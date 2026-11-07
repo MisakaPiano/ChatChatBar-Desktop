@@ -2523,6 +2523,51 @@
       "evidence": [
         "OWNER_FISH_ENVELOPE1_SUPPORT_SCOPED_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_7D393956506F4703",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
+      "reviewSource": "9daba717ec4708732834a259de7520ea74a19ff3",
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_94A0E79391180496",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
+      "reviewSource": "9daba717ec4708732834a259de7520ea74a19ff3",
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_7D5BB6C43B0AD72C",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
+      "reviewSource": "9daba717ec4708732834a259de7520ea74a19ff3",
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_DA2EA3EE59370EE1",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
+      "reviewSource": "9daba717ec4708732834a259de7520ea74a19ff3",
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_0130FDE4E28BB17D",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
+      "reviewSource": "9daba717ec4708732834a259de7520ea74a19ff3",
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -5121,8 +5166,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -5131,8 +5176,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_7D393956506F4703"
+      ],
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -5541,8 +5591,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -5551,8 +5601,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_94A0E79391180496"
+      ],
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioModels.kt",
@@ -6284,8 +6339,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -6294,8 +6349,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_7D5BB6C43B0AD72C"
+      ],
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -8877,8 +8937,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -8887,8 +8947,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_DA2EA3EE59370EE1"
+      ],
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -11611,8 +11676,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Five full upstream voice-skill text changes are reference support, not newly invoked authority. Active alternative editing/stable IDs and independent take snapshots map to actual shared/native owners; auxiliary two-slot and TTS permit-through-retry keep existing scoped proofs. Three additional existing Linux162 whole methods reused for version identity, takes/reopen and explicit model/serialized limit config; the old8-wrapper golden method is not upstream7-tail Prompt adoption. Desktop OS protection/task/startup and explicit selected backup voice/anchor/namespace/original-byte custody are native equivalents, not Android QQ/accessibility/Keystore or live phone migration. Prior human audio results unchanged, zero new tests/provider calls/paid synthesis/publication. Existing315 actual user decision remains separate.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -11621,8 +11686,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FISH_VOICE_MAINTENANCE_SUPPORT_0130FDE4E28BB17D"
+      ],
+      "evidence": [
+        "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:.agents/skills/chatbar-image-generation-runtime/SKILL.md",

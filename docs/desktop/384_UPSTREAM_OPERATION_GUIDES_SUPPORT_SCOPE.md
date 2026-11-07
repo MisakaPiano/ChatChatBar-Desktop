@@ -23,3 +23,5 @@
 3项Android图片instrumentation支持由现有shared/native原10个完整方法限域等位：隐私/stealth7、真实桌面Comment/alpha/WebP2、独立蓝色封面导出且卡与package不变1。R03选中套件保留一条本地MockWebServer WARNING，不写成空stderr或供应商故障；Bitmap回收、全部chunk及非法输出路径字面instrumentation未借名通过，动画仍有原生边界。与先前方法重叠不算新10项；见 OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json，0新跑。
 
 Fish标签JSON围栏1项测试支持由现有gateway3/严格标签1完整方法限域复用，源/test未变；BOM/inline/括号变体只按源码依据，不拆成已跑方法。原8消息wrapper用例未借为7尾新Prompt采纳，315保持实际用户决定边界。原始输出、未知字段/ID拒绝及修改发言确认保持；不重复先前Retry9+3。见 OWNER_FISH_ENVELOPE1_SUPPORT_SCOPED_REUSE.json，0新跑。
+
+5项Fish语音维护文本按既有shared/native owner限定映射，额外复用版本身份/多take重开/显式模型和输出上限3个既有完整方法；旧8消息黄金用例不当7尾Prompt采纳，先前Retry/JSON解析方法不重复计数。Android QQ/无障碍/Keystore不转成Desktop新后台任务或授权；语音迁移沿原类型/命名空间及原字节保全，真人原结果保持。见 OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json，0新跑。
