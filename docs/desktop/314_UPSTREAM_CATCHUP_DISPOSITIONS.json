@@ -823,6 +823,66 @@
       "evidence": [
         "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
       ]
+    },
+    {
+      "id": "RESEARCH_SELECTED_MODEL_PARAMETERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Selected auxiliary model settings reach actual research, brief, appearance and world-book requests without fixed low/disabled-thinking overrides; reused shared8 plus Desktop2 original methods. Later experimental transport has separate149 proof.",
+      "reviewSource": "a9146b8d1e7ee044f449e6a1a1d4bbc7e355dfa6",
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
+    },
+    {
+      "id": "VOICE_RESPONSE_POLICY_AND_TAG_GATEWAY",
+      "disposition": "EQUIVALENT",
+      "scope": "Strict complete JSON, separate transport/output budgets and cancellation/permanent rejection; reused15 original methods. No uncertain TTS replay. Preview gateway has separate32 proof; no all-voice UI claim.",
+      "reviewSource": "a9146b8d1e7ee044f449e6a1a1d4bbc7e355dfa6",
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
+    },
+    {
+      "id": "MESSAGE_EDIT_RETAINS_SIBLING_VERSIONS",
+      "disposition": "EQUIVALENT",
+      "scope": "Editing the selected whole message or segment preserves sibling alternatives and durable version identities. Shared current policy has149 custody8 proof; actual Desktop edit methods/test bodies unchanged from original41-method suite, not whole-file equality.",
+      "reviewSource": "a9146b8d1e7ee044f449e6a1a1d4bbc7e355dfa6",
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
+    },
+    {
+      "id": "CHARACTER_POSITION_REQUEST_AND_ROUNDTRIP",
+      "disposition": "EQUIVALENT",
+      "scope": "Automatic/custom positions preserve positive/negative centers and coordinate flags through actual request JSON, history/draft roundtrip and explicit PNG import selection; reused5 original PASS with six exact current blobs. Desktop pointer UI and existing Prompt delta remain separately pending.",
+      "reviewSource": "a9146b8d1e7ee044f449e6a1a1d4bbc7e355dfa6",
+      "owners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterPositionPolicy.kt"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json"
+      ]
+    },
+    {
+      "id": "FORMAL_TTS_TYPED_REJECTION_TRANSPORT",
+      "disposition": "EQUIVALENT",
+      "scope": "Shared typed retryAfter error custody plus actual Desktop formal TTS adapter delegates rejection-only retry, freezes admitted credentials/body, retains cancellation and never repeats uncertain or accepted malformed synthesis; reused4 real loopback transport methods, three exact blobs. Android platform service is replaced by Desktop adapter, not all voice UI.",
+      "reviewSource": "a9146b8d1e7ee044f449e6a1a1d4bbc7e355dfa6",
+      "owners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt",
+        "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishRejectedRetryTest.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/FishAudioModels.kt"
+      ],
+      "evidence": [
+        "OWNER_FORMAL_TTS_REJECTION_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -931,8 +991,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Automatic/custom positions preserve positive/negative centers and coordinate flags through actual request JSON, history/draft roundtrip and explicit PNG import selection; reused5 original PASS with six exact current blobs. Desktop pointer UI and existing Prompt delta remain separately pending.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -941,8 +1001,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_REQUEST_AND_ROUNDTRIP"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -958,8 +1023,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Automatic/custom positions preserve positive/negative centers and coordinate flags through actual request JSON, history/draft roundtrip and explicit PNG import selection; reused5 original PASS with six exact current blobs. Desktop pointer UI and existing Prompt delta remain separately pending.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -968,8 +1033,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_REQUEST_AND_ROUNDTRIP"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -985,8 +1055,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Automatic/custom positions preserve positive/negative centers and coordinate flags through actual request JSON, history/draft roundtrip and explicit PNG import selection; reused5 original PASS with six exact current blobs. Desktop pointer UI and existing Prompt delta remain separately pending.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -995,8 +1065,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_REQUEST_AND_ROUNDTRIP"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -1012,8 +1087,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Automatic/custom positions preserve positive/negative centers and coordinate flags through actual request JSON, history/draft roundtrip and explicit PNG import selection; reused5 original PASS with six exact current blobs. Desktop pointer UI and existing Prompt delta remain separately pending.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -1022,8 +1097,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_REQUEST_AND_ROUNDTRIP"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -3287,8 +3367,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Editing the selected whole message or segment preserves sibling alternatives and durable version identities. Shared current policy has149 custody8 proof; actual Desktop edit methods/test bodies unchanged from original41-method suite, not whole-file equality.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
@@ -3297,8 +3377,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MESSAGE_EDIT_RETAINS_SIBLING_VERSIONS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/main/java/com/example/chatbar/domain/chat/RoleplayContentSegments.kt",
@@ -3314,8 +3399,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Editing the selected whole message or segment preserves sibling alternatives and durable version identities. Shared current policy has149 custody8 proof; actual Desktop edit methods/test bodies unchanged from original41-method suite, not whole-file equality.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/RoleplayContentSegments.kt",
@@ -3324,8 +3409,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MESSAGE_EDIT_RETAINS_SIBLING_VERSIONS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -3613,8 +3703,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Shared typed retryAfter error custody plus actual Desktop formal TTS adapter delegates rejection-only retry, freezes admitted credentials/body, retains cancellation and never repeats uncertain or accepted malformed synthesis; reused4 real loopback transport methods, three exact blobs. Android platform service is replaced by Desktop adapter, not all voice UI.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/FishAudioModels.kt",
@@ -3623,8 +3713,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "FORMAL_TTS_TYPED_REJECTION_TRANSPORT"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_FORMAL_TTS_REJECTION_REUSE.json"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioService.kt",
@@ -3640,8 +3735,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Shared typed retryAfter error custody plus actual Desktop formal TTS adapter delegates rejection-only retry, freezes admitted credentials/body, retains cancellation and never repeats uncertain or accepted malformed synthesis; reused4 real loopback transport methods, three exact blobs. Android platform service is replaced by Desktop adapter, not all voice UI.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioService.kt",
@@ -3650,8 +3745,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "FORMAL_TTS_TYPED_REJECTION_TRANSPORT"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_FORMAL_TTS_REJECTION_REUSE.json"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioTagService.kt",
@@ -3667,8 +3767,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Strict complete JSON, separate transport/output budgets and cancellation/permanent rejection; reused15 original methods. No uncertain TTS replay. Preview gateway has separate32 proof; no all-voice UI claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/FishAudioTagService.kt",
@@ -3677,8 +3777,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "VOICE_RESPONSE_POLICY_AND_TAG_GATEWAY"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/main/java/com/example/chatbar/domain/voice/VoiceResponsePolicy.kt",
@@ -3694,8 +3799,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Strict complete JSON, separate transport/output budgets and cancellation/permanent rejection; reused15 original methods. No uncertain TTS replay. Preview gateway has separate32 proof; no all-voice UI claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/VoiceResponsePolicy.kt",
@@ -3704,8 +3809,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "VOICE_RESPONSE_POLICY_AND_TAG_GATEWAY"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/test/java/com/example/chatbar/domain/voice/FishAudioTagPolicyTest.kt",
@@ -4940,8 +5050,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected auxiliary model settings reach actual research, brief, appearance and world-book requests without fixed low/disabled-thinking overrides; reused shared8 plus Desktop2 original methods. Later experimental transport has separate149 proof.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterAppearanceImageService.kt",
@@ -4950,8 +5060,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "RESEARCH_SELECTED_MODEL_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/CharacterAutoFillService.kt",
@@ -5487,8 +5602,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected auxiliary model settings reach actual research, brief, appearance and world-book requests without fixed low/disabled-thinking overrides; reused shared8 plus Desktop2 original methods. Later experimental transport has separate149 proof.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/search/CharacterResearchPlanner.kt",
@@ -5497,8 +5612,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "RESEARCH_SELECTED_MODEL_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/search/LlmResearchBriefSummarizer.kt",
@@ -5514,8 +5634,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected auxiliary model settings reach actual research, brief, appearance and world-book requests without fixed low/disabled-thinking overrides; reused shared8 plus Desktop2 original methods. Later experimental transport has separate149 proof.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/search/LlmResearchBriefSummarizer.kt",
@@ -5524,8 +5644,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "RESEARCH_SELECTED_MODEL_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/search/WorldBookResearchService.kt",
@@ -5541,8 +5666,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected auxiliary model settings reach actual research, brief, appearance and world-book requests without fixed low/disabled-thinking overrides; reused shared8 plus Desktop2 original methods. Later experimental transport has separate149 proof.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/search/WorldBookResearchService.kt",
@@ -5551,8 +5676,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "RESEARCH_SELECTED_MODEL_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioTagService.kt",
@@ -5595,8 +5725,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected auxiliary model settings reach actual research, brief, appearance and world-book requests without fixed low/disabled-thinking overrides; reused shared8 plus Desktop2 original methods. Later experimental transport has separate149 proof.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/worldbook/WorldBookAiService.kt",
@@ -5605,8 +5735,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "RESEARCH_SELECTED_MODEL_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_SELECTED_RESEARCH_VOICE_AND_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
