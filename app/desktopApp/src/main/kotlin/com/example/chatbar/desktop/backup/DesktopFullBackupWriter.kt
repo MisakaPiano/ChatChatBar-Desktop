@@ -38,6 +38,7 @@ internal object DesktopFullBackupWriter {
                 require(preferences.desktopLlmAccounts == null && preferences.desktopNovelAiAccounts == null && preferences.desktopFishAccounts == null)
                 require(preferences.brushSize.isFinite() && preferences.brushSize > 0 && preferences.brushType.length <= 100)
                 val entities = linkedMapOf<String, JsonObject>()
+                val identities = DesktopBackupEntityIdentities()
                 val proof = linkedMapOf<String, AppBackupFileRecord>()
                 val sourceProof = linkedMapOf<String, String>()
                 val transported = linkedMapOf<String, ByteArray>()
@@ -54,6 +55,7 @@ internal object DesktopFullBackupWriter {
                         val bytes = Files.readAllBytes(path)
                         try {
                             val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = CURRENT_DESKTOP_BACKUP_CODE, modern = true)
+                            identities.observe(name, original)
                             val selected = credentials?.entity(name, original) ?: original
                             // New defaults are omitted in live/legacy entities. The selected modern
                             // settings transport carries explicit false so merge choices can reset true.

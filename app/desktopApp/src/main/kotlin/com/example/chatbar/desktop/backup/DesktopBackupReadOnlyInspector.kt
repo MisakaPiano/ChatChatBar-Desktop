@@ -89,6 +89,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             val central = InspectionZipDirectory.read(payload)
             val seen = linkedMapOf<String, AppBackupFileRecord>()
             val entities = linkedMapOf<String, JsonObject>()
+            val identities = DesktopBackupEntityIdentities()
             var manifest: InspectionManifest? = null
             var preferenceHash: String? = null
             var inventory: Map<String, AppBackupFileRecord>? = null
@@ -118,6 +119,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                             if (entity) {
                                 stage = "ENTITY_SCHEMA"
                                 val value = strictJson(bytes).jsonObject
+                                identities.observe(path, value)
                                 scanCredentials(value, DesktopBackupPolicy.entityType(path), credentials)
                                 if (DesktopBackupPolicy.schemas[DesktopBackupPolicy.entityType(path)] == null ||
                                     DesktopBackupPolicy.entityType(path) in setOf("moment_posts", "moment_tasks")) uninterpreted++

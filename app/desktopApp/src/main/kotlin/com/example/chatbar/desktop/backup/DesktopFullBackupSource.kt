@@ -64,6 +64,7 @@ internal object DesktopFullBackupSource {
                 var incompatibleHistoricalDesktopV5 = false
                 val seen = linkedMapOf<String, AppBackupFileRecord>()
                 val entities = linkedMapOf<String, JsonObject>()
+                val identities = DesktopBackupEntityIdentities()
                 val historicalAvatarReferences = mutableListOf<String>()
                 phase = "AUTHENTICATION_ZIP"
                 AppBackupCodec.decryptingForInspection(input, password) { version, protected -> envelope = version; encrypted = protected; sourceEncrypted = protected }.use { plain ->
@@ -132,6 +133,7 @@ internal object DesktopFullBackupSource {
                                                 }
                                             }
                                             entities[path] = DesktopBackupRecords.scopeRecord(value)
+                                            identities.observe(path, value)
                                             sinkOperation { sink.entity(path, value, bytes) }
                                         }
                                     }
