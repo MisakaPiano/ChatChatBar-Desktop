@@ -45,7 +45,26 @@ Voice R01（b09/control012436aa/run42330233799）原两方法均在5秒等待界
 
 0f4只增实际RuntimeFixture反例：先生成旧合成录音、添加尚无锚点的新回复，再命名暂停旧有效录音的真实play normal边界；exclusive排队后，late调用与UI相同的placementsForMessage(newReply)。暖repo的新anchor写等待准入会占住原mutex。984仅把VoiceMessageRepository原持久化mutex块置于storage normal之后，保留strictReads、缓存/初始化、锚点版本迁移/reconcile、restore和删除原body，shared内部调用internal入口，不扩底层API可见性。原纯文件DesktopVoiceAudioStore mutex不改。
 
-正例检查仅包括播放准备返回Job、维护排空、late等待、释放后的新anchor版本、原消息/录音bytes和零新增TTS；stopForMaintenance/join单独完成，不宣称声卡或冷初始化复现。R01/control6fc8b16d和R02/controlb7110d2f原件待；984不借用此前54/81为本仓库新scope通过。
+正例检查仅包括播放准备返回Job、维护排空、late等待、释放后的新anchor版本、原消息/录音bytes和零新增TTS；stopForMaintenance/join单独完成，不宣称声卡或冷初始化复现。R01/control6fc8b16d/run42331431763仅317B source、零XML；R02/controlb7110d2f/run42331520806先执行原shared VoiceRepositoryPersistence1PASS，随后同样在Desktop测试编译失败：新用例两处snapshotAnchorsForMessages把List传给要求Set的接口（38/61行）。两轮都没有Desktop业务结论，不借此前54/81代验。
+
+9e4只把两处调用修正为setOf。旧生产后继af12以0f4为父，仅复制修正后的同一测试blob；R03/control71f26aad/run42332169956原一个方法在5秒播放准备返回界限FAIL、0ERROR/SKIP。当前生产R04/control ec1b3350/run42332177084原九套Desktop55PASS、0FAIL/ERROR/SKIP：repo新1、mutation3、Runtime9、Persistence5、Safety5、HistoricalRetention4、LegacyVoiceIdentity3、SaveSlotService24、TextDrain1。已匹配984的shared1原PASS单独复用，不当作新同轮56。原两轮编译失败保留；本次actual等待反例来自修正后同一测试blob。
+
+| 原编译失败 | artifact / 字节 / SHA256 |
+| --- | --- |
+| Repo R01 | 13557865955 / 317 / 0272180f633da2b138d30fce342d527810285f94bd2eee9a1aa25eeff2b18541 |
+| Repo R02 | 13558096429 / 9338 / 01956cb09f1c4c99e87eca31a2d9e7140139bbcdb1ed76cc9f94a8da271377f0 |
+| Repo R03（合法夹具旧生产） | 13558297488 / 10624 / 9c3130f75a889587042c9f059e9ae4892c49bdc3067bf00a83167a238af7f780 |
+| Repo R04（新生产） | 13558322547 / 31639 / 6e8d47cdacef07bfbf2532cc0241a1d2ba498511adb2d9b062952bbbd2b6b861 |
+
+R03/R04两个原ZIP也已核长度/SHA256/CRC/source.json与实际XML。完整通过范围包括播放准备/维护排空和late等待、释放后anchor/version与原音频bytes、零新增TTS、历史/存档语音保全与原取消排水；不把fake output当作物理声卡。
+
+## 具体normal-only回复候选切换
+
+另核Primary.selectAssistantAlternative原回调仅读取、eligible范围及selected-version保存，memory.sourceChanged发生在voice mutation退出后。4ffc新增 `mutateNormalMessage` 并只让该回调走专用normal helper，复用原停止播放/取消精确消息语音的owner，memory handoff仍在外；通用helper不变。新增第四个facade有界检查核切换保留兄弟候选和版本IDs。Mutation R04/control8752ba1a/run42332426826原三套55PASS、0FAIL/ERROR/SKIP：Admission4、Runtime9、实际Primary42；新入口按该后继成立，不从此前54或repo55代验，方法重叠不相加。
+
+该原件artifact13558397194、20098B、SHA256 `fabf56084c8a8ea9da353a4c2bc4f32b62edd5a570090e0d1096a41dc5522e9a`，长度/CRC/source.json/原XML已核。
+
+whole/segment编辑、带图修改/删除等回调会把normal持久化与后续exclusive资源清理组合，仍作为具体源码候选保留，不能由上述normal-only入口推广全局锁序闭合。这里没有对通用mutateMessage概括增加outer normal lease。
 
 ## 8c参数delta的精确映射
 

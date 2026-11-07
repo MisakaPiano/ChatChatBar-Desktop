@@ -1,3 +1,7 @@
+2026-11-07 语音仓库后继与具体候选切换检查完成：Repo R01/R02两处新测试List/Set编译失败保留，仅R02原shared1PASS；9e4修正同一测试blob后，旧生产af12/control71f R03原1个5秒等待FAIL，新生产control ec1b R04原九套Desktop55PASS、0FAIL/ERROR/SKIP，实际暖repo/新anchor UI reader和旧play准备成立，不冒称声卡/冷启动。4ffc另补normal-only候选切换，Mutation R04原Admission4+Runtime9+Primary42=55PASS；此前34/81/54分源保留不相加，详321。混合编辑/图片清理回调仍留具体源码候选，不泛化全局锁序闭合。当前继续NAI导入/模型参数/UI相邻增量；314整体false，公开1244/db7/签26、A1真人FAIL、315未采纳不动，无新包/公发、日常代装、本机JVM或真实资料操作。
+
+下方历史保留。
+
 2026-11-07 语音与格式修复实际缺口继续补齐：格式修复旧请求缺所选max_tokens已由新1FAIL复现，53dec后原四套34PASS且消息封装/Prompt/TLS/terminal原边界保留；语音驻场/删录音旧两等待FAIL，b3后原八套81PASS，d569手动人物开关及命名暂停后继原三套54PASS（重叠不相加），详321。另确认界面独立placementsForMessage会写新回复anchor；0f4暖repo/旧录音真实play反例和984共享仓库gate-before-mutex后继正在云验，未借81/54代验。320后继合计22条复用映射，321再精确映射8c四个参数delta，314仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳不变，无新包/公发、日常代装、本机JVM或真实资料操作。
 
 下方历史保留。
