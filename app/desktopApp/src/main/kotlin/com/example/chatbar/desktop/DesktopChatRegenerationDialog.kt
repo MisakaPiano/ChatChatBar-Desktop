@@ -51,14 +51,14 @@ internal fun DesktopChatRegenerationDialog(message: ChatMessage, metadata: Gener
                     StudioField("高度", s.customHeight.toString()) { it.toIntOrNull()?.let { height -> settings = s.copy(customHeight = height) } }
                     StudioField("数量", s.count.toString()) { it.toIntOrNull()?.let { count -> settings = s.copy(count = count) } }
                     StudioField("Steps", s.steps.toString()) { it.toIntOrNull()?.let { steps -> settings = s.copy(steps = steps) } }
-                    StudioField("Guidance", s.guidance.toString()) { it.toFloatOrNull()?.let { value -> settings = s.copy(guidance = value) } }
+                    StudioNumericField("Guidance", s.guidance.toString()) { it.toFloatOrNull()?.takeIf { value -> value.isFinite() && value in 1f..10f }?.let { value -> settings = s.copy(guidance = value) } }
                     CompactChoice("Seed", NovelAiSeedMode.entries, s.seedMode, { it.name }) { settings = s.copy(seedMode = it) }
                     if (s.seedMode == NovelAiSeedMode.FIXED) StudioField("Seed", s.seed.toString()) { it.toLongOrNull()?.let { seed -> settings = s.copy(seed = seed) } }
-                    s.validationError(draft.characterPrompts.size)?.let { StatusText(it) }
+                    s.requestValidationError(draft.characterPrompts.size)?.let { StatusText(it) }
                 }
             }
             StudioActions {
-                BootstrapButton("重新生成", enabled = draft.canRegenerate && settings?.validationError(draft.characterPrompts.size) == null && settings != null) {
+                BootstrapButton("重新生成", enabled = draft.canRegenerate && settings?.requestValidationError(draft.characterPrompts.size) == null && settings != null) {
                     scope.launch {
                         try { service.generate(message, draft, requireNotNull(settings)); onClose() }
                         catch (_: Exception) { status = "无法启动；请检查参数或正在运行的任务" }

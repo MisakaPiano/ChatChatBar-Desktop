@@ -212,6 +212,14 @@ internal fun StudioNumericInput(label: String, value: String, modifier: Modifier
         cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
 }
 
+@Composable
+internal fun StudioNumericField(label: String, value: String, change: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        StatusText(label)
+        StudioNumericInput(label, value, Modifier.fillMaxWidth(), change)
+    }
+}
+
 internal fun studioAspectOptions(settings: NovelAiGenerationSettings) = NovelAiAspectRatio.entries.filterNot {
     settings.sizeTier == NovelAiSizeTier.WALLPAPER && it == NovelAiAspectRatio.SQUARE
 }

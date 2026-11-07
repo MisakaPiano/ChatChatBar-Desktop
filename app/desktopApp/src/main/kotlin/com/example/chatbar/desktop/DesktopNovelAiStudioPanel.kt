@@ -227,19 +227,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                             guidanceEditor = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Triple(controller.resources.readBytes(asset.path), d.imageGuidance.maskImage?.let { controller.resources.readBytes(it.path) }, d.imageGuidance.focusedInpaintRegion) }
                         } }
                     }
-                    StudioField("Minimum Context 32–96", g.focusedInpaintMinimumContext.toString()) { text -> text.toIntOrNull()?.let { value -> change { it.copy(focusedInpaintMinimumContext = value) } } }
-                    StudioField("图生图 Strength", g.imageToImageStrength.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(imageToImageStrength = value) } } }
-                    StudioField("Noise", g.imageToImageNoise.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(imageToImageNoise = value) } } }
-                    StudioField("Inpaint Strength", g.inpaintStrength.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(inpaintStrength = value) } } }
-                    CompactChoice("精确参考类型", NovelAiPreciseReferenceType.entries, g.preciseReference.type, { it.displayName }) { value -> change { it.copy(preciseReference = it.preciseReference.copy(type = value)) } }
-                    StudioField("参考 Strength", g.preciseReference.strength.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(preciseReference = it.preciseReference.copy(strength = value)) } } }
-                    StudioField("Fidelity", g.preciseReference.fidelity.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(preciseReference = it.preciseReference.copy(fidelity = value)) } } }
-                    g.vibes.forEach { vibe ->
-                        StatusText("Vibe ${g.vibes.indexOf(vibe) + 1}")
-                        StudioField("信息提取", vibe.informationExtracted.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(vibes = it.vibes.map { v -> if (v.id == vibe.id) v.copy(informationExtracted = value, encodedVibe = null) else v }) } } }
-                        StudioField("强度", vibe.strength.toString()) { text -> text.toFloatOrNull()?.let { value -> change { it.copy(vibes = it.vibes.map { v -> if (v.id == vibe.id) v.copy(strength = value) else v }) } } }
-                        StudioAction("移除 Vibe") { change { it.copy(vibes = it.vibes.filterNot { v -> v.id == vibe.id }) } }
-                    }
+                    DesktopGuidanceNumericControls(g, ::change)
                     StudioToggle("归一化 Vibe 强度", g.normalizeVibeStrengths) { change { it.copy(normalizeVibeStrengths = !it.normalizeVibeStrengths) } }
                     StudioAction("重置图像引导") { scope.launch { controller.replace { it.copy(imageGuidance = NovelAiImageGuidanceDraft()) } } }
                     g.validationError(d.selectedModel)?.let { StatusText(it) }
