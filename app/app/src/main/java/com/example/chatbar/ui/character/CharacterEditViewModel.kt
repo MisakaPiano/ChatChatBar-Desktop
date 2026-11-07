@@ -553,20 +553,34 @@ class CharacterEditViewModel(
 
     fun discardDraft(onDone: (() -> Unit)? = null) {
         viewModelScope.launch {
-            draftJob?.cancelAndJoin()
-            draftJob = null
-            loadedDraft?.draftSessionId?.let { draftAssetService.deleteDraft(it) } ?: draftAssetService.deleteDraft(draftSessionId)
-            loadedDraft?.id?.let { draftRepository.delete(it) }
-            draftRepository.deleteForTarget(EditorDraftType.CHARACTER_CARD, characterId)
-            loadedDraft = null
-            pendingDeletedAssets.clear()
-            pendingDeletedDocumentIds.clear()
-            openModalState = null
-            restoredOpenModalState = null
-            hasLocalChanges = false
-            hasUnsavedDraftChanges = false
-            restoreDraft = null
-            restoreConflict = false
+            draftReady = false
+            try {
+                draftJob?.cancelAndJoin()
+                draftJob = null
+                val savedCard = characterId?.let { characterRepository.getById(it) }
+                loadedDraft?.draftSessionId?.let { draftAssetService.deleteDraft(it) } ?: draftAssetService.deleteDraft(draftSessionId)
+                loadedDraft?.id?.let { draftRepository.delete(it) }
+                draftRepository.deleteForTarget(EditorDraftType.CHARACTER_CARD, characterId)
+                loadedDraft = null
+                // The same editor ViewModel can be reused when this card is reopened.
+                // Discard its editable fields as well as the persisted draft.
+                baseCard = savedCard
+                _indexingStatus.value = null
+                applyCard(savedCard)
+                draftSavedAt = null
+                sourceDeleted = false
+                saveConflict = false
+                pendingDeletedAssets.clear()
+                pendingDeletedDocumentIds.clear()
+                openModalState = null
+                restoredOpenModalState = null
+                hasLocalChanges = false
+                hasUnsavedDraftChanges = false
+                restoreDraft = null
+                restoreConflict = false
+            } finally {
+                draftReady = true
+            }
             onDone?.invoke()
         }
     }
@@ -2407,8 +2421,9 @@ class CharacterEditViewModel(
         }
     }
 
-    private fun applyCard(card: CharacterCard) {
-        _characterCard.value = card
+    private fun applyCard(savedCard: CharacterCard?) {
+        val card = savedCard ?: CharacterCard.create(name = "")
+        _characterCard.value = savedCard
         name = card.name
         botName = card.botName
         greeting = card.greeting
