@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 
 /** User-driven selection over immutable, credential-free inputs. Publication is a separate operation. */
 internal class DesktopMergePreview private constructor(
-    val conflicts: List<Conflict>,
+    private val candidateConflicts: List<Conflict>,
     private val pc: Map<String, Unit>,
     private val incoming: Map<String, Unit>,
     private val identical: Set<String>,
@@ -15,39 +15,105 @@ internal class DesktopMergePreview private constructor(
     enum class Choice { KEEP_PC, TAKE_PHONE, BOTH, SKIP }
     enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT }
     class Conflict internal constructor(val key: String, val label: String, val category: String,
-        val reasons: Set<Reason>, val choices: Set<Choice>, internal val pcKeys: Set<String>) {
+        val reasons: Set<Reason>, val choices: Set<Choice>, internal val pcKeys: Set<String>, internal val targetPcKey: String? = null) {
         override fun toString() = "MergeConflict($category,$reasons)"
+        internal fun sameTargets(other: Conflict) = key == other.key && category == other.category &&
+            reasons == other.reasons && choices == other.choices && pcKeys == other.pcKeys && targetPcKey == other.targetPcKey
     }
     class Unit internal constructor(val key: String, val category: String, val label: String,
         val records: Map<String, JsonObject>, internal val signature: String,
         internal val messageIds: Set<String> = emptySet(), internal val forkable: Boolean = false,
-        internal val ownedIds: Set<Pair<String, String>> = emptySet()) {
+        internal val ownedIds: Set<Pair<String, String>> = emptySet(),
+        internal val primaryId: String? = null, internal val cardOwner: String? = null) {
         override fun toString() = "MergeUnit($category,${records.size})"
+    }
+    class Alias internal constructor(val type: String, val sourceId: String, val targetId: String,
+        internal val source: Unit, internal val target: Unit) {
+        override fun toString() = "MergeAlias($type)"
     }
     class Selection internal constructor(val computer: List<Unit>, val phone: List<Unit>,
         val forkIncomingUnits: Set<String>, val pcFingerprint: String,
         val ignoredIncomingUnits: Set<String> = emptySet(),
         val replacedComputerUnits: Map<String, Unit> = emptyMap(),
         val incomingScope: InspectionScope? = null,
-        val computerVoiceSources: List<DesktopMergeVoiceSourcePolicy.Source> = emptyList()) {
+        val computerVoiceSources: List<DesktopMergeVoiceSourcePolicy.Source> = emptyList(),
+        val aliases: List<Alias> = emptyList()) {
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
+    private data class CardDomain(val incomingCopy: Boolean, val id: String)
+    val conflicts: List<Conflict> get() = effectiveConflicts(emptyMap())
+
+    /** Card choices determine the named-session domain without allocating IDs or touching source data. */
+    fun effectiveConflicts(choices: Map<String, Choice>): List<Conflict> {
+        fun incomingDomain(card: String?): CardDomain? {
+            if (card == null) return null
+            val key = "character_cards:$card"
+            val conflict = candidateConflicts.firstOrNull { it.key == key }
+                ?: return CardDomain(key !in pc, card)
+            val choice = choices[key] ?: return null
+            if (choice == Choice.BOTH) return CardDomain(true, card)
+            return conflict.targetPcKey?.let(pc::get)?.primaryId?.let { CardDomain(false, it) }
+        }
+        return candidateConflicts.mapNotNull { conflict ->
+            if (conflict.category != "chat_sessions") return@mapNotNull conflict
+            val candidate = incoming.getValue(conflict.key)
+            val exact = pc[candidate.key]
+            val domain = incomingDomain(candidate.cardOwner)
+            val named = if (exact != null || domain == null || domain.incomingCopy) emptyList() else conflict.pcKeys.mapNotNull(pc::get).filter {
+                it.cardOwner == domain.id && normalizedLabel(it.label) == normalizedLabel(candidate.label)
+            }
+            val target = exact?.key ?: named.singleOrNull()?.key
+            val collided = conflict.pcKeys.mapNotNull(pc::get).filter {
+                it.key != candidate.key && it.key != target && it.ownedIds.any(candidate.ownedIds::contains)
+            }
+            val peers = (listOfNotNull(exact) + named + collided).distinctBy { it.key }
+            if (peers.isEmpty()) return@mapNotNull null
+            val reasons = conflict.reasons - setOf(Reason.SAME_NAME, Reason.OWNED_ID_COLLISION) + buildSet {
+                if (named.isNotEmpty()) add(Reason.SAME_NAME)
+                if (collided.isNotEmpty()) add(Reason.OWNED_ID_COLLISION)
+            }
+            val allowed = buildSet {
+                add(Choice.KEEP_PC); add(Choice.SKIP)
+                if (collided.isEmpty() && target != null) add(Choice.TAKE_PHONE)
+                if (candidate.forkable) add(Choice.BOTH)
+            }
+            Conflict(conflict.key, conflict.label, conflict.category, reasons, allowed, peers.mapTo(hashSetOf()) { it.key }, target)
+        }
+    }
+
+    fun choose(choices: Map<String, Choice>, key: String, choice: Choice): Map<String, Choice> {
+        val previous = effectiveConflicts(choices).associateBy { it.key }
+        require(choice in requireNotNull(previous[key]).choices) { "MERGE_CHOICE_NOT_APPLICABLE" }
+        val proposed = choices + (key to choice)
+        val next = effectiveConflicts(proposed).associateBy { it.key }
+        return proposed.filter { (id, selected) -> next[id]?.let { target ->
+            selected in target.choices && previous[id]?.sameTargets(target) == true
+        } == true }
+    }
+
     fun select(choices: Map<String, Choice>, checkActive: () -> kotlin.Unit = {}): Selection {
+        val conflicts = effectiveConflicts(choices)
         require(choices.keys == conflicts.mapTo(hashSetOf()) { it.key }) { "MERGE_EXPLICIT_CHOICES_REQUIRED" }
         val computer = pc.toMutableMap()
         val phone = incoming.filterKeys { it !in identical }.toMutableMap()
         val forks = hashSetOf<String>()
         val replaced = linkedMapOf<String, Unit>()
+        val aliases = mutableListOf<Alias>()
         conflicts.forEach { conflict ->
             checkActive()
             val choice = choices.getValue(conflict.key)
             require(choice in conflict.choices) { "MERGE_CHOICE_NOT_APPLICABLE" }
+            val candidate = incoming.getValue(conflict.key)
+            val target = conflict.targetPcKey?.let(pc::get)
+            if (choice != Choice.BOTH && target != null && candidate.primaryId != null && target.primaryId != null)
+                aliases += Alias(candidate.category, candidate.primaryId, target.primaryId, candidate, target)
             when (choice) {
                 Choice.KEEP_PC, Choice.SKIP -> phone.remove(conflict.key)
                 Choice.TAKE_PHONE -> {
-                    pc[conflict.key]?.let { replaced[conflict.key] = it }
-                    conflict.pcKeys.forEach(computer::remove)
+                    val targetKey = requireNotNull(conflict.targetPcKey) { "MERGE_REPLACEMENT_TARGET_AMBIGUOUS" }
+                    replaced[conflict.key] = pc.getValue(targetKey)
+                    computer.remove(targetKey)
                 }
                 Choice.BOTH -> {
                     // Same-name independent identities stay intact. Any colliding identity needs
@@ -56,20 +122,30 @@ internal class DesktopMergePreview private constructor(
                 }
             }
         }
+        for (conflict in conflicts.filter { it.category == "character_cards" && choices[it.key] in setOf(Choice.KEEP_PC, Choice.SKIP) }) {
+            val ignored = incoming.getValue(conflict.key)
+            if (conflict.targetPcKey == null && "character_cards:${ignored.primaryId}" !in pc)
+                require(phone.values.none { it.category == "chat_sessions" && it.cardOwner == ignored.primaryId }) {
+                    "MERGE_SKIPPED_CARD_HAS_SELECTED_CONVERSATIONS"
+                }
+        }
+        val aliasIdentity = DesktopMergeIdentity().also { identity -> aliases.filter { it.sourceId != it.targetId }
+            .forEach { identity.bind(it.type, it.sourceId, it.targetId) } }
         val voiceSources = mutableListOf<DesktopMergeVoiceSourcePolicy.Source>()
         for ((key, original) in replaced) {
             checkActive()
             val candidate = phone.getValue(key)
-            val retained = DesktopMergeRetainedMedia(sourceScope, original, checkActive).retainedSessionRecords(candidate)
+            val retained = DesktopMergeRetainedMedia(sourceScope, original, aliasIdentity, checkActive).retainedSessionRecords(candidate)
             if (retained.records.isNotEmpty()) computer["retained:$key"] = Unit("retained:$key", original.category,
                 original.label, retained.records, original.signature)
             voiceSources += retained.voiceSources
         }
         return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint,
-            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope, voiceSources)
+            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope, voiceSources, aliases)
     }
 
     companion object {
+        private fun normalizedLabel(value: String) = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.ROOT)
         /** Scope governs settings projection and preservation of explicitly unselected media. */
         fun create(pcEntities: Map<String, JsonObject>, phoneEntities: Map<String, JsonObject>,
             pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null,
@@ -83,10 +159,10 @@ internal class DesktopMergePreview private constructor(
                 val exact = pc[candidate.key]
                 if (exact != null && exact.signature == candidate.signature && candidate.key !in credentialConflicts) { identical += candidate.key; return@forEach }
                 // A Moment sender is not a unique post name. Different posts by the same person coexist.
-                val normalizedName = java.text.Normalizer.normalize(candidate.label.trim(), java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.ROOT)
-                val sameName = if (normalizedName.isEmpty() || candidate.category == "moment_posts") emptyList() else pc.values.filter {
+                val normalizedName = normalizedLabel(candidate.label)
+                val sameName = if (exact != null || normalizedName.isEmpty() || candidate.category == "moment_posts") emptyList() else pc.values.filter {
                     it.category == candidate.category &&
-                        java.text.Normalizer.normalize(it.label.trim(), java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.ROOT) == normalizedName &&
+                        normalizedLabel(it.label) == normalizedName &&
                         it.key != candidate.key
                 }
                 val ownedCollisions = if (candidate.category == "chat_sessions") pc.values.filter {
@@ -103,9 +179,10 @@ internal class DesktopMergePreview private constructor(
                         account(exact) != account(candidate)) add(Reason.ACCOUNT_IDENTITY)
                 }
                 val allowed = mutableSetOf(Choice.KEEP_PC, Choice.SKIP)
-                if (ownedCollisions.isEmpty()) allowed += Choice.TAKE_PHONE
+                val target = exact?.key ?: peers.singleOrNull()?.key
+                if (ownedCollisions.isEmpty() && target != null) allowed += Choice.TAKE_PHONE
                 if (candidate.forkable) allowed += Choice.BOTH
-                conflicts += Conflict(candidate.key, candidate.label, candidate.category, reasons, allowed, peers.mapTo(hashSetOf()) { it.key })
+                conflicts += Conflict(candidate.key, candidate.label, candidate.category, reasons, allowed, peers.mapTo(hashSetOf()) { it.key }, target)
             }
             // A PC unit may be named by several incoming conflicts. Conflicting TAKE/BOTH choices
             // are rechecked by the materializer's final dependency graph, not resolved by last write.
@@ -194,7 +271,9 @@ internal class DesktopMergePreview private constructor(
                     record["id"]?.jsonPrimitive?.contentOrNull?.let { family to it }
                 }.toSet() else emptySet()
                 Unit(key, type, label, items, signature.digest().joinToString("") { "%02x".format(it) }, messages,
-                    type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books", "moment_posts"), ownedIds)
+                    type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books", "moment_posts"), ownedIds,
+                    value["id"]?.jsonPrimitive?.contentOrNull,
+                    if (type == "chat_sessions") value["characterCardId"]?.jsonPrimitive?.contentOrNull else null)
             }
         }
 

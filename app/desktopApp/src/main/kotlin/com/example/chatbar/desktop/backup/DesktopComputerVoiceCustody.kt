@@ -7,17 +7,23 @@ import java.nio.channels.FileChannel
 import java.nio.file.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 
 /** Inert PC snapshot originals whose ownership cannot be proved against replacement text. */
+@OptIn(ExperimentalSerializationApi::class)
 internal object DesktopComputerVoiceCustody {
     const val KIND = "unselected-computer-voice-source"
     @Serializable private data class Proof(val path: String, val bytes: Long, val sha256: String)
     @Serializable private data class Entry(val type: String, val sourcePath: String, val ownerPath: String,
-        val targetPath: String, val record: String, val owner: String, val target: String, val audio: String? = null)
+        val targetPath: String, val record: String, val owner: String, val target: String, val audio: String? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val targetIncoming: Boolean = false)
+    @Serializable private data class SessionAlias(val source: String, val target: String)
     @Serializable private data class Index(val version: Int = 1, val kind: String = KIND,
         val computerFingerprint: String, val incomingSha256: String, val scope: InspectionScope,
-        val files: List<Proof>, val entries: List<Entry>)
+        val files: List<Proof>, val entries: List<Entry>,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val aliases: List<SessionAlias> = emptyList())
     private val hash = Regex("[a-f0-9]{64}")
 
     suspend fun preserve(computer: DesktopFullBackupMapping.Export, incoming: DesktopFullBackupStaging,
@@ -29,6 +35,7 @@ internal object DesktopComputerVoiceCustody {
         check(computer.credentialFreeSource && selected.size <= DesktopBackupPolicy.MAX_FILES)
         val files = linkedMapOf<String, Proof>()
         val sources = linkedMapOf<String, Path>()
+        val aliases = linkedMapOf<String, SessionAlias>()
         suspend fun file(source: Path, media: Boolean = false): String {
             val sha = DesktopArchiveFiles.hash(source, DesktopFullBackupSource.MAX_FILE)
             val path = if (media) "media/$sha.mp3" else "records/$sha.json"
@@ -45,8 +52,18 @@ internal object DesktopComputerVoiceCustody {
                 .getValue(source.target.relative)
             val value = strict(record)
             val ownerValue = strict(owner); val targetValue = strict(target)
-            sameOwner(ownerValue, targetValue)
-            check(!DesktopMergeVoiceSourcePolicy.canRetainLive(source.record.type, value, ownerValue, targetValue)) {
+            val sourceSession = requireNotNull(targetValue["sessionId"]?.jsonPrimitive?.contentOrNull)
+            val targetSession = requireNotNull(ownerValue["sessionId"]?.jsonPrimitive?.contentOrNull)
+            val incomingAlias = sourceSession != targetSession
+            if (incomingAlias) {
+                check(source.targetSide == DesktopMergeDestinationPlan.Side.PHONE && selection.aliases.any {
+                    it.type == "chat_sessions" && it.sourceId == sourceSession && it.targetId == targetSession
+                }) { "COMPUTER_VOICE_TARGET_OWNER_CHANGED" }
+                aliases[sourceSession] = SessionAlias(sourceSession, targetSession)
+            }
+            val comparison = if (incomingAlias) JsonObject(targetValue + ("sessionId" to JsonPrimitive(targetSession))) else targetValue
+            sameOwner(ownerValue, comparison)
+            check(!DesktopMergeVoiceSourcePolicy.canRetainLive(source.record.type, value, ownerValue, comparison)) {
                 "MERGE_COMPUTER_VOICE_CLASSIFICATION_CHANGED"
             }
             val audio = if (source.record.type == "generated_voice_messages") {
@@ -55,10 +72,10 @@ internal object DesktopComputerVoiceCustody {
                 file(computer.files.getValue(voice.audioPath.removePrefix(DesktopBackupPolicy.PREFIX)), media = true)
             } else null
             Entry(source.record.type, source.record.relative, source.owner.relative, source.target.relative,
-                file(record), file(owner), file(target), audio)
+                file(record), file(owner), file(target), audio, incomingAlias)
         }
-        val index = Index(computerFingerprint = selection.pcFingerprint, incomingSha256 = incoming.source.sourceHash,
-            scope = requireNotNull(selection.incomingScope), files = files.values.toList(), entries = entries)
+        val index = Index(version = if (aliases.isEmpty()) 1 else 2, computerFingerprint = selection.pcFingerprint, incomingSha256 = incoming.source.sourceHash,
+            scope = requireNotNull(selection.incomingScope), files = files.values.toList(), entries = entries, aliases = aliases.values.toList())
         val bytes = backupJson.encodeToString(Index.serializer(), index).toByteArray(Charsets.UTF_8)
         check(bytes.size <= DesktopBackupPolicy.MAX_JSON)
         val parent = root.resolve(DesktopHistoricalVoiceCustody.ROOT)
@@ -91,9 +108,18 @@ internal object DesktopComputerVoiceCustody {
     private suspend fun validate(home: Path): Index {
         DesktopArchiveFiles.safe(home, true)
         val index = backupJson.decodeFromJsonElement(Index.serializer(), strict(home.resolve("index.json")))
-        check(index.version == 1 && index.kind == KIND && hash.matches(index.computerFingerprint) && hash.matches(index.incomingSha256) &&
+        check(index.version in 1..2 && index.kind == KIND && hash.matches(index.computerFingerprint) && hash.matches(index.incomingSha256) &&
             index.entries.size in 1..DesktopBackupPolicy.MAX_FILES && index.files.size <= DesktopBackupPolicy.MAX_FILES && home.fileName.toString() == name(index)) {
             "COMPUTER_VOICE_INDEX_SCHEMA"
+        }
+        val aliases = index.aliases.associateBy { it.source }
+        check(aliases.size == index.aliases.size && aliases.size <= DesktopBackupPolicy.MAX_FILES &&
+            index.aliases.map { it.target }.distinct().size == aliases.size &&
+            (index.version == 1) == (aliases.isEmpty() && index.entries.none { it.targetIncoming })) { "COMPUTER_VOICE_ALIAS_SCHEMA" }
+        index.aliases.forEach { alias ->
+            check(alias.source != alias.target && listOf(alias.source, alias.target).all { id ->
+                id.isNotBlank() && id.length <= 1024 && id.none(Char::isISOControl)
+            }) { "COMPUTER_VOICE_ALIAS_SCHEMA" }
         }
         val files = index.files.associateBy { it.path }; check(files.size == index.files.size)
         for (proof in files.values) {
@@ -105,7 +131,7 @@ internal object DesktopComputerVoiceCustody {
                 "COMPUTER_VOICE_FILE_CHANGED"
             }
         }
-        val used = hashSetOf<String>(); val records = hashSetOf<String>()
+        val used = hashSetOf<String>(); val records = hashSetOf<String>(); val usedAliases = hashSetOf<String>()
         for (entry in index.entries) {
             currentCoroutineContext().ensureActive()
             listOf(entry.sourcePath, entry.ownerPath, entry.targetPath).forEach(DesktopBackupPolicy::path)
@@ -117,8 +143,15 @@ internal object DesktopComputerVoiceCustody {
             check(listOf(entry.record, entry.owner, entry.target).all { it.startsWith("records/") })
             val original = strict(home.resolve(entry.record))
             val ownerValue = strict(home.resolve(entry.owner)); val targetValue = strict(home.resolve(entry.target))
-            sameOwner(ownerValue, targetValue)
-            check(!DesktopMergeVoiceSourcePolicy.canRetainLive(entry.type, original, ownerValue, targetValue)) {
+            val comparison = if (entry.targetIncoming) {
+                val source = requireNotNull(targetValue["sessionId"]?.jsonPrimitive?.contentOrNull)
+                val alias = aliases[source]
+                check(alias != null && alias.target == ownerValue["sessionId"]?.jsonPrimitive?.contentOrNull) { "COMPUTER_VOICE_TARGET_OWNER_CHANGED" }
+                usedAliases += source
+                JsonObject(targetValue + ("sessionId" to JsonPrimitive(alias.target)))
+            } else targetValue
+            sameOwner(ownerValue, comparison)
+            check(!DesktopMergeVoiceSourcePolicy.canRetainLive(entry.type, original, ownerValue, comparison)) {
                 "COMPUTER_VOICE_SOURCE_CLASSIFICATION"
             }
             if (entry.type == "generated_voice_messages") {
@@ -130,7 +163,7 @@ internal object DesktopComputerVoiceCustody {
                 DesktopMp3Validation.validate(home.resolve(audio), 16L shl 20, 1_800_000)
             } else check(entry.audio == null)
         }
-        check(used == files.keys)
+        check(used == files.keys && usedAliases == aliases.keys)
         val observed = hashSetOf<String>()
         Files.walk(home).use { paths -> paths.forEach { file ->
             if (Files.isDirectory(file, LinkOption.NOFOLLOW_LINKS)) DesktopArchiveFiles.safe(file, true)

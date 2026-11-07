@@ -73,6 +73,24 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         return "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。" +
             DesktopHistoricalMomentAvatarPolicy.warning(result.missingHistoricalAvatars)
     }
+    fun effectiveConflicts(choices: Map<String, DesktopMergePreview.Choice>): List<DesktopMergePreview.Conflict> =
+        preview?.data?.effectiveConflicts(choices) ?: run {
+            check(!mutable.value.ready) { "MERGE_READY_PREVIEW_MISSING" }
+            emptyList()
+        }
+
+    fun chooseConflict(choices: Map<String, DesktopMergePreview.Choice>, key: String,
+        choice: DesktopMergePreview.Choice): Map<String, DesktopMergePreview.Choice> {
+        if (!mutable.value.ready || mutable.value.busy || service.restartRequired) {
+            mutable.update { it.copy(error = "当前合并预览不能修改，请等待当前操作完成或重新检查。") }
+            return choices
+        }
+        return try { requireNotNull(preview).data.choose(choices, key, choice) }
+        catch (_: IllegalArgumentException) {
+            mutable.update { it.copy(error = "合并选项已变化，请重新核对当前显示的冲突。") }; choices
+        }
+    }
+
     fun commit(choices: Map<String, DesktopMergePreview.Choice>, credentials: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>,
         imagePreferencesFromPhone: Boolean?, confirmed: Boolean) = action(null, DesktopMergeTask.COMMIT) { outcome ->
         check(confirmed)

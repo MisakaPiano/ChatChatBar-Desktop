@@ -22,7 +22,7 @@ class DesktopMergeOmittedVoiceRetentionTest {
     @Test fun `actual merge proves original voice versions before live retention and roundtrips ambiguous sources inertly`() = runBlocking<Unit> {
         data class Case(val sourceVersion: String?, val voiceVersion: String?, val targetVersion: String?,
             val targetContent: String, val targetId: String = "m", val live: Boolean,
-            val targetRole: MessageRole = MessageRole.ASSISTANT)
+            val targetRole: MessageRole = MessageRole.ASSISTANT, val namedSession: Boolean = false)
         val oldText = "Synthetic narration.\n<n=\"Alice\"/>[synthetic old line]()"
         val newText = "Synthetic narration.\n<n=\"Alice\"/>[synthetic replacement line]()"
         val cases = listOf(Case("pc", "pc", "pc", oldText, live = true),
@@ -31,7 +31,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
             Case("pc-current", "pruned", "pruned", newText, live = false),
             Case("pc", "pc", "phone", newText, targetId = "new-message", live = true),
             Case(null, null, null, newText, live = false), Case(null, null, null, oldText, live = true),
-            Case("pc", "pc", "pc", oldText, live = false, targetRole = MessageRole.USER))
+            Case("pc", "pc", "pc", oldText, live = false, targetRole = MessageRole.USER),
+            Case("pc", "pc", "phone", newText, live = false, namedSession = true))
         for (case in cases) {
             val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/omitted-voice").toAbsolutePath()), "case-")
             try {
@@ -54,10 +55,12 @@ class DesktopMergeOmittedVoiceRetentionTest {
                     "entities/generated_voice_messages/voice.json" to bytes(GeneratedVoiceMessage.serializer(), voice),
                     "entities/voice_anchor_states/$anchorId.json" to bytes(VoiceAnchorState.serializer(), anchors))
                 original.forEach { (path, raw) -> val file = pcRoot.resolve(path); Files.createDirectories(file.parent); Files.write(file, raw) }
-                val target = ChatMessage(case.targetId, "s", case.targetRole, case.targetContent,
+                val incomingSessionId = if (case.namedSession) "phone-session" else "s"
+                val target = ChatMessage(case.targetId, incomingSessionId, case.targetRole, case.targetContent,
                     currentAlternativeVersionId = case.targetVersion, createdAt = 1, updatedAt = 2)
-                val incoming = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
-                    "entities/chat_messages/s_${case.targetId}.json" to bytes(ChatMessage.serializer(), target))
+                val incoming = mapOf("entities/character_cards/c.json" to card,
+                    "entities/chat_sessions/$incomingSessionId.json" to bytes(ChatSession.serializer(), ChatSession(incomingSessionId, "c", "Synthetic", createdAt = 1, updatedAt = 1)),
+                    "entities/chat_messages/${incomingSessionId}_${case.targetId}.json" to bytes(ChatMessage.serializer(), target))
                 val scope = OfficialWireScope(emptySet(), 1, 1, 1, 0, 1, false, false, false, false,
                     sessionDefaultChoice = OfficialWireSessionChoice(voice = false))
                 val source = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming,
@@ -73,7 +76,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
                             val selected = preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.TAKE_PHONE })
                             assertEquals(if (case.live) 0 else 2, selected.computerVoiceSources.size, case.toString())
                             val captured = listOf("entities/generated_voice_messages/voice.json", "entities/chat_messages/s_m.json",
-                                "entities/voice_anchor_states/$anchorId.json").map { Files.readAllBytes(pc.files.getValue(it)) } + listOf(audioBytes)
+                                "entities/voice_anchor_states/$anchorId.json").map { Files.readAllBytes(pc.files.getValue(it)) } + listOf(audioBytes) +
+                                if (case.namedSession) listOf(Files.readAllBytes(phone.files.getValue("entities/chat_messages/${incomingSessionId}_${case.targetId}.json"))) else emptyList()
                             val root = Files.createDirectory(base.resolve("merged"))
                             val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), MergeRootSyntheticProtector)
                             own(root, base).use {

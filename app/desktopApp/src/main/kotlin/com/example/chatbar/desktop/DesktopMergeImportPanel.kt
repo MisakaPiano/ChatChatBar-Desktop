@@ -18,6 +18,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
     var imageFromPhone by remember(state.ready) { mutableStateOf<Boolean?>(null) }
     var confirmed by remember(state.ready) { mutableStateOf(false) }
     var detailsOpen by remember(state.failureDetails) { mutableStateOf(false) }
+    val activeConflicts = controller.effectiveConflicts(choices)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading("导入与合并")
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")
@@ -35,9 +36,10 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
             StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
             if (state.desktopParticipation) StatusText("该备份包含 Desktop 扩展（人物／玩家设置、命名账户或动态图片版本）；手机端不保证保留这些内容。", DesktopBootstrapColors.warning)
             if (state.historicalDesktopV5Settings) StatusText("已保留旧 Desktop 备份中的生图设置扩展；这些设置不代表官方 1.4.7 支持。", DesktopBootstrapColors.warning)
-            if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
-            if (state.conflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${state.conflicts.size} 项数据冲突")
-            state.conflicts.groupBy { conflict ->
+            if (activeConflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
+            if (activeConflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${activeConflicts.size} 项数据冲突")
+            StatusText("先选择角色卡的处理方式，再核对同卡会话冲突；更改选择会保留仍然适用的其他选择。")
+            activeConflicts.groupBy { conflict ->
                 if (conflict.category == "app_settings") mergeSetting(conflict.label)?.group ?: "其他应用设置" else mergeCategory(conflict.category)
             }.forEach { (group, conflicts) ->
                 StudioDisclosure("$group · ${conflicts.count { it.key in choices }} / ${conflicts.size}", initiallyOpen = true) {
@@ -46,6 +48,8 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusText(if (conflict.category == "app_settings") mergeSetting(conflict.label)?.label ?: conflict.label.ifBlank { "未命名设置" }
                     else conflict.label.ifBlank { "未命名" })
+                if (conflict.targetPcKey == null && DesktopMergePreview.Reason.SAME_NAME in conflict.reasons)
+                    StatusText("存在多个同名目标，不会覆盖多个条目；请选择保留电脑、跳过或两份都保留。", DesktopBootstrapColors.warning)
                 state.modelDetails[conflict.key]?.let { details ->
                     details.computer.forEach { StatusText("电脑：$it") }
                     details.phone.forEach { StatusText("手机：$it") }
@@ -53,7 +57,10 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                 ActionRow {
                     conflict.choices.forEach { choice ->
                         StudioAction(mergeChoice(choice), selected = choices[conflict.key] == choice,
-                            style = StudioActionStyle.CHIP, enabled = !state.busy) { choices = choices + (conflict.key to choice) }
+                            style = StudioActionStyle.CHIP, enabled = !state.busy) {
+                                choices = controller.chooseConflict(choices, conflict.key, choice)
+                                confirmed = false
+                            }
                     }
                 }
                 }
@@ -90,7 +97,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
             StudioSwitch("我确认以上选择，并允许把所选凭据安全保存到新目录", confirmed,
                 enabled = !state.busy) { confirmed = !confirmed }
             ActionRow {
-                BootstrapButton("选择位置并合并…", enabled = !state.busy && confirmed && choices.size == state.conflicts.size &&
+                BootstrapButton("选择位置并合并…", enabled = !state.busy && confirmed && choices.keys == activeConflicts.mapTo(hashSetOf()) { it.key } &&
                     credentials.size == state.credentials.size && (!state.imagePreferencesChoiceRequired || imageFromPhone != null)) {
                     controller.commit(choices, credentials, imageFromPhone, confirmed)
                 }

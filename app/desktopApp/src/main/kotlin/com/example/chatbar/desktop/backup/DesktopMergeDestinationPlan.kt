@@ -33,6 +33,7 @@ internal class DesktopMergeDestinationPlan private constructor(
             try {
             checkActive()
             val identity = DesktopMergeIdentity()
+            DesktopMergeNamedBindings.bind(selection, identity, checkActive)
             require(computerMedia.keys.none { it.startsWith("entities/") } && phoneMedia.keys.none {
                 it.startsWith("entities/") || it.startsWith("save_slot_packages/")
             }) { "MERGE_MEDIA_INPUT_CATEGORY" }
@@ -129,14 +130,14 @@ internal class DesktopMergeDestinationPlan private constructor(
                 add(DesktopMergeRecord(path, value), mapped, unit.category == "app_settings")
             }
             for (unit in selection.phone) {
-                val retainedMedia = DesktopMergeRetainedMedia(selection.incomingScope, selection.replacedComputerUnits[unit.key], checkActive)
+                val retainedMedia = DesktopMergeRetainedMedia(selection.incomingScope, selection.replacedComputerUnits[unit.key], identity, checkActive)
                 for ((path, value) in unit.records) {
                     checkActive(); val record = DesktopMergeRecord(path, value)
                     // A zero fingerprint still admits equal-count stale indexes. Extra retained owners
                     // require the normal repository to rebuild from the actual merged message files.
-                    if (record.type == "chat_message_indexes" && record.text("sessionId") in rebuiltMessageSessions) continue
+                    if (record.type == "chat_message_indexes" && record.text("sessionId")?.let { identity.value("chat_sessions", it) } in rebuiltMessageSessions) continue
                     var mapped = mapper.rewrite(record) { reference, fields -> resource(Side.PHONE, path, phoneNames, reference, fields) }
-                    retainedMedia.fields(record)?.let { retained ->
+                    retainedMedia.fields(record, mapped)?.let { retained ->
                         val mappedMedia = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(retained) { reference, fields ->
                             resource(Side.COMPUTER, path, pcNames, reference, fields)
                         }.toString(Charsets.UTF_8)).jsonObject

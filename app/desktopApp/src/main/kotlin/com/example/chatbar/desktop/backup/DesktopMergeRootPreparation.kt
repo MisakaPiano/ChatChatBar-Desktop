@@ -44,6 +44,8 @@ internal object DesktopMergeRootPreparation {
             }
             checkSelection(selection.computer, pcEntities); checkSelection(selection.phone, phone.entities)
             checkSelection(selection.replacedComputerUnits.values.toList(), pcEntities)
+            checkSelection(selection.aliases.map { it.source }.distinctBy { it.key }, phone.entities)
+            checkSelection(selection.aliases.map { it.target }.distinctBy { it.key }, pcEntities)
             check(selection.replacedComputerUnits.isEmpty() || selection.incomingScope == phone.source.manifest.scope) {
                 "MERGE_RETAINED_SCOPE_CHANGED"
             }
