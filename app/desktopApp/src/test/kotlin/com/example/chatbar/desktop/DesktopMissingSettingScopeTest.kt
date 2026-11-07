@@ -22,7 +22,7 @@ class DesktopMissingSettingScopeTest {
             bootstrap.save((bootstrap.load() as DesktopBootstrapLoadResult.Missing).document, DesktopDataRootSelection.custom(root))
             val gate = DesktopDataOperationCoordinator()
             val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(source)).ownership
-            val original = AppSettings(defaultModelId = "local-model", themeMode = ThemeMode.DARK, chatBubbleFontScale = 1.4,
+            val original = AppSettings(defaultModelId = "local-model", themeMode = ThemeMode.DARK, chatBubbleFontScale = 1.4f,
                 lastSeenChatAt = 42, lastSeenMomentsAt = 43)
             val settingsFile = root.resolve("entities/app_settings.json")
             Files.createDirectories(settingsFile.parent)
@@ -62,7 +62,7 @@ class DesktopMissingSettingScopeTest {
                 val settings = assertNotNull(JsonFileStorage(destination).loadSingleton("app_settings", AppSettings.serializer()))
                 assertEquals(if (scenario == 2) original.themeMode else defaults.themeMode, settings.themeMode)
                 assertEquals(if (scenario == 2) original.defaultModelId else defaults.defaultModelId, settings.defaultModelId)
-                assertEquals(when (scenario) { 0 -> defaults.chatBubbleFontScale; 1 -> 1.6; else -> original.chatBubbleFontScale }, settings.chatBubbleFontScale)
+                assertEquals(when (scenario) { 0 -> defaults.chatBubbleFontScale; 1 -> 1.6f; else -> original.chatBubbleFontScale }, settings.chatBubbleFontScale)
                 assertEquals(if (scenario == 1) 21 else original.lastSeenChatAt, settings.lastSeenChatAt)
                 assertEquals(if (scenario == 1) defaults.lastSeenMomentsAt else original.lastSeenMomentsAt, settings.lastSeenMomentsAt)
                 assertContentEquals(settingsBytes, Files.readAllBytes(settingsFile))
