@@ -22,4 +22,4 @@
 
 原件、检查结果及最终附件位于 `I:/CCB-Desktop-Continuity/updates/20261108-candidate1245-preparation/`。主要回执为 `PRIVATE1245_PACKAGE_NATIVE_REVIEW.json`、`SIGNED_CLIENT_VALIDATION.json`、`FROZEN_REVIEW.json` 和 `RELEASE_DRAFT_RESULT.private.json`。
 
-仅清理完成下载的临时签名链接描述，以及完整163唯一无用Android debug远端产物13588185048（102774086逻辑字节）。原始报告、源码、Desktop最终包及所有旧失败／取消证据保留。远端逻辑字节不代表本地磁盘实际释放量。
+清理完成下载的临时签名链接描述，以及完整163唯一无用Android debug远端产物13588185048（102774086逻辑字节）。两份1245下载外包装在原hash／CRC、所有成员与已保存最终文件逐项复核且独立复核后退役，共379185953逻辑字节；实际安装器、独立ZIP和各小成员继续保留，远端artifact未改。两份原生／签名原报告ZIP、全部原始测试报告、源码与旧失败／取消证据保留。逻辑文件字节不代表磁盘实际释放量。
