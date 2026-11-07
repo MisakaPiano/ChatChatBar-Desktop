@@ -160,7 +160,7 @@ class BackupExportCatalog internal constructor(
     val sessions = records.filter { it.type == "chat_sessions" }.map {
         BackupSessionItem(it.id, it.string("characterCardId").orEmpty(), it.string("displayTitleOverride") ?: it.string("title") ?: "未命名会话")
     }.sortedBy { it.title }
-    val historyCount = records.count { it.type == "novelai_generation_history" }
+    val historyCount = records.count { it.type in setOf("novelai_generation_history", "desktop_image_post_process_results") }
     val momentCount = records.count { it.type == "moment_posts" }
     fun allSelection() = AppBackupSelection(
         BackupSettingOptions.ids, characters.map { it.id }.toSet(),
@@ -227,7 +227,7 @@ class BackupExportCatalog internal constructor(
                     record.string("sourceId") in documentIds
                 "edit_drafts" -> "editorDrafts" in selection.globalOptions || record.string("targetId") in selection.characterIds
                 "moment_posts", "moment_tasks" -> selection.moments
-                "novelai_generation_history", "novelai_history_fold_preferences" -> selection.studioHistory
+                "novelai_generation_history", "novelai_history_fold_preferences", "desktop_image_post_process_results" -> selection.studioHistory
                 "novelai_studio_draft", "novelai_studio_history_undo", "novelai_studio_guidance_checkpoint", "desktop_studio_edit_history",
                 "novelai_design_conversations", "novelai_design_current" -> selection.studioSettings
                 "preset_import_state", "model_configuration_migration", "character_speaker_migration_state", "world_book_migration_state" -> true
@@ -301,8 +301,10 @@ class BackupExportCatalog internal constructor(
                     val withoutChatImages = if (type == "chat_messages") sizeWithout { path ->
                         "[]".takeIf { path.size == 1 && path.single() in setOf("images", "generatedImageMetadata") }
                     } else file.length()
-                    val withoutStudioImages = if (type == "novelai_generation_history") sizeWithout { path ->
-                        "\"chatbar-save-slot-omitted-image:metadata\"".takeIf { path == listOf("images", "path") }
+                    val withoutStudioImages = if (type in setOf("novelai_generation_history", "desktop_image_post_process_results")) sizeWithout { path ->
+                        "\"chatbar-save-slot-omitted-image:metadata\"".takeIf {
+                            type == "novelai_generation_history" && path == listOf("images", "path") ||
+                                type == "desktop_image_post_process_results" && path == listOf("imagePath") }
                     } else file.length()
                     val withoutMomentImages = if (type == "moment_posts") sizeWithout { path ->
                         when {
@@ -352,8 +354,10 @@ internal class BackupExportPlan(
     private val recordsByPath = records.associateBy { it.file.path }
     fun extraFields(file: File): Map<String, String> = additions[file.path].orEmpty()
     fun resourcePath(file: File, path: String, fields: List<String>): String {
-        if (recordsByPath.getValue(file.path).type != "novelai_generation_history" || selection.studioHistoryImages ||
-            fields != listOf("images", "path")) return path
+        val type = recordsByPath.getValue(file.path).type
+        val historyImage = type == "novelai_generation_history" && fields == listOf("images", "path") ||
+            type == "desktop_image_post_process_results" && fields == listOf("imagePath")
+        if (!historyImage || selection.studioHistoryImages) return path
         if (path.startsWith(OMITTED_SAVE_SLOT_IMAGE_PREFIX)) return path
         val hash = MessageDigest.getInstance("SHA-256").digest(path.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
@@ -365,7 +369,7 @@ internal class BackupExportPlan(
         for (record in records) {
             paths[record.file.canonicalPath] = when {
                 record.type == "chat_messages" && selection.sessions[record.string("sessionId")]?.images == false -> record.withoutChatImagesBytes
-                record.type == "novelai_generation_history" && !selection.studioHistoryImages -> record.withoutStudioImagesBytes
+                record.type in setOf("novelai_generation_history", "desktop_image_post_process_results") && !selection.studioHistoryImages -> record.withoutStudioImagesBytes
                 record.type == "moment_posts" && !selection.momentsImages -> record.withoutMomentImagesBytes
                 else -> record.file.length()
             }

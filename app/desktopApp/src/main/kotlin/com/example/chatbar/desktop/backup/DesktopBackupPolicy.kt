@@ -41,6 +41,7 @@ internal object DesktopBackupPolicy {
         "novelai_studio_draft" to NovelAiStudioDraft.serializer(), "novelai_studio_history_undo" to NovelAiStudioUndoDraft.serializer(),
         "novelai_studio_guidance_checkpoint" to NovelAiGuidanceEditorCheckpoint.serializer(),
         "desktop_studio_edit_history" to com.example.chatbar.desktop.DesktopStudioHistoryJournal.serializer(),
+        "desktop_image_post_process_results" to com.example.chatbar.desktop.DesktopPostProcessResultRecord.serializer(),
         "novelai_generation_history" to NovelAiGenerationHistoryEntry.serializer(),
         "novelai_history_fold_preferences" to NovelAiHistoryFoldPreference.serializer(),
         "novelai_design_conversations" to NovelAiDesignConversation.serializer(),
@@ -115,6 +116,8 @@ internal object DesktopBackupPolicy {
         }
         try {
             DesktopOfficialBackupEntitySchema.validate(type, clean, wireVersionCode)
+            if (type == "desktop_image_post_process_results") json.decodeFromJsonElement(
+                com.example.chatbar.desktop.DesktopPostProcessResultRecord.serializer(), clean).validateForImport()
         } catch (_: SerializationException) {
             throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.ENTITY_SCHEMA_UNSUPPORTED)
         }

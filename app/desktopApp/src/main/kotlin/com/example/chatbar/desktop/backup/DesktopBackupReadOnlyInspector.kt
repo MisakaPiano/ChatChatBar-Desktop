@@ -219,6 +219,10 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             require((post[DesktopMomentBackupExtension.FIELD] as? JsonArray).orEmpty().isEmpty())
         }
         require(s.studioHistory || counts.count("novelai_generation_history") == 0)
+        require(s.studioHistory || counts.count("desktop_image_post_process_results") == 0)
+        if (!s.studioHistoryImages) entities.filterKeys { DesktopBackupPolicy.entityType(it) == "desktop_image_post_process_results" }.values.forEach {
+            require(it["imagePath"]?.jsonPrimitive?.contentOrNull?.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) == true)
+        }
         require(s.studioSettings || counts.keys.none { it.startsWith("novelai_studio_") || it.startsWith("novelai_design_") })
         val sessions = entities.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values
             .map { requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull) }

@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -19,14 +21,19 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     val state by controller.state.collectAsState()
     val tasks by controller.taskEntries.collectAsState()
     val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }
+    val records by controller.postProcessResults.records.collectAsState()
     var tab by remember(path) { mutableStateOf(NovelAiPostProcessTab.UPSCALE) }
     var options by remember(path) { mutableStateOf(NovelAiEnhanceOptions()) }
-    var enhanceResult by remember(path) { mutableStateOf<Pair<ByteArray, NovelAiEnhanceOptions>?>(null) }
-    var upscaleResult by remember(path) { mutableStateOf<ByteArray?>(null) }
+    var selectedRecordId by remember(path) { mutableStateOf<String?>(null) }
     var status by remember(path) { mutableStateOf("") }
     var sourceError by remember(path) { mutableStateOf("") }
     var source by remember(path) { mutableStateOf<NovelAiEnhanceSource?>(null) }
     val scope = rememberCoroutineScope()
+    LaunchedEffect(controller, path) {
+        try { controller.postProcessResults.load() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { status = "后处理记录读取失败；原记录保留，请重开后重试" }
+    }
     val input by produceState<Pair<ByteArray, Pair<Int, Int>>?>(null, path) {
         value = withContext(Dispatchers.IO) { try {
             require(Files.size(path) <= DesktopImageEditing.MAX_BYTES)
@@ -36,6 +43,9 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             bytes to (raster.width to raster.height)
         } catch (_: Exception) { sourceError = "仅支持可读取的静态图片；动画保持原样，请先还原规范伪装再处理"; null } }
     }
+    val sourceHash = remember(input?.first) { input?.first?.let(DesktopPostProcessResults::digest) }
+    val ownBusy = sourceHash != null && sourceHash == state.postProcessSourceSha256 &&
+        tasks.any { it.taskId == state.postProcessTaskId && it.status == DesktopTaskStatus.RUNNING }
     StudioChips("图片处理", NovelAiPostProcessTab.entries, tab, { it.label }) { if (!busy) tab = it }
     val dimensions = input?.second
     val recipe = source
@@ -54,27 +64,46 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     if (sourceError.isNotEmpty()) StatusText(sourceError, DesktopBootstrapColors.warning)
     StatusText(cost?.let { "预计 $it Anlas" } ?: "费用 / 输入资格不可用")
     val validScale = tab == NovelAiPostProcessTab.UPSCALE || recipe != null && dimensions != null && options.scale in NovelAiPostProcessPolicy.scales(dimensions.first, dimensions.second, recipe.settings.model)
-    StudioAction(if (busy) "停止" else tab.label, enabled = busy || (state.credentialConfigured && input != null && cost != null && cost <= 140 && validScale)) {
-        if (busy) controller.stop() else scope.launch {
+    StudioAction(if (ownBusy) "停止" else if (busy) "其他图像任务运行中" else tab.label,
+        enabled = ownBusy || (!busy && state.credentialConfigured && input != null && cost != null && cost <= 140 && validScale)) {
+        if (ownBusy) controller.stopPostProcess() else scope.launch {
             val selected = tab; val selectedOptions = options
             controller.postProcess(requireNotNull(input).first, selected, recipe, selectedOptions,
-                onComplete = { bytes -> if (selected == NovelAiPostProcessTab.ENHANCE) enhanceResult = bytes to selectedOptions else upscaleResult = bytes },
+                onComplete = { selectedRecordId = null },
                 onStatus = { status = it })
         }
     }
     if (status.isNotBlank()) StatusText(status)
-    val result = if (tab == NovelAiPostProcessTab.ENHANCE) enhanceResult?.first else upscaleResult
+    val record = records.firstOrNull { it.id == selectedRecordId }
+        ?: records.firstOrNull { it.sourceSha256 == sourceHash && it.operation == tab.name }
+    if (records.isNotEmpty()) StudioDisclosure("后处理记录（${records.size}）") {
+        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 240.dp)) {
+            items(records, key = { it.id }) { entry ->
+                StudioAction("${if (entry.operation == NovelAiPostProcessTab.UPSCALE.name) "Upscale" else "Enhance"} · ${java.time.Instant.ofEpochMilli(entry.createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()}",
+                    selected = entry.id == record?.id) { selectedRecordId = entry.id }
+            }
+        }
+    }
+    val result by produceState<ByteArray?>(null, record) {
+        value = null
+        record?.let { selected -> try { value = controller.postProcessResults.read(selected) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { status = "此结果图片不可读或备份未包含图片；记录和来源保留" } }
+    }
     result?.let { output ->
-        if (tab == NovelAiPostProcessTab.ENHANCE && enhanceResult?.second != options) StatusText("参数已更改；预览仍是上次结果")
+        if (record?.sourceSha256 != sourceHash) StatusText("所选为其他来源的已保存结果；不会覆盖当前来源")
+        if (record != null && !record.matches(tab, options)) StatusText("参数已更改；预览仍是上次结果")
         var split by remember(path, output) { mutableStateOf(.5f) }
         Box(Modifier.fillMaxWidth().height(330.dp).pointerInput(path, output) { detectDragGestures { change, _ -> change.consume(); split = (change.position.x / size.width).coerceIn(0f, 1f) } }) {
-            DesktopOwnedImage("before-${path}", { requireNotNull(input).first }, Modifier.fillMaxSize())
+            input?.takeIf { record?.sourceSha256 == sourceHash }?.let { original ->
+                DesktopOwnedImage("before-${path}", { original.first }, Modifier.fillMaxSize())
+            }
             DesktopOwnedImage("after-${output.contentHashCode()}", { output }, Modifier.fillMaxSize().drawWithContent {
-                clipRect(left = size.width * split) { this@drawWithContent.drawContent() }
+                clipRect(left = if (record?.sourceSha256 == sourceHash) size.width * split else 0f) { this@drawWithContent.drawContent() }
             })
             Box(Modifier.fillMaxHeight().fillMaxWidth(split).border(1.dp, DesktopBootstrapColors.primary))
         }
-        StatusText("左：原图 · 右：处理结果 · 拖动比较")
+        StatusText(if (record?.sourceSha256 == sourceHash) "左：原图 · 右：处理结果 · 拖动比较" else "已保存的处理结果")
         StudioActions {
             StudioAction("用作当前导入图片", enabled = !busy) { onUse(output) }
             StudioAction("保存 PNG") { scope.launch { try {

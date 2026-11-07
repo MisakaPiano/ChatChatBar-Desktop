@@ -57,7 +57,7 @@ class DesktopPostProcessLifetimeTest {
     @Test fun `actual processing finishes after pane closes and durable result survives controller reopen without changing source or draft`() = runBlocking(edt) {
         val f = Fixture(); val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
         try {
-            f.server.dispatcher = object : Dispatcher() { override fun dispatch(request: RecordedRequest): MockResponse {
+            f.server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() { override fun dispatch(request: RecordedRequest): MockResponse {
                 entered.complete(Unit); runBlocking { release.await() }
                 return MockResponse().setBody("""{"images":[{"image":"${Base64.getEncoder().encodeToString(f.output)}"}]}""")
             } }
@@ -102,5 +102,36 @@ class DesktopPostProcessLifetimeTest {
                 assertEquals(0, f.server.requestCount)
             } finally { scene.close() }
         } finally { release.complete(Unit); f.close() }
+    }
+
+    @Test fun `only the matching source pane stops its own request and retains previously saved output on cancellation`() = runBlocking(edt) {
+        val f = Fixture()
+        try {
+            val controller = f.controller(); assertTrue(controller.load())
+            val saved = controller.postProcessResults.persist(f.input, f.output, NovelAiPostProcessTab.UPSCALE, NovelAiEnhanceOptions())
+            val draft = controller.repository.loadDraft()
+            f.server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+            assertTrue(controller.postProcess(f.input, NovelAiPostProcessTab.UPSCALE, null, NovelAiEnhanceOptions(),
+                { error("Cancelled work cannot publish a result") }, {}))
+            withContext(Dispatchers.IO) { assertNotNull(f.server.takeRequest(5, TimeUnit.SECONDS)) }
+            val different = f.parent.resolve("different.png").also { path ->
+                val image = BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB).apply { setRGB(0, 0, 0xff112233.toInt()) }
+                Files.write(path, DesktopImageEditing.png(image))
+            }
+            val other = ImageComposeScene(650, 1000, coroutineContext = edt) { DesktopImagePostProcessPanel(different, controller) {} }
+            try { other.frames(); assertNull(other.action("停止")); assertTrue(f.app.taskRuntime.tasks.value.first().status == DesktopTaskStatus.RUNNING) }
+            finally { other.close() }
+            val own = ImageComposeScene(650, 1000, coroutineContext = edt) { DesktopImagePostProcessPanel(f.source, controller) {} }
+            try {
+                withTimeout(5_000) { while (own.action("停止") == null) own.frames() }
+                assertTrue(own.action("停止")!!.config[SemanticsActions.OnClick].action!!.invoke())
+                withTimeout(5_000) { while (f.app.taskRuntime.tasks.value.first().status == DesktopTaskStatus.RUNNING) delay(20) }
+                assertEquals(DesktopTaskStatus.CANCELLED, f.app.taskRuntime.tasks.value.first().status)
+            } finally { own.close() }
+            assertEquals(listOf(saved), controller.postProcessResults.records.value)
+            assertContentEquals(f.output, controller.postProcessResults.read(saved))
+            assertEquals(draft, controller.repository.loadDraft()); assertContentEquals(f.input, Files.readAllBytes(f.source))
+            assertEquals(1, f.server.requestCount)
+        } finally { f.close() }
     }
 }

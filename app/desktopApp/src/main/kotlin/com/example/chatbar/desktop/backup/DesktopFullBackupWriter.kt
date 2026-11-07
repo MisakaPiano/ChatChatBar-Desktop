@@ -80,7 +80,7 @@ internal object DesktopFullBackupWriter {
                     sessionsWithVoice = choices?.values?.count { it.voice } ?: sessions,
                     sessionsWithArchives = choices?.values?.count { it.archives } ?: sessions,
                     studioSettings = counts.keys.any { it.startsWith("novelai_studio_") || it.startsWith("novelai_design_") },
-                    studioHistory = selection?.studioHistory ?: ((counts["novelai_generation_history"] ?: 0) > 0),
+                    studioHistory = selection?.studioHistory ?: ((counts["novelai_generation_history"] ?: 0) + (counts["desktop_image_post_process_results"] ?: 0) > 0),
                     studioHistoryImages = selection?.studioHistoryImages ?: true,
                     moments = selection?.moments ?: (counts.keys.any { it in setOf("moment_posts", "moment_tasks") }),
                     momentsImages = selection?.momentsImages ?: true, sessionChoices = choices.orEmpty(),

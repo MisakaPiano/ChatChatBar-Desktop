@@ -27,6 +27,8 @@ internal data class DesktopNovelAiStudioState(
     val status: String = "",
     val taskId: String? = null,
     val generationTaskId: String? = null,
+    val postProcessTaskId: String? = null,
+    val postProcessSourceSha256: String? = null,
     val preview: ByteArray? = null,
     val reverseCandidate: NovelAiPromptPlan? = null,
     val reverseSceneDescription: String? = null,
@@ -86,6 +88,7 @@ internal class DesktopNovelAiStudioController(
     private val presetArchive: DesktopGenerationPresetArchive? = null,
 ) {
     val repository = DesktopStudioHistoryRepository(storage)
+    val postProcessResults = DesktopPostProcessResults(storage, resources, coordinator)
     val textHistories = DesktopStudioTextHistories()
     val imageDiagnostics get() = tasks.diagnostics
     val designRepository = NovelAiDesignConversationRepository(storage)
@@ -148,15 +151,21 @@ internal class DesktopNovelAiStudioController(
                 onStatus("正在请求 ${tab.label}")
                 val result = processor.process(bytes, tab, source, options, account) { onStatus(it); report(it) }
                 currentCoroutineContext().ensureActive()
-                onComplete(result); onStatus("处理完成；来源未改变")
+                postProcessResults.persist(bytes, result, tab, options)
+                // A departed Pane's presentation callback cannot discard the durable paid output.
+                runCatching { onComplete(result); onStatus("处理完成并已保存；来源未改变") }
+                report("处理完成并已保存")
                 refreshAccount()
             } catch (cancelled: CancellationException) { onStatus("已停止；来源和上次结果保留"); throw cancelled }
             catch (_: Exception) { onStatus("图片处理未完成；来源和上次结果保留，请检查配置或服务状态"); throw DesktopNovelAiRequestException("图片处理未完成") }
         } }
-        mutableState.update { it.copy(taskId = id) }
+        mutableState.update { it.copy(taskId = id, postProcessTaskId = id, postProcessSourceSha256 = DesktopPostProcessResults.digest(bytes)) }
     }
 
+    fun stopPostProcess(): Boolean = state.value.postProcessTaskId?.let(tasks::requestUserStop) ?: false
+
     suspend fun load() = action {
+        postProcessResults.load()
         repository.initialize()
         designRepository.initialize()
         repository.loadDraft()
