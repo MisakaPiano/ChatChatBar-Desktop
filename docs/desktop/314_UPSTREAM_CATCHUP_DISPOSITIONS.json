@@ -7913,7 +7913,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "EQUIVALENT",
-      "reason": "Actual Desktop duplicate captures under normal admission, prepares only in an offline workspace, then drains audio and verifies full source/empty target/plan under exclusive admission before recoverable journal commit. Existing voice/task/memory session reservation remains. Four owner blobs and three original method bodies/proofs reused; no blanket outer normal lease or whole-copy/native acceptance claim.",
+      "reason": "Actual Desktop duplicate captures under normal admission, prepares only in an offline workspace, then drains audio and verifies full source/empty target/plan under exclusive admission before recoverable journal commit. Existing voice/task/memory session reservation remains. Four owner blobs and three original method bodies/proofs reused; no blanket outer normal lease or whole-copy/native acceptance claim. Historical exact-owner reuse binds d175. Later successful-work lifecycle changes Service; R15 original34 and R18 current4 with unchanged30 cover the scoped successor, preserving original admission and journal boundaries; no current whole-owner equality to full162 is claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SessionCopyService.kt",
@@ -7925,7 +7925,9 @@
       "behaviorIds": [],
       "evidence": [
         "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
-        "OWNER_SESSION_COPY_ADMISSION_REUSE.json"
+        "OWNER_SESSION_COPY_ADMISSION_REUSE.json",
+        "docs/desktop/325_SAVE_SLOT_SUCCESS_WORK_LIFECYCLE.md",
+        "OWNER_SUCCESS_LIFECYCLE_AND_STUDIO_R18_REVIEW.json"
       ]
     },
     {
@@ -17569,6 +17571,14 @@
     "mappedDelta": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/chat/SessionCopyService.kt",
     "originalRun": 42085881455,
     "matchedMethods": 3,
-    "newRuns": 0
+    "newRuns": 0,
+    "laterLifecycleReview": {
+      "normal": "930e2fe0c38b934476d426155a88cd9905e61778",
+      "run": 42342909490,
+      "matchedCleanupScope": 34,
+      "currentMethods": 4,
+      "unchangedR15Methods": 30,
+      "wholeOwnerEqualityTo162": false
+    }
   }
 }

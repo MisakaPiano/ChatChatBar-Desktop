@@ -14,6 +14,8 @@ Prepared携带新创建目录的DesktopSaveSlotOwnedWork能力。Service在发�
 
 临时asset副本携带独立parent/file身份与创建字节hash。capture只记录实际物化的内置asset副本；确认成功后独立释放该文件，外部图片、普通用户图片、内置原始资源和其他旧临时文件均不是成员。失败或取消时保留副本。hash/目录遍历与删除在IO上下文中进行；清理失败显示成功侧notice，不将已提交的主操作伪装成失败，也不放宽原source CAS/plan验证/原子journal发布。
 
-本组待云端实际Service、Archive和新的所有权拒绝检查：成功全流程、复制后真实图引用可读、旧证据保留、foreign文件造成清理拒绝但复制仍成功、内置asset成功释放与失败保留、目录/字节替换拒绝。当前尚未计PASS，没有本机JVM、真实用户根操作、安装包或公开更新。
+云端R15（42342221387，normal39ee/controla2bd）原Service27、Archive6、OwnedWork1共34PASS。后继d114在每次删除前重核全部所属父目录及asset父级身份；R18（42342909490，normal930e/controlcff779）实际成功全流程、foreign清理拒绝仍提交成功、asset成功释放/失败保留和所有权拒绝共4方法PASS。Service、Archive及两原测试文件与R15逐blob相等；当前限定范围按R15未改30与R18当前4匹配34，不称一次新全套34。复制后真实图引用及原字节、旧证据保留均有实际断言。
+
+R18原ZIP137232B、SHA256 `5deef6df021aca24f58cc4b02619b4de07861273a97e301a934d13cb35f5f732`，CRC/source/逐XML已核；全5套24方法为23PASS和1个既有原生桌面前置SKIP，0FAIL/ERROR。原件与匹配回执为Continuity下`slot-success-cleanup-r15.original.zip`、`slot-and-studio-r18.original.zip`和`OWNER_SUCCESS_LIFECYCLE_AND_STUDIO_R18_REVIEW.json`。R16/R17同一布局DSL编译失败、零XML原件保留；930e修正后才执行R18，不把编译失败当业务反例。没有本机JVM、真实用户根操作、安装包或公开更新，也未宣称实际释放用户盘空间。
 
 324中d175的会话复制原准入复用保留为该时点的事实；本组在不改变原离线准备/独占发布边界的前提下增加成功后生命周期，修改后的Service/Archive需要本组后继证明，不能继续称当前整个Service blob仍等于原162。
