@@ -23,9 +23,9 @@ internal class DesktopSessionInventory(private val root: Path) {
                     check(++count <= 40000) { "会话数据清单超过校验预算" }
                     check(file.fileName.toString().matches(Regex("[A-Za-z0-9_-]{1,256}\\.json"))) { "存在未知会话文件；原文件保留" }
                     DesktopArchiveFiles.safe(file, false)
-                    com.example.chatbar.desktop.backup.DesktopBackupRecords.requireSize(Files.size(file))
                     val relative = "entities/$type/${file.fileName}"
                     if (selectedPaths != null && relative !in selectedPaths) continue
+                    com.example.chatbar.desktop.backup.DesktopBackupRecords.requireSize(Files.size(file))
                     val before = DesktopArchiveFiles.hash(file, recordBudget)
                     val value = Json.parseToJsonElement(Files.readString(file)).jsonObject
                     val ownerKey = when (type) { "chat_sessions" -> "id"; "vector_chunks" -> "sourceId"; else -> "sessionId" }
