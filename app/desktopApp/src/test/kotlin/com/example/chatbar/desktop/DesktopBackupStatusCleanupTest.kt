@@ -12,7 +12,11 @@ class DesktopBackupStatusCleanupTest {
         val payloads = NovelAiInlinePayloadStore(root.toFile())
         val cleanup = DesktopOwnedImageCleanup(root, DesktopCharacterResourceStore(root), gate)
         val journal = DesktopBackupOperationJournal(root, DesktopBackupOperationJournal.Lane.BACKUP)
-        fun payload(value: String): String = "novelai-vibe-payloads/" + payloads.retain(value).substringAfter(':')
+        fun payload(value: String): String {
+            val reference = payloads.retainStream(value.byteInputStream())
+            check(reference.startsWith(NovelAiInlinePayloadStore.PREFIX))
+            return "novelai-vibe-payloads/" + reference.substringAfter(':')
+        }
         suspend fun close() { gate.closeAndDrain(); check(root.toFile().deleteRecursively()) }
     }
 
