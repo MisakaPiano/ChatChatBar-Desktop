@@ -11,6 +11,7 @@ import java.nio.file.Path
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopMergeOmittedVoiceRetentionTest {
@@ -20,7 +21,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
 
     @Test fun `actual merge proves original voice versions before live retention and roundtrips ambiguous sources inertly`() = runBlocking<Unit> {
         data class Case(val sourceVersion: String?, val voiceVersion: String?, val targetVersion: String?,
-            val targetContent: String, val targetId: String = "m", val live: Boolean)
+            val targetContent: String, val targetId: String = "m", val live: Boolean,
+            val targetRole: MessageRole = MessageRole.ASSISTANT)
         val oldText = "Alice：『synthetic old line』"
         val newText = "Alice：『synthetic replacement line』"
         val cases = listOf(Case("pc", "pc", "pc", oldText, live = true),
@@ -28,7 +30,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
             Case("pc", "pc", "pc", newText, live = false),
             Case("pc-current", "pruned", "pruned", newText, live = false),
             Case("pc", "pc", "phone", newText, targetId = "new-message", live = true),
-            Case(null, null, null, newText, live = false), Case(null, null, null, oldText, live = true))
+            Case(null, null, null, newText, live = false), Case(null, null, null, oldText, live = true),
+            Case("pc", "pc", "pc", oldText, live = false, targetRole = MessageRole.USER))
         for (case in cases) {
             val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/omitted-voice").toAbsolutePath()), "case-")
             try {
@@ -51,7 +54,7 @@ class DesktopMergeOmittedVoiceRetentionTest {
                     "entities/generated_voice_messages/voice.json" to bytes(GeneratedVoiceMessage.serializer(), voice),
                     "entities/voice_anchor_states/$anchorId.json" to bytes(VoiceAnchorState.serializer(), anchors))
                 original.forEach { (path, raw) -> val file = pcRoot.resolve(path); Files.createDirectories(file.parent); Files.write(file, raw) }
-                val target = ChatMessage(case.targetId, "s", MessageRole.ASSISTANT, case.targetContent,
+                val target = ChatMessage(case.targetId, "s", case.targetRole, case.targetContent,
                     currentAlternativeVersionId = case.targetVersion, createdAt = 1, updatedAt = 2)
                 val incoming = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
                     "entities/chat_messages/s_${case.targetId}.json" to bytes(ChatMessage.serializer(), target))
@@ -114,6 +117,10 @@ class DesktopMergeOmittedVoiceRetentionTest {
                                         Files.write(record, before.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() })
                                         assertFails { DesktopHistoricalVoiceCustody.validate(root) }
                                         Files.write(record, before); DesktopHistoricalVoiceCustody.validate(root)
+                                        if (case.targetVersion == "phone" && case.targetId == "m") {
+                                            forgedSourceRejected(base, custody, target = true, expected = "COMPUTER_VOICE_TARGET_OWNER_CHANGED")
+                                            forgedSourceRejected(base, custody, target = false, expected = "MERGE_RETAINED_VOICE_OWNER")
+                                        }
                                     }
                                 }
                             }
@@ -124,5 +131,36 @@ class DesktopMergeOmittedVoiceRetentionTest {
                 original.forEach { (path, raw) -> assertContentEquals(raw, Files.readAllBytes(pcRoot.resolve(path))) }
             } finally { check(base.toFile().deleteRecursively()) }
         }
+    }
+
+    /** A structurally self-consistent foreign seal must still prove the record/owner/target relation. */
+    private suspend fun forgedSourceRejected(base: Path, custody: Path, target: Boolean, expected: String) {
+        val home = Files.list(custody).use { it.findFirst().orElseThrow() }
+        val index = backupJson.parseToJsonElement(Files.readString(home.resolve("index.json"))).jsonObject
+        val entry = index.getValue("entries").jsonArray.map { it.jsonObject }.first { it["type"] == JsonPrimitive("generated_voice_messages") }
+        val field = if (target) "target" else "record"
+        val oldPath = entry.getValue(field).jsonPrimitive.content
+        val original = backupJson.parseToJsonElement(Files.readString(home.resolve(oldPath))).jsonObject
+        val forged = JsonObject(original + ((if (target) "id" else "messageId") to JsonPrimitive("unrelated-message")))
+        val bytes = forged.toString().toByteArray(Charsets.UTF_8)
+        val hash = DesktopBackupPolicy.digest(bytes); val path = "records/$hash.json"
+        val files = JsonArray(index.getValue("files").jsonArray.map { raw -> raw.jsonObject.let { proof ->
+            if (proof["path"] == JsonPrimitive(oldPath)) JsonObject(proof + mapOf("path" to JsonPrimitive(path),
+                "bytes" to JsonPrimitive(bytes.size.toLong()), "sha256" to JsonPrimitive(hash))) else proof
+        } })
+        val entries = JsonArray(index.getValue("entries").jsonArray.map { raw -> raw.jsonObject.let { record ->
+            if (record[field] == JsonPrimitive(oldPath)) JsonObject(record + (field to JsonPrimitive(path))) else record
+        } })
+        val changed = JsonObject(index + mapOf("files" to files, "entries" to entries))
+        val directoryName = DesktopBackupPolicy.digest((DesktopComputerVoiceCustody.KIND + "\u0000" + changed.toString()).toByteArray(Charsets.UTF_8))
+        val root = Files.createDirectory(base.resolve(if (target) "forged-target" else "forged-owner"))
+        val destination = root.resolve(DesktopHistoricalVoiceCustody.ROOT).resolve(directoryName)
+        Files.createDirectories(destination.resolve("records")); Files.createDirectories(destination.resolve("media"))
+        for (raw in files) {
+            val name = raw.jsonObject.getValue("path").jsonPrimitive.content
+            Files.write(destination.resolve(name), if (name == path) bytes else Files.readAllBytes(home.resolve(name)))
+        }
+        Files.writeString(destination.resolve("index.json"), changed.toString())
+        assertEquals(expected, assertFails { DesktopHistoricalVoiceCustody.validate(root) }.message)
     }
 }

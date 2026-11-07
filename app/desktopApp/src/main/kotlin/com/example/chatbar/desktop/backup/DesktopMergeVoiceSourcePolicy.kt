@@ -30,7 +30,7 @@ internal object DesktopMergeVoiceSourcePolicy {
             }
             else -> error("MERGE_RETAINED_VOICE_TYPE")
         }
-        if (owner.id != target.id || owner.sessionId != target.sessionId) return false
+        if (owner.id != target.id || owner.sessionId != target.sessionId || owner.role != target.role) return false
         if (version == null) return before == after &&
             MessageAlternativeVersionPolicy.activeVersion(owner) == MessageAlternativeVersionPolicy.activeVersion(target)
         val original = before.singleOrNull { it.id == version } ?: return false

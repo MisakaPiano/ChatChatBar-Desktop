@@ -29,7 +29,7 @@ internal object DesktopComputerVoiceCustody {
         check(computer.credentialFreeSource && selected.size <= DesktopBackupPolicy.MAX_FILES)
         val files = linkedMapOf<String, Proof>()
         val sources = linkedMapOf<String, Path>()
-        fun file(source: Path, media: Boolean = false): String {
+        suspend fun file(source: Path, media: Boolean = false): String {
             val sha = DesktopArchiveFiles.hash(source, DesktopFullBackupSource.MAX_FILE)
             val path = if (media) "media/$sha.mp3" else "records/$sha.json"
             val proof = Proof(path, Files.size(source), sha)
@@ -146,10 +146,13 @@ internal object DesktopComputerVoiceCustody {
         val target = backupJson.decodeFromJsonElement(ChatMessage.serializer(), after)
         check(source.id == target.id && source.sessionId == target.sessionId) { "COMPUTER_VOICE_TARGET_OWNER_CHANGED" }
     }
-    private fun strict(path: Path): JsonObject {
+    private suspend fun strict(path: Path): JsonObject {
         DesktopArchiveFiles.safe(path, false); check(Files.size(path) <= DesktopBackupPolicy.MAX_JSON)
         val out = java.io.StringWriter()
-        Files.newInputStream(path).use { input -> input.strictUtf8Reader().use { BackupJsonStream(it, out) { value, _ -> value }.copy() } }
+        val context = currentCoroutineContext()
+        Files.newInputStream(path).use { input -> input.strictUtf8Reader().use {
+            BackupJsonStream(it, out, checkActive = { context.ensureActive() }) { value, _ -> value }.copy()
+        } }
         return backupJson.parseToJsonElement(out.toString()).jsonObject
     }
 }
