@@ -42,6 +42,8 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     private val clock: () -> Long = System::nanoTime,
 ) : NovelAiStudioStateRepository(storage) {
     private val editHistoryMutex = Mutex()
+    private suspend fun <T> withEditHistoryDataAccess(operation: suspend () -> T): T =
+        storage.withNormalOperation { editHistoryMutex.withLock { operation() } }
     private val available = MutableStateFlow(DesktopStudioHistoryAvailability())
     val historyAvailability = available.asStateFlow()
     private var timeline: DesktopStudioHistoryTimeline? = null
@@ -91,7 +93,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         return value
     }
 
-    suspend fun initializeHistory() = editHistoryMutex.withLock {
+    suspend fun initializeHistory() = withEditHistoryDataAccess {
         // The initial default draft must travel with its timeline in a selected backup.
         loadDraft()
         super.updateDraft(resetPromptEditors = false) { it }
@@ -99,7 +101,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     }
 
     override suspend fun updateDraft(resetPromptEditors: Boolean,
-        transform: (NovelAiStudioDraft) -> NovelAiStudioDraft): NovelAiStudioDraft = editHistoryMutex.withLock {
+        transform: (NovelAiStudioDraft) -> NovelAiStudioDraft): NovelAiStudioDraft = withEditHistoryDataAccess {
         val before = loadDraft()
         val target = transform(before)
         val current = snapshot(before)
@@ -107,7 +109,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         val history = loaded(current)
         check(history.current() == current) { "Studio history changed outside its owner" }
         val compactTarget = target.copy(imageGuidance = after.imageGuidance)
-        if (after == current) return@withLock super.updateDraft(resetPromptEditors) { compactTarget }
+        if (after == current) return@withEditHistoryDataAccess super.updateDraft(resetPromptEditors) { compactTarget }
         val now = clock()
         val boundary = currentCoroutineContext()[DesktopStudioEditingContext]?.boundary ?: DesktopStudioTextBoundary()
         val key = desktopStudioTypingKey(current, after)
@@ -151,10 +153,10 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         }
     }
 
-    suspend fun replay(redo: Boolean): Boolean = editHistoryMutex.withLock {
+    suspend fun replay(redo: Boolean): Boolean = withEditHistoryDataAccess {
         val before = loaded(snapshot(loadDraft()))
         val cursor = before.cursor + if (redo) 1 else -1
-        if (cursor !in before.entries.indices) return@withLock false
+        if (cursor !in before.entries.indices) return@withEditHistoryDataAccess false
         val after = before.copy(cursor = cursor)
         transition(before, after) { super.updateDraft(resetPromptEditors = true) { after.current()!! } }
         lastTypingKey = null; publish(after, replay = true)

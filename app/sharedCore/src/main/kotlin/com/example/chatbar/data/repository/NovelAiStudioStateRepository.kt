@@ -42,6 +42,9 @@ open class NovelAiStudioStateRepository(
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
     protected val historyMutex = Mutex()
 
+    private suspend fun <T> Mutex.withDataAccess(operation: suspend () -> T): T =
+        storage.withNormalOperation { withLock { operation() } }
+
     suspend fun initialize() {
         storage.loadAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer())
     }
@@ -64,9 +67,9 @@ open class NovelAiStudioStateRepository(
         synchronized(draftStateLock) {
             _draft.value?.let { return it }
         }
-        return draftMutex.withLock {
+        return draftMutex.withDataAccess {
             synchronized(draftStateLock) {
-                _draft.value?.let { return@withLock it }
+                _draft.value?.let { return@withDataAccess it }
             }
             val loaded = storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())
                 ?: NovelAiStudioDraft(followDefaultNovelAiImageModel = true)
@@ -97,7 +100,7 @@ open class NovelAiStudioStateRepository(
 
     suspend fun flushLatestDraft(): NovelAiStudioDraft {
         if (_draft.value == null) loadDraft()
-        return draftMutex.withLock {
+        return draftMutex.withDataAccess {
             while (true) {
                 val snapshot = synchronized(draftStateLock) {
                     checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
@@ -106,7 +109,7 @@ open class NovelAiStudioStateRepository(
                 val latest = synchronized(draftStateLock) {
                     checkNotNull(_draft.value)
                 }
-                if (latest.contentRevision == snapshot.contentRevision) return@withLock latest
+                if (latest.contentRevision == snapshot.contentRevision) return@withDataAccess latest
             }
             error("unreachable")
         }
@@ -146,16 +149,16 @@ open class NovelAiStudioStateRepository(
         current.applyReversePromptPlan(plan)
     }
 
-    suspend fun saveUndoDraft(draft: NovelAiStudioDraft) = undoMutex.withLock {
+    suspend fun saveUndoDraft(draft: NovelAiStudioDraft) = undoMutex.withDataAccess {
         storage.saveSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft(draft), NovelAiStudioUndoDraft.serializer())
         _undoAvailable.value = true
     }
 
-    suspend fun loadUndoDraft(): NovelAiStudioDraft? = undoMutex.withLock {
+    suspend fun loadUndoDraft(): NovelAiStudioDraft? = undoMutex.withDataAccess {
         storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())?.draft.also { _undoAvailable.value = it != null }
     }
 
-    suspend fun clearUndoDraft() = undoMutex.withLock {
+    suspend fun clearUndoDraft() = undoMutex.withDataAccess {
         storage.saveSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft(), NovelAiStudioUndoDraft.serializer())
         _undoAvailable.value = false
     }
@@ -210,15 +213,15 @@ open class NovelAiStudioStateRepository(
         storage.observeAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer())
             .map { entries -> entries.sortedByDescending(NovelAiGenerationHistoryEntry::createdAt) }
 
-    suspend fun saveHistory(entry: NovelAiGenerationHistoryEntry) = historyMutex.withLock {
+    suspend fun saveHistory(entry: NovelAiGenerationHistoryEntry) = historyMutex.withDataAccess {
         storage.saveEntity(HISTORY_ENTITY, entry.id, entry, NovelAiGenerationHistoryEntry.serializer())
     }
 
-    suspend fun deleteHistory(id: String) = historyMutex.withLock {
+    suspend fun deleteHistory(id: String) = historyMutex.withDataAccess {
         storage.deleteEntity<NovelAiGenerationHistoryEntry>(HISTORY_ENTITY, id)
     }
 
-    suspend fun clearHistory() = historyMutex.withLock {
+    suspend fun clearHistory() = historyMutex.withDataAccess {
         storage.deleteAll<NovelAiGenerationHistoryEntry>(HISTORY_ENTITY)
     }
 
