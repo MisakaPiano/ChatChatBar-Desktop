@@ -747,6 +747,49 @@
         "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
       ],
       "delivery": "Unreleased scoped engineering; not official Android full roundtrip or user acceptance"
+    },
+    {
+      "id": "DESKTOP_RAG_AND_MOMENT_MAINTENANCE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Only d3 RAG index maintenance and Android Moment scheduler/receiver entry mapping",
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_RAG_MOMENT_ADMISSION_REUSED162_REVIEW.json"
+      ],
+      "verification": "Reused162 original13 methods on8 exact current owners/test files; separately changed Chat/Settings gate order has independent current runs. No current-HEAD rerun or blanket parity claim."
+    },
+    {
+      "id": "MAINTENANCE_MUTEX_ORDER_AND_CATALOG_ROUTE",
+      "disposition": "EQUIVALENT",
+      "scope": "Only Chat/Settings mutex admission order and catalog default route/timeouts plus named affected regressions; later external password changes require independent checks",
+      "verification": {
+        "source": "2e3cc9b177e0329247d355adda9875278494eafc",
+        "control": "676b454ab2471e736ba2bc00b83fcf6a9ab20e0c",
+        "run": 42324271381,
+        "sharedPass": 44,
+        "desktopPass": 70,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "before": {
+          "source": "1cd069ecb309b17f13b8d92331dfae61f93fca87",
+          "control": "138b38384d91454f4f2ac1e940f7f07ca1b02e1d",
+          "run": 42324264543,
+          "passed": 2,
+          "failures": 5,
+          "errors": 0,
+          "skipped": 0
+        },
+        "priorCompileFailures": [
+          42323491109,
+          42323711300
+        ],
+        "evidence": "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "scope": "Only Chat/Settings mutex admission order and catalog default route/timeouts plus named affected regressions; later external password changes require independent checks"
+      },
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
+      ]
     }
   ],
   "deltas": [
@@ -7009,7 +7052,16 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [],
+      "reviewedSubBehaviors": [
+        {
+          "id": "MAINTENANCE_MUTEX_ORDER_AND_CATALOG_ROUTE",
+          "evidence": [
+            "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
+          ],
+          "meaning": "Actual mutex-order and ordinary catalog client default gap fixed and independently checked. Mixed remainder not closed by this sub-behavior proof."
+        }
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/repository/MemoryRepository.kt",
@@ -7852,8 +7904,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Android alarm receiver pause guard has no Windows alarm owner. Desktop app-lifecycle scheduling and root-local approval replace this platform entry; actual registered work holds normal admission. Original4 controller methods reused, no claim of Android background alarm support.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentAlarmReceiver.kt",
@@ -7862,8 +7914,16 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DESKTOP_RAG_AND_MOMENT_MAINTENANCE"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_RAG_MOMENT_ADMISSION_REUSED162_REVIEW.json"
+      ],
+      "implementationOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMomentsController.kt"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/moment/MomentScheduler.kt",
@@ -7879,8 +7939,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Android scheduler maintenance/alarm entry maps to Desktop app-owned scheduler and gate-admitted registered work, root-bound local consent and unapproved imported-plan policy; matching original4 controller methods reused on exact named owner/test sources. No Android alarm/device compatibility claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentScheduler.kt",
@@ -7889,8 +7949,16 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DESKTOP_RAG_AND_MOMENT_MAINTENANCE"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_RAG_MOMENT_ADMISSION_REUSED162_REVIEW.json"
+      ],
+      "implementationOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMomentsController.kt"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/rag/RagManager.kt",
@@ -7906,8 +7974,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Official delta adds Android maintenance admission around index deletion/embedding/publication. Actual Desktop container routes to registered document/history transaction owners, short exclusive source snapshots and final source/config recheck+journal publication, with original9 matching methods and exact named owner/test blobs. Not a shared RagManager runtime call or blanket dependency proof.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/RagManager.kt",
@@ -7916,8 +7984,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DESKTOP_RAG_AND_MOMENT_MAINTENANCE"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_RAG_MOMENT_ADMISSION_REUSED162_REVIEW.json"
+      ],
+      "implementationOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexService.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatMemoryIndex.kt"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/service/AiBackgroundWorkManager.kt",
@@ -7998,7 +8075,16 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [],
+      "reviewedSubBehaviors": [
+        {
+          "id": "MAINTENANCE_MUTEX_ORDER_AND_CATALOG_ROUTE",
+          "evidence": [
+            "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
+          ],
+          "meaning": "Actual mutex-order and ordinary catalog client default gap fixed and independently checked. Mixed remainder not closed by this sub-behavior proof."
+        }
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioStorage.kt",
