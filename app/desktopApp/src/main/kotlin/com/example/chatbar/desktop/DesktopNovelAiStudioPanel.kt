@@ -294,6 +294,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
             }
             if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
+            DesktopPostProcessHistoryNotice(controller, state.postProcessError)
 
             section("Prompt")
             StudioDisclosure("生成设置", d.activeSettings.sizeTier.displayName, initiallyOpen = true) { section("参数") }

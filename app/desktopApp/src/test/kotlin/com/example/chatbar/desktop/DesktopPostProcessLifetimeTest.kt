@@ -50,7 +50,8 @@ class DesktopPostProcessLifetimeTest {
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
     }
     private suspend fun ImageComposeScene.frames() { repeat(5) { render(System.nanoTime()).close(); delay(18) } }
-    private fun ImageComposeScene.action(label: String) = nodes().firstOrNull {
+    // The selected tab chip has the same label; the final matching action is the submit button.
+    private fun ImageComposeScene.action(label: String) = nodes().lastOrNull {
         it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick)
     }
 
@@ -66,7 +67,7 @@ class DesktopPostProcessLifetimeTest {
             try {
                 withTimeout(5_000) { while (scene.action(NovelAiPostProcessTab.UPSCALE.label)?.config?.contains(SemanticsProperties.Disabled) != false) scene.frames() }
                 assertTrue(scene.action(NovelAiPostProcessTab.UPSCALE.label)!!.config[SemanticsActions.OnClick].action!!.invoke())
-                withTimeout(5_000) { entered.await() }
+                withTimeout(5_000) { while (!entered.isCompleted) scene.frames() }; entered.await()
             } finally { scene.close(); release.complete(Unit) }
             withTimeout(10_000) { while (f.app.taskRuntime.tasks.value.any { it.status == DesktopTaskStatus.RUNNING }) delay(20) }
             assertEquals(DesktopTaskStatus.COMPLETED, f.app.taskRuntime.tasks.value.first().status)
@@ -132,6 +133,57 @@ class DesktopPostProcessLifetimeTest {
             assertContentEquals(f.output, controller.postProcessResults.read(saved))
             assertEquals(draft, controller.repository.loadDraft()); assertContentEquals(f.input, Files.readAllBytes(f.source))
             assertEquals(1, f.server.requestCount)
+        } finally { f.close() }
+    }
+
+    @Test fun `captured stop from finished operation never cancels a newer post processing request`() = runBlocking(edt) {
+        val f = Fixture()
+        try {
+            val controller = f.controller(); assertTrue(controller.load())
+            f.server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+            assertTrue(controller.postProcess(f.input, NovelAiPostProcessTab.UPSCALE, null, NovelAiEnhanceOptions(), {}, {}))
+            withContext(Dispatchers.IO) { assertNotNull(f.server.takeRequest(5, TimeUnit.SECONDS)) }
+            val first = f.app.taskRuntime.tasks.value.first().taskId
+            val scene = ImageComposeScene(650, 1000, coroutineContext = edt) { DesktopImagePostProcessPanel(f.source, controller) {} }
+            try {
+                withTimeout(5_000) { while (scene.action("停止") == null) scene.frames() }
+                val oldStop = scene.action("停止")!!.config[SemanticsActions.OnClick].action!!
+                assertTrue(f.app.taskRuntime.requestUserStop(first))
+                withTimeout(5_000) { while (f.app.taskRuntime.tasks.value.single { it.taskId == first }.status == DesktopTaskStatus.RUNNING) delay(20) }
+                f.server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+                assertTrue(controller.postProcess(f.input, NovelAiPostProcessTab.UPSCALE, null, NovelAiEnhanceOptions(), {}, {}))
+                withContext(Dispatchers.IO) { assertNotNull(f.server.takeRequest(5, TimeUnit.SECONDS)) }
+                val second = f.app.taskRuntime.tasks.value.first().taskId; assertNotEquals(first, second)
+                assertTrue(oldStop.invoke()); scene.frames()
+                assertEquals(DesktopTaskStatus.RUNNING, f.app.taskRuntime.tasks.value.single { it.taskId == second }.status)
+                assertEquals(2, f.server.requestCount)
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
+
+    @Test fun `corrupt auxiliary processing history stays visible while actual Studio draft controls remain usable`() = runBlocking(edt) {
+        val f = Fixture()
+        try {
+            val controller = f.controller()
+            controller.repository.updateDraft { it.copy(basePrompt = "existing editable scene") }
+            val bad = f.app.appDataRoot.resolve("entities/desktop_image_post_process_results/broken.json")
+            Files.createDirectories(bad.parent); Files.writeString(bad, "{broken-original")
+            assertTrue(controller.load())
+            assertTrue(controller.state.value.ready)
+            assertNotNull(controller.state.value.postProcessError)
+            assertEquals("existing editable scene", controller.draft.value!!.basePrompt)
+            assertTrue(controller.edit { it.copy(basePrompt = "ordinary Studio still edits") })
+            val scene = ImageComposeScene(1000, 1100, coroutineContext = edt) { DesktopNovelAiStudioPanel(controller) }
+            try {
+                withTimeout(5_000) { while (scene.action("重试后处理记录") == null) scene.frames() }
+                assertTrue(scene.nodes().any { n -> n.config.getOrNull(SemanticsProperties.Text)?.any { it.text.contains("后处理记录读取失败") } == true })
+                assertEquals("{broken-original", Files.readString(bad))
+                assertEquals("ordinary Studio still edits", controller.repository.loadDraft().basePrompt)
+                Files.delete(bad)
+                assertTrue(scene.action("重试后处理记录")!!.config[SemanticsActions.OnClick].action!!.invoke())
+                withTimeout(5_000) { while (controller.state.value.postProcessError != null) scene.frames() }
+            } finally { scene.close() }
+            assertEquals(0, f.server.requestCount)
         } finally { f.close() }
     }
 }

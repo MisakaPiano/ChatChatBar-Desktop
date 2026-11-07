@@ -30,7 +30,7 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     var source by remember(path) { mutableStateOf<NovelAiEnhanceSource?>(null) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller, path) {
-        try { controller.postProcessResults.load() }
+        try { controller.reloadPostProcessResults() }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { status = "后处理记录读取失败；原记录保留，请重开后重试" }
     }
@@ -46,6 +46,7 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     val sourceHash = remember(input?.first) { input?.first?.let(DesktopPostProcessResults::digest) }
     val ownBusy = sourceHash != null && sourceHash == state.postProcessSourceSha256 &&
         tasks.any { it.taskId == state.postProcessTaskId && it.status == DesktopTaskStatus.RUNNING }
+    val ownTaskId = state.postProcessTaskId.takeIf { ownBusy }
     StudioChips("图片处理", NovelAiPostProcessTab.entries, tab, { it.label }) { if (!busy) tab = it }
     val dimensions = input?.second
     val recipe = source
@@ -65,8 +66,8 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     StatusText(cost?.let { "预计 $it Anlas" } ?: "费用 / 输入资格不可用")
     val validScale = tab == NovelAiPostProcessTab.UPSCALE || recipe != null && dimensions != null && options.scale in NovelAiPostProcessPolicy.scales(dimensions.first, dimensions.second, recipe.settings.model)
     StudioAction(if (ownBusy) "停止" else if (busy) "其他图像任务运行中" else tab.label,
-        enabled = ownBusy || (!busy && state.credentialConfigured && input != null && cost != null && cost <= 140 && validScale)) {
-        if (ownBusy) controller.stopPostProcess() else scope.launch {
+        enabled = ownBusy || (!busy && state.postProcessError == null && state.credentialConfigured && input != null && cost != null && cost <= 140 && validScale)) {
+        if (ownBusy) ownTaskId?.let(controller::stopPostProcess) else scope.launch {
             val selected = tab; val selectedOptions = options
             controller.postProcess(requireNotNull(input).first, selected, recipe, selectedOptions,
                 onComplete = { selectedRecordId = null },
@@ -74,6 +75,7 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
         }
     }
     if (status.isNotBlank()) StatusText(status)
+    DesktopPostProcessHistoryNotice(controller, state.postProcessError)
     val record = records.firstOrNull { it.id == selectedRecordId }
         ?: records.firstOrNull { it.sourceSha256 == sourceHash && it.operation == tab.name }
     if (records.isNotEmpty()) StudioDisclosure("后处理记录（${records.size}）") {
@@ -112,4 +114,12 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             StudioAction("复制图片") { scope.launch { try { withContext(Dispatchers.IO) { copyDesktopImage(output, null) } } catch (_: Exception) { status = "复制失败；结果保留" } } }
         }
     }
+}
+
+@Composable
+internal fun DesktopPostProcessHistoryNotice(controller: DesktopNovelAiStudioController, error: String?) {
+    if (error == null) return
+    val scope = rememberCoroutineScope()
+    StatusText(error, DesktopBootstrapColors.warning)
+    StudioAction("重试后处理记录") { scope.launch { controller.reloadPostProcessResults() } }
 }

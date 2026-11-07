@@ -14,7 +14,7 @@ internal class DesktopMergeRetainedMedia(
         records.keys.forEach { path ->
             checkActive()
             val type = DesktopBackupPolicy.entityType(path)
-            if (type in setOf("chat_messages", "moment_posts", "novelai_generation_history")) {
+            if (type in setOf("chat_messages", "moment_posts", "novelai_generation_history", "desktop_image_post_process_results")) {
                 val value = records.getValue(path)
                 key(type, value)?.let { check(put(it, path) == null) { "MERGE_RETAINED_ID_COLLISION" } }
             }
@@ -105,6 +105,12 @@ internal class DesktopMergeRetainedMedia(
                         path.isNotBlank() && !path.startsWith("chatbar-save-slot-omitted-image:") } == true }) return null
                 mapOf("images" to images)
             }
+            "desktop_image_post_process_results" -> {
+                if (selected.studioHistoryImages) return null
+                val image = old["imagePath"]?.jsonPrimitive?.contentOrNull ?: return null
+                if (image.isBlank() || image.startsWith("chatbar-save-slot-omitted-image:")) return null
+                mapOf("imagePath" to JsonPrimitive(image))
+            }
             else -> return null
         }
         return JsonObject(fields)
@@ -117,6 +123,9 @@ internal class DesktopMergeRetainedMedia(
             "moment_posts" -> listOf(type, id, value["sessionId"]?.jsonPrimitive?.contentOrNull,
                 value["characterCardId"]?.jsonPrimitive?.contentOrNull)
             "novelai_generation_history" -> listOf(type, id)
+            "desktop_image_post_process_results" -> listOf(type, id,
+                value["sourceSha256"]?.jsonPrimitive?.contentOrNull, value["imageSha256"]?.jsonPrimitive?.contentOrNull,
+                value["operation"]?.jsonPrimitive?.contentOrNull)
             else -> null
         }
     }

@@ -29,6 +29,7 @@ internal data class DesktopNovelAiStudioState(
     val generationTaskId: String? = null,
     val postProcessTaskId: String? = null,
     val postProcessSourceSha256: String? = null,
+    val postProcessError: String? = null,
     val preview: ByteArray? = null,
     val reverseCandidate: NovelAiPromptPlan? = null,
     val reverseSceneDescription: String? = null,
@@ -143,6 +144,7 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun postProcess(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, onComplete: (ByteArray) -> Unit, onStatus: (String) -> Unit) = action {
+        check(reloadPostProcessResults()) { "后处理记录尚未通过读取检查" }
         val processor = requireNotNull(postProcessor)
         val (identity, frozen) = studioCredentialRead { credentialIdentity() to freezeCredential() }
         val account = state.value.account.takeIf { accountIdentity == identity }
@@ -162,10 +164,18 @@ internal class DesktopNovelAiStudioController(
         mutableState.update { it.copy(taskId = id, postProcessTaskId = id, postProcessSourceSha256 = DesktopPostProcessResults.digest(bytes)) }
     }
 
-    fun stopPostProcess(): Boolean = state.value.postProcessTaskId?.let(tasks::requestUserStop) ?: false
+    fun stopPostProcess(taskId: String): Boolean =
+        if (state.value.postProcessTaskId == taskId) tasks.requestUserStop(taskId) else false
+
+    suspend fun reloadPostProcessResults(): Boolean = try {
+        postProcessResults.load(); mutableState.update { it.copy(postProcessError = null) }; true
+    } catch (cancelled: CancellationException) { throw cancelled }
+    catch (_: Exception) {
+        mutableState.update { it.copy(postProcessError = "后处理记录读取失败；原记录和图片保留，普通 Studio 仍可使用。") }; false
+    }
 
     suspend fun load() = action {
-        postProcessResults.load()
+        reloadPostProcessResults()
         repository.initialize()
         designRepository.initialize()
         repository.loadDraft()
