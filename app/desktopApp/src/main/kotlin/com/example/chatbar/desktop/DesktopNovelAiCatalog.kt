@@ -19,6 +19,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
 
 /** Installs immutable, verified auxiliary databases. No entity/package schema or credentials. */
@@ -119,9 +121,15 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
     }
     private data class Snapshot(val metadata: DanbooruCatalogMetadata, val database: Path, val index: Path)
     @Volatile private var active: Snapshot? = null
-    @Synchronized private fun snapshot(): Snapshot {
+    private val snapshotMutex = Mutex()
+    private suspend fun snapshot(): Snapshot = snapshotMutex.withLock {
         active?.let { return it }
         val manifest = assets.root.resolve("active-catalog.json")
+        if (!Files.exists(manifest)) {
+            DesktopNovelAiCatalogTransfer.portable(assets.root.parent.parent)?.let {
+                DesktopNovelAiCatalogTransfer.activatePortable(it, assets.root)
+            }
+        }
         val next = if (Files.exists(manifest)) {
             val metadata = Json.decodeFromString<DanbooruCatalogMetadata>(Files.readString(manifest))
             require(metadata.sourceSha.matches(Regex("[a-f0-9]{40}")))
@@ -132,11 +140,22 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
                 check(it.moveToFirst() && it.getInt(0) == 2 && it.getString(1) == metadata.sourceSha)
             } }
             Snapshot(metadata, database, index)
-        } else Snapshot(bundled,
-            assets.installAdmitted("danbooru/tag.sqlite.bundle", bundled.sourceSha, bundled.sourceSizeBytes, gitBlob = true),
-            assets.indexAdmitted("danbooru", bundled.sourceSha))
+        } else {
+            val installed = Snapshot(bundled,
+                assets.installAdmitted("danbooru/tag.sqlite.bundle", bundled.sourceSha, bundled.sourceSizeBytes, gitBlob = true),
+                assets.indexAdmitted("danbooru", bundled.sourceSha))
+            // A cold-installed source is also an installed version, not merely an anonymous cache.
+            val stage = assets.root.resolve("manifest-${UUID.randomUUID()}.part")
+            try {
+                java.io.FileOutputStream(stage.toFile()).use {
+                    it.write(Json.encodeToString(DanbooruCatalogMetadata.serializer(), bundled).toByteArray()); it.fd.sync()
+                }
+                Files.move(stage, manifest, StandardCopyOption.ATOMIC_MOVE)
+            } finally { Files.deleteIfExists(stage) }
+            installed
+        }
         active = next
-        return next
+        next
     }
     fun requireDurableMetadata(expected: DanbooruCatalogMetadata) {
         val manifest = assets.root.resolve("active-catalog.json")
@@ -144,7 +163,10 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
         check(durable == expected) { "词库版本已更改" }
     }
     val updateRoot get() = assets.root
-    @Synchronized fun activated() { active = null; synchronized(cache) { cache.clear() }; version.value = snapshot().metadata.sourceSha }
+    suspend fun activated() {
+        snapshotMutex.withLock { active = null; synchronized(cache) { cache.clear() } }
+        version.value = snapshot().metadata.sourceSha
+    }
     private val version = MutableStateFlow("")
     override val completionVersion = version.asStateFlow()
     private val cache = object : LinkedHashMap<String, List<NovelAiTagCandidate>>(16, .75f, true) {

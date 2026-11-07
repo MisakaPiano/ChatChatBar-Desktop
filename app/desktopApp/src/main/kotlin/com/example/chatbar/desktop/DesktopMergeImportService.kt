@@ -131,7 +131,7 @@ internal class DesktopMergeImportService(
                 gate.withExclusiveMaintenance {
                     progress(Progress(Stage.CHECKING_SOURCE))
                     checkOwnedSource()
-                    check(mapping.inventory(StrictBackupZipReader.Limits().expanded) == preview.computer.proof) { "MERGE_COMPUTER_CHANGED_REINSPECT" }
+                    mapping.verifySource(preview.computer)
                     val settings = readDesktopSettings()
                     try { check(if (settings == null) preview.desktopSettings == null else preview.desktopSettings?.contentEquals(settings) == true) { "MERGE_COMPUTER_CHANGED_REINSPECT" } }
                     finally { settings?.fill(0) }
@@ -162,7 +162,7 @@ internal class DesktopMergeImportService(
                     }
                     progress(Progress(Stage.VERIFYING_RESULT))
                     preview.credentials.verifyComputerUnchanged()
-                    check(mapping.inventory(StrictBackupZipReader.Limits().expanded) == preview.computer.proof) { "MERGE_COMPUTER_CHANGED_REINSPECT" }
+                    mapping.verifySource(preview.computer)
                     val latestSettings = readDesktopSettings()
                     try { check(if (latestSettings == null) preview.desktopSettings == null else preview.desktopSettings?.contentEquals(latestSettings) == true) { "MERGE_COMPUTER_CHANGED_REINSPECT" } }
                     finally { latestSettings?.fill(0) }

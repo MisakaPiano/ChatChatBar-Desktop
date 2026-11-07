@@ -125,6 +125,7 @@ private fun mergeChoice(choice: DesktopMergePreview.Choice) = when (choice) {
     DesktopMergePreview.Choice.SKIP -> "跳过此项"
 }
 private fun mergeCategory(category: String) = when (category) {
+    "tagCatalog" -> "标签库"
     "chat_sessions" -> "聊天"
     "character_cards" -> "角色卡"
     "model_configs", "retrieval_model_config" -> "模型"

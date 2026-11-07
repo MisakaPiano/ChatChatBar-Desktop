@@ -26,7 +26,7 @@ internal class DesktopFullBackupService(
 
     suspend fun catalog(): BackupExportCatalog = gate.withNormalOperation {
         val context = currentCoroutineContext()
-        val files = mapping.inventory(StrictBackupZipReader.Limits().expanded).keys.associateWith(root::resolve)
+        val files = mapping.inventory(StrictBackupZipReader.Limits().expanded).keys.associateWith(root::resolve) + mapping.installedCatalogFiles()
         BackupExportCatalog.read(root.toFile(), files) { context.ensureActive() }
     }
 

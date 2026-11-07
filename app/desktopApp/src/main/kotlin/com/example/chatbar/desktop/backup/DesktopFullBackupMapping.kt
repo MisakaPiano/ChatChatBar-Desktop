@@ -13,9 +13,19 @@ import kotlinx.serialization.json.*
 internal class DesktopFullBackupMapping(private val root: Path, private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") }) {
     data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences,
         private val scratch: DesktopBackupScratch, val credentialFreeSource: Boolean = false,
-        val missingHistoricalAvatars: Int = 0) : AutoCloseable { override fun close() = scratch.close() }
+        val missingHistoricalAvatars: Int = 0,
+        val catalogProof: Map<String, String> = emptyMap()) : AutoCloseable { override fun close() = scratch.close() }
     data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>,
         private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
+
+    internal fun installedCatalogFiles(): Map<String, Path> = DesktopNovelAiCatalogTransfer.installed(root)?.files.orEmpty()
+
+    internal suspend fun verifySource(snapshot: Export, maximum: Long = StrictBackupZipReader.Limits().expanded) {
+        check(inventory(maximum) == snapshot.proof &&
+            installedCatalogFiles().mapValues { DesktopArchiveFiles.hash(it.value, DesktopBackupPolicy.MAX_FILE) } == snapshot.catalogProof) {
+            "MERGE_COMPUTER_CHANGED_REINSPECT"
+        }
+    }
 
     suspend fun inventory(maximum: Long = DesktopBackupPolicy.MAX_TOTAL): Map<String, String> {
         require(maximum in DesktopBackupPolicy.MAX_TOTAL..StrictBackupZipReader.Limits().expanded)
@@ -64,8 +74,14 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         forMerge: Boolean = false, selection: AppBackupSelection? = null): Export {
         require(wireVersionCode in 84..CURRENT_DESKTOP_BACKUP_CODE)
         val proof = inventory(maximum)
+        val catalogFiles = installedCatalogFiles()
+        val catalogProof = catalogFiles.mapValues { DesktopArchiveFiles.hash(it.value, DesktopBackupPolicy.MAX_FILE) }
+        val exportProof = proof + catalogProof
+        check(exportProof.size <= DesktopBackupPolicy.MAX_FILES)
+        check(exportProof.keys.sumOf { Files.size(catalogFiles[it] ?: root.resolve(it)) } <= maximum)
+        val sourceFiles = exportProof.keys.associateWith { catalogFiles[it] ?: root.resolve(it) }
         val context = currentCoroutineContext()
-        val catalog = selection?.let { BackupExportCatalog.read(root.toFile(), proof.keys.associateWith(root::resolve)) { context.ensureActive() } }
+        val catalog = selection?.let { BackupExportCatalog.read(root.toFile(), sourceFiles) { context.ensureActive() } }
         val plan = selection?.let { requireNotNull(catalog).plan(it) }
         val selectedRecords = plan?.records?.associateBy { it.relative }
         val selectedMedia = plan?.additionalFiles?.mapTo(hashSetOf()) { it.second } ?: hashSetOf()
@@ -122,9 +138,9 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             return DesktopBackupPolicy.PREFIX + relative
         }
         // Resolve selected entity references first; an unselected broken card cannot block another card.
-        proof.entries.sortedBy { if (it.key.startsWith("entities/")) 0 else 1 }.forEachIndexed { index, (relative, hash) ->
+        exportProof.entries.sortedBy { if (it.key.startsWith("entities/")) 0 else 1 }.forEachIndexed { index, (relative, hash) ->
             currentCoroutineContext().ensureActive()
-            val source = root.resolve(relative)
+            val source = sourceFiles.getValue(relative)
             val target = directory.resolve("file-$index")
             if (relative.startsWith("entities/")) {
                 if (selectedRecords != null && relative !in selectedRecords && relative != "entities/desktop_backup_preferences.json") return@forEachIndexed
@@ -165,8 +181,11 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             }
         }
         check(inventory(maximum) == proof) { "SOURCE_CHANGED_DURING_EXPORT" }
+        check(installedCatalogFiles().mapValues { DesktopArchiveFiles.hash(it.value, DesktopBackupPolicy.MAX_FILE) } == catalogProof) {
+            "CATALOG_SOURCE_CHANGED_DURING_EXPORT"
+        }
         absentAvatars.forEach(DesktopHistoricalMomentAvatarPolicy::requireMissing)
-        return Export(directory, files, proof, preferences, scratch, forMerge, missingHistoricalAvatars)
+        return Export(directory, files, proof, preferences, scratch, forMerge, missingHistoricalAvatars, catalogProof)
         } catch (error: Throwable) {
             try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
             throw error
@@ -296,17 +315,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
     }
 
     private fun validateCatalog(directory: Path) {
-        val database = directory.resolve("danbooru_catalog/tag.sqlite")
-        val manifest = directory.resolve("danbooru_catalog/catalog.json")
-        if (!Files.exists(database) && !Files.exists(manifest)) return
-        check(Files.isRegularFile(database) && Files.isRegularFile(manifest) && Files.size(manifest) <= 1024 * 1024)
-        val metadata = backupJson.decodeFromString(DanbooruCatalogMetadata.serializer(), Files.readString(manifest))
-        check(metadata.sourceSizeBytes == Files.size(database) && metadata.rowCount >= 0 && metadata.sourceSha.isNotBlank())
-        java.sql.DriverManager.getConnection("jdbc:sqlite:file:${database.toUri().rawPath}?mode=ro&immutable=1").use { db ->
-            db.createStatement().use { statement -> statement.executeQuery("PRAGMA quick_check").use { rows ->
-                check(rows.next() && rows.getString(1) == "ok" && !rows.next())
-            } }
-        }
+        DesktopNovelAiCatalogTransfer.portable(directory)
     }
 }
 

@@ -1,0 +1,13 @@
+# 已安装标签库的备份与离线激活
+
+实际缺口：native CatalogUpdate发布auxiliary/novelai/<sha>.sqlite、index和active-catalog.json；Mapping仅验证并排除auxiliary，而导出选择只收danbooru_catalog。旧的原件保留不等于native更新后的版本可导出；PC合并捕获也会漏掉它。
+
+新增DesktopNovelAiCatalogTransfer作为原DB+metadata桥。Mapping源inventory仍保持实际根/legacy journal边界，另捕获catalogProof并在导出结束及实际MergeService提交前后核对。导出/大小估计/PC capture使用native当前authority，覆盖旧transport副本的同两个wire键。显式不选tagCatalog则不导出；普通卡片合并未带入词库时，新根保留电脑的版本。
+
+两边pair不同，在现有冲突预览加入单独标签库项，只能保留电脑、跳过或采用导入，不能把两个单一active authority拼在一起。RootPreparation只过滤这个pair，其他资源与原实体选择不变。真正采用的pair在映射后验证Git blob、大小、结构、表名及行数；metadata与DB不匹配拒绝，新根不会以错误pair完成准备。
+
+新根首次Tag lookup在normal受理和snapshot mutex内验证已导入pair，离线构建共享ranked索引，原DB/索引先发布、metadata pointer最后发布。错误输入不自动退回bundled。cold bundle也记录当前source metadata。旧wire原件保留，native更新后导出以新authority为准。词库未初始化时仍按原内置加载路径；不保留全部derived caches、不调用网络、不改模型Prompt。
+
+必要合成检查：实际CatalogUpdate→Service选范围导出/文件核查→Staging→受控新根准备→重开native lookup/补全→再导出；PC native-only capture经仅卡片合并保留版本；不同pair各显式选择；未带密码/损坏等与本功能无关的既有证据不重复。当前新增三方法待云端原件，不提前称通过、已交付或真人验收。已有R107准入三项分源保留，仅对冷安装/更新受影响两方法补测，Dictionary入口未改不重跑。
+
+现代导入模式仍是下一项。当前不单项打包/公开，最终按用户集中交付要求收敛已知缺口再提供完整候选；legacy v1内部原地替换不冒称新的GUI能力。

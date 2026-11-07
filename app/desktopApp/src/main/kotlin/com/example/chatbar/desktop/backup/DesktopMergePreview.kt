@@ -11,6 +11,8 @@ internal class DesktopMergePreview private constructor(
     private val identical: Set<String>,
     val pcFingerprint: String,
     private val sourceScope: InspectionScope?,
+    private val incomingCatalog: Boolean,
+    private val catalogConflict: Boolean,
 ) {
     enum class Choice { KEEP_PC, TAKE_PHONE, BOTH, SKIP }
     enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT, TARGET_IDENTITY }
@@ -38,7 +40,8 @@ internal class DesktopMergePreview private constructor(
         val replacedComputerUnits: Map<String, Unit> = emptyMap(),
         val incomingScope: InspectionScope? = null,
         val computerVoiceSources: List<DesktopMergeVoiceSourcePolicy.Source> = emptyList(),
-        val aliases: List<Alias> = emptyList()) {
+        val aliases: List<Alias> = emptyList(),
+        val catalogFromPhone: Boolean = false) {
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
@@ -124,6 +127,7 @@ internal class DesktopMergePreview private constructor(
             checkActive()
             val choice = choices.getValue(conflict.key)
             require(choice in conflict.choices) { "MERGE_CHOICE_NOT_APPLICABLE" }
+            if (conflict.key == CATALOG_KEY) return@forEach
             val candidate = incoming.getValue(conflict.key)
             val target = conflict.targetPcKey?.let(pc::get)
             if (choice != Choice.BOTH && target != null && candidate.primaryId != null && target.primaryId != null)
@@ -161,10 +165,12 @@ internal class DesktopMergePreview private constructor(
             voiceSources += retained.voiceSources
         }
         return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint,
-            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope, voiceSources, aliases)
+            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope, voiceSources, aliases,
+            incomingCatalog && (!catalogConflict || choices[CATALOG_KEY] == Choice.TAKE_PHONE))
     }
 
     companion object {
+        const val CATALOG_KEY = "tagCatalog:installed"
         private fun normalizedLabel(value: String) = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.ROOT)
         /** Scope governs settings projection and preservation of explicitly unselected media. */
         fun create(pcEntities: Map<String, JsonObject>, phoneEntities: Map<String, JsonObject>,
@@ -207,7 +213,16 @@ internal class DesktopMergePreview private constructor(
             // A PC unit may be named by several incoming conflicts. Conflicting TAKE/BOTH choices
             // are rechecked by the materializer's final dependency graph, not resolved by last write.
             val fingerprint = DesktopBackupPolicy.digest(pc.toSortedMap().entries.joinToString("\n") { "${it.key}:${it.value.signature}" }.toByteArray())
-            return DesktopMergePreview(conflicts, pc, phone, identical, fingerprint, scope)
+            val paths = com.example.chatbar.desktop.DesktopNovelAiCatalogTransfer.wirePaths
+            val localCatalog = pcMedia.filterKeys { it in paths }
+            val importedCatalog = phoneMedia.filterKeys { it in paths }
+            require(localCatalog.isEmpty() || localCatalog.keys == paths) { "MERGE_CATALOG_PAIR_REQUIRED" }
+            require(importedCatalog.isEmpty() || importedCatalog.keys == paths) { "MERGE_CATALOG_PAIR_REQUIRED" }
+            val hasIncoming = importedCatalog.isNotEmpty() && scope?.globalOptions?.contains("tagCatalog") != false
+            val needsChoice = hasIncoming && localCatalog.isNotEmpty() && localCatalog != importedCatalog
+            if (needsChoice) conflicts += Conflict(CATALOG_KEY, "已安装标签库", "tagCatalog",
+                setOf(Reason.SAME_ID_DIFFERENT_CONTENT), setOf(Choice.KEEP_PC, Choice.TAKE_PHONE, Choice.SKIP), emptySet())
+            return DesktopMergePreview(conflicts, pc, phone, identical, fingerprint, scope, hasIncoming, needsChoice)
         }
 
         private fun account(unit: Unit): List<JsonElement?> = unit.records.values.single().let {
