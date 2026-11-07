@@ -34,11 +34,15 @@ class DesktopStudioPresetWindowLifecycleTest {
         }
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,
             parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() },
-            filePicker = picker, bundledAssets = { """{"entries":[]}""".toByteArray() })
+            filePicker = picker, bundledAssets = { path ->
+                if (path.startsWith("presets/")) """{"entries":[]}""".toByteArray()
+                else DesktopBundledAssetReader()(path)
+            })
         val controller = app.novelAiStudioController
         val source = parent.resolve("source.ccbpreset")
         val bad = Files.write(parent.resolve("invalid.ccbpreset"), byteArrayOf(1, 2, 3))
         var scene: ImageComposeScene? = null
+        var opening = 0
         fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
         fun matches(node: SemanticsNode, label: String) =
             node.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true ||
@@ -57,6 +61,8 @@ class DesktopStudioPresetWindowLifecycleTest {
         fun windows() = java.awt.Window.getWindows().filterIsInstance<ComposeWindow>()
             .filter { it.title == "生成预设" && it.isDisplayable }
         suspend fun open(): ComposeWindow {
+            opening++
+            println("PRESET_WINDOW_OPEN attempt=$opening")
             settle()
             val entry = assertNotNull(scene).semanticsOwners.flatMap { walk(it.rootSemanticsNode) }.single {
                 matches(it, "生成预设…") && it.config.contains(SemanticsActions.OnClick)
@@ -65,7 +71,7 @@ class DesktopStudioPresetWindowLifecycleTest {
             val point = entry.boundsInRoot.center
             assertNotNull(scene).sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
             assertNotNull(scene).sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
-            await("Actual preset window did not reopen on the same Studio page") {
+            await("Actual preset window did not reopen on the same Studio page, attempt=$opening") {
                 windows().size == 1 && windows().single().isShowing && action(windows().single(), "导出当前生成预设") != null
             }
             return windows().single()

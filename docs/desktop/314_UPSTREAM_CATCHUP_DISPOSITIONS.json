@@ -1589,8 +1589,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "DesktopImageMetadata.readEnhance delegates directly to the shared reader with original-alpha adapter; exact supported Full hashes, actual base/role captions, coordinates and replay-parameter allow-list remain shared. Exact shared policy/service/reader/test blobs match original162; seven original selected methods re-read with SHA/CRC. This narrow owner reuse does not cover Desktop oriented wire serialization or all148b UI; that successor remains separately pending.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -1600,7 +1600,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/327_UPSCALE_ORIENTATION_WIRE_REVIEW.md",
+        "OWNER_POSTPROCESS_SHARED_REUSE.json"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPostProcessFiles.kt",
@@ -1663,8 +1666,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop production calls shared Upscale endpoint/one-image bounded JSON decode/cancellation/no-retry owner with safe platform errors and base64 adapter. Exact shared policy/service/reader/test blobs match original162; seven original selected methods re-read with SHA/CRC. This narrow owner reuse does not cover Desktop oriented wire serialization or all148b UI; that successor remains separately pending.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiUpscaleService.kt",
@@ -1674,7 +1677,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/327_UPSCALE_ORIENTATION_WIRE_REVIEW.md",
+        "OWNER_POSTPROCESS_SHARED_REUSE.json"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/ui/components/ImageComparison.kt",
@@ -17580,5 +17586,16 @@
       "unchangedR15Methods": 30,
       "wholeOwnerEqualityTo162": false
     }
+  },
+  "postProcessSharedReview": {
+    "mappedDeltas": [
+      "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+      "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiUpscaleService.kt"
+    ],
+    "originalRun": 42085881455,
+    "matchedMethods": 7,
+    "newRuns": 0,
+    "desktopOrientationWire": "PENDING_R20_R21",
+    "completeWholeInventory": false
   }
 }
