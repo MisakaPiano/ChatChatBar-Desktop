@@ -8,6 +8,6 @@
 
 新根首次Tag lookup在normal受理和snapshot mutex内验证已导入pair，离线构建共享ranked索引，原DB/索引先发布、metadata pointer最后发布。错误输入不自动退回bundled。cold bundle也记录当前source metadata。旧wire原件保留，native更新后导出以新authority为准。词库未初始化时仍按原内置加载路径；不保留全部derived caches、不调用网络、不改模型Prompt。
 
-必要合成检查：实际CatalogUpdate→Service选范围导出/文件核查→Staging→受控新根准备→重开native lookup/补全→再导出；PC native-only capture经仅卡片合并保留版本；不同pair各显式选择；未带密码/损坏等与本功能无关的既有证据不重复。当前新增三方法待云端原件，不提前称通过、已交付或真人验收。已有R107准入三项分源保留，仅对冷安装/更新受影响两方法补测，Dictionary入口未改不重跑。
+必要合成检查：实际CatalogUpdate→Service选范围导出/文件核查→Staging→受控新根准备→重开native lookup/补全→再导出；PC native-only capture经仅卡片合并保留版本；不同pair各显式选择；未带密码/损坏等与本功能无关的既有证据不重复。R108原13325B/SHA256 75223e3e1b800475dbd3888e085ecd1ffc2eb0843c4699d617653949a2460329核CRC/control source/两唯一XML/空stderr，新三方法与受影响cold/update两方法完整PASS。详情见OWNER_INSTALLED_CATALOG_R108_COMPLETE_REVIEW.json；R107的Dictionary一方法分源复用，不加成八个新方法，不称已交付或真人验收。
 
 现代导入模式仍是下一项。当前不单项打包/公开，最终按用户集中交付要求收敛已知缺口再提供完整候选；legacy v1内部原地替换不冒称新的GUI能力。

@@ -90,7 +90,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         if (!mutable.value.ready || mutable.value.busy || closed || service.restartRequired) return@synchronized
         val captured = requireNotNull(preview)
         modeOperation?.cancel(); val generation = ++modeGeneration
-        mutable.update { it.copy(mode = mode, modePlanning = mode != DesktopBackupRestoreMode.MERGE_CHOICES, modeSummary = null, modeError = null) }
+        mutable.update { it.copy(mode = mode, modePlanning = mode != DesktopBackupRestoreMode.MERGE_CHOICES, modeSummary = null, modeError = null, failureDetails = null) }
         if (mode == DesktopBackupRestoreMode.MERGE_CHOICES) return@synchronized
         modeOperation = scope.launch {
             try {

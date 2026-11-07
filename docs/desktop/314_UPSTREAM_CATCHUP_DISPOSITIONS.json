@@ -1470,6 +1470,87 @@
       "evidence": [
         "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json"
       ]
+    },
+    {
+      "id": "DELETION_COMPLETE_D3_ACCESS_DELTA_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 maintenance-wrapper delta only. Actual Core normal commit then released normal before reference-aware exclusive cleanup; actual session service transactions/receipts and startup retry preserve admission. Reuses R100/R101 retention and original162 actual session controller1; not whole pre-existing Android pending-card queue parity.",
+      "reviewSource": "fc82447db2a7d299391e7b2a91fc363102739e69",
+      "evidence": [
+        "OWNER_DELETION_TWO_DELTA_REUSE.json"
+      ]
+    },
+    {
+      "id": "DELETION_COMPLETE_1A_MOMENT_RETENTION_DELTA_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete1a helper extraction only: retired card media referenced by historical Moment snapshots remains retained by Desktop full-reference cleanup. R100 actual Store→Core deletion/overwrite and R101 warning proof reused, no new runs or whole deletion feature claim.",
+      "reviewSource": "fc82447db2a7d299391e7b2a91fc363102739e69",
+      "evidence": [
+        "OWNER_DELETION_TWO_DELTA_REUSE.json"
+      ]
+    },
+    {
+      "id": "REPOSITORY_BACKGROUND_D3_CHATREPOSITORY",
+      "disposition": "EQUIVALENT",
+      "scope": "Exact R04 ChatRepository normal gate before Mutex; d3 settings/relink/scroll/index/message/order/replace/sourceTurn call sites use withDataAccess; actual queue/index/viewport/append methods reused, not fresh114.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
+    },
+    {
+      "id": "REPOSITORY_BACKGROUND_D3_LOCALDATATRANSFERFOREGROUNDSERVICE",
+      "disposition": "EQUIVALENT",
+      "scope": "Android promotion/channel/8s OS ready/FGS timeout are N/A platform primitives. Desktop backup/merge are app-owned scopes with TaskCenter progress and current unique task-id stop; watchBackup/watchMerge passes row id to stopTask. Controller matches id and active job; stale id cannot cancel successor. closeAndDrain joins owned work, no local-transfer provider preflight. Static actual controller paths plus reused lifetime tests, not a new late-stop GUI test.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
+    },
+    {
+      "id": "REPOSITORY_BACKGROUND_D3_AIBACKGROUNDWORKMANAGER",
+      "disposition": "EQUIVALENT",
+      "scope": "Android foreground generation lease holds maintenance access until release. Desktop same root coordinator protects actual I/O and merge task maintenance cancels/joins original jobs before exclusive; ordinary export freezes staged snapshot then compresses outside exclusive, without holding a blanket HTTP-job lease. Page/observer departure not job cancellation. Runtime maintenance proof uses held synthetic job/finally and admission/resume; not a new real filesystem snapshot test.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
+    },
+    {
+      "id": "REPOSITORY_BACKGROUND_D3_STREAMINGFOREGROUNDSERVICE",
+      "disposition": "EQUIVALENT",
+      "scope": "Only Android init before FGS notification changed. Desktop app initializes own TaskCenter/tray, has no Android channel/service dependency. Reused fake backend attach/unsupported/terminal-only notice tests; actual physical Windows tray glyph/notification result not claimed.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
+    },
+    {
+      "id": "BACKUP_REGISTRY_COMPLETE_D3_WIRE_POLICY_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Full new d3 registry source normalized equal except Desktop namespace/avatar fields. Actual resource stream/selection/path policy owners, not unused Registry.files. Native inventory is stricter registered-root classification; installed catalog bridge has separate R108 actual proof. No whole backup closure.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
+    },
+    {
+      "id": "CATALOG_COMPLETE_D3_DANBOORUTAGCATALOG_ADMISSION",
+      "disposition": "EQUIVALENT",
+      "scope": "Full d3 write-admission delta: native cold source/index/metadata and whole updater download/build/authority-last publication/cleanup enter actual data normal before snapshot mutex/IO. R107 three methods and R108 affected cold/update two are separate complete actual AppContainer→CoordinatedSnapshot evidence. Immutable generation layout has no Android backup-file recovery sweep. No whole catalog/Engine or new run claim.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
+    },
+    {
+      "id": "CATALOG_COMPLETE_D3_DANBOORUCATALOGUPDATE_ADMISSION",
+      "disposition": "EQUIVALENT",
+      "scope": "Full d3 write-admission delta: native cold source/index/metadata and whole updater download/build/authority-last publication/cleanup enter actual data normal before snapshot mutex/IO. R107 three methods and R108 affected cold/update two are separate complete actual AppContainer→CoordinatedSnapshot evidence. Immutable generation layout has no Android backup-file recovery sweep. No whole catalog/Engine or new run claim.",
+      "reviewSource": "a0c5129464751e96f0f9eacd0e6e70e8eecf06c5",
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -8186,8 +8267,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Exact R04 ChatRepository normal gate before Mutex; d3 settings/relink/scroll/index/message/order/replace/sourceTurn call sites use withDataAccess; actual queue/index/viewport/append methods reused, not fresh114.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
@@ -8196,8 +8277,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": [],
+      "behaviorIds": [
+        "REPOSITORY_BACKGROUND_D3_CHATREPOSITORY"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ],
       "reviewedSubBehaviors": [
         {
           "id": "MAINTENANCE_MUTEX_ORDER_AND_CATALOG_ROUTE",
@@ -8426,11 +8512,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Full new d3 registry source normalized equal except Desktop namespace/avatar fields. Actual resource stream/selection/path policy owners, not unused Registry.files. Native inventory is stricter registered-root classification; installed catalog bridge has separate R108 actual proof. No whole backup closure.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_REGISTRY_COMPLETE_D3_WIRE_POLICY_REUSE"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupEntityValidator.kt",
@@ -8615,11 +8706,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Android promotion/channel/8s OS ready/FGS timeout are N/A platform primitives. Desktop backup/merge are app-owned scopes with TaskCenter progress and current unique task-id stop; watchBackup/watchMerge passes row id to stopTask. Controller matches id and active job; stale id cannot cancel successor. closeAndDrain joins owned work, no local-transfer provider preflight. Static actual controller paths plus reused lifetime tests, not a new late-stop GUI test.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPOSITORY_BACKGROUND_D3_LOCALDATATRANSFERFOREGROUNDSERVICE"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/card/CharacterCardTransferService.kt",
@@ -8828,8 +8924,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 maintenance-wrapper delta only. Actual Core normal commit then released normal before reference-aware exclusive cleanup; actual session service transactions/receipts and startup retry preserve admission. Reuses R100/R101 retention and original162 actual session controller1; not whole pre-existing Android pending-card queue parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/deletion/DeletionCoordinator.kt",
@@ -8838,8 +8934,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DELETION_COMPLETE_D3_ACCESS_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_DELETION_TWO_DELTA_REUSE.json",
+        "docs/desktop/365_DELETION_ADMISSION_RETENTION_DELTA_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/draft/EditorDraftAssetService.kt",
@@ -8887,8 +8988,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Full d3 write-admission delta: native cold source/index/metadata and whole updater download/build/authority-last publication/cleanup enter actual data normal before snapshot mutex/IO. R107 three methods and R108 affected cold/update two are separate complete actual AppContainer→CoordinatedSnapshot evidence. Immutable generation layout has no Android backup-file recovery sweep. No whole catalog/Engine or new run claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/DanbooruTagCatalog.kt",
@@ -8897,8 +8998,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CATALOG_COMPLETE_D3_DANBOORUTAGCATALOG_ADMISSION"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/image/ImagePrivacyExporter.kt",
@@ -9242,8 +9348,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Android foreground generation lease holds maintenance access until release. Desktop same root coordinator protects actual I/O and merge task maintenance cancels/joins original jobs before exclusive; ordinary export freezes staged snapshot then compresses outside exclusive, without holding a blanket HTTP-job lease. Page/observer departure not job cancellation. Runtime maintenance proof uses held synthetic job/finally and admission/resume; not a new real filesystem snapshot test.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/service/AiBackgroundWorkManager.kt",
@@ -9252,8 +9358,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPOSITORY_BACKGROUND_D3_AIBACKGROUNDWORKMANAGER"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/service/StreamingForegroundService.kt",
@@ -9269,8 +9380,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only Android init before FGS notification changed. Desktop app initializes own TaskCenter/tray, has no Android channel/service dependency. Reused fake backend attach/unsupported/terminal-only notice tests; actual physical Windows tray glyph/notification result not claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/service/StreamingForegroundService.kt",
@@ -9279,8 +9390,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPOSITORY_BACKGROUND_D3_STREAMINGFOREGROUNDSERVICE"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/update/DanbooruCatalogUpdate.kt",
@@ -9296,8 +9412,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Full d3 write-admission delta: native cold source/index/metadata and whole updater download/build/authority-last publication/cleanup enter actual data normal before snapshot mutex/IO. R107 three methods and R108 affected cold/update two are separate complete actual AppContainer→CoordinatedSnapshot evidence. Immutable generation layout has no Android backup-file recovery sweep. No whole catalog/Engine or new run claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/update/DanbooruCatalogUpdate.kt",
@@ -9306,8 +9422,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": [],
+      "behaviorIds": [
+        "CATALOG_COMPLETE_D3_DANBOORUCATALOGUPDATE_ADMISSION"
+      ],
+      "evidence": [
+        "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json",
+        "docs/desktop/366_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_REUSE.md"
+      ],
       "reviewedSubBehaviors": [
         {
           "id": "MAINTENANCE_MUTEX_ORDER_AND_CATALOG_ROUTE",
@@ -10868,8 +10989,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a helper extraction only: retired card media referenced by historical Moment snapshots remains retained by Desktop full-reference cleanup. R100 actual Store→Core deletion/overwrite and R101 warning proof reused, no new runs or whole deletion feature claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/deletion/DeletionCoordinator.kt",
@@ -10878,8 +10999,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DELETION_COMPLETE_1A_MOMENT_RETENTION_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_DELETION_TWO_DELTA_REUSE.json",
+        "docs/desktop/365_DELETION_ADMISSION_RETENTION_DELTA_REUSE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",

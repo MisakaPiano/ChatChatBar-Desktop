@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
@@ -55,7 +57,11 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                 state.modeSummary?.let { plan ->
                     StatusText("新增 ${plan.added} · 更新 ${plan.updated} · 副本 ${plan.copied} · 移除 ${plan.removed}")
                     plan.warnings.take(20).forEach { StatusText(it, DesktopBootstrapColors.warning) }
-                    if (plan.warnings.size > 20) StatusText("另有 ${plan.warnings.size - 20} 项保留或副本提示。")
+                    if (plan.warnings.size > 20) StudioDisclosure("查看全部 ${plan.warnings.size} 项提示", initiallyOpen = false) {
+                        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 240.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(plan.warnings) { StatusText(it, DesktopBootstrapColors.warning) }
+                        }
+                    }
                 }
             }
             if (state.desktopParticipation) StatusText("该备份包含 Desktop 扩展（人物／玩家设置、命名账户或动态图片版本）；手机端不保证保留这些内容。", DesktopBootstrapColors.warning)
