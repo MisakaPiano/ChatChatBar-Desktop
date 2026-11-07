@@ -1060,6 +1060,16 @@
         "OWNER_ALBUM_NAVIGATION_FINAL_REVIEW.json",
         "OWNER_ALBUM_LOCATE_HIGHLIGHT_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "CHARACTER_EFFORT_TRANSPARENCY_ENTITY_DELTA_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Only five complete CharacterImageSettings raw first-parent deltas: effort/transparency fields and apply, four-field sampling reset, clear imported Variety sigma. Current entity/defaults/model/actual defaults component and two test blobs match original162. Own original shared1/Desktop2 all pass reused separately,0new runs. Legacy EncodeDefault NEVER and helper delegation preserve values. Final wire straight_alpha uses separate R69, not original162; no whole editor or PNG reader equivalence.",
+      "reviewSource": "cbd47d42f4e8f8e50bde2dc6e1f52adfcd48b394",
+      "evidence": [
+        "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
+        "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -11350,8 +11360,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete CharacterImageSettings raw first-parent deltas: effort/transparency fields and apply, four-field sampling reset, clear imported Variety sigma. Current entity/defaults/model/actual defaults component and two test blobs match original162. Own original shared1/Desktop2 all pass reused separately,0new runs. Legacy EncodeDefault NEVER and helper delegation preserve values. Final wire straight_alpha uses separate R69, not original162; no whole editor or PNG reader equivalence.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -11360,8 +11370,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EFFORT_TRANSPARENCY_ENTITY_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
+        "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -11773,8 +11788,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete CharacterImageSettings raw first-parent deltas: effort/transparency fields and apply, four-field sampling reset, clear imported Variety sigma. Current entity/defaults/model/actual defaults component and two test blobs match original162. Own original shared1/Desktop2 all pass reused separately,0new runs. Legacy EncodeDefault NEVER and helper delegation preserve values. Final wire straight_alpha uses separate R69, not original162; no whole editor or PNG reader equivalence.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -11783,8 +11798,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EFFORT_TRANSPARENCY_ENTITY_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
+        "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImagePostProcessing.kt",
@@ -12616,8 +12636,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete CharacterImageSettings raw first-parent deltas: effort/transparency fields and apply, four-field sampling reset, clear imported Variety sigma. Current entity/defaults/model/actual defaults component and two test blobs match original162. Own original shared1/Desktop2 all pass reused separately,0new runs. Legacy EncodeDefault NEVER and helper delegation preserve values. Final wire straight_alpha uses separate R69, not original162; no whole editor or PNG reader equivalence.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -12626,8 +12646,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EFFORT_TRANSPARENCY_ENTITY_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
+        "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImagePostProcessing.kt",
@@ -12970,8 +12995,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete CharacterImageSettings raw first-parent deltas: effort/transparency fields and apply, four-field sampling reset, clear imported Variety sigma. Current entity/defaults/model/actual defaults component and two test blobs match original162. Own original shared1/Desktop2 all pass reused separately,0new runs. Legacy EncodeDefault NEVER and helper delegation preserve values. Final wire straight_alpha uses separate R69, not original162; no whole editor or PNG reader equivalence.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -12980,8 +13005,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EFFORT_TRANSPARENCY_ENTITY_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
+        "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -14482,8 +14512,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete CharacterImageSettings raw first-parent deltas: effort/transparency fields and apply, four-field sampling reset, clear imported Variety sigma. Current entity/defaults/model/actual defaults component and two test blobs match original162. Own original shared1/Desktop2 all pass reused separately,0new runs. Legacy EncodeDefault NEVER and helper delegation preserve values. Final wire straight_alpha uses separate R69, not original162; no whole editor or PNG reader equivalence.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -14492,8 +14522,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EFFORT_TRANSPARENCY_ENTITY_DELTA_REUSE"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
+        "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImagePostProcessing.kt",

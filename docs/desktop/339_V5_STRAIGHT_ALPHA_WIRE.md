@@ -4,4 +4,4 @@
 
 最小补该字段到最终参数对象，覆盖High／Medium、透明开／关以及普通图生图／聚焦重绘／Enhance。V4.5不新增。保留Desktop原High关闭透明时的params_version=3和省略hint选择，不改Prompt原文、UC、费用、存储、读取白名单、重试或凭据。
 
-`NovelAiV5GenerationPolicyTest` 新增最终action体字段检查，并在既有真实parseEnhance路径补断言；其他未变断言一并保留。R69仅定向该共享类，待原件，不做真实付费出图或全项目重跑。旧字段缺失有确定源差异，不另造旧源CI配对。
+`NovelAiV5GenerationPolicyTest` 新增最终action体字段检查，并在既有真实parseEnhance路径补断言；其他未变断言一并保留。R69／42358743436原10116B／SHA6bec0106…bc2323已独核CRC/source/全部XML与空stderr，唯一V5Policy类6方法完整PASS、0FAIL/ERROR/SKIP。其中新增一个矩阵方法，另在原PNG→Enhance方法加字段断言，其他相邻方法保留；不是六个新增方法。详 `OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json`。不做真实付费出图或全项目重跑。旧字段缺失有确定源差异，不另造旧源CI配对。
