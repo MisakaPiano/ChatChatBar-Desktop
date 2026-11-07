@@ -38,7 +38,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
             if (state.historicalDesktopV5Settings) StatusText("已保留旧 Desktop 备份中的生图设置扩展；这些设置不代表官方 1.4.7 支持。", DesktopBootstrapColors.warning)
             if (activeConflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             if (activeConflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${activeConflicts.size} 项数据冲突")
-            StatusText("先选择角色卡的处理方式，再核对同卡会话冲突；更改选择会保留仍然适用的其他选择。")
+            StatusText("先选择卡片的处理方式，再核对相关会话和编辑草稿冲突；更改选择会保留仍然适用的其他选择。")
             activeConflicts.groupBy { conflict ->
                 if (conflict.category == "app_settings") mergeSetting(conflict.label)?.group ?: "其他应用设置" else mergeCategory(conflict.category)
             }.forEach { (group, conflicts) ->
@@ -50,6 +50,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                     else conflict.label.ifBlank { "未命名" })
                 if (conflict.targetPcKey == null && DesktopMergePreview.Reason.SAME_NAME in conflict.reasons)
                     StatusText("存在多个同名目标，不会覆盖多个条目；请选择保留电脑、跳过或两份都保留。", DesktopBootstrapColors.warning)
+                if (conflict.category == "edit_drafts") StatusText("同一编辑目标已有未保存草稿，请选择保留哪一份；卡片的处理方式不会自动决定草稿来源。")
                 state.modelDetails[conflict.key]?.let { details ->
                     details.computer.forEach { StatusText("电脑：$it") }
                     details.phone.forEach { StatusText("手机：$it") }

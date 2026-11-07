@@ -55,6 +55,7 @@ internal class DesktopMergeDestinationPlan private constructor(
                 identity.bind("chat_messages", old, "$prefix-${index.toString(16).padStart(8, '0')}")
             }
             declarations.filter { it.first != "chat_messages" }.forEach { (type, id) -> identity.bind(type, id, UUID.randomUUID().toString()) }
+            DesktopMergeEditorDraftBindings.bind(selection, identity, checkActive)
             val memory = phone + catalogs.values.map { it.manifest }
             val mapper = DesktopMergeGraphRemapper(memory, identity, checkActive)
             val entities: MutableMap<String, JsonObject> = recordScratch?.let(::DesktopBackupRecordStore) ?: linkedMapOf()

@@ -13,7 +13,7 @@ internal class DesktopMergePreview private constructor(
     private val sourceScope: InspectionScope?,
 ) {
     enum class Choice { KEEP_PC, TAKE_PHONE, BOTH, SKIP }
-    enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT }
+    enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT, TARGET_IDENTITY }
     class Conflict internal constructor(val key: String, val label: String, val category: String,
         val reasons: Set<Reason>, val choices: Set<Choice>, internal val pcKeys: Set<String>, internal val targetPcKey: String? = null) {
         override fun toString() = "MergeConflict($category,$reasons)"
@@ -24,7 +24,8 @@ internal class DesktopMergePreview private constructor(
         val records: Map<String, JsonObject>, internal val signature: String,
         internal val messageIds: Set<String> = emptySet(), internal val forkable: Boolean = false,
         internal val ownedIds: Set<Pair<String, String>> = emptySet(),
-        internal val primaryId: String? = null, internal val cardOwner: String? = null) {
+        internal val primaryId: String? = null, internal val cardOwner: String? = null,
+        internal val draftType: String? = null, internal val draftTarget: String? = null) {
         override fun toString() = "MergeUnit($category,${records.size})"
     }
     class Alias internal constructor(val type: String, val sourceId: String, val targetId: String,
@@ -41,25 +42,44 @@ internal class DesktopMergePreview private constructor(
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
-    private data class CardDomain(val incomingCopy: Boolean, val id: String)
+    private data class CardDomain(val incomingCopy: Boolean, val id: String, val forked: Boolean = false)
     val conflicts: List<Conflict> get() = effectiveConflicts(emptyMap())
+
+    private fun incomingDomain(type: String, id: String?, choices: Map<String, Choice>): CardDomain? {
+        if (id == null) return null
+        val key = "$type:$id"
+        val conflict = candidateConflicts.firstOrNull { it.key == key }
+            ?: return CardDomain(key !in pc, id)
+        val choice = choices[key] ?: return null
+        if (choice == Choice.BOTH) return CardDomain(true, id, key in pc || Reason.OWNED_ID_COLLISION in conflict.reasons)
+        return conflict.targetPcKey?.let(pc::get)?.primaryId?.let { CardDomain(false, it) }
+    }
+
+    private fun draftNeedsImport(unit: Unit, choices: Map<String, Choice>): Boolean {
+        if (unit.key !in identical) return true
+        val domain = unit.draftTarget?.let { incomingDomain(DesktopMergeEditorDraftBindings.category(unit.draftType), it, choices) }
+        return domain != null && (domain.forked || domain.id != unit.draftTarget)
+    }
+
+    private fun draftConflicts(choices: Map<String, Choice>): List<Conflict> = incoming.values.mapNotNull { unit ->
+        if (unit.category != "edit_drafts" || !draftNeedsImport(unit, choices)) return@mapNotNull null
+        val domain = unit.draftTarget?.let { incomingDomain(DesktopMergeEditorDraftBindings.category(unit.draftType), it, choices) }
+        if (unit.draftTarget != null && domain == null || domain?.forked == true) return@mapNotNull null
+        val id = DesktopMergeEditorDraftBindings.id(unit.draftType, domain?.id)
+        val target = pc["edit_drafts:$id"] ?: return@mapNotNull null
+        Conflict(unit.key, unit.label, unit.category,
+            setOf(if (unit.primaryId == target.primaryId) Reason.SAME_ID_DIFFERENT_CONTENT else Reason.TARGET_IDENTITY),
+            setOf(Choice.KEEP_PC, Choice.SKIP, Choice.TAKE_PHONE), setOf(target.key), target.key)
+    }
 
     /** Card choices determine the named-session domain without allocating IDs or touching source data. */
     fun effectiveConflicts(choices: Map<String, Choice>): List<Conflict> {
-        fun incomingDomain(card: String?): CardDomain? {
-            if (card == null) return null
-            val key = "character_cards:$card"
-            val conflict = candidateConflicts.firstOrNull { it.key == key }
-                ?: return CardDomain(key !in pc, card)
-            val choice = choices[key] ?: return null
-            if (choice == Choice.BOTH) return CardDomain(true, card)
-            return conflict.targetPcKey?.let(pc::get)?.primaryId?.let { CardDomain(false, it) }
-        }
         return candidateConflicts.mapNotNull { conflict ->
+            if (conflict.category == "edit_drafts") return@mapNotNull null
             if (conflict.category != "chat_sessions") return@mapNotNull conflict
             val candidate = incoming.getValue(conflict.key)
             val exact = pc[candidate.key]
-            val domain = incomingDomain(candidate.cardOwner)
+            val domain = incomingDomain("character_cards", candidate.cardOwner, choices)
             val named = if (exact != null || domain == null || domain.incomingCopy) emptyList() else conflict.pcKeys.mapNotNull(pc::get).filter {
                 it.cardOwner == domain.id && normalizedLabel(it.label) == normalizedLabel(candidate.label)
             }
@@ -79,7 +99,7 @@ internal class DesktopMergePreview private constructor(
                 if (candidate.forkable) add(Choice.BOTH)
             }
             Conflict(conflict.key, conflict.label, conflict.category, reasons, allowed, peers.mapTo(hashSetOf()) { it.key }, target)
-        }
+        } + draftConflicts(choices)
     }
 
     fun choose(choices: Map<String, Choice>, key: String, choice: Choice): Map<String, Choice> {
@@ -96,7 +116,7 @@ internal class DesktopMergePreview private constructor(
         val conflicts = effectiveConflicts(choices)
         require(choices.keys == conflicts.mapTo(hashSetOf()) { it.key }) { "MERGE_EXPLICIT_CHOICES_REQUIRED" }
         val computer = pc.toMutableMap()
-        val phone = incoming.filterKeys { it !in identical }.toMutableMap()
+        val phone = incoming.filter { (key, unit) -> key !in identical || unit.category == "edit_drafts" && draftNeedsImport(unit, choices) }.toMutableMap()
         val forks = hashSetOf<String>()
         val replaced = linkedMapOf<String, Unit>()
         val aliases = mutableListOf<Alias>()
@@ -251,7 +271,9 @@ internal class DesktopMergePreview private constructor(
                     groupedStudio && key.startsWith("novelai_studio_draft:") && DesktopBackupPolicy.entityType(it.key) == "novelai_studio_draft" } ?: items.entries.first()
                 val type = if (key.startsWith("setting:")) "app_settings" else DesktopBackupPolicy.entityType(primary.key)
                 val value = primary.value
-                val label = if (groupedStudio && key.startsWith("novelai_studio_draft:")) "Studio 草稿与编辑历史" else if (type == "app_settings") key.removePrefix("setting:") else
+                val label = if (type == "edit_drafts") "编辑草稿 · " + listOf("characterPayload", "formatPayload", "worldBookPayload").firstNotNullOfOrNull {
+                    (value[it] as? JsonObject)?.get("name")?.jsonPrimitive?.contentOrNull
+                }.orEmpty() else if (groupedStudio && key.startsWith("novelai_studio_draft:")) "Studio 草稿与编辑历史" else if (type == "app_settings") key.removePrefix("setting:") else
                     value["displayTitleOverride"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotBlank)
                         ?: listOf("title", "name", "displayName", "senderName").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
                 val signature = java.security.MessageDigest.getInstance("SHA-256")
@@ -284,7 +306,9 @@ internal class DesktopMergePreview private constructor(
                 Unit(key, type, label, items, signature.digest().joinToString("") { "%02x".format(it) }, messages,
                     type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books", "moment_posts"), ownedIds,
                     value["id"]?.jsonPrimitive?.contentOrNull,
-                    if (type == "chat_sessions") value["characterCardId"]?.jsonPrimitive?.contentOrNull else null)
+                    if (type == "chat_sessions") value["characterCardId"]?.jsonPrimitive?.contentOrNull else null,
+                    if (type == "edit_drafts") value["entityType"]?.jsonPrimitive?.contentOrNull else null,
+                    if (type == "edit_drafts") value["targetId"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotBlank) else null)
             }
         }
 

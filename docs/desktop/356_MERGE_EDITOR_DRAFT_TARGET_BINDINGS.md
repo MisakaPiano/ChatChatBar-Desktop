@@ -1,0 +1,9 @@
+# 合并后的编辑草稿目标
+
+实际EditorDraftRepository.getForTarget按entityType小写与targetId派生存储key；固定12e Engine.plan也在目标绑定后重算edit_drafts id。此前Desktop只映射targetId，id仍沿用来源，因而同名B→A后普通入口查找的key与落盘不同。这是已确认源码矛盾，R95旧actual仓库反例待原件，不提前称运行失败。
+
+现在最终角色卡／格式卡／世界书的目标身份和fork分配完后，DesktopMergeEditorDraftBindings复用真实Repository.draftId决定草稿ID。草稿作为独立选择保留；若目标已有另一份未保存草稿，Preview随当前卡选择派生相应冲突，不能用采用角色卡替代草稿来源决定，同一目标不提供虚假的“两份并用”。更改卡选择只清理已不适用的草稿选择，提交再核算。相同草稿原字节在复制原目标时也需另存到新目标，不能因为identical而漏掉。
+
+目标为空的CREATE草稿仍按new入口找到。不会保存为正式卡、替用户应用或丢弃草稿；正文／Prompt文本、原baseHash、draftSessionId、modal状态和待用／待删资产保持原义，仅真实typed引用和资源位置映射。RootPreparation保留对alias两侧与被替换PC Unit的原快照核对。实际Preview→Plan落盘→EditorDraftRepository的合成测试覆盖字符卡四选择、草稿独立来源选择与切换失效、相同草稿的原ID复制、全新草稿、以及格式卡／世界书命名采用和原ID复制，不读预制资产，不调用AI或真实根。
+
+新实现及后继必要验证尚待原件，未提前PASS；R93/R94有效结果保留，不借它们证明本次草稿分支，也不以此关闭整个Engine/Catalog。公开1244/db7/sign26与真人分组保持。
