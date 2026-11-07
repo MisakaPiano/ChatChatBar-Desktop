@@ -1,0 +1,31 @@
+{
+  "kind": "EXPLICIT_PUBLIC1245_FROZEN1233_CLIENT_NETWORK_PROBE",
+  "source": "4c7c6a6c61439fb30bcf4f28c08f09fe476bcfee",
+  "version": "0.1.0-preview.1245",
+  "metadataCommit": "7a979b43efa78d6efd9892afdc3a375cc9d03c04",
+  "installerBytes": 182874532,
+  "installerSha256": "baa27152aad4b359ad49d6edce8b585144647b46ddeb7ebcc3ed4f296b53f7cc",
+  "notesSha256": "c7c4ac6f74ce8f0c523caac1d77bc804b7e99d11a7cdfb2a8c945e5fbfd7ad25",
+  "roles": {
+    "1.root.json": {
+      "bytes": 1568,
+      "sha256": "2bb6b45884b7eda8c54d541280874042ac6fe0e2c70c6000bb5885a224b2f8ad"
+    },
+    "root.json": {
+      "bytes": 1568,
+      "sha256": "2bb6b45884b7eda8c54d541280874042ac6fe0e2c70c6000bb5885a224b2f8ad"
+    },
+    "snapshot.json": {
+      "bytes": 470,
+      "sha256": "fa1b06f45d34ce6786bf148e0108c5a37758e9a48ed80896baf66dcb5da7e0fb"
+    },
+    "targets.json": {
+      "bytes": 3041,
+      "sha256": "07009ac9776bae4aa3d22e79f9ce7740e72da9134e72e4755c720dd8451bef35"
+    },
+    "timestamp.json": {
+      "bytes": 471,
+      "sha256": "53caacc14dd8779da624819a7116d0a6b69a91d030d48ecbbc8caa3b10a49b3d"
+    }
+  }
+}
