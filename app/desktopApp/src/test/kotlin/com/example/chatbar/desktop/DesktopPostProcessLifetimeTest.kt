@@ -50,7 +50,7 @@ class DesktopPostProcessLifetimeTest {
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
     }
     private suspend fun ImageComposeScene.frames() { repeat(5) { render(System.nanoTime()).close(); delay(18) } }
-    private fun ImageComposeScene.action(label: String) = nodes().firstOrNull {
+    private fun ImageComposeScene.action(label: String) = nodes().lastOrNull {
         it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick)
     }
 
@@ -66,7 +66,7 @@ class DesktopPostProcessLifetimeTest {
             try {
                 withTimeout(5_000) { while (scene.action(NovelAiPostProcessTab.UPSCALE.label)?.config?.contains(SemanticsProperties.Disabled) != false) scene.frames() }
                 assertTrue(scene.action(NovelAiPostProcessTab.UPSCALE.label)!!.config[SemanticsActions.OnClick].action!!.invoke())
-                withTimeout(5_000) { entered.await() }
+                withTimeout(5_000) { while (!entered.isCompleted) scene.frames() }; entered.await()
             } finally { scene.close(); release.complete(Unit) }
             withTimeout(10_000) { while (f.app.taskRuntime.tasks.value.any { it.status == DesktopTaskStatus.RUNNING }) delay(20) }
             assertEquals(DesktopTaskStatus.COMPLETED, f.app.taskRuntime.tasks.value.first().status)
