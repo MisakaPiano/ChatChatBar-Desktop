@@ -949,6 +949,15 @@
         "docs/desktop/330_PRESET_FORMAT_DEPENDENCY_REUSE.md",
         "OWNER_PRESET_FORMAT_DEPENDENCY_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "TRANSIENT_EXPORT_ONLY_CHARACTER_COVER",
+      "disposition": "EQUIVALENT",
+      "scope": "Desktop native cover dialog retains a transient replacement byte copy, validates selected static input through its bounded decoder, and changes rendered PNG pixels only; original card and attached package resources stay unchanged. Four exact original162 blobs and exact controller cover functions; one actual controller/renderer/export/decode original PASS reused, no new run or Android downsample equality claim.",
+      "reviewSource": "14ea422e4e0022f89003e202524cfdf83261e985",
+      "evidence": [
+        "OWNER_EXPORT_ONLY_COVER_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -5212,8 +5221,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop native cover dialog retains a transient replacement byte copy, validates selected static input through its bounded decoder, and changes rendered PNG pixels only; original card and attached package resources stay unchanged. Four exact original162 blobs and exact controller cover functions; one actual controller/renderer/export/decode original PASS reused, no new run or Android downsample equality claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterCardPngRenderer.kt",
@@ -5222,8 +5231,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "TRANSIENT_EXPORT_ONLY_CHARACTER_COVER"
+      ],
+      "evidence": [
+        "OWNER_EXPORT_ONLY_COVER_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/CharacterCardTransferService.kt",
