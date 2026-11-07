@@ -45,14 +45,15 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=false --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.desktop.DesktopPostProcessComparisonWindowTest.actual old DDIM PNG remains readable but High Enhance is disabled while Medium and independent Upscale are available' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioVarietyPlusTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: valid-png-import-r79-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
