@@ -50,10 +50,14 @@ class DesktopBackupOperationJournalTest {
             f.journal.finish(second, DesktopBackupOperationJournal.Phase.COMPLETE)
             f.journal.abandonPreview(second)
             assertNull(DesktopBackupOperationJournal(f.root, DesktopBackupOperationJournal.Lane.BACKUP).previousNotice())
+            assertNotNull(DesktopBackupOperationJournal(f.root, DesktopBackupOperationJournal.Lane.BACKUP).previousResult())
             val pending = f.journal.begin(DesktopBackupOperationJournal.Kind.CHECK)
             f.journal.finish(pending, DesktopBackupOperationJournal.Phase.PREVIEW)
             assertNotNull(f.journal.previousNotice())
-            f.journal.abandonPreview(pending); assertNull(f.journal.previousNotice())
+            f.journal.abandonPreview(pending); assertNull(f.journal.previousNotice()); assertNotNull(f.journal.previousResult())
+            val failed = f.journal.begin(DesktopBackupOperationJournal.Kind.EXPORT)
+            f.journal.finish(failed, DesktopBackupOperationJournal.Phase.FAILED)
+            assertNotNull(DesktopBackupOperationJournal(f.root, DesktopBackupOperationJournal.Lane.BACKUP).previousNotice())
         }
     }
 

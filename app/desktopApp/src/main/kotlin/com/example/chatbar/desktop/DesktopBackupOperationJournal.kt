@@ -22,9 +22,24 @@ internal class DesktopBackupOperationJournal(root: Path, private val lane: Lane)
         when (read()?.phase) {
             Phase.RUNNING, Phase.WAITING, Phase.PREVIEW, Phase.RESTART, Phase.UNCONFIRMED ->
                 "上次备份或导入的最终结果尚未确认，可能曾被中断。请核对保存的文件、当前资料和恢复提示；不会自动重试或清理恢复记录。"
+            Phase.FAILED -> "上次备份或导入报告未完成，请核对文件、当前资料和已有提示。"
             else -> null
         }
     } catch (_: Exception) { STATUS_UNAVAILABLE }
+
+    fun previousResult(): String? = try {
+        read()?.let { record ->
+            val action = when (record.kind) {
+                Kind.EXPORT -> "备份导出"; Kind.CHECK -> "备份检查"; Kind.RESTORE -> "恢复准备"
+                Kind.MERGE_CHECK -> "合并检查"; Kind.MERGE_COMMIT -> "合并准备"
+            }
+            when (record.phase) {
+                Phase.COMPLETE -> "上次${action}已记录完成。"
+                Phase.CANCELLED -> "上次${action}已取消。"
+                else -> null
+            }
+        }
+    } catch (_: Exception) { null } // The paired previousNotice exposes unreadable status.
 
     @Synchronized fun begin(kind: Kind): Ticket {
         read() // Never overwrite an unknown/corrupt pre-existing record silently.

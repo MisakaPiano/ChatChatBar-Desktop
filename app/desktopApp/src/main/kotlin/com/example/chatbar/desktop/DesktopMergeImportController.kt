@@ -22,7 +22,7 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
     val passwordRequest: DesktopBackupPasswordRequest? = null,
     val mode: DesktopBackupRestoreMode = DesktopBackupRestoreMode.MERGE_CHOICES,
     val modePlanning: Boolean = false, val modeSummary: DesktopMergeModeSummary? = null, val modeError: String? = null,
-    val operationNotice: String? = null)
+    val operationNotice: String? = null, val previousOperationResult: String? = null)
 
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
@@ -31,7 +31,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private val applicationHomeResolver: () -> DesktopApplicationHomeResult = DesktopApplicationHome::resolve,
     private val operationJournal: DesktopBackupOperationJournal? = null) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val mutable = MutableStateFlow(DesktopMergeImportState(operationNotice = operationJournal?.previousNotice()))
+    private val mutable = MutableStateFlow(DesktopMergeImportState(operationNotice = operationJournal?.previousNotice(),
+        previousOperationResult = operationJournal?.previousResult()))
     private var journalTicket: DesktopBackupOperationJournal.Ticket? = null
     val state = mutable.asStateFlow()
     private val lock = Any()
@@ -71,7 +72,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         }
     }
     private suspend fun inspectSelectedFile(path: Path, password: CharArray?): String {
-        preview = null; mutable.update { DesktopMergeImportState(busy = true, operationNotice = it.operationNotice) }
+        preview = null; mutable.update { DesktopMergeImportState(busy = true, operationNotice = it.operationNotice,
+            previousOperationResult = it.previousOperationResult) }
         val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
         mutable.update { it.copy(ready = true, code = result.code, files = result.fileCount, versionName = result.versionName, modelDetails = result.modelDetails, catalogDetails = result.catalogDetails,
@@ -162,7 +164,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     fun discard() { discardExternal() }
     fun discardExternal() = actionJob(null) {
         service.discard(); preview = null; passwordFile = null
-        mutable.update { DesktopMergeImportState(busy = true) }
+        mutable.update { DesktopMergeImportState(busy = true, operationNotice = it.operationNotice,
+            previousOperationResult = it.previousOperationResult) }
         "已取消合并，当前电脑数据未改变"
     }
     fun leavePasswordFlow() = synchronized(lock) {
@@ -217,7 +220,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 if (task != null) recordStatus {
                     operationJournal?.begin(if (task == DesktopMergeTask.COMMIT) DesktopBackupOperationJournal.Kind.MERGE_COMMIT
                         else DesktopBackupOperationJournal.Kind.MERGE_CHECK)?.let { statusTicket = it; journalTicket = it }
-                    mutable.update { it.copy(operationNotice = null) }
+                    mutable.update { it.copy(operationNotice = null, previousOperationResult = null) }
                 }
                 val message = work { outcome = it }
                 mutable.update { it.copy(message = message) }

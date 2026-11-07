@@ -17,14 +17,15 @@ internal data class DesktopFullBackupState(val busy: Boolean = false, val messag
     val error: String? = null, val summary: AppBackupSummary? = null,
     val desktopOnly: Boolean = false, val restartRequired: Boolean = false, val catalog: BackupExportCatalog? = null,
     val exportResult: DesktopBackupExportResult? = null, val passwordRequest: DesktopBackupPasswordRequest? = null,
-    val operationNotice: String? = null)
+    val operationNotice: String? = null, val previousOperationResult: String? = null)
 
 /** The application owns the operation; leaving the panel cannot abandon a scheduled restore. */
 internal class DesktopFullBackupController(private val service: DesktopFullBackupService,
     private val picker: DesktopFilePicker, dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val operationJournal: DesktopBackupOperationJournal? = null) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val mutable = MutableStateFlow(DesktopFullBackupState(operationNotice = operationJournal?.previousNotice()))
+    private val mutable = MutableStateFlow(DesktopFullBackupState(operationNotice = operationJournal?.previousNotice(),
+        previousOperationResult = operationJournal?.previousResult()))
     private var journalTicket: DesktopBackupOperationJournal.Ticket? = null
     val state = mutable.asStateFlow()
     private val lock = Any()
@@ -148,7 +149,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                             DesktopBackupTask.INSPECT -> DesktopBackupOperationJournal.Kind.CHECK
                             DesktopBackupTask.RESTORE_PREPARATION -> DesktopBackupOperationJournal.Kind.RESTORE
                         })?.let { statusTicket = it; journalTicket = it }
-                        mutable.update { it.copy(operationNotice = null) }
+                        mutable.update { it.copy(operationNotice = null, previousOperationResult = null) }
                     }
                     val message = work { message -> outcome = DesktopWorkPhase.CANCELLED; message }
                     currentCoroutineContext().ensureActive()
