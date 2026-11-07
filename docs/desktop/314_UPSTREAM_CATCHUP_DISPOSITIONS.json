@@ -1425,6 +1425,15 @@
       "evidence": [
         "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json"
       ]
+    },
+    {
+      "id": "HISTORY_BATCH_SAVE_AND_METADATA_GUIDE_FULL_1A_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete1a History Screen/VM/Tutorial deltas: existing omitted preview/detail4 evidence retained; new actual original-byte batch Engine3 and inverse ordinary UI1 complete R100 PASS, exact shared naming, explicit overwrite/skip remaining choices, cancellation/failure/foreign preservation, bilingual metadata guide. Not media-cleanup warning acceptance or a new broad R14 run; no native chooser/human/hard-kill claim.",
+      "reviewSource": "cc902fc4121b41f25670ab59de6fd076d00d69f4",
+      "evidence": [
+        "OWNER_HISTORY_MEDIA_R100_VALID_SIX_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -10915,8 +10924,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a History Screen/VM/Tutorial deltas: existing omitted preview/detail4 evidence retained; new actual original-byte batch Engine3 and inverse ordinary UI1 complete R100 PASS, exact shared naming, explicit overwrite/skip remaining choices, cancellation/failure/foreign preservation, bilingual metadata guide. Not media-cleanup warning acceptance or a new broad R14 run; no native chooser/human/hard-kill claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryScreen.kt",
@@ -10925,8 +10934,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_BATCH_SAVE_AND_METADATA_GUIDE_FULL_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_HISTORY_MEDIA_R100_VALID_SIX_REVIEW.json",
+        "docs/desktop/357_HISTORY_BATCH_SAVE_AND_METADATA_GUIDE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryThumbnail.kt",
@@ -10966,8 +10980,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a History Screen/VM/Tutorial deltas: existing omitted preview/detail4 evidence retained; new actual original-byte batch Engine3 and inverse ordinary UI1 complete R100 PASS, exact shared naming, explicit overwrite/skip remaining choices, cancellation/failure/foreign preservation, bilingual metadata guide. Not media-cleanup warning acceptance or a new broad R14 run; no native chooser/human/hard-kill claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryViewModel.kt",
@@ -10976,8 +10990,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_BATCH_SAVE_AND_METADATA_GUIDE_FULL_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_HISTORY_MEDIA_R100_VALID_SIX_REVIEW.json",
+        "docs/desktop/357_HISTORY_BATCH_SAVE_AND_METADATA_GUIDE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/manage/AppBackupHost.kt",
@@ -11070,8 +11089,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a History Screen/VM/Tutorial deltas: existing omitted preview/detail4 evidence retained; new actual original-byte batch Engine3 and inverse ordinary UI1 complete R100 PASS, exact shared naming, explicit overwrite/skip remaining choices, cancellation/failure/foreign preservation, bilingual metadata guide. Not media-cleanup warning acceptance or a new broad R14 run; no native chooser/human/hard-kill claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -11080,8 +11099,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_BATCH_SAVE_AND_METADATA_GUIDE_FULL_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_HISTORY_MEDIA_R100_VALID_SIX_REVIEW.json",
+        "docs/desktop/357_HISTORY_BATCH_SAVE_AND_METADATA_GUIDE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
