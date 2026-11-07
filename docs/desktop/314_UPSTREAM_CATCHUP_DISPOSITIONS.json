@@ -1018,6 +1018,26 @@
         "docs/desktop/333_STUDIO_SAMPLING_ONLY_RESET.md",
         "OWNER_STUDIO_SAMPLING_RESET_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "POSTPROCESS_DURABLE_VALIDATED_PNG_AND_OWNED_LIFETIME",
+      "disposition": "EQUIVALENT",
+      "scope": "Only148b PostProcessFiles adapter: existing Desktop byte/size/static/orientation/alpha validations plus immutable durable PNG records, exact task/source Stop, source/draft preservation and explicit use. Desktop retains32MiB/raster bounds rather than claiming Android100MiB exact limits. Current matched Lifetime5/Store2/retention1 come from R56four+retention1, R58bad-historyUI+actualall/light/offbackup, and R55Store1; separate originals, not one new8 run. Original BackupSelection5 is reused. No native/full-process restart, provider, user or whole148b acceptance.",
+      "reviewSource": "dd9ac344f1c066aa1303f452cf767a1143b89017",
+      "evidence": [
+        "docs/desktop/334_POST_PROCESS_RESULTS_AND_EXACT_STOP.md",
+        "OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json"
+      ]
+    },
+    {
+      "id": "MOSAIC_EDITED_PRIVACY_COPY_OUTPUT",
+      "disposition": "EQUIVALENT",
+      "scope": "Onlyb6 edited-copy privacy output delta. Actual Desktop Complete, explicit privacy action and export-copy callbacks use strip(current) -> privacyCopy with visible low-bit warning and source/failure preservation. Exact unchanged owner/test blobs reuse fa39 original selected integration PASS for ordinary/invalid Comment, alpha fallback, orientation1/6, cleared metadata/hidden pixels and source bytes. No new run, actual mouse click or whole mosaic/brush proof.",
+      "reviewSource": "dd9ac344f1c066aa1303f452cf767a1143b89017",
+      "evidence": [
+        "OWNER_MOSAIC_PRIVACY_B6_REUSE.json",
+        "COORDINATOR_MOSAIC_PRIVACY_B6_SCOPED_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -1723,11 +1743,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only148b PostProcessFiles adapter: existing Desktop byte/size/static/orientation/alpha validations plus immutable durable PNG records, exact task/source Stop, source/draft preservation and explicit use. Desktop retains32MiB/raster bounds rather than claiming Android100MiB exact limits. Current matched Lifetime5/Store2/retention1 come from R56four+retention1, R58bad-historyUI+actualall/light/offbackup, and R55Store1; separate originals, not one new8 run. Original BackupSelection5 is reused. No native/full-process restart, provider, user or whole148b acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_DURABLE_VALIDATED_PNG_AND_OWNED_LIFETIME"
+      ],
+      "evidence": [
+        "docs/desktop/334_POST_PROCESS_RESULTS_AND_EXACT_STOP.md",
+        "OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioAssetStorage.kt",
@@ -2143,8 +2168,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Onlyb6 edited-copy privacy output delta. Actual Desktop Complete, explicit privacy action and export-copy callbacks use strip(current) -> privacyCopy with visible low-bit warning and source/failure preservation. Exact unchanged owner/test blobs reuse fa39 original selected integration PASS for ordinary/invalid Comment, alpha fallback, orientation1/6, cleared metadata/hidden pixels and source bytes. No new run, actual mouse click or whole mosaic/brush proof.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/components/ImageMosaicEditor.kt",
@@ -2153,8 +2178,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MOSAIC_EDITED_PRIVACY_COPY_OUTPUT"
+      ],
+      "evidence": [
+        "OWNER_MOSAIC_PRIVACY_B6_REUSE.json",
+        "COORDINATOR_MOSAIC_PRIVACY_B6_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "b6d68320b02a564afe4582bdc5f25978a57f4ea9:app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
