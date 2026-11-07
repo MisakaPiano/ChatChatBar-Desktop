@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.*
+import com.example.chatbar.domain.prompt.AiTaskRefusalException
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.*
@@ -9,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.*
 
 class DesktopImageDescriptionParametersTest {
-    private val encoded = "data:image/png;base64,AAAA"
+    private val encoded = "AAAA" // describe/withImage accept raw base64, not a complete data URI.
     private val controls = setOf("enable_thinking", "thinking_budget", "max_thinking_tokens", "reasoning_effort",
         "max_tokens", "max_completion_tokens")
     private fun model(server: MockWebServer) = ModelConfig("vision", "Synthetic vision", server.url("/v1").toString(),
@@ -43,7 +44,7 @@ class DesktopImageDescriptionParametersTest {
                 val imageInput = messages[4].jsonObject.getValue("content").jsonArray
                     .filter { it.jsonObject["type"]?.jsonPrimitive?.content == "image_url" }
                 assertEquals(1, imageInput.size)
-                assertEquals(encoded, imageInput.single().jsonObject.getValue("image_url").jsonObject.getValue("url").jsonPrimitive.content)
+                assertEquals("data:image/jpeg;base64,$encoded", imageInput.single().jsonObject.getValue("image_url").jsonObject.getValue("url").jsonPrimitive.content)
                 assertEquals(1, server.requestCount)
             } finally { transport.closeAndDrain() }
         }
