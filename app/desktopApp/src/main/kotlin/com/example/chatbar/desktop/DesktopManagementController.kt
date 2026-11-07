@@ -76,6 +76,7 @@ internal class DesktopManagementController(
     private val afterCharacterDuplicateCommit: (String) -> Unit = {},
     private val presetSource: DesktopPresetSource? = null,
     private val presetSuiteRestore: DesktopPresetSuiteRestoreService? = null,
+    private val draftDataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
 ) {
     private val mutableState = MutableStateFlow(DesktopManagementState())
     val state = mutableState.asStateFlow()
@@ -166,7 +167,7 @@ internal class DesktopManagementController(
                     } else worlds.delete(pending.id)
                 }
             }
-            is DesktopManagementDeletion.Draft -> {
+            is DesktopManagementDeletion.Draft -> draftDataGate.withNormalOperation {
                 val expected = pending.draft
                 val current = draftRepository.getForTarget(expected.entityType, expected.targetId)
                 check(current == expected) { "Draft changed; refresh and confirm again" }

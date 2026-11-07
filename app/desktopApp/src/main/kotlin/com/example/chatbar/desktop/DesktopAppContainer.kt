@@ -773,14 +773,16 @@ class DesktopAppContainer internal constructor(
     internal fun createManagementController(
         transfer: DesktopTypedTransferController,
         suiteRestore: DesktopPresetSuiteRestoreService = presetSuiteRestore,
+        discardDraftAssets: (String) -> Unit = DesktopCharacterDraftResources(appDataRoot, characterResourceStore)::discardSession,
     ) = DesktopManagementController(
         characterRepository, formatCardRepository, worldBookRepository, chatRepository, editorDraftRepository,
         characterTransfers, formatTransfers, worldBookTransfers, transfer,
         characterEditorController, formatCardEditorController, worldBookEditorController,
-        DesktopCharacterDraftResources(appDataRoot, characterResourceStore)::discardSession,
+        discardDraftAssets,
         afterReconcile = { modelSettingsController.refreshFormatChoices() },
         presetSource = presetSource,
         presetSuiteRestore = suiteRestore,
+        draftDataGate = dataOperationCoordinator,
     )
 
     internal fun createModelTemplateTransferController(
