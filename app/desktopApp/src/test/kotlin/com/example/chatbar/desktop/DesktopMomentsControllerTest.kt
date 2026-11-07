@@ -11,6 +11,65 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopMomentsControllerTest {
+    @Test fun `selected author is revalidated on save while original snapshot and media remain retained`() = runBlocking<Unit> {
+        val parent = Files.createTempDirectory("preview-synthetic-moment-author-save-")
+        val root = Files.createDirectory(parent.resolve("data"))
+        val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root,
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() })
+        var controller: DesktopMomentsController? = null
+        try {
+            val person = CharacterInfo.create("Before").copy(id = "person", appearanceImage = "images/before.png")
+            val card = CharacterCard("card", "Before card", characters = listOf(person), createdAt = 1, updatedAt = 1)
+            container.characterRepository.save(card)
+            val storage = container.jsonFileStorage
+            val session = ChatSession("session", card.id, "Synthetic", createdAt = 1, updatedAt = 1)
+            storage.saveEntity("chat_sessions", session.id, session, ChatSession.serializer())
+            val post = MomentPost("post", card.id, session.id, senderCharacterId = "historical", senderName = "Historical sender",
+                senderAvatar = "images/historical.png", text = "Original", imagePath = "images/retained.png",
+                imagePrompt = "Retained image prompt", userLiked = true, scheduledAt = 1, generatedAt = 1)
+            storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
+            val task = MomentTask.create(card.id, session.id, 1).copy(status = MomentTaskStatus.COMPLETED, postId = post.id)
+            storage.saveEntity("moment_tasks", task.id, task, MomentTask.serializer())
+            val owner = DesktopMomentsController(DesktopMomentStore(storage, container.dataOperationCoordinator),
+                container.settingsRepository, container.characterRepository, container.chatRepository,
+                container.dataOperationCoordinator, container.taskRuntime,
+                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> error("No generation") })
+            controller = owner
+            withTimeout(5000) { owner.state.first { it.posts.size == 1 } }
+            val selected = com.example.chatbar.domain.moment.MomentPostEditing.senderOptions(card).single { it.key == "character:person" }.sender
+            val postFile = root.resolve("entities/moment_posts/post.json")
+            val taskFile = root.resolve("entities/moment_tasks/${task.id}.json")
+            val originalBytes = Files.readAllBytes(postFile); val taskBytes = Files.readAllBytes(taskFile)
+            // The editor's captured sender is stale after an independent card write.
+            storage.saveEntity("character_cards", card.id, card.copy(characters = emptyList()), CharacterCard.serializer())
+            assertFails { owner.edit(post.id, "Must not commit", selected) }
+            assertContentEquals(originalBytes, Files.readAllBytes(postFile))
+            assertContentEquals(taskBytes, Files.readAllBytes(taskFile))
+            val currentPerson = person.copy(name = "Current", appearanceImage = "images/current.png")
+            storage.saveEntity("character_cards", card.id, card.copy(characters = listOf(currentPerson)), CharacterCard.serializer())
+            owner.edit(post.id, " New text ", selected)
+            val changed = owner.state.value.posts.single()
+            assertEquals("Current", changed.senderName); assertEquals("images/current.png", changed.senderAvatar)
+            assertEquals(post.copy(text = "New text", senderCharacterId = person.id, senderName = currentPerson.name,
+                senderAvatar = currentPerson.appearanceImage, updatedAt = changed.updatedAt), changed)
+            val selectedCard = com.example.chatbar.domain.moment.MomentPostEditing.senderOptions(card).single { it.key == "card" }.sender
+            storage.saveEntity("character_cards", card.id, card.copy(name = "Current card", avatar = "images/card-current.png"), CharacterCard.serializer())
+            owner.edit(post.id, "Card text", selectedCard)
+            assertEquals("Current card", owner.state.value.posts.single().senderName)
+            assertEquals("images/card-current.png", owner.state.value.posts.single().senderAvatar)
+            storage.deleteEntity<CharacterCard>("character_cards", card.id)
+            val beforeMissingCard = Files.readAllBytes(postFile)
+            assertFails { owner.edit(post.id, "Must not commit", selectedCard) }
+            assertContentEquals(beforeMissingCard, Files.readAllBytes(postFile))
+            // The existing null argument is the explicit original-snapshot choice, not a new card binding.
+            owner.edit(post.id, "Keep historical sender", null)
+            val retained = owner.state.value.posts.single()
+            assertEquals("Current card", retained.senderName); assertEquals("images/card-current.png", retained.senderAvatar)
+            assertEquals(post.imagePath, retained.imagePath); assertEquals(post.imagePrompt, retained.imagePrompt)
+            assertTrue(retained.userLiked); assertContentEquals(taskBytes, Files.readAllBytes(taskFile))
+        } finally { controller?.closeAndDrain(); container.close(); check(parent.toFile().deleteRecursively()) }
+    }
+
     @Test fun `moment navigation resolves retained IDs only and refuses deleted or relinked objects without generation`() = runBlocking {
         val parent = Files.createTempDirectory("moment-navigation-")
         val root = Files.createDirectory(parent.resolve("data"))
