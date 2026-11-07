@@ -15,14 +15,24 @@ import androidx.compose.ui.window.*
 @Composable
 internal fun DesktopImageToolWindow(title: String, onClose: () -> Unit, width: Dp = 920.dp, height: Dp = 760.dp,
     onActivate: () -> Unit = {}, onKey: (KeyEvent) -> Boolean = { false }, closeOnEscape: Boolean = true,
+    activationRevision: Int? = null,
     content: @Composable ColumnScope.() -> Unit) {
     val activate by rememberUpdatedState(onActivate)
     val initialSize = rememberDesktopImageWindowSize(width, height)
+    val state = rememberWindowState(size = initialSize)
     Window(onCloseRequest = onClose, title = title, resizable = true, icon = desktopImageWindowIcon(),
         undecorated = DesktopWindowChrome.isWindows,
-        state = rememberWindowState(size = initialSize), onPreviewKeyEvent = {
+        state = state, onPreviewKeyEvent = {
             if (closeOnEscape && it.type == KeyEventType.KeyDown && it.key == Key.Escape) { onClose(); true } else onKey(it)
         }) {
+        LaunchedEffect(activationRevision) {
+            if (activationRevision != null) {
+                state.isMinimized = false
+                withFrameNanos { } // Apply native restoration before requesting foreground focus.
+                window.toFront()
+                window.requestFocus()
+            }
+        }
         DisposableEffect(window) {
             val listener = object : java.awt.event.WindowAdapter() { override fun windowGainedFocus(e: java.awt.event.WindowEvent) { activate() } }
             window.addWindowFocusListener(listener)

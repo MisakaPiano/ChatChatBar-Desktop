@@ -11,7 +11,8 @@ import kotlinx.coroutines.*
 
 /** A preview/confirm file workflow; none of these actions generate images or contact a provider. */
 @Composable
-internal fun DesktopStudioPresetExchange(controller: DesktopNovelAiStudioController, businessBusy: Boolean, onClose: () -> Unit) {
+internal fun DesktopStudioPresetExchange(controller: DesktopNovelAiStudioController, businessBusy: Boolean,
+    activationRevision: Int? = null, onClose: () -> Unit) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     var operation by remember { mutableStateOf<Job?>(null) }
@@ -39,7 +40,7 @@ internal fun DesktopStudioPresetExchange(controller: DesktopNovelAiStudioControl
             } catch (_: Exception) { closing = false; notice = "临时预设清理未完成，请重试关闭；原文件保留。" }
         }
     }
-    DesktopImageToolWindow("生成预设", ::close, width = 680.dp) {
+    DesktopImageToolWindow("生成预设", ::close, width = 680.dp, activationRevision = activationRevision) {
         DesktopStudioPresetExchangeContent(state.presetPreview, businessBusy, working, closing, notice, state.status,
             onExport = { run {
                 controller.picker.pickSaveFile(PRESET_TYPE, "ChatBar-generation.ccbpreset")?.let { path ->

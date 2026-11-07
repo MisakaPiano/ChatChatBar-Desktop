@@ -83,6 +83,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     var guidanceEditor by remember { mutableStateOf<Triple<ByteArray, ByteArray?, NovelAiFocusedInpaintRegion?>?>(null) }
     var auxiliary by remember { mutableStateOf<String?>(null) }
     var showingPreset by remember { mutableStateOf(false) }
+    var presetActivation by remember { mutableIntStateOf(0) }
     var showingFullPrompt by remember { mutableStateOf(false) }
     DesktopDesignToolLifecycle(controller, auxiliary in setOf("AI 设计", "设计设置", "设计历史"))
     var currentImage by remember { mutableStateOf<java.nio.file.Path?>(null) }
@@ -161,7 +162,9 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                             val text = java.awt.Toolkit.getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String ?: return@launch
                             controller.replace { NovelAiStudioPromptClipboard.apply(text, it) }
                         } }
-                        if (controller.generationPresetAvailable) StudioAction("生成预设…", enabled = !busy) { showingPreset = true }
+                        if (controller.generationPresetAvailable) StudioAction("生成预设…", enabled = !busy) {
+                            presetActivation++; showingPreset = true
+                        }
                         StudioAction("完整 Prompt…", enabled = !busy) { showingFullPrompt = true }
                         StudioAction("清空", style = StudioActionStyle.TERTIARY) { scope.launch { controller.clearPrompts() } }
                         StudioToggle("中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
@@ -329,7 +332,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 }
             }
         })
-    if (showingPreset) DesktopStudioPresetExchange(controller, busy) { showingPreset = false }
+    if (showingPreset) DesktopStudioPresetExchange(controller, busy, presetActivation) { showingPreset = false }
     if (showingFullPrompt) DesktopStudioFullPromptExchange(controller, busy) { showingFullPrompt = false }
     auxiliary?.let { surface ->
         DesktopImageToolWindow(surface, { auxiliary = null },
