@@ -6,6 +6,7 @@ import com.example.chatbar.data.local.entity.ChatScrollPosition
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.data.repository.SettingsRepository
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
@@ -13,6 +14,37 @@ import kotlinx.serialization.json.Json
 import kotlin.test.*
 
 class DesktopChatRepositoryAdmissionTest {
+    @Test fun `admitted settings refresh drains before a later settings reader during maintenance`(): Unit = runBlocking {
+        fixture { f ->
+            val settings = SettingsRepository(f.storage)
+            settings.initialize()
+            val releaseOld = CompletableDeferred<Unit>()
+            val refreshed = CompletableDeferred<Unit>()
+            val exclusiveEntered = CompletableDeferred<Unit>()
+            val releaseExclusive = CompletableDeferred<Unit>()
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withNormalOperation {
+                    releaseOld.await()
+                    // The same admitted refresh used after an API-account mutation.
+                    settings.initialize(forceReload = true)
+                    refreshed.complete(Unit)
+                }
+            })
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withExclusiveMaintenance { exclusiveEntered.complete(Unit); releaseExclusive.await() }
+            })
+            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
+            val reader = f.keep(async(start = CoroutineStart.UNDISPATCHED) { settings.getAppSettings() })
+            assertFalse(reader.isCompleted)
+            releaseOld.complete(Unit)
+            withTimeout(5000) { refreshed.await(); exclusiveEntered.await() }
+            assertFalse(reader.isCompleted)
+            releaseExclusive.complete(Unit)
+            assertEquals(settings.currentAppSettings, withTimeout(5000) { reader.await() })
+            withTimeout(5000) { f.jobs.joinAll() }
+        }
+    }
+
     private class Fixture(val root: Path, val gate: DesktopDataOperationCoordinator,
         val storage: JsonFileStorage, val repository: ChatRepository) {
         val jobs = mutableListOf<Job>()

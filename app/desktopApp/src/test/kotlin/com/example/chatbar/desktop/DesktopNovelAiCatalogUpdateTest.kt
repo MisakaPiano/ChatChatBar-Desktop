@@ -2,6 +2,12 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.domain.update.*
+import com.example.chatbar.domain.ApplicationProxyMode
+import com.example.chatbar.domain.ApplicationProxySettings
+import com.example.chatbar.domain.ProxyAwareClient
+import java.io.IOException
+import java.net.Proxy
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -13,6 +19,58 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import kotlin.test.*
 
 class DesktopNovelAiCatalogUpdateTest {
+    @Test fun `ordinary checker and installer defaults honor live application routing and refuse unavailable settings`(): Unit = runBlocking {
+        val root = Files.createTempDirectory("catalog-default-routing-")
+        val oldProxy = ProxyAwareClient.applicationProxy
+        val oldAvailable = ProxyAwareClient.applicationRoutingAvailable
+        val oldSocketFactory = ProxyAwareClient.platformSocketFactory
+        try {
+            val (source, metadata) = database(root, "routing")
+            Files.move(source, root.resolve("${metadata.sourceSha}.sqlite"))
+            val pointer = root.resolve("active-catalog.json")
+            val original = Json.encodeToString(DanbooruCatalogMetadata.serializer(), metadata)
+            Files.writeString(pointer, original)
+            val catalog = DesktopNovelAiTagCatalog(DesktopNovelAiCatalogAssets(root) { error("no bundled fallback") })
+            val sockets = object : javax.net.SocketFactory() {
+                override fun createSocket(): java.net.Socket = error("network forbidden")
+                override fun createSocket(h: String, p: Int): java.net.Socket = error("network forbidden")
+                override fun createSocket(h: String, p: Int, l: java.net.InetAddress, lp: Int): java.net.Socket = error("network forbidden")
+                override fun createSocket(h: java.net.InetAddress, p: Int): java.net.Socket = error("network forbidden")
+                override fun createSocket(h: java.net.InetAddress, p: Int, l: java.net.InetAddress, lp: Int): java.net.Socket = error("network forbidden")
+            }
+            ProxyAwareClient.platformSocketFactory = sockets
+            val checker = SharedDanbooruCatalogUpdateChecker(catalog, "synthetic-routing")
+            val installer = DesktopNovelAiCatalogUpdate(catalog)
+            // Inspect the actual no-override instances used by the Studio controller.
+            val clients = listOf(checker, installer).map { owner ->
+                owner.javaClass.getDeclaredField("client").apply { isAccessible = true }.get(owner) as OkHttpClient
+            }
+            for (client in clients) assertSame(sockets, client.socketFactory)
+            val destination = URI("https://raw.githubusercontent.com/synthetic/tag.sqlite")
+            for ((mode, type) in listOf(ApplicationProxyMode.HTTP to Proxy.Type.HTTP, ApplicationProxyMode.SOCKS to Proxy.Type.SOCKS)) {
+                ProxyAwareClient.applicationProxy = ApplicationProxySettings(mode = mode, host = "proxy.invalid", port = 8123)
+                for (client in clients) {
+                    val route = client.proxySelector.select(destination).single()
+                    assertEquals(type, route.type())
+                    assertEquals("proxy.invalid", (route.address() as java.net.InetSocketAddress).hostString)
+                    assertEquals(8123, (route.address() as java.net.InetSocketAddress).port)
+                }
+            }
+            ProxyAwareClient.applicationProxy = ApplicationProxySettings(mode = ApplicationProxyMode.DIRECT)
+            for (client in clients) assertEquals(listOf(Proxy.NO_PROXY), client.proxySelector.select(destination))
+            ProxyAwareClient.applicationRoutingAvailable = false
+            assertFailsWith<IOException> { checker.checkLatestCatalog() }
+            assertFailsWith<IOException> { installer.install(DanbooruCatalogUpdateInfo(metadata, "f".repeat(40), "", destination.toString(), "", 1)) {} }
+            assertEquals(original, Files.readString(pointer))
+            assertFalse(Files.list(root).use { paths -> paths.anyMatch { it.fileName.toString().endsWith(".part") } })
+        } finally {
+            ProxyAwareClient.applicationProxy = oldProxy
+            ProxyAwareClient.applicationRoutingAvailable = oldAvailable
+            ProxyAwareClient.platformSocketFactory = oldSocketFactory
+            root.toFile().deleteRecursively()
+        }
+    }
+
     private fun database(root: Path, prefix: String): Pair<Path, DanbooruCatalogMetadata> {
         val file = root.resolve("$prefix-fixture.sqlite")
         DriverManager.getConnection("jdbc:sqlite:$file").use { db ->
