@@ -1,62 +1,332 @@
-name: Focused Desktop UI and diagnostic regression
+name: Full batch engineering regression 163
 
 on:
   push:
-    branches: ['codex/desktop-ui-probe-*']
+    branches: ['codex/desktop-ui-probe-full163']
 
 permissions:
   contents: read
 
 concurrency:
-  group: desktop-ui-probe-${{ github.ref }}
-  cancel-in-progress: true
+  group: full-batch163-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  focused:
-    runs-on: windows-latest
-    timeout-minutes: 30
+  build:
+    name: Test and package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
     steps:
-      - name: Enable long-path checkout
-        run: git config --global core.longpaths true
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test pinned upstream inventory without network or source mutation
+        working-directory: ${{ github.workspace }}
+        run: python3 -B -m unittest discover -s tools/desktop/upstream -p 'test_*.py'
+
+      - name: Test independent release display build and storage identities
+        working-directory: ${{ github.workspace }}
+        run: python3 -B -m unittest discover -s tools/desktop/update -p 'test_version_identity.py'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Select a fresh canonical NTFS temporary directory
-        shell: pwsh
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK packages
         run: |
-          $ErrorActionPreference = 'Stop'
-          $probeRoot = Join-Path ($env:SystemDrive + '\') ('p' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
-          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($probeRoot)).DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
-          New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
-          $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
-          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
-      - name: Record exact source and run bounded synthetic regressions
-        shell: pwsh
-        working-directory: app
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Test and package debug APK
         env:
-          CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/paging
-          CCB_SCREENSHOT_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/export
-          CCB_FORMAT_AI_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/style
+          CHATBAR_SUPABASE_URL: ${{ secrets.CHATBAR_SUPABASE_URL || 'https://rrlxofrrgfnhjfyrqvry.supabase.co' }}
+          CHATBAR_SUPABASE_ANON_KEY: ${{ secrets.CHATBAR_SUPABASE_ANON_KEY || 'sb_publishable_J56aQ_JJLnank-dv1olMdg_d87xNQjD' }}
+        run: ./gradlew :sharedCore:test :app:test :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: chatbar-debug-apk
+          path: app/app/build/outputs/apk/debug/*.apk
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+
+      - name: Compare synthetic Kotlin text estimates with fixed tokenizer references
+        working-directory: ${{ github.workspace }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
-          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
-            ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Preserve actual reports and synthetic review images
+          python -m venv "$RUNNER_TEMP/ccb-budget-reference"
+          referencePython="$RUNNER_TEMP/ccb-budget-reference/bin/python"
+          "$referencePython" -m pip install --disable-pip-version-check --only-binary=:all: tiktoken==0.12.0 --report "$RUNNER_TEMP/prompt-calibration-pip.json"
+          "$referencePython" -B tools/desktop/diagnostics/calibrate_prompt_budget.py --input app/sharedCore/build/reports/prompt-budget-calibration/input.json --output app/sharedCore/build/reports/prompt-budget-calibration/comparison.json --pip-report "$RUNNER_TEMP/prompt-calibration-pip.json"
+
+      - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: test-reports
           path: |
-            app/sharedCore/build/test-results/test/
-            app/sharedCore/build/reports/tests/test/
-            app/desktopApp/build/test-results/test/
-            app/desktopApp/build/reports/tests/test/
-            ${{ runner.temp }}/ccb-ui-probe/
-          if-no-files-found: error
+            app/app/build/reports/tests/
+            app/app/build/reports/problems/
+            app/sharedCore/build/reports/tests/
+            app/sharedCore/build/test-results/
+            app/sharedCore/build/reports/prompt-budget-calibration/
+
+  desktop:
+    name: Windows Desktop tests
+    runs-on: windows-latest
+    env:
+      # All native credential cases use task-owned synthetic temporary roots.
+      CCB_PREVIEW_NATIVE_DPAPI: "1"
+    steps:
+      - name: Enable long-path Git checkout on this runner
+        run: git config --global core.longpaths true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare supported NTFS workspace and record native prerequisites
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $jvmSettings = (& java -XshowSettings:properties -version 2>&1 | Out-String)
+          $originalTemp = [regex]::Match($jvmSettings, 'java.io.tmpdir\s*=\s*(.+)').Groups[1].Value.Trim()
+          Add-Type @'
+          using System;
+          using System.Text;
+          using System.Runtime.InteropServices;
+          using Microsoft.Win32.SafeHandles;
+          public static class DesktopCiNativePrerequisites {
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern uint GetLongPathName(string path, StringBuilder result, uint size);
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern SafeFileHandle CreateFile(string path, uint access, uint sharing, IntPtr security, uint creation, uint flags, IntPtr template);
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern uint GetFinalPathNameByHandle(SafeFileHandle handle, StringBuilder result, uint size, uint flags);
+            [DllImport("winmm.dll")] public static extern uint waveOutGetNumDevs();
+            public static string LongPath(string path) { var b=new StringBuilder(32768); return GetLongPathName(path,b,32768)>0 ? b.ToString() : null; }
+            public static string FinalPath(string path) { using(var h=CreateFile(path,0x80,7,IntPtr.Zero,3,0x02000000,IntPtr.Zero)) { if(h.IsInvalid)return null; var b=new StringBuilder(32768); return GetFinalPathNameByHandle(h,b,32768,0)>0 ? b.ToString() : null; } }
+          }
+          '@
+          $ciRoot = Join-Path ($env:SystemDrive + '\') ('c' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          $volume = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($ciRoot))
+          if ($volume.DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $ciRoot -ErrorAction Stop | Out-Null
+          $testTemp = New-Item -ItemType Directory -Path (Join-Path $ciRoot 'temp') -ErrorAction Stop
+          $source = Join-Path $ciRoot 'source'
+          git worktree add --detach $source HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'DESKTOP_NTFS_WORKTREE_FAILED' }
+          $facts = [ordered]@{
+            originalJvmTemp = $originalTemp
+            originalLongPath = [DesktopCiNativePrerequisites]::LongPath($originalTemp)
+            originalFinalPath = [DesktopCiNativePrerequisites]::FinalPath($originalTemp)
+            originalTempAttributes = [string][IO.File]::GetAttributes($originalTemp)
+            workspaceVolumeFormat = ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($env:GITHUB_WORKSPACE))).DriveFormat
+            selectedVolumeFormat = $volume.DriveFormat
+            selectedTemp = $testTemp.FullName
+            selectedFinalPath = [DesktopCiNativePrerequisites]::FinalPath($testTemp.FullName)
+            nativeWaveOutputDevices = [DesktopCiNativePrerequisites]::waveOutGetNumDevs()
+            sourceCommit = (git rev-parse HEAD)
+          }
+          $facts | ConvertTo-Json | Set-Content (Join-Path $env:RUNNER_TEMP 'desktop-native-prerequisites.json') -Encoding utf8
+          $facts | ConvertTo-Json
+          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)", "CCB_CI_SOURCE=$source") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Upload Windows prerequisite facts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-prerequisites
+          path: ${{ runner.temp }}/desktop-native-prerequisites.json
+
+      - name: Test Desktop on Windows
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        env:
+          CCB_FORMAT_AI_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/format-card-ai-images
+          CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-paging-images
+          CCB_SCREENSHOT_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-export-images
+          CCB_EXTERNAL_IMPORT_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/external-import-images
+          CCB_TASK_CENTER_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/task-center-images
+          CCB_CONTEXT_HELP_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/context-help-images
+          CCB_RECOVERY_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/recovery-images
+          CCB_STUDIO_IMAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/studio-image-readiness
+          CCB_MEDIA_USAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/media-usage-images
+        run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
+
+      - name: Test Studio streaming storage on NTFS
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        run: .\gradlew.bat :sharedCore:test --tests com.example.chatbar.data.local.JsonFileStorageStudioStreamingTest --tests com.example.chatbar.domain.image.NovelAiCompactJsonInputTest --no-daemon --stacktrace --console=plain
+
+      - name: Upload separate Windows Studio streaming reports
+        if: always() && env.CCB_CI_SOURCE != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-studio-streaming-reports
+          path: |
+            ${{ env.CCB_CI_SOURCE }}/app/sharedCore/build/reports/tests/test/
+            ${{ env.CCB_CI_SOURCE }}/app/sharedCore/build/test-results/test/
+
+      - name: Test NSIS manager lifecycle with synthetic programs
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: python -m unittest discover -s tools/desktop/nsis -p test_lifecycle.py -v
+
+      - name: Test Desktop trusted updater and native exit handoff
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: |
+          python tools/desktop/update/prepare_runtime.py --destination "$env:RUNNER_TEMP/ccb-desktop-update-runtime" --artifact-cache "$env:RUNNER_TEMP/ccb-desktop-update-artifacts" --download
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP/ccb-desktop-update-runtime/python.exe" -B tools/desktop/update/test_client.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tools/desktop/update -p test_handoff.py -v
+
+      - name: Verify actual proxy sockets with packaged production classes
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        run: .\gradlew.bat :desktopApp:proxyPackagedRoutingTest -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+
+      - name: Upload Desktop test reports
+        if: always() && env.CCB_CI_SOURCE != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-test-reports
+          path: |
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/test-results/
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/problems/
+
+      - name: Reproduce Studio edit backlog on the unchanged prior source
+        if: ${{ !cancelled() && hashFiles('.github/desktop-studio-edit-baseline-request.json') != '' && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $request = Get-Content .github/desktop-studio-edit-baseline-request.json -Raw | ConvertFrom-Json
+          if ($request.baselineSource -cne 'e5bf7509449ac50ce94726b6f5e19c02b659b3b6') { throw 'STUDIO_BASELINE_REFUSED' }
+          $baseline = Join-Path (Split-Path $env:CCB_CI_SOURCE -Parent) 'studio-edit-baseline'
+          if (Test-Path -LiteralPath $baseline) { throw 'NEW_BASELINE_DIRECTORY_REQUIRED' }
+          git fetch --no-tags --depth=1 origin $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_FETCH_FAILED' }
+          git worktree add --detach $baseline $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_WORKTREE_FAILED' }
+          $relative = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStudioEditResponsivenessTest.kt'
+          $source = Join-Path $env:CCB_CI_SOURCE $relative
+          $target = Join-Path $baseline $relative
+          Copy-Item -LiteralPath $source -Destination $target -ErrorAction Stop
+          $hash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+          if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -cne $hash) { throw 'BASELINE_TEST_COPY_MISMATCH' }
+          @{path=$relative;sha256=$hash.ToLowerInvariant()} | ConvertTo-Json | Set-Content (Join-Path $baseline 'OVERLAY_TEST_HASHES.json') -Encoding utf8
+          "CCB_STUDIO_BASELINE_ROOT=$baseline" | Add-Content $env:GITHUB_ENV -Encoding utf8
+          $env:CCB_STUDIO_BASELINE_ROOT = $baseline
+          Push-Location (Join-Path $baseline 'app')
+          try {
+            .\gradlew.bat :desktopApp:test --tests com.example.chatbar.desktop.DesktopStudioEditResponsivenessTest -PdesktopTestHeadless=true --no-daemon --console=plain
+            $env:CCB_STUDIO_BASELINE_EXIT = [string]$LASTEXITCODE
+          } finally { Pop-Location }
+          $verify = @'
+          import json, os, pathlib, xml.etree.ElementTree as ET
+          root=pathlib.Path(os.environ['CCB_STUDIO_BASELINE_ROOT'])
+          files=list(root.glob('app/desktopApp/build/test-results/test/TEST-*DesktopStudioEditResponsivenessTest.xml'))
+          assert len(files)==1, 'BASELINE_XML_REQUIRED'
+          suite=ET.parse(files[0]).getroot()
+          failed=[case for case in suite.findall('testcase') if case.find('failure') is not None]
+          expected='Pure parameter edits were queued behind image cleanup'
+          observed=len(failed)==1 and expected in (failed[0].find('failure').attrib.get('message','')+(failed[0].find('failure').text or ''))
+          result=dict(kind='UNCHANGED_STUDIO_EDIT_BACKLOG_COUNTERFACTUAL',baselineSource='e5bf7509449ac50ce94726b6f5e19c02b659b3b6',tests=int(suite.attrib['tests']),failures=int(suite.attrib['failures']),errors=int(suite.attrib['errors']),exit=int(os.environ['CCB_STUDIO_BASELINE_EXIT']),observed=observed,productionChanged=False,humanAcceptance=False)
+          result['passed']=result['tests']==3 and result['failures']==1 and result['errors']==0 and result['exit']!=0 and observed
+          (root/'BASELINE_REVIEW.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+          assert result['passed'], 'EXPECTED_STUDIO_BACKLOG_NOT_PROVED'
+          print(json.dumps(result))
+          '@
+          $verify | python -B -
+          exit $LASTEXITCODE
+
+      - name: Upload separate Studio edit baseline evidence
+        if: always() && env.CCB_STUDIO_BASELINE_ROOT != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-studio-edit-baseline-reports
+          path: |
+            ${{ env.CCB_STUDIO_BASELINE_ROOT }}/BASELINE_REVIEW.json
+            ${{ env.CCB_STUDIO_BASELINE_ROOT }}/OVERLAY_TEST_HASHES.json
+            ${{ env.CCB_STUDIO_BASELINE_ROOT }}/app/desktopApp/build/test-results/test/TEST-*DesktopStudioEditResponsivenessTest.xml
+
+      - name: Reproduce live-chat display failures on the unchanged public 1228 source
+        if: ${{ !cancelled() && hashFiles('.github/desktop-chat-display-baseline-request.json') != '' && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $request = Get-Content .github/desktop-chat-display-baseline-request.json -Raw | ConvertFrom-Json
+          if ($request.kind -cne 'CCB_LIVE_CHAT_DISPLAY_BASELINE_COUNTERFACTUAL' -or $request.baselineSource -cne 'bd684bc4b8a1cea0517eacfef62d31e19f09a9a9') { throw 'BASELINE_REQUEST_REFUSED' }
+          $baseline = Join-Path (Split-Path $env:CCB_CI_SOURCE -Parent) 'chat-display-baseline'
+          if (Test-Path -LiteralPath $baseline) { throw 'NEW_BASELINE_DIRECTORY_REQUIRED' }
+          git fetch --no-tags --depth=1 origin $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_FETCH_FAILED' }
+          git worktree add --detach $baseline $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_WORKTREE_FAILED' }
+          $testFiles = @('DesktopLiveChatDisplayTest.kt', 'DesktopRealChatRuntimeCancellationTest.kt')
+          $testFolder = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop'
+          $hashes = @($testFiles | ForEach-Object {
+            $source = Join-Path (Join-Path $env:CCB_CI_SOURCE $testFolder) $_
+            $target = Join-Path (Join-Path $baseline $testFolder) $_
+            Copy-Item -LiteralPath $source -Destination $target -ErrorAction Stop
+            $digest = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+            if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -cne $digest) { throw 'BASELINE_TEST_COPY_MISMATCH' }
+            @{path=$_;sha256=$digest.ToLowerInvariant()}
+          })
+          $env:CCB_DISPLAY_BASELINE_ROOT = $baseline
+          "CCB_DISPLAY_BASELINE_ROOT=$baseline" | Add-Content $env:GITHUB_ENV -Encoding utf8
+          $hashes | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $baseline 'OVERLAY_TEST_HASHES.json') -Encoding utf8
+          Push-Location (Join-Path $baseline 'app')
+          try {
+            .\gradlew.bat :desktopApp:test --tests com.example.chatbar.desktop.DesktopLiveChatDisplayTest -PdesktopTestHeadless=true --no-daemon --console=plain
+            $env:CCB_DISPLAY_BASELINE_EXIT = [string]$LASTEXITCODE
+          } finally { Pop-Location }
+          $verify = @'
+          import json, os, pathlib, xml.etree.ElementTree as ET
+          root=pathlib.Path(os.environ['CCB_DISPLAY_BASELINE_ROOT'])
+          files=list(root.glob('app/desktopApp/build/test-results/test/TEST-*DesktopLiveChatDisplayTest.xml'))
+          assert len(files)==1, 'BASELINE_XML_REQUIRED'
+          suite=ET.parse(files[0]).getroot()
+          expected={'LIVE_USER_NOT_VISIBLE_BEFORE_REPLY_COMPLETES','LIVE_STREAM_BODY_TRUNCATED'}
+          failures=[case.find('failure') for case in suite.findall('testcase')]
+          observed={token for failure in failures if failure is not None for token in expected if token in (failure.attrib.get('message','')+(failure.text or ''))}
+          result=dict(kind='UNCHANGED_PUBLIC1228_LIVE_DISPLAY_COUNTERFACTUAL',baselineSource='bd684bc4b8a1cea0517eacfef62d31e19f09a9a9',tests=int(suite.attrib['tests']),failures=int(suite.attrib['failures']),errors=int(suite.attrib['errors']),exit=int(os.environ['CCB_DISPLAY_BASELINE_EXIT']),observed=sorted(observed),productionChanged=False,humanAcceptance=False)
+          result['passed']=result['tests']==2 and result['failures']==2 and result['errors']==0 and result['exit']!=0 and observed==expected
+          (root/'BASELINE_REVIEW.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+          assert result['passed'], 'EXPECTED_DISPLAY_FAILURES_NOT_PROVED'
+          print(json.dumps(result))
+          '@
+          $verify | python -B -
+          exit $LASTEXITCODE
+
+      - name: Upload separate live-chat display baseline evidence
+        if: always() && env.CCB_DISPLAY_BASELINE_ROOT != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-chat-display-baseline-reports
+          path: |
+            ${{ env.CCB_DISPLAY_BASELINE_ROOT }}/BASELINE_REVIEW.json
+            ${{ env.CCB_DISPLAY_BASELINE_ROOT }}/OVERLAY_TEST_HASHES.json
+            ${{ env.CCB_DISPLAY_BASELINE_ROOT }}/app/desktopApp/build/test-results/test/TEST-*DesktopLiveChatDisplayTest.xml
