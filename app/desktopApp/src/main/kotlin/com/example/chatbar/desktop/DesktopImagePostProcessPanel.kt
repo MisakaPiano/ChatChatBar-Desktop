@@ -1,15 +1,12 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
 import java.nio.file.Files
@@ -89,26 +86,20 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             }
         }
     }
-    val result by produceState<ByteArray?>(null, record) {
+    val result by produceState<Pair<String, ByteArray>?>(null, record) {
         value = null
-        record?.let { selected -> try { value = controller.postProcessResults.read(selected) }
+        record?.let { selected -> try { value = selected.id to controller.postProcessResults.read(selected) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { status = "此结果图片不可读或备份未包含图片；记录和来源保留" } }
     }
-    result?.let { output ->
+    result?.takeIf { it.first == record?.id }?.second?.let { output ->
         if (record?.sourceSha256 != sourceHash) StatusText("所选为其他来源的已保存结果；不会覆盖当前来源")
         if (record != null && !record.matches(tab, options)) StatusText("参数已更改；预览仍是上次结果")
-        var split by remember(path, output) { mutableStateOf(.5f) }
-        Box(Modifier.fillMaxWidth().height(330.dp).pointerInput(path, output) { detectDragGestures { change, _ -> change.consume(); split = (change.position.x / size.width).coerceIn(0f, 1f) } }) {
-            input?.takeIf { record?.sourceSha256 == sourceHash }?.let { original ->
-                DesktopOwnedImage("before-${path}", { original.first }, Modifier.fillMaxSize())
-            }
-            DesktopOwnedImage("after-${output.contentHashCode()}", { output }, Modifier.fillMaxSize().drawWithContent {
-                clipRect(left = if (record?.sourceSha256 == sourceHash) size.width * split else 0f) { this@drawWithContent.drawContent() }
-            }, postProcessOutput = true)
-            Box(Modifier.fillMaxHeight().fillMaxWidth(split).border(1.dp, DesktopBootstrapColors.primary))
-        }
-        StatusText(if (record?.sourceSha256 == sourceHash) "左：原图 · 右：处理结果 · 拖动比较" else "已保存的处理结果")
+        val original = input?.takeIf { record?.sourceSha256 == sourceHash }
+        if (original != null) DesktopPostProcessComparison("${path}-${record?.id}", original.first, output,
+            IntSize(original.second.first, original.second.second), Modifier.fillMaxWidth().height(365.dp))
+        else DesktopImageZoomSurface("after-${record?.id}", { output }, Modifier.fillMaxWidth().height(330.dp), postProcessOutput = true)
+        StatusText(if (original != null) "左：原图 · 右：处理结果" else "已保存的处理结果")
         StudioActions {
             StudioAction("用作当前导入图片", enabled = !busy) { onUse(output) }
             StudioAction("保存 PNG") { scope.launch { try {

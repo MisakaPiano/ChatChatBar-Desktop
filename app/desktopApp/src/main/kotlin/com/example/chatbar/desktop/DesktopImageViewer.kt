@@ -55,7 +55,7 @@ internal fun desktopDecodedImageIdentity(reference: String): String = java.util.
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null,
     minimumDisplayWidthPx: Int? = null, postProcessOutput: Boolean = false,
-    displayTargetForSource: ((IntSize) -> IntSize)? = null) {
+    contentScale: ContentScale? = null, displayTargetForSource: ((IntSize) -> IntSize)? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
     val identity = remember(reference) { desktopDecodedImageIdentity(reference) }
     val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource, postProcessOutput) {
@@ -103,7 +103,7 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
         displayed?.let { dimensionsChanged?.invoke(it.sourceDimensions) }
     }
     Box(modifier.semantics { displayed?.identity?.let { this[DesktopDecodedImageIdentity] = it } }, contentAlignment = Alignment.Center) {
-        displayed?.let { Image(it.bitmap, "图片", Modifier.fillMaxSize(), contentScale = if (crop) ContentScale.Crop else ContentScale.Fit) }
+        displayed?.let { Image(it.bitmap, "图片", Modifier.fillMaxSize(), contentScale = contentScale ?: if (crop) ContentScale.Crop else ContentScale.Fit) }
             ?: StatusText(error ?: "正在读取图片…")
     }
 }

@@ -114,7 +114,7 @@ class DesktopLargePostProcessResultTest {
                 }
                 val child = requireNotNull(window)
                 child.click("▸ Enhance / Upscale")
-                val resultIdentity = desktopDecodedImageIdentity("after-${output.contentHashCode()}")
+                val resultIdentity = desktopDecodedImageIdentity("comparison-${source}-${record.id}-result")
                 withTimeout(20_000) { while (child.nodes().none { it.config.getOrNull(DesktopDecodedImageIdentity) == resultIdentity }) scene.frames() }
                 child.click("保存 PNG")
                 withTimeout(10_000) { while (!Files.exists(saved)) scene.frames() }
