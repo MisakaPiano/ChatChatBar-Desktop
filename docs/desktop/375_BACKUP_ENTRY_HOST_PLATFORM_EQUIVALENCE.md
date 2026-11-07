@@ -1,0 +1,5 @@
+# 备份入口与宿主四项界面差异
+
+Desktop使用独立“数据”导航，将备份概览、范围选择、保护/保存、文件检查及显式合并分开；应用owned controller持有任务、密码重试和取消/排空，离开页面不丢已提交操作。现代模式必须完成当前预览才确认，展示总计与逐项冲突、完整warnings；与Android逐类count表及直接设置分类入口的呈现区别明记。工作室所选空范围提示已补，旧手动KEEP/SKIP流程保留。
+
+完整d3与1a两个Host/Settings入口raw delta共四项已读，当前实际Panel/Dialog/Controller/Shell源码SHA记录在 OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json；Controller与新根生命周期只复用原作用域检查，0新跑，不宣称已做当前物理Panel/native picker或真人验收。c181纯文本提示随最终正常编译验证。后端Service/Graph/Archive/Engine独立保持待处理，不能因入口齐备关闭整备份；314整体false。

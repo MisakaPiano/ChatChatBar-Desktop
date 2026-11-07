@@ -1641,6 +1641,42 @@
       "evidence": [
         "OWNER_BACKUP_MODELS_TWO_COMPLETE_DELTA_REUSE.json"
       ]
+    },
+    {
+      "id": "BACKUP_UI_ENTRY_COMPLETE_D3CF2AA9_APPBACKUPHOST",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete UI host delta only: Desktop Data backup overview routes to explicit selection/export protection/save, password-aware file checking and a separate confirmed merge/new-root workflow. App-owned controllers retain operation lifetime, cancellation, progress/error/restart and credential/path privacy; modern modes require current summary and expose all warnings. Desktop uses totals+explicit conflict units, rather than Android category-count table; manual KEEP/SKIP remains additional. Actual Controller/Lifecycle evidence is scoped, not a new physical Panel run; backend Service/Graph/Engine have separate dispositions.",
+      "reviewSource": "01a84a3fd5df153f7454cbd20b42e30cc5145ab5",
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BACKUP_UI_ENTRY_COMPLETE_D3CF2AA9_GLOBALSETTINGSSCREEN",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete settings entry delta only: Desktop dedicated Data→backup overview/export/import replaces Android Management migration-category link; current all/light/clear/custom selection and optional password/credential protection are reachable through that host. Independent native data-root/restart workflow is preserved. This is navigation/presentation equivalence, not whole backup/Engine, new UI physical acceptance or Android APK behavior.",
+      "reviewSource": "01a84a3fd5df153f7454cbd20b42e30cc5145ab5",
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BACKUP_UI_ENTRY_COMPLETE_1A692604_APPBACKUPHOST",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete UI host delta only: Desktop Data backup overview routes to explicit selection/export protection/save, password-aware file checking and a separate confirmed merge/new-root workflow. App-owned controllers retain operation lifetime, cancellation, progress/error/restart and credential/path privacy; modern modes require current summary and expose all warnings. Desktop uses totals+explicit conflict units, rather than Android category-count table; manual KEEP/SKIP remains additional. Actual Controller/Lifecycle evidence is scoped, not a new physical Panel run; backend Service/Graph/Engine have separate dispositions.",
+      "reviewSource": "01a84a3fd5df153f7454cbd20b42e30cc5145ab5",
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BACKUP_UI_ENTRY_COMPLETE_1A692604_GLOBALSETTINGSSCREEN",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete settings entry delta only: Desktop dedicated Data→backup overview/export/import replaces Android Management migration-category link; current all/light/clear/custom selection and optional password/credential protection are reachable through that host. Independent native data-root/restart workflow is preserved. This is navigation/presentation equivalence, not whole backup/Engine, new UI physical acceptance or Android APK behavior.",
+      "reviewSource": "01a84a3fd5df153f7454cbd20b42e30cc5145ab5",
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json"
+      ]
     }
   ],
   "deltas": [
@@ -9770,11 +9806,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete UI host delta only: Desktop Data backup overview routes to explicit selection/export protection/save, password-aware file checking and a separate confirmed merge/new-root workflow. App-owned controllers retain operation lifetime, cancellation, progress/error/restart and credential/path privacy; modern modes require current summary and expose all warnings. Desktop uses totals+explicit conflict units, rather than Android category-count table; manual KEEP/SKIP remains additional. Actual Controller/Lifecycle evidence is scoped, not a new physical Panel run; backend Service/Graph/Engine have separate dispositions.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_UI_ENTRY_COMPLETE_D3CF2AA9_APPBACKUPHOST"
+      ],
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json",
+        "docs/desktop/375_BACKUP_ENTRY_HOST_PLATFORM_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
@@ -9790,8 +9831,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete settings entry delta only: Desktop dedicated Data→backup overview/export/import replaces Android Management migration-category link; current all/light/clear/custom selection and optional password/credential protection are reachable through that host. Independent native data-root/restart workflow is preserved. This is navigation/presentation equivalence, not whole backup/Engine, new UI physical acceptance or Android APK behavior.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
@@ -9800,8 +9841,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_UI_ENTRY_COMPLETE_D3CF2AA9_GLOBALSETTINGSSCREEN"
+      ],
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json",
+        "docs/desktop/375_BACKUP_ENTRY_HOST_PLATFORM_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ui/shared/SharedImportHost.kt",
@@ -11355,11 +11401,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete UI host delta only: Desktop Data backup overview routes to explicit selection/export protection/save, password-aware file checking and a separate confirmed merge/new-root workflow. App-owned controllers retain operation lifetime, cancellation, progress/error/restart and credential/path privacy; modern modes require current summary and expose all warnings. Desktop uses totals+explicit conflict units, rather than Android category-count table; manual KEEP/SKIP remains additional. Actual Controller/Lifecycle evidence is scoped, not a new physical Panel run; backend Service/Graph/Engine have separate dispositions.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_UI_ENTRY_COMPLETE_1A692604_APPBACKUPHOST"
+      ],
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json",
+        "docs/desktop/375_BACKUP_ENTRY_HOST_PLATFORM_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/manage/AppBackupSelectionScreen.kt",
@@ -11405,8 +11456,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete settings entry delta only: Desktop dedicated Data→backup overview/export/import replaces Android Management migration-category link; current all/light/clear/custom selection and optional password/credential protection are reachable through that host. Independent native data-root/restart workflow is preserved. This is navigation/presentation equivalence, not whole backup/Engine, new UI physical acceptance or Android APK behavior.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
@@ -11415,8 +11466,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_UI_ENTRY_COMPLETE_1A692604_GLOBALSETTINGSSCREEN"
+      ],
+      "evidence": [
+        "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json",
+        "docs/desktop/375_BACKUP_ENTRY_HOST_PLATFORM_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
