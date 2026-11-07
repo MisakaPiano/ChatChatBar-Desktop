@@ -26,7 +26,7 @@ class DesktopBackupStatusCleanupTest {
             f.journal.begin(DesktopBackupOperationJournal.Kind.EXPORT)
             DesktopBackupOperationJournal(f.root, DesktopBackupOperationJournal.Lane.MERGE).begin(DesktopBackupOperationJournal.Kind.MERGE_CHECK)
             val markers = Files.newDirectoryStream(f.root.resolve("backups")).use { paths -> paths.associateWith(Files::readAllBytes) }
-            val unused = f.payload("AQID".repeat(128)); val used = f.payload("BAUG".repeat(128))
+            val unused = f.payload("AQID".repeat(2048)); val used = f.payload("BAUG".repeat(2048))
             Files.writeString(f.root.resolve("entities/reference.json"), """{"vibe":"chatbar-vibe-file:${used.substringAfterLast('/')}"}""")
             f.cleanup.deleteUnreferenced(listOf(unused, used))
             assertFalse(Files.exists(f.root.resolve(unused)))
@@ -57,7 +57,7 @@ class DesktopBackupStatusCleanupTest {
                     else -> { Files.delete(marker); Files.createDirectory(marker) }
                 }
                 val before = if (Files.isRegularFile(evidence)) Files.readAllBytes(evidence) else null
-                val payload = f.payload("AQID".repeat(128)); val bytes = Files.readAllBytes(f.root.resolve(payload))
+                val payload = f.payload("AQID".repeat(2048)); val bytes = Files.readAllBytes(f.root.resolve(payload))
                 assertFails { f.cleanup.deleteUnreferenced(listOf(payload)) }
                 assertContentEquals(bytes, Files.readAllBytes(f.root.resolve(payload)))
                 if (before != null) assertContentEquals(before, Files.readAllBytes(evidence))

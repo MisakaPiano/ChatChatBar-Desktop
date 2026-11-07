@@ -2460,6 +2460,15 @@
       "evidence": [
         "OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json"
       ]
+    },
+    {
+      "id": "BACKUP_MERGE_ENGINE_COMPLETE_1A_NATIVE_SELECTION_AND_TRANSIENT_STATE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete647-line upstream Engine delta reconciled with actual native Preview/RestoreModes/Destination/RootPreparation: ID/unique normalized names and card-local conversation domains, ambiguity copies/content fingerprints, selected-empty families/transitive retained dependencies, typed primary/embedded/draft/package identities and independent memory ancestry, per-side scoped search/defaults/lastSeen/max-completed markers, original-side omitted-media/voice custody, catalog and protected new-root publication. Existing exact-source scoped originals remain separate, never summed into whole compatibility. Final incoming deletion omission and ID-less fold repository key now have actual whole-method evidence: R139 originalModePlan6+deletion1; R141 selected fold Plan and authenticated four-mode publication/repository-readback2. R138 old deletion first assertion failed; other old/current139 failures were genuine generic-ID refusal before later assertions, retained. R140 two later depth2-presence assertions used a mispositioned positional scope (history false/images true), so PC retention was correct; only fixture changed to named history true in141. Modern UPDATE/COPIES keep existing fold depths, scoped REPLACE selected-empty clears, explicit manual choices unchanged. Native default manual merge/protected independent root/dormant official Moments and inert PC deletion bytes differ explicitly from Android default/in-place/deletion-executor route. R141 whole run has two independent cleanup-fixture failures, not borrowed here; R142 pending. Limits84..88/capacity retained; not formal1.0/public/human/Android-device acceptance.",
+      "reviewSource": "b97e13553662ac6f4b457ab56f51a9c39bc44a62",
+      "evidence": [
+        "OWNER_COMPLETE_MERGE_ENGINE_WITH_TRANSIENT_R141.json"
+      ]
     }
   ],
   "deltas": [
@@ -12014,11 +12023,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete647-line upstream Engine delta reconciled with actual native Preview/RestoreModes/Destination/RootPreparation: ID/unique normalized names and card-local conversation domains, ambiguity copies/content fingerprints, selected-empty families/transitive retained dependencies, typed primary/embedded/draft/package identities and independent memory ancestry, per-side scoped search/defaults/lastSeen/max-completed markers, original-side omitted-media/voice custody, catalog and protected new-root publication. Existing exact-source scoped originals remain separate, never summed into whole compatibility. Final incoming deletion omission and ID-less fold repository key now have actual whole-method evidence: R139 originalModePlan6+deletion1; R141 selected fold Plan and authenticated four-mode publication/repository-readback2. R138 old deletion first assertion failed; other old/current139 failures were genuine generic-ID refusal before later assertions, retained. R140 two later depth2-presence assertions used a mispositioned positional scope (history false/images true), so PC retention was correct; only fixture changed to named history true in141. Modern UPDATE/COPIES keep existing fold depths, scoped REPLACE selected-empty clears, explicit manual choices unchanged. Native default manual merge/protected independent root/dormant official Moments and inert PC deletion bytes differ explicitly from Android default/in-place/deletion-executor route. R141 whole run has two independent cleanup-fixture failures, not borrowed here; R142 pending. Limits84..88/capacity retained; not formal1.0/public/human/Android-device acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_MERGE_ENGINE_COMPLETE_1A_NATIVE_SELECTION_AND_TRANSIENT_STATE"
+      ],
+      "evidence": [
+        "OWNER_COMPLETE_MERGE_ENGINE_WITH_TRANSIENT_R141.json",
+        "docs/desktop/385_MERGE_ENGINE_NATIVE_BEHAVIOR_CLOSURE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupMergeIdentity.kt",
