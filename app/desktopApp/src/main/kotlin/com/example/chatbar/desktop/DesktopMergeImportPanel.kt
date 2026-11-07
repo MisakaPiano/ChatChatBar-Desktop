@@ -52,6 +52,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                     DesktopBackupRestoreMode.UPDATE_EXISTING -> "先按编号、再按唯一名称更新；无法唯一匹配时保留原内容并新增副本。"
                     else -> "只替换备份明确勾选的范围；该范围为空也会清除对应内容。未选内容仍需的依赖保留；旧无范围的全量备份则替换全部。"
                 })
+                StatusText("勾选的工作室设置会整体替换，空范围也会清空；生成历史按独立范围处理。", DesktopBootstrapColors.warning)
                 if (state.modePlanning) StatusText("正在后台计算所选范围与依赖…")
                 state.modeError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 state.modeSummary?.let { plan ->
