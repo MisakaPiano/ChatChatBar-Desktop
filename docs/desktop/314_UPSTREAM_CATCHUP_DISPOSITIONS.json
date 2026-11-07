@@ -9183,11 +9183,15 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop history uses a stable actual cell/density target for bounded static local decoding, preserving its existing Fit presentation and independent full preview. Shared originalOmitted drives no-read thumbnail/detail placeholders, metadata-to-recipe clicks, real-image-only galleries and disabled use-as-image without disabling recipe or Seed reuse. R10 existing scoped history31 plus exact successor R14 four methods, with overlap explicitly matched in324; no native or user acceptance claim.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "merge-media-history-r10.original.review.json",
+        "history-metadata-r14.original.review.json"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryViewModel.kt",
@@ -10062,11 +10066,15 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop history uses a stable actual cell/density target for bounded static local decoding, preserving its existing Fit presentation and independent full preview. Shared originalOmitted drives no-read thumbnail/detail placeholders, metadata-to-recipe clicks, real-image-only galleries and disabled use-as-image without disabling recipe or Seed reuse. R10 existing scoped history31 plus exact successor R14 four methods, with overlap explicitly matched in324; no native or user acceptance claim.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "merge-media-history-r10.original.review.json",
+        "history-metadata-r14.original.review.json"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryViewModel.kt",
@@ -17543,5 +17551,15 @@
     "passed": 2,
     "scope": "Original preference file/maintenance/reopen and actual paint pixels; old center-coordinate fixture failure retained",
     "nativeAcceptance": false
+  },
+  "historyThumbnailReview": {
+    "mappedDeltas": [
+      "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryThumbnail.kt",
+      "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryThumbnail.kt"
+    ],
+    "source": "5c8526e7f3dde0c5d452b2b8e291e04ac5b706fb",
+    "successorRun": 42340654767,
+    "successorPassed": 4,
+    "scope": "Current four successor methods plus source-matched old29=33 history methods, not one new33 or31+4. Static decode Fit adaptation; animations retain existing separate path."
   }
 }

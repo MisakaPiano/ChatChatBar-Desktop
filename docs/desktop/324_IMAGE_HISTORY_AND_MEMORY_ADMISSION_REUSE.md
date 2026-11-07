@@ -32,4 +32,6 @@ R11/run42339729760/control4f03原21686B/SHA `b889976af9ac78064296c5b3230f1c3adc3
 
 ## 元数据历史项完整入口后继
 
-1a692还要求遗漏原图仅保留配方时不读不存在的路径。282f先补缩略占位；5c852补共享originalOmitted属性（原定义直移）、普通gallery过滤、点击进入配方详情、详情占位和用作图像禁用。仅输出图遗漏不禁止参数/Seed复用，recipe source条件独立。R13只对应先前缩略占位两方法，R14/control01eee5补当前完整入口四方法；各自待原件，未借31旧PASS提升这些后继。
+1a692还要求遗漏原图仅保留配方时不读不存在的路径。282f先补缩略占位；5c852补共享originalOmitted属性（原定义直移）、普通gallery过滤、点击进入配方详情、详情占位和用作图像禁用。仅输出图遗漏不禁止参数/Seed复用，recipe source条件独立。
+
+R13/run42340449190/control54a9原9458B/SHA `fa96a7d9becdc5ed6bdec190475c305aa79d4662c040d3b2e7f3478fd90f4e9c`原缩略占位两方法2PASS，保留其先前scope。当前完整入口R14/run42340654767/control01eee5原11732B/SHA `aa99ac95b798f7a119de95020d3b97d4a5bf795c503428bc62d9512342449c46`已核CRC/source/原两套XML，四方法4PASS/0FAIL/ERROR/SKIP：metadata零读取、普通缩略实际解码/重组、含metadata的实际图库只传八张有效图及宽窄界面、metadata详情保留FULL配方回调且所有用作按钮禁用，无网络请求。当前source按R10未变29方法加R14四方法匹配33；不是一次新33，也不是31+2+4，重叠的旧decode/旧workspace由当前方法覆盖。仅将1d/1a两条thumbnail delta映射EQUIVALENT，未据此关闭整个HistoryScreen或全314。
