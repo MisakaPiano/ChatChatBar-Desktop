@@ -71,7 +71,9 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                             commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to it)
                         } } catch (failure: Exception) { error = failure.message }
                     } }
-                    BootstrapButton("恢复角色背景") { commit(options to null) }
+                    if (replacement != null) BootstrapButton("恢复角色背景") {
+                        commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to null)
+                    }
                     BootstrapButton("打码 / 纯色遮盖", enabled = sourceBytes != null) { editingCopy = true }
                     BootstrapButton("撤销", enabled = undo.isNotEmpty()) { com.example.chatbar.domain.image.undoCanvasState(working, undo, redo)?.let { working = it } }
                     BootstrapButton("重做", enabled = redo.isNotEmpty()) { com.example.chatbar.domain.image.redoCanvasState(working, undo, redo)?.let { working = it } }
