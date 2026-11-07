@@ -120,7 +120,7 @@ class DesktopChatRepositoryAdmissionTest {
             withTimeout(5000) { oldDone.await(); exclusiveEntered.await() }
             assertFalse(late.isCompleted)
             assertEquals(newer, Json.decodeFromString(ChatScrollPosition.serializer(),
-                Files.readString(f.root.resolve("entities/chat_scroll_positions/s.json")))))
+                Files.readString(f.root.resolve("entities/chat_scroll_positions/s.json"))))
             releaseExclusive.complete(Unit)
             withTimeout(5000) { f.jobs.joinAll() }
             assertEquals(newer, f.repository.getScrollPosition("s"))
