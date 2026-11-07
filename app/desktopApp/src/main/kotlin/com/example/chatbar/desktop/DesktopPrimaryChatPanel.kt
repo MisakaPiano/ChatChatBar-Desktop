@@ -122,7 +122,6 @@ internal fun DesktopPrimaryChatPanel(
         mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
     }
     var chatDebugOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
-    var narrativeModeOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var backgroundOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
@@ -345,7 +344,6 @@ internal fun DesktopPrimaryChatPanel(
                             }) else null,
                         ) {
                             if (selected != null) {
-                                BootstrapButton(selected.narrativeMode.shortLabel + " ▾", secondary = true) { narrativeModeOpen = true }
                                 if (state.people.isNotEmpty() && nextAutoPeopleHidden) CompositionLocalProvider(LocalDesktopChatPeople provides peopleActions) {
                                     DesktopChatPeopleHeader(state.people, controller, preferences.inlineStatuses, setInline,
                                         onManage = { inspectedPersonId = null; peopleOpen = true }, allPeople = preferences.allPeople,
@@ -445,9 +443,6 @@ internal fun DesktopPrimaryChatPanel(
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 sendKey = preferences.sendKey, onSendKey = chooseSendKey,
-                narrativeControls = { state.selectedSession?.let { session ->
-                    BootstrapButton(session.narrativeMode.shortLabel + " ▾", secondary = true) { narrativeModeOpen = true }
-                } },
                 voiceControls = { DesktopComposerVoiceControl(state, voiceUi,
                     state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true) },
                 onDraft = controller::editComposer, onSend = send,
@@ -459,11 +454,6 @@ internal fun DesktopPrimaryChatPanel(
                     onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } }) },
                 onPickImage = { scope.launch { controller.pickImage() } },
                 ingressModifier = Modifier.desktopImageIngress(canLaunch, controller::imageIngressFailure) { input -> scope.launch { controller.receiveImages(input) } })
-        }
-        if (narrativeModeOpen) state.selectedSession?.let { session ->
-            DesktopChatNarrativeModeDialog(session.narrativeMode, onSelect = { mode ->
-                scope.launch { controller.setNarrativeMode(session.id, mode) }
-            }, onClose = { narrativeModeOpen = false })
         }
         if (composer.continuationPending) DesktopContinuationConfirmation(
             enabled = composer.canClickSend(canLaunch) && !composer.hasAttachments && composer.input.text.isBlank(),

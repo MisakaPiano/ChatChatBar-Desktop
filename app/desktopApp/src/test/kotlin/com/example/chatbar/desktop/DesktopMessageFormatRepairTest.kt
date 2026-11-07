@@ -55,6 +55,14 @@ class DesktopMessageFormatRepairTest {
     /** Default integration topology is exactly one container/root/repository for chat and repair.
      * Separate storage is opt-in and exclusively for operation-gate fault injection. */
     internal class Fixture(val faultInjection: Boolean = false) {
+        companion object {
+            // Repository admission now wraps the message/index/session mutexes. Count those
+            // leases too: outer, message read, session read, message write, index lease/write,
+            // session lease/read/write. Assertions below still prove the actual durable stage.
+            const val MESSAGE_WRITE = 4
+            const val INDEX_WRITE = 6
+            const val PREVIEW_WRITE = 9
+        }
         val root = Files.createTempDirectory("desktop-format-repair-")
         val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("container"),
             DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
@@ -107,7 +115,7 @@ class DesktopMessageFormatRepairTest {
             response = { flow {
                 emit(StreamEvent.Delta("second fixed"))
                 gate.calls.set(0)
-                gate.hook = { n, after -> if (n == 3 && after) throw IOException("synthetic post-write failure") }
+                gate.hook = { n, after -> if (n == MESSAGE_WRITE && after) throw IOException("synthetic post-write failure") }
                 emit(StreamEvent.Done)
             } }
             return run().also { gate.hook = { _, _ -> }; assertEquals(DesktopRepairStatus.COMMIT_UNCERTAIN, it.status) }
@@ -449,7 +457,7 @@ class DesktopMessageFormatRepairTest {
                     if (mode == 0) f.replace(f.original.copy(reasoningContent = "concurrent metadata edit"))
                     else {
                         f.gate.calls.set(0)
-                        f.gate.hook = { n, after -> if (n == 3 && after == (mode == 2)) throw failure }
+                        f.gate.hook = { n, after -> if (n == Fixture.MESSAGE_WRITE && after == (mode == 2)) throw failure }
                     }
                 }
                 DesktopRepairSafety.VERIFIED_SAFE
@@ -575,8 +583,8 @@ class DesktopMessageFormatRepairTest {
         f.response = { flow {
             emit(StreamEvent.Delta("fixed"))
             f.gate.calls.set(0)
-            // Commit reads message + session, then saves message (index already cached by addMessage).
-            f.gate.hook = { n, after -> if (n == 3 && after) throw failure }
+            // The outer repository lease precedes both reads; the index is already cached.
+            f.gate.hook = { n, after -> if (n == Fixture.MESSAGE_WRITE && after) throw failure }
             emit(StreamEvent.Done)
         } }
         val result = f.run()
@@ -641,10 +649,10 @@ class DesktopMessageFormatRepairTest {
 
     @Test fun `fault fixture cancellation at message or index write preserves actual repository outcome`() = runBlocking {
         for ((call, after, expectedStage) in listOf(
-            Triple(3, false, MessageUpdateStage.WRITE_MESSAGE),
-            Triple(3, true, MessageUpdateStage.WRITE_MESSAGE),
-            Triple(4, false, MessageUpdateStage.WRITE_INDEX),
-            Triple(4, true, MessageUpdateStage.WRITE_INDEX),
+            Triple(Fixture.MESSAGE_WRITE, false, MessageUpdateStage.WRITE_MESSAGE),
+            Triple(Fixture.MESSAGE_WRITE, true, MessageUpdateStage.WRITE_MESSAGE),
+            Triple(Fixture.INDEX_WRITE, false, MessageUpdateStage.WRITE_INDEX),
+            Triple(Fixture.INDEX_WRITE, true, MessageUpdateStage.WRITE_INDEX),
         )) fixture(faultInjection = true) { f ->
             val entered = CompletableDeferred<Unit>()
             f.response = { flow {
@@ -660,7 +668,7 @@ class DesktopMessageFormatRepairTest {
             assertFalse(f.runtime.requestUserStop(id)) // Commit already owns the terminal.
             f.runtime.closeAndDrain()
             val state = f.await(id)
-            if (call == 3 && !after) {
+            if (call == Fixture.MESSAGE_WRITE && !after) {
                 assertEquals(DesktopRepairStatus.STORAGE_FAILURE, state.status)
                 val result = assertIs<ConditionalMessageUpdateResult.StorageFailure>(state.commit)
                 assertEquals(expectedStage, result.stage)
@@ -676,7 +684,7 @@ class DesktopMessageFormatRepairTest {
             assertEquals(state.status, f.runtime.repairTasks.value[id])
             assertEquals(call + 1, f.gate.calls.get()) // One readback; no retry/second write.
             f.gate.hook = { _, _ -> }
-            assertEquals(if (call == 3 && !after) f.original.displayContent else "fixed", f.reopened().displayContent)
+            assertEquals(if (call == Fixture.MESSAGE_WRITE && !after) f.original.displayContent else "fixed", f.reopened().displayContent)
             assertEquals(1, f.requests.get())
         }
     }
@@ -688,8 +696,8 @@ class DesktopMessageFormatRepairTest {
             emit(StreamEvent.Delta("fixed"))
             f.gate.calls.set(0)
             f.gate.hook = { n, after ->
-                if (n == 3 && after) throw failure
-                if (n == 4 && !after) { reading.complete(Unit); release.await() }
+                if (n == Fixture.MESSAGE_WRITE && after) throw failure
+                if (n == Fixture.MESSAGE_WRITE + 1 && !after) { reading.complete(Unit); release.await() }
             }
             emit(StreamEvent.Done)
         } }
@@ -707,7 +715,7 @@ class DesktopMessageFormatRepairTest {
         assertEquals(failure.message, result.cause.message)
         assertTrue(generateSequence<Throwable>(result.cause) { it.cause }.take(8).any { it === failure })
         assertEquals(result.attempted, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(result.durableMessage).value)
-        assertEquals(4, f.gate.calls.get())
+        assertEquals(Fixture.MESSAGE_WRITE + 1, f.gate.calls.get())
         assertEquals(1, f.requests.get())
         f.gate.hook = { _, _ -> }
         assertEquals("fixed", f.reopened().displayContent)

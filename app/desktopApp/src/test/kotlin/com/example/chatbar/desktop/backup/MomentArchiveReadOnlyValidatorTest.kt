@@ -206,9 +206,21 @@ class MomentArchiveReadOnlyValidatorTest {
             val result = report(owners() + mapOf("entities/moment_posts/p.json" to post.toByteArray(), "entities/moment_tasks/t.json" to task))
             assertEquals(when { status == "UNKNOWN" -> MomentArchiveReadOnlyValidator.State.BLOCKED; postId.contains("missing") -> MomentArchiveReadOnlyValidator.State.UNRESOLVED_DEPENDENCIES; else -> MomentArchiveReadOnlyValidator.State.SOURCE_GRAPH_VERIFIED_WITH_SCOPE }, result.state)
             assertFalse(result.taskRunnable)
-            if (status != "UNKNOWN") assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, report(owners() + mapOf("entities/moment_tasks/t.json" to task, "entities/moment_tasks/other.json" to task)).state)
+            if (status != "UNKNOWN") isolated(archive(files = owners() + mapOf(
+                "entities/moment_tasks/t.json" to task, "entities/moment_tasks/other.json" to task))) { source ->
+                val failure = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> {
+                    DesktopBackupReadOnlyInspector().inspectMoments(source, null)
+                }
+                assertEquals("ENTITY_SCHEMA", failure.stage)
+            }
         }
-        assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, report(owners() + mapOf("entities/moment_posts/p.json" to post.toByteArray(), "entities/moment_posts/q.json" to post.toByteArray())).state)
+        isolated(archive(files = owners() + mapOf(
+            "entities/moment_posts/p.json" to post.toByteArray(), "entities/moment_posts/q.json" to post.toByteArray()))) { source ->
+            val failure = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> {
+                DesktopBackupReadOnlyInspector().inspectMoments(source, null)
+            }
+            assertEquals("ENTITY_SCHEMA", failure.stage)
+        }
         val conflict = """{"id":"t","characterCardId":"other","sessionId":"s","scheduledAt":999999999,"postId":"p"}""".toByteArray()
         assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, report(owners() + mapOf("entities/moment_posts/p.json" to post.toByteArray(), "entities/moment_tasks/t.json" to conflict)).state)
     }

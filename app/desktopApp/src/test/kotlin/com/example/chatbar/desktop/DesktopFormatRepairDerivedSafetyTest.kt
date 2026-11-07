@@ -321,7 +321,8 @@ class DesktopFormatRepairDerivedSafetyTest {
         })
         val chats = ChatRepository(storage)
         // The read path deliberately need not retain an index cache. Prime via the ordinary
-        // fixture update before arming, so calls 3/4/6 are actual message/index/preview writes.
+        // fixture update before arming. Repository admission leases are counted as well as
+        // storage reads/writes; the named offsets target message/index/preview durable writes.
         chats.updateMessage(f.original)
         val gate = DesktopFormatRepairDerivedSafety(f.dataRoot, storage, f.container.dataOperationCoordinator, f.runtime)
         val scoped = object : DesktopRepairSafetyGate {
@@ -334,8 +335,10 @@ class DesktopFormatRepairDerivedSafetyTest {
     }
 
     @Test fun `actual message index and preview failures preserve uncertain evidence inside exclusive scope`() = runBlocking {
-        for ((call, stage) in listOf(3 to MessageUpdateStage.WRITE_MESSAGE, 4 to MessageUpdateStage.WRITE_INDEX,
-            6 to MessageUpdateStage.WRITE_PREVIEW)) fixture { f ->
+        for ((call, stage) in listOf(
+            DesktopMessageFormatRepairTest.Fixture.MESSAGE_WRITE to MessageUpdateStage.WRITE_MESSAGE,
+            DesktopMessageFormatRepairTest.Fixture.INDEX_WRITE to MessageUpdateStage.WRITE_INDEX,
+            DesktopMessageFormatRepairTest.Fixture.PREVIEW_WRITE to MessageUpdateStage.WRITE_PREVIEW)) fixture { f ->
             val failure = java.io.IOException("synthetic post-write failure")
             val c = faultController(f) { if (it == call) {
                 assertEquals("fixed", assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(
@@ -355,7 +358,7 @@ class DesktopFormatRepairDerivedSafetyTest {
 
     @Test fun `actual shutdown after durable write retains uncertain result across exclusive unwinding`() = runBlocking { fixture { f ->
         val written = CompletableDeferred<Unit>()
-        val c = faultController(f) { if (it == 3) {
+        val c = faultController(f) { if (it == DesktopMessageFormatRepairTest.Fixture.MESSAGE_WRITE) {
             assertEquals("fixed", assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(
                 f.chats.readMessageDurable("m", "s")).value.displayContent)
             written.complete(Unit); awaitCancellation()

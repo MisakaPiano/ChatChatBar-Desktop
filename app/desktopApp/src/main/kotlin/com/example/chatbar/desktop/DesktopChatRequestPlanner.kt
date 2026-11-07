@@ -298,8 +298,8 @@ internal class DesktopChatRequestPlanner(
                 ) else "",
                 playerName = playerName,
                 botName = card.effectiveBotName,
-                narrativeMode = session.narrativeMode,
-                previousNarrativeMode = inputs.previousNarrativeMode ?: ChatHistoryPromptPolicy.previousNarrativeMode(contextMessages),
+                // The stored mode is retained, but the proposed Prompt layers/ordering are
+                // still awaiting the explicit 315 adoption decision. Keep default assembly.
             ),
         )
         return DesktopChatRequestPlan(
@@ -341,8 +341,7 @@ internal class DesktopChatRequestPlanner(
         val rendered = PlaceholderRenderer.render(source, playerName, card.effectiveBotName)
         val payload = ChatHistoryPromptPolicy.payloadText(rendered, hasSupportedImage = inputs.supportsImages && message.role == MessageRole.USER && message.images.isNotEmpty())
             ?: return null
-        val historical = ChatHistoryPromptPolicy.renderedHistoryText(message, payload)
-        return imageMessage(message.role.name.lowercase(), historical, message.images, inputs.supportsImages)
+        return imageMessage(message.role.name.lowercase(), payload, message.images, inputs.supportsImages)
     }
 
     private fun imageMessage(role: String, text: String, images: List<String>, supported: Boolean): ChatApiMessage {

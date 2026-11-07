@@ -91,12 +91,24 @@ class DesktopCredentialSourceCensusTest {
             }
         }
     }
-    @Test fun `duplicate model and singleton identities make source incomplete`() = runBlocking {
+    @Test fun `duplicate model and singleton identities refuse before source metadata or target observation`() = runBlocking {
         val base = CensusWireFixtures.files()
         val variants = listOf(base + ("entities/model_configs/other.json" to CensusWireFixtures.model().toByteArray()),
             base + ("entities/embedding_model_config/other.json" to CensusWireFixtures.embedding().toByteArray()))
-        for ((i, files) in variants.withIndex()) census(CensusWireFixtures.bytes(files = files), "duplicate-id-$i") {
-            assertFalse(it.complete); assertTrue(CensusLimitation.DUPLICATE_ID in it.limitations)
+        for ((i, files) in variants.withIndex()) CensusWireFixtures.input(CensusWireFixtures.bytes(files = files), "duplicate-id-$i") { path ->
+            val reader = Reader(stamp)
+            var published = false
+            val before = CensusWireFixtures.digest(Files.readAllBytes(path))
+            val failure = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> {
+                inspector.inspectCredentialSources(path, null).use {
+                    published = true
+                    it.observeAndPlan(reader, stamp)
+                }
+            }
+            assertEquals("ENTITY_SCHEMA", failure.stage)
+            assertFalse(published); assertEquals(0, reader.accesses); assertEquals(0, reader.reads)
+            assertEquals(before, CensusWireFixtures.digest(Files.readAllBytes(path)))
+            assertNull(failure.cause)
         }
     }
     @Test fun `duplicate JSON fields and escaped equivalent keys are rejected by shared strict parser`() = runBlocking {

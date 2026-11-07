@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.PlayerSetting
@@ -40,6 +41,7 @@ class DesktopRealChatRuntimeTest {
                 container.characterRepository.save(card)
                 val id = container.characterSessionService.createSessionForCharacter(card.id)
                 configureModel(container, server, "fake-exclusion-key")
+                container.chatRepository.setNarrativeMode(id, ChatNarrativeMode.ADVANCE)
                 container.settingsRepository.updateAppSettings { it.copy(excludeAssistantStatusFromHistory = exclude) }
                 val earlier = "earlier-body\n```status\nearlier-status-token\n```\n------\n[earlier-option-token]()\n------"
                 val previous = "previous-body\n```status\nprevious-status-token\n```"
@@ -49,7 +51,13 @@ class DesktopRealChatRuntimeTest {
                 }
                 server.enqueue(sse("""{"choices":[{"delta":{"content":"reply"},"finish_reason":"stop"}]}""", "[DONE]"))
                 container.createRealChatRuntime().sendText(id, "third")
-                val contents = serializedContents(server.takeRequest().body.readUtf8()).joinToString("\n")
+                val sent = serializedContents(server.takeRequest().body.readUtf8())
+                val contents = sent.joinToString("\n")
+                assertTrue(previous in sent)
+                assertFalse(contents.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)))
+                assertFalse(contents.contains(MainChatPromptAuthority.narrativeModeTailSystemPrompt(
+                    ChatNarrativeMode.ADVANCE, ChatNarrativeMode.FOCUS)))
+                assertEquals(ChatNarrativeMode.ADVANCE, container.chatRepository.getSession(id)?.narrativeMode)
                 assertTrue(contents.contains("earlier-body"))
                 assertEquals(!exclude, contents.contains("earlier-status-token"))
                 assertEquals(!exclude, contents.contains("earlier-option-token"))
