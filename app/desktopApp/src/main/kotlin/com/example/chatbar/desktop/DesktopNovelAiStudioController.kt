@@ -445,12 +445,13 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun importCard(id: String) {
         val card = requireNotNull(characters.getById(id))
+        val cardModel = card.defaultNovelAiImageModel
         val globalModel = settings.getAppSettings().novelAiImageModel
         replace { current ->
             val imported = current.importCharacterCardPromptSources(card.id, card.defaultImagePrompt, card.defaultImageNegativePrompt,
                 card.characters.map { NovelAiCharacterPromptSource(it.name, it.imagePrompt) })
-            val configured = if (card.defaultNovelAiImageModel != null)
-                imported.copy(selectedModel = card.defaultNovelAiImageModel, followDefaultNovelAiImageModel = false)
+            val configured = if (cardModel != null)
+                imported.copy(selectedModel = cardModel, followDefaultNovelAiImageModel = false)
             else if (current.followDefaultNovelAiImageModel) imported.copy(selectedModel = globalModel)
             else imported
             card.defaultImageGenerationSettings?.let { configured.withActiveSettings(it.applyTo(configured.activeSettings)) } ?: configured

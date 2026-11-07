@@ -95,13 +95,18 @@ class DesktopPostProcessComparisonWindowTest {
 
     @Test fun `actual old DDIM PNG remains readable but High Enhance is disabled while Medium and independent Upscale are available`() = runBlocking(edt) {
         val parent = Files.createTempDirectory("post-process-sampler-entry-")
-        val secrets = InMemoryDesktopSecretStore().apply { save(DesktopCredentialKey.NovelAiToken, "synthetic") }
+        val secrets = InMemoryDesktopSecretStore()
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE,
             parent.resolve("bootstrap.json")), secretStoreFactory = { secrets }, bundledAssets = { path ->
                 if (path.startsWith("presets/")) """{"entries":[]}""".toByteArray() else DesktopBundledAssetReader()(path)
             })
         try {
-            val controller = app.novelAiStudioController; assertTrue(controller.load())
+            val controller = DesktopNovelAiStudioController(app.jsonFileStorage, app.characterResourceStore, UnconfiguredDesktopFilePicker,
+                app.dataOperationCoordinator, {}, app.novelAiGenerationRuntime,
+                DesktopNovelAiGuidance(app.appDataRoot, app.characterResourceStore, secrets), app.taskRuntime,
+                app.novelAiInfrastructure, app.settingsRepository, app.effectiveModelResolver, app.characterRepository,
+                account = { NovelAiAccountUsage(100, 3, true, 50.0, false) }, credentialConfigured = { true })
+            assertTrue(controller.load())
             for (medium in listOf(false, true)) {
                 val model = if (medium) "nai-diffusion-5-full-medium" else "nai-diffusion-5-full"
                 val comment = """{"model":"$model","width":64,"height":64,"prompt":"synthetic scene","steps":28,"scale":6,"sampler":"ddim_v3","cfg_rescale":0}"""
