@@ -26,7 +26,9 @@ class DesktopPostProcessLifetimeTest {
         val parent = Files.createTempDirectory("post-process-lifetime-")
         val secrets = InMemoryDesktopSecretStore().apply { save(DesktopCredentialKey.NovelAiToken, "synthetic") }
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE,
-            parent.resolve("bootstrap.json")), secretStoreFactory = { secrets }, bundledAssets = { """{"entries":[]}""".toByteArray() })
+            parent.resolve("bootstrap.json")), secretStoreFactory = { secrets }, bundledAssets = { path ->
+                if (path.startsWith("presets/")) """{"entries":[]}""".toByteArray() else DesktopBundledAssetReader()(path)
+            })
         val server = MockWebServer()
         val client = OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().url(server.url(chain.request().url.encodedPath)).build())
