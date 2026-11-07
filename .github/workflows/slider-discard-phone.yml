@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: d18647257a4eb3b924945f07b2d9451fb81cb8db
+  SOURCE_SHA: 518cd467d88269bfe22795d6bc286a11af2f4481
   TEST_APPLICATION_ID: com.example.chatbar.slidertest.discardr2
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: d18647257a4eb3b924945f07b2d9451fb81cb8db
+          ref: 518cd467d88269bfe22795d6bc286a11af2f4481
           persist-credentials: false
-          fetch-depth: 3
+          fetch-depth: 5
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
@@ -171,7 +171,7 @@ jobs:
                   'versionName':'1.4.10-slider-discard-r2','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,
                   'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,
                   'tests':json.loads((out / 'TEST_SUMMARY.json').read_text()),
-                  'independentDiscardFix':'e1c547051035cad34c752ddc72a8874a9f4f5ada',
+                  'independentDiscardFix':'bcecc0792c58194f74a9dab398ea1c73bcd92018',
                   'upstreamKnownFailure':'PromptAssemblerCharacterModeTest line127 reproduced on c84 baseline; not modified or hidden',
                   'privateKeysOrUserDataInjected':False,'installedOnDevice':False,
                   'cloudRun':'https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/' + os.environ['GITHUB_RUN_ID']}
