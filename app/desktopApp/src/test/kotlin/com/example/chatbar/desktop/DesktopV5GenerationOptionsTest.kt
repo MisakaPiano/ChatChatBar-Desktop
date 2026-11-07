@@ -96,6 +96,34 @@ class DesktopV5GenerationOptionsTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
+    @Test fun `queued High sampler UI action cannot overwrite dormant choice after switching to Medium`() = runBlocking(edt) {
+        val high = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, sampler = NovelAiSampler.DPM_PLUS_PLUS_2M)
+        var settings by mutableStateOf(high)
+        val queued = mutableListOf<(NovelAiGenerationSettings) -> NovelAiGenerationSettings>()
+        val scene = ImageComposeScene(560, 1000, coroutineContext = edt) {
+            StudioAdvancedSettings(settings) { queued.add(it) }
+        }
+        fun nodes(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::nodes)
+        fun has(n: SemanticsNode, text: String): Boolean = n.config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true ||
+            n.children.any { has(it, text) }
+        suspend fun frames() { repeat(4) { scene.render().close(); delay(20) } }
+        fun click(text: String) {
+            val n = scene.semanticsOwners.flatMap { nodes(it.rootSemanticsNode) }.first { has(it, text) && it.config.contains(SemanticsActions.OnClick) }
+            assertTrue(n.boundsInRoot.width > 0 && n.boundsInRoot.height > 0)
+            assertTrue(n.config[SemanticsActions.OnClick].action!!.invoke())
+        }
+        try {
+            frames(); click("Sampler · DPM++ 2M ▾"); frames(); click("Euler")
+            assertEquals(1, queued.size)
+            settings = settings.copy(effort = NovelAiEffort.MEDIUM)
+            frames()
+            settings = queued.single()(settings)
+            assertEquals(high.copy(effort = NovelAiEffort.MEDIUM), settings)
+            assertEquals(NovelAiSampler.EULER_ANCESTRAL, settings.effectiveSampler)
+            assertEquals(high, settings.copy(effort = NovelAiEffort.HIGH))
+        } finally { scene.close() }
+    }
+
     @Test fun `normal settings UI can choose Medium and transparency without losing High choices`() = runBlocking(edt) {
         var draft by mutableStateOf(NovelAiStudioDraft(selectedModel = NovelAiImageModel.V5_FULL,
             v5Settings = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, steps = 37, cfgRescale = .4f)))

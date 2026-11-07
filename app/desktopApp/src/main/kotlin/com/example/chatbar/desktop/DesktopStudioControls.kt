@@ -273,7 +273,9 @@ internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((Nove
     StudioSlider("CFG Scale", s.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
     if (!s.isMedium) {
         StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
-        CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
+        CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value ->
+            change { current -> if (current.isMedium) current else current.copy(sampler = value) }
+        }
     } else StatusText("14 Steps · Euler Ancestral · CFG Rescale 0")
     if (s.model.supportsVarietyPlus) StudioSwitch("Variety+（V+）", s.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus) } }
     StudioSwitch("Random Seed", s.seedMode == NovelAiSeedMode.RANDOM) { change { it.copy(seedMode = if (it.seedMode == NovelAiSeedMode.RANDOM) NovelAiSeedMode.FIXED else NovelAiSeedMode.RANDOM) } }
