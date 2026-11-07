@@ -21,7 +21,8 @@ class DesktopBackupIdentityInputTest {
     // Independent test-only wire creation bypasses every production writer/validator under test.
     private fun wire(root: Path, label: String, values: Map<String, JsonObject>, legacy: Boolean = false): Path {
         val files = values.mapValues { it.value.toString().toByteArray() }
-        val prefs = backupJson.encodeToString(InspectionPreferences.serializer(), InspectionPreferences()).toByteArray()
+        val prefs = (if (legacy) backupJson.encodeToString(BackupPreferences.serializer(), BackupPreferences())
+            else backupJson.encodeToString(InspectionPreferences.serializer(), InspectionPreferences())).toByteArray()
         val counts = files.keys.groupingBy(DesktopBackupPolicy::entityType).eachCount()
         val scope = InspectionScope(inspectionGlobalOptions, counts["character_cards"] ?: 0, 0, 0, 0, 0,
             studioSettings = false, studioHistory = false, studioHistoryImages = false, moments = false)
