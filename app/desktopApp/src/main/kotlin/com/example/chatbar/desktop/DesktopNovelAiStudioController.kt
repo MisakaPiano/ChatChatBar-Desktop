@@ -477,8 +477,8 @@ internal class DesktopNovelAiStudioController(
 
     fun setHistorySelection(selection: Set<NovelAiHistoryImageSelection>) = mutableState.update { it.copy(selected = selection) }
 
-    suspend fun deleteSelected() = action {
-        val selections = state.value.selected.toList()
+    suspend fun deleteSelected(requested: Set<NovelAiHistoryImageSelection>? = null) = action {
+        val selections = (requested ?: state.value.selected).toList()
         require(selections.isNotEmpty())
         val candidates = mutableListOf<String>()
         // Read all affected entries and replace once, before any reference-aware media cleanup.

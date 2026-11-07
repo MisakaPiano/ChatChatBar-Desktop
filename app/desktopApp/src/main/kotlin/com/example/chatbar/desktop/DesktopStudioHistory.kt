@@ -10,7 +10,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import com.example.chatbar.domain.image.*
@@ -18,6 +20,25 @@ import com.example.chatbar.ui.imageprompt.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
+
+internal fun desktopHistoryThumbnailTarget(source: IntSize, viewport: IntSize): IntSize {
+    val scale = minOf(1.0, viewport.width.coerceAtLeast(1).toDouble() / source.width.coerceAtLeast(1),
+        viewport.height.coerceAtLeast(1).toDouble() / source.height.coerceAtLeast(1))
+    return IntSize((source.width * scale).roundToInt().coerceAtLeast(1),
+        (source.height * scale).roundToInt().coerceAtLeast(1))
+}
+
+@Composable
+internal fun DesktopHistoryThumbnail(reference: String, read: (String) -> ByteArray, modifier: Modifier) {
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier) {
+        val viewport = with(density) { IntSize(maxWidth.roundToPx().coerceAtLeast(1), maxHeight.roundToPx().coerceAtLeast(1)) }
+        // Stable across selection/status recompositions; a real cell/density change may decode again.
+        val decodeTarget = remember(viewport) { { source: IntSize -> desktopHistoryThumbnailTarget(source, viewport) } }
+        DesktopOwnedImage(reference, read, Modifier.fillMaxSize(), displayTargetForSource = decodeTarget)
+    }
+}
 
 internal fun desktopHistoryDateFilter(text: String): NovelAiHistoryDateFilter? {
     val value = text.trim()
@@ -75,6 +96,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     var detail by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
     var highlighted by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf("") }
     var selectionState by remember { mutableStateOf(NovelAiHistorySelection()) }
     var lastSelectedAlbum by remember { mutableStateOf<String?>(null) }
@@ -153,13 +175,21 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
         }
         if (problem.isNotBlank()) StatusText(problem, DesktopBootstrapColors.warning)
         StudioActions {
-            BootstrapButton("删除选中 ${state.selected.size}", enabled = state.selected.isNotEmpty()) { confirmDelete = true }
+            BootstrapButton("删除选中 ${state.selected.size}", enabled = state.selected.isNotEmpty() && !deleting) { confirmDelete = true }
             if (confirmDelete) {
-                    BootstrapButton("确认删除所选图片", variant = DesktopActionVariant.DESTRUCTIVE) { scope.launch {
-                        controller.retainHistorySelection(visibleSelections)
-                        controller.deleteSelected(); confirmDelete = false
-                    } }
-                BootstrapButton("取消") { confirmDelete = false }
+                BootstrapButton("确认删除所选图片", enabled = !deleting, variant = DesktopActionVariant.DESTRUCTIVE) {
+                    if (!deleting) {
+                        val requested = state.selected.intersect(visibleSelections)
+                        if (requested.isNotEmpty()) {
+                            deleting = true
+                            scope.launch {
+                                try { controller.deleteSelected(requested); confirmDelete = false }
+                                finally { deleting = false }
+                            }
+                        }
+                    }
+                }
+                BootstrapButton("取消", enabled = !deleting) { confirmDelete = false }
             }
         }
         Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -170,6 +200,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 val allSelected = album.images.all { it.key in selectionState.keys }
                 var shift by remember { mutableStateOf(false) }
                 fun select(range: Boolean) {
+                    if (deleting) return
                     highlighted = item
                     val input = selectionState.copy(rangeAnchorKey = if (range) lastSelectedAlbum else null)
                     selectionState = NovelAiHistorySelectionPolicy.selectAlbum(input, albums, album.key, false)
@@ -178,7 +209,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 }
                 Column(Modifier.border(if (allSelected) 2.dp else 1.dp, if (allSelected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border).padding(6.dp)) {
                     Box {
-                        DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
+                        DesktopHistoryThumbnail(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
                             .onPointerEvent(PointerEventType.Press) { shift = it.keyboardModifiers.isShiftPressed }
                             .desktopViewerEntry(enabled = preferencesLoaded && !savingPreference, onClick = {
                                 if (shift) select(true)

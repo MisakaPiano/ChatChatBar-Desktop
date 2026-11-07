@@ -142,10 +142,13 @@ class DesktopPhase7StudioTest {
             val copy = controller.draft.value!!.imageGuidance.baseImage!!.path
             assertNotEquals(copy, entry.images.single().path)
             controller.toggleSelection(NovelAiHistoryImageSelection(entry.id, entry.images.single().path))
-            controller.deleteSelected()
+            val requested = controller.state.value.selected
+            val second = store.persist(listOf(png), NovelAiGenerationRecipe(basePrompt = "second"))
+            controller.setHistorySelection(setOf(NovelAiHistoryImageSelection(second.id, second.images.single().path)))
+            controller.deleteSelected(requested)
             assertContentEquals(png, container.characterResourceStore.readBytes(copy))
             assertFalse(Files.exists(container.characterResourceStore.resolveOwnedReference(entry.images.single().path)))
-            val second = store.persist(listOf(png), NovelAiGenerationRecipe(basePrompt = "second"))
+            assertContentEquals(png, container.characterResourceStore.readBytes(second.images.single().path))
             Files.writeString(root.resolve("entities/novelai_generation_history/${second.id}.json"), "corrupt")
             controller.toggleSelection(NovelAiHistoryImageSelection(second.id, second.images.single().path))
             controller.deleteSelected()

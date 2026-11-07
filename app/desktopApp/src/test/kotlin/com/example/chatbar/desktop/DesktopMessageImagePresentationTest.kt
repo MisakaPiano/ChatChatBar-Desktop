@@ -146,6 +146,43 @@ class DesktopMessageImagePresentationTest {
         assertEquals(80, decoded.height)
     }
 
+    @Test fun `history thumbnails decode for their actual cell and keep stable requests during recomposition`() = runBlocking(awt) {
+        val raw = png(2048, 1536)
+        val before = raw.copyOf()
+        for (viewport in listOf(IntSize(180, 180), IntSize(360, 360), IntSize(240, 180))) {
+            val target = desktopHistoryThumbnailTarget(IntSize(2048, 1536), viewport)
+            var source = IntSize.Zero
+            val decoded = DesktopImageEditing.decode(raw, longestSide = 1600,
+                onSourceDimensions = { w, h -> source = IntSize(w, h) },
+                displayTargetForSource = { w, h -> desktopHistoryThumbnailTarget(IntSize(w, h), viewport).let { it.width to it.height } })
+            assertEquals(IntSize(2048, 1536), source)
+            assertTrue(decoded.width >= target.width && decoded.height >= target.height)
+            assertTrue(decoded.width < 1024 && decoded.height < 768)
+            assertTrue(target.width <= viewport.width && target.height <= viewport.height)
+        }
+        var reads = 0
+        var label by mutableStateOf("before")
+        var width by mutableStateOf(180.dp)
+        val scene = ImageComposeScene(600, 600) {
+            Column {
+                StatusText(label)
+                DesktopHistoryThumbnail("synthetic", { reads++; raw }, Modifier.width(width).height(180.dp))
+            }
+        }
+        try {
+            withTimeout(10_000) { while (scene.nodes().none { it.config.getOrNull(DesktopDecodedImageIdentity) != null }) scene.frames() }
+            val initialReads = reads
+            label = "after"
+            scene.frames()
+            assertEquals(initialReads, reads)
+            width = 360.dp
+            withTimeout(10_000) { while (reads == initialReads) scene.frames() }
+            scene.frames()
+            assertEquals(initialReads + 1, reads)
+        } finally { scene.close() }
+        assertContentEquals(before, raw)
+    }
+
     @Test fun `changing image reference never carries previous source dimensions`() = runBlocking(awt) {
         val first = png(800, 400)
         val second = png(24, 12)

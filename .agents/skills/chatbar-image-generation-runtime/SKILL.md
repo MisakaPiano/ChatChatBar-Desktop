@@ -5,6 +5,8 @@ description: Maintain ChatBar image-generation and image-processing runtime acro
 
 # ChatBar Image Generation Runtime
 
+Desktop Studio history grid uses `DesktopHistoryThumbnail` with a remembered decode target derived from the actual cell size and density. Selection/status recomposition must not restart decoding; full image/detail previews keep independent targets. Static decoding preserves orientation-correct source dimensions and immutable bytes. History delete confirmation sets a synchronous local submitting latch before launching and freezes the visible selection passed to the controller; retain atomic record validation and reference-aware cleanup.
+
 V5 transparency insertion shares the quote policy's ECMAScript whitespace and explicit-text boundary helpers, including NBSP and BOM. The request-only hint must precede the text block; stored Prompt bytes and inactive V4.5/disabled options remain unchanged. The existing case-insensitive imported-tag deduplication is retained; it is broader than upstream's exact suffix recognition and is not byte-exact upstream equivalence.
 
 `NovelAiStudioStateRepository.loadDraft` uses `NovelAiGenerationDefaults.forModel` for both settings only when the singleton is absent. Entity decoder defaults and existing draft values stay unchanged; reading a saved draft must not reset or rewrite it. Explicit reset and card sampling reset share the same model defaults.
