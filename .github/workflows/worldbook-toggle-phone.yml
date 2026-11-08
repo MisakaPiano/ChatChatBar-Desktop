@@ -23,9 +23,9 @@ jobs:
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Path compiler -Force | Out-Null
           $name = 'kotlin-compiler-embeddable-2.3.20.jar'
-          $url = 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/'
+          $url = 'https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/'
           foreach ($suffix in @('.sha1', '')) {
-            curl.exe --fail --location --retry 1 --connect-timeout 20 --max-time 120 --header "Cache-Control: no-cache" --silent --show-error --output ("compiler/" + $name + $suffix) ($url + $name + $suffix + '?ccbArtifact=002fac4210c52c27b244305d60b0906e831f49be')
+            curl.exe --fail --location --retry 1 --connect-timeout 20 --max-time 120 --header "Cache-Control: no-cache" --silent --show-error --output ("compiler/" + $name + $suffix) ($url + $name + $suffix + '?ccbWorldbookCompiler=20261108-r06')
             if ($LASTEXITCODE -ne 0) { throw 'OFFICIAL_COMPILER_DOWNLOAD_FAILED' }
           }
           $expected = (Get-Content ("compiler/" + $name + '.sha1') -Raw).Trim()
