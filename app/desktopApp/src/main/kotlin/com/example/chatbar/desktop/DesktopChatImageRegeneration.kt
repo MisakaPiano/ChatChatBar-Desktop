@@ -91,10 +91,12 @@ internal class DesktopChatImageRegeneration(
         val frozen = credential()
         require(!frozen.read().isNullOrBlank())
         val preference = requirements?.imagePromptPreference ?: openingSession.imagePromptPreference
+        // Remember the confirmed choice once at submission, outside the replayable task body.
+        // A retry retains its request snapshot without writing over a later session preference.
+        if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
+            openingSession.copy(imagePromptPreference = preference))
         return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = true, queueIfBusy = true) { report -> withContext(frozen) {
             require(eligible())
-            if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
-                openingSession.copy(imagePromptPreference = preference))
             val plan = infrastructure.promptDesigner().design(messages,
                 original.id, card, model, playerName = playerName,
                 sessionId = session.id, imageContentHint = requirements?.imageContentHint.orEmpty(),
