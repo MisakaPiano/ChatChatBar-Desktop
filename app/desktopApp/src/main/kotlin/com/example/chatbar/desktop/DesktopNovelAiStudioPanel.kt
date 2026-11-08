@@ -26,7 +26,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
     onDataSettings: (() -> Unit)? = null,
     onModelSettings: (String?) -> Unit = {}) {
-    CompositionLocalProvider(LocalDesktopStudioTextHistories provides controller.textHistories) {
+    val promptAuthority by controller.draft.collectAsState()
+    CompositionLocalProvider(LocalDesktopStudioTextHistories provides controller.textHistories,
+        LocalDesktopPromptAnnotationRevision provides (promptAuthority?.promptContentRevision ?: 0L)) {
         DesktopNovelAiStudioContent(controller, navigation, captions, diagnostics, chromeRecorder, onDataSettings, onModelSettings)
     }
 }
@@ -87,6 +89,8 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     var viewingIndex by remember { mutableStateOf(0) }
     var guidanceEditor by remember { mutableStateOf<Triple<ByteArray, ByteArray?, NovelAiFocusedInpaintRegion?>?>(null) }
     var auxiliary by remember { mutableStateOf<String?>(null) }
+    var auxiliaryActivation by remember { mutableIntStateOf(0) }
+    fun openAuxiliary(surface: String) { auxiliary = surface; auxiliaryActivation++ }
     var showingPreset by remember { mutableStateOf(false) }
     var presetActivation by remember { mutableIntStateOf(0) }
     var showingFullPrompt by remember { mutableStateOf(false) }
@@ -155,9 +159,23 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     }
     fun pickImage() { scope.launch {
         controller.picker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp", "gif", "apng")))?.let {
-            currentImage = it; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate()
+            currentImage = it; selectedResult = null; openAuxiliary("当前图片"); controller.clearReverseCandidate()
         }
     } }
+    val guidanceImages: @Composable () -> Unit = {
+        DesktopStudioGuidanceImages(d.imageGuidance, d.selectedModel, controller.resources::readBytes,
+            onPreview = { asset -> imageAction {
+                controller.resources.readBytes(asset.path)
+                importedPreview = controller.resources.resolveOwnedReference(asset.path)
+            } },
+            onReplace = { binding -> imageAction {
+                controller.picker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp")))?.let {
+                    controller.importGuidance(it, binding.target, binding.vibeId, preserveMode = true, expectedAsset = binding.asset)
+                }
+            } },
+            onRemove = { binding -> edit { it.copy(imageGuidance = desktopRemoveGuidanceImage(it.imageGuidance, binding)) } },
+            onSettings = { openAuxiliary("图像引导") })
+    }
     val section: @Composable (String) -> Unit = { section ->
             when (section) {
                 "Prompt" -> {
@@ -214,9 +232,10 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                     }
                 }
                 "图像引导" -> {
-                    desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("导入 · ${target.displayName}") { scope.launch {
+                    guidanceImages()
+                    StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("导入 · ${target.displayName}") { scope.launch {
                         controller.picker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp")))?.let { controller.importGuidance(it, target) }
-                    } } }
+                    } } } }
                     val g = d.imageGuidance
                     fun change(transform: (NovelAiImageGuidanceDraft) -> NovelAiImageGuidanceDraft) = edit { it.copy(imageGuidance = transform(it.imageGuidance)) }
                     CompactChoice("操作", NovelAiGenerationAction.entries, g.action, { it.displayName }) { value -> change { it.copy(action = value) } }
@@ -251,7 +270,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else previewPath(shownPath) }
     val imageResultActions: @Composable (Boolean) -> Unit = { allowRecipe ->
         DesktopStudioResultActions(shownPath != null && intermediate == null, {
-            currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate()
+            currentImage = shownPath; openAuxiliary("当前图片"); controller.clearReverseCandidate()
         }) {
             if (allowRecipe && intermediate == null && owned != null)
                 history.firstOrNull { entry -> entry.images.any { it.path == owned } }?.let { entry ->
@@ -268,11 +287,11 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 java.nio.file.Files.createTempFile("ccb-studio-clipboard-", ".png").also { java.nio.file.Files.write(it, bytes); clipboardFiles.add(it) }
             }
         }
-        if (file != null) { currentImage = file; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate() }
+        if (file != null) { currentImage = file; selectedResult = null; openAuxiliary("当前图片"); controller.clearReverseCandidate() }
     } },
         navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
         previewActions = { DesktopStudioPrimaryPreviewActions(shownPath != null && intermediate == null,
-            { auxiliary = "历史" }, ::preview) },
+            { openAuxiliary("历史") }, ::preview) },
         inlinePreviewActions = {
             DesktopStudioPreviewActions(shownPath != null, intermediate != null, true) { inlineResetRevision++ }
         },
@@ -293,14 +312,15 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 StudioAction("查看模型读取问题", style = StudioActionStyle.TERTIARY) { modelProblemDismissed = false }
             }
             StudioActions {
-                StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
-                StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
+                StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { openAuxiliary("AI 设计") }
+                StudioAction("图像引导", icon = DesktopAppIcons.Star) { openAuxiliary("图像引导") }
                 StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
                 DesktopImageLogEntry(controller.imageDiagnostics, state.generationTaskId)
-                StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
+                StudioAction("设置", icon = DesktopAppIcons.Settings) { openAuxiliary("设置") }
             }
             if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
             DesktopPostProcessHistoryNotice(controller, state.postProcessError)
+            if (desktopGuidanceImageBindings(d.imageGuidance, d.selectedModel).isNotEmpty()) guidanceImages()
 
             section("Prompt")
             StudioDisclosure("生成设置", d.activeSettings.sizeTier.displayName, initiallyOpen = true) { section("参数") }
@@ -345,7 +365,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     auxiliary?.let { surface ->
         DesktopImageToolWindow(surface, { auxiliary = null },
             width = when (surface) { "设置", "设计设置" -> 560.dp; "图像引导" -> 680.dp; else -> 980.dp },
-            onActivate = { authRevision++ }) {
+            onActivate = { authRevision++ }, activationRevision = auxiliaryActivation) {
                 StudioActions { StudioAction(if (surface == "设计历史" || surface == "设计设置") "返回 AI 设计" else "返回 Studio") { auxiliary = if (surface == "设计历史" || surface == "设计设置") "AI 设计" else null } }
                 if (surface == "AI 设计") DesktopDesignConversation(controller, d, busy, authentication,
                     onSettings = { auxiliary = "设计设置" }, onHistory = { auxiliary = "设计历史" },
@@ -353,9 +373,11 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 else if (surface == "历史") Box(Modifier.weight(1f).fillMaxWidth()) {
                     DesktopStudioHistory(controller, onApply = ::reuse,
                         onPreview = { paths, index -> viewing = paths; viewingIndex = index },
-                        onUse = { path, target -> scope.launch { controller.useHistoryImage(path, target); auxiliary = "图像引导" } })
+                        onUse = { path, target -> scope.launch { if (controller.useHistoryImage(path, target)) openAuxiliary("图像引导") } })
                 }
                 else Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
+                    if (imageError.isNotBlank()) StatusText(imageError)
                     if (surface == "设置") {
                     StudioActions {
                         StudioAction("检查 Danbooru 词库更新", enabled = !busy) { scope.launch { controller.checkCatalog() } }
@@ -393,7 +415,9 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                                 } }
                                 StudioAction("显示文件") { imageAction { ProcessBuilder("explorer.exe", "/select,", path.toString()).start() } }
                             }
-                            StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("用作 · ${target.displayName}", enabled = !busy) { scope.launch { controller.importGuidance(path, target); auxiliary = "图像引导" } } } }
+                            StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("用作 · ${target.displayName}") { scope.launch {
+                                if (controller.importGuidance(path, target)) openAuxiliary("图像引导")
+                            } } } }
                             StudioDisclosure("Enhance / Upscale") {
                                 DesktopImagePostProcessPanel(path, controller) { bytes -> imageAction {
                                     val target = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -435,7 +459,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
         val copy = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             java.nio.file.Files.createTempFile("ccb-image-tools-", ".png").also { java.nio.file.Files.write(it, bytes); clipboardFiles.add(it) }
         }
-        currentImage = copy; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate()
+        currentImage = copy; selectedResult = null; openAuxiliary("当前图片"); controller.clearReverseCandidate()
     } }) }
     guidanceEditor?.let { DesktopImageToolsDialog(it.first, controller.picker, { guidanceEditor = null }, controller::applyGuidanceEdit, it.second, it.third) }
     metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null; metadataPreview = null }, title = "选择导入的元数据", icon = desktopImageWindowIcon(),

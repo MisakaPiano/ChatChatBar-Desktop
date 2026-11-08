@@ -559,8 +559,22 @@ internal class DesktopNovelAiStudioController(
         } }
     }
 
-    suspend fun importGuidance(path: Path, target: NovelAiImageUseTarget) = action {
+    suspend fun importGuidance(path: Path, target: NovelAiImageUseTarget, replacingVibeId: String? = null,
+        preserveMode: Boolean = false, expectedAsset: NovelAiStudioAssetRef? = null) = action {
         coordinator.withNormalOperation { withContext(NonCancellable) {
+            fun checkSource(guidance: NovelAiImageGuidanceDraft) {
+                if (!preserveMode) return
+                check(when (target) {
+                    NovelAiImageUseTarget.IMAGE_TO_IMAGE, NovelAiImageUseTarget.INPAINT -> guidance.baseImage == expectedAsset
+                    NovelAiImageUseTarget.PRECISE_REFERENCE -> guidance.preciseReference.asset == expectedAsset
+                    NovelAiImageUseTarget.VIBE_REFERENCE -> guidance.vibes.singleOrNull { it.id == replacingVibeId }?.let { it.asset == expectedAsset } == true
+                }) { "原参考图片已变化，请重新选择" }
+            }
+            checkSource(repository.loadDraft().imageGuidance)
+            if (replacingVibeId != null) {
+                require(target == NovelAiImageUseTarget.VIBE_REFERENCE)
+                require(repository.loadDraft().imageGuidance.vibes.any { it.id == replacingVibeId })
+            }
             require(Files.size(path) <= DesktopImageEditing.MAX_BYTES)
             val bytes = Files.readAllBytes(path)
             DesktopImageEditing.requireStatic(bytes)
@@ -572,24 +586,33 @@ internal class DesktopNovelAiStudioController(
                 sha256 = java.security.MessageDigest.getInstance("SHA-256").digest(normalized).joinToString("") { "%02x".format(it) })
             // Unknown commit outcomes retain the newly created candidate. Undo retains previous sources.
             repository.saveUndoDraft(repository.loadDraft())
-            repository.updateDraft { old -> old.copy(imageGuidance = when (target) {
+            repository.updateDraft { old ->
+                checkSource(old.imageGuidance)
+                val nextGuidance = when (target) {
                 NovelAiImageUseTarget.IMAGE_TO_IMAGE -> old.imageGuidance.copy(action = NovelAiGenerationAction.IMAGE_TO_IMAGE, baseImage = asset, maskImage = null)
                 NovelAiImageUseTarget.INPAINT -> old.imageGuidance.copy(action = NovelAiGenerationAction.INPAINT, baseImage = asset, maskImage = null,
                     focusedInpaintRegion = null)
                 NovelAiImageUseTarget.PRECISE_REFERENCE -> old.imageGuidance.copy(referenceMode = NovelAiReferenceMode.PRECISE,
                     preciseReference = old.imageGuidance.preciseReference.copy(asset = asset))
                 NovelAiImageUseTarget.VIBE_REFERENCE -> {
-                    require(old.imageGuidance.vibes.size < NovelAiImageGuidanceDraft.MAX_VIBES)
+                    require(replacingVibeId != null || old.imageGuidance.vibes.size < NovelAiImageGuidanceDraft.MAX_VIBES)
                     old.imageGuidance.copy(referenceMode = NovelAiReferenceMode.VIBE,
-                        vibes = old.imageGuidance.vibes + NovelAiVibeReferenceDraft(asset = asset))
+                        vibes = if (replacingVibeId == null) old.imageGuidance.vibes + NovelAiVibeReferenceDraft(asset = asset)
+                        else {
+                            require(old.imageGuidance.vibes.any { it.id == replacingVibeId })
+                            old.imageGuidance.vibes.map { if (it.id == replacingVibeId) it.copy(asset = asset, encodedVibe = null) else it }
+                        })
                 }
-            }) }
+                }
+                old.copy(imageGuidance = if (preserveMode) nextGuidance.copy(action = old.imageGuidance.action,
+                    referenceMode = old.imageGuidance.referenceMode) else nextGuidance)
+            }
         } }
     }
 
-    suspend fun useHistoryImage(reference: String, target: NovelAiImageUseTarget) {
+    suspend fun useHistoryImage(reference: String, target: NovelAiImageUseTarget): Boolean {
         resources.readBytes(reference) // Validate owned regular file before resolving.
-        importGuidance(resources.resolveOwnedReference(reference), target)
+        return importGuidance(resources.resolveOwnedReference(reference), target)
     }
 
     suspend fun applyGuidanceEdit(bytes: ByteArray, mask: ByteArray?, region: NovelAiFocusedInpaintRegion) = action {
