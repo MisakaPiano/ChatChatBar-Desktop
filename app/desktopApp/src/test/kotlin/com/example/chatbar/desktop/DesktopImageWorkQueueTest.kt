@@ -9,6 +9,31 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopImageWorkQueueTest {
+    @Test fun `new Moment placeholder is reserved with its card before another post action can be admitted`() = runBlocking {
+        val f = DesktopAssistantImageActionTest.Fixture(); val entered = CompletableDeferred<Unit>()
+        var owner: DesktopMomentsController? = null
+        try {
+            f.initialize(); val c = f.c
+            c.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }
+            val store = DesktopMomentStore(c.jsonFileStorage, c.dataOperationCoordinator)
+            val controller = DesktopMomentsController(store, c.settingsRepository, c.characterRepository, c.chatRepository,
+                c.dataOperationCoordinator, c.taskRuntime,
+                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> entered.complete(Unit); awaitCancellation() },
+                imageGenerator = DesktopMomentImageGenerator { _, _, _, _, _, _, _ -> error("Duplicate post image must not run") })
+            owner = controller
+            withTimeout(5000) { controller.state.first { it.enabled } }
+            controller.generate("card"); withTimeout(5000) { entered.await() }
+            val placeholder = store.posts().single()
+            assertTrue("card:card" in controller.state.value.busyTargets)
+            assertTrue("post:${placeholder.id}" in controller.state.value.busyTargets)
+            controller.retry(placeholder); controller.generateImage(placeholder)
+            assertEquals(1, controller.workRows.value.count { it.active })
+            assertTrue(controller.stopTask(controller.workRows.value.single().id))
+            withTimeout(5000) { controller.workRows.first { it.none { row -> row.active } } }
+            assertEquals(MomentTaskStatus.FAILED, store.tasks().single().status)
+            assertTrue(controller.state.value.busyTargets.isEmpty())
+        } finally { owner?.closeAndDrain(); f.close() }
+    }
     @Test fun `different source queues and queued cancellation retry cannot overtake running work or release its target`() = runBlocking {
         val f = DesktopAssistantImageActionTest.Fixture()
         val release = CompletableDeferred<Unit>(); val entered = CompletableDeferred<Unit>()
@@ -77,7 +102,7 @@ class DesktopImageWorkQueueTest {
                     val path = "images/queue-${post.id}.png"
                     java.nio.file.Files.createDirectories(f.design.root.resolve("images"))
                     java.nio.file.Files.write(f.design.root.resolve(path), DesktopImageEditing.png(java.awt.image.BufferedImage(16,16,java.awt.image.BufferedImage.TYPE_INT_RGB)))
-                    DesktopMomentImageResult(path, GeneratedImageMetadata(path, "Synthetic", width = 16, height = 16, sizePreset = "SQUARE"), "Prompt ${post.id}", "Brief")
+                    DesktopMomentImageResult(path, GeneratedImageMetadata(path, "Synthetic", negativePrompt = "Negative", width = 16, height = 16, sizePreset = "SQUARE"), "Prompt ${post.id}", "Brief")
                 })
             owner = controller
             withTimeout(5000) { controller.state.first { it.enabled && it.posts.size == 2 } }

@@ -12,7 +12,7 @@ import java.util.UUID
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
-private class DesktopMomentWorkEvidence : AbstractCoroutineContextElement(Key) {
+private class DesktopMomentWorkEvidence(val workId: String) : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<DesktopMomentWorkEvidence>
     var phase: DesktopWorkPhase? = null
     var skipped = false
@@ -78,7 +78,7 @@ internal class DesktopMomentsController(
     private val admissionMutex = Mutex()
     private var accepting = true
     private val workers = mutableMapOf<String, Job>()
-    private val workTargets = mutableMapOf<String, String>()
+    private val workTargets = mutableMapOf<String, Set<String>>()
     private var activeWorkId: String? = null
     private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
     val workRows = mutableWork.asStateFlow()
@@ -332,13 +332,13 @@ internal class DesktopMomentsController(
     private fun launchOwnedWork(sessionId: String, target: String, usageContext: DesktopUsageContext? = null,
         work: suspend ((String) -> Unit) -> Unit): Job? = synchronized(lock) {
         check(accepting)
-        if (target in workTargets.values) {
+        if (workTargets.values.any { target in it }) {
             mutableState.update { it.copy(notice = "该角色卡或动态已有任务，请等待或停止对应任务") }; return@synchronized null
         }
         val workId = UUID.randomUUID().toString()
-        workTargets[workId] = target
+        workTargets[workId] = setOf(target)
         var outcome = DesktopWorkPhase.COMPLETED
-        val evidence = DesktopMomentWorkEvidence()
+        val evidence = DesktopMomentWorkEvidence(workId)
         mutableWork.update { rows -> (listOf(DesktopWorkRow(workId, DesktopWorkKind.MOMENT, DesktopWorkPhase.RUNNING,
             clock(), target = DesktopWorkTarget(DesktopPrimaryRoute.MOMENTS, sessionId = sessionId, detail = DesktopWorkDetail.MOMENTS_HOME),
             canStop = true, contextLabel = "朋友圈任务（忙时排队）")) + rows).let(::boundedWorkRows) }
@@ -376,11 +376,11 @@ internal class DesktopMomentsController(
             }
         }
         workers[workId] = job
-        mutableState.update { it.copy(busy = true, busyTargets = workTargets.values.toSet()) }
+        mutableState.update { it.copy(busy = true, busyTargets = workTargets.values.flatten().toSet()) }
         job.invokeOnCompletion { failure ->
             synchronized(lock) {
                 workers.remove(workId); workTargets.remove(workId)
-                mutableState.update { it.copy(busy = workers.isNotEmpty(), busyTargets = workTargets.values.toSet()) }
+                mutableState.update { it.copy(busy = workers.isNotEmpty(), busyTargets = workTargets.values.flatten().toSet()) }
             }
             val actual = if (outcome == DesktopWorkPhase.UNCONFIRMED || evidence.phase == DesktopWorkPhase.UNCONFIRMED)
                 DesktopWorkPhase.UNCONFIRMED else evidence.phase ?: outcome
@@ -419,6 +419,13 @@ internal class DesktopMomentsController(
             ?: error("原会话已删除；本次计划保留，请核对后处理")
         val attempt = store.begin(source, card, session, retry, recoverMissingPost)
         try {
+            val workId = requireNotNull(currentCoroutineContext()[DesktopMomentWorkEvidence]).workId
+            synchronized(lock) {
+                val postTarget = "post:${attempt.placeholder.id}"
+                check(workTargets.none { (id, targets) -> id != workId && postTarget in targets })
+                workTargets[workId] = requireNotNull(workTargets[workId]) + postTarget
+                mutableState.update { it.copy(busyTargets = workTargets.values.flatten().toSet()) }
+            }
             val messages = chats.getMessages(session.id)
             val latest = store.posts().filter { it.characterCardId == card.id && !it.isPlaceholder }.maxByOrNull { it.generatedAt }
             val result = if (debug) {
