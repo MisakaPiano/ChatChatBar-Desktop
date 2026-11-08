@@ -14,7 +14,7 @@ concurrency:
 jobs:
   focused:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Enable long-path checkout
         run: git config --global core.longpaths true
@@ -33,6 +33,97 @@ jobs:
           New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
           $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
           @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Prepare supported temporary cloud display
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-native-probe') -ErrorAction Stop | Out-Null
+          ./tools/windows/Set-CloudNativeProbeDisplay.ps1
+      - name: Restore only the pinned public official compiler
+        id: restoreCompiler
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccb-official-compiler-verified
+          key: ccb-official-kotlin-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337-v1
+      - name: Recover pinned compiler with bounded missing-range waves and full digest validation
+        id: verifyCompiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:RUNNER_TEMP 'ccb-official-compiler-transport.py'
+          @'
+          from pathlib import Path
+          import hashlib,json,os,shutil,subprocess,tempfile,time
+          url='https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/kotlin-compiler-embeddable-2.3.20.jar'
+          total=59718536
+          sha1='002fac4210c52c27b244305d60b0906e831f49be'
+          sha256='976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
+          root=Path(os.environ['RUNNER_TEMP'])/'ccb-ui-probe/compiler-proof';root.mkdir(parents=True,exist_ok=True)
+          gradle=Path(os.environ.get('GRADLE_USER_HOME',str(Path.home()/'.gradle')))/'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20'/sha1
+          target=gradle/'kotlin-compiler-embeddable-2.3.20.jar'
+          verifiedRoot=Path(os.environ['RUNNER_TEMP'])/'ccb-official-compiler-verified'
+          retained=verifiedRoot/'compiler.jar'
+          proof={'officialUrl':url,'expectedBytes':total,'expectedSha1':sha1,'expectedSha256':sha256,'sourceOrDependencyRepositoryChanged':False,'parts':[],'wavesBound':2,'totalSecondsBound':600,'verified':False}
+          def verified(path):
+              if not path.is_file()or path.stat().st_size!=total:return False
+              data=path.read_bytes()
+              return hashlib.sha1(data).hexdigest()==sha1 and hashlib.sha256(data).hexdigest()==sha256
+          try:
+              if verified(target):
+                  proof['cacheReuse']='verified-gradle-file'
+              elif retained.exists():
+                  if not verified(retained):raise RuntimeError('RESTORED_OFFICIAL_COMPILER_DIGEST_MISMATCH')
+                  gradle.mkdir(parents=True,exist_ok=True);shutil.copyfile(retained,target)
+                  proof['cacheReuse']='independently-reverified-official-only-cache'
+              else:
+                  if target.exists():raise RuntimeError('EXISTING_COMPILER_CACHE_DIGEST_MISMATCH')
+                  deadline=time.monotonic()+600
+                  starts=list(range(0,total,2*1024*1024));ready={}
+                  with tempfile.TemporaryDirectory(prefix='ccb-official-ranges-',dir=os.environ['RUNNER_TEMP'])as tmp:
+                      stage=Path(tmp);whole=stage/'compiler.jar';fullResponse=False
+                      for wave in range(1,3):
+                          for start in starts:
+                              if start in ready:continue
+                              left=deadline-time.monotonic()
+                              if left<1:raise RuntimeError('OFFICIAL_COMPILER_RANGE_TOTAL_DEADLINE')
+                              end=min(start+2*1024*1024-1,total-1)
+                              part=stage/('part-'+str(start));headers=stage/('headers-'+str(start))
+                              query='?ccbSegment='+str(start)+('' if wave==1 else '&ccbRangeRetry='+str(wave))
+                              result=subprocess.run(['curl.exe','--fail','--silent','--show-error','--location','--connect-timeout',str(min(20,max(1,int(left)))),'--max-time',str(min(60,max(1,int(left)))),'--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+query])
+                              size=part.stat().st_size if part.exists()else 0
+                              header=headers.read_text(encoding='utf-8',errors='replace').lower()if headers.exists()else''
+                              matched=('content-range: bytes '+str(start)+'-'+str(end)+'/'+str(total))in header
+                              row={'wave':wave,'start':start,'end':end,'exitCode':result.returncode,'bytes':size,'contentRangeMatched':matched}
+                              proof['parts'].append(row)
+                              if result.returncode==0 and start==0 and size==total and verified(part):
+                                  shutil.copyfile(part,whole);fullResponse=True;break
+                              if result.returncode==0 and size==end-start+1 and matched:
+                                  ready[start]=part;row['partSha256']=hashlib.sha256(part.read_bytes()).hexdigest()
+                              else:
+                                  print('OFFICIAL_RANGE_ATTEMPT_REFUSED wave='+str(wave)+' start='+str(start)+' exit='+str(result.returncode),flush=True)
+                          if fullResponse or len(ready)==len(starts):break
+                      if not fullResponse:
+                          if len(ready)!=len(starts):raise RuntimeError('OFFICIAL_COMPILER_MISSING_RANGES_'+str(len(starts)-len(ready)))
+                          with whole.open('wb')as combined:
+                              for start in starts:combined.write(ready[start].read_bytes())
+                      if not verified(whole):raise RuntimeError('OFFICIAL_COMPILER_FINAL_DIGEST_MISMATCH')
+                      gradle.mkdir(parents=True,exist_ok=True);shutil.copyfile(whole,target)
+                      proof['reusedSuccessfulRangesWithinJob']=True
+              if not verified(target):raise RuntimeError('OFFICIAL_COMPILER_GRADLE_COPY_MISMATCH')
+              verifiedRoot.mkdir(parents=True,exist_ok=True)
+              if not retained.exists():shutil.copyfile(target,retained)
+              if not verified(retained):raise RuntimeError('OFFICIAL_COMPILER_RETAINED_COPY_MISMATCH')
+              proof.update(actualBytes=target.stat().st_size,actualSha1=hashlib.sha1(target.read_bytes()).hexdigest(),actualSha256=hashlib.sha256(target.read_bytes()).hexdigest(),verified=True)
+          finally:
+              (root/'compiler-transport-proof.json').write_text(json.dumps(proof,indent=2),encoding='utf-8')
+          '@ | Set-Content -LiteralPath $script -Encoding utf8
+          python $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain only the fully verified public compiler for subsequent focused jobs
+        if: steps.verifyCompiler.outcome == 'success' && steps.restoreCompiler.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ccb-official-compiler-verified
+          key: ccb-official-kotlin-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337-v1
       - name: Record exact source and run bounded synthetic regressions
         shell: pwsh
         working-directory: app
@@ -45,18 +136,101 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sharedExit = 0
+          @'
+          {
+            "normalSource": "68016066790d6edadb3f24273b7f9be708b2e98e",
+            "selectedSharedClasses": [],
+            "selectedDesktopClasses": [
+              "com.example.chatbar.desktop.DesktopRetainedAiModelChoicesTest"
+            ],
+            "sourceBlobs": {
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRetainedAiModelChoicesTest.kt": "a9b2be5e96075b73df057da508cc3adf552d8a91",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAiModelChoices.kt": "d830136622676557e08f0f9b64f5d450266dcd29",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": "9da3602e0f6ee66e078628ace2e318b65af0044a",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterCardAiController.kt": "d60b853c17baf6807e8c599d811fb6bc7c67bfb9",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterCardAiPanel.kt": "396e6bad5f12e70deccc7f9b29ea4dfcbbdcdae0",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterCardPngRenderer.kt": "aed0274074d85f431b6f08c77cbed5b5591c3575",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftResources.kt": "9c25771cc4e2766401be5807c713489d28ba6aa8",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt": "459dc4beb01a4f10ab971647e1c99b8b9c939d77",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt": "8681cbe346b7be17dce8564391902ba024352c35",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt": "e7c60fb1974b0dc5efad8e54c9ddc0f71134c433",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt": "abe1c34796f594977cc1af3f3b2e0af0e7057131",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoverExportDialog.kt": "e9247c7520d564e9aa3b14adc6c0414da6d7f3bc",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopEffectiveModelPresentation.kt": "2b920940f4b6f3debfc34d6f7b8e8e74cadf66ac",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFormatCardAutoFillController.kt": "21dfd7873b08e4fc6b2d4f6c975e57f3f48b4c3a",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFormatCardAutoFillPanel.kt": "35711f2c09805b6e17274d64aa718db275ce3a94",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt": "37f4deaeef6baa013328c7e882b8b2461555788b",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopModelSettingsController.kt": "d7eb79c29e94f3adff1a468bf5ee7753e553eb48",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioController.kt": "a846808c51558be18d624666a52f94aacd12673d",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioPanel.kt": "4e6a4ea8ea4839f329fe7a5e9ad575d6127db544",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt": "d51c6df6092947cf496bf61389579590b98ec266",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt": "1e75cd7ecf1de6eb09d73ee545eeb2dba654f981",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPresentation.kt": "77a1917439ee4defbfff4d6e3258cedcc7677f5a",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioCredentialRecovery.kt": "f69551991b60efd7b251c9c9a673015e166763bc",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioModels.kt": "5b31100543e40102f041bf084c3156d951b42ee9",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTypedTransferController.kt": "e6e7441ae9772a35b9c8487f551c725ee04960ed",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUiStrings.kt": "711ad3f1a0ce300ab5a38f69783aa13a9115cd72",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWorldBookAiController.kt": "1e4aa9f5c6d0911e38cf31b95fd451ae9bf46e7e",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWorldBookAiPanel.kt": "3fc5863e236a83e82c589cbfae59bff87e2ed7d7",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupDataRegistry.kt": "7ed120438802b678841bc5b17bded45a6fb6c178",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt": "4eb71ef5803e0bb3d43d1c9ba19da7dc1b36119b",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt": "56dc23f8fa854e4efe5db1a2dcde10d897f5dedc",
+              "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeDestinationPlan.kt": "6e1ffe3ce0683774097ece3d547405722eb43c6e",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopCharacterImageTest.kt": "eae87961ad4bb0d2041e099defa0c84fedd756f3",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatBubbleParityTest.kt": "4fc9a34d223779a2ae99c7b5c2211ce106c87d88",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatCompactStatusAndVersionsTest.kt": "ae80fbe9cb4187a6508a9358706acf34d7684e2d",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopManagementControllerTest.kt": "8609666c24dc04f7723ca21ea64708e097d951e1",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt": "2ddd7283674ccafe7d797f2d38ef3f481711784f",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopModelPublicationAdmissionTest.kt": "9d274eaeb4a8cd508a98fe664e1ac705b85196a2",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopOriginalCharacterCoverTest.kt": "521fd88021e4ccc439e75c92d0acb97ab776874f",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopOriginalCoverBackupTest.kt": "178d1f0f582edbd1620d94cdd31797a8a962e225",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRetainedModelChoicesTest.kt": "85c7987771f42544c62fbe716d76aba19fc84d07",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRetainedPrimaryModelChoicesTest.kt": "582bdc98406e927061caa49e0c5b63bbc2e69d19",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStudioModelConfigurationTest.kt": "5bdfcd52a2536b1a13a79fe86e810d399bbe1d14",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTypedTransferControllerTest.kt": "3406568bf9db39620814d406aa19fd217c7242b1",
+              "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUiLanguageControllerTest.kt": "7206bf8fe0401d593c4509b388e6884ee538b979",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt": "7c89d260fa09ecbc6125bc56c94eb6610a8a7488",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ModelRepository.kt": "022376ae95dfdd7deccff202cd9872f2706fdd24",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CardTransferModels.kt": "2bbff977c3fc6fabcf185c06501f995b998a948a",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CharacterCardPngExportOptions.kt": "5d451f240e75d6f10b563fe637959cf04eba5e06",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CharacterCardPngPackageCodec.kt": "24e67a60548535274a2c2a9c3d9a375c4fc81f82",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CharacterCardTransferCore.kt": "dcd0e96f74d2e192879673ce59f73dfab33a5148",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CharacterResourceStore.kt": "874c58398df19a2d545cc72e284fbebada2ed9b0",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/OriginalCharacterCover.kt": "509db2208e2b784d95f0283bad0fc20bdaf532d6",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/SharedImportClassifierCore.kt": "38cedfb3dab23849edce5390ce24707ee9e13778",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/model/EffectiveModelConfiguration.kt": "4b4746297999e4b63813a263be1b484da2b05783",
+              "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/model/EffectiveModelResolver.kt": "9c6f5417792b0adcad10cfce882914919de0ecf9",
+              "app/sharedCore/src/test/kotlin/com/example/chatbar/data/repository/ModelRepositoryPublicationTest.kt": "58a704b20403b89a3792ff7db90c4b91ecd32419",
+              "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/card/CharacterCardPngExportOptionsTest.kt": "ee559d5b58cbe8427c8ab850c4875a9762b86b2b",
+              "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/card/OriginalCharacterCoverTest.kt": "00156d48f99556ee31a77e3a15d0eaeab12e5cfd",
+              "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/model/EffectiveModelResolverTest.kt": "65955e671964f6543ba725f5871cd91f60e79319"
+            }
+          }
+          '@ | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/expected-source-and-scope.json"
+          python -c "import json,subprocess,os; from pathlib import Path; p=Path(os.environ['RUNNER_TEMP'])/'ccb-ui-probe/expected-source-and-scope.json'; m=json.loads(p.read_text(encoding='utf-8-sig')); actual={k:subprocess.check_output(['git','rev-parse','HEAD:'+k],text=True).strip() for k in m['sourceBlobs']}; assert actual==m['sourceBlobs']; m['actualSourceBlobs']=actual; m['verified']=True; (p.parent/'actual-source-proof.json').write_text(json.dumps(m,indent=2),encoding='utf-8')"
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=false --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.desktop.DesktopRetainedAiModelChoicesTest'
+          $desktopExit = $LASTEXITCODE
+          @{ sharedExecuted=$false; desktopExit=$desktopExit } | ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/group-exits.json"
+          if ($sharedExit -ne 0 -or $desktopExit -ne 0) { exit 1 }
+      - name: Restore temporary runner display
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath (Join-Path $env:RUNNER_TEMP 'ccb-native-probe/display-original.json')) {
+            ./tools/windows/Set-CloudNativeProbeDisplay.ps1 -Restore
+          }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: retained-ai-models-r03-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
             app/desktopApp/build/test-results/test/
             app/desktopApp/build/reports/tests/test/
             ${{ runner.temp }}/ccb-ui-probe/
+            ${{ runner.temp }}/ccb-native-probe/
           if-no-files-found: error
