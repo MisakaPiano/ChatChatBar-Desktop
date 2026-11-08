@@ -2,7 +2,11 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.semantics.*
@@ -33,7 +37,7 @@ class DesktopChatCompactStatusAndVersionsTest {
         val zh = DesktopUiStrings(DesktopUiLanguage.ZH_CN); val en = DesktopUiStrings(DesktopUiLanguage.EN)
         fun status(text: String) = desktopPresentMessage(
             com.example.chatbar.data.local.entity.ChatMessage.create("synthetic", com.example.chatbar.data.local.entity.MessageRole.ASSISTANT,
-                "<n=\"其他人\"/>[此前发言]()\n```status\n$text\n```"), "User", "Card", null, true)
+                "<n=\"其他人\"/>[此前发言]()\n```status\n$text\n```"), card = null, playerName = "User", segmentedAssistant = true)
             .segments.single { it.kind == RoleplaySegmentKind.STATUS }
         val named = status("👤姓名：小宁\n位置：旅馆大厅")
         assertEquals("状态栏：小宁", desktopStatusDisclosureLabel(named, zh))
@@ -55,10 +59,12 @@ class DesktopChatCompactStatusAndVersionsTest {
             val strings = DesktopUiStrings(DesktopUiLanguage.ZH_CN)
             for (width in listOf(360, 800)) {
                 val scene = ImageComposeScene(width, 650) {
-                    val state by controller.state.collectAsState()
-                    state.messages.firstOrNull { it.id == f.source.id }?.let { message ->
-                        PrimaryMessageBubble(message, state.copy(assistantSegmentedBubblesEnabled = true), controller, clipboard,
-                            actions = listOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE))
+                    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
+                        val state by controller.state.collectAsState()
+                        state.messages.firstOrNull { it.id == f.source.id }?.let { message ->
+                            PrimaryMessageBubble(message, state.copy(assistantSegmentedBubblesEnabled = true), controller, clipboard,
+                                actions = listOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE))
+                        }
                     }
                 }
                 try {
