@@ -57,6 +57,11 @@ jobs:
           text = text.replace(old_scheme, 'android:scheme="chatbar-alignment-a1"')
           manifest.write_text(text)
           PY
+      - uses: actions/cache/restore@v4
+        id: compiler_cache
+        with:
+          path: ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/002fac4210c52c27b244305d60b0906e831f49be
+          key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
       - name: Verify official compiler with bounded range transport after full download timeout
         run: |
           python3 - <<'PY'
@@ -84,10 +89,17 @@ jobs:
                           end = min(start+2*1024*1024-1,total-1)
                           part = staged / 'part'
                           headers = root / ('headers-'+str(start)+'.txt')
-                          result = subprocess.run(['curl','--fail','--silent','--show-error','--location','--max-time','60','--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+'?ccbSegment='+str(start)])
-                          size = part.stat().st_size if part.exists() else 0
-                          proof['parts'].append({'start':start,'end':end,'exitCode':result.returncode,'bytes':size})
-                          if result.returncode: raise RuntimeError('Official compiler range request failed before Gradle')
+                          attempts = []
+                          for attempt in range(3):
+                              result = subprocess.run(['curl','--fail','--silent','--show-error','--location','--max-time','45','--write-out','%{http_code}','--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+'?ccbSegment='+str(start)], capture_output=True, text=True)
+                              size = part.stat().st_size if part.exists() else 0
+                              status = result.stdout.strip()
+                              attempts.append({'attempt':attempt+1,'exitCode':result.returncode,'httpStatus':status,'bytes':size})
+                              if result.returncode == 0: break
+                              print('Compiler segment failed', start, attempts[-1], result.stderr.strip())
+                              if status not in ('000','408','429','500','502','503','504'): break
+                          proof['parts'].append({'start':start,'end':end,'exitCode':result.returncode,'bytes':size,'attempts':attempts})
+                          if result.returncode: raise RuntimeError('Official compiler segment failed after bounded transient retries before Gradle')
                           if start == 0 and size == total:
                               combined.write(part.read_bytes())
                               break
@@ -98,11 +110,17 @@ jobs:
               data = whole.read_bytes()
               assert hashlib.sha1(data).hexdigest() == sha1
               proof['actualSha256'] = hashlib.sha256(data).hexdigest()
+              assert proof['actualSha256'] == '976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
               proof['verified'] = True
               shutil.copyfile(whole, target)
           finally:
               (root/'compiler-transport-proof.json').write_text(json.dumps(proof,indent=2))
           PY
+      - uses: actions/cache/save@v4
+        if: steps.compiler_cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/002fac4210c52c27b244305d60b0906e831f49be
+          key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
       - name: Compile and check affected unit behavior
         working-directory: app
         run: |
