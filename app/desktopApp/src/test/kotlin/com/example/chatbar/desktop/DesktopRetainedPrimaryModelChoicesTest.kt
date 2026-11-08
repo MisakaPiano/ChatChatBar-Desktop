@@ -50,6 +50,7 @@ class DesktopRetainedPrimaryModelChoicesTest {
                 assertEquals(persisted, c.chatRepository.getSession("session"))
                 assertFalse(after.toString().contains("synthetic-primary-key"))
                 assertFalse(after.modelChoicesReadFailed)
+                observation?.cancelAndJoin(); observation = null
             }
         } finally {
             withContext(NonCancellable) { observation?.cancelAndJoin(); c.close() }

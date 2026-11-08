@@ -61,6 +61,7 @@ class DesktopRetainedModelChoicesTest {
                 assertFalse(c.state.value.modelChoicesReadFailed)
                 assertFalse(c.state.value.toString().contains("synthetic-secret"))
                 assertFalse(c.state.value.busy)
+                observer?.cancelAndJoin(); observer = null
             }
         } finally {
             withContext(NonCancellable) { observer?.cancelAndJoin() }
@@ -88,6 +89,7 @@ class DesktopRetainedModelChoicesTest {
                 c.state.first { !it.modelChoicesReadFailed && it.availableChatModels.any { model -> model.id == "first" } }
                 assertEquals(saved, f.secrets.values)
                 assertFalse(c.state.value.toString().contains("synthetic-secret-not-ui"))
+                observer?.cancelAndJoin(); observer = null
             }
         } finally {
             withContext(NonCancellable) { observer?.cancelAndJoin() }
