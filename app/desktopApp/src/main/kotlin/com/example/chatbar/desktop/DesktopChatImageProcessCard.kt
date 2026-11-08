@@ -17,7 +17,8 @@ internal fun DesktopChatImageProcessCard(
 ) {
     var expanded by remember(task.taskId) { mutableStateOf(true) }
     val scroll = rememberScrollState()
-    val phase = progress?.stage ?: "Prompt 设计"
+    val phase = if (task.status == DesktopTaskStatus.RUNNING && task.startedAt == null) "等待图像任务"
+        else progress?.stage ?: "Prompt 设计"
     Row(Modifier.fillMaxWidth().testTag("image-process-row-${task.taskId}"),
         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
         Column(Modifier.weight(1f).testTag("image-process-card-${task.taskId}")

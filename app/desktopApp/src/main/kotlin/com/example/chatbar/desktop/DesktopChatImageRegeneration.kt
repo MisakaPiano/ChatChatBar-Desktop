@@ -8,6 +8,9 @@ import com.example.chatbar.domain.card.PackagedImage
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.desktop.security.DesktopCredentialKey
+import com.example.chatbar.desktop.security.DesktopAccountStore
+import com.example.chatbar.desktop.security.DesktopAccountService
+import com.example.chatbar.desktop.security.DesktopCredentialCall
 import java.util.Base64
 import java.util.UUID
 import kotlinx.coroutines.*
@@ -32,6 +35,13 @@ internal class DesktopChatImageRegeneration(
     private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
     private val imageClient: okhttp3.OkHttpClient? = null,
 ) {
+    val taskStates get() = tasks.tasks
+    private suspend fun credential(): DesktopCredentialCall {
+        val key = DesktopCredentialKey.NovelAiToken
+        currentCoroutineContext()[DesktopCredentialCall]?.takeIf { it.owner === secrets && it.credentialKey == key }?.let { return it }
+        return (secrets as? DesktopAccountStore)?.captureCall(key, DesktopAccountService.NOVELAI)
+            ?: DesktopCredentialCall(secrets, key, "unmanaged", secrets.load(key))
+    }
     /** Presence/authentication booleans only leave this boundary; no account request or task admission. */
     suspend fun preflight(original: ChatMessage): DesktopChatImagePreflight = try {
         when {
@@ -66,24 +76,27 @@ internal class DesktopChatImageRegeneration(
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
     suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
         requirePreflight(original)
-        suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)
+        suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
+            chats.readSessionDurable(original.sessionId) is EntityReadResult.Valid
         require(eligible())
         val openingSession = requireNotNull(chats.getSession(original.sessionId))
+        val session = openingSession
+        val originalCard = requireNotNull(characters.getById(session.characterCardId))
+        val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
+        val app = settings.getAppSettings()
+        val model = requireNotNull(resolver?.resolveImageModel(session.imageModelId, app))
+        val target = NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
+        val messages = chats.getInitialMessagePage(original.sessionId, original.id).messages
+        val playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, originalCard, settings.getPlayerSetting().playerName)
+        val frozen = credential()
+        require(!frozen.read().isNullOrBlank())
         val preference = requirements?.imagePromptPreference ?: openingSession.imagePromptPreference
-        if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
-            openingSession.copy(imagePromptPreference = preference))
-        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = true) { report ->
-            requirePreflight(original)
+        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = true, queueIfBusy = true) { report -> withContext(frozen) {
             require(eligible())
-            val session = requireNotNull(chats.getSession(original.sessionId))
-            val originalCard = requireNotNull(characters.getById(session.characterCardId))
-            val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
-            val app = settings.getAppSettings()
-            val model = requireNotNull(resolver?.resolveImageModel(session.imageModelId, app))
-            val target = NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
-            val plan = infrastructure.promptDesigner().design(chats.getInitialMessagePage(original.sessionId, original.id).messages,
-                original.id, card, model, playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(
-                    session, characters.getById(session.characterCardId), settings.getPlayerSetting().playerName),
+            if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
+                openingSession.copy(imagePromptPreference = preference))
+            val plan = infrastructure.promptDesigner().design(messages,
+                original.id, card, model, playerName = playerName,
                 sessionId = session.id, imageContentHint = requirements?.imageContentHint.orEmpty(),
                 finalPromptRequirement = preference, targetImageModel = target,
                 naturalLanguageMode = session.novelAiNaturalLanguageMode && target == NovelAiImageModel.V5_FULL,
@@ -100,7 +113,7 @@ internal class DesktopChatImageRegeneration(
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible)
             }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") })
-        }
+        } }
     }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
     suspend fun initialSettings(message: ChatMessage, draft: NovelAiImageRegenerationDraft): NovelAiGenerationSettings {
@@ -122,14 +135,16 @@ internal class DesktopChatImageRegeneration(
         suspend fun eligible(): Boolean = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
             chats.readSessionDurable(original.sessionId) is EntityReadResult.Valid
         require(eligible())
-        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id, retryable = true) { report ->
+        val frozen = credential()
+        require(!frozen.read().isNullOrBlank())
+        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id, retryable = true, queueIfBusy = true) { report -> withContext(frozen) {
             require(eligible())
             report.generationStatus("正在生成图片")
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, launch.imageSize(), bytes, recipe, ::eligible)
             }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
                 onIntermediate = { _, step, _ -> report.generationStatus("重新生成 · Step $step") })
-        }
+        } }
     }
 }
 

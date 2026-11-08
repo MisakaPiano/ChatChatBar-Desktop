@@ -15,6 +15,30 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopAssistantImagePresentationTest {
+    @Test fun `other source image work keeps both actions enabled while own queued task only blocks duplicate submission`() = runBlocking(awt) {
+        val f = DesktopAssistantImageActionTest.Fixture(); val release = CompletableDeferred<Unit>(); val entered = CompletableDeferred<Unit>()
+        try {
+            f.initialize(); val runtime = f.c.taskRuntime
+            val foreign = runtime.launchNovelAi("held", "session", "other-source") { entered.complete(Unit); release.await() }
+            withTimeout(5000) { entered.await() }
+            val state = DesktopPrimaryChatState(selectedSession = f.c.chatRepository.getSession("session"), messages = listOf(f.source))
+            val scene = ImageComposeScene(700, 600) { DesktopAssistantImageActions(f.source, state, f.c.primaryChatController, true) }
+            try {
+                scene.frames()
+                fun disabled(label: String) = scene.nodes().single {
+                    it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf(label)
+                }.config.contains(SemanticsProperties.Disabled)
+                assertFalse(disabled("生成图片")); assertFalse(disabled("生图要求"))
+                val own = runtime.launchNovelAi("queued", "session", f.source.id, queueIfBusy = true) {}
+                scene.frames()
+                assertTrue(disabled("生成图片")); assertFalse(disabled("生图要求"))
+                assertTrue(scene.nodes().any { it.matches("等待图像任务") })
+                runtime.requestUserStop(own); f.terminal(own); scene.frames()
+                assertFalse(disabled("生成图片")); assertFalse(disabled("生图要求"))
+                assertEquals(DesktopTaskStatus.RUNNING, runtime.tasks.value.single { it.taskId == foreign }.status)
+            } finally { scene.close() }
+        } finally { release.complete(Unit); f.close() }
+    }
     @Test fun `one source process card shows latest task and dismiss reveals retained older terminal`() = runBlocking(awt) {
         val f = DesktopAssistantImageActionTest.Fixture()
         try {

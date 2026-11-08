@@ -5,6 +5,8 @@ description: Maintain Desktop task-center projections, exact owner cancellation,
 
 # Desktop Task Center
 
+Moments queued/running work keeps a separate original worker UUID and card/post reservation. Exact row Stop addresses that Job even before it enters the shared image-work lane; closing the controller or maintenance still drains its registered creative child. Queue history trimming preserves every active row. Chat image tasks remain RUNNING while queued but leave `startedAt` absent and carry a fixed waiting status; they retain the original task/message anchor and explicit retry owner.
+
 - `DesktopTaskRuntime.hasActiveVoiceSourceMutation` projects exact message mutation/repair/unknown-repair and running REAL_CHAT targets for voice admission. Regeneration entries carry their original target ID before dispatcher execution. Unrelated running replies/images do not become a global voice lock; existing per-owner Stop/drain and task-center projection are unchanged.
 
 - `DesktopTaskCenter` observes registered owner flows; it does not schedule feature work. Row IDs are namespaced by owner, stop/retry dispatches to the original ID, and stopRequested remains active until the real owner publishes a terminal state or retires its session activity. Observer shutdown joins its own collectors/commands, separate from business shutdown.

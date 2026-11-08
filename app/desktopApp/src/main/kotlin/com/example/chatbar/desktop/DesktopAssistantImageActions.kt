@@ -28,7 +28,7 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     }
     val scope = rememberCoroutineScope()
     val tasks by controller.taskRuntime.tasks.collectAsState()
-    val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
+    val running = desktopImageSourceBusy(tasks, message.sessionId, message.id)
     var imageStatus by remember(message.id) { mutableStateOf("") }
     var requirementsOpen by remember(message.id) { mutableStateOf(false) }
     var imageHint by remember(message.id) { mutableStateOf("") }
@@ -36,7 +36,7 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     val generate: (DesktopChatImageRequirements?) -> Unit = { requirements -> scope.launch {
         try {
             requireNotNull(controller.imageRegeneration).generateFromAssistant(message, requirements)
-            imageStatus = "已启动图片任务"; requirementsOpen = false
+            imageStatus = "已提交图片任务；忙时排队，可在过程区停止"; requirementsOpen = false
             controller.refreshAfterTerminalTask(message.sessionId)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: DesktopChatImagePreflightException) { imageStatus = failure.result.reason }
@@ -45,7 +45,7 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     actionBar {
         if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
             DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) { generate(null) }
-            DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = !running && interactionEnabled) {
+            DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = interactionEnabled) {
                 imageHint = ""; preference = state.selectedSession.imagePromptPreference; requirementsOpen = true
             }
         }

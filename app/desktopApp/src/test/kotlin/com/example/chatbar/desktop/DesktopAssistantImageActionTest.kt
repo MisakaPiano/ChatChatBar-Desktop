@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.desktop.security.DesktopCredentialKey
 import com.example.chatbar.domain.model.*
+import com.example.chatbar.domain.image.*
 import java.awt.image.BufferedImage
 import java.nio.ByteBuffer
 import java.nio.file.Files
@@ -39,12 +40,14 @@ class DesktopAssistantImageActionTest {
         val design = FinalProductDesignFixture()
         val c = design.container
         val requests = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val authorizations = java.util.concurrent.CopyOnWriteArrayList<String>()
         val model = ModelConfig("image-design", "Fixture", "https://fixture.invalid", "fake-key", "fixture", createdAt = 1)
         val resolver = EffectiveModelResolver(c.modelRepository, c.settingsRepository, object : PresetModelCatalogSource {
             override val catalog = PresetModelCatalog()
             override val modelCatalogVersion: Int? = null
         })
         val client = imageClient ?: OkHttpClient.Builder().addInterceptor { chain ->
+            authorizations += chain.request().header("Authorization").orEmpty()
             requests += okio.Buffer().also { chain.request().body!!.writeTo(it) }.readUtf8()
             val png = DesktopImageEditing.png(BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB))
             val packer = MessagePack.newDefaultBufferPacker()
@@ -76,6 +79,42 @@ class DesktopAssistantImageActionTest {
     private suspend fun fixture(work: suspend (Fixture) -> Unit) {
         val f = Fixture()
         try { f.initialize(); work(f) } finally { f.close() }
+    }
+    @Test fun `queued assistant design and old image regeneration freeze their own inputs credentials and result anchors`() = runBlocking {
+        val f = Fixture(); val release = CompletableDeferred<Unit>(); val entered = CompletableDeferred<Unit>()
+        try {
+            f.initialize()
+            assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(f.service.generateFromAssistant(f.source)).status)
+            val oldImage = f.c.chatRepository.getMessages("session").single { it.images.isNotEmpty() }
+            val source = f.c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "Another original source"))
+            val blocker = f.c.taskRuntime.launchNovelAi("held", "session", "foreign") { entered.complete(Unit); release.await() }
+            withTimeout(5000) { entered.await() }
+            val assistant = f.service.generateFromAssistant(source, DesktopChatImageRequirements("snapshot hint", "snapshot preference", false))
+            val metadata = oldImage.generatedImageMetadata.single()
+            val draft = metadata.toRegenerationDraft().copy(baseCaption = "frozen_old_image_prompt")
+            val launch = NovelAiGenerationSettings(customWidth = draft.width, customHeight = draft.height,
+                seedMode = NovelAiSeedMode.FIXED, seed = 1234, steps = 20)
+            val regeneration = f.service.generate(oldImage, draft, launch)
+            assertNull(f.c.taskRuntime.tasks.value.single { it.taskId == assistant }.startedAt)
+            assertNull(f.c.taskRuntime.tasks.value.single { it.taskId == regeneration }.startedAt)
+            f.c.desktopSecretStore.save(DesktopCredentialKey.NovelAiToken, "synthetic-later-token")
+            val session = f.c.chatRepository.getSession("session")!!
+            f.c.chatRepository.saveSessionSettingsDraft(session, session.copy(imagePromptPreference = "later preference"))
+            assertEquals(1, f.requests.size)
+            release.complete(Unit); f.terminal(blocker)
+            assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(assistant).status)
+            assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(regeneration).status)
+            assertEquals(3, f.requests.size)
+            assertTrue(f.authorizations.all { it == "Bearer synthetic-fixture-token" })
+            assertTrue(f.design.requests.flatten().any { "snapshot hint" in it.content.toString() && "snapshot preference" in it.content.toString() })
+            val reissued = f.requests.single { "frozen_old_image_prompt" in it }
+            assertTrue("1234" in reissued)
+            val saved = f.c.chatRepository.getMessages("session")
+            assertEquals(1, saved.count { it.generatedFromMessageId == source.id })
+            assertEquals(1, saved.count { it.generatedFromMessageId == oldImage.id })
+            assertEquals(oldImage, saved.single { it.id == oldImage.id })
+            assertEquals(source, saved.single { it.id == source.id })
+        } finally { release.complete(Unit); f.close() }
     }
     @Test fun `actual temporary chat image runtime records original HTTP attempt in its real session and usage owner`() = runBlocking {
         okhttp3.mockwebserver.MockWebServer().use { server ->

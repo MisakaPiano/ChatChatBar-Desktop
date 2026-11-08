@@ -41,6 +41,7 @@ internal data class DesktopMomentsState(
     val viewedThrough: Long = 0L,
     val streamedText: String = "",
     val debug: MomentDebugGenerationResult? = null,
+    val busyTargets: Set<String> = emptySet(),
     val albumSelection: DesktopMomentAlbumSelection = DesktopMomentAlbumSelection(),
 ) {
     val unread: Boolean get() = posts.any { !it.isPlaceholder && it.generatedAt > viewedThrough }
@@ -76,7 +77,8 @@ internal class DesktopMomentsController(
     private val lock = Any()
     private val admissionMutex = Mutex()
     private var accepting = true
-    private var worker: Job? = null
+    private val workers = mutableMapOf<String, Job>()
+    private val workTargets = mutableMapOf<String, String>()
     private var activeWorkId: String? = null
     private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
     val workRows = mutableWork.asStateFlow()
@@ -217,7 +219,7 @@ internal class DesktopMomentsController(
     }
     suspend fun pause() = admissionMutex.withLock { stopLocalScheduling(persistPause = true) }
     private suspend fun stopLocalScheduling(persistPause: Boolean) {
-        val jobs = synchronized(lock) { listOfNotNull(scheduler, worker).distinct().also {
+        val jobs = synchronized(lock) { (listOfNotNull(scheduler) + workers.values).distinct().also {
             scheduler = null; admitted.clear()
         } }
         jobs.forEach { it.cancel() }; jobs.forEach { it.join() }
@@ -230,11 +232,13 @@ internal class DesktopMomentsController(
         } }
     }
     fun stop() { synchronized(lock) {
-        if (worker?.isCompleted == false) { worker?.cancel(); markStopRequested(activeWorkId) }
+        val id = activeWorkId ?: workers.keys.firstOrNull() ?: return@synchronized
+        workers[id]?.let { it.cancel(); markStopRequested(id) }
     } }
     fun stopTask(id: String): Boolean = synchronized(lock) {
-        if (activeWorkId != id || worker?.isCompleted != false) false
-        else { worker?.cancel(); markStopRequested(id); true }
+        val job = workers[id]
+        if (job == null || job.isCompleted) false
+        else { job.cancel(); markStopRequested(id); true }
     }
 
     suspend fun generate(cardId: String, debug: Boolean = false) {
@@ -253,7 +257,7 @@ internal class DesktopMomentsController(
     }
     private fun launchWork(task: MomentTask, retry: MomentPost? = null, debug: Boolean = false,
         recoverMissingPost: Boolean = false): Job? =
-        launchOwnedWork(task.sessionId) { register ->
+        launchOwnedWork(task.sessionId, (retry?.id ?: task.postId)?.let { "post:$it" } ?: "card:${task.characterCardId}") { register ->
             withContext(DesktopUsageParent(DesktopUsageContext(DesktopUsageSource.MOMENTS,
                 taskId = task.id, sessionId = task.sessionId, cardId = task.characterCardId))) {
                 execute(task, retry, register, debug, recoverMissingPost)
@@ -262,7 +266,7 @@ internal class DesktopMomentsController(
 
     suspend fun generateImage(post: MomentPost, draft: NovelAiImageRegenerationDraft? = null) {
         val service = requireNotNull(imageGenerator) { "朋友圈图片服务不可用" }
-        launchOwnedWork(post.sessionId, DesktopUsageContext(DesktopUsageSource.MOMENTS,
+        launchOwnedWork(post.sessionId, "post:${post.id}", DesktopUsageContext(DesktopUsageSource.MOMENTS,
             sessionId = post.sessionId, cardId = post.characterCardId, subjectId = post.id)) { register ->
             val original = store.imageSource(post)
             check(DesktopMomentImageVersions.retained(original).size < DesktopMomentImageVersions.MAX_CANDIDATES) {
@@ -325,44 +329,59 @@ internal class DesktopMomentsController(
         refresh()
     }
 
-    private fun launchOwnedWork(sessionId: String, usageContext: DesktopUsageContext? = null,
+    private fun launchOwnedWork(sessionId: String, target: String, usageContext: DesktopUsageContext? = null,
         work: suspend ((String) -> Unit) -> Unit): Job? = synchronized(lock) {
         check(accepting)
-        if (worker?.isCompleted == false) {
-            mutableState.update { it.copy(notice = "已有朋友圈任务，请等待或停止") }; return@synchronized null
+        if (target in workTargets.values) {
+            mutableState.update { it.copy(notice = "该角色卡或动态已有任务，请等待或停止对应任务") }; return@synchronized null
         }
         val workId = UUID.randomUUID().toString()
-        activeWorkId = workId
+        workTargets[workId] = target
         var outcome = DesktopWorkPhase.COMPLETED
         val evidence = DesktopMomentWorkEvidence()
         mutableWork.update { rows -> (listOf(DesktopWorkRow(workId, DesktopWorkKind.MOMENT, DesktopWorkPhase.RUNNING,
             clock(), target = DesktopWorkTarget(DesktopPrimaryRoute.MOMENTS, sessionId = sessionId, detail = DesktopWorkDetail.MOMENTS_HOME),
-            canStop = true, contextLabel = "朋友圈生成与收尾")) + rows).take(41) }
+            canStop = true, contextLabel = "朋友圈任务（忙时排队）")) + rows).let(::boundedWorkRows) }
         val job = scope.launch(evidence, start = CoroutineStart.LAZY) {
             val imageReceipts = mutableListOf<String>()
-            mutableState.update { it.copy(busy = true, error = null, progress = "正在准备朋友圈", streamedText = "") }
             try {
-                tasksRuntime.withCardDesign("moments:$sessionId", publishWorkRow = false) {
-                    gate.withNormalOperation {
-                        if (usageContext == null) work { imageReceipts += it }
-                        else withContext(DesktopUsageParent(usageContext.copy(taskId = workId))) {
-                            work { imageReceipts += it }
+                tasksRuntime.withCardDesign("moments:$target", publishWorkRow = false) {
+                    tasksRuntime.withNovelAiWork {
+                        synchronized(lock) { activeWorkId = workId }
+                        mutableState.update { it.copy(error = null, progress = "正在准备朋友圈", streamedText = "") }
+                        try {
+                            gate.withNormalOperation {
+                                if (usageContext == null) work { imageReceipts += it }
+                                else withContext(DesktopUsageParent(usageContext.copy(taskId = workId))) {
+                                    work { imageReceipts += it }
+                                }
+                            }
+                        } finally {
+                            withContext(NonCancellable) {
+                                for (receipt in imageReceipts) try { finishImageCleanup(receipt) }
+                                catch (_: Exception) { outcome = DesktopWorkPhase.UNCONFIRMED; mutableState.update { it.copy(error = "动态记录已保留；图片清理未完成，重开或重试清理时核对") } }
+                                refresh()
+                            }
+                            mutableState.update { it.copy(progress = "") }
+                            synchronized(lock) { if (activeWorkId == workId) activeWorkId = null }
                         }
                     }
                 }
-            } catch (cancelled: CancellationException) { outcome = DesktopWorkPhase.CANCELLED; throw cancelled }
-            catch (_: Exception) { outcome = DesktopWorkPhase.FAILED; mutableState.update { it.copy(error = "朋友圈操作未完成；原记录和已完成检查点保留") } }
-            finally {
-                mutableState.update { it.copy(busy = false, progress = "") }
-                withContext(NonCancellable) {
-                    for (receipt in imageReceipts) try { finishImageCleanup(receipt) }
-                    catch (_: Exception) { outcome = DesktopWorkPhase.UNCONFIRMED; mutableState.update { it.copy(error = "动态记录已保留；图片清理未完成，重开或重试清理时核对") } }
-                    refresh()
-                }
+            } catch (cancelled: CancellationException) {
+                if (outcome != DesktopWorkPhase.UNCONFIRMED) outcome = DesktopWorkPhase.CANCELLED
+                throw cancelled
+            } catch (_: Exception) {
+                if (outcome != DesktopWorkPhase.UNCONFIRMED) outcome = DesktopWorkPhase.FAILED
+                mutableState.update { it.copy(error = "朋友圈操作未完成；原记录和已完成检查点保留") }
             }
         }
-        worker = job
+        workers[workId] = job
+        mutableState.update { it.copy(busy = true, busyTargets = workTargets.values.toSet()) }
         job.invokeOnCompletion { failure ->
+            synchronized(lock) {
+                workers.remove(workId); workTargets.remove(workId)
+                mutableState.update { it.copy(busy = workers.isNotEmpty(), busyTargets = workTargets.values.toSet()) }
+            }
             val actual = if (outcome == DesktopWorkPhase.UNCONFIRMED || evidence.phase == DesktopWorkPhase.UNCONFIRMED)
                 DesktopWorkPhase.UNCONFIRMED else evidence.phase ?: outcome
             val phase = when {
@@ -373,11 +392,16 @@ internal class DesktopMomentsController(
             }
             mutableWork.update { rows ->
                 if (evidence.skipped && phase == DesktopWorkPhase.COMPLETED && failure == null) rows.filterNot { it.id == workId }
-                else rows.map { if (it.id == workId) it.copy(phase = phase, canStop = false, stopRequested = false) else it }.take(40)
+                else rows.map { if (it.id == workId) it.copy(phase = phase, canStop = false, stopRequested = false) else it }.let(::boundedWorkRows)
             }
         }
         job.start()
         job
+    }
+
+    private fun boundedWorkRows(rows: List<DesktopWorkRow>): List<DesktopWorkRow> {
+        var completed = 0
+        return rows.filter { it.active || ++completed <= 40 }
     }
 
     private suspend fun execute(source: MomentTask, retry: MomentPost?, registerImageCleanup: (String) -> Unit,

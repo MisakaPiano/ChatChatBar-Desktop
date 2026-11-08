@@ -20,6 +20,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 enum class DesktopTaskKind { REAL_CHAT, NOVELAI }
 enum class DesktopChatOperation { SEND, REGENERATE }
@@ -50,6 +52,9 @@ class DesktopTaskAdmissionException(message: String) : IllegalStateException(mes
 
 class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(message)
 
+internal fun desktopImageSourceBusy(tasks: List<DesktopTaskEntry>, sessionId: String, messageId: String): Boolean =
+    tasks.any { it.sessionId == sessionId && it.targetMessageId == messageId && it.status == DesktopTaskStatus.RUNNING }
+
 internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
 internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN, CREATIVE, CHARACTER_AI, CHARACTER_APPEARANCE, CHARACTER_IMAGE, WORLD_BOOK_AI }
 internal data class DesktopOwnedWorkEntry(val taskId: String, val kind: DesktopOwnedWorkKind, val createdAt: Long,
@@ -76,6 +81,7 @@ internal class DesktopTaskRuntime(
 ) {
     init { require(completedHistoryLimit > 0) }
     private val lock = Any()
+    private val novelAiWorkMutex = Mutex()
     private val supervisor = SupervisorJob()
     private val scope = CoroutineScope(supervisor + dispatcher)
     val imageProgress = DesktopImageTaskProgress(scope)
@@ -101,7 +107,7 @@ internal class DesktopTaskRuntime(
     val repairTasks: StateFlow<Map<String, DesktopRepairStatus>> = mutableRepairTasks.asStateFlow()
     // In-memory closures retain immutable launch inputs and their original validity checks.
     // Never serialized, included in diagnostics, or used for automatic retry.
-    private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?,
+    private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?, val queueIfBusy: Boolean,
         val work: suspend ((String) -> Unit) -> Unit)
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private val userStoppedImages = mutableSetOf<String>()
@@ -285,6 +291,15 @@ internal class DesktopTaskRuntime(
                 it.sessionId == sessionId && it.targetMessageId == messageId }
     }
 
+    fun hasActiveImageSourceMutation(sessionId: String, messageId: String): Boolean = synchronized(lock) {
+        !accepting || maintenance || sessionId in messageMutations || runningRepair(sessionId) != null ||
+            uncertainRepairs.values.any { it.sessionId == sessionId && it.messageId == messageId } ||
+            desktopImageSourceBusy(mutableTasks.value, sessionId, messageId)
+    }
+
+    /** One cancellable work lane shared by chat/Studio image jobs and Moments. No data lease while waiting. */
+    suspend fun <T> withNovelAiWork(work: suspend () -> T): T = novelAiWorkMutex.withLock { work() }
+
     fun runningRepair(sessionId: String, messageId: String? = null): DesktopRepairTaskIdentity? = synchronized(lock) {
         mutableRepairIdentities.value.values.firstOrNull { it.sessionId == sessionId &&
             (messageId == null || it.messageId == messageId) && mutableRepairTasks.value[it.taskId] == DesktopRepairStatus.RUNNING }
@@ -319,26 +334,35 @@ internal class DesktopTaskRuntime(
         sessionId: String? = null,
         targetMessageId: String? = null,
         retryable: Boolean = false,
+        queueIfBusy: Boolean = false,
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
         if (sessionId in repairSessions || sessionId in messageMutations ||
             (sessionId == null && (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())))
             throw DesktopTaskAdmissionException("Format repair owns the image source session")
-        if (mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
+        require(!queueIfBusy || (sessionId != null && targetMessageId != null))
+        if (sessionId != null && targetMessageId != null &&
+            ((queueIfBusy && hasActiveImageSourceMutation(sessionId, targetMessageId)) || mutableTasks.value.any {
+                it.kind == DesktopTaskKind.NOVELAI && it.sessionId == sessionId && it.targetMessageId == targetMessageId && it.status == DesktopTaskStatus.RUNNING
+            }))
+            throw DesktopTaskAdmissionException("该来源图片任务或修改仍在进行")
+        if (!queueIfBusy && mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
-        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, work)
+        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, queueIfBusy, work)
         val usageParent = DesktopUsageContext(if (sessionId == null) DesktopUsageSource.OTHER else DesktopUsageSource.CHAT,
             taskId = id, sessionId = sessionId, subjectId = targetMessageId)
         val job = scope.launch(DesktopUsageParent(usageParent), start = CoroutineStart.LAZY) {
-            update(id) { it.copy(startedAt = clock()) }
             try {
-                work(DesktopImageTaskReporter(
+                withNovelAiWork {
+                    update(id) { it.copy(startedAt = clock(), message = label) }
+                    work(DesktopImageTaskReporter(
                     status = { message -> update(id) { if (it.status == DesktopTaskStatus.RUNNING) it.copy(message = message.take(PREVIEW_LIMIT)) else it } },
                     designSnapshot = { text, credential -> reportImageProgress(id) { imageProgress.design(id, text, credential) } },
                     generationStatus = { text -> reportImageProgress(id) { imageProgress.generation(id, text) } },
-                ))
+                    ))
+                }
                 synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "完成") }
             } catch (_: CancellationException) {
                 synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "已停止；已保存的结果保留") }
@@ -350,7 +374,7 @@ internal class DesktopTaskRuntime(
         activeJobs[id] = job
         if (sessionId != null && targetMessageId != null) imageProgress.admit(id)
         mutableTasks.value = bounded(listOf(DesktopTaskEntry(id, DesktopTaskKind.NOVELAI, sessionId,
-            clock(), message = label, targetMessageId = targetMessageId)) + mutableTasks.value)
+            clock(), message = "等待图像任务 · $label", targetMessageId = targetMessageId)) + mutableTasks.value)
         job.invokeOnCompletion {
             synchronized(lock) {
                 activeJobs.remove(id)
@@ -379,9 +403,9 @@ internal class DesktopTaskRuntime(
         val job = scope.launch(start = CoroutineStart.LAZY) {
             update(id) { it.copy(startedAt = clock()) }
             try {
-                runtime.liveSmoke(userConfirmedCredential, prompt, settings) { step, progress ->
+                withNovelAiWork { runtime.liveSmoke(userConfirmedCredential, prompt, settings) { step, progress ->
                     update(id) { it.copy(message = "NovelAI · Step $step · ${(progress * 100).toInt()}%") }
-                }
+                } }
                 synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "图片已安全保存") }
             } catch (_: CancellationException) {
                 synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "NovelAI 已停止") }
@@ -546,7 +570,7 @@ internal class DesktopTaskRuntime(
         val entry = mutableTasks.value.firstOrNull { it.taskId == taskId && it.canRetry } ?: return@synchronized null
         val checkpoint = imageRetryCheckpoints[entry.taskId] ?: return@synchronized null
         val replacement = launchNovelAi(checkpoint.label, checkpoint.sessionId, checkpoint.targetMessageId,
-            retryable = true, work = checkpoint.work)
+            retryable = true, queueIfBusy = checkpoint.queueIfBusy, work = checkpoint.work)
         dismissImageTask(taskId)
         replacement
     }

@@ -22,6 +22,8 @@ internal fun DesktopChatRegenerationDialog(message: ChatMessage, metadata: Gener
     var translation by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("载入原图参数…") }
     val scope = rememberCoroutineScope()
+    val tasks by service.taskStates.collectAsState()
+    val sourceBusy = desktopImageSourceBusy(tasks, message.sessionId, message.id)
     LaunchedEffect(message.id, metadata) {
         try { translation = service.translationEnabled(); settings = service.initialSettings(message, draft); status = "生成新图片并关联当前消息；原图保留" }
         catch (_: Exception) { status = "无法读取会话或原图参数" }
@@ -58,7 +60,7 @@ internal fun DesktopChatRegenerationDialog(message: ChatMessage, metadata: Gener
                 }
             }
             StudioActions {
-                BootstrapButton("重新生成", enabled = draft.canRegenerate && settings?.requestValidationError(draft.characterPrompts.size) == null && settings != null) {
+                BootstrapButton("重新生成", enabled = !sourceBusy && draft.canRegenerate && settings?.requestValidationError(draft.characterPrompts.size) == null && settings != null) {
                     scope.launch {
                         try { service.generate(message, draft, requireNotNull(settings)); onClose() }
                         catch (_: Exception) { status = "无法启动；请检查参数或正在运行的任务" }

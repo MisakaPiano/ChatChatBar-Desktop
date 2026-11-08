@@ -122,7 +122,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { DesktopManagementHeading("朋友圈") }
-                StudioAction("生成动态", enabled = state.enabled && !state.busy, icon = DesktopAppIcons.Add) { debugGeneration = false; choosingCard = true }
+                StudioAction("生成动态", enabled = state.enabled, icon = DesktopAppIcons.Add) { debugGeneration = false; choosingCard = true }
                 DesktopChatIconAction("朋友圈相册", DesktopAppIcons.ImageAdd) { showingAlbum = true }
                 DesktopChatIconAction(if (showingTools) "收起操作" else "更多操作", DesktopAppIcons.More) { showingTools = !showingTools }
                 if (state.busy) DesktopChatIconAction("停止生成", DesktopAppIcons.Stop, onClick = controller::stop)
@@ -134,7 +134,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                 BootstrapButton("计划与记录", secondary = true) { plans = true }
                 BootstrapButton("刷新", secondary = true) { act { controller.refresh() } }
                 if (controller.diagnostics != null) BootstrapButton("请求日志", secondary = true) { debugOperation = "GENERATE" }
-                BootstrapButton("调试生成", enabled = state.enabled && !state.busy, variant = DesktopActionVariant.GHOST) {
+                BootstrapButton("调试生成", enabled = state.enabled, variant = DesktopActionVariant.GHOST) {
                     debugGeneration = true; choosingCard = true
                 }
                 if (state.debug != null) BootstrapButton("本次调试交换", variant = DesktopActionVariant.GHOST) { showingDebug = true }
@@ -148,7 +148,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             if (state.posts.isEmpty()) StatusText("暂无动态。开启后不会因导入旧计划而自动生成。")
             LazyColumn(Modifier.fillMaxWidth().weight(1f), state = timelineScroll) {
                 items(state.posts, key = { it.id }) { post ->
-                    DesktopMomentFeedCard(post, controller.resources, state.busy,
+                    DesktopMomentFeedCard(post, controller.resources, "post:${post.id}" in state.busyTargets,
                         highlighted = highlightedPostId == post.id,
                         onOpenSession = { openLinked(post.id, false) },
                         onOpenCard = { focusSwitch -> openLinked(post.id, true, focusSwitch) },
@@ -201,7 +201,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             StatusText(if (debugGeneration) "调试立即生成会记录完整交换；配置NovelAI后会尝试配图，即使自动配图开关关闭。可能产生模型和配图费用。"
                 else "将按此角色卡最近会话及现有模型设置生成，可能产生模型或配图费用。")
             state.cards.filter { it.momentsEnabled }.forEach { card ->
-                BootstrapButton(card.name, enabled = !state.busy, secondary = true) {
+                BootstrapButton(card.name, enabled = "card:${card.id}" !in state.busyTargets, secondary = true) {
                     act { controller.generate(card.id, debugGeneration); choosingCard = false }
                 }
             }
@@ -226,13 +226,14 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                 task.failureReason?.let { StatusText(it) }
                 if (task.postId != null && state.posts.none { it.id == task.postId } &&
                     task.status in setOf(MomentTaskStatus.RUNNING, MomentTaskStatus.FAILED)) {
-                    BootstrapButton("手动重试中断任务", secondary = true, enabled = !state.busy) { recoveringTask = task }
+                    BootstrapButton("手动重试中断任务", secondary = true,
+                        enabled = "post:${task.postId}" !in state.busyTargets) { recoveringTask = task }
                 }
             }
         }
         recoveringTask?.let { task -> MomentModal("重试中断任务？", { recoveringTask = null }) {
             StatusText("这项任务没有已保存的动态，先前请求是否已完成或计费无法确认。确认后会重新请求AI，可能再次产生费用；使用原任务和动态编号，不会自动重试其他记录。")
-            BootstrapButton("确认重新请求", enabled = !state.busy) {
+            BootstrapButton("确认重新请求", enabled = "post:${task.postId}" !in state.busyTargets) {
                 act { controller.retryInterruptedTask(task); recoveringTask = null }
             }
         } }
@@ -267,13 +268,13 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
         } }
         confirmingImage?.let { post -> MomentModal("生成动态配图", { confirmingImage = null }) {
             StatusText("使用原角色卡与动态图片构思设计并生成图片，正文和点赞保留。此操作可能产生模型及NovelAI费用。")
-            BootstrapButton("确认生成", enabled = !state.busy) { act { controller.generateImage(post); confirmingImage = null } }
+            BootstrapButton("确认生成", enabled = "post:${post.id}" !in state.busyTargets) { act { controller.generateImage(post); confirmingImage = null } }
         } }
         applyingImage?.let { (post, avatar) -> MomentModal(if (avatar) "设为角色卡头像？" else "设为角色卡背景？", { applyingImage = null }) {
             StatusText("将替换这张动态所属角色卡的对应图片，原动态保留。")
             BootstrapButton("确认替换", enabled = !state.busy) { act { controller.useImageForCard(post, avatar); applyingImage = null } }
         } }
-        editingImage?.let { (post, draft) -> MomentImageEditModal(draft, !state.busy, { editingImage = null }) { next ->
+        editingImage?.let { (post, draft) -> MomentImageEditModal(draft, "post:${post.id}" !in state.busyTargets, { editingImage = null }) { next ->
             act { controller.generateImage(post, next); editingImage = null }
         } }
         val resources = controller.resources
@@ -281,7 +282,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             extraActions = { reference ->
                 state.posts.firstOrNull { !it.isPlaceholder && it.imagePath == reference }?.let { post ->
                     ViewerToolbarSeparator()
-                    DesktopChatIconAction("编辑Prompt重新生成", DesktopAppIcons.Reset, enabled = !state.busy) {
+                    DesktopChatIconAction("编辑Prompt重新生成", DesktopAppIcons.Reset, enabled = "post:${post.id}" !in state.busyTargets) {
                         act { val draft = controller.imageDraft(post); viewing = emptyList(); editingImage = post to draft }
                     }
                     DesktopChatIconAction("设为角色卡头像", DesktopAppIcons.Portrait, enabled = !state.busy) {
