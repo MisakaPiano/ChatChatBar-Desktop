@@ -110,6 +110,31 @@ class DesktopOriginalCharacterCoverTest {
         } finally { f.close() }
     }
 
+    @Test fun `all nested packaged PNG roles drop old card text on imported and exported copies without rewriting sources`() = runBlocking {
+        val f = Fixture()
+        try {
+            val original = image()
+            val payload = Base64.getEncoder().encodeToString("old nested character body".toByteArray())
+            val nested = PngTextChunks.insertTextChunk(original, "Chara", payload)
+            val retainedSource = nested.copyOf()
+            val source = CharacterCardPackage(schemaVersion = 10,
+                card = PackagedCharacterCard("Nested", avatarResourceId = "avatar", chatBackgroundResourceId = "background",
+                    characters = listOf(PackagedCharacter("Person", appearanceImageResourceId = "appearance")), coverImageResourceId = "cover"),
+                images = listOf("avatar", "background", "appearance", "cover").associateWith { packaged(nested) })
+            val imported = f.core.importNew(source)
+            val references = listOf(imported.avatar, imported.chatBackground, imported.characters.single().appearanceImage, imported.coverImage)
+            assertEquals(4, references.filterNotNull().toSet().size)
+            references.forEach { assertContentEquals(original, f.resources.readBytes(assertNotNull(it))) }
+            f.cards.update(imported.copy(name = "Current text"))
+            val exported = f.core.prepareExport(imported.id).packageData
+            assertEquals("Current text", exported.card.name)
+            assertEquals(4, exported.images.size)
+            exported.images.values.forEach { assertContentEquals(original, Base64.getDecoder().decode(it.data)) }
+            assertContentEquals(retainedSource, nested)
+            source.images.values.forEach { assertContentEquals(retainedSource, Base64.getDecoder().decode(it.data)) }
+        } finally { f.close() }
+    }
+
     @Test fun `nonPNG originals remain byte exact while original and explicit layout outputs stay separate`() = runBlocking {
         val f = Fixture()
         try {

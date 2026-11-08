@@ -206,7 +206,7 @@ class DesktopMessageActionsUxTest {
         } finally { scene.close() }
     }
 
-    @Test fun `combined toolbar disables image controls during source task and keeps one process card`() = runBlocking(awt) {
+    @Test fun `combined toolbar blocks duplicate generation retains requirements and keeps one process card`() = runBlocking(awt) {
         val fixture = DesktopAssistantImageActionTest.Fixture()
         val release = CompletableDeferred<Unit>()
         try {
@@ -227,9 +227,9 @@ class DesktopMessageActionsUxTest {
                 val copy = scene.nodes().single { it.label("复制整条") }.boundsInRoot
                 for (label in listOf("生成图片", "生图要求")) {
                     val node = scene.nodes().single { it.label(label) }
-                    assertTrue(node.config.contains(SemanticsProperties.Disabled))
+                    assertEquals(label == "生成图片", node.config.contains(SemanticsProperties.Disabled))
                     assertEquals(copy.center.y, node.boundsInRoot.center.y, 1f)
-                    scene.pointer(node.boundsInRoot.center, PointerButton.Primary)
+                    if (label == "生成图片") scene.pointer(node.boundsInRoot.center, PointerButton.Primary)
                 }
                 val cards = scene.nodes().filter { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("image-process-card-") == true }
                 assertEquals(1, cards.size)
@@ -237,6 +237,19 @@ class DesktopMessageActionsUxTest {
                 assertEquals(listOf(taskId), c.taskRuntime.tasks.value.map { it.taskId })
                 assertTrue(fixture.requests.isEmpty())
                 assertTrue(fixture.design.requests.isEmpty())
+                var submitted = 0
+                val form = ImageComposeScene(700, 500) {
+                    DesktopChatImageRequirementsForm("prepared hint", "retained preference", {}, {}, running = true,
+                        status = "", onCancel = {}, onGenerate = { submitted++ })
+                }
+                try {
+                    form.until { form.nodes().any { it.label("生成") } }
+                    val generate = form.nodes().single { it.label("生成") }
+                    assertTrue(generate.config.contains(SemanticsProperties.Disabled))
+                    form.pointer(generate.boundsInRoot.center, PointerButton.Primary)
+                    assertEquals(0, submitted)
+                    assertEquals(listOf(taskId), c.taskRuntime.tasks.value.map { it.taskId })
+                } finally { form.close() }
             } finally { scene.close(); release.complete(Unit); fixture.terminal(taskId) }
         } finally { release.complete(Unit); fixture.close() }
     }
