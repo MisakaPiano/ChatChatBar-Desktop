@@ -54,6 +54,18 @@ jobs:
           text = text.replace(old_scheme, 'android:scheme="chatbar-entrytoggle-w1"')
           manifest.write_text(text)
           PY
+      - name: Retain source identity and verify compiler dependency
+        run: |
+          mkdir -p phone-test-output/dependency
+          git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
+          dep_sha1=002fac4210c52c27b244305d60b0906e831f49be
+          dep_dir="$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/$dep_sha1"
+          mkdir -p "$dep_dir"
+          dep_file="$dep_dir/kotlin-compiler-embeddable-2.3.20.jar"
+          curl --fail --location --retry 3 --retry-all-errors --max-time 240 https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/kotlin-compiler-embeddable-2.3.20.jar --output "$dep_file"
+          echo "$dep_sha1  $dep_file" | sha1sum --check
+          sha256sum "$dep_file" > phone-test-output/dependency/compiler-sha256.txt
+          wc -c "$dep_file" > phone-test-output/dependency/compiler-bytes.txt
       - name: Compile and check affected unit behavior
         working-directory: app
         run: |
