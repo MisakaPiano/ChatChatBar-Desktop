@@ -228,7 +228,8 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
     val source = input.text
     val authorityRevision = LocalDesktopPromptAnnotationRevision.current
     val replayRevision = LocalDesktopStudioTextHistories.current?.authorityRevision ?: 0L
-    val annotations by produceState<Pair<String, NovelAiPromptTranslationResult>?>(null, source, translated, translationService, authorityRevision, replayRevision) {
+    val annotationRevision = LocalDesktopStudioTextHistories.current?.annotationRevision ?: 0L
+    val annotations by produceState<Pair<String, NovelAiPromptTranslationResult>?>(null, source, translated, translationService, authorityRevision, replayRevision, annotationRevision) {
         this.value = null
         if (translated) this.value = source to try {
             translationService.resolve(NovelAiPromptTranslationParser.parse(source, false))

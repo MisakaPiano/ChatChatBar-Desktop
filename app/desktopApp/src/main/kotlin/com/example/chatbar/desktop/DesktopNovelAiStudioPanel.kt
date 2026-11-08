@@ -174,7 +174,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 }
             } },
             onRemove = { binding -> edit { it.copy(imageGuidance = desktopRemoveGuidanceImage(it.imageGuidance, binding)) } },
-            onSettings = { openAuxiliary("图像引导") })
+            onSettings = { openAuxiliary("图像引导") }, editingEnabled = !busy)
     }
     val section: @Composable (String) -> Unit = { section ->
             when (section) {
@@ -415,7 +415,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                                 } }
                                 StudioAction("显示文件") { imageAction { ProcessBuilder("explorer.exe", "/select,", path.toString()).start() } }
                             }
-                            StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("用作 · ${target.displayName}") { scope.launch {
+                            StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("用作 · ${target.displayName}", enabled = !busy) { scope.launch {
                                 if (controller.importGuidance(path, target)) openAuxiliary("图像引导")
                             } } } }
                             StudioDisclosure("Enhance / Upscale") {

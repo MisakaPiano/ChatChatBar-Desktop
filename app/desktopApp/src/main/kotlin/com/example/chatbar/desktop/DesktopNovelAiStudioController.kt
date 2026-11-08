@@ -296,6 +296,9 @@ internal class DesktopNovelAiStudioController(
         val before = repository.loadDraft()
         repository.saveUndoDraft(before)
         repository.updateDraft(resetPromptEditors = true, transform = change)
+        // A same-text explicit import is still a request to refresh derived annotations.
+        // Keep this independent from editor authority so selection/IME are not reset.
+        textHistories.annotationsChanged()
     }
 
     suspend fun exportGenerationPreset(path: Path) = action(inspectAssets = false) {

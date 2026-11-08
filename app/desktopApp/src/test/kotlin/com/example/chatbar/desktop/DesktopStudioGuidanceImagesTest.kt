@@ -66,8 +66,9 @@ class DesktopStudioGuidanceImagesTest {
             preciseReference = NovelAiPreciseReferenceDraft(asset = asset), vibes = listOf(NovelAiVibeReferenceDraft(id = "encoded", encodedVibe = "synthetic")))
         for (width in listOf(320,680)) {
             val replaced = mutableListOf<String>(); val removed = mutableListOf<String>(); var viewed = 0
+            var editingEnabled by mutableStateOf(true)
             val scene = ImageComposeScene(width, 420) { DesktopStudioGuidanceImages(g, NovelAiImageModel.V5_FULL, { bytes },
-                { viewed++ }, { replaced += it.key }, { removed += it.key }, {}) }
+                { viewed++ }, { replaced += it.key }, { removed += it.key }, {}, editingEnabled) }
             try {
                 scene.frames()
                 assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.Text)?.any { t -> t.text.contains("3 项") } == true })
@@ -84,6 +85,11 @@ class DesktopStudioGuidanceImagesTest {
                     val p = java.nio.file.Path.of(dir).resolve("guidance-bindings-$width.png"); Files.createDirectories(p.parent)
                     scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(p,it.bytes) } }
                 }
+                editingEnabled = false; scene.frames()
+                for (label in listOf("更换基图", "移除基图", "更换精确参考", "更换氛围参考 1")) {
+                    assertTrue(action(label).config.contains(SemanticsProperties.Disabled))
+                }
+                assertFalse(action("查看基图").config.contains(SemanticsProperties.Disabled))
             } finally { scene.close() }
         }
     }

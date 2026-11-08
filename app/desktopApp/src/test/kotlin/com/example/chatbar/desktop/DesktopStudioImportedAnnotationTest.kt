@@ -41,6 +41,7 @@ class DesktopStudioImportedAnnotationTest {
         val translations = NovelAiPromptTranslationService(dictionary, lookup)
         try {
             f.initialize(); val c = f.container.novelAiStudioController
+            val originalPrompt = c.draft.value!!.basePrompt
             assertTrue(c.replace { it.copy(basePrompt = source) })
             val scene = ImageComposeScene(500, 160) {
                 val draft by c.draft.collectAsState()
@@ -55,15 +56,15 @@ class DesktopStudioImportedAnnotationTest {
                 field.edit(TextFieldValue(source, TextRange(2))) {}
                 scene.frames(); val beforeInput = field.value; val before = scene.pixels()
                 ready.set(true)
-                val oldRevision = c.draft.value!!.promptContentRevision
+                val oldRevision = c.textHistories.annotationRevision
                 assertTrue(c.replace { it.copy(basePrompt = source) })
-                assertTrue(c.draft.value!!.promptContentRevision > oldRevision)
+                assertTrue(c.textHistories.annotationRevision > oldRevision)
                 withTimeout(5000) { while (lookups.get() < 2) scene.frames() }; scene.frames()
                 assertNotEquals(before, scene.pixels())
                 assertEquals(beforeInput, field.value)
                 assertEquals(source, c.draft.value!!.basePrompt)
                 assertTrue(c.undo()); scene.frames()
-                assertEquals(source, c.draft.value!!.basePrompt)
+                assertEquals(originalPrompt, c.draft.value!!.basePrompt)
                 assertTrue(f.requests.isEmpty()); assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
             } finally { scene.close() }
         } finally { scope.cancel(); f.close() }

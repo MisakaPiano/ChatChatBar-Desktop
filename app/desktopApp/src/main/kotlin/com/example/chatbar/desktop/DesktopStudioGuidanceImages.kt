@@ -54,7 +54,7 @@ internal fun desktopRemoveGuidanceImage(guidance: NovelAiImageGuidanceDraft, bin
 internal fun DesktopStudioGuidanceImages(guidance: NovelAiImageGuidanceDraft, model: NovelAiImageModel,
     read: (String) -> ByteArray, onPreview: (NovelAiStudioAssetRef) -> Unit,
     onReplace: (DesktopGuidanceImageBinding) -> Unit, onRemove: (DesktopGuidanceImageBinding) -> Unit,
-    onSettings: () -> Unit) {
+    onSettings: () -> Unit, editingEnabled: Boolean = true) {
     val bindings = desktopGuidanceImageBindings(guidance, model)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StudioActions {
@@ -84,8 +84,8 @@ internal fun DesktopStudioGuidanceImages(guidance: NovelAiImageGuidanceDraft, mo
                 DesktopChatIconAction("查看${binding.title}", DesktopAppIcons.ExpandComposer, enabled = asset?.isUsable == true, targetDp = 28) {
                     asset?.let(onPreview)
                 }
-                DesktopChatIconAction("更换${binding.title}", DesktopAppIcons.ImageAdd, targetDp = 28) { onReplace(binding) }
-                DesktopChatIconAction("移除${binding.title}", DesktopAppIcons.Close, targetDp = 28) { onRemove(binding) }
+                DesktopChatIconAction("更换${binding.title}", DesktopAppIcons.ImageAdd, enabled = editingEnabled, targetDp = 28) { onReplace(binding) }
+                DesktopChatIconAction("移除${binding.title}", DesktopAppIcons.Close, enabled = editingEnabled, targetDp = 28) { onRemove(binding) }
             }
         } }
     }

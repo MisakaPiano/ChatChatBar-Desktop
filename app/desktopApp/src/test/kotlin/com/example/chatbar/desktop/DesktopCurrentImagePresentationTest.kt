@@ -94,7 +94,9 @@ class DesktopCurrentImagePresentationTest {
             scene.click("自动收起"); scene.click("外部焦点")
             assertTrue(scene.nodes().any { it.matches("外部焦点") && it.config.getOrNull(SemanticsProperties.Focused) == true })
             assertFalse(scene.nodes().any { it.matches("角色负面") })
-            scene.click("展开角色 1 Prompt"); scene.click("外部焦点")
+            scene.click("展开角色 1 Prompt")
+            scene.until { scene.nodes().any { it.matches("角色负面") && it.config.getOrNull(SemanticsProperties.Focused) == true } }
+            scene.click("外部焦点")
             assertFalse(scene.nodes().any { it.matches("角色负面") })
             assertEquals(listOf("role"), draft.characters.map { it.id }); assertTrue(draft.characters.single().enabled)
             assertTrue(f.container.taskRuntime.tasks.value.isEmpty())

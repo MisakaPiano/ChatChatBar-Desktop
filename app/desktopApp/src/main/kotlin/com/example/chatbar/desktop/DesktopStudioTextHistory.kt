@@ -16,6 +16,8 @@ internal class DesktopStudioTextHistories {
     private val fields = linkedMapOf<String, DesktopStudioTextHistory>()
     var authorityRevision by mutableLongStateOf(0)
         private set
+    var annotationRevision by mutableLongStateOf(0)
+        private set
     private var boundary = DesktopStudioTextBoundary()
     fun takeBoundary() = boundary.also { boundary = DesktopStudioTextBoundary() }
     fun field(key: String, text: String): DesktopStudioTextHistory {
@@ -26,6 +28,7 @@ internal class DesktopStudioTextHistories {
             onTypingBoundary = { boundary = boundary.copy(separate = true) }).also { fields[key] = it }
     }
     fun authorityChanged() { authorityRevision++ }
+    fun annotationsChanged() { annotationRevision++ }
 }
 
 internal class DesktopStudioTextHistory(text: String, private val clock: () -> Long = System::nanoTime,
