@@ -46,6 +46,7 @@ internal val inspectionGlobalOptions = setOf(
     "embedding",
     "defaultFormatCardId",
     "automaticFormatCheckEnabled",
+    "disableNarrativeModes",
     "formatRepairModelId",
     "memoryRagTopK",
     "memoryRagSimilarityThreshold",
