@@ -109,7 +109,6 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     var pendingReuse by remember { mutableStateOf<Triple<NovelAiGenerationHistoryEntry, NovelAiGenerationHistoryImage, NovelAiHistoryApplyMode>?>(null) }
     var imageError by remember { mutableStateOf("") }
     var authRevision by remember { mutableStateOf(0) }
-    val authentication by produceState(DesktopDesignAuthentication(), draft?.aiDesignModelId, auxiliary, authRevision) { value = controller.designAuthentication() }
     LaunchedEffect(controller) { controller.load(); translation = controller.translationEnabled() }
     fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) {
         val boundary = controller.textHistories.takeBoundary()
@@ -129,11 +128,9 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     val cards by produceState(emptyList<com.example.chatbar.data.local.entity.CharacterCard>(), controller) { value = controller.availableCards() }
     var modelReadRetry by remember(controller) { mutableIntStateOf(0) }
     var modelProblemDismissed by remember(controller, accountRevision, modelReadRetry) { mutableStateOf(false) }
-    val modelCatalog by produceState<DesktopStudioModelCatalog>(DesktopStudioModelCatalog.Loading,
-        controller, accountRevision, modelReadRetry) {
-        value = DesktopStudioModelCatalog.Loading
-        value = controller.availableModels()
-    }
+    val studioModels = rememberDesktopStudioModels(controller, d.aiDesignModelId, accountRevision, modelReadRetry, authRevision, auxiliary)
+    val modelCatalog = studioModels.catalog
+    val authentication = studioModels.authentication
     val models = (modelCatalog as? DesktopStudioModelCatalog.Available)?.models.orEmpty()
     val modelReadFailure = (modelCatalog as? DesktopStudioModelCatalog.Unavailable)?.failure
     if (modelReadFailure != null && !modelProblemDismissed && !accountProblemShowing && openedAccountService == null) {

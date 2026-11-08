@@ -471,6 +471,19 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun availableCards() = characters.getAll()
     suspend fun availableModels() = readDesktopStudioModels { resolver.availableChatModels() }
+
+    fun observeModels(): Flow<DesktopStudioModelCatalog> = flow {
+        var revision = 0L
+        resolver.observeConfiguration().collect { configuration ->
+            // Keep settings/keys out of presentation state, including changes that leave
+            // the list itself equal but change defaults or local authentication policy.
+            val safe = readDesktopStudioModels { configuration.chatModels }
+            emit(if (safe is DesktopStudioModelCatalog.Available) safe.copy(configurationRevision = ++revision) else safe)
+        }
+    }.catch { failure ->
+        if (failure is CancellationException) throw failure
+        emit(readDesktopStudioModels { throw failure })
+    }.flowOn(Dispatchers.IO)
     suspend fun vibeCacheMisses(draft: NovelAiStudioDraft) = withContext(Dispatchers.IO) { guidance.vibeCacheMisses(draft) }
 
     suspend fun designRequirement() = repository.loadDraft().extraRequirement

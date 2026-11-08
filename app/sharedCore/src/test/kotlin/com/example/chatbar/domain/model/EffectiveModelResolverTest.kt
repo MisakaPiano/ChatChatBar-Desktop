@@ -13,6 +13,8 @@ import com.example.chatbar.data.repository.SettingsRepository
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -137,6 +139,46 @@ class EffectiveModelResolverTest {
             listOf("默认对话模型/API Key 未配置"),
             modelConfigurationStatus(default = model("chat", "Chat", apiKey = ""), embedding = null).errors
         )
+    }
+
+    @Test
+    fun `live configuration observes model defaults capability and embedding changes while captured configuration stays frozen`() = runBlocking {
+        settings.saveAppSettings(AppSettings(defaultModelId = "first", siliconFlowApiKey = "synthetic-global"))
+        val first = model("first", "First", apiKey = "")
+        models.saveModel(first)
+        val observed = MutableStateFlow<EffectiveModelConfiguration?>(null)
+        val observer = launch(Dispatchers.Default) { resolver.observeConfiguration().collect { observed.value = it } }
+        suspend fun await(predicate: (EffectiveModelConfiguration) -> Boolean) =
+            withTimeout(5000) { observed.filterNotNull().first(predicate) }
+        try {
+            val frozen = await { it.defaultChatModel?.id == first.id }
+            assertEquals("synthetic-global", frozen.defaultChatModel?.apiKey)
+            val updated = first.copy(displayName = "First edited", modelName = "changed", isMultimodal = true)
+            models.saveModel(updated)
+            val changed = await { it.multimodalModels.any { m -> m.id == first.id } }
+            assertEquals("changed", changed.defaultChatModel?.modelName)
+            val hidden = model("hidden", "Hidden vision", apiKey = "own-key", selectableForChat = false).copy(isMultimodal = true)
+            models.saveModel(hidden)
+            val withHidden = await { it.auxiliaryTextModels.any { m -> m.id == hidden.id } }
+            assertTrue(withHidden.chatModels.none { it.id == hidden.id })
+            assertTrue(withHidden.multimodalModels.any { it.id == hidden.id })
+            val second = model("second", "Second", apiKey = "second-key")
+            models.saveModel(second)
+            settings.updateAppSettings { it.copy(defaultModelId = second.id, defaultImageModelId = first.id) }
+            val selected = await { it.defaultChatModel?.id == second.id }
+            assertEquals(first.id, selected.imageDesignModel(null)?.id)
+            assertNull(selected.imageDesignModel("removed-id"))
+            assertEquals(first.id, selected.imageModel("removed-id")?.id)
+            models.saveEmbeddingModel(EmbeddingConfig(id = "ignored", displayName = "Embedding", baseUrl = "https://embedding.invalid/v1", apiKey = "embed-key", modelName = "embed"))
+            await { it.embeddingModel?.modelName == "embed" }
+            models.deleteModel(first.id)
+            val removed = await { it.auxiliaryTextModels.none { m -> m.id == first.id } }
+            assertNull(removed.imageDesignModel(first.id))
+            assertEquals(second.id, removed.defaultImageModel?.id)
+            assertEquals("provider/first", frozen.defaultChatModel?.modelName)
+            assertFalse(frozen.defaultChatModel!!.isMultimodal)
+            assertEquals("first", frozen.settings.defaultModelId)
+        } finally { observer.cancelAndJoin() }
     }
 
     private fun catalogSource(): PresetModelCatalogSource = object : PresetModelCatalogSource {

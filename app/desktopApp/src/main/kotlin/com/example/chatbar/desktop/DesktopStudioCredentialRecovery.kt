@@ -38,7 +38,7 @@ internal enum class DesktopStudioModelReadFailure(val text: String) {
 
 internal sealed interface DesktopStudioModelCatalog {
     data object Loading : DesktopStudioModelCatalog
-    data class Available(val models: List<ModelConfig>) : DesktopStudioModelCatalog
+    data class Available(val models: List<ModelConfig>, val configurationRevision: Long = 0L) : DesktopStudioModelCatalog
     data class Unavailable(val failure: DesktopStudioModelReadFailure) : DesktopStudioModelCatalog
 }
 
