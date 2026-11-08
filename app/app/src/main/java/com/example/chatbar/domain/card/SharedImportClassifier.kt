@@ -67,7 +67,7 @@ object SharedImportClassifier {
         if (PngTextChunks.isPng(bytes)) {
             val chatBarPayload = PngTextChunks.extractTextChunk(bytes, PngTextChunks.CHATBAR_CHARACTER_KEYWORD)
             if (chatBarPayload != null) {
-                return runCatching { decodeChatBarPng(chatBarPayload) }
+                return runCatching { decodeChatBarPng(chatBarPayload, bytes) }
                     .getOrElse { SharedImportInspection.Unknown(textLike = false) }
             }
             val sillyTavernPayload = SillyTavernCardParser.extractCharaChunk(bytes)
@@ -94,7 +94,7 @@ object SharedImportClassifier {
             SharedImportKind.CHARACTER -> {
                 if (PngTextChunks.isPng(bytes)) {
                     PngTextChunks.extractTextChunk(bytes, PngTextChunks.CHATBAR_CHARACTER_KEYWORD)?.let {
-                        return decodeChatBarPng(it)
+                        return decodeChatBarPng(it, bytes)
                     }
                     SillyTavernCardParser.extractCharaChunk(bytes)?.let {
                         return decodeSillyTavernCharacter(it, bytes)
@@ -140,7 +140,7 @@ object SharedImportClassifier {
             .getOrElse { SharedImportInspection.Unknown(textLike = true) }
     }
 
-    private fun decodeChatBarPng(payload: String): SharedImportInspection.Character {
+    private fun decodeChatBarPng(payload: String, pngBytes: ByteArray): SharedImportInspection.Character {
         val rawJson = if (payload.trimStart().startsWith("{")) {
             payload
         } else {
@@ -149,7 +149,7 @@ object SharedImportClassifier {
         val packageData = json.decodeFromString(CharacterCardPackage.serializer(), rawJson)
             .withoutEmptyCharacterPlaceholders()
             .also(CharacterCardPackage::validateForImport)
-        return SharedImportInspection.Character(CharacterCardImportRequest(packageData))
+        return SharedImportInspection.Character(CharacterCardImportRequest(OriginalCharacterCover.attachToImportedPackage(packageData, pngBytes)))
     }
 
     private fun decodeCharacterJson(text: String): SharedImportInspection.Character {

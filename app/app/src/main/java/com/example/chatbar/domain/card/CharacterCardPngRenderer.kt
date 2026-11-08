@@ -31,7 +31,8 @@ data class CharacterCardPngExportOptions(
     val titleScale: Float = 0.052f,
     val cropCenterX: Float = 0.5f,
     val cropCenterY: Float = 0.5f,
-    val cropZoom: Float = 1f
+    val cropZoom: Float = 1f,
+    val preserveOriginalCover: Boolean = true
 ) {
     fun normalized(): CharacterCardPngExportOptions = copy(
         sizePx = sizePx.coerceIn(1024, 2048),
@@ -51,7 +52,7 @@ object CharacterCardPngRenderer {
         val size = normalized.sizePx
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val sourcePath = normalized.coverImagePath ?: card.chatBackground
+        val sourcePath = normalized.coverImagePath ?: card.coverImage ?: card.chatBackground
         val background = sourcePath
             ?.takeIf(String::isNotBlank)
             ?.let(::File)
