@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.card.CharacterCardPackage
+import com.example.chatbar.domain.card.CharacterCardExportCompatibility
+import com.example.chatbar.domain.card.forExportCompatibility
 import com.example.chatbar.domain.card.CharacterCardPngExportOptions
 import com.example.chatbar.domain.card.CharacterCardPngPackageCodec
 import com.example.chatbar.domain.card.FormatCardPackage
@@ -113,7 +115,7 @@ class Phase3FDesktopInteropTest {
 
                 assertFails {
                     container.characterTransfers.importNew(
-                        Phase3FInteropFixture.structuredCharacter.copy(schemaVersion = 10),
+                        Phase3FInteropFixture.structuredCharacter.copy(schemaVersion = 999),
                     )
                 }
                 val missing = Phase3FInteropFixture.structuredCharacter.copy(
@@ -238,8 +240,8 @@ class Phase3FDesktopInteropTest {
 
     private fun assertCharacterSemantics(expected: CharacterCardPackage, actual: CharacterCardPackage) {
         assertEquals(
-            Phase3FInteropFixture.normalizeCharacter(expected),
-            Phase3FInteropFixture.normalizeCharacter(actual),
+            Phase3FInteropFixture.normalizeCharacter(expected.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9)),
+            Phase3FInteropFixture.normalizeCharacter(actual.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9)),
         )
         assertEquals(
             Phase3FInteropFixture.imageRoleHashes(expected),

@@ -98,10 +98,15 @@ internal class DesktopCharacterResourceStore(
 
     internal fun requireDifferentCoverOutput(card: com.example.chatbar.data.local.entity.CharacterCard, destination: Path) {
         val reference = card.coverImage?.takeUnless { it.startsWith(ASSET_PREFIX) } ?: return
-        val original = requireReadableOwnedFile(reference).toRealPath()
+        val source = resolveOwnedReference(reference)
+        val sourceExists = Files.exists(source, LinkOption.NOFOLLOW_LINKS)
+        // A compatible JSON export does not consume the independent cover. Preserve its location
+        // guard even when that optional file/directory is absent, without requiring readable bytes.
+        val original = if (sourceExists) requireReadableOwnedFile(reference).toRealPath()
+            else root.toRealPath().resolve(root.relativize(source))
         val target = destination.toAbsolutePath().normalize()
         val physicalTarget = requireNotNull(target.parent).toRealPath().resolve(target.fileName)
-        require(original != physicalTarget && (!Files.exists(target) || !Files.isSameFile(original, target))) {
+        require(original != physicalTarget && (!sourceExists || !Files.exists(target) || !Files.isSameFile(original, target))) {
             "导出不能覆盖封面原图，请选择其他文件名或位置"
         }
     }
