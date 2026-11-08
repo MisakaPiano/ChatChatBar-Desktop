@@ -1,0 +1,193 @@
+name: Worldbook quick toggle and draft regression APK
+on:
+  push:
+    branches: [ci/upstream-worldbook-toggle-20261108]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: 79867913139523106743d612e74aae8b48c5d2cc
+  TEST_APPLICATION_ID: com.example.chatbar.entrytoggle.w1
+  CHATBAR_SILICONFLOW_API_KEY: ''
+  CHATBAR_SUPABASE_URL: ''
+  CHATBAR_SUPABASE_ANON_KEY: ''
+  CHATBAR_SUPABASE_REDIRECT_URI: chatbar-entrytoggle-w1://auth/callback
+jobs:
+  test-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 79867913139523106743d612e74aae8b48c5d2cc
+          persist-credentials: false
+          fetch-depth: 8
+      - name: Verify immutable contribution source
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git diff --exit-code
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Set co-install test identity only
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          gradle = Path('app/app/build.gradle.kts')
+          text = gradle.read_text()
+          old = 'applicationId = "com.example.chatbar"'
+          assert text.count(old) == 1
+          gradle.write_text(text.replace(old, 'applicationId = "' + os.environ['TEST_APPLICATION_ID'] + '"'))
+          manifest = Path('app/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text()
+          old_label = 'android:label="@string/app_name"'
+          old_scheme = 'android:scheme="chatbar"'
+          assert text.count(old_label) == 1 and text.count(old_scheme) == 1
+          text = text.replace(old_label, 'android:label="CCB 条目开关测试 w1"')
+          text = text.replace(old_scheme, 'android:scheme="chatbar-entrytoggle-w1"')
+          manifest.write_text(text)
+          PY
+      - name: Compile and check affected unit behavior
+        working-directory: app
+        run: |
+          bash ./gradlew :app:testDebugUnitTest --tests '*WorldBookEngineTest' --tests '*WorldBookEntryModalStateTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          mkdir -p ../phone-test-output/unit
+          cp -R app/build/test-results/testDebugUnitTest/. ../phone-test-output/unit/
+      - name: Build installable debug test APK
+        working-directory: app
+        run: bash ./gradlew :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.10-worldbook-toggle-w1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+      - name: Prepare device regression and unfixed control script
+        run: |
+          cat > "$RUNNER_TEMP/run-worldbook-checks.sh" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          vm="$GITHUB_WORKSPACE/app/app/src/main/java/com/example/chatbar/ui/worldbook/WorldBookEditViewModel.kt"
+          saved="$RUNNER_TEMP/worldbook-fixed-vm.kt"
+          out="$GITHUB_WORKSPACE/phone-test-output"
+          cp "$vm" "$saved"
+          finish() {
+            cp "$saved" "$vm"
+            if test -d app/build/outputs/androidTest-results/connected; then
+              mkdir -p "$out/last-device-results"
+              cp -R app/build/outputs/androidTest-results/connected/. "$out/last-device-results/"
+            fi
+          }
+          trap finish EXIT
+          bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.worldbook.WorldBookQuickToggleViewModelTest,com.example.chatbar.ui.worldbook.WorldBookEntryListItemTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          mkdir -p "$out/screenshots"
+          adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/worldbook-toggle-evidence/." "$out/screenshots/"
+          mkdir -p "$out/fixed"
+          cp -R app/build/outputs/androidTest-results/connected/. "$out/fixed/"
+          git show d200148e7ea43d8aed69022bd1ea9c47d9343d66:app/app/src/main/java/com/example/chatbar/ui/worldbook/WorldBookEditViewModel.kt > "$vm"
+          set +e
+          bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.worldbook.WorldBookQuickToggleViewModelTest#discardRestoresEnabledBeforeSameEditorReopens -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          red_exit=$?
+          set -e
+          test "$red_exit" -ne 0
+          mkdir -p "$out/unfixed-control"
+          cp -R app/build/outputs/androidTest-results/connected/. "$out/unfixed-control/"
+          cp "$saved" "$vm"
+          python3 - <<'PY'
+          import os, json
+          from pathlib import Path
+          from xml.etree import ElementTree as E
+          out = Path(os.environ['GITHUB_WORKSPACE']) / 'phone-test-output'
+          def results(folder):
+              cases = []
+              for p in (out / folder).rglob('TEST-*.xml'):
+                  for c in E.parse(p).getroot().iter('testcase'):
+                      cases.append({'class':c.get('classname'), 'name':c.get('name'),
+                                    'failure': c.find('failure') is not None,
+                                    'error': c.find('error') is not None,
+                                    'skipped': c.find('skipped') is not None,
+                                    'failureText': ''.join(c.find('failure').itertext()) if c.find('failure') is not None else ''})
+              return cases
+          green = results('fixed')
+          assert len(green) == 8, green
+          assert not any(c['failure'] or c['error'] or c['skipped'] for c in green), green
+          red = results('unfixed-control')
+          assert len(red) == 1 and red[0]['name'] == 'discardRestoresEnabledBeforeSameEditorReopens', red
+          assert red[0]['failure'] and not red[0]['error'], red
+          assert 'Discarded entry enabled flag must be restored' in red[0]['failureText'], red
+          unit = results('unit')
+          assert len(unit) > 0 and not any(c['failure'] or c['error'] or c['skipped'] for c in unit), unit
+          summary = {'fixedDeviceTests':green, 'fixedUnitTests':unit,
+                     'unfixedControl':red, 'unfixedControlExpectedAssertionFailureConfirmed':True,
+                     'controlScope':'Same fixed source and synthetic fixture; only WorldBookEditViewModel replaced with exact original d200 source; restored before final APK build',
+                     'scope':'4 actual worldbook ViewModel cases and 4 row UI cases; no paid requests or full navigation end-to-end'}
+          (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          PY
+          # The control test installed the unfixed app in the cloud emulator. Rebuild the fixed source for delivery.
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          bash ./gradlew :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.10-worldbook-toggle-w1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          SH
+      - name: Enable cloud runner KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify quick switch, actual ViewModel and original regression
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: app
+          script: bash "$RUNNER_TEMP/run-worldbook-checks.sh"
+      - name: Verify package, signature and exact build scope
+        run: |
+          mkdir -p phone-test-output
+          cp app/app/build/outputs/apk/debug/app-debug.apk phone-test-output/CCB-worldbook-toggle-w1-test.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging phone-test-output/CCB-worldbook-toggle-w1-test.apk > phone-test-output/apk-badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree phone-test-output/CCB-worldbook-toggle-w1-test.apk AndroidManifest.xml > phone-test-output/apk-manifest.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs phone-test-output/CCB-worldbook-toggle-w1-test.apk > phone-test-output/apk-signature.txt
+          python3 - <<'PY'
+          import os, json, hashlib, subprocess
+          from pathlib import Path
+          out = Path('phone-test-output')
+          apk = out / 'CCB-worldbook-toggle-w1-test.apk'
+          badging = (out / 'apk-badging.txt').read_text()
+          manifest = (out / 'apk-manifest.txt').read_text()
+          assert "name='" + os.environ['TEST_APPLICATION_ID'] + "'" in badging
+          assert "versionName='1.4.10-worldbook-toggle-w1'" in badging
+          assert 'CCB 条目开关测试 w1' in badging
+          assert os.environ['TEST_APPLICATION_ID'] + '.fileprovider' in manifest
+          assert 'chatbar-entrytoggle-w1' in manifest
+          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          assert set(changed) == {'app/app/build.gradle.kts','app/app/src/main/AndroidManifest.xml'}
+          source = subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip()
+          assert source == os.environ['SOURCE_SHA']
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
+          (out / 'SHA256.txt').write_text(digest + '  ' + apk.name + '\n')
+          info = {'source': source, 'sourceTree': subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),
+                  'applicationId':os.environ['TEST_APPLICATION_ID'], 'label':'CCB 条目开关测试 w1',
+                  'versionName':'1.4.10-worldbook-toggle-w1','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,
+                  'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,
+                  'tests':json.loads((out / 'TEST_SUMMARY.json').read_text()),
+                  'privateKeysOrUserDataInjected':False,'installedOnDevice':False,
+                  'cloudRun':'https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/' + os.environ['GITHUB_RUN_ID']}
+          (out / 'BUILD_INFO.json').write_text(json.dumps(info,ensure_ascii=False,indent=2))
+          print(json.dumps(info,ensure_ascii=False,indent=2))
+          PY
+      - name: Preserve failure results
+        if: failure()
+        run: |
+          mkdir -p phone-test-output/failure
+          cp -R app/app/build/outputs/androidTest-results/connected phone-test-output/failure/ 2>/dev/null || true
+          cp -R app/app/build/test-results/testDebugUnitTest phone-test-output/failure/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: worldbook-toggle-w1-phone-test-${{ github.run_id }}
+          path: phone-test-output/
+          retention-days: 14
+
