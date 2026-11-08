@@ -93,7 +93,10 @@ internal class DesktopNovelAiCatalogAssets(
 }
 
 internal class DesktopNovelAiSqlDatabase(path: Path) : NovelAiSqlDatabase, AutoCloseable {
-    private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:${path.toUri()}?mode=ro")
+    private val connection: Connection = run {
+        check(Files.isRegularFile(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)) { "词库数据库文件不存在或不可用" }
+        DriverManager.getConnection("jdbc:sqlite:${path.toUri()}?mode=ro")
+    }
     init { connection.createStatement().use { it.execute("PRAGMA query_only=ON") } }
     override fun rawQuery(sql: String, args: Array<String>): NovelAiSqlCursor {
         val statement = connection.prepareStatement(sql)
@@ -134,8 +137,12 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
             val metadata = Json.decodeFromString<DanbooruCatalogMetadata>(Files.readString(manifest))
             require(metadata.sourceSha.matches(Regex("[a-f0-9]{40}")))
             val database = assets.root.resolve("${metadata.sourceSha}.sqlite")
-            val index = assets.root.resolve("index-${metadata.sourceSha}.sqlite")
             DesktopNovelAiCatalogUpdate.verify(database, metadata.sourceSizeBytes, metadata.sourceSha)
+            // Downloaded/imported generations use a source-named index; bundled generations retain
+            // the SHA-256 content name installed by Assets. Both keep the same durable source.
+            val versionedIndex = assets.root.resolve("index-${metadata.sourceSha}.sqlite")
+            val index = if (Files.exists(versionedIndex, java.nio.file.LinkOption.NOFOLLOW_LINKS)) versionedIndex
+                else assets.indexAdmitted("danbooru", metadata.sourceSha)
             DesktopNovelAiSqlDatabase(index).use { db -> db.rawQuery("SELECT version,source FROM metadata", emptyArray()).use {
                 check(it.moveToFirst() && it.getInt(0) == 2 && it.getString(1) == metadata.sourceSha)
             } }
