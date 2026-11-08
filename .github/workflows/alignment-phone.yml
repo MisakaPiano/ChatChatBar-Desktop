@@ -57,6 +57,52 @@ jobs:
           text = text.replace(old_scheme, 'android:scheme="chatbar-alignment-a1"')
           manifest.write_text(text)
           PY
+      - name: Verify official compiler with bounded range transport after full download timeout
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, shutil, subprocess
+          from pathlib import Path
+          root = Path('phone-test-output/compiler-proof')
+          root.mkdir(parents=True, exist_ok=True)
+          sha1 = '002fac4210c52c27b244305d60b0906e831f49be'
+          total = 59718536
+          cache = Path(os.environ['GRADLE_USER_HOME']) / 'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20' / sha1
+          cache.mkdir(parents=True, exist_ok=True)
+          target = cache / 'kotlin-compiler-embeddable-2.3.20.jar'
+          url = 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/kotlin-compiler-embeddable-2.3.20.jar'
+          staged = Path(os.environ['RUNNER_TEMP']) / 'verified-compiler'
+          staged.mkdir(exist_ok=True)
+          whole = staged / 'compiler.jar'
+          proof = {'officialUrl':url,'expectedBytes':total,'sha1PinnedFromIndependentOfficialSidecar':sha1,'sourceOrDependencyRepositoryChanged':False,'parts':[]}
+          try:
+              if target.is_file() and hashlib.sha1(target.read_bytes()).hexdigest() == sha1:
+                  shutil.copyfile(target, whole)
+                  proof['cacheReuse'] = True
+              else:
+                  with whole.open('wb') as combined:
+                      for start in range(0,total,2*1024*1024):
+                          end = min(start+2*1024*1024-1,total-1)
+                          part = staged / 'part'
+                          headers = root / ('headers-'+str(start)+'.txt')
+                          result = subprocess.run(['curl','--fail','--silent','--show-error','--location','--max-time','60','--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+'?ccbSegment='+str(start)])
+                          size = part.stat().st_size if part.exists() else 0
+                          proof['parts'].append({'start':start,'end':end,'exitCode':result.returncode,'bytes':size})
+                          if result.returncode: raise RuntimeError('Official compiler range request failed before Gradle')
+                          if start == 0 and size == total:
+                              combined.write(part.read_bytes())
+                              break
+                          assert size == end-start+1, (start,size)
+                          assert ('content-range: bytes '+str(start)+'-'+str(end)+'/'+str(total)) in headers.read_text().lower(), start
+                          combined.write(part.read_bytes())
+                  assert whole.stat().st_size == total
+              data = whole.read_bytes()
+              assert hashlib.sha1(data).hexdigest() == sha1
+              proof['actualSha256'] = hashlib.sha256(data).hexdigest()
+              proof['verified'] = True
+              shutil.copyfile(whole, target)
+          finally:
+              (root/'compiler-transport-proof.json').write_text(json.dumps(proof,indent=2))
+          PY
       - name: Compile and check affected unit behavior
         working-directory: app
         run: |
