@@ -9,8 +9,24 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 
-/** Original-cover extension; packages without that extension retain the existing v9 wire. */
+/** Original-cover extension; ordinary exports explicitly project the official-compatible v9 wire. */
 const val CHARACTER_CARD_PACKAGE_SCHEMA_VERSION = 10
+
+/** Export wire policy only; it never changes the stored card or its original image. */
+enum class CharacterCardExportCompatibility { OFFICIAL_V9, DESKTOP_COVER_V10 }
+
+fun CharacterCardPackage.forExportCompatibility(compatibility: CharacterCardExportCompatibility): CharacterCardPackage {
+    if (compatibility == CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+        return copy(schemaVersion = CHARACTER_CARD_PACKAGE_SCHEMA_VERSION)
+    val cover = card.coverImageResourceId
+    val retained = buildSet<String> {
+        card.avatarResourceId?.let(::add)
+        card.chatBackgroundResourceId?.let(::add)
+        card.characters.mapNotNullTo(this) { it.appearanceImageResourceId }
+    }
+    return copy(schemaVersion = 9, card = card.copy(coverImageResourceId = null),
+        images = if (cover != null && cover !in retained) images - cover else images)
+}
 
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)

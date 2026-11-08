@@ -12,6 +12,8 @@ import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.CharacterCardImportRequest
 import com.example.chatbar.domain.card.CharacterCardPackage
+import com.example.chatbar.domain.card.CharacterCardExportCompatibility
+import com.example.chatbar.domain.card.forExportCompatibility
 import com.example.chatbar.domain.card.CharacterCardPngExportOptions
 import com.example.chatbar.domain.card.CharacterCardPngPackageCodec
 import com.example.chatbar.domain.card.CharacterCardTransferCore
@@ -105,10 +107,12 @@ internal sealed interface DesktopPendingTransferConflict {
 
 internal data class DesktopCoverExportDraft(val card: CharacterCard, val packageData: CharacterCardPackage,
     val backgroundBytes: ByteArray?, val originalCoverBytes: ByteArray? = null)
+internal class DesktopCharacterJsonExportDraft(val card: CharacterCard, val packageData: CharacterCardPackage)
 
 internal data class DesktopTypedTransferState(
     val externalImportReceipt: DesktopExternalImportReceipt? = null,
     val coverExport: DesktopCoverExportDraft? = null,
+    val characterJsonExport: DesktopCharacterJsonExportDraft? = null,
     val characters: List<DesktopTransferItem> = emptyList(),
     val formats: List<DesktopTransferItem> = emptyList(),
     val worldBooks: List<DesktopTransferItem> = emptyList(),
@@ -582,23 +586,45 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    suspend fun exportCharacterJson(id: String) = runOperation(null) {
-        val export = characterTransfers.prepareExport(id)
+    suspend fun exportCharacterJson(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9) = runOperation(null) {
+        val export = characterTransfers.prepareExport(id, compatibility)
         val destination = filePicker.pickSaveFile(JSON_FILES, safeFileName(export.card.name, "json")) ?: return@runOperation
         guardCharacterOutput(export.card, destination)
         writer.writeText(destination, json.encodeToString(CharacterCardPackage.serializer(), export.packageData))
         mutableState.value = state.value.copy(status = "文件已导出", error = null)
     }
 
-    suspend fun beginCoverExport(id: String) = runOperation(null) {
+    suspend fun beginCharacterJsonExport(id: String) = runOperation(null) {
         val export = characterTransfers.prepareExport(id)
+        mutableState.value = state.value.copy(characterJsonExport = DesktopCharacterJsonExportDraft(export.card, export.packageData), coverExport = null)
+    }
+
+    fun cancelCharacterJsonExport() { if (!state.value.busy) mutableState.value = state.value.copy(characterJsonExport = null) }
+
+    suspend fun finishCharacterJsonExport(draft: DesktopCharacterJsonExportDraft, compatibility: CharacterCardExportCompatibility) = runOperation(null) {
+        check(state.value.characterJsonExport === draft) { "角色导出已关闭" }
+        val packageData = if (compatibility == CharacterCardExportCompatibility.OFFICIAL_V9) draft.packageData else {
+            val full = characterTransfers.prepareExport(draft.card.id, compatibility)
+            check(full.card == draft.card && full.packageData.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9)
+                .copy(exportedAt = draft.packageData.exportedAt) == draft.packageData) { "角色卡或关联资源已变化，请重新打开导出" }
+            full.packageData.copy(exportedAt = draft.packageData.exportedAt)
+        }
+        check(state.value.characterJsonExport === draft) { "角色导出已关闭" }
+        val destination = filePicker.pickSaveFile(JSON_FILES, safeFileName(draft.card.name, "json")) ?: return@runOperation
+        guardCharacterOutput(draft.card, destination)
+        writer.writeText(destination, json.encodeToString(CharacterCardPackage.serializer(), packageData))
+        mutableState.value = state.value.copy(characterJsonExport = null, status = "文件已导出", error = null)
+    }
+
+    suspend fun beginCoverExport(id: String) = runOperation(null) {
+        val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
         val background = export.packageData.card.chatBackgroundResourceId
             ?.let(export.packageData.images::get)?.data?.let(::decodeCharacterPackagedImage)
             ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
         val original = export.packageData.card.coverImageResourceId
             ?.let(export.packageData.images::getValue)?.data?.let(::decodeCharacterPackagedImage)
             ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
-        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background, original))
+        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background, original), characterJsonExport = null)
     }
 
     fun cancelCoverExport() { if (!state.value.busy) mutableState.value = state.value.copy(coverExport = null) }
@@ -613,7 +639,7 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun finishCoverExport(draft: DesktopCoverExportDraft, options: CharacterCardPngExportOptions,
-        replacement: ByteArray?) = runOperation(null) {
+        replacement: ByteArray?, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9) = runOperation(null) {
         check(state.value.coverExport === draft) { "封面导出已关闭" }
         val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(draft.card.name, "png")) ?: return@runOperation
         guardCharacterOutput(draft.card, destination)
@@ -621,13 +647,14 @@ internal class DesktopTypedTransferController(
             characterPngRenderer.renderExportImage(draft.card, options, draft.originalCoverBytes, draft.backgroundBytes, replacement)
         }
         // The replacement changes visible pixels only. Package and original resource map are untouched.
-        writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, draft.packageData, json))
+        writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, draft.packageData.forExportCompatibility(compatibility), json))
         mutableState.value = state.value.copy(coverExport = null, status = "角色 PNG 已导出", error = null)
     }
 
-    suspend fun exportCharacterPng(id: String, options: CharacterCardPngExportOptions = CharacterCardPngExportOptions()) {
+    suspend fun exportCharacterPng(id: String, options: CharacterCardPngExportOptions = CharacterCardPngExportOptions(),
+        compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9) {
         runOperation(null) {
-            val export = characterTransfers.prepareExport(id)
+            val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
             val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(export.card.name, "png")) ?: return@runOperation
             guardCharacterOutput(export.card, destination)
             val backgroundBytes = export.packageData.card.chatBackgroundResourceId
@@ -640,7 +667,7 @@ internal class DesktopTypedTransferController(
                 ?.let(export.packageData.images::getValue)?.data?.let(::decodeCharacterPackagedImage)
                 ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
             val rendered = characterPngRenderer.renderExportImage(export.card, options, original, backgroundBytes)
-            writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, export.packageData, json))
+            writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, export.packageData.forExportCompatibility(compatibility), json))
             mutableState.value = mutableState.value.copy(status = "角色 PNG 已导出", error = null)
         }
     }

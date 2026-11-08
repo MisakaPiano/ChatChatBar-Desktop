@@ -95,12 +95,12 @@ class CharacterCardTransferCore internal constructor(
         postCommitResourceCleanup = postCommitResourceCleanup,
     )
 
-    suspend fun prepareExport(id: String): CharacterCardExport = normalOperation {
-        prepareExportUngated(id)
+    suspend fun prepareExport(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9): CharacterCardExport = normalOperation {
+        prepareExportUngated(id, compatibility)
     }
 
-    suspend fun exportJson(id: String): String = normalOperation {
-        json.encodeToString(CharacterCardPackage.serializer(), prepareExportUngated(id).packageData)
+    suspend fun exportJson(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9): String = normalOperation {
+        json.encodeToString(CharacterCardPackage.serializer(), prepareExportUngated(id, compatibility).packageData)
     }
 
     fun decode(rawJson: String): CharacterCardPackage =
@@ -307,9 +307,9 @@ class CharacterCardTransferCore internal constructor(
             withContext(ioDispatcher) { operation() }
         }
 
-    private suspend fun prepareExportUngated(id: String): CharacterCardExport {
+    private suspend fun prepareExportUngated(id: String, compatibility: CharacterCardExportCompatibility): CharacterCardExport {
         val card = characters.getById(id) ?: error("角色卡不存在")
-        return CharacterCardExport(card, packageCard(card))
+        return CharacterCardExport(card, packageCard(card, compatibility))
     }
 
     private suspend fun createAndCommit(
@@ -389,7 +389,8 @@ class CharacterCardTransferCore internal constructor(
         }
     }
 
-    private suspend fun packageCard(card: CharacterCard): CharacterCardPackage {
+    private suspend fun packageCard(card: CharacterCard,
+        compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.DESKTOP_COVER_V10): CharacterCardPackage {
         val exportableCharacters = card.characters.filterNot(CharacterPlaceholderPolicy::isEmpty)
         require(exportableCharacters.all { it.name.isNotBlank() }) { "人物名称不能为空" }
         val documents = card.customDocuments.map { document ->
@@ -413,7 +414,7 @@ class CharacterCardTransferCore internal constructor(
             resourceIdsByReference[reference] = resourceId
             return resourceId
         }
-        val coverId = card.coverImage?.takeIf(String::isNotBlank)?.let { reference ->
+        val coverId = card.coverImage?.takeIf { compatibility == CharacterCardExportCompatibility.DESKTOP_COVER_V10 && it.isNotBlank() }?.let { reference ->
             val original = resources.readBytes(reference)
             val bytes = if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original) else original
             images["cover-original"] = PackagedImage(resources.fileName(reference), Base64.getEncoder().encodeToString(bytes))
@@ -440,7 +441,7 @@ class CharacterCardTransferCore internal constructor(
             )
         }
         return CharacterCardPackage(
-            schemaVersion = if (coverId == null) 9 else CHARACTER_CARD_PACKAGE_SCHEMA_VERSION,
+            schemaVersion = if (compatibility == CharacterCardExportCompatibility.OFFICIAL_V9) 9 else CHARACTER_CARD_PACKAGE_SCHEMA_VERSION,
             card = PackagedCharacterCard(
                 name = card.name,
                 botName = card.botName,

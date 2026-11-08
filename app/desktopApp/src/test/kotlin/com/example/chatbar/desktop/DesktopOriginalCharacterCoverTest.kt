@@ -51,7 +51,7 @@ class DesktopOriginalCharacterCoverTest {
             repeat(5) { index ->
                 card = card.copy(name = "Edited-$index", greeting = "New text $index")
                 f.cards.update(card)
-                val export = f.core.prepareExport(card.id)
+                val export = f.core.prepareExport(card.id, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
                 assertEquals(10, export.packageData.schemaVersion)
                 assertEquals(1, export.packageData.images.size)
                 val cover = Base64.getDecoder().decode(export.packageData.images.getValue(assertNotNull(export.packageData.card.coverImageResourceId)).data)
@@ -126,7 +126,7 @@ class DesktopOriginalCharacterCoverTest {
             assertEquals(4, references.filterNotNull().toSet().size)
             references.forEach { assertContentEquals(original, f.resources.readBytes(assertNotNull(it))) }
             f.cards.update(imported.copy(name = "Current text"))
-            val exported = f.core.prepareExport(imported.id).packageData
+            val exported = f.core.prepareExport(imported.id, CharacterCardExportCompatibility.DESKTOP_COVER_V10).packageData
             assertEquals("Current text", exported.card.name)
             assertEquals(4, exported.images.size)
             exported.images.values.forEach { assertContentEquals(original, Base64.getDecoder().decode(it.data)) }

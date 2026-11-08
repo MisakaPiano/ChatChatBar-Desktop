@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
 import com.example.chatbar.domain.card.CharacterCardPngExportOptions
+import com.example.chatbar.domain.card.CharacterCardExportCompatibility
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +35,7 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
     }
     fun change(next: CharacterCardPngExportOptions) = commit(next to replacement)
     var error by remember { mutableStateOf<String?>(null) }
+    var compatibility by remember(draft) { mutableStateOf(CharacterCardExportCompatibility.OFFICIAL_V9) }
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val sourceBytes = replacement ?: draft.originalCoverBytes ?: draft.backgroundBytes
@@ -93,10 +95,11 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                 }
             }
             (error ?: state.error)?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+            DesktopCharacterExportCompatibilityChoice(compatibility, !state.busy) { compatibility = it }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton("取消", secondary = true, enabled = !state.busy, onClick = controller::cancelCoverExport)
                 BootstrapButton("导出 PNG", enabled = !state.busy && preview != null) {
-                    scope.launch { controller.finishCoverExport(draft, options, replacement) }
+                    scope.launch { controller.finishCoverExport(draft, options, replacement, compatibility) }
                 }
             }
         }

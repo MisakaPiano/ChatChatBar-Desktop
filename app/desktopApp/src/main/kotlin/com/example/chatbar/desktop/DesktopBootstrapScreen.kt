@@ -219,13 +219,15 @@ internal fun DesktopDataRootPanel(
 internal fun DesktopTypedTransferPanel(controller: DesktopTypedTransferController) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
+    state.characterJsonExport?.let { DesktopCharacterJsonExportDialog(it, controller) }
+    state.coverExport?.let { DesktopCoverExportDialog(it, controller) }
     LaunchedEffect(controller) { controller.refresh() }
     DesktopTransferPanel(
         state = state,
         onImportCharacter = { scope.launch { controller.chooseAndImportCharacter() } },
         onImportFormat = { scope.launch { controller.chooseAndImportFormat() } },
         onImportWorldBook = { scope.launch { controller.chooseAndImportWorldBook() } },
-        onExportCharacterJson = { scope.launch { controller.exportCharacterJson(it) } },
+        onExportCharacterJson = { scope.launch { controller.beginCharacterJsonExport(it) } },
         onExportCharacterPng = { scope.launch { controller.beginCoverExport(it) } },
         onExportFormat = { scope.launch { controller.exportFormatJson(it) } },
         onExportWorldBook = { scope.launch { controller.exportWorldBookJson(it) } },

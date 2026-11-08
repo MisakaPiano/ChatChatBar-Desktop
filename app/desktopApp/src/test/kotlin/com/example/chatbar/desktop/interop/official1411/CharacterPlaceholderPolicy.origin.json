@@ -1,0 +1,9 @@
+{
+  "source": "87d1ab5e209233b66f0db9129e984cce0d437499",
+  "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterPlaceholderPolicy.kt",
+  "gitBlob": "d64029afa2a8c637dc161737bd53be56d85afe03",
+  "rawSha256": "c9b7728e09d64abd3f0ed1fd60aee400be3b671c808f371699c752a7726d8e51",
+  "fixtureSha256": "bda96e4410dfc85f8937534e572d287c01d7b014d853517c4670fedeaf876303",
+  "transform": "Package namespace only; official reader dependency",
+  "production": false
+}

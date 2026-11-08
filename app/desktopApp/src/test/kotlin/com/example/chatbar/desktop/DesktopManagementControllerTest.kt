@@ -453,6 +453,12 @@ class DesktopManagementControllerTest {
             for ((kind, id) in listOf(DesktopTransferKind.CHARACTER to card.id, DesktopTransferKind.FORMAT to format.id, DesktopTransferKind.WORLD_BOOK to book.id)) {
                 f.picker.save = f.root.resolve("$kind.json")
                 f.management.export(kind, id)
+                if (kind == DesktopTransferKind.CHARACTER) {
+                    val draft = assertNotNull(f.transfer.state.value.characterJsonExport)
+                    assertFalse(Files.exists(f.picker.save))
+                    f.transfer.finishCharacterJsonExport(draft, com.example.chatbar.domain.card.CharacterCardExportCompatibility.OFFICIAL_V9)
+                    assertNull(f.transfer.state.value.characterJsonExport)
+                }
                 val expected = when (kind) {
                     DesktopTransferKind.CHARACTER -> f.c.characterTransfers.exportJson(id)
                     DesktopTransferKind.FORMAT -> f.c.formatTransfers.exportJson(id)

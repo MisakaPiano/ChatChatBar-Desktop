@@ -1,0 +1,9 @@
+{
+  "source": "87d1ab5e209233b66f0db9129e984cce0d437499",
+  "path": "app/app/src/main/java/com/example/chatbar/domain/card/FormatCardUserToolPolicy.kt",
+  "gitBlob": "9dd9a298fdd4e7a2c60efc6b5645c47b7742533b",
+  "rawSha256": "fec6360973365423bfa24bfa5156320e3d879ac9163d9990d663c74c7e891998",
+  "fixtureSha256": "bf14349808a4cc145cf04a24b55e632f73b75907cd59c36ddee9e3c299f0b0d7",
+  "transform": "Package namespace only; official reader dependency",
+  "production": false
+}

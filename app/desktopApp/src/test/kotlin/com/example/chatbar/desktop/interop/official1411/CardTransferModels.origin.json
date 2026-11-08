@@ -1,0 +1,9 @@
+{
+  "source": "87d1ab5e209233b66f0db9129e984cce0d437499",
+  "path": "app/app/src/main/java/com/example/chatbar/domain/card/CardTransferModels.kt",
+  "gitBlob": "ef1182561eb9f8ffb3fb54eb23703e73593eef74",
+  "rawSha256": "ce472dc87be51305269e8e7e54dcfca33ec68984f6ae504b7432088b15d49ccc",
+  "fixtureSha256": "6efb2d4f87e9ef615ec0da931fce78d0de1b7c58d9bf4e4648f01221c1562012",
+  "transform": "Package namespace only; exact official DTOs and validateForImport methods",
+  "production": false
+}
