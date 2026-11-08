@@ -132,6 +132,9 @@ internal fun DesktopPrimaryChatPanel(
     val terminalTasks = tasks.filter { it.status != DesktopTaskStatus.RUNNING }
     val terminalSignature = terminalTasks.joinToString("|") { "${it.taskId}:${it.completedAt}" }
     LaunchedEffect(controller) { controller.chatUi?.load(); controller.refresh() }
+    LaunchedEffect(controller, state.selectedSession?.id, state.modelChoicesObservationRevision) {
+        controller.observeModelChoices(state.selectedSession?.id)
+    }
     LaunchedEffect(size, state.selectedSession?.id) {
         compactNavigation.onWideChatDisplayed(size, state.selectedSession?.id)
     }
@@ -409,6 +412,10 @@ internal fun DesktopPrimaryChatPanel(
                         } }
                         Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             preferenceError?.let { StatusText(it, colors.warning) }
+                            if (state.modelChoicesReadFailed) {
+                                StatusText(t(DesktopUiText.MODEL_CHOICES_READ_FAILED), colors.warning)
+                                BootstrapButton(t(DesktopUiText.MODEL_CHOICES_RETRY)) { controller.retryModelChoices() }
+                            }
                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                             state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                             state.error?.let { StatusText(t.status(it), colors.destructive) }

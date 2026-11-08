@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -79,6 +80,8 @@ internal data class DesktopPrimaryChatState(
     val sessionSettingsSaving: Boolean = false,
     val sessionSettingsLeavePrompt: Boolean = false,
     val modelChoices: List<DesktopPrimaryChoice> = emptyList(),
+    val modelChoicesReadFailed: Boolean = false,
+    val modelChoicesObservationRevision: Long = 0,
     val effectiveModels: DesktopEffectiveModelPresentation = DesktopEffectiveModelPresentation(),
     val formatChoices: List<DesktopPrimaryChoice> = emptyList(),
     val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
@@ -188,6 +191,45 @@ internal class DesktopPrimaryChatController(
     private val draftLock = Mutex()
     private val mutableState = MutableStateFlow(DesktopPrimaryChatState())
     val state: StateFlow<DesktopPrimaryChatState> = mutableState.asStateFlow()
+
+    /** Only replace model projections; composing, reading and unsaved session edits keep their owners. */
+    suspend fun observeModelChoices(expectedSessionId: String?) {
+        try {
+            models.observeConfiguration().collectLatest { configuration ->
+                withContext(Dispatchers.IO) {
+                    stateLock.withLock {
+                        val session = state.value.selectedSession
+                        if (session?.id != expectedSessionId) return@withLock
+                        val effective = session?.let { configuration.chatModel(it.modelId) }
+                        val status = session?.let { configuration.status(it.modelId) }
+                        val diagnostic = session?.let {
+                            desktopModelDiagnostic(it.modelId, effective, configuration.settings,
+                                effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey))
+                        }
+                        val choices = configuration.chatModels.map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
+                        val identities = desktopEffectiveModels(configuration)
+                        mutableState.update { current ->
+                            if (current.selectedSession != session) current else current.copy(
+                                modelChoices = choices, effectiveModels = identities,
+                                modelUsable = status?.isUsable ?: false, modelDiagnostic = diagnostic,
+                                configurationMessage = status?.errors?.firstOrNull() ?: if (session == null) "Select or create a session" else null,
+                                modelChoicesReadFailed = false,
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            mutableState.update { if (it.selectedSession?.id == expectedSessionId)
+                it.copy(modelChoicesReadFailed = true) else it }
+        }
+    }
+
+    fun retryModelChoices() {
+        mutableState.update { it.copy(modelChoicesObservationRevision = it.modelChoicesObservationRevision + 1) }
+    }
     private var settingsBaseline: ChatSession? = null
     // Short, non-suspending draft transitions only. The existing stateLock owns async selection/save.
     private val sessionSettingsLock = Any()

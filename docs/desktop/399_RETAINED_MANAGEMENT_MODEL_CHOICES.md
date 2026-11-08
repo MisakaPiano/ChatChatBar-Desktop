@@ -12,4 +12,6 @@ desktopEffectiveModels 的冷调用现在先取得一份配置，再从同一份
 
 该工作不代表所有长期消费者已覆盖：主聊天保留中的模型诊断/会话设置、其他 AI 编辑器的打开周期和多模态能力提示仍需逐项核对。398 新仓库与本批 2 项检查都等待官方编译器依赖恢复；不把旧 shared40 或零执行的 Desktop 运行当本批通过。公开 1246 / 签名28、原人工验收和真实迁移边界不变，无新包或本机 JVM。
 
-进一步的冷刷新修正：DesktopPrimaryChatController 选择/刷新会话时，从一份 modelConfiguration 派生可用性、有效模型、选择器与默认身份，替代连续独立解析；不重新读取或修改正在运行的请求。该入口的既有 DesktopDefaultModelVisibilityTest、模型诊断/上下文检查仍待定向补验。主聊天保留期间的独立变化订阅尚未接入，不能把冷读取一致性称为实时订阅完成。
+进一步的冷刷新修正：DesktopPrimaryChatController 选择/刷新会话时，从一份 modelConfiguration 派生可用性、有效模型、选择器与默认身份，替代连续独立解析；不重新读取或修改正在运行的请求。该入口的既有 DesktopDefaultModelVisibilityTest、模型诊断/上下文检查仍待定向补验。
+
+主聊天保留订阅的后续源码已接入：Panel 按选中会话与明确重试修订持有 observeModelChoices，切换时取消旧订阅。控制器沿原 stateLock 串行投影发布，核对会话身份后仅更新模型选项、可用性、诊断与默认身份，不重新加载消息或替换 composer、阅读窗口、会话设置草稿/dirty/保存状态。读取失败单独显示与重试，取消继续传播，不替换成成功空列表，不改变正在运行请求的冻结配置。新增 DesktopRetainedPrimaryModelChoicesTest 覆盖改名、全局默认切换、删除，以及未保存会话设置/文字/消息窗口/持久化设置保持。该后续源码尚未编译执行；此前 normal593 的 R06 不包含它，必须另外定向验证。
