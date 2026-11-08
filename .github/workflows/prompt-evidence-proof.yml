@@ -1,0 +1,78 @@
+name: Verify saved prompt CI repair evidence
+on:
+  push:
+    branches: [ci/upstream-prompt-evidence-proof-20261108]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify-recorded-results:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 451833c531e20151382401e9b783e0ce74e1f3ad
+          persist-credentials: false
+      - name: Check original full CI command and artifact identity
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:42445554719});
+            const job = jobs.data.jobs.find(x=>x.id===128623608587);
+            if (!job) throw new Error('Original job missing');
+            for (const name of ['Confirm original upstream assertion fails','Run full upstream CI command with repaired test']) {
+              if (job.steps.find(x=>x.name===name)?.conclusion!=='success') throw new Error('Required command failed: '+name);
+            }
+            const a = (await github.rest.actions.getArtifact({...context.repo,artifact_id:13603383046})).data;
+            if (a.digest!=='sha256:e0d8957896a225893ed37d20c8f01c75e81de098b9bc964a345274af42bbbaab') throw new Error('Artifact digest mismatch');
+            if (a.workflow_run?.id!==42445554719) throw new Error('Wrong run');
+            fs.mkdirSync('proof',{recursive:true});
+            fs.writeFileSync('proof/ORIGINAL_RUN.json',JSON.stringify({job,artifact:a},null,2));
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 42445554719
+          name: prompt-section-test-repair-42445554719
+          path: receipt-download
+      - name: Verify saved original and repaired XML without rerunning tests
+        run: |
+          test "$(git rev-parse HEAD)" = '451833c531e20151382401e9b783e0ce74e1f3ad'
+          test "$(git rev-parse 'HEAD^{tree}')" = 'a45df31306ed32302964a00129177160827ac95a'
+          git diff --exit-code
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,shutil,hashlib,os
+          from xml.etree import ElementTree as E
+          root=Path('receipt-download/section-test-evidence')
+          def cases(folder):
+              return [c for p in folder.glob('TEST-*.xml') for c in E.parse(p).getroot().iter('testcase')]
+          before=cases(root/'before')
+          after=cases(root/'after/testDebugUnitTest')
+          failed=[c for c in before if c.find('failure') is not None]
+          assert len(before)==23 and len(failed)==1
+          assert failed[0].get('name')=='generatedSectionsIncludeConfiguredContentWithoutNumberedSeparators'
+          assert len(after)==1390
+          assert not any(c.find('failure') is not None or c.find('error') is not None for c in after)
+          skipped=[c for c in after if c.find('skipped') is not None]
+          assert len(skipped)==1
+          assert skipped[0].get('classname')=='com.example.chatbar.domain.backup.BackupLargeStreamTest'
+          assert skipped[0].get('name')=='encryptedGiBRoundTripPreservesRawBytesWithConstantBuffers'
+          repaired=[c for c in after if c.get('classname')=='com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest']
+          assert len(repaired)==23 and not any(c.find('skipped') is not None for c in repaired)
+          for p in (root/'after/testDebugUnitTest').glob('TEST-*.xml'):
+              duplicate=Path('receipt-download/app/app/build/test-results/testDebugUnitTest')/p.name
+              assert p.read_bytes()==duplicate.read_bytes()
+          summary={'source':'451833c531e20151382401e9b783e0ce74e1f3ad','upstream':'87d1ab5e209233b66f0db9129e984cce0d437499','sourceTree':'a45df31306ed32302964a00129177160827ac95a','originalRun':42445554719,'originalRunConclusion':'failure in extra report assertion only; full upstream CI command succeeded','fullUpstreamCommand':'test compileDebugAndroidTestKotlin assembleDebug','fullUpstreamCommandResult':'PASS','before':{'total':23,'failures':1},'after':{'total':1390,'passed':1389,'failures':0,'errors':0,'skipped':1},'repairedSuite':{'total':23,'failures':0,'skipped':0},'skipReason':'Existing opt-in GiB backup test requires CHATBAR_BACKUP_LARGE_REGRESSION=1; unchanged','releaseUnitTests':'NOT_OBSERVED_IN_COMMAND_OUTPUT; not claimed','compileDebugAndroidTestKotlin':'PASS','assembleDebug':'PASS','productionAndPromptTextUnchanged':True,'testsRerunForReceiptCorrection':False,'proofRun':'https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/'+os.environ['GITHUB_RUN_ID']}
+          Path('proof/SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
+          shutil.copytree(root,Path('proof/xml'),dirs_exist_ok=True)
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prompt-ci-repair-proof-${{ github.run_id }}
+          path: proof/
+          retention-days: 14
