@@ -45,13 +45,19 @@ class DesktopCharacterExportCompatibilityUiTest {
         try {
             val card = app.characterTransfers.importNew(CharacterCardPackage(card = PackagedCharacterCard("Synthetic export")))
             val controller = app.createTypedTransferController(); controller.beginCharacterJsonExport(card.id)
+            val modal = DesktopModalActivity()
             val scene = ImageComposeScene(900, 700) {
-                val state by controller.state.collectAsState()
-                state.characterJsonExport?.let { DesktopCharacterJsonExportDialog(it, controller) }
+                CompositionLocalProvider(LocalDesktopModalActivity provides modal) {
+                    DesktopCharacterExportDialogs(controller)
+                    DesktopTypedTransferPanel(controller)
+                }
             }
             try {
                 val trigger = "文件格式 · 官方 CCB 兼容（推荐） ▾"
-                scene.until { scene.nodes().any { it.text() == trigger } }
+                scene.until { !controller.state.value.busy && controller.state.value.characters.any { it.id == card.id } &&
+                    scene.nodes().any { it.text() == trigger } }
+                assertEquals(1, modal.count)
+                assertEquals(1, scene.nodes().count { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("关闭角色导出") })
                 scene.capture("official")
                 scene.click(trigger)
                 scene.until { scene.nodes().any { it.text() == "Desktop 完整格式" } }
@@ -60,8 +66,10 @@ class DesktopCharacterExportCompatibilityUiTest {
                 scene.capture("desktop-full")
                 controller.cancelCharacterJsonExport()
                 scene.until { scene.nodes().none { it.text().contains("选择保存位置并导出") } }
+                assertEquals(0, modal.count)
                 controller.beginCharacterJsonExport(card.id)
                 scene.until { scene.nodes().any { it.text() == trigger } }
+                assertEquals(1, modal.count)
                 assertTrue(scene.nodes().none { it.text().contains("当前原版 CCB 不支持此格式") })
             } finally { scene.close() }
         } finally { app.close(); parent.toFile().deleteRecursively() }

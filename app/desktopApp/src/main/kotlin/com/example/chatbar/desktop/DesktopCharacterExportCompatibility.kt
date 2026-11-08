@@ -9,6 +9,13 @@ import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.card.CharacterCardExportCompatibility
 import kotlinx.coroutines.launch
 
+@Composable
+internal fun DesktopCharacterExportDialogs(controller: DesktopTypedTransferController) {
+    val state by controller.state.collectAsState()
+    state.characterJsonExport?.let { DesktopCharacterJsonExportDialog(it, controller) }
+    state.coverExport?.let { DesktopCoverExportDialog(it, controller) }
+}
+
 internal fun CharacterCardExportCompatibility.desktopLabel() = when (this) {
     CharacterCardExportCompatibility.OFFICIAL_V9 -> "官方 CCB 兼容（推荐）"
     CharacterCardExportCompatibility.DESKTOP_COVER_V10 -> "Desktop 完整格式"

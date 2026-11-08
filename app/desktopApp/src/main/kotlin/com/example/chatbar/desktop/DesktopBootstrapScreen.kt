@@ -91,6 +91,7 @@ internal fun DesktopBootstrapScreen(
             DesktopDataRootPanel(controller, onExitApplication)
 
             if (state is DesktopDataRootSwitchState.Idle) {
+                DesktopCharacterExportDialogs(transferController)
                 DesktopTypedTransferPanel(transferController)
                 BasicText(
                     text = "Prompt Inspector",
@@ -219,8 +220,6 @@ internal fun DesktopDataRootPanel(
 internal fun DesktopTypedTransferPanel(controller: DesktopTypedTransferController) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
-    state.characterJsonExport?.let { DesktopCharacterJsonExportDialog(it, controller) }
-    state.coverExport?.let { DesktopCoverExportDialog(it, controller) }
     LaunchedEffect(controller) { controller.refresh() }
     DesktopTransferPanel(
         state = state,

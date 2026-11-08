@@ -174,8 +174,7 @@ internal fun DesktopManagePanel(
     val worldState by worldBookEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
     val transferState by transferController.state.collectAsState()
-    transferState.coverExport?.let { DesktopCoverExportDialog(it, transferController) }
-    transferState.characterJsonExport?.let { DesktopCharacterJsonExportDialog(it, transferController) }
+    DesktopCharacterExportDialogs(transferController)
     val modelTransferState by modelTemplateController.state.collectAsState()
     val managementBusy = managementController.state.collectAsState().value.busy
     fun selectSection(choice: ManageSection, after: () -> Unit = {}) {
