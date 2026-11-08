@@ -62,61 +62,96 @@ jobs:
         with:
           path: ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/002fac4210c52c27b244305d60b0906e831f49be
           key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
+      - uses: actions/cache/restore@v4
+        id: compiler_parts
+        continue-on-error: true
+        if: steps.compiler_cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/ccb-official-compiler-parts
+          key: kotlin-parts-976f989d-v1-${{ github.run_id }}
+          restore-keys: kotlin-parts-976f989d-v1-
       - name: Verify official compiler with bounded range transport after full download timeout
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, shutil, subprocess
+          import hashlib, json, os, shutil, subprocess, time
           from pathlib import Path
           root = Path('phone-test-output/compiler-proof')
           root.mkdir(parents=True, exist_ok=True)
           sha1 = '002fac4210c52c27b244305d60b0906e831f49be'
+          sha256 = '976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
           total = 59718536
           cache = Path(os.environ['GRADLE_USER_HOME']) / 'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20' / sha1
           cache.mkdir(parents=True, exist_ok=True)
           target = cache / 'kotlin-compiler-embeddable-2.3.20.jar'
           url = 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/kotlin-compiler-embeddable-2.3.20.jar'
+          parts = Path.home() / '.cache/ccb-official-compiler-parts'
+          parts.mkdir(parents=True, exist_ok=True)
           staged = Path(os.environ['RUNNER_TEMP']) / 'verified-compiler'
           staged.mkdir(exist_ok=True)
           whole = staged / 'compiler.jar'
-          proof = {'officialUrl':url,'expectedBytes':total,'sha1PinnedFromIndependentOfficialSidecar':sha1,'sourceOrDependencyRepositoryChanged':False,'parts':[]}
+          proof = {'officialUrl':url,'expectedBytes':total,'expectedSha1':sha1,'expectedSha256':sha256,'sourceOrDependencyRepositoryChanged':False,'parts':[]}
+          offsets = list(range(0,total,2*1024*1024))
+          deadline = time.monotonic() + 600
+          def good(part, start):
+              try:
+                  meta = part.with_suffix('.json')
+                  if not part.is_file() or not meta.is_file(): return False
+                  d = json.loads(meta.read_text())
+                  return d['start'] == start and part.stat().st_size == min(2*1024*1024,total-start) and hashlib.sha256(part.read_bytes()).hexdigest() == d['sha256']
+              except (OSError,ValueError,KeyError): return False
           try:
-              if target.is_file() and hashlib.sha1(target.read_bytes()).hexdigest() == sha1:
-                  shutil.copyfile(target, whole)
+              if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == sha256:
+                  shutil.copyfile(target,whole)
                   proof['cacheReuse'] = True
               else:
-                  with whole.open('wb') as combined:
-                      for start in range(0,total,2*1024*1024):
+                  full = False
+                  for wave in range(2):
+                      for start in offsets:
+                          final = parts / (str(start)+'.part')
+                          if good(final,start): continue
+                          if time.monotonic() >= deadline: break
                           end = min(start+2*1024*1024-1,total-1)
                           part = staged / 'part'
-                          headers = root / ('headers-'+str(start)+'.txt')
-                          attempts = []
-                          for attempt in range(3):
-                              result = subprocess.run(['curl','--fail','--silent','--show-error','--location','--max-time','45','--write-out','%{http_code}','--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+'?ccbSegment='+str(start)], capture_output=True, text=True)
-                              size = part.stat().st_size if part.exists() else 0
-                              status = result.stdout.strip()
-                              attempts.append({'attempt':attempt+1,'exitCode':result.returncode,'httpStatus':status,'bytes':size})
-                              if result.returncode == 0: break
-                              print('Compiler segment failed', start, attempts[-1], result.stderr.strip())
-                              if status in ('401','403'): break
-                              if result.returncode not in (6,7,18,28,52,55,56,92) and status not in ('000','408','429','500','502','503','504'): break
-                          proof['parts'].append({'start':start,'end':end,'exitCode':result.returncode,'bytes':size,'attempts':attempts})
-                          if result.returncode: raise RuntimeError('Official compiler segment failed after bounded transient retries before Gradle')
-                          if start == 0 and size == total:
-                              combined.write(part.read_bytes())
-                              break
-                          assert size == end-start+1, (start,size)
-                          assert ('content-range: bytes '+str(start)+'-'+str(end)+'/'+str(total)) in headers.read_text().lower(), start
-                          combined.write(part.read_bytes())
-                  assert whole.stat().st_size == total
+                          part.unlink(missing_ok=True)
+                          headers = staged / 'headers.txt'
+                          result = subprocess.run(['curl','--fail','--silent','--show-error','--location','--max-time','30','--write-out','%{http_code}','--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+'?ccbSegment='+str(start)], capture_output=True, text=True)
+                          size = part.stat().st_size if part.exists() else 0
+                          status = result.stdout.strip()
+                          item = {'wave':wave+1,'start':start,'end':end,'exitCode':result.returncode,'httpStatus':status,'bytes':size}
+                          proof['parts'].append(item)
+                          if status in ('401','403'): raise RuntimeError('Official source denied access; no alternate route or retry')
+                          if result.returncode:
+                              print('Compiler segment unavailable',item,result.stderr.strip())
+                              continue
+                          if size == total and hashlib.sha256(part.read_bytes()).hexdigest() == sha256:
+                              shutil.copyfile(part,whole);full = True;break
+                          if size != end-start+1 or ('content-range: bytes '+str(start)+'-'+str(end)+'/'+str(total)) not in headers.read_text().lower():
+                              raise RuntimeError('Official range response length or Content-Range mismatch')
+                          part.replace(final)
+                          final.with_suffix('.json').write_text(json.dumps({'start':start,'sha256':hashlib.sha256(final.read_bytes()).hexdigest()}))
+                      if full or all(good(parts/(str(start)+'.part'),start) for start in offsets): break
+                  valid = [start for start in offsets if good(parts/(str(start)+'.part'),start)]
+                  proof['cachedValidParts'] = len(valid)
+                  proof['missingParts'] = [start for start in offsets if start not in valid]
+                  if not full:
+                      if len(valid) != len(offsets): raise RuntimeError('Official dependency still incomplete; validated pieces retained for bounded resume, no Gradle/tests')
+                      with whole.open('wb') as combined:
+                          for start in offsets: combined.write((parts/(str(start)+'.part')).read_bytes())
               data = whole.read_bytes()
-              assert hashlib.sha1(data).hexdigest() == sha1
+              assert len(data) == total and hashlib.sha1(data).hexdigest() == sha1 and hashlib.sha256(data).hexdigest() == sha256
               proof['actualSha256'] = hashlib.sha256(data).hexdigest()
-              assert proof['actualSha256'] == '976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
               proof['verified'] = True
-              shutil.copyfile(whole, target)
+              shutil.copyfile(whole,target)
           finally:
+              proof['cachedValidParts'] = sum(good(parts/(str(start)+'.part'),start) for start in offsets)
               (root/'compiler-transport-proof.json').write_text(json.dumps(proof,indent=2))
           PY
+      - uses: actions/cache/save@v4
+        continue-on-error: true
+        if: always() && steps.compiler_cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/ccb-official-compiler-parts
+          key: kotlin-parts-976f989d-v1-${{ github.run_id }}
       - uses: actions/cache/save@v4
         if: steps.compiler_cache.outputs.cache-hit != 'true'
         with:
