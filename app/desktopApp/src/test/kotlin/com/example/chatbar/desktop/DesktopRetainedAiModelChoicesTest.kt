@@ -34,7 +34,7 @@ class DesktopRetainedAiModelChoicesTest {
         val first = ModelConfig("first", "First", "https://fixture.invalid/v1", "synthetic-first-key", "first", createdAt = 1)
         val second = first.copy(id = "second", displayName = "Second", modelName = "second")
         val vision = first.copy(id = "vision", displayName = "Vision", isMultimodal = true, selectableForChat = false)
-        val card = CharacterCard("card", "Fixture", characters = listOf(CharacterInfo(name = "Person", profile = "Profile")), createdAt = 1, updatedAt = 1)
+        val card = CharacterCard("card", "Fixture", characters = listOf(CharacterInfo(id = "person", name = "Person", profile = "Profile")), createdAt = 1, updatedAt = 1)
         val calls = CopyOnWriteArrayList<String>()
         suspend fun initialize() {
             app.modelRepository.saveModel(first); app.modelRepository.saveModel(second); app.modelRepository.saveModel(vision)
