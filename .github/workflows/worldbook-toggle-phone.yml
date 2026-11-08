@@ -13,7 +13,32 @@ env:
   CHATBAR_SUPABASE_ANON_KEY: ''
   CHATBAR_SUPABASE_REDIRECT_URI: chatbar-entrytoggle-w1://auth/callback
 jobs:
+  compiler:
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - name: Download exact compiler from official Maven source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path compiler -Force | Out-Null
+          $name = 'kotlin-compiler-embeddable-2.3.20.jar'
+          $url = 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/'
+          foreach ($suffix in @('.sha1', '')) {
+            curl.exe --fail --location --retry 1 --connect-timeout 20 --max-time 120 --header "Cache-Control: no-cache" --silent --show-error --output ("compiler/" + $name + $suffix) ($url + $name + $suffix + '?ccbArtifact=002fac4210c52c27b244305d60b0906e831f49be')
+            if ($LASTEXITCODE -ne 0) { throw 'OFFICIAL_COMPILER_DOWNLOAD_FAILED' }
+          }
+          $expected = (Get-Content ("compiler/" + $name + '.sha1') -Raw).Trim()
+          if ($expected -ne '002fac4210c52c27b244305d60b0906e831f49be') { throw 'OFFICIAL_COMPILER_DIGEST_INVALID' }
+          if ((Get-FileHash ("compiler/" + $name) -Algorithm SHA1).Hash.ToLowerInvariant() -ne $expected) { throw 'OFFICIAL_COMPILER_DIGEST_MISMATCH' }
+          Get-FileHash ("compiler/" + $name) -Algorithm SHA256 | Format-List | Out-File compiler/compiler-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldbook-compiler-${{ github.run_id }}
+          path: compiler/
+          retention-days: 3
   test-apk:
+    needs: compiler
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     steps:
