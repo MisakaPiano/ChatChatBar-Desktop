@@ -1,7 +1,7 @@
 name: Android functional alignment verification and phone APK
 on:
   push:
-    branches: [ci/upstream-functional-alignment-20261108]
+    branches: [ci/upstream-functional-alignment-full-checks-disabled]
   workflow_dispatch:
 permissions:
   contents: read
