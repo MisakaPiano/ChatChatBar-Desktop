@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 4c655065b1d7de1a8f8db8ed2b0304bb9308bdf7
+  SOURCE_SHA: 385f311d7c66fed9fb8c00455b46edb9f0e674c1
   TEST_APPLICATION_ID: com.example.chatbar.alignment.a1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 4c655065b1d7de1a8f8db8ed2b0304bb9308bdf7
+          ref: 385f311d7c66fed9fb8c00455b46edb9f0e674c1
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "4876fb15f1b5dd3ea5c6061247a8e294d1f39e9b"
+          test "$(git rev-parse HEAD^{tree})" = "e848c9c4c7336182208b2c042a0ab1a077dd3a96"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
       - uses: actions/setup-java@v4
@@ -106,7 +106,7 @@ jobs:
       - name: Compile and check affected unit behavior
         working-directory: app
         run: |
-          bash ./gradlew :app:testDebugUnitTest --tests '*WorldBookEngineTest' --tests '*WorldBookEntryModalStateTest' --tests '*FunctionalAlignmentPolicyTest' --tests '*PromptAssemblerCharacterModeTest' --tests '*MomentMediaRetentionTest' --tests '*SessionCopyPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:testDebugUnitTest --tests '*WorldBookEngineTest' --tests '*WorldBookEntryModalStateTest' --tests '*FunctionalAlignmentPolicyTest' --tests '*CharacterParticipationBackupIdentityTest' --tests '*PromptAssemblerCharacterModeTest' --tests '*MomentMediaRetentionTest' --tests '*SessionCopyPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
           mkdir -p ../phone-test-output/unit
           cp -R app/build/test-results/testDebugUnitTest/. ../phone-test-output/unit/
       - name: Build installable debug test APK
@@ -160,7 +160,7 @@ jobs:
                                     'failureText': ''.join(c.find('failure').itertext()) if c.find('failure') is not None else ''})
               return cases
           green = results('fixed')
-          assert len(green) == 19, green
+          assert len(green) == 20, green
           assert not any(c['failure'] or c['error'] or c['skipped'] for c in green), green
           red = results('unfixed-control')
           assert len(red) == 1 and red[0]['name'] == 'discardRestoresEnabledBeforeSameEditorReopens', red
@@ -171,7 +171,7 @@ jobs:
           summary = {'fixedDeviceTests':green, 'fixedUnitTests':unit,
                      'unfixedControl':red, 'unfixedControlExpectedAssertionFailureConfirmed':True,
                      'controlScope':'Same fixed source and synthetic fixture; only WorldBookEditViewModel replaced with exact original d200 source; restored before final APK build',
-                     'scope':'19 scoped Android cases: worldbook/card draft, row/gallery UI, media transfer and actual ViewModel rebind; synthetic-only, no paid requests or full navigation end-to-end'}
+                     'scope':'20 scoped Android cases: worldbook/card draft, row/gallery UI, media transfer and actual ViewModel rebind; synthetic-only, no paid requests or full navigation end-to-end'}
           (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
           print(json.dumps(summary,ensure_ascii=False,indent=2))
           PY
