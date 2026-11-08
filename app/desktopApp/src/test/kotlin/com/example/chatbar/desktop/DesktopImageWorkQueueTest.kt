@@ -16,9 +16,10 @@ class DesktopImageWorkQueueTest {
             f.initialize(); val c = f.c
             c.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }
             val store = DesktopMomentStore(c.jsonFileStorage, c.dataOperationCoordinator)
+            val calls = AtomicInteger()
             val controller = DesktopMomentsController(store, c.settingsRepository, c.characterRepository, c.chatRepository,
                 c.dataOperationCoordinator, c.taskRuntime,
-                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> entered.complete(Unit); awaitCancellation() },
+                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> calls.incrementAndGet(); entered.complete(Unit); awaitCancellation() },
                 imageGenerator = DesktopMomentImageGenerator { _, _, _, _, _, _, _ -> error("Duplicate post image must not run") })
             owner = controller
             withTimeout(5000) { controller.state.first { it.enabled } }
@@ -28,9 +29,14 @@ class DesktopImageWorkQueueTest {
             assertTrue("post:${placeholder.id}" in controller.state.value.busyTargets)
             controller.retry(placeholder); controller.generateImage(placeholder)
             assertEquals(1, controller.workRows.value.count { it.active })
-            assertTrue(controller.stopTask(controller.workRows.value.single().id))
+            val other = CharacterCard.create("Queued card").copy(id = "queued-card")
+            c.characterRepository.save(other)
+            c.chatRepository.createSession(ChatSession("queued-session", other.id, "Queued", createdAt = 1, updatedAt = 1))
+            controller.generate(other.id)
+            controller.pause()
             withTimeout(5000) { controller.workRows.first { it.none { row -> row.active } } }
             assertEquals(MomentTaskStatus.FAILED, store.tasks().single().status)
+            assertEquals(1, calls.get())
             assertTrue(controller.state.value.busyTargets.isEmpty())
         } finally { owner?.closeAndDrain(); f.close() }
     }

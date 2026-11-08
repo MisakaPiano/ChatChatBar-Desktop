@@ -58,7 +58,7 @@ class DesktopTaskRuntimeTest {
             assertEquals(listOf(old), container.chatRepository.getMessages(session))
         }
     }
-    @Test fun `completed old reply voice overlaps chat image and Moments while each Stop keeps the other owners running`() = runBlocking {
+    @Test fun `completed old reply voice overlaps chat and serial image Moments while each Stop keeps other owners running`() = runBlocking {
         withContainer { container ->
             ControlledDesktopSseServer("""{"choices":[{"delta":{"content":"reply-held-for-concurrency"}}]}""", holdSeconds = 60).use { server ->
                 val sessionId = prepare(container, server.baseUrl)
@@ -96,27 +96,30 @@ class DesktopTaskRuntimeTest {
                 try {
                     withTimeout(5000) { moments.state.first { it.enabled } }
                     moments.generate(card.id)
-                    withTimeout(5000) { momentEntered.await() }
+                    assertTrue(moments.state.value.busy)
+                    assertFalse(momentEntered.isCompleted)
                     fishServer.enqueue(MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE))
                     val batch = assertNotNull(voice.generate(old, "alice"))
                     assertNotNull(fishServer.takeRequest(5, TimeUnit.SECONDS))
                     assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
                     assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
                     assertTrue(moments.state.value.busy)
+                    assertTrue(runtime.requestUserStop(image))
+                    awaitTask(runtime, image) { it.status == DesktopTaskStatus.USER_STOPPED }
+                    withTimeout(5000) { momentEntered.await() }
+                    assertTrue(voice.coordinator.batches.value.any { it.id == batch &&
+                        it.phase !in setOf(VoiceGenerationPhase.CANCELLED, VoiceGenerationPhase.FAILED) })
                     voice.coordinator.cancel(batch)
                     withTimeout(5000) { voice.coordinator.batches.first { rows -> rows.none { it.id == batch &&
                         it.phase !in setOf(VoiceGenerationPhase.CANCELLED, VoiceGenerationPhase.FAILED) } } }
                     assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
-                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertEquals(DesktopTaskStatus.USER_STOPPED, task(runtime, image).status)
                     assertTrue(moments.state.value.busy)
                     assertTrue(container.voiceRepository.listForSession(sessionId).isEmpty())
                     moments.stop()
                     withTimeout(5000) { moments.workRows.first { rows -> rows.isNotEmpty() && rows.none { it.active } } }
                     assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
-                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
-                    assertTrue(runtime.requestUserStop(image))
-                    awaitTask(runtime, image) { it.status == DesktopTaskStatus.USER_STOPPED }
-                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.USER_STOPPED, task(runtime, image).status)
                     assertTrue(runtime.requestUserStop(chat))
                     awaitTask(runtime, chat) { it.status == DesktopTaskStatus.USER_STOPPED }
                     assertEquals(old, chats.getMessage(old.id, sessionId))

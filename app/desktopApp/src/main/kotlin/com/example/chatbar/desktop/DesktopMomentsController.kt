@@ -77,6 +77,7 @@ internal class DesktopMomentsController(
     private val lock = Any()
     private val admissionMutex = Mutex()
     private var accepting = true
+    private var stopRevision = 0L
     private val workers = mutableMapOf<String, Job>()
     private val workTargets = mutableMapOf<String, Set<String>>()
     private var activeWorkId: String? = null
@@ -220,7 +221,7 @@ internal class DesktopMomentsController(
     suspend fun pause() = admissionMutex.withLock { stopLocalScheduling(persistPause = true) }
     private suspend fun stopLocalScheduling(persistPause: Boolean) {
         val jobs = synchronized(lock) { (listOfNotNull(scheduler) + workers.values).distinct().also {
-            scheduler = null; admitted.clear()
+            stopRevision++; scheduler = null; admitted.clear()
         } }
         jobs.forEach { it.cancel() }; jobs.forEach { it.join() }
         mutableState.update { it.copy(scheduling = false) }
@@ -336,6 +337,7 @@ internal class DesktopMomentsController(
             mutableState.update { it.copy(notice = "该角色卡或动态已有任务，请等待或停止对应任务") }; return@synchronized null
         }
         val workId = UUID.randomUUID().toString()
+        val openingStopRevision = stopRevision
         workTargets[workId] = setOf(target)
         var outcome = DesktopWorkPhase.COMPLETED
         val evidence = DesktopMomentWorkEvidence(workId)
@@ -347,7 +349,10 @@ internal class DesktopMomentsController(
             try {
                 tasksRuntime.withCardDesign("moments:$target", publishWorkRow = false) {
                     tasksRuntime.withNovelAiWork {
-                        synchronized(lock) { activeWorkId = workId }
+                        synchronized(lock) {
+                            if (!accepting || openingStopRevision != stopRevision) throw CancellationException("Moments work stopped before execution")
+                            activeWorkId = workId
+                        }
                         mutableState.update { it.copy(error = null, progress = "正在准备朋友圈", streamedText = "") }
                         try {
                             gate.withNormalOperation {

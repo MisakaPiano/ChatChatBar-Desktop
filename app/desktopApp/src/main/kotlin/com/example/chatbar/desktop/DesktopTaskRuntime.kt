@@ -298,7 +298,12 @@ internal class DesktopTaskRuntime(
     }
 
     /** One cancellable work lane shared by chat/Studio image jobs and Moments. No data lease while waiting. */
-    suspend fun <T> withNovelAiWork(work: suspend () -> T): T = novelAiWorkMutex.withLock { work() }
+    suspend fun <T> withNovelAiWork(work: suspend () -> T): T = novelAiWorkMutex.withLock {
+        synchronized(lock) {
+            if (!accepting || maintenance) throw CancellationException("Image work admission closed")
+        }
+        work()
+    }
 
     fun runningRepair(sessionId: String, messageId: String? = null): DesktopRepairTaskIdentity? = synchronized(lock) {
         mutableRepairIdentities.value.values.firstOrNull { it.sessionId == sessionId &&
