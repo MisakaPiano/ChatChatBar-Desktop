@@ -1,0 +1,107 @@
+name: Upstream prompt section regression repair
+on:
+  push:
+    branches: [ci/upstream-prompt-section-test-20261108]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: 451833c531e20151382401e9b783e0ce74e1f3ad
+  SOURCE_TREE: a45df31306ed32302964a00129177160827ac95a
+  UPSTREAM_SHA: 87d1ab5e209233b66f0db9129e984cce0d437499
+  TEST_PATH: app/app/src/test/java/com/example/chatbar/domain/chat/PromptAssemblerCharacterModeTest.kt
+  CHATBAR_SILICONFLOW_API_KEY: ''
+  CHATBAR_SUPABASE_URL: ''
+  CHATBAR_SUPABASE_ANON_KEY: ''
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 451833c531e20151382401e9b783e0ce74e1f3ad
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify test-only change on exact latest upstream
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$SOURCE_TREE"
+          test "$(git rev-parse HEAD^)" = "$UPSTREAM_SHA"
+          test "$(git diff --name-only "$UPSTREAM_SHA" HEAD)" = "$TEST_PATH"
+          git diff --exit-code
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Confirm original upstream assertion fails
+        run: |
+          cp "$TEST_PATH" "$RUNNER_TEMP/fixed-section-test.kt"
+          trap 'cp "$RUNNER_TEMP/fixed-section-test.kt" "$TEST_PATH"' EXIT
+          git show "$UPSTREAM_SHA:$TEST_PATH" > "$TEST_PATH"
+          git diff --exit-code "$UPSTREAM_SHA"
+          set +e
+          (cd app && bash ./gradlew :app:testDebugUnitTest --tests '*PromptAssemblerCharacterModeTest' --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8')
+          result=$?
+          set -e
+          mkdir -p section-test-evidence/before
+          cp app/app/build/test-results/testDebugUnitTest/TEST-*.xml section-test-evidence/before/
+          test "$result" -ne 0
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as E
+          cases=[c for p in Path('section-test-evidence/before').glob('TEST-*.xml') for c in E.parse(p).getroot().iter('testcase')]
+          failures=[c for c in cases if c.find('failure') is not None]
+          assert len(failures)==1
+          assert failures[0].get('name')=='generatedSectionsIncludeConfiguredContentWithoutNumberedSeparators'
+          assert not any(c.find('error') is not None for c in cases)
+          print('Confirmed exact old assertion fails on pristine upstream tree')
+          PY
+          cp "$RUNNER_TEMP/fixed-section-test.kt" "$TEST_PATH"
+          git diff --exit-code
+      - name: Run full upstream CI command with repaired test
+        working-directory: app
+        run: bash ./gradlew test compileDebugAndroidTestKotlin assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+      - name: Verify full results and unchanged production source
+        run: |
+          git diff --exit-code
+          python3 - <<'PY'
+          import os,json,shutil,hashlib,subprocess
+          from pathlib import Path
+          from xml.etree import ElementTree as E
+          root=Path('section-test-evidence')
+          variants={}
+          for folder in Path('app/app/build/test-results').iterdir():
+              if not folder.is_dir(): continue
+              files=list(folder.glob('TEST-*.xml'))
+              if not files: continue
+              target=root/'after'/folder.name
+              target.mkdir(parents=True,exist_ok=True)
+              for p in files: shutil.copy2(p,target/p.name)
+              cases=[c for p in files for c in E.parse(p).getroot().iter('testcase')]
+              failures=[c for c in cases if c.find('failure') is not None]
+              errors=[c for c in cases if c.find('error') is not None]
+              skipped=[c for c in cases if c.find('skipped') is not None]
+              assert not failures and not errors,(folder.name,len(failures),len(errors))
+              assert len(cases)>=1390,(folder.name,len(cases))
+              variants[folder.name]={'total':len(cases),'passed':len(cases)-len(skipped),'skipped':[{'class':c.get('classname'),'name':c.get('name'),'reason':''.join(c.find('skipped').itertext())} for c in skipped]}
+          assert 'testDebugUnitTest' in variants and 'testReleaseUnitTest' in variants,variants
+          changed=subprocess.check_output(['git','diff','--name-only',os.environ['UPSTREAM_SHA'],'HEAD'],text=True).splitlines()
+          assert changed==[os.environ['TEST_PATH']]
+          summary={'source':os.environ['SOURCE_SHA'],'tree':os.environ['SOURCE_TREE'],'upstream':os.environ['UPSTREAM_SHA'],'changedFiles':changed,'productionAndPromptTextUnchanged':True,'originalFailureReproduced':True,'variants':variants,'fullCiCommand':'test compileDebugAndroidTestKotlin assembleDebug','compileAndroidTest':'PASS','assembleDebug':'PASS','noPhoneOrEmulatorRun':True,'privateUserDataInjected':False,'run':'https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/'+os.environ['GITHUB_RUN_ID']}
+          (root/'SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prompt-section-test-repair-${{ github.run_id }}
+          path: |
+            section-test-evidence/
+            app/app/build/test-results/
+          retention-days: 14
