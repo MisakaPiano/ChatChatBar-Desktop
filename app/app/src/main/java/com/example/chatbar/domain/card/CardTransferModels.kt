@@ -25,6 +25,7 @@ data class CharacterCardPackage(
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class PackagedCharacterCard(
     val name: String,
     val botName: String = "",
@@ -49,7 +50,9 @@ data class PackagedCharacterCard(
     val characterVersion: String = "",
     val extensions: String = "",
     val characterBook: WorldBook? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val chatBackgroundImageResourceIds: List<String> = emptyList(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val coverImageResourceId: String? = null
 )
 
