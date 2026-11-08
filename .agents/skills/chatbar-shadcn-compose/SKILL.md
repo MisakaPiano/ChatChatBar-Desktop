@@ -95,3 +95,5 @@ A screen is migrated only when:
 - Kotlin compile passes.
 
 Full migration completes only when Material 3 dependency is removed and CI-equivalent verification passes.
+
+- CharacterEditScreen has one compact horizontally scrolling chat background gallery plus the legacy default-background picker; ChatSettingsDialog chooses gallery images in the existing background detail. CharacterRow owns an independent 48dp enabled switch. SessionSettingsContent exposes structured-person participation without rewriting card data or history; disabled-at-card people must be enabled on the card first.
