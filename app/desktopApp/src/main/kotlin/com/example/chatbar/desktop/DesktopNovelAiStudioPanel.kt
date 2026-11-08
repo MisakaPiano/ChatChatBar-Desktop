@@ -376,10 +376,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                     if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
                     if (imageError.isNotBlank()) StatusText(imageError)
                     if (surface == "设置") {
-                    StudioActions {
-                        StudioAction("检查 Danbooru 词库更新", enabled = !busy) { scope.launch { controller.checkCatalog() } }
-                        if (state.catalogUpdate != null) StudioAction("下载并更新词库", enabled = !busy) { scope.launch { controller.installCatalog() } }
-                    }
+                        DesktopCatalogUpdatePanel(controller.catalogUpdates)
                         StudioToggle("复制时忽略画风", d.copyPositivePromptIgnoreStyle) { edit { it.copy(copyPositivePromptIgnoreStyle = !it.copyPositivePromptIgnoreStyle) } }
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     } else if (surface == "当前图片") {

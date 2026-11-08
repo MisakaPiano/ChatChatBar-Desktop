@@ -30,6 +30,12 @@ internal fun DesktopUpdatePanel(
     val checkFailed = noticeState.error != null
     var supportStatus by remember { mutableStateOf<String?>(null) }
     val updater = LocalDesktopUpdater.current
+    val catalogProvider = LocalDesktopCatalogUpdates.current
+    var catalogAttempt by remember { mutableIntStateOf(0) }
+    val catalogResolution = remember(catalogProvider, catalogAttempt) {
+        try { Result.success(catalogProvider?.invoke()) } catch (failure: Exception) { Result.failure(failure) }
+    }
+    val catalog = catalogResolution.getOrNull()
     val download = updater?.state?.collectAsState()?.value
     var confirmInstall by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -60,7 +66,7 @@ internal fun DesktopUpdatePanel(
                 browserError = null; notices.setIncludePreview(!previews)
             }
             BootstrapButton("检查更新", enabled = !busy && download?.busy != true) {
-                browserError = null; notices.check()
+                browserError = null; checkDesktopProgramAndCatalog(notices, catalog)
             }
         }
         StatusText("启动后自动检查一次；下载与安装仍由你确认。")
@@ -101,6 +107,11 @@ internal fun DesktopUpdatePanel(
             BootstrapButton("确认更新并重启", enabled = !download.busy) { confirmInstall = true }
         }
         StatusText("安装版可在此下载、校验并确认更新；安装前正常保存和退出，保留所选数据目录及本机凭据。独立资料版请保留 UserData，并使用对应新版入口。")
+        if (catalog != null) DesktopCatalogUpdatePanel(catalog)
+        if (catalogResolution.isFailure) {
+            StatusText("无法准备 Danbooru 词库检查；程序更新仍可单独使用。", DesktopBootstrapColors.destructive)
+            BootstrapButton("重试准备词库检查", secondary = true) { catalogAttempt++ }
+        }
     }
     if (confirmInstall) DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim), contentAlignment = androidx.compose.ui.Alignment.Center) {

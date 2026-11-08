@@ -106,3 +106,6 @@ internal fun DesktopTaskCenter.watchAutomaticBackups(runtime: DesktopAutomaticBa
 
 internal fun DesktopTaskCenter.watchMoments(controller: DesktopMomentsController) =
     watch("moments", controller.workRows, stop = controller::stopTask)
+
+internal fun DesktopTaskCenter.watchCatalog(controller: DesktopCatalogUpdates) =
+    watch("catalog", controller.workRows, stop = controller::stopTask)

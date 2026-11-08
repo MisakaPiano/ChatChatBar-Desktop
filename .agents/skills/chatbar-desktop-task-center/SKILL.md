@@ -5,6 +5,8 @@ description: Maintain Desktop task-center projections, exact owner cancellation,
 
 # Desktop Task Center
 
+- `DesktopCatalogUpdates` owns single-flight explicit catalog check/install Jobs shared by Data and Studio. Infrastructure registers its original work rows lazily and drains it before closing the shared auxiliary scope. `watchCatalog` preserves exact UUID Stop and maps to distinct CATALOG_CHECK/CATALOG_UPDATE labels plus Data → updates navigation; it never uses the NovelAI lane. Rows become terminal only in the original Job completion handler after installer cleanup. A marked authority publication interrupted by cancellation/failure stays UNCONFIRMED without blind retry or a claim that the update was rolled back.
+
 Moments queued/running work keeps a separate original worker UUID and card/post reservation. Exact row Stop addresses that Job even before it enters the shared image-work lane; closing the controller or maintenance still drains its registered creative child. Queue history trimming preserves every active row. Chat image tasks remain RUNNING while queued but leave `startedAt` absent and carry a fixed waiting status; they retain the original task/message anchor and explicit retry owner.
 
 - `DesktopTaskRuntime.hasActiveVoiceSourceMutation` projects exact message mutation/repair/unknown-repair and running REAL_CHAT targets for voice admission. Regeneration entries carry their original target ID before dispatcher execution. Unrelated running replies/images do not become a global voice lock; existing per-owner Stop/drain and task-center projection are unchanged.

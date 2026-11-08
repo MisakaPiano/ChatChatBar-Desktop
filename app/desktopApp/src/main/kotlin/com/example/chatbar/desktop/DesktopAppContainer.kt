@@ -235,6 +235,7 @@ class DesktopAppContainer internal constructor(
             diagnostics = taskRuntime.diagnostics,
             experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled },
             operationGate = dataOperationCoordinator,
+            onCatalogUpdatesCreated = { taskCenter.watchCatalog(it) },
             synchronousCatalogAccess = { work -> dataOperationCoordinator.withSynchronousNormalOperation(work) })
     }
     internal val novelAiInfrastructure by novelAiInfrastructureOwner

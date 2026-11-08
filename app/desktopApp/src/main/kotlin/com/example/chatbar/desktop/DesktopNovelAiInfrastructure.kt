@@ -19,11 +19,14 @@ internal class DesktopNovelAiInfrastructure(
     diagnostics: DesktopTransportDiagnosticsOwner? = null,
     experimentalApiModeEnabled: () -> Boolean = { false },
     operationGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
+    onCatalogUpdatesCreated: (DesktopCatalogUpdates) -> Unit = {},
     synchronousCatalogAccess: ((() -> Unit) -> Unit) = { it() },
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val assets = DesktopNovelAiCatalogAssets(root.resolve("auxiliary/novelai"), operationGate, synchronousCatalogAccess, openAsset)
     val tags = DesktopNovelAiTagCatalog(assets)
+    private val catalogUpdatesOwner = lazy { DesktopCatalogUpdates(scope, tags).also(onCatalogUpdatesCreated) }
+    val catalogUpdates by catalogUpdatesOwner
     private val dictionary = NovelAiPromptWordDictionary.fromSource(DesktopNovelAiDictionary(assets))
     val suggestions = NovelAiTagSuggestionService(tags, dictionary, scope)
     val translations = NovelAiPromptTranslationService(dictionary, tags)
@@ -44,6 +47,7 @@ internal class DesktopNovelAiInfrastructure(
     suspend fun countTokens(plan: NovelAiPromptPlan, model: NovelAiImageModel): NovelAiPromptTokenUsage =
         withContext(Dispatchers.IO) { tokenCounter.count(plan, model) }
     suspend fun closeAndDrain() {
+        if (catalogUpdatesOwner.isInitialized()) catalogUpdates.closeAndDrain()
         scope.coroutineContext[Job]?.cancelAndJoin()
         transport.closeAndDrain()
     }

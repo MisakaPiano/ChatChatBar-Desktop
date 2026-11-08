@@ -207,6 +207,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopFishParentWindow provides window,
                                 LocalDesktopUpdater provides updater,
                                 LocalDesktopUpdateNotices provides updateNotices,
+                                LocalDesktopCatalogUpdates provides remember(appContainer) { { appContainer.novelAiInfrastructure.catalogUpdates } },
                                 LocalDesktopTaskCenter provides appContainer.taskCenter,
                                 LocalDesktopModalActivity provides modalActivity,
                                 LocalDesktopApiAccounts provides appContainer.apiAccountController,

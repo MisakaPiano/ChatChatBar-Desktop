@@ -37,7 +37,6 @@ internal data class DesktopNovelAiStudioState(
     val reverseBusy: Boolean = false,
     val reverseProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
     val designProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
-    val catalogUpdate: com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo? = null,
     val results: List<String> = emptyList(),
     val selected: Set<NovelAiHistoryImageSelection> = emptySet(),
     val presetPreview: DesktopGenerationPresetPreview? = null,
@@ -200,24 +199,7 @@ internal class DesktopNovelAiStudioController(
         return repository.updateDraft { it.copy(selectedModel = target) }
     }
 
-    suspend fun checkCatalog() = action {
-        val id = tasks.launchNovelAi("检查 Danbooru 词库") { report ->
-            val update = com.example.chatbar.domain.update.SharedDanbooruCatalogUpdateChecker(
-                infrastructure.tags, "CCB-Desktop").checkLatestCatalog()
-            mutableState.update { it.copy(catalogUpdate = update) }
-            status(if (update == null) "词库已是最新版本" else "词库更新已就绪，下载 ${update.sizeBytes} 字节")
-            report("词库检查完成")
-        }
-        mutableState.update { it.copy(taskId = id) }
-    }
-    suspend fun installCatalog() = action {
-        val update = requireNotNull(state.value.catalogUpdate)
-        val id = tasks.launchNovelAi("更新 Danbooru 词库") { report ->
-            DesktopNovelAiCatalogUpdate(infrastructure.tags).install(update) { status(it); report(it) }
-            mutableState.update { it.copy(catalogUpdate = null) }
-        }
-        mutableState.update { it.copy(taskId = id) }
-    }
+    val catalogUpdates get() = infrastructure.catalogUpdates
     private suspend fun designModel(id: String?, app: com.example.chatbar.data.local.entity.AppSettings? = null): com.example.chatbar.data.local.entity.ModelConfig {
         val hydratedSettings = app ?: settings.getAppSettings()
         val model = desktopExactDesignModel(resolver, hydratedSettings, id)

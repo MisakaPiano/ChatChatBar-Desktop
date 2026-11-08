@@ -19,7 +19,9 @@ internal class DesktopNovelAiCatalogUpdate(private val catalog: DesktopNovelAiTa
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(15, TimeUnit.SECONDS)
-        .build()) {
+        .build(),
+    private val onPublication: () -> Unit = {},
+) {
     suspend fun install(info: DanbooruCatalogUpdateInfo, report: (String) -> Unit) = catalog.withDataAccess {
         val current = catalog.catalogMetadata() // A corrupt current authority is never overwritten.
         check(current.sourceSha == info.currentMetadata.sourceSha)
@@ -77,6 +79,7 @@ internal class DesktopNovelAiCatalogUpdate(private val catalog: DesktopNovelAiTa
                 } }
                 val encoded = Json.encodeToString(DanbooruCatalogMetadata.serializer(), metadata)
                 java.io.FileOutputStream(stagedManifest.toFile()).use { it.write(encoded.toByteArray()); it.fd.sync() }
+                onPublication()
                 publish(stagedManifest, root.resolve("active-catalog.json"))
                 catalog.activated()
             }
