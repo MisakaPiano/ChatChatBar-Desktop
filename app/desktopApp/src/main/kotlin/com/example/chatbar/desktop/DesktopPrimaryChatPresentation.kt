@@ -17,6 +17,7 @@ import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import com.example.chatbar.domain.chat.resolveRoleplaySpeakerIdentity
 import com.example.chatbar.domain.chat.stripRoleplaySpeakerMarkers
 import com.example.chatbar.domain.chat.RoleplayTextSegment
+import com.example.chatbar.domain.chat.RoleplayStatusOwnership
 import com.example.chatbar.domain.chat.roleplayDialogueMarkerPattern
 import com.example.chatbar.domain.chat.roleplayTextBlockId
 
@@ -31,6 +32,15 @@ internal data class DesktopPresentedSegment(
     /** Display input with CCB markers intact; never a clipboard or persistence authority. */
     val markdownSource: String = text,
 )
+
+/** Status ownership comes from this closed block's explicit labels, never adjacent speech. */
+internal fun desktopStatusDisclosureLabel(segment: DesktopPresentedSegment, strings: DesktopUiStrings): String {
+    val owner = segment.source?.let { source ->
+        RoleplayStatusOwnership.ownerNames(source.copy(displayText = segment.text)).singleOrNull()
+    }?.takeIf(String::isNotBlank)
+    return if (owner == null) strings(DesktopUiText.STATUS_PANEL)
+        else strings(DesktopUiText.STATUS_PANEL_OWNER).replace("{name}", owner)
+}
 
 internal data class DesktopPresentedMessage(
     val speakerLabel: String,

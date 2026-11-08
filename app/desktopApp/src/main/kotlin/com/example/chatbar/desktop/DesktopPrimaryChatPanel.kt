@@ -894,9 +894,8 @@ internal fun PrimaryMessageBubble(
     val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
         actions.filter { it == DesktopMessageAction.COPY } else actions
     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
-    val actionChoices = remember(message, onActionChoice != null) {
-        if (onActionChoice == null) emptyList() else desktopActionChoices(message)
-    }
+    val recognizedActionChoices = remember(message) { desktopActionChoices(message) }
+    val actionChoices = if (onActionChoice == null) emptyList() else recognizedActionChoices
     var messageTextWidth by remember(message) { mutableStateOf(0) }
     var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
     var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
@@ -1024,8 +1023,10 @@ internal fun PrimaryMessageBubble(
                             segment.blockId, segment.statusDefaultExpanded, segment.text) {
                             DesktopPresentationExpansion(segment.statusDefaultExpanded)
                         }
-                        DesktopChatDisclosure(t(DesktopUiText.STATUS_OPTIONS), expansion)
                         val choices = actionChoices.filter { it.blockStart == segment.source?.start }
+                        val actionBlock = recognizedActionChoices.any { it.blockStart == segment.source?.start }
+                        DesktopChatDisclosure(if (actionBlock) t(DesktopUiText.ACTION_CHOICES) else desktopStatusDisclosureLabel(segment, t),
+                            expansion, compact = true)
                         if (expansion.expanded && choices.isNotEmpty()) {
                             DesktopActionChoiceList(choices, enabled = !sessionRepairBusy) { onActionChoice?.invoke(it) }
                         } else if (expansion.expanded) SelectionContainer {
@@ -1052,16 +1053,10 @@ internal fun PrimaryMessageBubble(
         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
             interactionEnabled = !sessionRepairBusy) { imageControls ->
-            if (navigation != null || actions.isNotEmpty()) Column(
-                verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp),
-            ) {
-                navigation?.let {
-                    DesktopChatAlternativeControls(navigation) { delta ->
-                        scope.launch { controller.selectAssistantAlternative(message.id, delta) }
-                    }
-                }
-                if (actions.isNotEmpty()) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
+            if (navigation != null || actions.isNotEmpty()) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
                     DesktopChatMessageToolbar(if(imageOnly) imageOnlyMessageActions else actions, onAction, imageActions = imageControls,
+                        alternativeNavigation = navigation,
+                        onSelectAlternative = { delta -> scope.launch { controller.selectAssistantAlternative(message.id, delta) } },
                         userMessage = message.role == MessageRole.USER,
                         onMore = { menuSegment = null; menuAnchor = toolbarBounds },
                         showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
@@ -1071,7 +1066,6 @@ internal fun PrimaryMessageBubble(
                                 scope.launch { if (intent != null) controller.voices?.play(voicePlacements.first().voice, message, intent) }
                             }
                         })
-                }
             }
         }
         DesktopMessageFormatRepairStatus(message, repairState, repairing,
@@ -1120,8 +1114,8 @@ internal fun DesktopRoleplaySegmentSurface(
                 .background(background, RoundedCornerShape(metrics.topStartRadius.dp,
                     if (speakerSegment) 10.dp else 12.dp, if (speakerSegment) 10.dp else 12.dp,
                     if (speakerSegment) 10.dp else 12.dp))
-                .then(if (decorated) Modifier.padding(horizontal = metrics.horizontalPadding.dp,
-                    vertical = metrics.verticalPadding.dp) else Modifier),
+                .then(if (decorated) Modifier.padding(horizontal = if (kind == RoleplaySegmentKind.STATUS) 8.dp else metrics.horizontalPadding.dp,
+                    vertical = if (kind == RoleplaySegmentKind.STATUS) 2.dp else metrics.verticalPadding.dp) else Modifier),
                 verticalArrangement = Arrangement.spacedBy(5.dp)) { content(textColor, style) }
         }
         if (speakerSegment) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

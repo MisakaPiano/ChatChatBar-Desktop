@@ -110,7 +110,7 @@ class DesktopUiLanguageControllerTest {
         val english = DesktopUiStrings(DesktopUiLanguage.EN)
         listOf(DesktopUiText.RELINK_CHARACTER, DesktopUiText.RELINK_EXPLANATION,
             DesktopUiText.EDIT_MESSAGE, DesktopUiText.DELETE_MESSAGE_WARNING,
-            DesktopUiText.REASONING, DesktopUiText.STATUS_OPTIONS,
+            DesktopUiText.REASONING, DesktopUiText.STATUS_PANEL,
             DesktopUiText.SESSION_WORLD_BOOKS, DesktopUiText.WORLD_BOOK_INHERITED_NOTE,
             DesktopUiText.COPY_MESSAGE, DesktopUiText.RETRY_GENERATION).forEach { key ->
             assertTrue(chinese(key).any { it.code > 127 }, "$key must have Chinese product copy")

@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
@@ -115,14 +116,15 @@ internal fun DesktopComposerResizeHandle(onDrag: (Float) -> Unit) {
 }
 
 @Composable
-internal fun DesktopChatDisclosure(label: String, expansion: DesktopPresentationExpansion) {
-    Row(Modifier.height(DesktopChatControlDensity.TARGET_DP.dp)
+internal fun DesktopChatDisclosure(label: String, expansion: DesktopPresentationExpansion, compact: Boolean = false) {
+    Row(Modifier.height((if (compact) 26 else DesktopChatControlDensity.TARGET_DP).dp)
         .then(chatControlModifier(true, expansion::toggle)).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Image(rememberVectorPainter(if (expansion.expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed),
             null, Modifier.size(DesktopChatControlDensity.ICON_DP.dp),
             colorFilter = ColorFilter.tint(DesktopBootstrapColors.mutedForeground))
-        BasicText(label, style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp))
+        BasicText(label, style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp),
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -148,7 +150,9 @@ internal fun DesktopVersionControls(current: Int, total: Int, previousLabel: Str
 @Composable
 internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit,
     onMore: () -> Unit = {}, showVoice: Boolean = false, hasVoice: Boolean = false,
-    voiceEnabled: Boolean = true, onVoice: () -> Unit = {}, userMessage: Boolean = false, imageActions: @Composable () -> Unit = {}) {
+    voiceEnabled: Boolean = true, onVoice: () -> Unit = {}, userMessage: Boolean = false,
+    alternativeNavigation: DesktopAlternativeNavigation? = null, onSelectAlternative: (Int) -> Unit = {},
+    imageActions: @Composable () -> Unit = {}) {
     val t = LocalDesktopUiStrings.current
     if (userMessage) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
@@ -159,14 +163,19 @@ internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAc
     }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-            DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }
-            DesktopChatIconAction(t(DesktopMessageAction.REGENERATE.label), DesktopAppIcons.Refresh,
-                DesktopMessageAction.REGENERATE in actions || DesktopMessageAction.RETRY in actions) {
-                onAction(if (DesktopMessageAction.RETRY in actions) DesktopMessageAction.RETRY else DesktopMessageAction.REGENERATE)
+            if (actions.isNotEmpty()) {
+                DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }
+                DesktopChatIconAction(t(DesktopMessageAction.REGENERATE.label), DesktopAppIcons.Refresh,
+                    DesktopMessageAction.REGENERATE in actions || DesktopMessageAction.RETRY in actions) {
+                    onAction(if (DesktopMessageAction.RETRY in actions) DesktopMessageAction.RETRY else DesktopMessageAction.REGENERATE)
+                }
             }
-            DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More, onClick = onMore)
-            if (showVoice) DesktopChatIconAction(if (hasVoice) "播放本条语音" else "生成本条语音",
-                DesktopAppIcons.Voice, enabled = voiceEnabled, selected = hasVoice, onClick = onVoice)
+            alternativeNavigation?.let { DesktopChatAlternativeControls(it, onSelectAlternative) }
+            if (actions.isNotEmpty()) {
+                DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More, onClick = onMore)
+                if (showVoice) DesktopChatIconAction(if (hasVoice) "播放本条语音" else "生成本条语音",
+                    DesktopAppIcons.Voice, enabled = voiceEnabled, selected = hasVoice, onClick = onVoice)
+            }
         }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.End) { imageActions() }
     }

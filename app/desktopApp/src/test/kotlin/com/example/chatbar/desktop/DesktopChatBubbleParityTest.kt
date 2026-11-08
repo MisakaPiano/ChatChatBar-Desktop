@@ -264,8 +264,9 @@ class DesktopChatBubbleParityTest {
         return results.single()
     }
     private suspend fun ImageComposeScene.toggleFirstStatus() {
-        val label = DesktopUiStrings(DesktopUiLanguage.ZH_CN)(DesktopUiText.STATUS_OPTIONS)
-        var node = nodes().filter { it.label(label) }.minBy { it.boundsInRoot.top }
+        val label = DesktopUiStrings(DesktopUiLanguage.ZH_CN)(DesktopUiText.STATUS_PANEL)
+        var node = nodes().filter { node -> node.config.getOrNull(SemanticsProperties.Text)?.any {
+            it.text == label || it.text.startsWith("$label：") } == true }.minBy { it.boundsInRoot.top }
         while (node.config.getOrNull(SemanticsActions.OnClick) == null) node = checkNotNull(node.parent)
         sendPointerEvent(PointerEventType.Press, node.boundsInRoot.center, button = PointerButton.Primary)
         sendPointerEvent(PointerEventType.Release, node.boundsInRoot.center, button = PointerButton.Primary)
