@@ -10,6 +10,10 @@ import com.example.chatbar.data.local.entity.PresetEmbeddingModel
 import com.example.chatbar.data.local.entity.PresetModelCatalog
 import com.example.chatbar.domain.card.NamePolicy
 import java.util.UUID
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,11 +47,11 @@ class ModelRepository(
     private val _embeddingModel = MutableStateFlow<EmbeddingConfig?>(null)
     val embeddingModel: Flow<EmbeddingConfig?> = _embeddingModel.asStateFlow()
 
-    private val initializationMutex = Mutex()
+    private val stateMutex = Mutex()
     private var initialized = false
 
     suspend fun initialize() = storage.withNormalOperation {
-        initializationMutex.withLock {
+        stateMutex.withLock {
             if (initialized) return@withLock
             migrateLegacyPlanningModel()
             refreshModelCache()
@@ -56,6 +60,31 @@ class ModelRepository(
             initialized = true
         }
     }
+
+    /** Keep the existing cancellable credential/storage transaction, then publish its durable
+     * outcome before another mutation can overtake it. Admission must precede the state mutex. */
+    private suspend fun <T> mutate(publish: suspend () -> Unit, operation: suspend () -> T): T =
+        storage.withNormalOperation {
+            initialize()
+            stateMutex.withLock {
+                currentCoroutineContext().ensureActive()
+                var operationFailure: Throwable? = null
+                try {
+                    operation()
+                } catch (failure: Throwable) {
+                    operationFailure = failure
+                    throw failure
+                } finally {
+                    try {
+                        withContext(NonCancellable) { publish() }
+                    } catch (publicationFailure: Throwable) {
+                        val original = operationFailure
+                        if (original == null) throw publicationFailure
+                        if (publicationFailure !== original) original.addSuppressed(publicationFailure)
+                    }
+                }
+            }
+        }
 
     private suspend fun refreshModelCache() {
         _models.value = storage.loadAll(MODEL_TYPE, ModelConfig.serializer())
@@ -149,25 +178,24 @@ class ModelRepository(
         return loadModelEntity(id)
     }
 
-    suspend fun saveModel(model: ModelConfig) {
+    suspend fun saveModel(model: ModelConfig): Unit = mutate(::refreshModelCache) {
         saveModelEntity(model)
-        refreshModelCache()
+        Unit
     }
 
     /** Opt-in observation at the durable storage boundary; regular saveModel callers are unchanged. */
-    suspend fun saveModelObserved(model: ModelConfig, onCommitted: () -> Unit) {
+    suspend fun saveModelObserved(model: ModelConfig, onCommitted: () -> Unit): Unit = mutate(::refreshModelCache) {
         saveModelEntity(model, onCommitted)
-        refreshModelCache()
+        Unit
     }
 
     suspend fun readDurableModel(logicalId: String): JsonFileStorage.EntityReadResult<ModelConfig> =
         storage.readEntityStrict(MODEL_TYPE, modelStorageKeyPolicy.storageKey(logicalId), ModelConfig.serializer())
 
-    suspend fun refreshModelsFromStorage() = refreshModelCache()
+    suspend fun refreshModelsFromStorage(): Unit = mutate(::refreshModelCache) { Unit }
 
-    suspend fun duplicateModel(id: String): ModelConfig {
-        initialize()
-        val source = getModel(id) ?: error("Model not found")
+    suspend fun duplicateModel(id: String): ModelConfig = mutate(::refreshModelCache) {
+        val source = loadModelEntity(id) ?: error("Model not found")
         val copy = source.copy(
             id = UUID.randomUUID().toString(),
             displayName = NamePolicy.nextCopyName(source.displayName, _models.value.map { it.displayName }),
@@ -176,9 +204,7 @@ class ModelRepository(
             sourcePresetVersion = null,
             createdAt = System.currentTimeMillis()
         )
-        val saved = saveModelEntity(copy)
-        refreshModelCache()
-        return saved
+        saveModelEntity(copy)
     }
 
     suspend fun ensurePresetChatModels(catalog: PresetModelCatalog, catalogVersion: Int): List<ModelConfig> =
@@ -199,8 +225,7 @@ class ModelRepository(
         catalog: PresetModelCatalog,
         catalogVersion: Int,
         overwriteExisting: Boolean
-    ): List<ModelConfig> {
-        initialize()
+    ): List<ModelConfig> = mutate(::refreshModelCache) {
         val current = _models.value
         val saved = mutableListOf<ModelConfig>()
         catalog.chatModels.forEach { preset ->
@@ -217,8 +242,7 @@ class ModelRepository(
             }
             saved += if (existing == null || next != existing) saveModelEntity(next) else next
         }
-        refreshModelCache()
-        return saved
+        saved
     }
 
     private fun PresetChatModel.toModelConfig(
@@ -248,15 +272,15 @@ class ModelRepository(
     private suspend fun upsertPresetEmbeddingModel(
         catalog: PresetModelCatalog,
         overwriteExisting: Boolean
-    ) {
-        initialize()
+    ): Unit = mutate(::refreshEmbeddingModelCache) {
         catalog.embeddingModel?.let { preset ->
             val existing = _embeddingModel.value
             if (existing == null || overwriteExisting) {
                 val next = preset.toEmbeddingConfig(catalog, existing)
-                if (next != existing) saveEmbeddingModel(next)
+                if (next != existing) saveEmbeddingModelEntity(next)
             }
         }
+        Unit
     }
 
     private fun PresetEmbeddingModel.toEmbeddingConfig(
@@ -271,9 +295,8 @@ class ModelRepository(
         dimensions = dimensions
     )
 
-    suspend fun deleteModel(id: String) {
+    suspend fun deleteModel(id: String): Unit = mutate(::refreshModelCache) {
         deleteModelEntity(id)
-        refreshModelCache()
     }
 
     // ===== Embedding模型 =====
@@ -293,17 +316,20 @@ class ModelRepository(
             }
     }
 
-    suspend fun saveEmbedding(config: EmbeddingConfig) {
+    suspend fun saveEmbedding(config: EmbeddingConfig): Unit = mutate(::refreshEmbeddingCache) {
         embeddingCredentialPersistencePolicy.persist(
             scope = EmbeddingCredentialScope.Legacy(config.id),
             runtime = config,
         ) { persisted ->
             storage.saveEntity(EMBEDDING_TYPE, persisted.id, persisted, EmbeddingConfig.serializer())
         }
-        refreshEmbeddingCache()
     }
 
-    suspend fun deleteEmbedding(id: String) {
+    suspend fun deleteEmbedding(id: String): Unit = mutate(::refreshEmbeddingCache) {
+        deleteEmbeddingEntity(id)
+    }
+
+    private suspend fun deleteEmbeddingEntity(id: String) =
         embeddingCredentialPersistencePolicy.delete(EmbeddingCredentialScope.Legacy(id)) {
             storage.deleteEntity<EmbeddingConfig>(
                 EMBEDDING_TYPE,
@@ -311,15 +337,17 @@ class ModelRepository(
                 requireSuccess = embeddingCredentialPersistencePolicy.requireVerifiedEntityDeletion,
             )
         }
-        refreshEmbeddingCache()
-    }
 
     suspend fun getEmbeddingModel(): EmbeddingConfig? {
         initialize()
         return _embeddingModel.value
     }
 
-    suspend fun saveEmbeddingModel(config: EmbeddingConfig) {
+    suspend fun saveEmbeddingModel(config: EmbeddingConfig): Unit = mutate(::refreshEmbeddingModelCache) {
+        saveEmbeddingModelEntity(config)
+    }
+
+    private suspend fun saveEmbeddingModelEntity(config: EmbeddingConfig) {
         val singleton = config.copy(id = EMBEDDING_SINGLETON_ID)
         embeddingCredentialPersistencePolicy.persist(
             scope = EmbeddingCredentialScope.Singleton,
@@ -332,10 +360,9 @@ class ModelRepository(
                 EmbeddingConfig.serializer()
             )
         }
-        refreshEmbeddingModelCache()
     }
 
-    suspend fun deleteEmbeddingModel() {
+    suspend fun deleteEmbeddingModel(): Unit = mutate(::refreshEmbeddingModelCache) {
         embeddingCredentialPersistencePolicy.delete(EmbeddingCredentialScope.Singleton) {
             storage.deleteEntity<EmbeddingConfig>(
                 EMBEDDING_SINGLETON_TYPE,
@@ -343,16 +370,18 @@ class ModelRepository(
                 requireSuccess = embeddingCredentialPersistencePolicy.requireVerifiedEntityDeletion,
             )
         }
-        refreshEmbeddingModelCache()
     }
 
-    suspend fun migrateEmbeddingsToSingleton(preferredId: String?) {
-        val legacy = getAllEmbeddings()
-        if (getEmbeddingModel() == null) {
+    suspend fun migrateEmbeddingsToSingleton(preferredId: String?): Unit = mutate({
+        refreshEmbeddingCache()
+        refreshEmbeddingModelCache()
+    }) {
+        val legacy = _embeddings.value
+        if (_embeddingModel.value == null) {
             val selected = legacy.firstOrNull { it.id == preferredId } ?: legacy.firstOrNull()
-            if (selected != null) saveEmbeddingModel(selected)
+            if (selected != null) saveEmbeddingModelEntity(selected)
         }
-        legacy.forEach { deleteEmbedding(it.id) }
+        legacy.forEach { deleteEmbeddingEntity(it.id) }
     }
 
 }
