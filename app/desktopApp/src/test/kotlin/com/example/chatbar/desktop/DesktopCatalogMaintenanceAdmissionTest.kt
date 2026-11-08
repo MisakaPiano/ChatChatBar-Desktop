@@ -13,11 +13,57 @@ import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPOutputStream
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.*
 import okhttp3.ResponseBody.Companion.toResponseBody
 import kotlin.test.*
 
 class DesktopCatalogMaintenanceAdmissionTest {
+    @Test fun `bundled catalog survives owner close and cold reopen under Unicode space and escaped path characters`() = runBlocking<Unit> {
+        val parent = Files.createTempDirectory("ccb-catalog-reopen-").resolve("合成 目录 # % &").also { Files.createDirectories(it) }
+        val (source, metadata) = database(parent, "reopen")
+        val bundle = bundle(parent, source, metadata)
+        val fixture = Fixture(parent, bundle)
+        var reopened: DesktopAppContainer? = null
+        val readOnly = mutableListOf<Path>()
+        try {
+            val first = fixture.app.novelAiInfrastructure.tags
+            assertEquals(metadata, first.catalogMetadata())
+            val directory = first.updateRoot
+            val pointer = directory.resolve("active-catalog.json")
+            val original = Files.readAllBytes(pointer)
+            val indexMetadata = Json.parseToJsonElement(bundle.getValue("tag_completion/danbooru.json").toString(Charsets.UTF_8)).jsonObject
+            val bundledIndex = directory.resolve(indexMetadata.getValue("sha256").jsonPrimitive.content + ".sqlite")
+            assertTrue(Files.isRegularFile(bundledIndex))
+            assertFalse(Files.exists(directory.resolve("index-${metadata.sourceSha}.sqlite")))
+            fixture.app.close()
+            if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+                for (file in listOf(directory.resolve("${metadata.sourceSha}.sqlite"), bundledIndex)) {
+                    Files.setAttribute(file, "dos:readonly", true); readOnly.add(file)
+                }
+            }
+            val second = DesktopAppContainer(DesktopDataRootResolution.Resolved(fixture.root,
+                DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+                secretStoreFactory = { InMemoryDesktopSecretStore() },
+                bundledAssets = { name -> bundle[name] ?: """{"entries":[]}""".toByteArray() })
+            reopened = second
+            val catalog = second.novelAiInfrastructure.tags
+            assertEquals(metadata, catalog.catalogMetadata())
+            assertEquals("合成", catalog.exactChineseTranslations(listOf("reopen_9999"))["reopen_9999"])
+            assertEquals("reopen_9999", catalog.search("reopen_9999").candidates.first().name)
+            val names = mutableListOf<String>()
+            catalog.prepareCompletion(); catalog.streamCompletion("reopen_9999", { names += it.name }, {})
+            assertEquals(listOf("reopen_9999"), names)
+            assertContentEquals(original, Files.readAllBytes(pointer))
+            assertFalse(Files.exists(directory.resolve("index-${metadata.sourceSha}.sqlite")))
+        } finally {
+            reopened?.close()
+            readOnly.forEach { Files.setAttribute(it, "dos:readonly", false) }
+            fixture.close(); Files.deleteIfExists(parent.parent)
+        }
+    }
+
     private fun database(parent: Path, name: String): Pair<Path, DanbooruCatalogMetadata> {
         val file = parent.resolve("$name.sqlite")
         DriverManager.getConnection("jdbc:sqlite:$file").use { db ->
