@@ -34,6 +34,8 @@ Unqualified Android paths are relative to `app/app/src/main/java/com/example/cha
 
 ## Desktop boundaries
 
+- Retained Overlay observes safe model/default projections after initial character/model options loading. Explicit list refresh pauses and then restarts that observation; retry of a model projection does not reload characters or reset source choice/request/candidate/editor state. The original pinned draft diagnostics identity and retry revision key the composition-owned reader; protected failures are separate and visible. `DesktopRetainedAiModelChoicesTest` covers the actual Overlay and explicit protected-read recovery without model requests.
+
 - New editor payloads already have a UUID: use editor `targetId == null` plus `base == null`, not payload ID, for the blank-new gate. Pin candidate apply to `draftSessionId` and payload ID; recheck blank content/tools and preserve the current manual name/default flag. Apply schedules the existing editor draft; it does not save an entity or bind a character/session.
 - `DesktopTaskRuntime.withCardDesign` registers a structured caller child for maintenance/shutdown drain, independently from chat session admission. Data reads/generation hold the existing normal-operation lease. Preview/form state is process-local and belongs to that editor draft; another draft resets it.
 - Task-center `ownedWork` projects that same child UUID/Job and actual terminal cause, without another generation. Completion indicates candidate preparation only; application and entity save remain explicit editor actions.

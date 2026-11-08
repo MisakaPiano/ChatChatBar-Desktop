@@ -21,6 +21,9 @@ internal data class DesktopCharacterCardAiState(
     val busy: Boolean = false, val loading: Boolean = false,
     val request: String = "", val modelId: String? = null,
     val models: List<DesktopCardDesignOption> = emptyList(), val defaultModel: String = "",
+    val modelChoicesReadFailed: Boolean = false, val modelChoicesObservationRevision: Long = 0,
+    val referenceImageRoute: DesktopReferenceImageRoute = DesktopReferenceImageRoute.NO_MODEL,
+    val referenceImageModelName: String = "",
     val status: String = "", val error: String? = null,
     val raw: String = "", val repair: String = "", val reasoning: String = "", val repairReasoning: String = "",
     val candidate: CharacterCard? = null, val before: CharacterCard? = null,
@@ -109,8 +112,9 @@ internal class DesktopCharacterCardAiController(
             try {
                 val result = gate.withNormalOperation {
                     val fresh = settings.getAppSettings()
-                    Triple(models.availableChatModels(fresh).map { DesktopCardDesignOption(it.id, it.desktopAccountLabel()) },
-                        models.defaultChatModel(fresh)?.desktopAccountLabel().orEmpty(),
+                    val configuration = models.configuration(fresh)
+                    Triple(configuration.chatModels.map { DesktopCardDesignOption(it.id, it.desktopAccountLabel()) },
+                        configuration.defaultChatModel?.desktopAccountLabel().orEmpty(),
                         if (operation == CharacterCardAiOperation.FILL) fresh.characterAutoFillResearchSourceMode
                             else fresh.characterRewriteResearchSourceMode)
                 }
@@ -122,6 +126,29 @@ internal class DesktopCharacterCardAiController(
             finally { if (pin == target && state.value.operation == operation) mutableState.update { it.copy(loading = false) } }
         }
     }
+
+    suspend fun observeModelChoices() = withContext(Dispatchers.IO) {
+        val target = pin ?: return@withContext
+        val operation = state.value.operation
+        val selectedId = state.value.modelId
+        try {
+            models.observeConfiguration().collectLatest { configuration ->
+                val projection = desktopAiModelChoices(configuration, selectedId)
+                mutableState.update { current ->
+                    if (!current.open || pin != target || current.operation != operation || current.modelId != selectedId) current
+                    else current.copy(models = projection.options, defaultModel = projection.defaultName,
+                        referenceImageRoute = projection.referenceRoute, referenceImageModelName = projection.referenceModelName,
+                        modelChoicesReadFailed = false)
+                }
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { mutableState.update { current ->
+            if (current.open && pin == target && current.operation == operation && current.modelId == selectedId)
+                current.copy(modelChoicesReadFailed = true) else current
+        } }
+    }
+
+    fun retryModelChoices() { mutableState.update { it.copy(modelChoicesObservationRevision = it.modelChoicesObservationRevision + 1) } }
 
     private fun change(retainResearch: Boolean = false, change: (DesktopCharacterCardAiState) -> DesktopCharacterCardAiState) {
         if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return

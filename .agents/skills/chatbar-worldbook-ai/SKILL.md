@@ -5,6 +5,8 @@ description: Maintain ChatBar world-book AI creation, blank-content filling, can
 
 # ChatBar World Book AI
 
+Desktop retained AI Panel observes model/default projections after its original options job completes, keyed by pinned draft diagnostics identity, operation and retry revision. Changes do not call `open`, reapply saved research mode, clear candidates/targets/checkpoints or replace frozen generation models. Separate projection failure/retry preserves ordinary task errors and form inputs. Initial options also derive names/default from one configuration. See `DesktopRetainedAiModelChoicesTest` for the actual retained Panel and candidate/source preservation.
+
 Desktop world-book generation tags its original TaskRuntime child WORLD_BOOK_AI. Task navigation carries the existing draft session and uses revealTaskDraft only while the original full book/target pin still matches; it does not load another book, refresh models, regenerate, apply or save. Normal Manage leave guards remain active, and a changed/closed pin is unavailable rather than recreated.
 
 Read these entry points before broad search.

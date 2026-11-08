@@ -21,6 +21,7 @@ internal data class DesktopWorldBookAiState(
     val busy: Boolean = false, val loading: Boolean = false, val referenceLoading: Boolean = false,
     val request: String = "", val modelId: String? = null,
     val models: List<DesktopCardDesignOption> = emptyList(), val defaultModel: String = "",
+    val modelChoicesReadFailed: Boolean = false, val modelChoicesObservationRevision: Long = 0,
     val sourceMode: CharacterResearchSourceMode = CharacterResearchSourceMode.NONE, val manualUrls: String = "",
     val reference: CharacterReferenceDocument? = null, val targetIds: Set<String> = emptySet(),
     val plans: List<WorldBookEntryPlanCandidate> = emptyList(), val contents: List<WorldBookContentCandidate> = emptyList(),
@@ -82,8 +83,9 @@ internal class DesktopWorldBookAiController(
             try {
                 val result = gate.withNormalOperation {
                     val fresh = settings.getAppSettings()
-                    Triple(models.availableChatModels(fresh).map { DesktopCardDesignOption(it.id, it.desktopAccountLabel()) },
-                        models.defaultChatModel(fresh)?.desktopAccountLabel().orEmpty(), fresh.worldBookAiResearchSourceMode)
+                    val configuration = models.configuration(fresh)
+                    Triple(configuration.chatModels.map { DesktopCardDesignOption(it.id, it.desktopAccountLabel()) },
+                        configuration.defaultChatModel?.desktopAccountLabel().orEmpty(), fresh.worldBookAiResearchSourceMode)
                 }
                 if (epoch.get() == token) mutableState.update { it.copy(models = result.first, defaultModel = result.second, sourceMode = result.third) }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -91,6 +93,25 @@ internal class DesktopWorldBookAiController(
         }
         optionsJob?.invokeOnCompletion { if (epoch.get() == token) mutableState.update { it.copy(loading = false) } }
     }
+
+    suspend fun observeModelChoices() = withContext(Dispatchers.IO) {
+        val target = pin ?: return@withContext
+        val operation = state.value.operation
+        try {
+            models.observeConfiguration().collectLatest { configuration ->
+                val projection = desktopAiModelChoices(configuration, state.value.modelId)
+                mutableState.update { current ->
+                    if (!current.open || pin != target || current.operation != operation) current
+                    else current.copy(models = projection.options, defaultModel = projection.defaultName, modelChoicesReadFailed = false)
+                }
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { mutableState.update { current ->
+            if (current.open && pin == target && current.operation == operation) current.copy(modelChoicesReadFailed = true) else current
+        } }
+    }
+
+    fun retryModelChoices() { mutableState.update { it.copy(modelChoicesObservationRevision = it.modelChoicesObservationRevision + 1) } }
 
     private fun change(change: (DesktopWorldBookAiState) -> DesktopWorldBookAiState) {
         val before = state.value

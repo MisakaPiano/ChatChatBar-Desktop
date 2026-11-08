@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.sp
 internal fun DesktopFormatCardAutoFillOverlay(controller: DesktopFormatCardAutoFillController) {
     val state by controller.state.collectAsState()
     if (!state.open) return
+    LaunchedEffect(controller, controller.diagnosticSessionId, state.loadingOptions, state.modelChoicesObservationRevision) {
+        if (!state.loadingOptions) controller.observeModelChoices()
+    }
     var fullRequest by remember(controller) { mutableStateOf(false) }
     var showLogs by remember(controller) { mutableStateOf(false) }
     DesktopModalSurface {
@@ -34,6 +37,7 @@ internal fun DesktopFormatCardAutoFillOverlay(controller: DesktopFormatCardAutoF
                     }
                     DesktopIconAction("关闭格式卡设计", DesktopAppIcons.Close, enabled = !state.busy, onClick = controller::close)
                 }
+                DesktopAiModelChoicesFailure(state.modelChoicesReadFailed, controller::retryModelChoices)
                 if (state.busy || state.loadingOptions) {
                     StatusText(if (state.busy) state.status else "正在读取角色卡与模型…")
                 } else {

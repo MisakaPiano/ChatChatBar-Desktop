@@ -55,6 +55,10 @@ internal fun desktopCharacterCardAiDiff(before: CharacterCard, after: CharacterC
 internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiController) {
     val state by controller.state.collectAsState()
     if (!state.open) return
+    LaunchedEffect(controller, controller.diagnosticSessionId, state.operation, state.modelId,
+        state.loading, state.modelChoicesObservationRevision) {
+        if (!state.loading) controller.observeModelChoices()
+    }
     var logs by remember(controller) { mutableStateOf(false) }
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
@@ -67,6 +71,7 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                     DesktopIconAction("关闭角色卡 AI", DesktopAppIcons.Close, enabled = !state.busy, onClick = controller::close)
                 }
                 StatusText("预览应用后的实际差异；应用只改变编辑草稿，保存仍需另行确认。")
+                DesktopAiModelChoicesFailure(state.modelChoicesReadFailed, controller::retryModelChoices)
                 val ids = listOf<String?>(null) + state.models.map { it.id } +
                     listOfNotNull(state.modelId?.takeUnless { id -> state.models.any { it.id == id } })
                 if (!state.busy && !state.referenceLoading && !state.imagesLoading) SearchableChoice("生成模型", ids, state.modelId, { id ->
@@ -108,6 +113,17 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                             enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, onClick = controller::chooseImages)
                         if (state.images.isNotEmpty()) BootstrapButton("清空参考图片", secondary = true,
                             enabled = !state.busy && !state.imagesLoading, onClick = controller::clearImages)
+                    }
+                    if (!state.loading) {
+                        val t = LocalDesktopUiStrings.current
+                        val label = when (state.referenceImageRoute) {
+                            DesktopReferenceImageRoute.NO_MODEL -> DesktopUiText.REFERENCE_IMAGE_NO_MODEL
+                            DesktopReferenceImageRoute.DIRECT -> DesktopUiText.REFERENCE_IMAGE_DIRECT
+                            DesktopReferenceImageRoute.LINKED -> DesktopUiText.REFERENCE_IMAGE_LINKED
+                            DesktopReferenceImageRoute.UNAVAILABLE -> DesktopUiText.REFERENCE_IMAGE_UNAVAILABLE
+                        }
+                        StatusText(t(label) + if (state.referenceImageRoute == DesktopReferenceImageRoute.LINKED)
+                            " · ${state.referenceImageModelName}" else "")
                     }
                     if (state.imagesLoading) StatusText("正在读取参考图片…")
                     state.images.forEachIndexed { index, image ->

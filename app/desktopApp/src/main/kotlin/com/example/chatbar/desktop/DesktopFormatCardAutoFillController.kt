@@ -18,6 +18,7 @@ internal data class DesktopFormatCardAutoFillState(
     val open: Boolean = false, val loadingOptions: Boolean = false, val busy: Boolean = false,
     val characters: List<DesktopCardDesignOption> = emptyList(),
     val models: List<DesktopCardDesignOption> = emptyList(), val defaultModelName: String = "",
+    val modelChoicesReadFailed: Boolean = false, val modelChoicesObservationRevision: Long = 0,
     val characterId: String? = null, val modelId: String? = null, val request: String = "",
     val sourceCharacterName: String = "", val status: String = "", val error: String? = null,
     val rawText: String = "", val repairText: String = "", val reasoning: String = "",
@@ -76,9 +77,10 @@ internal class DesktopFormatCardAutoFillController(
             try {
                 val options = gate.withNormalOperation {
                     val freshSettings = settings.getAppSettings()
+                    val configuration = models.configuration(freshSettings)
                     Triple(characters.getAll().map { DesktopCardDesignOption(it.id, it.name) },
-                        models.availableChatModels(freshSettings).map { DesktopCardDesignOption(it.id, it.desktopAccountLabel()) },
-                        models.defaultChatModel(freshSettings)?.desktopAccountLabel().orEmpty())
+                        configuration.chatModels.map { DesktopCardDesignOption(it.id, it.desktopAccountLabel()) },
+                        configuration.defaultChatModel?.desktopAccountLabel().orEmpty())
                 }
                 if (pin == originalPin) mutableState.update { it.copy(characters = options.first,
                     models = options.second, defaultModelName = options.third) }
@@ -90,6 +92,24 @@ internal class DesktopFormatCardAutoFillController(
             }
         }
     }
+
+    suspend fun observeModelChoices() = withContext(Dispatchers.IO) {
+        val originalPin = pin ?: return@withContext
+        try {
+            models.observeConfiguration().collectLatest { configuration ->
+                val projection = desktopAiModelChoices(configuration, state.value.modelId)
+                mutableState.update { current ->
+                    if (!current.open || pin != originalPin) current
+                    else current.copy(models = projection.options, defaultModelName = projection.defaultName, modelChoicesReadFailed = false)
+                }
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { mutableState.update { current ->
+            if (current.open && pin == originalPin) current.copy(modelChoicesReadFailed = true) else current
+        } }
+    }
+
+    fun retryModelChoices() { mutableState.update { it.copy(modelChoicesObservationRevision = it.modelChoicesObservationRevision + 1) } }
 
     private fun changeForm(change: (DesktopFormatCardAutoFillState) -> DesktopFormatCardAutoFillState) {
         if (state.value.busy) return

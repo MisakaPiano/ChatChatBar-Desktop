@@ -23,6 +23,9 @@ import com.example.chatbar.domain.worldbook.WorldBookAiOperation
 internal fun DesktopWorldBookAiPanel(controller: DesktopWorldBookAiController) {
     val state by controller.state.collectAsState()
     if (!state.open) return
+    LaunchedEffect(controller, controller.diagnosticSessionId, state.operation, state.loading, state.modelChoicesObservationRevision) {
+        if (!state.loading) controller.observeModelChoices()
+    }
     var logs by remember { mutableStateOf(false) }
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
@@ -37,6 +40,7 @@ internal fun DesktopWorldBookAiPanel(controller: DesktopWorldBookAiController) {
                 StatusText(if (state.operation == WorldBookAiOperation.CREATE) "只生成名称与关键词骨架，每批最多五条、总计最多五十条。"
                     else "只填写选中且正文为空的条目，保持条目 ID 与高级设置。")
                 StatusText("先核对候选并勾选应用；应用只改变编辑草稿，正常保存仍需另行确认。")
+                DesktopAiModelChoicesFailure(state.modelChoicesReadFailed, controller::retryModelChoices)
                 val enabled = !state.busy && !state.loading && !state.referenceLoading
                 if (state.loading) StatusText("正在读取模型与资料设置…")
                 val ids = listOf<String?>(null) + state.models.map { it.id } + listOfNotNull(state.modelId?.takeUnless { id -> state.models.any { it.id == id } })
