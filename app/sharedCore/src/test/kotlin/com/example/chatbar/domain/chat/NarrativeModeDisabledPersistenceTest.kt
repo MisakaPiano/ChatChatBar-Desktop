@@ -55,6 +55,7 @@ class NarrativeModeDisabledPersistenceTest {
     @Test fun `optional history helpers preserve disabled raw text and distinguish a null previous source from no source`() {
         val disabled = message().copy(narrativeMode = null)
         assertEquals("rendered body", ChatHistoryPromptPolicy.renderedHistoryText(disabled, "rendered body"))
+        assertEquals("rendered body", ChatHistoryPromptPolicy.renderedHistoryText(message(), "rendered body", narrativeModesEnabled = false))
         assertNull(ChatHistoryPromptPolicy.previousNarrativeMode(listOf(disabled)))
         assertNull(ChatHistoryPromptPolicy.previousNarrativeMode(emptyList(), disabled))
         assertEquals(ChatNarrativeMode.FOCUS, ChatHistoryPromptPolicy.previousNarrativeMode(emptyList()))

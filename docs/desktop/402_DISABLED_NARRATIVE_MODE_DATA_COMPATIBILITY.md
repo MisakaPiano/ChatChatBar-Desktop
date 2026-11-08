@@ -2,7 +2,7 @@
 
 2026-11-08。固定参考上游 `87d1ab5e209233b66f0db9129e984cce0d437499`（1.4.11，code90）。字段实际由 `6e322d0d3a78b0b24dc94bc559c89950d8dd0014` 引入，正式1.4.10 `954b61b87356fc676daa6590ac9e1ff519ab175b` 为code89；读取必须从89准入。本批为数据链源码准备，必要云端验证待完成，不提升正式baseline，也不采用315待确认Prompt或开放模式UI。
 
-AppSettings新增默认false且省略默认值的disableNarrativeModes；消息与候选版本允许明确null。旧记录缺字段、旧候选列表缺某索引仍为FOCUS；明确null不能在normalize/select/edit/prune/copy时被Elvis回填。会话/存档的会话级模式仍非空。实际生成以本轮已冻结设置决定新消息/重生成候选的元数据，开始传输后的设置修改不能重标当前输出；不改既有正文、历史、RAG或记忆来源。可选历史辅助函数保留null正文；实际主请求继续不启用模式system/history包装。
+AppSettings新增默认false且省略默认值的disableNarrativeModes；消息与候选版本允许明确null。旧记录缺字段、旧候选列表缺某索引仍为FOCUS；明确null不能在normalize/select/edit/prune/copy时被Elvis回填。会话/存档的会话级模式仍非空。实际生成以本轮已冻结设置决定新消息/重生成候选的元数据，开始传输后的设置修改不能重标当前输出；不改既有正文、历史、RAG或记忆来源。可选历史辅助函数对null消息或显式narrativeModesEnabled=false保留原正文；实际主请求继续不启用模式system/history包装。
 
 现代备份统一code90并保持84–89读取。严格共享serializer结合版本递归检查：pre89拒绝新停用字段及消息/候选null，包括内联存档；流式Source在完整认证manifest后应用此排除，不能因实体先于manifest而放行。未知字段/枚举与91仍拒绝。导出设置选中该字段时显式保存false；未选不物化。现代恢复选中缺失字段时使用false，未选设置与默认人工冲突选择不获得该默认权限。合并重映射保留null及候选身份。
 

@@ -10,9 +10,9 @@ enum class ChatHistoryPromptZone {
 }
 
 object ChatHistoryPromptPolicy {
-    fun renderedHistoryText(message: ChatMessage, renderedBody: String): String {
+    fun renderedHistoryText(message: ChatMessage, renderedBody: String, narrativeModesEnabled: Boolean = true): String {
         val mode = MessageAlternativeVersionPolicy.activeVersion(message).narrativeMode
-        return if (message.role == MessageRole.ASSISTANT && renderedBody.isNotBlank() && mode != null) {
+        return if (narrativeModesEnabled && message.role == MessageRole.ASSISTANT && renderedBody.isNotBlank() && mode != null) {
             com.example.chatbar.domain.prompt.MainChatPromptAuthority.narrativeModeHistoryReply(renderedBody,
                 mode)
         } else renderedBody
