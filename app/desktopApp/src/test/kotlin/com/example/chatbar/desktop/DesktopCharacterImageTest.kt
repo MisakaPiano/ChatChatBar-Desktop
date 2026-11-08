@@ -115,11 +115,16 @@ class DesktopCharacterImageTest {
             ai.setCrop(crop); ai.apply(); idle(ai)
             val applied = editor.state.value.card!!
             assertNotEquals(applied.avatar, applied.chatBackground)
+            assertNotEquals(applied.coverImage, applied.avatar)
+            assertNotEquals(applied.coverImage, applied.chatBackground)
+            assertContentEquals(bytes, editor.imageBytes(assertNotNull(applied.coverImage)))
             assertContentEquals(crop, editor.imageBytes(applied.avatar)); assertContentEquals(bytes, editor.imageBytes(applied.chatBackground))
             assertEquals(listOf(person), applied.characters); assertEquals(card, app.characterRepository.getById(card.id))
             assertTrue(editor.save())
             val saved = app.characterRepository.getById(card.id)!!
             assertContentEquals(crop, editor.imageBytes(saved.avatar)); assertContentEquals(bytes, editor.imageBytes(saved.chatBackground))
+            assertTrue(saved.coverImage!!.startsWith("images/character-covers/"))
+            assertContentEquals(bytes, editor.imageBytes(saved.coverImage))
         }
     }
 
@@ -139,7 +144,9 @@ class DesktopCharacterImageTest {
             assertEquals(card, editor.state.value.card)
             assertNotNull(textAi.state.value.candidate!!.avatar)
             assertNotNull(textAi.state.value.candidate!!.chatBackground)
+            assertNotNull(textAi.state.value.candidate!!.coverImage)
             assertTrue(textAi.apply()); assertNotNull(editor.state.value.card!!.avatar)
+            assertNotNull(editor.state.value.card!!.coverImage)
             assertEquals(card, app.characterRepository.getById(card.id))
         }
     }

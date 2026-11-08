@@ -144,7 +144,8 @@ internal class DesktopCharacterEditorController(
             val full = resources.stageImage(session, image).also(staged::add)
             val next = if (personId == null) {
                 val avatar = crop?.let { resources.stageImage(session, it).also(staged::add) } ?: full
-                destination.copy(avatar = avatar, chatBackground = full)
+                val cover = resources.copyAsCover(session, full).also(staged::add)
+                destination.copy(avatar = avatar, chatBackground = full, coverImage = cover)
             } else {
                 require(destination.characters.count { it.id == personId } == 1)
                 destination.copy(characters = destination.characters.map { if (it.id == personId) it.copy(appearanceImage = full) else it })
