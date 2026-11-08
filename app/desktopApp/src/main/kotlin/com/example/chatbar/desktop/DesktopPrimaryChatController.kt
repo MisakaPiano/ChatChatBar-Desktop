@@ -1155,15 +1155,16 @@ internal class DesktopPrimaryChatController(
                 val timeline = chats.getMessagesReadOnly(id)
                 withContext(Dispatchers.Default) { desktopChatPeople(selectedCharacter, timeline, session) }
             }
-            val modelStatus = models.status(session.modelId, appSettings)
-            val effective = models.resolveChatModel(session.modelId, appSettings)
+            val modelConfiguration = models.configuration(appSettings)
+            val modelStatus = modelConfiguration.status(session.modelId)
+            val effective = modelConfiguration.chatModel(session.modelId)
             val diagnostic = desktopModelDiagnostic(
                 session.modelId, effective, appSettings,
                 effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey),
             )
-            val modelChoices = models.availableChatModels(appSettings)
+            val modelChoices = modelConfiguration.chatModels
                 .map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
-            val effectiveModels = desktopEffectiveModels(models, appSettings)
+            val effectiveModels = desktopEffectiveModels(modelConfiguration)
             val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val persistedDraft = if (state.value.selectedSession?.id == id) null else {
