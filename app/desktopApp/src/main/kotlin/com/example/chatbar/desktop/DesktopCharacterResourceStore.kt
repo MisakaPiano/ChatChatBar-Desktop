@@ -5,6 +5,8 @@ import com.example.chatbar.domain.card.CharacterResourceNaming
 import com.example.chatbar.domain.card.CharacterResourceStore
 import com.example.chatbar.domain.card.PackagedDocument
 import com.example.chatbar.domain.card.PackagedImage
+import com.example.chatbar.domain.card.OriginalCharacterCover
+import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.card.decodeCharacterPackagedImage
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -94,6 +96,16 @@ internal class DesktopCharacterResourceStore(
     override fun fileName(reference: String): String =
         reference.removePrefix(ASSET_PREFIX).substringAfterLast('/').substringAfterLast('\\')
 
+    internal fun requireDifferentCoverOutput(card: com.example.chatbar.data.local.entity.CharacterCard, destination: Path) {
+        val reference = card.coverImage?.takeUnless { it.startsWith(ASSET_PREFIX) } ?: return
+        val original = requireReadableOwnedFile(reference).toRealPath()
+        val target = destination.toAbsolutePath().normalize()
+        val physicalTarget = requireNotNull(target.parent).toRealPath().resolve(target.fileName)
+        require(original != physicalTarget && (!Files.exists(target) || !Files.isSameFile(original, target))) {
+            "导出不能覆盖封面原图，请选择其他文件名或位置"
+        }
+    }
+
     override fun materializeDocument(
         document: PackagedDocument,
         timestamp: Long,
@@ -126,6 +138,21 @@ internal class DesktopCharacterResourceStore(
         return createOwnedFile(IMAGES_DIRECTORY, fileName, bytes)
     }
 
+    override fun materializeCoverImage(image: PackagedImage, timestamp: Long, resourceId: String): String =
+        materializeCoverImageTracked(image, timestamp, resourceId) {}
+
+    internal fun materializeCoverImageTracked(image: PackagedImage, timestamp: Long, resourceId: String,
+        beforeWrite: (String) -> Unit): String {
+        val original = when (val content = decodeCharacterPackagedImage(image.data)) {
+            is CharacterPackagedImageContent.Bytes -> content.value
+            is CharacterPackagedImageContent.Asset -> requireAssetReader()(content.logicalPath)
+        }
+        val bytes = if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original) else original
+        val fileName = "cover_${timestamp}_$resourceId.${CharacterResourceNaming.imageExtension(image.fileName)}"
+        beforeWrite("$COVERS_DIRECTORY/$fileName")
+        return createOwnedFile(COVERS_DIRECTORY, fileName, bytes)
+    }
+
     override fun deleteOwned(reference: String) {
         if (reference.startsWith(ASSET_PREFIX)) return
         val path = resolveOwnedReference(reference)
@@ -145,7 +172,9 @@ internal class DesktopCharacterResourceStore(
             "Desktop Character owned reference 不允许 traversal：$reference"
         }
         val normalized = relative.normalize()
-        require(normalized.nameCount == 2) { "Desktop Character owned reference 必须是直接 owned file：$reference" }
+        val cover = normalized.nameCount == 3 && normalized.getName(0).toString() == IMAGES_DIRECTORY &&
+            normalized.getName(1).toString() == "character-covers"
+        require(normalized.nameCount == 2 || cover) { "Desktop Character owned reference 必须是直接 owned file 或独立封面：$reference" }
         val directoryName = normalized.getName(0).toString()
         require(directoryName == IMAGES_DIRECTORY || directoryName == DOCUMENTS_DIRECTORY) {
             "Desktop Character owned reference 不属于允许目录：$reference"
@@ -155,6 +184,7 @@ internal class DesktopCharacterResourceStore(
             "Desktop Character owned reference 逃逸 appDataRoot：$reference"
         }
         validateOwnedDirectoryIfPresent(root.resolve(directoryName), directoryName)
+        if (cover) validateOwnedDirectoryIfPresent(root.resolve(COVERS_DIRECTORY), COVERS_DIRECTORY)
         return resolved
     }
 
@@ -188,6 +218,8 @@ internal class DesktopCharacterResourceStore(
         require(Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(root)) {
             "Desktop appDataRoot 必须是普通目录：$root"
         }
+        require(directoryName in setOf(IMAGES_DIRECTORY, DOCUMENTS_DIRECTORY, COVERS_DIRECTORY))
+        if (directoryName == COVERS_DIRECTORY) ensureOwnedDirectory(IMAGES_DIRECTORY)
         val directory = root.resolve(directoryName)
         if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) {
             Files.createDirectory(directory)
@@ -214,6 +246,7 @@ internal class DesktopCharacterResourceStore(
     private companion object {
         const val ASSET_PREFIX = "asset:"
         const val IMAGES_DIRECTORY = "images"
+        const val COVERS_DIRECTORY = "images/character-covers"
         const val DOCUMENTS_DIRECTORY = "documents"
     }
 }

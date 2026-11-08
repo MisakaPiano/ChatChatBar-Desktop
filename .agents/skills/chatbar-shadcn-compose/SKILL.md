@@ -5,11 +5,13 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+Desktop character editor exposes the independent original-cover slot without crop controls, plus copy-avatar/clear. Cover export retains original/layout modes separately: original preview is fit-only, crop/gradient/logo/title controls appear only for layout, and temporary replacements/undo affect the export copy. See `chatbar-desktop-character-cover` for saved-original custody.
+
 Desktop character-position canvas renders numbered markers using original draft order, draws the selected marker last, and shows the 5×5 reference grid in V5 as well as V4.5; only V4.5 snaps. Canvas bounds follow the actual generation/focused-inpaint request ratio. Keep existing live-edit guards, person/model numeric history scopes and scrollable controls; visual numbering must not alter center values or participation.
 
 Structured character detail's image Prompt reuses `StudioPromptField` through `DesktopCharacterImagePromptField`, including local tag candidates, raw-text Chinese overlays and isolated expanded editing. It remains inside `CharacterPersonWorkspace`'s draft/person/detail key; keep the same scoped history and captured-identity publication guard when rearranging this section. The translation toggle changes the existing global display preference, never the stored Prompt text.
 
-Cover export's existing “恢复角色背景” action is present only with a replacement image. It clears that export-only replacement and resets its three crop fields through the same undo history while retaining gradient/title/logo options; “重置全部” remains a separate full reset. Neither action writes the card or its packaged background bytes.
+Cover export's restore-source action is present only with a replacement; its caption follows independent cover or legacy background. It clears the export-only replacement and resets three crop fields through the same undo history while retaining gradient/title/logo options; “重置全部” remains separate. Neither action writes the card or packaged source images.
 
 Desktop Moments uses `DesktopMomentFeedCard` inside a bounded feed, with author/body/image alignment, an avatar gutter and compact footer actions. `DesktopVersionControls` shares chat alternative arrow/count styling with retained Moment image selection; labels and selection/persistence owners remain caller-specific. Actual-Panel synthetic narrow/wide tests retain screenshots through `CCB_FORMAT_AI_REVIEW_DIR`.
 

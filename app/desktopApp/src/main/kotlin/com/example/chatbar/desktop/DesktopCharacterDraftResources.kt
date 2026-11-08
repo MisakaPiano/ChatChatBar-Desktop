@@ -4,6 +4,8 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.DocumentRagStatus
 import com.example.chatbar.domain.card.PackagedDocument
 import com.example.chatbar.domain.card.PackagedImage
+import com.example.chatbar.domain.card.OriginalCharacterCover
+import com.example.chatbar.domain.card.PngTextChunks
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -20,7 +22,7 @@ internal class DesktopCharacterDraftResources(
     private val root = appDataRoot.toAbsolutePath().normalize()
     private val draftRoot = root.resolve("draft_assets")
 
-    fun stage(sessionId: String, source: Path, image: Boolean): String {
+    fun stage(sessionId: String, source: Path, image: Boolean, originalCover: Boolean = false): String {
         require(Files.isRegularFile(source)) { "Selected file is not a regular file" }
         val bytes = Files.readAllBytes(source)
         require(bytes.size <= 20 * 1024 * 1024) { "Selected file exceeds 20 MB" }
@@ -28,7 +30,14 @@ internal class DesktopCharacterDraftResources(
         else require(String(bytes, Charsets.UTF_8).toByteArray(Charsets.UTF_8).contentEquals(bytes)) {
             "Document must be UTF-8 text"
         }
-        return stageBytes(sessionId, source.fileName.toString(), bytes)
+        return stageBytes(sessionId, source.fileName.toString(),
+            if (originalCover && PngTextChunks.isPng(bytes)) OriginalCharacterCover.imageOnlyPng(bytes) else bytes)
+    }
+
+    fun copyAsCover(sessionId: String, reference: String): String {
+        val bytes = readImage(reference)
+        val original = if (PngTextChunks.isPng(bytes)) OriginalCharacterCover.imageOnlyPng(bytes) else bytes
+        return stageBytes(sessionId, reference.substringAfterLast('/'), original)
     }
 
     fun stageImage(sessionId: String, bytes: ByteArray): String {
@@ -52,7 +61,15 @@ internal class DesktopCharacterDraftResources(
     /** Only for rollback of a newly returned stage reference that was never assigned. */
     internal fun discardNew(reference: String) { Files.delete(resolveDraft(reference)) }
 
-    fun isDraft(reference: String): Boolean = reference.startsWith("draft_assets/")
+    fun isDraft(reference: String): Boolean = draftRelativeReference(reference) != null
+
+    /** Restored draft fields may use this root's absolute path; never admit another root. */
+    private fun draftRelativeReference(reference: String): String? {
+        if (reference.startsWith("draft_assets/")) return reference
+        val path = runCatching { Path.of(reference) }.getOrNull() ?: return null
+        if (!path.isAbsolute || path.any { it.toString() == "." || it.toString() == ".." } || !path.startsWith(draftRoot)) return null
+        return root.relativize(path).joinToString("/")
+    }
 
     /** Returns a durable card and every newly written resource for rollback on entity failure. */
     fun materialize(card: CharacterCard): Pair<CharacterCard, List<String>> {
@@ -78,9 +95,19 @@ internal class DesktopCharacterDraftResources(
                 created += result
                 result
             }
+        fun cover(reference: String?): String? = reference?.let { source ->
+            if (!isDraft(source) && source.startsWith("images/character-covers/")) source else {
+                // Copy even a durable avatar/asset into an independent cover file.
+                val bytes = readImage(source)
+                durable.materializeCoverImage(PackagedImage(source.substringAfterLast('/'),
+                    Base64.getEncoder().encodeToString(bytes)), System.currentTimeMillis(), UUID.randomUUID().toString())
+                    .also(created::add)
+            }
+        }
         try {
             val result = card.copy(
                 avatar = image(card.avatar),
+                coverImage = cover(card.coverImage),
                 chatBackground = image(card.chatBackground),
                 characters = card.characters.map { it.copy(appearanceImage = image(it.appearanceImage)) },
                 customDocuments = card.customDocuments.map { doc ->
@@ -162,7 +189,7 @@ internal class DesktopCharacterDraftResources(
     }
 
     private fun resolveDraft(reference: String): Path {
-        val parts = reference.split('/')
+        val parts = requireNotNull(draftRelativeReference(reference)) { "Invalid draft reference" }.split('/')
         require(parts.size == 3 && parts[0] == "draft_assets") { "Invalid draft reference" }
         val dir = sessionDirectory(parts[1])
         require(parts[2].matches(Regex("[A-Za-z0-9._-]{1,130}"))) { "Invalid draft file" }
@@ -178,6 +205,7 @@ internal class DesktopCharacterDraftResources(
 /** Positive retention evidence only; candidates not retained here still need the full reference authority. */
 internal fun desktopCharacterResourceReferences(card: CharacterCard): List<String> = buildList {
     card.avatar?.let(::add)
+    card.coverImage?.let(::add)
     card.chatBackground?.let(::add)
     card.characters.mapNotNullTo(this) { it.appearanceImage }
     card.customDocuments.mapTo(this) { it.filePath }

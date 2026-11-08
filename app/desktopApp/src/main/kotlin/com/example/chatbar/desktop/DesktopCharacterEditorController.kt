@@ -451,6 +451,21 @@ internal class DesktopCharacterEditorController(
     fun setDefaultFormatCard(id: String?) = edit { it.copy(defaultFormatCardId = id) }
 
     fun chooseAvatar(description: String = "Image") = chooseImage(description) { card, ref -> card.copy(avatar = ref) }
+    fun chooseCover(description: String = "Image") {
+        if (!canMutate()) return
+        val selected = filePicker.pickOpenFile(DesktopFileType(description, IMAGE_EXTENSIONS)) ?: return
+        stageResource(selected, image = true, originalCover = true) { card, ref -> card.copy(coverImage = ref) }
+    }
+
+    fun copyAvatarAsCover() {
+        if (!canMutate()) return
+        val avatar = _state.value.card?.avatar ?: return
+        val session = _state.value.draftSessionId ?: return
+        runCatching { manualResourceAccess {
+            val reference = resources.copyAsCover(session, avatar)
+            edit { it.copy(coverImage = reference) }
+        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
+    }
     fun chooseBackground(description: String = "Image") = chooseImage(description) { card, ref -> card.copy(chatBackground = ref) }
     fun chooseAppearance(id: String, description: String = "Image") = chooseImage(description) { card, ref ->
         card.copy(characters = card.characters.map { if (it.id == id) it.copy(appearanceImage = ref) else it })
@@ -479,6 +494,7 @@ internal class DesktopCharacterEditorController(
     }
 
     fun clearAvatar() = edit { it.copy(avatar = null) }
+    fun clearCover() = edit { it.copy(coverImage = null) }
     fun clearBackground() = edit { it.copy(chatBackground = null) }
     fun clearAppearance(id: String) = updateCharacter(id) { it.copy(appearanceImage = null) }
 
@@ -571,11 +587,11 @@ internal class DesktopCharacterEditorController(
         _state.value = _state.value.copy(stylePromptUndo = null)
     }
 
-    private fun stageResource(path: Path, image: Boolean, assign: (CharacterCard, String) -> CharacterCard) {
+    private fun stageResource(path: Path, image: Boolean, originalCover: Boolean = false, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
         runCatching { manualResourceAccess {
-            val ref = resources.stage(session, path, image)
+            val ref = resources.stage(session, path, image, originalCover)
             edit { assign(it, ref) }
         } }
             .onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
@@ -631,7 +647,7 @@ internal class DesktopCharacterEditorController(
     } }
 
     private fun draftAssets(card: CharacterCard): List<String> = buildList {
-        card.avatar?.let(::add); card.chatBackground?.let(::add)
+        card.avatar?.let(::add); card.chatBackground?.let(::add); card.coverImage?.let(::add)
         card.characters.mapNotNullTo(this) { it.appearanceImage }
         card.customDocuments.mapTo(this) { it.filePath }
     }.filter(resources::isDraft)
@@ -695,7 +711,7 @@ internal class DesktopCharacterEditorController(
             val retained = (source ?: card).copy(
                 name = NamePolicy.normalize(card.name), botName = card.botName,
                 greeting = card.greeting, alternateGreetings = card.alternateGreetings,
-                avatar = card.avatar, chatBackground = card.chatBackground,
+                avatar = card.avatar, chatBackground = card.chatBackground, coverImage = card.coverImage,
                 editMode = card.editMode, basicSetting = card.basicSetting,
                 freeformCharacterText = card.freeformCharacterText,
                 defaultImagePrompt = card.defaultImagePrompt,

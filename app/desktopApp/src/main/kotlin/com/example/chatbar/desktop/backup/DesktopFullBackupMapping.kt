@@ -243,7 +243,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 return root.resolve(DesktopBackupPolicy.desktopName(original)).toString()
             }
             check(destination != null) { "REFERENCED_RESOURCE_MISSING" }
-            // Desktop image/document owners deliberately accept only flat relative references.
+            // Image/document owners accept flat files and the exact independent-cover directory.
             return if (destination.startsWith("images/") || destination.startsWith("documents/")) destination
                 else root.resolve(destination).toString()
         }

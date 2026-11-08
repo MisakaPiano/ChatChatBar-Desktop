@@ -13,7 +13,7 @@ object CharacterCardPngPackageCodec {
         val packageJson = json.encodeToString(CharacterCardPackage.serializer(), packageData)
         val payload = Base64.getEncoder().encodeToString(packageJson.toByteArray(Charsets.UTF_8))
         return PngTextChunks.insertTextChunk(
-            renderedPng,
+            OriginalCharacterCover.imageOnlyPng(renderedPng),
             PngTextChunks.CHATBAR_CHARACTER_KEYWORD,
             payload,
         )

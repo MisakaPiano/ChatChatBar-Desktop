@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.card.CharacterCardPngExportOptions
+import com.example.chatbar.domain.card.OriginalCharacterCover
+import com.example.chatbar.domain.card.PngTextChunks
 import java.awt.Color
 import java.awt.Font
 import java.awt.GradientPaint
@@ -16,6 +18,15 @@ import kotlin.math.roundToInt
 internal class DesktopCharacterCardPngRenderer(
     private val logoBytes: () -> ByteArray = DesktopBrandResources::logoBytes,
 ) {
+    fun renderExportImage(card: CharacterCard, options: CharacterCardPngExportOptions,
+        originalCover: ByteArray?, background: ByteArray?, replacement: ByteArray? = null): ByteArray {
+        val original = replacement ?: originalCover
+        return if (options.preserveOriginalCover && original != null) {
+            if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original)
+            else DesktopImageEditing.png(DesktopImageEditing.decode(original))
+        } else render(card, options, replacement ?: originalCover ?: background)
+    }
+
     fun render(
         card: CharacterCard,
         options: CharacterCardPngExportOptions,

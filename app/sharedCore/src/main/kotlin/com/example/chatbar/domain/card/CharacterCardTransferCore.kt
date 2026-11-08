@@ -118,7 +118,7 @@ class CharacterCardTransferCore internal constructor(
         } else {
             String(Base64.getMimeDecoder().decode(payload), Charsets.UTF_8)
         }
-        return decode(rawJson)
+        return OriginalCharacterCover.attachToImportedPackage(decode(rawJson), pngBytes).also(CharacterCardPackage::validateForImport)
     }
 
     suspend fun duplicate(id: String): CharacterCard = normalOperation {
@@ -404,12 +404,20 @@ class CharacterCardTransferCore internal constructor(
         fun packageImage(reference: String?, resourceId: String): String? {
             reference?.takeIf(String::isNotBlank) ?: return null
             resourceIdsByReference[reference]?.let { return it }
+            val original = resources.readBytes(reference)
+            val bytes = if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original) else original
             images[resourceId] = PackagedImage(
                 fileName = resources.fileName(reference).ifBlank { "$resourceId.jpg" },
-                data = Base64.getEncoder().encodeToString(resources.readBytes(reference)),
+                data = Base64.getEncoder().encodeToString(bytes),
             )
             resourceIdsByReference[reference] = resourceId
             return resourceId
+        }
+        val coverId = card.coverImage?.takeIf(String::isNotBlank)?.let { reference ->
+            val original = resources.readBytes(reference)
+            val bytes = if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original) else original
+            images["cover-original"] = PackagedImage(resources.fileName(reference), Base64.getEncoder().encodeToString(bytes))
+            "cover-original"
         }
         val packagedCharacters = exportableCharacters.mapIndexed { index, character ->
             PackagedCharacter(
@@ -432,10 +440,12 @@ class CharacterCardTransferCore internal constructor(
             )
         }
         return CharacterCardPackage(
+            schemaVersion = if (coverId == null) 9 else CHARACTER_CARD_PACKAGE_SCHEMA_VERSION,
             card = PackagedCharacterCard(
                 name = card.name,
                 botName = card.botName,
                 avatarResourceId = packageImage(card.avatar, "avatar"),
+                coverImageResourceId = coverId,
                 characters = packagedCharacters,
                 greeting = card.greeting,
                 alternateGreetings = card.alternateGreetings,
@@ -489,10 +499,19 @@ class CharacterCardTransferCore internal constructor(
         ledger: MaterializationLedger,
     ): CharacterCard {
         val now = nowMillis()
-        val imageReferences = packageData.images.mapValues { (_, packaged) ->
-            val reference = resources.materializeImage(packaged, now, newId())
+        val coverId = packageData.card.coverImageResourceId
+        val coverAlsoUsedAsImage = coverId != null && (packageData.card.avatarResourceId == coverId ||
+            packageData.card.chatBackgroundResourceId == coverId || packageData.card.characters.any { it.appearanceImageResourceId == coverId })
+        val imageReferences = packageData.images.filterKeys { it != coverId || coverAlsoUsedAsImage }.mapValues { (_, packaged) ->
+            val content = decodeCharacterPackagedImage(packaged.data)
+            val image = if (content is CharacterPackagedImageContent.Bytes && PngTextChunks.isPng(content.value))
+                packaged.copy(data = Base64.getEncoder().encodeToString(OriginalCharacterCover.imageOnlyPng(content.value))) else packaged
+            val reference = resources.materializeImage(image, now, newId())
             ledger.resourceReferences += reference
             reference
+        }
+        val coverReference = coverId?.let {
+            resources.materializeCoverImage(packageData.images.getValue(it), now, newId()).also(ledger.resourceReferences::add)
         }
         val documents = packageData.documents.map { packaged ->
             val documentId = newId()
@@ -532,6 +551,7 @@ class CharacterCardTransferCore internal constructor(
             name = NamePolicy.normalize(name),
             botName = packagedCard.botName,
             avatar = packagedCard.avatarResourceId?.let(imageReferences::getValue),
+            coverImage = coverReference,
             characters = CharacterSpeakerNamePolicy.normalizeUnique(
                 packagedCard.characters.map { character ->
                     CharacterInfo(
@@ -657,6 +677,7 @@ class CharacterCardTransferCore internal constructor(
 
     private fun CharacterCard.ownedResourceReferences(): Set<String> = buildSet {
         avatar?.takeIf(String::isNotBlank)?.let(::add)
+        coverImage?.takeIf(String::isNotBlank)?.let(::add)
         chatBackground?.takeIf(String::isNotBlank)?.let(::add)
         characters.mapNotNullTo(this) { it.appearanceImage?.takeIf(String::isNotBlank) }
         customDocuments.mapNotNullTo(this) { it.filePath.takeIf(String::isNotBlank) }

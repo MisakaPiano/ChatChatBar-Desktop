@@ -85,7 +85,8 @@ internal class DesktopMergeDestinationPlan private constructor(
                 val destination = if (side == Side.PHONE && original.substringBefore('/') in setOf("images", "documents", "audio", "draft_assets")) {
                     val ext = original.substringAfterLast('.', "bin").lowercase()
                     require(ext.matches(Regex("[a-z0-9]{1,10}"))) { "MERGE_MEDIA_EXTENSION" }
-                    original.substringBefore('/') + "/import-" + DesktopBackupPolicy.digest((original + ":" + hash).toByteArray(Charsets.UTF_8)).take(40) + ".$ext"
+                    val directory = if (original.startsWith("images/character-covers/")) "images/character-covers" else original.substringBefore('/')
+                    directory + "/import-" + DesktopBackupPolicy.digest((original + ":" + hash).toByteArray(Charsets.UTF_8)).take(40) + ".$ext"
                 } else if (original.startsWith("images/") || original.startsWith("documents/")) DesktopBackupPolicy.desktopName(original) else original
                 val existing = resources[destination]
                 if (existing != null) require(existing.sha256 == hash) { "MERGE_RESOURCE_COLLISION" }

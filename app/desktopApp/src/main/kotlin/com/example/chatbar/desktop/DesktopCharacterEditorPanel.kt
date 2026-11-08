@@ -248,6 +248,14 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 EditorField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
                 EditorField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
             }
+            EditorSection(t(DesktopUiText.CHARACTER_ORIGINAL_COVER), Modifier.testTag("character-editor-original-cover")) {
+                ImageSlot(t(DesktopUiText.CHARACTER_ORIGINAL_COVER), card.coverImage,
+                    { controller.chooseCover(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearCover,
+                    controller, {}, allowCrop = false)
+                StatusText(t(DesktopUiText.CHARACTER_ORIGINAL_COVER_HELP))
+                if (card.avatar != null) BootstrapButton(t(DesktopUiText.CHARACTER_COPY_AVATAR_COVER), secondary = true,
+                    onClick = controller::copyAvatarAsCover)
+            }
             Column(Modifier.testTag("character-editor-greeting")) {
                 EditorField(t(DesktopUiText.GREETING), card.greeting, multiline = true) { value -> controller.edit { it.copy(greeting = value) } }
                 StudioDisclosure(t(DesktopUiText.ALTERNATE_GREETINGS)) {
@@ -661,7 +669,7 @@ private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharac
 
 @Composable
 private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, clear: () -> Unit,
-    controller: DesktopCharacterEditorController, applyCrop: (ByteArray) -> Unit) {
+    controller: DesktopCharacterEditorController, applyCrop: (ByteArray) -> Unit, allowCrop: Boolean = true) {
     val t = LocalDesktopUiStrings.current
     var cropBytes by remember(reference) { mutableStateOf<ByteArray?>(null) }
     cropBytes?.let { bytes -> DesktopImageWorkspace(bytes, label, { cropBytes = null }) {
@@ -679,7 +687,7 @@ private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, cle
         EditorActions {
             BootstrapButton(t(DesktopUiText.CHOOSE_IMAGE), onClick = choose)
             if (reference != null) {
-                BootstrapButton("裁剪 / 重新定位") { cropBytes = controller.imageBytes(reference) }
+                if (allowCrop) BootstrapButton("裁剪 / 重新定位") { cropBytes = controller.imageBytes(reference) }
                 BootstrapButton(t(DesktopUiText.CLEAR_IMAGE), onClick = clear)
             }
         }

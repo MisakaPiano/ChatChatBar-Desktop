@@ -1,0 +1,19 @@
+# Desktop 独立角色卡封面原图
+
+2026-11-08。用户通过 Android 协调对话明确交给 Desktop A。Android 由原协调端继续，Desktop 不并入其上游 PR。当前为源码实现及检查准备，未编译、执行新检查、打包、交付或公开。
+
+`CharacterCard.coverImage` 是追加在旧构造参数之后的可空引用，默认 null 不写 JSON。Desktop 用 CREATE_NEW 保存到 `images/character-covers`，只允许这一额外嵌套目录，拒绝符号链接。头像、背景及导出副本继续独立；即使输入包把头像与封面指向同一资源ID，也分别物化。
+
+编辑器提供封面选图、清除和“复制当前头像为封面原图”，复制经草稿成为新资源。封面栏不提供原地裁切；文字、排版、预览与导出都不改写原图，图中已有文字不会自动重绘。旧卡无原图记录时保持为空，不把背景推断为原封面。
+
+有原图时默认 PNG 导出保留原图外观。共享 `OriginalCharacterCover` 验证帧界、CRC、IHDR/IDAT/IEND，逐块复制所有非角色数据；去掉 tEXt/zTXt/iTXt 中大小写不敏感的 ChatBarCharacter/chara/ccv3，再附加当前角色包。尺寸、编码图像块和其他元数据不重绘。非PNG原文件原样保存，仅输出时转换。原 Logo/标题/渐变/裁切排版仍可明确选择；临时替换、遮盖、撤销只改变导出副本。
+
+生产 JSON/PNG/排版导出拒绝覆盖保存的封面原图，包括解析后的同一路径与物理同一文件。导入优先保留内嵌独立封面；旧 native/ST PNG 没有该资源时才取外层图像并去除旧卡数据。ST头像和传输中的PNG资源也去掉角色数据，避免隐藏旧卡与反复套娃；不改原始导入文件。
+
+字段与 Android 参考同义：`CharacterCard.coverImage`、`PackagedCharacterCard.coverImageResourceId`、`images/character-covers`。本地导入支持3–10；**无封面导出仍为9，有封面为暂定10**，封面引用必须有对应资源。10不是冻结官方协议，也不是跨端兼容通过；Android 合并图库、参与开关、多场景后须统一版本再验证。Android 后续提出的 chatBackgroundImages / chatBackgroundImageResourceIds 及 enabled、characterParticipation、autoPauseAbsentPeople canonical 别名不由本封面提交自动采纳，保留独立映射待办，不能因相同版本号宣称互通完成。
+
+卡片 JSON/PNG、复制与覆盖携带原图字节，不携带Windows绝对路径。草稿资源列表、保存白名单、引用清理与提交指纹保留封面。备份 registry 登记 coverImage；恢复与手机合并计划继续映射到独立封面目录。本根绝对草稿引用只在严格 draft_assets 根及会话/文件名校验下识别，不能读取其他根。清除及回滚只释放新分配或确认不再引用的资源，保留头像与其他卡/草稿引用。
+
+新增7项共享纯JVM、6项Desktop资源/实际传输、2项备份/合并检查，共15方法，使用内联或程序生成样本，**均未运行**。覆盖块保真与坏输入拒绝、反复导出、内嵌原图优先、默认/引用校验、ST导入、独立复制清除回滚、非PNG、生产输出防覆盖、认证备份/恢复及草稿重新物化。只读Python核对发现两处旧1px合成PNG的IDAT CRC错误，管理测试使用相同字节常量；三处换有效样图，原断言不删，原核对保留。这不是Kotlin测试通过。
+
+官方 Kotlin compiler2.3.20 下载持续504，按既有决定等待实际恢复，不空重试、不本机JVM、不换不明仓库。恢复后补跑本批及原卡片、分类器、编辑器、管理和备份受影响检查，再安排UI与双端验收。公开1246/签名28、原15项人工范围通过、自然下一次更新待验、真实资料/迁移及发布授权不变；398/399与其他1.4.11/314/315工作继续保留。

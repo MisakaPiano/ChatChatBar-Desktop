@@ -60,7 +60,10 @@ data class CharacterCard(
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val pendingSpeakerRenameTasks: List<SpeakerTagRenameTask> = emptyList(),
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    /** Immutable original cover resource; independent from avatar, chat background and exported layouts. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val coverImage: String? = null,
 ) {
     val effectiveBotName: String
         get() = botName.takeIf(String::isNotBlank) ?: name

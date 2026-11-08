@@ -21,6 +21,7 @@ import com.example.chatbar.domain.card.CharacterTransferObservation
 import com.example.chatbar.domain.card.FormatCardPackage
 import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.NamePolicy
+import com.example.chatbar.domain.card.OriginalCharacterCover
 import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.card.SillyTavernCardMapper
 import com.example.chatbar.domain.card.SillyTavernCardParser
@@ -103,7 +104,7 @@ internal sealed interface DesktopPendingTransferConflict {
 }
 
 internal data class DesktopCoverExportDraft(val card: CharacterCard, val packageData: CharacterCardPackage,
-    val backgroundBytes: ByteArray?)
+    val backgroundBytes: ByteArray?, val originalCoverBytes: ByteArray? = null)
 
 internal data class DesktopTypedTransferState(
     val externalImportReceipt: DesktopExternalImportReceipt? = null,
@@ -140,6 +141,7 @@ internal class DesktopTypedTransferController(
     private val readFormatDurable: suspend (String) -> JsonFileStorage.EntityReadResult<FormatCard> = formatRepository::readDurable,
     private val readWorldDurable: suspend (String) -> JsonFileStorage.EntityReadResult<WorldBook> = worldBookRepository::readDurable,
     private val readCharacterDurable: suspend (String) -> JsonFileStorage.EntityReadResult<CharacterCard> = characterRepository::readDurable,
+    private val guardCharacterOutput: (CharacterCard, Path) -> Unit = { _, _ -> },
 ) {
     private val mutableState = MutableStateFlow(DesktopTypedTransferState())
     val state: StateFlow<DesktopTypedTransferState> = mutableState.asStateFlow()
@@ -580,17 +582,23 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    suspend fun exportCharacterJson(id: String) = exportText(
-        suggestedName(id, characterRepository.getById(id)?.name, "json"),
-        characterTransfers.exportJson(id),
-    )
+    suspend fun exportCharacterJson(id: String) = runOperation(null) {
+        val export = characterTransfers.prepareExport(id)
+        val destination = filePicker.pickSaveFile(JSON_FILES, safeFileName(export.card.name, "json")) ?: return@runOperation
+        guardCharacterOutput(export.card, destination)
+        writer.writeText(destination, json.encodeToString(CharacterCardPackage.serializer(), export.packageData))
+        mutableState.value = state.value.copy(status = "文件已导出", error = null)
+    }
 
     suspend fun beginCoverExport(id: String) = runOperation(null) {
         val export = characterTransfers.prepareExport(id)
         val background = export.packageData.card.chatBackgroundResourceId
             ?.let(export.packageData.images::get)?.data?.let(::decodeCharacterPackagedImage)
             ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
-        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background))
+        val original = export.packageData.card.coverImageResourceId
+            ?.let(export.packageData.images::getValue)?.data?.let(::decodeCharacterPackagedImage)
+            ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
+        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background, original))
     }
 
     fun cancelCoverExport() { if (!state.value.busy) mutableState.value = state.value.copy(coverExport = null) }
@@ -600,15 +608,17 @@ internal class DesktopTypedTransferController(
         require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
         val bytes = Files.readAllBytes(path)
         DesktopImageEditing.requireStatic(bytes)
-        return DesktopImageEditing.png(DesktopImageEditing.decode(bytes))
+        DesktopImageEditing.decode(bytes)
+        return bytes
     }
 
     suspend fun finishCoverExport(draft: DesktopCoverExportDraft, options: CharacterCardPngExportOptions,
         replacement: ByteArray?) = runOperation(null) {
         check(state.value.coverExport === draft) { "封面导出已关闭" }
         val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(draft.card.name, "png")) ?: return@runOperation
+        guardCharacterOutput(draft.card, destination)
         val rendered = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            characterPngRenderer.render(draft.card, options, replacement ?: draft.backgroundBytes)
+            characterPngRenderer.renderExportImage(draft.card, options, draft.originalCoverBytes, draft.backgroundBytes, replacement)
         }
         // The replacement changes visible pixels only. Package and original resource map are untouched.
         writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, draft.packageData, json))
@@ -619,13 +629,17 @@ internal class DesktopTypedTransferController(
         runOperation(null) {
             val export = characterTransfers.prepareExport(id)
             val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(export.card.name, "png")) ?: return@runOperation
+            guardCharacterOutput(export.card, destination)
             val backgroundBytes = export.packageData.card.chatBackgroundResourceId
                 ?.let(export.packageData.images::get)
                 ?.data
                 ?.let(::decodeCharacterPackagedImage)
                 ?.let { it as? CharacterPackagedImageContent.Bytes }
                 ?.value
-            val rendered = characterPngRenderer.render(export.card, options, backgroundBytes)
+            val original = export.packageData.card.coverImageResourceId
+                ?.let(export.packageData.images::getValue)?.data?.let(::decodeCharacterPackagedImage)
+                ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
+            val rendered = characterPngRenderer.renderExportImage(export.card, options, original, backgroundBytes)
             writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, export.packageData, json))
             mutableState.value = mutableState.value.copy(status = "角色 PNG 已导出", error = null)
         }
@@ -660,7 +674,8 @@ internal class DesktopTypedTransferController(
                 ?: error("PNG 不包含 ChatBar 或 SillyTavern Character metadata")
             return CharacterCardImportRequest(
                 SillyTavernCardMapper(AuthoritativeCharacterTransferPromptPolicy)
-                    .toCharacterCardPackage(SillyTavernCardParser.parseJson(stJson, bytes)),
+                    .toCharacterCardPackage(SillyTavernCardParser.parseJson(stJson, OriginalCharacterCover.imageOnlyPng(bytes)))
+                    .let { OriginalCharacterCover.attachToImportedPackage(it, bytes) },
             )
         }
         val raw = String(bytes, Charsets.UTF_8)

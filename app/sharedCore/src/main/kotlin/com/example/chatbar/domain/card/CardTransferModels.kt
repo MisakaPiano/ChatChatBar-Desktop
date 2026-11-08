@@ -9,6 +9,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 
+/** Original-cover extension; packages without that extension retain the existing v9 wire. */
+const val CHARACTER_CARD_PACKAGE_SCHEMA_VERSION = 10
+
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
 data class CharacterCardPackage(
@@ -23,6 +26,7 @@ data class CharacterCardPackage(
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class PackagedCharacterCard(
     val name: String,
     val botName: String = "",
@@ -46,7 +50,9 @@ data class PackagedCharacterCard(
     val creator: String = "",
     val characterVersion: String = "",
     val extensions: String = "",
-    val characterBook: WorldBook? = null
+    val characterBook: WorldBook? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val coverImageResourceId: String? = null,
 )
 
 @Serializable
@@ -90,7 +96,8 @@ data class CharacterCardImportRequest(
 )
 
 fun CharacterCardPackage.validateForImport() {
-    require(schemaVersion in 3..9) { "不支持的角色卡 schemaVersion：$schemaVersion" }
+    require(schemaVersion in 3..CHARACTER_CARD_PACKAGE_SCHEMA_VERSION) { "不支持的角色卡 schemaVersion：$schemaVersion" }
+    require(card.coverImageResourceId == null || schemaVersion >= 10) { "独立封面原图需要角色卡格式10" }
     defaultFormatCard?.validateForImport()
     card.defaultImageGenerationSettings?.applyTo(
         com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel ?: NovelAiImageModel.V4_5_FULL)
@@ -103,6 +110,7 @@ fun CharacterCardPackage.validateForImport() {
     }
     val references = buildList {
         card.avatarResourceId?.let(::add)
+        card.coverImageResourceId?.let(::add)
         card.chatBackgroundResourceId?.let(::add)
         card.characters.mapNotNullTo(this) { it.appearanceImageResourceId }
     }

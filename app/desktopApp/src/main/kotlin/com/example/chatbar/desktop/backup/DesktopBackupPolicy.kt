@@ -137,7 +137,9 @@ internal object DesktopBackupPolicy {
             relative.startsWith("images/") || relative.startsWith("documents/") -> {
                 val extension = relative.substringAfterLast('.', "bin").lowercase()
                 require(extension.matches(Regex("[a-z0-9]{1,10}")))
-                "${relative.substringBefore('/')}/${digest(relative.toByteArray()).take(40)}.$extension"
+                val ownerDirectory = if (relative.startsWith("images/character-covers/")) "images/character-covers"
+                    else relative.substringBefore('/')
+                "$ownerDirectory/${digest(relative.toByteArray()).take(40)}.$extension"
             }
             relative.startsWith("entities/model_configs/") ->
                 "entities/model_configs/${WindowsSafeModelStorageKeyPolicy.storageKey(requireNotNull(value).getValue("id").jsonPrimitive.content)}.json"

@@ -5,6 +5,8 @@ description: Maintain ChatBar external ACTION_SEND/ACTION_VIEW/text import routi
 
 # ChatBar Shared Import
 
+Native/ST PNG classification retains an existing independent `coverImageResourceId` before taking outer image bytes through `OriginalCharacterCover`. Old PNG cards receive an image-only cover resource, and ST avatar input excludes old card metadata. JSON-only legacy cards do not infer covers from backgrounds. Desktop typed ingress uses the same core; see `chatbar-desktop-character-cover` for custody/export and provisional package version.
+
 Android external sharing is one global ingestion pipeline. Management-page import buttons remain independent, explicitly typed entry points.
 
 ## Entry Points

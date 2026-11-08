@@ -75,7 +75,7 @@ class SharedImportClassifierCore<M>(
                 PngTextChunks.CHATBAR_CHARACTER_KEYWORD,
             )
             if (chatBarPayload != null) {
-                return runCatching { decodeChatBarPng(chatBarPayload) }
+                return runCatching { decodeChatBarPng(chatBarPayload, bytes) }
                     .getOrElse { SharedImportCoreInspection.Unknown(textLike = false) }
             }
             val sillyTavernPayload = SillyTavernCardParser.extractCharaChunk(bytes)
@@ -102,7 +102,7 @@ class SharedImportClassifierCore<M>(
             SharedImportKind.CHARACTER -> {
                 if (PngTextChunks.isPng(bytes)) {
                     PngTextChunks.extractTextChunk(bytes, PngTextChunks.CHATBAR_CHARACTER_KEYWORD)?.let {
-                        return decodeChatBarPng(it)
+                        return decodeChatBarPng(it, bytes)
                     }
                     SillyTavernCardParser.extractCharaChunk(bytes)?.let {
                         return decodeSillyTavernCharacter(it, bytes)
@@ -161,7 +161,7 @@ class SharedImportClassifierCore<M>(
         }
     }
 
-    private fun decodeChatBarPng(payload: String): SharedImportCoreInspection.Character {
+    private fun decodeChatBarPng(payload: String, png: ByteArray): SharedImportCoreInspection.Character {
         val rawJson = if (payload.trimStart().startsWith("{")) {
             payload
         } else {
@@ -170,7 +170,8 @@ class SharedImportClassifierCore<M>(
         val packageData = json.decodeFromString(CharacterCardPackage.serializer(), rawJson)
             .withoutEmptyCharacterPlaceholders()
             .also(CharacterCardPackage::validateForImport)
-        return SharedImportCoreInspection.Character(CharacterCardImportRequest(packageData))
+        return SharedImportCoreInspection.Character(CharacterCardImportRequest(
+            OriginalCharacterCover.attachToImportedPackage(packageData, png).also(CharacterCardPackage::validateForImport)))
     }
 
     private fun decodeCharacterJson(text: String): SharedImportCoreInspection.Character {
@@ -198,8 +199,8 @@ class SharedImportClassifierCore<M>(
             "PNG 中的 Chara 数据不是受支持的 SillyTavern 角色卡"
         }
         val packageData = sillyTavernMapper.toCharacterCardPackage(
-            SillyTavernCardParser.parseJson(rawJson, pngBytes),
-        ).also(CharacterCardPackage::validateForImport)
+            SillyTavernCardParser.parseJson(rawJson, OriginalCharacterCover.imageOnlyPng(pngBytes)),
+        ).let { OriginalCharacterCover.attachToImportedPackage(it, pngBytes) }.also(CharacterCardPackage::validateForImport)
         return SharedImportCoreInspection.Character(CharacterCardImportRequest(packageData))
     }
 

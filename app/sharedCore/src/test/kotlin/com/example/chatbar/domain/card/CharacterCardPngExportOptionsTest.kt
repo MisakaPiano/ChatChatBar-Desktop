@@ -34,7 +34,7 @@ class CharacterCardPngExportOptionsTest {
         val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
         val packageData = CharacterCardPackage(card = PackagedCharacterCard(name = "Codec"))
         val png = Base64.getDecoder().decode(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
         )
 
         val attached = CharacterCardPngPackageCodec.attach(png, packageData, json)

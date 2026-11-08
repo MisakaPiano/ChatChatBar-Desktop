@@ -770,6 +770,7 @@ class DesktopAppContainer internal constructor(
         afterTypedCommit = afterTypedCommit,
         readFormatDurable = readFormatDurable,
         readWorldDurable = readWorldDurable,
+        guardCharacterOutput = characterResourceStore::requireDifferentCoverOutput,
         presetSource = presetSource,
     )
 

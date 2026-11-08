@@ -463,6 +463,6 @@ class DesktopTypedTransferControllerTest {
     private fun stV1(name: String) = """{"name":"$name","description":"desc","first_mes":"hello"}"""
     private fun stV2(name: String) = """{"spec":"chara_card_v2","data":{"name":"$name","description":"desc","first_mes":"hello"}}"""
     private fun minimalPng(): ByteArray = Base64.getDecoder().decode(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
     )
 }

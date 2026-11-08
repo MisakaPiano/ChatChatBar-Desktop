@@ -28,6 +28,10 @@ interface CharacterResourceStore {
         resourceId: String,
     ): String
 
+    /** Platform adapter materializes a separate immutable cover, never overwriting an avatar. */
+    fun materializeCoverImage(image: PackagedImage, timestamp: Long, resourceId: String): String =
+        materializeImage(image, timestamp, resourceId)
+
     /** 删除 owned reference；实现不得把任意外部路径当成 owned resource。 */
     fun deleteOwned(reference: String)
 }
