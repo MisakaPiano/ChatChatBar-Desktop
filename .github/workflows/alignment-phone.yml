@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 385f311d7c66fed9fb8c00455b46edb9f0e674c1
+  SOURCE_SHA: 74ec3fe4f4ef64024c9d175bcf0bcde27adcfdeb
   TEST_APPLICATION_ID: com.example.chatbar.alignment.a1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 385f311d7c66fed9fb8c00455b46edb9f0e674c1
+          ref: 74ec3fe4f4ef64024c9d175bcf0bcde27adcfdeb
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "e848c9c4c7336182208b2c042a0ab1a077dd3a96"
+          test "$(git rev-parse HEAD^{tree})" = "e16c5623dc178837e5d44a38fcd6bafa3aab3120"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
       - uses: actions/setup-java@v4
@@ -97,7 +97,8 @@ jobs:
                               attempts.append({'attempt':attempt+1,'exitCode':result.returncode,'httpStatus':status,'bytes':size})
                               if result.returncode == 0: break
                               print('Compiler segment failed', start, attempts[-1], result.stderr.strip())
-                              if status not in ('000','408','429','500','502','503','504'): break
+                              if status in ('401','403'): break
+                              if result.returncode not in (6,7,18,28,52,55,56,92) and status not in ('000','408','429','500','502','503','504'): break
                           proof['parts'].append({'start':start,'end':end,'exitCode':result.returncode,'bytes':size,'attempts':attempts})
                           if result.returncode: raise RuntimeError('Official compiler segment failed after bounded transient retries before Gradle')
                           if start == 0 and size == total:
