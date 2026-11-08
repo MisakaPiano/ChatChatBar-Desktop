@@ -9,7 +9,7 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 ## Desktop entrypoints
 
-The NSIS cloud candidate app-image command sets Compose's supported `-Pcompose.desktop.application.downloadWix=false`. Compose1.10.3 otherwise downloads WiX for Windows app-image tasks; this route does not build MSI. Keep the official NSIS compiler pins and dormant MSI behavior unchanged; see `tools/desktop/nsis/README.md`.
+The NSIS cloud candidate quotes Compose's `-Pcompose.desktop.application.downloadWix=false`. Compose1.10.3 still unconditionally reads `wixToolsetDir` for Windows app-image environments, so `prepareDesktopAppImageEnvironment` supplies a verified empty owned PATH directory only for AppImage + explicit no-download + no WIX_PATH. MSI tasks keep their toolset behavior. See `tools/desktop/nsis/README.md`.
 
 `validate_signed_candidate.py` is cloud-only exact-final-byte validation with the frozen public1233 updater. Its transport dependency is loaded from the same original commit into a cloud-owned snapshot, checked against the origin's Git blob and bound to the actual frozen client's imports; current candidate transport may evolve and is recorded separately. A `signedUpdateOnly:true` reused-artifact request carries only public signed role bytes, checks unchanged bootstrap/cache revision/discovery/full download/second verification and never launches installers. The frozen1233 prior remains revision15; the requested candidate revision must be an actual integer greater than prior and match the authenticated cache, rather than a hardcoded16. Its local metadata fetcher is separate from anonymous public discovery. AUTH parent wait is not all-descendant-exit proof.
 

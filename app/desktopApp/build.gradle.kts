@@ -71,7 +71,25 @@ tasks.configureEach {
 }
 // JDK17 generates recursive installation-directory cleanup and removes old products before
 // the rollback transaction. Correct only the generated unsigned MSI; its CAB payload is unchanged.
+// Compose1.10.3 reads wixToolsetDir for every Windows jpackage environment, even --type app-image.
+// With downloads explicitly disabled, that non-MSI task only needs an empty, owned PATH entry.
+val desktopAppImageWithoutWix = System.getProperty("os.name").startsWith("Windows", ignoreCase = true) &&
+    providers.gradleProperty("compose.desktop.application.downloadWix").orNull == "false" && System.getenv("WIX_PATH") == null
+val desktopAppImageEnvironmentDirectory = layout.buildDirectory.dir("compose/app-image-empty-path")
+val prepareDesktopAppImageEnvironment by tasks.registering {
+    outputs.dir(desktopAppImageEnvironmentDirectory)
+    outputs.upToDateWhen { false }
+    doLast {
+        val directory = desktopAppImageEnvironmentDirectory.get().asFile.toPath()
+        Files.createDirectories(directory)
+        Files.list(directory).use { check(it.findAny().isEmpty) { "DESKTOP_APP_IMAGE_ENVIRONMENT_NOT_EMPTY" } }
+    }
+}
 tasks.withType<AbstractJPackageTask>().configureEach {
+    if (targetFormat == TargetFormat.AppImage && desktopAppImageWithoutWix) {
+        dependsOn(prepareDesktopAppImageEnvironment)
+        wixToolsetDir.set(desktopAppImageEnvironmentDirectory)
+    }
     if (targetFormat == TargetFormat.Msi) {
         val safetyTool = rootProject.projectDir.parentFile.resolve("tools/desktop/windows/msi_safety.py")
         // WiX3 file APIs reject MAX_PATH-length generated inputs. Keep this task-owned
