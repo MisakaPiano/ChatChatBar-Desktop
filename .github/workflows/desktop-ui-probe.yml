@@ -33,6 +33,27 @@ jobs:
           New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
           $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
           @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Verify and warm the exact compiler artifact after original Gradle HTTP 504
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $artifactName = 'kotlin-compiler-embeddable-2.3.20.jar'
+          $artifactBase = 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/'
+          $warmRoot = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-ui-probe/compiler-primary') -Force
+          foreach ($suffix in @('.sha256', '.sha1', '')) {
+            curl.exe --fail --location --retry 1 --retry-delay 3 --connect-timeout 20 --max-time 90 --silent --show-error --output (Join-Path $warmRoot.FullName ($artifactName + $suffix)) ($artifactBase + $artifactName + $suffix)
+            if ($LASTEXITCODE -ne 0) { throw 'PRIMARY_COMPILER_DOWNLOAD_FAILED' }
+          }
+          $artifactPath = Join-Path $warmRoot.FullName $artifactName
+          $expected256 = (Get-Content -LiteralPath ($artifactPath + '.sha256') -Raw).Trim().ToLowerInvariant()
+          $expected1 = (Get-Content -LiteralPath ($artifactPath + '.sha1') -Raw).Trim().ToLowerInvariant()
+          if ($expected256 -notmatch '^[a-f0-9]{64}$' -or $expected1 -notmatch '^[a-f0-9]{40}$') { throw 'PRIMARY_COMPILER_DIGEST_INVALID' }
+          if ((Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected256 -or (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA1).Hash.ToLowerInvariant() -ne $expected1) { throw 'PRIMARY_COMPILER_DIGEST_MISMATCH' }
+          $gradleRoot = if ($env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME } else { Join-Path $env:USERPROFILE '.gradle' }
+          $cacheRoot = New-Item -ItemType Directory -Path (Join-Path $gradleRoot ('caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/' + $expected1)) -Force
+          Copy-Item -LiteralPath $artifactPath -Destination (Join-Path $cacheRoot.FullName $artifactName)
+          [ordered]@{ primaryUrl=($artifactBase + $artifactName); bytes=(Get-Item -LiteralPath $artifactPath).Length; sha256=$expected256; sha1=$expected1; originalGradleFailure='HTTP 504 before compilation'; repositoryOrSourceChanged=$false } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $warmRoot.Parent.FullName 'compiler-primary-proof.json') -Encoding utf8
+          Remove-Item -LiteralPath $artifactPath, ($artifactPath + '.sha256'), ($artifactPath + '.sha1')
       - name: Record exact source and run bounded synthetic regressions
         shell: pwsh
         working-directory: app
@@ -46,13 +67,23 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopStudioGuidanceImagesTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioImportedAnnotationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioUseWindowTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioWorkspaceTest' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioPresentationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioTextHistoryTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioDraftHistoryTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioFullPromptExchangeTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioPresetControllerTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: studio-guidance-ui-r04-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
