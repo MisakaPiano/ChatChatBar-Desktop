@@ -53,6 +53,12 @@ class DesktopRetainedAiModelChoicesTest {
     }
     private fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true ||
         config.getOrNull(SemanticsProperties.ContentDescription) == listOf(value)
+    private fun ImageComposeScene.captureReview(name: String) {
+        System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+            val path = java.nio.file.Path.of(directory).resolve("retained-ai-$name.png"); Files.createDirectories(path.parent)
+            render(System.nanoTime()).use { it.encodeToData()!!.use { data -> Files.write(path, data.bytes) } }
+        }
+    }
 
     @Test fun `character overlay updates same-id capabilities defaults and deleted choices while keeping candidate and source inputs`() = runBlocking(edt) {
         val f = Fixture()
@@ -80,6 +86,7 @@ class DesktopRetainedAiModelChoicesTest {
                 assertTrue(scene.nodes().any { it.label(DesktopUiStrings(DesktopUiLanguage.ZH_CN)(DesktopUiText.REFERENCE_IMAGE_DIRECT)) })
                 f.app.settingsRepository.updateAppSettings { it.copy(defaultModelId = "second", characterAutoFillResearchSourceMode = CharacterResearchSourceMode.MANUAL_URLS) }
                 scene.until { ai.state.value.defaultModel.contains("Second") }
+                scene.captureReview("character")
                 f.app.modelRepository.deleteModel("first")
                 scene.until { ai.state.value.referenceImageRoute == DesktopReferenceImageRoute.NO_MODEL }
                 assertEquals("first", ai.state.value.modelId)
@@ -114,6 +121,7 @@ class DesktopRetainedAiModelChoicesTest {
                 scene.until { ai.state.value.models.any { it.name.contains("Renamed world model") } }
                 f.app.settingsRepository.updateAppSettings { it.copy(defaultModelId = "second", worldBookAiResearchSourceMode = CharacterResearchSourceMode.MANUAL_URLS) }
                 scene.until { ai.state.value.defaultModel.contains("Second") }
+                scene.captureReview("worldbook")
                 f.app.modelRepository.deleteModel("first")
                 scene.until { ai.state.value.models.none { it.id == "first" } }
                 val after = ai.state.value
@@ -146,6 +154,7 @@ class DesktopRetainedAiModelChoicesTest {
                 scene.until { ai.state.value.models.any { it.name.contains("Renamed format model") } }
                 f.app.settingsRepository.updateAppSettings { it.copy(defaultModelId = "second") }
                 scene.until { ai.state.value.defaultModelName.contains("Second") }
+                scene.captureReview("format")
                 f.app.modelRepository.deleteModel("first")
                 scene.until { ai.state.value.models.none { it.id == "first" } }
                 val after = ai.state.value
