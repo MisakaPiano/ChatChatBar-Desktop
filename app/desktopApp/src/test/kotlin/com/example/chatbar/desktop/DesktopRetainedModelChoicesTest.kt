@@ -2,7 +2,6 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ModelConfig
-import com.example.chatbar.data.local.entity.PresetModelCatalog
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.model.*
@@ -10,6 +9,7 @@ import java.io.IOException
 import java.nio.file.Files
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.Json
 import kotlin.test.*
 
 class DesktopRetainedModelChoicesTest {
@@ -21,10 +21,11 @@ class DesktopRetainedModelChoicesTest {
         val models = repository()
         val settings = SettingsRepository(storage)
         val formats = FormatCardRepository(storage)
-        val presets = object : PresetModelCatalogSource {
-            override val catalog = PresetModelCatalog(baseUrl = "https://fixture.invalid/v1", chatModels = emptyList())
-            override val modelCatalogVersion = 1
-        }
+        val assets = mapOf(
+            "presets/manifest.json" to """{"entries":[{"type":"MODEL_CATALOG","version":1,"file":"inline-models.json"}]}""",
+            "inline-models.json" to """{"baseUrl":"https://fixture.invalid/v1","chatModels":[]}""",
+        )
+        val presets = DesktopPresetModelCatalogSource({ path -> assets.getValue(path).toByteArray() }, Json { ignoreUnknownKeys = true })
         fun controller(models: ModelRepository = this.models) = DesktopModelSettingsController(models, settings, formats,
             EffectiveModelResolver(models, settings, presets), ModelDiscoveryService(), presets)
         val source = ModelConfig("first", "First", "https://fixture.invalid/v1", "synthetic-secret-not-ui", "fixture-model", createdAt = 1)

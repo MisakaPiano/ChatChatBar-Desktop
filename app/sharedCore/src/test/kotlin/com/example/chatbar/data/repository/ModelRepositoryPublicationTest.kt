@@ -15,6 +15,11 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModelRepositoryPublicationTest {
+    private fun assertFailureOrigin(original: Throwable, evidence: Throwable) {
+        // Coroutine stack-trace recovery may copy an exception across an IO boundary.
+        // Keep the exact original identity assertion on the preserved cause chain.
+        assertTrue(generateSequence(evidence) { it.cause }.take(8).any { it === original })
+    }
     private class ModelPolicy : ModelCredentialPersistencePolicy by IdentityModelCredentialPersistencePolicy {
         var before: suspend (ModelConfig) -> Unit = {}
         var after: suspend (ModelConfig) -> Unit = {}
@@ -94,7 +99,7 @@ class ModelRepositoryPublicationTest {
     @Test fun `observed commit callback failure still publishes committed data and preserves failure`() = runTest {
         fixture { repo, _, _ ->
             val failure = IOException("synthetic callback failure")
-            assertSame(failure, assertFailsWith<IOException> {
+            assertFailureOrigin(failure, assertFailsWith<IOException> {
                 repo.saveModelObserved(model("Observed")) { throw failure }
             })
             assertEquals("Observed", repo.models.first().single().displayName)
@@ -162,8 +167,11 @@ class ModelRepositoryPublicationTest {
             val operationFailure = IOException("synthetic operation failure")
             val publicationFailure = IOException("synthetic hydration failure")
             policy.before = { policy.hydrationFailure = publicationFailure; throw operationFailure }
-            assertSame(operationFailure, assertFailsWith<IOException> { repo.saveModel(model("Failed")) })
-            assertTrue(operationFailure.suppressed.any { it === publicationFailure })
+            val caught = assertFailsWith<IOException> { repo.saveModel(model("Failed")) }
+            assertFailureOrigin(operationFailure, caught)
+            val suppressed = generateSequence<Throwable>(caught) { it.cause }.take(8).flatMap { it.suppressed.asSequence() }.toList()
+            assertEquals(1, suppressed.size)
+            assertFailureOrigin(publicationFailure, suppressed.single())
             policy.hydrationFailure = null
             assertEquals("Original", repo.getModel("model/id")?.displayName)
             assertEquals("Original", repo.models.first().single().displayName)

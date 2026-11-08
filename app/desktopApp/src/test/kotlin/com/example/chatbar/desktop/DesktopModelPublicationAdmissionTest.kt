@@ -75,9 +75,10 @@ class DesktopModelPublicationAdmissionTest {
                 DesktopModelCredentialPersistencePolicy(store))
             repo.saveModel(model())
             val failure = IOException("synthetic observed boundary failure")
-            assertSame(failure, assertFailsWith<IOException> {
+            val caught = assertFailsWith<IOException> {
                 repo.saveModelObserved(model("Committed", "fake-replaced")) { throw failure }
-            })
+            }
+            assertTrue(generateSequence<Throwable>(caught) { it.cause }.take(8).any { it === failure })
             assertEquals("fake-original", store.load(DesktopCredentialKey.ModelApiKey("model/id")))
             val published = repo.models.first().single()
             assertEquals("Committed", published.displayName)
