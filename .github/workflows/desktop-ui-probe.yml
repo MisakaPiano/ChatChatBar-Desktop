@@ -33,6 +33,43 @@ jobs:
           New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
           $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
           @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Prepare supported temporary cloud display
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-native-probe') -ErrorAction Stop | Out-Null
+          ./tools/windows/Set-CloudNativeProbeDisplay.ps1
+      - name: Optionally warm the exact known compiler through the second official Central endpoint
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $artifactName = 'kotlin-compiler-embeddable-2.3.20.jar'
+          $expected256 = '976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
+          $expected1 = '002fac4210c52c27b244305d60b0906e831f49be'
+          $gradleRoot = if ($env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME } else { Join-Path $env:USERPROFILE '.gradle' }
+          $cacheRoot = Join-Path $gradleRoot ('caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/' + $expected1)
+          $cacheFile = Join-Path $cacheRoot $artifactName
+          $available = $false; $curlExit = $null
+          if (Test-Path -LiteralPath $cacheFile) {
+            if ((Get-FileHash -LiteralPath $cacheFile -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected256) { throw 'COMPILER_CACHE_DIGEST_MISMATCH' }
+            $available = $true
+          } else {
+            $candidate = Join-Path $env:RUNNER_TEMP 'ccb-exact-compiler-candidate.jar'
+            $url = 'https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/' + $artifactName + '?ccbRun=' + $env:GITHUB_RUN_ID
+            curl.exe --fail --location --retry 1 --retry-delay 3 --connect-timeout 20 --max-time 90 --silent --show-error --output $candidate $url
+            $curlExit = $LASTEXITCODE
+            if ($curlExit -eq 0) {
+              if ((Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected256 -or (Get-FileHash -LiteralPath $candidate -Algorithm SHA1).Hash.ToLowerInvariant() -ne $expected1) { throw 'COMPILER_SECOND_OFFICIAL_ENDPOINT_DIGEST_MISMATCH' }
+              New-Item -ItemType Directory -Path $cacheRoot -Force | Out-Null
+              Copy-Item -LiteralPath $candidate -Destination $cacheFile
+              $available = $true
+            } else {
+              Write-Warning 'Optional verified cache warming failed; its failure is recorded. The unchanged Gradle resolution and actual tests must still succeed.'
+            }
+            if (Test-Path -LiteralPath $candidate) { Remove-Item -LiteralPath $candidate }
+          }
+          $evidence = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-ui-probe') -Force
+          [ordered]@{ available=$available; curlExit=$curlExit; sourceHost='repo1.maven.org'; sha256=$expected256; sha1=$expected1; originalPrimaryFailure='Maven compiler HTTP504'; optionalOnly=$true; applicationRepositoryVersionOrTestsChanged=$false } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence.FullName 'compiler-cache-warm.json') -Encoding utf8
+          $global:LASTEXITCODE = 0
       - name: Record exact source and run bounded synthetic regressions
         shell: pwsh
         working-directory: app
@@ -45,18 +82,42 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=false --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.desktop.DesktopStudioModelConfigurationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioCredentialRecoveryTest' `
+            --tests 'com.example.chatbar.desktop.DesktopDesignAuthenticationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest' `
+            --tests 'com.example.chatbar.desktop.DesktopModelSettingsControllerTest' `
+            --tests 'com.example.chatbar.desktop.DesktopModelDiagnosticsTest' `
+            --tests 'com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioCardModelImportTest' `
+            --tests 'com.example.chatbar.desktop.DesktopModelEditorLifecycleTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioPresentationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopChatCompactStatusAndVersionsTest' `
+            --tests 'com.example.chatbar.desktop.DesktopChatBubbleParityTest' `
+            --tests 'com.example.chatbar.desktop.DesktopMessageActionsUxTest' `
+            --tests 'com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopChatVoicePresentationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopUiLanguageControllerTest' `
+            --tests 'com.example.chatbar.desktop.DesktopChatContextUxTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Restore temporary runner display
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath (Join-Path $env:RUNNER_TEMP 'ccb-native-probe/display-original.json')) {
+            ./tools/windows/Set-CloudNativeProbeDisplay.ps1 -Restore
+          }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: model-config-chat-native-r05-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
             app/desktopApp/build/test-results/test/
             app/desktopApp/build/reports/tests/test/
             ${{ runner.temp }}/ccb-ui-probe/
+            ${{ runner.temp }}/ccb-native-probe/
           if-no-files-found: error
