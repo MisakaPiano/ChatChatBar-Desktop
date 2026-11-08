@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 74ec3fe4f4ef64024c9d175bcf0bcde27adcfdeb
+  SOURCE_SHA: b8fb9679d71071afd6ad944b19d9ef0e4c67d7c8
   TEST_APPLICATION_ID: com.example.chatbar.alignment.a1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 74ec3fe4f4ef64024c9d175bcf0bcde27adcfdeb
+          ref: b8fb9679d71071afd6ad944b19d9ef0e4c67d7c8
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "e16c5623dc178837e5d44a38fcd6bafa3aab3120"
+          test "$(git rev-parse HEAD^{tree})" = "48c884f6cc31b6c4e4c672aa5f382e43f2af12d3"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
       - uses: actions/setup-java@v4
@@ -214,7 +214,7 @@ jobs:
                                     'failureText': ''.join(c.find('failure').itertext()) if c.find('failure') is not None else ''})
               return cases
           green = results('fixed')
-          assert len(green) == 20, green
+          assert len(green) == 21, green
           assert not any(c['failure'] or c['error'] or c['skipped'] for c in green), green
           red = results('unfixed-control')
           assert len(red) == 1 and red[0]['name'] == 'discardRestoresEnabledBeforeSameEditorReopens', red
@@ -225,7 +225,7 @@ jobs:
           summary = {'fixedDeviceTests':green, 'fixedUnitTests':unit,
                      'unfixedControl':red, 'unfixedControlExpectedAssertionFailureConfirmed':True,
                      'controlScope':'Same fixed source and synthetic fixture; only WorldBookEditViewModel replaced with exact original d200 source; restored before final APK build',
-                     'scope':'20 scoped Android cases: worldbook/card draft, row/gallery UI, media transfer and actual ViewModel rebind; synthetic-only, no paid requests or full navigation end-to-end'}
+                     'scope':'21 scoped Android cases: worldbook/card draft, row/gallery UI, media transfer and actual ViewModel rebind; synthetic-only, no paid requests or full navigation end-to-end'}
           (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
           print(json.dumps(summary,ensure_ascii=False,indent=2))
           PY
