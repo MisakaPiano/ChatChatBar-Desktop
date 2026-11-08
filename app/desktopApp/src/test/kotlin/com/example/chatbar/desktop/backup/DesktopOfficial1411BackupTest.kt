@@ -24,21 +24,22 @@ class DesktopOfficial1411BackupTest {
         "entities/chat_messages/s_m.json" to message.toByteArray(),
         "entities/save_slots/slot.json" to """{"schemaVersion":7,"id":"slot","sessionId":"s","name":"Saved","messages":[$message],"createdAt":1}""".toByteArray())
 
-    @Test fun `plain and encrypted code90 retain disabled settings and nested nullable candidate modes through staging writer and reread`() = runBlocking {
-        for (encrypted in listOf(false, true)) {
-            val bytes = CensusWireFixtures.bytes(version = 2, code = 90, files = files, prefs = "{}", encrypted = encrypted, scope = scope)
-            CensusWireFixtures.input(bytes, "official1411-$encrypted") { path ->
+    @Test fun `plain and encrypted official1410 and1411 retain disabled settings and nested nullable candidate modes through staging writer and reread`() = runBlocking {
+        for (code in 89..90) for (encrypted in listOf(false, true)) for (disabled in listOf(false, true)) {
+            val selected = files + ("entities/app_settings.json" to """{"disableNarrativeModes":$disabled}""".toByteArray())
+            val bytes = CensusWireFixtures.bytes(version = 2, code = code, files = selected, prefs = "{}", encrypted = encrypted, scope = scope)
+            CensusWireFixtures.input(bytes, "official1410-and1411-$code-$encrypted-$disabled") { path ->
                 fun password() = if (encrypted) CensusWireFixtures.PASSWORD.toCharArray() else null
                 val before = Files.readAllBytes(path)
                 val sink = Sink()
-                assertEquals(90, DesktopFullBackupSource.verify(path, password(), sink).manifest.appVersionCode)
-                assertEquals(90, DesktopBackupReadOnlyInspector().inspect(path, password()).appVersionCode)
+                assertEquals(code, DesktopFullBackupSource.verify(path, password(), sink).manifest.appVersionCode)
+                assertEquals(code, DesktopBackupReadOnlyInspector().inspect(path, password()).appVersionCode)
                 DesktopFullBackupStaging.prepare(path, password(), Files.createDirectory(path.parent.resolve("stage"))).use { staged ->
                     val output = path.parent.resolve("roundtrip.cbbackup")
                     DesktopFullBackupWriter.export(staged.files, output, null)
                     val reread = Sink()
                     assertEquals(90, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
-                    assertEquals(JsonPrimitive(true), reread.entities.getValue("entities/app_settings.json")["disableNarrativeModes"])
+                    assertEquals(JsonPrimitive(disabled), reread.entities.getValue("entities/app_settings.json")["disableNarrativeModes"])
                     for (name in listOf("entities/chat_messages/s_m.json", "entities/save_slots/slot.json"))
                         assertEquals(sink.entities.getValue(name), reread.entities.getValue(name))
                 }
@@ -47,14 +48,14 @@ class DesktopOfficial1411BackupTest {
         }
     }
 
-    @Test fun `older wire versions reject new disable flag and explicit null modes including nested slots while code90 stays strict`() {
+    @Test fun `pre89 wire versions reject new disable flag and explicit null modes including nested slots while89 and90 stay strict`() {
         val cases = listOf("app_settings" to """{"disableNarrativeModes":false}""",
             "chat_messages" to message,
             "save_slots" to files.getValue("entities/save_slots/slot.json").toString(Charsets.UTF_8))
         for ((type, text) in cases) {
             val value = backupJson.parseToJsonElement(text).jsonObject
-            DesktopOfficialBackupEntitySchema.validate(type, value, 90)
-            for (code in 84..89) assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, code) }
+            for (code in 89..90) DesktopOfficialBackupEntitySchema.validate(type, value, code)
+            for (code in 84..88) assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, code) }
             assertFails { DesktopOfficialBackupEntitySchema.validate(type, JsonObject(value + ("unknownField" to JsonPrimitive(true))), 90) }
             assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 91) }
         }
@@ -84,12 +85,13 @@ class DesktopOfficial1411BackupTest {
     }
 
     @Test fun `authenticated older manifests cannot smuggle new modes even when entity entries precede metadata`() = runBlocking {
-        for (code in 88..89) CensusWireFixtures.input(CensusWireFixtures.bytes(version = 2, code = code,
-            files = files, prefs = "{}", scope = scope), "pre1411-$code") { path ->
+        for (encrypted in listOf(false, true)) CensusWireFixtures.input(CensusWireFixtures.bytes(version = 2, code = 88,
+            files = files, prefs = "{}", scope = scope, encrypted = encrypted), "pre1410-$encrypted") { path ->
+            fun password() = if (encrypted) CensusWireFixtures.PASSWORD.toCharArray() else null
             val before = Files.readAllBytes(path)
             assertEquals("ENTITY_SCHEMA", assertFailsWith<DesktopFullBackupSource.Refusal> {
-                DesktopFullBackupSource.verify(path, null, Sink()) }.stage)
-            assertFails { DesktopBackupReadOnlyInspector().inspect(path, null) }
+                DesktopFullBackupSource.verify(path, password(), Sink()) }.stage)
+            assertFails { DesktopBackupReadOnlyInspector().inspect(path, password()) }
             assertContentEquals(before, Files.readAllBytes(path))
         }
     }
