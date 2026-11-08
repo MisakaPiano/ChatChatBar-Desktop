@@ -33,6 +33,27 @@ jobs:
           New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
           $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
           @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Verify and warm the exact compiler artifact after original Gradle HTTP 504
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $artifactName = 'kotlin-compiler-embeddable-2.3.20.jar'
+          $artifactBase = 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/'
+          $warmRoot = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-ui-probe/compiler-primary') -Force
+          foreach ($suffix in @('.sha1', '')) {
+            curl.exe --fail --location --retry 1 --retry-delay 3 --connect-timeout 20 --max-time 90 --header "Cache-Control: no-cache" --silent --show-error --output (Join-Path $warmRoot.FullName ($artifactName + $suffix)) ($artifactBase + $artifactName + $suffix + '?ccbArtifact=002fac4210c52c27b244305d60b0906e831f49be')
+            if ($LASTEXITCODE -ne 0) { throw 'PRIMARY_COMPILER_DOWNLOAD_FAILED' }
+          }
+          $artifactPath = Join-Path $warmRoot.FullName $artifactName
+          $expected1 = (Get-Content -LiteralPath ($artifactPath + '.sha1') -Raw).Trim().ToLowerInvariant()
+          if ($expected1 -ne '002fac4210c52c27b244305d60b0906e831f49be') { throw 'PRIMARY_COMPILER_DIGEST_INVALID' }
+          if ((Get-FileHash -LiteralPath $artifactPath -Algorithm SHA1).Hash.ToLowerInvariant() -ne $expected1) { throw 'PRIMARY_COMPILER_DIGEST_MISMATCH' }
+          $actual256 = (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $gradleRoot = if ($env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME } else { Join-Path $env:USERPROFILE '.gradle' }
+          $cacheRoot = New-Item -ItemType Directory -Path (Join-Path $gradleRoot ('caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/' + $expected1)) -Force
+          Copy-Item -LiteralPath $artifactPath -Destination (Join-Path $cacheRoot.FullName $artifactName)
+          [ordered]@{ primaryUrl=($artifactBase + $artifactName); bytes=(Get-Item -LiteralPath $artifactPath).Length; sha256=$actual256; sha1=$expected1; digestSource='Official Maven SHA1 pinned independently; SHA256 records the fetched bytes'; originalGradleFailure='HTTP 504 before compilation'; repositoryOrSourceChanged=$false; cacheRevalidationRequested=$true } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $warmRoot.Parent.FullName 'compiler-primary-proof.json') -Encoding utf8
+          Remove-Item -LiteralPath $artifactPath, ($artifactPath + '.sha1')
       - name: Record exact source and run bounded synthetic regressions
         shell: pwsh
         working-directory: app
@@ -45,14 +66,29 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
+          .\gradlew.bat :sharedCore:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.domain.model.EffectiveModelResolverTest' `
+            --tests 'com.example.chatbar.domain.model.ModelConfigurationTest' `
+            --tests 'com.example.chatbar.data.repository.ModelRepositoryFoundationTest' `
+            --tests 'com.example.chatbar.data.repository.ModelRepositoryMigrationTest'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopStudioModelConfigurationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioCredentialRecoveryTest' `
+            --tests 'com.example.chatbar.desktop.DesktopDesignAuthenticationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest' `
+            --tests 'com.example.chatbar.desktop.DesktopModelSettingsControllerTest' `
+            --tests 'com.example.chatbar.desktop.DesktopModelDiagnosticsTest' `
+            --tests 'com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioCardModelImportTest' `
+            --tests 'com.example.chatbar.desktop.DesktopModelEditorLifecycleTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioPresentationTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: live-model-config-r01-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
