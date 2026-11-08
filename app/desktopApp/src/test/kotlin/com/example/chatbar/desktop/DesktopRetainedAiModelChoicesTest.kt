@@ -106,6 +106,7 @@ class DesktopRetainedAiModelChoicesTest {
             val book = WorldBook("book", "Fixture", entries = listOf(WorldBookEntry("target", "Blank", listOf("key"), "")))
             f.app.worldBookRepository.save(book)
             val editor = f.app.worldBookEditorController; editor.openExisting("book")
+            val savedBook = editor.state.value.book
             val ai = DesktopWorldBookAiController(editor, f.app.settingsRepository, f.app.effectiveModelResolver,
                 f.app.taskRuntime, f.app.dataOperationCoordinator, stream = { _, _, _, model, _ ->
                     f.calls += model.id
@@ -128,7 +129,7 @@ class DesktopRetainedAiModelChoicesTest {
                 assertEquals("first", after.modelId); assertEquals(before.request, after.request)
                 assertEquals(before.plans, after.plans); assertEquals(before.selectedIds, after.selectedIds)
                 assertEquals(before.targetIds, after.targetIds); assertEquals(before.sourceMode, after.sourceMode)
-                assertEquals(before.outputs, after.outputs); assertEquals(book, editor.state.value.book)
+                assertEquals(before.outputs, after.outputs); assertEquals(savedBook, editor.state.value.book)
                 assertEquals(listOf("first"), f.calls)
                 assertFalse(after.toString().contains("synthetic-first-key"))
             } finally { scene.close() }
