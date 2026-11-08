@@ -89,7 +89,7 @@ object SillyTavernCardMapper {
                     data = Base64.getEncoder().encodeToString(OriginalCharacterCover.imageOnlyPng(st.pngBytes))
                 ), "card-avatar" to PackagedImage(
                     fileName = "card.png",
-                    data = Base64.getEncoder().encodeToString(st.pngBytes)
+                    data = Base64.getEncoder().encodeToString(OriginalCharacterCover.imageOnlyPng(st.pngBytes))
                 ))
             } else emptyMap(),
             worldBooks = listOfNotNull(characterBook)

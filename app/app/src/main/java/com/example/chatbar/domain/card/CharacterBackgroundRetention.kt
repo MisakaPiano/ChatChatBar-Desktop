@@ -12,12 +12,12 @@ object CharacterBackgroundRetention {
         cards: List<CharacterCard>, sessions: List<ChatSession>, drafts: List<EditorDraft>,
         slots: List<SaveSlotSummary>
     ): List<String> = buildList {
-        cards.forEach { card -> addAll(card.chatBackgroundImages); card.chatBackground?.let(::add) }
+        cards.forEach { card -> addAll(card.chatBackgroundImages); card.chatBackground?.let(::add); card.coverImage?.let(::add) }
         sessions.mapNotNullTo(this) { it.chatBackground }
         slots.mapNotNullTo(this) { it.chatBackground }
         drafts.forEach { draft ->
             addAll(draft.draftAssetPaths)
-            draft.characterPayload?.let { card -> addAll(card.chatBackgroundImages); card.chatBackground?.let(::add) }
+            draft.characterPayload?.let { card -> addAll(card.chatBackgroundImages); card.chatBackground?.let(::add); card.coverImage?.let(::add) }
         }
     }.filter(String::isNotBlank).distinct()
 

@@ -1450,6 +1450,7 @@ class CharacterEditViewModel(
             return
         }
         avatar = _coverImageState.value.avatarPath ?: path
+        coverImage = path
         setDefaultChatBackground(path)
         _coverImageState.value = CharacterCoverImageUiState()
     }

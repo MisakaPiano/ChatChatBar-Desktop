@@ -110,6 +110,41 @@ class OriginalCharacterCoverTransferTest {
         } finally { assets.deleteDraft(session) }
     }
 
+    @Test fun usingExistingAvatarCopiesItToDedicatedCoverStorage() = runBlocking<Unit> {
+        val source = localImage(Color.BLUE)
+        val original = source.readBytes()
+        val assets = EditorDraftAssetService(app)
+        val card = assets.materializeCharacterAssets(CharacterCard.create("synthetic").copy(
+            avatar = source.absolutePath, coverImage = source.absolutePath, chatBackground = source.absolutePath))
+        val cover = File(requireNotNull(card.coverImage)).also { files += it }
+        assertNotEquals(source.absolutePath, cover.absolutePath)
+        assertEquals("character-covers", cover.parentFile!!.name)
+        assertArrayEquals(original, source.readBytes())
+        assertArrayEquals(original, cover.readBytes())
+        assertEquals(source.absolutePath, card.avatar)
+        assertEquals(source.absolutePath, card.chatBackground)
+    }
+
+    @Test fun exportedImageResourcesCannotRetainStaleCharacterPayloads() = runBlocking<Unit> {
+        val pixels = image(Color.BLUE)
+        val original = PngTextChunks.insertTextChunk(pixels, "chara", "synthetic-old-card-text")
+        val source = File(app.cacheDir, "synthetic-old-card-${UUID.randomUUID()}.png").also {
+            it.writeBytes(original); files += it
+        }
+        val card = CharacterCard.create("synthetic-new-card").copy(avatar = source.absolutePath,
+            chatBackground = source.absolutePath, chatBackgroundImages = listOf(source.absolutePath), coverImage = source.absolutePath)
+        app.characterRepository.save(card); cards += card.id
+        val exported = app.characterCardTransferService.exportPng(card.id)
+        val decoded = requireNotNull(app.characterCardTransferService.decodePng(exported))
+        for (resource in decoded.images.values) {
+            val bytes = java.util.Base64.getDecoder().decode(resource.data)
+            assertNull(PngTextChunks.extractTextChunk(bytes, "chara"))
+            assertNull(PngTextChunks.extractTextChunk(bytes, PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
+            assertArrayEquals(pixels, bytes)
+        }
+        assertArrayEquals(original, source.readBytes())
+    }
+
     private suspend fun importLegacy(original: ByteArray): CharacterCard {
         val raw = json.encodeToString(CharacterCardPackage.serializer(),
             CharacterCardPackage(schemaVersion = 9, card = PackagedCharacterCard("合成原封面卡")))

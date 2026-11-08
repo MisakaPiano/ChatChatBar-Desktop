@@ -149,7 +149,7 @@ class CharacterCardTransferService(
             if (resourceId != "cover-original") resourceIdsByPath[path]?.let { return it }
             val file = requireResourceFile(path, label)
             val originalBytes = file.readBytes()
-            val imageBytes = if (resourceId == "cover-original" && PngTextChunks.isPng(originalBytes)) {
+            val imageBytes = if (PngTextChunks.isPng(originalBytes)) {
                 OriginalCharacterCover.imageOnlyPng(originalBytes)
             } else originalBytes
             images[resourceId] = PackagedImage(
@@ -386,7 +386,7 @@ class CharacterCardTransferService(
                 app.assets.open(packaged.data.removePrefix("asset:")).use { input -> file.outputStream().use(input::copyTo) }
             } else {
                 val bytes = Base64.decode(packaged.data, Base64.DEFAULT)
-                file.writeBytes(if (resourceId == coverResourceId && PngTextChunks.isPng(bytes)) {
+                file.writeBytes(if (PngTextChunks.isPng(bytes)) {
                     OriginalCharacterCover.imageOnlyPng(bytes)
                 } else bytes)
             }
