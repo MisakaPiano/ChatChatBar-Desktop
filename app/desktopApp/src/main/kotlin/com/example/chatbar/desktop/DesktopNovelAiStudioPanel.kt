@@ -249,6 +249,18 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
         else importedPreview = path
     }
     fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else previewPath(shownPath) }
+    val imageResultActions: @Composable (Boolean) -> Unit = { allowRecipe ->
+        DesktopStudioResultActions(shownPath != null && intermediate == null, {
+            currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate()
+        }) {
+            if (allowRecipe && intermediate == null && owned != null)
+                history.firstOrNull { entry -> entry.images.any { it.path == owned } }?.let { entry ->
+                    val image = entry.images.first { it.path == owned }
+                    StudioAction("新种子重绘") { reuse(entry, image, NovelAiHistoryApplyMode.NEW_SEED) }
+                    StudioAction("复用 Seed ${image.seed}") { reuse(entry, image, NovelAiHistoryApplyMode.SEED_ONLY) }
+                }
+        }
+    }
     DesktopStudioWorkspace(workspace,
         modifier = Modifier.desktopImageIngress(!busy, { imageError = "图片导入未完成；当前图片保留" }) { input -> imageAction {
         val file = input.paths.firstOrNull() ?: input.raster?.let { bytes ->
@@ -260,9 +272,14 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     } },
         navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
         previewActions = { DesktopStudioPrimaryPreviewActions(shownPath != null && intermediate == null,
-            shownPath != null && intermediate == null, { auxiliary = "历史" }, ::preview,
-            { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() }) },
-        compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, expand, ::preview) },
+            { auxiliary = "历史" }, ::preview) },
+        inlinePreviewActions = {
+            DesktopStudioPreviewActions(shownPath != null, intermediate != null, true) { inlineResetRevision++ }
+        },
+        compact = { expand -> Column {
+            DesktopStudioCompactResult(shownPath, intermediate, expand, ::preview)
+            imageResultActions(false)
+        } },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi) {
                 StudioAccountActions {
@@ -300,12 +317,14 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
         },
         preview = { rail ->
-            if (rail) StudioVerticalFilmstrip(resultPaths, owned, controller.resources::readBytes,
-                onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
-            else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                StudioActions {
-                    DesktopStudioPreviewActions(shownPath != null, intermediate != null, true) { inlineResetRevision++ }
+            if (rail) Column(Modifier.fillMaxSize()) {
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    StudioVerticalFilmstrip(resultPaths, owned, controller.resources::readBytes,
+                        onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
                 }
+                imageResultActions(false)
+            }
+            else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (intermediate != null) DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
                     else if (shownPath != null) DesktopImageZoomSurface(shownPath.toString(),
@@ -318,13 +337,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 }
                 StudioFilmstrip(resultPaths, owned, controller.resources::readBytes,
                     onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
-                if (intermediate == null && owned != null) history.firstOrNull { entry -> entry.images.any { it.path == owned } }?.let { entry ->
-                    val image = entry.images.first { it.path == owned }
-                    StudioActions {
-                        StudioAction("新种子重绘") { reuse(entry, image, NovelAiHistoryApplyMode.NEW_SEED) }
-                        StudioAction("复用 Seed ${image.seed}") { reuse(entry, image, NovelAiHistoryApplyMode.SEED_ONLY) }
-                    }
-                }
+                imageResultActions(true)
             }
         })
     if (showingPreset) DesktopStudioPresetExchange(controller, busy, presetActivation) { showingPreset = false }
@@ -445,11 +458,19 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
 }
 
 @Composable
-internal fun DesktopStudioPrimaryPreviewActions(hasPreview: Boolean, hasSavedImage: Boolean,
-    onHistory: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+internal fun DesktopStudioPrimaryPreviewActions(hasPreview: Boolean,
+    onHistory: () -> Unit, onViewer: () -> Unit) {
     StudioAction("历史", icon = DesktopAppIcons.History, onClick = onHistory)
     StudioAction("预览", enabled = hasPreview, icon = DesktopAppIcons.ExpandComposer, onClick = onViewer)
-    StudioAction("图像操作 / 用作", enabled = hasSavedImage, onClick = onImageActions)
+}
+
+@Composable
+internal fun DesktopStudioResultActions(hasSavedImage: Boolean, onImageActions: () -> Unit,
+    recipeActions: @Composable () -> Unit = {}) {
+    StudioActions {
+        StudioAction("图像操作 / 用作", enabled = hasSavedImage, onClick = onImageActions)
+        recipeActions()
+    }
 }
 
 @Composable

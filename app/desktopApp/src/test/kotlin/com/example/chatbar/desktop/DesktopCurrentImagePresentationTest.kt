@@ -264,11 +264,11 @@ class DesktopCurrentImagePresentationTest {
         var intermediate by mutableStateOf(true)
         var saved by mutableStateOf(true)
         var viewed = 0; var reset = 0; var used = 0
-        val scene = ImageComposeScene(900, 110) {
+        val scene = ImageComposeScene(900, 180) {
             Column {
-                StudioActions { DesktopStudioPrimaryPreviewActions(saved && !intermediate, saved && !intermediate,
-                    {}, { viewed++ }, { used++ }) }
+                StudioActions { DesktopStudioPrimaryPreviewActions(saved && !intermediate, {}, { viewed++ }) }
                 StudioActions { DesktopStudioPreviewActions(saved, intermediate, true) { reset++ } }
+                DesktopStudioResultActions(saved && !intermediate, { used++ })
             }
         }
         try {
@@ -299,8 +299,9 @@ class DesktopCurrentImagePresentationTest {
         val scene = ImageComposeScene(700, 550) {
             Column {
                 StudioActions { DesktopStudioPrimaryPreviewActions(savedPath != null && intermediate == null,
-                    savedPath != null && intermediate == null, {}, { viewed++ }, { used++ }) }
+                    {}, { viewed++ }) }
                 DesktopStudioCompactResult(savedPath, intermediate, { expanded = !expanded }, { viewed++ })
+                DesktopStudioResultActions(savedPath != null && intermediate == null, { used++ })
             }
         }
         try {
@@ -321,6 +322,8 @@ class DesktopCurrentImagePresentationTest {
             savedPath = path; intermediate = null; scene.frames()
             assertTrue(scene.nodes().any { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) && it.config.getOrNull(SemanticsActions.OnClick) != null })
             assertTrue(scene.nodes().any { it.matches("图像操作 / 用作") })
+            scene.click("图像操作 / 用作")
+            assertEquals(1, used)
             assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
         } finally { scene.close(); Files.deleteIfExists(path) }
     }

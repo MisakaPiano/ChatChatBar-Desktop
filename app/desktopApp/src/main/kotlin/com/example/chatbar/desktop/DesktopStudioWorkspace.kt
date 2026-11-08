@@ -51,6 +51,7 @@ internal fun DesktopStudioWorkspace(
     diagnostics: (@Composable () -> Unit)? = null,
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
     previewActions: (@Composable () -> Unit)? = null,
+    inlinePreviewActions: (@Composable () -> Unit)? = null,
     compact: @Composable (onExpand: () -> Unit) -> Unit,
     editor: @Composable () -> Unit,
     footer: @Composable () -> Unit,
@@ -72,6 +73,7 @@ internal fun DesktopStudioWorkspace(
         val wide = width >= 900f
         val focus = wide && state.mode == "预览专注" && !state.diagnostics
         val expanded = (wide || state.compactExpanded) && (wide || !state.diagnostics)
+        val rail = wide && state.mode == "仅缩略图"
         val previewWidth = if (wide) state.previewWidth(width,
             if (state.diagnostics && state.mode == "预览专注") "展开预览" else state.mode) else minOf(width, 640f)
         val editorWidth = if (wide && !focus) width - previewWidth - 12f else width
@@ -143,8 +145,9 @@ internal fun DesktopStudioWorkspace(
                         CompactChoice("布局", listOf("展开预览", "仅缩略图", "预览专注"), state.mode, { it }) { state.mode = it }
                         if (focus) StudioAction("返回编辑") { state.mode = "展开预览" }
                     }
+                    if (!rail) inlinePreviewActions?.invoke()
                 }
-                Box(Modifier.weight(1f).fillMaxWidth()) { preview(wide && state.mode == "仅缩略图") }
+                Box(Modifier.weight(1f).fillMaxWidth()) { preview(rail) }
             }
         }
         // Measure the reserved blank caption band without adding a painted title bar.

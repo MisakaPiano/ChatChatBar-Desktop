@@ -87,26 +87,46 @@ class DesktopStudioWorkspaceTest {
         }
     }
 
-    @Test fun `history preview and media actions share one adjacent toolbar in narrow and wide workspace`() = runBlocking(awt) {
+    @Test fun `history preview and reset share upper toolbar while media actions lead below the image`() = runBlocking(awt) {
         for (width in listOf(360, 1240)) {
-            var history = 0; var viewer = 0; var media = 0
+            var history = 0; var viewer = 0; var media = 0; var reset = 0
+            val state = DesktopStudioWorkspaceState().apply { compactExpanded = true }
             val scene = ImageComposeScene(width, 700) {
-                DesktopStudioWorkspace(previewActions = {
-                    DesktopStudioPrimaryPreviewActions(true, true, { history++ }, { viewer++ }, { media++ })
-                }, compact = {}, editor = { StatusText("Synthetic editor") }, footer = {}, preview = {})
+                DesktopStudioWorkspace(state, previewActions = {
+                    DesktopStudioPrimaryPreviewActions(true, { history++ }, { viewer++ })
+                }, inlinePreviewActions = { DesktopStudioPreviewActions(true, false, true) { reset++ } },
+                    compact = {}, editor = { StatusText("Synthetic editor") }, footer = {}, preview = {
+                        Column(Modifier.fillMaxSize()) {
+                            Box(Modifier.weight(1f).fillMaxWidth()) { StatusText("Synthetic image") }
+                            DesktopStudioResultActions(true, { media++ }) {
+                                StudioAction("新种子重绘") {}
+                                StudioAction("复用 Seed 123") {}
+                            }
+                        }
+                    })
             }
             try {
                 scene.frames()
                 fun action(text: String) = scene.nodes().first {
                     it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf(text) && it.config.contains(SemanticsActions.OnClick)
                 }.boundsInRoot
-                val h = action("历史"); val v = action("预览"); val m = action("图像操作 / 用作")
-                assertEquals(h.top, v.top, 1f); assertEquals(v.top, m.top, 1f)
-                assertTrue(h.right <= v.left && v.right <= m.left)
-                assertTrue(h.left >= 0 && m.right <= width)
+                val h = action("历史"); val v = action("预览"); val r = action("适应 / 重置")
+                val m = action("图像操作 / 用作"); val redraw = action("新种子重绘"); val seed = action("复用 Seed 123")
+                assertEquals(h.top, v.top, 1f)
+                if (width >= 900) assertEquals(h.top, r.top, 1f)
+                assertTrue(h.right <= v.left)
+                assertTrue(m.top > r.bottom)
+                assertTrue(m.top < redraw.top || m.right <= redraw.left)
+                assertTrue(redraw.top < seed.top || redraw.right <= seed.left)
+                for (bounds in listOf(h, v, r, m, redraw, seed)) {
+                    assertTrue(bounds.width > 0 && bounds.height >= 24)
+                    assertTrue(bounds.left >= 0 && bounds.right <= width && bounds.top >= 0 && bounds.bottom <= 700)
+                }
+                assertEquals(1, scene.nodes().count { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("适应 / 重置") })
+                assertEquals(1, scene.nodes().count { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("图像操作 / 用作") })
                 assertFalse(scene.nodes().any { it.matches("打开预览") })
-                scene.click("历史"); scene.click("预览"); scene.click("图像操作 / 用作")
-                assertEquals(1, history); assertEquals(1, viewer); assertEquals(1, media)
+                scene.click("历史"); scene.click("预览"); scene.click("适应 / 重置"); scene.click("图像操作 / 用作")
+                assertEquals(1, history); assertEquals(1, viewer); assertEquals(1, media); assertEquals(1, reset)
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                     val file = Path.of(directory).resolve("studio-primary-toolbar-$width.png"); Files.createDirectories(file.parent)
                     scene.render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
@@ -213,6 +233,13 @@ class DesktopStudioWorkspaceTest {
                         assertEquals(0f, pane.top, 1f); assertEquals(h.toFloat(), pane.bottom, 1f)
                         assertEquals(w * .49f, pane.width, 1f)
                         assertTrue(footer.right < pane.left)
+                        val reset = scene.bounds("适应 / 重置")
+                        val media = scene.bounds("图像操作 / 用作")
+                        val redraw = scene.bounds("新种子重绘")
+                        assertTrue(reset.top < media.top)
+                        assertEquals(media.top, redraw.top, 1f)
+                        assertTrue(media.right <= redraw.left)
+                        assertEquals(1, scene.nodes().count { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("图像操作 / 用作") })
                         assertPreviewCaption()
                         val prompt = scene.bounds("Studio Prompt 编辑区")
                         scene.sendPointerEvent(PointerEventType.Scroll, prompt.center, scrollDelta = Offset(0f, 12f)); scene.frames()
@@ -224,6 +251,9 @@ class DesktopStudioWorkspaceTest {
                         scene.click("NovelAI Studio")
                         scene.click("布局 · 展开预览 ▾"); scene.click("仅缩略图")
                         assertEquals(116f, scene.bounds("Studio 全高预览面板").width, 1f)
+                        assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
+                        val railMedia = scene.bounds("图像操作 / 用作")
+                        assertTrue(railMedia.width > 0 && railMedia.height >= 24 && railMedia.right <= w)
                         // The narrow rail's caption band is covered by the real window buttons.
                         assertEquals(116f, chrome.layout.dragRegions.single().right - chrome.layout.dragRegions.single().left, 1f)
                         scene.shot("wide-rail-$w")
@@ -234,6 +264,7 @@ class DesktopStudioWorkspaceTest {
                         scene.shot("wide-focus-$w"); scene.click("返回编辑")
                         assertEquals(pane, scene.bounds("Studio 全高预览面板"))
                     } else {
+                        assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
                         assertTrue(scene.bounds("Studio 当前图片摘要").height < 180f)
                         assertTrue(chrome.layout.dragRegions.isEmpty())
                         scene.shot(if (w == 360) "extreme-narrow-collapsed" else "narrow-collapsed")
