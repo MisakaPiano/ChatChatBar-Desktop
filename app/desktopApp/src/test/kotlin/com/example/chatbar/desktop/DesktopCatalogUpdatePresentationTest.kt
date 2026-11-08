@@ -2,6 +2,10 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.domain.image.DanbooruCatalogMetadata
@@ -38,7 +42,9 @@ class DesktopCatalogUpdatePresentationTest {
         val notices = DesktopUpdateNotices(scope, "0.1.0-preview.1", null, false) { appCalls++; DesktopUpdateResult(null, false) }
         val owner = DesktopCatalogUpdates(scope, { catalogCalls++; if (fail) error("fixture") else info }, { _, _, _ -> installs++ })
         val scene = ImageComposeScene(1100, 1400, coroutineContext = edt) {
-            CompositionLocalProvider(LocalDesktopUpdateNotices provides notices, LocalDesktopCatalogUpdates provides { owner }) { DesktopUpdatePanel() }
+            CompositionLocalProvider(LocalDesktopUpdateNotices provides notices, LocalDesktopCatalogUpdates provides { owner }) {
+                Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) { DesktopUpdatePanel() }
+            }
         }
         try {
             scene.frames(); assertEquals(0, catalogCalls); scene.click("检查更新")
@@ -57,7 +63,9 @@ class DesktopCatalogUpdatePresentationTest {
         val notices = DesktopUpdateNotices(scope, "0.1.0-preview.1", null, false) { appCalls++; DesktopUpdateResult(null, false) }
         val provider: () -> DesktopCatalogUpdates = { prepareCalls++; error("SYNTHETIC_PREPARATION_FAILURE") }
         val scene = ImageComposeScene(1100, 1400, coroutineContext = edt) {
-            CompositionLocalProvider(LocalDesktopUpdateNotices provides notices, LocalDesktopCatalogUpdates provides provider) { DesktopUpdatePanel() }
+            CompositionLocalProvider(LocalDesktopUpdateNotices provides notices, LocalDesktopCatalogUpdates provides provider) {
+                Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) { DesktopUpdatePanel() }
+            }
         }
         try {
             scene.frames(); assertEquals(1, prepareCalls)
