@@ -19,6 +19,7 @@ class DesktopRetainedPrimaryModelChoicesTest {
                 val first = ModelConfig("first", "First", "https://fixture.invalid/v1", "synthetic-primary-key", "first", createdAt = 1)
                 val second = first.copy(id = "second", displayName = "Second", modelName = "second")
                 c.modelRepository.saveModel(first); c.modelRepository.saveModel(second)
+                c.modelRepository.saveModel(first.copy(id = "retained", displayName = "Retained fixture", modelName = "retained"))
                 c.settingsRepository.updateAppSettings { it.copy(defaultModelId = "first") }
                 c.characterRepository.save(CharacterCard.create("Fixture").copy(id = "card"))
                 c.chatRepository.createSession(ChatSession(id = "session", characterCardId = "card", title = "Fixture", createdAt = 1, updatedAt = 1))
