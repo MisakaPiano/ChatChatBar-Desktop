@@ -11,6 +11,7 @@ import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.EffectiveModelConfiguration
 import com.example.chatbar.domain.model.ModelDiscoveryService
 import com.example.chatbar.domain.model.resolveEffectiveModelApiKey
 import java.util.concurrent.atomic.AtomicLong
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -133,6 +135,8 @@ internal data class DesktopModelSettingsState(
     val status: String? = null,
     val error: String? = null,
     val availableAuxiliaryTextModels: List<DesktopModelItem> = emptyList(),
+    val modelChoicesObservationRevision: Long = 0,
+    val modelChoicesReadFailed: Boolean = false,
 )
 
 /** Desktop-only orchestration over shared model/settings authorities; no constructor I/O. */
@@ -159,6 +163,30 @@ internal class DesktopModelSettingsController(
     private val discoveryGeneration = AtomicLong()
     @Volatile
     private var discoveryJob: Job? = null
+
+    /** Retained selector publication must not reload or replace an unsaved settings/editor draft. */
+    suspend fun observeModelChoices() {
+        try {
+            resolver.observeConfiguration().collectLatest { configuration ->
+                val raw = models.getAllModels()
+                val listed = raw.map(ModelConfig::toItem)
+                val available = configuration.chatModels.map(ModelConfig::toItem)
+                val auxiliary = configuration.auxiliaryTextModels.map(ModelConfig::toItem)
+                val diagnostic = defaultDiagnostic(configuration, raw)
+                mutableState.update { it.copy(models = listed, availableChatModels = available,
+                    availableAuxiliaryTextModels = auxiliary, effectiveModels = desktopEffectiveModels(configuration),
+                    defaultDiagnostic = diagnostic, modelChoicesReadFailed = false) }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            mutableState.update { it.copy(modelChoicesReadFailed = true) }
+        }
+    }
+
+    fun retryModelChoices() {
+        mutableState.update { it.copy(modelChoicesObservationRevision = it.modelChoicesObservationRevision + 1) }
+    }
 
     suspend fun loadModels() = perform("Unable to load models") {
         loadBundledCatalog()
@@ -677,21 +705,25 @@ internal class DesktopModelSettingsController(
     }
 
     private suspend fun refreshDefaultDiagnostic(app: AppSettings) {
-        val effectiveModels = desktopEffectiveModels(resolver, app)
-        val effective = resolver.defaultChatModel(app)
-        val raw = effective?.id?.let { models.getModel(it) }
-        val diagnostic = desktopModelDiagnostic(
+        val configuration = resolver.configuration(app)
+        val diagnostic = defaultDiagnostic(configuration, models.getAllModels())
+        mutableState.update { it.copy(defaultDiagnostic = diagnostic, effectiveModels = desktopEffectiveModels(configuration)) }
+    }
+
+    private fun defaultDiagnostic(configuration: EffectiveModelConfiguration, rawModels: List<ModelConfig>): DesktopModelDiagnostic {
+        val app = configuration.settings
+        val effective = configuration.defaultChatModel
+        return desktopModelDiagnostic(
             configuredId = app.configuredDefaultChatModelId(),
             effective = effective,
             appSettings = app,
-            rawEffective = raw,
+            rawEffective = rawModels.firstOrNull { it.id == effective?.id },
             catalogProvider = presets.catalog.takeIf { catalog ->
                 effective?.sourcePresetKey != null && catalog.chatModels.any {
                     it.modelKey == effective.sourcePresetKey
                 }
             }?.provider,
         )
-        mutableState.update { it.copy(defaultDiagnostic = diagnostic, effectiveModels = effectiveModels) }
     }
 
     suspend fun currentEffectiveModels(): DesktopEffectiveModelPresentation =

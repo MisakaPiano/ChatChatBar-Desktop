@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.EffectiveModelConfiguration
 
 /** Read-only identities resolved by the runtime authority; no credentials or fallback policy are stored here. */
 internal data class DesktopModelIdentity(val id: String, val name: String)
@@ -22,10 +23,13 @@ internal data class DesktopEffectiveModelPresentation(
 }
 
 internal suspend fun desktopEffectiveModels(resolver: EffectiveModelResolver, app: AppSettings): DesktopEffectiveModelPresentation =
+    desktopEffectiveModels(resolver.configuration(app))
+
+internal fun desktopEffectiveModels(configuration: EffectiveModelConfiguration): DesktopEffectiveModelPresentation =
     DesktopEffectiveModelPresentation(
-        chat = resolver.defaultChatModel(app).toIdentity(),
-        image = resolver.defaultImageModel(app).toIdentity(),
-        configuredImageId = app.defaultImageModelId,
+        chat = configuration.defaultChatModel.toIdentity(),
+        image = configuration.defaultImageModel.toIdentity(),
+        configuredImageId = configuration.settings.defaultImageModelId,
     )
 
 private fun ModelConfig?.toIdentity() = this?.let { DesktopModelIdentity(it.id, it.desktopAccountLabel()) }

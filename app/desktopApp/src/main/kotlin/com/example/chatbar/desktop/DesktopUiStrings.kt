@@ -143,6 +143,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     EXPORT_MODEL_TEMPLATE("导出模型模板", "Export model template"),
     VERIFY_MODEL_IMPORT("重新核实模型模板", "Verify model import again"),
     RETRY_MODEL_TEMPLATE_TARGET("重试打开导入的模型", "Retry opening imported model"),
+    MODEL_CHOICES_READ_FAILED("模型选项刷新失败，原选择与未保存设置已保留。", "Model choices could not be refreshed. Your selection and unsaved settings are retained."),
+    MODEL_CHOICES_RETRY("重试读取", "Retry reading"),
     MODEL_TEMPLATE_TARGET_FAILED("无法打开导入的模型；可重试或关闭此提示。",
         "Could not open the imported model. Retry or dismiss this notice."),
     MODEL_TEMPLATE_IMPORTED("模型模板已导入，请编辑并填写 API Key。",

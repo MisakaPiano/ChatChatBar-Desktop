@@ -166,6 +166,9 @@ internal fun DesktopManagePanel(
     var settingsGroup by remember { mutableStateOf(ManageSettingsGroup.CONNECTION) }
     var confirmClearCredential by remember { mutableStateOf(false) }
     val state by modelSettingsController.state.collectAsState()
+    LaunchedEffect(modelSettingsController, state.modelChoicesObservationRevision) {
+        modelSettingsController.observeModelChoices()
+    }
     val characterState by characterEditorController.state.collectAsState()
     val formatState by formatCardEditorController.state.collectAsState()
     val worldState by worldBookEditorController.state.collectAsState()
@@ -315,6 +318,10 @@ internal fun DesktopManagePanel(
         if (state.busy) StatusText(t(DesktopUiText.WORKING))
         state.status?.let { StatusText(t.status(it)) }
         state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
+        if (state.modelChoicesReadFailed) {
+            StatusText(t(DesktopUiText.MODEL_CHOICES_READ_FAILED), DesktopBootstrapColors.destructive)
+            BootstrapButton(t(DesktopUiText.MODEL_CHOICES_RETRY), secondary = true) { modelSettingsController.retryModelChoices() }
+        }
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
             ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController, managementController, onStartCharacterChat)
