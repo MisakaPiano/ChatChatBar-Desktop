@@ -249,7 +249,7 @@ class DesktopRealChatRuntime internal constructor(
             sessionId = sessionId,
             role = MessageRole.ASSISTANT,
             content = "",
-        )).copy(narrativeMode = plan.session.narrativeMode)
+        )).copy(narrativeMode = if (turn.settings.disableNarrativeModes) null else plan.session.narrativeMode)
         var accumulatedContent = ""
         var previewContent: String? = null
         var accumulatedReasoning = ""

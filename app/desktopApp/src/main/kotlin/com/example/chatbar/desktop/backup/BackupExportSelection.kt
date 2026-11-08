@@ -28,6 +28,7 @@ object BackupSettingOptions {
         field("defaultFormatCardId", "默认格式卡", "回复与记忆"),
         field("experimentalApiModeEnabled", "实验 API 模式", "模型与连接"),
         field("automaticFormatCheckEnabled", "自动格式检查", "回复与记忆"),
+        field("disableNarrativeModes", "停用聚焦与推进", "回复与记忆"),
         field("formatRepairModelId", "格式修复模型", "回复与记忆"),
         field("memoryRagTopK", "记忆检索数量", "回复与记忆"),
         field("memoryRagSimilarityThreshold", "记忆相似度阈值", "回复与记忆"),

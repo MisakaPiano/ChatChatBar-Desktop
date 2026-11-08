@@ -60,9 +60,13 @@ internal object DesktopFullBackupWriter {
                             val selected = credentials?.entity(name, original) ?: original
                             // New defaults are omitted in live/legacy entities. The selected modern
                             // settings transport carries explicit false so merge choices can reset true.
-                            val value = if (DesktopBackupPolicy.entityType(name) == "app_settings" &&
+                            val compatible = if (DesktopBackupPolicy.entityType(name) == "app_settings" &&
                                 "experimentalApiModeEnabled" !in selected) JsonObject(selected +
                                     ("experimentalApiModeEnabled" to JsonPrimitive(false))) else selected
+                            val value = if (DesktopBackupPolicy.entityType(name) == "app_settings" &&
+                                (selection == null || "disableNarrativeModes" in selection.globalOptions) &&
+                                "disableNarrativeModes" !in compatible) JsonObject(compatible +
+                                    ("disableNarrativeModes" to JsonPrimitive(false))) else compatible
                             entities[name] = DesktopBackupRecords.scopeRecord(value)
                             if (value != original || DesktopBackupPolicy.entityType(name) == "moment_posts")
                                 transported[name] = value.toString().toByteArray()
@@ -98,7 +102,7 @@ internal object DesktopFullBackupWriter {
                     desktopFishAccounts = capturedPreferences.desktopFishAccounts,
                     brushSize = preferences.brushSize, brushType = preferences.brushType)).toByteArray()
                 val manifest = InspectionManifest(formatVersion = 2, appVersionCode = CURRENT_DESKTOP_BACKUP_CODE,
-                    appVersionName = "CCB Desktop / official 1.4.9 selected transport compatibility", createdAt = System.currentTimeMillis(),
+                    appVersionName = "CCB Desktop / official 1.4.11 selected data transport", createdAt = System.currentTimeMillis(),
                     sourceFilesRoot = "desktop-selected-root", counts = counts, fileCount = proof.size,
                     totalBytes = total, preferencesSha256 = DesktopBackupPolicy.digest(prefs), scope = scope)
                 DesktopBackupScratch.create(destination.parent, "backup-modern-output-").use { scratch ->

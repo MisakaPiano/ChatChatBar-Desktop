@@ -10,16 +10,20 @@ enum class ChatHistoryPromptZone {
 }
 
 object ChatHistoryPromptPolicy {
-    fun renderedHistoryText(message: ChatMessage, renderedBody: String): String =
-        if (message.role == MessageRole.ASSISTANT && renderedBody.isNotBlank()) {
+    fun renderedHistoryText(message: ChatMessage, renderedBody: String): String {
+        val mode = MessageAlternativeVersionPolicy.activeVersion(message).narrativeMode
+        return if (message.role == MessageRole.ASSISTANT && renderedBody.isNotBlank() && mode != null) {
             com.example.chatbar.domain.prompt.MainChatPromptAuthority.narrativeModeHistoryReply(renderedBody,
-                MessageAlternativeVersionPolicy.activeVersion(message).narrativeMode)
+                mode)
         } else renderedBody
+    }
 
-    fun previousNarrativeMode(history: List<ChatMessage>, regenerationTarget: ChatMessage? = null): ChatNarrativeMode =
-        (regenerationTarget ?: history.lastOrNull {
+    fun previousNarrativeMode(history: List<ChatMessage>, regenerationTarget: ChatMessage? = null): ChatNarrativeMode? {
+        val source = regenerationTarget ?: history.lastOrNull {
             it.role == MessageRole.ASSISTANT && it.displayContent.isNotBlank() && it.generatedFromMessageId == null
-        })?.let { MessageAlternativeVersionPolicy.activeVersion(it).narrativeMode } ?: ChatNarrativeMode.FOCUS
+        } ?: return ChatNarrativeMode.FOCUS
+        return MessageAlternativeVersionPolicy.activeVersion(source).narrativeMode
+    }
 
     fun sourceText(
         message: ChatMessage,

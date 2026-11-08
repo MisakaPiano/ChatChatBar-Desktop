@@ -23,7 +23,7 @@ class DesktopMissingSettingScopeTest {
             val gate = DesktopDataOperationCoordinator()
             val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(source)).ownership
             val original = AppSettings(defaultModelId = "local-model", themeMode = ThemeMode.DARK, chatBubbleFontScale = 1.4f,
-                lastSeenChatAt = 42, lastSeenMomentsAt = 43)
+                lastSeenChatAt = 42, lastSeenMomentsAt = 43, disableNarrativeModes = true)
             val settingsFile = root.resolve("entities/app_settings.json")
             Files.createDirectories(settingsFile.parent)
             val settingsBytes = backupJson.encodeToString(AppSettings.serializer(), original).toByteArray()
@@ -38,14 +38,14 @@ class DesktopMissingSettingScopeTest {
                 put("chatBubbleFontScale", 1.6)
                 put("lastSeenChatAt", 21)
                 // An unselected incoming value must never replace its PC counterpart.
-                if (scenario == 2) { put("themeMode", "LIGHT"); put("lastSeenMomentsAt", 22) }
+                if (scenario == 2) { put("themeMode", "LIGHT"); put("lastSeenMomentsAt", 22); put("disableNarrativeModes", false) }
             }.toString().toByteArray()
-            val fields = if (scenario == 2) emptySet() else setOf("themeMode", "defaultModelId", "chatBubbleFontScale")
+            val fields = if (scenario == 2) emptySet() else setOf("themeMode", "defaultModelId", "chatBubbleFontScale", "disableNarrativeModes")
             val sessionCount = if (scenario == 1) 1 else 0
             val scope = OfficialWireScope(fields, 1, sessionCount, sessionCount, sessionCount, sessionCount,
                 false, false, false, scenario == 1, sessionDefaultChoice = OfficialWireSessionChoice())
             val archive = Files.write(base.resolve("phone.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming,
-                code = 88, version = 2, scope = scope))
+                code = 90, version = 2, scope = scope))
             val archiveBytes = Files.readAllBytes(archive)
             val service = DesktopMergeImportService(source, gate, InMemoryDesktopSecretStore(), {}, { it() },
                 DesktopMigrationDestinationPreparer({ unavailable }, DesktopDataRootOwnership::acquire),
@@ -62,6 +62,7 @@ class DesktopMissingSettingScopeTest {
                 val settings = assertNotNull(JsonFileStorage(destination).loadSingleton("app_settings", AppSettings.serializer()))
                 assertEquals(if (scenario == 2) original.themeMode else defaults.themeMode, settings.themeMode)
                 assertEquals(if (scenario == 2) original.defaultModelId else defaults.defaultModelId, settings.defaultModelId)
+                assertEquals(scenario == 2, settings.disableNarrativeModes)
                 assertEquals(when (scenario) { 0 -> defaults.chatBubbleFontScale; 1 -> 1.6f; else -> original.chatBubbleFontScale }, settings.chatBubbleFontScale)
                 assertEquals(if (scenario == 1) 21 else original.lastSeenChatAt, settings.lastSeenChatAt)
                 assertEquals(if (scenario == 1) defaults.lastSeenMomentsAt else original.lastSeenMomentsAt, settings.lastSeenMomentsAt)

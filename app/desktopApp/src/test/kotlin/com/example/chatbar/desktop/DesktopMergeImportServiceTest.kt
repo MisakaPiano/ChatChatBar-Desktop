@@ -388,13 +388,13 @@ class DesktopMergeImportServiceTest {
                     assertEquals(true, imported.defaultImageGenerationSettings?.transparentBackground)
                 }
                 // The old runtime correctly requires restart; a reopened root has a new coordinator.
-                // Old input identity remains unchanged; the ordinary modern re-export now declares88.
+                // Old input identity remains unchanged; the ordinary modern re-export now declares90.
                 DesktopDataOperationCoordinator().withExclusiveMaintenance {
                     DesktopFullBackupMapping(target).export(Files.createDirectory(base.resolve("v5-export-work")), 88, StrictBackupZipReader.Limits().expanded).use { exported ->
                         val output = base.resolve("v5-return.cbbackup")
                         DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
                         DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("v5-return-work"))).use { returned ->
-                            assertEquals(88, returned.source.manifest.appVersionCode)
+                            assertEquals(90, returned.source.manifest.appVersionCode)
                             assertFalse(returned.source.historicalDesktopV5Settings)
                             if (historic) {
                                 val draft = backupJson.decodeFromJsonElement<com.example.chatbar.domain.image.NovelAiStudioDraft>(returned.entities.getValue("entities/novelai_studio_draft.json"))

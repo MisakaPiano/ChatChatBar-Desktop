@@ -187,8 +187,12 @@ internal class DesktopMergeDestinationPlan private constructor(
                 }
             }
             if (selection.defaultSettingFields.isNotEmpty()) {
-                val defaults = backupJson.encodeToJsonElement(com.example.chatbar.data.local.entity.AppSettings.serializer(),
-                    com.example.chatbar.data.local.entity.AppSettings()).jsonObject.filterKeys { it in selection.defaultSettingFields }
+                val encodedDefaults = backupJson.encodeToJsonElement(com.example.chatbar.data.local.entity.AppSettings.serializer(),
+                    com.example.chatbar.data.local.entity.AppSettings()).jsonObject
+                // The live entity omits this false default. A selected missing wire field
+                // still owns its typed default when preparing a modern restore.
+                val defaults = (encodedDefaults + ("disableNarrativeModes" to JsonPrimitive(false)))
+                    .filterKeys { it in selection.defaultSettingFields }
                 val path = "entities/app_settings.json"
                 entities[path] = JsonObject(entities[path].orEmpty() + defaults)
             }

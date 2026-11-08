@@ -29,6 +29,16 @@ internal object DesktopOfficialBackupEntitySchema {
         when (descriptor.kind) {
             StructureKind.CLASS, StructureKind.OBJECT -> {
                 val obj = value as? JsonObject ?: return // The actual serializer diagnoses its expected type.
+                if (code < 90) {
+                    if (typeName == "com.example.chatbar.data.local.entity.AppSettings")
+                        require("disableNarrativeModes" !in obj) { "OFFICIAL_PRE1411_NARRATIVE_DISABLE_UNSUPPORTED" }
+                    if (typeName == "com.example.chatbar.data.local.entity.ChatMessage") {
+                        require(obj["narrativeMode"] != JsonNull &&
+                            (obj["alternativeNarrativeModes"] as? JsonArray)?.none { it == JsonNull } != false) {
+                            "OFFICIAL_PRE1411_NULL_NARRATIVE_MODE_UNSUPPORTED"
+                        }
+                    }
+                }
                 if (code < 88) {
                     val newFields = when (typeName) {
                         "com.example.chatbar.data.local.entity.AppSettings" -> setOf("experimentalApiModeEnabled")

@@ -33,8 +33,8 @@ internal class DesktopMergeGraphRemapper(
                             "alternativeVersionIds" to JsonArray(normalized.alternativeVersionIds.map(::JsonPrimitive)),
                             "currentAlternativeVersionId" to (normalized.currentAlternativeVersionId?.let(::JsonPrimitive) ?: JsonNull))
                         val modes = if ("narrativeMode" in value || "alternativeNarrativeModes" in value) mapOf(
-                            "narrativeMode" to JsonPrimitive(normalized.narrativeMode.name),
-                            "alternativeNarrativeModes" to JsonArray(normalized.alternativeNarrativeModes.map { JsonPrimitive(it.name) }))
+                            "narrativeMode" to (normalized.narrativeMode?.name?.let(::JsonPrimitive) ?: JsonNull),
+                            "alternativeNarrativeModes" to JsonArray(normalized.alternativeNarrativeModes.map { it?.name?.let(::JsonPrimitive) ?: JsonNull }))
                             else emptyMap()
                         JsonObject(value + versions + modes)
                     } else value

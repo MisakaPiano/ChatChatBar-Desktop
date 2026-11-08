@@ -11,6 +11,29 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopSaveSlotArchiveTest {
+    @Test fun `v8 export import retains explicit null narrative mode beside named alternative modes`(): Unit = runBlocking { fixture { root, archive ->
+        val original = MessageAlternativeVersionPolicy.append(SyntheticSaveSlotCorpus.message().copy(narrativeMode = null),
+            "another version", "disabled-test-version", narrativeMode = ChatNarrativeMode.ADVANCE)
+        val message = MessageAlternativeVersionPolicy.select(original, 0)
+        val prepared = archive.create(SyntheticSaveSlotCorpus.slot(), SaveSlotImagePolicy.NONE, false,
+            { emit -> emit(message) }, {}, emptyList(), { error("no media") })
+        val exported = root.resolve("null-mode.cbsave")
+        archive.export(prepared, exported)
+        val imported = archive.prepare(exported)
+        val codec = SaveSlotPackageStorage(root.resolve("null-mode-reader").toFile(), { _, _ -> error("not encoding") })
+        val local = Files.newInputStream(imported.file).use { codec.importPackage(it, "target") { name -> name } }.slot
+        codec.openReader(local).use { reader ->
+            reader.validate()
+            val messages = mutableListOf<ChatMessage>()
+            reader.streamMessages("target") { messages += it }
+            val restored = messages.single()
+            assertNull(restored.narrativeMode)
+            assertEquals(message.alternativeNarrativeModes, restored.alternativeNarrativeModes)
+            assertEquals(message.alternativeVersionIds, restored.alternativeVersionIds)
+            assertEquals(message.content, restored.content)
+        }
+    } }
+
     @Test fun `oversized input reports capacity before creating a preparation copy`(): Unit = runBlocking { fixture { root, archive ->
         val source = root.resolve("oversized-synthetic.cbsave")
         java.nio.channels.FileChannel.open(source, java.nio.file.StandardOpenOption.CREATE_NEW,

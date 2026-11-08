@@ -34,6 +34,46 @@ import kotlin.test.assertTrue
 
 class DesktopRealChatRuntimeTest {
     @Test
+    fun `disabled mode is frozen for actual generation and regeneration retains the original null candidate`() = runBlocking {
+        withRuntimeContainer { container, root, _ ->
+            MockWebServer().use { server ->
+                val card = CharacterCard.create("Synthetic disabled mode")
+                container.characterRepository.save(card)
+                val id = container.characterSessionService.createSessionForCharacter(card.id)
+                configureModel(container, server, "fake-disabled-mode-key")
+                container.chatRepository.setNarrativeMode(id, ChatNarrativeMode.ADVANCE)
+                container.settingsRepository.updateAppSettings { it.copy(disableNarrativeModes = true) }
+                val requests = mutableListOf<List<String>>()
+                server.dispatcher = object : Dispatcher() {
+                    override fun dispatch(request: RecordedRequest): MockResponse {
+                        requests += serializedContents(request.body.readUtf8())
+                        // Changing settings after transport begins must not relabel this reply.
+                        runBlocking { container.settingsRepository.updateAppSettings { it.copy(disableNarrativeModes = false) } }
+                        return sse("""{"choices":[{"delta":{"content":"synthetic reply"},"finish_reason":"stop"}]}""", "[DONE]")
+                    }
+                }
+                val runtime = container.createRealChatRuntime()
+                withTimeout(10000) { runtime.sendText(id, "synthetic input") }
+                val first = container.chatRepository.getMessages(id).last { it.role == MessageRole.ASSISTANT }
+                assertNull(first.narrativeMode)
+                assertEquals(ChatNarrativeMode.ADVANCE, container.chatRepository.getSession(id)?.narrativeMode)
+                withTimeout(10000) { runtime.regenerate(id, first.id) }
+                val regenerated = assertNotNull(container.chatRepository.getMessage(first.id, id))
+                assertEquals(ChatNarrativeMode.ADVANCE, regenerated.narrativeMode)
+                assertEquals(listOf(null, ChatNarrativeMode.ADVANCE), regenerated.alternativeNarrativeModes)
+                assertEquals(2, regenerated.alternativeVersionIds.toSet().size)
+                val selected = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.select(regenerated, 0)
+                container.chatRepository.updateMessage(selected)
+                val cold = com.example.chatbar.data.repository.ChatRepository(com.example.chatbar.data.local.JsonFileStorage(root))
+                assertNull(cold.getMessage(first.id, id)?.narrativeMode)
+                assertEquals(2, requests.size)
+                assertTrue(requests.flatten().none { it.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)) })
+                assertFalse(container.settingsRepository.getAppSettings().disableNarrativeModes)
+            }
+        }
+    }
+
+    @Test
     fun `persisted history exclusion reaches shared request policy while latest assistant stays complete`() = runBlocking {
         for (exclude in listOf(true, false)) withRuntimeContainer { container, _, _ ->
             MockWebServer().use { server ->

@@ -68,7 +68,9 @@ data class AppSettings(
     val momentsBackgroundGuideDismissed: Boolean = false,
     val momentsAutoStartConfirmed: Boolean = false,
     val lastSeenMomentsAt: Long = 0L,
-    val lastSeenChatAt: Long = 0L
+    val lastSeenChatAt: Long = 0L,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val disableNarrativeModes: Boolean = false,
 )
 
 const val DEFAULT_CHAT_BACKGROUND_IMAGE_OPACITY = 0.16f

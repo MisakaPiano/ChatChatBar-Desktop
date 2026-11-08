@@ -262,7 +262,7 @@ class DesktopMergeRootPreparationTest {
                     val output = base.resolve("merged.cbbackup")
                     DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
                     DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("roundtrip"))).use { returned ->
-                        assertEquals(88, returned.source.manifest.appVersionCode)
+                        assertEquals(90, returned.source.manifest.appVersionCode)
                         assertTrue(returned.files.keys.any { it.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Computer content") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Phone content") })

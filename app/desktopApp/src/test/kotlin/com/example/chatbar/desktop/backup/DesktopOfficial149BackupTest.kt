@@ -36,12 +36,12 @@ class DesktopOfficial149BackupTest {
                     val output = path.parent.resolve("reexport.cbbackup")
                     DesktopFullBackupWriter.export(staged.files, output, null)
                     val reread = Sink()
-                    assertEquals(88, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
+                    assertEquals(90, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
                     for ((name, value) in sink.entities) {
                         // Staging removes credentials and deliberately materializes the empty
                         // singleton key. All source fields and all other entity values stay intact.
                         val expected = if (name == "entities/app_settings.json")
-                            JsonObject(value + ("siliconFlowApiKey" to JsonPrimitive(""))) else value
+                            JsonObject(value + mapOf("siliconFlowApiKey" to JsonPrimitive(""), "disableNarrativeModes" to JsonPrimitive(false))) else value
                         assertEquals(expected, reread.entities[name], name)
                     }
                     assertEquals(JsonPrimitive("ADVANCE"), reread.entities.getValue("entities/save_slots/slot.json")["narrativeMode"])
@@ -58,7 +58,9 @@ class DesktopOfficial149BackupTest {
             val value = backupJson.parseToJsonElement(text).jsonObject
             DesktopOfficialBackupEntitySchema.validate(type, value, 88)
             for (code in 84..87) assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, code) }
-            assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 89) }
+            DesktopOfficialBackupEntitySchema.validate(type, value, 89)
+            DesktopOfficialBackupEntitySchema.validate(type, value, 90)
+            assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 91) }
             assertFails { DesktopOfficialBackupEntitySchema.validate(type, JsonObject(value + ("futureField" to JsonPrimitive(true))), 88) }
         }
         assertFails { DesktopOfficialBackupEntitySchema.validate("chat_sessions",
@@ -80,7 +82,8 @@ class DesktopOfficial149BackupTest {
                 DesktopFullBackupWriter.export(mapped.files, output, null, mapped.preferences, selection = selection)
                 val sink = Sink()
                 val proof = DesktopFullBackupSource.verify(output, null, sink)
-                assertEquals(88, proof.manifest.appVersionCode)
+                assertEquals(90, proof.manifest.appVersionCode)
+                assertFalse("disableNarrativeModes" in sink.entities.getValue("entities/app_settings.json"))
                 assertEquals(JsonPrimitive(false), sink.entities.getValue("entities/app_settings.json")["experimentalApiModeEnabled"])
                 assertFalse("experimentalApiModeEnabled" in proof.manifest.scope!!.globalOptions)
                 assertTrue(Files.readString(settings).contains("true"))
@@ -91,6 +94,7 @@ class DesktopOfficial149BackupTest {
             val sink = Sink()
             DesktopFullBackupSource.verify(output, null, sink)
             assertEquals(JsonPrimitive(false), sink.entities.getValue("entities/app_settings.json")["experimentalApiModeEnabled"])
+            assertEquals(JsonPrimitive(false), sink.entities.getValue("entities/app_settings.json")["disableNarrativeModes"])
         }
     }
 }

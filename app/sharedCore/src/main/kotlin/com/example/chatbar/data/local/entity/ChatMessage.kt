@@ -75,10 +75,10 @@ data class ChatMessage(
     /** 当前内容版本身份；无 alternatives 时仍保留，供派生资源绑定。 */
     val currentAlternativeVersionId: String? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val narrativeMode: ChatNarrativeMode = ChatNarrativeMode.FOCUS,
-    /** With alternatives in order; missing legacy entries mean FOCUS. */
+    val narrativeMode: ChatNarrativeMode? = ChatNarrativeMode.FOCUS,
+    /** Missing legacy entries mean FOCUS; explicit null retains disabled mode. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val alternativeNarrativeModes: List<ChatNarrativeMode> = emptyList(),
+    val alternativeNarrativeModes: List<ChatNarrativeMode?> = emptyList(),
     val reasoningContent: String? = null,              // 思维链内容
     val generatedFromMessageId: String? = null,
     val formatRepairNotice: MessageFormatRepairNotice? = null,

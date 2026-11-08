@@ -61,6 +61,7 @@ internal object DesktopFullBackupSource {
                 var incompatible84 = false
                 var incompatiblePre148 = false
                 var incompatiblePre149 = false
+                var incompatiblePre1411 = false
                 var incompatibleHistoricalDesktopV5 = false
                 val seen = linkedMapOf<String, AppBackupFileRecord>()
                 val entities = linkedMapOf<String, JsonObject>()
@@ -120,6 +121,8 @@ internal object DesktopFullBackupSource {
                                                 "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                                                 else -> {
                                                     DesktopOfficialBackupEntitySchema.validate(type, value, CURRENT_DESKTOP_BACKUP_CODE)
+                                                    if (!incompatiblePre1411) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 89) }
+                                                    catch (_: Exception) { incompatiblePre1411 = true }
                                                     if (!incompatiblePre149) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 87) }
                                                     catch (_: Exception) { incompatiblePre149 = true }
                                                     if (!incompatible84) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 84) }
@@ -169,6 +172,7 @@ internal object DesktopFullBackupSource {
                 val historicalDesktopV5 = incompatiblePre148 && !incompatibleHistoricalDesktopV5 && DesktopBackupVersionProfile.historicalDesktop147(m)
                 require(m.appVersionCode >= 87 || !incompatiblePre148 || historicalDesktopV5)
                 require(m.appVersionCode >= 88 || !incompatiblePre149)
+                require(m.appVersionCode >= 90 || !incompatiblePre1411)
                 phase = "SELECTION_SCOPE"
                 m.scope?.let { DesktopBackupReadOnlyInspector().scopeReport(it, counts, entities) }
                 active()
