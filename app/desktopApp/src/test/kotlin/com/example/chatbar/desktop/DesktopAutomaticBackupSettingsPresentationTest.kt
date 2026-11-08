@@ -94,8 +94,9 @@ class DesktopAutomaticBackupSettingsPresentationTest {
 
     @Test fun `UI wiring exposes backup section Advanced and explicit Apply without runtime bypass`() {
         fun source(name: String) = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop", name))
-        val manage = source("DesktopManagePanel.kt").substringAfter("ManageSection.SETTINGS -> {")
-        assertTrue(manage.contains("DesktopAutomaticBackupSettingsPanel(backupSettingsController)"))
+        val data = source("DesktopDataWorkspace.kt")
+        assertTrue(data.contains("DesktopAutomaticBackupSettingsPanel(automatic)"))
+        assertFalse(source("DesktopManagePanel.kt").contains("DesktopAutomaticBackupSettingsPanel("))
         val panel = source("DesktopAutomaticBackupSettingsPanel.kt")
         val controller = source("DesktopAutomaticBackupSettingsController.kt")
         assertTrue(panel.contains("if (advanced)"))

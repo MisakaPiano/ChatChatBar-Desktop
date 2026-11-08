@@ -187,7 +187,6 @@ class DesktopChatPeoplePresentationTest {
         val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
             DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
             secretStoreFactory = { InMemoryDesktopSecretStore() })
-        val scope = CoroutineScope(SupervisorJob() + edt)
         try {
             val person = CharacterInfo.create("Target person").copy(profile = "Specific target profile")
             val card = CharacterCard.create("Target card", greeting = "Hi").copy(
@@ -196,10 +195,9 @@ class DesktopChatPeoplePresentationTest {
             val transfer = container.createTypedTransferController()
             val templates = container.createModelTemplateTransferController()
             val management = container.createManagementController(transfer)
-            val backup = DesktopAutomaticBackupSettingsController(container.automaticBackupRuntime, scope)
             var requested by mutableStateOf<Pair<String, String>?>(card.id to person.id)
             val scene = ImageComposeScene(1000, 900, coroutineContext = edt) {
-                DesktopManagePanel(transfer, templates, management, container.modelSettingsController, backup,
+                DesktopManagePanel(transfer, templates, management, container.modelSettingsController,
                     container.characterEditorController, container.formatCardEditorController,
                     container.worldBookEditorController, container.uiLanguageController,
                     container.appearanceController, container.connectionTestController, container.novelAiSettingsController,
@@ -234,6 +232,6 @@ class DesktopChatPeoplePresentationTest {
                 capture(scene, "sf03-ui-management-failure.png")
                 throw error
             } finally { scene.close() }
-        } finally { scope.cancel(); container.close(); parent.toFile().deleteRecursively() }
+        } finally { container.close(); parent.toFile().deleteRecursively() }
     }
 }

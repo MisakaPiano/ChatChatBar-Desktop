@@ -63,7 +63,7 @@ private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, M
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 private enum class ManageSettingsGroup(val label: String) {
     CONNECTION("模型与连接"), REPLY("回复与记忆"), APPEARANCE("外观与显示"), PLAYER("玩家设定"),
-    IMAGE("图片生成"), VOICE("语音与朗读"), OTHER("朋友圈／备份与其他")
+    IMAGE("图片生成"), VOICE("语音与朗读"), MOMENTS("朋友圈"), USAGE("用量统计")
 }
 
 @Composable
@@ -136,7 +136,6 @@ internal fun DesktopManagePanel(
     modelTemplateController: DesktopModelTemplateTransferController,
     managementController: DesktopManagementController,
     modelSettingsController: DesktopModelSettingsController,
-    backupSettingsController: DesktopAutomaticBackupSettingsController,
     characterEditorController: DesktopCharacterEditorController,
     formatCardEditorController: DesktopFormatCardEditorController,
     worldBookEditorController: DesktopWorldBookEditorController,
@@ -377,11 +376,14 @@ internal fun DesktopManagePanel(
                             DesktopFishGlobalSettings(state, modelSettingsController)
                         }
                     }
-                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.OTHER) {
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.MOMENTS) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             momentsController?.let { DesktopMomentsSettings(it) }
+                        }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.USAGE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             providerUsage?.let { DesktopProviderUsagePanel(it) }
-                            DesktopAutomaticBackupSettingsPanel(backupSettingsController)
                         }
                     }
                     listOf(ManageSettingsGroup.CONNECTION, ManageSettingsGroup.REPLY, ManageSettingsGroup.PLAYER).forEach { area ->

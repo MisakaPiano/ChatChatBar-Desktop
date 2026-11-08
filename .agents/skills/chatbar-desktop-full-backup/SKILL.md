@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+Automatic-backup settings have one UI entry in `DesktopDataWorkspace` / 数据 → 自动备份. It uses Main's existing app-scoped `DesktopAutomaticBackupSettingsController` and runtime observer; management settings do not duplicate that panel or create another settings owner.
+
 `DesktopBackupOperationJournal` persists only a version, random operation ticket, fixed kind and phase in separate backup/merge ordinary files directly under `backups`, excluded by the existing snapshot/root-migration infrastructure policy and ignored by snapshot-directory listing. Controllers show previous uncertain/failed work on reopen and neutral completed/cancelled summaries, record completion from their actual outcome, and abandon password/preview state on normal close. It grants no retry, cleanup or restore authority; the existing journal/new-root fence remains authoritative. Status IO failures stay visible in `operationNotice` and must not relabel a successfully published file/root as failure. Late tickets cannot overwrite a newer operation. `DesktopBackupOperationJournalTest` covers a hard child-process exit/readback, actual Controller completion/cancel paths and real snapshot exclusion/listing.
 
 The resource-cleanup adapter recognizes only the two exact safe regular status files after bounded strict UTF-8/JSON, duplicate-key, exact field-set, version, UUID and enum validation. These records contain no resource references; recognition does not grant deletion. Unknown/corrupt entries and real snapshot directories retain the cleanup owner's original refusal. `DesktopBackupStatusCleanupTest` covers actual journal-to-cleanup integration and retained evidence on refusal.

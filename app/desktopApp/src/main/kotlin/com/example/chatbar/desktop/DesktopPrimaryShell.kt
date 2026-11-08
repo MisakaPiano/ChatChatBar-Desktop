@@ -196,7 +196,6 @@ internal fun DesktopPrimaryShell(
                         modelTemplateController = modelTemplateController,
                         managementController = managementController,
                         modelSettingsController = modelSettingsController,
-                        backupSettingsController = backupSettingsController,
                         characterEditorController = characterEditorController,
                         formatCardEditorController = formatCardEditorController,
                         worldBookEditorController = worldBookEditorController,

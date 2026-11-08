@@ -125,10 +125,8 @@ class DesktopFishPresentationTest {
             val transfer = container.createTypedTransferController()
             val templates = container.createModelTemplateTransferController()
             val management = container.createManagementController(transfer)
-            val scope = CoroutineScope(SupervisorJob() + awt)
-            val backup = DesktopAutomaticBackupSettingsController(container.automaticBackupRuntime, scope)
             val scene = ImageComposeScene(1200, 900, coroutineContext = awt) {
-                DesktopManagePanel(transfer, templates, management, controller, backup,
+                DesktopManagePanel(transfer, templates, management, controller,
                     container.characterEditorController, container.formatCardEditorController,
                     container.worldBookEditorController, container.uiLanguageController,
                     container.appearanceController, container.connectionTestController,
@@ -250,7 +248,7 @@ class DesktopFishPresentationTest {
                 assertTrue(saved.audiobookModeEnabled)
                 assertEquals("stale-ref", saved.voiceTagModelId)
                 assertEquals(FishAudioTtsModels.S2_1_PRO_FREE, saved.fishAudioTtsModelId)
-            } finally { scene.close(); scope.cancel() }
+            } finally { scene.close() }
         }
     }
 
