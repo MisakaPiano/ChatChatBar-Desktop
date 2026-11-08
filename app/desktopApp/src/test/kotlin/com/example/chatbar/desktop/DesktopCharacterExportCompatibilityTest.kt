@@ -38,7 +38,8 @@ class DesktopCharacterExportCompatibilityTest {
             documents = listOf(PackagedDocument("synthetic.txt", "txt", "synthetic-document")))
         suspend fun card() = app.characterTransfers.importNew(assertNotNull(app.characterTransfers.decodePng(
             CharacterCardPngPackageCodec.attach(picture, legacy, app.transferJson)))).let { initial ->
-            initial.copy(name = "Edited legacy", greeting = "Edited text").also { app.characterRepository.update(it) }
+            app.characterRepository.update(initial.copy(name = "Edited legacy", greeting = "Edited text"))
+            assertNotNull(app.characterRepository.getById(initial.id))
         }
         fun wire(path: Path): String {
             val bytes = Files.readAllBytes(path)
