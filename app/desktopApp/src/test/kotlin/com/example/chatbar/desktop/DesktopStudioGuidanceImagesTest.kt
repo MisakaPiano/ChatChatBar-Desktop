@@ -65,15 +65,15 @@ class DesktopStudioGuidanceImagesTest {
         val g = NovelAiImageGuidanceDraft(action = NovelAiGenerationAction.IMAGE_TO_IMAGE, baseImage = asset,
             preciseReference = NovelAiPreciseReferenceDraft(asset = asset), vibes = listOf(NovelAiVibeReferenceDraft(id = "encoded", encodedVibe = "synthetic")))
         for (width in listOf(320,680)) {
-            val replaced = mutableListOf<String>(); val removed = mutableListOf<String>(); var viewed = 0
+            val replaced = mutableListOf<String>(); val removed = mutableListOf<String>(); var viewed = 0; var settingsOpened = 0
             var editingEnabled by mutableStateOf(true)
             val scene = ImageComposeScene(width, 420) { DesktopStudioGuidanceImages(g, NovelAiImageModel.V5_FULL, { bytes },
-                { viewed++ }, { replaced += it.key }, { removed += it.key }, {}, editingEnabled) }
+                { viewed++ }, { replaced += it.key }, { removed += it.key }, { settingsOpened++ }, editingEnabled) }
             try {
                 scene.frames()
                 assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.Text)?.any { t -> t.text.contains("3 项") } == true })
                 fun action(label: String) = scene.nodes().single { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf(label) }
-                for (label in listOf("查看基图","更换基图","移除基图","更换精确参考","更换氛围参考 1")) {
+                for (label in listOf("图像引导设置","查看基图","更换基图","移除基图","更换精确参考","更换氛围参考 1")) {
                     val node = action(label); val bounds = node.boundsInRoot
                     assertTrue(bounds.width >= 24 && bounds.height >= 24 && bounds.left >= 0 && bounds.right <= width)
                     assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
@@ -81,6 +81,7 @@ class DesktopStudioGuidanceImagesTest {
                 assertTrue(action("查看氛围参考 1").config.contains(SemanticsProperties.Disabled))
                 assertEquals(listOf("base","precise","vibe:encoded"), replaced)
                 assertEquals(listOf("base"), removed); assertEquals(1, viewed)
+                assertEquals(1, settingsOpened)
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { dir ->
                     val p = java.nio.file.Path.of(dir).resolve("guidance-bindings-$width.png"); Files.createDirectories(p.parent)
                     scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(p,it.bytes) } }

@@ -2,7 +2,7 @@ package com.example.chatbar.desktop.interop.official1411
 
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.MainChatPromptAuthority as PromptTemplates
 import kotlin.random.Random
 
 data class FormatCardUserToolValidation(

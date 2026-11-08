@@ -176,7 +176,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $nsis = Join-Path $env:CCB_BUILD_OUTPUT 'nsis'
-          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" "-PdesktopBuildNumber=$env:CCB_CANDIDATE_BUILD" -Pcompose.desktop.application.downloadWix=false --no-daemon --no-configuration-cache --console=plain
+          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" "-PdesktopBuildNumber=$env:CCB_CANDIDATE_BUILD" "-Pcompose.desktop.application.downloadWix=false" --no-daemon --no-configuration-cache --console=plain
           if ($LASTEXITCODE -ne 0) { throw 'FROZEN_IMAGE_BUILD_FAILED' }
           $image = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\compose\binaries\main\app\ChatChatBarDesktop'
           # Application source stays frozen. Auditing/packaging tools have their own control commit.

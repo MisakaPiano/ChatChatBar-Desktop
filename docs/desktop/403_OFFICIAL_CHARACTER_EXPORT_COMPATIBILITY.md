@@ -16,6 +16,6 @@
 
 共享投影、真实核心与控制器 JSON／PNG 默认和完整导出、普通旧 PNG→改文字→导出、原图字节与本地引用保全、取消／重入／资源改变、缺失的独立封面不妨碍兼容 JSON、真实管理入口和格式选择界面列入定向检查。
 
-测试命名空间 `desktop.interop.official1411` 保留官方 DTO、读取校验和两个依赖，只有 package namespace 变化；旁置 origin JSON 记录固定源码、Git blob 和 SHA256。它校验实际输出的兼容9，并应拒绝完整10。这是固定官方读取器的工程证据，不能代替 Android 设备、完整图库或双向往返验收。
+测试命名空间 `desktop.interop.official1411` 保留官方 DTO、读取校验和两个依赖；DTO/读取校验仅 package namespace 变化，用户工具依赖另将 Android Prompt facade 的 import 别名绑定到现有共享 authority，校验方法不变。旁置 origin JSON 记录固定源码、Git blob、转换及 SHA256。它校验实际输出的兼容9，并应拒绝完整10。这是固定官方读取器的工程证据，不能代替 Android 设备、完整图库或双向往返验收。
 
 当前检查结果等待新源码的云端实际回执；不得把旧原图16项或旧源码集成结果当成本次默认格式修复已通过。公开版本、签名信息和现用根保持原状态，1247仍只准备未公开候选。

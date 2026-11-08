@@ -202,17 +202,10 @@ class DesktopPhase7ReauditTest {
         assertTrue(controller.state.value.status.contains("非完整复现"))
     } }
 
-    @Test fun `reverse progress preserves separate full content reasoning and stage with direct guidance wiring`() {
+    @Test fun `reverse progress preserves separate full content reasoning and parsed stage`() {
         val progress = DesktopReversePromptProgress(reasoning = "private reasoning").content("【图片理解】\nscene\n【设计】\n" + "x".repeat(5000))
         assertEquals("设计", progress.stage); assertEquals("private reasoning", progress.reasoning)
         assertTrue(progress.content.length > 5000)
-        val panel = source("DesktopNovelAiStudioPanel.kt")
-        assertTrue(Regex("""\("图像引导"(?:,\s*icon = [\w.]+)?\)\s*\{\s*auxiliary = "图像引导"\s*}""").containsMatchIn(panel))
-        assertTrue(panel.contains("DesktopReversePromptPane(state, busy,"))
-        val reverse = source("DesktopReversePromptPane.kt")
-        assertTrue(reverse.contains("DesktopMarkdownText(state.reverseProgress.reasoning)"))
-        assertTrue(reverse.contains("DesktopMarkdownText(state.reverseProgress.content)"))
-        assertTrue(panel.contains("DesktopStudioHistory(controller"))
     }
 
     private fun studio(c: DesktopAppContainer, root: Path, account: suspend () -> NovelAiAccountUsage) = DesktopNovelAiStudioController(

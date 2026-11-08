@@ -5,6 +5,10 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.card.CharacterCardPngPackageCodec
 import com.example.chatbar.domain.card.CharacterCardPngExportOptions
+import com.example.chatbar.domain.card.CharacterCardPackage
+import com.example.chatbar.domain.card.CharacterCardExportCompatibility
+import com.example.chatbar.domain.card.PngTextChunks
+import com.example.chatbar.domain.card.forExportCompatibility
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.nio.file.Files
@@ -160,11 +164,20 @@ class DesktopPhase7ImagesTest {
         val draft = assertNotNull(controller.state.value.coverExport)
         controller.finishCoverExport(draft, CharacterCardPngExportOptions(sizePx = 1024), png(Color.BLUE))
         assertNull(controller.state.value.error)
-        val decoded = assertNotNull(c.characterTransfers.decodePng(Files.readAllBytes(destination)))
-        assertEquals(draft.packageData, decoded)
+        val output = Files.readAllBytes(destination)
+        val raw = String(java.util.Base64.getDecoder().decode(assertNotNull(
+            PngTextChunks.extractTextChunk(output, PngTextChunks.CHATBAR_CHARACTER_KEYWORD))), Charsets.UTF_8)
+        val payload = c.transferJson.decodeFromString(CharacterCardPackage.serializer(), raw)
+        assertEquals(draft.packageData.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9), payload)
+        val decoded = assertNotNull(c.characterTransfers.decodePng(output))
+        val importedCoverId = assertNotNull(decoded.card.coverImageResourceId)
+        assertEquals(payload, decoded.copy(schemaVersion = 9, card = decoded.card.copy(coverImageResourceId = null),
+            images = decoded.images - importedCoverId))
+        assertContentEquals(png(Color.BLUE), java.util.Base64.getDecoder().decode(decoded.images.getValue(importedCoverId).data))
         assertEquals(card, c.characterRepository.getById(card.id))
         val pixels = DesktopImageEditing.decode(Files.readAllBytes(destination))
-        assertEquals(Color.BLUE.rgb, pixels.getRGB(100, 100))
+        assertEquals(40, pixels.width); assertEquals(20, pixels.height)
+        assertEquals(Color.BLUE.rgb, pixels.getRGB(pixels.width / 2, pixels.height / 2))
     } }
 
     @Test fun `attachment preserves embedded metadata and display sampling bounds decode`() = runBlocking { fixture { c, _ ->

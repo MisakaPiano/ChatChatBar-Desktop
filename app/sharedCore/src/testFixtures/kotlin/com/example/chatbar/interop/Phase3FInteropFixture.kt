@@ -28,7 +28,7 @@ object Phase3FInteropFixture {
     const val WORLD_BOOK_NAME = "Phase3F Standalone WorldBook"
 
     private val imageBytes = Base64.getDecoder().decode(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=",
     )
 
     private val fishBinding = FishAudioVoiceBinding(
