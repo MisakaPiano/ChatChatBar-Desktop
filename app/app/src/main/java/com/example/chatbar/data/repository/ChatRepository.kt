@@ -108,7 +108,9 @@ class ChatRepository(private val storage: JsonFileStorage) {
                 else session.copy(
                     narrativeMode = latest.narrativeMode,
                     characterParticipation = latest.characterParticipation,
-                    autoPauseAbsentPeople = latest.autoPauseAbsentPeople
+                    autoPauseAbsentPeople = latest.autoPauseAbsentPeople,
+                    desktopPlayerRole = latest.desktopPlayerRole,
+                    desktopPlayerAvatar = latest.desktopPlayerAvatar
                 )
             )
         }

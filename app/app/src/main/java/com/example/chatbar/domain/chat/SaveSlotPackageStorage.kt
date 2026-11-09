@@ -117,6 +117,10 @@ class SaveSlotPackageStorage(private val context: Context) {
                 validateImageRef(reference)
                 imageCount++
             }
+            slot.desktopPlayerAvatar?.let { reference ->
+                validateImageRef(reference)
+                imageCount++
+            }
             require(imageCount == packageRef.imageCount) {
                 "存档图片数量不完整：$imageCount/${packageRef.imageCount}"
             }
@@ -183,6 +187,8 @@ class SaveSlotPackageStorage(private val context: Context) {
             val reference = slot.chatBackground ?: return null
             return materializeImage(reference)
         }
+
+        suspend fun materializePlayerAvatar(): String? = slot.desktopPlayerAvatar?.let { materializeImage(it) }
 
         fun cleanupCreatedFiles(fishAudioStorage: FishAudioStorage) {
             createdImages.forEach { path -> runCatching { File(path).delete() } }
@@ -325,6 +331,10 @@ class SaveSlotPackageStorage(private val context: Context) {
                     }
                 }
 
+            val packagedPlayerAvatar = baseSlot.desktopPlayerAvatar?.takeIf(String::isNotBlank)?.let { path ->
+                if (imagePolicy == SaveSlotImagePolicy.NONE) null else packageImage(path)
+            }
+
             try {
                 ZipOutputStream(tempFile.outputStream().buffered()).use { zip ->
                     zip.setLevel(Deflater.BEST_SPEED)
@@ -403,6 +413,7 @@ class SaveSlotPackageStorage(private val context: Context) {
                     val manifest = baseSlot.copy(
                         schemaVersion = SCHEMA_VERSION,
                         chatBackground = packagedBackground,
+                        desktopPlayerAvatar = packagedPlayerAvatar,
                         messages = emptyList(),
                         imageResources = emptyMap(),
                         voiceMessages = emptyList(),

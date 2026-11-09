@@ -144,6 +144,7 @@ fun ChatSettingsDialog(
     var replyLanguage by rememberSettingDraft(session?.replyLanguage ?: "")
     var supplementary by rememberSettingDraft(session?.supplementarySetting ?: "")
     var playerName by rememberSettingDraft(session?.playerName ?: "")
+    var playerRole by rememberSettingDraft(session?.desktopPlayerRole)
     var playerSetting by rememberSettingDraft(session?.playerSetting ?: "")
     var background by rememberSettingDraft(session?.chatBackground ?: "")
     var participation by rememberSettingDraft(session?.characterParticipation.orEmpty())
@@ -216,6 +217,7 @@ fun ChatSettingsDialog(
             replyLength = it.replyLength.toString()
             replyLanguage = it.replyLanguage ?: ""
             supplementary = it.supplementarySetting ?: ""; playerName = it.playerName ?: ""
+            playerRole = it.desktopPlayerRole
             playerSetting = it.playerSetting ?: ""; background = it.chatBackground ?: ""
             participation = it.characterParticipation
             audiobookModeEnabled = it.audiobookModeEnabled
@@ -246,6 +248,7 @@ fun ChatSettingsDialog(
             supplementary.takeIf(String::isNotBlank) != it.supplementarySetting ||
             playerName.takeIf(String::isNotBlank) != it.playerName ||
             playerSetting.takeIf(String::isNotBlank) != it.playerSetting ||
+            playerRole != it.desktopPlayerRole ||
             background.takeIf(String::isNotBlank) != it.chatBackground ||
             participation != it.characterParticipation ||
             audiobookModeEnabled != it.audiobookModeEnabled ||
@@ -253,8 +256,7 @@ fun ChatSettingsDialog(
             longTermMemoryEnabled != it.longTermMemoryEnabled ||
             extraWorldBookIds != it.extraWorldBookIds
     } ?: false
-    val renderPlayerName = session?.playerName?.takeIf { it.isNotBlank() }
-        ?: globalPlayerSetting.playerName.takeIf { it.isNotBlank() }
+    val renderPlayerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, characterCard, globalPlayerSetting.playerName)
     val renderBotName = characterCard?.effectiveBotName ?: session?.title ?: ""
 
     fun renderSessionText(text: String): String =
@@ -297,6 +299,7 @@ fun ChatSettingsDialog(
                                 supplementarySetting = supplementary.takeIf(String::isNotBlank),
                                 playerName = playerName.takeIf(String::isNotBlank),
                                 playerSetting = playerSetting.takeIf(String::isNotBlank),
+                                 desktopPlayerRole = playerRole,
                                 chatBackground = background.takeIf(String::isNotBlank),
                                 characterParticipation = participation,
                                 audiobookModeEnabled = audiobookModeEnabled,
@@ -402,7 +405,10 @@ fun ChatSettingsDialog(
                                 }
                             },
                             autoPauseAbsentPeople = session?.autoPauseAbsentPeople ?: false,
-                            onRebindCharacter = { requestLeave(onRebindCharacter) }
+                            onRebindCharacter = { requestLeave(onRebindCharacter) },
+                             playerRole = playerRole, onPlayerRole = { playerRole = it },
+                             playerAvatar = session?.desktopPlayerAvatar, inheritedPlayerAvatar = globalPlayerSetting.desktopAvatar,
+                             onSavePlayerAvatar = { path -> viewModel.savePlayerAvatar(path) }
                         )
                         "长期记忆" -> LongTermMemoryContent(
                             session = session,

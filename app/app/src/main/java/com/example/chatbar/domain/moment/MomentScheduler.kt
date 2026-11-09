@@ -163,7 +163,7 @@ class MomentScheduler(
         val imageModel = modelResolver.resolveImageModel(session.imageModelId, settings)
         val globalPlayerName = settingsRepository.getPlayerSetting().playerName
             .takeIf(String::isNotBlank)
-        val playerName = session.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName
+        val playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, card, globalPlayerName)
 
         val running = task.copy(status = MomentTaskStatus.RUNNING, sessionId = session.id, failureReason = null)
         momentRepository.updateTask(running)

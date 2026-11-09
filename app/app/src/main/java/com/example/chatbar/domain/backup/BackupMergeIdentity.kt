@@ -43,10 +43,11 @@ internal class BackupMergeIdentity(private val copy: Boolean) {
         return when (field) {
             "sessionId" -> "chat_sessions"
             "characterCardId", "importedCharacterCardId" -> "character_cards"
-            "cardId" -> "character_cards".takeIf { fields.any { it == "characterParticipation" || it == "desktopCharacterParticipation" } }
+            "cardId" -> "character_cards".takeIf { fields.any { it == "characterParticipation" || it == "desktopCharacterParticipation" || it == "desktopPlayerRole" } }
             "disabledPersonIds", "automaticallyPausedPersonIds" -> "characters".takeIf {
-                fields.any { it == "characterParticipation" || it == "desktopCharacterParticipation" }
+                fields.any { it == "characterParticipation" || it == "desktopCharacterParticipation" || it == "desktopPlayerRole" }
             }
+            "personId" -> "characters".takeIf { "desktopPlayerRole" in fields }
             "characterId", "senderCharacterId" -> "characters"
             "messageId", "messageIds", "generatedFromMessageId", "anchorMessageId", "longTermMemoryUpdatedThroughMessageId" -> "chat_messages"
             "modelId", "imageModelId", "defaultModelId", "defaultImageModelId", "visionModelId", "formatRepairModelId", "voiceTagModelId", "aiDesignModelId", "designModelId" -> "model_configs"
@@ -88,7 +89,7 @@ internal class BackupMergeIdentity(private val copy: Boolean) {
         else -> text
     }
     companion object {
-        val fields = setOf("id", "sessionId", "characterCardId", "importedCharacterCardId", "cardId", "disabledPersonIds", "automaticallyPausedPersonIds", "characterId", "senderCharacterId", "messageId", "messageIds",
+        val fields = setOf("id", "sessionId", "characterCardId", "importedCharacterCardId", "cardId", "personId", "disabledPersonIds", "automaticallyPausedPersonIds", "characterId", "senderCharacterId", "messageId", "messageIds",
             "generatedFromMessageId", "anchorMessageId", "longTermMemoryUpdatedThroughMessageId", "modelId", "imageModelId", "defaultModelId",
             "defaultImageModelId", "visionModelId", "formatRepairModelId", "voiceTagModelId", "aiDesignModelId", "designModelId", "defaultEmbeddingId",
             "formatCardId", "defaultFormatCardId", "worldBookIds", "extraWorldBookIds", "boundWorldBookId", "entryId", "postId", "currentConversationId",

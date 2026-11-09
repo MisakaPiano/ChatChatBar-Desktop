@@ -620,8 +620,8 @@ fun ChatScreen(
     val latestComplete = !isResponding && streamingMessage == null && messages.isNotEmpty()
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val backgroundPath = session?.chatBackground ?: characterCard?.chatBackground
-    val renderPlayerName = session?.playerName?.takeIf { it.isNotBlank() }
-        ?: playerSetting.playerName.takeIf { it.isNotBlank() }
+    val renderPlayerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, characterCard, playerSetting.playerName)
+    val playerAvatarPath = com.example.chatbar.domain.chat.PlayerRolePolicy.avatar(session, characterCard, playerSetting.desktopAvatar)
     val renderBotName = characterCard?.effectiveBotName ?: session?.title ?: ""
     val botAvatarPath = characterCard?.avatar
     val characterAvatars = remember(characterCard?.characters) {
@@ -1181,6 +1181,7 @@ fun ChatScreen(
                             message = message,
                             fontScale = bubbleFontScale,
                             renderPlayerName = renderPlayerName,
+                            playerAvatarPath = playerAvatarPath,
                             renderBotName = renderBotName,
                             botAvatarPath = botAvatarPath,
                             characterAvatars = characterAvatars,
@@ -1214,6 +1215,7 @@ fun ChatScreen(
                         message = displayedMessage,
                         fontScale = bubbleFontScale,
                         renderPlayerName = renderPlayerName,
+                        playerAvatarPath = playerAvatarPath,
                         renderBotName = renderBotName,
                         botAvatarPath = botAvatarPath,
                         characterAvatars = characterAvatars,
@@ -2330,6 +2332,7 @@ private fun StreamingChatBubble(
     message: ChatMessage?,
     fontScale: Float,
     renderPlayerName: String?,
+    playerAvatarPath: String?,
     renderBotName: String,
     botAvatarPath: String?,
     characterAvatars: List<ChatBubbleCharacterAvatar>,
@@ -2350,6 +2353,7 @@ private fun StreamingChatBubble(
             message = message,
             fontScale = fontScale,
             renderPlayerName = renderPlayerName,
+            playerAvatarPath = playerAvatarPath,
             renderBotName = renderBotName,
             botAvatarPath = botAvatarPath,
             characterAvatars = characterAvatars,

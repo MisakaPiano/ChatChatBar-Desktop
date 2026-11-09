@@ -42,7 +42,11 @@ internal fun SessionSettingsContent(
     participation: List<SessionCharacterParticipation> = emptyList(),
     onPersonEnabled: (String, Boolean) -> Unit = { _, _ -> },
     autoPauseAbsentPeople: Boolean = false,
-    onRebindCharacter: () -> Unit = {}
+    onRebindCharacter: () -> Unit = {},
+    playerRole: com.example.chatbar.data.local.entity.SessionPlayerRole? = null,
+    onPlayerRole: (com.example.chatbar.data.local.entity.SessionPlayerRole?) -> Unit = {},
+    playerAvatar: String? = null, inheritedPlayerAvatar: String? = null,
+    onSavePlayerAvatar: suspend (String?) -> Unit = {}
 ) {
     var showWorldBooks by remember { mutableStateOf(false) }
     val modelOptions = models.map { SessionOption(it.id, it.displayName) }
@@ -103,6 +107,12 @@ internal fun SessionSettingsContent(
             CbField("玩家名称", description = if (playerName.isBlank()) "跟随全局 · $inheritedPlayerName" else "本会话已指定") {
                 CbInput(playerName, onPlayerName, placeholder = "留空跟随全局")
             }
+        },
+        SettingsEntry("player-avatar", "player", "玩家头像", "头像 覆盖 全局 裁剪") {
+            com.example.chatbar.ui.components.PlayerAvatarSetting(playerAvatar, inheritedPlayerAvatar, onSavePlayerAvatar)
+        },
+        SettingsEntry("player-role", "player", "我扮演的角色", "关联 姓名 头像 绑定") {
+            com.example.chatbar.ui.components.PlayerRoleControls(peopleCard, playerRole, onPlayerRole)
         },
         SettingsEntry("persona", "player", "玩家设定", "玩家设定覆盖") {
             SettingsTextSummary(if (playerSetting.isBlank()) "玩家设定 · 跟随全局" else "玩家设定 · 本会话已指定",

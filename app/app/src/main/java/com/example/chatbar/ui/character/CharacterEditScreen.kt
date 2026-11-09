@@ -243,7 +243,7 @@ private data class PendingImageCrop(
     val onImage: (String) -> Unit
 )
 
-private enum class CharacterImageCropTarget(
+internal enum class CharacterImageCropTarget(
     val title: String,
     val aspectRatio: Float,
     val outputWidth: Int,
@@ -2072,7 +2072,7 @@ private fun formatDraftSavedAt(timeMs: Long): String =
     SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timeMs))
 
 @Composable
-private fun CharacterImageCropDialog(
+internal fun CharacterImageCropDialog(
     uri: Uri,
     target: CharacterImageCropTarget,
     onDismiss: () -> Unit,

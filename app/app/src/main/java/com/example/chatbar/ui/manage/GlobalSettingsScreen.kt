@@ -552,6 +552,11 @@ internal fun GlobalSettingsScreen(
         SettingsEntry("player-name", "player", "玩家名称", "玩家名称") {
             CbField("玩家名称") { CbInput(playerName, { playerName = it }, placeholder = "旅行者") }
         },
+        SettingsEntry("player-avatar", "player", "玩家头像", "头像 图片 裁剪") {
+            com.example.chatbar.ui.components.PlayerAvatarSetting(player.desktopAvatar) { path ->
+                ChatBarApp.instance.settingsRepository.setPlayerAvatar(path)
+            }
+        },
         SettingsEntry("player-persona", "player", "玩家全局设定", "玩家全局设定") {
             SettingsLink("玩家全局设定", persona.ifBlank { "未填写 · 点击编辑" }.replace("\n", " ")) { fullscreen = true }
         },
