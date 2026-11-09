@@ -97,6 +97,7 @@ import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.core.MarkwonTheme
 import io.noties.markwon.html.HtmlPlugin
+import androidx.compose.ui.text.style.TextOverflow
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
