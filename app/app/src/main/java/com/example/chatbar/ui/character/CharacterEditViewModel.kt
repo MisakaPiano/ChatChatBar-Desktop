@@ -356,6 +356,7 @@ class CharacterEditViewModel(
     var alternateGreetings by mutableStateOf(listOf<String>())
     var avatar by mutableStateOf<String?>(null)
     var chatBackground by mutableStateOf<String?>(null)
+    var coverImage by mutableStateOf<String?>(null)
     var chatBackgroundImages by mutableStateOf<List<String>>(emptyList())
     var editMode by mutableStateOf(CharacterEditMode.STRUCTURED)
     var basicSetting by mutableStateOf("")
@@ -700,6 +701,7 @@ class CharacterEditViewModel(
             // reference draft-asset paths, but the draft session dir is deleted below,
             // so a later save would fail to materialize those files.
             avatar = effectiveCard.avatar
+            coverImage = effectiveCard.coverImage
             chatBackground = effectiveCard.chatBackground
             chatBackgroundImages = effectiveCard.chatBackgroundImages
             charactersList.clear()
@@ -1116,6 +1118,7 @@ class CharacterEditViewModel(
         charactersList.addAll(merged.characters)
         state.coverImage.path?.takeIf(String::isNotBlank)?.let { path ->
             avatar = state.coverImage.avatarPath ?: path
+            coverImage = path
             setDefaultChatBackground(path)
         }
         _autoFillState.value = CharacterAutoFillUiState()
@@ -1461,6 +1464,7 @@ class CharacterEditViewModel(
             return
         }
         avatar = _coverImageState.value.avatarPath ?: path
+        coverImage = path
         setDefaultChatBackground(path)
         _coverImageState.value = CharacterCoverImageUiState()
     }
@@ -2040,6 +2044,7 @@ class CharacterEditViewModel(
         }
         state.coverImage.path?.takeIf(String::isNotBlank)?.let { path ->
             avatar = state.coverImage.avatarPath ?: path
+            coverImage = path
             setDefaultChatBackground(path)
         }
         _rewriteState.value = CharacterRewriteUiState()
@@ -2448,6 +2453,7 @@ class CharacterEditViewModel(
         greeting = card.greeting
         alternateGreetings = card.alternateGreetings
         avatar = card.avatar
+        coverImage = card.coverImage
         chatBackground = card.chatBackground
         chatBackgroundImages = card.chatBackgroundImages
         editMode = card.editMode
@@ -2532,6 +2538,7 @@ class CharacterEditViewModel(
                 greeting = greeting,
                 alternateGreetings = alternateGreetings,
                 avatar = avatar,
+                coverImage = coverImage,
                 chatBackground = chatBackground,
                 chatBackgroundImages = chatBackgroundImages,
                 editMode = editMode,
@@ -2558,7 +2565,7 @@ class CharacterEditViewModel(
 
     private fun hasNewCharacterInput(): Boolean =
         name.isNotBlank() || botName.isNotBlank() || greeting.isNotBlank() || alternateGreetings.any(String::isNotBlank) ||
-            avatar != null || chatBackground != null || chatBackgroundImages.isNotEmpty() || editMode != CharacterEditMode.STRUCTURED ||
+            avatar != null || coverImage != null || chatBackground != null || chatBackgroundImages.isNotEmpty() || editMode != CharacterEditMode.STRUCTURED ||
             basicSetting.isNotBlank() || freeformCharacterText.isNotBlank() || defaultImagePrompt.isNotBlank() ||
             systemPrompt.isNotBlank() || postHistoryInstructions.isNotBlank() || mesExample.isNotBlank() ||
             creatorNotes.isNotBlank() || !momentsEnabled || selectedWorldBookIds.isNotEmpty() ||
@@ -2581,6 +2588,7 @@ class CharacterEditViewModel(
             greeting = greeting,
             alternateGreetings = alternateGreetings,
             avatar = avatar,
+            coverImage = coverImage,
             chatBackground = chatBackground,
             chatBackgroundImages = chatBackgroundImages,
             editMode = editMode,
@@ -2614,6 +2622,7 @@ class CharacterEditViewModel(
             greeting = greeting,
             alternateGreetings = alternateGreetings,
             avatar = avatar,
+            coverImage = coverImage,
             chatBackground = chatBackground,
             chatBackgroundImages = chatBackgroundImages,
             editMode = editMode,

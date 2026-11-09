@@ -52,6 +52,7 @@ class EditorDraftAssetService(private val context: Context) {
             }
             card.copy(
                 avatar = image(card.avatar),
+                coverImage = materializeCoverOriginal(card.coverImage),
                 chatBackground = image(card.chatBackground),
                 chatBackgroundImages = card.chatBackgroundImages.mapNotNull(::image).distinct(),
                 characters = card.characters.map { character ->
@@ -83,6 +84,7 @@ class EditorDraftAssetService(private val context: Context) {
 
     fun ownedAssetPaths(card: CharacterCard): List<String> = buildList {
         card.avatar?.let(::add)
+        card.coverImage?.let(::add)
         card.chatBackground?.let(::add)
         addAll(card.chatBackgroundImages)
         card.characters.mapNotNullTo(this) { it.appearanceImage }
@@ -100,6 +102,17 @@ class EditorDraftAssetService(private val context: Context) {
             check(file.exists() && file.length() > 0L) { "草稿文件复制失败" }
             file.absolutePath
         }
+    }
+
+    private fun materializeCoverOriginal(path: String?): String? {
+        if (path.isNullOrBlank()) return null
+        val source = File(path).canonicalFile
+        check(source.isFile && source.length() > 0L) { "封面原图不存在或为空" }
+        val directory = File(context.filesDir, "images/character-covers").canonicalFile
+        if (source.toPath().startsWith(directory.toPath())) return source.absolutePath
+        val target = uniqueFile(directory, source.name)
+        source.copyTo(target, overwrite = false)
+        return target.absolutePath
     }
 
     private fun materializeFile(path: String?, dirName: String): String? {

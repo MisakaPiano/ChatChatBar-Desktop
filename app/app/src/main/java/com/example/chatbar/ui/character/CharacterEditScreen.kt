@@ -571,6 +571,17 @@ fun CharacterEditScreen(
             }) {
                 CbInput(viewModel.greeting, { viewModel.greeting = it }, placeholder = "输入开场白…", singleLine = false, minLines = 2)
             }
+            CbField("角色卡封面原图", description = "独立保存原图；修改文字、聊天背景和导出样式不会改写它。") {
+                ImagePickerPanel(
+                    imagePath = viewModel.coverImage, height = 112.dp,
+                    onPick = { pickImage { viewModel.coverImage = it } },
+                    onClear = { viewModel.coverImage = null },
+                    onDownload = { viewModel.coverImage?.let { saveImageToGallery(context, it) } }
+                )
+                if (viewModel.coverImage == null && viewModel.avatar != null) {
+                    CbButton("复制当前头像为封面原图", { viewModel.coverImage = viewModel.avatar }, variant = ButtonVariant.Ghost)
+                }
+            }
             CbField("聊天背景图库", description = "可以保存多张图片；默认背景用于新会话，每个会话也可单独选择。") {
                 com.example.chatbar.ui.components.ChatBackgroundGallery(
                     (listOfNotNull(viewModel.chatBackground) + viewModel.chatBackgroundImages).distinct(),
@@ -2015,6 +2026,7 @@ private fun characterDraftSnapshot(viewModel: CharacterEditViewModel): String = 
     append(viewModel.greeting).append('|')
     append(viewModel.alternateGreetings.joinToString("\u001f")).append('|')
     append(viewModel.avatar.orEmpty()).append('|')
+    append(viewModel.coverImage.orEmpty()).append('|')
     append(viewModel.chatBackground.orEmpty()).append('|')
     append(viewModel.chatBackgroundImages.joinToString("\u001e")).append('|')
     append(viewModel.editMode.name).append('|')

@@ -37,11 +37,56 @@ class CharacterCardTransferService(
         options: CharacterCardPngExportOptions = CharacterCardPngExportOptions()
     ): ByteArray = withContext(Dispatchers.IO) {
         val card = repository.getById(id) ?: error("角色卡不存在")
-        val packageJson = json.encodeToString(CharacterCardPackage.serializer(), packageCard(card))
+        val normalized = options.normalized()
+        val originalPath = normalized.baseImagePath(card)
+        // Keep the actual chosen base, not the rendered title/gradient, in this export only.
+        val exportCard = if (normalized.legacyCompatibility) card.copy(
+            coverImage = null, chatBackgroundImages = emptyList(),
+            characters = card.characters.map { it.copy(enabled = true) }
+        ) else card.copy(coverImage = originalPath)
+        val exportPackage = packageCard(exportCard).let { if (normalized.legacyCompatibility) it.copy(schemaVersion = 9) else it }
+        val packageJson = json.encodeToString(CharacterCardPackage.serializer(), exportPackage)
+        if (normalized.preserveOriginalCover && normalized.canKeepOriginal(card) && originalPath != null) {
+            val source = requireResourceFile(originalPath, "角色卡封面原图")
+            val bytes = source.readBytes()
+            val png = if (PngTextChunks.isPng(bytes)) bytes else {
+                val bitmap = android.graphics.BitmapFactory.decodeFile(source.absolutePath)
+                    ?: error("角色卡封面原图无法读取")
+                try {
+                    java.io.ByteArrayOutputStream().use { output ->
+                        check(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
+                        output.toByteArray()
+                    }
+                } finally { bitmap.recycle() }
+            }
+            return@withContext OriginalCharacterCover.exportPng(png, packageJson)
+        }
         val renderedPng = CharacterCardPngRenderer.render(app, card, options)
         val payload = JvmBase64.getEncoder().encodeToString(packageJson.toByteArray(Charsets.UTF_8))
         PngTextChunks.insertTextChunk(renderedPng, PngTextChunks.CHATBAR_CHARACTER_KEYWORD, payload)
     }
+
+    suspend fun exportCoverBase(id: String, options: CharacterCardPngExportOptions): CharacterCoverBaseExport =
+        withContext(Dispatchers.IO) {
+            val card = repository.getById(id) ?: error("角色卡不存在")
+            val path = options.normalized().baseImagePath(card) ?: error("请先选择封面底图")
+            val file = requireResourceFile(path, "封面底图")
+            val original = file.readBytes()
+            val bytes = if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original) else original
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            require(bounds.outWidth > 0 && bounds.outHeight > 0) { "封面底图无法读取" }
+            val mime = bounds.outMimeType ?: "application/octet-stream"
+            val extension = when (mime) {
+                "image/png" -> "png"
+                "image/jpeg" -> "jpg"
+                "image/webp" -> "webp"
+                "image/gif" -> "gif"
+                "image/bmp", "image/x-ms-bmp" -> "bmp"
+                else -> "image"
+            }
+            CharacterCoverBaseExport(bytes, mime, extension)
+        }
 
     fun decode(rawJson: String): CharacterCardPackage =
         json.decodeFromString(CharacterCardPackage.serializer(), rawJson)
@@ -55,7 +100,7 @@ class CharacterCardTransferService(
         } else {
             String(JvmBase64.getDecoder().decode(payload), Charsets.UTF_8)
         }
-        return decode(rawJson)
+        return OriginalCharacterCover.attachToImportedPackage(decode(rawJson), pngBytes)
     }
 
     suspend fun duplicate(id: String): CharacterCard = withContext(Dispatchers.IO) {
@@ -130,13 +175,17 @@ class CharacterCardTransferService(
         val resourceIdsByPath = mutableMapOf<String, String>()
         fun packageImage(path: String?, resourceId: String, label: String): String? {
             path?.takeIf(String::isNotBlank) ?: return null
-            resourceIdsByPath[path]?.let { return it }
+            if (resourceId != "cover-original") resourceIdsByPath[path]?.let { return it }
             val file = requireResourceFile(path, label)
+            val originalBytes = file.readBytes()
+            val imageBytes = if (PngTextChunks.isPng(originalBytes)) {
+                OriginalCharacterCover.imageOnlyPng(originalBytes)
+            } else originalBytes
             images[resourceId] = PackagedImage(
                 fileName = file.name.ifBlank { "$resourceId.jpg" },
-                data = Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
+                data = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
             )
-            resourceIdsByPath[path] = resourceId
+            if (resourceId != "cover-original") resourceIdsByPath[path] = resourceId
             return resourceId
         }
         val packagedCharacters = exportableCharacters.mapIndexed { index, character ->
@@ -165,6 +214,7 @@ class CharacterCardTransferService(
                 name = card.name,
                 botName = card.botName,
                 avatarResourceId = packageImage(card.avatar, "avatar", "角色卡头像"),
+                coverImageResourceId = packageImage(card.coverImage, "cover-original", "角色卡封面原图"),
                 characters = packagedCharacters,
                 greeting = card.greeting,
                 alternateGreetings = card.alternateGreetings,
@@ -220,7 +270,7 @@ class CharacterCardTransferService(
         val now = System.currentTimeMillis()
         val createdFiles = mutableListOf<File>()
         try {
-            val imagePathMap = materializeImages(packageData.images, now, createdFiles)
+            val imagePathMap = materializeImages(packageData.images, now, createdFiles, packageData.card.coverImageResourceId)
             val docsDir = File(app.filesDir, "documents").also(File::mkdirs)
             val documents = packageData.documents.map { packaged ->
                 val docId = UUID.randomUUID().toString()
@@ -253,6 +303,7 @@ class CharacterCardTransferService(
                 name = NamePolicy.normalize(name),
                 botName = card.botName,
                 avatar = card.avatarResourceId?.let(imagePathMap::getValue),
+                coverImage = card.coverImageResourceId?.let(imagePathMap::getValue),
                 characters = CharacterSpeakerNamePolicy.normalizeUnique(
                     card.characters.map { character ->
                         CharacterInfo(
@@ -347,20 +398,26 @@ class CharacterCardTransferService(
     private fun materializeImages(
         images: Map<String, PackagedImage>,
         now: Long,
-        createdFiles: MutableList<File>
+        createdFiles: MutableList<File>,
+        coverResourceId: String?
     ): Map<String, String> {
         val imageDir = File(app.filesDir, "images").also(File::mkdirs)
-        return images.mapValues { (_, packaged) ->
+        val coversDir = File(imageDir, "character-covers").also(File::mkdirs)
+        return images.mapValues { (resourceId, packaged) ->
             val extension = File(packaged.fileName).extension
                 .lowercase()
                 .takeIf { it.matches(Regex("[a-z0-9]{1,10}")) }
                 ?: "jpg"
-            val file = File(imageDir, "card_${now}_${UUID.randomUUID()}.$extension")
+            val targetDir = if (resourceId == coverResourceId) coversDir else imageDir
+            val file = File(targetDir, "card_${now}_${UUID.randomUUID()}.$extension")
             createdFiles += file
             if (packaged.data.startsWith("asset:")) {
                 app.assets.open(packaged.data.removePrefix("asset:")).use { input -> file.outputStream().use(input::copyTo) }
             } else {
-                file.writeBytes(Base64.decode(packaged.data, Base64.DEFAULT))
+                val bytes = Base64.decode(packaged.data, Base64.DEFAULT)
+                file.writeBytes(if (PngTextChunks.isPng(bytes)) {
+                    OriginalCharacterCover.imageOnlyPng(bytes)
+                } else bytes)
             }
             file.absolutePath
         }
@@ -396,6 +453,7 @@ class CharacterCardTransferService(
 
     private fun CharacterCard.ownedFilePaths(): Set<String> = buildSet {
         avatar?.takeIf { it.isNotBlank() }?.let(::add)
+        coverImage?.takeIf { it.isNotBlank() }?.let(::add)
         chatBackground?.takeIf { it.isNotBlank() }?.let(::add)
         addAll(chatBackgroundImages.filter(String::isNotBlank))
         characters.mapNotNullTo(this) { it.appearanceImage?.takeIf(String::isNotBlank) }

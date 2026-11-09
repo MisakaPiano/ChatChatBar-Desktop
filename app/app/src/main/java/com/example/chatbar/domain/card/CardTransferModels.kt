@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 
-const val CHARACTER_CARD_PACKAGE_SCHEMA_VERSION = 10
+const val CHARACTER_CARD_PACKAGE_SCHEMA_VERSION = 11
 
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
@@ -51,7 +51,9 @@ data class PackagedCharacterCard(
     val extensions: String = "",
     val characterBook: WorldBook? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val chatBackgroundImageResourceIds: List<String> = emptyList()
+    val chatBackgroundImageResourceIds: List<String> = emptyList(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val coverImageResourceId: String? = null
 )
 
 @Serializable
@@ -107,6 +109,7 @@ internal fun CharacterCardPackage.validateForImport() {
     }
     val references = buildList {
         card.avatarResourceId?.let(::add)
+        card.coverImageResourceId?.let(::add)
         card.chatBackgroundResourceId?.let(::add)
         addAll(card.chatBackgroundImageResourceIds)
         card.characters.mapNotNullTo(this) { it.appearanceImageResourceId }

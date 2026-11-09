@@ -1,0 +1,9 @@
+# Cover and gallery portable contract
+
+Complete character package11 combines independent `coverImageResourceId`, ordered `chatBackgroundImageResourceIds`, and independent default `chatBackgroundResourceId`. Entity fields are `coverImage`, `chatBackgroundImages`, `chatBackground`. Image IDs are opaque. Default outside gallery is valid, including legacy single-background cards. Import accepts repeated gallery refs, resolves/deduplicates by reference identity in first-occurrence order; never deduplicate by image bytes. All refs must exist. Missing files fail export visibly. Session background override remains outside the character package.
+
+Readers accept3–10, including Android gallery10 and Desktop cover10, with missing optional fields empty/null. Explicit compatibility9 omits independent cover, gallery and person gates and warns about that loss; complete11 is required for all-background interchange. No schema number alone proves Desktop interoperability.
+
+Cover source files are immutable. PNG export removes only prior card payload chunks from output image copies; encoded image/other chunks are preserved. Native imports retain embedded original before considering outer rendered PNG. Selected export base is carried as an independent cover in the export copy, without modifying saved card/default/gallery. Display title never renames card. Standalone base output strips old card payloads from PNG and keeps non-PNG source bytes.
+
+Public synthetic fixtures: `app/app/src/androidTest/assets/cover-gallery-contract/`; manifest gives bytes/SHA256. They intentionally include default outside gallery, duplicate refs, independent cover/avatar/person pictures and disabled person. Device test writes actual Android-produced JSON/PNG to external-files `cover-gallery-evidence/` for Desktop reader roundtrips. These are contract fixtures, not a claim that both production readers passed.

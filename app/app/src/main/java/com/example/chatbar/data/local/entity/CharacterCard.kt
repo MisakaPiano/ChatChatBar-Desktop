@@ -61,7 +61,10 @@ data class CharacterCard(
     val updatedAt: Long,
     /** Original chat images available to new and existing conversations; default remains chatBackground. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val chatBackgroundImages: List<String> = emptyList()
+    val chatBackgroundImages: List<String> = emptyList(),
+    /** Immutable original cover, independent from display composition and chat backgrounds. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val coverImage: String? = null
 ) {
     val effectiveBotName: String
         get() = botName.takeIf(String::isNotBlank) ?: name

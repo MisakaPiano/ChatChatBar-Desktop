@@ -140,6 +140,7 @@ private data class PendingDeletion(
             ownerId = card.id,
             filePaths = buildList {
                 card.avatar?.let(::add)
+                card.coverImage?.let(::add)
                 card.chatBackground?.let(::add)
                 addAll(card.chatBackgroundImages)
                 card.characters.mapNotNullTo(this) { it.appearanceImage }

@@ -63,6 +63,7 @@ object SillyTavernCardMapper {
             greeting = finalGreeting,
             alternateGreetings = finalAlternates,
             avatarResourceId = if (st.pngBytes != null) "card-avatar" else null,
+            coverImageResourceId = if (st.pngBytes != null) "cover-original" else null,
             chatBackgroundResourceId = if (st.pngBytes != null) "card-avatar" else null,
             editMode = CharacterEditMode.FREEFORM,
             freeformCharacterText = freeformText,
@@ -79,13 +80,16 @@ object SillyTavernCardMapper {
         )
 
         return CharacterCardPackage(
-            schemaVersion = 5,
+            schemaVersion = CHARACTER_CARD_PACKAGE_SCHEMA_VERSION,
             card = card,
             documents = emptyList(),
             images = if (st.pngBytes != null) {
-                mapOf("card-avatar" to PackagedImage(
+                mapOf("cover-original" to PackagedImage(
+                    fileName = "cover-original.png",
+                    data = Base64.getEncoder().encodeToString(OriginalCharacterCover.imageOnlyPng(st.pngBytes))
+                ), "card-avatar" to PackagedImage(
                     fileName = "card.png",
-                    data = Base64.getEncoder().encodeToString(st.pngBytes)
+                    data = Base64.getEncoder().encodeToString(OriginalCharacterCover.imageOnlyPng(st.pngBytes))
                 ))
             } else emptyMap(),
             worldBooks = listOfNotNull(characterBook)

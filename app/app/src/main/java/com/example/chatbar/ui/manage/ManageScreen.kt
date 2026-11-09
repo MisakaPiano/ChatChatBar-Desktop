@@ -100,6 +100,8 @@ import com.example.chatbar.domain.appearance.ThemeColorHistoryPolicy
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import com.example.chatbar.domain.card.CharacterCardImportRequest
 import com.example.chatbar.domain.card.CharacterCardPngExportOptions
+import com.example.chatbar.domain.card.CharacterCoverAssets
+import com.example.chatbar.domain.card.CharacterCoverBaseExport
 import com.example.chatbar.domain.card.CharacterCardPngRenderer
 import com.example.chatbar.domain.card.SharedImportFocus
 import com.example.chatbar.domain.card.SharedImportSection
@@ -244,6 +246,10 @@ fun ManageScreen(
     var exportCharacterId by remember { mutableStateOf<String?>(null) }
     var pendingCharacterExport by remember { mutableStateOf<CharacterCard?>(null) }
     var characterExportOptions by remember { mutableStateOf(CharacterCardPngExportOptions()) }
+    var pendingCoverBase by remember { mutableStateOf<Pair<String, CharacterCoverBaseExport>?>(null) }
+    var coverBaseBusy by remember { mutableStateOf(false) }
+    var coverBaseRequest by remember { mutableStateOf(0) }
+
     var exportFormatId by remember { mutableStateOf<String?>(null) }
     var exportWorldBookId by remember { mutableStateOf<String?>(null) }
     var exportWorldBookAsStId by remember { mutableStateOf<String?>(null) }
@@ -279,6 +285,34 @@ fun ManageScreen(
                     it.write(viewModel.exportCharacterCardPng(id, characterExportOptions))
                 }
             }.onSuccess { message = "角色卡 PNG 已导出。" }.onFailure { message = "导出失败：${it.message}" }
+        }
+    }
+    val saveCoverBase = rememberLauncherForActivityResult(
+        CreateOpenableDocument(pendingCoverBase?.second?.mimeType ?: "image/png")
+    ) { uri ->
+        val captured = pendingCoverBase.also { pendingCoverBase = null }
+        if (uri != null && captured != null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    requireNotNull(context.contentResolver.openOutputStream(uri)) { "无法写入所选位置" }
+                        .use { it.write(captured.second.bytes) }
+                }
+                message = "封面底图已保存，可从文件重新选择复用。"
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                message = "底图保存失败：${error.message}"
+            } finally { coverBaseBusy = false }
+        } else coverBaseBusy = false
+    }
+    LaunchedEffect(pendingCoverBase) {
+        pendingCoverBase?.let { captured ->
+            try { saveCoverBase.launch(captured.first) }
+            catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                pendingCoverBase = null
+                coverBaseBusy = false
+                message = "无法打开保存位置：${error.message}"
+            }
         }
     }
     val importCharacter = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -656,7 +690,24 @@ fun ManageScreen(
             card = card,
             options = characterExportOptions,
             onOptionsChange = { characterExportOptions = it },
-            onDismiss = { pendingCharacterExport = null },
+            onDismiss = { coverBaseRequest++; pendingCharacterExport = null },
+            baseBusy = coverBaseBusy,
+            onSaveBase = { capturedOptions ->
+                val request = ++coverBaseRequest
+                coverBaseBusy = true
+                scope.launch {
+                    try {
+                        val base = viewModel.exportCharacterCoverBase(card.id, capturedOptions)
+                        if (request == coverBaseRequest && pendingCharacterExport?.id == card.id) {
+                            pendingCoverBase = "${safeName(card.name)}-封面底图.${base.extension}" to base
+                        } else coverBaseBusy = false
+                    } catch (error: Exception) {
+                        if (error is kotlinx.coroutines.CancellationException) throw error
+                        coverBaseBusy = false
+                        if (request == coverBaseRequest) message = "读取底图失败：${error.message}"
+                    }
+                }
+            },
             onExport = {
                 exportCharacterId = card.id
                 pendingCharacterExport = null
@@ -693,12 +744,14 @@ fun ManageScreen(
 }
 
 @Composable
-private fun CharacterPngExportDialog(
+internal fun CharacterPngExportDialog(
     card: CharacterCard,
     options: CharacterCardPngExportOptions,
     onOptionsChange: (CharacterCardPngExportOptions) -> Unit,
     onDismiss: () -> Unit,
-    onExport: () -> Unit
+    onExport: () -> Unit,
+    baseBusy: Boolean = false,
+    onSaveBase: (CharacterCardPngExportOptions) -> Unit = {}
 ) {
     val normalized = options.normalized()
     val context = LocalContext.current
@@ -734,14 +787,40 @@ private fun CharacterPngExportDialog(
             }
         }
     }
-    val backgroundFile = (normalized.coverImagePath ?: card.chatBackground)?.let(::File)?.takeIf(File::isFile)
+    val backgroundFile = normalized.baseImagePath(card)?.let(::File)?.takeIf(File::isFile)
     var showBackgroundCrop by remember(card.id) { mutableStateOf(false) }
+    var showCardImages by remember(card.id) { mutableStateOf(false) }
+    val cardImages = remember(card) { CharacterCoverAssets.available(card) }
+    if (showCardImages) {
+        CbDialog(onDismissRequest = { showCardImages = false }, title = "选择本卡图片",
+            confirm = { CbButton("返回导出", { showCardImages = false }) }) {
+            if (cardImages.isEmpty()) CbText("本卡没有可用图片，请从文件选择。")
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = 420.dp).weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(cardImages, key = { it.path }) { asset ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AsyncImage(File(asset.path), asset.labels.joinToString(" / "),
+                            Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+                        CbText(asset.labels.joinToString(" / "), Modifier.weight(1f), maxLines = 3)
+                        CbButton("选为底图", {
+                            onOptionsChange(normalized.copy(coverImagePath = asset.path,
+                                cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f))
+                            showCardImages = false
+                        }, modifier = Modifier.heightIn(min = 48.dp), enabled = !baseBusy && !importingCover,
+                            variant = ButtonVariant.Outline)
+                    }
+                }
+            }
+        }
+        return
+    }
     CbDialog(
         onDismissRequest = onDismiss,
         title = "导出角色卡 PNG",
         modifier = Modifier.heightIn(max = 780.dp),
         dismiss = { CbButton("取消", onDismiss, variant = ButtonVariant.Ghost) },
-        confirm = { CbButton("导出 PNG", onExport, enabled = !importingCover) }
+        confirm = { CbButton("导出 PNG", onExport, enabled = !importingCover && !baseBusy) }
     ) {
         Column(
             Modifier
@@ -749,48 +828,82 @@ private fun CharacterPngExportDialog(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            CharacterPngPreview(card, normalized)
-            CbButton("从文件选择导出图片", { chooseCover.launch(arrayOf("image/*")) }, enabled = !importingCover, variant = ButtonVariant.Outline)
-            if (normalized.coverImagePath != null) {
-                CbButton("使用角色卡背景图", { onOptionsChange(normalized.copy(coverImagePath = null, cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f)) }, variant = ButtonVariant.Ghost)
+            val keepOriginal = normalized.canKeepOriginal(card) && normalized.preserveOriginalCover
+            CbButton("从本卡图片选择", { showCardImages = true }, enabled = !baseBusy && !importingCover,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), variant = ButtonVariant.Outline)
+            CbButton("从文件选择底图", { chooseCover.launch(arrayOf("image/*")) }, enabled = !baseBusy && !importingCover,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), variant = ButtonVariant.Ghost)
+            CbButton(if (baseBusy) "正在保存底图…" else "单独保存底图文件", { onSaveBase(normalized) },
+                enabled = backgroundFile != null && !baseBusy && !importingCover,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), variant = ButtonVariant.Outline)
+            CbField("导出格式") {
+                CbSelect(normalized.legacyCompatibility, listOf(false, true),
+                    { if (it) "兼容旧版（单张背景）" else "完整格式（保留原图与图库）" },
+                    { onOptionsChange(normalized.copy(legacyCompatibility = it)) })
+                if (normalized.legacyCompatibility) CbText("兼容导出不携带独立底图、整套图库和人物开关。可单独保存底图供手动复用。",
+                    color = ChatBarTheme.colors.warning, style = ChatBarTheme.typography.caption)
             }
-            if (backgroundFile == null) {
-                CbText("未设置默认聊天背景，当前预览使用品牌底色。", color = ChatBarTheme.colors.warning, style = ChatBarTheme.typography.caption)
+            if (normalized.canKeepOriginal(card)) {
+                CbSelect(
+                    keepOriginal, listOf(true, false),
+                    { if (it) "原图导出（不加文字）" else "排版导出（文字与渐变）" },
+                    { onOptionsChange(normalized.copy(preserveOriginalCover = it)) }
+                )
+            }
+            if (keepOriginal) {
+                AsyncImage(
+                    model = backgroundFile, contentDescription = "封面原图",
+                    modifier = Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Fit
+                )
+                CbText("保留原图尺寸和画面，仅更新角色卡数据。原图文件不会被改写。", style = ChatBarTheme.typography.caption)
             } else {
-                CbButton("调整背景裁剪", { showBackgroundCrop = true }, variant = ButtonVariant.Outline)
+                CharacterPngPreview(card, normalized)
+                CbField("封面显示文字", description = "只影响导出图片，不改角色卡名称和设定。") {
+                    CbInput(normalized.displayText ?: card.name, { onOptionsChange(normalized.copy(displayText = it)) },
+                        singleLine = true)
+                    CbButton("使用角色卡名称", { onOptionsChange(normalized.copy(displayText = null)) }, variant = ButtonVariant.Ghost)
+                }
+                if (normalized.coverImagePath != null) {
+                    CbButton(if (card.coverImage != null) "使用角色卡封面原图" else "使用角色卡背景图", { onOptionsChange(normalized.copy(coverImagePath = null, cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f)) }, variant = ButtonVariant.Ghost)
+                }
+                if (backgroundFile == null) {
+                    CbText("未设置默认聊天背景，当前预览使用品牌底色。", color = ChatBarTheme.colors.warning, style = ChatBarTheme.typography.caption)
+                } else {
+                    CbButton("调整背景裁剪", { showBackgroundCrop = true }, variant = ButtonVariant.Outline)
+                }
+                CbField("导出尺寸") {
+                    val sizes = listOf(1024, 1536, 2048)
+                    CbSelect(normalized.sizePx, sizes, { "${it} x ${it}" }, { onOptionsChange(normalized.copy(sizePx = it)) })
+                }
+                ExportSliderField(
+                    label = "渐变高度",
+                    valueText = "${(normalized.gradientHeight * 100).roundToInt()}%",
+                    value = normalized.gradientHeight,
+                    range = 0.25f..0.68f,
+                    onChange = { onOptionsChange(normalized.copy(gradientHeight = it)) }
+                )
+                ExportSliderField(
+                    label = "渐变强度",
+                    valueText = "${(normalized.gradientStrength * 100).roundToInt()}%",
+                    value = normalized.gradientStrength,
+                    range = 0.45f..0.9f,
+                    onChange = { onOptionsChange(normalized.copy(gradientStrength = it)) }
+                )
+                ExportSliderField(
+                    label = "图标大小",
+                    valueText = "${(normalized.logoScale * 100).roundToInt()}%",
+                    value = normalized.logoScale,
+                    range = 0.07f..0.14f,
+                    onChange = { onOptionsChange(normalized.copy(logoScale = it)) }
+                )
+                ExportSliderField(
+                    label = "标题大小",
+                    valueText = "${(normalized.titleScale * 100).roundToInt()}%",
+                    value = normalized.titleScale,
+                    range = 0.04f..0.08f,
+                    onChange = { onOptionsChange(normalized.copy(titleScale = it)) }
+                )
             }
-            CbField("导出尺寸") {
-                val sizes = listOf(1024, 1536, 2048)
-                CbSelect(normalized.sizePx, sizes, { "${it} x ${it}" }, { onOptionsChange(normalized.copy(sizePx = it)) })
-            }
-            ExportSliderField(
-                label = "渐变高度",
-                valueText = "${(normalized.gradientHeight * 100).roundToInt()}%",
-                value = normalized.gradientHeight,
-                range = 0.25f..0.68f,
-                onChange = { onOptionsChange(normalized.copy(gradientHeight = it)) }
-            )
-            ExportSliderField(
-                label = "渐变强度",
-                valueText = "${(normalized.gradientStrength * 100).roundToInt()}%",
-                value = normalized.gradientStrength,
-                range = 0.45f..0.9f,
-                onChange = { onOptionsChange(normalized.copy(gradientStrength = it)) }
-            )
-            ExportSliderField(
-                label = "图标大小",
-                valueText = "${(normalized.logoScale * 100).roundToInt()}%",
-                value = normalized.logoScale,
-                range = 0.07f..0.14f,
-                onChange = { onOptionsChange(normalized.copy(logoScale = it)) }
-            )
-            ExportSliderField(
-                label = "标题大小",
-                valueText = "${(normalized.titleScale * 100).roundToInt()}%",
-                value = normalized.titleScale,
-                range = 0.04f..0.08f,
-                onChange = { onOptionsChange(normalized.copy(titleScale = it)) }
-            )
         }
     }
 
@@ -815,8 +928,8 @@ private fun CharacterPngExportDialog(
 
 @Composable
 private fun CharacterPngPreview(card: CharacterCard, options: CharacterCardPngExportOptions) {
-    val backgroundFile = remember(card.chatBackground, options.coverImagePath) {
-        (options.coverImagePath ?: card.chatBackground)?.let(::File)?.takeIf(File::isFile)
+    val backgroundFile = remember(card.coverImage, card.chatBackground, options.coverImagePath) {
+        (options.coverImagePath ?: card.coverImage ?: card.chatBackground)?.let(::File)?.takeIf(File::isFile)
     }
     val density = LocalDensity.current
     var sourceSize by remember(backgroundFile) { mutableStateOf<ImageCropSize?>(null) }
@@ -916,7 +1029,7 @@ private fun CharacterPngPreview(card: CharacterCard, options: CharacterCardPngEx
             }
             Spacer(Modifier.width(gap))
             CbText(
-                card.name.ifBlank { "未命名角色" },
+                options.displayText ?: card.name.ifBlank { "未命名角色" },
                 modifier = Modifier.weight(1f),
                 color = Color.White,
                 style = ChatBarTheme.typography.title.copy(

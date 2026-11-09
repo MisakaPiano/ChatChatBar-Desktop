@@ -22,7 +22,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 data class CharacterCardPngExportOptions(
-    /** Export-only cover; never stored on the character card or in its package. */
+    /** Export-only base; retained in the exported copy, without changing the saved card. */
     val coverImagePath: String? = null,
     val sizePx: Int = 1536,
     val gradientHeight: Float = 0.42f,
@@ -31,8 +31,18 @@ data class CharacterCardPngExportOptions(
     val titleScale: Float = 0.052f,
     val cropCenterX: Float = 0.5f,
     val cropCenterY: Float = 0.5f,
-    val cropZoom: Float = 1f
+    val cropZoom: Float = 1f,
+    val preserveOriginalCover: Boolean = true,
+    val displayText: String? = null,
+    val legacyCompatibility: Boolean = false
 ) {
+    fun baseImagePath(card: CharacterCard): String? =
+        coverImagePath?.takeIf(String::isNotBlank) ?: card.coverImage?.takeIf(String::isNotBlank)
+        ?: card.chatBackground?.takeIf(String::isNotBlank)
+
+    fun canKeepOriginal(card: CharacterCard): Boolean =
+        !coverImagePath.isNullOrBlank() || !card.coverImage.isNullOrBlank()
+
     fun normalized(): CharacterCardPngExportOptions = copy(
         sizePx = sizePx.coerceIn(1024, 2048),
         gradientHeight = gradientHeight.coerceIn(0.25f, 0.68f),
@@ -51,7 +61,7 @@ object CharacterCardPngRenderer {
         val size = normalized.sizePx
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val sourcePath = normalized.coverImagePath ?: card.chatBackground
+        val sourcePath = normalized.baseImagePath(card)
         val background = sourcePath
             ?.takeIf(String::isNotBlank)
             ?.let(::File)
@@ -72,7 +82,7 @@ object CharacterCardPngRenderer {
             drawFallbackBackground(canvas, size)
         }
         drawBottomGradient(canvas, size, normalized)
-        drawBrandRow(context, canvas, size, card.name.ifBlank { "未命名角色" }, normalized)
+        drawBrandRow(context, canvas, size, normalized.displayText ?: card.name.ifBlank { "未命名角色" }, normalized)
         return ByteArrayOutputStream().use { output ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
             bitmap.recycle()
