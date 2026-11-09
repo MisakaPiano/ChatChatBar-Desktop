@@ -97,6 +97,7 @@ import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.core.MarkwonTheme
 import io.noties.markwon.html.HtmlPlugin
+import androidx.compose.ui.text.style.TextOverflow
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -821,7 +822,8 @@ private fun SegmentBubbleSurface(
 private fun CharacterChatAvatar(
     avatarPath: String?,
     name: String,
-    exportMode: Boolean
+    exportMode: Boolean,
+    contentDescription: String = "角色头像"
 ) {
     val shape = CircleShape
     val cleanPath = avatarPath?.takeIf { it.isNotBlank() }
@@ -843,7 +845,7 @@ private fun CharacterChatAvatar(
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap,
-                        contentDescription = "角色头像",
+                        contentDescription = contentDescription,
                         modifier = Modifier.size(ChatAvatarSize).clip(shape),
                         contentScale = ContentScale.Crop
                     )
@@ -853,7 +855,7 @@ private fun CharacterChatAvatar(
             } else {
                 AsyncImage(
                     model = avatarFile,
-                    contentDescription = "角色头像",
+                    contentDescription = contentDescription,
                     modifier = Modifier.size(ChatAvatarSize).clip(shape),
                     contentScale = ContentScale.Crop
                 )
@@ -963,9 +965,9 @@ private fun LegacyChatBubble(
                 horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
             ) {
                 if (isUser && (playerAvatarPath != null || !renderPlayerName.isNullOrBlank())) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CbText(renderPlayerName ?: "你", style = ChatBarTheme.typography.caption)
-                        CharacterChatAvatar(playerAvatarPath, renderPlayerName ?: "你", exportMode)
+                    Row(Modifier.widthIn(max = bubbleMaxWidth), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CbText(renderPlayerName ?: "你", Modifier.weight(1f, fill = false), style = ChatBarTheme.typography.caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        CharacterChatAvatar(playerAvatarPath, renderPlayerName ?: "你", exportMode, contentDescription = "玩家头像")
                     }
                     Spacer(Modifier.height(4.dp))
                 }

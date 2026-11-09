@@ -11,6 +11,11 @@ internal fun <T> mergeSettingsDraft(serializer: KSerializer<T>, baseline: T, dra
     val before = json.encodeToJsonElement(serializer, baseline).jsonObject
     val edited = json.encodeToJsonElement(serializer, draft).jsonObject
     val current = json.encodeToJsonElement(serializer, latest).jsonObject
-    val changes = edited.filter { (key, value) -> before[key] != value }
-    return json.decodeFromJsonElement(serializer, JsonObject(current + changes))
+    val merged = current.toMutableMap()
+    // EncodeDefault.NEVER omits a field reset to its default. Absence is an edit too.
+    for (key in before.keys + edited.keys) {
+        if (before[key] == edited[key]) continue
+        if (key in edited) merged[key] = edited.getValue(key) else merged.remove(key)
+    }
+    return json.decodeFromJsonElement(serializer, JsonObject(merged))
 }
