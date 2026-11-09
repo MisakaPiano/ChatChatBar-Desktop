@@ -44,7 +44,7 @@ class DesktopPortableBackgroundGalleryTest {
         assertFalse(after.card.chatBackgroundResourceId in after.card.chatBackgroundImageResourceIds)
     }
 
-    @Test fun `actual Android JSON and PNG survive Desktop production import export reopen and second round without losing any backgrounds`() = runBlocking {
+    @Test fun `actual Android JSON and PNG survive Desktop production import export reopen and second round without losing any backgrounds`(): Unit = runBlocking {
         for (extension in listOf("json", "png")) withApp { app, _ ->
             val input = fixture("android-complete11.$extension")
             val source = if (extension == "json") app.characterTransfers.decode(input.toString(Charsets.UTF_8))
@@ -69,7 +69,7 @@ class DesktopPortableBackgroundGalleryTest {
         }
     }
 
-    @Test fun `legacy private library projects read only then explicit migration preserves default preferred source bytes and later removal`() = runBlocking {
+    @Test fun `legacy private library projects read only then explicit migration preserves default preferred source bytes and later removal`(): Unit = runBlocking {
         withApp { app, _ ->
             val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
             val card = app.characterTransfers.importNew(source)
@@ -96,7 +96,7 @@ class DesktopPortableBackgroundGalleryTest {
         }
     }
 
-    @Test fun `new background bytes and explicit default survive export while missing gallery fails visibly without modifying source`() = runBlocking {
+    @Test fun `new background bytes and explicit default survive export while missing gallery fails visibly without modifying source`(): Unit = runBlocking {
         withApp { app, parent ->
             val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
             val card = app.characterTransfers.importNew(source)
@@ -137,7 +137,7 @@ class DesktopPortableBackgroundGalleryTest {
         }
     }
 
-    @Test fun `new Desktop preference does not become a legacy gallery source after a portable card edit`() = runBlocking {
+    @Test fun `new Desktop preference does not become a legacy gallery source after a portable card edit`(): Unit = runBlocking {
         withApp { app, _ ->
             val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
             val card = app.characterTransfers.importNew(source)

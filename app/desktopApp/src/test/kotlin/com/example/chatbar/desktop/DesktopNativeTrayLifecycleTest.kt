@@ -24,7 +24,7 @@ class DesktopNativeTrayLifecycleTest {
     }
     private suspend fun until(check: () -> Boolean) = withTimeout(10000) { while (!check()) delay(20) }
 
-    @Test fun `real tray main close hides restores and explicit exit retains dirty continuation then drains original work`() = runBlocking {
+    @Test fun `real tray main close hides restores and explicit exit retains dirty continuation then drains original work`(): Unit = runBlocking {
         val output = System.getenv("CCB_NATIVE_TRAY_REVIEW_DIR")?.let(Path::of)
         assumeTrue("Opt-in cloud native tray only", output != null && System.getenv("GITHUB_ACTIONS") == "true")
         val supported = awt { SystemTray.isSupported() }
