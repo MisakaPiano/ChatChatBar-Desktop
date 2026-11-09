@@ -1,0 +1,52 @@
+{
+  "syntheticOnly": true,
+  "desktopProducerSource": "c4a90fc74b08d97c7a0aab79b9b1706c06925aa6",
+  "desktopProducerRun": 42674872283,
+  "desktopArtifactSha256": "59b29a93b73f94c249bd2da18e9c1c4f63c33760fc0a93f4a0a1de16493a4bdc",
+  "originalAndroidSource": "2fd7c2b08641b9f255312822919e7c2ce15bd871",
+  "producerMethodsPassed": [
+    "new background bytes and explicit default survive export while missing gallery fails visibly without modifying source",
+    "export guard retains gallery original bytes and its missing location including an existing hardlink alias",
+    "new Desktop preference does not become a legacy gallery source after a portable card edit",
+    "legacy private library projects read only then explicit migration preserves default preferred source bytes and later removal",
+    "actual Android JSON and PNG survive Desktop production import export reopen and second round without losing any backgrounds"
+  ],
+  "files": [
+    {
+      "file": "desktop-from-android-json.json",
+      "bytes": 4297,
+      "sha256": "245b24038d737f476ffd133d86c09dd50cd0b964721784b42ff35399e657f0ae",
+      "originCase": "android-origin"
+    },
+    {
+      "file": "desktop-from-android-json.png",
+      "bytes": 5872,
+      "sha256": "fb822a53836cbc9e607ca1d9abc05cec42992b973ea47479174f9b2dd03fcdd2",
+      "originCase": "android-origin"
+    },
+    {
+      "file": "desktop-from-android-png.json",
+      "bytes": 4297,
+      "sha256": "4590ce31fb85f54ccd02bc1480b2d5d4dd893bab066df96f5b1e1c9937f844e3",
+      "originCase": "android-origin"
+    },
+    {
+      "file": "desktop-from-android-png.png",
+      "bytes": 5872,
+      "sha256": "eeecf6d21e8f3069c9c642335d6a89a07eb9cf73232be0b87036d1e2ec54231c",
+      "originCase": "android-origin"
+    },
+    {
+      "file": "desktop-created-complete11.json",
+      "bytes": 4333,
+      "sha256": "a943d0fd4183203f2595a97899c2bd43eb8f98274c43dd5ce46605d08a379faa",
+      "originCase": "desktop-origin"
+    },
+    {
+      "file": "desktop-created-complete11.png",
+      "bytes": 5920,
+      "sha256": "baf897f828ee19d9dde03f2b9d67971d00b30235081da7381b895346ee931339",
+      "originCase": "desktop-origin"
+    }
+  ]
+}
