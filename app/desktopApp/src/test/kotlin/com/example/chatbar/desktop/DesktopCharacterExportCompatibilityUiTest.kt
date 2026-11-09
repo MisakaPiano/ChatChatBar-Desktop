@@ -63,7 +63,7 @@ class DesktopCharacterExportCompatibilityUiTest {
                 val payload = assertNotNull(PngTextChunks.extractTextChunk(Files.readAllBytes(output), PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
                 val raw = String(java.util.Base64.getDecoder().decode(payload), Charsets.UTF_8)
                 val data = app.transferJson.decodeFromString(Official1411Package.serializer(), raw).also { it.validateOfficial1411() }
-                assertEquals(9, data.schemaVersion); assertNull(data.card.coverImageResourceId)
+                assertEquals(9, data.schemaVersion); assertFalse(raw.contains("coverImageResourceId"))
                 assertEquals(card, app.characterRepository.getById(card.id))
                 assertContentEquals(background, Files.readAllBytes(app.appDataRoot.resolve(assertNotNull(card.chatBackground))))
                 assertContentEquals(replacement, Files.readAllBytes(input))
