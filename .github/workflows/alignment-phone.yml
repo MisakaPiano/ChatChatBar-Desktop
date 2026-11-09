@@ -1,4 +1,4 @@
-name: Android alignment a2 people controls and external draft fixes
+name: Android alignment a2 focused people UI and final phone APK
 on:
   push:
     branches: [ci/upstream-functional-alignment-20261108]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: bc20bdf40c7bb76d3aa237774e7b36d2b2503077
+  SOURCE_SHA: 63be1edd7dfdc56177bc1679e90b40bf3b39725d
   TEST_APPLICATION_ID: com.example.chatbar.alignment.a2
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,16 +19,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: bc20bdf40c7bb76d3aa237774e7b36d2b2503077
+          ref: 63be1edd7dfdc56177bc1679e90b40bf3b39725d
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "ff26ce2b2ca35a4c667a732ab1c3281f10fb2a68"
+          test "$(git rev-parse HEAD^{tree})" = "416adaf81dc66b7a232d389bbde462e575b4a2ab"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
+          git diff --name-only bc20bdf40c7bb76d3aa237774e7b36d2b2503077 HEAD > phone-test-output/SOURCE_CHANGE_FROM_R01.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          changed = set(Path('phone-test-output/SOURCE_CHANGE_FROM_R01.txt').read_text().splitlines())
+          assert changed == {'app/app/src/main/java/com/example/chatbar/ui/chat/ChatPeopleControls.kt','app/app/src/androidTest/java/com/example/chatbar/ui/chat/ChatPeopleControlsTest.kt'}, changed
+          PY
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -157,15 +163,9 @@ jobs:
         with:
           path: ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/002fac4210c52c27b244305d60b0906e831f49be
           key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
-      - name: Compile production and instrumentation, check person policy
+      - name: Compile production and instrumentation and build final APK
         working-directory: app
-        run: |
-          bash ./gradlew :app:testDebugUnitTest --tests '*FunctionalAlignmentPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
-          mkdir -p ../phone-test-output/unit
-          cp -R app/build/test-results/testDebugUnitTest/. ../phone-test-output/unit/
-      - name: Build installable debug test APK
-        working-directory: app
-        run: bash ./gradlew :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a2 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+        run: bash ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a2 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
       - name: Prepare affected phone regressions
         run: |
           cat > "$RUNNER_TEMP/alignment-a2-checks.sh" <<'SH'
@@ -179,7 +179,7 @@ jobs:
             fi
           }
           trap finish EXIT
-          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a2 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.manage.ManagementDraftDiscardTest,com.example.chatbar.ui.character.CharacterDraftDiscardTest,com.example.chatbar.ui.worldbook.WorldBookQuickToggleViewModelTest,com.example.chatbar.ui.chat.SessionCharacterRebindTest,com.example.chatbar.ui.chat.ChatPeopleControlsTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a2 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ChatPeopleControlsTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
           mkdir -p "$out/screenshots"
           adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/alignment-people-evidence/." "$out/screenshots/"
           test -s "$out/screenshots/people-topbar-320dp.png"
@@ -190,7 +190,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify people UI, actual management discard and atomic session persistence
+      - name: Verify changed people UI and screenshots
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -218,10 +218,10 @@ jobs:
                       cases.append({'class':c.get('classname'),'name':c.get('name'),'failure':c.find('failure') is not None,'error':c.find('error') is not None,'skipped':c.find('skipped') is not None})
               return cases
           unit, device = results('unit'), results('device')
-          assert len(unit) == 8 and not any(c['failure'] or c['error'] or c['skipped'] for c in unit), unit
-          assert len(device) == 27 and not any(c['failure'] or c['error'] or c['skipped'] for c in device), device
-          assert len({(c['class'],c['name']) for c in device}) == 27
-          summary = {'unit':unit,'device':device,'scope':'8 existing person-policy checks plus27 affected Android cases, including6 actual management-list discard regressions,4 people UI cases and4 atomic/actual ViewModel quick-toggle checks. Prior unrelated gallery/transfer results reused. Synthetic only.'}
+          assert len(unit) == 0, unit  # R01 unit originals were independently verified; not rerun or counted in this run
+          assert len(device) == 4 and not any(c['failure'] or c['error'] or c['skipped'] for c in device), device
+          assert len({(c['class'],c['name']) for c in device}) == 4
+          summary = {'unit':unit,'device':device,'scope':'4 affected people UI cases on source 63be1edd7dfdc56177bc1679e90b40bf3b39725d. R01 original8 JVM and23 non-UI Android cases retained separately from bc20 source; exact only-two-UI-files diff verified. R01 screenshot-harness failure preserved, no full same-source CI claim.', 'reuse':{'run':42638914210,'artifact':13685755563,'artifactSha256':'ad7397a6ef6b8d5cef62881e4d5f523512311fd917331865359e358116980c65','unitPass':8,'nonUiAndroidPass':23}}
           (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
           apk = out / 'CCB-functional-alignment-a2-test.apk'
           badging = (out / 'apk-badging.txt').read_text()
@@ -237,7 +237,7 @@ jobs:
           assert source == os.environ['SOURCE_SHA']
           digest = hashlib.sha256(apk.read_bytes()).hexdigest()
           (out / 'SHA256.txt').write_text(digest + '  ' + apk.name + '\n')
-          info = {'source':source,'sourceTree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'applicationId':os.environ['TEST_APPLICATION_ID'],'label':'CCB 功能对齐测试 a2','versionName':'1.4.10-functional-alignment-a2','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,'selectedChecks':{'unit':8,'android':27},'privateKeysOrUserDataInjected':False,'installedOnUserDevice':False,'humanAcceptance':False}
+          info = {'source':source,'sourceTree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'applicationId':os.environ['TEST_APPLICATION_ID'],'label':'CCB 功能对齐测试 a2','versionName':'1.4.10-functional-alignment-a2','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,'selectedChecks':{'unitExecutedThisRun':0,'androidExecutedThisRun':4,'reusedR01Unit':8,'reusedR01NonUiAndroid':23},'privateKeysOrUserDataInjected':False,'installedOnUserDevice':False,'humanAcceptance':False}
           (out / 'BUILD_INFO.json').write_text(json.dumps(info,ensure_ascii=False,indent=2))
           print(json.dumps(info,ensure_ascii=False,indent=2))
           PY
