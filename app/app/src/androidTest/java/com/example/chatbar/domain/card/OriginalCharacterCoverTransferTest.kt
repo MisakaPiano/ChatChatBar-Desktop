@@ -145,6 +145,74 @@ class OriginalCharacterCoverTransferTest {
         assertArrayEquals(original, source.readBytes())
     }
 
+    @Test fun chosenBaseAndDisplayTextRoundTripWithoutChangingCardOrDefault() = runBlocking<Unit> {
+        val original = image(Color.BLUE)
+        val card = importLegacy(original)
+        val selected = localImage(Color.GREEN)
+        val background = localImage(Color.RED)
+        val saved = card.copy(chatBackground = background.absolutePath,
+            chatBackgroundImages = listOf(background.absolutePath, selected.absolutePath))
+        app.characterRepository.save(saved)
+        val beforeExport = app.characterRepository.getById(card.id)
+        val options = CharacterCardPngExportOptions(coverImagePath = selected.absolutePath,
+            preserveOriginalCover = false, displayText = "synthetic export title", sizePx = 1024)
+        val exported = app.characterCardTransferService.exportPng(card.id, options)
+        val decoded = requireNotNull(app.characterCardTransferService.decodePng(exported))
+        assertEquals(card.name, decoded.card.name)
+        val imported = app.characterCardTransferService.importNew(decoded).also { cards += it.id }
+        assertArrayEquals(selected.readBytes(), File(requireNotNull(imported.coverImage)).readBytes())
+        assertArrayEquals(background.readBytes(), File(requireNotNull(imported.chatBackground)).readBytes())
+        assertEquals(2, imported.chatBackgroundImages.size)
+        assertEquals(beforeExport, app.characterRepository.getById(card.id))
+        assertArrayEquals(original, File(requireNotNull(card.coverImage)).readBytes())
+        val base = app.characterCardTransferService.exportCoverBase(imported.id, CharacterCardPngExportOptions())
+        assertEquals("image/png", base.mimeType)
+        assertArrayEquals(selected.readBytes(), base.bytes)
+    }
+
+    @Test fun standaloneBaseStripsOnlyCardPayloadAndPreservesJpegBytes() = runBlocking<Unit> {
+        val card = importLegacy(image(Color.BLUE))
+        val pixels = image(Color.GREEN)
+        val selected = localImage(Color.RED).also { it.writeBytes(PngTextChunks.insertTextChunk(pixels, "chara", "old synthetic")) }
+        val png = app.characterCardTransferService.exportCoverBase(card.id,
+            CharacterCardPngExportOptions(coverImagePath = selected.absolutePath))
+        assertArrayEquals(pixels, png.bytes)
+        assertNotNull(PngTextChunks.extractTextChunk(selected.readBytes(), "chara"))
+        val bitmap = Bitmap.createBitmap(19, 11, Bitmap.Config.ARGB_8888)
+        val jpeg = try { bitmap.eraseColor(Color.YELLOW); ByteArrayOutputStream().use {
+            check(bitmap.compress(Bitmap.CompressFormat.JPEG, 80, it)); it.toByteArray()
+        } } finally { bitmap.recycle() }
+        selected.writeBytes(jpeg)
+        val saved = app.characterCardTransferService.exportCoverBase(card.id,
+            CharacterCardPngExportOptions(coverImagePath = selected.absolutePath))
+        assertEquals("image/jpeg", saved.mimeType)
+        assertEquals("jpg", saved.extension)
+        assertArrayEquals(jpeg, saved.bytes)
+        assertTrue(runCatching { app.characterCardTransferService.exportCoverBase(card.id,
+            CharacterCardPngExportOptions(coverImagePath = selected.absolutePath + ".missing")) }.isFailure)
+    }
+
+    @Test fun compatibilityExportKeepsDefaultButExplicitlyOmitsUnsupportedResourcesAndGates() = runBlocking<Unit> {
+        val card = importLegacy(image(Color.BLUE))
+        val background = localImage(Color.RED)
+        val gallery = localImage(Color.GREEN)
+        app.characterRepository.save(card.copy(chatBackground = background.absolutePath,
+            chatBackgroundImages = listOf(gallery.absolutePath),
+            characters = listOf(com.example.chatbar.data.local.entity.CharacterInfo.create("synthetic").copy(enabled = false))))
+        val png = app.characterCardTransferService.exportPng(card.id, CharacterCardPngExportOptions(legacyCompatibility = true))
+        // Inspect the payload before PNG import deliberately captures the outer legacy picture as a new original.
+        val raw = requireNotNull(PngTextChunks.extractTextChunk(png, PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
+        val decoded = app.characterCardTransferService.decode(if (raw.trimStart().startsWith("{")) raw
+            else String(java.util.Base64.getDecoder().decode(raw), Charsets.UTF_8))
+        assertEquals(9, decoded.schemaVersion)
+        assertNull(decoded.card.coverImageResourceId)
+        assertTrue(decoded.card.chatBackgroundImageResourceIds.isEmpty())
+        assertTrue(decoded.card.characters.single().enabled)
+        assertArrayEquals(background.readBytes(), java.util.Base64.getDecoder().decode(
+            decoded.images.getValue(requireNotNull(decoded.card.chatBackgroundResourceId)).data))
+        assertFalse(decoded.images.values.any { java.util.Base64.getDecoder().decode(it.data).contentEquals(gallery.readBytes()) })
+    }
+
     private suspend fun importLegacy(original: ByteArray): CharacterCard {
         val raw = json.encodeToString(CharacterCardPackage.serializer(),
             CharacterCardPackage(schemaVersion = 9, card = PackagedCharacterCard("合成原封面卡")))

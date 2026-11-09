@@ -1,0 +1,14 @@
+{
+  "android-gallery10.json": {
+    "bytes": 1677,
+    "sha256": "26a187910c366c6c0e5f528a3b649960f47a59832bcbe609eb9c16758f1ece0a"
+  },
+  "complete11.json": {
+    "bytes": 1708,
+    "sha256": "1d22571bc708deddd6b06bf497b70f260250083ccaafba1d413075e2c7953306"
+  },
+  "desktop-cover10.json": {
+    "bytes": 1646,
+    "sha256": "cf2fbf1b921e2332eb160a191cc7bea6afe324f1f5517520115382c0cbde6a99"
+  }
+}

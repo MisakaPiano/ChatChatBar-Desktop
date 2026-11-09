@@ -404,6 +404,9 @@ class ManageViewModel : ViewModel() {
     suspend fun exportCharacterCardPng(id: String, options: CharacterCardPngExportOptions): ByteArray =
         characterTransfers.exportPng(id, options)
 
+    suspend fun exportCharacterCoverBase(id: String, options: CharacterCardPngExportOptions) =
+        characterTransfers.exportCoverBase(id, options)
+
     // ===== 格式卡 CRUD =====
     fun deleteFormatCard(id: String) {
         viewModelScope.launch {

@@ -40,13 +40,13 @@ class CharacterCardPackageTest {
         assertFalse(encoded.contains("createdAt"))
         assertFalse(encoded.contains("updatedAt"))
         assertFalse(encoded.contains("pendingSpeakerRenameTasks"))
-        assertTrue(encoded.contains("\"schemaVersion\":10"))
+        assertTrue(encoded.contains("\"schemaVersion\":11"))
         assertEquals(packageData, json.decodeFromString(CharacterCardPackage.serializer(), encoded))
     }
 
     @Test
     fun legacyPackageSchemasDefaultBotNameToBlank() {
-        (3..9).forEach { schemaVersion ->
+        (3..10).forEach { schemaVersion ->
             val packageData = json.decodeFromString(
                 CharacterCardPackage.serializer(),
                 """{"schemaVersion":$schemaVersion,"card":{"name":"旧角色卡"}}"""
@@ -59,6 +59,25 @@ class CharacterCardPackageTest {
             assertEquals(null, packageData.defaultFormatCard)
             assertTrue(packageData.card.chatBackgroundImageResourceIds.isEmpty())
         }
+    }
+
+    @Test
+    fun historicalVersionTenCoverAndGalleryVariantsAreBothReadable() {
+        for (fields in listOf("\"coverImageResourceId\":\"a\"", "\"chatBackgroundImageResourceIds\":[\"a\",\"a\"]")) {
+            val raw = """{"schemaVersion":10,"card":{"name":"synthetic",$fields},"images":{"a":{"fileName":"a.png","data":"YWJj"}}}"""
+            json.decodeFromString(CharacterCardPackage.serializer(), raw).validateForImport()
+        }
+    }
+
+    @Test
+    fun defaultOutsideGalleryIsValidAndEveryGalleryReferenceMustExist() {
+        val data = CharacterCardPackage(card = PackagedCharacterCard(name = "synthetic",
+            chatBackgroundResourceId = "default", chatBackgroundImageResourceIds = listOf("second", "first", "second")),
+            images = listOf("default", "first", "second").associateWith { PackagedImage("$it.png", "YWJj") })
+        data.validateForImport()
+        assertEquals(listOf("second", "first", "second"), json.decodeFromString(CharacterCardPackage.serializer(),
+            json.encodeToString(CharacterCardPackage.serializer(), data)).card.chatBackgroundImageResourceIds)
+        assertTrue(runCatching { data.copy(images = data.images - "first").validateForImport() }.isFailure)
     }
 
     @Test
