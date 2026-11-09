@@ -1,7 +1,12 @@
 @file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
 package com.example.chatbar.desktop
 
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.entity.*
@@ -78,9 +83,10 @@ class DesktopCharacterCardAiPanelTest {
                 editor.cardImages = imageAi
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
-                    CompositionLocalProvider(LocalDesktopModalActivity provides activity,
-                        LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
-                        DesktopCharacterEditorOverlay(editor, editor.state.value)
+                    AuxiliaryReviewHost {
+                        CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
+                            DesktopCharacterEditorOverlay(editor, editor.state.value)
+                        }
                     }
                 }
                 try {
@@ -130,6 +136,24 @@ class DesktopCharacterCardAiPanelTest {
                 app.close()
                 check(parent.startsWith(Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize()))
                 parent.toFile().deleteRecursively()
+            }
+        }
+    }
+    /** Separate native tools are rendered above the editor only for synthetic visual review. */
+    @Composable private fun AuxiliaryReviewHost(content: @Composable () -> Unit) {
+        val tools = remember { mutableStateMapOf<Any, @Composable () -> Unit>() }
+        val frame: @Composable (@Composable () -> Unit) -> Unit = { body ->
+            val key = remember { Any() }
+            val current by rememberUpdatedState(body)
+            DisposableEffect(key) {
+                tools[key] = { current() }
+                onDispose { tools.remove(key) }
+            }
+        }
+        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
+            CompositionLocalProvider(LocalDesktopEditorAuxiliaryFrame provides frame) { content() }
+            tools.values.toList().forEachIndexed { index, tool ->
+                Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).zIndex(1f + index)) { tool() }
             }
         }
     }

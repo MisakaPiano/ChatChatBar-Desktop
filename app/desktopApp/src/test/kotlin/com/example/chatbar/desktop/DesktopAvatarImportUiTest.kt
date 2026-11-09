@@ -23,7 +23,13 @@ class DesktopAvatarImportUiTest {
     @Test fun `actual global avatar entry opens crop preview and cancel preserves settings while apply saves a distinct copy`(): Unit = runBlocking(edt) {
         val parent = Files.createTempDirectory("player-avatar-ui-")
         val path = parent.resolve("source.png")
-        val original = DesktopImageEditing.png(BufferedImage(80, 40, BufferedImage.TYPE_INT_RGB))
+        val original = DesktopImageEditing.png(BufferedImage(80, 40, BufferedImage.TYPE_INT_RGB).also { image ->
+            image.createGraphics().let { graphics -> try {
+                graphics.color = java.awt.Color(55, 110, 180); graphics.fillRect(0, 0, 40, 40)
+                graphics.color = java.awt.Color(240, 190, 70); graphics.fillRect(40, 0, 40, 40)
+                graphics.color = java.awt.Color.WHITE; graphics.fillOval(20, 4, 40, 32)
+            } finally { graphics.dispose() } }
+        })
         Files.write(path, original)
         val picker = object : DesktopFilePicker {
             override fun pickOpenFile(type: DesktopFileType) = path
@@ -51,6 +57,12 @@ class DesktopAvatarImportUiTest {
                 scene.click("选择玩家头像"); scene.until { has("应用") && enabled("应用") }
                 val slider = scene.nodes().first { it.config.contains(SemanticsActions.SetProgress) }
                 assertTrue(slider.config[SemanticsActions.SetProgress].action!!.invoke(.5f))
+                repeat(3) { scene.render(System.nanoTime()).close(); delay(20) }
+                System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val target = Path.of(directory).resolve("avatar-import-crop-preview.png")
+                    Files.createDirectories(target.parent)
+                    scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(target, it.bytes) } }
+                }
                 scene.click("应用")
                 scene.until { !has("应用") && controller.state.value.playerAvatar != null }
                 val saved = app.settingsRepository.getPlayerSetting()
