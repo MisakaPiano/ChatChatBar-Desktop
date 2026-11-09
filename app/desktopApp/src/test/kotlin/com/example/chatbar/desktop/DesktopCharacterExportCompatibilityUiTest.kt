@@ -53,13 +53,17 @@ class DesktopCharacterExportCompatibilityUiTest {
                 scene.until { opens == 1 && scene.nodes().any { it.text() == "撤销" && !it.config.contains(SemanticsProperties.Disabled) } }
                 scene.click("保留原图外观")
                 scene.until { scene.nodes().any { it.text().startsWith("原图模式保留") } }
+                scene.click("文件格式 · 完整格式11（推荐） ▾")
+                scene.until { scene.nodes().any { it.text() == "旧版兼容格式9" } }
+                scene.click("旧版兼容格式9")
+                scene.until { scene.nodes().any { it.text().contains("兼容旧版 CCB") } }
                 scene.capture("png-replacement")
                 scene.click("导出 PNG")
                 scene.until { !controller.state.value.busy && controller.state.value.coverExport == null }
                 assertNull(controller.state.value.error); assertEquals(1, saves)
                 assertContentEquals(replacement, OriginalCharacterCover.imageOnlyPng(Files.readAllBytes(output)))
-                // Desktop ingestion attaches the visible original and upgrades its internal
-                // package to10. Check the emitted wire with the frozen official reader instead.
+                // The explicit compatible9 choice is checked with the frozen reader;
+                // the default complete11 route is covered independently.
                 val payload = assertNotNull(PngTextChunks.extractTextChunk(Files.readAllBytes(output), PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
                 val raw = String(java.util.Base64.getDecoder().decode(payload), Charsets.UTF_8)
                 val data = app.transferJson.decodeFromString(Official1411Package.serializer(), raw).also { it.validateOfficial1411() }
