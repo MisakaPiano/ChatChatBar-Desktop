@@ -41,7 +41,7 @@ class PlayerRoleControlsTest {
             rule.setContent { ChatBarTheme { com.example.chatbar.ui.components.ChatBubble(message,
                 renderPlayerName = "synthetic linked player", playerAvatarPath = file.absolutePath) } }
             rule.onNodeWithText("synthetic linked player").assertIsDisplayed()
-            rule.onNodeWithContentDescription("synthetic linked player").assertIsDisplayed()
+            rule.onNodeWithContentDescription("玩家头像").assertIsDisplayed()
             rule.onNodeWithText("synthetic original content").assertIsDisplayed()
             assertEquals("synthetic original content", message.content)
             val output = java.io.File(context.getExternalFilesDir(null), "cover-gallery-evidence").apply { mkdirs() }

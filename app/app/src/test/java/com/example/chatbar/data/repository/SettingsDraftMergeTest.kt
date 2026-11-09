@@ -51,4 +51,27 @@ class SettingsDraftMergeTest {
         val latest = baseline.copy(defaultModelId = "external", momentsEnabled = true)
         assertEquals(latest, mergeSettingsDraft(AppSettings.serializer(), baseline, baseline, latest))
     }
+    @Test fun explicitClearOfOmittedDefaultFieldDoesNotKeepPriorPlayerBinding() {
+        val baseline = ChatSession.create("synthetic-card", "synthetic").copy(
+            desktopPlayerRole = com.example.chatbar.data.local.entity.SessionPlayerRole("synthetic-card", "synthetic-person"),
+            desktopPlayerAvatar = "old.png")
+        val latest = baseline.copy(lastMessagePreview = "new preview", desktopPlayerAvatar = "new.png")
+        val merged = mergeSettingsDraft(ChatSession.serializer(), baseline, baseline.copy(desktopPlayerRole = null), latest)
+        assertNull(merged.desktopPlayerRole)
+        assertEquals("new.png", merged.desktopPlayerAvatar)
+        assertEquals("new preview", merged.lastMessagePreview)
+        assertEquals(latest, mergeSettingsDraft(ChatSession.serializer(), baseline, baseline, latest))
+    }
+
+    @Test fun resettingOmittedCollectionAndBooleanToDefaultsPreservesOtherExternalChoices() {
+        val baseline = ChatSession.create("synthetic-card", "synthetic").copy(autoPauseAbsentPeople = true,
+            characterParticipation = listOf(com.example.chatbar.data.local.entity.SessionCharacterParticipation("synthetic-card", setOf("person"))))
+        val latest = baseline.copy(modelId = "new model")
+        val merged = mergeSettingsDraft(ChatSession.serializer(), baseline,
+            baseline.copy(autoPauseAbsentPeople = false, characterParticipation = emptyList()), latest)
+        assertFalse(merged.autoPauseAbsentPeople)
+        assertTrue(merged.characterParticipation.isEmpty())
+        assertEquals("new model", merged.modelId)
+    }
+
 }
