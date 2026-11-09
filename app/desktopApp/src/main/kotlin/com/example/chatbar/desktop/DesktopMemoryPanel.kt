@@ -38,7 +38,8 @@ internal fun DesktopMemoryPanel(controller: DesktopMemoryController, embedded: B
                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Column(Modifier.weight(1f)) {
                     StatusText("长期记忆")
-                    StatusText("${state.prompt?.usedArchiveChars ?: 0}/${state.limitChars} 字 · Archive ${state.archiveStatus.memoryUiLabel()} · HEAD ${state.headStatus.memoryUiLabel()}")
+                    val verifiedChars = state.prompt?.usedArchiveChars?.takeIf { state.promptCurrent }?.toString() ?: "—"
+                    StatusText("$verifiedChars/${state.limitChars} 字 · Archive ${state.archiveStatus.memoryUiLabel()} · HEAD ${state.headStatus.memoryUiLabel()}")
                 }
                 DesktopIconAction("维护与兼容参考", DesktopAppIcons.Settings) { confirmation = if (confirmation == "tools") null else "tools" }
                 DesktopIconAction("清空长期记忆…", DesktopAppIcons.Delete, enabled = !state.busy && !state.operationBusy && !dirty) { confirmation = "clear" }

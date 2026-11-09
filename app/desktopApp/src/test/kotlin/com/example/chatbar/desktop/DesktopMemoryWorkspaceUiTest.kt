@@ -94,6 +94,7 @@ class DesktopMemoryWorkspaceUiTest {
                 assertNull(controller.state.value.prompt)
                 assertFalse(scene.contains("Edited synthetic episode"), "A rejected new inspection must not display the old successful preview")
                 assertTrue(scene.contains("本次注入预览不可用"))
+                assertTrue(scene.contains("—/2000 字"), "An unavailable inspection must not report the old count or pretend the Archive is empty")
                 assertEquals(refusedSnapshot, snapshot(app.appDataRoot), "Inspection must neither recover nor delete the pending journal")
                 scene.shot("memory-injection-preview-refused-wide.png")
             } finally { scene.close() }
