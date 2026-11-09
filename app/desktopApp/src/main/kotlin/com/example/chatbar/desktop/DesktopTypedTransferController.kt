@@ -629,8 +629,11 @@ internal class DesktopTypedTransferController(
 
     fun cancelCoverExport() { if (!state.value.busy) mutableState.value = state.value.copy(coverExport = null) }
 
-    fun chooseCoverReplacement(): ByteArray? {
-        val path = filePicker.pickOpenFile(DesktopFileType("导出封面图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return null
+    internal fun coverExportFilePicker(window: java.awt.Window?): DesktopFilePicker =
+        if (window == null) filePicker else filePicker.withWindowOwner(window)
+
+    fun chooseCoverReplacement(picker: DesktopFilePicker = filePicker): ByteArray? {
+        val path = picker.pickOpenFile(DesktopFileType("导出封面图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return null
         require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
         val bytes = Files.readAllBytes(path)
         DesktopImageEditing.requireStatic(bytes)
@@ -639,12 +642,13 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun finishCoverExport(draft: DesktopCoverExportDraft, options: CharacterCardPngExportOptions,
-        replacement: ByteArray?, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9) = runOperation(null) {
+        replacement: ByteArray?, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9,
+        picker: DesktopFilePicker = filePicker) = runOperation(null) {
         check(state.value.coverExport === draft) { "封面导出已关闭" }
-        val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(draft.card.name, "png")) ?: return@runOperation
+        val destination = picker.pickSaveFile(PNG_FILES, safeFileName(draft.card.name, "png")) ?: return@runOperation
         guardCharacterOutput(draft.card, destination)
         val rendered = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            characterPngRenderer.renderExportImage(draft.card, options, draft.originalCoverBytes, draft.backgroundBytes, replacement)
+            characterPngRenderer.renderExportImage(draft.card, options, draft.originalCoverBytes ?: draft.backgroundBytes, draft.backgroundBytes, replacement)
         }
         // The replacement changes visible pixels only. Package and original resource map are untouched.
         writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, draft.packageData.forExportCompatibility(compatibility), json))

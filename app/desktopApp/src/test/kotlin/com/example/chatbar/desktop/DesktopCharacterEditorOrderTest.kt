@@ -17,6 +17,35 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopCharacterEditorOrderTest {
+    @Test fun `person summary uses the whole master row below identity and actions without widening the master`() = runBlocking(edt) {
+        val parent = Files.createTempDirectory("person-summary-width-")
+        val app = app(parent)
+        try {
+            val profile = "Synthetic profile with enough words to wrap across the available person row width."
+            val card = CharacterCard("summary", "Synthetic", characters = listOf(CharacterInfo("person", "Person", profile = profile)),
+                createdAt = 1, updatedAt = 1)
+            app.characterRepository.save(card)
+            val controller = app.characterEditorController; controller.openExisting(card.id)
+            val scene = ImageComposeScene(320, 180, coroutineContext = edt) {
+                CharacterPersonRow(DesktopPersonRowPresentation("person", "Person", null, profile), true, controller, {}, {})
+            }
+            try {
+                scene.frames()
+                val text = scene.nodes().single { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == profile } == true }.boundsInRoot
+                val name = scene.nodes().single { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == "Person" } == true }.boundsInRoot
+                assertTrue(text.width >= 290, "Profile must retain the master row width: $text")
+                assertTrue(text.top >= name.bottom)
+                assertTrue(text.right <= 320 && text.bottom <= 180)
+                assertFalse(controller.state.value.dirty)
+                System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val file = Path.of(directory).resolve("person-summary-width.png"); Files.createDirectories(file.parent)
+                    scene.render(System.nanoTime()).use { it.encodeToData()!!.use { data -> Files.write(file, data.bytes) } }
+                }
+            } finally { scene.close() }
+            assertEquals(card, app.characterRepository.getById(card.id))
+        } finally { app.close(); parent.toFile().deleteRecursively() }
+    }
+
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }

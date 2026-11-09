@@ -15,12 +15,14 @@ internal data class DesktopFileType(
 )
 
 internal interface DesktopFilePicker {
+    fun withWindowOwner(window: java.awt.Window): DesktopFilePicker = this
     fun pickOpenFile(type: DesktopFileType): Path?
     fun pickOpenFiles(type: DesktopFileType): List<Path> = listOfNotNull(pickOpenFile(type))
     fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path?
 }
 
 internal class SwingDesktopFilePicker(private val parent: Component? = null) : DesktopFilePicker {
+    override fun withWindowOwner(window: java.awt.Window): DesktopFilePicker = SwingDesktopFilePicker(window)
     override fun pickOpenFile(type: DesktopFileType): Path? = choose(type, null, save = false)
 
     override fun pickOpenFiles(type: DesktopFileType): List<Path> {

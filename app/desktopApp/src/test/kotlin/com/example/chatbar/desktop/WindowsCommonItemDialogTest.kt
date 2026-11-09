@@ -10,6 +10,20 @@ import kotlin.test.*
 class WindowsCommonItemDialogTest {
     private val json = DesktopFileType("JSON", listOf("json"))
 
+    @Test fun `explicit child window owner applies to only its request and retains the shared STA`() {
+        val fake = Fake()
+        WindowsCommonItemDialog({ 123L }, fake).use { service ->
+            val request = DesktopDialogRequest(DesktopDialogKind.OPEN, json)
+            service.pick(request, { 456L })
+            assertEquals(456L, fake.owner)
+            service.pick(request)
+            assertEquals(123L, fake.owner)
+            assertEquals(1, fake.threads.distinct().size)
+            assertFailsWith<IllegalStateException> { service.pick(request, { error("Closed export window") }) }
+            assertEquals(2, fake.events.count { it == "init" })
+        }
+    }
+
     @Test fun `filters preserve every existing caller extension and normalize suffixes`() {
         listOf(listOf("json"), listOf("png"), listOf("json", "png"),
             listOf("png", "jpg", "jpeg", "webp", "gif"), listOf("txt", "md", "json")).forEach { extensions ->

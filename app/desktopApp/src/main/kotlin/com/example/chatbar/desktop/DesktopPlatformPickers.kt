@@ -36,6 +36,20 @@ internal class DesktopDialogOwner {
 }
 
 internal class WindowsNativeFilePicker(private val service: WindowsCommonItemDialog) : DesktopFilePicker {
+    override fun withWindowOwner(window: Window): DesktopFilePicker = object : DesktopFilePicker {
+        private fun owner(): Long {
+            check(window.isDisplayable) { "Native file dialog window is no longer available" }
+            val handle = HWND(Native.getWindowPointer(window))
+            check(User32.INSTANCE.IsWindow(handle) && User32.INSTANCE.GetAncestor(handle, 2) == handle) {
+                "Native file dialog requires its explicit top-level window"
+            }
+            return Pointer.nativeValue(handle.pointer)
+        }
+        override fun pickOpenFile(type: DesktopFileType): Path? =
+            service.pick(DesktopDialogRequest(DesktopDialogKind.OPEN, type), ::owner)
+        override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? =
+            service.pick(DesktopDialogRequest(DesktopDialogKind.SAVE, type, suggestedName), ::owner)
+    }
     override fun pickOpenFile(type: DesktopFileType): Path? = service.pick(DesktopDialogRequest(DesktopDialogKind.OPEN, type))
     override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? =
         service.pick(DesktopDialogRequest(DesktopDialogKind.SAVE, type, suggestedName))

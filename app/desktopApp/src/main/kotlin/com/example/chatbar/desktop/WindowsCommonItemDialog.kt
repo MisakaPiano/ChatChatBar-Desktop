@@ -73,9 +73,9 @@ internal class WindowsCommonItemDialog(
     }
     private val active = AtomicBoolean()
 
-    fun pick(request: DesktopDialogRequest): Path? = execute {
+    fun pick(request: DesktopDialogRequest, requestOwner: () -> Long = owner): Path? = execute {
         // Resolve only a live top-level owner, immediately before this operation starts.
-        val hwnd = owner()
+        val hwnd = requestOwner()
         configured(request) { dialog ->
             val hr = dialog.show(hwnd)
             if (hr == WINDOWS_DIALOG_CANCELLED) null else {

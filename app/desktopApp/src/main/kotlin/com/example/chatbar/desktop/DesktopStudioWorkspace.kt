@@ -95,7 +95,6 @@ internal fun DesktopStudioWorkspace(
                     true, Modifier.width(142.dp)) { state.diagnostics = true }
             }
             if (!wide && !expanded && !state.diagnostics) Column {
-                StudioActions { previewActions?.invoke() }
                 compact { state.compactExpanded = true }
             }
             Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {

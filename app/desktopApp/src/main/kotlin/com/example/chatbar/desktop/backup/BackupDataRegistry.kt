@@ -20,7 +20,10 @@ object BackupDataRegistry {
     )
 
     fun isResourceField(field: String, ancestors: List<String>): Boolean =
-        field in resourceFields && ancestors.none { it == "extensions" || it == "metadata" }
+        field in resourceFields && ancestors.none { it == "extensions" || it == "metadata" } &&
+            // Fish service model artwork is metadata, including relative CDN keys. It is not
+            // CharacterCard.coverImage and must never be resolved against the local data root.
+            !(field == "coverImage" && ancestors.lastOrNull() in setOf("fishAudioVoice", "voice"))
 
     fun files(directory: File): Sequence<File> = sequence {
         val children = requireNotNull(directory.listFiles()) { "无法读取本地数据目录" }

@@ -7,6 +7,8 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 Desktop character editor exposes the independent original-cover slot without crop controls, plus copy-avatar/clear. Cover export retains original/layout modes separately: original preview is fit-only, crop/gradient/logo/title controls appear only for layout, and temporary replacements/undo affect the export copy. See `chatbar-desktop-character-cover` for saved-original custody.
 
+`CharacterPersonRow` places its two-line profile below the avatar/name/voice/actions row across the existing master width; it must not widen the320dp master or squeeze the detail pane. Narrow collapsed Studio puts history/viewer/image operations beside the thumbnail inside `DesktopStudioCompactResult`; expanded and wide preview toolbars keep their prior owners.
+
 Desktop character-position canvas renders numbered markers using original draft order, draws the selected marker last, and shows the 5×5 reference grid in V5 as well as V4.5; only V4.5 snaps. Canvas bounds follow the actual generation/focused-inpaint request ratio. Keep existing live-edit guards, person/model numeric history scopes and scrollable controls; visual numbering must not alter center values or participation.
 
 Structured character detail's image Prompt reuses `StudioPromptField` through `DesktopCharacterImagePromptField`, including local tag candidates, raw-text Chinese overlays and isolated expanded editing. It remains inside `CharacterPersonWorkspace`'s draft/person/detail key; keep the same scoped history and captured-identity publication guard when rearranging this section. The translation toggle changes the existing global display preference, never the stored Prompt text.

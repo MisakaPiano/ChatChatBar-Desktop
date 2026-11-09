@@ -20,8 +20,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller: DesktopTypedTransferController) {
-    var working by remember(draft) { mutableStateOf(CharacterCardPngExportOptions() to (null as ByteArray?)) }
+internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller: DesktopTypedTransferController,
+    frame: (@Composable (@Composable () -> Unit) -> Unit)? = null) {
+    val initialOptions = remember(draft) { CharacterCardPngExportOptions(preserveOriginalCover = draft.originalCoverBytes != null) }
+    var working by remember(draft) { mutableStateOf(initialOptions to (null as ByteArray?)) }
     val undo = remember(draft) { mutableStateListOf<Pair<CharacterCardPngExportOptions, ByteArray?>>() }
     val redo = remember(draft) { mutableStateListOf<Pair<CharacterCardPngExportOptions, ByteArray?>>() }
     val options = working.first
@@ -39,7 +41,7 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val sourceBytes = replacement ?: draft.originalCoverBytes ?: draft.backgroundBytes
-    val originalMode = options.preserveOriginalCover && (replacement != null || draft.originalCoverBytes != null)
+    val originalMode = options.preserveOriginalCover && sourceBytes != null
     val source by produceState<java.awt.image.BufferedImage?>(null, sourceBytes) {
         try { value = sourceBytes?.let { withContext(Dispatchers.Default) { DesktopImageEditing.decode(it) } } }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -48,14 +50,15 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
     val preview by produceState<ImageBitmap?>(null, options, sourceBytes) {
         try { value = withContext(Dispatchers.Default) {
             org.jetbrains.skia.Image.makeFromEncoded(DesktopCharacterCardPngRenderer().renderExportImage(
-                draft.card, options.copy(sizePx = 1024), draft.originalCoverBytes, draft.backgroundBytes, replacement)).toComposeImageBitmap()
+                draft.card, options.copy(sizePx = 1024), draft.originalCoverBytes ?: draft.backgroundBytes, draft.backgroundBytes, replacement)).toComposeImageBitmap()
         } } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure.message }
     }
     if (editingCopy && sourceBytes != null) DesktopImageToolsDialog(sourceBytes, UnconfiguredDesktopFilePicker,
         { editingCopy = false }, onImageApply = { commit(options to it) })
-    if (!editingCopy) DesktopImageToolWindow("CCB PNG 封面 · ${draft.card.name}", controller::cancelCoverExport,
-        width = 900.dp, height = 820.dp) {
+    val content: @Composable () -> Unit = {
+        val parentWindow = LocalDesktopFishParentWindow.current
+        val picker = remember(parentWindow, controller) { controller.coverExportFilePicker(parentWindow) }
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusText(if (originalMode) "原图模式保留图片尺寸与画面，仅更新角色数据。图片里已有的文字不会自动重绘。"
@@ -69,10 +72,10 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                     }, Modifier.weight(1f).fillMaxHeight())
                 Column(Modifier.width(250.dp).fillMaxHeight().verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    StudioSwitch("保留原图外观", originalMode, enabled = replacement != null || draft.originalCoverBytes != null) {
+                    StudioSwitch("保留原图外观", originalMode, enabled = sourceBytes != null && !state.busy) {
                         change(options.copy(preserveOriginalCover = !originalMode))
                     }
-                    if (draft.originalCoverBytes == null) StatusText("尚无独立封面原图。可到角色卡编辑器明确选图或复制头像。")
+                    StatusText("在这里选择本次导出的封面；不会修改聊天背景、头像或已保存的封面原图。")
                     if (!originalMode) {
                         DesktopImageSlider("缩放", (options.cropZoom - 1f) / 5f) { change(options.copy(cropZoom = 1f + it * 5f)) }
                         DesktopImageSlider("渐变高度", (options.gradientHeight - 0.25f) / 0.43f) { change(options.copy(gradientHeight = 0.25f + it * 0.43f)) }
@@ -80,8 +83,9 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                         DesktopImageSlider("Logo 大小", (options.logoScale - 0.07f) / 0.07f) { change(options.copy(logoScale = 0.07f + it * 0.07f)) }
                         DesktopImageSlider("标题大小", (options.titleScale - 0.04f) / 0.04f) { change(options.copy(titleScale = 0.04f + it * 0.04f)) }
                     }
-                    BootstrapButton("仅替换导出封面") { scope.launch {
-                        try { withContext(Dispatchers.IO) { controller.chooseCoverReplacement() }?.let {
+                    BootstrapButton("选择 / 替换导出封面", enabled = !state.busy) { scope.launch {
+                        error = null
+                        try { withContext(Dispatchers.IO) { controller.chooseCoverReplacement(picker) }?.let {
                             commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to it)
                         } } catch (failure: Exception) { error = failure.message }
                     } }
@@ -91,17 +95,23 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                     BootstrapButton("打码 / 纯色遮盖", enabled = sourceBytes != null) { editingCopy = true }
                     BootstrapButton("撤销", enabled = undo.isNotEmpty()) { com.example.chatbar.domain.image.undoCanvasState(working, undo, redo)?.let { working = it } }
                     BootstrapButton("重做", enabled = redo.isNotEmpty()) { com.example.chatbar.domain.image.redoCanvasState(working, undo, redo)?.let { working = it } }
-                    BootstrapButton("重置全部") { commit(CharacterCardPngExportOptions() to null) }
+                    BootstrapButton("重置全部") { commit(initialOptions to null) }
                 }
             }
+            if (state.busy) StatusText("正在选择保存位置或导出 PNG…")
             (error ?: state.error)?.let { StatusText(it, DesktopBootstrapColors.destructive) }
             DesktopCharacterExportCompatibilityChoice(compatibility, !state.busy) { compatibility = it }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton("取消", secondary = true, enabled = !state.busy, onClick = controller::cancelCoverExport)
                 BootstrapButton("导出 PNG", enabled = !state.busy && preview != null) {
-                    scope.launch { controller.finishCoverExport(draft, options, replacement, compatibility) }
+                    scope.launch { controller.finishCoverExport(draft, options, replacement, compatibility, picker) }
                 }
             }
         }
+    }
+    if (!editingCopy) {
+        if (frame != null) frame(content)
+        else DesktopImageToolWindow("CCB PNG 封面 · ${draft.card.name}", controller::cancelCoverExport,
+            width = 900.dp, height = 820.dp) { content() }
     }
 }

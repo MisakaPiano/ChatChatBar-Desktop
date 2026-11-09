@@ -33,7 +33,9 @@ class DesktopOriginalCoverBackupTest {
                 val resources = DesktopCharacterResourceStore(root)
                 val drafts = DesktopCharacterDraftResources(root, resources)
                 val cover = resources.materializeCoverImage(PackagedImage("original.png", Base64.getEncoder().encodeToString(bytes)), 1, "original")
-                val card = CharacterCard("card", "Original cover", createdAt = 1, updatedAt = 1, coverImage = cover)
+                val voice = FishAudioVoiceBinding("synthetic-voice", "Synthetic voice", coverImage = "model-artwork/relative-cover.webp")
+                val card = CharacterCard("card", "Original cover", createdAt = 1, updatedAt = 1, coverImage = cover,
+                    characters = listOf(CharacterInfo("person", "Synthetic person", fishAudioVoice = voice)))
                 CharacterRepository(storage).save(card)
                 val pending = drafts.copyAsCover("cover-draft", cover)
                 val draft = EditorDraft(EditorDraftRepository.draftId(EditorDraftType.CHARACTER_CARD, card.id), EditorDraftType.CHARACTER_CARD,
@@ -58,6 +60,7 @@ class DesktopOriginalCoverBackupTest {
                         }
                         val reopened = JsonFileStorage(target)
                         val restored = assertNotNull(CharacterRepository(reopened).getById(card.id))
+                        assertEquals(voice, restored.characters.single().fishAudioVoice)
                         assertNull(CharacterRepository(reopened).getById("unselected"))
                         assertTrue(restored.coverImage!!.startsWith("images/character-covers/"))
                         val targetResources = DesktopCharacterResourceStore(target)
@@ -97,5 +100,23 @@ class DesktopOriginalCoverBackupTest {
         }
         assertTrue(BackupDataRegistry.isResourceField("coverImage", emptyList()))
         assertFalse(BackupDataRegistry.isResourceField("coverImage", listOf("metadata")))
+    }
+
+    @Test fun `Fish artwork stays opaque in card voice and nested SaveSlot records while real resources remain mapped`() {
+        val raw = """{"coverImage":"images/character-covers/original.png","characters":[{"fishAudioVoice":{"coverImage":"model-artwork/relative-cover.webp"}}],"voice":{"coverImage":"model-artwork/clip.webp"},"voiceMessages":[{"voice":{"coverImage":"model-artwork/slot.webp"},"audioPath":"audio/clip.mp3"}],"metadata":{"coverImage":"opaque/value"}}"""
+        val paths = mutableListOf<String>()
+        val output = java.io.StringWriter()
+        BackupJsonStream(raw.reader(), output, mapPath = { path, _ -> paths += path; "mapped/$path" }).copy()
+        assertEquals(listOf("images/character-covers/original.png", "audio/clip.mp3"), paths)
+        val result = kotlinx.serialization.json.Json.parseToJsonElement(output.toString()).toString()
+        listOf("model-artwork/relative-cover.webp", "model-artwork/clip.webp", "model-artwork/slot.webp", "opaque/value").forEach {
+            assertTrue(result.contains(it))
+        }
+        for (path in listOf("../outside.png", "images/../outside.png", "unregistered/cover.png")) {
+            assertFailsWith<IllegalArgumentException> {
+                BackupJsonStream("""{"coverImage":"$path"}""".reader(), java.io.StringWriter(),
+                    mapPath = { value, _ -> DesktopBackupPolicy.path(value); value }).copy()
+            }
+        }
     }
 }

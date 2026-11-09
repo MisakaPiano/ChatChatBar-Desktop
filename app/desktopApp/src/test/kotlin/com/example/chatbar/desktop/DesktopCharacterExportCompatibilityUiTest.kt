@@ -14,6 +14,57 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopCharacterExportCompatibilityUiTest {
+    @Test fun `actual PNG dialog selects a separate export image enables original mode and writes compatible pixels`() = runBlocking(edt) {
+        val parent = Files.createTempDirectory("cover-choice-ui-")
+        fun picture(rgb: Int) = java.io.ByteArrayOutputStream().use { out ->
+            val image = java.awt.image.BufferedImage(7, 11, java.awt.image.BufferedImage.TYPE_INT_RGB)
+            for (y in 0 until image.height) for (x in 0 until image.width) image.setRGB(x, y, rgb)
+            check(javax.imageio.ImageIO.write(image, "png", out)); out.toByteArray()
+        }
+        val background = picture(0x125599); val replacement = picture(0x997722)
+        val input = Files.write(parent.resolve("chosen.png"), replacement)
+        val output = parent.resolve("export.png")
+        var opens = 0; var saves = 0
+        val picker = object : DesktopFilePicker {
+            override fun pickOpenFile(type: DesktopFileType): Path { opens++; return input }
+            override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path { saves++; return output }
+        }
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE,
+            parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() }, filePicker = picker,
+            bundledAssets = { path -> check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray() })
+        try {
+            val card = app.characterTransfers.importNew(CharacterCardPackage(card = PackagedCharacterCard("Synthetic PNG",
+                chatBackgroundResourceId = "background"), images = mapOf("background" to PackagedImage("background.png",
+                java.util.Base64.getEncoder().encodeToString(background)))))
+            assertNull(card.coverImage)
+            val controller = app.createTypedTransferController(); controller.beginCoverExport(card.id)
+            val draft = assertNotNull(controller.state.value.coverExport)
+            val scene = ImageComposeScene(900, 820, coroutineContext = edt) {
+                DesktopCoverExportDialog(draft, controller, frame = { content -> content() })
+            }
+            try {
+                scene.until { scene.nodes().any { it.text() == "导出 PNG" && !it.config.contains(SemanticsProperties.Disabled) } }
+                val original = scene.nodes().single { it.text() == "保留原图外观" && it.config.contains(SemanticsActions.OnClick) }
+                assertFalse(original.config.contains(SemanticsProperties.Disabled))
+                assertEquals(androidx.compose.ui.state.ToggleableState.Off, original.config[SemanticsProperties.ToggleableState])
+                scene.click("选择 / 替换导出封面")
+                scene.until { opens == 1 && scene.nodes().any { it.text() == "撤销" && !it.config.contains(SemanticsProperties.Disabled) } }
+                scene.click("保留原图外观")
+                scene.until { scene.nodes().any { it.text().startsWith("原图模式保留") } }
+                scene.capture("png-replacement")
+                scene.click("导出 PNG")
+                scene.until { !controller.state.value.busy && controller.state.value.coverExport == null }
+                assertNull(controller.state.value.error); assertEquals(1, saves)
+                assertContentEquals(replacement, OriginalCharacterCover.imageOnlyPng(Files.readAllBytes(output)))
+                val data = assertNotNull(app.characterTransfers.decodePng(Files.readAllBytes(output)))
+                assertEquals(9, data.schemaVersion); assertNull(data.card.coverImageResourceId)
+                assertEquals(card, app.characterRepository.getById(card.id))
+                assertContentEquals(background, Files.readAllBytes(app.appDataRoot.resolve(assertNotNull(card.chatBackground))))
+                assertContentEquals(replacement, Files.readAllBytes(input))
+            } finally { scene.close() }
+        } finally { app.close(); parent.toFile().deleteRecursively() }
+    }
+
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }

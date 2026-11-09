@@ -70,19 +70,30 @@ class DesktopStudioWorkspaceTest {
     }
 
     @Test fun `preview history action remains reachable in narrow collapsed and wide layouts without an empty Studio tab`() = runBlocking(awt) {
-        for (width in listOf(360, 1240)) {
+        for (width in listOf(360, 600, 1240)) {
             var opened = 0
             val scene = ImageComposeScene(width, 700) {
                 DesktopStudioWorkspace(previewActions = { StudioAction("历史") { opened++ } },
-                    compact = {}, editor = { StatusText("Editor fixture") }, footer = {}, preview = {})
+                    compact = { expand -> DesktopStudioCompactResult(null, null, expand, {}) {
+                        StudioAction("历史") { opened++ }
+                    } }, editor = { StatusText("Editor fixture") }, footer = {}, preview = {})
             }
             try {
                 scene.frames()
                 assertFalse(scene.nodes().any { it.matches("NovelAI Studio") || it.matches("高级 / 诊断") })
                 val bounds = scene.bounds("历史")
                 assertTrue(bounds.width > 0 && bounds.left >= 0 && bounds.right <= width)
+                if (width < 900) {
+                    val frame = scene.bounds("Studio 当前图片摘要")
+                    assertTrue(bounds.top >= frame.top && bounds.bottom <= frame.bottom)
+                    assertTrue(bounds.left >= frame.left && bounds.right <= frame.right)
+                }
                 scene.click("历史")
                 assertEquals(1, opened)
+                if (width < 900) System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val file = Path.of(directory).resolve("studio-compact-summary-$width.png"); Files.createDirectories(file.parent)
+                    scene.render().use { it.encodeToData()!!.use { data -> Files.write(file, data.bytes) } }
+                }
             } finally { scene.close() }
         }
     }

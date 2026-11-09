@@ -14,6 +14,32 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeImportServiceTest {
+    @Test fun `same exported file checks and reaches merge preview with relative Fish artwork in computer snapshot`() = runBlocking {
+        fixture {
+            val storage = JsonFileStorage(root)
+            val cards = com.example.chatbar.data.repository.CharacterRepository(storage)
+            val originalCard = assertNotNull(cards.getById("c"))
+            val voice = com.example.chatbar.data.local.entity.FishAudioVoiceBinding("synthetic", "Synthetic",
+                coverImage = "model-artwork/relative.webp")
+            val card = originalCard.copy(characters = listOf(com.example.chatbar.data.local.entity.CharacterInfo(
+                "person", "Synthetic", fishAudioVoice = voice)))
+            cards.save(card)
+            val focus = DesktopAudioFocus()
+            try {
+                val backups = DesktopFullBackupService(root, gate, DesktopAudioMaintenance({ focus }) {})
+                val exported = base.resolve("same-export.cbbackup")
+                backups.exportModern(exported, null)
+                backups.verifyFile(exported, null)
+                val preview = service.inspect(exported, null)
+                assertTrue(preview.fileCount > 0)
+                assertEquals(card, cards.getById("c"))
+                assertFalse(service.restartRequired)
+                assertEquals(root, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
+                service.discard()
+            } finally { focus.closeAndDrain() }
+        }
+    }
+
     @Test fun `data pane departure cannot cancel queued external inspection before its dispatcher starts`() = runBlocking {
         fixture(archiveBytes = CensusWireFixtures.bytes(encrypted = true)) {
             val entered = CompletableDeferred<Unit>()

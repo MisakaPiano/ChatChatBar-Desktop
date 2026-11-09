@@ -292,10 +292,15 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
         inlinePreviewActions = {
             DesktopStudioPreviewActions(shownPath != null, intermediate != null, true) { inlineResetRevision++ }
         },
-        compact = { expand -> Column {
-            DesktopStudioCompactResult(shownPath, intermediate, expand, ::preview)
-            imageResultActions(false)
-        } },
+        compact = { expand ->
+            DesktopStudioCompactResult(shownPath, intermediate, expand, ::preview) {
+                DesktopStudioPrimaryPreviewActions(shownPath != null && intermediate == null,
+                    { openAuxiliary("历史") }, ::preview)
+                StudioAction("图像操作 / 用作", enabled = shownPath != null && intermediate == null) {
+                    currentImage = shownPath; openAuxiliary("当前图片"); controller.clearReverseCandidate()
+                }
+            }
+        },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi) {
                 StudioAccountActions {
@@ -500,10 +505,10 @@ internal fun DesktopStudioPreviewActions(hasSavedImage: Boolean, showingIntermed
     } else if (hasSavedImage && zoomActive) StudioAction("适应 / 重置", onClick = onReset)
 }
 
-/** The compact image remains an entry to the inline pane; primary actions share the toolbar above. */
+/** Compact-only actions use the space beside the thumbnail, inside its existing summary frame. */
 @Composable
 internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?,
-    onExpand: () -> Unit, onViewer: () -> Unit) {
+    onExpand: () -> Unit, onViewer: () -> Unit, actions: @Composable () -> Unit = {}) {
     val showingIntermediate = intermediate != null
     Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)
         .semantics { contentDescription = "Studio 当前图片摘要" }, horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -523,6 +528,7 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
             StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片")
             if (showingIntermediate && path != null) StatusText("先前选择的图片未被本次生成替换")
             else if (!showingIntermediate && path == null) StatusText("导入图片或生成后查看结果")
+            StudioActions { actions() }
         }
     }
 }

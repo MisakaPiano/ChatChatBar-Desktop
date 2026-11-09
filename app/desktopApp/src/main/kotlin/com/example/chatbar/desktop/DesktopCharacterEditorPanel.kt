@@ -597,7 +597,7 @@ private fun CharacterPersonWorkspace(
 }
 
 @Composable
-private fun CharacterPersonRow(
+internal fun CharacterPersonRow(
     person: DesktopPersonRowPresentation, selected: Boolean, controller: DesktopCharacterEditorController,
     onSelect: () -> Unit, onDelete: () -> Unit,
 ) {
@@ -606,29 +606,33 @@ private fun CharacterPersonRow(
     val avatar by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, person.avatarReference, controller) {
         value = withContext(Dispatchers.IO) { desktopPersonAvatar(person, controller::imageBytes) }
     }
-    Row(Modifier.fillMaxWidth().background(if (selected) colors.secondary else colors.card, RoundedCornerShape(8.dp))
+    Column(Modifier.fillMaxWidth().background(if (selected) colors.secondary else colors.card, RoundedCornerShape(8.dp))
         .selectable(selected, role = Role.Tab, onClick = onSelect).padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.size(42.dp).clip(CircleShape).background(colors.muted), contentAlignment = Alignment.Center) {
-            val image = avatar
-            if (image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            else StatusText(desktopPersonInitial(person))
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            BasicText(person.name.ifBlank { t(DesktopUiText.NEW_CHARACTER) }, style = TextStyle(color = colors.foreground))
-            controller.state.value.card?.characters?.firstOrNull { it.id == person.id }?.fishAudioVoice?.let {
-                StatusText("音色 · ${it.title}")
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.size(42.dp).clip(CircleShape).background(colors.muted), contentAlignment = Alignment.Center) {
+                val image = avatar
+                if (image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                else StatusText(desktopPersonInitial(person))
             }
-            person.profile?.let { BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp)) }
-        }
-        controller.state.value.card?.takeIf { it.editMode == CharacterEditMode.STRUCTURED }?.let { card ->
-            card.characters.singleOrNull { it.id == person.id }?.let { entry ->
-                StudioSwitch("启用", entry.desktopEnabled) { controller.setCharacterEntryEnabled(person.id, !entry.desktopEnabled) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                BasicText(person.name.ifBlank { t(DesktopUiText.NEW_CHARACTER) }, style = TextStyle(color = colors.foreground))
+                controller.state.value.card?.characters?.firstOrNull { it.id == person.id }?.fishAudioVoice?.let {
+                    StatusText("音色 · ${it.title}")
+                }
             }
+            controller.state.value.card?.takeIf { it.editMode == CharacterEditMode.STRUCTURED }?.let { card ->
+                card.characters.singleOrNull { it.id == person.id }?.let { entry ->
+                    StudioSwitch("启用", entry.desktopEnabled) { controller.setCharacterEntryEnabled(person.id, !entry.desktopEnabled) }
+                }
+            }
+            DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit, onClick = onSelect)
+            DesktopIconAction(t(DesktopUiText.DELETE), DesktopAppIcons.Delete, destructive = true, onClick = onDelete)
         }
-        DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit, onClick = onSelect)
-        DesktopIconAction(t(DesktopUiText.DELETE), DesktopAppIcons.Delete, destructive = true, onClick = onDelete)
+        person.profile?.let { BasicText(it, Modifier.fillMaxWidth().padding(end = 8.dp),
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
+            style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp)) }
     }
 }
 
