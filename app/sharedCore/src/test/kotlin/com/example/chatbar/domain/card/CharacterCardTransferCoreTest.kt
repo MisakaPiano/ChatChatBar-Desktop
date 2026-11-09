@@ -75,7 +75,7 @@ class CharacterCardTransferCoreTest {
                 defaultImageGenerationSettings = settings))
             val imported = f.core.importNew(packaged)
             assertEquals(settings, imported.defaultImageGenerationSettings)
-            val exported = f.core.decode(f.core.exportJson(imported.id))
+            val exported = f.core.decode(f.core.exportJson(imported.id, CharacterCardExportCompatibility.OFFICIAL_V9))
             assertEquals(9, exported.schemaVersion)
             assertEquals(settings, exported.card.defaultImageGenerationSettings)
             assertEquals(model, exported.card.defaultNovelAiImageModel)

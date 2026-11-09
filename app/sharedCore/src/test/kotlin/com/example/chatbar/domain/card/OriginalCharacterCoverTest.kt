@@ -95,7 +95,8 @@ class OriginalCharacterCoverTest {
         assertFalse(json.encodeToString(serializer, card).contains("coverImage"))
         val cover = card.copy(coverImage = "images/character-covers/source.png")
         assertEquals(cover, json.decodeFromString(serializer, json.encodeToString(serializer, cover)))
-        assertEquals(9, CharacterCardPackage(card = PackagedCharacterCard("Legacy")).schemaVersion)
+        assertEquals(11, CharacterCardPackage(card = PackagedCharacterCard("Legacy")).schemaVersion)
+        CharacterCardPackage(schemaVersion = 9, card = PackagedCharacterCard("Legacy")).validateForImport()
         assertFailsWith<IllegalArgumentException> {
             CharacterCardPackage(schemaVersion = 9, card = PackagedCharacterCard("Legacy", coverImageResourceId = "cover"),
                 images = mapOf("cover" to PackagedImage("cover.png", "AA=="))).validateForImport()
