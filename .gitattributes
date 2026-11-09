@@ -11,6 +11,7 @@ docs/desktop/evidence/windows-msi-operation-contract-20261027/raw/** -text white
 tools/desktop/nsis/fixtures/Launcher-1229.cs -text
 tools/desktop/nsis/fixtures/Launcher-1233.cs -text
 tools/desktop/update/fixtures/desktop_update_1233.py -text
+app/desktopApp/src/test/resources/cover-gallery/** -text
 
 # Versioned synthetic cross-application text fixtures are byte-paired, including the final LF.
 app/sharedCore/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf

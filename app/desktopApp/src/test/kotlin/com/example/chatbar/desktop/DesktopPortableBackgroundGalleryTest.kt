@@ -6,12 +6,23 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.*
 import kotlin.test.*
 
 /** Inputs are exact production Android synthetic exports, hash-bound in resources/cover-gallery/origin.json. */
 class DesktopPortableBackgroundGalleryTest {
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private fun fixture(name: String) = requireNotNull(javaClass.getResourceAsStream("/cover-gallery/$name")).use { it.readBytes() }
+    private fun fixture(name: String): ByteArray {
+        val data = requireNotNull(javaClass.getResourceAsStream("/cover-gallery/$name")).use { it.readBytes() }
+        val origin = requireNotNull(javaClass.getResourceAsStream("/cover-gallery/origin.json")).use {
+            Json.parseToJsonElement(it.readBytes().toString(Charsets.UTF_8)).jsonObject
+        }
+        val record = origin.getValue("files").jsonArray.single { it.jsonObject.getValue("file").jsonPrimitive.content == name }.jsonObject
+        assertEquals(record.getValue("bytes").jsonPrimitive.int, data.size)
+        assertEquals(record.getValue("sha256").jsonPrimitive.content,
+            java.security.MessageDigest.getInstance("SHA-256").digest(data).joinToString("") { "%02x".format(it) })
+        return data
+    }
     private suspend fun <T> withApp(block: suspend (DesktopAppContainer, Path) -> T): T {
         val parent = Files.createTempDirectory("portable-gallery-")
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE,
