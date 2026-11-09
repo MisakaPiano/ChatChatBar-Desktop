@@ -42,7 +42,7 @@ def main():
     native.require(previous.get('remaining') == [] and previous.get('exitCode') == 0 and previous.get('current') == current,
                    'PREVIOUS_OWNED_NATIVE_JOB_MUST_HAVE_DRAINED')
     classes = case / 'packaged-main-tray-classes'; classes.mkdir()  # Exact new companion, outside all program payloads.
-    subprocess.run([str(native.JAVA.with_name('javac.exe')), '--release', '17', '-d', str(classes),
+    subprocess.run([str(native.JAVA.with_name('javac.exe')), '-encoding', 'UTF-8', '--release', '17', '-d', str(classes),
                     str(source / 'tools/desktop/nsis/PackagedMainTrayProbe.java')], check=True, timeout=60)
     settings = regular(case / 'local-appdata/ChatChatBarDesktop/desktop-settings.json')
     native.require(settings.parent.is_dir() and (not settings.exists() or
@@ -85,6 +85,10 @@ def main():
                            currentPointerUnchanged=(root / 'current.txt').read_text().strip() == current)
             native.save(case / 'packaged-main-tray-lifecycle.json', receipt)
             native.require(not remaining and code.value == 0 and facts is not None and facts.get('passed') is True and
+                           facts.get('ciJdk17') is True and facts.get('source') == commit and
+                           facts.get('version') == manifest['version'] and
+                           Path(facts['javaHome']).resolve() == native.JAVA.parent.parent.resolve() and
+                           Path(facts['mainClassOrigin']).resolve().is_relative_to((package / 'app').resolve()) and
                            receipt['currentPointerUnchanged'], 'PACKAGED_MAIN_TRAY_NOT_CONFIRMED')
     finally:
         if process.handle: kernel.CloseHandle(process.handle)
