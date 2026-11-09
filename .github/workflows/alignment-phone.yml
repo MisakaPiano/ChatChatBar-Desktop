@@ -1,4 +1,4 @@
-name: Android final long screenshot and tested APK
+name: Android player avatar actual pixels proof
 on:
   push:
     branches: [ci/upstream-functional-alignment-20261108]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 4e3b9c62ae7ecfcbc72ac5cb2df254b7f73f85e9
+  SOURCE_SHA: 271d82b2af80eb853fdab975350c01511c232431
   TEST_APPLICATION_ID: com.example.chatbar.cover.c1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 4e3b9c62ae7ecfcbc72ac5cb2df254b7f73f85e9
+          ref: 271d82b2af80eb853fdab975350c01511c232431
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
@@ -27,7 +27,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
           test "$(git rev-parse HEAD:app/app/src/main)" = "ce0d83748b40acd5fef88ba4848391d7187188b5"
-          test "$(git rev-parse HEAD^{tree})" = "bd93fe52971f679e388f7daf5313f6503f25f051"
+          test "$(git rev-parse HEAD^{tree})" = "a1847da814c9b663b6a265342685a8dcc6a5cb56"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
           python3 - <<'PY'
@@ -181,7 +181,7 @@ jobs:
             adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/cover-gallery-evidence/." "$out/roundtrip-and-ui/" || true
           }
           trap finish EXIT
-          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ChatLongScreenshotRenderTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.manage.PlayerRoleControlsTest#userBubbleShowsPlayerAvatarAndNameWithoutChangingStoredContent -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
           SH
       - name: Enable cloud runner KVM
         run: |
@@ -199,9 +199,6 @@ jobs:
           script: bash "$RUNNER_TEMP/cover-gallery-checks.sh"
       - name: Verify original reports and isolated APK
         run: |
-          cp app/app/build/outputs/apk/debug/app-debug.apk phone-test-output/CCB-cover-gallery-c1-test.apk
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging phone-test-output/CCB-cover-gallery-c1-test.apk > phone-test-output/apk-badging.txt
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs phone-test-output/CCB-cover-gallery-c1-test.apk > phone-test-output/apk-signature.txt
           python3 - <<'PY'
           import os,json,hashlib
           from pathlib import Path
@@ -212,16 +209,12 @@ jobs:
           unit=cases(Path('app/app/build/test-results/testDebugUnitTest'))
           device=cases(out/'device')
           assert len(unit)==0 and not any(c['failure'] or c['error'] for c in unit),unit
-          expected=["com.example.chatbar.ui.chat.ChatLongScreenshotRenderTest"]
+          expected=["com.example.chatbar.ui.manage.PlayerRoleControlsTest"]
           assert all(any(c['class']==n for c in device) for n in expected),device
-          assert len(device)==2 and not any(c['failure'] or c['error'] or c['skip'] for c in device),device
-          for n in ['player-avatar-long-screenshot.png']:
+          assert len(device)==1 and not any(c['failure'] or c['error'] or c['skip'] for c in device),device
+          for n in ['player-avatar-bubble.png']:
               assert (out/'roundtrip-and-ui'/n).stat().st_size>0,n
-          apk=out/'CCB-cover-gallery-c1-test.apk'
-          digest=hashlib.sha256(apk.read_bytes()).hexdigest()
-          assert "name='"+os.environ['TEST_APPLICATION_ID']+"'" in (out/'apk-badging.txt').read_text()
-          (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'Only corrected LongScreenshot two cases and final APK. Production byte-identical to R04; JVM and other Android results require R04 originals. R01/R02 unchanged cover cases retained separately. Desktop production roundtrip pending'},indent=2))
-          (out/'BUILD_INFO.json').write_text(json.dumps({'source':os.environ['SOURCE_SHA'],'tree':'bd93fe52971f679e388f7daf5313f6503f25f051','applicationId':os.environ['TEST_APPLICATION_ID'],'sha256':digest,'bytes':apk.stat().st_size,'userAcceptance':False,'crossPlatformAcceptance':False},indent=2))
+          (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'One UI case waits for green player avatar pixels, then captures actual UI. Production identical to R04/R05. No new APK delivery in this report.'},indent=2))
           PY
       - name: Preserve original results
         if: always()
