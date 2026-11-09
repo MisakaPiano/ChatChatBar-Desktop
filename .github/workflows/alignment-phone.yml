@@ -1,4 +1,4 @@
-name: Android cover gallery c1 scoped checks
+name: Android cover gallery player identity c1 checks
 on:
   push:
     branches: [ci/upstream-functional-alignment-20261108]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 2fd7c2b08641b9f255312822919e7c2ce15bd871
+  SOURCE_SHA: 7fe84c2015c0241fe52877ae3cce1c87e1d189b6
   TEST_APPLICATION_ID: com.example.chatbar.cover.c1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 2fd7c2b08641b9f255312822919e7c2ce15bd871
+          ref: 7fe84c2015c0241fe52877ae3cce1c87e1d189b6
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "32940a3cac7051a161d2617dceb5da7f2fda039a"
+          test "$(git rev-parse HEAD^{tree})" = "134da3d95189d8515cd838c965da13f107e56329"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
           python3 - <<'PY'
@@ -61,7 +61,7 @@ jobs:
           old_label = 'android:label="@string/app_name"'
           old_scheme = 'android:scheme="chatbar"'
           assert text.count(old_label) == 1 and text.count(old_scheme) == 1
-          text = text.replace(old_label, 'android:label="CCB 封面图库测试 c1"')
+          text = text.replace(old_label, 'android:label="CCB 图片与身份测试 c1"')
           text = text.replace(old_scheme, 'android:scheme="chatbar-cover-c1"')
           manifest.write_text(text)
           PY
@@ -167,7 +167,7 @@ jobs:
           key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
       - name: Compile, run JVM checks and build isolated test APK
         working-directory: app
-        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-cover-gallery-c1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
       - name: Prepare affected device regressions
         run: |
           cat > "$RUNNER_TEMP/cover-gallery-checks.sh" <<'SH'
@@ -180,7 +180,7 @@ jobs:
             adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/cover-gallery-evidence/." "$out/roundtrip-and-ui/" || true
           }
           trap finish EXIT
-          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-cover-gallery-c1 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest,com.example.chatbar.domain.card.CoverGalleryContractTransferTest,com.example.chatbar.ui.manage.CharacterCoverExportDialogTest,com.example.chatbar.ui.manage.ManagementDraftDiscardTest,com.example.chatbar.domain.card.CharacterCardPngRendererInstrumentedTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest,com.example.chatbar.domain.card.CoverGalleryContractTransferTest,com.example.chatbar.ui.manage.CharacterCoverExportDialogTest,com.example.chatbar.ui.manage.ManagementDraftDiscardTest,com.example.chatbar.domain.card.CharacterCardPngRendererInstrumentedTest,com.example.chatbar.domain.card.PlayerAvatarTransferTest,com.example.chatbar.ui.manage.PlayerRoleControlsTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
           SH
       - name: Enable cloud runner KVM
         run: |
@@ -211,16 +211,16 @@ jobs:
           unit=cases(Path('app/app/build/test-results/testDebugUnitTest'))
           device=cases(out/'device')
           assert len(unit)>1400 and not any(c['failure'] or c['error'] for c in unit),unit
-          expected=["com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest","com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest","com.example.chatbar.domain.card.CoverGalleryContractTransferTest","com.example.chatbar.ui.manage.CharacterCoverExportDialogTest","com.example.chatbar.ui.manage.ManagementDraftDiscardTest","com.example.chatbar.domain.card.CharacterCardPngRendererInstrumentedTest"]
+          expected=["com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest","com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest","com.example.chatbar.domain.card.CoverGalleryContractTransferTest","com.example.chatbar.ui.manage.CharacterCoverExportDialogTest","com.example.chatbar.ui.manage.ManagementDraftDiscardTest","com.example.chatbar.domain.card.CharacterCardPngRendererInstrumentedTest","com.example.chatbar.domain.card.PlayerAvatarTransferTest","com.example.chatbar.ui.manage.PlayerRoleControlsTest"]
           assert all(any(c['class']==n for c in device) for n in expected),device
           assert len(device)>=20 and not any(c['failure'] or c['error'] or c['skip'] for c in device),device
-          for n in ['android-complete11.json','android-complete11.png','cover-card-picker.png','cover-export-phone.png']:
+          for n in ['android-complete11.json','android-complete11.png','cover-card-picker.png','cover-export-phone.png','player-avatar-bubble.png']:
               assert (out/'roundtrip-and-ui'/n).stat().st_size>0,n
           apk=out/'CCB-cover-gallery-c1-test.apk'
           digest=hashlib.sha256(apk.read_bytes()).hexdigest()
           assert "name='"+os.environ['TEST_APPLICATION_ID']+"'" in (out/'apk-badging.txt').read_text()
           (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'Android only; production Desktop reader roundtrip pending'},indent=2))
-          (out/'BUILD_INFO.json').write_text(json.dumps({'source':os.environ['SOURCE_SHA'],'tree':'32940a3cac7051a161d2617dceb5da7f2fda039a','applicationId':os.environ['TEST_APPLICATION_ID'],'sha256':digest,'bytes':apk.stat().st_size,'userAcceptance':False,'crossPlatformAcceptance':False},indent=2))
+          (out/'BUILD_INFO.json').write_text(json.dumps({'source':os.environ['SOURCE_SHA'],'tree':'134da3d95189d8515cd838c965da13f107e56329','applicationId':os.environ['TEST_APPLICATION_ID'],'sha256':digest,'bytes':apk.stat().st_size,'userAcceptance':False,'crossPlatformAcceptance':False},indent=2))
           PY
       - name: Preserve original results
         if: always()
