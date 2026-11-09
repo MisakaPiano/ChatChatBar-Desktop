@@ -99,6 +99,7 @@ class DesktopPortableBackgroundGalleryTest {
         withApp { app, parent ->
             val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
             val card = app.characterTransfers.importNew(source)
+            app.characterRepository.update(card.copy(name = "Desktop modified synthetic gallery"))
             val image = bytes(source, source.card.chatBackgroundImageResourceIds.last())
             app.characterBackgrounds.import(card.id, image)
             val added = app.characterBackgrounds.catalog(card.id).images.last()
@@ -106,6 +107,26 @@ class DesktopPortableBackgroundGalleryTest {
             app.characterBackgrounds.setDefault(card.id, added)
             val full = app.characterTransfers.prepareExport(card.id).packageData
             assertEquals(full.card.chatBackgroundResourceId, full.card.chatBackgroundImageResourceIds.last())
+            assertEquals(card.chatBackgroundImages.size + 1, full.card.chatBackgroundImageResourceIds.size)
+            assertNotEquals(full.card.chatBackgroundImageResourceIds.last(), full.card.chatBackgroundImageResourceIds[card.chatBackgroundImages.lastIndex])
+            assertContentEquals(bytes(full, full.card.chatBackgroundImageResourceIds.last()), bytes(full, full.card.chatBackgroundImageResourceIds[card.chatBackgroundImages.lastIndex]))
+            System.getenv("CCB_COVER_GALLERY_REVIEW_DIR")?.let { directory ->
+                val output = Files.createDirectories(Path.of(directory))
+                Files.writeString(output.resolve("desktop-created-complete11.json"), app.transferJson.encodeToString(CharacterCardPackage.serializer(), full))
+                Files.write(output.resolve("desktop-created-complete11.png"), CharacterCardPngPackageCodec.attach(
+                    bytes(full, assertNotNull(full.card.coverImageResourceId)), full, app.transferJson))
+                fun digest(id: String) = java.security.MessageDigest.getInstance("SHA-256").digest(bytes(full, id)).joinToString("") { "%02x".format(it) }
+                val expected = buildJsonObject {
+                    put("syntheticOnly", true); put("name", full.card.name)
+                    put("cover", digest(assertNotNull(full.card.coverImageResourceId)))
+                    put("default", digest(assertNotNull(full.card.chatBackgroundResourceId)))
+                    put("defaultGalleryIndex", full.card.chatBackgroundImageResourceIds.indexOf(full.card.chatBackgroundResourceId))
+                    put("gallery", JsonArray(full.card.chatBackgroundImageResourceIds.map { JsonPrimitive(digest(it)) }))
+                    put("distinctReferences", full.card.chatBackgroundImageResourceIds.distinct().size)
+                    put("peopleEnabled", JsonArray(full.card.characters.map { JsonPrimitive(it.desktopEnabled) }))
+                }
+                Files.writeString(output.resolve("desktop-created-expected.json"), expected.toString())
+            }
             val before = assertNotNull(app.characterRepository.getById(card.id))
             Files.move(app.appDataRoot.resolve(added), parent.resolve("held.png"))
             assertFails { app.characterTransfers.prepareExport(card.id) }
