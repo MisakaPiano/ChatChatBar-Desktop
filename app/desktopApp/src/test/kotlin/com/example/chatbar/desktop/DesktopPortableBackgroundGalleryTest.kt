@@ -32,9 +32,9 @@ class DesktopPortableBackgroundGalleryTest {
         try { return block(app, parent) } finally { app.close(); check(parent.toFile().deleteRecursively()) }
     }
     private fun bytes(pack: CharacterCardPackage, id: String) = Base64.getDecoder().decode(pack.images.getValue(id).data)
-    private fun assertEquivalent(before: CharacterCardPackage, after: CharacterCardPackage) {
+    private fun assertEquivalent(before: CharacterCardPackage, after: CharacterCardPackage, expectedName: String = before.card.name) {
         assertEquals(11, after.schemaVersion)
-        assertEquals(before.card.name, after.card.name)
+        assertEquals(expectedName, after.card.name)
         assertEquals(before.card.characters.map { it.desktopEnabled }, after.card.characters.map { it.desktopEnabled })
         assertContentEquals(bytes(before, assertNotNull(before.card.coverImageResourceId)), bytes(after, assertNotNull(after.card.coverImageResourceId)))
         assertContentEquals(bytes(before, assertNotNull(before.card.chatBackgroundResourceId)), bytes(after, assertNotNull(after.card.chatBackgroundResourceId)))
@@ -51,12 +51,14 @@ class DesktopPortableBackgroundGalleryTest {
                 else assertNotNull(app.characterTransfers.decodePng(input))
             assertFalse(source.card.characters.single().desktopEnabled)
             var card = app.characterTransfers.importNew(source)
+            assertEquals(source.card.name, card.name) // Fresh destination preserves its original name.
             repeat(2) { round ->
                 val exported = app.characterTransfers.prepareExport(card.id).packageData
-                assertEquivalent(source, exported)
+                // Reimporting to this same nonempty repository intentionally applies the original copy-name policy.
+                assertEquivalent(source, exported, expectedName = card.name)
                 val wire = app.transferJson.encodeToString(CharacterCardPackage.serializer(), exported)
                 val png = CharacterCardPngPackageCodec.attach(bytes(exported, assertNotNull(exported.card.coverImageResourceId)), exported, app.transferJson)
-                assertEquivalent(source, assertNotNull(app.characterTransfers.decodePng(png)))
+                assertEquivalent(source, assertNotNull(app.characterTransfers.decodePng(png)), expectedName = card.name)
                 if (round == 0) System.getenv("CCB_COVER_GALLERY_REVIEW_DIR")?.let { directory ->
                     val output = Files.createDirectories(Path.of(directory))
                     Files.writeString(output.resolve("desktop-from-android-$extension.json"), wire)
