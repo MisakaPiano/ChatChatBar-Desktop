@@ -22,6 +22,22 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 class DesktopSettingsStoreTest {
+    @Test fun `close window to tray defaults off round trips and rejects a string boolean without resetting source`() = runTest {
+        withTemporaryParent { root ->
+            val store = DesktopSettingsStore(root, RecordingGate())
+            assertFalse(assertIs<DesktopSettingsLoadResult.Missing>(store.load()).document.settings.closeWindowToTray)
+            store.updateLatest { it.copy(closeWindowToTray = true, colorStyle = DesktopColorStyle.CCB_NATIVE) }
+            val reopened = DesktopSettingsStore(root, RecordingGate())
+            val saved = assertIs<DesktopSettingsLoadResult.Loaded>(reopened.load()).document.settings
+            assertTrue(saved.closeWindowToTray); assertEquals(DesktopColorStyle.CCB_NATIVE, saved.colorStyle)
+            val fields = kotlinx.serialization.json.Json.parseToJsonElement(Files.readString(store.settingsPath)) as kotlinx.serialization.json.JsonObject
+            val bad = kotlinx.serialization.json.JsonObject(fields + ("closeWindowToTray" to kotlinx.serialization.json.JsonPrimitive("true"))).toString().toByteArray()
+            Files.write(store.settingsPath, bad)
+            assertIs<DesktopSettingsLoadResult.Invalid>(reopened.load())
+            assertTrue(Files.readAllBytes(store.settingsPath).contentEquals(bad))
+        }
+    }
+
     @Test
     fun `load and save each participate in the operation gate`() = runTest {
         withTemporaryParent { root ->

@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import desktop_update as client
 import release_metadata
@@ -78,6 +80,119 @@ class Repository(FetcherInterface):
 
 
 class ClientTest(unittest.TestCase):
+    def cache_history(self, cache):
+        repo = Repository(version=119, installed=118, payload=b'MZ synthetic installer never executed')
+        ready = {}
+        for revision, build in enumerate(range(119, 125), start=1):
+            repo.custom.update(version=build, displayVersion=f'0.1.0-preview.{build}', sourceSha='b' * 40,
+                               github=dict(tag=f'desktop-v0.1.0-preview.{build}',
+                                           asset=f'ChatChatBar-Desktop-0.1.0-preview.{build}-windows-x64.exe'))
+            repo.payload = b'MZ synthetic installer never executed ' + str(build).encode()
+            repo.build(metadata_version=revision)
+            ready[build] = client.execute(repo.installed, cache, download=True, fetcher=repo)
+        current = client.Installed(120, '0.1.0-preview.120', 'a' * 40, 'preview', 1, repo.bootstrap)
+        return repo, current, ready
+
+    def test_explicit_cleanup_rechecks_real_signed_downloads_and_preserves_selected_current_recent_and_all_small_evidence(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-clean-cache-') as tmp:
+            cache = Path(tmp) / 'updates'
+            repo, installed, ready = self.cache_history(cache)
+            records = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file() and p.name != 'desktop-installer.exe'}
+            request_count = len(repo.requests)
+            cleaned = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+            self.assertEqual(2, cleaned['removedCount'])
+            self.assertEqual(len(repo.payload) * 2, cleaned['removedBytes'])
+            self.assertEqual(4, cleaned['retainedCount'])
+            self.assertEqual(0, cleaned['unavailableCount'])
+            for build, value in ready.items():
+                self.assertEqual(build not in (119, 122), Path(value['installer']).exists())
+            self.assertEqual(records, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file() and p.name != 'desktop-installer.exe'})
+            self.assertEqual(request_count, len(repo.requests))
+            self.assertGreaterEqual(cleaned['availableBytes'], 0)
+            again = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+            self.assertEqual(0, again['removedCount']); self.assertEqual(2, again['missingCount'])
+            self.assertEqual(0, again['unavailableCount'])
+
+    def test_cleanup_preserves_busy_hardlinked_changed_and_unknown_material_with_visible_reasons(self):
+        for refusal in ('busy', 'hardlink', 'changed', 'unknown', 'duplicate-receipt'):
+            with self.subTest(refusal=refusal), tempfile.TemporaryDirectory(prefix='ccb-clean-retain-') as tmp:
+                cache = Path(tmp) / 'updates'
+                _, installed, ready = self.cache_history(cache)
+                file = Path(ready[119]['installer']); before = file.read_bytes(); held = None
+                if refusal == 'busy':
+                    held = file.open('rb')
+                elif refusal == 'hardlink':
+                    outside = Path(tmp) / 'external-user-file.exe'; outside.hardlink_to(file)
+                elif refusal == 'changed':
+                    file.write_bytes(b'NZ' + before[2:]); before = file.read_bytes()
+                elif refusal == 'unknown':
+                    (file.parent / 'unowned.txt').write_text('synthetic user content')
+                else:
+                    record = file.parent / 'VERIFIED.json'
+                    record.write_text(record.read_text().rstrip().removesuffix('}') + ',"version":119}')
+                record_before = (file.parent / 'VERIFIED.json').read_bytes()
+                try:
+                    result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+                finally:
+                    if held is not None:
+                        held.close()
+                self.assertEqual(1, result['removedCount'])
+                self.assertGreaterEqual(result['unavailableCount'], 1)
+                self.assertEqual(before, file.read_bytes())
+                if refusal == 'hardlink':
+                    self.assertEqual(before, outside.read_bytes())
+                self.assertTrue((file.parent / 'VERIFIED.json').is_file())
+                self.assertEqual(record_before, (file.parent / 'VERIFIED.json').read_bytes())
+
+    def test_other_channel_target_is_retained_and_unreadable_cached_roles_never_get_reset_or_authorize_cleanup(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-clean-channels-') as tmp:
+            cache = Path(tmp) / 'updates'
+            _, installed, ready = self.cache_history(cache)
+            stable = cache / 'metadata-stable' / 'targets.json'
+            stable.parent.mkdir(exist_ok=True)
+            stable.write_text(json.dumps({'signed': {'targets': {'desktop-installer.exe': {'hashes': {'sha256': ready[119]['sha256']}}}}}))
+            original = stable.read_bytes()
+            result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+            self.assertEqual(1, result['removedCount']); self.assertTrue(Path(ready[119]['installer']).is_file())
+            self.assertEqual(original, stable.read_bytes())
+            stable.write_bytes(b'{invalid role}')
+            before = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()}
+            with self.assertRaisesRegex(client.UpdateRejected, '^UPDATE_CACHE_METADATA_UNREADABLE$'):
+                client.cleanup_downloads(installed, cache)
+            self.assertEqual(before, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()})
+
+    def test_cleanup_respects_the_original_client_lock_and_refuses_foreign_ownership_without_deletion(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-clean-lock-') as tmp:
+            cache = Path(tmp) / 'updates'
+            _, installed, ready = self.cache_history(cache)
+            original = {Path(v['installer']): Path(v['installer']).read_bytes() for v in ready.values()}
+            with client.exclusive(cache):
+                with self.assertRaisesRegex(client.UpdateRejected, '^UPDATE_BUSY$'):
+                    client.cleanup_downloads(installed, cache)
+            self.assertTrue(all(path.read_bytes() == value for path, value in original.items()))
+            (cache / 'owner.txt').write_text('foreign owner')
+            with self.assertRaisesRegex(client.UpdateRejected, '^FOREIGN_UPDATE_CACHE$'):
+                client.cleanup_downloads(installed, cache)
+            self.assertTrue(all(path.read_bytes() == value for path, value in original.items()))
+
+    def test_space_refusal_reports_the_actual_cache_and_counts_without_downloading_or_lowering_the_limit(self):
+        repo = Repository()
+        required = len(repo.payload) * 3 + 64 * 1024**2
+        with tempfile.TemporaryDirectory(prefix='ccb-update-space-') as tmp:
+            cache = Path(tmp) / 'updates'
+            with patch.object(client.shutil, 'disk_usage', return_value=SimpleNamespace(free=required - 1)):
+                with self.assertRaises(client.UpdateSpaceRequired) as raised:
+                    client.execute(repo.installed, cache, download=True, fetcher=repo)
+            result = client.failure_report(raised.exception)
+            self.assertEqual({'status': 'FAILED', 'reason': 'UPDATE_SPACE_REQUIRED', 'cache': str(cache),
+                              'requiredBytes': required, 'availableBytes': required - 1}, result)
+            _, targets_url = endpoints(client.REPOSITORY, 'preview', client.METADATA_BRANCH)
+            self.assertFalse(any(url.startswith(targets_url) for url in repo.requests))
+            with patch.object(client.shutil, 'disk_usage', return_value=SimpleNamespace(free=required)):
+                ready = client.execute(repo.installed, cache, download=True, fetcher=repo)
+            self.assertEqual('DOWNLOADED_VERIFIED', ready['status'])
+            self.assertEqual(repo.payload, Path(ready['installer']).read_bytes())
+
     def test_frozen_public1233_updater_downloads_and_reverifies_bridge_before_new_client_reads_stable(self):
         frozen = Path(__file__).parent / 'fixtures' / 'desktop_update_1233.py'
         origin = json.loads(frozen.with_suffix('.origin.json').read_text())

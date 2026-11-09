@@ -10,10 +10,14 @@ private fun DesktopTaskStatus.workPhase() = when (this) {
     DesktopTaskStatus.USER_STOPPED, DesktopTaskStatus.CANCELLED -> DesktopWorkPhase.CANCELLED
 }
 
+internal fun DesktopTaskCenter.watchProgramUpdates(controller: DesktopUpdateRuntime) =
+    watch("program-update", controller.workRows, stop = { controller.stopTask(it) })
+
 internal fun DesktopTaskCenter.watchRuntime(runtime: DesktopTaskRuntime) {
     val flow = combine(runtime.tasks, runtime.ownedWork, runtime.repairTasks, runtime.repairIdentities) { tasks, owned, repairs, identities ->
         tasks.map { task -> DesktopWorkRow(task.taskId, if (task.kind == DesktopTaskKind.REAL_CHAT) DesktopWorkKind.CHAT else DesktopWorkKind.IMAGE,
-            task.status.workPhase(), task.createdAt, target = task.sessionId?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = it, subjectId = task.targetMessageId) }
+            if (task.kind != DesktopTaskKind.REAL_CHAT && task.status == DesktopTaskStatus.RUNNING && task.startedAt == null)
+                DesktopWorkPhase.WAITING else task.status.workPhase(), task.createdAt, target = task.sessionId?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = it, subjectId = task.targetMessageId) }
                 ?: DesktopWorkTarget(DesktopPrimaryRoute.TOOLS), canStop = task.status == DesktopTaskStatus.RUNNING,
             canRetry = task.canRetry && task.status != DesktopTaskStatus.RUNNING) } +
         owned.map { entry -> DesktopWorkRow(entry.taskId,

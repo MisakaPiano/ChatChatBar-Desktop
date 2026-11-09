@@ -217,6 +217,8 @@ class DesktopSettingsStore internal constructor(
                     ?: return DesktopSettingsLoadResult.Invalid("Desktop guide preference is invalid"),
             taskNotifications = if (TASK_NOTIFICATIONS !in root) true else root.primitive(TASK_NOTIFICATIONS)?.booleanOrNull
                 ?: return DesktopSettingsLoadResult.Invalid("Desktop task notifications preference is invalid"),
+            closeWindowToTray = if (CLOSE_WINDOW_TO_TRAY !in root) false else root.primitive(CLOSE_WINDOW_TO_TRAY)?.takeUnless { it.isString }?.booleanOrNull
+                ?: return DesktopSettingsLoadResult.Invalid("Desktop close-to-tray preference is invalid"),
             networkProxy = try {
                 root[NETWORK_PROXY]?.let { chatUiJson.decodeFromJsonElement<com.example.chatbar.domain.ApplicationProxySettings>(it) }
                     ?: com.example.chatbar.domain.ApplicationProxySettings()
@@ -277,6 +279,7 @@ class DesktopSettingsStore internal constructor(
             put(UI_LANGUAGE, JsonPrimitive(settings.uiLanguage.name))
             put(COLOR_STYLE, JsonPrimitive(settings.colorStyle.name))
             put(TASK_NOTIFICATIONS, JsonPrimitive(settings.taskNotifications))
+            put(CLOSE_WINDOW_TO_TRAY, JsonPrimitive(settings.closeWindowToTray))
             put(GUIDE_ACKNOWLEDGED_VERSION, JsonPrimitive(settings.guideAcknowledgedVersion))
             val previousProxy = source[NETWORK_PROXY] as? JsonObject
             put(NETWORK_PROXY, JsonObject(previousProxy.orEmpty() +
@@ -333,6 +336,7 @@ class DesktopSettingsStore internal constructor(
         private const val CHAT_UI = "chatUi"
         private const val NETWORK_PROXY = "networkProxy"
         private const val TASK_NOTIFICATIONS = "taskNotifications"
+        private const val CLOSE_WINDOW_TO_TRAY = "closeWindowToTray"
         private const val GUIDE_ACKNOWLEDGED_VERSION = "guideAcknowledgedVersion"
         private const val ENABLED = "enabled"
         private const val MINIMUM_BACKUP_INTERVAL = "minimumBackupInterval"

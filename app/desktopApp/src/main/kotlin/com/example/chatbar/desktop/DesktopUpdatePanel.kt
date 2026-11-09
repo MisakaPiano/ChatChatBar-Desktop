@@ -38,6 +38,7 @@ internal fun DesktopUpdatePanel(
     val catalog = catalogResolution.getOrNull()
     val download = updater?.state?.collectAsState()?.value
     var confirmInstall by remember { mutableStateOf(false) }
+    var confirmCleanup by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DesktopDataSectionHeading("版本与更新")
         DesktopTaskbarPinEntry()
@@ -70,6 +71,10 @@ internal fun DesktopUpdatePanel(
             }
         }
         StatusText("启动后自动检查一次；下载与安装仍由你确认。")
+        if (updater?.supportsInstall == true) {
+            updater.cacheLocation?.let { StatusText("更新缓存位置：$it") }
+            BootstrapButton("清理旧更新安装包…", secondary = true, enabled = !busy && download?.busy != true) { confirmCleanup = true }
+        }
         noticeState.cacheNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (busy) StatusText("正在检查 Desktop 官方发行信息…")
         error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
@@ -95,9 +100,10 @@ internal fun DesktopUpdatePanel(
                 "DOWNLOADING" -> "正在下载更新 · ${download.received / (1024 * 1024)} / ${download.total / (1024 * 1024)} MB"
                 "VERIFYING" -> "正在验证更新签名和完整性…"
                 "WAITING_FOR_NORMAL_EXIT" -> "正在正常退出；完成后安装并重新打开…"
+                "CLEANING_CACHE" -> "正在核对并清理已验证的旧更新安装包…"
                 else -> "正在核对可信更新信息…"
             })
-            if (download.phase != "WAITING_FOR_NORMAL_EXIT") BootstrapButton("停止下载", secondary = true) { updater?.stop() }
+            if (download.phase != "WAITING_FOR_NORMAL_EXIT") BootstrapButton(if (download.phase == "CLEANING_CACHE") "停止清理" else "停止下载", secondary = true) { updater?.stop() }
         }
         download?.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
         download?.notice?.let { StatusText(it, DesktopBootstrapColors.warning) }
@@ -111,6 +117,22 @@ internal fun DesktopUpdatePanel(
         if (catalogResolution.isFailure) {
             StatusText("无法准备 Danbooru 词库检查；程序更新仍可单独使用。", DesktopBootstrapColors.destructive)
             BootstrapButton("重试准备词库检查", secondary = true) { catalogAttempt++ }
+        }
+    }
+    if (confirmCleanup) DesktopModalSurface {
+        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                DesktopDataSectionHeading("清理旧更新安装包")
+                StatusText("只清理本应用缓存中已验证且可重新下载的旧安装包，保留当前版本、已选更新和两份近期包。正在使用、缺失或无法确认的材料保留。")
+                StatusText("全部校验记录和防回滚信息保留；不清理已安装程序、聊天、图片、录音或备份。")
+                updater?.cacheLocation?.let { StatusText("位置：$it") }
+                ActionRow {
+                    BootstrapButton("取消", secondary = true) { confirmCleanup = false }
+                    BootstrapButton("确认清理", enabled = download?.busy != true) {
+                        confirmCleanup = false; updater?.cleanCache(result?.latest?.version)
+                    }
+                }
+            }
         }
     }
     if (confirmInstall) DesktopModalSurface {

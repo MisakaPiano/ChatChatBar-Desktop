@@ -16,6 +16,7 @@ data class DesktopSettings(
     val chatUi: DesktopChatUiPreferences = DesktopChatUiPreferences(),
     val networkProxy: com.example.chatbar.domain.ApplicationProxySettings = com.example.chatbar.domain.ApplicationProxySettings(),
     val taskNotifications: Boolean = true,
+    val closeWindowToTray: Boolean = false,
     val guideAcknowledgedVersion: Int = 0,
 ) {
     init {

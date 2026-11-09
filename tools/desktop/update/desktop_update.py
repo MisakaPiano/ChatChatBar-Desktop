@@ -33,6 +33,210 @@ class UpdateRejected(ValueError):
     pass
 
 
+class UpdateSpaceRequired(UpdateRejected):
+    def __init__(self, cache, required, available):
+        super().__init__('UPDATE_SPACE_REQUIRED')
+        self.cache, self.required, self.available = cache, required, available
+
+
+def failure_report(failure):
+    reason = str(failure) if isinstance(failure, UpdateRejected) else type(failure).__name__
+    result = {'status': 'FAILED', 'reason': reason}
+    if isinstance(failure, UpdateSpaceRequired):
+        result.update(cache=str(failure.cache), requiredBytes=failure.required, availableBytes=failure.available)
+    return result
+
+
+def _cache_receipt_bytes(path):
+    safe(path)
+    with path.open('rb') as stream:
+        raw = stream.read(32769)
+    if len(raw) > 32768:
+        raise UpdateRejected('UPDATE_METADATA_LIMIT')
+    return raw
+
+
+def _cache_receipt_object(raw):
+    def unique(pairs):
+        value = {}
+        for key, item in pairs:
+            if key in value:
+                raise UpdateRejected('UPDATE_CACHE_RECORD_DUPLICATE')
+            value[key] = item
+        return value
+    return json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+
+
+def _delete_verified_cached_installer(path, expected_bytes, expected_sha, remove=True):
+    """Delete only the exact, exclusively leased regular file; no path-based unlink race."""
+    if os.name != 'nt':
+        return 'PLATFORM_UNAVAILABLE'
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                                  wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    kernel.CreateFileW.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_void_p]
+    kernel.GetFinalPathNameByHandleW.argtypes = [wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD]
+    kernel.ReadFile.argtypes = [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p]
+    kernel.SetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    class Info(ctypes.Structure):
+        _fields_ = [('attributes', wintypes.DWORD), ('created', wintypes.FILETIME), ('accessed', wintypes.FILETIME),
+                    ('written', wintypes.FILETIME), ('volume', wintypes.DWORD), ('high', wintypes.DWORD),
+                    ('low', wintypes.DWORD), ('links', wintypes.DWORD), ('index_high', wintypes.DWORD), ('index_low', wintypes.DWORD)]
+    handle = kernel.CreateFileW(str(path), 0x80000000 | (0x10000 if remove else 0), 0, None, 3, 0x00200000 | 0x08000000, None)
+    if handle == ctypes.c_void_p(-1).value:
+        return 'BUSY_OR_DENIED'
+    try:
+        info = Info()
+        if not kernel.GetFileInformationByHandle(handle, ctypes.byref(info)):
+            return 'IDENTITY_UNAVAILABLE'
+        if info.attributes & (0x400 | 0x10) or info.links != 1 or (info.high << 32 | info.low) != expected_bytes:
+            return 'IDENTITY_REFUSED'
+        def matches_path():
+            buffer = ctypes.create_unicode_buffer(32768)
+            count = kernel.GetFinalPathNameByHandleW(handle, buffer, len(buffer), 0)
+            if not 0 < count < len(buffer):
+                return False
+            name = buffer.value
+            if name.startswith('\\\\?\\UNC\\'):
+                name = '\\\\' + name[8:]
+            elif name.startswith('\\\\?\\'):
+                name = name[4:]
+            return os.path.normcase(os.path.normpath(name)) == os.path.normcase(str(path))
+        if not matches_path():
+            return 'LOCATION_REFUSED'
+        digest = hashlib.sha256(); total = 0; buffer = ctypes.create_string_buffer(256 * 1024)
+        count = wintypes.DWORD(); first = True
+        while True:
+            if not kernel.ReadFile(handle, buffer, len(buffer), ctypes.byref(count), None):
+                return 'READ_FAILED'
+            if not count.value:
+                break
+            chunk = buffer.raw[:count.value]
+            if first and chunk[:2] != b'MZ':
+                return 'NOT_INSTALLER'
+            first = False; total += count.value
+            if total > expected_bytes:
+                return 'CHANGED'
+            digest.update(chunk)
+        if total != expected_bytes or digest.hexdigest() != expected_sha or not matches_path():
+            return 'CHANGED'
+        if not remove:
+            return 'VERIFIED'
+        remove = ctypes.c_ubyte(1)
+        if not kernel.SetFileInformationByHandle(handle, 4, ctypes.byref(remove), ctypes.sizeof(remove)):
+            return 'DELETE_REFUSED'
+    finally:
+        kernel.CloseHandle(handle)
+    return 'REMOVED' if not path.exists() else 'DELETE_UNCONFIRMED'
+
+
+def cleanup_downloads(installed, cache, protected_version=None):
+    """Explicit cache maintenance. Receipt hints never authorize installation or reset TUF state."""
+    cache = safe(cache)
+    if cache.exists() and any(cache.iterdir()):
+        owner = safe(cache / 'owner.txt')
+        if not owner.is_file() or owner.stat().st_nlink != 1 or owner.stat().st_size != len(PRODUCT) or owner.read_text(encoding='utf-8') != PRODUCT:
+            raise UpdateRejected('FOREIGN_UPDATE_CACHE')
+    if protected_version is not None:
+        try:
+            release_channel(protected_version)
+        except ValueError:
+            raise UpdateRejected('UPDATE_SELECTION_CHANGED') from None
+    result = dict(status='CACHE_CLEANED', cache=str(cache), removedBytes=0, removedCount=0,
+                  retainedCount=0, missingCount=0, unavailableCount=0, issues=[])
+    with exclusive(cache):
+        # Cached roles only add protection; they never authorize deletion or installation.
+        # This also retains the current target of the other signed channel/profile.
+        protected_hashes = set()
+        for name in ('metadata', 'metadata-stable'):
+            target_metadata = cache / name / 'targets.json'
+            if not target_metadata.exists():
+                continue
+            try:
+                envelope = read_json(target_metadata, 256 * 1024)
+                target = envelope['signed']['targets'].get('desktop-installer.exe')
+                if target is not None:
+                    digest = target['hashes']['sha256']
+                    if not isinstance(digest, str) or not re.fullmatch('[a-f0-9]{64}', digest):
+                        raise ValueError('INVALID_TARGET_HINT')
+                    protected_hashes.add(digest)
+            except Exception:
+                raise UpdateRejected('UPDATE_CACHE_METADATA_UNREADABLE') from None
+        home = cache / 'downloads'
+        if home.exists():
+            safe(home)
+            entries = list(home.iterdir())
+            if len(entries) > 1000:
+                raise UpdateRejected('UPDATE_CACHE_LIMIT')
+            candidates = []
+            def issue(stage, reason):
+                result['unavailableCount'] += 1
+                if len(result['issues']) < 20:
+                    result['issues'].append(dict(stage=stage if re.fullmatch('[a-f0-9]{32}', stage) else 'UNRECOGNIZED', reason=reason))
+            for stage in entries:
+                try:
+                    if not re.fullmatch('[a-f0-9]{32}', stage.name):
+                        issue(stage.name, 'UNKNOWN_STAGE'); continue
+                    safe(stage)
+                    if not stage.is_dir():
+                        issue(stage.name, 'INCOMPLETE_OR_UNKNOWN_MEMBERS'); continue
+                    members = {item.name for item in stage.iterdir()}
+                    if members not in ({'VERIFIED.json', 'desktop-installer.exe'}, {'VERIFIED.json'}):
+                        issue(stage.name, 'INCOMPLETE_OR_UNKNOWN_MEMBERS'); continue
+                    receipt = stage / 'VERIFIED.json'; safe(receipt)
+                    if not receipt.is_file() or receipt.stat().st_nlink != 1:
+                        issue(stage.name, 'RECEIPT_IDENTITY'); continue
+                    receipt_raw = _cache_receipt_bytes(receipt)
+                    hint = _cache_receipt_object(receipt_raw)
+                    build = hint.get('version'); display = hint.get('displayVersion', f'0.1.0-preview.{build}')
+                    channel = hint.get('channel', 'preview')
+                    if type(build) is not int or hint.get('status') != 'AVAILABLE':
+                        issue(stage.name, 'RECEIPT_IDENTITY'); continue
+                    ReleaseIdentity.create(display, build, channel)
+                    size = hint.get('bytes'); digest = hint.get('sha256')
+                    if (type(size) is not int or not 2 <= size <= 1024**3 or not isinstance(digest, str)
+                            or not re.fullmatch('[a-f0-9]{64}', digest) or not re.fullmatch('[a-f0-9]{40}', hint.get('sourceSha', ''))):
+                        issue(stage.name, 'RECEIPT_IDENTITY'); continue
+                    if 'desktop-installer.exe' not in members:
+                        result['missingCount'] += 1; continue
+                    file = stage / 'desktop-installer.exe'; safe(file)
+                    if not file.is_file() or file.stat().st_size != size:
+                        issue(stage.name, 'INSTALLER_IDENTITY'); continue
+                    verified = _delete_verified_cached_installer(file, size, digest, remove=False)
+                    if verified != 'VERIFIED':
+                        issue(stage.name, verified); continue
+                    candidates.append(dict(stage=stage, file=file, bytes=size, sha256=digest, build=build,
+                                           display=display, receipt=receipt, receipt_sha=hashlib.sha256(receipt_raw).hexdigest()))
+                except Exception:
+                    issue(stage.name, 'SOURCE_UNVERIFIED')
+            recent = {item['stage'] for item in sorted(candidates, key=lambda x: (x['build'], x['stage'].name), reverse=True)[:2]}
+            for item in candidates:
+                if (item['stage'] in recent or item['sha256'] in protected_hashes or item['build'] == installed.version or
+                        item['display'] in (installed.display_version, protected_version)):
+                    result['retainedCount'] += 1; continue
+                try:
+                    if (safe(item['receipt']).stat().st_size > 32768 or
+                            hashlib.sha256(_cache_receipt_bytes(item['receipt'])).hexdigest() != item['receipt_sha'] or
+                            {p.name for p in item['stage'].iterdir()} != {'VERIFIED.json', 'desktop-installer.exe'}):
+                        issue(item['stage'].name, 'SOURCE_CHANGED'); continue
+                    state = _delete_verified_cached_installer(safe(item['file']), item['bytes'], item['sha256'])
+                except Exception:
+                    state = 'SOURCE_UNVERIFIED'
+                if state == 'REMOVED':
+                    result['removedCount'] += 1; result['removedBytes'] += item['bytes']
+                else:
+                    issue(item['stage'].name, state)
+        try:
+            result['availableBytes'] = shutil.disk_usage(cache).free
+        except OSError:
+            result['spaceReadFailed'] = True
+    return result
+
+
 def safe(path):
     path = Path(os.path.abspath(path))
     for ancestor in (path, *path.parents):
@@ -246,8 +450,10 @@ def execute(installed, cache, download=False, verify_file=None, fetcher=None, re
                 return result
             if rejected:
                 report({'phase': 'CACHE_REJECTED'})
-            if shutil.disk_usage(cache).free < target.length * 3 + 64 * 1024**2:
-                raise UpdateRejected('UPDATE_SPACE_REQUIRED')
+            required = target.length * 3 + 64 * 1024**2
+            available = shutil.disk_usage(cache).free
+            if available < required:
+                raise UpdateSpaceRequired(cache, required, available)
             stage = downloads / (uuid.uuid4().hex + '.incomplete')
             stage.mkdir()
             file = stage / 'desktop-installer.exe'
@@ -298,6 +504,7 @@ def main():
     parser.add_argument('--package', type=Path, required=True)
     parser.add_argument('--cache', type=Path, required=True)
     parser.add_argument('--download', action='store_true')
+    parser.add_argument('--clean-cache', action='store_true')
     parser.add_argument('--verify-file', type=Path)
     parser.add_argument('--expected-version')
     routes_group = parser.add_mutually_exclusive_group()
@@ -308,14 +515,18 @@ def main():
     try:
         if cache == package or cache.is_relative_to(package) or package.is_relative_to(cache):
             raise UpdateRejected('UPDATE_CACHE_OVERLAP')
-        routes = parse_proxy_routes(args.proxy_routes, args.proxy_routes_base64)
-        execute(Installed.load(package), cache, args.download, args.verify_file,
-                report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True),
-                expected_version=args.expected_version, proxy_routes=routes)
+        routes = None if args.clean_cache else parse_proxy_routes(args.proxy_routes, args.proxy_routes_base64)
+        if args.clean_cache:
+            if args.download or args.verify_file:
+                raise UpdateRejected('UPDATE_ARGUMENTS_REFUSED')
+            print(json.dumps(cleanup_downloads(Installed.load(package), cache, args.expected_version), ensure_ascii=True), flush=True)
+        else:
+            execute(Installed.load(package), cache, args.download, args.verify_file,
+                    report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True),
+                    expected_version=args.expected_version, proxy_routes=routes)
         return 0
     except Exception as failure:
-        reason = str(failure) if isinstance(failure, UpdateRejected) else type(failure).__name__
-        print(json.dumps({'status': 'FAILED', 'reason': reason}), flush=True)
+        print(json.dumps(failure_report(failure)), flush=True)
         return 1
 
 

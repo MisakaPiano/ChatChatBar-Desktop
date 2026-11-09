@@ -291,6 +291,31 @@ class DesktopSaveSlotServiceTest {
         override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("NO_PICKER")
     }
 
+    @Test fun `cancellation during navigation after a committed duplicate never relabels the mutation unconfirmed`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val controller = DesktopSaveSlotController(f.service(), noSlotPicker()) {
+                entered.complete(Unit); release.await()
+            }
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                controller.duplicate()
+                withTimeout(10000) { entered.await() }
+                assertEquals(2, f.storage.loadAll("chat_sessions", ChatSession.serializer()).size)
+                controller.stop()
+                release.complete(Unit)
+                withTimeout(10000) { controller.state.first { !it.busy } }
+                val finished = withTimeout(10000) { controller.workRows.first { it.singleOrNull()?.active == false } }.single()
+                assertEquals(DesktopWorkPhase.COMPLETED, finished.phase)
+                assertTrue(controller.state.value.message.isNotBlank())
+                assertNotNull(controller.state.value.error)
+                assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
+                assertEquals(2, f.storage.loadAll("chat_sessions", ChatSession.serializer()).size)
+            } finally { release.complete(Unit); controller.closeAndDrain() }
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("desktop-slot-service-")
         val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(

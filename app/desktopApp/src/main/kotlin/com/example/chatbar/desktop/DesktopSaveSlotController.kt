@@ -64,19 +64,21 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
         service.export(slot.id, path)
         "存档已导出至所选新文件"
     }
-    fun restore(slot: SaveSlotSummary) = action(DesktopSaveSlotTask.RESTORE) { id ->
+    fun restore(slot: SaveSlotSummary) = action(DesktopSaveSlotTask.RESTORE, afterResult = { id -> afterChange(id) }) { id ->
         service.restore(slot.id, id) { progress -> mutable.update { it.copy(message = progress) } }
-        afterChange(id)
         "存档已恢复；恢复前的会话已另存保全"
     }
     fun delete(slot: SaveSlotSummary) = action(DesktopSaveSlotTask.DELETE) { id ->
         service.delete(slot.id, id)
         "存档已删除；其他存档和聊天中的图片、录音保持不变"
     }
-    fun duplicate() = action(DesktopSaveSlotTask.DUPLICATE) { id ->
-        val copied = service.duplicate(id) { progress -> mutable.update { it.copy(message = progress) } }
-        afterChange(copied.id)
-        "会话副本已创建，原会话保留"
+    fun duplicate() {
+        var copiedId: String? = null
+        action(DesktopSaveSlotTask.DUPLICATE, afterResult = { afterChange(requireNotNull(copiedId)) }) { id ->
+            val copied = service.duplicate(id) { progress -> mutable.update { it.copy(message = progress) } }
+            copiedId = copied.id
+            "会话副本已创建，原会话保留"
+        }
     }
     fun loadBindings() { synchronized(lock) {
         if (closed || mutable.value.busy) return
@@ -92,9 +94,8 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
         }
     } }
     fun refreshList() = action(DesktopSaveSlotTask.LIST) { "存档列表已刷新" }
-    fun rebind(characterId: String, books: List<String>) = action(DesktopSaveSlotTask.REBIND) { id ->
+    fun rebind(characterId: String, books: List<String>) = action(DesktopSaveSlotTask.REBIND, afterResult = { id -> afterChange(id) }) { id ->
         service.rebind(id, characterId, books)
-        afterChange(id)
         mutable.update { it.copy(bindings = null) }
         "会话资源已重新绑定；原内容和原格式卡保留，世界书计时已重置。"
     }
@@ -116,7 +117,8 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
         else { bindingRevision++; operation?.cancel(); markStopRequested(id); true }
     }
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun actionJob(task: DesktopSaveSlotTask = DesktopSaveSlotTask.LIST, work: suspend (String) -> String): Job? = synchronized(lock) {
+    private fun actionJob(task: DesktopSaveSlotTask = DesktopSaveSlotTask.LIST,
+        afterResult: (suspend (String) -> Unit)? = null, work: suspend (String) -> String): Job? = synchronized(lock) {
             val id = mutable.value.sessionId ?: return@synchronized null
             if (closed || mutable.value.busy) return@synchronized null
             mutable.update { it.copy(busy = true, error = null, errorDetails = null, message = "正在准备…") }
@@ -125,6 +127,7 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
             val evidence = DesktopSaveSlotWorkEvidence()
             var outcome = DesktopWorkPhase.COMPLETED
             var primaryReturned = false
+            var secondaryStage = "PRIMARY"
             if (taskId != null) mutableWork.update { rows ->
                 (listOf(DesktopWorkRow(taskId, DesktopWorkKind.SAVE_SLOT, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
                     target = DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = id, detail = DesktopWorkDetail.SAVE_SLOT),
@@ -137,7 +140,17 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
                     primaryReturned = true
                     mutable.update { it.copy(message = message + (if (task.recordWork) service.completedWorkCleanupNotice else null)
                         ?.let { notice -> "；$notice" }.orEmpty()) }
+                    if (afterResult != null) {
+                        secondaryStage = "UI_REFRESH"
+                        try { afterResult(id) }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (error: Exception) {
+                            mutable.update { it.copy(error = "操作已完成，但页面刷新失败；可从会话列表重新打开，无需重复操作。",
+                                errorDetails = desktopSaveSlotFailureDetails(task.label, secondaryStage, error)) }
+                        }
+                    }
                     if (task.refreshSlots) {
+                        secondaryStage = "SLOT_LIST"
                         try {
                             val slots = service.list(id)
                             mutable.update { it.copy(slots = slots, listError = null, listErrorDetails = null) }
@@ -152,7 +165,9 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
                 } catch (_: CancellationException) {
                     outcome = if (primaryReturned && task.recordWork && !evidence.pickerCancelled) DesktopWorkPhase.COMPLETED
                         else if (evidence.publicationAttempted) DesktopWorkPhase.UNCONFIRMED else DesktopWorkPhase.CANCELLED
-                    mutable.update { if (primaryReturned && task.recordWork) it.copy(listError = "操作已完成，列表刷新已停止；可单独重试列表。")
+                    mutable.update { if (primaryReturned && task.recordWork && secondaryStage == "UI_REFRESH")
+                            it.copy(error = "操作已完成，页面刷新已停止；可从会话列表重新打开。")
+                        else if (primaryReturned && task.recordWork) it.copy(listError = "操作已完成，列表刷新已停止；可单独重试列表。")
                         else it.copy(message = "已停止；已完成的存档保留，未确认的数据不会自动清理") }
                 } catch (error: Throwable) {
                     outcome = if (evidence.publicationAttempted) DesktopWorkPhase.UNCONFIRMED else DesktopWorkPhase.FAILED
@@ -185,7 +200,8 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
             }
             job
     }
-    private fun action(task: DesktopSaveSlotTask = DesktopSaveSlotTask.LIST, work: suspend (String) -> String) { actionJob(task, work) }
+    private fun action(task: DesktopSaveSlotTask = DesktopSaveSlotTask.LIST,
+        afterResult: (suspend (String) -> Unit)? = null, work: suspend (String) -> String) { actionJob(task, afterResult, work) }
     suspend fun closeAndDrain() {
         synchronized(lock) { closed = true; bindingRevision++ }
         scope.coroutineContext[Job]!!.cancelAndJoin()

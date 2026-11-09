@@ -660,6 +660,8 @@ private fun DesktopAppearanceSettings(
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     ManageHeading(t(DesktopUiText.APPEARANCE_DISPLAY))
+    DesktopCloseToTrayPreference()
+    LocalDesktopTray.current?.state?.collectAsState()?.value?.error?.let { StatusText(it, colors.destructive) }
     DesktopImageSlider("聊天背景透明度（全局）", state.backgroundOpacity) { value ->
         launch { controller.setBackgroundOpacity(value) }
     }

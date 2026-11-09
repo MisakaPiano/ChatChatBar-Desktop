@@ -13,7 +13,7 @@ internal enum class DesktopWorkKind(val label: String) {
     AUTOMATIC_BACKUP_CHECK("自动备份检查"), AUTOMATIC_BACKUP("自动快照"),
     MERGE("合并结果准备"), MERGE_CHECK("备份合并检查"), SAVE_SLOT("会话存档"), CHARACTER_AI("角色卡创作"),
     WORLD_BOOK_AI("世界书创作"), CHARACTER_IMAGE("角色图片"), CHARACTER_APPEARANCE("外貌识别"),
-    CATALOG_CHECK("词库检查"), CATALOG_UPDATE("词库更新")
+    CATALOG_CHECK("词库检查"), CATALOG_UPDATE("词库更新"), PROGRAM_UPDATE("程序更新准备"), UPDATE_CACHE("更新缓存维护")
 }
 internal enum class DesktopWorkPhase { RUNNING, WAITING, COMPLETED, FAILED, CANCELLED, UNCONFIRMED }
 internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, CHARACTER_DRAFT, APPEARANCE_DRAFT, CHARACTER_IMAGE_DRAFT,

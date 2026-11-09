@@ -118,7 +118,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         }.also(externalOwner::set) }
                         val updateProxySettings = { appContainer.networkProxyController.state.value.saved }
                         val updater = remember { DesktopUpdateRuntime(applicationScope, dataRoot = resolvedRoot.appDataRoot,
-                            proxySettings = updateProxySettings) }
+                            proxySettings = updateProxySettings).also(appContainer.taskCenter::watchProgramUpdates) }
                         val modalActivity = remember { DesktopModalActivity() }
                         val updateNotices = remember {
                             val identity = DesktopBuildIdentity.load()
@@ -143,7 +143,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
                         val tray = remember { appContainer.taskTray }
                         val trayState by tray.state.collectAsState()
-                        val requestClose: () -> Unit = {
+                        val finishExit: () -> Unit = {
                             DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
                             if (rootSwitchController.requestWindowClose()) {
                                 tray.prepareExit()
@@ -152,6 +152,23 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 exitApplication()
                             }
                             else DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_DEFERRED)
+                        }
+                        val exitGuard = remember(primaryChatController, modelSettingsController, tray) {
+                            DesktopApplicationExitGuard(
+                                chat = { next -> applicationScope.launch { primaryChatController.requestSessionSettingsLeave { next() } } },
+                                worldBooks = appContainer.worldBookEditorController::requestLeave,
+                                formats = appContainer.formatCardEditorController::requestLeave,
+                                characters = appContainer.characterEditorController::requestLeave,
+                                models = { next -> applicationScope.launch { modelSettingsController.requestLeave { next() } } },
+                                finish = finishExit,
+                            )
+                        }
+                        val requestExit: () -> Unit = {
+                            tray.show()
+                            if (rootSwitchController.state.value is DesktopDataRootSwitchState.Idle) exitGuard.requestExit() else finishExit()
+                        }
+                        val requestClose: () -> Unit = {
+                            desktopMainWindowClose(rootSwitchController.state.value, tray::hideOnWindowClose, requestExit)
                         }
                         Window(
                             onCloseRequest = requestClose,
@@ -165,7 +182,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 tray.initialize(onShow = { applicationScope.launch {
                                     windowState.isMinimized = false
                                     window.toFront(); window.requestFocus()
-                                } }, onExit = { applicationScope.launch { requestClose() } })
+                                } }, onExit = { applicationScope.launch { requestExit() } })
                             }
                             LaunchedEffect(window) {
                                 while (!window.isShowing) kotlinx.coroutines.delay(50)
@@ -209,6 +226,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopUpdateNotices provides updateNotices,
                                 LocalDesktopCatalogUpdates provides remember(appContainer) { { appContainer.novelAiInfrastructure.catalogUpdates } },
                                 LocalDesktopTaskCenter provides appContainer.taskCenter,
+                                LocalDesktopTray provides tray,
                                 LocalDesktopModalActivity provides modalActivity,
                                 LocalDesktopApiAccounts provides appContainer.apiAccountController,
                                 LocalDesktopImageToolPreferences provides appContainer.imageToolPreferences,
