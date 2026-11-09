@@ -31,10 +31,12 @@ class DesktopCharacterEditorOrderTest {
             }
             try {
                 scene.frames()
-                val text = scene.nodes().single { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == profile } == true }.boundsInRoot
-                val name = scene.nodes().single { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == "Person" } == true }.boundsInRoot
+                // The selectable row merges name and profile. Measure the original text nodes,
+                // not their combined selectable ancestor.
+                val text = scene.nodes(unmerged = true).single { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == profile } == true }.boundsInRoot
+                val name = scene.nodes(unmerged = true).single { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == "Person" } == true }.boundsInRoot
                 assertTrue(text.width >= 290, "Profile must retain the master row width: $text")
-                assertTrue(text.top >= name.bottom)
+                assertTrue(text.top >= name.bottom, "Profile $text must follow name $name")
                 assertTrue(text.right <= 320 && text.bottom <= 180)
                 assertFalse(controller.state.value.dirty)
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
@@ -219,9 +221,9 @@ class DesktopCharacterEditorOrderTest {
         }
     }
 
-    private fun ImageComposeScene.nodes(): List<SemanticsNode> {
+    private fun ImageComposeScene.nodes(unmerged: Boolean = false): List<SemanticsNode> {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
-        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+        return semanticsOwners.flatMap { walk(if (unmerged) it.unmergedRootSemanticsNode else it.rootSemanticsNode) }
     }
     private fun SemanticsNode.text(label: String): Boolean = config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true || children.any { it.text(label) }
     private fun SemanticsNode.visible(height: Int) = boundsInRoot.let { it.width > 0f && it.height > 0f && it.top >= 0f && it.bottom <= height.toFloat() }

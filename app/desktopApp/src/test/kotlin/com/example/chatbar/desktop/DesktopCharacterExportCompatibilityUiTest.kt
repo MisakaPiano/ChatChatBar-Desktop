@@ -6,6 +6,8 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.card.*
+import com.example.chatbar.desktop.interop.official1411.CharacterCardPackage as Official1411Package
+import com.example.chatbar.desktop.interop.official1411.validateForImport as validateOfficial1411
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.SwingUtilities
@@ -56,7 +58,11 @@ class DesktopCharacterExportCompatibilityUiTest {
                 scene.until { !controller.state.value.busy && controller.state.value.coverExport == null }
                 assertNull(controller.state.value.error); assertEquals(1, saves)
                 assertContentEquals(replacement, OriginalCharacterCover.imageOnlyPng(Files.readAllBytes(output)))
-                val data = assertNotNull(app.characterTransfers.decodePng(Files.readAllBytes(output)))
+                // Desktop ingestion attaches the visible original and upgrades its internal
+                // package to10. Check the emitted wire with the frozen official reader instead.
+                val payload = assertNotNull(PngTextChunks.extractTextChunk(Files.readAllBytes(output), PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
+                val raw = String(java.util.Base64.getDecoder().decode(payload), Charsets.UTF_8)
+                val data = app.transferJson.decodeFromString(Official1411Package.serializer(), raw).also { it.validateOfficial1411() }
                 assertEquals(9, data.schemaVersion); assertNull(data.card.coverImageResourceId)
                 assertEquals(card, app.characterRepository.getById(card.id))
                 assertContentEquals(background, Files.readAllBytes(app.appDataRoot.resolve(assertNotNull(card.chatBackground))))
