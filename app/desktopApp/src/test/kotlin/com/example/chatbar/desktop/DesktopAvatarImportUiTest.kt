@@ -2,6 +2,11 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
@@ -27,7 +32,7 @@ class DesktopAvatarImportUiTest {
             image.createGraphics().let { graphics -> try {
                 graphics.color = java.awt.Color(55, 110, 180); graphics.fillRect(0, 0, 40, 40)
                 graphics.color = java.awt.Color(240, 190, 70); graphics.fillRect(40, 0, 40, 40)
-                graphics.color = java.awt.Color.WHITE; graphics.fillOval(20, 4, 40, 32)
+                graphics.color = java.awt.Color.WHITE; graphics.fillOval(34, 14, 12, 12)
             } finally { graphics.dispose() } }
         })
         Files.write(path, original)
@@ -44,7 +49,9 @@ class DesktopAvatarImportUiTest {
             val before = app.settingsRepository.getPlayerSetting()
             val scene = ImageComposeScene(760, 860, coroutineContext = edt) {
                 val state by controller.state.collectAsState()
-                CompositionLocalProvider(LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
+                CompositionLocalProvider(LocalDesktopEditorAuxiliaryFrame provides { content ->
+                    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).zIndex(1f)) { content() }
+                }) {
                     DesktopPlayerAvatarSetting(controller, state)
                 }
             }
@@ -56,8 +63,8 @@ class DesktopAvatarImportUiTest {
                 assertEquals(before, app.settingsRepository.getPlayerSetting())
                 scene.click("选择玩家头像"); scene.until { has("应用") && enabled("应用") }
                 val slider = scene.nodes().first { it.config.contains(SemanticsActions.SetProgress) }
-                assertTrue(slider.config[SemanticsActions.SetProgress].action!!.invoke(.5f))
-                repeat(3) { scene.render(System.nanoTime()).close(); delay(20) }
+                assertTrue(slider.config[SemanticsActions.SetProgress].action!!.invoke(.05f))
+                scene.until { has("玩家头像 · 缩放与定位") }
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                     val target = Path.of(directory).resolve("avatar-import-crop-preview.png")
                     Files.createDirectories(target.parent)

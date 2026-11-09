@@ -4,9 +4,13 @@ package com.example.chatbar.desktop
 import androidx.compose.runtime.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.entity.*
@@ -150,10 +154,13 @@ class DesktopCharacterCardAiPanelTest {
                 onDispose { tools.remove(key) }
             }
         }
-        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
+            val width = maxWidth; val height = maxHeight
             CompositionLocalProvider(LocalDesktopEditorAuxiliaryFrame provides frame) { content() }
-            tools.values.toList().forEachIndexed { index, tool ->
-                Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).zIndex(1f + index)) { tool() }
+            tools.values.toList().forEach { tool ->
+                Popup(alignment = Alignment.TopStart, properties = PopupProperties(focusable = true)) {
+                    Box(Modifier.size(width, height).background(DesktopBootstrapColors.background)) { tool() }
+                }
             }
         }
     }
