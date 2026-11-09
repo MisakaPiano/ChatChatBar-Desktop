@@ -89,6 +89,7 @@ public final class PackagedMainTrayProbe {
                 menu("退出"); facts.put("originalTrayExitRequested", true);
             } catch (Throwable error) {
                 failure.set(error); facts.put("failureClass", error.getClass().getName()); facts.put("passed", false);
+                if (error.getMessage() != null && error.getMessage().matches("[A-Z0-9_]{1,100}")) facts.put("failureCode", error.getMessage());
                 try { save(); menu("退出"); } catch (Exception ignored) { /* No forced process termination or false drain result. */ }
             }
         }, "synthetic-packaged-main-tray");

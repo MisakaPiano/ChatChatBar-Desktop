@@ -42,8 +42,9 @@ def main():
     native.require(previous.get('remaining') == [] and previous.get('exitCode') == 0 and previous.get('current') == current,
                    'PREVIOUS_OWNED_NATIVE_JOB_MUST_HAVE_DRAINED')
     classes = case / 'packaged-main-tray-classes'; classes.mkdir()  # Exact new companion, outside all program payloads.
+    companion = Path(__file__).with_name('PackagedMainTrayProbe.java')
     subprocess.run([str(native.JAVA.with_name('javac.exe')), '-encoding', 'UTF-8', '--release', '17', '-d', str(classes),
-                    str(source / 'tools/desktop/nsis/PackagedMainTrayProbe.java')], check=True, timeout=60)
+                    str(companion)], check=True, timeout=60)
     settings = regular(case / 'local-appdata/ChatChatBarDesktop/desktop-settings.json')
     native.require(settings.parent.is_dir() and (not settings.exists() or
                    settings.is_file() and settings.stat().st_nlink == 1 and settings.stat().st_size <= 1024 * 1024), 'OWNED_PROFILE_REQUIRED')
@@ -53,8 +54,29 @@ def main():
     value['closeWindowToTray'] = True
     settings.write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
     result = case / 'packaged-main-tray-result.json'; native.require(not result.exists(), 'NEW_REPORT_REQUIRED')
-    jars = sorted((package / 'app').glob('*.jar')); native.require(jars, 'PACKAGED_JARS_REQUIRED')
-    command = [str(native.JAVA), '-Dchatbar.desktop.applicationHome=' + str(package), '-cp', os.pathsep.join(map(str, [classes, *jars])),
+    # jpackage extracts Skiko from its JAR and supplies its original path through this cfg.
+    # Preserve the exact original classpath order/options instead of inventing a second launch environment.
+    cfg = regular(package / 'app/ChatChatBarDesktop.cfg')
+    inventoried = {row['path']: row for row in manifest['files']}
+    for relative in ['app/ChatChatBarDesktop.cfg', 'app/skiko-windows-x64.dll', 'app/skiko-windows-x64.dll.sha256']:
+        path = regular(package / relative); expected = inventoried[relative]
+        native.require(path.is_file() and path.stat().st_size == expected['bytes'] and
+                       hashlib.sha256(path.read_bytes()).hexdigest() == expected['sha256'], 'ORIGINAL_LAUNCH_RESOURCE_IDENTITY')
+    lines = cfg.read_text(encoding='utf-8-sig').splitlines()
+    options = [line.removeprefix('java-options=') for line in lines if line.startswith('java-options=')]
+    expected_options = {'-Djpackage.app-version=' + os.environ['CCB_CANDIDATE_INSTALLER'],
+                        '-Dcompose.application.resources.dir=$APPDIR\\resources',
+                        '-Dcompose.application.configure.swing.globals=true', '-Dchatbar.desktop.applicationHome=$ROOTDIR',
+                        '-Djava.net.useSystemProxies=true', '-Dskiko.library.path=$APPDIR'}
+    native.require(len(options) == len(expected_options) and set(options) == expected_options, 'ORIGINAL_JAVA_OPTIONS_REQUIRED')
+    options = [value.replace('$APPDIR', str(package / 'app')).replace('$ROOTDIR', str(package)) for value in options]
+    classpath = [line.removeprefix('app.classpath=') for line in lines if line.startswith('app.classpath=')]
+    native.require(classpath and len(classpath) == len(set(classpath)) and
+                   all(value.startswith('$APPDIR\\') and Path(value.removeprefix('$APPDIR\\')).name == value.removeprefix('$APPDIR\\')
+                       and value.endswith('.jar') for value in classpath), 'ORIGINAL_JAR_CLASSPATH_REQUIRED')
+    jars = [package / 'app' / value.removeprefix('$APPDIR\\') for value in classpath]
+    native.require(set(jars) == set((package / 'app').glob('*.jar')), 'COMPLETE_PACKAGED_CLASSPATH_REQUIRED')
+    command = [str(native.JAVA), *options, '-cp', os.pathsep.join(map(str, [classes, *jars])),
                'ccb.synthetic.PackagedMainTrayProbe', str(package), str(result), commit]
     kernel = native.kernel; job = kernel.CreateJobObjectW(None, None); native.require(job, 'JOB_CREATE_FAILED')
     process = native.Process(); startup = native.Startup(); startup.cb = C.sizeof(startup); startup.flags = 0x100
@@ -80,8 +102,10 @@ def main():
                            exitCode=code.value,remaining=remaining,main=facts,ordinaryLauncher=False,bundledRuntime=False,osMouseGesture=False,
                            realUserData=False,agentInjected=False,providerCalls=False,
                            originalSettingsSha256=hashlib.sha256(original).hexdigest() if original is not None else None,
-                           companionSourceSha256=hashlib.sha256((source / 'tools/desktop/nsis/PackagedMainTrayProbe.java').read_bytes()).hexdigest(),
+                           companionSourceSha256=hashlib.sha256(companion.read_bytes()).hexdigest(),
                            driverSourceSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                           originalLauncherConfigSha256=hashlib.sha256(cfg.read_bytes()).hexdigest(),
+                           originalJavaOptionsAndClasspathPreserved=True,
                            currentPointerUnchanged=(root / 'current.txt').read_text().strip() == current)
             native.save(case / 'packaged-main-tray-lifecycle.json', receipt)
             native.require(not remaining and code.value == 0 and facts is not None and facts.get('passed') is True and
