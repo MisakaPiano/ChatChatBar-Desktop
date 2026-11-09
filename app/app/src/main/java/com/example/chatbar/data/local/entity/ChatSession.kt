@@ -34,6 +34,12 @@ data class SessionCharacterParticipation(
     init { require(cardId.isNotBlank() && disabledPersonIds.all(String::isNotBlank) && automaticallyPausedPersonIds.all(String::isNotBlank)) }
 }
 
+@Serializable
+data class SessionPlayerRole(val cardId: String, val personId: String,
+    val followName: Boolean = true, val followAvatar: Boolean = true) {
+    init { require(cardId.isNotBlank() && personId.isNotBlank()) }
+}
+
 /**
  * 聊天会话
  */
@@ -58,6 +64,8 @@ data class ChatSession(
     val supplementarySetting: String? = null, // 补充设定
     val playerName: String? = null,           // 玩家名称覆盖
     val playerSetting: String? = null,        // 个人设定覆盖
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val desktopPlayerRole: SessionPlayerRole? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val desktopPlayerAvatar: String? = null,
     val chatBackground: String? = null,
     val imagePromptPreference: String = "",
     val automaticImageGenerationEnabled: Boolean = false,

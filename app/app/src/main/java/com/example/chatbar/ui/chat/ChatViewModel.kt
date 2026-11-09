@@ -1097,7 +1097,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val globalPlayerName = settingsRepository.getPlayerSetting()
             .playerName
             .takeIf { it.isNotBlank() }
-        val playerName = currentSession.playerName?.takeIf { it.isNotBlank() } ?: globalPlayerName
+        val playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(currentSession, card, globalPlayerName)
         return PlaceholderRenderContext(
             playerName = playerName,
             botName = card?.effectiveBotName ?: currentSession.title
@@ -1901,7 +1901,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             val globalPlayerName = settingsRepository.getPlayerSetting()
                 .playerName
                 .takeIf { it.isNotBlank() }
-            val playerName = currentSession?.playerName?.takeIf { it.isNotBlank() } ?: globalPlayerName
+            val playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(currentSession, card, globalPlayerName)
             if (token == null || (promptOverride == null && (card == null || !modelUsable))) {
                 val missing = mutableListOf<String>()
                 if (token == null) missing.add("NovelAI Token")
@@ -2281,7 +2281,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             val globalPlayerName = ChatBarApp.instance.settingsRepository.getPlayerSetting()
                 .playerName
                 .takeIf { it.isNotBlank() }
-            val playerName = session.playerName?.takeIf { it.isNotBlank() } ?: globalPlayerName
+            val playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, card, globalPlayerName)
             engine.buildWorldBookPrompt(allEntries, card.effectiveBotName, playerName)
         }
 
@@ -2616,8 +2616,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 val playerSettingObj = settingsRepository.getPlayerSetting()
                 val activePlayerSetting = currentSession.playerSetting?.takeIf { it.isNotBlank() }
                     ?: playerSettingObj.globalPersona
-                val activePlayerName = currentSession.playerName?.takeIf { it.isNotBlank() }
-                    ?: playerSettingObj.playerName
+                val activePlayerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(currentSession, charCard, playerSettingObj.playerName).orEmpty()
                 val activePlayerNameOrNull = activePlayerName.takeIf { it.isNotBlank() }
                 val renderSessionText: (String) -> String = { text ->
                     PlaceholderRenderer.render(text, activePlayerNameOrNull, charCard.effectiveBotName)
@@ -4055,6 +4054,11 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
+    suspend fun savePlayerAvatar(path: String?) {
+        val current = _session.value ?: error("当前会话尚未加载")
+        _session.value = chatRepository.saveSessionSettingsDraft(current, current.copy(desktopPlayerAvatar = path))
+    }
+
     fun updateSessionConfig(
         modelId: String?,
         imageModelId: String?,
@@ -4075,6 +4079,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         extraWorldBookIds: List<String> = _session.value?.extraWorldBookIds ?: emptyList(),
         baseline: ChatSession? = null,
         characterParticipation: List<com.example.chatbar.data.local.entity.SessionCharacterParticipation>? = null,
+        desktopPlayerRole: com.example.chatbar.data.local.entity.SessionPlayerRole? = baseline?.desktopPlayerRole ?: _session.value?.desktopPlayerRole,
         onComplete: (Result<Unit>) -> Unit = {}
     ) {
         viewModelScope.launch {
@@ -4095,6 +4100,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     supplementarySetting = supplementarySetting?.takeIf { it.isNotBlank() },
                     playerName = playerName?.takeIf { it.isNotBlank() },
                     playerSetting = playerSetting?.takeIf { it.isNotBlank() },
+                    desktopPlayerRole = desktopPlayerRole,
                     chatBackground = chatBackground?.takeIf { it.isNotBlank() },
                     characterParticipation = characterParticipation ?: (baseline ?: s).characterParticipation,
                     audiobookModeEnabled = audiobookModeEnabled,
@@ -4134,6 +4140,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 schemaVersion = com.example.chatbar.domain.chat.SaveSlotPackageStorage.SCHEMA_VERSION,
                 playerSetting = curSession.playerSetting,
                 playerName = curSession.playerName,
+                desktopPlayerRole = curSession.desktopPlayerRole,
+                desktopPlayerAvatar = curSession.desktopPlayerAvatar,
                 supplementarySetting = curSession.supplementarySetting,
                 modelId = curSession.modelId,
                 imageModelId = curSession.imageModelId,
@@ -4271,6 +4279,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                   val restoredSession = curSession.copy(
                       playerSetting = materializedSlot.playerSetting,
                       playerName = materializedSlot.playerName,
+                      desktopPlayerRole = materializedSlot.desktopPlayerRole,
+                      desktopPlayerAvatar = materializedSlot.desktopPlayerAvatar,
                       supplementarySetting = materializedSlot.supplementarySetting,
                       modelId = materializedSlot.modelId,
                       imageModelId = materializedSlot.imageModelId,
@@ -4368,6 +4378,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 _saveSlotOperation.value = SaveSlotOperationState(true, "正在校验存档…", true)
                 reader.validate()
                 val restoredBackground = reader.materializeBackground()
+                val restoredPlayerAvatar = reader.materializePlayerAvatar()
                 _saveSlotOperation.value = SaveSlotOperationState(true, "正在恢复语音…", true)
                 val restoredVoices = reader.restoreVoices(
                     targetSessionId = sessionId,
@@ -4389,6 +4400,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         messageState.copy(
                             playerSetting = slot.playerSetting,
                             playerName = slot.playerName,
+                            desktopPlayerRole = slot.desktopPlayerRole,
+                            desktopPlayerAvatar = restoredPlayerAvatar,
                             supplementarySetting = slot.supplementarySetting,
                             modelId = slot.modelId,
                             imageModelId = slot.imageModelId,
@@ -4544,6 +4557,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             MaterializedSaveSlotImages(
                 slot = slot.copy(
                     chatBackground = slot.chatBackground?.let { pathsByResourceId[it] ?: it },
+                    desktopPlayerAvatar = slot.desktopPlayerAvatar?.let { pathsByResourceId[it] ?: it },
                     messages = slot.messages.map { message ->
                         message.copy(
                             images = message.images.map { pathsByResourceId[it] ?: it },

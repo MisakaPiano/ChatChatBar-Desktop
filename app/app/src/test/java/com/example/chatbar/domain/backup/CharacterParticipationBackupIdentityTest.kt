@@ -35,6 +35,18 @@ class CharacterParticipationBackupIdentityTest {
         assertEquals("old-person", extension.getValue("disabledPersonIds").jsonArray.single().jsonPrimitive.content)
     }
 
+    @Test fun explicitPlayerRoleRemapsCardAndPersonButNeverExtensionText() {
+        val result = rewrite("""{"desktopPlayerRole":{"cardId":"old-card","personId":"old-person","followName":false},"extensions":{"desktopPlayerRole":{"cardId":"old-card","personId":"old-person"}}}""")
+        val role = result.getValue("desktopPlayerRole").jsonObject
+        assertEquals("new-card", role.getValue("cardId").jsonPrimitive.content)
+        assertEquals("new-person", role.getValue("personId").jsonPrimitive.content)
+        assertFalse(role.getValue("followName").jsonPrimitive.boolean)
+        val extension = result.getValue("extensions").jsonObject.getValue("desktopPlayerRole").jsonObject
+        assertEquals("old-card", extension.getValue("cardId").jsonPrimitive.content)
+        assertEquals("old-person", extension.getValue("personId").jsonPrimitive.content)
+        for (name in listOf("desktopAvatar", "desktopPlayerAvatar")) assertTrue(BackupDataRegistry.isResourceField(name, emptyList()))
+    }
+
     private fun rewrite(raw: String): JsonObject {
         val record = BackupMergeRecord(File("synthetic-session.json"), "entities/chat_sessions/synthetic.json", "chat_sessions", emptyMap())
         val out = StringWriter()

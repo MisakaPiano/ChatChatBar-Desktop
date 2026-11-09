@@ -100,6 +100,11 @@ class SettingsRepository(private val storage: JsonFileStorage) {
         savePlayerSettingLocked(setting)
     }
 
+    suspend fun setPlayerAvatar(path: String?) = settingsMutex.withLock {
+        val latest = getPlayerSettingLocked()
+        savePlayerSettingLocked(latest.copy(desktopAvatar = path))
+    }
+
     private suspend fun savePlayerSettingLocked(setting: PlayerSetting) {
         val updated = setting.copy(updatedAt = System.currentTimeMillis())
         storage.saveSingleton(PLAYER_SETTING_TYPE, updated, PlayerSetting.serializer())

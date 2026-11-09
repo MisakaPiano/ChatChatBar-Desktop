@@ -18,6 +18,10 @@ data class SaveSlot(
     val description: String? = null,
     val playerName: String? = null,
     val playerSetting: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val desktopPlayerRole: SessionPlayerRole? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val desktopPlayerAvatar: String? = null,
     val supplementarySetting: String? = null,
     val modelId: String? = null,
     val imageModelId: String? = null,

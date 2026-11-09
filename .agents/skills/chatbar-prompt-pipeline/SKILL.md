@@ -104,3 +104,5 @@ Do not move behavior between these owners without tracing every caller and test.
 - Do not infer order from SECTION constants.
 - Do not accept preview-only evidence for a request-delivery bug.
 - Do not change source-turn grouping without checking direct context, RAG, and long-term memory together.
+
+- PlayerRolePolicy resolves an explicitly selected card/person role for the player name before ordinary session/global fallback. ChatViewModel freezes this resolved name with the existing request context, including World Book and image placeholder consumers. UI uses the same policy; association never rewrites stored player/card prompts, adds a status injection or changes participation.

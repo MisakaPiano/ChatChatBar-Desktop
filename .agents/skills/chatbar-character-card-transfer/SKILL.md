@@ -22,3 +22,5 @@ description: Maintain character PNG export, independent export cover, package tr
 - A running reply freezes its request-side people view. Its later world-book timing write uses ChatRepository.updateSessionWorldBookClock to patch only the latest clock under the settings mutex, preserving subsequent quick people choices/settings and rejecting a different bound card.
 
 - Ordinary ChatRepository.updateSession snapshot writes also preserve the latest participation/auto-pause fields, like the existing narrative-mode protection. The existing explicit save-slot restoration flag restores stored choices; first writes retain supplied initial choices. Dedicated quick toggles and settings-draft saves remain the mutation paths.
+
+- PlayerRolePolicy reuses the neutral Desktop explicit card/person identity rules, with independent follow-name/avatar flags. Global PlayerSetting.desktopAvatar and ChatSession.desktopPlayerAvatar are player resources, not character-package assets; linking does not change person gates or card data. A missing/ambiguous role falls back without name-based rebinding. Main chat request/rendering/home previews use the same resolved player name.

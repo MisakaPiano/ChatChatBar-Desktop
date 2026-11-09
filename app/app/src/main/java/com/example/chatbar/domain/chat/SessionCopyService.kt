@@ -51,6 +51,7 @@ class SessionCopyService(
                     val base = SaveSlot.create(sourceId, "复制会话").copy(
                         schemaVersion = SaveSlotPackageStorage.SCHEMA_VERSION,
                         chatBackground = source.chatBackground,
+                        desktopPlayerAvatar = source.desktopPlayerAvatar,
                         memorySnapshot = memory
                     )
                     var slot: SaveSlot? = null
@@ -76,6 +77,7 @@ class SessionCopyService(
                         onProgress("正在校验并复制图片、语音…")
                         packageReader.validate()
                         val background = packageReader.materializeBackground()
+                        val playerAvatar = packageReader.materializePlayerAvatar()
                         val copiedVoices = packageReader.restoreVoices(targetId, audioStorage).map { voice ->
                             voice.copy(messageId = policy.messageId(voice.messageId))
                         }
@@ -93,7 +95,7 @@ class SessionCopyService(
                         copiedVoices.forEach { voiceRepository.save(it) }
                         chatRepository.updateSessionDraft(targetId, draft)
                         onProgress("正在保存会话设置与长期记忆…")
-                        chatRepository.createSession(target.copy(chatBackground = background))
+                        chatRepository.createSession(target.copy(chatBackground = background, desktopPlayerAvatar = playerAvatar))
                         memoryService.loadSnapshot(targetId, memory)
                         requireNotNull(chatRepository.getSession(targetId))
                     } catch (error: Throwable) {

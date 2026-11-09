@@ -242,7 +242,8 @@ fun ChatBubble(
     blockFilterIds: Set<String>? = null,
     showMessageMeta: Boolean = true,
     statusBlockExpansionOverrides: Map<String, Boolean> = emptyMap(),
-    onStatusExpandedChange: ((String, Boolean) -> Unit)? = null
+    onStatusExpandedChange: ((String, Boolean) -> Unit)? = null,
+    playerAvatarPath: String? = null
 ) {
     // Keep stored attachment indexes stable, but omit archive-only image placeholders from the UI.
     if (message.images.isNotEmpty() && message.images.all(::isOmittedSaveSlotImage) &&
@@ -292,6 +293,7 @@ fun ChatBubble(
             modifier = modifier,
             fontScale = fontScale,
             renderPlayerName = renderPlayerName,
+            playerAvatarPath = playerAvatarPath,
             renderBotName = renderBotName,
             onLongPress = onLongPress,
             onPreviousAlternative = onPreviousAlternative,
@@ -880,6 +882,7 @@ private fun LegacyChatBubble(
     modifier: Modifier,
     fontScale: Float,
     renderPlayerName: String?,
+    playerAvatarPath: String?,
     renderBotName: String,
     onLongPress: (() -> Unit)?,
     onPreviousAlternative: (() -> Unit)?,
@@ -959,6 +962,13 @@ private fun LegacyChatBubble(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
             ) {
+                if (isUser && (playerAvatarPath != null || !renderPlayerName.isNullOrBlank())) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CbText(renderPlayerName ?: "你", style = ChatBarTheme.typography.caption)
+                        CharacterChatAvatar(playerAvatarPath, renderPlayerName ?: "你", exportMode)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                }
                 if (showText || visibleImageCount > 0) {
                     Column(
                         Modifier

@@ -49,3 +49,5 @@ BackupExportSelectionTest covers dependencies, three global defaults and indepen
 Manual acceptance: doc/app_backup_manual_acceptance.md.
 
 - Functional alignment media: chatBackgroundImages arrays are registered image references. Copy/merge remaps characterParticipation (and legacy desktopCharacterParticipation) cardId into character_cards and disabled/automatically-paused person ID sets into characters; never remap unrelated cardId fields or extension payloads.
+
+- Player identity media fields desktopAvatar/desktopPlayerAvatar are resource refs. BackupMergeIdentity remaps desktopPlayerRole.cardId/personId using character-card/person spaces, including nested SaveSlots, while extensions remain opaque. Confirmed picker crops live in images/player-avatars; external originals are never changed.

@@ -95,8 +95,7 @@ fun HomeScreen(
     fun renderSessionText(session: ChatSession, text: String): String =
         PlaceholderRenderer.render(
             text = text,
-            playerName = session.playerName?.takeIf { it.isNotBlank() }
-                ?: playerSetting.playerName.takeIf { it.isNotBlank() },
+            playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, characterCardsById[session.characterCardId], playerSetting.playerName),
             botName = characterBotNamesById[session.characterCardId] ?: session.title
         )
 

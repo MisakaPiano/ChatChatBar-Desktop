@@ -101,3 +101,5 @@ Full migration completes only when Material 3 dependency is removed and CI-equiv
 - CbTopBar keeps titles on one ellipsized line inside its fixed-height row. ChatPeopleControlsTest includes navigation plus all three chat actions at320dp and inspects actual text layout, avoiding clipped wrapped titles when adding the people counter.
 
 - CharacterPngExportDialog keeps current-card image candidates in a separate bounded dialog with 48dp selection actions; returning preserves export options. Complete11/legacy9 choices expose portable-resource loss, raw-base saving uses captured immutable bytes/MIME, and original/rendered output plus display text never edit the saved card.
+
+- PlayerAvatarSetting reuses CharacterImageCropDialog with Avatar target: cancel does not publish, confirm saves an owned 512px derivative immediately without committing name/persona drafts. Global player and session player entries expose the picker; session role controls are explicit ID choices with separate name/avatar switches and unlink. User bubbles render the effective player avatar/name.
