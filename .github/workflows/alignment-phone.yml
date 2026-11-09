@@ -1,4 +1,4 @@
-name: Android final player image scope and APK
+name: Android player unlink reset fix and final APK
 on:
   push:
     branches: [ci/upstream-functional-alignment-20261108]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 6b8d479f38cf64848b0b562dccff459dfaa6efa5
+  SOURCE_SHA: e8f98c7e73185f7acc0c0270c8bb1f5c8e8fbd1b
   TEST_APPLICATION_ID: com.example.chatbar.cover.c1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 6b8d479f38cf64848b0b562dccff459dfaa6efa5
+          ref: e8f98c7e73185f7acc0c0270c8bb1f5c8e8fbd1b
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "0807e8dfc454867deca38d7d393996864464d36e"
+          test "$(git rev-parse HEAD^{tree})" = "e43d47ef900d3ad263b4dec38d89c1d47632273f"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
           python3 - <<'PY'
@@ -167,7 +167,7 @@ jobs:
           key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
       - name: Compile, run JVM checks and build isolated test APK
         working-directory: app
-        run: bash ./gradlew :app:testDebugUnitTest --tests com.example.chatbar.domain.chat.FunctionalAlignmentPolicyTest --tests com.example.chatbar.domain.chat.SaveSlotSerializationTest :app:assembleDebug :app:assembleDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
       - name: Prepare affected device regressions
         run: |
           cat > "$RUNNER_TEMP/cover-gallery-checks.sh" <<'SH'
@@ -210,7 +210,7 @@ jobs:
               return [{'class':c.get('classname'),'name':c.get('name'),'failure':c.find('failure') is not None,'error':c.find('error') is not None,'skip':c.find('skipped') is not None} for p in folder.rglob('TEST-*.xml') for c in E.parse(p).getroot().iter('testcase')]
           unit=cases(Path('app/app/build/test-results/testDebugUnitTest'))
           device=cases(out/'device')
-          assert len(unit)>=10 and not any(c['failure'] or c['error'] for c in unit),unit
+          assert len(unit)>1400 and not any(c['failure'] or c['error'] for c in unit),unit
           expected=["com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest","com.example.chatbar.domain.card.PlayerAvatarTransferTest","com.example.chatbar.ui.manage.PlayerRoleControlsTest","com.example.chatbar.ui.chat.ChatLongScreenshotRenderTest"]
           assert all(any(c['class']==n for c in device) for n in expected),device
           assert len(device)>=9 and not any(c['failure'] or c['error'] or c['skip'] for c in device),device
@@ -219,8 +219,8 @@ jobs:
           apk=out/'CCB-cover-gallery-c1-test.apk'
           digest=hashlib.sha256(apk.read_bytes()).hexdigest()
           assert "name='"+os.environ['TEST_APPLICATION_ID']+"'" in (out/'apk-badging.txt').read_text()
-          (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'Final changed summary/retention and screenshot scope; R01 cover and R02 full player integration required separately; Desktop production roundtrip pending'},indent=2))
-          (out/'BUILD_INFO.json').write_text(json.dumps({'source':os.environ['SOURCE_SHA'],'tree':'0807e8dfc454867deca38d7d393996864464d36e','applicationId':os.environ['TEST_APPLICATION_ID'],'sha256':digest,'bytes':apk.stat().st_size,'userAcceptance':False,'crossPlatformAcceptance':False},indent=2))
+          (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'Full JVM after omitted-default reset fix; 9 affected Android avatar/gallery/long-screenshot cases. R01 cover and R02 unchanged device methods retained separately; Desktop production roundtrip pending'},indent=2))
+          (out/'BUILD_INFO.json').write_text(json.dumps({'source':os.environ['SOURCE_SHA'],'tree':'e43d47ef900d3ad263b4dec38d89c1d47632273f','applicationId':os.environ['TEST_APPLICATION_ID'],'sha256':digest,'bytes':apk.stat().st_size,'userAcceptance':False,'crossPlatformAcceptance':False},indent=2))
           PY
       - name: Preserve original results
         if: always()
