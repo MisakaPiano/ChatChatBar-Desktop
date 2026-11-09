@@ -7,6 +7,8 @@ description: Maintain and diagnose ChatBar prompt text, templates, builders, ass
 
 Treat the serialized API message list as source of truth. Constant declaration order and assembled preview text do not prove what the model receives.
 
+The Desktop session-memory injection preview uses `LongTermMemoryService.inspectPrompt` and the same Archive/HEAD formatter without persistence or maintenance enqueue. It is a read-only current-source projection, not a substitute for provider-wire evidence. `DesktopMemoryInjectionTransportTest` captures actual `DesktopRealChatRuntime`→`OpenAiStreamingTransport` JSON for owning/other/disabled/stale sessions and regeneration; local HTTP still uses the existing role-adaptation policy. This does not expand the separate generic Prompt Inspector's explicitly omitted memory/model-retrieval scope.
+
 Desktop request diagnostics receive explicit purpose/stage at the real producer, via `DesktopPromptDiagnosticContext`; do not infer them from task IDs or serialized text. `WriteDesktopBuildIdentity.promptSources` fingerprints normalized shared Prompt-directory source plus the Android PromptTemplates facade into `desktop-prompt-source.properties`. `DesktopPromptDiagnosticIdentity` combines that actual source hash with purpose/stage; this is a conservative template-source version, not a hash of user input or a claim of Android fingerprint equality. Missing/unmarked metadata remains unknown. Memory/RAG repairs retain distinct stage identities inside the original logical recorder; global filters include those earlier identities without creating extra provider attempts.
 
 ## First Read

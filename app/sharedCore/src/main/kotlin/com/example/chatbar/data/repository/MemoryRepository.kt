@@ -52,6 +52,14 @@ class MemoryRepository(
         read(STATE_TYPE, sessionId, MemorySessionState.serializer())
     }
 
+    /** Inspection must not replay a commit journal or manufacture a partly published snapshot. */
+    suspend fun inspectState(sessionId: String): MemorySessionState? = dataGate.withNormalOperation {
+        check(query(JOURNAL_TYPE, MemoryCommitJournal.serializer()) { it.sessionId == sessionId }.isEmpty()) {
+            "记忆提交仍待恢复；请完成正常刷新后再查看注入预览"
+        }
+        read(STATE_TYPE, sessionId, MemorySessionState.serializer())
+    }
+
     suspend fun saveState(state: MemorySessionState) {
         storage.saveEntity(STATE_TYPE, state.sessionId, state, MemorySessionState.serializer())
     }
@@ -149,6 +157,13 @@ class MemoryRepository(
     ): List<MemoryTierRevision> {
         if (limit <= 0) return emptyList()
         val state = getState(sessionId) ?: return emptyList()
+        return inspectHistory(state, tier, limit)
+    }
+
+    /** Traverse immutable revisions from an already inspected state, without journal recovery. */
+    suspend fun inspectHistory(state: MemorySessionState, tier: MemoryTier, limit: Int = Int.MAX_VALUE): List<MemoryTierRevision> {
+        if (limit <= 0) return emptyList()
+        val sessionId = state.sessionId
         var revisionId = state.page(tier).currentRevisionId
         val visited = mutableSetOf<String>()
         val result = mutableListOf<MemoryTierRevision>()

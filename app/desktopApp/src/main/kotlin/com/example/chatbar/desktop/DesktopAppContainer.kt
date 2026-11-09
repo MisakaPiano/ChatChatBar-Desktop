@@ -83,7 +83,8 @@ class DesktopAppContainer internal constructor(
     private val memoryService by lazy { com.example.chatbar.domain.memory.LongTermMemoryService(chatRepository,
         memoryRepository, settingsRepository, com.example.chatbar.domain.memory.MemoryAiGateway(memoryRagTextClient),
         contextWindowManager, dataGate = dataOperationCoordinator,
-        ensureSourceTurns = DesktopMemorySources(appDataRoot, jsonFileStorage, chatRepository)::ensure) }
+        ensureSourceTurns = DesktopMemorySources(appDataRoot, jsonFileStorage, chatRepository)::ensure,
+        inspectSourceTurns = DesktopMemorySources(appDataRoot, jsonFileStorage, chatRepository)::read) }
     private val memoryOwner = lazy { DesktopMemoryController(jsonFileStorage, chatRepository, settingsRepository,
         effectiveModelResolver, memoryService, memoryRepository, dataOperationCoordinator).also { taskCenter.watchMemory(it) } }
     internal val memoryController by memoryOwner

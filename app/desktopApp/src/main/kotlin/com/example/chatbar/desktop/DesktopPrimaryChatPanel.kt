@@ -126,6 +126,7 @@ internal fun DesktopPrimaryChatPanel(
     var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
     var settingsTab by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionSettingsTab.BASIC) }
+    var settingsWorkspace by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionWorkspaceTab.PARAMETERS) }
     var relinkOpen by remember { mutableStateOf(false) }
     var relinkCharacterId by remember { mutableStateOf<String?>(null) }
     var worldBookQuery by remember { mutableStateOf("") }
@@ -363,7 +364,11 @@ internal fun DesktopPrimaryChatPanel(
                                     } }
                                 }
                                 controller.memory?.let { memory ->
-                                    BootstrapButton("记忆", secondary = true) { memory.open(selected.id) }
+                                    BootstrapButton("记忆", secondary = true) {
+                                        settingsWorkspace = DesktopSessionWorkspaceTab.MEMORY
+                                        browser = browser.openSettings(selected.id)
+                                        memory.open(selected.id, inSessionSettings = true)
+                                    }
                                 }
                                 DesktopIconAction(t(DesktopUiText.MODEL_DETAILS),
                                     if (diagnosticDisclosure.expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed) {
@@ -472,6 +477,10 @@ internal fun DesktopPrimaryChatPanel(
             } },
         )
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
+            LaunchedEffect(browser.settingsSessionId, settingsWorkspace) {
+                if (settingsWorkspace == DesktopSessionWorkspaceTab.MEMORY)
+                    browser.settingsSessionId?.let { controller.memory?.open(it, inSessionSettings = true) }
+            }
             DesktopModalSurface { Column(
                 Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -479,26 +488,50 @@ internal fun DesktopPrimaryChatPanel(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     PrimaryHeading(t(DesktopUiText.SESSION_SETTINGS))
                     BootstrapButton(t(DesktopUiText.CLOSE), variant = DesktopActionVariant.GHOST) {
-                        scope.launch { controller.requestSessionSettingsLeave {
+                        controller.memory?.requestLeave { scope.launch { controller.requestSessionSettingsLeave {
+                            controller.memory?.closePanel()
                             browser = browser.copy(settingsSessionId = null)
-                        } }
+                        } } } ?: scope.launch { controller.requestSessionSettingsLeave { browser = browser.copy(settingsSessionId = null) } }
                     }
                 }
                 if (state.sessionSettingsDirty) StatusText("● ${t(DesktopUiText.UNSAVED_CHANGES)}", colors.warning)
                 if (state.sessionSettingsSaving) StatusText("正在保存会话设置；可继续编辑，请等待保存完成后关闭或切换", colors.warning)
                 if (!state.sessionSettingsSaving) state.status?.let { StatusText(it) }
                 state.error?.let { StatusText(it, colors.destructive) }
-                DesktopSessionSettingsTabs(settingsTab) { settingsTab = it }
-                key(settingsTab) { Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                DesktopSessionWorkspaceTabs(settingsWorkspace) { next ->
+                    val change = {
+                        settingsWorkspace = next
+                        if (next == DesktopSessionWorkspaceTab.MEMORY) state.selectedSession?.id?.let { controller.memory?.open(it, inSessionSettings = true) }
+                    }
+                    controller.memory?.requestLeave(change) ?: change()
+                }
+                if (settingsWorkspace == DesktopSessionWorkspaceTab.PARAMETERS) DesktopSessionSettingsTabs(settingsTab) { settingsTab = it }
+                if (settingsWorkspace == DesktopSessionWorkspaceTab.MEMORY) {
+                    Box(Modifier.weight(1f).fillMaxWidth()) { controller.memory?.let { memory ->
+                        DesktopMemoryPanel(memory, embedded = true, onJumpToSource = { sessionId, messageId ->
+                            memory.requestLeave { scope.launch { controller.requestSessionSettingsLeave {
+                                browser = browser.copy(settingsSessionId = null)
+                                memory.closePanel()
+                                controller.revealMessage(sessionId, messageId)
+                            } } }
+                        })
+                    } }
+                } else key(settingsWorkspace, settingsTab) { Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    DesktopSessionSettingsBody(state, controller, worldBookQuery, settingsTab, { backgroundOpen = true }, onOpenStudio) { worldBookQuery = it }
+                    if (settingsWorkspace == DesktopSessionWorkspaceTab.SAVES) {
+                        PrimaryHeading("会话存档")
+                        BootstrapButton("查看存档", secondary = true) { state.selectedSession?.id?.let { controller.saveSlots?.open(it) } }
+                    } else DesktopSessionSettingsBody(state, controller, worldBookQuery,
+                        if (settingsWorkspace == DesktopSessionWorkspaceTab.RAG) DesktopSessionSettingsTab.RAG else settingsTab,
+                        { backgroundOpen = true }, onOpenStudio) { worldBookQuery = it }
                 }
                 }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), variant = DesktopActionVariant.GHOST) {
-                        scope.launch { controller.requestSessionSettingsLeave {
+                        controller.memory?.requestLeave { scope.launch { controller.requestSessionSettingsLeave {
+                            controller.memory?.closePanel()
                             browser = browser.copy(settingsSessionId = null)
-                        } }
+                        } } } ?: scope.launch { controller.requestSessionSettingsLeave { browser = browser.copy(settingsSessionId = null) } }
                     }
                     BootstrapButton(if (state.sessionSettingsSaving) "正在保存…" else t(DesktopUiText.SAVE_CHANGES),
                         enabled = !state.sessionSettingsSaving && state.sessionSettingsDirty &&
@@ -531,7 +564,9 @@ internal fun DesktopPrimaryChatPanel(
         }
         if (chatDebugOpen) state.selectedSession?.let { session ->
             DesktopChatDebugOverlay(controller.taskRuntime.diagnostics, session.id, onClose = { chatDebugOpen = false },
-                onMemory = controller.memory?.let { memory -> ({ chatDebugOpen = false; memory.open(session.id) }) },
+                onMemory = controller.memory?.let { memory -> ({ chatDebugOpen = false;
+                    settingsWorkspace = DesktopSessionWorkspaceTab.MEMORY; browser = browser.openSettings(session.id)
+                    memory.open(session.id, inSessionSettings = true) }) },
                 maintenance = controller.maintenance)
         }
         browser.deleteSession?.let { item ->
@@ -1352,7 +1387,7 @@ internal fun DesktopSessionSettingsBody(
         controller.editSessionSettings { it.copy(automaticImageGenerationEnabled = !it.automaticImageGenerationEnabled) }
     }
     }
-    if (tab == DesktopSessionSettingsTab.CONTEXT) {
+    if (tab == DesktopSessionSettingsTab.RAG) {
     controller.rag?.let { rag -> state.selectedSession?.id?.let { sessionId ->
         val progress by rag.progress.collectAsState()
         val history = progress[rag.historyKey(sessionId)]
@@ -1372,6 +1407,8 @@ internal fun DesktopSessionSettingsBody(
             }
         }
     } }
+    }
+    if (tab == DesktopSessionSettingsTab.CONTEXT) {
     PrimaryChoiceField(t(DesktopUiText.FORMAT_CARD), draft.formatCardId, state.formatChoices) { id ->
         controller.editSessionSettings { it.copy(formatCardId = id) }
     }

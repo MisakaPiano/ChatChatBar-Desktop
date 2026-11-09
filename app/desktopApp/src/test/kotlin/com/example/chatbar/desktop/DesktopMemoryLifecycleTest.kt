@@ -14,6 +14,42 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopMemoryLifecycleTest {
+    @Test fun `read-only inspection reuses actual injection formatter and excludes changed source without writes or AI calls`(): Unit = runBlocking {
+        val f = Fixture()
+        fun files(): Map<String, String> = Files.walk(f.root).use { paths -> paths.filter(Files::isRegularFile).toList().associate {
+            f.root.relativize(it).toString() to java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(it))
+        } }
+        try {
+            f.setup()
+            f.service.updateArchiveAfterReply(f.session.id, f.model, 1, maxEpisodeBatches = 1)
+            f.service.maintainHeadAutomatically(f.session.id, f.model)
+            val actual = f.service.promptView(f.session.id)
+            val node = f.service.activeNodes(f.session.id).single()
+            val calls = f.calls
+            val before = files()
+            val inspection = f.service.inspectPrompt(f.session.id)
+            val preview = assertNotNull(inspection.prompt)
+            assertEquals(actual.fullText, preview.fullText)
+            assertEquals(actual.archive, preview.archive)
+            assertEquals(actual.headAndTimeline, preview.headAndTimeline)
+            assertEquals(before, files())
+            assertEquals(calls, f.calls)
+            val message = f.chats.getMessages(f.session.id).first { it.sourceTurnId in node.sourceTurnIds && it.role == MessageRole.ASSISTANT }
+            f.chats.updateMessage(message.copy(content = "Synthetic changed source; old events no longer apply"))
+            val changed = files()
+            val stale = f.service.inspectPrompt(f.session.id)
+            val stalePreview = assertNotNull(stale.prompt)
+            assertFalse(stalePreview.archive.contains(node.body))
+            assertTrue(stale.state!!.staleSourcesByNodeId.isNotEmpty())
+            assertEquals(changed, files(), "Inspection may project stale state but must not commit that projection")
+            assertEquals(calls, f.calls)
+            val actualAfterSourceValidation = f.service.promptView(f.session.id)
+            assertEquals(actualAfterSourceValidation.fullText, stalePreview.fullText)
+            assertEquals(calls, f.calls)
+            assertNotNull(f.repository.getNode(node.id))
+        } finally { f.close() }
+    }
+
     @Test fun `manual node regeneration carries the real selected session through its original controller gate`() = runBlocking {
         val f = Fixture()
         var controller: DesktopMemoryController? = null

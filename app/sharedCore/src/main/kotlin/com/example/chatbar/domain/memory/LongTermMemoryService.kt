@@ -74,6 +74,9 @@ data class MemoryBackfillEstimate(
     val sourceCharacters: Int = 0
 )
 
+data class MemoryPromptInspection(val session: ChatSession, val state: MemorySessionState?,
+    val nodes: List<MemoryNode>, val prompt: MemoryPromptView?)
+
 data class MemoryArchiveUpdateResult(
     val committedEpisodes: Int = 0,
     val hasMoreReadyBatches: Boolean = false
@@ -136,6 +139,7 @@ class LongTermMemoryService constructor(
     private val contextWindowManager: ContextWindowManager,
     private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
     private val ensureSourceTurns: suspend (String) -> List<ChatMessage> = chatRepository::ensureSourceTurns,
+    private val inspectSourceTurns: suspend (String) -> List<ChatMessage> = chatRepository::getMessagesReadOnly,
 ) {
     private val revisions = MemoryRevisionService(memoryRepository)
     private val stateMutexes = ConcurrentHashMap<String, Mutex>()
@@ -154,6 +158,30 @@ class LongTermMemoryService constructor(
     suspend fun promptView(sessionId: String): MemoryPromptView = stateLock(sessionId) {
         val loaded = loadLocked(sessionId)
         compileAndCacheLocked(loaded)
+    }
+
+    /** Uses the real source validation and formatter without migration, cache writes or AI scheduling. */
+    suspend fun inspectPrompt(sessionId: String): MemoryPromptInspection = stateLock(sessionId) {
+        val savedSession = requireNotNull(chatRepository.getSession(sessionId)) { "会话不存在" }
+        val session = savedSession.copy(memoryLimitChars = MemoryBudgetPolicy.normalizedLimit(savedSession.memoryLimitChars))
+        val stored = memoryRepository.inspectState(sessionId)
+            ?: return@stateLock MemoryPromptInspection(session, null, emptyList(), null)
+        check(stored.schemaVersion == CURRENT_LONG_TERM_MEMORY_SCHEMA_VERSION) { "旧版记忆尚待正常迁移；未修改原数据" }
+        check(session.sourceTurnTombstones.none { it.sourceTurnId !in stored.projectedDeletedSourceTurnIds }) {
+            "来源删除尚待正常整理；未修改原数据"
+        }
+        val messages = inspectSourceTurns(sessionId)
+        check(messages.all { it.sessionId == sessionId && (it.role == MessageRole.SYSTEM || !it.sourceTurnId.isNullOrBlank()) }) {
+            "记忆来源尚待正常初始化；未修改原数据"
+        }
+        val nodes = memoryRepository.getReachableNodes(stored.activeNodeIds + stored.legacyReferenceNodeIds)
+            .associateBy { it.id }.toMutableMap()
+        var projected = MemoryPageOrderPolicy.normalize(reconcileState(stored, messages, session), nodes)
+        projected = reconcileBackfillBoundary(projected, messages, currentContextWindowSize(), nodes)
+        projected = refreshSourceStaleness(projected, nodes, messages, session, persistMigratedNodes = false)
+        val view = compileAndCacheLocked(LoadedMemory(session, messages, projected, nodes), persistCache = false)
+        MemoryPromptInspection(session, projected,
+            (projected.activeNodeIds + projected.legacyReferenceNodeIds).distinct().mapNotNull(nodes::get), view)
     }
 
     /**
@@ -3007,7 +3035,8 @@ class LongTermMemoryService constructor(
         state: MemorySessionState,
         nodes: Map<String, MemoryNode>,
         messages: List<ChatMessage>,
-        session: ChatSession
+        session: ChatSession,
+        persistMigratedNodes: Boolean = true,
     ): MemorySessionState {
         val sourceIds = sourceTimeline(messages).map { it.sourceTurnId }
         val currentFingerprints = sourceIds.associateWith { sourceId ->
@@ -3046,7 +3075,7 @@ class LongTermMemoryService constructor(
                 migratedNodes += migrated
             }
         }
-        if (migratedNodes.isNotEmpty()) memoryRepository.saveNodes(migratedNodes)
+        if (persistMigratedNodes && migratedNodes.isNotEmpty()) memoryRepository.saveNodes(migratedNodes)
         val stale = state.activeNodeIds.mapNotNull { id ->
             val node = nodes[id] ?: return@mapNotNull null
             val evidence = node.sourceFingerprints.ifEmpty { node.sourceHashes }
@@ -3173,7 +3202,8 @@ class LongTermMemoryService constructor(
         archiveStatus: MemoryUpdateStatus? = null,
         archiveError: String? = null,
         headStatus: MemoryUpdateStatus? = null,
-        headError: String? = null
+        headError: String? = null,
+        persistCache: Boolean = true,
     ): MemoryPromptView {
         val state = loaded.state
         val safeFrontier = effectiveArchiveFrontier(loaded)
@@ -3307,6 +3337,7 @@ class LongTermMemoryService constructor(
             headMaintenanceState = headMaintenanceState,
             warnings = warnings
         )
+        if (!persistCache) return view
         val currentSession = chatRepository.getSession(loaded.session.id) ?: loaded.session
         chatRepository.saveSessionSettingsDraft(currentSession,
             currentSession.copy(

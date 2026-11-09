@@ -12,13 +12,22 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
-internal enum class DesktopSessionSettingsTab(val label: String) { BASIC("基础"), CONTEXT("Prompt / 上下文"), IMAGES("图片"), VOICE("语音与朗读"), ADVANCED("高级") }
+internal enum class DesktopSessionSettingsTab(val label: String) { BASIC("基础"), CONTEXT("Prompt / 上下文"), IMAGES("图片"), VOICE("语音与朗读"), ADVANCED("高级"), RAG("RAG 检索库") }
+internal enum class DesktopSessionWorkspaceTab(val label: String) { PARAMETERS("参数与设定"), MEMORY("长期记忆"), RAG("RAG 检索库"), SAVES("存档") }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun DesktopSessionWorkspaceTabs(selected: DesktopSessionWorkspaceTab, onSelect: (DesktopSessionWorkspaceTab) -> Unit) {
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        DesktopSessionWorkspaceTab.entries.forEach { tab -> BootstrapButton(tab.label, secondary = selected != tab) { onSelect(tab) } }
+    }
+}
 
 /** The controller draft and immediate writes remain outside tab composition. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun DesktopSessionSettingsTabs(selected: DesktopSessionSettingsTab, onSelect: (DesktopSessionSettingsTab) -> Unit) {
-    val tabs = DesktopSessionSettingsTab.entries
+    val tabs = DesktopSessionSettingsTab.entries.filterNot { it == DesktopSessionSettingsTab.RAG }
     val focus = remember { tabs.map { FocusRequester() } }
     FlowRow(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         tabs.forEachIndexed { index, tab ->

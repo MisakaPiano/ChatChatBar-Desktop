@@ -8,6 +8,13 @@ import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import java.util.concurrent.atomic.AtomicLong
+
+internal enum class DesktopMemoryPage(val label: String, val tier: MemoryTier? = null) {
+    HEAD("当前状态"), EPISODE("近期流程", MemoryTier.EPISODE), ARC("事件总结", MemoryTier.ARC),
+    ERA("故事进程", MemoryTier.ERA), PREVIEW("注入预览")
+}
+internal enum class DesktopMemorySection(val label: String) { CURRENT("当前"), EDIT("编辑"), HISTORY("历史") }
 
 internal data class DesktopMemoryState(
     val open: Boolean = false, val sessionId: String? = null, val enabled: Boolean = false,
@@ -15,7 +22,16 @@ internal data class DesktopMemoryState(
     val tier: MemoryTier = MemoryTier.EPISODE, val history: List<MemoryTierRevision> = emptyList(),
     val historyNodes: List<MemoryNode>? = null, val busy: Boolean = false, val operationBusy: Boolean = false,
     val message: String = "", val error: String? = null, val estimate: MemoryBackfillEstimate? = null,
-)
+    val prompt: MemoryPromptView? = null, val limitChars: Int = 2000,
+    val archiveStatus: MemoryUpdateStatus = MemoryUpdateStatus.IDLE, val headStatus: MemoryUpdateStatus = MemoryUpdateStatus.IDLE,
+    val inSessionSettings: Boolean = false, val page: DesktopMemoryPage = DesktopMemoryPage.HEAD,
+    val section: DesktopMemorySection = DesktopMemorySection.CURRENT,
+    val editingNode: MemoryNode? = null, val nodeText: String = "", val headDraft: MemoryHead? = null,
+    val leavePrompt: Boolean = false,
+    val historyLimit: Int = 100, val historyHasMore: Boolean = false,
+) {
+    val dirty: Boolean get() = (editingNode != null && nodeText != editingNode.body) || (headDraft != null && headDraft != memory?.head)
+}
 
 /** View-independent ownership. Closing this panel does not cancel committed/paid maintenance. */
 internal class DesktopMemoryController(
@@ -30,6 +46,8 @@ internal class DesktopMemoryController(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutableState = MutableStateFlow(DesktopMemoryState())
     val state = mutableState.asStateFlow()
+    private var pendingLeave: (() -> Unit)? = null
+    private val inspectionRevision = AtomicLong()
     private suspend fun <T> withSessionUsage(sessionId: String, block: suspend () -> T): T {
         val inherited = currentCoroutineContext()[DesktopUsageParent]?.value?.takeIf { it.sessionId == sessionId }
         return withContext(DesktopUsageParent((inherited ?: DesktopUsageContext(DesktopUsageSource.CHAT)).copy(
@@ -61,7 +79,7 @@ internal class DesktopMemoryController(
     fun stop() { val id = state.value.sessionId ?: return; scope.launch {
         try { coordinator.stopAndJoin(id); refreshSafely(id) }
         catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { mutableState.update { it.copy(error = "停止后的记忆状态未确认；保留原数据") } }
+        catch (_: Exception) { mutableState.update { if (it.sessionId == id) it.copy(error = "停止后的记忆状态未确认；保留原数据") else it } }
     } }
     suspend fun promptView(session: ChatSession, readOnly: Boolean): MemoryPromptView? {
         if (!session.longTermMemoryEnabled || readOnly) return null
@@ -69,15 +87,55 @@ internal class DesktopMemoryController(
         coordinator.enqueue(session.id, MemoryMaintenanceTrigger.USER_MESSAGE_PERSISTED)
         return service.promptView(session.id)
     }
-    fun open(sessionId: String) {
-        mutableState.value = DesktopMemoryState(open = true, sessionId = sessionId)
+    fun open(sessionId: String, inSessionSettings: Boolean = false) {
+        if (state.value.open && state.value.sessionId == sessionId) {
+            mutableState.update { it.copy(inSessionSettings = inSessionSettings) }; return
+        }
+        if (state.value.dirty) { requestLeave { open(sessionId, inSessionSettings) }; return }
+        inspectionRevision.incrementAndGet()
+        pendingLeave = null
+        mutableState.value = DesktopMemoryState(open = true, sessionId = sessionId, inSessionSettings = inSessionSettings)
         action { service.ensureMigrated(sessionId); coordinator.activateSession(sessionId) }
     }
-    fun closePanel() { mutableState.update { it.copy(open = false) } }
-    fun refresh() = action { }
-    fun tier(value: MemoryTier) { mutableState.update { it.copy(tier = value, historyNodes = null) }; refresh() }
+    fun requestLeave(action: () -> Unit) {
+        if (state.value.dirty) { pendingLeave = action; mutableState.update { it.copy(leavePrompt = true) } }
+        else { cancelEditing(); action() }
+    }
+    fun resolveLeave(discard: Boolean) {
+        val next = pendingLeave; pendingLeave = null
+        mutableState.update { it.copy(leavePrompt = false) }
+        if (discard) { cancelEditing(); next?.invoke() }
+    }
+    fun closePanel() = requestLeave { mutableState.update { it.copy(open = false) } }
+    fun page(page: DesktopMemoryPage) = requestLeave {
+        mutableState.update { it.copy(page = page, section = DesktopMemorySection.CURRENT,
+            tier = page.tier ?: it.tier, historyNodes = null, historyLimit = 100) }; inspect()
+    }
+    fun section(section: DesktopMemorySection) = requestLeave { mutableState.update { it.copy(section = section) } }
+    fun beginNodeEdit(node: MemoryNode) {
+        if (state.value.nodes.none { it.id == node.id } || state.value.operationBusy) return
+        mutableState.update { it.copy(editingNode = node, nodeText = node.body) }
+    }
+    fun nodeText(text: String) { mutableState.update { it.copy(nodeText = text) } }
+    fun beginHeadEdit() { mutableState.update { it.copy(headDraft = it.memory?.head) } }
+    fun headDraft(head: MemoryHead) { mutableState.update { it.copy(headDraft = head) } }
+    fun cancelEditing() { mutableState.update { it.copy(editingNode = null, nodeText = "", headDraft = null) } }
+    fun saveNodeDraft() {
+        val captured = state.value; val node = captured.editingNode ?: return
+        editNode(node.id, captured.nodeText) {
+            if (state.value.sessionId == captured.sessionId && state.value.editingNode?.id == node.id && state.value.nodeText == captured.nodeText) cancelEditing()
+        }
+    }
+    fun saveHeadDraft() {
+        val captured = state.value; val head = captured.headDraft ?: return
+        editHead(head) { if (state.value.sessionId == captured.sessionId && state.value.headDraft == head) cancelEditing() }
+    }
+    fun refresh() = action { service.refreshForCurrentConditions(it) }
+    private fun inspect() { state.value.sessionId?.let { id -> scope.launch { refreshSafely(id) } } }
+    fun tier(value: MemoryTier) { mutableState.update { it.copy(tier = value, historyNodes = null, historyLimit = 100) }; inspect() }
+    fun loadMoreHistory() { mutableState.update { it.copy(historyLimit = (it.historyLimit.toLong() + 100).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }; inspect() }
     fun setEnabled(enabled: Boolean) = action { id -> service.setEnabled(id, enabled) }
-    fun estimateBackfill() = action { id -> val estimate = service.estimateBackfill(id); mutableState.update { it.copy(estimate = estimate) } }
+    fun estimateBackfill() = action { id -> val estimate = service.estimateBackfill(id); mutableState.update { if (it.sessionId == id) it.copy(estimate = estimate) else it } }
     fun startBackfill() { state.value.sessionId?.let(coordinator::enqueueBackfill) }
     fun pauseBackfill() = action { service.pauseBackfill(it) }
     fun repairSources() { state.value.sessionId?.let(coordinator::enqueueSourceRepair) }
@@ -85,6 +143,15 @@ internal class DesktopMemoryController(
     fun retry() { state.value.sessionId?.let { coordinator.enqueue(it, MemoryMaintenanceTrigger.RETRY, manual = true) } }
     fun regenerateAll() { state.value.sessionId?.let(coordinator::enqueueFullRegeneration) }
     fun regenerateHead() { state.value.sessionId?.let(coordinator::enqueueHeadRegeneration) }
+    fun clear() = action { service.clear(it) }
+    suspend fun sourceMessage(nodeId: String): String? {
+        val captured = state.value
+        val node = captured.nodes.firstOrNull { it.id == nodeId } ?: return null
+        val id = captured.sessionId ?: return null
+        return gate.withNormalOperation {
+            chats.getMessagesReadOnly(id).firstOrNull { it.sourceTurnId in node.sourceTurnIds && it.role != MessageRole.SYSTEM }?.id
+        }.takeIf { state.value.sessionId == id }
+    }
     fun expandOrCompress(expand: Boolean) = action { id ->
         service.resolveCompressionDecision(id, expand)?.let { coordinator.enqueueCompressionDecisionContinuation(id, it) }
     }
@@ -99,7 +166,13 @@ internal class DesktopMemoryController(
         if (state.value.sessionId == id) onCandidate(candidate)
     }
     fun editHead(head: MemoryHead, onSaved: () -> Unit = {}) = action { service.editHead(it, head); onSaved() }
-    fun previewRevision(id: String) = action { val nodes = service.revisionNodes(id); mutableState.update { state -> state.copy(historyNodes = nodes) } }
+    fun previewRevision(id: String) = action { sessionId ->
+        val revision = requireNotNull(repository.getRevision(id)) { "记忆历史不存在" }
+        check(revision.sessionId == sessionId && revision.tier == state.value.tier) { "记忆历史不属于当前分页" }
+        val nodes = service.revisionNodes(id)
+        mutableState.update { current -> if (current.sessionId == sessionId && current.tier == revision.tier)
+            current.copy(historyNodes = nodes) else current }
+    }
     fun restoreRevision(id: String) = action { service.restoreTierRevision(it, id) }
     suspend fun cancelAndJoinForDeletion(id: String) = coordinator.cancelAndJoinForSession(id)
 
@@ -120,18 +193,26 @@ internal class DesktopMemoryController(
         if (job == null) mutableState.update { it.copy(operationBusy = false, error = "该会话正在停止或已关闭，请等待恢复后重试") }
     }
     private suspend fun refreshSafely(id: String) {
+        if (state.value.sessionId != id) return
+        val revision = inspectionRevision.incrementAndGet()
         try {
             gate.withNormalOperation {
                 val session = chats.getSession(id) ?: return@withNormalOperation
-                val memory = repository.getState(id)
-                val nodes = repository.getNodes(memory?.let { it.episodePage.activeNodeIds + it.arcPage.activeNodeIds + it.eraPage.activeNodeIds + it.legacyReferenceNodeIds }.orEmpty())
-                val history = if (state.value.tier == MemoryTier.LEGACY_REFERENCE) emptyList() else repository.history(id, state.value.tier, 100)
-                if (state.value.sessionId == id) mutableState.update { it.copy(enabled = session.longTermMemoryEnabled,
-                    memory = memory, nodes = nodes, history = history,
+                val inspected = service.inspectPrompt(id)
+                val memory = inspected.state
+                val nodes = inspected.nodes
+                val historyLimit = state.value.historyLimit
+                val selectedTier = state.value.tier
+                val history = if (selectedTier == MemoryTier.LEGACY_REFERENCE || memory == null) emptyList() else repository.inspectHistory(memory, selectedTier, historyLimit)
+                if (state.value.sessionId == id && inspectionRevision.get() == revision) mutableState.update { it.copy(enabled = session.longTermMemoryEnabled,
+                    memory = memory, nodes = nodes,
+                    history = if (it.tier == selectedTier) history else it.history,
+                    historyHasMore = if (it.tier == selectedTier) history.size == historyLimit else it.historyHasMore, prompt = inspected.prompt,
+                    limitChars = session.memoryLimitChars, archiveStatus = session.memoryArchiveStatus, headStatus = session.memoryHeadStatus,
                     message = listOfNotNull(session.memoryArchiveError, session.memoryHeadError).joinToString("；")) }
             }
         } catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { if (state.value.sessionId == id) mutableState.update { it.copy(error = "无法完整读取记忆；未覆盖原数据") } }
+        catch (_: Exception) { if (state.value.sessionId == id && inspectionRevision.get() == revision) mutableState.update { it.copy(error = "无法完整读取记忆；未覆盖原数据") } }
     }
     suspend fun closeAndDrain() { scope.coroutineContext[Job]!!.cancelAndJoin(); coordinator.closeNetworkSubscription() }
 }
