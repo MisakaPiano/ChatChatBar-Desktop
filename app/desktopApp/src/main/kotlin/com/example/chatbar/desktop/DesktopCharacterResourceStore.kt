@@ -97,17 +97,20 @@ internal class DesktopCharacterResourceStore(
         reference.removePrefix(ASSET_PREFIX).substringAfterLast('/').substringAfterLast('\\')
 
     internal fun requireDifferentCoverOutput(card: com.example.chatbar.data.local.entity.CharacterCard, destination: Path) {
-        val reference = card.coverImage?.takeUnless { it.startsWith(ASSET_PREFIX) } ?: return
-        val source = resolveOwnedReference(reference)
-        val sourceExists = Files.exists(source, LinkOption.NOFOLLOW_LINKS)
-        // A compatible JSON export does not consume the independent cover. Preserve its location
-        // guard even when that optional file/directory is absent, without requiring readable bytes.
-        val original = if (sourceExists) requireReadableOwnedFile(reference).toRealPath()
-            else root.toRealPath().resolve(root.relativize(source))
+        val references = (listOfNotNull(card.coverImage) + card.chatBackgroundImages).distinct()
+            .filterNot { it.startsWith(ASSET_PREFIX) }
+        if (references.isEmpty()) return
         val target = destination.toAbsolutePath().normalize()
         val physicalTarget = requireNotNull(target.parent).toRealPath().resolve(target.fileName)
-        require(original != physicalTarget && (!sourceExists || !Files.exists(target) || !Files.isSameFile(original, target))) {
-            "导出不能覆盖封面原图，请选择其他文件名或位置"
+        references.forEach { reference ->
+            val source = resolveOwnedReference(reference)
+            val sourceExists = Files.exists(source, LinkOption.NOFOLLOW_LINKS)
+            // Compatibility9 omits these originals; their locations are still protected when absent.
+            val original = if (sourceExists) requireReadableOwnedFile(reference).toRealPath()
+                else root.toRealPath().resolve(root.relativize(source))
+            require(original != physicalTarget && (!sourceExists || !Files.exists(target) || !Files.isSameFile(original, target))) {
+                "导出不能覆盖封面或图库原图，请选择其他文件名或位置"
+            }
         }
     }
 

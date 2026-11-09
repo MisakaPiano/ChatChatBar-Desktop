@@ -152,4 +152,21 @@ class DesktopPortableBackgroundGalleryTest {
             assertContentEquals(app.characterResourceStore.readBytes(chosen), bytes(source, source.card.chatBackgroundImageResourceIds.first()))
         }
     }
+
+    @Test fun `export guard retains gallery original bytes and its missing location including an existing hardlink alias`(): Unit = runBlocking {
+        withApp { app, parent ->
+            val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
+            val card = app.characterTransfers.importNew(source)
+            val path = app.appDataRoot.resolve(card.chatBackgroundImages.first())
+            val original = Files.readAllBytes(path)
+            assertFails { app.characterResourceStore.requireDifferentCoverOutput(card, path) }
+            val alias = Files.createLink(parent.resolve("gallery-alias.png"), path)
+            assertFails { app.characterResourceStore.requireDifferentCoverOutput(card, alias) }
+            assertContentEquals(original, Files.readAllBytes(path))
+            Files.delete(alias)
+            Files.move(path, parent.resolve("retained-gallery.png"))
+            assertFails { app.characterResourceStore.requireDifferentCoverOutput(card, path) }
+            assertFalse(Files.exists(path))
+        }
+    }
 }
