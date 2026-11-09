@@ -47,6 +47,7 @@ internal fun DesktopMemoryPanel(controller: DesktopMemoryController, embedded: B
             }
             state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
             if (state.message.isNotBlank()) StatusText(state.message, DesktopBootstrapColors.warning)
+            if (state.page != DesktopMemoryPage.PREVIEW) state.inspectionError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
             if (state.busy) ActionRow {
                 StatusText("记忆任务进行中；关闭此窗口后任务继续。")
                 BootstrapButton("停止任务", secondary = true) { controller.stop() }
@@ -174,9 +175,11 @@ internal fun DesktopMemoryPanel(controller: DesktopMemoryController, embedded: B
                 }
                 if (state.page == DesktopMemoryPage.PREVIEW) {
                     StatusText("Archive + HEAD · 按当前来源只读校验与同一发送格式器生成；不调用模型、不写入缓存。发送前仍会重新校验。")
-                    if (!state.enabled) StatusText("此会话长期记忆已关闭，实际请求不注入此块。")
+                    if (state.inspectionError != null) StatusText(state.inspectionError!!, DesktopBootstrapColors.destructive)
+                    else if (!state.promptCurrent) StatusText("正在只读核对当前来源…")
+                    else if (!state.enabled) StatusText("此会话长期记忆已关闭，实际请求不注入此块。")
                     else SelectionContainer { StatusText(state.prompt?.fullText?.ifBlank { "（空）" } ?: "记忆尚未初始化，请正常刷新后查看。") }
-                    state.prompt?.warnings?.forEach { StatusText(it.message, DesktopBootstrapColors.warning) }
+                    if (state.promptCurrent) state.prompt?.warnings?.forEach { StatusText(it.message, DesktopBootstrapColors.warning) }
                 }
                 val nodes = if (state.page.tier != null && state.section != DesktopMemorySection.HISTORY) state.nodes.filter { it.tier == state.page.tier } else emptyList()
                 if (state.page.tier != null && state.section != DesktopMemorySection.HISTORY && nodes.isEmpty()) StatusText("当前分页还没有记忆内容。")

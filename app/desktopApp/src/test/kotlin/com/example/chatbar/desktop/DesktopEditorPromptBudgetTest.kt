@@ -2,6 +2,11 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.entity.*
@@ -39,7 +44,9 @@ class DesktopEditorPromptBudgetTest {
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
                     CompositionLocalProvider(LocalDesktopModalActivity provides activity,
-                        LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) { DesktopEditorPromptBudget(controller, entity) }
+                        LocalDesktopEditorAuxiliaryFrame provides { content ->
+                            Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).zIndex(1f)) { content() }
+                        }) { DesktopEditorPromptBudget(controller, entity) }
                 }
                 try {
                     scene.until { has("字段 Token 估算") }; scene.click("字段 Token 估算")
@@ -47,6 +54,17 @@ class DesktopEditorPromptBudgetTest {
                     assertEquals(12000L, controller.state.value.target.contextWindowTokens)
                     assertTrue(scene.textContains("用户配置"))
                     assertTrue(scene.textContains("不是本轮输入总量"))
+                    if (entity is CharacterCard) {
+                        scene.clickContaining("人物条目 ·")
+                        scene.until { textContains("合成人物 ·") }
+                        scene.clickContaining("合成人物 ·")
+                        scene.until { textContains("已停用") }
+                    } else if (entity is WorldBook) {
+                        scene.clickContaining("世界书条目 ·")
+                        scene.until { textContains("合成条目 ·") }
+                        scene.clickContaining("合成条目 ·")
+                        scene.until { textContains("触发") }
+                    }
                     scene.shot("editor-budget-$name-$width.png")
                     controller.select(second.id)
                     scene.until { textContains("合成模型二") && !controller.state.value.loading }
@@ -78,6 +96,12 @@ class DesktopEditorPromptBudgetTest {
     }
     private suspend fun ImageComposeScene.click(label: String) {
         val node = nodes().first { it.matches(label) && it.config.contains(SemanticsActions.OnClick) }
+        assertFalse(node.config.contains(SemanticsProperties.Disabled)); assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
+        repeat(3) { render().close(); delay(20) }
+    }
+    private suspend fun ImageComposeScene.clickContaining(label: String) {
+        fun SemanticsNode.containsText(): Boolean = config.getOrNull(SemanticsProperties.Text)?.any { label in it.text } == true || children.any { it.containsText() }
+        val node = nodes().first { it.containsText() && it.config.contains(SemanticsActions.OnClick) }
         assertFalse(node.config.contains(SemanticsProperties.Disabled)); assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
         repeat(3) { render().close(); delay(20) }
     }

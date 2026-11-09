@@ -316,6 +316,10 @@ internal class DesktopPrimaryChatController(
         val selectedId = state.value.selectedSession?.id
             ?.takeIf { id -> allSessions.any { it.id == id } }
             ?: allSessions.firstOrNull()?.id
+        if (state.value.selectedSession?.id != null && selectedId != state.value.selectedSession?.id && memory?.state?.value?.dirty == true) {
+            mutableState.update { it.copy(characters = characterItems, sessions = sessions, error = "原会话已不可用；记忆编辑草稿已保留，请先处理草稿") }
+            return
+        }
         if (selectedId == null) {
             synchronized(sessionSettingsLock) {
                 if (state.value.sessionSettingsDirty || state.value.sessionSettingsSaving) {
@@ -346,6 +350,7 @@ internal class DesktopPrimaryChatController(
     suspend fun selectSession(id: String): Unit = guarded {
         val generation = sessionSaveGeneration.get()
         if (blockDuringSessionSave()) return@guarded
+        if (state.value.selectedSession?.id != id && memory?.deferNavigationIfDirty { selectSession(id) } == true) return@guarded
         if (state.value.sessionSettingsDirty && state.value.selectedSession?.id != id) {
             requestSessionSettingsLeave { selectSession(id) }
             return@guarded
@@ -369,6 +374,7 @@ internal class DesktopPrimaryChatController(
     suspend fun createSession(characterId: String): Unit = guarded {
         val generation = sessionSaveGeneration.get()
         if (blockDuringSessionSave()) return@guarded
+        if (memory?.deferNavigationIfDirty { createSession(characterId) } == true) return@guarded
         if (state.value.sessionSettingsDirty) {
             requestSessionSettingsLeave { createSession(characterId) }
             return@guarded
@@ -550,6 +556,7 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun requestSessionSettingsLeave(action: suspend () -> Unit) {
+        if (memory?.deferNavigationIfDirty { requestSessionSettingsLeave(action) } == true) return
         val leave = synchronized(sessionSettingsLock) {
             if (blockDuringSessionSave()) return
             if (state.value.sessionSettingsDirty) {

@@ -23,6 +23,7 @@ internal data class DesktopMemoryState(
     val historyNodes: List<MemoryNode>? = null, val busy: Boolean = false, val operationBusy: Boolean = false,
     val message: String = "", val error: String? = null, val estimate: MemoryBackfillEstimate? = null,
     val prompt: MemoryPromptView? = null, val limitChars: Int = 2000,
+    val promptCurrent: Boolean = false, val inspectionError: String? = null,
     val archiveStatus: MemoryUpdateStatus = MemoryUpdateStatus.IDLE, val headStatus: MemoryUpdateStatus = MemoryUpdateStatus.IDLE,
     val inSessionSettings: Boolean = false, val page: DesktopMemoryPage = DesktopMemoryPage.HEAD,
     val section: DesktopMemorySection = DesktopMemorySection.CURRENT,
@@ -69,7 +70,16 @@ internal class DesktopMemoryController(
             .distinctUntilChanged().collect { if (state.value.open) state.value.sessionId?.let { refreshSafely(it) } }
         }
     }
-    fun selectSession(id: String) { coordinator.selectSession(id) }
+    fun selectSession(id: String) {
+        coordinator.selectSession(id)
+        mutableState.update { if (it.sessionId != id && !it.dirty) DesktopMemoryState() else it }
+    }
+    /** The primary navigation owner also uses this guard before replacing the selected session. */
+    fun deferNavigationIfDirty(action: suspend () -> Unit): Boolean {
+        if (!state.value.dirty) return false
+        requestLeave { scope.launch { action() } }
+        return true
+    }
     fun afterReply(id: String) { coordinator.enqueue(id, MemoryMaintenanceTrigger.REPLY_PERSISTED) }
     fun sourceChanged(id: String) { coordinator.launchSessionAction(id) {
         try { service.refreshForCurrentConditions(id) }
@@ -148,9 +158,18 @@ internal class DesktopMemoryController(
         val captured = state.value
         val node = captured.nodes.firstOrNull { it.id == nodeId } ?: return null
         val id = captured.sessionId ?: return null
-        return gate.withNormalOperation {
-            chats.getMessagesReadOnly(id).firstOrNull { it.sourceTurnId in node.sourceTurnIds && it.role != MessageRole.SYSTEM }?.id
-        }.takeIf { state.value.sessionId == id }
+        return try {
+            val messageId = gate.withNormalOperation {
+                chats.getMessagesReadOnly(id).firstOrNull { it.sourceTurnId in node.sourceTurnIds && it.role != MessageRole.SYSTEM }?.id
+            }
+            if (messageId == null) mutableState.update { if (it.sessionId == id)
+                it.copy(error = "这条记忆的原消息已不存在；未修改记忆或聊天") else it }
+            messageId.takeIf { state.value.sessionId == id }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) {
+            mutableState.update { if (it.sessionId == id) it.copy(error = "无法读取记忆来源；原数据保留，请刷新后重试") else it }
+            null
+        }
     }
     fun expandOrCompress(expand: Boolean) = action { id ->
         service.resolveCompressionDecision(id, expand)?.let { coordinator.enqueueCompressionDecisionContinuation(id, it) }
@@ -195,6 +214,7 @@ internal class DesktopMemoryController(
     private suspend fun refreshSafely(id: String) {
         if (state.value.sessionId != id) return
         val revision = inspectionRevision.incrementAndGet()
+        mutableState.update { if (it.sessionId == id) it.copy(promptCurrent = false, inspectionError = null) else it }
         try {
             gate.withNormalOperation {
                 val session = chats.getSession(id) ?: return@withNormalOperation
@@ -204,15 +224,17 @@ internal class DesktopMemoryController(
                 val historyLimit = state.value.historyLimit
                 val selectedTier = state.value.tier
                 val history = if (selectedTier == MemoryTier.LEGACY_REFERENCE || memory == null) emptyList() else repository.inspectHistory(memory, selectedTier, historyLimit)
-                if (state.value.sessionId == id && inspectionRevision.get() == revision) mutableState.update { it.copy(enabled = session.longTermMemoryEnabled,
+                mutableState.update { if (it.sessionId != id || inspectionRevision.get() != revision) it else it.copy(enabled = session.longTermMemoryEnabled,
                     memory = memory, nodes = nodes,
                     history = if (it.tier == selectedTier) history else it.history,
                     historyHasMore = if (it.tier == selectedTier) history.size == historyLimit else it.historyHasMore, prompt = inspected.prompt,
+                    promptCurrent = true, inspectionError = null,
                     limitChars = session.memoryLimitChars, archiveStatus = session.memoryArchiveStatus, headStatus = session.memoryHeadStatus,
                     message = listOfNotNull(session.memoryArchiveError, session.memoryHeadError).joinToString("；")) }
             }
         } catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { if (state.value.sessionId == id && inspectionRevision.get() == revision) mutableState.update { it.copy(error = "无法完整读取记忆；未覆盖原数据") } }
+        catch (_: Exception) { mutableState.update { if (it.sessionId != id || inspectionRevision.get() != revision) it else
+            it.copy(prompt = null, promptCurrent = false, inspectionError = "本次注入预览不可用；请完成正常刷新或恢复后重试。原数据未修改。") } }
     }
     suspend fun closeAndDrain() { scope.coroutineContext[Job]!!.cancelAndJoin(); coordinator.closeNetworkSubscription() }
 }

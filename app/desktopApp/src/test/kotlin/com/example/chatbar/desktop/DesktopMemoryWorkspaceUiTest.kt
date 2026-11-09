@@ -84,7 +84,53 @@ class DesktopMemoryWorkspaceUiTest {
                 assertTrue(scene.contains("Edited synthetic location"))
                 assertEquals(before, snapshot(app.appDataRoot), "Switching to preview must not save a cache or a migration")
                 scene.shot("memory-injection-preview-wide.png")
+                val committed = assertNotNull(repository.getState(session.id))
+                val journal = MemoryCommitJournal("pending-preview", session.id, committed.revision,
+                    nextState = committed.copy(revision = committed.revision + 1))
+                app.jsonFileStorage.saveEntity("memory_commit_journals", journal.id, journal, MemoryCommitJournal.serializer())
+                val refusedSnapshot = snapshot(app.appDataRoot)
+                controller.page(DesktopMemoryPage.PREVIEW)
+                scene.until { controller.state.value.inspectionError != null && !controller.state.value.promptCurrent }
+                assertNull(controller.state.value.prompt)
+                assertFalse(scene.contains("Edited synthetic episode"), "A rejected new inspection must not display the old successful preview")
+                assertTrue(scene.contains("本次注入预览不可用"))
+                assertEquals(refusedSnapshot, snapshot(app.appDataRoot), "Inspection must neither recover nor delete the pending journal")
+                scene.shot("memory-injection-preview-refused-wide.png")
             } finally { scene.close() }
+        } finally { app.close(); parent.toFile().deleteRecursively() }
+    }
+    @Test fun `real primary navigation asks before leaving a memory draft and never opens one session with another sessions memory`(): Unit = runBlocking(edt) {
+        val parent = Files.createTempDirectory("memory-primary-navigation-")
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE,
+            parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() },
+            bundledAssets = { path -> check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray() })
+        try {
+            val card = CharacterCard.create("Synthetic card"); app.characterRepository.save(card)
+            val a = app.chatRepository.createSession(ChatSession.create(card.id, "A").copy(longTermMemoryEnabled = true))
+            val b = app.chatRepository.createSession(ChatSession.create(card.id, "B").copy(longTermMemoryEnabled = true))
+            val primary = app.primaryChatController; val memory = app.memoryController
+            primary.refresh(); primary.selectSession(a.id); memory.open(a.id, inSessionSettings = true)
+            withTimeout(15_000) { while (memory.state.value.memory == null || memory.state.value.busy || memory.state.value.operationBusy) delay(20) }
+            memory.beginHeadEdit(); memory.headDraft(assertNotNull(memory.state.value.headDraft).copy(location = "Unsaved A"))
+            primary.selectSession(b.id)
+            assertEquals(a.id, primary.state.value.selectedSession?.id)
+            assertEquals(a.id, memory.state.value.sessionId); assertTrue(memory.state.value.leavePrompt)
+            memory.resolveLeave(false); assertTrue(memory.state.value.dirty)
+            val count = app.chatRepository.getAllSessions().size
+            primary.createSession(card.id)
+            assertTrue(memory.state.value.leavePrompt); assertEquals(count, app.chatRepository.getAllSessions().size)
+            memory.resolveLeave(false)
+            var leftChat = false
+            primary.requestSessionSettingsLeave { leftChat = true }
+            assertFalse(leftChat); assertTrue(memory.state.value.leavePrompt)
+            memory.resolveLeave(false)
+            primary.selectSession(b.id); memory.resolveLeave(true)
+            withTimeout(15_000) { while (primary.state.value.selectedSession?.id != b.id) delay(20) }
+            assertFalse(memory.state.value.open); assertNull(memory.state.value.sessionId)
+            memory.open(b.id, inSessionSettings = true)
+            withTimeout(15_000) { while (memory.state.value.memory == null || memory.state.value.operationBusy || memory.state.value.busy) delay(20) }
+            assertEquals(b.id, memory.state.value.sessionId); assertFalse(memory.state.value.dirty)
+            assertFalse(memory.state.value.memory!!.head.render().contains("Unsaved A"))
         } finally { app.close(); parent.toFile().deleteRecursively() }
     }
     private fun snapshot(root: Path): Map<String, String> = Files.walk(root).use { paths -> paths.filter(Files::isRegularFile).toList().associate {
