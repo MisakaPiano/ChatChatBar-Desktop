@@ -114,4 +114,20 @@ class DesktopPortableBackgroundGalleryTest {
             assertFails { app.characterTransfers.prepareExport(card.id, CharacterCardExportCompatibility.OFFICIAL_V9) }
         }
     }
+
+    @Test fun `new Desktop preference does not become a legacy gallery source after a portable card edit`() = runBlocking {
+        withApp { app, _ ->
+            val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
+            val card = app.characterTransfers.importNew(source)
+            val chosen = card.chatBackgroundImages.first()
+            app.characterBackgrounds.prefer(card.id, chosen)
+            assertTrue(app.characterBackgrounds.load(card.id).migrated)
+            assertEquals(card, app.characterRepository.getById(card.id))
+            app.characterRepository.update(card.copy(chatBackgroundImages = card.chatBackgroundImages - chosen))
+            val exported = app.characterTransfers.prepareExport(card.id).packageData
+            assertEquals(card.chatBackgroundImages.size - 1, exported.card.chatBackgroundImageResourceIds.size)
+            assertEquals(chosen, app.characterBackgrounds.preferred(card.id))
+            assertContentEquals(app.characterResourceStore.readBytes(chosen), bytes(source, source.card.chatBackgroundImageResourceIds.first()))
+        }
+    }
 }

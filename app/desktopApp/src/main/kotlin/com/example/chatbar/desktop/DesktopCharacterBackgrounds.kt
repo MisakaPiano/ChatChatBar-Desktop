@@ -129,7 +129,8 @@ internal class DesktopCharacterBackgrounds(
             val previous = load(id)
             require(path == null || path in catalog(id).images || path in previous.images)
             path?.let(resources::readBytes)
-            save(id, previous.copy(images = (previous.images + listOfNotNull(path)).distinct(), preferred = path))
+            save(id, previous.copy(images = (previous.images + listOfNotNull(path)).distinct(), preferred = path,
+                migrated = previous.migrated || (characters != null && previous.images.isEmpty())))
             revision.value++
         } }
     }
