@@ -15,7 +15,8 @@ import kotlinx.serialization.json.*
 internal interface DesktopSessionReservation {
     suspend fun <T> run(sessionId: String, operation: suspend () -> T): T
 }
-internal data class DesktopSessionBindingChoices(val session: ChatSession, val characters: List<CharacterCard>, val books: List<WorldBook>)
+internal data class DesktopSessionResourceChoice(val id: String, val name: String)
+internal data class DesktopSessionBindingChoices(val session: ChatSession, val characters: List<DesktopSessionResourceChoice>, val books: List<DesktopSessionResourceChoice>)
 
 /** One app-owned archive service. Preparation and native drain precede exclusive publication. */
 internal class DesktopSaveSlotService(
@@ -182,8 +183,22 @@ internal class DesktopSaveSlotService(
     }
 
     suspend fun bindingChoices(sessionId: String): DesktopSessionBindingChoices = gate.withNormalOperation {
-        DesktopSessionBindingChoices(strictEntity("chat_sessions", sessionId, ChatSession.serializer()),
-            strictEntities("character_cards", CharacterCard.serializer()), strictEntities("world_books", WorldBook.serializer()))
+        val session = try {
+            require(sessionId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
+            when (val read = storage.readEntityBoundedStrict("chat_sessions", sessionId, ChatSession.serializer())) {
+                is JsonFileStorage.EntityReadResult.Valid -> read.value.also { check(it.id == sessionId) }
+                is JsonFileStorage.EntityReadResult.Corrupt -> throw read.cause
+                is JsonFileStorage.EntityReadResult.ReadError -> throw read.cause
+                JsonFileStorage.EntityReadResult.Missing -> throw NoSuchFileException("SESSION_RECORD")
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { throw DesktopSessionResourceReadException(DesktopSessionResourceRead.SESSION, sessionId, error) }
+        DesktopSessionBindingChoices(session,
+            bindingResources("character_cards", CharacterCard.serializer(), DesktopSessionResourceRead.CHARACTER_CARDS) {
+                DesktopSessionResourceChoice(it.id, it.name)
+            }, bindingResources("world_books", WorldBook.serializer(), DesktopSessionResourceRead.WORLD_BOOKS) {
+                DesktopSessionResourceChoice(it.id, it.name)
+            })
     }
 
     suspend fun create(sessionId: String, name: String, imagePolicy: SaveSlotImagePolicy,
@@ -455,12 +470,20 @@ internal class DesktopSaveSlotService(
             else -> error("存档或会话无法安全读取，原数据已保留")
         }
     }
-    private suspend fun <T : Any> strictEntities(type: String, serializer: KSerializer<T>): List<T> {
-        val values = mutableListOf<T>()
-        storage.visitEntitiesStrict(type, serializer, maximumFileBytes = 1024 * 1024) { _, value ->
-            check(values.size < 4096) { "存档列表超过读取预算" }
-            values += value
-        }
+    private suspend fun <T : Any> bindingResources(type: String, serializer: KSerializer<T>,
+        resource: DesktopSessionResourceRead, project: (T) -> DesktopSessionResourceChoice): List<DesktopSessionResourceChoice> {
+        val values = mutableListOf<DesktopSessionResourceChoice>()
+        var reading: String? = null
+        try {
+            // Match the existing strict entity/rebind contract; retain only lightweight choices.
+            storage.visitEntitiesStrict(type, serializer, onEntryRead = { reading = it }) { storageId, value ->
+                check(values.size < 4096) { "BINDING_OPTION_COUNT" }
+                val choice = project(value)
+                check(choice.id == storageId) { "BINDING_OPTION_IDENTITY" }
+                values += choice
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { throw DesktopSessionResourceReadException(resource, reading, error) }
         return values
     }
 }

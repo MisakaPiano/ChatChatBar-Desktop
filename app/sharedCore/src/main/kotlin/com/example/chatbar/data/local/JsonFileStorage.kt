@@ -399,6 +399,7 @@ class JsonFileStorage(
         serializer: KSerializer<T>,
         maximumFileBytes: Int = 8 * 1024 * 1024,
         validatePath: (Path) -> Unit = {},
+        onEntryRead: (String) -> Unit = {},
         visit: suspend (String, T) -> Unit,
     ): Long = mutexFor(entityType).withLock {
         require(entityType.matches(Regex("[a-z_]+")))
@@ -411,6 +412,8 @@ class JsonFileStorage(
                 for (path in entries) {
                     currentCoroutineContext().ensureActive()
                     val name = path.fileName.toString()
+                    // Diagnostic identity only: all original path/record checks still follow.
+                    onEntryRead(name.removeSuffix(".json"))
                     val value = decodeStrictInventoryRecord(path, serializer, strictJson, maximumFileBytes, validatePath)
                     visit(name.removeSuffix(".json"), value)
                     count++

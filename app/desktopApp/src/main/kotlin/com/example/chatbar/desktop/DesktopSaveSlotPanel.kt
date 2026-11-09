@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -54,7 +55,11 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
                 BootstrapButton(if (audio) "包含录音" else "不含录音", secondary = !audio, enabled = !state.busy) { audio = !audio }
             }
             if (state.message.isNotBlank()) StatusText(state.message)
-            state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+            state.error?.let { DesktopSaveSlotFailureNotice(it, state.errorDetails) }
+            state.listError?.let { message ->
+                DesktopSaveSlotFailureNotice(message, state.listErrorDetails)
+                BootstrapButton("重试存档列表", secondary = true, enabled = !state.busy) { controller.refreshList() }
+            }
             if (state.busy) ActionRow {
                 StatusText("关闭窗口不会丢弃已开始的操作。")
                 BootstrapButton("停止操作", secondary = true) { controller.stop() }
@@ -112,4 +117,16 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
             BootstrapButton("返回聊天", secondary = true) { controller.closePanel() }
         }
     })
+}
+
+@Composable
+private fun DesktopSaveSlotFailureNotice(message: String, details: String?) {
+    var expanded by remember(message, details) { mutableStateOf(false) }
+    StatusText(message, DesktopBootstrapColors.destructive)
+    if (details != null) {
+        BootstrapButton(if (expanded) "收起错误详情" else "查看错误详情", secondary = true) { expanded = !expanded }
+        if (expanded) Box(Modifier.fillMaxWidth().heightIn(max = 160.dp).verticalScroll(rememberScrollState())) {
+            SelectionContainer { StatusText(details) }
+        }
+    }
 }

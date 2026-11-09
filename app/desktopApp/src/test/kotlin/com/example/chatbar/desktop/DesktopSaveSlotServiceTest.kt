@@ -163,6 +163,134 @@ class DesktopSaveSlotServiceTest {
         }
     }
 
+    @Test fun `binding choices accept existing bounded large cards and books without retaining their bodies`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val card = CharacterCard.create("Large card").copy(id = "large-card", basicSetting = "x".repeat(1100000))
+            val book = WorldBook.create("Large book", "y".repeat(1100000)).copy(id = "large-book")
+            f.storage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            f.storage.saveEntity("world_books", book.id, book, WorldBook.serializer())
+            val path = f.root.resolve("entities/character_cards/${card.id}.json")
+            val before = Files.readAllBytes(path)
+            assertTrue(before.size in 1024 * 1024 + 1 until 8 * 1024 * 1024)
+            // Exact former candidate path refuses a file accepted by the ordinary strict contract.
+            assertFailsWith<java.io.IOException> {
+                f.storage.visitEntitiesStrict("character_cards", CharacterCard.serializer(), maximumFileBytes = 1024 * 1024) { _, _ -> }
+            }
+            assertIs<JsonFileStorage.EntityReadResult.Valid<CharacterCard>>(
+                f.storage.readEntityBoundedStrict("character_cards", card.id, CharacterCard.serializer()))
+            val choices = f.service().bindingChoices("s")
+            assertEquals(listOf(DesktopSessionResourceChoice(card.id, card.name)), choices.characters)
+            assertEquals(listOf(DesktopSessionResourceChoice(book.id, book.name)), choices.books)
+            assertEquals(card.id, f.service().rebind("s", card.id, listOf(book.id)).characterCardId)
+            assertContentEquals(before, Files.readAllBytes(path))
+        }
+    }
+
+    @Test fun `binding refusal identifies the exact resource without leaking corrupt text or changing sources`(): Unit = runBlocking {
+        val secret = "SYNTHETIC_BODY_MUST_NOT_APPEAR"
+        val cases = listOf(
+            "json" to "{\"name\":\"$secret\",broken}".toByteArray(),
+            "unknown" to "{\"id\":\"broken\",\"name\":\"Safe\",\"unrecognized\":\"$secret\"}".toByteArray(),
+            "utf8" to byteArrayOf(0xc3.toByte(), 0x28),
+            "oversize" to ("{\"id\":\"broken\",\"name\":\"Safe\",\"basicSetting\":\"" + "x".repeat(8 * 1024 * 1024) + "\"}").toByteArray(),
+            "identity" to "{\"id\":\"different\",\"name\":\"Safe\"}".toByteArray(),
+        )
+        for ((label, bytes) in cases) Fixture().use { f ->
+            f.seed()
+            val directory = Files.createDirectories(f.root.resolve("entities/character_cards"))
+            val path = Files.write(directory.resolve("broken.json"), bytes)
+            val session = DesktopSessionInventory(f.root).read("s")
+            val failure = assertFailsWith<DesktopSessionResourceReadException>(label) { f.service().bindingChoices("s") }
+            assertEquals(DesktopSessionResourceRead.CHARACTER_CARDS, failure.resource, label)
+            assertEquals("broken", failure.storageId, label)
+            val details = desktopSaveSlotFailureDetails("bindings", "PRIMARY", failure)
+            assertTrue("broken" in details); assertFalse(secret in details)
+            assertFalse("basicSetting" in details)
+            assertContentEquals(bytes, Files.readAllBytes(path), label)
+            assertEquals(session, DesktopSessionInventory(f.root).read("s"), label)
+        }
+    }
+
+    @Test fun `binding choices remain usable beside a separately visible unrelated slot list failure`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val card = CharacterCard.create("Choice").copy(id = "synthetic-card")
+            f.storage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            val broken = Files.writeString(Files.createDirectories(f.root.resolve("entities/save_slots")).resolve("other-session.json"), "{bad}")
+            val before = Files.readAllBytes(broken)
+            val controller = DesktopSaveSlotController(f.service(), noSlotPicker()) { error("READ_ONLY") }
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                assertNotNull(controller.state.value.listError)
+                controller.loadBindings()
+                val ready = withTimeout(10000) { controller.state.first { !it.busy && it.bindings != null } }
+                assertEquals(card.id, ready.bindings!!.characters.single().id)
+                assertNull(ready.error); assertNotNull(ready.listError) // No silent disappearance of the bad catalog.
+                assertTrue(controller.workRows.value.isEmpty())
+                assertContentEquals(before, Files.readAllBytes(broken))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `successful duplicate and rebind remain completed when the subsequent catalog refresh fails`(): Unit = runBlocking {
+        for (rebind in listOf(false, true)) Fixture().use { f ->
+            f.seed()
+            val next = CharacterCard.create("Next").copy(id = "next-card")
+            f.storage.saveEntity("character_cards", next.id, next, CharacterCard.serializer())
+            var callbacks = 0
+            val controller = DesktopSaveSlotController(f.service(), noSlotPicker()) {
+                callbacks++
+                Files.writeString(Files.createDirectories(f.root.resolve("entities/save_slots")).resolve("foreign.json"), "{bad}")
+            }
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                if (rebind) controller.rebind(next.id, emptyList()) else controller.duplicate()
+                val result = withTimeout(10000) { controller.state.first { !it.busy && it.listError != null } }
+                assertNull(result.error); assertTrue(result.message.isNotBlank()); assertNotNull(result.listErrorDetails)
+                val finished = withTimeout(10000) { controller.workRows.first { it.singleOrNull()?.active == false } }.single()
+                assertEquals(DesktopWorkPhase.COMPLETED, finished.phase)
+                if (rebind) assertEquals(next.id, f.chats.getSession("s")!!.characterCardId)
+                else assertEquals(2, f.storage.loadAll("chat_sessions", ChatSession.serializer()).size)
+                controller.refreshList()
+                withTimeout(10000) { controller.state.first { !it.busy && it.listError != null } }
+                assertEquals(1, callbacks) // A list retry must never repeat the actual mutation.
+                assertEquals(1, controller.workRows.value.size)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `closed or cancelled binding preview cannot return late choices or switch the captured session`(): Unit = runBlocking {
+        for (close in listOf("preview", "panel", "stop")) Fixture().use { f ->
+            f.seed(); f.chats.createSession(f.session.copy(id = "other"))
+            val card = CharacterCard.create("Choice").copy(id = "synthetic-card")
+            f.storage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            val controller = DesktopSaveSlotController(f.service(), noSlotPicker()) { error("READ_ONLY") }
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            var hold: Job? = null
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                hold = launch(Dispatchers.IO) { f.gate.withExclusiveMaintenance { entered.complete(Unit); release.await() } }
+                withTimeout(10000) { entered.await() }
+                controller.loadBindings()
+                withTimeout(10000) { controller.state.first { it.busy } }
+                assertNull(controller.openFileContext("other"))
+                when (close) { "preview" -> controller.closeBindings(); "panel" -> controller.closePanel(); else -> controller.stop() }
+                release.complete(Unit); hold.join()
+                val completed = withTimeout(10000) { controller.state.first { !it.busy } }
+                assertEquals("s", completed.sessionId); assertNull(completed.bindings)
+                if (close == "panel") assertFalse(completed.open)
+                assertNotNull(controller.openFileContext("other")).join()
+                assertEquals("other", controller.state.value.sessionId); assertNull(controller.state.value.bindings)
+            } finally { release.complete(Unit); hold?.join(); controller.closeAndDrain() }
+        }
+    }
+
+    private fun noSlotPicker() = object : DesktopFilePicker {
+        override fun pickOpenFile(type: DesktopFileType): Path? = error("NO_PICKER")
+        override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("NO_PICKER")
+    }
+
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("desktop-slot-service-")
         val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(
