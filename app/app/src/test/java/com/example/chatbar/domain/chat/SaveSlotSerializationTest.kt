@@ -190,6 +190,7 @@ class SaveSlotSerializationTest {
             id = "slot-1",
             sessionId = "session-1",
             name = "长记录",
+            desktopPlayerAvatar = "synthetic-player.png",
             messages = List(3) { index -> message(index, "x".repeat(10_000)) },
             createdAt = 20
         )
@@ -198,6 +199,7 @@ class SaveSlotSerializationTest {
 
         assertEquals("slot-1", summary.id)
         assertEquals(3, summary.messageCount)
+        assertEquals("synthetic-player.png", summary.desktopPlayerAvatar)
     }
 
     @Test
