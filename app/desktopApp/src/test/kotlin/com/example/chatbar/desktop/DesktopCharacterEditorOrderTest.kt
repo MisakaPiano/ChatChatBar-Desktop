@@ -75,7 +75,8 @@ class DesktopCharacterEditorOrderTest {
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, height, coroutineContext = edt) {
                     val state by editor.state.collectAsState()
-                    CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
+                    CompositionLocalProvider(LocalDesktopModalActivity provides activity,
+                        LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
                         DesktopCharacterEditorOverlay(editor, state)
                         DesktopCharacterLeavePrompt(editor)
                     }
@@ -119,7 +120,8 @@ class DesktopCharacterEditorOrderTest {
                 val before = editor.state.value.card
                 val scene = ImageComposeScene(width, height, coroutineContext = edt) {
                     val state by editor.state.collectAsState()
-                    CompositionLocalProvider(LocalDesktopModalActivity provides remember { DesktopModalActivity() }) {
+                    CompositionLocalProvider(LocalDesktopModalActivity provides remember { DesktopModalActivity() },
+                        LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
                         DesktopCharacterEditorOverlay(editor, state)
                     }
                 }
@@ -189,7 +191,8 @@ class DesktopCharacterEditorOrderTest {
                     val activity = DesktopModalActivity()
                     val scene = ImageComposeScene(420, 560, coroutineContext = edt) {
                         val state by editor.state.collectAsState()
-                        CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
+                        CompositionLocalProvider(LocalDesktopModalActivity provides activity,
+                            LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
                             DesktopCharacterEditorOverlay(editor, state); DesktopCharacterLeavePrompt(editor)
                         }
                     }

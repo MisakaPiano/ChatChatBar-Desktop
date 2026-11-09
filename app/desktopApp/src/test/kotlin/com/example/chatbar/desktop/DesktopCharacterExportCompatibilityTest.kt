@@ -14,7 +14,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopCharacterExportCompatibilityTest {
-    @Test fun `selected base saves separately and full PNG reimports its raw base while layout title stays display only`() = runBlocking {
+    @Test fun `selected base saves separately and full PNG reimports its raw base while layout title stays display only`(): Unit = runBlocking {
         val f = Fixture()
         try {
             val card = f.card()

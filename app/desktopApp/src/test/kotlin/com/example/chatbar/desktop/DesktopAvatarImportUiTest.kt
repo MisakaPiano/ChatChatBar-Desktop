@@ -20,7 +20,7 @@ class DesktopAvatarImportUiTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    @Test fun `actual global avatar entry opens crop preview and cancel preserves settings while apply saves a distinct copy`() = runBlocking(edt) {
+    @Test fun `actual global avatar entry opens crop preview and cancel preserves settings while apply saves a distinct copy`(): Unit = runBlocking(edt) {
         val parent = Files.createTempDirectory("player-avatar-ui-")
         val path = parent.resolve("source.png")
         val original = DesktopImageEditing.png(BufferedImage(80, 40, BufferedImage.TYPE_INT_RGB))
