@@ -1,0 +1,7 @@
+{
+  "kind": "CCB_DESKTOP_FROZEN_CLOUD_BUILD_REQUEST",
+  "sourceSha": "4d3ad162b7de79d266a5586d90d10527b50ccf1d",
+  "desktopVersion": "0.1.0-preview.1249",
+  "installerVersion": "0.1.1249",
+  "buildNumber": 1249
+}
