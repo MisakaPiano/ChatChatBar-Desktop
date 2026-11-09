@@ -49,7 +49,7 @@ public final class PackagedMainTrayProbe {
     private static String quoted(String value) {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n") + "\"";
     }
-    private static void save() throws Exception {
+    private static synchronized void save() throws Exception {
         StringJoiner json = new StringJoiner(",", "{", "}\n");
         synchronized (facts) { facts.forEach((k,v) -> json.add(quoted(k) + ":" + (v instanceof Boolean || v instanceof Number ? v : quoted(String.valueOf(v))))); }
         Files.writeString(report, json.toString());
@@ -69,6 +69,20 @@ public final class PackagedMainTrayProbe {
         facts.put("javaHome", System.getProperty("java.home")); facts.put("ciJdk17", Runtime.version().feature() == 17);
         facts.put("packagedMainClasses", true); facts.put("ordinaryLauncher", false); facts.put("bundledRuntime", false);
         facts.put("osMouseGesture", false); facts.put("agentInjected", false); facts.put("providerCalls", false);
+        // Production deliberately calls exitProcess only after its original MAIN_RETURNED / SAFE_EXIT_HANDOFF.
+        // Observe that shutdown without replacing terminate(), intercepting System.exit, or forcing exit.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                facts.put("jvmShutdownHookEntered", true);
+                facts.put("reflectiveMainReturned", mainReturned.get());
+                facts.put("mainWindowsDisposed", mainWindow() == null);
+                facts.put("trayIconRemoved", !SystemTray.isSupported() || SystemTray.getSystemTray().getTrayIcons().length == 0);
+                facts.put("passed", failure.get() == null && Boolean.TRUE.equals(facts.get("mainCloseHiddenAndStillDisplayable")) &&
+                    Boolean.TRUE.equals(facts.get("originalTrayMenuRestoredMain")) && Boolean.TRUE.equals(facts.get("originalTrayExitRequested")) &&
+                    Boolean.TRUE.equals(facts.get("mainWindowsDisposed")) && Boolean.TRUE.equals(facts.get("trayIconRemoved")));
+                save();
+            } catch (Throwable ignored) { /* Missing facts remain an external-driver failure. */ }
+        }, "synthetic-original-jvm-shutdown-observer"));
         Thread script = new Thread(() -> {
             try {
                 AtomicReference<Frame> frame = new AtomicReference<>();
@@ -86,7 +100,7 @@ public final class PackagedMainTrayProbe {
                 await(() -> { try { return onAwt(() -> frame.get().isVisible()); }
                     catch (Exception e) { throw new IllegalStateException("RESTORE_OBSERVATION_FAILED"); } }, 20, "TRAY_DID_NOT_RESTORE_MAIN");
                 facts.put("originalTrayMenuRestoredMain", true);
-                menu("退出"); facts.put("originalTrayExitRequested", true);
+                facts.put("originalTrayExitRequested", true); save(); menu("退出");
             } catch (Throwable error) {
                 failure.set(error); facts.put("failureClass", error.getClass().getName()); facts.put("passed", false);
                 if (error.getMessage() != null && error.getMessage().matches("[A-Z0-9_]{1,100}")) facts.put("failureCode", error.getMessage());

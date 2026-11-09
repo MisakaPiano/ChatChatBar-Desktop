@@ -49,7 +49,11 @@ def main():
     native.require(settings.parent.is_dir() and (not settings.exists() or
                    settings.is_file() and settings.stat().st_nlink == 1 and settings.stat().st_size <= 1024 * 1024), 'OWNED_PROFILE_REQUIRED')
     original = settings.read_bytes() if settings.exists() else None
-    value = json.loads(original) if original is not None else {'formatVersion': 1}
+    value = json.loads(original) if original is not None else {
+        'formatVersion': 1,
+        'automaticBackup': {'enabled': False, 'minimumBackupInterval': 'PT24H',
+                            'maximumSnapshotCount': 7, 'checkInterval': 'PT1H'},
+    }
     native.require(isinstance(value, dict) and type(value.get('formatVersion')) is int and value['formatVersion'] == 1, 'SETTINGS_FORMAT')
     value['closeWindowToTray'] = True
     settings.write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
@@ -98,6 +102,13 @@ def main():
             while pids() and time.monotonic() < deadline: time.sleep(.1)
             remaining = pids(); code = W.DWORD(); kernel.GetExitCodeProcess(process.handle, C.byref(code))
             facts = json.loads(result.read_text()) if result.exists() else None
+            shutdown_lines = (case / 'packaged-main-tray-stderr.log').read_text(encoding='utf-8-sig').splitlines()
+            stages = [line.split()[-1] for line in shutdown_lines if line.startswith('CCB_SHUTDOWN ')]
+            terminal = ['CLOSE_REQUESTED', 'COMPOSE_RETURNED', 'TASK_DRAIN_BEGIN', 'TASK_DRAIN_END',
+                        'DRAFT_DRAIN_BEGIN', 'DRAFT_DRAIN_END', 'BACKUP_CLOSE_BEGIN', 'BACKUP_CLOSE_END',
+                        'COORDINATOR_CLOSE_BEGIN', 'COORDINATOR_CLOSE_END', 'MIGRATION_CLOSE_BEGIN',
+                        'MIGRATION_CLOSE_END', 'CONTAINER_CLOSED', 'PICKERS_CLOSED', 'OWNERSHIP_RELEASED',
+                        'MAIN_RETURNED', 'SAFE_EXIT_HANDOFF']
             receipt = dict(kind='PACKAGED_CLASS_MAIN_TRAY_AND_NORMAL_EXIT',source=commit,version=manifest['version'],jobAssignedBeforeResume=True,
                            exitCode=code.value,remaining=remaining,main=facts,ordinaryLauncher=False,bundledRuntime=False,osMouseGesture=False,
                            realUserData=False,agentInjected=False,providerCalls=False,
@@ -106,6 +117,8 @@ def main():
                            driverSourceSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                            originalLauncherConfigSha256=hashlib.sha256(cfg.read_bytes()).hexdigest(),
                            originalJavaOptionsAndClasspathPreserved=True,
+                           originalShutdownStages=stages, productionMainReturnTraceObserved=stages == terminal,
+                           originalExitProcessUnmodified=True,
                            currentPointerUnchanged=(root / 'current.txt').read_text().strip() == current)
             native.save(case / 'packaged-main-tray-lifecycle.json', receipt)
             native.require(not remaining and code.value == 0 and facts is not None and facts.get('passed') is True and
@@ -113,7 +126,7 @@ def main():
                            facts.get('version') == manifest['version'] and
                            Path(facts['javaHome']).resolve() == native.JAVA.parent.parent.resolve() and
                            Path(facts['mainClassOrigin']).resolve().is_relative_to((package / 'app').resolve()) and
-                           receipt['currentPointerUnchanged'], 'PACKAGED_MAIN_TRAY_NOT_CONFIRMED')
+                           stages == terminal and receipt['currentPointerUnchanged'], 'PACKAGED_MAIN_TRAY_NOT_CONFIRMED')
     finally:
         if process.handle: kernel.CloseHandle(process.handle)
         kernel.CloseHandle(job)
