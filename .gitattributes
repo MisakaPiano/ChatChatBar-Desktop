@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Exact synthetic Desktop production exports are hash-bound across platforms.
+app/app/src/androidTest/assets/desktop-cover-gallery/* -text
