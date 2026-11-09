@@ -109,7 +109,7 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                     BootstrapButton("单独保存封面底图…", enabled = sourceBytes != null && !state.busy) {
                         sourceBytes?.let { bytes -> scope.launch { controller.saveCoverBase(draft, bytes, picker) } }
                     }
-                    StatusText("底图文件不含本次添加的文字和阴影，下次可直接选它重新排版。Desktop 完整格式还会把所选底图保存在卡内；官方兼容格式不保留独立底图。")
+                    StatusText("底图文件不含本次添加的文字和阴影，下次可直接选它重新排版。完整格式11还会把所选底图保存在卡内；旧版兼容格式9不携带独立底图。")
                     if (replacement != null) BootstrapButton(if (draft.originalCoverBytes != null) "恢复封面原图" else "恢复角色背景") {
                         commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to null)
                     }
