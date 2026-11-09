@@ -1,0 +1,234 @@
+name: Desktop1248 feedback r01-focused
+on:
+  push:
+    branches: ['codex/desktop-integration-feedback1248-*']
+permissions:
+  contents: read
+jobs:
+  desktop:
+    name: Focused synthetic feedback regression r01-focused
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CCB_PREVIEW_NATIVE_DPAPI: '1'
+    steps:
+      - name: Enable long-path checkout
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          ref: c887a96eda0dd63052ca12b8906a133e40eb837e
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind this integration report to the frozen application source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $normal=git rev-parse HEAD
+          if($normal -cne 'c887a96eda0dd63052ca12b8906a133e40eb837e'){throw 'FROZEN_c887a96eda0dd63052ca12b8906a133e40eb837e_MISMATCH'}
+          $proof=Join-Path $env:RUNNER_TEMP 'integration-source.json'
+          @{source=$normal; expected='c887a96eda0dd63052ca12b8906a133e40eb837e'; platform='${{ runner.os }}'; scope='synthetic integration only; no user roots/keys/archives'; public=$false} | ConvertTo-Json | Set-Content -LiteralPath $proof -Encoding utf8
+
+      - name: Restore only the pinned public official compiler
+        id: restoreCompiler
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccb-official-compiler-verified
+          key: ccb-official-kotlin-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337-v1
+      - name: Recover pinned compiler with bounded missing-range waves and full digest validation
+        id: verifyCompiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:RUNNER_TEMP 'ccb-official-compiler-transport.py'
+          @'
+          from pathlib import Path
+          import hashlib,json,os,shutil,subprocess,tempfile,time
+          url='https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/kotlin-compiler-embeddable-2.3.20.jar'
+          total=59718536
+          sha1='002fac4210c52c27b244305d60b0906e831f49be'
+          sha256='976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
+          root=Path(os.environ['RUNNER_TEMP'])/'ccb-ui-probe/compiler-proof';root.mkdir(parents=True,exist_ok=True)
+          gradle=Path(os.environ.get('GRADLE_USER_HOME',str(Path.home()/'.gradle')))/'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20'/sha1
+          target=gradle/'kotlin-compiler-embeddable-2.3.20.jar'
+          verifiedRoot=Path(os.environ['RUNNER_TEMP'])/'ccb-official-compiler-verified'
+          retained=verifiedRoot/'compiler.jar'
+          proof={'officialUrl':url,'expectedBytes':total,'expectedSha1':sha1,'expectedSha256':sha256,'sourceOrDependencyRepositoryChanged':False,'parts':[],'wavesBound':2,'totalSecondsBound':600,'verified':False}
+          def verified(path):
+              if not path.is_file()or path.stat().st_size!=total:return False
+              data=path.read_bytes()
+              return hashlib.sha1(data).hexdigest()==sha1 and hashlib.sha256(data).hexdigest()==sha256
+          try:
+              if verified(target):
+                  proof['cacheReuse']='verified-gradle-file'
+              elif retained.exists():
+                  if not verified(retained):raise RuntimeError('RESTORED_OFFICIAL_COMPILER_DIGEST_MISMATCH')
+                  gradle.mkdir(parents=True,exist_ok=True);shutil.copyfile(retained,target)
+                  proof['cacheReuse']='independently-reverified-official-only-cache'
+              else:
+                  if target.exists():raise RuntimeError('EXISTING_COMPILER_CACHE_DIGEST_MISMATCH')
+                  deadline=time.monotonic()+600
+                  starts=list(range(0,total,2*1024*1024));ready={}
+                  with tempfile.TemporaryDirectory(prefix='ccb-official-ranges-',dir=os.environ['RUNNER_TEMP'])as tmp:
+                      stage=Path(tmp);whole=stage/'compiler.jar';fullResponse=False
+                      for wave in range(1,3):
+                          for start in starts:
+                              if start in ready:continue
+                              left=deadline-time.monotonic()
+                              if left<1:raise RuntimeError('OFFICIAL_COMPILER_RANGE_TOTAL_DEADLINE')
+                              end=min(start+2*1024*1024-1,total-1)
+                              part=stage/('part-'+str(start));headers=stage/('headers-'+str(start))
+                              query='?ccbSegment='+str(start)+('' if wave==1 else '&ccbRangeRetry='+str(wave))
+                              result=subprocess.run(['curl.exe','--fail','--silent','--show-error','--location','--connect-timeout',str(min(20,max(1,int(left)))),'--max-time',str(min(60,max(1,int(left)))),'--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+query])
+                              size=part.stat().st_size if part.exists()else 0
+                              header=headers.read_text(encoding='utf-8',errors='replace').lower()if headers.exists()else''
+                              matched=('content-range: bytes '+str(start)+'-'+str(end)+'/'+str(total))in header
+                              row={'wave':wave,'start':start,'end':end,'exitCode':result.returncode,'bytes':size,'contentRangeMatched':matched}
+                              proof['parts'].append(row)
+                              if result.returncode==0 and start==0 and size==total and verified(part):
+                                  shutil.copyfile(part,whole);fullResponse=True;break
+                              if result.returncode==0 and size==end-start+1 and matched:
+                                  ready[start]=part;row['partSha256']=hashlib.sha256(part.read_bytes()).hexdigest()
+                              else:
+                                  print('OFFICIAL_RANGE_ATTEMPT_REFUSED wave='+str(wave)+' start='+str(start)+' exit='+str(result.returncode),flush=True)
+                          if fullResponse or len(ready)==len(starts):break
+                      if not fullResponse:
+                          if len(ready)!=len(starts):raise RuntimeError('OFFICIAL_COMPILER_MISSING_RANGES_'+str(len(starts)-len(ready)))
+                          with whole.open('wb')as combined:
+                              for start in starts:combined.write(ready[start].read_bytes())
+                      if not verified(whole):raise RuntimeError('OFFICIAL_COMPILER_FINAL_DIGEST_MISMATCH')
+                      gradle.mkdir(parents=True,exist_ok=True);shutil.copyfile(whole,target)
+                      proof['reusedSuccessfulRangesWithinJob']=True
+              if not verified(target):raise RuntimeError('OFFICIAL_COMPILER_GRADLE_COPY_MISMATCH')
+              verifiedRoot.mkdir(parents=True,exist_ok=True)
+              if not retained.exists():shutil.copyfile(target,retained)
+              if not verified(retained):raise RuntimeError('OFFICIAL_COMPILER_RETAINED_COPY_MISMATCH')
+              proof.update(actualBytes=target.stat().st_size,actualSha1=hashlib.sha1(target.read_bytes()).hexdigest(),actualSha256=hashlib.sha256(target.read_bytes()).hexdigest(),verified=True)
+          finally:
+              (root/'compiler-transport-proof.json').write_text(json.dumps(proof,indent=2),encoding='utf-8')
+          '@ | Set-Content -LiteralPath $script -Encoding utf8
+          python $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain only the fully verified public compiler for subsequent focused jobs
+        if: steps.verifyCompiler.outcome == 'success' && steps.restoreCompiler.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ccb-official-compiler-verified
+          key: ccb-official-kotlin-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337-v1
+      - name: Prepare supported NTFS workspace and record native prerequisites
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $jvmSettings = (& java -XshowSettings:properties -version 2>&1 | Out-String)
+          $originalTemp = [regex]::Match($jvmSettings, 'java.io.tmpdir\s*=\s*(.+)').Groups[1].Value.Trim()
+          Add-Type @'
+          using System;
+          using System.Text;
+          using System.Runtime.InteropServices;
+          using Microsoft.Win32.SafeHandles;
+          public static class DesktopCiNativePrerequisites {
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern uint GetLongPathName(string path, StringBuilder result, uint size);
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern SafeFileHandle CreateFile(string path, uint access, uint sharing, IntPtr security, uint creation, uint flags, IntPtr template);
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern uint GetFinalPathNameByHandle(SafeFileHandle handle, StringBuilder result, uint size, uint flags);
+            [DllImport("winmm.dll")] public static extern uint waveOutGetNumDevs();
+            public static string LongPath(string path) { var b=new StringBuilder(32768); return GetLongPathName(path,b,32768)>0 ? b.ToString() : null; }
+            public static string FinalPath(string path) { using(var h=CreateFile(path,0x80,7,IntPtr.Zero,3,0x02000000,IntPtr.Zero)) { if(h.IsInvalid)return null; var b=new StringBuilder(32768); return GetFinalPathNameByHandle(h,b,32768,0)>0 ? b.ToString() : null; } }
+          }
+          '@
+          $ciRoot = Join-Path ($env:SystemDrive + '\') ('c' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          $volume = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($ciRoot))
+          if ($volume.DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $ciRoot -ErrorAction Stop | Out-Null
+          $testTemp = New-Item -ItemType Directory -Path (Join-Path $ciRoot 'temp') -ErrorAction Stop
+          $source = Join-Path $ciRoot 'source'
+          git worktree add --detach $source HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'DESKTOP_NTFS_WORKTREE_FAILED' }
+          $facts = [ordered]@{
+            originalJvmTemp = $originalTemp
+            originalLongPath = [DesktopCiNativePrerequisites]::LongPath($originalTemp)
+            originalFinalPath = [DesktopCiNativePrerequisites]::FinalPath($originalTemp)
+            originalTempAttributes = [string][IO.File]::GetAttributes($originalTemp)
+            workspaceVolumeFormat = ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($env:GITHUB_WORKSPACE))).DriveFormat
+            selectedVolumeFormat = $volume.DriveFormat
+            selectedTemp = $testTemp.FullName
+            selectedFinalPath = [DesktopCiNativePrerequisites]::FinalPath($testTemp.FullName)
+            nativeWaveOutputDevices = [DesktopCiNativePrerequisites]::waveOutGetNumDevs()
+            sourceCommit = (git rev-parse HEAD)
+          }
+          $facts | ConvertTo-Json | Set-Content (Join-Path $env:RUNNER_TEMP 'desktop-native-prerequisites.json') -Encoding utf8
+          $facts | ConvertTo-Json
+          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)", "CCB_CI_SOURCE=$source") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Upload Windows prerequisite facts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-prerequisites
+          path: ${{ runner.temp }}/desktop-native-prerequisites.json
+
+      - name: Prepare and exercise the exact cross-volume report collector before unit execution
+        if: env.CCB_CI_SOURCE != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $script=Join-Path $env:RUNNER_TEMP 'collect-feedback1248-r01-focused-reports.py'
+          @'
+          from pathlib import Path
+          import os,json,zipfile,hashlib,subprocess,sys
+          source=Path(os.environ['CCB_CI_SOURCE']);runner=Path(os.environ['RUNNER_TEMP'])
+          assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=source,text=True).strip()=='c887a96eda0dd63052ca12b8906a133e40eb837e'
+          output=runner/('feedback1248-r01-focused-custody-prerequisite-r03.zip' if '--preflight' in sys.argv else 'feedback1248-r01-focused-windows-r03.zip');entries={}
+          for leaf in ['integration-source.json','desktop-native-prerequisites.json']:
+              path=runner/leaf;assert path.is_file();entries[leaf]=path
+          for prefix,root in [('compiler-proof',runner/'ccb-ui-probe/compiler-proof'),('sharedCore/test-results',source/'app/sharedCore/build/test-results'),('sharedCore/reports',source/'app/sharedCore/build/reports/tests'),('desktopApp/test-results',source/'app/desktopApp/build/test-results'),('desktopApp/reports',source/'app/desktopApp/build/reports/tests')]:
+              if not root.is_dir():continue
+              for path in root.rglob('*'):
+                  if path.is_file():
+                      assert not path.is_symlink();name=prefix+'/'+path.relative_to(root).as_posix();assert name not in entries;entries[name]=path
+          assert entries and sum(p.stat().st_size for p in entries.values())<512*1024*1024
+          with zipfile.ZipFile(output,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+              for name,path in sorted(entries.items()):z.write(path,name)
+          with zipfile.ZipFile(output) as checked:
+              assert checked.testzip() is None and len(checked.namelist())==len(set(checked.namelist()))
+          print(json.dumps(dict(path=str(output),members=len(entries),bytes=output.stat().st_size,sha256=hashlib.sha256(output.read_bytes()).hexdigest())))
+          '@ | Set-Content -LiteralPath $script -Encoding utf8
+          python $script --preflight
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: feedback1248-r01-focused-custody-prerequisite-r03
+          path: ${{ runner.temp }}/feedback1248-r01-focused-custody-prerequisite-r03.zip
+          if-no-files-found: error
+
+      - name: Test final shared and Desktop source integration on Windows
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        env:
+          CCB_FORMAT_AI_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/format-card-ai-images
+          CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-paging-images
+          CCB_SCREENSHOT_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-export-images
+          CCB_EXTERNAL_IMPORT_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/external-import-images
+          CCB_TASK_CENTER_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/task-center-images
+          CCB_CONTEXT_HELP_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/context-help-images
+          CCB_RECOVERY_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/recovery-images
+          CCB_STUDIO_IMAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/studio-image-readiness
+          CCB_MEDIA_USAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/media-usage-images
+        run: .\gradlew.bat :desktopApp:test --tests "com.example.chatbar.desktop.DesktopOriginalCoverBackupTest" --tests "com.example.chatbar.desktop.DesktopMergeImportServiceTest" --tests "com.example.chatbar.desktop.DesktopCharacterExportCompatibilityTest" --tests "com.example.chatbar.desktop.DesktopCharacterExportCompatibilityUiTest" --tests "com.example.chatbar.desktop.WindowsCommonItemDialogTest" --tests "com.example.chatbar.desktop.DesktopStudioWorkspaceTest" --tests "com.example.chatbar.desktop.DesktopCharacterEditorOrderTest" -PdesktopTestHeadless=true --no-daemon --stacktrace
+
+      - name: Collect complete reports through the pre-exercised collector
+        if: always() && env.CCB_CI_SOURCE != ''
+        shell: pwsh
+        run: |
+          python (Join-Path $env:RUNNER_TEMP 'collect-feedback1248-r01-focused-reports.py')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_CI_SOURCE != ''
+        with:
+          name: feedback1248-r01-focused-windows-r03-reports
+          path: ${{ runner.temp }}/feedback1248-r01-focused-windows-r03.zip
+          if-no-files-found: error
