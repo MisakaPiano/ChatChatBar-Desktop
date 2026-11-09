@@ -42,6 +42,14 @@ class PlayerRoleControlsTest {
                 renderPlayerName = "synthetic linked player", playerAvatarPath = file.absolutePath) } }
             rule.onNodeWithText("synthetic linked player").assertIsDisplayed()
             rule.onNodeWithContentDescription("玩家头像").assertIsDisplayed()
+            // Presence of an AsyncImage node does not prove that Coil finished loading it.
+            rule.waitUntil(timeoutMillis = 10_000) {
+                val pixels = rule.onNodeWithContentDescription("玩家头像").captureToImage().asAndroidBitmap()
+                try {
+                    val center = pixels.getPixel(pixels.width / 2, pixels.height / 2)
+                    android.graphics.Color.green(center) > 230 && android.graphics.Color.red(center) < 20 && android.graphics.Color.blue(center) < 20
+                } finally { pixels.recycle() }
+            }
             rule.onNodeWithText("synthetic original content").assertIsDisplayed()
             assertEquals("synthetic original content", message.content)
             val output = java.io.File(context.getExternalFilesDir(null), "cover-gallery-evidence").apply { mkdirs() }
