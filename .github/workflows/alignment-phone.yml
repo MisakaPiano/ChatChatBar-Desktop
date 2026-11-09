@@ -1,4 +1,4 @@
-name: Android player avatar actual pixels proof
+name: Android consumes actual Desktop cover gallery exports
 on:
   push:
     branches: [ci/upstream-functional-alignment-20261108]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 271d82b2af80eb853fdab975350c01511c232431
+  SOURCE_SHA: af23e4cb8a02c45ab2d5cb5791e66389e969547a
   TEST_APPLICATION_ID: com.example.chatbar.cover.c1
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 271d82b2af80eb853fdab975350c01511c232431
+          ref: af23e4cb8a02c45ab2d5cb5791e66389e969547a
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
@@ -27,7 +27,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
           test "$(git rev-parse HEAD:app/app/src/main)" = "ce0d83748b40acd5fef88ba4848391d7187188b5"
-          test "$(git rev-parse HEAD^{tree})" = "a1847da814c9b663b6a265342685a8dcc6a5cb56"
+          test "$(git rev-parse HEAD^{tree})" = "96fe2312906acbf17ac564bbdca8bd6f7466339f"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
           python3 - <<'PY'
@@ -36,6 +36,12 @@ jobs:
           folder=Path('app/app/src/androidTest/assets/cover-gallery-contract')
           for name, value in json.loads((folder/'MANIFEST.json').read_text()).items():
               data=(folder/name).read_bytes()
+              assert len(data)==value['bytes'] and hashlib.sha256(data).hexdigest()==value['sha256']
+          folder=Path('app/app/src/androidTest/assets/desktop-cover-gallery')
+          origin=json.loads((folder/'origin.json').read_text())
+          assert origin['syntheticOnly'] and {v['originCase'] for v in origin['files']}=={'android-origin','desktop-origin'}
+          for value in origin['files']:
+              data=(folder/value['file']).read_bytes()
               assert len(data)==value['bytes'] and hashlib.sha256(data).hexdigest()==value['sha256']
           PY
       - uses: actions/setup-java@v4
@@ -178,10 +184,10 @@ jobs:
           finish() {
             mkdir -p "$out/device" "$out/roundtrip-and-ui"
             cp -R app/build/outputs/androidTest-results/connected/. "$out/device/" 2>/dev/null || true
-            adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/cover-gallery-evidence/." "$out/roundtrip-and-ui/" || true
+            adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/desktop-cover-gallery-evidence/." "$out/roundtrip-and-ui/" || true
           }
           trap finish EXIT
-          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.manage.PlayerRoleControlsTest#userBubbleShowsPlayerAvatarAndNameWithoutChangingStoredContent -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-image-identity-c1 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.domain.card.DesktopCoverGalleryRoundTripTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
           SH
       - name: Enable cloud runner KVM
         run: |
@@ -209,12 +215,17 @@ jobs:
           unit=cases(Path('app/app/build/test-results/testDebugUnitTest'))
           device=cases(out/'device')
           assert len(unit)==0 and not any(c['failure'] or c['error'] for c in unit),unit
-          expected=["com.example.chatbar.ui.manage.PlayerRoleControlsTest"]
+          expected=["com.example.chatbar.domain.card.DesktopCoverGalleryRoundTripTest"]
           assert all(any(c['class']==n for c in device) for n in expected),device
           assert len(device)==1 and not any(c['failure'] or c['error'] or c['skip'] for c in device),device
-          for n in ['player-avatar-bubble.png']:
+          for n in ['android-return-origin.json']:
               assert (out/'roundtrip-and-ui'/n).stat().st_size>0,n
-          (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'One UI case waits for green player avatar pixels, then captures actual UI. Production identical to R04/R05. No new APK delivery in this report.'},indent=2))
+          returned=json.loads((out/'roundtrip-and-ui/android-return-origin.json').read_text())
+          assert len(returned['files'])==len(returned['inputs'])*2==12
+          for item in returned['files']:
+              data=(out/'roundtrip-and-ui'/item['file']).read_bytes()
+              assert len(data)==item['bytes'] and hashlib.sha256(data).hexdigest()==item['sha256']
+          (out/'TEST_SUMMARY.json').write_text(json.dumps({'unit':unit,'device':device,'scope':'One Android production fixture consumption method over both origin directions and both formats, reexports actual JSON/PNG for Desktop final leg. No new phone APK delivery.'},indent=2))
           PY
       - name: Preserve original results
         if: always()
