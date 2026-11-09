@@ -23,12 +23,14 @@ class DesktopMergeImportServiceTest {
                 coverImage = "model-artwork/relative.webp")
             val card = originalCard.copy(characters = listOf(com.example.chatbar.data.local.entity.CharacterInfo(
                 "person", "Synthetic", fishAudioVoice = voice)))
-            cards.save(card)
             val focus = DesktopAudioFocus()
             try {
                 val backups = DesktopFullBackupService(root, gate, DesktopAudioMaintenance({ focus }) {})
                 val exported = base.resolve("same-export.cbbackup")
                 backups.exportModern(exported, null)
+                // Incoming selection may omit Fish-bearing records. Its verification must stay
+                // independent of the current computer snapshot captured by merge inspection.
+                cards.save(card)
                 backups.verifyFile(exported, null)
                 val preview = service.inspect(exported, null)
                 assertTrue(preview.fileCount > 0)
