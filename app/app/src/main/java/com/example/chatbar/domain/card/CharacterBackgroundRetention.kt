@@ -14,7 +14,9 @@ object CharacterBackgroundRetention {
     ): List<String> = buildList {
         cards.forEach { card -> addAll(card.chatBackgroundImages); card.chatBackground?.let(::add); card.coverImage?.let(::add) }
         sessions.mapNotNullTo(this) { it.chatBackground }
+        sessions.mapNotNullTo(this) { it.desktopPlayerAvatar }
         slots.mapNotNullTo(this) { it.chatBackground }
+        slots.mapNotNullTo(this) { it.desktopPlayerAvatar }
         drafts.forEach { draft ->
             addAll(draft.draftAssetPaths)
             draft.characterPayload?.let { card -> addAll(card.chatBackgroundImages); card.chatBackground?.let(::add); card.coverImage?.let(::add) }
@@ -26,5 +28,5 @@ object CharacterBackgroundRetention {
         app.chatRepository.getAllSessions(),
         app.editorDraftRepository.getAll().filterNot { excludedCardId != null && it.targetId == excludedCardId },
         app.saveSlotRepository.getAll()
-    )
+    ) + listOfNotNull(app.settingsRepository.getPlayerSetting().desktopAvatar)
 }

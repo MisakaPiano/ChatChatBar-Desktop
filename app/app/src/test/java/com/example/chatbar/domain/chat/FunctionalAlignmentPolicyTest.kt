@@ -6,6 +6,7 @@ import com.example.chatbar.domain.moment.MomentMediaRetention
 import kotlinx.serialization.json.Json
 import org.junit.Assert.*
 import org.junit.Test
+import com.example.chatbar.data.local.entity.toSummary
 
 class FunctionalAlignmentPolicyTest {
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
@@ -98,4 +99,14 @@ class FunctionalAlignmentPolicyTest {
         assertTrue(MomentMediaRetention.unreferencedPaths(listOf(a, b), emptyList(), refs).isEmpty())
         assertEquals(listOf(b), MomentMediaRetention.unreferencedPaths(listOf(a, b), emptyList(), listOf(a)))
     }
+    @Test fun playerAvatarReferencesRetainImagesUsedByConversationAndArchive() {
+        val session = com.example.chatbar.data.local.entity.ChatSession.create("synthetic-card", "synthetic")
+            .copy(desktopPlayerAvatar = "session-avatar.png")
+        val slot = com.example.chatbar.data.local.entity.SaveSlot.create(session.id, "synthetic")
+            .copy(desktopPlayerAvatar = "archive-avatar.png")
+        val refs = CharacterBackgroundRetention.references(emptyList(), listOf(session), emptyList(), listOf(slot.toSummary()))
+        assertTrue("session-avatar.png" in refs)
+        assertTrue("archive-avatar.png" in refs)
+    }
+
 }

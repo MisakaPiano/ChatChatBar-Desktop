@@ -100,7 +100,8 @@ data class SaveSlotSummary(
     val imageCount: Int = 0,
     val includeAudio: Boolean = true,
     val audioCount: Int = 0,
-    val chatBackground: String? = null
+    val chatBackground: String? = null,
+    val desktopPlayerAvatar: String? = null
 )
 
 fun SaveSlot.toSummary(): SaveSlotSummary = SaveSlotSummary(
@@ -115,7 +116,8 @@ fun SaveSlot.toSummary(): SaveSlotSummary = SaveSlotSummary(
     imageCount = packageRef?.imageCount ?: imageResources.size,
     includeAudio = includeAudio,
     audioCount = packageRef?.audioCount ?: audioResources.size,
-    chatBackground = chatBackground
+    chatBackground = chatBackground,
+    desktopPlayerAvatar = desktopPlayerAvatar
 )
 
 @Serializable
