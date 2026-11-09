@@ -1,4 +1,4 @@
-name: Android alignment a2 late worldbook state and final phone APK
+name: Android alignment a2 latest participation protection and final APK
 on:
   push:
     branches: [ci/upstream-functional-alignment-20261108]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 1be57a5777032b5962f4e848774a18b0c165c646
+  SOURCE_SHA: 96e17527431534b9663c8c2fc20ad77a38c352a1
   TEST_APPLICATION_ID: com.example.chatbar.alignment.a2
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
@@ -19,21 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 1be57a5777032b5962f4e848774a18b0c165c646
+          ref: 96e17527431534b9663c8c2fc20ad77a38c352a1
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "df0885cf62847075d8f48503b6033bfeea2c1d37"
+          test "$(git rev-parse HEAD^{tree})" = "5a66ded0ebb7a456cac11577eb904d8b1633a1da"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
-          git diff --name-only 63be1edd7dfdc56177bc1679e90b40bf3b39725d HEAD > phone-test-output/SOURCE_CHANGE_FROM_R02.txt
+          git diff --name-only 1be57a5777032b5962f4e848774a18b0c165c646 HEAD > phone-test-output/SOURCE_CHANGE_FROM_R03.txt
           python3 - <<'PY'
           from pathlib import Path
-          changed = set(Path('phone-test-output/SOURCE_CHANGE_FROM_R02.txt').read_text().splitlines())
-          assert changed == {'.agents/skills/chatbar-character-card-transfer/SKILL.md','app/app/src/main/java/com/example/chatbar/data/repository/ChatRepository.kt','app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt','app/app/src/androidTest/java/com/example/chatbar/ui/chat/SessionCharacterRebindTest.kt'}, changed
+          changed = set(Path('phone-test-output/SOURCE_CHANGE_FROM_R03.txt').read_text().splitlines())
+          assert changed == {'.agents/skills/chatbar-character-card-transfer/SKILL.md','app/app/src/main/java/com/example/chatbar/data/repository/ChatRepository.kt','app/app/src/androidTest/java/com/example/chatbar/ui/chat/SessionCharacterRebindTest.kt'}, changed
           PY
       - uses: actions/setup-java@v4
         with:
@@ -215,9 +215,9 @@ jobs:
               return cases
           unit, device = results('unit'), results('device')
           assert len(unit) == 0, unit  # R01 unit originals were independently verified; not rerun or counted in this run
-          assert len(device) == 11 and not any(c['failure'] or c['error'] or c['skipped'] for c in device), device
-          assert len({(c['class'],c['name']) for c in device}) == 11
-          summary = {'unit':unit,'device':device,'scope':'11 session cases including two late worldbook-clock regressions. R01 8 JVM and14 unchanged card/worldbook draft cases retained separately; R02 four people UI cases required separately. Exact changed files versus R02 verified. Not a complete single-source suite.', 'reuse':{'r01Run':42638914210,'r01Artifact':13685755563,'r01Unit':8,'r01DraftCases':14,'r02UiRun':42641289419,'requiredR02UiCases':4}}
+          assert len(device) == 14 and not any(c['failure'] or c['error'] or c['skipped'] for c in device), device
+          assert len({(c['class'],c['name']) for c in device}) == 14
+          summary = {'unit':unit,'device':device,'scope':'14 session cases including late clock and memory snapshot protection, explicit restore and first-write behavior. R01 8 JVM and14 unchanged card/worldbook draft cases retained separately; R02 four people UI cases required separately. Exact changed files versus R03 verified; R02 people UI production/test blobs unchanged. Not a complete single-source suite.', 'reuse':{'r01Run':42638914210,'r01Artifact':13685755563,'r01Unit':8,'r01DraftCases':14,'r02UiRun':42641289419,'requiredR02UiCases':4}}
           (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
           apk = out / 'CCB-functional-alignment-a2-test.apk'
           badging = (out / 'apk-badging.txt').read_text()
@@ -233,7 +233,7 @@ jobs:
           assert source == os.environ['SOURCE_SHA']
           digest = hashlib.sha256(apk.read_bytes()).hexdigest()
           (out / 'SHA256.txt').write_text(digest + '  ' + apk.name + '\n')
-          info = {'source':source,'sourceTree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'applicationId':os.environ['TEST_APPLICATION_ID'],'label':'CCB 功能对齐测试 a2','versionName':'1.4.10-functional-alignment-a2','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,'selectedChecks':{'unitExecutedThisRun':0,'androidExecutedThisRun':11,'reusedR01Unit':8,'reusedR01Draft':14,'requiredR02Ui':4},'privateKeysOrUserDataInjected':False,'installedOnUserDevice':False,'humanAcceptance':False}
+          info = {'source':source,'sourceTree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'applicationId':os.environ['TEST_APPLICATION_ID'],'label':'CCB 功能对齐测试 a2','versionName':'1.4.10-functional-alignment-a2','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,'selectedChecks':{'unitExecutedThisRun':0,'androidExecutedThisRun':14,'reusedR01Unit':8,'reusedR01Draft':14,'requiredR02Ui':4},'privateKeysOrUserDataInjected':False,'installedOnUserDevice':False,'humanAcceptance':False}
           (out / 'BUILD_INFO.json').write_text(json.dumps(info,ensure_ascii=False,indent=2))
           print(json.dumps(info,ensure_ascii=False,indent=2))
           PY
