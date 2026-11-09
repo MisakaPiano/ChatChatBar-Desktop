@@ -1,7 +1,7 @@
 name: Gallery original-image loading proof
 on:
   push:
-    branches: [ci/upstream-functional-alignment-20261108]
+    branches: [ci/upstream-gallery-proof-completed-disabled]
   workflow_dispatch:
 permissions:
   contents: read

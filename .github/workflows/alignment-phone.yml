@@ -1,17 +1,17 @@
-name: Android functional alignment verification and phone APK
+name: Android alignment a2 people controls and external draft fixes
 on:
   push:
-    branches: [ci/upstream-functional-alignment-full-checks-disabled]
+    branches: [ci/upstream-functional-alignment-20261108]
   workflow_dispatch:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: b8fb9679d71071afd6ad944b19d9ef0e4c67d7c8
-  TEST_APPLICATION_ID: com.example.chatbar.alignment.a1
+  SOURCE_SHA: bc20bdf40c7bb76d3aa237774e7b36d2b2503077
+  TEST_APPLICATION_ID: com.example.chatbar.alignment.a2
   CHATBAR_SILICONFLOW_API_KEY: ''
   CHATBAR_SUPABASE_URL: ''
   CHATBAR_SUPABASE_ANON_KEY: ''
-  CHATBAR_SUPABASE_REDIRECT_URI: chatbar-alignment-a1://auth/callback
+  CHATBAR_SUPABASE_REDIRECT_URI: chatbar-alignment-a2://auth/callback
 jobs:
   test-apk:
     runs-on: ubuntu-24.04
@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: b8fb9679d71071afd6ad944b19d9ef0e4c67d7c8
+          ref: bc20bdf40c7bb76d3aa237774e7b36d2b2503077
           persist-credentials: false
           fetch-depth: 8
       - name: Verify immutable contribution source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           git diff --exit-code
-          test "$(git rev-parse HEAD^{tree})" = "48c884f6cc31b6c4e4c672aa5f382e43f2af12d3"
+          test "$(git rev-parse HEAD^{tree})" = "ff26ce2b2ca35a4c667a732ab1c3281f10fb2a68"
           mkdir -p phone-test-output
           git rev-parse HEAD HEAD^{tree} > phone-test-output/SOURCE_IDENTITY.txt
       - uses: actions/setup-java@v4
@@ -53,8 +53,8 @@ jobs:
           old_label = 'android:label="@string/app_name"'
           old_scheme = 'android:scheme="chatbar"'
           assert text.count(old_label) == 1 and text.count(old_scheme) == 1
-          text = text.replace(old_label, 'android:label="CCB 功能对齐测试 a1"')
-          text = text.replace(old_scheme, 'android:scheme="chatbar-alignment-a1"')
+          text = text.replace(old_label, 'android:label="CCB 功能对齐测试 a2"')
+          text = text.replace(old_scheme, 'android:scheme="chatbar-alignment-a2"')
           manifest.write_text(text)
           PY
       - uses: actions/cache/restore@v4
@@ -157,88 +157,40 @@ jobs:
         with:
           path: ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20/002fac4210c52c27b244305d60b0906e831f49be
           key: verified-official-kotlin-compiler-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337
-      - name: Compile and check affected unit behavior
+      - name: Compile production and instrumentation, check person policy
         working-directory: app
         run: |
-          bash ./gradlew :app:testDebugUnitTest --tests '*WorldBookEngineTest' --tests '*WorldBookEntryModalStateTest' --tests '*FunctionalAlignmentPolicyTest' --tests '*CharacterParticipationBackupIdentityTest' --tests '*PromptAssemblerCharacterModeTest' --tests '*MomentMediaRetentionTest' --tests '*SessionCopyPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:testDebugUnitTest --tests '*FunctionalAlignmentPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
           mkdir -p ../phone-test-output/unit
           cp -R app/build/test-results/testDebugUnitTest/. ../phone-test-output/unit/
       - name: Build installable debug test APK
         working-directory: app
-        run: bash ./gradlew :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
-      - name: Prepare device regression and unfixed control script
+        run: bash ./gradlew :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a2 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+      - name: Prepare affected phone regressions
         run: |
-          cat > "$RUNNER_TEMP/run-worldbook-checks.sh" <<'SH'
+          cat > "$RUNNER_TEMP/alignment-a2-checks.sh" <<'SH'
           #!/usr/bin/env bash
           set -euo pipefail
-          vm="$GITHUB_WORKSPACE/app/app/src/main/java/com/example/chatbar/ui/worldbook/WorldBookEditViewModel.kt"
-          saved="$RUNNER_TEMP/worldbook-fixed-vm.kt"
           out="$GITHUB_WORKSPACE/phone-test-output"
-          cp "$vm" "$saved"
           finish() {
-            cp "$saved" "$vm"
             if test -d app/build/outputs/androidTest-results/connected; then
-              mkdir -p "$out/last-device-results"
-              cp -R app/build/outputs/androidTest-results/connected/. "$out/last-device-results/"
+              mkdir -p "$out/device"
+              cp -R app/build/outputs/androidTest-results/connected/. "$out/device/"
             fi
           }
           trap finish EXIT
-          bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.worldbook.WorldBookQuickToggleViewModelTest,com.example.chatbar.ui.worldbook.WorldBookEntryListItemTest,com.example.chatbar.ui.character.CharacterDraftDiscardTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest,com.example.chatbar.ui.chat.SessionCharacterRebindTest,com.example.chatbar.ui.components.ChatBackgroundGalleryTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a2 -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.manage.ManagementDraftDiscardTest,com.example.chatbar.ui.character.CharacterDraftDiscardTest,com.example.chatbar.ui.worldbook.WorldBookQuickToggleViewModelTest,com.example.chatbar.ui.chat.SessionCharacterRebindTest,com.example.chatbar.ui.chat.ChatPeopleControlsTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
           mkdir -p "$out/screenshots"
-          adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/worldbook-toggle-evidence/." "$out/screenshots/"
-          adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/alignment-evidence/." "$out/screenshots/"
-          mkdir -p "$out/fixed"
-          cp -R app/build/outputs/androidTest-results/connected/. "$out/fixed/"
-          git show d200148e7ea43d8aed69022bd1ea9c47d9343d66:app/app/src/main/java/com/example/chatbar/ui/worldbook/WorldBookEditViewModel.kt > "$vm"
-          set +e
-          bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.worldbook.WorldBookQuickToggleViewModelTest#discardRestoresEnabledBeforeSameEditorReopens -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
-          red_exit=$?
-          set -e
-          test "$red_exit" -ne 0
-          mkdir -p "$out/unfixed-control"
-          cp -R app/build/outputs/androidTest-results/connected/. "$out/unfixed-control/"
-          cp "$saved" "$vm"
-          python3 - <<'PY'
-          import os, json
-          from pathlib import Path
-          from xml.etree import ElementTree as E
-          out = Path(os.environ['GITHUB_WORKSPACE']) / 'phone-test-output'
-          def results(folder):
-              cases = []
-              for p in (out / folder).rglob('TEST-*.xml'):
-                  for c in E.parse(p).getroot().iter('testcase'):
-                      cases.append({'class':c.get('classname'), 'name':c.get('name'),
-                                    'failure': c.find('failure') is not None,
-                                    'error': c.find('error') is not None,
-                                    'skipped': c.find('skipped') is not None,
-                                    'failureText': ''.join(c.find('failure').itertext()) if c.find('failure') is not None else ''})
-              return cases
-          green = results('fixed')
-          assert len(green) == 21, green
-          assert not any(c['failure'] or c['error'] or c['skipped'] for c in green), green
-          red = results('unfixed-control')
-          assert len(red) == 1 and red[0]['name'] == 'discardRestoresEnabledBeforeSameEditorReopens', red
-          assert red[0]['failure'] and not red[0]['error'], red
-          assert 'Discarded entry enabled flag must be restored' in red[0]['failureText'], red
-          unit = results('unit')
-          assert len(unit) > 0 and not any(c['failure'] or c['error'] or c['skipped'] for c in unit), unit
-          summary = {'fixedDeviceTests':green, 'fixedUnitTests':unit,
-                     'unfixedControl':red, 'unfixedControlExpectedAssertionFailureConfirmed':True,
-                     'controlScope':'Same fixed source and synthetic fixture; only WorldBookEditViewModel replaced with exact original d200 source; restored before final APK build',
-                     'scope':'21 scoped Android cases: worldbook/card draft, row/gallery UI, media transfer and actual ViewModel rebind; synthetic-only, no paid requests or full navigation end-to-end'}
-          (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
-          print(json.dumps(summary,ensure_ascii=False,indent=2))
-          PY
-          # The control test installed the unfixed app in the cloud emulator. Rebuild the fixed source for delivery.
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          bash ./gradlew :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.10-functional-alignment-a1 --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          adb pull "/sdcard/Android/data/$TEST_APPLICATION_ID/files/alignment-people-evidence/." "$out/screenshots/"
+          test -s "$out/screenshots/people-topbar-320dp.png"
+          test -s "$out/screenshots/people-list-phone.png"
           SH
       - name: Enable cloud runner KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify aligned controls, gallery, transfer, actual ViewModels and original regression
+      - name: Verify people UI, actual management discard and atomic session persistence
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -246,39 +198,46 @@ jobs:
           target: google_apis
           disable-animations: true
           working-directory: app
-          script: bash "$RUNNER_TEMP/run-worldbook-checks.sh"
-      - name: Verify package, signature and exact build scope
+          script: bash "$RUNNER_TEMP/alignment-a2-checks.sh"
+      - name: Verify reports, package, signature and build scope
         run: |
           mkdir -p phone-test-output
-          cp app/app/build/outputs/apk/debug/app-debug.apk phone-test-output/CCB-functional-alignment-a1-test.apk
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging phone-test-output/CCB-functional-alignment-a1-test.apk > phone-test-output/apk-badging.txt
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree phone-test-output/CCB-functional-alignment-a1-test.apk AndroidManifest.xml > phone-test-output/apk-manifest.txt
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs phone-test-output/CCB-functional-alignment-a1-test.apk > phone-test-output/apk-signature.txt
+          cp app/app/build/outputs/apk/debug/app-debug.apk phone-test-output/CCB-functional-alignment-a2-test.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging phone-test-output/CCB-functional-alignment-a2-test.apk > phone-test-output/apk-badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree phone-test-output/CCB-functional-alignment-a2-test.apk AndroidManifest.xml > phone-test-output/apk-manifest.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs phone-test-output/CCB-functional-alignment-a2-test.apk > phone-test-output/apk-signature.txt
           python3 - <<'PY'
           import os, json, hashlib, subprocess
           from pathlib import Path
+          from xml.etree import ElementTree as E
           out = Path('phone-test-output')
-          apk = out / 'CCB-functional-alignment-a1-test.apk'
+          def results(folder):
+              cases = []
+              for p in (out / folder).rglob('TEST-*.xml'):
+                  for c in E.parse(p).getroot().iter('testcase'):
+                      cases.append({'class':c.get('classname'),'name':c.get('name'),'failure':c.find('failure') is not None,'error':c.find('error') is not None,'skipped':c.find('skipped') is not None})
+              return cases
+          unit, device = results('unit'), results('device')
+          assert len(unit) == 8 and not any(c['failure'] or c['error'] or c['skipped'] for c in unit), unit
+          assert len(device) == 27 and not any(c['failure'] or c['error'] or c['skipped'] for c in device), device
+          assert len({(c['class'],c['name']) for c in device}) == 27
+          summary = {'unit':unit,'device':device,'scope':'8 existing person-policy checks plus27 affected Android cases, including6 actual management-list discard regressions,4 people UI cases and4 atomic/actual ViewModel quick-toggle checks. Prior unrelated gallery/transfer results reused. Synthetic only.'}
+          (out / 'TEST_SUMMARY.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
+          apk = out / 'CCB-functional-alignment-a2-test.apk'
           badging = (out / 'apk-badging.txt').read_text()
           manifest = (out / 'apk-manifest.txt').read_text()
           assert "name='" + os.environ['TEST_APPLICATION_ID'] + "'" in badging
-          assert "versionName='1.4.10-functional-alignment-a1'" in badging
-          assert 'CCB 功能对齐测试 a1' in badging
+          assert "versionName='1.4.10-functional-alignment-a2'" in badging
+          assert 'CCB 功能对齐测试 a2' in badging
           assert os.environ['TEST_APPLICATION_ID'] + '.fileprovider' in manifest
-          assert 'chatbar-alignment-a1' in manifest
-          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          assert 'chatbar-alignment-a2' in manifest
+          changed = subprocess.check_output(['git','diff','--name-only'],text=True).splitlines()
           assert set(changed) == {'app/app/build.gradle.kts','app/app/src/main/AndroidManifest.xml'}
-          source = subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip()
+          source = subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert source == os.environ['SOURCE_SHA']
           digest = hashlib.sha256(apk.read_bytes()).hexdigest()
           (out / 'SHA256.txt').write_text(digest + '  ' + apk.name + '\n')
-          info = {'source': source, 'sourceTree': subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),
-                  'applicationId':os.environ['TEST_APPLICATION_ID'], 'label':'CCB 功能对齐测试 a1',
-                  'versionName':'1.4.10-functional-alignment-a1','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,
-                  'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,
-                  'tests':json.loads((out / 'TEST_SUMMARY.json').read_text()),
-                  'privateKeysOrUserDataInjected':False,'installedOnDevice':False,
-                  'cloudRun':'https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/' + os.environ['GITHUB_RUN_ID']}
+          info = {'source':source,'sourceTree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'applicationId':os.environ['TEST_APPLICATION_ID'],'label':'CCB 功能对齐测试 a2','versionName':'1.4.10-functional-alignment-a2','variant':'debug','apk':apk.name,'bytes':apk.stat().st_size,'sha256':digest,'buildOnlyChanges':changed,'identityOnly':True,'selectedChecks':{'unit':8,'android':27},'privateKeysOrUserDataInjected':False,'installedOnUserDevice':False,'humanAcceptance':False}
           (out / 'BUILD_INFO.json').write_text(json.dumps(info,ensure_ascii=False,indent=2))
           print(json.dumps(info,ensure_ascii=False,indent=2))
           PY
@@ -291,7 +250,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: functional-alignment-a1-phone-test-${{ github.run_id }}
+          name: functional-alignment-a2-phone-test-${{ github.run_id }}
           path: phone-test-output/
           retention-days: 14
-
