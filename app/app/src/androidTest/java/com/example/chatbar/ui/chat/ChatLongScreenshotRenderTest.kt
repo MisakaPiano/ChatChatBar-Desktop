@@ -59,6 +59,34 @@ class ChatLongScreenshotRenderTest {
         assertTrue(options.outHeight > 200)
     }
 
+    @Test fun longScreenshotKeepsPlayerAvatarPixelsWithoutEditingSource() = runBlocking {
+        val avatar = File(composeTestRule.activity.cacheDir, "synthetic-player-magenta.png")
+        val bitmap = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
+        try { bitmap.eraseColor(android.graphics.Color.MAGENTA); avatar.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+        finally { bitmap.recycle() }
+        val before = avatar.readBytes()
+        try {
+            val request = ChatLongScreenshotRequest(title = "synthetic", messages = listOf(
+                ChatMessage(id = "synthetic-message", sessionId = "synthetic-session", role = MessageRole.USER,
+                    content = "synthetic message", createdAt = 1, updatedAt = 1)),
+                backgroundPath = null, widthPx = 720, fontScale = 1f, fileName = "synthetic-player-screenshot.png",
+                playerName = "synthetic player", playerAvatarPath = avatar.absolutePath)
+            val output = renderChatLongScreenshot(composeTestRule.activity, request)
+            val decoded = requireNotNull(BitmapFactory.decodeFile(output.absolutePath))
+            try {
+                var magenta = 0
+                for (y in 0 until decoded.height) for (x in 0 until decoded.width) {
+                    val color = decoded.getPixel(x, y)
+                    if (android.graphics.Color.red(color) > 220 && android.graphics.Color.blue(color) > 220 && android.graphics.Color.green(color) < 30) magenta++
+                }
+                assertTrue("Expected actual player avatar pixels in exported screenshot", magenta > 200)
+            } finally { decoded.recycle() }
+            org.junit.Assert.assertArrayEquals(before, avatar.readBytes())
+            val folder = File(composeTestRule.activity.getExternalFilesDir(null), "cover-gallery-evidence").apply { mkdirs() }
+            output.copyTo(File(folder, "player-avatar-long-screenshot.png"), overwrite = true)
+        } finally { avatar.delete() }
+    }
+
     private fun createBitmapFile(name: String, width: Int, height: Int): File {
         val file = File(composeTestRule.activity.cacheDir, name)
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
