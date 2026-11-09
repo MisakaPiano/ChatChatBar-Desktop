@@ -59,7 +59,7 @@ class ChatLongScreenshotRenderTest {
         assertTrue(options.outHeight > 200)
     }
 
-    @Test fun longScreenshotKeepsPlayerAvatarPixelsWithoutEditingSource() = runBlocking {
+    @Test fun longScreenshotKeepsPlayerAvatarPixelsWithoutEditingSource() = runBlocking<Unit> {
         val avatar = File(composeTestRule.activity.cacheDir, "synthetic-player-magenta.png")
         val bitmap = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
         try { bitmap.eraseColor(android.graphics.Color.MAGENTA); avatar.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
