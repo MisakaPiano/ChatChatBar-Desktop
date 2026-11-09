@@ -22,12 +22,17 @@ internal class DesktopPlayerImages(
     fun read(reference: String): ByteArray = resources.readBytes(reference)
 
     suspend fun choose(): Change? {
+        val bytes = selectForEditing() ?: return null
+        return replace(DesktopImageEditing.png(DesktopImageEditing.decode(bytes, longestSide = 1024)))
+    }
+
+    /** Selection alone is transient. The original file is never rewritten or installed as the avatar. */
+    suspend fun selectForEditing(): ByteArray? {
         val path = picker.pickOpenFile(DesktopFileType("玩家头像", listOf("png", "jpg", "jpeg", "webp", "gif"))) ?: return null
-        val bytes = withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.IO) {
             require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
-            DesktopImageEditing.png(DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 1024))
+            Files.readAllBytes(path).also { DesktopImageEditing.decode(it) }
         }
-        return replace(bytes)
     }
 
     suspend fun replace(bytes: ByteArray?): Change {

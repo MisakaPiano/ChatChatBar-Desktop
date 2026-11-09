@@ -675,9 +675,11 @@ private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharac
 private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, clear: () -> Unit,
     controller: DesktopCharacterEditorController, applyCrop: (ByteArray) -> Unit, allowCrop: Boolean = true) {
     val t = LocalDesktopUiStrings.current
-    var cropBytes by remember(reference) { mutableStateOf<ByteArray?>(null) }
+    val draftIdentity = controller.state.value.draftSessionId
+    var cropBytes by remember(reference, draftIdentity) { mutableStateOf<ByteArray?>(null) }
     cropBytes?.let { bytes -> DesktopImageWorkspace(bytes, label, { cropBytes = null }) {
-        applyCrop(it); cropBytes = null
+        if (controller.state.value.draftSessionId == draftIdentity) applyCrop(it)
+        cropBytes = null
     } }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         StatusText(label)
@@ -689,7 +691,9 @@ private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, cle
             else Image(bitmap, contentDescription = label, modifier = Modifier.size(96.dp))
         }
         EditorActions {
-            BootstrapButton(t(DesktopUiText.CHOOSE_IMAGE), onClick = choose)
+            BootstrapButton(t(DesktopUiText.CHOOSE_IMAGE)) {
+                if (allowCrop) cropBytes = controller.selectImageForEditing(t(DesktopUiText.CHOOSE_IMAGE)) else choose()
+            }
             if (reference != null) {
                 if (allowCrop) BootstrapButton("裁剪 / 重新定位") { cropBytes = controller.imageBytes(reference) }
                 BootstrapButton(t(DesktopUiText.CLEAR_IMAGE), onClick = clear)

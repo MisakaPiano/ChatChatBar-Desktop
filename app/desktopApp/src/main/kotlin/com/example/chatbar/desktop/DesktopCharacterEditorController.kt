@@ -31,6 +31,7 @@ import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import com.example.chatbar.domain.image.*
 import java.nio.file.Path
+import java.nio.file.Files
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
@@ -476,6 +477,16 @@ internal class DesktopCharacterEditorController(
         if (!canMutate()) return
         val selected = filePicker.pickOpenFile(DesktopFileType(description, IMAGE_EXTENSIONS)) ?: return
         stageResource(selected, image = true) { card, ref -> assign(card, ref) }
+    }
+
+    /** No draft/resource mutation until the crop workspace's explicit Apply action. */
+    fun selectImageForEditing(description: String): ByteArray? {
+        if (!canMutate()) return null
+        val selected = filePicker.pickOpenFile(DesktopFileType(description, IMAGE_EXTENSIONS)) ?: return null
+        return runCatching {
+            require(Files.size(selected) <= 20 * 1024 * 1024) { "Selected file exceeds 20 MB" }
+            Files.readAllBytes(selected).also { DesktopImageEditing.requireStatic(it); DesktopImageEditing.decode(it) }
+        }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }.getOrNull()
     }
 
     fun cropAvatar(bytes: ByteArray) = cropImage(bytes) { card, ref -> card.copy(avatar = ref) }

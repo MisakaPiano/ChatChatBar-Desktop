@@ -105,8 +105,10 @@ internal sealed interface DesktopPendingTransferConflict {
     ) : DesktopPendingTransferConflict
 }
 
+internal data class DesktopCoverAsset(val id: String, val label: String, val bytes: ByteArray)
 internal data class DesktopCoverExportDraft(val card: CharacterCard, val packageData: CharacterCardPackage,
-    val backgroundBytes: ByteArray?, val originalCoverBytes: ByteArray? = null)
+    val backgroundBytes: ByteArray?, val originalCoverBytes: ByteArray? = null,
+    val assets: List<DesktopCoverAsset> = emptyList())
 internal class DesktopCharacterJsonExportDraft(val card: CharacterCard, val packageData: CharacterCardPackage)
 
 internal data class DesktopTypedTransferState(
@@ -146,6 +148,7 @@ internal class DesktopTypedTransferController(
     private val readWorldDurable: suspend (String) -> JsonFileStorage.EntityReadResult<WorldBook> = worldBookRepository::readDurable,
     private val readCharacterDurable: suspend (String) -> JsonFileStorage.EntityReadResult<CharacterCard> = characterRepository::readDurable,
     private val guardCharacterOutput: (CharacterCard, Path) -> Unit = { _, _ -> },
+    private val additionalCoverAssets: suspend (CharacterCard) -> List<DesktopCoverAsset> = { emptyList() },
 ) {
     private val mutableState = MutableStateFlow(DesktopTypedTransferState())
     val state: StateFlow<DesktopTypedTransferState> = mutableState.asStateFlow()
@@ -624,7 +627,17 @@ internal class DesktopTypedTransferController(
         val original = export.packageData.card.coverImageResourceId
             ?.let(export.packageData.images::getValue)?.data?.let(::decodeCharacterPackagedImage)
             ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
-        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background, original), characterJsonExport = null)
+        val assets = export.packageData.images.mapNotNull { (id, image) ->
+            val bytes = (decodeCharacterPackagedImage(image.data) as? CharacterPackagedImageContent.Bytes)?.value ?: return@mapNotNull null
+            val labels = buildList {
+                if (id == export.packageData.card.coverImageResourceId) add("封面原图")
+                if (id == export.packageData.card.avatarResourceId) add("卡片头像")
+                if (id == export.packageData.card.chatBackgroundResourceId) add("聊天背景")
+                export.packageData.card.characters.filter { it.appearanceImageResourceId == id }.forEach { add("人物图 · ${it.name}") }
+            }
+            DesktopCoverAsset(id, labels.joinToString(" / ").ifBlank { image.fileName }, bytes)
+        } + additionalCoverAssets(export.card)
+        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background, original, assets), characterJsonExport = null)
     }
 
     fun cancelCoverExport() { if (!state.value.busy) mutableState.value = state.value.copy(coverExport = null) }
@@ -641,6 +654,20 @@ internal class DesktopTypedTransferController(
         return bytes
     }
 
+    suspend fun saveCoverBase(draft: DesktopCoverExportDraft, bytes: ByteArray,
+        picker: DesktopFilePicker = filePicker) = runOperation(null) {
+        check(state.value.coverExport === draft) { "封面导出已关闭" }
+        DesktopImageEditing.requireStatic(bytes)
+        DesktopImageEditing.decode(bytes)
+        val original = if (PngTextChunks.isPng(bytes)) OriginalCharacterCover.imageOnlyPng(bytes) else bytes
+        val extension = desktopImageResourceExtension(original)
+        val destination = picker.pickSaveFile(DesktopFileType("封面底图", listOf(extension)),
+            safeFileName("${draft.card.name}-封面底图", extension)) ?: return@runOperation
+        guardCharacterOutput(draft.card, destination)
+        writer.writeBytes(destination, original)
+        mutableState.value = state.value.copy(status = "封面底图已单独保存；下次可直接选择这份原图继续排版", error = null)
+    }
+
     suspend fun finishCoverExport(draft: DesktopCoverExportDraft, options: CharacterCardPngExportOptions,
         replacement: ByteArray?, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9,
         picker: DesktopFilePicker = filePicker) = runOperation(null) {
@@ -650,8 +677,8 @@ internal class DesktopTypedTransferController(
         val rendered = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             characterPngRenderer.renderExportImage(draft.card, options, draft.originalCoverBytes ?: draft.backgroundBytes, draft.backgroundBytes, replacement)
         }
-        // The replacement changes visible pixels only. Package and original resource map are untouched.
-        writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, draft.packageData.forExportCompatibility(compatibility), json))
+        val packageData = desktopCoverExportPackage(draft.packageData, replacement, compatibility)
+        writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, packageData, json))
         mutableState.value = state.value.copy(coverExport = null, status = "角色 PNG 已导出", error = null)
     }
 

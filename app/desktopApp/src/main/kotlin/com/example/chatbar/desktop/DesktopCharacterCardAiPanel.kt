@@ -60,10 +60,10 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
         if (!state.loading) controller.observeModelChoices()
     }
     var logs by remember(controller) { mutableStateOf(false) }
-    DesktopModalSurface {
-        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(Modifier.widthIn(max = 1120.dp).fillMaxHeight()
-                .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(16.dp)
+    DesktopEditorAuxiliaryWindow(if (state.operation == CharacterCardAiOperation.FILL) "AI 补全空白" else "AI 定向改写",
+        { if (!state.busy) controller.close() }, width = 1120.dp) {
+            val parentWindow = LocalDesktopFishParentWindow.current
+            Column(Modifier.fillMaxSize().padding(8.dp)
                 .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { DesktopManagementHeading(
@@ -98,7 +98,7 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     BootstrapButton("选择临时参考文档", secondary = true, enabled = !state.busy && !state.referenceLoading && !state.imagesLoading,
-                        onClick = controller::chooseReference)
+                        onClick = { controller.chooseReference(parentWindow) })
                     if (state.reference != null) BootstrapButton("移除参考文档", secondary = true,
                         enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, onClick = controller::clearReference)
                 }
@@ -110,7 +110,7 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                 if (state.operation == CharacterCardAiOperation.FILL) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         BootstrapButton("添加参考图片", secondary = true,
-                            enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, onClick = controller::chooseImages)
+                            enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, onClick = { controller.chooseImages(parentWindow) })
                         if (state.images.isNotEmpty()) BootstrapButton("清空参考图片", secondary = true,
                             enabled = !state.busy && !state.imagesLoading, onClick = controller::clearImages)
                     }
@@ -187,7 +187,6 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                 state.research?.brief?.let { brief -> DesignTextDisclosure("研究摘要",
                     (brief.facts + brief.notes).joinToString("\n\n")) }
             }
-        }
     }
     if (logs) controller.diagnosticSessionId?.let { session ->
         DesktopChatDebugOverlay(controller.diagnosticOwner, session, onClose = { logs = false })

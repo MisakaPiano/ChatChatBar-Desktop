@@ -78,7 +78,8 @@ class DesktopCharacterCardAiPanelTest {
                 editor.cardImages = imageAi
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
-                    CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
+                    CompositionLocalProvider(LocalDesktopModalActivity provides activity,
+                        LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
                         DesktopCharacterEditorOverlay(editor, editor.state.value)
                     }
                 }

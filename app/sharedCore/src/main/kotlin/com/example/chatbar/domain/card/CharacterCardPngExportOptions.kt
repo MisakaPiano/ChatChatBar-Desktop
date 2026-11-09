@@ -11,6 +11,7 @@ data class CharacterCardPngExportOptions(
     val cropCenterY: Float = 0.5f,
     val cropZoom: Float = 1f,
     val preserveOriginalCover: Boolean = true,
+    val displayTitle: String? = null,
 ) {
     fun normalized(): CharacterCardPngExportOptions = copy(
         sizePx = sizePx.coerceIn(1024, 2048),

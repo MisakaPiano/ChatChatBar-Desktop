@@ -1270,9 +1270,16 @@ internal fun DesktopSessionSettingsBody(
     }
     StatusText(if (draft.desktopPlayerAvatar == null) "玩家头像：跟随全局" else "玩家头像：本会话单独设置")
     val playerImageScope = rememberCoroutineScope()
+    var pendingPlayerAvatar by remember(session?.id) { mutableStateOf<Pair<String, ByteArray>?>(null) }
+    pendingPlayerAvatar?.let { (sessionId, original) ->
+        DesktopImageWorkspace(original, "会话玩家头像 · 缩放与定位", { pendingPlayerAvatar = null }, allowAnimationFrame = true) { edited ->
+            controller.chooseSessionPlayerAvatar(editedBytes = edited, expectedSessionId = sessionId)
+            if (controller.state.value.error == null) pendingPlayerAvatar = null
+        }
+    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PrimaryAvatar(draft.desktopPlayerAvatar ?: state.defaultPlayerAvatar, state.globalPlayerName ?: "你", controller, 40.dp)
-        BootstrapButton("选择会话头像", secondary = true) { playerImageScope.launch { controller.chooseSessionPlayerAvatar() } }
+        BootstrapButton("选择会话头像", secondary = true) { playerImageScope.launch { pendingPlayerAvatar = controller.prepareSessionPlayerAvatar() } }
         BootstrapButton("恢复跟随全局", secondary = true, enabled = draft.desktopPlayerAvatar != null) {
             playerImageScope.launch { controller.chooseSessionPlayerAvatar(followGlobal = true) }
         }

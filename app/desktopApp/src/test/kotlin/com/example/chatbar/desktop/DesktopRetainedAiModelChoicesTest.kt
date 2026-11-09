@@ -71,7 +71,11 @@ class DesktopRetainedAiModelChoicesTest {
                 }).also { editor.cardAi = it }
             ai.open(CharacterCardAiOperation.FILL); withTimeout(10000) { ai.state.first { !it.loading } }
             ai.setRequest("Retained character request"); ai.selectModel("first")
-            val scene = ImageComposeScene(1100, 900) { DesktopCharacterCardAiOverlay(ai) }
+            val scene = ImageComposeScene(1100, 900) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) {
+                    DesktopCharacterCardAiOverlay(ai)
+                }
+            }
             try {
                 scene.until { ai.state.value.referenceImageRoute == DesktopReferenceImageRoute.UNAVAILABLE }
                 ai.generate(); scene.until { !ai.state.value.busy && ai.state.value.candidate != null }

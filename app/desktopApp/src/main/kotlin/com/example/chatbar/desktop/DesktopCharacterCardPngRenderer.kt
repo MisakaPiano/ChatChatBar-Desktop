@@ -65,7 +65,7 @@ internal class DesktopCharacterCardPngRenderer(
 
             graphics.color = Color.WHITE
             graphics.font = Font(Font.SANS_SERIF, Font.BOLD, (size * normalized.titleScale).roundToInt())
-            val title = card.name.ifBlank { "未命名角色" }
+            val title = normalized.displayTitle ?: card.name.ifBlank { "未命名角色" }
             graphics.drawString(title, margin + markSize + (size * 0.024f).roundToInt(), size - margin - markSize / 3)
         } finally {
             graphics.dispose()

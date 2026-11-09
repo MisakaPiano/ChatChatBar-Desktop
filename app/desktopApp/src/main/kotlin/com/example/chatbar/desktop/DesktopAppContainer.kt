@@ -772,6 +772,12 @@ class DesktopAppContainer internal constructor(
         readFormatDurable = readFormatDurable,
         readWorldDurable = readWorldDurable,
         guardCharacterOutput = characterResourceStore::requireDifferentCoverOutput,
+        additionalCoverAssets = { card ->
+            DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore, dataOperationCoordinator,
+                ownedImageCleanup::deleteUnreferenced).load(card.id).images.mapIndexed { index, reference ->
+                DesktopCoverAsset("desktop-background-$index", "背景库图片 ${index + 1}", characterResourceStore.readBytes(reference))
+            }
+        },
         presetSource = presetSource,
     )
 

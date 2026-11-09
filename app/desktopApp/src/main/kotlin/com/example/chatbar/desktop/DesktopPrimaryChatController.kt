@@ -821,9 +821,23 @@ internal class DesktopPrimaryChatController(
         }
     }
 
-    suspend fun chooseSessionPlayerAvatar(followGlobal: Boolean = false) = guarded {
+    suspend fun prepareSessionPlayerAvatar(): Pair<String, ByteArray>? {
+        var selected: Pair<String, ByteArray>? = null
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            val path = imagePicker.pickOpenFile(DesktopFileType("会话玩家头像", listOf("png", "jpg", "jpeg", "webp", "gif"))) ?: return@guarded
+            val original = withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path).bytes }
+            if (state.value.selectedSession?.id == session.id) selected = session.id to original
+        }
+        return selected
+    }
+
+    suspend fun chooseSessionPlayerAvatar(followGlobal: Boolean = false, editedBytes: ByteArray? = null,
+        expectedSessionId: String? = null) = guarded {
         val session = state.value.selectedSession ?: return@guarded
-        val bytes = if (followGlobal) null else {
+        check(expectedSessionId == null || session.id == expectedSessionId) { "会话已切换，请重新选择头像" }
+        mutableState.update { it.copy(error = null) }
+        val bytes = if (followGlobal) null else editedBytes ?: run {
             val path = imagePicker.pickOpenFile(DesktopFileType("会话玩家头像", listOf("png", "jpg", "jpeg", "webp", "gif"))) ?: return@guarded
             withContext(Dispatchers.IO) {
                 val prepared = requireNotNull(imageStore).prepare(path)

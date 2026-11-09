@@ -20,6 +20,10 @@ import kotlinx.coroutines.withContext
 internal fun DesktopPlayerAvatarSetting(controller: DesktopModelSettingsController, state: DesktopModelSettingsState) {
     if (controller.playerImages == null) return
     val scope = rememberCoroutineScope()
+    var pending by remember(controller) { mutableStateOf<ByteArray?>(null) }
+    pending?.let { original -> DesktopImageWorkspace(original, "玩家头像 · 缩放与定位", { pending = null }, allowAnimationFrame = true) { edited ->
+        controller.applyPlayerAvatar(edited); if (controller.state.value.error == null) pending = null
+    } }
     val bitmap by produceState<ImageBitmap?>(null, state.playerAvatar) {
         value = withContext(Dispatchers.IO) { state.playerAvatar?.let { reference ->
             runCatching { DesktopImageEditing.decode(controller.playerImages.read(reference), longestSide = 128).toComposeImageBitmap() }.getOrNull()
@@ -31,7 +35,7 @@ internal fun DesktopPlayerAvatarSetting(controller: DesktopModelSettingsControll
                 bitmap?.let { Image(it, "玩家头像", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                     ?: StatusText(state.settings?.playerName?.trim()?.take(1)?.ifBlank { "你" } ?: "你")
             }
-            BootstrapButton("选择玩家头像", enabled = !state.busy, secondary = true) { scope.launch { controller.choosePlayerAvatar() } }
+            BootstrapButton("选择玩家头像", enabled = !state.busy, secondary = true) { scope.launch { pending = controller.preparePlayerAvatar() } }
             DesktopChatIconAction("清除玩家头像", DesktopAppIcons.Delete, enabled = !state.busy && state.playerAvatar != null) {
                 scope.launch { controller.clearPlayerAvatar() }
             }

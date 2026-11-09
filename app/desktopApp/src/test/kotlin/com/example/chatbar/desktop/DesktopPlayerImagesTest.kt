@@ -11,6 +11,37 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopPlayerImagesTest {
+    @Test fun `selecting an avatar preserves the original and settings until the edited copy is explicitly applied`(): Unit = runBlocking {
+        val root = Files.createTempDirectory("avatar-crop-admission-")
+        val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root.resolve("data"), gate)
+            val settings = SettingsRepository(storage)
+            val resources = DesktopCharacterResourceStore(root.resolve("data"))
+            val original = DesktopImageEditing.png(BufferedImage(48, 20, BufferedImage.TYPE_INT_RGB).also { image ->
+                for (x in 24 until 48) for (y in 0 until 20) image.setRGB(x, y, 0x00ff00)
+            })
+            val selected = root.resolve("original.png"); Files.write(selected, original)
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = selected
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): java.nio.file.Path? = error("No save dialog")
+            }
+            val images = DesktopPlayerImages(settings, resources, picker, gate)
+            val before = settings.getPlayerSetting()
+            val pending = assertNotNull(images.selectForEditing())
+            assertEquals(before, settings.getPlayerSetting(), "Selection/cancel must not save the source")
+            val crop = DesktopImageEditing.png(DesktopImageEditing.crop(DesktopImageEditing.decode(pending),
+                DesktopImageTransform(centerX = .9f, zoom = 2f), 64, 64))
+            images.replace(crop)
+            val saved = settings.getPlayerSetting()
+            assertContentEquals(crop, resources.readBytes(assertNotNull(saved.desktopAvatar)))
+            assertContentEquals(original, Files.readAllBytes(selected))
+            assertContentEquals(original, pending)
+            assertEquals(64, DesktopImageEditing.decode(crop).width)
+            assertEquals(0x00ff00, DesktopImageEditing.decode(crop).getRGB(32, 32) and 0xffffff)
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+
     @Test fun `avatar saves are independent of persona edits and cleanup retains a shared session image`(): Unit = runBlocking {
         val root = Files.createTempDirectory("desktop-player-images-")
         val gate = DesktopDataOperationCoordinator()

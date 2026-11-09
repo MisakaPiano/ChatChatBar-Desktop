@@ -19,10 +19,8 @@ import androidx.compose.ui.unit.dp
 internal fun DesktopCharacterAppearanceOverlay(controller: DesktopCharacterAppearanceController) {
     val state by controller.state.collectAsState()
     if (!state.open) return
-    DesktopModalSurface {
-        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(Modifier.widthIn(max = 800.dp).heightIn(max = 800.dp)
-                .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(16.dp)
+    DesktopEditorAuxiliaryWindow("图片补外貌／服装 · ${state.name}", { if (!state.busy) controller.close() }, width = 800.dp) {
+            Column(Modifier.fillMaxSize().padding(8.dp)
                 .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { DesktopManagementHeading("图片补外貌／服装 · ${state.name}") }
@@ -51,6 +49,5 @@ internal fun DesktopCharacterAppearanceOverlay(controller: DesktopCharacterAppea
                 DesignTextDisclosure("图片识别原文", state.raw, initiallyExpanded = state.candidate == null)
                 DesignTextDisclosure("图片识别思考", state.reasoning)
             }
-        }
     }
 }

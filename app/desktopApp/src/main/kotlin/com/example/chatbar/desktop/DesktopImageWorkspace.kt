@@ -30,7 +30,8 @@ internal fun DesktopImageWorkspace(
     sourceBytes: ByteArray,
     title: String,
     onCancel: () -> Unit,
-    onApply: (ByteArray) -> Unit,
+    allowAnimationFrame: Boolean = false,
+    onApply: suspend (ByteArray) -> Unit,
 ) {
     var transform by remember(sourceBytes) { mutableStateOf(DesktopImageTransform()) }
     var square by remember(sourceBytes) { mutableStateOf(true) }
@@ -39,7 +40,7 @@ internal fun DesktopImageWorkspace(
     val scope = rememberCoroutineScope()
     val source by produceState<java.awt.image.BufferedImage?>(null, sourceBytes) {
         try { value = withContext(Dispatchers.Default) {
-            DesktopImageEditing.requireStatic(sourceBytes)
+            if (!allowAnimationFrame) DesktopImageEditing.requireStatic(sourceBytes)
             DesktopImageEditing.decode(sourceBytes)
         } } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure.message }
@@ -52,10 +53,11 @@ internal fun DesktopImageWorkspace(
                 .toComposeImageBitmap()
         }
     }
-    DesktopImageToolWindow(title, { if (!busy) onCancel() }, width = 760.dp, height = 780.dp) {
+    DesktopEditorAuxiliaryWindow(title, { if (!busy) onCancel() }, width = 760.dp, height = 780.dp) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusText("拖动定位 · 滚轮缩放 · 应用后创建新图片")
+            if (allowAnimationFrame) StatusText("动画图片使用首帧制作头像；原文件保留。确认应用前不会改变现有头像。")
             DesktopImageViewport(preview, title, source?.width ?: 1, source?.height ?: 1,
                 512f / height, transform, { transform = it }, Modifier.weight(1f).fillMaxWidth())
             DesktopImageSlider("缩放 ${"%.2f".format(transform.zoom)}×", (transform.zoom - 1f) / 7f) {

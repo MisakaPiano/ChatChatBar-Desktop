@@ -639,6 +639,18 @@ internal class DesktopModelSettingsController(
         mutableState.update { it.copy(playerAvatar = avatar, status = result.cleanupNotice ?: "玩家头像已保存") }
     }
 
+    suspend fun preparePlayerAvatar(): ByteArray? {
+        var selected: ByteArray? = null
+        perform("无法读取玩家头像") { selected = playerImages?.selectForEditing() }
+        return selected
+    }
+
+    suspend fun applyPlayerAvatar(bytes: ByteArray) = perform("无法保存玩家头像") {
+        val result = playerImages?.replace(bytes) ?: return@perform
+        val avatar = settings.getPlayerSetting().desktopAvatar
+        mutableState.update { it.copy(playerAvatar = avatar, status = result.cleanupNotice ?: "玩家头像已保存") }
+    }
+
     suspend fun clearPlayerAvatar() = perform("无法清除玩家头像") {
         val result = playerImages?.replace(null) ?: return@perform
         val avatar = settings.getPlayerSetting().desktopAvatar

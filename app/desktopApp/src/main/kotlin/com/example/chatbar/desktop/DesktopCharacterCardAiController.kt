@@ -176,10 +176,11 @@ internal class DesktopCharacterCardAiController(
         current.copy(images = images)
     }
 
-    fun chooseImages() {
+    fun chooseImages(parentWindow: java.awt.Window? = null) {
         if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading || state.value.operation != CharacterCardAiOperation.FILL) return
         val target = pin ?: return
-        val paths = filePicker.pickOpenFiles(DesktopFileType("参考图片", listOf("png", "jpg", "jpeg", "webp", "gif")))
+        val paths = (if (parentWindow == null) filePicker else filePicker.withWindowOwner(parentWindow))
+            .pickOpenFiles(DesktopFileType("参考图片", listOf("png", "jpg", "jpeg", "webp", "gif")))
         if (paths.isEmpty()) return
         val token = UUID.randomUUID().toString(); imagesToken = token
         mutableState.update { it.copy(imagesLoading = true, error = null) }
@@ -213,11 +214,12 @@ internal class DesktopCharacterCardAiController(
         }
     }
 
-    fun chooseReference() {
+    fun chooseReference(parentWindow: java.awt.Window? = null) {
         if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return
         val target = pin ?: return
         val operation = state.value.operation
-        val path = filePicker.pickOpenFile(DesktopFileType("参考文档", listOf("txt", "md", "json"))) ?: return
+        val path = (if (parentWindow == null) filePicker else filePicker.withWindowOwner(parentWindow))
+            .pickOpenFile(DesktopFileType("参考文档", listOf("txt", "md", "json"))) ?: return
         mutableState.update { it.copy(referenceLoading = true, error = null) }
         referenceJob = scope.launch {
             try {

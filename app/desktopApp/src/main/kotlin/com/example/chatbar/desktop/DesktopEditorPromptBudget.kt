@@ -69,11 +69,8 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
     val model by controller.state.collectAsState()
     if (toolEntry) StudioAction("字段 Token 估算", style = StudioActionStyle.TERTIARY) { open = true }
     else BootstrapButton("字段 Token 估算", secondary = true) { open = true }
-    if (open) DesktopModalSurface {
-        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(Modifier.widthIn(max = 1000.dp).fillMaxWidth().heightIn(max = 820.dp)
-                .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(16.dp)
-                .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (open) DesktopEditorAuxiliaryWindow("编辑字段 Token 估算", { open = false }) {
+            Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { DesktopManagementHeading("编辑字段 Token 估算") }
                     DesktopIconAction("关闭 Token 估算", DesktopAppIcons.Close) { open = false }
@@ -105,12 +102,26 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
                     estimate.estimatedTextContextPercent?.let { percent ->
                         StatusText("静态字段参考占容量 ≈ ${java.lang.String.format(java.util.Locale.ROOT, "%.1f", percent)}%；不是本轮请求占用或可用余额。")
                     }
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        items(estimate.sections, key = { it.id }) { section ->
-                            Column { StatusText("${section.label} · ≈ ${section.estimate.tokens} Token")
-                                if (section.note.isNotBlank()) StatusText(section.note, DesktopBootstrapColors.mutedForeground) }
-                        }
+                    val groups = remember(entity, estimate) { desktopEditorBudgetGroups(entity, estimate) }
+                    LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(groups, key = { it.id }) { group -> DesktopEditorBudgetGroupView(group) }
                     }
+                }
+            }
+    }
+}
+
+@Composable
+private fun DesktopEditorBudgetGroupView(group: DesktopEditorBudgetGroup) {
+    var expanded by remember(group.id) { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        BootstrapButton("${if (expanded) "▾" else "▸"} ${group.label} · ≈ ${group.tokens} Token", secondary = true) { expanded = !expanded }
+        if (expanded) Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            group.children.forEach { child -> key(child.id) { DesktopEditorBudgetGroupView(child) } }
+            group.sections.forEach { section ->
+                Column {
+                    StatusText("${section.label} · ≈ ${section.estimate.tokens} Token")
+                    if (section.note.isNotBlank()) StatusText(section.note, DesktopBootstrapColors.mutedForeground)
                 }
             }
         }

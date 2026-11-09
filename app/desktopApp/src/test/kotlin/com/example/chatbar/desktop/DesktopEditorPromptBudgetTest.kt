@@ -38,7 +38,8 @@ class DesktopEditorPromptBudgetTest {
             for (width in listOf(420, 1100)) for ((name, entity) in entities) {
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
-                    CompositionLocalProvider(LocalDesktopModalActivity provides activity) { DesktopEditorPromptBudget(controller, entity) }
+                    CompositionLocalProvider(LocalDesktopModalActivity provides activity,
+                        LocalDesktopEditorAuxiliaryFrame provides { content -> content() }) { DesktopEditorPromptBudget(controller, entity) }
                 }
                 try {
                     scene.until { has("字段 Token 估算") }; scene.click("字段 Token 估算")

@@ -5,6 +5,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -77,6 +81,11 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                     }
                     StatusText("在这里选择本次导出的封面；不会修改聊天背景、头像或已保存的封面原图。")
                     if (!originalMode) {
+                        StatusText("封面显示文字（不修改卡名或提示词）")
+                        BasicTextField(options.displayTitle ?: draft.card.name, { change(options.copy(displayTitle = it)) },
+                            Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
+                            cursorBrush = DesktopBootstrapColors.inputCaret,
+                            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
                         DesktopImageSlider("缩放", (options.cropZoom - 1f) / 5f) { change(options.copy(cropZoom = 1f + it * 5f)) }
                         DesktopImageSlider("渐变高度", (options.gradientHeight - 0.25f) / 0.43f) { change(options.copy(gradientHeight = 0.25f + it * 0.43f)) }
                         DesktopImageSlider("渐变强度", (options.gradientStrength - 0.45f) / 0.45f) { change(options.copy(gradientStrength = 0.45f + it * 0.45f)) }
@@ -89,6 +98,18 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
                             commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to it)
                         } } catch (failure: Exception) { error = failure.message }
                     } }
+                    if (draft.assets.isNotEmpty()) {
+                        SearchableChoice("卡内图片作为封面", listOf<String?>(null) + draft.assets.map { it.id }, draft.assets.firstOrNull { it.bytes === replacement }?.id,
+                            { id -> draft.assets.firstOrNull { it.id == id }?.label ?: "选择当前卡图片…" }) { id ->
+                            draft.assets.firstOrNull { it.id == id }?.let {
+                                commit(options.copy(cropCenterX = .5f, cropCenterY = .5f, cropZoom = 1f) to it.bytes)
+                            }
+                        }
+                    }
+                    BootstrapButton("单独保存封面底图…", enabled = sourceBytes != null && !state.busy) {
+                        sourceBytes?.let { bytes -> scope.launch { controller.saveCoverBase(draft, bytes, picker) } }
+                    }
+                    StatusText("底图文件不含本次添加的文字和阴影，下次可直接选它重新排版。Desktop 完整格式还会把所选底图保存在卡内；官方兼容格式不保留独立底图。")
                     if (replacement != null) BootstrapButton(if (draft.originalCoverBytes != null) "恢复封面原图" else "恢复角色背景") {
                         commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to null)
                     }
@@ -100,6 +121,7 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
             }
             if (state.busy) StatusText("正在选择保存位置或导出 PNG…")
             (error ?: state.error)?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+            state.status?.let { StatusText(it) }
             DesktopCharacterExportCompatibilityChoice(compatibility, !state.busy) { compatibility = it }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton("取消", secondary = true, enabled = !state.busy, onClick = controller::cancelCoverExport)

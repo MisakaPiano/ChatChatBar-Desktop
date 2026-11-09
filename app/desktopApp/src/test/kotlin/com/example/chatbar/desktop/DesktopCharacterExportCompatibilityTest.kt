@@ -14,6 +14,55 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopCharacterExportCompatibilityTest {
+    @Test fun `selected base saves separately and full PNG reimports its raw base while layout title stays display only`() = runBlocking {
+        val f = Fixture()
+        try {
+            val card = f.card()
+            f.controller.beginCoverExport(card.id)
+            val draft = assertNotNull(f.controller.state.value.coverExport)
+            assertTrue(draft.assets.any { it.label.contains("卡片头像") })
+            val base = DesktopImageEditing.png(BufferedImage(23, 41, BufferedImage.TYPE_INT_RGB).also { it.setRGB(4, 9, 0x00aacc) })
+            val basePath = f.parent.resolve("reusable-base.png"); f.picker.target = basePath
+            f.controller.saveCoverBase(draft, base)
+            assertNull(f.controller.state.value.error)
+            assertSame(draft, f.controller.state.value.coverExport)
+            assertContentEquals(base, Files.readAllBytes(basePath))
+            val output = f.parent.resolve("layout.png"); f.picker.target = output
+            f.controller.finishCoverExport(draft, CharacterCardPngExportOptions(preserveOriginalCover = false,
+                displayTitle = "Display title only", gradientStrength = .5f), base, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+            assertNull(f.controller.state.value.error)
+            val pack = assertNotNull(f.app.characterTransfers.decodePng(Files.readAllBytes(output)))
+            val embedded = pack.images.getValue(assertNotNull(pack.card.coverImageResourceId))
+            assertContentEquals(base, Base64.getDecoder().decode(embedded.data))
+            assertEquals(card.name, pack.card.name)
+            assertEquals(card, f.app.characterRepository.getById(card.id))
+            assertContentEquals(base, Files.readAllBytes(basePath))
+            val other = DesktopCharacterCardPngRenderer().render(card, CharacterCardPngExportOptions(displayTitle = "Another title"), base)
+            assertFalse(other.contentEquals(Files.readAllBytes(output)))
+            val compatible = desktopCoverExportPackage(draft.packageData, base, CharacterCardExportCompatibility.OFFICIAL_V9)
+            assertNull(compatible.card.coverImageResourceId)
+            f.official(f.app.transferJson.encodeToString(CharacterCardPackage.serializer(), compatible))
+        } finally { f.close() }
+    }
+
+    @Test fun `cover candidates include only the selected cards actual package and background library assets`() = runBlocking {
+        val f = Fixture()
+        try {
+            val card = f.card()
+            val library = DesktopCharacterBackgrounds(f.app.jsonFileStorage, f.app.characterResourceStore,
+                f.app.dataOperationCoordinator, {})
+            library.import(card.id, f.picture)
+            library.import("unrelated-card", DesktopImageEditing.png(BufferedImage(3, 5, BufferedImage.TYPE_INT_RGB)))
+            f.controller.beginCoverExport(card.id)
+            val draft = assertNotNull(f.controller.state.value.coverExport)
+            assertEquals(1, draft.assets.count { it.id.startsWith("desktop-background-") })
+            val owned = f.app.characterResourceStore.readBytes(library.load(card.id).images.single())
+            assertContentEquals(owned, draft.assets.single { it.id.startsWith("desktop-background-") }.bytes)
+            assertTrue(draft.assets.none { DesktopImageEditing.decode(it.bytes).width == 3 })
+            assertEquals(card, f.app.characterRepository.getById(card.id))
+        } finally { f.close() }
+    }
+
     private class Picker : DesktopFilePicker {
         var target: Path? = null
         var saves = 0
