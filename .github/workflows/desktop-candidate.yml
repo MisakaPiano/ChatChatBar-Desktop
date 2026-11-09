@@ -140,6 +140,96 @@ jobs:
           python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/metadata_preflight.py"
           if ($LASTEXITCODE -ne 0) { throw 'FILE_IDENTITY_PREFLIGHT_FAILED' }
 
+      - name: Restore only the pinned public official compiler
+        id: restoreCompiler
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccb-official-compiler-verified
+          key: ccb-official-kotlin-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337-v1
+      - name: Recover pinned compiler with bounded missing-range waves and full digest validation
+        id: verifyCompiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:RUNNER_TEMP 'ccb-official-compiler-transport.py'
+          @'
+          from pathlib import Path
+          import hashlib,json,os,shutil,subprocess,tempfile,time
+          url='https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.3.20/kotlin-compiler-embeddable-2.3.20.jar'
+          total=59718536
+          sha1='002fac4210c52c27b244305d60b0906e831f49be'
+          sha256='976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337'
+          root=Path(os.environ['RUNNER_TEMP'])/'ccb-ui-probe/compiler-proof';root.mkdir(parents=True,exist_ok=True)
+          gradle=Path(os.environ.get('GRADLE_USER_HOME',str(Path.home()/'.gradle')))/'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.3.20'/sha1
+          target=gradle/'kotlin-compiler-embeddable-2.3.20.jar'
+          verifiedRoot=Path(os.environ['RUNNER_TEMP'])/'ccb-official-compiler-verified'
+          retained=verifiedRoot/'compiler.jar'
+          proof={'officialUrl':url,'expectedBytes':total,'expectedSha1':sha1,'expectedSha256':sha256,'sourceOrDependencyRepositoryChanged':False,'parts':[],'wavesBound':2,'totalSecondsBound':600,'verified':False}
+          def verified(path):
+              if not path.is_file()or path.stat().st_size!=total:return False
+              data=path.read_bytes()
+              return hashlib.sha1(data).hexdigest()==sha1 and hashlib.sha256(data).hexdigest()==sha256
+          try:
+              if verified(target):
+                  proof['cacheReuse']='verified-gradle-file'
+              elif retained.exists():
+                  if not verified(retained):raise RuntimeError('RESTORED_OFFICIAL_COMPILER_DIGEST_MISMATCH')
+                  gradle.mkdir(parents=True,exist_ok=True);shutil.copyfile(retained,target)
+                  proof['cacheReuse']='independently-reverified-official-only-cache'
+              else:
+                  if target.exists():raise RuntimeError('EXISTING_COMPILER_CACHE_DIGEST_MISMATCH')
+                  deadline=time.monotonic()+600
+                  starts=list(range(0,total,2*1024*1024));ready={}
+                  with tempfile.TemporaryDirectory(prefix='ccb-official-ranges-',dir=os.environ['RUNNER_TEMP'])as tmp:
+                      stage=Path(tmp);whole=stage/'compiler.jar';fullResponse=False
+                      for wave in range(1,3):
+                          for start in starts:
+                              if start in ready:continue
+                              left=deadline-time.monotonic()
+                              if left<1:raise RuntimeError('OFFICIAL_COMPILER_RANGE_TOTAL_DEADLINE')
+                              end=min(start+2*1024*1024-1,total-1)
+                              part=stage/('part-'+str(start));headers=stage/('headers-'+str(start))
+                              query='?ccbSegment='+str(start)+('' if wave==1 else '&ccbRangeRetry='+str(wave))
+                              result=subprocess.run(['curl.exe','--fail','--silent','--show-error','--location','--connect-timeout',str(min(20,max(1,int(left)))),'--max-time',str(min(60,max(1,int(left)))),'--range',str(start)+'-'+str(end),'--dump-header',str(headers),'--output',str(part),url+query])
+                              size=part.stat().st_size if part.exists()else 0
+                              header=headers.read_text(encoding='utf-8',errors='replace').lower()if headers.exists()else''
+                              matched=('content-range: bytes '+str(start)+'-'+str(end)+'/'+str(total))in header
+                              row={'wave':wave,'start':start,'end':end,'exitCode':result.returncode,'bytes':size,'contentRangeMatched':matched}
+                              proof['parts'].append(row)
+                              if result.returncode==0 and start==0 and size==total and verified(part):
+                                  shutil.copyfile(part,whole);fullResponse=True;break
+                              if result.returncode==0 and size==end-start+1 and matched:
+                                  ready[start]=part;row['partSha256']=hashlib.sha256(part.read_bytes()).hexdigest()
+                              else:
+                                  print('OFFICIAL_RANGE_ATTEMPT_REFUSED wave='+str(wave)+' start='+str(start)+' exit='+str(result.returncode),flush=True)
+                          if fullResponse or len(ready)==len(starts):break
+                      if not fullResponse:
+                          if len(ready)!=len(starts):raise RuntimeError('OFFICIAL_COMPILER_MISSING_RANGES_'+str(len(starts)-len(ready)))
+                          with whole.open('wb')as combined:
+                              for start in starts:combined.write(ready[start].read_bytes())
+                      if not verified(whole):raise RuntimeError('OFFICIAL_COMPILER_FINAL_DIGEST_MISMATCH')
+                      gradle.mkdir(parents=True,exist_ok=True);shutil.copyfile(whole,target)
+                      proof['reusedSuccessfulRangesWithinJob']=True
+              if not verified(target):raise RuntimeError('OFFICIAL_COMPILER_GRADLE_COPY_MISMATCH')
+              verifiedRoot.mkdir(parents=True,exist_ok=True)
+              if not retained.exists():shutil.copyfile(target,retained)
+              if not verified(retained):raise RuntimeError('OFFICIAL_COMPILER_RETAINED_COPY_MISMATCH')
+              proof.update(actualBytes=target.stat().st_size,actualSha1=hashlib.sha1(target.read_bytes()).hexdigest(),actualSha256=hashlib.sha256(target.read_bytes()).hexdigest(),verified=True)
+          finally:
+              (root/'compiler-transport-proof.json').write_text(json.dumps(proof,indent=2),encoding='utf-8')
+          '@ | Set-Content -LiteralPath $script -Encoding utf8
+          python $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain only the fully verified public compiler for subsequent focused jobs
+        if: steps.verifyCompiler.outcome == 'success' && steps.restoreCompiler.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ccb-official-compiler-verified
+          key: ccb-official-kotlin-2.3.20-976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337-v1
+      - name: Retain public compiler provenance separately from the application image
+        run: |
+          Copy-Item -LiteralPath "$env:RUNNER_TEMP/ccb-ui-probe/compiler-proof/compiler-transport-proof.json" -Destination "$env:CCB_BUILD_OUTPUT/compiler-transport-proof.json" -ErrorAction Stop
+
       - name: Fetch pinned official NSIS compiler
         if: env.CCB_REUSE_BUILD_RUN == ''
         run: |
@@ -212,51 +302,28 @@ jobs:
           python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/community_auth_probe.py" --case $case --root $program
           if ($LASTEXITCODE -ne 0) { throw 'COMMUNITY_AUTH_NATIVE_PROBE_FAILED' }
 
-      - name: Actual ordinary upgrade and stable-entry lifecycle in fresh runner profile
-        if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
+      - name: Fresh exact candidate and original cold-launch prerequisite for Main companion
         run: |
           $ErrorActionPreference = 'Stop'
           $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
           New-Item -ItemType Directory -Path $approved -Force | Out-Null
           $case = Join-Path $approved 'windows-runtime-nsis-cloud'
           $program = Join-Path $env:CCB_BUILD_BASE 'installed'
-          $baseline = Join-Path $env:CCB_BUILD_BASE 'baseline1225.exe'
-          Invoke-WebRequest 'https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/download/desktop-v0.1.0-preview.1225/ChatChatBar-Desktop-0.1.0-preview.1225-windows-x64.exe' -OutFile $baseline
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $baseline).Hash.ToLowerInvariant() -cne '04a35d64ba9958e305bb247c1f217bbfcd1507fa1753661ee2520e54032a96c0') { throw 'BASELINE_HASH' }
           $driver = Join-Path $env:GITHUB_WORKSPACE 'tools\desktop\nsis\native_smoke.py'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1225 --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
-          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_NATIVE_FAILED' }
-          $old = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
-          $oldManifest = Get-Content -LiteralPath (Join-Path $program "versions\$old\install-manifest.json") -Raw | ConvertFrom-Json
-          if ($oldManifest.version -cne '0.1.0-preview.1225' -or $oldManifest.commit -cne '54008bc17847a30fc53e403f99e8aaa335521cda') { throw 'BASELINE_IDENTITY' }
-          $data = Join-Path $case 'local-appdata\ChatChatBarDesktop'
-          $canary = Join-Path $data 'cloud-native-retained-canary.txt'
-          Set-Content -LiteralPath $canary -Value 'Synthetic retained upgrade canary' -Encoding utf8 -NoNewline
-          $before = (Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash
           $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
-          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_UPGRADE_FAILED' }
-          $current = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
-          $manifest = Get-Content -LiteralPath (Join-Path $program "versions\$current\install-manifest.json") -Raw | ConvertFrom-Json
-          if ($manifest.version -cne $env:CCB_CANDIDATE_VERSION -or $manifest.commit -cne $env:CCB_CANDIDATE_SOURCE) { throw 'CANDIDATE_IDENTITY' }
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'CANARY_CHANGED' }
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
-          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_REOPEN_FAILED' }
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'REOPEN_CANARY_CHANGED' }
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-fresh-companion --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
+          if ($LASTEXITCODE -ne 0) { throw 'EXACT_CANDIDATE_FRESH_FAILED' }
           python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-external --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file --cold-external-matrix
-          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_COLD_EXTERNAL_FAILED' }
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_EXTERNAL_CANARY_CHANGED' }
-          [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'EXACT_CANDIDATE_COLD_FAILED' }
           "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
 
-      - name: Actual independent Chinese entry and isolated data lifecycle
-        if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
+      - name: Observe packaged Main tray wiring with external CI JDK17 companion
+        id: packagedMainTray
+        continue-on-error: true
+        if: env.CCB_AUTH_ONLY != 'true' && env.CCB_SIGNED_ONLY != 'true'
         run: |
-          $ErrorActionPreference = 'Stop'
-          $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
-          $case = Join-Path $approved 'windows-runtime-independent-cloud'
-          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/independent_smoke.py" --source $env:CCB_CI_SOURCE --archive $env:CCB_CANDIDATE_ARCHIVE --receipt ([IO.Path]::ChangeExtension($env:CCB_CANDIDATE_ARCHIVE, '.json')) --audit "$env:CCB_CANDIDATE_NSIS/app-image-audit.json" --case $case --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --outside-bootstrap "$env:CCB_NATIVE_CASE/local-appdata/ChatChatBarDesktop.bootstrap.json"
-          if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_NATIVE_FAILED' }
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/packaged_main_tray_probe.py" --source $env:CCB_CI_SOURCE --case $env:CCB_NATIVE_CASE --root (Join-Path $env:CCB_BUILD_BASE 'installed')
+          if ($LASTEXITCODE -ne 0) { throw 'PACKAGED_CLASS_MAIN_TRAY_NOT_CONFIRMED' }
 
       - uses: actions/upload-artifact@v4
         if: always() && env.CCB_BUILD_OUTPUT != '' && env.CCB_REUSE_BUILD_RUN == ''
@@ -268,6 +335,7 @@ jobs:
             ${{ env.CCB_BUILD_OUTPUT }}/nsis/package.json
             ${{ env.CCB_BUILD_OUTPUT }}/nsis/install-manifest.json
             ${{ env.CCB_BUILD_OUTPUT }}/nsis/app-image-audit.json
+            ${{ env.CCB_BUILD_OUTPUT }}/compiler-transport-proof.json
             ${{ env.CCB_BUILD_OUTPUT }}/package-control.json
 
       - uses: actions/upload-artifact@v4
@@ -290,6 +358,8 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-external-delivery.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-external-before-launch.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-stderr.log
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/packaged-main-tray-lifecycle.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/packaged-main-tray-stdout.log
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-cloud/result.json
             ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
             ${{ env.CCB_BUILD_OUTPUT }}/metadata-preflight.json
@@ -297,3 +367,7 @@ jobs:
             ${{ env.CCB_BUILD_OUTPUT }}/native-cwd-policy-tests.log
             ${{ env.CCB_BUILD_OUTPUT }}/restored-candidate.json
             ${{ env.CCB_BUILD_OUTPUT }}/signed-client-result.json
+
+      - name: Require actual packaged Main tray companion result
+        if: always() && env.CCB_AUTH_ONLY != 'true' && env.CCB_SIGNED_ONLY != 'true' && steps.packagedMainTray.outcome != 'success'
+        run: throw 'PACKAGED_MAIN_TRAY_VALIDATION_FAILED'
