@@ -1,0 +1,23 @@
+{
+  "kind": "CCB_DESKTOP_FROZEN_CLOUD_BUILD_REQUEST",
+  "sourceSha": "b23362d732f41b0fad34090a941c48ef722c8847",
+  "desktopVersion": "0.1.0-preview.1251",
+  "installerVersion": "0.1.1251",
+  "buildNumber": 1251,
+  "reuseBuildRun": 42678004428,
+  "reuseRequestCommit": "daca3379d93f6c15e69980441f88f9150bbac046",
+  "reuseArtifacts": [
+    {
+      "id": 13701941845,
+      "name": "desktop-candidate-installer",
+      "bytes": 183582470,
+      "sha256": "4cf0b81c2caa73f0a4a0f816f76b7b30955072ebd34bb4e05495026484bfabd5"
+    },
+    {
+      "id": 13701727204,
+      "name": "desktop-candidate-independent",
+      "bytes": 196585181,
+      "sha256": "a0707cdf28fa5b3c2d208973a0db2698f263a31fbaffe3857383d2bae18d8c9c"
+    }
+  ]
+}
