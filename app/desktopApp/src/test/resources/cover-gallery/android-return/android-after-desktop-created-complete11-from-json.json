@@ -1,0 +1,84 @@
+{
+    "schemaVersion": 11,
+    "exportedAt": 1794250378323,
+    "card": {
+        "name": "Desktop modified synthetic gallery",
+        "botName": "",
+        "avatarResourceId": "avatar",
+        "characters": [
+            {
+                "name": "Synthetic person",
+                "profile": "",
+                "appearance": "",
+                "appearanceImageResourceId": "character-0-appearance",
+                "clothing": "",
+                "abilities": "",
+                "habits": "",
+                "background": "",
+                "relationships": "",
+                "speakingStyle": "",
+                "imagePrompt": "",
+                "fishAudioVoice": null,
+                "enabled": false
+            }
+        ],
+        "greeting": "",
+        "alternateGreetings": [],
+        "chatBackgroundResourceId": "chat-background",
+        "editMode": "STRUCTURED",
+        "basicSetting": "",
+        "freeformCharacterText": "",
+        "defaultImagePrompt": "",
+        "defaultImageNegativePrompt": "worst quality, bad quality, lowres, blurry, very displeasing, jpeg artifacts, chromatic aberration, film grain, halftone, unfinished,\ndeformed, distorted anatomy, bad proportions, bad hands, bad eyes, asymmetrical face, 3.8::extra fingers, fewer digits, artist collaboration::, extra hands, extra legs,\ncensored, watermark, user_interface, logo, signature, multiple views, turnaround, reference, 4koma, 2koma,\nhigh contrast, overexposure, toon, oekaki, chibi, old,\n3::dark areola, dark pussy::, dark penis",
+        "defaultNovelAiImageModel": null,
+        "defaultImageGenerationSettings": null,
+        "systemPrompt": "",
+        "postHistoryInstructions": "",
+        "mesExample": "",
+        "creatorNotes": "",
+        "tags": [],
+        "creator": "",
+        "characterVersion": "",
+        "extensions": "",
+        "characterBook": null,
+        "chatBackgroundImageResourceIds": [
+            "chat-background-0",
+            "chat-background-1",
+            "chat-background-2",
+            "chat-background"
+        ],
+        "coverImageResourceId": "cover-original"
+    },
+    "documents": [],
+    "images": {
+        "character-0-appearance": {
+            "fileName": "card_1794250378300_ee2b3ec3-5ece-4184-a7d8-e354971f9da7.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANklEQVR4nO3OQQ0AMAgEMHQiDBFTORWEezSpgFbPS1bnAz+/XH5+fn5+mfz8/Pz8Mvn5+flt+UZpR/UzH2QSAAAAAElFTkSuQmCC"
+        },
+        "avatar": {
+            "fileName": "card_1794250378300_479c3271-91f5-4a21-b27f-bc137e09451f.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANklEQVR4nO3OQQ0AMAgEMNShExETOBWEezSpgNbrSVbnAz+/XH5+fn5+mfz8/Pz8Mvn5+flt+chTR/VgeB7nAAAAAElFTkSuQmCC"
+        },
+        "cover-original": {
+            "fileName": "card_1794250378300_45cb28d1-c12b-4bc0-a9e0-abaa7086457b.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANklEQVR4nO3OQQ0AMAgEMOQgB4mTOhWEezSpgFbPS1bnAz+/XH5+fn5+mfz8/Pz8Mvn5+flt+crHBXLazfy2AAAAAElFTkSuQmCC"
+        },
+        "chat-background": {
+            "fileName": "card_1794250378300_36ba4c00-97cf-4c24-87a8-f253d2923aec.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANklEQVR4nO3OQQ0AMAgEMJQgB+2TNRWEezSpgFbPS1bnAz+/XH5+fn5+mfz8/Pz8Mvn5+flt+U32hc6wa7bdAAAAAElFTkSuQmCC"
+        },
+        "chat-background-0": {
+            "fileName": "card_1794250378300_20a960bf-d7f9-4f3c-84ec-5cc60f3d7e01.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANUlEQVR4nO3OQQ0AAAgEIJPYP4qxTOG8BxsBqOlOVu8DP79cfn5+fn6Z/Pz8/Pwy+fn5+V1ZTFGFB4UvcbUAAAAASUVORK5CYII="
+        },
+        "chat-background-1": {
+            "fileName": "card_1794250378300_f9cdb3f7-0dd7-4a3f-aaa8-9b36007144f9.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANklEQVR4nO3OQQ0AMAgEMJSgBNkTOBWEezSpgFa/SVbnAz+/XH5+fn5+mfz8/Pz8Mvn5+flt+SqAxTWYtDCTAAAAAElFTkSuQmCC"
+        },
+        "chat-background-2": {
+            "fileName": "card_1794250378300_d687348a-016d-4408-8110-1b6c2c6fd3b9.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAADUAAAAfCAIAAADIsxJ3AAAANklEQVR4nO3OQQ0AMAgEMJQgB+2TNRWEezSpgFbPS1bnAz+/XH5+fn5+mfz8/Pz8Mvn5+flt+U32hc6wa7bdAAAAAElFTkSuQmCC"
+        }
+    },
+    "worldBooks": []
+}
