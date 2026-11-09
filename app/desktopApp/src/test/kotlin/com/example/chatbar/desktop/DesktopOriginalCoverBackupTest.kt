@@ -12,6 +12,7 @@ import java.nio.file.Files
 import java.util.Base64
 import javax.imageio.ImageIO
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopOriginalCoverBackupTest {
@@ -39,6 +40,9 @@ class DesktopOriginalCoverBackupTest {
                     chatBackground = cover, chatBackgroundImages = listOf(gallery),
                     characters = listOf(CharacterInfo("person", "Synthetic person", fishAudioVoice = voice)))
                 CharacterRepository(storage).save(card)
+                storage.saveEntity(DesktopCharacterBackgrounds.KEY, card.id, buildJsonObject {
+                    put("images", JsonArray(listOf(JsonPrimitive(gallery)))); put("preferred", gallery); put("migrated", true)
+                }, JsonObject.serializer())
                 val pending = drafts.copyAsCover("cover-draft", cover)
                 val draft = EditorDraft(EditorDraftRepository.draftId(EditorDraftType.CHARACTER_CARD, card.id), EditorDraftType.CHARACTER_CARD,
                     EditorDraftMode.EDIT, card.id, "cover-draft", characterPayload = card.copy(coverImage = pending, chatBackgroundImages = listOf(pending)), draftAssetPaths = listOf(pending),
@@ -70,6 +74,9 @@ class DesktopOriginalCoverBackupTest {
                         assertContentEquals(bytes, targetResources.readBytes(restored.chatBackgroundImages.single()))
                         assertEquals(restored.coverImage, restored.chatBackground)
                         assertFalse(restored.chatBackground in restored.chatBackgroundImages)
+                        val legacy = decodeDesktopBackgroundLibrary(assertNotNull(reopened.loadEntity(DesktopCharacterBackgrounds.KEY, card.id, JsonObject.serializer())))
+                        assertTrue(legacy.migrated)
+                        assertEquals(restored.chatBackgroundImages.single(), legacy.preferred)
                         val restoredDraft = assertNotNull(EditorDraftRepository(reopened).getForTarget(EditorDraftType.CHARACTER_CARD, card.id))
                         val payload = assertNotNull(restoredDraft.characterPayload)
                         val targetDrafts = DesktopCharacterDraftResources(target, targetResources)
