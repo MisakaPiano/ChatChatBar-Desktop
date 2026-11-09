@@ -41,7 +41,7 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
     }
     fun change(next: CharacterCardPngExportOptions) = commit(next to replacement)
     var error by remember { mutableStateOf<String?>(null) }
-    var compatibility by remember(draft) { mutableStateOf(CharacterCardExportCompatibility.OFFICIAL_V9) }
+    var compatibility by remember(draft) { mutableStateOf(CharacterCardExportCompatibility.COMPLETE_V11) }
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val sourceBytes = replacement ?: draft.originalCoverBytes ?: draft.backgroundBytes

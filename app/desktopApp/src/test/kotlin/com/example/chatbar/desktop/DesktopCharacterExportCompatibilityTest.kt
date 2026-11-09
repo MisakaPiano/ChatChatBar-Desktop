@@ -29,7 +29,7 @@ class DesktopCharacterExportCompatibilityTest {
             assertContentEquals(base, Files.readAllBytes(basePath))
             val output = f.parent.resolve("layout.png"); f.picker.target = output
             f.controller.finishCoverExport(draft, CharacterCardPngExportOptions(preserveOriginalCover = false,
-                displayTitle = "Display title only", gradientStrength = .5f), base, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+                displayTitle = "Display title only", gradientStrength = .5f), base, CharacterCardExportCompatibility.COMPLETE_V11)
             assertNull(f.controller.state.value.error)
             val pack = assertNotNull(f.app.characterTransfers.decodePng(Files.readAllBytes(output)))
             val embedded = pack.images.getValue(assertNotNull(pack.card.coverImageResourceId))
@@ -55,9 +55,9 @@ class DesktopCharacterExportCompatibilityTest {
             library.import("unrelated-card", DesktopImageEditing.png(BufferedImage(3, 5, BufferedImage.TYPE_INT_RGB)))
             f.controller.beginCoverExport(card.id)
             val draft = assertNotNull(f.controller.state.value.coverExport)
-            assertEquals(1, draft.assets.count { it.id.startsWith("desktop-background-") })
+            assertEquals(1, draft.assets.count { it.label.startsWith("背景图库") })
             val owned = f.app.characterResourceStore.readBytes(library.load(card.id).images.single())
-            assertContentEquals(owned, draft.assets.single { it.id.startsWith("desktop-background-") }.bytes)
+            assertContentEquals(owned, draft.assets.single { it.label.startsWith("背景图库") }.bytes)
             assertTrue(draft.assets.none { DesktopImageEditing.decode(it.bytes).width == 3 })
             assertEquals(card, f.app.characterRepository.getById(card.id))
         } finally { f.close() }
@@ -105,13 +105,13 @@ class DesktopCharacterExportCompatibilityTest {
         try {
             val card = f.card(); val cover = assertNotNull(card.coverImage)
             val retained = Files.readAllBytes(f.app.appDataRoot.resolve(cover))
-            val core = f.app.characterTransfers.prepareExport(card.id).packageData
+            val core = f.app.characterTransfers.prepareExport(card.id, CharacterCardExportCompatibility.OFFICIAL_V9).packageData
             assertEquals(9, core.schemaVersion); assertNull(core.card.coverImageResourceId)
             assertEquals(1, core.images.size)
-            f.official(f.app.characterTransfers.exportJson(card.id))
+            f.official(f.app.characterTransfers.exportJson(card.id, CharacterCardExportCompatibility.OFFICIAL_V9))
             for (extension in listOf("json", "png")) {
                 val target = f.parent.resolve("default.$extension"); f.picker.target = target
-                if (extension == "json") f.controller.exportCharacterJson(card.id) else f.controller.exportCharacterPng(card.id)
+                if (extension == "json") f.controller.exportCharacterJson(card.id, CharacterCardExportCompatibility.OFFICIAL_V9) else f.controller.exportCharacterPng(card.id, compatibility = CharacterCardExportCompatibility.OFFICIAL_V9)
                 assertNull(f.controller.state.value.error)
                 val raw = f.wire(target); val official = f.official(raw)
                 assertFalse(raw.contains("coverImageResourceId")); assertEquals(9, official.schemaVersion)
@@ -134,18 +134,18 @@ class DesktopCharacterExportCompatibilityTest {
                 val target = f.parent.resolve("full.$extension"); f.picker.target = target
                 if (extension == "json") {
                     f.controller.beginCharacterJsonExport(card.id)
-                    f.controller.finishCharacterJsonExport(assertNotNull(f.controller.state.value.characterJsonExport), CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+                    f.controller.finishCharacterJsonExport(assertNotNull(f.controller.state.value.characterJsonExport), CharacterCardExportCompatibility.COMPLETE_V11)
                 } else {
                     f.controller.beginCoverExport(card.id)
                     f.controller.finishCoverExport(assertNotNull(f.controller.state.value.coverExport), CharacterCardPngExportOptions(), null,
-                        CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+                        CharacterCardExportCompatibility.COMPLETE_V11)
                 }
                 assertNull(f.controller.state.value.error)
                 val raw = f.wire(target)
                 val official = f.app.transferJson.decodeFromString(Official1411Package.serializer(), raw)
                 assertFailsWith<IllegalArgumentException> { official.validateOfficial1411() }
                 val full = f.app.characterTransfers.decode(raw)
-                assertEquals(10, full.schemaVersion)
+                assertEquals(11, full.schemaVersion)
                 val image = full.images.getValue(assertNotNull(full.card.coverImageResourceId))
                 assertContentEquals(f.picture, Base64.getDecoder().decode(image.data))
                 val reimported = f.app.characterTransfers.importNew(full)
@@ -161,13 +161,13 @@ class DesktopCharacterExportCompatibilityTest {
             val card = f.card()
             f.controller.beginCharacterJsonExport(card.id)
             val draft = assertNotNull(f.controller.state.value.characterJsonExport)
-            assertEquals(9, draft.packageData.schemaVersion)
+            assertEquals(9, draft.packageData.schemaVersion) // Lightweight compatible baseline; visible choice defaults to full11.
             f.picker.target = f.parent.resolve("dialog.json")
             f.controller.finishCharacterJsonExport(draft, CharacterCardExportCompatibility.OFFICIAL_V9)
             f.official(f.wire(f.picker.target!!)); assertNull(f.controller.state.value.characterJsonExport)
             f.controller.beginCoverExport(card.id)
             f.picker.target = f.parent.resolve("dialog.png")
-            f.controller.finishCoverExport(assertNotNull(f.controller.state.value.coverExport), CharacterCardPngExportOptions(), null)
+            f.controller.finishCoverExport(assertNotNull(f.controller.state.value.coverExport), CharacterCardPngExportOptions(), null, CharacterCardExportCompatibility.OFFICIAL_V9)
             f.official(f.wire(f.picker.target!!))
             assertContentEquals(f.picture, OriginalCharacterCover.imageOnlyPng(Files.readAllBytes(f.picker.target!!)))
             assertEquals(card, f.app.characterRepository.getById(card.id))
@@ -203,12 +203,12 @@ class DesktopCharacterExportCompatibilityTest {
             val card = f.card()
             f.controller.beginCharacterJsonExport(card.id); val old = assertNotNull(f.controller.state.value.characterJsonExport)
             f.app.characterRepository.update(card.copy(greeting = "Changed while dialog open"))
-            f.controller.finishCharacterJsonExport(old, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+            f.controller.finishCharacterJsonExport(old, CharacterCardExportCompatibility.COMPLETE_V11)
             assertNotNull(f.controller.state.value.error); assertEquals(0, f.picker.saves)
             f.controller.cancelCharacterJsonExport(); f.controller.beginCharacterJsonExport(card.id)
             val current = assertNotNull(f.controller.state.value.characterJsonExport)
             Files.write(f.app.appDataRoot.resolve(assertNotNull(card.avatar)), byteArrayOf(1, 2, 3))
-            f.controller.finishCharacterJsonExport(current, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+            f.controller.finishCharacterJsonExport(current, CharacterCardExportCompatibility.COMPLETE_V11)
             assertNotNull(f.controller.state.value.error); assertEquals(0, f.picker.saves)
         } finally { f.close() }
     }
@@ -218,7 +218,7 @@ class DesktopCharacterExportCompatibilityTest {
         try {
             val card = f.card(); Files.delete(f.app.appDataRoot.resolve(assertNotNull(card.coverImage)))
             Files.delete(f.app.appDataRoot.resolve(card.coverImage!!).parent)
-            val raw = f.app.characterTransfers.exportJson(card.id); f.official(raw)
+            val raw = f.app.characterTransfers.exportJson(card.id, CharacterCardExportCompatibility.OFFICIAL_V9); f.official(raw)
             f.controller.beginCharacterJsonExport(card.id)
             val draft = assertNotNull(f.controller.state.value.characterJsonExport)
             f.picker.target = f.parent.resolve("missing-cover.json")
@@ -232,7 +232,7 @@ class DesktopCharacterExportCompatibilityTest {
             assertNotNull(f.controller.state.value.error); assertFalse(Files.exists(source))
             f.controller.cancelCharacterJsonExport()
             f.controller.beginCharacterJsonExport(card.id)
-            f.controller.finishCharacterJsonExport(assertNotNull(f.controller.state.value.characterJsonExport), CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+            f.controller.finishCharacterJsonExport(assertNotNull(f.controller.state.value.characterJsonExport), CharacterCardExportCompatibility.COMPLETE_V11)
             assertNotNull(f.controller.state.value.error)
             assertEquals(card.coverImage, f.app.characterRepository.getById(card.id)?.coverImage)
         } finally { f.close() }

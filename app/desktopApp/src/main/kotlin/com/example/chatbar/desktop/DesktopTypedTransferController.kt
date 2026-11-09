@@ -589,7 +589,7 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    suspend fun exportCharacterJson(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9) = runOperation(null) {
+    suspend fun exportCharacterJson(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.COMPLETE_V11) = runOperation(null) {
         val export = characterTransfers.prepareExport(id, compatibility)
         val destination = filePicker.pickSaveFile(JSON_FILES, safeFileName(export.card.name, "json")) ?: return@runOperation
         guardCharacterOutput(export.card, destination)
@@ -598,7 +598,9 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun beginCharacterJsonExport(id: String) = runOperation(null) {
-        val export = characterTransfers.prepareExport(id)
+        // The choice dialog must also open when an omitted optional cover/gallery is missing.
+        // Full11 remains the visible default; its additional resources are required at final capture.
+        val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.OFFICIAL_V9)
         mutableState.value = state.value.copy(characterJsonExport = DesktopCharacterJsonExportDraft(export.card, export.packageData), coverExport = null)
     }
 
@@ -606,12 +608,12 @@ internal class DesktopTypedTransferController(
 
     suspend fun finishCharacterJsonExport(draft: DesktopCharacterJsonExportDraft, compatibility: CharacterCardExportCompatibility) = runOperation(null) {
         check(state.value.characterJsonExport === draft) { "角色导出已关闭" }
-        val packageData = if (compatibility == CharacterCardExportCompatibility.OFFICIAL_V9) draft.packageData else {
-            val full = characterTransfers.prepareExport(draft.card.id, compatibility)
-            check(full.card == draft.card && full.packageData.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9)
-                .copy(exportedAt = draft.packageData.exportedAt) == draft.packageData) { "角色卡或关联资源已变化，请重新打开导出" }
-            full.packageData.copy(exportedAt = draft.packageData.exportedAt)
+        val captured = characterTransfers.prepareExport(draft.card.id, compatibility)
+        check(captured.card == draft.card && captured.packageData.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9)
+            .copy(exportedAt = draft.packageData.exportedAt) == draft.packageData) {
+            "角色卡或关联资源已变化，请重新打开导出"
         }
+        val packageData = captured.packageData.copy(exportedAt = draft.packageData.exportedAt)
         check(state.value.characterJsonExport === draft) { "角色导出已关闭" }
         val destination = filePicker.pickSaveFile(JSON_FILES, safeFileName(draft.card.name, "json")) ?: return@runOperation
         guardCharacterOutput(draft.card, destination)
@@ -620,7 +622,7 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun beginCoverExport(id: String) = runOperation(null) {
-        val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+        val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.COMPLETE_V11)
         val background = export.packageData.card.chatBackgroundResourceId
             ?.let(export.packageData.images::get)?.data?.let(::decodeCharacterPackagedImage)
             ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
@@ -632,7 +634,8 @@ internal class DesktopTypedTransferController(
             val labels = buildList {
                 if (id == export.packageData.card.coverImageResourceId) add("封面原图")
                 if (id == export.packageData.card.avatarResourceId) add("卡片头像")
-                if (id == export.packageData.card.chatBackgroundResourceId) add("聊天背景")
+                if (id == export.packageData.card.chatBackgroundResourceId) add("默认聊天背景")
+                if (id in export.packageData.card.chatBackgroundImageResourceIds) add("背景图库 ${export.packageData.card.chatBackgroundImageResourceIds.indexOf(id) + 1}")
                 export.packageData.card.characters.filter { it.appearanceImageResourceId == id }.forEach { add("人物图 · ${it.name}") }
             }
             DesktopCoverAsset(id, labels.joinToString(" / ").ifBlank { image.fileName }, bytes)
@@ -669,7 +672,7 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun finishCoverExport(draft: DesktopCoverExportDraft, options: CharacterCardPngExportOptions,
-        replacement: ByteArray?, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9,
+        replacement: ByteArray?, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.COMPLETE_V11,
         picker: DesktopFilePicker = filePicker) = runOperation(null) {
         check(state.value.coverExport === draft) { "封面导出已关闭" }
         val destination = picker.pickSaveFile(PNG_FILES, safeFileName(draft.card.name, "png")) ?: return@runOperation
@@ -683,9 +686,9 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun exportCharacterPng(id: String, options: CharacterCardPngExportOptions = CharacterCardPngExportOptions(),
-        compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9) {
+        compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.COMPLETE_V11) {
         runOperation(null) {
-            val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+            val export = characterTransfers.prepareExport(id, CharacterCardExportCompatibility.COMPLETE_V11)
             val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(export.card.name, "png")) ?: return@runOperation
             guardCharacterOutput(export.card, destination)
             val backgroundBytes = export.packageData.card.chatBackgroundResourceId

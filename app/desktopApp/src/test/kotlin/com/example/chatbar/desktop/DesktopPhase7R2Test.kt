@@ -18,7 +18,7 @@ class DesktopPhase7R2Test {
             val entries = library.load(card.id)
             assertEquals(2, entries.images.size); assertNotEquals(entries.images[0], entries.images[1])
             library.prefer(card.id, entries.images[1])
-            val reopened = DesktopCharacterBackgrounds(JsonFileStorage(root, gate), resources, gate) {}
+            val reopened = DesktopCharacterBackgrounds(JsonFileStorage(root, gate), resources, gate, cleanup = {})
             assertEquals(entries.images[1], reopened.preferred(card.id))
             assertEquals(card, cards.getById(card.id))
             library.prefer(card.id, null)

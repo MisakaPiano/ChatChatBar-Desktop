@@ -724,6 +724,7 @@ internal class DesktopCharacterEditorController(
                 name = NamePolicy.normalize(card.name), botName = card.botName,
                 greeting = card.greeting, alternateGreetings = card.alternateGreetings,
                 avatar = card.avatar, chatBackground = card.chatBackground, coverImage = card.coverImage,
+                chatBackgroundImages = card.chatBackgroundImages,
                 editMode = card.editMode, basicSetting = card.basicSetting,
                 freeformCharacterText = card.freeformCharacterText,
                 defaultImagePrompt = card.defaultImagePrompt,

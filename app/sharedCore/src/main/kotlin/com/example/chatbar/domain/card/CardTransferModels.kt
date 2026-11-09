@@ -9,29 +9,30 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 
-/** Original-cover extension; ordinary exports explicitly project the official-compatible v9 wire. */
-const val CHARACTER_CARD_PACKAGE_SCHEMA_VERSION = 10
+/** Complete original cover and ordered background-gallery transport. */
+const val CHARACTER_CARD_PACKAGE_SCHEMA_VERSION = 11
 
 /** Export wire policy only; it never changes the stored card or its original image. */
-enum class CharacterCardExportCompatibility { OFFICIAL_V9, DESKTOP_COVER_V10 }
+enum class CharacterCardExportCompatibility { OFFICIAL_V9, COMPLETE_V11 }
 
 fun CharacterCardPackage.forExportCompatibility(compatibility: CharacterCardExportCompatibility): CharacterCardPackage {
-    if (compatibility == CharacterCardExportCompatibility.DESKTOP_COVER_V10)
+    if (compatibility == CharacterCardExportCompatibility.COMPLETE_V11)
         return copy(schemaVersion = CHARACTER_CARD_PACKAGE_SCHEMA_VERSION)
-    val cover = card.coverImageResourceId
     val retained = buildSet<String> {
         card.avatarResourceId?.let(::add)
         card.chatBackgroundResourceId?.let(::add)
         card.characters.mapNotNullTo(this) { it.appearanceImageResourceId }
     }
-    return copy(schemaVersion = 9, card = card.copy(coverImageResourceId = null),
-        images = if (cover != null && cover !in retained) images - cover else images)
+    val omitted = (card.chatBackgroundImageResourceIds + listOfNotNull(card.coverImageResourceId)).toSet() - retained
+    return copy(schemaVersion = 9, card = card.copy(coverImageResourceId = null,
+        chatBackgroundImageResourceIds = emptyList(), characters = card.characters.map { it.copy(desktopEnabled = true) }),
+        images = images - omitted)
 }
 
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
 data class CharacterCardPackage(
-    val schemaVersion: Int = 9,
+    val schemaVersion: Int = CHARACTER_CARD_PACKAGE_SCHEMA_VERSION,
     val exportedAt: Long = System.currentTimeMillis(),
     val card: PackagedCharacterCard,
     val documents: List<PackagedDocument> = emptyList(),
@@ -69,6 +70,8 @@ data class PackagedCharacterCard(
     val characterBook: WorldBook? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val coverImageResourceId: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val chatBackgroundImageResourceIds: List<String> = emptyList(),
 )
 
 @Serializable
@@ -86,6 +89,8 @@ data class PackagedCharacter(
     val speakingStyle: String = "",
     val imagePrompt: String = "",
     val fishAudioVoice: FishAudioVoiceBinding? = null,
+    @kotlinx.serialization.SerialName("enabled")
+    @kotlinx.serialization.json.JsonNames("desktopEnabled")
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val desktopEnabled: Boolean = true
 )
@@ -114,6 +119,8 @@ data class CharacterCardImportRequest(
 fun CharacterCardPackage.validateForImport() {
     require(schemaVersion in 3..CHARACTER_CARD_PACKAGE_SCHEMA_VERSION) { "不支持的角色卡 schemaVersion：$schemaVersion" }
     require(card.coverImageResourceId == null || schemaVersion >= 10) { "独立封面原图需要角色卡格式10" }
+    require(card.chatBackgroundImageResourceIds.isEmpty() || schemaVersion >= 10) { "背景图库需要角色卡格式10或11" }
+    require(card.chatBackgroundImageResourceIds.all(String::isNotBlank)) { "背景图库资源 ID 不能为空" }
     defaultFormatCard?.validateForImport()
     card.defaultImageGenerationSettings?.applyTo(
         com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel ?: NovelAiImageModel.V4_5_FULL)
@@ -128,6 +135,7 @@ fun CharacterCardPackage.validateForImport() {
         card.avatarResourceId?.let(::add)
         card.coverImageResourceId?.let(::add)
         card.chatBackgroundResourceId?.let(::add)
+        addAll(card.chatBackgroundImageResourceIds)
         card.characters.mapNotNullTo(this) { it.appearanceImageResourceId }
     }
     val missing = references.filterNot(images::containsKey).distinct()

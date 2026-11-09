@@ -68,6 +68,7 @@ class CharacterCardTransferCore internal constructor(
     private val nowMillis: () -> Long,
     private val newId: () -> String,
     private val postCommitResourceCleanup: (suspend (List<String>) -> Unit)? = null,
+    private val additionalBackgrounds: suspend (CharacterCard) -> List<String> = { emptyList() },
 ) {
     constructor(
         characterRepository: CharacterRepository,
@@ -80,6 +81,7 @@ class CharacterCardTransferCore internal constructor(
         operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         postCommitResourceCleanup: (suspend (List<String>) -> Unit)? = null,
+        additionalBackgrounds: suspend (CharacterCard) -> List<String> = { emptyList() },
     ) : this(
         characters = RepositoryCharacterTransferStore(characterRepository),
         worldBooks = RepositoryWorldBookTransferStore(worldBookRepository),
@@ -93,13 +95,14 @@ class CharacterCardTransferCore internal constructor(
         nowMillis = System::currentTimeMillis,
         newId = { UUID.randomUUID().toString() },
         postCommitResourceCleanup = postCommitResourceCleanup,
+        additionalBackgrounds = additionalBackgrounds,
     )
 
-    suspend fun prepareExport(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9): CharacterCardExport = normalOperation {
+    suspend fun prepareExport(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.COMPLETE_V11): CharacterCardExport = normalOperation {
         prepareExportUngated(id, compatibility)
     }
 
-    suspend fun exportJson(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.OFFICIAL_V9): String = normalOperation {
+    suspend fun exportJson(id: String, compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.COMPLETE_V11): String = normalOperation {
         json.encodeToString(CharacterCardPackage.serializer(), prepareExportUngated(id, compatibility).packageData)
     }
 
@@ -390,7 +393,7 @@ class CharacterCardTransferCore internal constructor(
     }
 
     private suspend fun packageCard(card: CharacterCard,
-        compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.DESKTOP_COVER_V10): CharacterCardPackage {
+        compatibility: CharacterCardExportCompatibility = CharacterCardExportCompatibility.COMPLETE_V11): CharacterCardPackage {
         val exportableCharacters = card.characters.filterNot(CharacterPlaceholderPolicy::isEmpty)
         require(exportableCharacters.all { it.name.isNotBlank() }) { "人物名称不能为空" }
         val documents = card.customDocuments.map { document ->
@@ -414,7 +417,7 @@ class CharacterCardTransferCore internal constructor(
             resourceIdsByReference[reference] = resourceId
             return resourceId
         }
-        val coverId = card.coverImage?.takeIf { compatibility == CharacterCardExportCompatibility.DESKTOP_COVER_V10 && it.isNotBlank() }?.let { reference ->
+        val coverId = card.coverImage?.takeIf { compatibility == CharacterCardExportCompatibility.COMPLETE_V11 && it.isNotBlank() }?.let { reference ->
             val original = resources.readBytes(reference)
             val bytes = if (PngTextChunks.isPng(original)) OriginalCharacterCover.imageOnlyPng(original) else original
             images["cover-original"] = PackagedImage(resources.fileName(reference), Base64.getEncoder().encodeToString(bytes))
@@ -437,7 +440,7 @@ class CharacterCardTransferCore internal constructor(
                 speakingStyle = character.speakingStyle,
                 imagePrompt = character.imagePrompt,
                 fishAudioVoice = character.fishAudioVoice,
-                desktopEnabled = character.desktopEnabled,
+                desktopEnabled = if (compatibility == CharacterCardExportCompatibility.OFFICIAL_V9) true else character.desktopEnabled,
             )
         }
         return CharacterCardPackage(
@@ -451,6 +454,10 @@ class CharacterCardTransferCore internal constructor(
                 greeting = card.greeting,
                 alternateGreetings = card.alternateGreetings,
                 chatBackgroundResourceId = packageImage(card.chatBackground, "chat-background"),
+                chatBackgroundImageResourceIds = if (compatibility == CharacterCardExportCompatibility.OFFICIAL_V9) emptyList()
+                    else (card.chatBackgroundImages + additionalBackgrounds(card)).distinct().mapIndexed { index, ref ->
+                        requireNotNull(packageImage(ref, "chat-background-gallery-$index"))
+                    },
                 editMode = card.editMode,
                 basicSetting = card.basicSetting,
                 freeformCharacterText = card.freeformCharacterText,
@@ -502,7 +509,7 @@ class CharacterCardTransferCore internal constructor(
         val now = nowMillis()
         val coverId = packageData.card.coverImageResourceId
         val coverAlsoUsedAsImage = coverId != null && (packageData.card.avatarResourceId == coverId ||
-            packageData.card.chatBackgroundResourceId == coverId || packageData.card.characters.any { it.appearanceImageResourceId == coverId })
+            packageData.card.chatBackgroundResourceId == coverId || coverId in packageData.card.chatBackgroundImageResourceIds || packageData.card.characters.any { it.appearanceImageResourceId == coverId })
         val imageReferences = packageData.images.filterKeys { it != coverId || coverAlsoUsedAsImage }.mapValues { (_, packaged) ->
             val content = decodeCharacterPackagedImage(packaged.data)
             val image = if (content is CharacterPackagedImageContent.Bytes && PngTextChunks.isPng(content.value))
@@ -577,6 +584,7 @@ class CharacterCardTransferCore internal constructor(
             greeting = packagedCard.greeting,
             alternateGreetings = packagedCard.alternateGreetings,
             chatBackground = packagedCard.chatBackgroundResourceId?.let(imageReferences::getValue),
+            chatBackgroundImages = packagedCard.chatBackgroundImageResourceIds.distinct().map(imageReferences::getValue),
             editMode = packagedCard.editMode,
             basicSetting = packagedCard.basicSetting,
             freeformCharacterText = packagedCard.freeformCharacterText,
@@ -680,6 +688,7 @@ class CharacterCardTransferCore internal constructor(
         avatar?.takeIf(String::isNotBlank)?.let(::add)
         coverImage?.takeIf(String::isNotBlank)?.let(::add)
         chatBackground?.takeIf(String::isNotBlank)?.let(::add)
+        addAll(chatBackgroundImages)
         characters.mapNotNullTo(this) { it.appearanceImage?.takeIf(String::isNotBlank) }
         customDocuments.mapNotNullTo(this) { it.filePath.takeIf(String::isNotBlank) }
     }

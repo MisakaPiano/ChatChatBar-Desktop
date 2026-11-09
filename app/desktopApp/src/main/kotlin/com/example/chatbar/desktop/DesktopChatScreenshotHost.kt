@@ -116,7 +116,10 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                 controller.verifyScreenshotMessages(chosen)
                 stage = "PREVIEW_RESOURCES"
                 val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
-                val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
+                val card = state.selectedCharacter
+                val cardDefault = if (card == null) null else if (controller.backgroundLibrary == null) card.chatBackground
+                    else controller.backgroundLibrary.currentDefault(card.id, card.chatBackground)
+                val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, cardDefault).first
                 stage = "PREVIEW_RENDER"
                 val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
                     chosen, tree.selected, snapshot.voices, background = background, contentOptions = contentOptions)
@@ -153,7 +156,10 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                     controller.verifyScreenshotMessages(chosen)
                     stage = "EXPORT_DOCUMENT_PROJECTION"
                     val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
-                    val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
+                    val card = state.selectedCharacter
+                val cardDefault = if (card == null) null else if (controller.backgroundLibrary == null) card.chatBackground
+                    else controller.backgroundLibrary.currentDefault(card.id, card.chatBackground)
+                val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, cardDefault).first
                     val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
                         chosen, tree.selected, snapshot.voices, background = background, contentOptions = contentOptions)
                     val blocks = withContext(Dispatchers.Default) { desktopScreenshotDocument(request, snapshot.colors) }

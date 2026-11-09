@@ -32,7 +32,24 @@ class CharacterCardExportCompatibilityTest {
     }
 
     @Test fun `explicit full projection preserves every field and independent image`() {
-        assertEquals(source, source.forExportCompatibility(CharacterCardExportCompatibility.DESKTOP_COVER_V10))
+        assertEquals(source.copy(schemaVersion = 11), source.forExportCompatibility(CharacterCardExportCompatibility.COMPLETE_V11))
         source.validateForImport()
+    }
+
+    @Test fun `complete gallery accepts ordered duplicate refs and an independent default while compatible projection retains aliases`() {
+        val full = source.copy(schemaVersion = 11, card = source.card.copy(
+            chatBackgroundImageResourceIds = listOf("extra", "avatar", "extra"),
+            characters = source.card.characters.map { it.copy(desktopEnabled = false) }))
+        full.validateForImport()
+        val old = full.forExportCompatibility(CharacterCardExportCompatibility.OFFICIAL_V9)
+        old.validateForImport()
+        assertEquals(listOf("extra", "avatar", "extra"), full.card.chatBackgroundImageResourceIds)
+        assertTrue(old.card.chatBackgroundImageResourceIds.isEmpty())
+        assertTrue(old.card.characters.all { it.desktopEnabled })
+        assertEquals("background", old.card.chatBackgroundResourceId)
+        assertTrue("avatar" in old.images); assertFalse("extra" in old.images); assertFalse("cover" in old.images)
+        assertFails { full.copy(schemaVersion = 9).validateForImport() }
+        assertFails { full.copy(card = full.card.copy(chatBackgroundImageResourceIds = listOf("missing"))).validateForImport() }
+        full.copy(schemaVersion = 10).validateForImport() // Android gallery10 and Desktop cover10 are field-based reads.
     }
 }

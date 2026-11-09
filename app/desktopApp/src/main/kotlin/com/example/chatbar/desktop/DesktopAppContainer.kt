@@ -493,6 +493,8 @@ class DesktopAppContainer internal constructor(
     )
 
     private val characterDocumentRagCleanup = DesktopCharacterDocumentRagCleanup(jsonFileStorage)
+    internal val characterBackgrounds by lazy { DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
+        dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, characterRepository) }
     internal val characterTransfers: CharacterCardTransferCore = createCharacterTransferCore(characterDocumentRagCleanup)
     internal val formatTransfers = FormatCardTransferService(formatCardRepository, transferJson)
     internal val worldBookTransfers = WorldBookTransferService(worldBookRepository, transferJson)
@@ -707,8 +709,7 @@ class DesktopAppContainer internal constructor(
             saveSlots = saveSlotController,
             formatRepair = messageFormatRepairController,
             imagePicker = filePicker,
-            backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
-                dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced),
+            backgroundLibrary = characterBackgrounds,
             imageRegeneration = DesktopChatImageRegeneration(chatRepository, characterRepository, settingsRepository,
                 characterResourceStore, dataOperationCoordinator, desktopSecretStore, taskRuntime, novelAiInfrastructure, effectiveModelResolver),
         )
@@ -773,12 +774,6 @@ class DesktopAppContainer internal constructor(
         readFormatDurable = readFormatDurable,
         readWorldDurable = readWorldDurable,
         guardCharacterOutput = characterResourceStore::requireDifferentCoverOutput,
-        additionalCoverAssets = { card ->
-            DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore, dataOperationCoordinator,
-                ownedImageCleanup::deleteUnreferenced).load(card.id).images.mapIndexed { index, reference ->
-                DesktopCoverAsset("desktop-background-$index", "背景库图片 ${index + 1}", characterResourceStore.readBytes(reference))
-            }
-        },
         presetSource = presetSource,
     )
 
@@ -827,6 +822,7 @@ class DesktopAppContainer internal constructor(
         json = transferJson,
         operationGate = dataOperationCoordinator,
         postCommitResourceCleanup = ownedImageCleanup::deleteUnreferenced,
+        additionalBackgrounds = { card -> characterBackgrounds.exportBackgrounds(card) },
     )
 
     suspend fun close() {

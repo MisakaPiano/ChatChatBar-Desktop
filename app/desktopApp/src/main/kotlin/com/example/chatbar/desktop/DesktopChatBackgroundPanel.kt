@@ -23,7 +23,7 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
     val scope = rememberCoroutineScope()
     LaunchedEffect(card?.id, revision) {
         warning = ""
-        try { entries = card?.id?.let { library?.load(it) } ?: DesktopCharacterBackgroundLibrary() }
+        try { entries = card?.id?.let { library?.catalog(it) } ?: DesktopCharacterBackgroundLibrary() }
         catch (_: Exception) { entries = DesktopCharacterBackgroundLibrary(); warning = "背景库不可读取；使用官方背景，保留所有资源" }
     }
     fun action(work: suspend () -> Unit) { scope.launch {
@@ -45,14 +45,17 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
                     warning = "Desktop 首选背景不可读取；使用官方背景，保留资源供修复"
                 }.getOrNull() }
             }
-            StatusText("当前来源：${desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, card?.chatBackground).second}")
+            val cardDefault by produceState(card?.chatBackground, card, revision) {
+                value = if (card == null || library == null) card?.chatBackground else library.currentDefault(card.id, card.chatBackground)
+            }
+            StatusText("当前来源：${desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, cardDefault).second}")
             StudioActions {
                 BootstrapButton("选择 / 替换会话背景", enabled = !busy) { action { controller.chooseSessionBackground() } }
                 BootstrapButton("清除会话覆盖", enabled = !busy) { action { controller.chooseSessionBackground(clear = true) } }
             }
             DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value -> scope.launch { controller.setBackgroundOpacity(value) } }
-            StatusText("Desktop 角色背景库 · ${card?.name ?: "未关联角色"}")
-            StatusText("首选仅在此 Desktop 生效；角色卡跨平台背景和导出内容保持不变。")
+            StatusText("角色卡背景图库 · ${card?.name ?: "未关联角色"}")
+            StatusText("图库及默认背景随完整角色卡导出；会话覆盖与 Desktop 首选独立。旧 Desktop 库可移入角色卡，原库与图片保留。")
             StudioActions {
                 BootstrapButton("添加背景", enabled = !busy && card != null && library != null) { action {
                     controller.imagePicker.pickOpenFile(DesktopFileType("背景", listOf("png", "jpg", "jpeg", "webp")))?.let { path ->
@@ -60,14 +63,17 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
                         library!!.import(card!!.id, bytes)
                     }
                 } }
+                BootstrapButton("旧 Desktop 库移入角色卡", enabled = !busy && card != null && library != null) { action { library!!.migrate(card!!.id) } }
                 BootstrapButton("清除 Desktop 首选", enabled = !busy && card != null && library != null) { action { library!!.prefer(card!!.id, null) } }
+                BootstrapButton("清除角色卡默认背景", enabled = !busy && card != null && library != null) { action { library!!.setDefault(card!!.id, null) } }
             }
             entries.images.forEach { path ->
                 DesktopOwnedImage(path, controller.characterResources::readBytes, Modifier.fillMaxWidth().height(150.dp)
                     .desktopViewerEntry(onClick = { preview = entries.images.toList() to entries.images.indexOf(path) }))
                 StudioActions {
                     BootstrapButton(if (path == entries.preferred) "✓ Desktop 首选" else "设为首选", enabled = !busy) { action { library!!.prefer(card!!.id, path) } }
-                    BootstrapButton("删除", enabled = !busy) { delete = path }
+                    BootstrapButton(if (path == cardDefault) "✓ 角色卡默认" else "设为角色卡默认", enabled = !busy) { action { library!!.setDefault(card!!.id, path) } }
+                    BootstrapButton("从图库移除", enabled = !busy) { delete = path }
                     if (delete == path) {
                         BootstrapButton("确认删除", enabled = !busy) { action { library!!.remove(card!!.id, path); delete = null } }
                         BootstrapButton("取消") { delete = null }

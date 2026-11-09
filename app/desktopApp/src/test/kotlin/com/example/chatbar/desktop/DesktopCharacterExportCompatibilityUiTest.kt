@@ -110,24 +110,24 @@ class DesktopCharacterExportCompatibilityUiTest {
                 }
             }
             try {
-                val trigger = "文件格式 · 官方 CCB 兼容（推荐） ▾"
+                val trigger = "文件格式 · 完整格式11（推荐） ▾"
                 scene.until { !controller.state.value.busy && controller.state.value.characters.any { it.id == card.id } &&
                     scene.nodes().any { it.text() == trigger } }
                 assertEquals(1, modal.count)
                 assertEquals(1, scene.nodes().count { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("关闭角色导出") })
-                scene.capture("official")
+                scene.capture("complete-default")
                 scene.click(trigger)
-                scene.until { scene.nodes().any { it.text() == "Desktop 完整格式" } }
-                scene.click("Desktop 完整格式")
-                scene.until { scene.nodes().any { it.text().contains("当前原版 CCB 不支持此格式") } }
-                scene.capture("desktop-full")
+                scene.until { scene.nodes().any { it.text() == "旧版兼容格式9" } }
+                scene.click("旧版兼容格式9")
+                scene.until { scene.nodes().any { it.text().contains("兼容旧版 CCB") } }
+                scene.capture("compatibility9")
                 controller.cancelCharacterJsonExport()
                 scene.until { scene.nodes().none { it.text().contains("选择保存位置并导出") } }
                 assertEquals(0, modal.count)
                 controller.beginCharacterJsonExport(card.id)
                 scene.until { scene.nodes().any { it.text() == trigger } }
                 assertEquals(1, modal.count)
-                assertTrue(scene.nodes().none { it.text().contains("当前原版 CCB 不支持此格式") })
+                assertTrue(scene.nodes().none { it.text().contains("兼容旧版 CCB") })
             } finally { scene.close() }
         } finally { app.close(); parent.toFile().deleteRecursively() }
     }

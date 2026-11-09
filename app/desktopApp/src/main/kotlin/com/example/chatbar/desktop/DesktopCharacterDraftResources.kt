@@ -109,6 +109,7 @@ internal class DesktopCharacterDraftResources(
                 avatar = image(card.avatar),
                 coverImage = cover(card.coverImage),
                 chatBackground = image(card.chatBackground),
+                chatBackgroundImages = card.chatBackgroundImages.map { requireNotNull(image(it)) },
                 characters = card.characters.map { it.copy(appearanceImage = image(it.appearanceImage)) },
                 customDocuments = card.customDocuments.map { doc ->
                     if (!isDraft(doc.filePath)) doc else doc.copy(
@@ -207,6 +208,7 @@ internal fun desktopCharacterResourceReferences(card: CharacterCard): List<Strin
     card.avatar?.let(::add)
     card.coverImage?.let(::add)
     card.chatBackground?.let(::add)
+    addAll(card.chatBackgroundImages)
     card.characters.mapNotNullTo(this) { it.appearanceImage }
     card.customDocuments.mapTo(this) { it.filePath }
 }

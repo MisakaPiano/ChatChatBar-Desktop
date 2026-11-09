@@ -71,7 +71,9 @@ internal object DesktopBackupPolicy {
                 }
             } == true } == true ||
             (value["characters"] as? JsonArray)?.any { person ->
-                ((person as? JsonObject)?.get("desktopEnabled") as? JsonPrimitive)?.booleanOrNull == false } == true
+                (person as? JsonObject)?.let {
+                    ((it["enabled"] ?: it["desktopEnabled"]) as? JsonPrimitive)?.booleanOrNull == false
+                } == true } == true
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 
@@ -111,7 +113,8 @@ internal object DesktopBackupPolicy {
         }
         val clean = credentialFree(value).jsonObject
         if (type == "desktop_character_backgrounds") {
-            require(clean.keys == setOf("images", "preferred"))
+            require(clean.keys - "migrated" == setOf("images", "preferred"))
+            clean["migrated"]?.jsonPrimitive?.let { require(!it.isString && it.booleanOrNull != null) }
             val images = clean.getValue("images").jsonArray.map { require(it.jsonPrimitive.isString); it.jsonPrimitive.content }
             val preferred = clean.getValue("preferred").jsonPrimitive.contentOrNull
             require(images.distinct().size == images.size && (preferred == null || preferred in images))
@@ -155,7 +158,7 @@ internal object DesktopBackupPolicy {
         val output = StringWriter()
         BackupJsonStream(value.toString().reader(), output, mapPath = map).copy()
         // Desktop's separate background preference is not an official resource-field name.
-        if (value.keys == setOf("images", "preferred")) {
+        if (value.keys - "migrated" == setOf("images", "preferred")) {
             val parsed = json.parseToJsonElement(output.toString()).jsonObject.toMutableMap()
             value["preferred"]?.jsonPrimitive?.contentOrNull?.let { parsed["preferred"] = JsonPrimitive(map(it, listOf("preferred"))) }
             return JsonObject(parsed).toString().toByteArray(Charsets.UTF_8)

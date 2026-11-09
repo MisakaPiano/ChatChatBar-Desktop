@@ -33,13 +33,15 @@ class DesktopOriginalCoverBackupTest {
                 val resources = DesktopCharacterResourceStore(root)
                 val drafts = DesktopCharacterDraftResources(root, resources)
                 val cover = resources.materializeCoverImage(PackagedImage("original.png", Base64.getEncoder().encodeToString(bytes)), 1, "original")
+                val gallery = resources.materializeImage(PackagedImage("gallery.png", Base64.getEncoder().encodeToString(bytes)), 1, "gallery")
                 val voice = FishAudioVoiceBinding("synthetic-voice", "Synthetic voice", coverImage = "model-artwork/relative-cover.webp")
                 val card = CharacterCard("card", "Original cover", createdAt = 1, updatedAt = 1, coverImage = cover,
+                    chatBackground = cover, chatBackgroundImages = listOf(gallery),
                     characters = listOf(CharacterInfo("person", "Synthetic person", fishAudioVoice = voice)))
                 CharacterRepository(storage).save(card)
                 val pending = drafts.copyAsCover("cover-draft", cover)
                 val draft = EditorDraft(EditorDraftRepository.draftId(EditorDraftType.CHARACTER_CARD, card.id), EditorDraftType.CHARACTER_CARD,
-                    EditorDraftMode.EDIT, card.id, "cover-draft", characterPayload = card.copy(coverImage = pending), draftAssetPaths = listOf(pending),
+                    EditorDraftMode.EDIT, card.id, "cover-draft", characterPayload = card.copy(coverImage = pending, chatBackgroundImages = listOf(pending)), draftAssetPaths = listOf(pending),
                     createdAt = 1, updatedAt = 2)
                 EditorDraftRepository(storage).save(draft)
                 if (selected) CharacterRepository(storage).save(CharacterCard("unselected", "Omitted missing cover",
@@ -65,14 +67,19 @@ class DesktopOriginalCoverBackupTest {
                         assertTrue(restored.coverImage!!.startsWith("images/character-covers/"))
                         val targetResources = DesktopCharacterResourceStore(target)
                         assertContentEquals(bytes, targetResources.readBytes(restored.coverImage!!))
+                        assertContentEquals(bytes, targetResources.readBytes(restored.chatBackgroundImages.single()))
+                        assertEquals(restored.coverImage, restored.chatBackground)
+                        assertFalse(restored.chatBackground in restored.chatBackgroundImages)
                         val restoredDraft = assertNotNull(EditorDraftRepository(reopened).getForTarget(EditorDraftType.CHARACTER_CARD, card.id))
                         val payload = assertNotNull(restoredDraft.characterPayload)
                         val targetDrafts = DesktopCharacterDraftResources(target, targetResources)
                         assertTrue(targetDrafts.isDraft(payload.coverImage!!))
                         assertContentEquals(bytes, targetDrafts.readImage(payload.coverImage!!))
+                        assertContentEquals(bytes, targetDrafts.readImage(payload.chatBackgroundImages.single()))
                         val (materialized, created) = targetDrafts.materialize(payload)
                         assertTrue(materialized.coverImage!!.startsWith("images/character-covers/"))
                         assertContentEquals(bytes, targetResources.readBytes(materialized.coverImage!!))
+                        assertContentEquals(bytes, targetResources.readBytes(materialized.chatBackgroundImages.single()))
                         targetDrafts.rollback(created, java.io.IOException("synthetic test rollback"))
                         assertContentEquals(bytes, targetResources.readBytes(restored.coverImage!!))
                     }

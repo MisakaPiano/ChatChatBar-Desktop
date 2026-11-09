@@ -818,7 +818,12 @@ private fun PrimaryTimeline(
         val preferred by produceState<String?>(null, state.selectedCharacter?.id, backgroundRevision) {
             value = state.selectedCharacter?.id?.let { runCatching { controller.backgroundLibrary?.preferred(it) }.getOrNull() }
         }
-        val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
+        val cardDefault by produceState(state.selectedCharacter?.chatBackground, state.selectedCharacter, backgroundRevision) {
+            val card = state.selectedCharacter
+            val library = controller.backgroundLibrary
+            value = if (card == null) null else if (library == null) card.chatBackground else library.currentDefault(card.id, card.chatBackground)
+        }
+        val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, cardDefault).first
         if (!background.isNullOrBlank()) DesktopOwnedImage(background, controller.characterResources::readBytes,
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(state.backgroundOpacity), crop = true)
         LazyColumn(

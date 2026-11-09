@@ -1,0 +1,17 @@
+{
+  "syntheticOnly": true,
+  "androidSource": "2fd7c2b08641b9f255312822919e7c2ce15bd871",
+  "run": 42662179892,
+  "files": [
+    {
+      "file": "android-complete11.json",
+      "bytes": 4248,
+      "sha256": "1540573ab9de17c573a346f728a16f54fe301992397062c222896346f57905f2"
+    },
+    {
+      "file": "android-complete11.png",
+      "bytes": 5804,
+      "sha256": "6cee4d7a55bb4a666458492bca29c9756bbe7ca5845b54531b62e6a8eca4d4a0"
+    }
+  ]
+}

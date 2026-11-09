@@ -13,6 +13,7 @@ internal fun desktopCoverExportPackage(source: CharacterCardPackage, replacement
     val bytes = if (PngTextChunks.isPng(replacement)) OriginalCharacterCover.imageOnlyPng(replacement) else replacement
     val oldCover = source.card.coverImageResourceId
     val usedElsewhere = source.card.avatarResourceId == oldCover || source.card.chatBackgroundResourceId == oldCover ||
+        oldCover in source.card.chatBackgroundImageResourceIds ||
         source.card.characters.any { it.appearanceImageResourceId == oldCover }
     val images = if (oldCover != null && !usedElsewhere) source.images - oldCover else source.images
     var id = "cover-export-base"

@@ -17,8 +17,8 @@ internal fun DesktopCharacterExportDialogs(controller: DesktopTypedTransferContr
 }
 
 internal fun CharacterCardExportCompatibility.desktopLabel() = when (this) {
-    CharacterCardExportCompatibility.OFFICIAL_V9 -> "官方 CCB 兼容（推荐）"
-    CharacterCardExportCompatibility.DESKTOP_COVER_V10 -> "Desktop 完整格式"
+    CharacterCardExportCompatibility.OFFICIAL_V9 -> "旧版兼容格式9"
+    CharacterCardExportCompatibility.COMPLETE_V11 -> "完整格式11（推荐）"
 }
 
 @Composable
@@ -27,15 +27,15 @@ internal fun DesktopCharacterExportCompatibilityChoice(selected: CharacterCardEx
     CompactChoice("文件格式", CharacterCardExportCompatibility.entries, selected, { it.desktopLabel() }) {
         if (enabled) onSelect(it)
     }
-    if (selected == CharacterCardExportCompatibility.DESKTOP_COVER_V10)
-        StatusText("包含独立封面原图。当前原版 CCB 不支持此格式；仅用于支持独立封面的 Desktop 版本。Android 双端传输尚未验收。", DesktopBootstrapColors.warning)
-    else StatusText("用于当前原版 CCB 分享。本地独立封面原图继续保留，PNG 的原图外观也可保留。")
+    if (selected == CharacterCardExportCompatibility.COMPLETE_V11)
+        StatusText("保留独立封面、全部背景及默认背景和人物启用设置。用于支持完整格式11的版本；旧版 CCB 请选择兼容格式9。", DesktopBootstrapColors.warning)
+    else StatusText("兼容旧版 CCB；不携带独立封面、背景图库及人物启用开关，仅保留默认背景。本地原件保持。")
 }
 
 @Composable
 internal fun DesktopCharacterJsonExportDialog(draft: DesktopCharacterJsonExportDraft, controller: DesktopTypedTransferController) {
     val state by controller.state.collectAsState()
-    var compatibility by remember(draft) { mutableStateOf(CharacterCardExportCompatibility.OFFICIAL_V9) }
+    var compatibility by remember(draft) { mutableStateOf(CharacterCardExportCompatibility.COMPLETE_V11) }
     val scope = rememberCoroutineScope()
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(20.dp), contentAlignment = Alignment.Center) {

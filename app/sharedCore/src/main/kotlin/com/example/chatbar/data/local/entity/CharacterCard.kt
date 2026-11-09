@@ -64,6 +64,9 @@ data class CharacterCard(
     /** Immutable original cover resource; independent from avatar, chat background and exported layouts. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val coverImage: String? = null,
+    /** Ordered portable gallery; the default background may also be outside this list. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val chatBackgroundImages: List<String> = emptyList(),
 ) {
     val effectiveBotName: String
         get() = botName.takeIf(String::isNotBlank) ?: name
@@ -125,6 +128,8 @@ data class CharacterInfo(
     val imagePrompt: String = "",
     val fishAudioVoice: FishAudioVoiceBinding? = null,
     /** Desktop card variant gate; source text/media remain intact. */
+    @kotlinx.serialization.SerialName("enabled")
+    @kotlinx.serialization.json.JsonNames("desktopEnabled")
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val desktopEnabled: Boolean = true
 ) {
