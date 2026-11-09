@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.card.*
+import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64

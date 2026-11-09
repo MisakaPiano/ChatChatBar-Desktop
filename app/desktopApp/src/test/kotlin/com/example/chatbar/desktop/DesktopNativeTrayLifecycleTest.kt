@@ -34,7 +34,8 @@ class DesktopNativeTrayLifecycleTest {
         val root = Files.createTempDirectory("native-tray-owned-")
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val center = DesktopTaskCenter()
-        val tray = DesktopTrayController(center, DesktopSettingsStore(root))
+        val gate = DesktopDataOperationCoordinator()
+        val tray = DesktopTrayController(center, DesktopSettingsStore(root, gate))
         val frame = awt { Frame("Synthetic CCB tray lifecycle").apply { setSize(480, 280); isVisible = true } }
         val dirty = AtomicReference<(() -> Unit)?>()
         val drained = CompletableDeferred<Unit>()
@@ -77,12 +78,12 @@ class DesktopNativeTrayLifecycleTest {
             tray.closeAndDrain()
             assertTrue(awt { icon !in SystemTray.getSystemTray().trayIcons })
             awt { frame.dispose() }; assertFalse(awt { frame.isDisplayable })
-            val saved = assertIs<DesktopSettingsLoadResult.Loaded>(DesktopSettingsStore(root).load())
+            val saved = assertIs<DesktopSettingsLoadResult.Loaded>(DesktopSettingsStore(root, gate).load())
             assertTrue(saved.document.settings.closeWindowToTray)
             Files.writeString(output.resolve("native-tray-lifecycle.json"), """{"passed":true,"actualAwtTray":true,"mainCloseHide":true,"trayMenuRestore":true,"exitDirtyDeferred":true,"originalWorkDrained":true,"iconRemoved":true,"frameDisposed":true,"packagedMain":false,"osMouseGesture":false}""")
         } finally {
             visibleJob?.cancelAndJoin(); tray.closeAndDrain(); center.closeAndDrain(); scope.coroutineContext[Job]!!.cancelAndJoin()
-            awt { frame.dispose() }; check(root.toFile().deleteRecursively())
+            awt { frame.dispose() }; gate.closeAndDrain(); check(root.toFile().deleteRecursively())
         }
     }
 }
