@@ -8,6 +8,46 @@ import kotlin.test.*
 import org.junit.Assume.assumeTrue
 
 class WindowsNativeDialogIntegrationTest {
+    @Test fun `export picker uses its actual child top level HWND and refuses a disposed export window`() {
+        requireDesktopGraphicsForNativeTest()
+        assumeTrue(DesktopWindowChrome.isWindows)
+        EventQueue.invokeAndWait {
+            val main = ComposeWindow().apply { setSize(600, 400); addNotify() }
+            val export = ComposeWindow().apply { setSize(500, 350); addNotify() }
+            val seen = mutableListOf<Long>()
+            val backend = object : CommonDialogBackend {
+                override fun initializeSta() = AutoCloseable {}
+                override fun create(kind: DesktopDialogKind) = object : CommonDialogHandle {
+                    override fun getOptions() = 0
+                    override fun setOptions(options: Int) {}
+                    override fun setFilter(description: String, pattern: String) {}
+                    override fun setDefaultExtension(extension: String) {}
+                    override fun setFileName(name: String) {}
+                    override fun setTitle(title: String) {}
+                    override fun show(owner: Long): Int { seen += owner; return WINDOWS_DIALOG_CANCELLED }
+                    override fun result(): CommonDialogItem = error("Cancelled synthetic chooser")
+                    override fun close() {}
+                }
+            }
+            val mainHandle = Pointer.nativeValue(com.sun.jna.Native.getWindowPointer(main))
+            val exportHandle = Pointer.nativeValue(com.sun.jna.Native.getWindowPointer(export))
+            try {
+                assertNotEquals(mainHandle, exportHandle)
+                WindowsCommonItemDialog({ mainHandle }, backend).use { service ->
+                    val ordinary = WindowsNativeFilePicker(service)
+                    val child = ordinary.withWindowOwner(export)
+                    assertNull(child.pickOpenFile(DesktopFileType("Image", listOf("png"))))
+                    assertNull(child.pickSaveFile(DesktopFileType("PNG", listOf("png")), "synthetic.png"))
+                    assertNull(ordinary.pickOpenFile(DesktopFileType("Card", listOf("json"))))
+                    assertEquals(listOf(exportHandle, exportHandle, mainHandle), seen)
+                    export.dispose()
+                    assertFailsWith<IllegalStateException> { child.pickOpenFile(DesktopFileType("Image", listOf("png"))) }
+                    assertEquals(3, seen.size)
+                }
+            } finally { export.dispose(); main.dispose() }
+        }
+    }
+
     @Test fun `real COM open save and folder configure and release on dedicated STA without showing UI`() {
         assumeTrue(DesktopWindowChrome.isWindows)
         WindowsCommonItemDialog({ error("proof must not request owner or show a dialog") }).use { service ->

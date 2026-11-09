@@ -20,6 +20,40 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopStudioWorkspaceTest {
+    @Test fun `narrow thumbnail frame contains all three reachable image actions without extra external rows`() = runBlocking(awt) {
+        val path = Files.createTempFile("compact-studio-", ".png")
+        try {
+            check(javax.imageio.ImageIO.write(java.awt.image.BufferedImage(3, 7, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", path.toFile()))
+            for (width in listOf(360, 600)) {
+                var history = 0; var viewer = 0; var media = 0
+                val scene = ImageComposeScene(width, 700) {
+                    DesktopStudioWorkspace(previewActions = { error("Collapsed narrow mode must not create an external action row") },
+                        compact = { expand -> DesktopStudioCompactResult(path, null, expand, { viewer++ }) {
+                            DesktopStudioPrimaryPreviewActions(true, { history++ }, { viewer++ })
+                            StudioAction("图像操作 / 用作") { media++ }
+                        } }, editor = { StatusText("Synthetic editor") }, footer = {}, preview = {})
+                }
+                try {
+                    scene.frames()
+                    val frame = scene.bounds("Studio 当前图片摘要")
+                    val thumbnail = scene.bounds("显示图片面板")
+                    for (label in listOf("历史", "预览", "图像操作 / 用作")) {
+                        val action = scene.nodes().single { it.matches(label) && it.config.contains(SemanticsActions.OnClick) }
+                        val bounds = action.boundsInRoot
+                        assertTrue(bounds.left >= thumbnail.right && bounds.right <= frame.right)
+                        assertTrue(bounds.top >= frame.top && bounds.bottom <= frame.bottom)
+                        scene.click(label)
+                    }
+                    assertEquals(1, history); assertEquals(1, viewer); assertEquals(1, media)
+                    System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                        val file = Path.of(directory).resolve("studio-compact-actions-$width.png"); Files.createDirectories(file.parent)
+                        scene.render().use { it.encodeToData()!!.use { data -> Files.write(file, data.bytes) } }
+                    }
+                } finally { scene.close() }
+            }
+        } finally { Files.delete(path) }
+    }
+
     @Test fun `production content frame bounds divider between title and global status in all wide modes`() = runBlocking(awt) {
         for (mode in listOf("展开预览", "仅缩略图", "预览专注")) {
             val state = DesktopStudioWorkspaceState().apply { this.mode = mode }
