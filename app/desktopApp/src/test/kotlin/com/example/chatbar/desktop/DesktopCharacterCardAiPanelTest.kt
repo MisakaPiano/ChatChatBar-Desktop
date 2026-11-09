@@ -145,9 +145,10 @@ class DesktopCharacterCardAiPanelTest {
     }
     /** Separate native tools are rendered above the editor only for synthetic visual review. */
     @Composable private fun AuxiliaryReviewHost(content: @Composable () -> Unit) {
-        val tools = remember { mutableStateMapOf<Any, @Composable () -> Unit>() }
+        val tools = remember { mutableStateMapOf<Int, @Composable () -> Unit>() }
+        val sequence = remember { java.util.concurrent.atomic.AtomicInteger() }
         val frame: @Composable (@Composable () -> Unit) -> Unit = { body ->
-            val key = remember { Any() }
+            val key = remember { sequence.incrementAndGet() }
             val current by rememberUpdatedState(body)
             DisposableEffect(key) {
                 tools[key] = { current() }
@@ -157,11 +158,11 @@ class DesktopCharacterCardAiPanelTest {
         BoxWithConstraints(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
             val width = maxWidth; val height = maxHeight
             CompositionLocalProvider(LocalDesktopEditorAuxiliaryFrame provides frame) { content() }
-            tools.values.toList().forEach { tool ->
+            tools.toList().sortedBy { it.first }.forEach { (id, tool) -> key(id) {
                 Popup(alignment = Alignment.TopStart, properties = PopupProperties(focusable = true)) {
                     Box(Modifier.size(width, height).background(DesktopBootstrapColors.background)) { tool() }
                 }
-            }
+            } }
         }
     }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
