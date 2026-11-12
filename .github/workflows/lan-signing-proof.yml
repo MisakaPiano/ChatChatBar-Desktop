@@ -1,0 +1,61 @@
+name: LAN signing laboratory public-block proof
+on:
+  push:
+    branches: ['codex/lan-signing-proof-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  signing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate frozen public input provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          request = json.load(open('.github/lan-signing-proof-request.json'))
+          original = request['originalArtifact']
+          api = 'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/'
+          def get(path):
+              headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'}
+              return json.load(urllib.request.urlopen(urllib.request.Request(api + path, headers=headers)))
+          run = get('runs/' + str(original['runId']))
+          artifact = get('artifacts/' + str(original['id']))
+          assert run['head_sha'] == artifact['workflow_run']['head_sha'] == original['sourceSha']
+          assert artifact['workflow_run']['id'] == original['runId'] and artifact['name'] == original['name'] and not artifact['expired']
+          assert artifact['size_in_bytes'] == original['bytes']
+          assert artifact['digest'] == 'sha256:' + original['outerSha256']
+          json.dump({'originalArtifact': artifact, 'sourceRunSha': run['head_sha']}, open('original-provenance.json', 'w'), indent=2)
+          with open(os.environ['GITHUB_ENV'], 'a') as env: env.write('CCB_LAB_ORIGINAL_RUN=' + str(original['runId']) + '\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ccb-lan-preview-android
+          run-id: ${{ env.CCB_LAB_ORIGINAL_RUN }}
+          github-token: ${{ github.token }}
+          path: original
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: build-tools;36.0.0
+      - name: Assemble only in cloud and verify using official Android tools
+        run: |
+          python3 tools/lan-signing-lab/verify_detached_apk.py --source original/app-lanPreview.apk --public-request .github/lan-signing-proof-request.json --directory proof --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+          cp original-provenance.json proof/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-signing-lab-evidence
+          path: |
+            proof/*.json
+            proof/*.txt
+            original-provenance.json
