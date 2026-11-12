@@ -1,0 +1,52 @@
+name: Frozen Moment reanchor defect reproduction
+on:
+  push:
+    branches: ['codex/lan-reanchor-repro-*']
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze pre-fix source and add the diagnostic harness only
+        run: |
+          sourceSha=3ec773f1c7a708d50eef1fa74ae6628b5ede6058
+          sourceDir="$RUNNER_TEMP/ccb-moment-reanchor-old-source"
+          git worktree add --detach "$sourceDir" "$sourceSha"
+          test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
+          target="$sourceDir/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/MomentReanchorReproTest.kt"
+          test ! -e "$target"
+          cp tools/lan-reanchor-repro/MomentReanchorReproTest.kt "$target"
+          echo "CCB_REPRO_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+          mkdir -p evidence
+          python3 - <<'PY'
+          import json, os
+          json.dump({'productionSource':'3ec773f1c7a708d50eef1fa74ae6628b5ede6058', 'harnessControlSource':os.environ['GITHUB_SHA'], 'purpose':'PRE_FIX_DEFECT_REPRODUCTION_NOT_PRODUCT_PASS', 'realUserData':False, 'modelCalls':False},open('evidence/source.json','w'),indent=2)
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Exercise the actual pre-fix planner with synthetic records
+        run: |
+          cd "$CCB_REPRO_SOURCE/app"
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.MomentReanchorReproTest' --no-daemon --stacktrace
+      - name: Collect original diagnostic results
+        if: always()
+        run: |
+          if test -d "$CCB_REPRO_SOURCE/app/sharedCore/build/test-results/test"; then cp -r "$CCB_REPRO_SOURCE/app/sharedCore/build/test-results/test" evidence/; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moment-reanchor-prefixed-reproduction
+          path: evidence/
