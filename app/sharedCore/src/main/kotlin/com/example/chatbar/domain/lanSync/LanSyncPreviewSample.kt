@@ -24,8 +24,8 @@ internal object LanSyncPreviewSample {
             longTermMemory = "离线合成记忆：这段资料仅用于核对同步与保留情况。", createdAt = 1, updatedAt = 1)
         val message = ChatMessage("$PREFIX-message", SESSION, MessageRole.ASSISTANT, "这是离线合成会话。可以编辑这条消息，再到另一端核对。",
             images = listOf(image), alternatives = listOf("这是样例的第一个消息版本。", "这是离线合成会话。可以编辑这条消息，再到另一端核对。"),
-            alternativeVersionIds = listOf("sample-version-0", "sample-version-1"), currentAlternativeIndex = 1,
-            currentAlternativeVersionId = "sample-version-1", createdAt = 1, updatedAt = 1, orderKey = 1_000_000)
+            alternativeVersionIds = listOf("$PREFIX-message-version-0", "$PREFIX-message-version-1"), currentAlternativeIndex = 1,
+            currentAlternativeVersionId = "$PREFIX-message-version-1", createdAt = 1, updatedAt = 1, orderKey = 1_000_000)
         val versions = listOf(imageHash, alternateImageHash).mapIndexed { index, hash ->
             val path = reference("moment-version-$index", hash)
             val prompt = if (index == 0) "离线蓝色格样例" else "离线暖色格样例"
