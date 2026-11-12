@@ -1,0 +1,73 @@
+name: Frozen next LAN Desktop independent candidate
+on:
+  push:
+    branches: ['codex/lan-preview-signing-*']
+    paths: [.github/lan-next-preview-desktop-request.json]
+permissions:
+  contents: read
+jobs:
+  independent:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze exact source in an owned NTFS workspace
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $request = Get-Content .github/lan-next-preview-desktop-request.json -Raw | ConvertFrom-Json
+          if ($request.sourceSha -cnotmatch '^[0-9a-f]{40}$' -or $request.version -cnotmatch '^0\.1\.0-lan\.[1-9][0-9]*$' -or $request.installerVersion -cnotmatch '^0\.1\.[1-9][0-9]*$' -or $request.buildNumber -notmatch '^[1-9][0-9]*$') { throw 'LAN_PACKAGE_IDENTITY' }
+          $base = Join-Path ($env:SystemDrive + '\') ('ccblan-' + [Guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $base -ErrorAction Stop | Out-Null
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          $source = Join-Path $base 'source'
+          git worktree add --detach $source $request.sourceSha
+          if ($LASTEXITCODE -ne 0 -or (git -C $source rev-parse HEAD) -cne $request.sourceSha) { throw 'SOURCE_IDENTITY' }
+          $output = New-Item -ItemType Directory -Path (Join-Path $base 'output') -ErrorAction Stop
+          $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
+          @("CCB_CI_SOURCE=$source", "CCB_LAN_OUTPUT=$($output.FullName)", "CCB_LAN_VERSION=$($request.version)", "CCB_LAN_INSTALLER=$($request.installerVersion)", "CCB_LAN_BUILD=$($request.buildNumber)", "CCB_LAN_SOURCE=$($request.sourceSha)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+          Copy-Item -LiteralPath .github/lan-next-preview-desktop-request.json -Destination (Join-Path $output 'source-request.json')
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build ordinary application image and independent profile ZIP
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-Location (Join-Path $env:CCB_CI_SOURCE 'app')
+          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_LAN_VERSION" "-PdesktopInstallerVersion=$env:CCB_LAN_INSTALLER" "-PdesktopBuildNumber=$env:CCB_LAN_BUILD" '-Pcompose.desktop.application.downloadWix=false' --no-daemon --no-configuration-cache --console=plain
+          if ($LASTEXITCODE -ne 0) { throw 'LAN_APP_IMAGE_BUILD' }
+          $image = Join-Path $env:CCB_CI_SOURCE 'app/desktopApp/build/compose/binaries/main/app/ChatChatBarDesktop'
+          $audit = Join-Path $env:CCB_LAN_OUTPUT 'app-image-audit.json'
+          python -B "$env:CCB_CI_SOURCE/tools/desktop/windows/audit_app_image.py" --image $image --report $audit --version $env:CCB_LAN_VERSION --commit $env:CCB_LAN_SOURCE --installer-version $env:CCB_LAN_INSTALLER --profile desktop
+          if ($LASTEXITCODE -ne 0) { throw 'LAN_IMAGE_AUDIT' }
+          $archive = Join-Path $env:CCB_LAN_OUTPUT "CCB-$env:CCB_LAN_VERSION-independent-windows-x64.zip"
+          python -B "$env:CCB_CI_SOURCE/tools/desktop/nsis/build_independent_zip.py" --image $image --destination $archive --version $env:CCB_LAN_VERSION --commit $env:CCB_LAN_SOURCE --installer-version $env:CCB_LAN_INSTALLER --lan-sync-preview
+          if ($LASTEXITCODE -ne 0) { throw 'LAN_INDEPENDENT_PACKAGE' }
+          @("CCB_LAN_IMAGE=$image", "CCB_LAN_ARCHIVE=$archive", "CCB_LAN_AUDIT=$audit") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Verify actual independent launch and normal close in a synthetic profile
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $approved = Join-Path $env:CCB_CI_SOURCE 'app/desktopApp/build/preview-continuous-private-20261025'
+          New-Item -ItemType Directory -Path $approved -Force | Out-Null
+          $case = Join-Path $approved 'windows-runtime-independent-lan'
+          $outside = Join-Path $approved 'lan-outside-control/ChatChatBarDesktop.bootstrap.json'
+          python -B "$env:CCB_CI_SOURCE/tools/desktop/nsis/independent_smoke.py" --source $env:CCB_CI_SOURCE --archive $env:CCB_LAN_ARCHIVE --receipt ([IO.Path]::ChangeExtension($env:CCB_LAN_ARCHIVE, '.json')) --audit $env:CCB_LAN_AUDIT --case $case --version $env:CCB_LAN_VERSION --commit $env:CCB_LAN_SOURCE --outside-bootstrap $outside
+          if ($LASTEXITCODE -ne 0) { throw 'LAN_NATIVE_LIFECYCLE' }
+          Copy-Item -LiteralPath (Join-Path $case 'result.json') -Destination (Join-Path $env:CCB_LAN_OUTPUT 'native-result.json')
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_LAN_OUTPUT != ''
+        with:
+          name: ccb-lan-next-independent-desktop
+          compression-level: 0
+          path: |
+            ${{ env.CCB_LAN_OUTPUT }}/*.zip
+            ${{ env.CCB_LAN_OUTPUT }}/*.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-lan/result.json
