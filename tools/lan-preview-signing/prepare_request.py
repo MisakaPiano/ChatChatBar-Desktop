@@ -4,6 +4,9 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
+# The local portable Python uses isolated module search paths.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from apk_v2_local import prepare, write_new, file_hash
 
 CERTIFICATE = '801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7'
@@ -20,7 +23,12 @@ def main(directory, artifact_path, keyfile, output):
     manifest = json.loads((directory/'raw-manifest.json').read_text(encoding='utf8'))
     frozen = json.loads((directory/'source-request.json').read_text(encoding='utf8'))
     artifact = json.loads(artifact_path.read_text(encoding='utf8'))
-    assert set(artifact) == {'id', 'runId', 'name', 'bytes', 'outerSha256', 'controlSha'}
+    fields = {'id', 'runId', 'name', 'bytes', 'outerSha256', 'controlSha'}
+    assert set(artifact) in (fields, fields | {'knownDiagnosticFailure'})
+    if 'knownDiagnosticFailure' in artifact:
+        assert artifact['knownDiagnosticFailure'] == 'INSTRUMENTATION_APK_VERSION_OMITTED'
+        assert artifact['runId'] == 43330457689
+        assert artifact['controlSha'] == 'a2ce60578f4f1aea08bf3ff481ed2cc6b738f65c'
     assert artifact['name'] == 'ccb-lan-next-signing-inputs'
     assert all(type(artifact[k]) is int and artifact[k] > 0 for k in ('id', 'runId', 'bytes'))
     assert re.fullmatch('[a-f0-9]{64}', artifact['outerSha256'])

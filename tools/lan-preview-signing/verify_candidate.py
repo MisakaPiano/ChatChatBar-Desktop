@@ -7,7 +7,9 @@ import re
 import shutil
 import struct
 import subprocess
+import sys
 import zipfile
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from assemble_public_apk import assemble, file_hash
 
 CERTIFICATE = '801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7'
@@ -63,13 +65,14 @@ def main(request_path, source_dir, output_dir, build_tools):
         digest = re.search(r'^Signer #1 certificate SHA-256 digest: (\S+)', signature, re.M)
         assert digest and digest.group(1) == CERTIFICATE
         badging = run_tool(build_tools/'aapt', ['dump', 'badging', str(output)], output_dir/(role+'-badging.txt'))
-        match = re.search(r"^package: name='([^']+)' versionCode='([0-9]+)'", badging, re.M)
+        match = re.search(r"^package: name='([^']+)' versionCode='([0-9]*)'", badging, re.M)
         assert match and match.group(1) == package
+        actual_version = int(match.group(2)) if match.group(2) else None
         if version is not None:
-            assert int(match.group(2)) == version
+            assert actual_version == version
         assert "sdkVersion:'26'" in badging
         run_tool(build_tools/'zipalign', ['-c', '4', str(output)], output_dir/(role+'-zipalign.txt'))
-        rows.append({'role': role, 'package': package, 'versionCode': int(match.group(2)),
+        rows.append({'role': role, 'package': package, 'versionCode': actual_version,
                      'sha256': file_hash(output), 'bytes': output.stat().st_size,
                      'certificateSha256': CERTIFICATE, 'officialV2Verified': True,
                      'entryBytesAndOffsetsPreserved': True, 'zipalign4Passed': True})

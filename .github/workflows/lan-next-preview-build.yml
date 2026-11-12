@@ -61,13 +61,13 @@ jobs:
               p=root/name
               text=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/aapt','dump','badging',str(p)],text=True)
               (root/(name+'.badging.txt')).write_text(text,encoding='utf8')
-              match=re.search(r"^package: name='([^']+)' versionCode='([0-9]+)'",text,re.M)
+              match=re.search(r"^package: name='([^']+)' versionCode='([0-9]*)'",text,re.M)
               print(name, text.splitlines()[0], flush=True)
               assert match and match.group(1)==package, ('APK_PACKAGE',name,package,match.groups() if match else None)
               if version is not None: assert int(match.group(2))==version, ('APK_VERSION',name,version,match.group(2))
               assert "sdkVersion:'26'" in text
               with p.open('rb') as stream: digest=hashlib.file_digest(stream,'sha256').hexdigest()
-              rows.append({'filename':name,'package':package,'versionCode':int(match.group(2)),'sha256':digest,'bytes':p.stat().st_size})
+              rows.append({'filename':name,'package':package,'versionCode':int(match.group(2)) if match.group(2) else None,'sha256':digest,'bytes':p.stat().st_size})
           request=json.load(open('.github/lan-next-preview-build-request.json'))
           json.dump({'sourceSha':request['sourceSha'],'controlSha':os.environ['GITHUB_SHA'],'inputs':rows,'persistentSigningApplied':False,'deviceUpgradeTested':False,'userDelivered':False},open(root/'raw-manifest.json','w'),indent=2)
           PY

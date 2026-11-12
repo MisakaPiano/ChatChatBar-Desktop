@@ -32,7 +32,21 @@ jobs:
           artifact = get('artifacts/'+str(original['id']))
           assert re.fullmatch('[a-f0-9]{40}', original['controlSha'])
           assert run['head_sha'] == artifact['workflow_run']['head_sha'] == original['controlSha']
-          assert run['conclusion'] == 'success'
+          if original.get('knownDiagnosticFailure') is None:
+              assert run['conclusion'] == 'success'
+          else:
+              # One observed wrapper-only failure: the test APK legitimately omits versionCode.
+              # Do not treat its old run as green or waive any future failed build.
+              assert original['knownDiagnosticFailure'] == 'INSTRUMENTATION_APK_VERSION_OMITTED'
+              assert original['runId'] == 43330457689
+              assert original['controlSha'] == 'a2ce60578f4f1aea08bf3ff481ed2cc6b738f65c'
+              assert run['conclusion'] == 'failure'
+              jobs = get('runs/'+str(original['runId'])+'/jobs')['jobs']
+              assert len(jobs) == 1 and jobs[0]['name'] == 'raw-inputs'
+              steps = {s['name']:s['conclusion'] for s in jobs[0]['steps']}
+              for name in ['Freeze source and validate isolated-series request', 'Build isolated81 and its instrumentation APK', 'Preserve81 inputs before the next variant build', 'Build isolated82 with matching source and retained fixture']:
+                  assert steps[name] == 'success'
+              assert steps['Pin all raw inputs and verify manifest identities'] == 'failure'
           assert artifact['workflow_run']['id'] == original['runId'] and artifact['name'] == original['name'] and not artifact['expired']
           assert artifact['size_in_bytes'] == original['bytes']
           assert artifact['digest'] == 'sha256:'+original['outerSha256']
@@ -56,6 +70,8 @@ jobs:
           packages: platform-tools build-tools;36.0.0
       - name: Assemble only from public blocks and independently verify exact APKs
         run: |
+          controlSha=$(python3 -c 'import json; print(json.load(open(".github/lan-next-preview-signing-request.json"))["originalArtifact"]["controlSha"])')
+          python3 tools/lan-preview-signing/inspect_raw_inputs.py --directory original --control-sha "$controlSha" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
           python3 tools/lan-preview-signing/verify_candidate.py --request .github/lan-next-preview-signing-request.json --source-dir original --output-dir candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0"
           cp original-provenance.json candidate/
       - name: Enable cloud emulator acceleration
