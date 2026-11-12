@@ -22,10 +22,11 @@ data class LanSyncPairOffer(val protocol: Int = LAN_SYNC_PROTOCOL, val host: Str
         .encodeToString(lanSyncJson.encodeToString(this).toByteArray(Charsets.UTF_8))
     companion object {
         fun parse(code: String): LanSyncPairOffer {
+            require(code.length <= 2048) { "SYNC_PAIR_CODE" }
             val prefix = "CCB-LAN$LAN_SYNC_PROTOCOL:"
             val version = Regex("^CCB-LAN([0-9]+):").find(code)?.groupValues?.get(1)
             require(version == null || version == LAN_SYNC_PROTOCOL.toString()) { "SYNC_PROTOCOL" }
-            require(code.length <= 2048 && code.startsWith(prefix)) { "SYNC_PAIR_CODE" }
+            require(code.startsWith(prefix)) { "SYNC_PAIR_CODE" }
             return lanSyncJson.decodeFromString<LanSyncPairOffer>(lanSyncUtf8(java.util.Base64.getUrlDecoder()
                 .decode(code.removePrefix(prefix)))).also { it.validate() }
         }

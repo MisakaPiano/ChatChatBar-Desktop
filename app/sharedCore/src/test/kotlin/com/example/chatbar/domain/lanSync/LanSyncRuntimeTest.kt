@@ -156,12 +156,40 @@ class LanSyncRuntimeTest {
             previous = a.store.baseline(b.id, a.id).revision
             a.writeCard(a.readCard("pc-card").copy(name = "电脑分歧")); b.writeCard(b.readCard("phone-card").copy(name = "手机分歧"))
             host.requestSync(); until("projected conflict") { host.state.value.conflicts.size == 1 }
+            delay(16_000) // Human review must outlive the ordinary15s socket read timeout without reconnecting.
+            assertEquals(1, host.state.value.conflicts.size)
+            assertTrue(phone.state.value.busy)
             host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_PHONE))
             completed(a, b, previous); assertEquals("手机分歧", a.readCard("pc-card").name)
             previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
             assertEquals(mapping, b.store.projection(a.id, b.id)); assertEquals(1, a.names().size); assertEquals(1, b.names().size)
+            previous = a.store.baseline(b.id, a.id).revision
+            a.writeCard(a.readCard("pc-card").copy(name = "电脑两份")); b.writeCard(b.readCard("phone-card").copy(name = "手机两份"))
+            host.requestSync(); until("projected keep both conflict") { host.state.value.conflicts.size == 1 }
+            host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_BOTH))
+            completed(a, b, previous)
+            assertEquals(setOf("电脑两份", "手机两份"), a.names()); assertEquals(a.names(), b.names())
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            assertEquals(2, a.names().size); assertEquals(2, b.names().size)
             assertEquals("phone-person", b.readCard("phone-card").characters.single().id)
             assertContentEquals(excludedBytes, Files.readAllBytes(excluded))
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
+    @Test fun lostAcknowledgementAfterProjectionPersistenceResumesWithoutAnotherAliasOrCopy() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); var interrupted = false
+        val b = End("phone", network) { phase, _ -> if (phase == "PHONE_PROJECTION" && !interrupted) {
+            interrupted = true; throw java.io.IOException("synthetic lost projection acknowledgement")
+        } }
+        a.writeCard(CharacterCard("pc", "同源卡", sourcePresetKey = "synthetic/preset", sourcePresetVersion = 1, createdAt = 1, updatedAt = 1))
+        b.writeCard(a.readCard("pc").copy(id = "phone", createdAt = 2, updatedAt = 2))
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            assertTrue(interrupted)
+            assertEquals(listOf(LanSyncIdBinding("character_cards", "phone", "pc")), b.store.projection(a.id, b.id).bindings)
+            assertEquals(setOf("同源卡"), a.names()); assertEquals(a.names(), b.names())
+            assertFalse(Files.exists(b.root.resolve("entities/character_cards/pc.json")))
+            assertEquals("phone", b.readCard("phone").id)
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun earlierProtocolIsRefusedBeforeTrustProjectionOrDataMutation() = runBlocking {

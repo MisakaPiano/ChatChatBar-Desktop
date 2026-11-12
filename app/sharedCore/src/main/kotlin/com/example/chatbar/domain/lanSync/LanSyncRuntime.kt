@@ -224,7 +224,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                         else baseline
                     if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
                     val comparison = LanSyncCompare.compare(computer.snapshot, phoneSnapshot, ancestor)
-                    val decisions = decide(comparison)
+                    val decisions = try { decide(comparison, wire) } catch (failure: IllegalArgumentException) {
+                        if (failure.message == "SYNC_CONFLICT_TIMEOUT") { requested = false; wire.sendText("SYNC_CONFLICT_TIMEOUT") }
+                        throw failure
+                    }
                     val planned = LanSyncPlanner.plan(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
                     val plan = planned.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents, supersedes = previous?.plan?.transaction)
                     LanSyncPending(peerId, plan, computer.snapshot.hashes(), phoneSnapshot.hashes()).also {
@@ -304,10 +307,19 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                             store.admitProjection(peer.fingerprint, identity.fingerprint, offer.projection)
                         }
                     }
+                    observe("PHONE_PROJECTION", offer.projection.digest())
                     phoneSnapshot = phoneSnapshot.copy(records = offer.projection.rewrite(phoneSnapshot.records))
                 } else require(offer.sourceHashes.isEmpty() && offer.computerPresets.isEmpty()) { "SYNC_PROJECTION_PROOF" }
                 wire.sendText(lanSyncJson.encodeToString(phoneSnapshot.hashes()))
-                val plan = lanSyncJson.decodeFromString<LanSyncPlan>(wire.text())
+                val decisionDeadline = System.nanoTime() + 10 * 60_000_000_000L
+                var planText = wire.text()
+                while (planText == "WAIT_DECISION") {
+                    require(System.nanoTime() <= decisionDeadline) { "SYNC_CONFLICT_TIMEOUT" }
+                    _state.value = _state.value.copy(status = "等待在电脑选择冲突内容，连接保持中")
+                    planText = wire.text()
+                }
+                require(planText != "SYNC_CONFLICT_TIMEOUT") { "SYNC_CONFLICT_TIMEOUT" }
+                val plan = lanSyncJson.decodeFromString<LanSyncPlan>(planText)
                 val expected = lanSyncJson.decodeFromString<Map<String, String>>(wire.text())
                 val received = LanSyncTransfer.receive(wire, store.root, peer.fingerprint)
                 try {
@@ -342,12 +354,20 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         platform.exclusive { workspace.recover(); value = workspace.capture(identity.fingerprint, currentProjection()) }
         return requireNotNull(value)
     }
-    private suspend fun decide(comparison: LanSyncComparison): Map<String, LanSyncChoice> {
+    private suspend fun decide(comparison: LanSyncComparison, wire: LanSyncWire): Map<String, LanSyncChoice> {
         if (comparison.conflicts.isEmpty()) return emptyMap()
         val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
         choices = answer
         _state.value = _state.value.copy(status = "请逐项选择双方修改的内容", conflicts = comparison.conflicts)
-        try { return withTimeout(10 * 60_000) { answer.await() } } finally { choices = null }
+        return coroutineScope {
+            val keepalive = launch { while (isActive) { wire.sendText("WAIT_DECISION"); delay(5_000) } }
+            try {
+                withTimeoutOrNull(10 * 60_000) { answer.await() } ?: throw IllegalArgumentException("SYNC_CONFLICT_TIMEOUT")
+            } finally {
+                choices = null
+                withContext(NonCancellable) { keepalive.cancelAndJoin() }
+            }
+        }
     }
     private suspend fun applyPrepared(pending: LanSyncPending, blobs: Map<String, java.nio.file.Path>) {
         platform.exclusive {
@@ -430,6 +450,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_PAIR_EXPIRED" -> "配对码已过期，请在电脑生成新的二维码"
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"
             "SYNC_PROTOCOL" -> "两端同步协议版本不同，请使用匹配的双端同步版本"
+            "SYNC_CONFLICT_TIMEOUT" -> "冲突选择等待已结束，现有资料和恢复记录已保留；请重新点同步检查"
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"
             "SYNC_BASELINE_MISMATCH" -> "两端共同基线不一致，已保留资料和回执，需恢复上次同步"
             "SYNC_BUSY_MEMORY", "SYNC_PENDING_REPOSITORY_WORK" -> "本机仍有资料处理或恢复任务，请完成后重试"
