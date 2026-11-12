@@ -61,6 +61,7 @@ class DesktopAppContainer internal constructor(
             chatRepository.reloadAfterLanSync(); voiceRepository.reload()
             settingsRepository.refreshPlayerSettingFromStorage()
             jsonFileStorage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
+            if (novelAiStudioOwner.isInitialized()) check(novelAiStudioController.reloadPostProcessResults()) { "SYNC_POSTPROCESS_RELOAD" }
             if (primaryChatControllerOwner.isInitialized()) primaryChatController.refresh()
             if (momentsOwner.isInitialized()) momentsController.refresh()
         }, resolve = { reference ->

@@ -19,7 +19,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val assetResource: (String) -> ByteArray? = { null },
     private val audioResource: (String, String, String, Path) -> String = { _, _, _, file -> file.toString() },
     private val observeJournal: (String, Int) -> Unit = { _, _ -> },
-    private val validateResource: (String, Path) -> Unit = { _, _ -> },
+    private val validateResource: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> },
     private val resourceReference: (String, Path) -> String = { _, path -> path.toString() },
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
@@ -31,7 +31,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         try {
         val blobs = linkedMapOf<String, Path>(); val resources = linkedMapOf<String, Long>()
         val records = mutableListOf<LanSyncRecord>(); val sourceFiles = linkedMapOf<String, String>()
-        val checkedResources = hashSetOf<Pair<String, String>>()
+        val checkedResources = hashSetOf<Triple<String, String, String>>()
         val excluded = linkedSetOf<String>()
         val entities = dataRoot.resolve("entities")
         if (Files.exists(entities, LinkOption.NOFOLLOW_LINKS)) {
@@ -78,7 +78,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                                 if (reference.startsWith(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX))
                                     require(hash == reference.removePrefix(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX)) { "SYNC_VIBE_PAYLOAD_INVALID" }
                             }
-                            if (checkedResources.add(kind to hash)) validateResource(kind, requireNotNull(blobs[hash]))
+                            LanSyncPostProcess.validateImageHash(original, field, hash)
+                            if (checkedResources.add(Triple(kind, hash, original.key))) validateResource(kind, requireNotNull(blobs[hash]), original)
                             val suffix = if (kind == "payloads") "utf8" else reference.substringAfterLast('.', "bin").lowercase().takeIf {
                                 it.matches(Regex("[a-z0-9]{1,8}"))
                             } ?: "bin"
@@ -133,7 +134,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
         Files.createDirectory(transaction)
         val changes = linkedMapOf<String, ByteArray?>()
-        val checkedResources = hashSetOf<Pair<String, String>>()
+        val checkedResources = hashSetOf<Triple<String, String, String>>()
         val localRecords = projection.rewrite(plan.snapshot.records, toLocal = true)
         val desired = plan.snapshot.records.zip(localRecords).associate { (wire, local) ->
             LanSyncScope.relativePath(local) to (wire to local)
@@ -151,7 +152,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     val source = requireNotNull(blobs[parts[3]]) { "SYNC_RESOURCE_MISSING" }
                     val size = requireNotNull(plan.snapshot.resources[parts[3]]) { "SYNC_RESOURCE_MANIFEST" }
                     require(hashFile(source, size) == parts[3]) { "SYNC_RESOURCE_DAMAGED" }
-                    if (checkedResources.add(parts[1] to parts[3])) validateResource(parts[1], source)
+                    if (checkedResources.add(Triple(parts[1], parts[3], wire.key))) validateResource(parts[1], source, wire)
                     if (parts[1] == "audio") {
                         audioResource(requireNotNull(local.text("sessionId")), local.id, parts[3], source)
                     } else if (parts[1] == "payloads") {

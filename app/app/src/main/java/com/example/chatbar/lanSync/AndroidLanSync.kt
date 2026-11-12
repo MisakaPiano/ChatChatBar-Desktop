@@ -38,12 +38,17 @@ class AndroidLanSync(private val app: ChatBarApp) {
             val target = dataRoot.resolve("audio/lan-$hash.mp3")
             LanSyncBlobs.publish(source, target, Files.size(source), hash, root)
             target.toString()
-        }, validateResource = { kind, path ->
+        }, validateResource = { kind, path, record ->
             if (kind == "images") {
-                require(Files.size(path) <= 32L * 1024 * 1024) { "SYNC_IMAGE_BUDGET" }
+                val result = LanSyncPostProcess.record(record)
+                require(Files.size(path) <= if (result == null) 32L * 1024 * 1024 else
+                    com.example.chatbar.domain.image.NovelAiPostProcessResultRecord.MAX_IMAGE_BYTES.toLong()) { "SYNC_IMAGE_BUDGET" }
                 val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { android.graphics.BitmapFactory.decodeStream(it, null, options) }
-                require(options.outWidth > 0 && options.outHeight > 0 && options.outWidth.toLong() * options.outHeight <= 32_000_000) { "SYNC_IMAGE_INVALID" }
+                val pixels = if (result == null) 32_000_000L else com.example.chatbar.domain.image.NovelAiPostProcessPolicy.MAX_PIXELS *
+                    if (result.operation == com.example.chatbar.domain.image.NovelAiPostProcessTab.UPSCALE.name) 4 else 1
+                require(options.outWidth > 0 && options.outHeight > 0 && options.outWidth.toLong() * options.outHeight <= pixels &&
+                    (result == null || options.outMimeType == "image/png")) { "SYNC_IMAGE_INVALID" }
             }
         })
     val runtime by lazy { LanSyncRuntime(store, workspace, object : LanSyncPlatform {

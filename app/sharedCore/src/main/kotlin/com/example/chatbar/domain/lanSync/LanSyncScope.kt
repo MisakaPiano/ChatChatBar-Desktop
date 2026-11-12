@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
+import com.example.chatbar.domain.image.NovelAiPostProcessResultRecord
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.*
 
@@ -24,9 +25,10 @@ object LanSyncScope {
         "moment_posts" to MomentPost.serializer(), "moment_tasks" to MomentTask.serializer(),
         "player_setting" to PlayerSetting.serializer(),
         "novelai_generation_history" to NovelAiGenerationHistoryEntry.serializer(),
+        LanSyncPostProcess.TYPE to NovelAiPostProcessResultRecord.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿和工作室当前草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。电脑后处理记录与结果图片可往返保留，需回电脑查看。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿、工作室当前草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
@@ -81,6 +83,7 @@ object LanSyncScope {
         val serializer = requireNotNull(schemas[record.type]) { "SYNC_UNSUPPORTED_TYPE" }
         lanSyncJson.decodeFromJsonElement(serializer, record.body)
         if (record.type in LanSyncMoments.types) LanSyncMoments.validate(record)
+        LanSyncPostProcess.validate(record)
         require(identity(record.type, record.body) == record.id) { "SYNC_BODY_ID" }
         // Pending state-machine journals have their own owner; do not transport an active transaction.
         if (record.type == "chat_sessions") {

@@ -60,7 +60,7 @@ class LanSyncMomentTransferTest {
         val store = LanSyncStateStore(privateRoot, keys::protect, keys::unprotect)
         val id = store.identity().fingerprint
         private val workspace = LanSyncWorkspace(root, privateRoot.resolve("workspace"), { Paths.get(it) },
-            validateResource = { kind, file -> if (kind == "images") {
+            validateResource = { kind, file, _ -> if (kind == "images") {
                 val bitmap = requireNotNull(BitmapFactory.decodeFile(file.toString()))
                 require(bitmap.width == 8 && bitmap.height == 8); bitmap.recycle()
             } })

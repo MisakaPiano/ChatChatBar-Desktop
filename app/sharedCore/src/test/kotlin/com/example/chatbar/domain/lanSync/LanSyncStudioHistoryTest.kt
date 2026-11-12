@@ -15,7 +15,7 @@ class LanSyncStudioHistoryTest {
     private fun root() = Files.createTempDirectory("lan-studio-history-").toRealPath()
     private fun workspace(root: Path, state: Path) = LanSyncWorkspace(root, state, { raw ->
         Path.of(raw).let { if (it.isAbsolute) it else root.resolve(it) }
-    }, validateResource = { kind, path -> if (kind == "images") {
+    }, validateResource = { kind, path, _ -> if (kind == "images") {
         val image = javax.imageio.ImageIO.read(path.toFile()); require(image != null); image.flush()
     } })
     private fun write(root: Path, entry: NovelAiGenerationHistoryEntry): Path {

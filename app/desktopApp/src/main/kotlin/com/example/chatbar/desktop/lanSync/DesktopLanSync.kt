@@ -26,10 +26,16 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                     app.voiceAudioStore.persist(session, artifact, it, Files.size(source)).path
                 }
             }
-        }, validateResource = { kind, path ->
+        }, validateResource = { kind, path, record ->
             if (kind == "images") {
-                require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
-                DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
+                val result = LanSyncPostProcess.record(record)
+                if (result != null) {
+                    require(Files.size(path) <= DesktopPostProcessRaster.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
+                    DesktopPostProcessRaster.decode(Files.readAllBytes(path), com.example.chatbar.domain.image.NovelAiPostProcessTab.valueOf(result.operation), longestSide = 256).flush()
+                } else {
+                    require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
+                    DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
+                }
             }
         }, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) })
     val runtime by lazy { LanSyncRuntime(stateStore, workspace, object : LanSyncPlatform {

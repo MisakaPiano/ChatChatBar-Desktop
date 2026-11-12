@@ -61,7 +61,7 @@ jobs:
           @("TEMP=$env:TEMP", "TMP=$env:TMP", "CCB_LAN_TEST_ENV=$($evidence.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
       - name: Desktop compilation
         working-directory: app
-        run: .\gradlew.bat :desktopApp:test --tests '*DesktopUpdateNoticesTest*' --tests '*DesktopStartupGateTest*' --tests '*DesktopLanSync*' --tests '*DormantPreservationPreparationTest*' --tests '*DesktopPreservationStoreTest*' --tests '*DesktopMomentVersionBackupTest*' --tests '*DesktopFullBackupWriterTest*' --tests '*DesktopMomentAdmissionStoreTest*' --no-daemon --stacktrace
+        run: .\gradlew.bat :desktopApp:test --tests '*DesktopUpdateNoticesTest*' --tests '*DesktopStartupGateTest*' --tests '*DesktopLanSync*' --tests '*DormantPreservationPreparationTest*' --tests '*DesktopPreservationStoreTest*' --tests '*DesktopMomentVersionBackupTest*' --tests '*DesktopFullBackupWriterTest*' --tests '*DesktopMomentAdmissionStoreTest*' --tests '*DesktopPostProcessResultsTest*' --tests '*DesktopPostProcessRetainedMediaTest*' --tests '*DesktopPostProcessSourceIdentityTest*' --no-daemon --stacktrace
       - name: Collect original results within one artifact root
         if: always()
         run: |

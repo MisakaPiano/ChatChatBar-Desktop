@@ -29,7 +29,7 @@ class DesktopLanSyncResourceTest {
         val resources = DesktopCharacterResourceStore(root)
         val workspace = LanSyncWorkspace(root, state, resources::resolveOwnedReference,
             resourceReference = { _, path -> desktopLanSyncResourceReference(root, path) },
-            validateResource = { kind, path -> if (kind == "images") DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush() })
+            validateResource = { kind, path, _ -> if (kind == "images") DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush() })
         workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()), emptyMap(), "computer", mapOf(hash to blob))
         val restored = requireNotNull(JsonFileStorage(root).loadEntity("character_cards", card.id, CharacterCard.serializer()))
         assertContentEquals(bytes, resources.readBytes(requireNotNull(restored.avatar)))
