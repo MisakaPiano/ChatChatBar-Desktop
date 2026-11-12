@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 import java.security.MessageDigest
 import java.util.UUID
 
-const val LAN_SYNC_PROTOCOL = 4
+const val LAN_SYNC_PROTOCOL = 5
 
 /** Protocol identities are independent of filenames, clocks, IP addresses and display names. */
 @Serializable

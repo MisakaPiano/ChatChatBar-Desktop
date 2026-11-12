@@ -548,6 +548,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_COMPONENT_HISTORY_MISSING" -> "关联动态的共同成员记录缺失，已停止写入并保留资料；请检查同步恢复记录"
             "SYNC_STORAGE_SHAPE" -> "资料存放位置与当前版本不符，已停止写入并保留原文件；请检查后重试"
             "SYNC_SINGLETON_KEEP_BOTH" -> "全局设定只能保留一个生效版本，请选择电脑或手机的版本"
+            "SYNC_VIBE_PAYLOAD_INVALID" -> "氛围编码资源缺失或校验未通过，已停止写入并保留原资料；请检查后重试"
             "SYNC_MOMENT_ADMISSION_STORAGE" -> "本机朋友圈调度授权未能安全保存，尚未开始写入同步资料；请检查后重试"
             "SYNC_CONFLICT_TIMEOUT" -> "冲突选择等待已结束，现有资料和恢复记录已保留；请重新点同步检查"
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"

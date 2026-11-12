@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.*
 
@@ -22,9 +23,10 @@ object LanSyncScope {
         "voice_anchor_states" to VoiceAnchorState.serializer(),
         "moment_posts" to MomentPost.serializer(), "moment_tasks" to MomentTask.serializer(),
         "player_setting" to PlayerSetting.serializer(),
+        "novelai_generation_history" to NovelAiGenerationHistoryEntry.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿和工作室当前草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
@@ -46,8 +48,12 @@ object LanSyncScope {
     /** Only previously supported bodies are reconsidered; the frozen legacy envelope is never rewritten. */
     internal fun validateLegacyPending(snapshot: LanSyncSnapshot) {
         try {
-            val allowed = if (snapshot.protocol == 3) legacyChatTypes + LanSyncMoments.types else legacyChatTypes
-            require(snapshot.protocol in 1..3 && allowed.containsAll(snapshot.coveredTypes))
+            val allowed = when (snapshot.protocol) {
+                3 -> legacyChatTypes + LanSyncMoments.types
+                4 -> legacyChatTypes + LanSyncMoments.types + "player_setting"
+                else -> legacyChatTypes
+            }
+            require(snapshot.protocol in 1..4 && allowed.containsAll(snapshot.coveredTypes))
             val compatible = snapshot.copy(protocol = LAN_SYNC_PROTOCOL,
                 records = snapshot.records.map { it.copy(body = normalize(it.type, it.body)) })
             compatible.validate(); validateGraph(compatible)
@@ -92,14 +98,15 @@ object LanSyncScope {
         val mediaIdentities = linkedMapOf<String, String>()
         snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
             when {
-                reference.isBlank() || reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
-                record.type == "save_slots" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
+                reference.isBlank() || field != "vibePayload" && reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
+                record.type == "save_slots" && field != "vibePayload" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
                     reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) -> Unit
                 else -> {
                     val parts = reference.split('/')
-                    require(parts.size == 5 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages") &&
+                    require(parts.size == 5 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages", "payloads") &&
                         parts[2].matches(Regex("[a-f0-9-]{36}")) && parts[3].matches(Regex("[a-f0-9]{64}")) && parts[4].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_EXTERNAL_WIRE_REFERENCE" }
-                    require((field == "packageFile") == (parts[1] == "packages") && (field == "audioPath") == (parts[1] == "audio")) { "SYNC_RESOURCE_KIND" }
+                    require((field == "packageFile") == (parts[1] == "packages") && (field == "audioPath") == (parts[1] == "audio") &&
+                        (field == "vibePayload") == (parts[1] == "payloads")) { "SYNC_RESOURCE_KIND" }
                     require(parts[3] in snapshot.resources) { "SYNC_RESOURCE_MANIFEST" }
                     val identity = "${parts[1]}/${parts[2]}"
                     require(mediaIdentities[identity]?.let { it == parts[3] } != false) { "SYNC_RESOURCE_ID_CHANGED" }

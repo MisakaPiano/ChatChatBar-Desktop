@@ -58,6 +58,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             app.chatRepository.reloadAfterLanSync(); app.voiceMessageRepository.reload()
             app.momentRepository.refreshFromStorage()
             app.settingsRepository.refreshPlayerSettingFromStorage()
+            app.novelAiStudioRepository.initialize()
         }
     }, android.os.Build.MODEL.take(80)) }
     fun recoverBeforeRepositories() = workspace.recover()

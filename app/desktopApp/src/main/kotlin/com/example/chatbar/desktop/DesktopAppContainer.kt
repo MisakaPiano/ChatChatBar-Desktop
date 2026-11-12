@@ -60,6 +60,7 @@ class DesktopAppContainer internal constructor(
             characterRepository.refreshFromStorage(); formatCardRepository.refreshFromStorage(); worldBookRepository.refreshFromStorage()
             chatRepository.reloadAfterLanSync(); voiceRepository.reload()
             settingsRepository.refreshPlayerSettingFromStorage()
+            jsonFileStorage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
             if (primaryChatControllerOwner.isInitialized()) primaryChatController.refresh()
             if (momentsOwner.isInitialized()) momentsController.refresh()
         }, resolve = { reference ->

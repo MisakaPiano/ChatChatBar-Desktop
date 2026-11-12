@@ -10,6 +10,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.domain.moment.MomentScheduler
+import com.example.chatbar.domain.image.*
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -20,6 +21,7 @@ import java.nio.file.Paths
 import java.util.UUID
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -66,7 +68,10 @@ class LanSyncMomentTransferTest {
             override suspend fun exclusive(work: suspend () -> Unit) = scheduler.withLanSyncMaintenance {
                 AiBackgroundWorkManager.withLanSyncMaintenance { gate.exclusive(work) }
             }
-            override suspend fun reload(sessionIds: Set<String>) { repository.refreshFromStorage() }
+            override suspend fun reload(sessionIds: Set<String>) {
+                repository.refreshFromStorage(); settings.refreshPlayerSettingFromStorage()
+                storage.loadAll("novelai_generation_history", NovelAiGenerationHistoryEntry.serializer())
+            }
         }, name, scope = scope, network = network)
         suspend fun close() { runtime.closeAndDrain(); scope.cancel(); scope.coroutineContext[Job]!!.join() }
         fun reopen() = Endpoint(app, network, name, root, privateRoot, keyAlias)
@@ -86,6 +91,68 @@ class LanSyncMomentTransferTest {
             bitmap.eraseColor(color)
             java.io.ByteArrayOutputStream().use { output -> check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)); output.toByteArray() }
         } finally { bitmap.recycle() }
+    }
+
+    @Test fun actualAndroidStudioHistoryVibeAndPlayerSingletonTransferReverseAndReopenWithoutProviders() = runBlocking {
+        val app = ApplicationProvider.getApplicationContext<ChatBarApp>()
+        withTimeout(60000) { while (!app.lanSyncStartupReady) { check(!app.lanSyncRecoveryFailed); delay(100) } }
+        val network = Network()
+        var a = Endpoint(app, network, "synthetic-studio-host"); var b = Endpoint(app, network, "synthetic-studio-phone")
+        var left = NovelAiStudioStateRepository(a.storage); var right = NovelAiStudioStateRepository(b.storage)
+        try {
+            a.settings.initialize() // The destination has no player singleton yet: first participation is an addition.
+            a.settings.updateAppSettings { it.copy(siliconFlowApiKey = "synthetic-local-only-not-a-key") }
+            val settingsFile = a.root.resolve("entities/app_settings.json"); val settingsBytes = Files.readAllBytes(settingsFile)
+            val pixels = png(Color.GREEN)
+            val image = a.root.resolve("images/history.png"); Files.createDirectories(image.parent); Files.write(image, pixels)
+            a.settings.savePlayerSetting(PlayerSetting(playerName = "合成全局玩家", globalPersona = "全局设定原文", desktopAvatar = image.toString()))
+            val payload = "E".repeat(NovelAiInlinePayloadStore.INLINE_LIMIT + 123)
+            val encoded = NovelAiInlinePayloadStore(a.root.toFile()).retain(payload)
+            val recipe = NovelAiGenerationRecipe(basePrompt = "历史配方原文\n第二行", negativePrompt = "合成负面",
+                characters = listOf(NovelAiCharacterPromptDraft("scoped-role", "合成人物")),
+                imageGuidance = NovelAiImageGuidanceDraft(baseImage = NovelAiStudioAssetRef("scoped-asset", image.toString(), lanSyncHash(pixels), 8, 8),
+                    vibes = listOf(NovelAiVibeReferenceDraft("scoped-vibe", encodedVibe = encoded))))
+            val entry = NovelAiGenerationHistoryEntry("synthetic-history", listOf(NovelAiGenerationHistoryImage(image.toString(), 42)), recipe, createdAt = 1)
+            left.saveHistory(entry)
+            a.runtime.startHost(); await { a.runtime.state.value.addresses.isNotEmpty() }
+            a.runtime.pairOffer("192.168.1.2"); b.runtime.pair(requireNotNull(a.runtime.state.value.offer).code())
+            await { a.store.peers().size == 1 && b.store.peers().size == 1 }
+            b.runtime.startPhone(); b.runtime.requestSync(); completed(a, b)
+            val imported = right.history.first().single()
+            assertEquals(recipe.basePrompt, imported.recipe.basePrompt)
+            assertEquals(recipe.characters, imported.recipe.characters)
+            assertEquals(imported.images.single().path, imported.recipe.imageGuidance.baseImage?.path)
+            assertEquals(payload, NovelAiInlinePayloadStore(b.root.toFile()).resolve(requireNotNull(imported.recipe.imageGuidance.vibes.single().encodedVibe)))
+            assertArrayEquals(pixels, Files.readAllBytes(Paths.get(imported.images.single().path)))
+            val bitmap = requireNotNull(BitmapFactory.decodeFile(imported.images.single().path))
+            try { assertEquals(Color.GREEN, bitmap.getPixel(0, 0)) } finally { bitmap.recycle() }
+            val profile = b.settings.playerSetting.first()
+            assertEquals("合成全局玩家", profile.playerName); assertEquals("全局设定原文", profile.globalPersona)
+            assertEquals(imported.images.single().path, profile.desktopAvatar)
+            assertTrue(Files.isRegularFile(b.root.resolve("entities/player_setting.json")))
+            assertFalse(Files.exists(b.root.resolve("entities/player_setting")))
+            assertArrayEquals(settingsBytes, Files.readAllBytes(settingsFile))
+            var revision = a.store.baseline(b.id, a.id).revision
+            right.saveHistory(imported.copy(recipe = imported.recipe.copy(basePrompt = "手机反向配方")))
+            b.settings.updatePlayerSetting { it.copy(playerName = "手机反向玩家") }
+            b.runtime.requestSync(); completed(a, b, revision)
+            assertEquals("手机反向配方", left.history.first().single().recipe.basePrompt)
+            assertEquals("手机反向玩家", a.settings.playerSetting.first().playerName)
+            assertArrayEquals(settingsBytes, Files.readAllBytes(settingsFile))
+            val aId = a.id; val bId = b.id
+            a.close(); b.close(); a = a.reopen(); b = b.reopen()
+            left = NovelAiStudioStateRepository(a.storage); right = NovelAiStudioStateRepository(b.storage)
+            a.settings.initialize(); b.settings.initialize(); left.initialize(); right.initialize()
+            assertEquals(aId, a.id); assertEquals(bId, b.id)
+            assertEquals("手机反向玩家", b.settings.playerSetting.first().playerName)
+            assertEquals(payload, NovelAiInlinePayloadStore(b.root.toFile()).resolve(requireNotNull(right.history.first().single().recipe.imageGuidance.vibes.single().encodedVibe)))
+            a.runtime.startHost(); await { a.runtime.state.value.addresses.isNotEmpty() }; b.runtime.startPhone()
+            revision = a.store.baseline(b.id, a.id).revision
+            b.runtime.requestSync(); completed(a, b, revision)
+            assertEquals(1, left.history.first().size)
+            assertEquals(1, right.history.first().size)
+            assertArrayEquals(settingsBytes, Files.readAllBytes(settingsFile))
+        } finally { a.close(); b.close() }
     }
 
     @Test fun actualAndroidKeystoreRuntimeTransfersMomentVersionsReverseEditsAndReopens() = runBlocking {

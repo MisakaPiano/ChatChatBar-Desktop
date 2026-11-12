@@ -13,7 +13,10 @@ import com.example.chatbar.data.local.entity.MomentImageVersion
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.MomentRepository
+import com.example.chatbar.data.repository.NovelAiStudioStateRepository
+import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.*
 import java.net.*
 import java.nio.file.*
@@ -46,10 +49,13 @@ class LanSyncRuntimeTest {
         val id = store.identity().fingerprint
         val workspace = LanSyncWorkspace(root, stateRoot.resolve("workspace"), { raw -> Path.of(raw) })
         val gate = LanSyncOperationGate()
+        val storage = JsonFileStorage(root, gate)
         val exclusiveCalls = java.util.concurrent.atomic.AtomicInteger()
         fun runtime() = LanSyncRuntime(store, workspace, object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) { exclusiveCalls.incrementAndGet(); gate.exclusive(work) }
-            override suspend fun reload(sessionIds: Set<String>) {}
+            override suspend fun reload(sessionIds: Set<String>) {
+                storage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
+            }
         }, name, observe = observe, network = network)
         fun write(id: String, name: String, image: String? = null) {
             writeCard(CharacterCard(id, name, avatar = image, createdAt = 1, updatedAt = 1))
@@ -534,8 +540,62 @@ class LanSyncRuntimeTest {
             } finally { host.closeAndDrain(); phone.closeAndDrain() }
         }
     }
+    @Test fun studioHistoryActualTlsReverseEditKeepBothAndDeletionPreserveRecipeRolesImagesAndVibeResources() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        val left = NovelAiStudioStateRepository(a.storage); val right = NovelAiStudioStateRepository(b.storage)
+        val bytes = LanSyncPreviewSample.image()
+        val path = a.root.resolve("images/history.png"); Files.createDirectories(path.parent); Files.write(path, bytes)
+        val encoding = "S".repeat(NovelAiInlinePayloadStore.INLINE_LIMIT + 37)
+        val reference = NovelAiInlinePayloadStore(a.root.toFile()).retain(encoding)
+        val recipe = NovelAiGenerationRecipe(basePrompt = "保留的原始配方", negativePrompt = "合成负面",
+            characters = listOf(NovelAiCharacterPromptDraft("scoped-role", "合成人物")),
+            imageGuidance = NovelAiImageGuidanceDraft(baseImage = NovelAiStudioAssetRef("scoped-asset", path.toString(), lanSyncHash(bytes), 32, 32),
+                vibes = listOf(NovelAiVibeReferenceDraft("scoped-vibe", encodedVibe = reference))))
+        val original = NovelAiGenerationHistoryEntry("history", listOf(NovelAiGenerationHistoryImage(path.toString(), 42)), recipe, createdAt = 1)
+        left.saveHistory(original)
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            val imported = right.history.first().single() // actual post-commit cache publication
+            assertEquals(recipe.basePrompt, imported.recipe.basePrompt)
+            assertEquals(imported.images.single().path, imported.recipe.imageGuidance.baseImage?.path)
+            assertContentEquals(bytes, Files.readAllBytes(Path.of(imported.images.single().path)))
+            assertEquals(encoding, NovelAiInlinePayloadStore(b.root.toFile()).resolve(requireNotNull(imported.recipe.imageGuidance.vibes.single().encodedVibe)))
+            var previous = a.store.baseline(b.id, a.id).revision
+            right.saveHistory(imported.copy(recipe = imported.recipe.copy(basePrompt = "手机反向修改")))
+            phone.requestSync(); completed(a, b, previous)
+            assertEquals("手机反向修改", left.history.first().single().recipe.basePrompt)
+            left.saveHistory(left.history.first().single().let { it.copy(recipe = it.recipe.copy(basePrompt = "电脑保留配方")) })
+            right.saveHistory(right.history.first().single().let { it.copy(recipe = it.recipe.copy(basePrompt = "手机保留配方")) })
+            previous = a.store.baseline(b.id, a.id).revision; host.requestSync()
+            until("one complete Studio history batch conflict") { host.state.value.conflicts.size == 1 }
+            val conflict = host.state.value.conflicts.single()
+            assertEquals("novelai_generation_history/history", conflict.unit)
+            host.resolveConflicts(mapOf(conflict.unit to LanSyncChoice.KEEP_BOTH)); completed(a, b, previous)
+            for ((end, repo) in listOf(a to left, b to right)) {
+                val entries = repo.history.first()
+                assertEquals(2, entries.size)
+                assertEquals(setOf("电脑保留配方", "手机保留配方"), entries.map { it.recipe.basePrompt }.toSet())
+                entries.forEach { entry ->
+                    assertEquals(listOf("scoped-role"), entry.recipe.characters.map { it.id })
+                    assertEquals("scoped-asset", entry.recipe.imageGuidance.baseImage?.id)
+                    assertEquals("scoped-vibe", entry.recipe.imageGuidance.vibes.single().id)
+                    assertContentEquals(bytes, Files.readAllBytes(Path.of(entry.images.single().path)))
+                    assertEquals(encoding, NovelAiInlinePayloadStore(end.root.toFile()).resolve(requireNotNull(entry.recipe.imageGuidance.vibes.single().encodedVibe)))
+                }
+            }
+            val ids = right.history.first().map { it.id }.toSet()
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            assertEquals(ids, right.history.first().map { it.id }.toSet())
+            val fork = ids.single { it != original.id }
+            right.deleteHistory(fork)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            assertEquals(listOf(original.id), left.history.first().map { it.id })
+            assertContentEquals(bytes, Files.readAllBytes(Path.of(left.history.first().single().images.single().path)))
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {
-        for (legacyProtocol in listOf(1, 2, 3)) for (bothApplied in listOf(false, true)) {
+        for (legacyProtocol in listOf(1, 2, 3, 4)) for (bothApplied in listOf(false, true)) {
             val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
             for (end in listOf(a, b)) end.write("card", "同一合成角色")
             a.writeConversation("电脑版本", "pc-local-model"); b.writeConversation("手机版本", "phone-local-model")

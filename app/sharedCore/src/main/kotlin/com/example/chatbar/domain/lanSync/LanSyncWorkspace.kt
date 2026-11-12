@@ -59,11 +59,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     val original = LanSyncRecord(type, id, body); LanSyncScope.validateRecord(original)
                     require(dataRoot.relativize(file).toString().replace('\\', '/') == LanSyncScope.relativePath(original)) { "SYNC_STORAGE_ID" }
                     val normalized = LanSyncScope.normalize(type, mapResources(body) { reference, field ->
-                        if (reference.isBlank() || reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) ||
-                            type == "save_slots" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
+                        if (reference.isBlank() || field != "vibePayload" && reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) ||
+                            type == "save_slots" && field != "vibePayload" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
                                 reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX))) reference else {
-                            val kind = if (field == "packageFile") "packages" else if (field == "audioPath") "audio" else if (field in setOf("filePath", "filePaths", "path")) "documents" else "images"
-                            val resource = if (reference.startsWith("asset:")) {
+                            val kind = if (field == "packageFile") "packages" else if (field == "audioPath") "audio"
+                                else if (field == "vibePayload") "payloads" else if (field in setOf("filePath", "filePaths", "path")) "documents" else "images"
+                            val resource = if (kind == "payloads") LanSyncVibePayloads.source(dataRoot, reference, scratch)
+                            else if (reference.startsWith("asset:")) {
                                 val bytes = requireNotNull(assetResource(reference)) { "SYNC_ASSET_UNAVAILABLE" }
                                 frozen.resolve("asset-${UUID.randomUUID()}").also { lanSyncAtomicWrite(it, bytes); scratch.own(it) }
                             } else (if (field == "packageFile") dataRoot.resolve("save_slot_packages").resolve(reference) else resolveResource(reference)).also { source ->
@@ -71,14 +73,20 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             }
                             if (field == "packageFile") LanSyncSlotPackages.validate(resource, body)
                             val hash = freeze(resource, frozen, blobs, resources, scratch)
+                            if (kind == "payloads") {
+                                LanSyncVibePayloads.validate(requireNotNull(blobs[hash]))
+                                if (reference.startsWith(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX))
+                                    require(hash == reference.removePrefix(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX)) { "SYNC_VIBE_PAYLOAD_INVALID" }
+                            }
                             if (checkedResources.add(kind to hash)) validateResource(kind, requireNotNull(blobs[hash]))
-                            val suffix = reference.substringAfterLast('.', "bin").lowercase().takeIf {
+                            val suffix = if (kind == "payloads") "utf8" else reference.substringAfterLast('.', "bin").lowercase().takeIf {
                                 it.matches(Regex("[a-z0-9]{1,8}"))
                             } ?: "bin"
                             val retainedId = resource.fileName.toString().let { name ->
                                 Regex("lan-([a-f0-9-]{36})-[a-f0-9]{64}\\.[a-z0-9]{1,8}").matchEntire(name)?.groupValues?.get(1)
                             }
-                            val mediaId = retainedId ?: UUID.nameUUIDFromBytes((if (kind == "packages") "package/${original.id}"
+                            val mediaId = retainedId ?: UUID.nameUUIDFromBytes((if (kind == "payloads") "vibe/$hash"
+                                else if (kind == "packages") "package/${original.id}"
                                 else if (reference.startsWith("asset:")) reference else dataRoot.relativize(resource).toString().replace('\\', '/'))
                                 .toByteArray(Charsets.UTF_8)).toString()
                             "ccb-lan-v1/$kind/$mediaId/$hash/$suffix"
@@ -138,7 +146,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             val materialized = mapResources(local.body) { reference, field ->
                 if (!reference.startsWith("ccb-lan-v1/")) reference else {
                     val parts = reference.split('/')
-                    require(parts.size == 5 && parts[1] in setOf("images", "audio", "documents", "packages") && parts[2].matches(Regex("[a-f0-9-]{36}")) &&
+                    require(parts.size == 5 && parts[1] in setOf("images", "audio", "documents", "packages", "payloads") && parts[2].matches(Regex("[a-f0-9-]{36}")) &&
                         parts[3].matches(Regex("[a-f0-9]{64}")) && parts[4].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_RESOURCE_REFERENCE" }
                     val source = requireNotNull(blobs[parts[3]]) { "SYNC_RESOURCE_MISSING" }
                     val size = requireNotNull(plan.snapshot.resources[parts[3]]) { "SYNC_RESOURCE_MANIFEST" }
@@ -146,6 +154,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     if (checkedResources.add(parts[1] to parts[3])) validateResource(parts[1], source)
                     if (parts[1] == "audio") {
                         audioResource(requireNotNull(local.text("sessionId")), local.id, parts[3], source)
+                    } else if (parts[1] == "payloads") {
+                        LanSyncVibePayloads.retain(dataRoot, source, parts[3])
                     } else {
                         val packageSource = if (parts[1] == "packages") {
                             val ref = requireNotNull(local.body["packageRef"]).jsonObject
@@ -282,8 +292,11 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                         val field = fields.lastOrNull()
                         val packageFile = fields == listOf("packageRef", "fileName")
                         val serviceArtwork = field == "coverImage" && fields.dropLast(1).lastOrNull() in setOf("fishAudioVoice", "voice")
-                        if (value.isString && (field in LanSyncScope.resources || packageFile) && !serviceArtwork)
-                            JsonPrimitive(transform(value.content, if (packageFile) "packageFile" else field!!)) else value
+                        val vibe = field == "encodedVibe" && "vibes" in fields
+                        val studioImage = field == "path" && (fields.dropLast(1).lastOrNull() == "images" ||
+                            fields.any { it in setOf("imageGuidance", "guidance") } && fields.dropLast(1).lastOrNull() in setOf("asset", "baseImage", "maskImage"))
+                        if (value.isString && (field in LanSyncScope.resources || packageFile || vibe) && !serviceArtwork)
+                            JsonPrimitive(transform(value.content, when { packageFile -> "packageFile"; vibe -> "vibePayload"; studioImage -> "imagePath"; else -> field!! })) else value
                     }
                     else -> value
                 }
