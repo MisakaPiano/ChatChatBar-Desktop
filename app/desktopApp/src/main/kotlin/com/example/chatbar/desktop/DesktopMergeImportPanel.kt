@@ -67,7 +67,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                     }
                 }
             }
-            if (state.desktopParticipation) StatusText("该备份包含 Fork 扩展（人物／玩家设置、命名账户、动态图片版本或同步分支来源）；官方手机端不保证保留这些内容。", DesktopBootstrapColors.warning)
+            if (state.desktopParticipation) StatusText("该备份包含 Fork 扩展（人物／玩家设置、命名账户、动态图片版本、同步分支来源或计划休眠标记）；官方手机端不保证保留这些内容。", DesktopBootstrapColors.warning)
             if (state.historicalDesktopV5Settings) StatusText("已保留旧 Desktop 备份中的生图设置扩展；这些设置不代表官方 1.4.7 支持。", DesktopBootstrapColors.warning)
             if (activeConflicts.isEmpty() && mode == DesktopBackupRestoreMode.MERGE_CHOICES) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             if (activeConflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${activeConflicts.size} 项数据冲突")

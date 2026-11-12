@@ -1,12 +1,18 @@
 package com.example.chatbar.desktop.backup
 
 import com.example.chatbar.data.local.entity.MomentPost
+import com.example.chatbar.data.local.entity.MomentTask
 import com.example.chatbar.desktop.DesktopMomentImageVersions
 import kotlinx.serialization.json.*
 
 /** Keep the pinned official snapshot strict; validate the explicitly named Desktop extension separately. */
 internal object DesktopMomentBackupExtension {
     const val FIELD = "desktopImageVersions"
+    const val TASK_APPROVAL_FIELD = "requiresLocalScheduleApproval"
+    fun taskSnapshot(value: JsonObject): MomentTaskSnapshot {
+        if (TASK_APPROVAL_FIELD in value) backupJson.decodeFromJsonElement(MomentTask.serializer(), value)
+        return backupJson.decodeFromJsonElement(MomentTaskSnapshot.serializer(), JsonObject(value - TASK_APPROVAL_FIELD))
+    }
     fun snapshot(value: JsonObject): MomentPostSnapshot {
         val official = JsonObject(value - FIELD)
         val snapshot = backupJson.decodeFromJsonElement(MomentPostSnapshot.serializer(), official)

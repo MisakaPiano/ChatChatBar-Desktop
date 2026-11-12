@@ -5,6 +5,8 @@ description: Maintain ChatBar's 朋友圈/Moments module. Use when changing the 
 
 # ChatBar Moments
 
+`MomentTask.requiresLocalScheduleApproval` is an optional Fork extension for imported schedule data. It defaults false and is omitted at false so legacy native serialization/admission hashes stay unchanged. Android due execution uses shared `MomentTaskExecutionPolicy` to leave marked PENDING records dormant without changing their status or replaying RUNNING work. The LAN scope, explicit local-approval UI and maintenance/reload integration must be closed before enabling Moments transport; this guard alone is not complete LAN support.
+
 Desktop `DesktopMomentsSettings` lives in management settings' own `MOMENTS` / 朋友圈 group, separately from usage statistics. The retained pane keeps the existing app-scoped controller; moving between settings groups does not restart its scheduler. Automatic backup settings remain in Data, not this group.
 
 Desktop MomentStore.begin/edit retains the selected author's owned image reference, without copying it into a separate avatar file. Typed card overwrite/deletion must therefore use the AppContainer's Core postcommit full-reference cleanup, preserving existing `moment_posts.senderAvatar` and image/version references. Historical missing-avatar transfer tolerance is not permission to delete a currently valid referenced image. The actual container retention regression uses Store-produced posts and both Core deletion/overwrite.

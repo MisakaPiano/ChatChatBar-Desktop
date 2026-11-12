@@ -61,6 +61,7 @@ internal object DesktopBackupPolicy {
     fun hasDesktopParticipation(value: JsonObject): Boolean =
         value["lanSyncOrigin"] is JsonObject ||
         DesktopMomentBackupExtension.FIELD in value ||
+        (value[DesktopMomentBackupExtension.TASK_APPROVAL_FIELD] as? JsonPrimitive)?.booleanOrNull == true ||
         value["desktopPlayerRole"] is JsonObject ||
         (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||

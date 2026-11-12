@@ -118,7 +118,10 @@ internal object DesktopFullBackupSource {
                                                             historicalAvatarReferences += DesktopBackupPolicy.path(it.removePrefix(DesktopBackupPolicy.PREFIX))
                                                         }
                                                 }
-                                                "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
+                                                "moment_tasks" -> {
+                                                    if (value[DesktopMomentBackupExtension.TASK_APPROVAL_FIELD] == JsonPrimitive(true)) incompatible84 = true
+                                                    DesktopMomentBackupExtension.taskSnapshot(value.jsonObject)
+                                                }
                                                 else -> {
                                                     DesktopOfficialBackupEntitySchema.validate(type, value, CURRENT_DESKTOP_BACKUP_CODE)
                                                     if (!incompatiblePre1410) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 88) }

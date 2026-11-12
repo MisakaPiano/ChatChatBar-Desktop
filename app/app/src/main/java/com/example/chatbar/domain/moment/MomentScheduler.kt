@@ -85,6 +85,7 @@ class MomentScheduler(
         val tasks = momentRepository.pendingTasksDue(now)
         if (tasks.isEmpty()) return
         for (task in tasks) {
+            if (!MomentTaskExecutionPolicy.mayAutomaticallyExecute(task)) continue
             processTask(task, now)
         }
     }
