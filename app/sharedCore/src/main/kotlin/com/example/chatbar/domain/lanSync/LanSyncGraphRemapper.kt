@@ -16,7 +16,7 @@ internal class LanSyncGraphRemapper(
     fun rewrite(record: LanSyncRecord, mapResource: (String, List<String>) -> String = { value, _ -> value }): JsonObject {
         val originalValue = record.value
         val scopedProofs = if (record.type == "save_slots")
-            LanSyncMemoryProofs(listOf(LanSyncRecord(record.relative, originalValue)), identity, checkActive) else proofs
+            LanSyncMemoryProofs(listOf(record.copy(body = originalValue)), identity, checkActive) else proofs
         fun walk(value: JsonElement, path: List<String>): JsonElement {
             checkActive()
             require(path.size <= 128) { "MERGE_JSON_DEPTH" }

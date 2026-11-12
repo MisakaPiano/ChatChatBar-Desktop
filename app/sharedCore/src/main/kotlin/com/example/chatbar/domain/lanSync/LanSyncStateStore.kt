@@ -91,7 +91,10 @@ internal fun lanSyncSafe(path: Path, directory: Boolean = false) {
 internal fun lanSyncRead(path: Path, limit: Int): ByteArray {
     lanSyncSafe(path); require(Files.size(path) <= limit) { "SYNC_FILE_LIMIT" }
     return Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
-        val bytes = input.readNBytes(limit + 1); require(bytes.size <= limit); bytes
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(16 * 1024); var total = 0
+        while (true) { val count = input.read(buffer); if (count < 0) break; total += count; require(total <= limit); output.write(buffer, 0, count) }
+        output.toByteArray()
     }
 }
 internal fun lanSyncAtomicWrite(path: Path, bytes: ByteArray) {
