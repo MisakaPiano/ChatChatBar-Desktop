@@ -14,12 +14,18 @@ import javax.crypto.spec.GCMParameterSpec
 
 class AndroidLanSync(private val app: ChatBarApp) {
     val gate = LanSyncOperationGate()
-    private val root = app.noBackupFilesDir.toPath().resolve("lan-sync-v1")
+    private val dataRoot = app.filesDir.canonicalFile.toPath()
+    private val root = app.noBackupFilesDir.canonicalFile.toPath().resolve("lan-sync-v1")
     private val store = LanSyncStateStore(root, ::protect, ::unprotect)
-    private val workspace = LanSyncWorkspace(app.filesDir.toPath(), root.resolve("workspace"),
+    private val workspace = LanSyncWorkspace(dataRoot, root.resolve("workspace"),
         resolveResource = { reference ->
             val path = java.nio.file.Paths.get(reference)
-            if (path.isAbsolute) path else app.filesDir.toPath().resolve(reference)
+            val alias = app.filesDir.toPath()
+            when {
+                path.isAbsolute && path.startsWith(alias) -> dataRoot.resolve(alias.relativize(path))
+                path.isAbsolute -> path
+                else -> dataRoot.resolve(reference)
+            }
         }, assetResource = { reference ->
             app.assets.open(reference.removePrefix("asset:").removePrefix("/")).use { input ->
                 val result = java.io.ByteArrayOutputStream(); val buffer = ByteArray(16 * 1024)
@@ -28,7 +34,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
                 result.toByteArray()
             }
         }, audioResource = { _, _, hash, source ->
-            val target = app.filesDir.toPath().resolve("audio/lan-$hash.mp3")
+            val target = dataRoot.resolve("audio/lan-$hash.mp3")
             Files.createDirectories(target.parent)
             if (Files.notExists(target, LinkOption.NOFOLLOW_LINKS)) Files.copy(source, target)
             require(LanSyncWorkspace.hashFile(target, Files.size(source)) == hash)

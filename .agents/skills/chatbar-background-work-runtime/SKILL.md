@@ -22,6 +22,8 @@ Use chatbar-model-request-runtime for HTTP/SSE behavior, chatbar-image-generatio
 
 ## Ownership
 
+- Foreground LAN sync uses `withLanSyncMaintenance`: it reserves only while no AI lease is active and rejects new AI leases until publication and repository reload finish. It does not acquire an AI foreground lease or change the streaming service lifecycle. The separate `LanSyncOperationGate` drains Android storage operations.
+
 - `AiBackgroundWorkManager` owns active-work counting, foreground lease generations, readiness, protection-loss propagation, network monitoring, and final service release.
 - `StreamingForegroundService` owns immediate foreground promotion, locks, stop-action handling, and destruction signals.
 - `StreamingNotificationManager` owns notification construction and channels; it does not own work lifetime.

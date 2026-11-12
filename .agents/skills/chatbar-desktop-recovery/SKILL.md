@@ -5,6 +5,8 @@ description: Maintain Desktop recovery/support guidance over existing typed owne
 
 # Desktop Recovery and Support
 
+- `DesktopStartupGate` now also invokes `DesktopLanSyncStartup.recover` under root ownership before the existing backup/index/session recovery and before business repositories. An authorized incomplete LAN journal must finish or refuse startup; the existing fixed startup-check guidance retains files and offers copy/close, without automatic cleanup.
+
 - `DesktopRecovery.kt` projects only root-switch, full-backup and merge owner states into area/phase pairs. No repository scan, journal inspection, payload/path/exception text, clipboard dump or health verdict is performed. Backup check, successful export, merge preview, active work and restart preparation remain distinct; restart outranks stale success/error fields.
 - Backup/merge owners' fixed `operationNotice` also projects ATTENTION when idle; its local status record never authorizes recovery, retry or cleanup. Existing busy/restart precedence stays unchanged.
 - `DesktopDataWorkspace` has the Recovery and support destination. Its six actions select existing export/check/import/location/automatic/update panes only. They do not increment export requests, open pickers, select conflicts or submit work. The callback rereads all original root/backup/merge locks, including restart, so an old enabled click cannot escape a forced operation view. Existing panes retain preparation and choices. Forced backup/root views show the matching fixed owner guidance without removing their original controls.

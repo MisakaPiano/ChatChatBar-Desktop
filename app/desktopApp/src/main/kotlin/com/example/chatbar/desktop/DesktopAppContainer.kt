@@ -47,9 +47,9 @@ class DesktopAppContainer internal constructor(
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
     private val lanSyncOwner = lazy { DesktopLanSync(this,
-        exclusive = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance {
+        exclusive = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance(work = {
             dataOperationCoordinator.withExclusiveMaintenance { work() }
-        } } },
+        }) } },
         reload = {
             characterRepository.refreshFromStorage(); formatCardRepository.refreshFromStorage(); worldBookRepository.refreshFromStorage()
             chatRepository.reloadAfterLanSync(); voiceRepository.reload()

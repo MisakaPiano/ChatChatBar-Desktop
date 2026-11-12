@@ -45,6 +45,7 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
     @Synchronized fun peers(): List<LanSyncPeer> = read("peers.json")?.let { lanSyncJson.decodeFromString(it) } ?: emptyList()
     @Synchronized fun trust(peer: LanSyncPeer) {
         require(peer.fingerprint.matches(Regex("[0-9a-f]{64}")))
+        require(peers().none { it.fingerprint != peer.fingerprint }) { "SYNC_ONE_PEER_ONLY" }
         write("peers.json", lanSyncJson.encodeToString(peers().filterNot { it.fingerprint == peer.fingerprint } + peer.copy(name = peer.name.take(80))))
     }
     @Synchronized fun revoke(fingerprint: String) {

@@ -44,6 +44,7 @@ internal class DesktopStartupGate(
     private val alreadyInUse: DesktopAlreadyInUsePresenter = PlatformAlreadyInUsePresenter,
     private val report: (String) -> Unit = System.err::println,
     private val recoverIndex: suspend (DesktopDataRootResolution.Resolved) -> Unit = {
+        DesktopLanSyncStartup.recover(it.appDataRoot)
         DesktopFullBackupCommitJournal(it.appDataRoot).recover()
         DesktopIndexCommitJournal(it.appDataRoot).recover()
         DesktopSessionCommitJournal(it.appDataRoot).recover()

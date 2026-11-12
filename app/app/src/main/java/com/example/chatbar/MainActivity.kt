@@ -48,6 +48,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (ChatBarApp.instance.lanSyncRecoveryFailed) {
+            startActivity(android.content.Intent(this, com.example.chatbar.lanSync.LanSyncRecoveryActivity::class.java))
+            finish(); return
+        }
         CrashReportManager.recordBreadcrumb("lifecycle", "main_activity_created")
 
         currentIntentHandled = savedInstanceState?.getBoolean(STATE_CURRENT_INTENT_HANDLED) == true

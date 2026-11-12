@@ -20,15 +20,18 @@ object LanSyncTransfer {
         require(snapshot.deviceId == authenticatedDevice) { "SYNC_SNAPSHOT_DEVICE" }
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
         require(snapshot.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }
-        val directory = workspace.resolve("received-${UUID.randomUUID()}")
-        Files.createDirectories(directory); lanSyncSafe(directory, true)
+        val scratch = LanSyncScratch(workspace, "received"); val directory = scratch.directory
+        var returned = false
+        try {
         val blobs = linkedMapOf<String, Path>()
         snapshot.resources.toSortedMap().forEach { (hash, size) ->
             val target = directory.resolve(hash)
-            Files.newOutputStream(target, StandardOpenOption.CREATE_NEW).use { wire.receiveBlob(it, size, hash) }
+            Files.newOutputStream(target, StandardOpenOption.CREATE_NEW).use { scratch.own(target); wire.receiveBlob(it, size, hash) }
             java.nio.channels.FileChannel.open(target, StandardOpenOption.WRITE).use { it.force(true) }
             blobs[hash] = target
         }
-        return LanSyncCapture(snapshot, blobs, emptyMap())
+        returned = true
+        return LanSyncCapture(snapshot, blobs, emptyMap(), scratch::close)
+        } finally { if (!returned) scratch.close() }
     }
 }

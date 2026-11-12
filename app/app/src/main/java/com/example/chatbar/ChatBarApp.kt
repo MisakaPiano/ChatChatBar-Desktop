@@ -223,6 +223,8 @@ class ChatBarApp : Application() {
     val lanSyncOwner by lazy { com.example.chatbar.lanSync.AndroidLanSync(this) }
     @Volatile var lanSyncStartupReady = false
         private set
+    @Volatile var lanSyncRecoveryFailed = false
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -230,7 +232,8 @@ class ChatBarApp : Application() {
         CrashReportManager.initialize(this)
 
         // 1. 初始化文件存储
-        lanSyncOwner.recoverBeforeRepositories()
+        try { lanSyncOwner.recoverBeforeRepositories() }
+        catch (_: Exception) { lanSyncRecoveryFailed = true; return }
         jsonFileStorage = JsonFileStorage(filesDir.toPath(), lanSyncOwner.gate)
         
         // 2. 初始化各个仓库

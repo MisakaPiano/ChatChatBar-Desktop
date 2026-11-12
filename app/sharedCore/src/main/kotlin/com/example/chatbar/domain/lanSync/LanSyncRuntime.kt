@@ -42,9 +42,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private var discoverySocket: java.net.DatagramSocket? = null
     private var choices: CompletableDeferred<Map<String, LanSyncChoice>>? = null
     private val sockets = java.util.concurrent.ConcurrentHashMap.newKeySet<SSLSocket>()
+    @Volatile private var retryPaused = false
 
     fun refresh() { _state.value = _state.value.copy(peers = store.peers()) }
-    fun requestSync() { requested = true; _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接") }
+    fun requestSync() { retryPaused = false; requested = true; _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接") }
     fun resolveConflicts(values: Map<String, LanSyncChoice>) { choices?.complete(values) }
     fun revoke(fingerprint: String) { store.revoke(fingerprint); refresh() }
     fun cancelPairing() { synchronized(offerLock) { offer = null }; _state.value = _state.value.copy(offer = null) }
@@ -116,7 +117,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         refresh()
         polling = scope.launch {
             while (isActive) {
-                if (!operation.isLocked) store.peers().forEach { peer ->
+                if (!operation.isLocked && !retryPaused) store.peers().forEach { peer ->
                     operation.withLock { safely { phoneAttempt(peer) } }
                 }
                 delay(2500)
@@ -155,7 +156,9 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 wire.sendText("SYNC")
                 _state.value = _state.value.copy(busy = true, status = "正在接收并检查手机快照")
                 val phone = LanSyncTransfer.receive(wire, store.root, peerId)
+                try {
                 val computer = capture()
+                try {
                 val prepared = pending ?: run {
                     val comparison = LanSyncCompare.compare(computer.snapshot, phone.snapshot, baseline)
                     val decisions = if (comparison.conflicts.isEmpty()) emptyMap() else {
@@ -178,11 +181,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 applyPrepared(prepared, available)
                 wire.sendText("COMMIT:${prepared.plan.transaction}")
                 require(wire.text() == "COMMITTED:${prepared.plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
-                store.complete(peerId, identity.fingerprint, prepared.plan)
+                complete(peerId, prepared.plan)
                 store.clearPending(peerId, prepared.plan.transaction)
                 requested = false
                 _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes)
                 wire.sendText("DONE")
+                } finally { computer.close() }
+                } finally { phone.close() }
             }
         }
     }
@@ -206,7 +211,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 if (response == "IDLE") return
                 if (response.startsWith("FINISHED:") && pending != null && response == "FINISHED:${pending.plan.transaction}") {
                     require(workspace.applied(pending.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
-                    store.complete(peer.fingerprint, identity.fingerprint, pending.plan)
+                    complete(peer.fingerprint, pending.plan)
                     store.clearPending(peer.fingerprint, pending.plan.transaction)
                     requested = false
                     _state.value = _state.value.copy(status = "上次同步已核对完成，两端回执一致")
@@ -214,10 +219,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 }
                 require(response == "SYNC") { "SYNC_COMMAND" }
                 _state.value = _state.value.copy(busy = true, status = "正在准备一致快照，冲突将在电脑端显示")
-                val phone = capture(); LanSyncTransfer.send(wire, phone)
+                val phone = capture()
+                try {
+                LanSyncTransfer.send(wire, phone)
                 val plan = lanSyncJson.decodeFromString<LanSyncPlan>(wire.text())
                 val expected = lanSyncJson.decodeFromString<Map<String, String>>(wire.text())
                 val received = LanSyncTransfer.receive(wire, store.root, peer.fingerprint)
+                try {
                 require(received.snapshot.hashes() == plan.snapshot.hashes()) { "SYNC_PLAN_MISMATCH" }
                 val prior = store.pending(peer.fingerprint)
                 require(prior == null || prior.plan.transaction == plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
@@ -226,12 +234,14 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 applyPrepared(prepared, received.blobs)
                 wire.sendText("APPLIED:${plan.transaction}")
                 require(wire.text() == "COMMIT:${plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
-                store.complete(peer.fingerprint, identity.fingerprint, plan)
+                complete(peer.fingerprint, plan)
                 wire.sendText("COMMITTED:${plan.transaction}")
                 require(wire.text() == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
                 store.clearPending(peer.fingerprint, plan.transaction)
                 requested = false
                 _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes)
+                } finally { received.close() }
+                } finally { phone.close() }
             } } finally { sockets -= socket }
         }
     }
@@ -242,7 +252,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         return requireNotNull(value)
     }
     private suspend fun applyPrepared(pending: LanSyncPending, blobs: Map<String, java.nio.file.Path>) {
-        if (!workspace.applied(pending.plan.transaction)) platform.exclusive {
+        platform.exclusive {
             withContext(NonCancellable) {
                 workspace.recover()
                 if (!workspace.applied(pending.plan.transaction)) workspace.apply(pending.plan, pending.expectedLocal, identity.fingerprint, blobs)
@@ -256,12 +266,33 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         val directory = store.root.resolve("transfer-${plan.transaction}"); Files.createDirectories(directory)
         plan.snapshot.resources.forEach { (hash, size) ->
             val target = directory.resolve(hash)
-            if (Files.notExists(target)) Files.copy(requireNotNull(blobs[hash]), target)
+            if (Files.notExists(target)) {
+                val scratch = LanSyncScratch(store.root, "retaining")
+                try {
+                    val temporary = scratch.directory.resolve(hash)
+                    require(LanSyncWorkspace.copyHash(requireNotNull(blobs[hash]), temporary, size, scratch::own) == hash) { "SYNC_RESOURCE_DAMAGED" }
+                    Files.move(temporary, target, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+                    // Ownership moved to the retained immutable transaction; the scratch is now empty.
+                    Files.delete(scratch.directory)
+                } catch (failure: Exception) { runCatching { scratch.close() }; throw failure }
+            }
             require(LanSyncWorkspace.hashFile(target, size) == hash) { "SYNC_RETAINED_BLOB_DAMAGED" }
         }
     }
     private fun retainedBlobs(plan: LanSyncPlan) = plan.snapshot.resources.keys.associateWith { store.root.resolve("transfer-${plan.transaction}/$it") }
         .filterValues { Files.exists(it) }
+    private fun complete(peer: String, plan: LanSyncPlan) {
+        val previous = store.baseline(peer, identity.fingerprint).revision
+        store.complete(peer, identity.fingerprint, plan)
+        if (previous != null && previous != plan.transaction) workspace.retire(previous)
+        val directory = store.root.resolve("transfer-${plan.transaction}")
+        if (Files.exists(directory)) {
+            val actual = Files.newDirectoryStream(directory).use { it.toList() }
+            require(actual.map { it.fileName.toString() }.toSet() == plan.snapshot.resources.keys) { "SYNC_RETAINED_UNKNOWN_CHILD" }
+            actual.forEach { require(LanSyncWorkspace.hashFile(it, plan.snapshot.resources.getValue(it.fileName.toString())) == it.fileName.toString()) }
+            actual.forEach(Files::delete); Files.delete(directory)
+        }
+    }
     private suspend fun safely(work: suspend () -> Unit) {
         try { work() }
         catch (cancelled: CancellationException) { throw cancelled }
@@ -269,6 +300,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         finally { _state.value = _state.value.copy(busy = false) }
     }
     private fun showFailure(failure: Exception) {
+        if (failure !is java.io.IOException) retryPaused = true
         val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z_]+")) }
         val text = when (code) {
             "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" -> "同步期间本机资料变化，尚未覆盖；请重试并重新检查"
@@ -276,6 +308,9 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"
             "SYNC_BASELINE_MISMATCH" -> "两端共同基线不一致，已保留资料和回执，需恢复上次同步"
             "SYNC_BUSY_MEMORY", "SYNC_PENDING_REPOSITORY_WORK" -> "本机仍有资料处理或恢复任务，请完成后重试"
+            "SYNC_ONE_PEER_ONLY" -> "首版一次连接一台可信设备；请先撤销已有配对再连接另一台"
+            "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机仍在生成或处理资料，请完成后点同步重试"
+            "SYNC_INITIALIZING" -> "本机资料仍在初始化，请稍后点同步重试"
             "SYNC_UNTRUSTED_DEVICE", "SYNC_DEVICE_CHANGED" -> "设备身份未受信任，请检查或重新配对"
             else -> if (failure is java.net.ConnectException || failure is java.net.SocketTimeoutException)
                 "暂时连不上电脑：请保持两端页面打开，检查同一局域网、防火墙和电脑地址；会自动重连"

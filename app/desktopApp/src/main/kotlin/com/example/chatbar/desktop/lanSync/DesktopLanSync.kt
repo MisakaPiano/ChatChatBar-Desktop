@@ -13,8 +13,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     private val resolve: (String) -> Path,
     private val asset: (String) -> ByteArray,
 ) {
-    private val localRoot = WindowsSecretRootResolver.resolve(app.appDataRoot).resolve("lan-sync-v1")
-        .resolve(lanSyncHash(app.appDataRoot.toString().toByteArray(Charsets.UTF_8)))
+    private val localRoot = DesktopLanSyncStartup.localRoot(app.appDataRoot)
     private val protector = WindowsDpapiSecretProtector()
     private val stateStore = LanSyncStateStore(localRoot, protector::protect, protector::unprotect)
     private val workspace = LanSyncWorkspace(app.appDataRoot, localRoot.resolve("workspace"), resolveResource = resolve,
@@ -34,4 +33,14 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     }, "CCB 电脑") }
     fun recoverBeforeRepositories() = workspace.recover()
     fun stop() = runtime.stop()
+}
+
+internal object DesktopLanSyncStartup {
+    fun localRoot(root: Path): Path = WindowsSecretRootResolver.resolve(root).resolve("lan-sync-v1")
+        .resolve(lanSyncHash(root.toString().toByteArray(Charsets.UTF_8)))
+    fun recover(root: Path) {
+        val workspace = localRoot(root).resolve("workspace")
+        if (!Files.exists(workspace, LinkOption.NOFOLLOW_LINKS)) return
+        LanSyncWorkspace(root, workspace, resolveResource = { error("SYNC_STARTUP_RESOURCE_ACCESS") }).recover()
+    }
 }
