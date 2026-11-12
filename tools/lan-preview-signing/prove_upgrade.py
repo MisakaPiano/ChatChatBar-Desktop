@@ -18,10 +18,15 @@ def adb(arguments, filename):
 
 
 def stage(method, expected_version):
-    output = adb(['shell', 'am', 'instrument', '-w', '-e', 'class', CLASS+'#'+method,
+    output = adb(['shell', 'am', 'instrument', '-w', '-e', 'lanSyncUpgradeFixture', 'true',
+                  '-e', 'class', CLASS+'#'+method,
                   PACKAGE+'.test/androidx.test.runner.AndroidJUnitRunner'], method+'.txt')
     assert re.search(r'OK \(1 test\)', output), method
     assert not any(word in output for word in ['FAILURES!!!', 'INSTRUMENTATION_FAILED', 'INSTRUMENTATION_ABORTED'])
+    # JUnit assumptions may still yield OK. Require an actually executed successful test,
+    # not AndroidJUnitRunner's -3 ignored/-4 assumption-failure terminal status.
+    statuses = re.findall(r'^INSTRUMENTATION_STATUS_CODE: (-?\d+)\s*$', output, re.M)
+    assert statuses == ['1', '0'], (method, statuses)
     package = adb(['shell', 'dumpsys', 'package', PACKAGE], method+'-package.txt')
     assert re.search(r'\bversionCode='+str(expected_version)+r'\b', package)
 
