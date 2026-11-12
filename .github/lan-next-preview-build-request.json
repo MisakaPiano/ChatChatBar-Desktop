@@ -6,5 +6,11 @@
     81,
     82
   ],
-  "purpose": "Frozen isolated next-preview raw APK inputs for persistent detached signing and synthetic API26 in-place upgrade. No private key uploaded; no first-preview install/data changes or delivery."
+  "purpose": "Frozen isolated next-preview raw APK inputs for persistent detached signing and synthetic API26 in-place upgrade. No private key uploaded; no first-preview install/data changes or delivery.",
+  "attempt": 2,
+  "previousFailure": {
+    "runId": 43329099852,
+    "jobId": 131568991000,
+    "boundary": "Raw badging package assertion at embedded line11 after both builds completed. No raw artifact preserved; exact mismatching package not yet observed. Preserve all raw diagnostics on the next bounded attempt."
+  }
 }
