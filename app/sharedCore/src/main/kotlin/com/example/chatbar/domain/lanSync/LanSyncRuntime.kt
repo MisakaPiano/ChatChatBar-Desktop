@@ -19,7 +19,7 @@ import javax.net.ssl.SSLSocket
 data class LanSyncUiState(val status: String = "两端打开此页面后可同步", val busy: Boolean = false,
     val peers: List<LanSyncPeer> = emptyList(), val addresses: List<String> = emptyList(),
     val offer: LanSyncPairOffer? = null, val conflicts: List<LanSyncConflict> = emptyList(),
-    val excluded: Set<String> = emptySet())
+    val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null)
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
@@ -42,6 +42,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private var listening: Job? = null
     private var polling: Job? = null
     private var pairing: Job? = null
+    private var sample: Job? = null
     private var discovery: Job? = null
     private var discoverySocket: java.net.DatagramSocket? = null
     private var choices: CompletableDeferred<Map<String, LanSyncChoice>>? = null
@@ -52,6 +53,25 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     fun requestSync() { retryPaused = false; requested = true; _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接") }
     fun resolveConflicts(values: Map<String, LanSyncChoice>) { choices?.complete(values) }
     fun revoke(fingerprint: String) { store.revoke(fingerprint); refresh() }
+    fun createPreviewSample() { sample = scope.launch { operation.withLock { safely {
+        _state.value = _state.value.copy(busy = true, status = "正在建立离线合成样例")
+        platform.exclusive { withContext(NonCancellable) {
+            workspace.capture(identity.fingerprint).use { capture ->
+                val bytes = LanSyncPreviewSample.image(); val hash = lanSyncHash(bytes)
+                val records = LanSyncPreviewSample.records(hash)
+                require(capture.snapshot.records.none { current -> records.any { it.key == current.key } }) { "SYNC_SAMPLE_ALREADY_PRESENT" }
+                val scratch = LanSyncScratch(store.root, "sample")
+                try {
+                    val source = scratch.directory.resolve(hash)
+                    java.nio.file.Files.write(source, bytes, java.nio.file.StandardOpenOption.CREATE_NEW); scratch.own(source)
+                    val snapshot = capture.snapshot.copy(records = capture.snapshot.records + records, resources = capture.snapshot.resources + (hash to bytes.size.toLong()))
+                    workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()), capture.snapshot.hashes(), identity.fingerprint, capture.blobs + (hash to source))
+                    platform.reload(records.filter { it.type == "chat_sessions" }.map { it.id }.toSet())
+                } finally { scratch.close() }
+            }
+        } }
+        _state.value = _state.value.copy(status = "已建立“局域网离线样例”；可打开会话编辑消息，无需密钥或生成调用")
+    } } } }
     fun cancelPairing() { synchronized(offerLock) { offer = null }; _state.value = _state.value.copy(offer = null) }
 
     fun startHost() {
@@ -328,6 +348,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private fun complete(peer: String, plan: LanSyncPlan) {
         val previous = store.baseline(peer, identity.fingerprint).revision
         store.complete(peer, identity.fingerprint, plan)
+        try {
         if (previous != null && previous != plan.transaction) workspace.retire(previous)
         val directory = store.root.resolve("transfer-${plan.transaction}")
         if (Files.exists(directory)) {
@@ -335,6 +356,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             require(actual.map { it.fileName.toString() }.toSet() == plan.snapshot.resources.keys) { "SYNC_RETAINED_UNKNOWN_CHILD" }
             actual.forEach { require(LanSyncWorkspace.hashFile(it, plan.snapshot.resources.getValue(it.fileName.toString())) == it.fileName.toString()) }
             actual.forEach(Files::delete); Files.delete(directory)
+        }
+        _state.value = _state.value.copy(cleanupNotice = null)
+        } catch (_: Exception) {
+            _state.value = _state.value.copy(cleanupNotice = "同步结果与回执已保存；部分旧临时资料未能安全回收，已保留供检查。")
         }
     }
     private suspend fun safely(work: suspend () -> Unit) {
@@ -355,6 +380,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_ONE_PEER_ONLY" -> "首版一次连接一台可信设备；请先撤销已有配对再连接另一台"
             "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机仍在生成或处理资料，请完成后点同步重试"
             "SYNC_INITIALIZING" -> "本机资料仍在初始化，请稍后点同步重试"
+            "SYNC_SAMPLE_ALREADY_PRESENT" -> "离线样例已存在，原内容已保留；可直接打开并编辑"
             "SYNC_UNTRUSTED_DEVICE", "SYNC_DEVICE_CHANGED" -> "设备身份未受信任，请检查或重新配对"
             else -> if (failure is java.net.ConnectException || failure is java.net.SocketTimeoutException)
                 "暂时连不上电脑：请保持两端页面打开，检查同一局域网、防火墙和电脑地址；会自动重连"
@@ -365,12 +391,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     fun stop() {
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null
         pairing?.cancel(); pairing = null
+        sample?.cancel(); sample = null
         listening?.cancel(); listening = null; listener?.close(); listener = null
         discovery?.cancel(); discovery = null; discoverySocket?.close(); discoverySocket = null
         sockets.forEach { runCatching { it.close() } }; sockets.clear()
     }
     suspend fun closeAndDrain() {
-        val jobs = listOfNotNull(listening, polling, pairing, discovery)
+        val jobs = listOfNotNull(listening, polling, pairing, sample, discovery)
         stop()
         jobs.joinAll()
     }

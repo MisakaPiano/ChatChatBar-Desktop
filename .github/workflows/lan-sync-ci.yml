@@ -2,6 +2,7 @@ name: Isolated LAN sync engineering
 on:
   push:
     branches: ['codex/lan-sync-*']
+    paths-ignore: [.github/lan-sync-package-request.json, .github/lan-sync-device-request.json]
 permissions:
   contents: read
 jobs:
@@ -45,6 +46,19 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Record native path evidence and use a canonical NTFS temporary root
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path ($env:SystemDrive + '\') ('lt' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          $evidence = New-Item -ItemType Directory -Path (Join-Path $base 'evidence') -ErrorAction Stop
+          & java "$env:GITHUB_WORKSPACE/tools/lan-sync/StartupPathEvidence.java" | Set-Content (Join-Path $evidence 'original-temp.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'ORIGINAL_PATH_EVIDENCE_FAILED' }
+          $taskTemp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          $env:TEMP = $taskTemp.FullName; $env:TMP = $taskTemp.FullName
+          & java "$env:GITHUB_WORKSPACE/tools/lan-sync/StartupPathEvidence.java" | Set-Content (Join-Path $evidence 'canonical-temp.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'CANONICAL_PATH_EVIDENCE_FAILED' }
+          @("TEMP=$env:TEMP", "TMP=$env:TMP", "CCB_LAN_TEST_ENV=$($evidence.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
       - name: Desktop compilation
         working-directory: app
         run: .\gradlew.bat :desktopApp:test --tests '*DesktopUpdateNoticesTest*' --tests '*DesktopStartupGateTest*' --no-daemon --stacktrace
@@ -52,4 +66,6 @@ jobs:
         if: always()
         with:
           name: lan-sync-desktop-evidence
-          path: app/desktopApp/build/test-results/test/
+          path: |
+            app/desktopApp/build/test-results/test/
+            ${{ env.CCB_LAN_TEST_ENV }}/*.json

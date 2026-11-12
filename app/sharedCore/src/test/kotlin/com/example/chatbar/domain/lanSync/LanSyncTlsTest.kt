@@ -7,7 +7,7 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class LanSyncTlsTest {
-    @Test fun actualMutualTlsStreamsAndRejectsAnUnpinnedIdentity() = runBlocking {
+    @Test fun actualMutualTlsStreamsAndRejectsAnUnpinnedIdentity(): Unit = runBlocking {
         val serverId = LanSyncTlsIdentity.create(); val clientId = LanSyncTlsIdentity.create()
         val server = serverId.context { it == clientId.fingerprint }.serverSocketFactory.createServerSocket() as SSLServerSocket
         server.soTimeout = 10_000

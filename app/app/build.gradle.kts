@@ -20,6 +20,7 @@ android {
         releaseKeyPassword.isPresent
 
     defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         applicationId = "com.example.chatbar"
         minSdk = 26
         targetSdk = 36
@@ -104,6 +105,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    if (providers.gradleProperty("lanSyncDeviceTests").orNull == "true") testBuildType = "lanPreview"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

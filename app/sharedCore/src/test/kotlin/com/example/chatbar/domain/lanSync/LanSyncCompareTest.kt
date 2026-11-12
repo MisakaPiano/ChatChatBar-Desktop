@@ -37,4 +37,13 @@ class LanSyncCompareTest {
         val b = a.copy(body = buildJsonObject { put("name", "名称"); put("id", "a") })
         assertEquals(snapshot(a).hashes(), snapshot(b).hashes())
     }
+    @Test fun presetInstallTimestampsAndAuditOnlyWritesDoNotInventConflicts() {
+        val a = LanSyncRecord("character_cards", "a", buildJsonObject {
+            put("id", "a"); put("name", "synthetic"); put("sourcePresetKey", "synthetic-preset"); put("createdAt", 1); put("updatedAt", 1)
+        })
+        val b = a.copy(body = JsonObject(a.body + mapOf("createdAt" to JsonPrimitive(10), "updatedAt" to JsonPrimitive(20))))
+        assertEquals(snapshot(a).hashes(), snapshot(b).hashes())
+        val changed = b.copy(body = JsonObject(b.body + ("name" to JsonPrimitive("edited"))))
+        assertNotEquals(snapshot(a).hashes(), snapshot(changed).hashes())
+    }
 }

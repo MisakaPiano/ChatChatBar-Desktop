@@ -23,6 +23,9 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
         DesktopDataSectionHeading("局域网同步")
         StatusText(LanSyncScope.description)
         StatusText(state.status)
+        state.cleanupNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        if (remember { DesktopBuildIdentity.load().version.substringAfter('-', "").startsWith("lan.") })
+            BootstrapButton("载入离线验收样例", secondary = true, enabled = !state.busy) { runtime.createPreviewSample() }
         ActionRow {
             BootstrapButton("同步 / 接续", enabled = !state.busy && state.peers.isNotEmpty()) { runtime.requestSync() }
             state.addresses.forEach { address ->

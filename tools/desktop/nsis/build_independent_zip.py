@@ -21,7 +21,7 @@ if not exist "%TEMP%" mkdir "%TEMP%"
 start "" /D "%~dp0Program" "%~dp0Program\\ChatChatBarDesktop.exe"
 '''.replace('\n', '\r\n')
 
-def build(image, destination, version, commit, installer_version):
+def build(image, destination, version, commit, installer_version, lan_sync_preview=False):
     image = image.absolute(); destination = destination.absolute()
     regular(destination.parent, directory=True)
     if destination.exists() or destination.is_relative_to(image):
@@ -37,6 +37,17 @@ def build(image, destination, version, commit, installer_version):
         '合并完成后正常退出，再双击同一启动入口；该入口会继续使用自己的资料选择。\n'
         '资料目录与程序目录分开。若需移动数据请使用应用内的数据目录迁移功能。\n'
         '本包是独立使用入口，不提供应用内自动安装重启或损坏程序修复。\n')
+    if lan_sync_preview:
+        if not version.startswith('0.1.0-lan.'):
+            raise ValueError('LAN_PREVIEW_VERSION_REQUIRED')
+        guide = ('CCB 局域网独立预览 ' + version + '\n\n'
+            '完整解压到新的本机目录，双击“启动独立资料版.cmd”。不要直接运行 Program 内的 EXE。\n'
+            '本入口仅使用旁边的 UserData，保留日常版资料；本包不连接公开更新通道。\n'
+            '电脑：数据 → 局域网同步。安卓旁装预览：管理 → 局域网同步。保持两端页面打开。\n'
+            '电脑生成二维码，手机扫码，核对短设备身份并确认；之后点击同步／接续即可。\n'
+            '可先在一端点“载入离线验收样例”，同步后打开会话，编辑样例消息并再次同步；无需密钥或付费生成。\n'
+            '同步时无需手工导出、搬运或选择备份。具体冲突在电脑逐项选择，未支持的数据不参与删除。\n'
+            '这是独立资料预览，不代表官方安卓已支持，也未接管原版手机资料。\n')
     with zipfile.ZipFile(destination, 'x', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for item in report['files']:
             source = image / item['path']
@@ -64,4 +75,5 @@ if __name__ == '__main__':
     parser.add_argument('--version', required=True)
     parser.add_argument('--commit', required=True)
     parser.add_argument('--installer-version', required=True)
+    parser.add_argument('--lan-sync-preview', action='store_true')
     build(**vars(parser.parse_args()))

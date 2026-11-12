@@ -44,6 +44,9 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
         CbText("局域网同步")
         CbText(LanSyncScope.description)
         CbText(state.status)
+        state.cleanupNotice?.let { CbText(it, color = ChatBarTheme.colors.warning) }
+        if (com.example.chatbar.BuildConfig.BUILD_TYPE == "lanPreview")
+            CbButton("载入离线验收样例", runtime::createPreviewSample, enabled = !state.busy, variant = ButtonVariant.Secondary)
         CbButton("同步 / 接续", runtime::requestSync, enabled = !state.busy && state.peers.isNotEmpty())
         CbButton("扫描电脑二维码", { scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
             .setPrompt("扫描自己电脑 CCB 中的配对二维码").setBeepEnabled(false).setOrientationLocked(false)) }, enabled = !state.busy)

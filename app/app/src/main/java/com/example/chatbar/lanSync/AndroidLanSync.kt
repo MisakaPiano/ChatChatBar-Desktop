@@ -16,7 +16,8 @@ class AndroidLanSync(private val app: ChatBarApp) {
     val gate = LanSyncOperationGate()
     private val dataRoot = app.filesDir.canonicalFile.toPath()
     private val root = app.noBackupFilesDir.canonicalFile.toPath().resolve("lan-sync-v1")
-    private val store = LanSyncStateStore(root, ::protect, ::unprotect)
+    private val protection = AndroidLanSyncKeyProtection()
+    private val store = LanSyncStateStore(root, protection::protect, protection::unprotect)
     private val workspace = LanSyncWorkspace(dataRoot, root.resolve("workspace"),
         resolveResource = { reference ->
             val path = java.nio.file.Paths.get(reference)
@@ -57,23 +58,4 @@ class AndroidLanSync(private val app: ChatBarApp) {
     }, android.os.Build.MODEL.take(80)) }
     fun recoverBeforeRepositories() = workspace.recover()
 
-    private fun key(): SecretKey {
-        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        return (store.getKey(ALIAS, null) as? SecretKey) ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
-            init(KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256).build())
-        }.generateKey()
-    }
-    private fun protect(bytes: ByteArray): ByteArray {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key()) }
-        return cipher.iv + cipher.doFinal(bytes)
-    }
-    private fun unprotect(bytes: ByteArray): ByteArray {
-        require(bytes.size > 28)
-        return Cipher.getInstance("AES/GCM/NoPadding").apply {
-            init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes.copyOfRange(0, 12)))
-        }.doFinal(bytes.copyOfRange(12, bytes.size))
-    }
-    companion object { private const val ALIAS = "chatbar-lan-sync-identity-v1" }
 }

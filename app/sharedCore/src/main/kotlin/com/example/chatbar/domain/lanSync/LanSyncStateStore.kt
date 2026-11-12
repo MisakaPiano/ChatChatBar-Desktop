@@ -110,10 +110,24 @@ internal fun lanSyncAtomicWrite(path: Path, bytes: ByteArray) {
     Files.createDirectories(path.parent); lanSyncSafe(path.parent, true)
     if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncSafe(path)
     val part = path.resolveSibling(".${UUID.randomUUID()}.part")
+    var partKey: Any? = null
+    var created = false
+    var moved = false
+    try {
     FileChannel.open(part, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { channel ->
+        created = true
+        partKey = Files.readAttributes(part, java.nio.file.attribute.BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey()
         var buffer = java.nio.ByteBuffer.wrap(bytes)
         while (buffer.hasRemaining()) channel.write(buffer)
         channel.force(true)
     }
     Files.move(part, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+    moved = true
+    } finally {
+        if (created && !moved && Files.exists(part, LinkOption.NOFOLLOW_LINKS)) {
+            lanSyncSafe(part)
+            require(Files.readAttributes(part, java.nio.file.attribute.BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey() == partKey) { "SYNC_TEMPORARY_CHANGED" }
+            Files.delete(part)
+        }
+    }
 }

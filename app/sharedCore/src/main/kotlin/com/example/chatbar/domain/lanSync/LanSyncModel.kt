@@ -11,6 +11,10 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
     internal val value get() = body
     internal val singleton get() = false
     internal fun text(field: String) = (body[field] as? JsonPrimitive)?.contentOrNull
+    internal fun comparisonBody(): JsonObject {
+        val ignored = if (!text("sourcePresetKey").isNullOrBlank()) setOf("updatedAt", "createdAt") else setOf("updatedAt")
+        return JsonObject(body.filterKeys { it !in ignored })
+    }
     val key: String get() = "$type/$id"
     val unit: String get() = when {
         type == "chat_sessions" -> "conversation/$id"
@@ -43,7 +47,7 @@ data class LanSyncSnapshot(
     fun units(): Map<String, List<LanSyncRecord>> = records.groupBy { it.unit }
     fun hashes(): Map<String, String> = units().mapValues { (_, records) ->
         lanSyncHash(JsonArray(records.sortedBy { it.key }.map {
-            buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.body) }
+            buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.comparisonBody()) }
         }))
     }
 

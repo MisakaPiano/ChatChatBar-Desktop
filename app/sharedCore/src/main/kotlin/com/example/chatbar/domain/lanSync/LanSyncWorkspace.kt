@@ -113,7 +113,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val currentRecords = current.snapshot.records.associateBy { it.key }
         desired.forEach { (relative, wire) ->
             val existing = currentRecords[wire.key]
-            if (existing?.body == wire.body) return@forEach
+            if (existing?.comparisonBody() == wire.comparisonBody()) return@forEach
             val materialized = mapResources(wire.body) { reference, field ->
                 if (!reference.startsWith("ccb-lan-v1/")) reference else {
                     val parts = reference.split('/')
