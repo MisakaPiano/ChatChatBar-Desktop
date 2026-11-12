@@ -126,12 +126,12 @@ open class NovelAiStudioStateRepository(
     open suspend fun updateDraft(
         resetPromptEditors: Boolean = false,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
-    ): NovelAiStudioDraft {
+    ): NovelAiStudioDraft = withStudioDataAccess {
         val before = synchronized(draftStateLock) {
             checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
         }
         val next = stageDraft(resetPromptEditors, transform)
-        return try {
+        try {
             flushLatestDraft()
             next
         } catch (error: Throwable) {

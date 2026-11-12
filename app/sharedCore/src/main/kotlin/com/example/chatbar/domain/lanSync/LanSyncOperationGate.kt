@@ -19,6 +19,16 @@ class LanSyncOperationGate : AppDataOperationGate {
     private class Admission(val owner: LanSyncOperationGate) : AbstractCoroutineContextElement(Key) {
         companion object Key : CoroutineContext.Key<Admission>
     }
+    /** Memory-only editor staging stays synchronous while open; callers defer the whole edit if false. */
+    fun tryWithImmediateNormalOperation(operation: () -> Unit): Boolean {
+        synchronized(lock) {
+            if (reopened != null) return false
+            active++
+        }
+        try { operation() }
+        finally { synchronized(lock) { active--; if (active == 0) drained?.complete(Unit) } }
+        return true
+    }
     override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
         if (currentCoroutineContext()[Admission]?.owner === this) return operation()
         while (true) {

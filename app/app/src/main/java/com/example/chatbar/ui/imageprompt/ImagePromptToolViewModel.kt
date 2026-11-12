@@ -339,9 +339,30 @@ class ImagePromptToolViewModel : ViewModel() {
         }
     }
 
+    private fun admitDraftEdit(expectedEditorRevision: Long? = null, operation: () -> Unit) {
+        val edit: () -> Unit = {
+            if (expectedEditorRevision == null || _uiState.value.promptEditorRevision == expectedEditorRevision) operation()
+        }
+        if (app.lanSyncOwner.gate.tryWithImmediateNormalOperation(edit)) return
+        viewModelScope.launch {
+            app.lanSyncOwner.gate.withNormalOperation {
+                try { edit() }
+                catch (failure: IllegalArgumentException) {
+                    _uiState.update { it.copy(error = failure.message ?: "工作室修改未完成；现有内容保留") }
+                }
+            }
+        }
+    }
+
     fun updateDraft(
         historyKey: String? = null,
         resetPromptEditors: Boolean = false,
+        transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
+    ) = admitDraftEdit { updateDraftNow(historyKey, resetPromptEditors, transform) }
+
+    private fun updateDraftNow(
+        historyKey: String?,
+        resetPromptEditors: Boolean,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
     ) {
         val state = _uiState.value
@@ -375,11 +396,12 @@ class ImagePromptToolViewModel : ViewModel() {
         historyKey: String,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
     ) {
-        if (_uiState.value.promptEditorRevision != expectedEditorRevision) return
-        updateDraft(historyKey, transform = transform)
+        admitDraftEdit(expectedEditorRevision) { updateDraftNow(historyKey, false, transform) }
     }
 
-    fun undoDraftChange() {
+    fun undoDraftChange() = admitDraftEdit { undoDraftChangeNow() }
+
+    private fun undoDraftChangeNow() {
         val state = _uiState.value
         if (state.applyingHistory || state.isBusy && !state.isGeneratingImage || draftUndo.isEmpty()) return
         val previous = draftUndo.removeAt(draftUndo.lastIndex)
@@ -389,7 +411,9 @@ class ImagePromptToolViewModel : ViewModel() {
         applyDraftHistoryState(previous)
     }
 
-    fun redoDraftChange() {
+    fun redoDraftChange() = admitDraftEdit { redoDraftChangeNow() }
+
+    private fun redoDraftChangeNow() {
         val state = _uiState.value
         if (state.applyingHistory || state.isBusy && !state.isGeneratingImage || draftRedo.isEmpty()) return
         val next = draftRedo.removeAt(draftRedo.lastIndex)
