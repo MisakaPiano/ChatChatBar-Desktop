@@ -29,7 +29,8 @@ class LanSyncApi26Test {
         val serverId = LanSyncTlsIdentity.create(); val clientId = LanSyncTlsIdentity.create()
         val server = serverId.context { it == clientId.fingerprint }.serverSocketFactory.createServerSocket() as SSLServerSocket
         server.soTimeout = 15_000; server.needClientAuth = true
-        server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+        // Android may choose ::1 for getLoopbackAddress; match the numeric IPv4 client below.
+        server.bind(InetSocketAddress("127.0.0.1", 0))
         val pool = Executors.newSingleThreadExecutor()
         try {
             val response = pool.submit<Boolean> {
