@@ -122,6 +122,10 @@ android {
     packaging {
       resources {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        // BC1.86's three JARs share this license; retain all license bytes in the APK.
+        merges += "META-INF/LICENSE.md"
+        // Exact duplicate OSGi/JAR-signature metadata is not an Android runtime resource.
+        excludes += setOf("META-INF/versions/9/OSGI-INF/MANIFEST.MF", "META-INF/BCRSA204.SF", "META-INF/BCRSA204.RSA")
       }
     }
 

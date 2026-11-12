@@ -63,6 +63,7 @@ object LanSyncPlanner {
             excludedTypes = computer.excludedTypes + phone.excludedTypes)
         result.validate()
         LanSyncScope.validateGraph(result)
+        require(result.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }
         return LanSyncPlan(transaction, result, parents)
     }
 }

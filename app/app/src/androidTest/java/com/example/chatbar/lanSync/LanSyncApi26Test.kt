@@ -35,13 +35,23 @@ class LanSyncApi26Test {
             val response = pool.submit<Boolean> {
                 (server.accept() as SSLSocket).use { socket ->
                     LanSyncTls.configure(socket); socket.soTimeout = 15_000; socket.startHandshake()
-                    LanSyncWire(socket).use { wire -> assertEquals("synthetic", wire.text()); wire.sendText("verified") }
+                    LanSyncWire(socket).use { wire ->
+                        assertEquals("synthetic", wire.text()); wire.sendText("verified")
+                        val bytes = ByteArray(65_536) { (it % 251).toByte() }
+                        wire.sendBlob(bytes.inputStream(), bytes.size.toLong())
+                    }
                 }
                 true
             }
             (clientId.context { it == serverId.fingerprint }.socketFactory.createSocket("127.0.0.1", server.localPort) as SSLSocket).use { socket ->
                 LanSyncTls.configure(socket); socket.soTimeout = 15_000; socket.startHandshake()
-                LanSyncWire(socket).use { wire -> wire.sendText("synthetic"); assertEquals("verified", wire.text()) }
+                LanSyncWire(socket).use { wire ->
+                    wire.sendText("synthetic"); assertEquals("verified", wire.text())
+                    val expected = ByteArray(65_536) { (it % 251).toByte() }
+                    val result = java.io.ByteArrayOutputStream()
+                    wire.receiveBlob(result, expected.size.toLong(), lanSyncHash(expected))
+                    assertArrayEquals(expected, result.toByteArray())
+                }
             }
             assertTrue(response.get(20, TimeUnit.SECONDS))
         } finally { server.close(); pool.shutdownNow() }

@@ -13,7 +13,16 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
     internal fun text(field: String) = (body[field] as? JsonPrimitive)?.contentOrNull
     internal fun comparisonBody(): JsonObject {
         val ignored = if (!text("sourcePresetKey").isNullOrBlank()) setOf("updatedAt", "createdAt") else setOf("updatedAt")
-        return JsonObject(body.filterKeys { it !in ignored })
+        val aliases = linkedMapOf<String, Int>()
+        return LanSyncWorkspace.mapResources(JsonObject(body.filterKeys { it !in ignored })) { reference, _ ->
+            if (reference.startsWith("ccb-lan-v1/")) {
+                val parts = reference.split('/')
+                if (parts.size == 5) {
+                    val ordinal = aliases.getOrPut("${parts[1]}/${parts[2]}") { aliases.size }
+                    "ccb-lan-content/${parts[1]}/${parts[3]}/${parts[4]}/$ordinal"
+                } else reference
+            } else reference
+        }
     }
     val key: String get() = "$type/$id"
     val unit: String get() = when {

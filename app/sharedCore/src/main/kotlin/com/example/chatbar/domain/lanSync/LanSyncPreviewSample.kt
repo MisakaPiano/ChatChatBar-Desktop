@@ -13,7 +13,7 @@ internal object LanSyncPreviewSample {
     private const val CARD = "ccb-lan-preview-sample-card"
     private const val SESSION = "ccb-lan-preview-sample-session"
     fun records(imageHash: String): List<LanSyncRecord> {
-        val image = "ccb-lan-v1/images/$imageHash/png"
+        val image = "ccb-lan-v1/images/${UUID.nameUUIDFromBytes("ccb-lan-preview-image".toByteArray())}/$imageHash/png"
         val card = CharacterCard(CARD, "局域网离线样例", avatar = image, createdAt = 1, updatedAt = 1)
         val session = ChatSession(SESSION, CARD, "局域网离线样例", longTermMemoryEnabled = false,
             longTermMemory = "离线合成记忆：这段资料仅用于核对同步与保留情况。", createdAt = 1, updatedAt = 1)

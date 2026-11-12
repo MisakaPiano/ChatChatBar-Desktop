@@ -31,13 +31,18 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                 require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
                 DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
             }
-        })
+        }, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) })
     val runtime by lazy { LanSyncRuntime(stateStore, workspace, object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
     }, "CCB 电脑") }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() = runtime.closeAndDrain()
+}
+
+internal fun desktopLanSyncResourceReference(root: Path, path: Path): String {
+    require(path.normalize().startsWith(root)) { "SYNC_EXTERNAL_RESOURCE" }
+    return root.relativize(path).toString().replace('\\', '/')
 }
 
 internal object DesktopLanSyncStartup {

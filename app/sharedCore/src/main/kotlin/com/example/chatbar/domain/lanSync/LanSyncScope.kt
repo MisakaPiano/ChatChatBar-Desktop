@@ -51,6 +51,7 @@ object LanSyncScope {
     fun validateGraph(snapshot: LanSyncSnapshot) {
         snapshot.records.forEach(::validateRecord)
         val referenced = linkedSetOf<String>()
+        val mediaIdentities = linkedMapOf<String, String>()
         snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
             when {
                 reference.isBlank() || reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
@@ -58,11 +59,14 @@ object LanSyncScope {
                     reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) -> Unit
                 else -> {
                     val parts = reference.split('/')
-                    require(parts.size == 4 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages") &&
-                        parts[2].matches(Regex("[a-f0-9]{64}")) && parts[3].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_EXTERNAL_WIRE_REFERENCE" }
+                    require(parts.size == 5 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages") &&
+                        parts[2].matches(Regex("[a-f0-9-]{36}")) && parts[3].matches(Regex("[a-f0-9]{64}")) && parts[4].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_EXTERNAL_WIRE_REFERENCE" }
                     require((field == "packageFile") == (parts[1] == "packages") && (field == "audioPath") == (parts[1] == "audio")) { "SYNC_RESOURCE_KIND" }
-                    require(parts[2] in snapshot.resources) { "SYNC_RESOURCE_MANIFEST" }
-                    referenced += parts[2]
+                    require(parts[3] in snapshot.resources) { "SYNC_RESOURCE_MANIFEST" }
+                    val identity = "${parts[1]}/${parts[2]}"
+                    require(mediaIdentities[identity]?.let { it == parts[3] } != false) { "SYNC_RESOURCE_ID_CHANGED" }
+                    mediaIdentities[identity] = parts[3]
+                    referenced += parts[3]
                 }
             }
             reference
@@ -90,7 +94,7 @@ object LanSyncScope {
 
     fun referencedResources(records: List<LanSyncRecord>): Set<String> = buildSet {
         records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { value, _ ->
-            if (value.startsWith("ccb-lan-v1/")) value.split('/').getOrNull(2)?.let(::add)
+            if (value.startsWith("ccb-lan-v1/")) value.split('/').getOrNull(3)?.let(::add)
             value
         } }
     }
