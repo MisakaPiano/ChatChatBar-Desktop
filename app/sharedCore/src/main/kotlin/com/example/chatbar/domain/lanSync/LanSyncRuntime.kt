@@ -350,12 +350,27 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         store.complete(peer, identity.fingerprint, plan)
         try {
         if (previous != null && previous != plan.transaction) workspace.retire(previous)
-        val directory = store.root.resolve("transfer-${plan.transaction}")
-        if (Files.exists(directory)) {
+        val retiredPlans = mutableListOf(plan)
+        val seen = hashSetOf(plan.transaction)
+        var ancestor = plan.supersedes
+        while (ancestor != null) {
+            require(seen.size < 256 && seen.add(ancestor)) { "SYNC_SUPERSEDED_CHAIN" }
+            // An endpoint may never have received an older host plan; only its own durable
+            // superseded evidence grants authority to reclaim that older local transfer.
+            val older = store.superseded(peer, ancestor)?.plan ?: break
+            retiredPlans += older
+            ancestor = older.supersedes
+        }
+        retiredPlans.forEach { retired ->
+        if (retired.transaction != plan.transaction) workspace.retire(retired.transaction)
+        val directory = store.root.resolve("transfer-${retired.transaction}")
+        if (Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            lanSyncSafe(directory, true)
             val actual = Files.newDirectoryStream(directory).use { it.toList() }
-            require(actual.map { it.fileName.toString() }.toSet() == plan.snapshot.resources.keys) { "SYNC_RETAINED_UNKNOWN_CHILD" }
-            actual.forEach { require(LanSyncWorkspace.hashFile(it, plan.snapshot.resources.getValue(it.fileName.toString())) == it.fileName.toString()) }
+            require(actual.map { it.fileName.toString() }.toSet() == retired.snapshot.resources.keys) { "SYNC_RETAINED_UNKNOWN_CHILD" }
+            actual.forEach { require(LanSyncWorkspace.hashFile(it, retired.snapshot.resources.getValue(it.fileName.toString())) == it.fileName.toString()) }
             actual.forEach(Files::delete); Files.delete(directory)
+        }
         }
         _state.value = _state.value.copy(cleanupNotice = null)
         } catch (_: Exception) {

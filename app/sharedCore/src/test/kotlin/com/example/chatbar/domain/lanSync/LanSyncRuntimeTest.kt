@@ -36,9 +36,9 @@ class LanSyncRuntimeTest {
             override suspend fun exclusive(work: suspend () -> Unit) = gate.exclusive(work)
             override suspend fun reload(sessionIds: Set<String>) {}
         }, name, observe = observe, network = network)
-        fun write(id: String, name: String) {
+        fun write(id: String, name: String, image: String? = null) {
             val path = root.resolve("entities/character_cards/$id.json"); Files.createDirectories(path.parent)
-            Files.writeString(path, lanSyncJson.encodeToJsonElement(CharacterCard.serializer(), CharacterCard(id, name, createdAt = 1, updatedAt = 1)).toString())
+            Files.writeString(path, lanSyncJson.encodeToJsonElement(CharacterCard.serializer(), CharacterCard(id, name, avatar = image, createdAt = 1, updatedAt = 1)).toString())
         }
         fun names(): Set<String> = workspace.capture(id).use { capture -> capture.snapshot.records.mapNotNull { it.text("name") }.toSet() }
     }
@@ -98,9 +98,14 @@ class LanSyncRuntimeTest {
     }
     @Test fun phoneAppliedDisconnectAndBothLaterEditsRebaseWithoutOldPlanLoop() = runBlocking {
         val network = SyntheticLan(); var interrupted = false
-        val a = End("computer", network); a.write("a", "电脑原卡")
+        val a = End("computer", network)
+        val image = a.root.resolve("images/synthetic.bin")
+        Files.createDirectories(image.parent)
+        val bytes = ByteArray(128 * 1024) { (it % 251).toByte() }
+        Files.write(image, bytes)
+        a.write("a", "电脑原卡", image.toString())
         val b = End("phone", network) { phase, _ -> if (phase == "PHONE_APPLIED" && !interrupted) {
-            interrupted = true; a.write("a", "电脑之后修改"); throw java.io.IOException("synthetic disconnect after phone apply")
+            interrupted = true; a.write("a", "电脑之后修改", image.toString()); throw java.io.IOException("synthetic disconnect after phone apply")
         } }
         val host = a.runtime(); val phone = b.runtime()
         try {
@@ -112,6 +117,15 @@ class LanSyncRuntimeTest {
             assertEquals(a.names(), b.names())
             val revisions = Files.newDirectoryStream(a.stateRoot, "superseded-*").use { it.count() }
             assertEquals(1, revisions)
+            for (end in listOf(a, b)) {
+                val transfers = Files.newDirectoryStream(end.stateRoot, "transfer-*").use { it.toList() }
+                assertTrue(transfers.isEmpty(), "superseded transfer bytes must be released: $transfers")
+                end.workspace.capture(end.id).use { capture ->
+                    assertTrue(capture.snapshot.resources.keys.contains(lanSyncHash(bytes)))
+                    assertContentEquals(bytes, Files.readAllBytes(capture.blobs.getValue(lanSyncHash(bytes))))
+                }
+                assertTrue(Files.newDirectoryStream(end.stateRoot, "superseded-*").use { it.iterator().hasNext() }, "superseded identity evidence remains")
+            }
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
 }

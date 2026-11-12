@@ -36,15 +36,16 @@ class DesktopLanSyncCrashProcessTest {
 }
 
 object DesktopLanSyncCrashChild {
+    private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false }
     private fun data(root: Path) = root.resolve("data")
     private fun card(id: String, name: String) = LanSyncRecord("character_cards", id,
-        lanSyncJson.encodeToJsonElement(CharacterCard.serializer(), CharacterCard(id, name, createdAt = 1, updatedAt = 1)).jsonObject)
+        json.encodeToJsonElement(CharacterCard.serializer(), CharacterCard(id, name, createdAt = 1, updatedAt = 1)).jsonObject)
     fun write(root: Path, id: String, name: String) {
         val path = data(root).resolve("entities/character_cards/$id.json")
         Files.createDirectories(path.parent)
         Files.writeString(path, card(id, name).body.toString())
     }
-    fun read(root: Path, id: String) = lanSyncJson.parseToJsonElement(
+    fun read(root: Path, id: String) = json.parseToJsonElement(
         Files.readString(data(root).resolve("entities/character_cards/$id.json"))).jsonObject.getValue("name").jsonPrimitive.content
     @JvmStatic fun main(args: Array<String>) {
         val root = Path.of(args[0]).toRealPath()

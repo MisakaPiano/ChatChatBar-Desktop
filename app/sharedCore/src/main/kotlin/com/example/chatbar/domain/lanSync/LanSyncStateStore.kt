@@ -75,6 +75,14 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
         }
         pending(value)
     }
+    @Synchronized fun superseded(peer: String, transaction: String): LanSyncPending? {
+        require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
+        return read("superseded-$transaction.json")?.let { raw ->
+            lanSyncJson.decodeFromString<LanSyncPending>(raw).also {
+                require(it.peerId == peer && it.plan.transaction == transaction) { "SYNC_SUPERSEDED_IDENTITY" }
+            }
+        }
+    }
     @Synchronized fun clearPending(peer: String, transaction: String) {
         val pending = pending(peer) ?: return
         require(pending.plan.transaction == transaction)
