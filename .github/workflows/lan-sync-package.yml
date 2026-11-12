@@ -58,7 +58,7 @@ jobs:
           $approved = Join-Path $env:CCB_CI_SOURCE 'app/desktopApp/build/preview-continuous-private-20261025'
           New-Item -ItemType Directory -Path $approved -Force | Out-Null
           $case = Join-Path $approved 'windows-runtime-independent-lan'
-          $outside = Join-Path $env:CCB_LAN_OUTPUT 'outside-profile/ChatChatBarDesktop.bootstrap.json'
+          $outside = Join-Path $approved 'lan-outside-control/ChatChatBarDesktop.bootstrap.json'
           python -B "$env:CCB_CI_SOURCE/tools/desktop/nsis/independent_smoke.py" --source $env:CCB_CI_SOURCE --archive $env:CCB_LAN_ARCHIVE --receipt ([IO.Path]::ChangeExtension($env:CCB_LAN_ARCHIVE, '.json')) --audit $env:CCB_LAN_AUDIT --case $case --version $env:CCB_LAN_VERSION --commit $env:CCB_LAN_SOURCE --outside-bootstrap $outside
           if ($LASTEXITCODE -ne 0) { throw 'LAN_NATIVE_LIFECYCLE' }
           Copy-Item -LiteralPath (Join-Path $case 'result.json') -Destination (Join-Path $env:CCB_LAN_OUTPUT 'native-result.json')
