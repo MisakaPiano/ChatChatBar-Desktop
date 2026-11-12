@@ -34,7 +34,7 @@ class NovelAiStudioRepository(
 ) : NovelAiStudioStateRepository(storage) {
     suspend fun deleteHistoryImages(
         selections: List<NovelAiHistoryImageSelection>
-    ): NovelAiHistoryImageDeleteResult = historyMutex.withLock {
+    ): NovelAiHistoryImageDeleteResult = withStudioDataAccess { historyMutex.withLock {
         val uniqueSelections = selections.distinctBy { it.entryId to it.imagePath }
         require(uniqueSelections.isNotEmpty()) { "未选择历史图片" }
         val originals = storage.loadAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer())
@@ -92,7 +92,7 @@ class NovelAiStudioRepository(
             deletedCount = uniqueSelections.size,
             cleanupFailureCount = cleanupFailures
         )
-    }
+    } }
 
     companion object {
         private const val DRAFT_ENTITY = "novelai_studio_draft"

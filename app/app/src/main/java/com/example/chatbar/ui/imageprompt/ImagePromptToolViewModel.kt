@@ -71,6 +71,7 @@ import java.io.File
 import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -226,6 +227,10 @@ data class ImagePromptToolUiState(
 
 class ImagePromptToolViewModel : ViewModel() {
     private val app = ChatBarApp.instance
+    private fun launchImagePublication(start: CoroutineStart, work: suspend CoroutineScope.() -> Unit): Job =
+        viewModelScope.launch(start = start) publication@{
+            app.lanSyncOwner.gate.withNormalOperation { work(this@publication) }
+        }
     private val repository = app.novelAiStudioRepository
     private val settingsRepository = app.settingsRepository
     private val characterRepository = app.characterRepository
@@ -1116,7 +1121,7 @@ class ImagePromptToolViewModel : ViewModel() {
             )
         }
         app.streamingStopRequested.value = false
-        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+        val job = launchImagePublication(start = CoroutineStart.LAZY) {
             var pendingHistoryId: String? = null
             try {
                 AiBackgroundWorkManager.run {
