@@ -65,20 +65,26 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         platform.exclusive { withContext(NonCancellable) {
             val projection = currentProjection()
             workspace.capture(identity.fingerprint, projection).use { capture ->
-                val bytes = LanSyncPreviewSample.image(); val hash = lanSyncHash(bytes)
-                val records = LanSyncPreviewSample.records(hash)
+                val images = listOf(LanSyncPreviewSample.image(), LanSyncPreviewSample.image(warm = true))
+                val hashes = images.map(::lanSyncHash)
+                val payloads = hashes.zip(images).toMap()
+                val records = LanSyncPreviewSample.records(hashes[0], hashes[1])
                 require(capture.snapshot.records.none { current -> records.any { it.key == current.key } }) { "SYNC_SAMPLE_ALREADY_PRESENT" }
                 val scratch = LanSyncScratch(store.root, "sample")
                 try {
-                    val source = scratch.directory.resolve(hash)
-                    java.nio.file.Files.write(source, bytes, java.nio.file.StandardOpenOption.CREATE_NEW); scratch.own(source)
-                    val snapshot = capture.snapshot.copy(records = capture.snapshot.records + records, resources = capture.snapshot.resources + (hash to bytes.size.toLong()))
-                    workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()), capture.snapshot.hashes(), identity.fingerprint, capture.blobs + (hash to source), projection)
+                    val sources = payloads.mapValues { (hash, bytes) ->
+                        scratch.directory.resolve(hash).also { source ->
+                            java.nio.file.Files.write(source, bytes, java.nio.file.StandardOpenOption.CREATE_NEW); scratch.own(source)
+                        }
+                    }
+                    val snapshot = capture.snapshot.copy(records = capture.snapshot.records + records,
+                        resources = capture.snapshot.resources + payloads.mapValues { it.value.size.toLong() })
+                    workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()), capture.snapshot.hashes(), identity.fingerprint, capture.blobs + sources, projection)
                     platform.reload(records.filter { it.type == "chat_sessions" }.map { it.id }.toSet())
                 } finally { scratch.close() }
             }
         } }
-        _state.value = _state.value.copy(status = "已建立“局域网离线样例”；可打开会话编辑消息，无需密钥或生成调用")
+        _state.value = _state.value.copy(status = "已建立“局域网离线样例 2”：会话版本、朋友圈图片版本和暂停计划，无需密钥或生成调用")
     } } } }
     fun cancelPairing() { synchronized(offerLock) { offer = null }; _state.value = _state.value.copy(offer = null) }
 
