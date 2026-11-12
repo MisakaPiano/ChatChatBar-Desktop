@@ -91,6 +91,13 @@ class ChatRepository internal constructor(
         initialized = true
     }
 
+    /** The LAN owner has already committed and validated the complete graph under exclusive admission. */
+    suspend fun reloadAfterLanSync() = messageAppendMutex.withDataAccess {
+        messageIndexMutex.withDataAccess { messageIndexes.clear() }
+        refreshSessionCache()
+        initialized = true
+    }
+
     // ===== 会话操作 =====
 
     fun observeSessions(): Flow<List<ChatSession>> = _sessions.asStateFlow()

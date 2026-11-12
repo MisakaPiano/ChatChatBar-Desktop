@@ -38,6 +38,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private var listener: SSLServerSocket? = null
     private var listening: Job? = null
     private var polling: Job? = null
+    private var discovery: Job? = null
+    private var discoverySocket: java.net.DatagramSocket? = null
     private var choices: CompletableDeferred<Map<String, LanSyncChoice>>? = null
     private val sockets = java.util.concurrent.ConcurrentHashMap.newKeySet<SSLSocket>()
 
@@ -55,6 +57,16 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             val server = context.serverSocketFactory.createServerSocket() as SSLServerSocket
             server.reuseAddress = false; server.needClientAuth = true
             server.bind(InetSocketAddress(0)); listener = server
+            discovery = scope.launch {
+                try {
+                    LanSyncDiscovery.listen(identity.fingerprint, server.localPort).use { udp ->
+                        discoverySocket = udp
+                        while (isActive) LanSyncDiscovery.respond(udp, identity.fingerprint, server.localPort)
+                    }
+                } catch (failure: Exception) {
+                    if (isActive) _state.value = _state.value.copy(status = "电脑连接已就绪；地址自动发现暂不可用，请检查专用网络的 UDP 39237 权限")
+                }
+            }
             _state.value = _state.value.copy(status = "电脑已就绪，安卓可扫码或连接已配对设备", addresses = addresses, peers = store.peers())
             while (isActive) {
                 val socket = server.accept() as SSLSocket
@@ -177,7 +189,14 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
 
     private suspend fun phoneAttempt(peer: LanSyncPeer) {
         val baseline = store.baseline(peer.fingerprint, identity.fingerprint)
-        LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint).use { socket ->
+        val socket = try { LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint) }
+        catch (failure: java.io.IOException) {
+            val address = LanSyncDiscovery.find(peer.fingerprint) ?: throw failure
+            LanSyncTls.connect(identity, address.first, address.second, peer.fingerprint).also {
+                store.trust(peer.copy(host = address.first, port = address.second))
+            }
+        }
+        socket.use { socket ->
             sockets += socket
             try { LanSyncWire(socket).use { wire ->
                 val pending = store.pending(peer.fingerprint)
@@ -267,6 +286,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     fun stop() {
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null
         listening?.cancel(); listening = null; listener?.close(); listener = null
+        discovery?.cancel(); discovery = null; discoverySocket?.close(); discoverySocket = null
         sockets.forEach { runCatching { it.close() } }; sockets.clear()
     }
 }

@@ -258,6 +258,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     providerUsage = appContainer.providerUsage,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
+                                    lanSync = appContainer.lanSync,
                                     externalImportController = externalImports,
                                     taskCenter = appContainer.taskCenter,
                                     taskTray = tray,

@@ -220,13 +220,18 @@ class ChatBarApp : Application() {
     lateinit var momentScheduler: MomentScheduler
         private set
 
+    val lanSyncOwner by lazy { com.example.chatbar.lanSync.AndroidLanSync(this) }
+    @Volatile var lanSyncStartupReady = false
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         CrashReportManager.initialize(this)
 
         // 1. 初始化文件存储
-        jsonFileStorage = JsonFileStorage(filesDir.toPath())
+        lanSyncOwner.recoverBeforeRepositories()
+        jsonFileStorage = JsonFileStorage(filesDir.toPath(), lanSyncOwner.gate)
         
         // 2. 初始化各个仓库
         characterRepository = CharacterRepository(jsonFileStorage)
@@ -517,6 +522,7 @@ class ChatBarApp : Application() {
         persistentInitializationMutex.withLock {
             try {
                 initializePersistentStateLocked()
+                lanSyncStartupReady = true
             } catch (error: JsonFileStorage.SingletonReadException) {
                 // JsonFileStorage publishes a safe UI error; do not log JSON/credentials from its cause.
                 Log.e(TAG, error.message.orEmpty())

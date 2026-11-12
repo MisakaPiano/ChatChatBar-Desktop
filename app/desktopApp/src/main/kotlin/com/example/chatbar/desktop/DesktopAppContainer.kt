@@ -46,6 +46,19 @@ class DesktopAppContainer internal constructor(
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
+    private val lanSyncOwner = lazy { DesktopLanSync(this,
+        exclusive = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance {
+            dataOperationCoordinator.withExclusiveMaintenance { work() }
+        } } },
+        reload = {
+            characterRepository.refreshFromStorage(); formatCardRepository.refreshFromStorage(); worldBookRepository.refreshFromStorage()
+            chatRepository.reloadAfterLanSync(); voiceRepository.reload()
+            if (primaryChatControllerOwner.isInitialized()) primaryChatController.refresh()
+        }, resolve = { reference ->
+            val path = java.nio.file.Path.of(reference)
+            if (path.isAbsolute) path else characterResourceStore.resolveOwnedReference(reference)
+        }, asset = characterResourceStore::readBytes) }
+    internal val lanSync get() = lanSyncOwner.value.runtime
     internal val imageToolPreferences by lazy { DesktopImageToolPreferences(jsonFileStorage, dataOperationCoordinator) }
     internal val documentRagReader by lazy {
         DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator, maintenance = audioMaintenance)
@@ -429,6 +442,7 @@ class DesktopAppContainer internal constructor(
     }
 
     suspend fun initializePersistentState() {
+        lanSyncOwner.value.recoverBeforeRepositories()
         automaticBackupRuntime.initialize()
         presetBootstrap.initialize()
         saveSlotService.resumeSessionDeletionCleanup()
@@ -826,6 +840,7 @@ class DesktopAppContainer internal constructor(
     )
 
     suspend fun close() {
+        if (lanSyncOwner.isInitialized()) lanSyncOwner.value.stop()
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {

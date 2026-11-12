@@ -260,6 +260,7 @@ tasks.register<JavaExec>("verifyPhase7LocalFixture") {
 
 dependencies {
     implementation(project(":sharedCore"))
+    implementation("com.google.zxing:core:3.5.4")
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)

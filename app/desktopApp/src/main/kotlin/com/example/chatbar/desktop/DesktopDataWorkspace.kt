@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class DataPage(val label: String) { BACKUP("备份与导入"), LOCATION("数据目录"), AUTO("自动备份"), UPDATE("版本与更新"), RECOVERY("恢复与支持"), DIAGNOSTICS("支持与诊断") }
+private enum class DataPage(val label: String) { BACKUP("备份与导入"), LAN("局域网同步"), LOCATION("数据目录"), AUTO("自动备份"), UPDATE("版本与更新"), RECOVERY("恢复与支持"), DIAGNOSTICS("支持与诊断") }
 private enum class BackupPage { OVERVIEW, EXPORT, IMPORT, CHECK }
 
 @Composable
@@ -18,7 +18,8 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     onExit: () -> Unit, openUpdateRequest: Int = 0, onUpdateRequestConsumed: () -> Unit = {},
     openImportRequest: Int = 0, onImportRequestConsumed: () -> Unit = {},
     taskDetail: DesktopWorkDetail? = null, onTaskDetailConsumed: () -> Unit = {},
-    diagnostics: (@Composable () -> Unit)? = null) {
+    diagnostics: (@Composable () -> Unit)? = null,
+    lanSync: com.example.chatbar.domain.lanSync.LanSyncRuntime? = null) {
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val rootState by root.state.collectAsState()
@@ -118,6 +119,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
                 if (moving) StatusText(t(desktopRecoveryText(recovery.first { it.area == DesktopRecoveryArea.DIRECTORY })))
                 DesktopDataRootPanel(root, onExit)
             } }
+            if (page == DataPage.LAN) lanSync?.let { DesktopLanSyncPanel(it) }
             DesktopRetainedPane(page == DataPage.AUTO) { DataWorkspaceScroll { DesktopAutomaticBackupSettingsPanel(automatic) } }
             DesktopRetainedPane(page == DataPage.UPDATE) { DataWorkspaceScroll { DesktopUpdatePanel(onExit = onExit) } }
             DesktopRetainedPane(page == DataPage.DIAGNOSTICS) { diagnostics?.invoke() }

@@ -59,6 +59,7 @@ internal fun DesktopPrimaryShell(
     onHideToTray: (() -> Unit)? = null,
     guideReminder: DesktopGuideReminderController? = null,
     communityController: DesktopCommunityController? = null,
+    lanSync: com.example.chatbar.domain.lanSync.LanSyncRuntime? = null,
 ) {
     val guideNotice = guideReminder?.state?.collectAsState()?.value
     LaunchedEffect(guideReminder) { guideReminder?.load() }
@@ -238,6 +239,7 @@ internal fun DesktopPrimaryShell(
                         onUpdateRequestConsumed = { openUpdateRequest = 0 }, openImportRequest = openImportRequest,
                         onImportRequestConsumed = { openImportRequest = 0 }, taskDetail = taskDataDetail,
                         onTaskDetailConsumed = { taskDataDetail = null },
+                        lanSync = lanSync,
                         diagnostics = { DesktopGlobalDiagnostics(primaryChatController.taskRuntime.diagnostics, promptInspectorController) })
                 }
                 primaryChatController.voices?.let { runtime ->
