@@ -1,6 +1,6 @@
 {
   "kind": "CCB_LAN_MINIMUM_PLATFORM_REQUEST",
-  "sourceSha": "e94667d04d557cbc7bd1014207ee64566b7acca1",
+  "sourceSha": "69e34b5f809c53eef4a738d0198ee6ccc4961c55",
   "api": 26,
   "scope": "synthetic Keystore identity, actual mutual TLS, canonical app-root and internal-link refusal"
 }
