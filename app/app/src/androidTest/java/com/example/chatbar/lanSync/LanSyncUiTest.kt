@@ -23,8 +23,8 @@ class LanSyncUiTest {
             scenario.onActivity { assertFalse(it.isFinishing); assertFalse(it.isDestroyed) }
             val runtime = app.lanSyncOwner.runtime
             runtime.createPreviewSample()
-            withTimeout(20_000) { while (app.chatRepository.getSession("ccb-lan-preview-sample-session") == null || runtime.state.value.busy) delay(100) }
-            val session = requireNotNull(app.chatRepository.getSession("ccb-lan-preview-sample-session"))
+            withTimeout(20_000) { while (app.chatRepository.getSession("ccb-lan-preview-sample-v2-session") == null || runtime.state.value.busy) delay(100) }
+            val session = requireNotNull(app.chatRepository.getSession("ccb-lan-preview-sample-v2-session"))
             assertFalse(session.longTermMemoryEnabled)
             assertNull(session.modelId)
             val message = app.chatRepository.getMessagesReadOnly(session.id).single()
@@ -33,6 +33,19 @@ class LanSyncUiTest {
             assertEquals(message.alternativeVersionIds[message.currentAlternativeIndex], message.currentAlternativeVersionId)
             val image = requireNotNull(BitmapFactory.decodeFile(message.images.single()))
             image.recycle()
+            val post = requireNotNull(app.momentRepository.getPost("ccb-lan-preview-sample-v2-post"))
+            assertEquals(2, post.desktopImageVersions.size)
+            val colours = post.desktopImageVersions.map { version ->
+                val bitmap = requireNotNull(BitmapFactory.decodeFile(version.imagePath))
+                try { assertEquals(32, bitmap.width); assertEquals(32, bitmap.height); bitmap.getPixel(0, 0) }
+                finally { bitmap.recycle() }
+            }
+            assertNotEquals(colours[0], colours[1])
+            val plans = app.momentRepository.getAllTasks().filter { it.id.startsWith("ccb-lan-preview-sample-v2-") }
+            assertEquals(2, plans.size)
+            assertTrue(plans.all { it.requiresLocalScheduleApproval })
+            assertEquals(setOf(com.example.chatbar.data.local.entity.MomentTaskStatus.PENDING,
+                com.example.chatbar.data.local.entity.MomentTaskStatus.RUNNING), plans.map { it.status }.toSet())
             scenario.recreate()
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             scenario.onActivity { assertFalse(it.isFinishing); assertFalse(it.isDestroyed) }
