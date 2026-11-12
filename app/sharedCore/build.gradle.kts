@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.msgpack.core)
     implementation(libs.okhttp.sse)
     implementation(libs.jsoup)
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.86")
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
