@@ -47,7 +47,10 @@ class DesktopPostProcessSourceIdentityTest {
             var selected by mutableStateOf(first)
             val clock = TestCoroutineScheduler()
             val inputDispatcher = StandardTestDispatcher(clock)
+            var composedRecords: List<DesktopPostProcessResultRecord> = emptyList()
             val scene = ImageComposeScene(650, 1100, coroutineContext = edt) {
+                val currentRecords by controller.postProcessResults.records.collectAsState()
+                SideEffect { composedRecords = currentRecords }
                 DesktopImagePostProcessPanel(selected, controller, inputDispatcher) { error("Use must remain explicit") }
             }
             fun nodes(): List<SemanticsNode> {
@@ -81,6 +84,43 @@ class DesktopPostProcessSourceIdentityTest {
                 assertTrue(app.taskRuntime.tasks.value.isEmpty())
                 assertEquals(0, controller.postProcessResults.records.value.size)
                 assertContentEquals(firstBytes, Files.readAllBytes(first)); assertContentEquals(secondBytes, Files.readAllBytes(second))
+
+                // A LAN choice can replace metadata under the same immutable ID. Hold the actual
+                // storage admission after publishing the new flow, so its new image read cannot win a race.
+                selected = first; frames(); clock.runCurrent(); frames()
+                val oldOutput = DesktopImageEditing.png(BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB))
+                val original = controller.postProcessResults.persist(firstBytes, oldOutput, NovelAiPostProcessTab.UPSCALE, NovelAiEnhanceOptions())
+                fun texts() = nodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.map { it.text }
+                suspend fun awaitResult(label: String) = withTimeout(10_000) {
+                    while (texts().none { it == label }) frames()
+                }
+                awaitResult("已保存结果 16 × 16")
+                val newOutput = DesktopImageEditing.png(BufferedImage(24, 16, BufferedImage.TYPE_INT_ARGB))
+                val relative = "images/lan-sync-replaced.png"
+                Files.write(app.appDataRoot.resolve(relative), newOutput)
+                val replacement = original.copy(imagePath = relative, imageSha256 = DesktopPostProcessResults.digest(newOutput), strength = .7f)
+                val published = CompletableDeferred<Unit>(); val releaseRead = CompletableDeferred<Unit>()
+                val incoming = launch(Dispatchers.IO) {
+                    app.dataOperationCoordinator.withExclusiveMaintenance {
+                        app.jsonFileStorage.saveEntity(DesktopPostProcessResults.KEY, replacement.id, replacement, DesktopPostProcessResultRecord.serializer())
+                        check(controller.reloadPostProcessResults())
+                        published.complete(Unit); releaseRead.await()
+                    }
+                }
+                try {
+                    withTimeout(10_000) {
+                        published.await()
+                        do {
+                            scene.render(System.nanoTime()).close()
+                            if (composedRecords != listOf(replacement)) delay(20)
+                        } while (composedRecords != listOf(replacement))
+                    }
+                    assertTrue(texts().none { it.startsWith("已保存结果 ") }, "Previous bytes must disappear while the same-ID replacement read waits")
+                    assertTrue(texts().none { it in setOf("用作当前导入图片", "保存 PNG", "复制图片") }, "Old result actions must not acquire the replacement record")
+                } finally { releaseRead.complete(Unit); incoming.join() }
+                awaitResult("已保存结果 24 × 16")
+                assertContentEquals(newOutput, controller.postProcessResults.read(replacement))
+                assertTrue(app.taskRuntime.tasks.value.isEmpty())
             } finally { scene.close(); clock.runCurrent() }
         } finally { app.close(); check(parent.toFile().deleteRecursively()) }
     }
