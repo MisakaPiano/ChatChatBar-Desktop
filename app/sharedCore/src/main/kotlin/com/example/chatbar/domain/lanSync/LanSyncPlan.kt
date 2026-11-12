@@ -4,7 +4,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 @Serializable
-data class LanSyncPlan(val transaction: String, val snapshot: LanSyncSnapshot, val parents: Map<String, String>)
+data class LanSyncPlan(val transaction: String, val snapshot: LanSyncSnapshot, val parents: Map<String, String>,
+    val supersedes: String? = null)
 
 object LanSyncPlanner {
     fun plan(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
@@ -40,7 +41,11 @@ object LanSyncPlanner {
         // One remote-side namespace also rebinds remote conversations to a copied card/world book.
         val mapper = LanSyncGraphRemapper(phone.records, identity)
         val rewritten = incoming.map { record ->
-            val body = mapper.rewrite(record).let { mapped ->
+            val body = (if (record.type == "save_slots" && record.body["packageRef"] is JsonObject) {
+                // The shared library envelope deliberately retains the complete immutable source archive.
+                JsonObject(record.body + mapOf("id" to JsonPrimitive(identity.value("save_slots", record.id)),
+                    "sessionId" to JsonPrimitive(identity.value("chat_sessions", requireNotNull(record.text("sessionId"))))))
+            } else mapper.rewrite(record)).let { mapped ->
                 if (record.type == "chat_sessions" && identity.value("chat_sessions", record.id) != record.id) {
                     val title = (mapped["displayTitleOverride"] as? JsonPrimitive)?.contentOrNull
                         ?: (mapped["title"] as? JsonPrimitive)?.contentOrNull ?: "对话"

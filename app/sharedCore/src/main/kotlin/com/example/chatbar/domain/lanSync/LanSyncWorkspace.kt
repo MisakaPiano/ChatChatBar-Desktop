@@ -50,14 +50,15 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     require(file.fileName.toString() == "$id.json") { "SYNC_STORAGE_ID" }
                     val original = LanSyncRecord(type, id, body); LanSyncScope.validateRecord(original)
                     val normalized = LanSyncScope.normalize(type, mapResources(body) { reference, field ->
-                        if (reference.isBlank() || reference.startsWith("omitted-image:")) reference else {
-                            val kind = if (field == "audioPath") "audio" else if (field in setOf("filePath", "filePaths", "path")) "documents" else "images"
+                        if (reference.isBlank() || reference.startsWith("chatbar-save-slot-") || reference.startsWith("omitted-image:")) reference else {
+                            val kind = if (field == "packageFile") "packages" else if (field == "audioPath") "audio" else if (field in setOf("filePath", "filePaths", "path")) "documents" else "images"
                             val resource = if (reference.startsWith("asset:")) {
                                 val bytes = requireNotNull(assetResource(reference)) { "SYNC_ASSET_UNAVAILABLE" }
                                 frozen.resolve("asset-${UUID.randomUUID()}").also { lanSyncAtomicWrite(it, bytes); scratch.own(it) }
-                            } else resolveResource(reference).also { source ->
+                            } else (if (field == "packageFile") dataRoot.resolve("save_slot_packages").resolve(reference) else resolveResource(reference)).also { source ->
                                 require(source.toAbsolutePath().normalize().startsWith(dataRoot)) { "SYNC_EXTERNAL_RESOURCE" }
                             }
+                            if (field == "packageFile") LanSyncSlotPackages.validate(resource, body)
                             val hash = freeze(resource, frozen, blobs, resources, scratch)
                             val suffix = reference.substringAfterLast('.', "bin").lowercase().takeIf {
                                 it.matches(Regex("[a-z0-9]{1,8}"))
@@ -110,7 +111,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             val materialized = mapResources(wire.body) { reference, field ->
                 if (!reference.startsWith("ccb-lan-v1/")) reference else {
                     val parts = reference.split('/')
-                    require(parts.size == 4 && parts[1] in setOf("images", "audio", "documents") &&
+                    require(parts.size == 4 && parts[1] in setOf("images", "audio", "documents", "packages") &&
                         parts[2].matches(Regex("[a-f0-9]{64}")) && parts[3].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_RESOURCE_REFERENCE" }
                     val source = requireNotNull(blobs[parts[2]]) { "SYNC_RESOURCE_MISSING" }
                     val size = requireNotNull(plan.snapshot.resources[parts[2]]) { "SYNC_RESOURCE_MANIFEST" }
@@ -118,15 +119,30 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     if (parts[1] == "audio") {
                         audioResource(requireNotNull(wire.text("sessionId")), wire.id, parts[2], source)
                     } else {
-                        val target = dataRoot.resolve(parts[1]).resolve("lan-${parts[2]}.${parts[3]}")
+                        val packageSource = if (parts[1] == "packages") {
+                            val ref = requireNotNull(wire.body["packageRef"]).jsonObject
+                            // Validate against the retained source envelope before choosing a new library filename.
+                            val nested = java.util.zip.ZipFile(source.toFile()).use { zip ->
+                                val entry = requireNotNull(zip.getEntry("manifest.json")); require(entry.size in 1..256 * 1024)
+                                val raw = zip.getInputStream(entry).use { it.readBytes() }
+                                lanSyncJson.parseToJsonElement(raw.toString(Charsets.UTF_8)).jsonObject
+                            }
+                            val sourceId = nested.getValue("id").jsonPrimitive.content
+                            val filename = if (wire.id != sourceId) "${wire.id}.cbsave" else "lan-${parts[2]}.cbsave"
+                            val library = JsonObject(wire.body + ("packageRef" to JsonObject(ref + ("fileName" to JsonPrimitive(filename)))))
+                            LanSyncSlotPackages.validate(source, library)
+                            filename
+                        } else null
+                        val target = if (packageSource != null) dataRoot.resolve("save_slot_packages").resolve(packageSource)
+                            else dataRoot.resolve(parts[1]).resolve("lan-${parts[2]}.${parts[3]}")
                         Files.createDirectories(target.parent); lanSyncSafe(target.parent, true)
                         if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) require(hashFile(target, size) == parts[2]) { "SYNC_RESOURCE_COLLISION" }
                         else { require(copyHash(source, target, size) == parts[2]) { "SYNC_RESOURCE_DAMAGED" } }
-                        target.toString()
+                        if (packageSource != null) target.fileName.toString() else target.toString()
                     }
                 }
             }
-            val localBody = existing?.let {
+            val localBody = existing?.takeIf { wire.type == "chat_sessions" }?.let {
                 val original = lanSyncJson.parseToJsonElement(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD).toString(Charsets.UTF_8)).jsonObject
                 JsonObject(materialized + original.filterKeys { it in LanSyncScope.localFields })
             } ?: materialized
@@ -232,8 +248,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     is JsonArray -> JsonArray(value.map { visit(it, fields) })
                     is JsonPrimitive -> {
                         val field = fields.lastOrNull()
+                        val packageFile = fields == listOf("packageRef", "fileName")
                         val serviceArtwork = field == "coverImage" && fields.dropLast(1).lastOrNull() in setOf("fishAudioVoice", "voice")
-                        if (value.isString && field in LanSyncScope.resources && !serviceArtwork) JsonPrimitive(transform(value.content, field!!)) else value
+                        if (value.isString && (field in LanSyncScope.resources || packageFile) && !serviceArtwork)
+                            JsonPrimitive(transform(value.content, if (packageFile) "packageFile" else field!!)) else value
                     }
                     else -> value
                 }

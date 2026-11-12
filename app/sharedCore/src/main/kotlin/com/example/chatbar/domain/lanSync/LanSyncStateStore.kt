@@ -67,6 +67,13 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
     }
     @Synchronized fun pending(peer: String): LanSyncPending? = read("pending-${key(peer)}.json")?.let { lanSyncJson.decodeFromString(it) }
     @Synchronized fun pending(value: LanSyncPending) = write("pending-${key(value.peerId)}.json", lanSyncJson.encodeToString(value))
+    @Synchronized fun replacePending(value: LanSyncPending) {
+        pending(value.peerId)?.let { previous ->
+            require(value.plan.supersedes == previous.plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
+            write("superseded-${previous.plan.transaction}.json", lanSyncJson.encodeToString(previous))
+        }
+        pending(value)
+    }
     @Synchronized fun clearPending(peer: String, transaction: String) {
         val pending = pending(peer) ?: return
         require(pending.plan.transaction == transaction)

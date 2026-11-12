@@ -14,14 +14,15 @@ object LanSyncScope {
         "memory_tier_revisions" to MemoryTierRevision.serializer(),
         "memory_compression_transactions" to MemoryCompressionTransaction.serializer(),
         "memory_commits" to MemoryCommit.serializer(), "generated_voice_messages" to GeneratedVoiceMessage.serializer(),
+        "save_slots" to SaveSlot.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "不含账户和密钥、设备设置、输入草稿、存档库、朋友圈、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档。不含账户和密钥、设备设置、输入草稿、朋友圈、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
 
-    fun normalize(type: String, body: JsonObject): JsonObject = JsonObject(body.filterKeys { it !in localFields })
+    fun normalize(type: String, body: JsonObject): JsonObject = if (type == "chat_sessions") JsonObject(body.filterKeys { it !in localFields }) else body
 
     fun identity(type: String, body: JsonObject): String? =
         (body[if (type == "memory_states") "sessionId" else "id"] as? JsonPrimitive)?.contentOrNull
@@ -55,6 +56,7 @@ object LanSyncScope {
             }
         }
         // Reuses the established shared memory ancestry checks without rewriting text.
-        LanSyncMemoryProofs(snapshot.records, LanSyncIdentity())
+        LanSyncMemoryProofs(snapshot.records.filter { it.type != "save_slots" }, LanSyncIdentity())
+        snapshot.records.filter { it.type == "save_slots" }.forEach { LanSyncMemoryProofs(listOf(it), LanSyncIdentity()) }
     }
 }

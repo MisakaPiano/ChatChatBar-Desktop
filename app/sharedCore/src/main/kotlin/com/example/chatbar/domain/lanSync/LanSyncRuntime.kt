@@ -22,12 +22,14 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
     val excluded: Set<String> = emptySet())
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
-    val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null)
+    val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
+    val locallyApplied: Boolean = false)
 
 /** Desktop is the listener; Android maintains a short authenticated poll while its page is visible. */
 class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace: LanSyncWorkspace,
     private val platform: LanSyncPlatform, private val name: String,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)) {
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val observe: (String, String) -> Unit = { _, _ -> }) {
     private val identity by lazy { store.identity() }
     private val _state = MutableStateFlow(LanSyncUiState())
     val state = _state.asStateFlow()
@@ -145,11 +147,19 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             }
             require(store.peers().any { it.fingerprint == peerId }) { "SYNC_UNTRUSTED_DEVICE" }
             require(hello.command == "POLL" || hello.command == "SYNC") { "SYNC_COMMAND" }
-            val pending = store.pending(peerId)
+            var pending = store.pending(peerId)
             if (hello.command == "POLL" && !requested && pending == null) { wire.sendText("IDLE"); return }
             operation.withLock {
                 val baseline = store.baseline(peerId, identity.fingerprint)
+                if (pending?.plan?.transaction in baseline.receipts) {
+                    val finished = requireNotNull(pending)
+                    require(workspace.applied(finished.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
+                    complete(peerId, finished.plan)
+                    store.clearPending(peerId, finished.plan.transaction)
+                    pending = null
+                }
                 if (hello.pendingTransaction != null && hello.pendingTransaction in baseline.receipts) {
+                    require(workspace.applied(hello.pendingTransaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
                     wire.sendText("FINISHED:${hello.pendingTransaction}"); return@withLock
                 }
                 require(pending != null || hello.revision == baseline.revision) { "SYNC_BASELINE_MISMATCH" }
@@ -159,17 +169,31 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 try {
                 val computer = capture()
                 try {
-                val prepared = pending ?: run {
-                    val comparison = LanSyncCompare.compare(computer.snapshot, phone.snapshot, baseline)
-                    val decisions = if (comparison.conflicts.isEmpty()) emptyMap() else {
-                        val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
-                        choices = answer
-                        _state.value = _state.value.copy(status = "请逐项选择双方修改的内容", conflicts = comparison.conflicts)
-                        try { withTimeout(10 * 60_000) { answer.await() } } finally { choices = null }
-                    }
-                    val plan = LanSyncPlanner.plan(computer.snapshot, phone.snapshot, baseline, decisions, UUID.randomUUID().toString())
-                    LanSyncPending(peerId, plan, computer.snapshot.hashes(), phone.snapshot.hashes()).also(store::pending)
+                val previous = pending
+                val computerApplied = previous?.let { workspace.applied(it.plan.transaction) } == true
+                val phoneApplied = previous != null && hello.pendingTransaction == previous.plan.transaction && hello.locallyApplied
+                val needsRebase = previous != null && when {
+                    computerApplied && phoneApplied -> false
+                    computerApplied -> phone.snapshot.hashes() != previous.expectedRemote
+                    phoneApplied -> computer.snapshot.hashes() != previous.expectedLocal
+                    else -> computer.snapshot.hashes() != previous.expectedLocal || phone.snapshot.hashes() != previous.expectedRemote
                 }
+                val prepared = if (previous == null || needsRebase) {
+                    val ancestor = if (previous != null && (computerApplied || phoneApplied))
+                        LanSyncBaseline(peerId, "recovery:${previous.plan.transaction}",
+                            if (computerApplied) previous.expectedRemote else previous.expectedLocal,
+                            ownerId = identity.fingerprint, coveredTypes = baseline.coveredTypes)
+                        else baseline
+                    if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
+                    val comparison = LanSyncCompare.compare(computer.snapshot, phone.snapshot, ancestor)
+                    val decisions = decide(comparison)
+                    val planned = LanSyncPlanner.plan(computer.snapshot, phone.snapshot, ancestor, decisions, UUID.randomUUID().toString())
+                    val plan = planned.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents, supersedes = previous?.plan?.transaction)
+                    LanSyncPending(peerId, plan, computer.snapshot.hashes(), phone.snapshot.hashes()).also {
+                        if (previous == null) store.pending(it) else store.replacePending(it)
+                    }
+                } else previous
+                requireNotNull(prepared)
                 // The frozen complete output, not a new import interpretation, is retried after disconnect.
                 val output = prepared.plan.snapshot.copy(deviceId = identity.fingerprint)
                 val available = computer.blobs + phone.blobs + retainedBlobs(prepared.plan)
@@ -179,11 +203,14 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 LanSyncTransfer.send(wire, LanSyncCapture(output, available, emptyMap()))
                 require(wire.text() == "APPLIED:${prepared.plan.transaction}") { "SYNC_PHONE_RECEIPT" }
                 applyPrepared(prepared, available)
+                observe("HOST_APPLIED", prepared.plan.transaction)
                 wire.sendText("COMMIT:${prepared.plan.transaction}")
                 require(wire.text() == "COMMITTED:${prepared.plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
                 complete(peerId, prepared.plan)
+                observe("HOST_BASELINE", prepared.plan.transaction)
                 store.clearPending(peerId, prepared.plan.transaction)
-                requested = false
+                requested = computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
+                    phoneApplied && phone.snapshot.hashes() != prepared.plan.snapshot.hashes()
                 _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes)
                 wire.sendText("DONE")
                 } finally { computer.close() }
@@ -206,14 +233,15 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             try { LanSyncWire(socket).use { wire ->
                 val pending = store.pending(peer.fingerprint)
                 wire.sendText(lanSyncJson.encodeToString(LanSyncHello(if (requested || pending != null) "SYNC" else "POLL", name,
-                    revision = baseline.revision, pendingTransaction = pending?.plan?.transaction)))
+                    revision = baseline.revision, pendingTransaction = pending?.plan?.transaction,
+                    locallyApplied = pending?.let { workspace.applied(it.plan.transaction) } == true)))
                 val response = wire.text()
                 if (response == "IDLE") return
                 if (response.startsWith("FINISHED:") && pending != null && response == "FINISHED:${pending.plan.transaction}") {
                     require(workspace.applied(pending.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
                     complete(peer.fingerprint, pending.plan)
                     store.clearPending(peer.fingerprint, pending.plan.transaction)
-                    requested = false
+                    requested = true // Finish the old receipt, then exchange any edits made since that apply.
                     _state.value = _state.value.copy(status = "上次同步已核对完成，两端回执一致")
                     return
                 }
@@ -228,17 +256,23 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 try {
                 require(received.snapshot.hashes() == plan.snapshot.hashes()) { "SYNC_PLAN_MISMATCH" }
                 val prior = store.pending(peer.fingerprint)
-                require(prior == null || prior.plan.transaction == plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
-                val prepared = prior ?: LanSyncPending(peer.fingerprint, plan, expected, emptyMap()).also(store::pending)
+                require(prior == null || prior.plan.transaction == plan.transaction || plan.supersedes == prior.plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
+                val prepared = if (prior?.plan?.transaction == plan.transaction) prior else
+                    LanSyncPending(peer.fingerprint, plan, expected, emptyMap()).also {
+                        if (prior == null) store.pending(it) else store.replacePending(it)
+                    }
+                val alreadyApplied = workspace.applied(plan.transaction)
                 retainBlobs(plan, received.blobs)
                 applyPrepared(prepared, received.blobs)
+                observe("PHONE_APPLIED", plan.transaction)
                 wire.sendText("APPLIED:${plan.transaction}")
                 require(wire.text() == "COMMIT:${plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
                 complete(peer.fingerprint, plan)
+                observe("PHONE_BASELINE", plan.transaction)
                 wire.sendText("COMMITTED:${plan.transaction}")
                 require(wire.text() == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
                 store.clearPending(peer.fingerprint, plan.transaction)
-                requested = false
+                requested = alreadyApplied && phone.snapshot.hashes() != plan.snapshot.hashes()
                 _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes)
                 } finally { received.close() }
                 } finally { phone.close() }
@@ -250,6 +284,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         var value: LanSyncCapture? = null
         platform.exclusive { workspace.recover(); value = workspace.capture(identity.fingerprint) }
         return requireNotNull(value)
+    }
+    private suspend fun decide(comparison: LanSyncComparison): Map<String, LanSyncChoice> {
+        if (comparison.conflicts.isEmpty()) return emptyMap()
+        val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
+        choices = answer
+        _state.value = _state.value.copy(status = "请逐项选择双方修改的内容", conflicts = comparison.conflicts)
+        try { return withTimeout(10 * 60_000) { answer.await() } } finally { choices = null }
     }
     private suspend fun applyPrepared(pending: LanSyncPending, blobs: Map<String, java.nio.file.Path>) {
         platform.exclusive {
