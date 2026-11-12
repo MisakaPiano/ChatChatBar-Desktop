@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
+import com.example.chatbar.data.local.entity.FormatCard
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.net.*
@@ -46,6 +47,10 @@ class LanSyncRuntimeTest {
             Files.writeString(path, lanSyncJson.encodeToJsonElement(CharacterCard.serializer(), card).toString())
         }
         fun readCard(id: String) = lanSyncJson.decodeFromString(CharacterCard.serializer(), Files.readString(root.resolve("entities/character_cards/$id.json")))
+        fun writeFormat(id: String) {
+            val path = root.resolve("entities/format_cards/$id.json"); Files.createDirectories(path.parent)
+            Files.writeString(path, lanSyncJson.encodeToJsonElement(FormatCard.serializer(), FormatCard(id, id, "合成格式", createdAt = 1)).toString())
+        }
         fun names(): Set<String> = workspace.capture(id).use { capture -> capture.snapshot.records.mapNotNull { it.text("name") }.toSet() }
     }
     private suspend fun until(reason: String, check: () -> Boolean) {
@@ -214,9 +219,56 @@ class LanSyncRuntimeTest {
                     assertEquals("SYNC_PROTOCOL", wire.text())
                 }
             }
+            network.connect(b.store.identity(), LanSyncPeer(a.id, "synthetic", offer.host, offer.port)).use { socket ->
+                LanSyncWire(socket).use { wire ->
+                    wire.sendText("""{"protocol":$LAN_SYNC_PROTOCOL,"command":"PAIR","name":"smaller-scope","coveredTypes":["character_cards"]}""")
+                    assertEquals("SYNC_SCOPE_MISMATCH", wire.text())
+                }
+            }
             assertTrue(a.store.peers().isEmpty()); assertTrue(b.store.peers().isEmpty())
             assertEquals(setOf("原资料"), a.names())
             assertFalse(Files.newDirectoryStream(a.stateRoot, "projection-*").use { it.iterator().hasNext() })
         } finally { host.closeAndDrain() }
+    }
+    @Test fun existingCommonScopeExpandsWithoutResetAndInterruptedExpansionCannotDeleteNewTypesEarly() = runBlocking {
+        val network = SyntheticLan(); val interrupted = java.util.concurrent.atomic.AtomicBoolean(false)
+        val common = java.util.concurrent.atomic.AtomicBoolean(false)
+        val oldTypes = setOf("character_cards")
+        lateinit var a: End; lateinit var b: End
+        a = End("computer", network) { phase, transaction -> if (phase == "HOST_BASELINE" && common.compareAndSet(false, true)) {
+            assertEquals(transaction, b.store.baseline(a.id, b.id).revision)
+            assertTrue(Files.exists(a.root.resolve("entities/format_cards/pc-format.json")))
+        } }
+        b = End("phone", network) { phase, _ -> if (phase == "PHONE_BASELINE" && interrupted.compareAndSet(false, true)) {
+            assertEquals(oldTypes, a.store.baseline(b.id, a.id).coveredTypes)
+            assertEquals(LanSyncScope.schemas.keys, b.store.baseline(a.id, b.id).coveredTypes)
+            assertTrue(Files.exists(a.root.resolve("entities/format_cards/pc-format.json")))
+            Files.delete(b.root.resolve("entities/format_cards/pc-format.json"))
+            throw java.io.IOException("synthetic lost expanded-scope receipt after a later user deletion")
+        } }
+        for (end in listOf(a, b)) { end.write("keep", "旧类保留"); end.write("deleted", "旧类删除") }
+        val old = a.workspace.capture(a.id).use { it.snapshot.copy(coveredTypes = oldTypes) }
+        val previous = LanSyncPlan(java.util.UUID.randomUUID().toString(), old, emptyMap())
+        a.store.complete(b.id, a.id, previous); b.store.complete(a.id, b.id, previous)
+        Files.delete(a.root.resolve("entities/character_cards/deleted.json"))
+        a.writeFormat("pc-format"); b.writeFormat("phone-format")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b, previous.transaction)
+            until("new type deletion only after shared expanded receipt") {
+                common.get() && !Files.exists(a.root.resolve("entities/format_cards/pc-format.json")) &&
+                    a.store.pending(b.id) == null && b.store.pending(a.id) == null &&
+                    a.store.baseline(b.id, a.id).revision == b.store.baseline(a.id, b.id).revision
+            }
+            val expandedRevision = a.store.baseline(b.id, a.id).revision
+            host.requestSync(); completed(a, b, expandedRevision)
+            assertTrue(interrupted.get())
+            for (end in listOf(a, b)) {
+                assertFalse(Files.exists(end.root.resolve("entities/character_cards/deleted.json")))
+                assertTrue(Files.exists(end.root.resolve("entities/format_cards/phone-format.json")))
+            }
+            assertTrue(previous.transaction in a.store.baseline(b.id, a.id).receipts)
+            assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
 }

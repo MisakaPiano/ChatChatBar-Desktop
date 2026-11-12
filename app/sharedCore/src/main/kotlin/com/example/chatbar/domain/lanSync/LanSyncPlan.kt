@@ -60,7 +60,7 @@ object LanSyncPlanner {
         val records = retained + rewritten
         val result = LanSyncSnapshot(deviceId = computer.deviceId, records = records,
             resources = (computer.resources + phone.resources).filterKeys { it in LanSyncScope.referencedResources(records) },
-            excludedTypes = computer.excludedTypes + phone.excludedTypes)
+            excludedTypes = computer.excludedTypes + phone.excludedTypes, coveredTypes = computer.coveredTypes)
         result.validate()
         LanSyncScope.validateGraph(result)
         require(result.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }

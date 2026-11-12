@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 import java.security.MessageDigest
 import java.util.UUID
 
-const val LAN_SYNC_PROTOCOL = 2
+const val LAN_SYNC_PROTOCOL = 3
 
 /** Protocol identities are independent of filenames, clocks, IP addresses and display names. */
 @Serializable
@@ -99,9 +99,12 @@ data class LanSyncComparison(
 
 /** Three-way comparison deliberately has no last-write-wins or timestamp tie breaker. */
 object LanSyncCompare {
+    internal fun requireCoverage(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline) {
+        require(computer.coveredTypes == phone.coveredTypes && computer.coveredTypes.containsAll(baseline.coveredTypes)) { "SYNC_SCOPE_MISMATCH" }
+    }
     fun compare(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline): LanSyncComparison {
         computer.validate(); phone.validate()
-        require(computer.coveredTypes == phone.coveredTypes && computer.coveredTypes == baseline.coveredTypes) { "SYNC_SCOPE_MISMATCH" }
+        requireCoverage(computer, phone, baseline)
         require(baseline.peerId == phone.deviceId && (baseline.ownerId == null && baseline.revision == null || baseline.ownerId == computer.deviceId)) { "SYNC_BASELINE_DEVICE" }
         val left = computer.hashes(); val right = phone.hashes()
         val automatic = linkedMapOf<String, Boolean>()

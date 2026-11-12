@@ -24,7 +24,8 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
-    val locallyApplied: Boolean = false, val hasProjection: Boolean = false, val protocol: Int = LAN_SYNC_PROTOCOL)
+    val locallyApplied: Boolean = false, val hasProjection: Boolean = false, val protocol: Int = LAN_SYNC_PROTOCOL,
+    val coveredTypes: Set<String> = LanSyncScope.schemas.keys)
 
 /** Desktop is the listener; Android maintains a short authenticated poll while its page is visible. */
 class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace: LanSyncWorkspace,
@@ -125,7 +126,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             sockets += socket
             try { LanSyncWire(socket).use { wire ->
                 wire.sendText(lanSyncJson.encodeToString(LanSyncHello("PAIR", name, value.token)))
-                require(wire.text() == "PAIRED") { "SYNC_PAIR_REJECTED" }
+                val result = wire.text()
+                require(result != "SYNC_PROTOCOL") { "SYNC_PROTOCOL" }
+                require(result != "SYNC_SCOPE_MISMATCH") { "SYNC_SCOPE_MISMATCH" }
+                require(result == "PAIRED") { "SYNC_PAIR_REJECTED" }
                 store.trust(LanSyncPeer(value.fingerprint, "电脑", value.host, value.port))
                 wire.sendText("REMEMBERED")
                 _state.value = _state.value.copy(status = "已记住可信电脑", peers = store.peers())
@@ -158,8 +162,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         val peerId = LanSyncTls.peerFingerprint(socket)
         LanSyncWire(socket).use { wire ->
             val helloText = wire.text().also { require(it.length <= 4096) }
-            if (lanSyncJson.parseToJsonElement(helloText).jsonObject["protocol"]?.jsonPrimitive?.intOrNull != LAN_SYNC_PROTOCOL) {
+            val helloBody = lanSyncJson.parseToJsonElement(helloText).jsonObject
+            val protocol = helloBody["protocol"] as? JsonPrimitive
+            if (protocol == null || protocol.isString || protocol.intOrNull != LAN_SYNC_PROTOCOL) {
                 wire.sendText("SYNC_PROTOCOL"); error("SYNC_PROTOCOL")
+            }
+            if ((helloBody["coveredTypes"] as? JsonArray)?.map { it.jsonPrimitive.content }?.toSet() != LanSyncScope.schemas.keys) {
+                wire.sendText("SYNC_SCOPE_MISMATCH"); error("SYNC_SCOPE_MISMATCH")
             }
             val hello = lanSyncJson.decodeFromString<LanSyncHello>(helloText)
             if (hello.command == "PAIR") {
@@ -199,6 +208,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val computer = capture()
                 try {
                 val previous = pending
+                try { LanSyncCompare.requireCoverage(computer.snapshot, phone.snapshot, baseline) }
+                catch (failure: IllegalArgumentException) { wire.sendText("SYNC_SCOPE_MISMATCH"); throw failure }
                 var phoneSnapshot = phone.snapshot
                 val projection = if (baseline.revision == null && previous == null && !hello.hasProjection)
                     LanSyncPresetProjection.propose(computer.snapshot.records, phoneSnapshot.records) else LanSyncProjection()
@@ -279,6 +290,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     hasProjection = store.projection(peer.fingerprint, identity.fingerprint).bindings.isNotEmpty())))
                 val response = wire.text()
                 require(response != "SYNC_PROTOCOL") { "SYNC_PROTOCOL" }
+                require(response != "SYNC_SCOPE_MISMATCH") { "SYNC_SCOPE_MISMATCH" }
                 if (response == "IDLE") return
                 if (response.startsWith("FINISHED:") && pending != null && response == "FINISHED:${pending.plan.transaction}") {
                     require(workspace.applied(pending.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
@@ -293,7 +305,9 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val phone = capture()
                 try {
                 LanSyncTransfer.send(wire, phone)
-                val offer = lanSyncJson.decodeFromString<LanSyncProjectionOffer>(wire.text())
+                val offerText = wire.text()
+                require(offerText != "SYNC_SCOPE_MISMATCH") { "SYNC_SCOPE_MISMATCH" }
+                val offer = lanSyncJson.decodeFromString<LanSyncProjectionOffer>(offerText)
                 offer.projection.validate()
                 var phoneSnapshot = phone.snapshot
                 if (offer.projection.bindings.isNotEmpty()) {
