@@ -35,8 +35,13 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     fun inspect(value: String) {
         code = value
-        confirm = runCatching { LanSyncPairOffer.parse(value) }.getOrNull()
-        error = if (confirm == null) "无法识别或配对码已过期，请在电脑重新生成" else null
+        val parsed = runCatching { LanSyncPairOffer.parse(value) }
+        confirm = parsed.getOrNull()
+        error = when {
+            parsed.exceptionOrNull()?.message == "SYNC_PROTOCOL" -> "配对码来自其他同步版本，请使用匹配的双端安装包"
+            confirm == null -> "无法识别或配对码已过期，请在电脑重新生成"
+            else -> null
+        }
     }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result -> result.contents?.let(::inspect) }
     Column(Modifier.fillMaxSize().background(ChatBarTheme.colors.background).statusBarsPadding().navigationBarsPadding()

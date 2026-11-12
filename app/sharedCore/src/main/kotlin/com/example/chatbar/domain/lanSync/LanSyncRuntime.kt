@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.*
 import java.net.InetSocketAddress
 import java.net.SocketException
 import java.nio.file.Files
@@ -23,7 +24,7 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
-    val locallyApplied: Boolean = false)
+    val locallyApplied: Boolean = false, val hasProjection: Boolean = false, val protocol: Int = LAN_SYNC_PROTOCOL)
 
 /** Desktop is the listener; Android maintains a short authenticated poll while its page is visible. */
 class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace: LanSyncWorkspace,
@@ -56,7 +57,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     fun createPreviewSample() { sample = scope.launch { operation.withLock { safely {
         _state.value = _state.value.copy(busy = true, status = "正在建立离线合成样例")
         platform.exclusive { withContext(NonCancellable) {
-            workspace.capture(identity.fingerprint).use { capture ->
+            val projection = currentProjection()
+            workspace.capture(identity.fingerprint, projection).use { capture ->
                 val bytes = LanSyncPreviewSample.image(); val hash = lanSyncHash(bytes)
                 val records = LanSyncPreviewSample.records(hash)
                 require(capture.snapshot.records.none { current -> records.any { it.key == current.key } }) { "SYNC_SAMPLE_ALREADY_PRESENT" }
@@ -65,7 +67,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     val source = scratch.directory.resolve(hash)
                     java.nio.file.Files.write(source, bytes, java.nio.file.StandardOpenOption.CREATE_NEW); scratch.own(source)
                     val snapshot = capture.snapshot.copy(records = capture.snapshot.records + records, resources = capture.snapshot.resources + (hash to bytes.size.toLong()))
-                    workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()), capture.snapshot.hashes(), identity.fingerprint, capture.blobs + (hash to source))
+                    workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()), capture.snapshot.hashes(), identity.fingerprint, capture.blobs + (hash to source), projection)
                     platform.reload(records.filter { it.type == "chat_sessions" }.map { it.id }.toSet())
                 } finally { scratch.close() }
             }
@@ -155,7 +157,11 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         LanSyncTls.configure(socket); socket.startHandshake()
         val peerId = LanSyncTls.peerFingerprint(socket)
         LanSyncWire(socket).use { wire ->
-            val hello = lanSyncJson.decodeFromString<LanSyncHello>(wire.text().also { require(it.length <= 4096) })
+            val helloText = wire.text().also { require(it.length <= 4096) }
+            if (lanSyncJson.parseToJsonElement(helloText).jsonObject["protocol"]?.jsonPrimitive?.intOrNull != LAN_SYNC_PROTOCOL) {
+                wire.sendText("SYNC_PROTOCOL"); error("SYNC_PROTOCOL")
+            }
+            val hello = lanSyncJson.decodeFromString<LanSyncHello>(helloText)
             if (hello.command == "PAIR") {
                 synchronized(offerLock) {
                     val current = requireNotNull(offer) { "SYNC_PAIR_CLOSED" }
@@ -193,13 +199,22 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val computer = capture()
                 try {
                 val previous = pending
+                var phoneSnapshot = phone.snapshot
+                val projection = if (baseline.revision == null && previous == null && !hello.hasProjection)
+                    LanSyncPresetProjection.propose(computer.snapshot.records, phoneSnapshot.records) else LanSyncProjection()
+                val offer = if (projection.bindings.isEmpty()) LanSyncProjectionOffer() else
+                    LanSyncProjectionOffer(projection, phoneSnapshot.hashes(), LanSyncPresetProjection.presets(computer.snapshot.records))
+                wire.sendText(lanSyncJson.encodeToString(offer))
+                if (projection.bindings.isNotEmpty()) phoneSnapshot = phoneSnapshot.copy(records = projection.rewrite(phoneSnapshot.records))
+                phoneSnapshot.validate(); LanSyncScope.validateGraph(phoneSnapshot)
+                require(lanSyncJson.decodeFromString<Map<String, String>>(wire.text()) == phoneSnapshot.hashes()) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
                 val computerApplied = previous?.let { workspace.applied(it.plan.transaction) } == true
                 val phoneApplied = previous != null && hello.pendingTransaction == previous.plan.transaction && hello.locallyApplied
                 val needsRebase = previous != null && when {
                     computerApplied && phoneApplied -> false
-                    computerApplied -> phone.snapshot.hashes() != previous.expectedRemote
+                    computerApplied -> phoneSnapshot.hashes() != previous.expectedRemote
                     phoneApplied -> computer.snapshot.hashes() != previous.expectedLocal
-                    else -> computer.snapshot.hashes() != previous.expectedLocal || phone.snapshot.hashes() != previous.expectedRemote
+                    else -> computer.snapshot.hashes() != previous.expectedLocal || phoneSnapshot.hashes() != previous.expectedRemote
                 }
                 val prepared = if (previous == null || needsRebase) {
                     val ancestor = if (previous != null && (computerApplied || phoneApplied))
@@ -208,11 +223,11 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                             ownerId = identity.fingerprint, coveredTypes = baseline.coveredTypes)
                         else baseline
                     if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
-                    val comparison = LanSyncCompare.compare(computer.snapshot, phone.snapshot, ancestor)
+                    val comparison = LanSyncCompare.compare(computer.snapshot, phoneSnapshot, ancestor)
                     val decisions = decide(comparison)
-                    val planned = LanSyncPlanner.plan(computer.snapshot, phone.snapshot, ancestor, decisions, UUID.randomUUID().toString())
+                    val planned = LanSyncPlanner.plan(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
                     val plan = planned.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents, supersedes = previous?.plan?.transaction)
-                    LanSyncPending(peerId, plan, computer.snapshot.hashes(), phone.snapshot.hashes()).also {
+                    LanSyncPending(peerId, plan, computer.snapshot.hashes(), phoneSnapshot.hashes()).also {
                         if (previous == null) store.pending(it) else store.replacePending(it)
                     }
                 } else previous
@@ -233,7 +248,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 observe("HOST_BASELINE", prepared.plan.transaction)
                 store.clearPending(peerId, prepared.plan.transaction)
                 requested = computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
-                    phoneApplied && phone.snapshot.hashes() != prepared.plan.snapshot.hashes()
+                    phoneApplied && phoneSnapshot.hashes() != prepared.plan.snapshot.hashes()
                 _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes)
                 wire.sendText("DONE")
                 } finally { computer.close() }
@@ -257,8 +272,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val pending = store.pending(peer.fingerprint)
                 wire.sendText(lanSyncJson.encodeToString(LanSyncHello(if (requested || pending != null) "SYNC" else "POLL", name,
                     revision = baseline.revision, pendingTransaction = pending?.plan?.transaction,
-                    locallyApplied = pending?.let { workspace.applied(it.plan.transaction) } == true)))
+                    locallyApplied = pending?.let { workspace.applied(it.plan.transaction) } == true,
+                    hasProjection = store.projection(peer.fingerprint, identity.fingerprint).bindings.isNotEmpty())))
                 val response = wire.text()
+                require(response != "SYNC_PROTOCOL") { "SYNC_PROTOCOL" }
                 if (response == "IDLE") return
                 if (response.startsWith("FINISHED:") && pending != null && response == "FINISHED:${pending.plan.transaction}") {
                     require(workspace.applied(pending.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
@@ -273,6 +290,23 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val phone = capture()
                 try {
                 LanSyncTransfer.send(wire, phone)
+                val offer = lanSyncJson.decodeFromString<LanSyncProjectionOffer>(wire.text())
+                offer.projection.validate()
+                var phoneSnapshot = phone.snapshot
+                if (offer.projection.bindings.isNotEmpty()) {
+                    require(baseline.revision == null && pending == null && currentProjection().bindings.isEmpty()) { "SYNC_PROJECTION_ALREADY_ASSIGNED" }
+                    require(offer.sourceHashes == phoneSnapshot.hashes() &&
+                        LanSyncPresetProjection.propose(offer.computerPresets, phoneSnapshot.records) == offer.projection) { "SYNC_PROJECTION_PROOF" }
+                    platform.exclusive {
+                        workspace.capture(identity.fingerprint).use { latest ->
+                            require(latest.snapshot.hashes() == offer.sourceHashes) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
+                            offer.projection.rewrite(latest.snapshot.records)
+                            store.admitProjection(peer.fingerprint, identity.fingerprint, offer.projection)
+                        }
+                    }
+                    phoneSnapshot = phoneSnapshot.copy(records = offer.projection.rewrite(phoneSnapshot.records))
+                } else require(offer.sourceHashes.isEmpty() && offer.computerPresets.isEmpty()) { "SYNC_PROJECTION_PROOF" }
+                wire.sendText(lanSyncJson.encodeToString(phoneSnapshot.hashes()))
                 val plan = lanSyncJson.decodeFromString<LanSyncPlan>(wire.text())
                 val expected = lanSyncJson.decodeFromString<Map<String, String>>(wire.text())
                 val received = LanSyncTransfer.receive(wire, store.root, peer.fingerprint)
@@ -295,7 +329,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 wire.sendText("COMMITTED:${plan.transaction}")
                 require(wire.text() == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
                 store.clearPending(peer.fingerprint, plan.transaction)
-                requested = alreadyApplied && phone.snapshot.hashes() != plan.snapshot.hashes()
+                requested = alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes()
                 _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes)
                 } finally { received.close() }
                 } finally { phone.close() }
@@ -305,7 +339,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
 
     private suspend fun capture(): LanSyncCapture {
         var value: LanSyncCapture? = null
-        platform.exclusive { workspace.recover(); value = workspace.capture(identity.fingerprint) }
+        platform.exclusive { workspace.recover(); value = workspace.capture(identity.fingerprint, currentProjection()) }
         return requireNotNull(value)
     }
     private suspend fun decide(comparison: LanSyncComparison): Map<String, LanSyncChoice> {
@@ -319,13 +353,17 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         platform.exclusive {
             withContext(NonCancellable) {
                 workspace.recover()
-                if (!workspace.applied(pending.plan.transaction)) workspace.apply(pending.plan, pending.expectedLocal, identity.fingerprint, blobs)
+                if (!workspace.applied(pending.plan.transaction)) workspace.apply(pending.plan, pending.expectedLocal, identity.fingerprint, blobs,
+                    store.projection(pending.peerId, identity.fingerprint))
                 val sessions = pending.plan.snapshot.records.filter { it.type == "chat_sessions" }.map { it.id }.toSet()
                 platform.reload(sessions)
             }
         }
         store.pending(pending.copy(localApplied = true))
     }
+    private fun currentProjection(): LanSyncProjection = store.peers().singleOrNull()?.let {
+        store.projection(it.fingerprint, identity.fingerprint)
+    } ?: LanSyncProjection()
     private fun retainBlobs(plan: LanSyncPlan, blobs: Map<String, java.nio.file.Path>) {
         val directory = store.root.resolve("transfer-${plan.transaction}"); Files.createDirectories(directory)
         plan.snapshot.resources.forEach { (hash, size) ->
@@ -391,6 +429,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" -> "同步期间本机资料变化，尚未覆盖；请重试并重新检查"
             "SYNC_PAIR_EXPIRED" -> "配对码已过期，请在电脑生成新的二维码"
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"
+            "SYNC_PROTOCOL" -> "两端同步协议版本不同，请使用匹配的双端同步版本"
+            "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"
             "SYNC_BASELINE_MISMATCH" -> "两端共同基线不一致，已保留资料和回执，需恢复上次同步"
             "SYNC_BUSY_MEMORY", "SYNC_PENDING_REPOSITORY_WORK" -> "本机仍有资料处理或恢复任务，请完成后重试"
             "SYNC_ONE_PEER_ONLY" -> "首版一次连接一台可信设备；请先撤销已有配对再连接另一台"

@@ -24,7 +24,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
 
-    fun capture(deviceId: String): LanSyncCapture {
+    fun capture(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture {
         lanSyncSafe(dataRoot, true)
         val scratch = LanSyncScratch(stateRoot, "capture"); val frozen = scratch.directory
         var returned = false
@@ -85,7 +85,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 } }
             } }
         }
-        val snapshot = LanSyncSnapshot(deviceId = deviceId, records = records, resources = resources, excludedTypes = excluded)
+        val snapshot = LanSyncSnapshot(deviceId = deviceId, records = projection.rewrite(records), resources = resources, excludedTypes = excluded)
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
         require(lanSyncJson.encodeToString(snapshot).toByteArray(Charsets.UTF_8).size <= LanSyncWire.MAX_MESSAGE) { "SYNC_SNAPSHOT_LIMIT" }
         returned = true
@@ -106,9 +106,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     /** Prepares a durable local journal before changing any entity. Media are immutable additions. */
-    fun apply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String, blobs: Map<String, Path>) {
+    fun apply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String, blobs: Map<String, Path>,
+        projection: LanSyncProjection = LanSyncProjection()) {
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
-        val current = capture(deviceId)
+        val current = capture(deviceId, projection)
         try {
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
         val transaction = stateRoot.resolve("transaction-${plan.transaction.also { require(it.matches(Regex("[a-f0-9-]{36}"))) }}")
@@ -116,12 +117,16 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         Files.createDirectory(transaction)
         val changes = linkedMapOf<String, ByteArray?>()
         val checkedResources = hashSetOf<Pair<String, String>>()
-        val desired = plan.snapshot.records.associateBy { "entities/${it.type}/${LanSyncScope.storageId(it)}.json" }
+        val localRecords = projection.rewrite(plan.snapshot.records, toLocal = true)
+        val desired = plan.snapshot.records.zip(localRecords).associate { (wire, local) ->
+            "entities/${local.type}/${LanSyncScope.storageId(local)}.json" to (wire to local)
+        }
         val currentRecords = current.snapshot.records.associateBy { it.key }
-        desired.forEach { (relative, wire) ->
+        desired.forEach { (relative, pair) ->
+            val (wire, local) = pair
             val existing = currentRecords[wire.key]
             if (existing?.comparisonBody() == wire.comparisonBody()) return@forEach
-            val materialized = mapResources(wire.body) { reference, field ->
+            val materialized = mapResources(local.body) { reference, field ->
                 if (!reference.startsWith("ccb-lan-v1/")) reference else {
                     val parts = reference.split('/')
                     require(parts.size == 5 && parts[1] in setOf("images", "audio", "documents", "packages") && parts[2].matches(Regex("[a-f0-9-]{36}")) &&
@@ -131,10 +136,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     require(hashFile(source, size) == parts[3]) { "SYNC_RESOURCE_DAMAGED" }
                     if (checkedResources.add(parts[1] to parts[3])) validateResource(parts[1], source)
                     if (parts[1] == "audio") {
-                        audioResource(requireNotNull(wire.text("sessionId")), wire.id, parts[3], source)
+                        audioResource(requireNotNull(local.text("sessionId")), local.id, parts[3], source)
                     } else {
                         val packageSource = if (parts[1] == "packages") {
-                            val ref = requireNotNull(wire.body["packageRef"]).jsonObject
+                            val ref = requireNotNull(local.body["packageRef"]).jsonObject
                             // Validate against the retained source envelope before choosing a new library filename.
                             val nested = java.util.zip.ZipFile(source.toFile()).use { zip ->
                                 val entry = requireNotNull(zip.getEntry("manifest.json")); require(entry.size in 1..256 * 1024)
@@ -142,8 +147,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                                 lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                             }
                             val sourceId = nested.getValue("id").jsonPrimitive.content
-                            val filename = if (wire.id != sourceId) "${wire.id}.cbsave" else "lan-${parts[2]}-${parts[3]}.cbsave"
-                            val library = JsonObject(wire.body + ("packageRef" to JsonObject(ref + ("fileName" to JsonPrimitive(filename)))))
+                            val filename = if (local.id != sourceId) "${local.id}.cbsave" else "lan-${parts[2]}-${parts[3]}.cbsave"
+                            val library = JsonObject(local.body + ("packageRef" to JsonObject(ref + ("fileName" to JsonPrimitive(filename)))))
                             LanSyncSlotPackages.validate(source, library)
                             filename
                         } else null
@@ -159,7 +164,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD))).jsonObject
                 JsonObject(materialized + original.filterKeys { it in LanSyncScope.localFields })
             } ?: materialized
-            LanSyncScope.validateRecord(wire.copy(body = localBody))
+            LanSyncScope.validateRecord(local.copy(body = localBody))
             changes[relative] = lanSyncJson.encodeToString(JsonObject.serializer(), localBody).toByteArray(Charsets.UTF_8)
         }
         current.sourceFiles.keys.filter { it !in desired }.forEach { changes[it] = null }

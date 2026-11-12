@@ -93,6 +93,14 @@ class LanSyncConversationTest {
         b.storage.saveEntity("save_slots", saved.id, saved, SaveSlot.serializer())
         val left = a.workspace.capture("computer"); val right = b.workspace.capture("phone")
         try {
+            val projection = LanSyncProjection(listOf(LanSyncIdBinding("character_cards", "card", "wire-card")))
+            val projected = right.snapshot.copy(records = projection.rewrite(right.snapshot.records))
+            assertEquals(right.snapshot.records.single { it.type == "save_slots" }.body,
+                projected.records.single { it.type == "save_slots" }.body)
+            val packagePath = b.root.resolve("save_slot_packages/${saved.packageRef!!.fileName}")
+            val originalPackage = Files.readAllBytes(packagePath)
+            b.workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), projected, emptyMap()), projected.hashes(), "phone", right.blobs, projection)
+            assertContentEquals(originalPackage, Files.readAllBytes(packagePath))
             val plan = LanSyncPlanner.plan(left.snapshot, right.snapshot, LanSyncBaseline("phone"),
                 mapOf("conversation/session" to LanSyncChoice.KEEP_BOTH), UUID.randomUUID().toString())
             // A first-pair conversation differs because only the phone owns the slot; preserve both graphs.

@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.CharacterInfo
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.net.*
@@ -37,9 +38,14 @@ class LanSyncRuntimeTest {
             override suspend fun reload(sessionIds: Set<String>) {}
         }, name, observe = observe, network = network)
         fun write(id: String, name: String, image: String? = null) {
-            val path = root.resolve("entities/character_cards/$id.json"); Files.createDirectories(path.parent)
-            Files.writeString(path, lanSyncJson.encodeToJsonElement(CharacterCard.serializer(), CharacterCard(id, name, avatar = image, createdAt = 1, updatedAt = 1)).toString())
+            writeCard(CharacterCard(id, name, avatar = image, createdAt = 1, updatedAt = 1))
         }
+        fun writeCard(card: CharacterCard) {
+            val id = card.id
+            val path = root.resolve("entities/character_cards/$id.json"); Files.createDirectories(path.parent)
+            Files.writeString(path, lanSyncJson.encodeToJsonElement(CharacterCard.serializer(), card).toString())
+        }
+        fun readCard(id: String) = lanSyncJson.decodeFromString(CharacterCard.serializer(), Files.readString(root.resolve("entities/character_cards/$id.json")))
         fun names(): Set<String> = workspace.capture(id).use { capture -> capture.snapshot.records.mapNotNull { it.text("name") }.toSet() }
     }
     private suspend fun until(reason: String, check: () -> Boolean) {
@@ -127,5 +133,55 @@ class LanSyncRuntimeTest {
                 assertTrue(Files.newDirectoryStream(end.stateRoot, "superseded-*").use { it.iterator().hasNext() }, "superseded identity evidence remains")
             }
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
+    @Test fun initialPresetProjectionPersistsThroughReopenEditsConflictAndRepeatWithoutLocalIdChanges() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.writeCard(CharacterCard("pc-card", "同源卡", characters = listOf(CharacterInfo("pc-person", "人物")),
+            sourcePresetKey = "synthetic/preset", sourcePresetVersion = 1, createdAt = 1, updatedAt = 1))
+        b.writeCard(a.readCard("pc-card").copy(id = "phone-card", characters = listOf(CharacterInfo("phone-person", "人物")), createdAt = 99, updatedAt = 99))
+        val excluded = b.root.resolve("entities/moment_posts/retained.json"); Files.createDirectories(excluded.parent)
+        val excludedBytes = "synthetic excluded phone-card phone-person".toByteArray(); Files.write(excluded, excludedBytes)
+        var host = a.runtime(); var phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            val mapping = b.store.projection(a.id, b.id); assertEquals(2, mapping.bindings.size)
+            assertEquals(setOf("同源卡"), a.names()); assertEquals(a.names(), b.names())
+            assertFalse(Files.exists(b.root.resolve("entities/character_cards/pc-card.json")))
+            var previous = a.store.baseline(b.id, a.id).revision
+            host.closeAndDrain(); phone.closeAndDrain(); host = a.runtime(); phone = b.runtime()
+            host.startHost(); phone.startPhone()
+            b.writeCard(b.readCard("phone-card").copy(name = "手机重开后编辑"))
+            phone.requestSync(); completed(a, b, previous)
+            assertEquals("手机重开后编辑", a.readCard("pc-card").name)
+            previous = a.store.baseline(b.id, a.id).revision
+            a.writeCard(a.readCard("pc-card").copy(name = "电脑分歧")); b.writeCard(b.readCard("phone-card").copy(name = "手机分歧"))
+            host.requestSync(); until("projected conflict") { host.state.value.conflicts.size == 1 }
+            host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_PHONE))
+            completed(a, b, previous); assertEquals("手机分歧", a.readCard("pc-card").name)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            assertEquals(mapping, b.store.projection(a.id, b.id)); assertEquals(1, a.names().size); assertEquals(1, b.names().size)
+            assertEquals("phone-person", b.readCard("phone-card").characters.single().id)
+            assertContentEquals(excludedBytes, Files.readAllBytes(excluded))
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
+    @Test fun earlierProtocolIsRefusedBeforeTrustProjectionOrDataMutation() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("retained", "原资料")
+        val host = a.runtime()
+        try {
+            host.startHost(); until("host listening") { host.state.value.addresses.isNotEmpty() }
+            host.pairOffer("192.168.1.2"); val offer = requireNotNull(host.state.value.offer)
+            val error = assertFailsWith<IllegalArgumentException> { LanSyncPairOffer.parse("CCB-LAN1:legacy") }
+            assertEquals("SYNC_PROTOCOL", error.message)
+            network.connect(b.store.identity(), LanSyncPeer(a.id, "synthetic", offer.host, offer.port)).use { socket ->
+                LanSyncWire(socket).use { wire ->
+                    wire.sendText("""{"command":"PAIR","name":"legacy"}""")
+                    assertEquals("SYNC_PROTOCOL", wire.text())
+                }
+            }
+            assertTrue(a.store.peers().isEmpty()); assertTrue(b.store.peers().isEmpty())
+            assertEquals(setOf("原资料"), a.names())
+            assertFalse(Files.newDirectoryStream(a.stateRoot, "projection-*").use { it.iterator().hasNext() })
+        } finally { host.closeAndDrain() }
     }
 }

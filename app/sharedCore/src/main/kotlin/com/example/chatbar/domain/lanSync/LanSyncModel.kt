@@ -5,6 +5,8 @@ import kotlinx.serialization.json.*
 import java.security.MessageDigest
 import java.util.UUID
 
+const val LAN_SYNC_PROTOCOL = 2
+
 /** Protocol identities are independent of filenames, clocks, IP addresses and display names. */
 @Serializable
 data class LanSyncRecord(val type: String, val id: String, val body: JsonObject) {
@@ -36,7 +38,7 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
 
 @Serializable
 data class LanSyncSnapshot(
-    val protocol: Int = 1,
+    val protocol: Int = LAN_SYNC_PROTOCOL,
     val deviceId: String,
     val records: List<LanSyncRecord>,
     val resources: Map<String, Long> = emptyMap(),
@@ -44,7 +46,7 @@ data class LanSyncSnapshot(
     val coveredTypes: Set<String> = LanSyncScope.schemas.keys,
 ) {
     fun validate() {
-        require(protocol == 1 && deviceId.isNotBlank()) { "SYNC_PROTOCOL" }
+        require(protocol == LAN_SYNC_PROTOCOL && deviceId.isNotBlank()) { "SYNC_PROTOCOL" }
         require(records.size <= 100_000 && records.map { it.key }.toSet().size == records.size) { "SYNC_IDENTITIES" }
         records.forEach {
             require(it.type.matches(Regex("[a-z_]+")) && it.id.isNotBlank() && it.id.length <= 256) { "SYNC_ID" }
@@ -72,6 +74,7 @@ data class LanSyncBaseline(
     val receipts: List<String> = emptyList(),
     val ownerId: String? = null,
     val coveredTypes: Set<String> = LanSyncScope.schemas.keys,
+    val localProjectionHash: String? = null,
 )
 
 @Serializable
