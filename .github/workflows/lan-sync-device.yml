@@ -43,7 +43,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: cd "$CCB_PLATFORM_SOURCE/app" && chmod +x gradlew && ./gradlew :app:connectedLanPreviewAndroidTest -PlanSyncDeviceTests=true -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.lanSync.LanSyncApi26Test --no-daemon --stacktrace
+          script: cd "$CCB_PLATFORM_SOURCE/app" && chmod +x gradlew && ./gradlew :app:connectedLanPreviewAndroidTest -PlanSyncDeviceTests=true -Pandroid.testInstrumentationRunnerArguments.package=com.example.chatbar.lanSync --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
