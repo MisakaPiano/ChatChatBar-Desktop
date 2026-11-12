@@ -112,7 +112,7 @@ fun MomentsScreen(
     }
     CbScaffold(
         modifier = modifier,
-        topBar = { CbTopBar("朋友圈") }
+        topBar = { CbTopBar("朋友圈", actions = { SyncedMomentPlanAction() }) }
     ) { bottomInset ->
         Box(Modifier.fillMaxSize().background(ChatBarTheme.colors.background)) {
             if (posts.isEmpty()) {
