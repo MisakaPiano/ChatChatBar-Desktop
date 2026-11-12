@@ -49,11 +49,14 @@ class AndroidLanSync(private val app: ChatBarApp) {
     val runtime by lazy { LanSyncRuntime(store, workspace, object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) {
             require(app.lanSyncStartupReady) { "SYNC_INITIALIZING" }
-            AiBackgroundWorkManager.withLanSyncMaintenance { gate.exclusive { work() } }
+            app.momentScheduler.withLanSyncMaintenance {
+                AiBackgroundWorkManager.withLanSyncMaintenance { gate.exclusive { work() } }
+            }
         }
         override suspend fun reload(sessionIds: Set<String>) {
             app.characterRepository.refreshFromStorage(); app.formatCardRepository.refreshFromStorage(); app.worldBookRepository.refreshFromStorage()
             app.chatRepository.reloadAfterLanSync(); app.voiceMessageRepository.reload()
+            app.momentRepository.refreshFromStorage()
         }
     }, android.os.Build.MODEL.take(80)) }
     fun recoverBeforeRepositories() = workspace.recover()

@@ -29,13 +29,38 @@ class MomentScheduler(
     private val chatRepository: ChatRepository,
     private val momentRepository: MomentRepository,
     private val modelResolver: EffectiveModelResolver,
-    private val generationService: MomentGenerationService
+    private val generationService: MomentGenerationService,
+    private val syncGate: com.example.chatbar.domain.lanSync.LanSyncOperationGate? = null
 ) {
     private val appContext = context.applicationContext
     private val mutex = Mutex()
     private val schedulePreparation = MomentSchedulePreparation(characterRepository::getAll,
         chatRepository::getAllSessions, momentRepository::getAllPosts, momentRepository::getAllTasks,
         momentRepository::saveTask)
+
+    private suspend fun <T> schedulerLocked(work: suspend () -> T): T {
+        syncGate?.requireNoNormalAdmission()
+        return mutex.withLock { work() }
+    }
+
+    suspend fun <T> withLanSyncMaintenance(work: suspend () -> T): T = schedulerLocked(work)
+
+    suspend fun syncedPendingPlans(): List<MomentTask> = schedulerLocked {
+        momentRepository.getAllTasks().filter { it.status == MomentTaskStatus.PENDING && it.requiresLocalScheduleApproval }
+            .sortedBy { it.scheduledAt }
+    }
+
+    /** Explicit UI confirmation names these exact snapshots; it never resets interrupted work. */
+    suspend fun approveSyncedPlans(expected: List<MomentTask>): Int = schedulerLocked {
+        require(expected.isNotEmpty() && expected.map { it.id }.toSet().size == expected.size)
+        val gate = requireNotNull(syncGate)
+        gate.withNormalOperation {
+            val current = momentRepository.getAllTasks().associateBy { it.id }
+            require(expected.all { it.status == MomentTaskStatus.PENDING && it.requiresLocalScheduleApproval && current[it.id] == it }) { "同步计划已变化，请重新核对" }
+            expected.forEach { task -> momentRepository.saveTask(task.copy(requiresLocalScheduleApproval = false)) }
+            expected.size
+        }
+    }
 
     fun kick(reason: String = "manual") {
         scope.launch {
@@ -48,7 +73,7 @@ class MomentScheduler(
         }
     }
 
-    suspend fun runOnce(reason: String = "manual", now: Long = System.currentTimeMillis()) = mutex.withLock {
+    suspend fun runOnce(reason: String = "manual", now: Long = System.currentTimeMillis()) = schedulerLocked {
         settingsRepository.initialize()
         characterRepository.initialize()
         chatRepository.initialize()
@@ -56,7 +81,7 @@ class MomentScheduler(
         MomentAlarmScheduler.cancel(appContext)
         val settings = settingsRepository.getAppSettings()
         if (!settings.momentsEnabled) {
-            return@withLock
+            return@schedulerLocked
         }
 
         ensureSchedules(now, settings)
@@ -65,14 +90,14 @@ class MomentScheduler(
         Log.d(TAG, "Moment scheduler complete: $reason")
     }
 
-    suspend fun ensureFutureSchedules(reason: String = "preview", now: Long = System.currentTimeMillis()) = mutex.withLock {
+    suspend fun ensureFutureSchedules(reason: String = "preview", now: Long = System.currentTimeMillis()) = schedulerLocked {
         settingsRepository.initialize()
         characterRepository.initialize()
         chatRepository.initialize()
         momentRepository.initialize()
         MomentAlarmScheduler.cancel(appContext)
         val settings = settingsRepository.getAppSettings()
-        if (!settings.momentsEnabled) return@withLock
+        if (!settings.momentsEnabled) return@schedulerLocked
 
         ensureSchedules(now, settings)
         Log.d(TAG, "Moment future schedules ensured: $reason")

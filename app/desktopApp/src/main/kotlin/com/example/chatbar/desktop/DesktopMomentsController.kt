@@ -76,7 +76,9 @@ internal class DesktopMomentsController(
     }
     private val lock = Any()
     private val admissionMutex = Mutex()
+    private val initialization = CompletableDeferred<Unit>()
     private var accepting = true
+    private var lanSyncMaintenance = false
     private var stopRevision = 0L
     private val workers = mutableMapOf<String, Job>()
     private val workTargets = mutableMapOf<String, Set<String>>()
@@ -93,13 +95,14 @@ internal class DesktopMomentsController(
         })
 
     init { scope.launch {
-        refresh()
         try {
+            refresh()
             if (!recoverImages()) mutableState.update { it.copy(error = "朋友圈图片清理尚未完成；原文件和回执保留") }
             restoreLocalScheduling()
         }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { mutableState.update { it.copy(error = "本机朋友圈调度授权未通过；请核对后手动恢复，未自动生成") } }
+        finally { initialization.complete(Unit) }
     } }
 
     /** Navigation uses the retained post identity, never a same-name or recent-session fallback. */
@@ -219,6 +222,50 @@ internal class DesktopMomentsController(
         }
     }
     suspend fun pause() = admissionMutex.withLock { stopLocalScheduling(persistPause = true) }
+    /** Temporary drain retains only exact pre-existing local grants; imported plans gain none. */
+    suspend fun <T> withLanSyncMaintenance(synchronizeTasks: Boolean, work: suspend () -> T): T {
+        initialization.await()
+        return admissionMutex.withLock {
+            var wasScheduling = false
+            var authoritySafe = true
+            val previous = synchronized(lock) {
+                check(!lanSyncMaintenance && workers.values.none { !it.isCompleted }) { "SYNC_BACKGROUND_WORK_BUSY" }
+                lanSyncMaintenance = true
+                scheduler.also { wasScheduling = it?.isActive == true; scheduler = null }
+            }
+            suspend fun pruneGrants() {
+                val current = store.tasks().filter { it.status == MomentTaskStatus.PENDING }.associateBy { it.id }
+                synchronized(lock) { admitted.entries.removeAll { current[it.key] != it.value } }
+            }
+            try {
+                previous?.cancelAndJoin()
+                tasksRuntime.withIdleMaintenance {
+                    if (synchronizeTasks) {
+                        // Retire stale grants before a remote record can resurrect historical bytes.
+                        try { pruneGrants(); persistAdmission(false) }
+                        catch (error: Exception) {
+                            authoritySafe = false
+                            if (error is CancellationException) throw error
+                            throw IllegalStateException("SYNC_MOMENT_ADMISSION_STORAGE", error)
+                        }
+                    }
+                    try { work() }
+                    finally { withContext(NonCancellable) {
+                        if (synchronizeTasks) try { pruneGrants(); persistAdmission(wasScheduling && accepting) }
+                        catch (_: Exception) { authoritySafe = false }
+                    } }
+                }
+            } finally { withContext(NonCancellable) {
+                previous?.cancelAndJoin()
+                refresh()
+                synchronized(lock) { lanSyncMaintenance = false }
+                if (!authoritySafe) mutableState.update { it.copy(scheduling = false,
+                    error = "资料已保留；本机朋友圈调度核对未完成，请检查后手动恢复") }
+                else if (wasScheduling && accepting && settings.getAppSettings().momentsEnabled)
+                    startScheduler("同步已核对；原本机已批准计划继续，新增或变化的同步计划保持暂停")
+            } }
+        }
+    }
     private suspend fun stopLocalScheduling(persistPause: Boolean) {
         val jobs = synchronized(lock) { (listOfNotNull(scheduler) + workers.values).distinct().also {
             stopRevision++; scheduler = null; admitted.clear()
@@ -333,6 +380,9 @@ internal class DesktopMomentsController(
     private fun launchOwnedWork(sessionId: String, target: String, usageContext: DesktopUsageContext? = null,
         work: suspend ((String) -> Unit) -> Unit): Job? = synchronized(lock) {
         check(accepting)
+        if (lanSyncMaintenance) {
+            mutableState.update { it.copy(notice = "正在同步资料，请完成后再操作朋友圈") }; return@synchronized null
+        }
         if (workTargets.values.any { target in it }) {
             mutableState.update { it.copy(notice = "该角色卡或动态已有任务，请等待或停止对应任务") }; return@synchronized null
         }

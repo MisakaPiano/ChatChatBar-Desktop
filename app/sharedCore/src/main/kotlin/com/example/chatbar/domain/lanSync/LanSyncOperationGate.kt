@@ -29,14 +29,19 @@ class LanSyncOperationGate : AppDataOperationGate {
         try { return withContext(Admission(this)) { operation() } }
         finally { synchronized(lock) { active--; if (active == 0) drained?.complete(Unit) } }
     }
-    suspend fun <T> exclusive(operation: suspend () -> T): T = maintenance.withLock {
+    suspend fun requireNoNormalAdmission() {
         require(currentCoroutineContext()[Admission]?.owner !== this) { "SYNC_GATE_UPGRADE" }
-        val wait = synchronized(lock) {
-            reopened = CompletableDeferred()
-            CompletableDeferred<Unit>().also { drained = it; if (active == 0) it.complete(Unit) }
+    }
+    suspend fun <T> exclusive(operation: suspend () -> T): T {
+        requireNoNormalAdmission()
+        return maintenance.withLock {
+            val wait = synchronized(lock) {
+                reopened = CompletableDeferred()
+                CompletableDeferred<Unit>().also { drained = it; if (active == 0) it.complete(Unit) }
+            }
+            try { wait.await(); withContext(Admission(this)) { operation() } }
+            finally { synchronized(lock) { drained = null; reopened?.complete(Unit); reopened = null } }
         }
-        try { wait.await(); withContext(Admission(this)) { operation() } }
-        finally { synchronized(lock) { drained = null; reopened?.complete(Unit); reopened = null } }
     }
 }
 

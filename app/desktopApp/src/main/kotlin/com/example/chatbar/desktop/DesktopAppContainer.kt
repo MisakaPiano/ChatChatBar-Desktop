@@ -49,13 +49,18 @@ class DesktopAppContainer internal constructor(
     private val lanSyncOwner = lazy { DesktopLanSync(this,
         exclusive = { work ->
             if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot()
-            taskRuntime.withMaintenance { withBackupIoMaintenance(work = {
-            dataOperationCoordinator.withExclusiveMaintenance { work() }
-        }) } },
+            val reserved: suspend () -> Unit = { withBackupIoMaintenance(work = {
+                dataOperationCoordinator.withExclusiveMaintenance { work() }
+            }) }
+            if (momentsOwner.isInitialized() || "moment_tasks" in com.example.chatbar.domain.lanSync.LanSyncScope.schemas) momentsController.withLanSyncMaintenance(
+                synchronizeTasks = "moment_tasks" in com.example.chatbar.domain.lanSync.LanSyncScope.schemas, work = reserved)
+            else taskRuntime.withIdleMaintenance(reserved)
+        },
         reload = {
             characterRepository.refreshFromStorage(); formatCardRepository.refreshFromStorage(); worldBookRepository.refreshFromStorage()
             chatRepository.reloadAfterLanSync(); voiceRepository.reload()
             if (primaryChatControllerOwner.isInitialized()) primaryChatController.refresh()
+            if (momentsOwner.isInitialized()) momentsController.refresh()
         }, resolve = { reference ->
             val path = java.nio.file.Path.of(reference)
             if (path.isAbsolute) path else characterResourceStore.resolveOwnedReference(reference)

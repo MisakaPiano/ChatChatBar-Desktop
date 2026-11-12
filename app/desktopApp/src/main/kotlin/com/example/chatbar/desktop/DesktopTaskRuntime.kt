@@ -590,6 +590,17 @@ internal class DesktopTaskRuntime(
         true
     }
 
+    /** Sync reserves an already idle runtime; it never cancels admitted provider work. */
+    suspend fun <T> withIdleMaintenance(work: suspend () -> T): T {
+        synchronized(lock) {
+            if (!accepting || maintenance || activeJobs.values.any { !it.isCompleted } || messageMutations.isNotEmpty())
+                throw DesktopTaskAdmissionException("SYNC_BACKGROUND_WORK_BUSY")
+            maintenance = true
+        }
+        try { return work() }
+        finally { synchronized(lock) { maintenance = false } }
+    }
+
     /** Temporarily stop all task admission and drain owned writers BEFORE exclusive root IO.
      * Timeout deliberately leaves admission stopped: an undrained writer is not a safe snapshot.
      * Ordinary shutdown remains permanent even if it overlaps the maintenance lease. */

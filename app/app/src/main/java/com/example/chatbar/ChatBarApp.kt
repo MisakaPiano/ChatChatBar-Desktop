@@ -404,7 +404,8 @@ class ChatBarApp : Application() {
             chatRepository = chatRepository,
             momentRepository = momentRepository,
             modelResolver = effectiveModelResolver,
-            generationService = momentGenerationService
+            generationService = momentGenerationService,
+            syncGate = lanSyncOwner.gate
         )
         imageUnderstandingService = ImageUnderstandingService(effectiveModelResolver, streamingChatService::describeImageStreaming)
         val characterReferenceDocumentRetriever = RagCharacterReferenceDocumentRetriever(
