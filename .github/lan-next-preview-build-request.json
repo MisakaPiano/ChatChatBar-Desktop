@@ -1,0 +1,10 @@
+{
+  "kind": "CCB_LAN_NEXT_PREVIEW_BUILD",
+  "sourceSha": "08db90c2cec1611b7f56c688fb5f219ea7f051c5",
+  "series": "next",
+  "versions": [
+    81,
+    82
+  ],
+  "purpose": "Frozen isolated next-preview raw APK inputs for persistent detached signing and synthetic API26 in-place upgrade. No private key uploaded; no first-preview install/data changes or delivery."
+}
