@@ -21,7 +21,7 @@ class LanSyncSingletonTest {
         val left = workspace(a, sa); val right = workspace(b, sb)
         val source = SettingsRepository(JsonFileStorage(a)); val target = SettingsRepository(JsonFileStorage(b))
         source.initialize(); target.initialize()
-        target.updateAppSettings { it.copy(momentsEnabled = true, novelAiToken = "synthetic-local-only-not-a-key") }
+        target.updateAppSettings { it.copy(momentsEnabled = true, siliconFlowApiKey = "synthetic-local-only-not-a-key") }
         val localSettings = b.resolve("entities/app_settings.json"); val localBytes = Files.readAllBytes(localSettings)
         val avatar = a.resolve("images/avatar.png"); Files.createDirectories(avatar.parent)
         val bytes = LanSyncPreviewSample.image(); Files.write(avatar, bytes)
