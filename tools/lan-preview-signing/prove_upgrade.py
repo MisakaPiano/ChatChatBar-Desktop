@@ -1,0 +1,41 @@
+"""Run the two ordered, synthetic-only upgrade fixture stages in the cloud."""
+import json
+from pathlib import Path
+import re
+import subprocess
+
+PACKAGE = 'com.example.chatbar.lansyncnext'
+CLASS = 'com.example.chatbar.lanSync.LanSyncPreviewUpgradeTest'
+ROOT = Path('candidate')
+
+
+def adb(arguments, filename):
+    result = subprocess.run(['adb', *arguments], text=True, encoding='utf8', errors='replace',
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    (ROOT/filename).write_text(result.stdout, encoding='utf8')
+    assert result.returncode == 0, filename
+    return result.stdout
+
+
+def stage(method, expected_version):
+    output = adb(['shell', 'am', 'instrument', '-w', '-e', 'class', CLASS+'#'+method,
+                  PACKAGE+'.test/androidx.test.runner.AndroidJUnitRunner'], method+'.txt')
+    assert re.search(r'OK \(1 test\)', output), method
+    assert not any(word in output for word in ['FAILURES!!!', 'INSTRUMENTATION_FAILED', 'INSTRUMENTATION_ABORTED'])
+    package = adb(['shell', 'dumpsys', 'package', PACKAGE], method+'-package.txt')
+    assert re.search(r'\bversionCode='+str(expected_version)+r'\b', package)
+
+
+assert 'Success' in adb(['install', str(ROOT/'base.apk')], 'install-base.txt')
+assert 'Success' in adb(['install', str(ROOT/'tests.apk')], 'install-tests.txt')
+stage('seedSyntheticRepositoryAndProtectedPeerIdentity', 81)
+adb(['shell', 'am', 'force-stop', PACKAGE], 'stop-before-upgrade.txt')
+assert 'Success' in adb(['install', '-r', str(ROOT/'upgrade.apk')], 'install-upgrade.txt')
+stage('verifySyntheticRepositoryAndProtectedPeerIdentityAfterUpgrade', 82)
+receipt = {'kind': 'CCB_LAN_NEXT_PREVIEW_UPGRADE_PROOF', 'api': 26,
+           'package': PACKAGE, 'versions': [81, 82], 'sameSignerUpgradeAccepted': True,
+           'fixtureStagesPassed': 2, 'uninstallOrClearData': False,
+           'physicalPhoneTested': False, 'firstPreviewMigrated': False,
+           'humanAcceptance': False, 'userDelivered': False}
+(ROOT/'upgrade-proof.json').write_text(json.dumps(receipt, indent=2), encoding='utf8')
+print(json.dumps(receipt))

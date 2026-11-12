@@ -1,0 +1,88 @@
+name: Persistent next LAN preview signing and synthetic upgrade
+on:
+  push:
+    branches: ['codex/lan-preview-signing-*']
+    paths: [.github/lan-next-preview-signing-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sign-and-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check frozen original cloud provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          request = json.load(open('.github/lan-next-preview-signing-request.json'))
+          assert request['kind'] == 'CCB_LAN_NEXT_PREVIEW_PUBLIC_SIGNING'
+          assert re.fullmatch('[a-f0-9]{40}', request['sourceSha'])
+          original = request['originalArtifact']
+          api = 'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/'
+          def get(path):
+              headers = {'Authorization': 'Bearer '+os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'}
+              return json.load(urllib.request.urlopen(urllib.request.Request(api+path, headers=headers)))
+          run = get('runs/'+str(original['runId']))
+          artifact = get('artifacts/'+str(original['id']))
+          assert run['head_sha'] == artifact['workflow_run']['head_sha'] == request['sourceSha']
+          assert run['conclusion'] == 'success'
+          assert artifact['workflow_run']['id'] == original['runId'] and artifact['name'] == original['name'] and not artifact['expired']
+          assert artifact['size_in_bytes'] == original['bytes']
+          assert artifact['digest'] == 'sha256:'+original['outerSha256']
+          json.dump({'runSha': run['head_sha'], 'artifact': artifact}, open('original-provenance.json','w'), indent=2)
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write('LAN_NEXT_ORIGINAL_RUN='+str(original['runId'])+'\n')
+              env.write('LAN_NEXT_ORIGINAL_NAME='+original['name']+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.LAN_NEXT_ORIGINAL_NAME }}
+          run-id: ${{ env.LAN_NEXT_ORIGINAL_RUN }}
+          github-token: ${{ github.token }}
+          path: original
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;36.0.0
+      - name: Assemble only from public blocks and independently verify exact APKs
+        run: |
+          python3 tools/lan-preview-signing/verify_candidate.py --request .github/lan-next-preview-signing-request.json --source-dir original --output-dir candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+          cp original-provenance.json candidate/
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install81 seed synthetic state replace82 and check persisted ownership
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 tools/lan-preview-signing/prove_upgrade.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-next-preview-signing-upgrade-evidence
+          path: |
+            candidate/*.json
+            candidate/*.txt
+            original-provenance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lan-next-preview-verified-apks
+          path: |
+            candidate/base.apk
+            candidate/upgrade.apk
+            candidate/tests.apk
