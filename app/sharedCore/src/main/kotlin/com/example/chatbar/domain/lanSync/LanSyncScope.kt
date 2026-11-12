@@ -19,9 +19,10 @@ object LanSyncScope {
         "memory_commits" to MemoryCommit.serializer(), "generated_voice_messages" to GeneratedVoiceMessage.serializer(),
         "save_slots" to SaveSlot.serializer(),
         "voice_anchor_states" to VoiceAnchorState.serializer(),
+        "moment_posts" to MomentPost.serializer(), "moment_tasks" to MomentTask.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "同时保留旧式及 v8 会话存档。不含账户和密钥、设备设置、输入草稿、朋友圈、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档、朋友圈及其图片版本和计划。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
@@ -29,6 +30,7 @@ object LanSyncScope {
     fun normalize(type: String, body: JsonObject): JsonObject = when (type) {
         "chat_sessions" -> JsonObject(body.filterKeys { it !in localFields })
         "format_cards" -> JsonObject(body + ("isDefault" to JsonPrimitive(false)))
+        "moment_tasks" -> JsonObject(body + ("requiresLocalScheduleApproval" to JsonPrimitive(true)))
         else -> body
     }
     internal fun retainedLocalFields(type: String) = when (type) {
@@ -64,6 +66,7 @@ object LanSyncScope {
     fun validateRecord(record: LanSyncRecord) {
         val serializer = requireNotNull(schemas[record.type]) { "SYNC_UNSUPPORTED_TYPE" }
         lanSyncJson.decodeFromJsonElement(serializer, record.body)
+        if (record.type in LanSyncMoments.types) LanSyncMoments.validate(record)
         require(identity(record.type, record.body) == record.id) { "SYNC_BODY_ID" }
         // Pending state-machine journals have their own owner; do not transport an active transaction.
         if (record.type == "chat_sessions") {
@@ -76,6 +79,7 @@ object LanSyncScope {
     fun validateGraph(snapshot: LanSyncSnapshot) {
         snapshot.records.forEach(::validateRecord)
         require(snapshot.records.none { it.type == "format_cards" && it.body["isDefault"] != JsonPrimitive(false) }) { "SYNC_DEVICE_DEFAULT_ON_WIRE" }
+        require(snapshot.records.none { it.type == "moment_tasks" && it.body["requiresLocalScheduleApproval"] != JsonPrimitive(true) }) { "SYNC_SCHEDULE_AUTHORITY_ON_WIRE" }
         val referenced = linkedSetOf<String>()
         val mediaIdentities = linkedMapOf<String, String>()
         snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
@@ -102,7 +106,7 @@ object LanSyncScope {
         val messages = snapshot.records.filter { it.type == "chat_messages" }.associateBy { it.id }
         snapshot.records.forEach { record ->
             val session = record.text("sessionId")
-            if (session != null) require(session in ids["chat_sessions"].orEmpty()) { "SYNC_ORPHAN_SESSION" }
+            if (session != null && record.type !in LanSyncMoments.types) require(session in ids["chat_sessions"].orEmpty()) { "SYNC_ORPHAN_SESSION" }
             if (record.type == "chat_sessions") {
                 // Existing archived conversations deliberately retain a missing card identity.
                 require(!record.text("characterCardId").isNullOrBlank()) { "SYNC_MISSING_CHARACTER_ID" }

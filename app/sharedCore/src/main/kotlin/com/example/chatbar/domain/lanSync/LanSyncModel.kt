@@ -28,6 +28,8 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
     }
     val key: String get() = "$type/$id"
     val unit: String get() = when {
+        type == "moment_posts" -> "moment-post/$id"
+        type == "moment_tasks" -> "moment-task/$id"
         type == "chat_sessions" -> "conversation/$id"
         type == "vector_chunks" && text("sourceType") == "CHAT_MEMORY" -> "conversation/${text("sourceId")}"
         type == "vector_chunks" -> "character_cards/${text("sourceId")}"
@@ -55,7 +57,7 @@ data class LanSyncSnapshot(
         require(resources.keys.all { it.matches(Regex("[0-9a-f]{64}")) } && resources.values.all { it in 1..MAX_RESOURCE }) { "SYNC_RESOURCE" }
     }
 
-    fun units(): Map<String, List<LanSyncRecord>> = records.groupBy { it.unit }
+    fun units(): Map<String, List<LanSyncRecord>> = LanSyncMoments.units(records)
     fun hashes(): Map<String, String> = units().mapValues { (_, records) ->
         lanSyncHash(JsonArray(records.sortedBy { it.key }.map {
             buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.comparisonBody()) }
@@ -118,10 +120,11 @@ object LanSyncCompare {
                 b == old -> automatic[key] = true
                 else -> {
                     val l = leftUnits[key].orEmpty(); val r = rightUnits[key].orEmpty()
-                    val owner = (l + r).firstOrNull { it.type == "chat_sessions" } ?: (l + r).first()
-                    val title = listOf("displayTitleOverride", "title", "name").firstNotNullOfOrNull {
+                    val owner = (l + r).firstOrNull { it.type == "chat_sessions" }
+                        ?: (l + r).firstOrNull { it.type == "moment_posts" } ?: (l + r).first()
+                    val title = listOf("displayTitleOverride", "title", "name", "senderName").firstNotNullOfOrNull {
                         (owner.body[it] as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank)
-                    } ?: owner.type
+                    } ?: if (owner.type == "moment_tasks") "朋友圈计划" else owner.type
                     conflicts += LanSyncConflict(key, title.take(160), a == null, b == null, l.size, r.size)
                 }
             }

@@ -6,7 +6,8 @@ internal object LanSyncRebase {
         computer: LanSyncSnapshot, phone: LanSyncSnapshot, computerApplied: Boolean): Map<String, String> {
         val expected = if (computerApplied) previous.expectedRemote else previous.expectedLocal
         if (baseline.revision == null) return expected
-        val units = (previous.plan.snapshot.records + computer.records + phone.records).groupBy { it.unit }
+        val units = (previous.plan.snapshot.units().entries + computer.units().entries + phone.units().entries)
+            .groupBy { it.key }.mapValues { (_, rows) -> rows.flatMap { it.value } }
         return expected.mapNotNull { (unit, hash) ->
             val records = units[unit].orEmpty()
             val authoritative = records.isNotEmpty() && records.all { it.type in baseline.coveredTypes }
@@ -23,8 +24,9 @@ internal object LanSyncRebase {
         if (newTypes.isEmpty()) return null
         val present = current.records.map { it.key }.toSet()
         val target = plan.snapshot.records.associateBy { it.key }
+        val resolved = resolvedKeys(plan, previous.plan)
         val keys = previous.plan.snapshot.records.filter { old ->
-            old.type in newTypes && old.key !in present && old.unit !in plan.resolvedUnits &&
+            old.type in newTypes && old.key !in present && old.key !in resolved &&
                 target[old.key]?.comparisonBody() == old.comparisonBody()
         }.map { it.key }.toSet()
         return keys.takeIf { it.isNotEmpty() }?.let { LanSyncDeferredDeletion(previous.plan.transaction, it) }
@@ -39,9 +41,10 @@ internal object LanSyncRebase {
         val common = requireNotNull(plan.commonCoveredTypesBefore) { "SYNC_DEFERRED_DELETION_PROOF" }
         val old = previous.snapshot.records.associateBy { it.key }
         val records = plan.snapshot.records.associateBy { it.key }
+        val resolved = resolvedKeys(plan, previous)
         require(deferred.recordKeys.all { key ->
             val record = records[key]
-            record != null && record.type !in common && record.unit !in plan.resolvedUnits &&
+            record != null && record.type !in common && record.key !in resolved &&
                 old[key]?.comparisonBody() == record.comparisonBody()
         }) { "SYNC_DEFERRED_DELETION_PROOF" }
         val retained = plan.snapshot.records.filterNot { it.key in deferred.recordKeys }
@@ -55,4 +58,8 @@ internal object LanSyncRebase {
         require(plan.commonCoveredTypesBefore?.let { plan.snapshot.coveredTypes.containsAll(it) } != false &&
             plan.resolvedUnits.size <= 100_000 && plan.resolvedUnits.all { it.length in 1..600 }) { "SYNC_REBASE_POLICY" }
     }
+
+    private fun resolvedKeys(plan: LanSyncPlan, previous: LanSyncPlan): Set<String> =
+        (plan.snapshot.units().entries + previous.snapshot.units().entries)
+            .filter { it.key in plan.resolvedUnits }.flatMap { it.value }.map { it.key }.toSet()
 }

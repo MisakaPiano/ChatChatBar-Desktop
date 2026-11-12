@@ -228,22 +228,24 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val computerApplied = previous?.let { workspace.applied(it.plan.transaction) } == true
                 val phoneApplied = previous != null && hello.pendingTransaction == previous.plan.transaction && hello.locallyApplied
                 val protocolChanged = previous != null && previous.plan.snapshot.protocol != LAN_SYNC_PROTOCOL
+                val coverageChanged = previous != null && previous.plan.snapshot.coveredTypes != computer.snapshot.coveredTypes
+                require(previous == null || computer.snapshot.coveredTypes.containsAll(previous.plan.snapshot.coveredTypes)) { "SYNC_SCOPE_MISMATCH" }
                 if (protocolChanged) try { LanSyncScope.validateLegacyPending(requireNotNull(previous).plan.snapshot) }
                 catch (failure: IllegalArgumentException) {
                     finishRequest(requestToken); wire.sendText("SYNC_LEGACY_PLAN_UNSUPPORTED"); throw failure
                 }
-                if (protocolChanged && computerApplied && phoneApplied) {
+                if ((protocolChanged || coverageChanged) && computerApplied && phoneApplied) {
                     val finished = requireNotNull(previous)
                     // Both endpoints have already published the old payload. Finish its receipts
                     // without replaying it over later edits, then run a fresh current-protocol round.
-                    wire.sendText("LEGACY_FINISH:${finished.plan.transaction}")
-                    require(wire.text() == "LEGACY_COMMITTED:${finished.plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
+                    wire.sendText("APPLIED_FINISH:${finished.plan.transaction}")
+                    require(wire.text() == "APPLIED_COMMITTED:${finished.plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
                     complete(peerId, finished.plan); store.clearPending(peerId, finished.plan.transaction)
                     queueSync(); wire.sendText("DONE")
                     _state.value = _state.value.copy(busy = false, status = "旧同步回执已确认，正在核对后续修改")
                     return@withLock
                 }
-                val needsRebase = previous != null && (protocolChanged || when {
+                val needsRebase = previous != null && (protocolChanged || coverageChanged || when {
                     computerApplied && phoneApplied -> false
                     computerApplied -> phoneSnapshot.hashes() != previous.expectedRemote
                     phoneApplied -> computer.snapshot.hashes() != previous.expectedLocal
@@ -359,12 +361,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 }
                 require(planText != "SYNC_CONFLICT_TIMEOUT") { "SYNC_CONFLICT_TIMEOUT" }
                 require(planText != "SYNC_LEGACY_PLAN_UNSUPPORTED") { "SYNC_LEGACY_PLAN_UNSUPPORTED" }
-                if (planText.startsWith("LEGACY_FINISH:")) {
+                if (planText.startsWith("APPLIED_FINISH:")) {
                     val finished = requireNotNull(pending) { "SYNC_RECEIPT_WITHOUT_APPLY" }
-                    require(planText == "LEGACY_FINISH:${finished.plan.transaction}" && workspace.applied(finished.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
-                    LanSyncScope.validateLegacyPending(finished.plan.snapshot)
+                    require(planText == "APPLIED_FINISH:${finished.plan.transaction}" && workspace.applied(finished.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
+                    if (finished.plan.snapshot.protocol != LAN_SYNC_PROTOCOL) LanSyncScope.validateLegacyPending(finished.plan.snapshot)
+                    else { finished.plan.snapshot.validate(); LanSyncScope.validateGraph(finished.plan.snapshot) }
                     complete(peer.fingerprint, finished.plan)
-                    wire.sendText("LEGACY_COMMITTED:${finished.plan.transaction}")
+                    wire.sendText("APPLIED_COMMITTED:${finished.plan.transaction}")
                     require(wire.text() == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
                     store.clearPending(peer.fingerprint, finished.plan.transaction)
                     queueSync()

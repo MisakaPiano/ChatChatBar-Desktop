@@ -6,6 +6,13 @@ import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.data.local.entity.MomentPost
+import com.example.chatbar.data.local.entity.MomentTask
+import com.example.chatbar.data.local.entity.MomentTaskStatus
+import com.example.chatbar.data.local.entity.MomentImageVersion
+import com.example.chatbar.data.local.entity.GeneratedImageMetadata
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.repository.MomentRepository
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.net.*
@@ -189,7 +196,7 @@ class LanSyncRuntimeTest {
         a.writeCard(CharacterCard("pc-card", "同源卡", characters = listOf(CharacterInfo("pc-person", "人物")),
             sourcePresetKey = "synthetic/preset", sourcePresetVersion = 1, createdAt = 1, updatedAt = 1))
         b.writeCard(a.readCard("pc-card").copy(id = "phone-card", characters = listOf(CharacterInfo("phone-person", "人物")), createdAt = 99, updatedAt = 99))
-        val excluded = b.root.resolve("entities/moment_posts/retained.json"); Files.createDirectories(excluded.parent)
+        val excluded = b.root.resolve("entities/editor_drafts/retained.json"); Files.createDirectories(excluded.parent)
         val excludedBytes = "synthetic excluded phone-card phone-person".toByteArray(); Files.write(excluded, excludedBytes)
         var host = a.runtime(); var phone = b.runtime()
         try {
@@ -362,6 +369,94 @@ class LanSyncRuntimeTest {
             host.requestSync(); completed(a, b, revision)
             assertEquals(a.names(), b.names())
             assertEquals(1, Files.newDirectoryStream(a.stateRoot, "superseded-*").use { it.count() })
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
+    @Test fun oldSameProtocolCoveragePendingFinishesOrRebasesWithoutResetEvenWhenHashesDidNotChange() = runBlocking {
+        for (bothApplied in listOf(false, true)) {
+            val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+            listOf(a, b).forEach { it.write("card", "旧范围原卡") }
+            val left = a.workspace.capture(a.id); val right = b.workspace.capture(b.id)
+            val old = LanSyncPlan(java.util.UUID.randomUUID().toString(), left.snapshot.copy(coveredTypes = LanSyncScope.legacyChatTypes), emptyMap())
+            try {
+                b.workspace.apply(old, right.snapshot.hashes(), b.id, emptyMap())
+                if (bothApplied) a.workspace.apply(old, left.snapshot.hashes(), a.id, emptyMap())
+                a.store.pending(LanSyncPending(b.id, old, left.snapshot.hashes(), right.snapshot.hashes(), localApplied = bothApplied))
+                b.store.pending(LanSyncPending(a.id, old, right.snapshot.hashes(), emptyMap(), localApplied = true))
+                if (bothApplied) a.write("card", "双方应用后修改")
+                val host = a.runtime(); val phone = b.runtime()
+                try {
+                    pair(host, phone, a, b); phone.requestSync(); completed(a, b, old.transaction)
+                    assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
+                    assertEquals(a.names(), b.names())
+                    assertEquals(setOf(if (bothApplied) "双方应用后修改" else "旧范围原卡"), a.names())
+                } finally { host.closeAndDrain(); phone.closeAndDrain() }
+            } finally { left.close(); right.close() }
+        }
+    }
+    @Test fun momentsHistoryVersionsConflictsAndDormantPlansRoundTripWithoutChatOrExecutionAuthority() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        val left = MomentRepository(JsonFileStorage(a.root, a.gate)); val right = MomentRepository(JsonFileStorage(b.root, b.gate))
+        val bytes = LanSyncPreviewSample.image()
+        val images = listOf("first.png", "selected.png").map { name ->
+            a.root.resolve("images/$name").also { Files.createDirectories(it.parent); Files.write(it, bytes) }.toString()
+        }
+        fun metadata(path: String, prompt: String) = GeneratedImageMetadata(path, prompt, negativePrompt = "合成负面", sizePreset = "synthetic", width = 64, height = 64)
+        val versions = images.mapIndexed { index, path -> MomentImageVersion("image-version-$index", path, "版本$index",
+            metadata(path, "版本$index"), "简述$index", index.toLong()) }
+        val post = MomentPost("pc-post", "historical-missing-card", "historical-missing-session", senderCharacterId = "missing-person",
+            senderName = "合成人物", text = "保留原文 sessionId=historical-missing-session", imagePath = images.last(),
+            imagePrompt = versions.last().imagePrompt, generatedImageMetadata = versions.last().generatedImageMetadata,
+            imageBrief = versions.last().imageBrief, scheduledAt = 1, generatedAt = 1, desktopImageVersions = versions)
+        left.savePost(post)
+        left.saveTask(MomentTask("pc-completed", post.characterCardId, post.sessionId, 1, MomentTaskStatus.COMPLETED, post.id, createdAt = 1))
+        left.saveTask(MomentTask("pc-pending", post.characterCardId, post.sessionId, Long.MAX_VALUE, createdAt = 1))
+        val placeholder = post.copy(id = "phone-placeholder", imagePath = null, generatedImageMetadata = null,
+            imagePrompt = "", imageBrief = "", desktopImageVersions = emptyList(), isPlaceholder = true, generationCheckpoint = "opaque synthetic sessionId=historical-missing-session")
+        right.savePost(placeholder)
+        val running = MomentTask("phone-running", post.characterCardId, post.sessionId, 1, MomentTaskStatus.RUNNING, placeholder.id, createdAt = 1)
+        right.saveTask(running)
+        right.saveTask(running.copy(id = "phone-pending", status = MomentTaskStatus.PENDING, postId = null, scheduledAt = Long.MAX_VALUE))
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            assertFalse(left.getAllTasks().single { it.id == "pc-pending" }.requiresLocalScheduleApproval)
+            assertTrue(right.getAllTasks().single { it.id == "pc-pending" }.requiresLocalScheduleApproval)
+            assertFalse(right.getAllTasks().single { it.id == "phone-pending" }.requiresLocalScheduleApproval)
+            assertTrue(left.getAllTasks().single { it.id == "phone-pending" }.requiresLocalScheduleApproval)
+            assertEquals(MomentTaskStatus.RUNNING, left.getAllTasks().single { it.id == running.id }.status)
+            assertEquals(placeholder.generationCheckpoint, right.getPost(placeholder.id)?.generationCheckpoint)
+            val imported = requireNotNull(right.getPost(post.id))
+            assertEquals(listOf("image-version-0", "image-version-1"), imported.desktopImageVersions.map { it.id })
+            assertEquals(imported.desktopImageVersions.last().imagePath, imported.imagePath)
+            assertEquals(2, imported.desktopImageVersions.map { it.imagePath }.distinct().size)
+            imported.desktopImageVersions.forEach { assertContentEquals(bytes, Files.readAllBytes(Path.of(it.imagePath))) }
+            var previous = a.store.baseline(b.id, a.id).revision
+            val edited = right.getAllTasks().single { it.id == "pc-pending" }.copy(scheduledAt = Long.MAX_VALUE - 1)
+            right.saveTask(edited); phone.requestSync(); completed(a, b, previous)
+            assertTrue(left.getAllTasks().single { it.id == edited.id }.requiresLocalScheduleApproval)
+            right.saveTask(edited.copy(requiresLocalScheduleApproval = false))
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            assertTrue(left.getAllTasks().single { it.id == edited.id }.requiresLocalScheduleApproval)
+            assertFalse(right.getAllTasks().single { it.id == edited.id }.requiresLocalScheduleApproval)
+            left.savePost(requireNotNull(left.getPost(post.id)).copy(text = "电脑分歧"))
+            right.savePost(requireNotNull(right.getPost(post.id)).copy(text = "手机分歧"))
+            previous = a.store.baseline(b.id, a.id).revision; host.requestSync()
+            until("one linked Moment conflict separate from chat") { host.state.value.conflicts.size == 1 }
+            assertEquals("moment-task/pc-completed", host.state.value.conflicts.single().unit)
+            host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_BOTH)); completed(a, b, previous)
+            for (repo in listOf(left, right)) {
+                val tasks = repo.getAllTasks().filter { it.status == MomentTaskStatus.COMPLETED }
+                assertEquals(2, tasks.size)
+                assertEquals(setOf("电脑分歧", "手机分歧"), tasks.map { requireNotNull(repo.getPost(requireNotNull(it.postId))).text }.toSet())
+                tasks.forEach { assertEquals(2, requireNotNull(repo.getPost(requireNotNull(it.postId))).desktopImageVersions.size) }
+            }
+            previous = a.store.baseline(b.id, a.id).revision; host.requestSync(); completed(a, b, previous)
+            assertEquals(5, right.getAllTasks().size)
+            right.deletePost(placeholder.id)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            assertNull(left.getPost(placeholder.id))
+            assertEquals(MomentTaskStatus.RUNNING, left.getAllTasks().single { it.id == running.id }.status)
+            assertFalse(Files.exists(a.root.resolve("entities/chat_sessions")))
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {

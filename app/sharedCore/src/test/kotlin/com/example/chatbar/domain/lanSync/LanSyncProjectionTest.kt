@@ -45,7 +45,7 @@ class LanSyncProjectionTest {
             val file = root.resolve("entities/${record.type}/${record.id}.json"); Files.createDirectories(file.parent); Files.writeString(file, record.body.toString())
         }
         phone.forEach(::write)
-        val excluded = root.resolve("entities/moment_posts/local.json"); Files.createDirectories(excluded.parent)
+        val excluded = root.resolve("entities/editor_drafts/local.json"); Files.createDirectories(excluded.parent)
         val retained = "{\"characterCardId\":\"phone-card\",\"senderCharacterId\":\"phone-person\"}"
         Files.writeString(excluded, retained)
         val projection = LanSyncPresetProjection.propose(computer, phone)
