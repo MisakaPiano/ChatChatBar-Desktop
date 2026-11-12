@@ -113,6 +113,31 @@ class LanSyncRuntimeTest {
             }
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun requestDuringEitherEndpointCompletionTailSurvivesTheOlderRound() = runBlocking {
+        for (side in listOf("HOST", "PHONE")) {
+            val network = SyntheticLan()
+            val injected = java.util.concurrent.atomic.AtomicBoolean()
+            lateinit var host: LanSyncRuntime
+            lateinit var phone: LanSyncRuntime
+            val a = End("computer", network) { phase, _ ->
+                if (side == "HOST" && phase == "HOST_PENDING_CLEARED" && injected.compareAndSet(false, true)) host.requestSync()
+            }
+            val b = End("phone", network) { phase, _ ->
+                if (side == "PHONE" && phase == "PHONE_PENDING_CLEARED" && injected.compareAndSet(false, true)) phone.requestSync()
+            }
+            a.write("card", "合成卡")
+            host = a.runtime(); phone = b.runtime()
+            try {
+                pair(host, phone, a, b); phone.requestSync()
+                until("new $side request must complete a second bilateral transaction") {
+                    val left = a.store.baseline(b.id, a.id); val right = b.store.baseline(a.id, b.id)
+                    injected.get() && left.receipts.size >= 2 && left.revision == right.revision &&
+                        a.store.pending(b.id) == null && b.store.pending(a.id) == null
+                }
+                assertEquals(setOf("合成卡"), a.names()); assertEquals(a.names(), b.names())
+            } finally { host.closeAndDrain(); phone.closeAndDrain() }
+        }
+    }
     @Test fun hostBaselineCrashFinishesOldPendingThenActuallyExchangesNewEdit() = runBlocking {
         val network = SyntheticLan(); var crashed = false
         val a = End("computer", network) { phase, _ -> if (phase == "HOST_BASELINE" && !crashed) { crashed = true; throw java.io.IOException("synthetic dropped final receipt") } }
