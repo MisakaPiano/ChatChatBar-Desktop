@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.lanSync
 
-import java.net.InetAddress
 import java.net.InetSocketAddress
 import javax.net.ssl.*
 import kotlinx.coroutines.*
@@ -11,13 +10,14 @@ class LanSyncTlsTest {
         val serverId = LanSyncTlsIdentity.create(); val clientId = LanSyncTlsIdentity.create()
         val server = serverId.context { it == clientId.fingerprint }.serverSocketFactory.createServerSocket() as SSLServerSocket
         server.soTimeout = 10_000
-        server.needClientAuth = true; server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+        server.needClientAuth = true; server.bind(InetSocketAddress("127.0.0.1", 0))
         try {
         val receiving = async(Dispatchers.IO) {
             server.accept().use { raw ->
                 val socket = raw as SSLSocket; LanSyncTls.configure(socket); socket.startHandshake()
                 LanSyncWire(socket).use { wire ->
                     assertEquals("synthetic", wire.text()); wire.sendText("authenticated")
+                    wire.send(byteArrayOf(0xc3.toByte(), 0x28))
                     val bytes = ByteArray(200_000) { (it % 251).toByte() }
                     wire.sendBlob(bytes.inputStream(), bytes.size.toLong())
                 }
@@ -28,6 +28,7 @@ class LanSyncTlsTest {
             LanSyncTls.configure(client); client.startHandshake()
             LanSyncWire(client).use { wire ->
                 wire.sendText("synthetic"); assertEquals("authenticated", wire.text())
+                assertFailsWith<IllegalArgumentException> { wire.text() }
                 val expected = ByteArray(200_000) { (it % 251).toByte() }; val destination = java.io.ByteArrayOutputStream()
                 wire.receiveBlob(destination, expected.size.toLong(), lanSyncHash(expected))
                 assertContentEquals(expected, destination.toByteArray())
@@ -38,7 +39,7 @@ class LanSyncTlsTest {
 
         val refusing = serverId.context { false }.serverSocketFactory.createServerSocket() as SSLServerSocket
         refusing.soTimeout = 10_000
-        refusing.needClientAuth = true; refusing.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+        refusing.needClientAuth = true; refusing.bind(InetSocketAddress("127.0.0.1", 0))
         try {
         val refusal = async(Dispatchers.IO) {
             refusing.accept().use { raw -> val accepted = raw as SSLSocket; LanSyncTls.configure(accepted); accepted.soTimeout = 10_000

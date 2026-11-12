@@ -57,6 +57,21 @@ class LanSyncWorkspaceTest {
         }
         assertEquals("同步时编辑", lanSyncJson.parseToJsonElement(Files.readString(root.resolve("entities/character_cards/a.json"))).jsonObject["name"]?.jsonPrimitive?.content)
     }
+    @Test fun malformedSourceTextRefusesBeforeReplacingAnyOriginalBytes() {
+        val root = root(); val state = root().resolve("workspace")
+        write(root, card("a", "valid"))
+        val file = root.resolve("entities/character_cards/a.json")
+        val text = Files.readString(file)
+        val marker = text.indexOf("valid")
+        assertTrue(marker >= 0)
+        val bytes = text.substring(0, marker).toByteArray(Charsets.UTF_8) + byteArrayOf(0xc3.toByte(), 0x28) +
+            text.substring(marker + 5).toByteArray(Charsets.UTF_8)
+        Files.write(file, bytes)
+        val failure = assertFailsWith<IllegalArgumentException> { workspace(root, state).capture("synthetic") }
+        assertEquals("SYNC_INVALID_UTF8", failure.message)
+        assertContentEquals(bytes, Files.readAllBytes(file))
+        assertFalse(Files.newDirectoryStream(state, "capture-*").use { it.iterator().hasNext() })
+    }
     @Test fun corruptLastPayloadIsRejectedBeforeAnyEntryChanges() {
         val root = root(); val state = root().resolve("workspace")
         write(root, card("a", "A旧")); write(root, card("b", "B旧"))

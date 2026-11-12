@@ -31,7 +31,7 @@ internal object LanSyncSlotPackages {
             val manifest = requireNotNull(zip.getEntry("manifest.json")) { "SYNC_SLOT_PACKAGE_MANIFEST" }
             require(manifest.size in 1..256 * 1024)
             val bytes = zip.getInputStream(manifest).use { it.readBytes() }
-            val nested = lanSyncJson.decodeFromJsonElement(SaveSlot.serializer(), lanSyncJson.parseToJsonElement(bytes.toString(Charsets.UTF_8)))
+            val nested = lanSyncJson.decodeFromJsonElement(SaveSlot.serializer(), lanSyncJson.parseToJsonElement(lanSyncUtf8(bytes)))
             val inner = requireNotNull(nested.packageRef); val reference = requireNotNull(library.packageRef)
             require(library.schemaVersion == 8 && nested.schemaVersion == 8 && (reference.byteLength <= 0 || reference.byteLength == Files.size(path))) { "SYNC_SLOT_PACKAGE_ENVELOPE" }
             require(library.id == nested.id && library.sessionId == nested.sessionId || library.id != nested.id && reference.fileName == "${library.id}.cbsave") { "SYNC_SLOT_PACKAGE_OWNER" }

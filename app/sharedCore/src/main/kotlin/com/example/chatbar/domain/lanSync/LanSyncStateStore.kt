@@ -23,8 +23,8 @@ data class LanSyncPairOffer(val protocol: Int = 1, val host: String, val port: I
     companion object {
         fun parse(code: String): LanSyncPairOffer {
             require(code.length <= 2048 && code.startsWith("CCB-LAN1:")) { "SYNC_PAIR_CODE" }
-            return lanSyncJson.decodeFromString<LanSyncPairOffer>(java.util.Base64.getUrlDecoder()
-                .decode(code.removePrefix("CCB-LAN1:")).toString(Charsets.UTF_8)).also { it.validate() }
+            return lanSyncJson.decodeFromString<LanSyncPairOffer>(lanSyncUtf8(java.util.Base64.getUrlDecoder()
+                .decode(code.removePrefix("CCB-LAN1:")))).also { it.validate() }
         }
     }
 }
@@ -89,7 +89,7 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
         Files.delete(root.resolve("pending-${key(peer)}.json"))
     }
     private fun read(name: String): String? = root.resolve(name).let {
-        if (Files.notExists(it, LinkOption.NOFOLLOW_LINKS)) null else lanSyncRead(it, LanSyncWire.MAX_MESSAGE).toString(Charsets.UTF_8)
+        if (Files.notExists(it, LinkOption.NOFOLLOW_LINKS)) null else lanSyncUtf8(lanSyncRead(it, LanSyncWire.MAX_MESSAGE))
     }
     private fun write(name: String, value: String) = lanSyncAtomicWrite(root.resolve(name), value.toByteArray(Charsets.UTF_8))
     private fun key(peer: String): String = peer.also { require(it.matches(Regex("[0-9a-f]{64}"))) }

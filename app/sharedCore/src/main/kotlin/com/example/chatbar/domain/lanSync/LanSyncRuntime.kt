@@ -385,8 +385,9 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     }
     private fun showFailure(failure: Exception) {
         if (failure !is java.io.IOException) retryPaused = true
-        val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z_]+")) }
+        val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]+")) }
         val text = when (code) {
+            "SYNC_INVALID_UTF8" -> "文字资料含损坏编码，已停止继续写入并保留现有文件；请检查资料后重试"
             "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" -> "同步期间本机资料变化，尚未覆盖；请重试并重新检查"
             "SYNC_PAIR_EXPIRED" -> "配对码已过期，请在电脑生成新的二维码"
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"

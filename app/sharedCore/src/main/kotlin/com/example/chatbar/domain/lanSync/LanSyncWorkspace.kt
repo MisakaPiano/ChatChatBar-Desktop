@@ -48,7 +48,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 Files.newDirectoryStream(directory).use { files -> files.sortedBy { it.fileName.toString() }.forEach { file ->
                     require(file.fileName.toString().endsWith(".json")) { "SYNC_UNFINISHED_ENTITY" }
                     val raw = lanSyncRead(file, MAX_RECORD)
-                    val body = lanSyncJson.parseToJsonElement(raw.toString(Charsets.UTF_8)).jsonObject
+                    val body = lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                     val id = requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_ENTITY_ID" }
                     val original = LanSyncRecord(type, id, body); LanSyncScope.validateRecord(original)
                     require(file.fileName.toString() == "${LanSyncScope.storageId(original)}.json") { "SYNC_STORAGE_ID" }
@@ -139,7 +139,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             val nested = java.util.zip.ZipFile(source.toFile()).use { zip ->
                                 val entry = requireNotNull(zip.getEntry("manifest.json")); require(entry.size in 1..256 * 1024)
                                 val raw = zip.getInputStream(entry).use { it.readBytes() }
-                                lanSyncJson.parseToJsonElement(raw.toString(Charsets.UTF_8)).jsonObject
+                                lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                             }
                             val sourceId = nested.getValue("id").jsonPrimitive.content
                             val filename = if (wire.id != sourceId) "${wire.id}.cbsave" else "lan-${parts[2]}-${parts[3]}.cbsave"
@@ -156,7 +156,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 }
             }
             val localBody = existing?.takeIf { wire.type == "chat_sessions" }?.let {
-                val original = lanSyncJson.parseToJsonElement(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD).toString(Charsets.UTF_8)).jsonObject
+                val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD))).jsonObject
                 JsonObject(materialized + original.filterKeys { it in LanSyncScope.localFields })
             } ?: materialized
             LanSyncScope.validateRecord(wire.copy(body = localBody))
@@ -202,7 +202,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(transactionId.matches(Regex("[a-f0-9-]{36}")))
         val transaction = stateRoot.resolve("transaction-$transactionId")
         if (!Files.exists(transaction.resolve("applied")) || Files.exists(transaction.resolve("retired"))) return
-        val journal = lanSyncJson.decodeFromString<LanSyncJournal>(lanSyncRead(transaction.resolve("journal.json"), LanSyncWire.MAX_MESSAGE).toString(Charsets.UTF_8))
+        val journal = lanSyncJson.decodeFromString<LanSyncJournal>(lanSyncUtf8(lanSyncRead(transaction.resolve("journal.json"), LanSyncWire.MAX_MESSAGE)))
         require(journal.transaction == transactionId)
         val payloads = journal.entries.flatMap { entry -> listOfNotNull(
             entry.oldHash?.let { transaction.resolve("${entry.index}.old") to it },
@@ -214,8 +214,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     private fun recoverTransaction(transaction: Path) {
         val bytes = lanSyncRead(transaction.resolve("journal.json"), LanSyncWire.MAX_MESSAGE)
-        require(lanSyncRead(transaction.resolve("authorized"), 128).toString(Charsets.UTF_8) == lanSyncHash(bytes)) { "SYNC_JOURNAL_DAMAGED" }
-        val journal = lanSyncJson.decodeFromString<LanSyncJournal>(bytes.toString(Charsets.UTF_8))
+        require(lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128)) == lanSyncHash(bytes)) { "SYNC_JOURNAL_DAMAGED" }
+        val journal = lanSyncJson.decodeFromString<LanSyncJournal>(lanSyncUtf8(bytes))
         require(transaction.fileName.toString() == "transaction-${journal.transaction}" && journal.entries.map { it.path }.toSet().size == journal.entries.size)
         // Validate the entire recovery authority before the first entity changes.
         journal.entries.forEach { entry ->

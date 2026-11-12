@@ -113,7 +113,7 @@ class LanSyncWire(private val socket: SSLSocket) : Closeable {
         return ByteArray(size).also(input::readFully)
     }
     fun sendText(value: String) = send(value.toByteArray(Charsets.UTF_8))
-    fun text(): String = receive().toString(Charsets.UTF_8)
+    fun text(): String = lanSyncUtf8(receive())
     fun sendBlob(source: InputStream, length: Long) {
         require(length in 1..LanSyncSnapshot.MAX_RESOURCE)
         output.writeLong(length)
