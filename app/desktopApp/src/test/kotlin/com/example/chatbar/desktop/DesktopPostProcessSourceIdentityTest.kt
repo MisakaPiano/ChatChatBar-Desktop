@@ -49,7 +49,7 @@ class DesktopPostProcessSourceIdentityTest {
             val inputDispatcher = StandardTestDispatcher(clock)
             var composedRecords: List<DesktopPostProcessResultRecord> = emptyList()
             val scene = ImageComposeScene(650, 1100, coroutineContext = edt) {
-                val currentRecords by controller.postProcessResults.records.collectAsState()
+                val currentRecords = controller.postProcessResults.records.collectAsState().value
                 SideEffect { composedRecords = currentRecords }
                 DesktopImagePostProcessPanel(selected, controller, inputDispatcher) { error("Use must remain explicit") }
             }
