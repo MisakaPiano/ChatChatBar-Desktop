@@ -131,7 +131,13 @@ object LanSyncCompare {
                         ?: (l + r).firstOrNull { it.type == "moment_posts" } ?: (l + r).first()
                     val title = listOf("displayTitleOverride", "title", "name", "senderName").firstNotNullOfOrNull {
                         (owner.body[it] as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank)
-                    } ?: when (owner.type) { "moment_tasks" -> "朋友圈计划"; "player_setting" -> "全局玩家设定"; else -> owner.type }
+                    } ?: when (owner.type) {
+                        "moment_tasks" -> "朋友圈计划"
+                        "player_setting" -> "全局玩家设定"
+                        "novelai_generation_history" -> "生图历史"
+                        LanSyncPostProcess.TYPE -> "电脑后处理历史"
+                        else -> owner.type
+                    }
                     conflicts += LanSyncConflict(key, title.take(160), a == null, b == null, l.size, r.size,
                         canKeepBoth = (l + r).none { it.singleton })
                 }

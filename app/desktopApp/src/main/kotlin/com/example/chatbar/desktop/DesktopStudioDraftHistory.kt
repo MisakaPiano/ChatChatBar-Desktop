@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
+import com.example.chatbar.domain.image.NovelAiStudioHistoryTimeline
+import com.example.chatbar.domain.image.NovelAiStudioHistoryJournal
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -20,19 +21,8 @@ private class DesktopStudioEditingContext(val boundary: DesktopStudioTextBoundar
     companion object Key : CoroutineContext.Key<DesktopStudioEditingContext>
 }
 
-@Serializable
-internal data class DesktopStudioHistoryTimeline(
-    val entries: List<NovelAiStudioDraft> = emptyList(), val cursor: Int = 0,
-) {
-    fun current() = entries.getOrNull(cursor)
-}
-
-/** Write-ahead intent keeps both alternatives referenced until the draft write is resolved. */
-@Serializable
-internal data class DesktopStudioHistoryJournal(
-    val committed: DesktopStudioHistoryTimeline = DesktopStudioHistoryTimeline(),
-    val pending: DesktopStudioHistoryTimeline? = null,
-)
+internal typealias DesktopStudioHistoryTimeline = NovelAiStudioHistoryTimeline
+internal typealias DesktopStudioHistoryJournal = NovelAiStudioHistoryJournal
 
 internal data class DesktopStudioHistoryAvailability(val undo: Boolean = false, val redo: Boolean = false,
     val replayRevision: Long = 0)
@@ -78,15 +68,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
             val legacy = loadUndoDraft()?.let(::snapshot)?.takeIf { it != current }
             DesktopStudioHistoryTimeline(listOfNotNull(legacy, current), if (legacy == null) 0 else 1)
         } else {
-            fun validate(t: DesktopStudioHistoryTimeline) {
-                require(t.entries.isNotEmpty() && t.entries.size <= MAX_ENTRIES && t.cursor in t.entries.indices)
-            }
-            validate(journal.committed); journal.pending?.let(::validate)
-            when (current) {
-                journal.pending?.current() -> requireNotNull(journal.pending)
-                journal.committed.current() -> journal.committed
-                else -> error("Studio history and draft require recovery")
-            }
+            journal.resolved(current)
         }
         store(DesktopStudioHistoryJournal(value))
         publish(value)
@@ -165,7 +147,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
 
     companion object {
         const val ENTITY = "desktop_studio_edit_history"
-        const val MAX_ENTRIES = 101
+        const val MAX_ENTRIES = NovelAiStudioHistoryTimeline.MAX_ENTRIES
         private const val MAX_BYTES = 3 * 1024 * 1024
     }
 }
