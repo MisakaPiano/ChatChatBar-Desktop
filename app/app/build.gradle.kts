@@ -110,6 +110,7 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
+        resValues = true
       compose = true
       aidl = false
       buildConfig = true

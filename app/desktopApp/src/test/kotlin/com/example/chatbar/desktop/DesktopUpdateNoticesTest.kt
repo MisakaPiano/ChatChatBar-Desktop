@@ -5,6 +5,17 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopUpdateNoticesTest {
+    @Test fun `isolated LAN preview refuses startup and manual public update queries`(): Unit = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        var calls = 0
+        val notices = DesktopUpdateNotices(scope, "0.1.0-lan.1", null, startupAllowed = false,
+            disabledReason = "isolated synthetic delivery") { calls++; DesktopUpdateResult(null, false) }
+        try {
+            assertNull(notices.checkOnStartup()); assertNull(notices.check())
+            assertEquals(0, calls); assertNull(notices.state.value.result)
+            assertEquals("isolated synthetic delivery", notices.state.value.error)
+        } finally { notices.closeAndDrain(); scope.cancel() }
+    }
     private val installed = "0.1.0-preview.100"
     private val next = "0.1.0-preview.101"
     private fun result(version: String = next, newer: Boolean = true) = DesktopUpdateResult(

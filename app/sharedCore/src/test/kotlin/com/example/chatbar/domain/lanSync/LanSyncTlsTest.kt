@@ -10,7 +10,9 @@ class LanSyncTlsTest {
     @Test fun actualMutualTlsStreamsAndRejectsAnUnpinnedIdentity() = runBlocking {
         val serverId = LanSyncTlsIdentity.create(); val clientId = LanSyncTlsIdentity.create()
         val server = serverId.context { it == clientId.fingerprint }.serverSocketFactory.createServerSocket() as SSLServerSocket
+        server.soTimeout = 10_000
         server.needClientAuth = true; server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+        try {
         val receiving = async(Dispatchers.IO) {
             server.accept().use { raw ->
                 val socket = raw as SSLSocket; LanSyncTls.configure(socket); socket.startHandshake()
@@ -31,18 +33,24 @@ class LanSyncTlsTest {
                 assertContentEquals(expected, destination.toByteArray())
             }
         }
-        receiving.await(); server.close()
+        receiving.await()
+        } finally { server.close() }
 
         val refusing = serverId.context { false }.serverSocketFactory.createServerSocket() as SSLServerSocket
+        refusing.soTimeout = 10_000
         refusing.needClientAuth = true; refusing.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+        try {
         val refusal = async(Dispatchers.IO) {
-            refusing.accept().use { raw -> assertFails { (raw as SSLSocket).startHandshake() } }
+            refusing.accept().use { raw -> val accepted = raw as SSLSocket; LanSyncTls.configure(accepted); accepted.soTimeout = 10_000
+                assertFails { accepted.startHandshake() } }
         }
         withContext(Dispatchers.IO) {
             val client = clientId.context { it == serverId.fingerprint }.socketFactory.createSocket("127.0.0.1", refusing.localPort) as SSLSocket
+            LanSyncTls.configure(client); client.soTimeout = 10_000
             client.use { runCatching { it.startHandshake(); it.outputStream.write(1); it.inputStream.read() } }
         }
-        refusal.await(); refusing.close()
+        refusal.await()
+        } finally { refusing.close() }
     }
     @Test fun numericLocalAddressPolicyRefusesDnsLoopbackAndInternet() {
         listOf("localhost", "127.0.0.1", "8.8.8.8", "https://192.168.1.1", "192.168.1.1/path", "192.168.01.1").forEach {

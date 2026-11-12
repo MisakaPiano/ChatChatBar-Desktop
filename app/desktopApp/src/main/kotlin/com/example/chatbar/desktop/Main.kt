@@ -122,13 +122,16 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val modalActivity = remember { DesktopModalActivity() }
                         val updateNotices = remember {
                             val identity = DesktopBuildIdentity.load()
+                            val lanPreview = identity.version.substringAfter('-', "").startsWith("lan.")
                             val checker = DesktopUpdateChecker(proxySettings = updateProxySettings)
                             DesktopUpdateNotices(applicationScope, identity.version,
                                 System.getenv("LOCALAPPDATA")?.let { DesktopUpdateNoticeHints(java.nio.file.Path.of(it).resolve("ChatChatBarDesktopUpdates")) },
-                                startupAllowed = System.getProperty("jpackage.app-path") != null,
-                                startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null) { previews ->
+                                startupAllowed = !lanPreview && System.getProperty("jpackage.app-path") != null,
+                                startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null,
+                                disabledReason = if (lanPreview) "局域网预览包独立交付，不连接公开更新通道；后续包从当前对话领取。" else null,
+                                query = { previews ->
                                 checker.check(identity.version, previews)
-                            }
+                            })
                         }
                         DisposableEffect(updateNotices) { onDispose { updateNotices.close() } }
                         val backupSettingsController = remember { DesktopAutomaticBackupSettingsController(appContainer.automaticBackupRuntime, applicationScope) }

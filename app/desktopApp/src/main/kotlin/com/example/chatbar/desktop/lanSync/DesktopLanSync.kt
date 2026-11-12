@@ -26,6 +26,11 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                     app.voiceAudioStore.persist(session, artifact, it, Files.size(source)).path
                 }
             }
+        }, validateResource = { kind, path ->
+            if (kind == "images") {
+                require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
+                DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
+            }
         })
     val runtime by lazy { LanSyncRuntime(stateStore, workspace, object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
@@ -36,8 +41,11 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
 }
 
 internal object DesktopLanSyncStartup {
-    fun localRoot(root: Path): Path = WindowsSecretRootResolver.resolve(root).resolve("lan-sync-v1")
-        .resolve(lanSyncHash(root.toString().toByteArray(Charsets.UTF_8)))
+    fun localRoot(root: Path): Path {
+        val base = WindowsSecretRootResolver.resolve().parent.resolve("ChatChatBarDesktopLanSync")
+        require(!base.startsWith(root) && !root.startsWith(base)) { "SYNC_STATE_ROOT_OVERLAP" }
+        return base.resolve(lanSyncHash(root.toString().toByteArray(Charsets.UTF_8)))
+    }
     fun recover(root: Path) {
         val workspace = localRoot(root).resolve("workspace")
         if (!Files.exists(workspace, LinkOption.NOFOLLOW_LINKS)) return

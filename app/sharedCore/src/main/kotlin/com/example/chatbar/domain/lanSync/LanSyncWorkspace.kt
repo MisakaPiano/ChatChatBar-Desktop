@@ -19,6 +19,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val assetResource: (String) -> ByteArray? = { null },
     private val audioResource: (String, String, String, Path) -> String = { _, _, _, file -> file.toString() },
     private val observeJournal: (String, Int) -> Unit = { _, _ -> },
+    private val validateResource: (String, Path) -> Unit = { _, _ -> },
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
 
@@ -29,6 +30,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         try {
         val blobs = linkedMapOf<String, Path>(); val resources = linkedMapOf<String, Long>()
         val records = mutableListOf<LanSyncRecord>(); val sourceFiles = linkedMapOf<String, String>()
+        val checkedResources = hashSetOf<Pair<String, String>>()
         val excluded = linkedSetOf<String>()
         val entities = dataRoot.resolve("entities")
         if (Files.exists(entities, LinkOption.NOFOLLOW_LINKS)) {
@@ -62,6 +64,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             }
                             if (field == "packageFile") LanSyncSlotPackages.validate(resource, body)
                             val hash = freeze(resource, frozen, blobs, resources, scratch)
+                            if (checkedResources.add(kind to hash)) validateResource(kind, requireNotNull(blobs[hash]))
                             val suffix = reference.substringAfterLast('.', "bin").lowercase().takeIf {
                                 it.matches(Regex("[a-z0-9]{1,8}"))
                             } ?: "bin"
@@ -105,6 +108,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
         Files.createDirectory(transaction)
         val changes = linkedMapOf<String, ByteArray?>()
+        val checkedResources = hashSetOf<Pair<String, String>>()
         val desired = plan.snapshot.records.associateBy { "entities/${it.type}/${LanSyncScope.storageId(it)}.json" }
         val currentRecords = current.snapshot.records.associateBy { it.key }
         desired.forEach { (relative, wire) ->
@@ -118,6 +122,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     val source = requireNotNull(blobs[parts[2]]) { "SYNC_RESOURCE_MISSING" }
                     val size = requireNotNull(plan.snapshot.resources[parts[2]]) { "SYNC_RESOURCE_MANIFEST" }
                     require(hashFile(source, size) == parts[2]) { "SYNC_RESOURCE_DAMAGED" }
+                    if (checkedResources.add(parts[1] to parts[2])) validateResource(parts[1], source)
                     if (parts[1] == "audio") {
                         audioResource(requireNotNull(wire.text("sessionId")), wire.id, parts[2], source)
                     } else {

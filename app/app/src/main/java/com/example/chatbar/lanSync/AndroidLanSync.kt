@@ -37,6 +37,13 @@ class AndroidLanSync(private val app: ChatBarApp) {
             val target = dataRoot.resolve("audio/lan-$hash.mp3")
             LanSyncBlobs.publish(source, target, Files.size(source), hash, root)
             target.toString()
+        }, validateResource = { kind, path ->
+            if (kind == "images") {
+                require(Files.size(path) <= 32L * 1024 * 1024) { "SYNC_IMAGE_BUDGET" }
+                val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { android.graphics.BitmapFactory.decodeStream(it, null, options) }
+                require(options.outWidth > 0 && options.outHeight > 0 && options.outWidth.toLong() * options.outHeight <= 32_000_000) { "SYNC_IMAGE_INVALID" }
+            }
         })
     val runtime by lazy { LanSyncRuntime(store, workspace, object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) {
