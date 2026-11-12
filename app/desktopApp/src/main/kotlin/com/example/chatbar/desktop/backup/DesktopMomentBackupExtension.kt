@@ -10,6 +10,10 @@ internal object DesktopMomentBackupExtension {
     const val FIELD = "desktopImageVersions"
     const val TASK_APPROVAL_FIELD = "requiresLocalScheduleApproval"
     fun taskSnapshot(value: JsonObject): MomentTaskSnapshot {
+        if (TASK_APPROVAL_FIELD in value) {
+            val marker = value[TASK_APPROVAL_FIELD] as? JsonPrimitive
+            require(marker != null && !marker.isString && marker.booleanOrNull != null) { "MOMENT_TASK_APPROVAL_TYPE" }
+        }
         if (TASK_APPROVAL_FIELD in value) backupJson.decodeFromJsonElement(MomentTask.serializer(), value)
         return backupJson.decodeFromJsonElement(MomentTaskSnapshot.serializer(), JsonObject(value - TASK_APPROVAL_FIELD))
     }

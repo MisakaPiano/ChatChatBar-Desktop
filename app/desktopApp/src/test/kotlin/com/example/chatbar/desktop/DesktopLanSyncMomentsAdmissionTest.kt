@@ -19,7 +19,9 @@ class DesktopLanSyncMomentsAdmissionTest {
         assertTrue(json.decodeFromJsonElement(MomentTask.serializer(), imported).requiresLocalScheduleApproval)
         val transported = DesktopBackupPolicy.entity("entities/moment_tasks/${task.id}.json", imported.toString().toByteArray(), exporting = true, modern = true)
         assertEquals(JsonPrimitive(true), transported[DesktopMomentBackupExtension.TASK_APPROVAL_FIELD])
-        assertFails { DesktopMomentBackupExtension.taskSnapshot(JsonObject(imported + (DesktopMomentBackupExtension.TASK_APPROVAL_FIELD to JsonPrimitive("true")))) }
+        for (invalid in listOf(JsonPrimitive("true"), JsonNull, JsonPrimitive(1))) {
+            assertFails { DesktopMomentBackupExtension.taskSnapshot(JsonObject(imported + (DesktopMomentBackupExtension.TASK_APPROVAL_FIELD to invalid))) }
+        }
         assertFails { DesktopMomentBackupExtension.taskSnapshot(JsonObject(imported + ("unknownField" to JsonPrimitive(1)))) }
     }
 }
