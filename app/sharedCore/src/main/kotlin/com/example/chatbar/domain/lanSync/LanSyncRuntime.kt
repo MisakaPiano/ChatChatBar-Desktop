@@ -20,7 +20,7 @@ import javax.net.ssl.SSLSocket
 data class LanSyncUiState(val status: String = "两端打开此页面后可同步", val busy: Boolean = false,
     val peers: List<LanSyncPeer> = emptyList(), val addresses: List<String> = emptyList(),
     val offer: LanSyncPairOffer? = null, val conflicts: List<LanSyncConflict> = emptyList(),
-    val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null)
+    val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null, val failureCode: String? = null)
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
@@ -57,7 +57,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     @Volatile private var retryPaused = false
 
     fun refresh() { _state.value = _state.value.copy(peers = store.peers()) }
-    fun requestSync() { retryPaused = false; queueSync(); _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接") }
+    fun requestSync() { retryPaused = false; queueSync(); _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接", failureCode = null) }
     fun resolveConflicts(values: Map<String, LanSyncChoice>) { choices?.complete(values) }
     fun revoke(fingerprint: String) { store.revoke(fingerprint); refresh() }
     fun createPreviewSample() { sample = scope.launch { operation.withLock { safely {
@@ -106,9 +106,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val socket = server.accept() as SSLSocket
                 // One bounded handshake/operation at a time; unknown clients get no data protocol access.
                 sockets += socket
-                try { socket.use { handleHost(it) } }
+                var trustedData = false
+                try { socket.use { handleHost(it) { trustedData = true } } }
                 catch (cancelled: CancellationException) { throw cancelled }
-                catch (failure: Exception) { showFailure(failure) }
+                catch (failure: Exception) { showFailure(failure, pauseRetry = trustedData) }
                 finally { sockets -= socket }
             }
         } }
@@ -161,7 +162,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         }
     }
 
-    private suspend fun handleHost(socket: SSLSocket) {
+    private suspend fun handleHost(socket: SSLSocket, trustedData: () -> Unit) {
         val requestToken = syncRequest.get()
         require(network.accepts(socket.inetAddress)) { "SYNC_LOCAL_ADDRESS" }
         LanSyncTls.configure(socket); socket.startHandshake()
@@ -191,6 +192,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             }
             require(store.peers().any { it.fingerprint == peerId }) { "SYNC_UNTRUSTED_DEVICE" }
             require(hello.command == "POLL" || hello.command == "SYNC") { "SYNC_COMMAND" }
+            trustedData()
+            if (retryPaused) { wire.sendText("PAUSED"); return }
             var pending = store.pending(peerId)
             if (hello.command == "POLL" && !requested && pending == null) { wire.sendText("IDLE"); return }
             operation.withLock {
@@ -208,7 +211,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 }
                 require(pending != null || hello.revision == baseline.revision) { "SYNC_BASELINE_MISMATCH" }
                 wire.sendText("SYNC")
-                _state.value = _state.value.copy(busy = true, status = "正在接收并检查手机快照")
+                _state.value = _state.value.copy(busy = true, status = "正在接收并检查手机快照", failureCode = null)
                 val phone = LanSyncTransfer.receive(wire, store.root, peerId)
                 try {
                 val computer = capture()
@@ -293,7 +296,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 observe("HOST_PENDING_CLEARED", prepared.plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
                     phoneApplied && phoneSnapshot.hashes() != prepared.plan.snapshot.hashes())
-                _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes)
+                _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes, failureCode = null)
                 wire.sendText("DONE")
                 } finally { computer.close() }
                 } finally { phone.close() }
@@ -322,6 +325,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val response = wire.text()
                 require(response != "SYNC_PROTOCOL") { "SYNC_PROTOCOL" }
                 require(response != "SYNC_SCOPE_MISMATCH") { "SYNC_SCOPE_MISMATCH" }
+                if (response == "PAUSED") {
+                    // Keep the lightweight authenticated poll alive so a PC-side explicit retry
+                    // resumes both endpoints; do not resend snapshots while its owner is paused.
+                    _state.value = _state.value.copy(busy = false, failureCode = "SYNC_REMOTE_PAUSED",
+                        status = "电脑端同步已暂停，请在电脑核对提示并点同步重试；现有资料与恢复记录保留")
+                    return
+                }
                 if (response == "IDLE") return
                 if (response.startsWith("FINISHED:") && pending != null && response == "FINISHED:${pending.plan.transaction}") {
                     require(workspace.applied(pending.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
@@ -332,7 +342,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     return
                 }
                 require(response == "SYNC") { "SYNC_COMMAND" }
-                _state.value = _state.value.copy(busy = true, status = "正在准备一致快照，冲突将在电脑端显示")
+                _state.value = _state.value.copy(busy = true, status = "正在准备一致快照，冲突将在电脑端显示", failureCode = null)
                 val phone = capture()
                 try {
                 LanSyncTransfer.send(wire, phone)
@@ -403,7 +413,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 store.clearPending(peer.fingerprint, plan.transaction)
                 observe("PHONE_PENDING_CLEARED", plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
-                _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes)
+                _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes, failureCode = null)
                 } finally { received.close() }
                 } finally { phone.close() }
             } } finally { sockets -= socket }
@@ -518,8 +528,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         catch (failure: Exception) { showFailure(failure) }
         finally { _state.value = _state.value.copy(busy = false) }
     }
-    private fun showFailure(failure: Exception) {
-        if (failure !is java.io.IOException) retryPaused = true
+    private fun showFailure(failure: Exception, pauseRetry: Boolean = true) {
+        if (pauseRetry && failure !is java.io.IOException) retryPaused = true
         val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]+")) }
         val text = when (code) {
             "SYNC_INVALID_UTF8" -> "文字资料含损坏编码，已停止继续写入并保留现有文件；请检查资料后重试"
@@ -546,7 +556,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 "暂时连不上电脑：请保持两端页面打开，检查同一局域网、防火墙和电脑地址；会自动重连"
                 else "同步未完成，资料和恢复记录已保留。" + (code?.let { " 原因：$it" } ?: "请检查连接后重试。")
         }
-        _state.value = _state.value.copy(status = text, busy = false, conflicts = emptyList())
+        _state.value = _state.value.copy(status = text, busy = false, conflicts = emptyList(), failureCode = code)
     }
     fun stop() {
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null

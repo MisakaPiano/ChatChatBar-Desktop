@@ -23,12 +23,14 @@ import kotlin.test.*
 class LanSyncRuntimeTest {
     private class SyntheticLan : LanSyncNetwork {
         private val endpoints = java.util.concurrent.ConcurrentHashMap<String, Int>()
+        val connections = java.util.concurrent.atomic.AtomicInteger()
         override fun addresses() = listOf("192.168.1.2")
         override fun accepts(address: InetAddress) = address.isLoopbackAddress
         override val discoveryEnabled = false
         override fun listening(fingerprint: String, port: Int) { endpoints[fingerprint] = port }
         override fun discover(fingerprint: String) = endpoints[fingerprint]?.let { "192.168.1.2" to it }
         override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
+            connections.incrementAndGet()
             val plain = Socket()
             try {
                 plain.connect(InetSocketAddress("127.0.0.1", peer.port), 2000)
@@ -44,8 +46,9 @@ class LanSyncRuntimeTest {
         val id = store.identity().fingerprint
         val workspace = LanSyncWorkspace(root, stateRoot.resolve("workspace"), { raw -> Path.of(raw) })
         val gate = LanSyncOperationGate()
+        val exclusiveCalls = java.util.concurrent.atomic.AtomicInteger()
         fun runtime() = LanSyncRuntime(store, workspace, object : LanSyncPlatform {
-            override suspend fun exclusive(work: suspend () -> Unit) = gate.exclusive(work)
+            override suspend fun exclusive(work: suspend () -> Unit) { exclusiveCalls.incrementAndGet(); gate.exclusive(work) }
             override suspend fun reload(sessionIds: Set<String>) {}
         }, name, observe = observe, network = network)
         fun write(id: String, name: String, image: String? = null) {
@@ -144,6 +147,31 @@ class LanSyncRuntimeTest {
                 assertEquals(setOf("合成卡"), a.names()); assertEquals(a.names(), b.names())
             } finally { host.closeAndDrain(); phone.closeAndDrain() }
         }
+    }
+    @Test fun hostDataFailurePausesSnapshotsButItsExplicitRetryResumesTheRememberedPhone() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("card", "原卡")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            val revision = a.store.baseline(b.id, a.id).revision
+            val wrong = a.root.resolve("entities/character_cards.json")
+            Files.writeString(wrong, "synthetic wrong storage shape must remain")
+            host.requestSync()
+            until("PC records its source refusal") { host.state.value.failureCode == "SYNC_STORAGE_SHAPE" }
+            until("phone sees a paused owner without starting another snapshot") { phone.state.value.failureCode == "SYNC_REMOTE_PAUSED" }
+            val hostCalls = a.exclusiveCalls.get(); val phoneCalls = b.exclusiveCalls.get()
+            val previousConnections = network.connections.get()
+            until("authenticated poll keeps observing the paused owner") { network.connections.get() >= previousConnections + 2 }
+            assertEquals(hostCalls, a.exclusiveCalls.get()); assertEquals(phoneCalls, b.exclusiveCalls.get())
+            assertEquals(revision, a.store.baseline(b.id, a.id).revision)
+            assertEquals("synthetic wrong storage shape must remain", Files.readString(wrong))
+            Files.delete(wrong); a.write("later", "修正后新增")
+            // Only the failed owner needs an explicit retry; the peer has retained its poll.
+            host.requestSync(); completed(a, b, revision)
+            assertEquals(setOf("原卡", "修正后新增"), b.names())
+            assertNull(host.state.value.failureCode); assertNull(phone.state.value.failureCode)
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun hostBaselineCrashFinishesOldPendingThenActuallyExchangesNewEdit() = runBlocking {
         val network = SyntheticLan(); var crashed = false
@@ -273,6 +301,12 @@ class LanSyncRuntimeTest {
             assertTrue(a.store.peers().isEmpty()); assertTrue(b.store.peers().isEmpty())
             assertEquals(setOf("原资料"), a.names())
             assertFalse(Files.newDirectoryStream(a.stateRoot, "projection-*").use { it.iterator().hasNext() })
+            val phone = b.runtime()
+            try {
+                // Rejected unauthenticated capabilities must not pause subsequent trusted work.
+                pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+                assertEquals(setOf("原资料"), b.names())
+            } finally { phone.closeAndDrain() }
         } finally { host.closeAndDrain() }
     }
     @Test fun existingCommonScopeExpandsWithoutResetAndInterruptedExpansionCannotDeleteNewTypesEarly() = runBlocking {
