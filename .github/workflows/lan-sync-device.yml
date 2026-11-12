@@ -22,6 +22,17 @@ jobs:
           git worktree add --detach "$sourceDir" "$sourceSha"
           test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
           echo "CCB_PLATFORM_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import json, os
+          request = json.load(open('.github/lan-sync-device-request.json'))
+          chosen = request.get('testClass')
+          if chosen is None:
+              argument = '-Pandroid.testInstrumentationRunnerArguments.package=com.example.chatbar.lanSync'
+          else:
+              assert chosen == 'com.example.chatbar.lanSync.LanSyncUiTest'
+              argument = '-Pandroid.testInstrumentationRunnerArguments.class=' + chosen
+          with open(os.environ['GITHUB_ENV'], 'a') as env: env.write('CCB_PLATFORM_TEST_ARGUMENT=' + argument + '\n')
+          PY
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -43,7 +54,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: cd "$CCB_PLATFORM_SOURCE/app" && chmod +x gradlew && ./gradlew :app:connectedLanPreviewAndroidTest -PlanSyncDeviceTests=true -Pandroid.testInstrumentationRunnerArguments.package=com.example.chatbar.lanSync --no-daemon --stacktrace
+          script: cd "$CCB_PLATFORM_SOURCE/app" && chmod +x gradlew && ./gradlew :app:connectedLanPreviewAndroidTest -PlanSyncDeviceTests=true "$CCB_PLATFORM_TEST_ARGUMENT" --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,7 +1,8 @@
 {
   "kind": "CCB_LAN_MINIMUM_PLATFORM_REQUEST",
-  "sourceSha": "747bcc56464ffa8708e0e6ebe242946d62e6230a",
+  "sourceSha": "92d6473056fc4e3e931f10783a73b94366b972b5",
   "api": 26,
-  "scope": "Existing7 native owner/UI/platform tests plus1 actual Android Runtime/Keystore/Moment PNG versions/reverse edits/reopen/address rediscovery, controlled loopback endpoints",
-  "purpose": "Full new Moment snapshot/storage/media path on API26; synthetic isolated roots and no provider calls; not physical Wi-Fi or Windows interoperability proof"
+  "scope": "Only changed production sample-v2 activity/repositories/images/dormant plan creation and lifecycle method",
+  "purpose": "Targeted sample UI method only; source747 other8 runtime/owner methods already separately verified; no model calls",
+  "testClass": "com.example.chatbar.lanSync.LanSyncUiTest"
 }
