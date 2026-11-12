@@ -360,7 +360,7 @@ class LanSyncRuntimeTest {
                     a.store.baseline(b.id, a.id).revision == b.store.baseline(a.id, b.id).revision
             }
             for (end in listOf(a, b)) {
-                assertEquals(setOf("电脑应用后修改", "手机应用后新增"), end.names())
+                assertEquals(setOf("电脑应用后修改", "手机应用后新增", "phone-format"), end.names())
                 assertFalse(Files.exists(end.root.resolve("entities/format_cards/pc-format.json")))
                 assertTrue(Files.exists(end.root.resolve("entities/format_cards/phone-format.json")))
                 assertTrue(ancestor.transaction in end.store.baseline(if (end === a) b.id else a.id, end.id).receipts)
