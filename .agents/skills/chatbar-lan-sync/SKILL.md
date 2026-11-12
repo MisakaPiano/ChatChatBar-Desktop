@@ -5,6 +5,9 @@ description: Maintain paired same-LAN Android/Desktop sync, mutual TLS discovery
 
 # LAN Sync
 
+- Copied conversations persist optional `ChatSession.lanSyncOrigin` (parent, transaction, source device) in their user-data record; cumulative peer receipts retain mappings as well. Message physical keys follow the existing `<sessionId>_<messageId>` contract. Android observes the repository's sync revision to refresh messages/memory/slots without replacing its composer.
+- Android `lanPreview` is a separate `com.example.chatbar.lansync` application/data area, named CCB 局域网预览. Ordinary debug/release identity remains unchanged. It is a Fork test build, not official Android integration or permission to overwrite an existing phone install.
+
 - Shared implementation: `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/`. `LanSyncScope` declares the negotiated complete coverage; excluded stores are informational and never deletion authority. `LanSyncModel/Plan` use three-way whole-conversation units and deterministic fork identities. Graph/identity/memory-proof adapters originate from the established Desktop backup implementations; keep their opaque-text, version and ancestry behavior aligned.
 - `LanSyncWorkspace` normalizes resource references to content hashes, captures immutable blobs and compares the local source again before journal authorization. Its journal is platform-local, outside portable app data. Bootstrap recovery must precede repositories; complete journal/payload/target validation precedes publication.
 - `LanSyncTls` uses P-256 device certificates and pinned mutual TLS 1.2/1.3 AEAD. A two-minute one-use QR capability admits initial pairing, with explicit phone confirmation. Private identity bytes use DPAPI or Android Keystore. UDP39237 supplies address hints only; a pinned TLS handshake authenticates every discovered endpoint.

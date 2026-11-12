@@ -47,10 +47,12 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     val raw = lanSyncRead(file, MAX_RECORD)
                     val body = lanSyncJson.parseToJsonElement(raw.toString(Charsets.UTF_8)).jsonObject
                     val id = requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_ENTITY_ID" }
-                    require(file.fileName.toString() == "$id.json") { "SYNC_STORAGE_ID" }
                     val original = LanSyncRecord(type, id, body); LanSyncScope.validateRecord(original)
+                    require(file.fileName.toString() == "${LanSyncScope.storageId(original)}.json") { "SYNC_STORAGE_ID" }
                     val normalized = LanSyncScope.normalize(type, mapResources(body) { reference, field ->
-                        if (reference.isBlank() || reference.startsWith("chatbar-save-slot-") || reference.startsWith("omitted-image:")) reference else {
+                        if (reference.isBlank() || reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) ||
+                            type == "save_slots" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
+                                reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX))) reference else {
                             val kind = if (field == "packageFile") "packages" else if (field == "audioPath") "audio" else if (field in setOf("filePath", "filePaths", "path")) "documents" else "images"
                             val resource = if (reference.startsWith("asset:")) {
                                 val bytes = requireNotNull(assetResource(reference)) { "SYNC_ASSET_UNAVAILABLE" }
@@ -103,7 +105,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
         Files.createDirectory(transaction)
         val changes = linkedMapOf<String, ByteArray?>()
-        val desired = plan.snapshot.records.associateBy { "entities/${it.type}/${it.id}.json" }
+        val desired = plan.snapshot.records.associateBy { "entities/${it.type}/${LanSyncScope.storageId(it)}.json" }
         val currentRecords = current.snapshot.records.associateBy { it.key }
         desired.forEach { (relative, wire) ->
             val existing = currentRecords[wire.key]

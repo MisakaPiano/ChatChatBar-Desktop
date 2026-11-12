@@ -614,6 +614,14 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
     private fun observeSessionChanges() {
         viewModelScope.launch {
+            var first = true
+            chatRepository.lanSyncRevision.collect {
+                if (first) first = false else {
+                    refreshMessages(); refreshSaveSlots(); refreshRagMemoryChunks(); refreshLongTermMemory()
+                }
+            }
+        }
+        viewModelScope.launch {
             chatRepository.observeSessions().collect { sessions ->
                 sessions.find { it.id == sessionId }?.let { updatedSession ->
                     val modelChanged = _session.value?.modelId != updatedSession.modelId

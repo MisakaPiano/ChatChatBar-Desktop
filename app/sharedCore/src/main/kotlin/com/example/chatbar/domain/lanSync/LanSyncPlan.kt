@@ -49,13 +49,18 @@ object LanSyncPlanner {
                 if (record.type == "chat_sessions" && identity.value("chat_sessions", record.id) != record.id) {
                     val title = (mapped["displayTitleOverride"] as? JsonPrimitive)?.contentOrNull
                         ?: (mapped["title"] as? JsonPrimitive)?.contentOrNull ?: "对话"
-                    JsonObject(mapped + ("displayTitleOverride" to JsonPrimitive(title.take(60) + "（同步分支）")))
+                    JsonObject(mapped + mapOf("displayTitleOverride" to JsonPrimitive(title.take(60) + "（同步分支）"),
+                        "lanSyncOrigin" to buildJsonObject {
+                            put("parentSessionId", record.id); put("transaction", transaction); put("sourceDeviceId", phone.deviceId)
+                        }))
                 } else mapped
             }
             record.copy(id = requireNotNull(LanSyncScope.identity(record.type, body)), body = body)
         }
-        val result = LanSyncSnapshot(deviceId = computer.deviceId, records = retained + rewritten,
-            resources = computer.resources + phone.resources, excludedTypes = computer.excludedTypes + phone.excludedTypes)
+        val records = retained + rewritten
+        val result = LanSyncSnapshot(deviceId = computer.deviceId, records = records,
+            resources = (computer.resources + phone.resources).filterKeys { it in LanSyncScope.referencedResources(records) },
+            excludedTypes = computer.excludedTypes + phone.excludedTypes)
         result.validate()
         LanSyncScope.validateGraph(result)
         return LanSyncPlan(transaction, result, parents)

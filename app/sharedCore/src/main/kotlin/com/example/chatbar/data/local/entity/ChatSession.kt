@@ -44,6 +44,9 @@ data class SessionPlayerRole(val cardId: String, val personId: String,
 }
 
 @Serializable
+data class LanSyncConversationOrigin(val parentSessionId: String, val transaction: String, val sourceDeviceId: String)
+
+@Serializable
 @OptIn(ExperimentalSerializationApi::class)
 data class ChatSession(
     val id: String,
@@ -109,7 +112,9 @@ data class ChatSession(
     val lastMessageRole: MessageRole? = null,
     val timedWorldInfo: Map<String, TimedEffectState> = emptyMap(),
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val lanSyncOrigin: LanSyncConversationOrigin? = null,
 ) {
     init { require(desktopCharacterParticipation.map { it.cardId }.distinct().size == desktopCharacterParticipation.size) }
     fun resolvedNovelAiImageModel(

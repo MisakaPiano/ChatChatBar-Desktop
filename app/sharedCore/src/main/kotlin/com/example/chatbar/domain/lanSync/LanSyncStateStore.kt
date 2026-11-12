@@ -63,7 +63,8 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
         val baseline = LanSyncBaseline(peer, plan.transaction, plan.snapshot.hashes(),
             (previous.receipts + plan.transaction).takeLast(64), owner, plan.snapshot.coveredTypes)
         write("baseline-${key(peer)}.json", lanSyncJson.encodeToString(baseline))
-        write("receipt-${key(peer)}.json", lanSyncJson.encodeToString(plan.parents))
+        val previousParents = read("receipt-${key(peer)}.json")?.let { lanSyncJson.decodeFromString<Map<String, String>>(it) }.orEmpty()
+        write("receipt-${key(peer)}.json", lanSyncJson.encodeToString(previousParents + plan.parents))
     }
     @Synchronized fun pending(peer: String): LanSyncPending? = read("pending-${key(peer)}.json")?.let { lanSyncJson.decodeFromString(it) }
     @Synchronized fun pending(value: LanSyncPending) = write("pending-${key(value.peerId)}.json", lanSyncJson.encodeToString(value))

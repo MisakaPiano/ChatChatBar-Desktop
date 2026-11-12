@@ -33,6 +33,8 @@ object LanSyncScope {
         }
         return (body[if (type == "memory_states") "sessionId" else "id"] as? JsonPrimitive)?.contentOrNull
     }
+    fun storageId(record: LanSyncRecord): String = if (record.type == "chat_messages")
+        "${requireNotNull(record.text("sessionId"))}_${record.id}" else record.id
 
     fun validateRecord(record: LanSyncRecord) {
         val serializer = requireNotNull(schemas[record.type]) { "SYNC_UNSUPPORTED_TYPE" }
@@ -48,13 +50,32 @@ object LanSyncScope {
 
     fun validateGraph(snapshot: LanSyncSnapshot) {
         snapshot.records.forEach(::validateRecord)
+        val referenced = linkedSetOf<String>()
+        snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
+            when {
+                reference.isBlank() || reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
+                record.type == "save_slots" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
+                    reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) -> Unit
+                else -> {
+                    val parts = reference.split('/')
+                    require(parts.size == 4 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages") &&
+                        parts[2].matches(Regex("[a-f0-9]{64}")) && parts[3].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_EXTERNAL_WIRE_REFERENCE" }
+                    require((field == "packageFile") == (parts[1] == "packages") && (field == "audioPath") == (parts[1] == "audio")) { "SYNC_RESOURCE_KIND" }
+                    require(parts[2] in snapshot.resources) { "SYNC_RESOURCE_MANIFEST" }
+                    referenced += parts[2]
+                }
+            }
+            reference
+        } }
+        require(referenced == snapshot.resources.keys) { "SYNC_UNREFERENCED_RESOURCE" }
         val ids = snapshot.records.groupBy { it.type }.mapValues { (_, rows) -> rows.map { it.id }.toSet() }
         val messages = snapshot.records.filter { it.type == "chat_messages" }.associateBy { it.id }
         snapshot.records.forEach { record ->
             val session = record.text("sessionId")
             if (session != null) require(session in ids["chat_sessions"].orEmpty()) { "SYNC_ORPHAN_SESSION" }
             if (record.type == "chat_sessions") {
-                require(record.text("characterCardId") in ids["character_cards"].orEmpty()) { "SYNC_MISSING_CHARACTER" }
+                // Existing archived conversations deliberately retain a missing card identity.
+                require(!record.text("characterCardId").isNullOrBlank()) { "SYNC_MISSING_CHARACTER_ID" }
                 record.text("formatCardId")?.let { require(it in ids["format_cards"].orEmpty()) { "SYNC_MISSING_FORMAT" } }
             }
             if (record.type == "generated_voice_messages") {
@@ -65,5 +86,12 @@ object LanSyncScope {
         // Reuses the established shared memory ancestry checks without rewriting text.
         LanSyncMemoryProofs(snapshot.records.filter { it.type != "save_slots" }, LanSyncIdentity())
         snapshot.records.filter { it.type == "save_slots" }.forEach { LanSyncMemoryProofs(listOf(it), LanSyncIdentity()) }
+    }
+
+    fun referencedResources(records: List<LanSyncRecord>): Set<String> = buildSet {
+        records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { value, _ ->
+            if (value.startsWith("ccb-lan-v1/")) value.split('/').getOrNull(2)?.let(::add)
+            value
+        } }
     }
 }

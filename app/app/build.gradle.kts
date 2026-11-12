@@ -88,6 +88,14 @@ android {
     }
 
     buildTypes {
+        create("lanPreview") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".lansync"
+            versionNameSuffix = "-lan-preview"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("debug")
+            resValue("string", "app_name", "CCB 局域网预览")
+        }
         release {
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
