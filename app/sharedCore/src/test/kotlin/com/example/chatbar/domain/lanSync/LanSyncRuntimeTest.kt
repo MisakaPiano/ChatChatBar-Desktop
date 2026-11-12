@@ -309,6 +309,61 @@ class LanSyncRuntimeTest {
             assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun oneAppliedScopeExpansionRetainsLaterDeletionUntilBilateralAuthorityWithoutRestoringLocalFile() = runBlocking {
+        val network = SyntheticLan()
+        val interrupted = java.util.concurrent.atomic.AtomicBoolean()
+        val expanded = java.util.concurrent.atomic.AtomicBoolean()
+        val deferred = java.util.concurrent.atomic.AtomicBoolean()
+        val oldTypes = setOf("character_cards")
+        lateinit var a: End; lateinit var b: End
+        a = End("computer", network) { phase, transaction ->
+            if (phase == "HOST_BASELINE" && expanded.compareAndSet(false, true)) {
+                assertTrue(deferred.get())
+                assertEquals(transaction, b.store.baseline(a.id, b.id).revision)
+                assertTrue(Files.exists(a.root.resolve("entities/format_cards/pc-format.json")))
+                assertFalse(Files.exists(b.root.resolve("entities/format_cards/pc-format.json")))
+            }
+        }
+        b = End("phone", network) { phase, _ -> if (phase == "PHONE_APPLIED") {
+            if (interrupted.compareAndSet(false, true)) {
+                assertEquals(oldTypes, a.store.baseline(b.id, a.id).coveredTypes)
+                Files.delete(b.root.resolve("entities/format_cards/pc-format.json"))
+                b.write("phone-later", "手机应用后新增")
+                a.write("card", "电脑应用后修改")
+                throw java.io.IOException("synthetic disconnect after single-side expanded apply and later edits")
+            } else if (!expanded.get()) {
+                assertFalse(Files.exists(b.root.resolve("entities/format_cards/pc-format.json")))
+                assertTrue(Files.exists(a.root.resolve("entities/format_cards/pc-format.json")))
+                assertEquals(oldTypes, a.store.baseline(b.id, a.id).coveredTypes)
+                assertEquals(setOf("format_cards/pc-format"), b.store.pending(a.id)?.deferredDeletion?.recordKeys)
+                deferred.set(true)
+            }
+        } }
+        listOf(a, b).forEach { it.write("card", "共同原卡") }
+        val old = a.workspace.capture(a.id).use { it.snapshot.copy(coveredTypes = oldTypes) }
+        val ancestor = LanSyncPlan(java.util.UUID.randomUUID().toString(), old, emptyMap())
+        a.store.complete(b.id, a.id, ancestor); b.store.complete(a.id, b.id, ancestor)
+        a.writeFormat("pc-format"); b.writeFormat("phone-format")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync()
+            until("deferred local deletion propagates only after the first common expanded receipt") {
+                expanded.get() && !Files.exists(a.root.resolve("entities/format_cards/pc-format.json")) &&
+                    a.store.pending(b.id) == null && b.store.pending(a.id) == null &&
+                    a.store.baseline(b.id, a.id).revision == b.store.baseline(a.id, b.id).revision
+            }
+            for (end in listOf(a, b)) {
+                assertEquals(setOf("电脑应用后修改", "手机应用后新增"), end.names())
+                assertFalse(Files.exists(end.root.resolve("entities/format_cards/pc-format.json")))
+                assertTrue(Files.exists(end.root.resolve("entities/format_cards/phone-format.json")))
+                assertTrue(ancestor.transaction in end.store.baseline(if (end === a) b.id else a.id, end.id).receipts)
+            }
+            val revision = a.store.baseline(b.id, a.id).revision
+            host.requestSync(); completed(a, b, revision)
+            assertEquals(a.names(), b.names())
+            assertEquals(1, Files.newDirectoryStream(a.stateRoot, "superseded-*").use { it.count() })
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {
         for (legacyProtocol in listOf(1, 2)) for (bothApplied in listOf(false, true)) {
             val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)

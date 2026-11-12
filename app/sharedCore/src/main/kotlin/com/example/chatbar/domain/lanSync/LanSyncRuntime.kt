@@ -252,7 +252,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val prepared = if (previous == null || needsRebase) {
                     val ancestor = if (previous != null && (computerApplied || phoneApplied))
                         LanSyncBaseline(peerId, "recovery:${previous.plan.transaction}",
-                            if (computerApplied) previous.expectedRemote else previous.expectedLocal,
+                            LanSyncRebase.ancestorHashes(previous, baseline, computer.snapshot, phoneSnapshot, computerApplied),
                             ownerId = identity.fingerprint, coveredTypes = baseline.coveredTypes)
                         else baseline
                     if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
@@ -263,7 +263,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     }
                     val planned = LanSyncPlanner.plan(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
                     val plan = planned.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents, supersedes = previous?.plan?.transaction)
-                    LanSyncPending(peerId, plan, computer.snapshot.hashes(), phoneSnapshot.hashes()).also {
+                    prepareLocalPending(peerId, plan, computer.snapshot.hashes(), phoneSnapshot.hashes(),
+                        previous, computer.snapshot, computerApplied).also {
                         if (previous == null) store.pending(it) else store.replacePending(it)
                     }
                 } else previous
@@ -284,7 +285,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 observe("HOST_BASELINE", prepared.plan.transaction)
                 store.clearPending(peerId, prepared.plan.transaction)
                 observe("HOST_PENDING_CLEARED", prepared.plan.transaction)
-                finishRequest(requestToken, computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
+                finishRequest(requestToken, prepared.deferredDeletion != null || computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
                     phoneApplied && phoneSnapshot.hashes() != prepared.plan.snapshot.hashes())
                 _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes)
                 wire.sendText("DONE")
@@ -378,7 +379,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 val prior = store.pending(peer.fingerprint)
                 require(prior == null || prior.plan.transaction == plan.transaction || plan.supersedes == prior.plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
                 val prepared = if (prior?.plan?.transaction == plan.transaction) prior else
-                    LanSyncPending(peer.fingerprint, plan, expected, emptyMap()).also {
+                    prepareLocalPending(peer.fingerprint, plan, expected, emptyMap(), prior, phoneSnapshot,
+                        prior?.let { workspace.applied(it.plan.transaction) } == true).also {
                         if (prior == null) store.pending(it) else store.replacePending(it)
                     }
                 val alreadyApplied = workspace.applied(plan.transaction)
@@ -393,7 +395,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 require(wire.text() == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
                 store.clearPending(peer.fingerprint, plan.transaction)
                 observe("PHONE_PENDING_CLEARED", plan.transaction)
-                finishRequest(requestToken, alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
+                finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
                 _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes)
                 } finally { received.close() }
                 } finally { phone.close() }
@@ -421,12 +423,26 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             }
         }
     }
+    private fun prepareLocalPending(peer: String, plan: LanSyncPlan, expectedLocal: Map<String, String>,
+        expectedRemote: Map<String, String>, previous: LanSyncPending?, current: LanSyncSnapshot,
+        previousApplied: Boolean): LanSyncPending {
+        val deferred = LanSyncRebase.deferred(previous, current, plan, previousApplied)
+        // Validate the complete local graph before publishing a superseding pending envelope.
+        LanSyncRebase.localPlan(plan, deferred, previous?.plan)
+        return LanSyncPending(peer, plan, expectedLocal, expectedRemote, deferredDeletion = deferred)
+    }
     private suspend fun applyPrepared(pending: LanSyncPending, blobs: Map<String, java.nio.file.Path>) {
         platform.exclusive {
             withContext(NonCancellable) {
                 workspace.recover()
-                if (!workspace.applied(pending.plan.transaction)) workspace.apply(pending.plan, pending.expectedLocal, identity.fingerprint, blobs,
-                    store.projection(pending.peerId, identity.fingerprint))
+                if (!workspace.applied(pending.plan.transaction)) {
+                    val old = pending.deferredDeletion?.let { proof ->
+                        require(workspace.applied(proof.previousTransaction)) { "SYNC_DEFERRED_DELETION_PROOF" }
+                        store.superseded(pending.peerId, proof.previousTransaction)?.plan
+                    }
+                    workspace.apply(LanSyncRebase.localPlan(pending.plan, pending.deferredDeletion, old),
+                        pending.expectedLocal, identity.fingerprint, blobs, store.projection(pending.peerId, identity.fingerprint))
+                }
                 val sessions = pending.plan.snapshot.records.filter { it.type == "chat_sessions" }.map { it.id }.toSet()
                 platform.reload(sessions)
             }
@@ -503,6 +519,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"
             "SYNC_PROTOCOL" -> "两端同步协议版本不同，请使用匹配的双端同步版本"
             "SYNC_LEGACY_PLAN_UNSUPPORTED" -> "旧同步计划无法由此版本安全接续，原计划与已应用成果已保留；请使用对应版本完成或核对恢复记录"
+            "SYNC_DEFERRED_DELETION_PROOF", "SYNC_REBASE_POLICY" -> "范围扩展后的本机修改尚不能安全接续，原资料与恢复记录已保留；请检查同步记录后重试"
+            "SYNC_MOMENT_ADMISSION_STORAGE" -> "本机朋友圈调度授权未能安全保存，尚未开始写入同步资料；请检查后重试"
             "SYNC_CONFLICT_TIMEOUT" -> "冲突选择等待已结束，现有资料和恢复记录已保留；请重新点同步检查"
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"
             "SYNC_BASELINE_MISMATCH" -> "两端共同基线不一致，已保留资料和回执，需恢复上次同步"

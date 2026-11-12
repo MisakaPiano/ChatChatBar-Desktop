@@ -36,7 +36,11 @@ data class LanSyncPairOffer(val protocol: Int = LAN_SYNC_PROTOCOL, val host: Str
 @Serializable
 data class LanSyncPending(val peerId: String, val plan: LanSyncPlan,
     val expectedLocal: Map<String, String>, val expectedRemote: Map<String, String>, val localApplied: Boolean = false,
-    val ownerId: String? = null, val localProjectionHash: String? = null)
+    val ownerId: String? = null, val localProjectionHash: String? = null,
+    val deferredDeletion: LanSyncDeferredDeletion? = null)
+
+@Serializable
+data class LanSyncDeferredDeletion(val previousTransaction: String, val recordKeys: Set<String>)
 
 @Serializable private data class LanSyncDeviceProjection(val peerId: String, val ownerId: String, val projection: LanSyncProjection)
 

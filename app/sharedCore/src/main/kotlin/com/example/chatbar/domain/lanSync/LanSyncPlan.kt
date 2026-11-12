@@ -5,7 +5,8 @@ import kotlinx.serialization.json.*
 
 @Serializable
 data class LanSyncPlan(val transaction: String, val snapshot: LanSyncSnapshot, val parents: Map<String, String>,
-    val supersedes: String? = null)
+    val supersedes: String? = null, val commonCoveredTypesBefore: Set<String>? = null,
+    val resolvedUnits: Set<String> = emptySet())
 
 object LanSyncPlanner {
     fun plan(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
@@ -64,6 +65,7 @@ object LanSyncPlanner {
         result.validate()
         LanSyncScope.validateGraph(result)
         require(result.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }
-        return LanSyncPlan(transaction, result, parents)
+        return LanSyncPlan(transaction, result, parents, commonCoveredTypesBefore = baseline.coveredTypes,
+            resolvedUnits = choices.keys.toSet())
     }
 }
