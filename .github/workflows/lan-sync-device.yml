@@ -1,7 +1,7 @@
 name: Frozen LAN minimum Android platform proof
 on:
   push:
-    branches: ['codex/lan-sync-*']
+    branches: ['codex/lan-sync-*', 'codex/lan-platform-proof-*']
     paths: [.github/lan-sync-device-request.json]
 permissions:
   contents: read

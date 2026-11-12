@@ -1,6 +1,7 @@
 {
   "kind": "CCB_LAN_MINIMUM_PLATFORM_REQUEST",
-  "sourceSha": "26b2d03af6297c029cc8a4f515ac35d7eea31a25",
+  "sourceSha": "537034285deffa7e54addc81f6de318b706bf860",
   "api": 26,
-  "scope": "synthetic Keystore identity, actual IPv4 mutual TLS and blob, canonical app-root refusal, real sync activity lifecycle and offline sample repositories"
+  "scope": "synthetic Keystore identity, actual IPv4 mutual TLS and blob, canonical app-root refusal, real sync activity lifecycle and offline sample repositories",
+  "purpose": "Frozen native Moments approval UI and scheduler ordering; synthetic cloud-only data, no provider calls"
 }
