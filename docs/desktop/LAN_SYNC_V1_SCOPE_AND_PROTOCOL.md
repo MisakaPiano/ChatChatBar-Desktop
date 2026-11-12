@@ -39,4 +39,8 @@
 
 必要工程验证只在云端运行，使用人工合成记录与媒体；没有手机真机、真实Wi-Fi或真人验收证据时明确保持未测。实现中持续对照主线，仅在隔离副本验证合并，不直接改主工作区或公开发布。
 
+后续预览包准备使用独立 `com.example.chatbar.lansyncnext`／“CCB 局域网预览 2”，与首包并存。Gradle仅在明确同时给出 `-PlanSyncPreviewSeries=next -PlanSyncPreviewCode=81`（后继82）时改变lanPreview身份；不改变普通debug/release及无参数的首系列。版本名分别为 `1.4.1-lan-preview.2.81/82`。首包244957…证书不能由新系列801f5462…证书替代，新系列不能冒称保留原首包身份或已迁移原首包测试资料。
+
+升级验证类为 `com.example.chatbar.lanSync.LanSyncPreviewUpgradeTest`：先在新系列81中定向运行 `seedSyntheticRepositoryAndProtectedPeerIdentity`，不卸载、不清资料地安装同系列82，再定向运行 `verifySyntheticRepositoryAndProtectedPeerIdentityAfterUpgrade`。两阶段均需显式runner参数 `lanSyncUpgradeFixture=true`，并强制核对实际包名、版本及指定公开证书SHA256。前者仅创建独立合成root并拒绝覆盖已有证据；后者要求所有原文件SHA256、原Keystore alias/可解保护身份、可信peer、共同基线、待确认计划保持，且角色/玩家/生图history及Vibe/后处理记录仍可读，绝不在验证阶段补造缺失证据。这里只是测试入口与冻结构包准备，实际升级执行、签名灾恢与真人验收另计。
+
 后续19类候选沿用后处理结果原有独立的100 MiB图片预算和按操作区分的像素上限；普通图片仍按原预算。资源验证绑定每条引用的记录，不能用同字节的宽松检查替代另一记录的严格规则。来源指纹仅关联原输入，不声称拥有或补造原输入文件。历史轻量备份的省略标记保持原语义，不要求其指纹等于结果摘要；实际传输的结果则必须与记录imageSha256完全一致。后处理记录共享化保持原Desktop/备份序列化字段与路径合同；Android落盘用本机资源路径，回电脑恢复原相对路径。

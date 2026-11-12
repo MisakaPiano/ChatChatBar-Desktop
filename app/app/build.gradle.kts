@@ -6,6 +6,15 @@ plugins {
   alias(libs.plugins.kotlin.serialization)
 }
 
+// Explicitly isolated successor series. No arbitrary package name, label or version is accepted.
+val lanSyncPreviewSeries = providers.gradleProperty("lanSyncPreviewSeries").orNull
+val lanSyncPreviewCodeRaw = providers.gradleProperty("lanSyncPreviewCode").orNull
+require((lanSyncPreviewSeries == null) == (lanSyncPreviewCodeRaw == null)) { "LAN_PREVIEW_SERIES_AND_CODE_REQUIRED" }
+val lanSyncPreviewCode = lanSyncPreviewCodeRaw?.let { raw ->
+    require(lanSyncPreviewSeries == "next" && raw in setOf("81", "82")) { "LAN_PREVIEW_SERIES_OR_CODE_INVALID" }
+    raw.toInt()
+}
+
 android {
     namespace = "com.example.chatbar"
     compileSdk = 36
@@ -91,11 +100,11 @@ android {
     buildTypes {
         create("lanPreview") {
             initWith(getByName("debug"))
-            applicationIdSuffix = ".lansync"
-            versionNameSuffix = "-lan-preview"
+            applicationIdSuffix = if (lanSyncPreviewCode == null) ".lansync" else ".lansyncnext"
+            versionNameSuffix = if (lanSyncPreviewCode == null) "-lan-preview" else "-lan-preview.2"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("debug")
-            resValue("string", "app_name", "CCB 局域网预览")
+            resValue("string", "app_name", if (lanSyncPreviewCode == null) "CCB 局域网预览" else "CCB 局域网预览 2")
         }
         release {
             if (hasReleaseSigning) {
@@ -131,6 +140,15 @@ android {
 
     sourceSets.getByName("androidTest") {
         assets.srcDir(rootProject.file("interop-fixtures/phase3f"))
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("lanPreview")) { variant ->
+        lanSyncPreviewCode?.let { code -> variant.outputs.forEach { output ->
+            output.versionCode.set(code)
+            output.versionName.set("1.4.1-lan-preview.2.$code")
+        } }
     }
 }
 
