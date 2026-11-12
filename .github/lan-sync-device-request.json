@@ -1,8 +1,8 @@
 {
   "kind": "CCB_LAN_MINIMUM_PLATFORM_REQUEST",
-  "sourceSha": "92d6473056fc4e3e931f10783a73b94366b972b5",
+  "sourceSha": "59b2bdcc71c687211f174cdc76af0b3837577982",
   "api": 26,
-  "scope": "Only changed production sample-v2 activity/repositories/images/dormant plan creation and lifecycle method",
-  "purpose": "Targeted sample UI method only; source747 other8 runtime/owner methods already separately verified; no model calls",
-  "testClass": "com.example.chatbar.lanSync.LanSyncUiTest"
+  "scope": "Only Android Studio history lock-order admission and changed real Runtime Studio history Vibe/player transport; class also retains Moment transfer regression",
+  "purpose": "Cloud real Android synthetic private roots only; no providers, no real data, no local JVM; prior other7 and sample-v2 native evidence retained separately",
+  "testClass": "com.example.chatbar.lanSync.LanSyncStudioHistoryAdmissionTest,com.example.chatbar.lanSync.LanSyncMomentTransferTest"
 }

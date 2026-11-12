@@ -29,7 +29,14 @@ jobs:
           if chosen is None:
               argument = '-Pandroid.testInstrumentationRunnerArguments.package=com.example.chatbar.lanSync'
           else:
-              assert chosen == 'com.example.chatbar.lanSync.LanSyncUiTest'
+              allowed = {
+                  'com.example.chatbar.lanSync.LanSyncUiTest',
+                  'com.example.chatbar.lanSync.LanSyncStudioHistoryAdmissionTest',
+                  'com.example.chatbar.lanSync.LanSyncMomentTransferTest',
+              }
+              assert isinstance(chosen, str) and chosen
+              classes = chosen.split(',')
+              assert len(classes) == len(set(classes)) and set(classes) <= allowed
               argument = '-Pandroid.testInstrumentationRunnerArguments.class=' + chosen
           with open(os.environ['GITHUB_ENV'], 'a') as env: env.write('CCB_PLATFORM_TEST_ARGUMENT=' + argument + '\n')
           PY
