@@ -1,0 +1,53 @@
+name: Frozen LAN APK identity proof
+on:
+  push:
+    branches: ['codex/lan-sync-*']
+    paths: [.github/lan-sync-apk-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact original artifact source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          request = json.load(open('.github/lan-sync-apk-request.json'))
+          api = 'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/'
+          def get(path):
+              return json.load(urllib.request.urlopen(urllib.request.Request(api + path, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})))
+          run = get('runs/' + str(request['runId']))
+          artifact = get('artifacts/' + str(request['artifactId']))
+          assert run['head_sha'] == request['sourceSha'] == artifact['workflow_run']['head_sha']
+          assert artifact['workflow_run']['id'] == request['runId'] and artifact['name'] == 'ccb-lan-preview-android' and not artifact['expired']
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write('CCB_APK_RUN=' + str(request['runId']) + '\n')
+          os.mkdir('verified-apk')
+          json.dump({'request': request, 'originalArtifact': artifact}, open('verified-apk/source.json', 'w'), indent=2)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ccb-lan-preview-android
+          run-id: ${{ env.CCB_APK_RUN }}
+          github-token: ${{ github.token }}
+          path: verified-apk
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: build-tools;36.0.0
+      - name: Read manifest and verify actual APK signature
+        run: |
+          python3 tools/lan-sync/apk_identity.py --directory verified-apk --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ccb-lan-verified-android
+          path: verified-apk/

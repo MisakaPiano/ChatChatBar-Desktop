@@ -2,7 +2,7 @@ name: Isolated LAN sync engineering
 on:
   push:
     branches: ['codex/lan-sync-*']
-    paths-ignore: [.github/lan-sync-package-request.json, .github/lan-sync-device-request.json]
+    paths-ignore: [.github/lan-sync-package-request.json, .github/lan-sync-device-request.json, .github/lan-sync-apk-request.json]
 permissions:
   contents: read
 jobs:
