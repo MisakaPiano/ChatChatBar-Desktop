@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 import java.security.MessageDigest
 import java.util.UUID
 
-const val LAN_SYNC_PROTOCOL = 3
+const val LAN_SYNC_PROTOCOL = 4
 
 /** Protocol identities are independent of filenames, clocks, IP addresses and display names. */
 @Serializable
@@ -58,13 +58,15 @@ data class LanSyncSnapshot(
     }
 
     fun units(): Map<String, List<LanSyncRecord>> = LanSyncMoments.units(records)
-    fun hashes(): Map<String, String> = units().mapValues { (_, records) ->
-        lanSyncHash(JsonArray(records.sortedBy { it.key }.map {
-            buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.comparisonBody()) }
-        }))
-    }
+    fun hashes(): Map<String, String> = lanSyncUnitHashes(units())
 
     companion object { const val MAX_RESOURCE: Long = 256L * 1024 * 1024 }
+}
+
+internal fun lanSyncUnitHashes(units: Map<String, List<LanSyncRecord>>): Map<String, String> = units.mapValues { (_, records) ->
+    lanSyncHash(JsonArray(records.sortedBy { it.key }.map {
+        buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.comparisonBody()) }
+    }))
 }
 
 /** Missing entries after a shared baseline are tombstones, never fresh additions. */
@@ -77,6 +79,7 @@ data class LanSyncBaseline(
     val ownerId: String? = null,
     val coveredTypes: Set<String> = LanSyncScope.schemas.keys,
     val localProjectionHash: String? = null,
+    val componentRecords: Map<String, Set<String>> = emptyMap(),
 )
 
 @Serializable
@@ -97,6 +100,8 @@ data class LanSyncComparison(
     val conflicts: List<LanSyncConflict>,
     val computerHashes: Map<String, String>,
     val phoneHashes: Map<String, String>,
+    val computerUnits: Map<String, List<LanSyncRecord>> = emptyMap(),
+    val phoneUnits: Map<String, List<LanSyncRecord>> = emptyMap(),
 )
 
 /** Three-way comparison deliberately has no last-write-wins or timestamp tie breaker. */
@@ -108,12 +113,13 @@ object LanSyncCompare {
         computer.validate(); phone.validate()
         requireCoverage(computer, phone, baseline)
         require(baseline.peerId == phone.deviceId && (baseline.ownerId == null && baseline.revision == null || baseline.ownerId == computer.deviceId)) { "SYNC_BASELINE_DEVICE" }
-        val left = computer.hashes(); val right = phone.hashes()
+        val grouped = LanSyncMoments.comparison(computer, phone, baseline)
+        val leftUnits = grouped.computer; val rightUnits = grouped.phone
+        val left = lanSyncUnitHashes(leftUnits); val right = lanSyncUnitHashes(rightUnits)
         val automatic = linkedMapOf<String, Boolean>()
         val conflicts = mutableListOf<LanSyncConflict>()
-        val leftUnits = computer.units(); val rightUnits = phone.units()
-        (left.keys + right.keys + baseline.hashes.keys).sorted().forEach { key ->
-            val a = left[key]; val b = right[key]; val old = baseline.hashes[key]
+        (left.keys + right.keys + grouped.ancestor.keys).sorted().forEach { key ->
+            val a = left[key]; val b = right[key]; val old = grouped.ancestor[key]
             when {
                 a == b -> automatic[key] = true
                 a == old -> automatic[key] = false
@@ -129,7 +135,7 @@ object LanSyncCompare {
                 }
             }
         }
-        return LanSyncComparison(automatic, conflicts, left, right)
+        return LanSyncComparison(automatic, conflicts, left, right, leftUnits, rightUnits)
     }
 }
 

@@ -12,6 +12,70 @@ class LanSyncMomentGraphTest {
     private val pending = MomentTask("task", "missing-card", "missing-session", 1, createdAt = 1)
     private val posted = MomentPost("post", pending.characterCardId, pending.sessionId, senderName = "历史作者",
         text = "原文保持", scheduledAt = 1, generatedAt = 1)
+    private fun common(snapshot: LanSyncSnapshot) = LanSyncBaseline("phone", "common", snapshot.hashes(),
+        ownerId = "computer", coveredTypes = snapshot.coveredTypes, componentRecords = LanSyncMoments.components(snapshot))
+
+    @Test fun lowerIdDuplicateLinkAndConcurrentPostEditRemainOneResolvableWholeComponent() {
+        val originalTask = pending.copy(id = "t", postId = posted.id)
+        val base = LanSyncSnapshot(deviceId = "computer", records = listOf(task(originalTask), post(posted)))
+        val pc = base.copy(records = base.records + task(originalTask.copy(id = "a")))
+        val phone = base.copy(deviceId = "phone", records = listOf(task(originalTask), post(posted.copy(text = "手机后续编辑"))))
+        val baseline = common(base)
+        val comparison = LanSyncCompare.compare(pc, phone, baseline)
+        assertEquals(listOf("moment-task/t"), comparison.conflicts.map { it.unit })
+        assertTrue(comparison.automatic.isEmpty())
+        for (choice in listOf(LanSyncChoice.KEEP_PHONE, LanSyncChoice.KEEP_BOTH)) {
+            val plan = LanSyncPlanner.plan(pc, phone, baseline, mapOf("moment-task/t" to choice), "synthetic-$choice")
+            plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
+            assertEquals(plan.snapshot.records.size, plan.snapshot.records.map { it.key }.distinct().size)
+            val tasks = plan.snapshot.records.filter { it.type == "moment_tasks" }
+            val posts = plan.snapshot.records.filter { it.type == "moment_posts" }.associateBy { it.id }
+            assertTrue(tasks.all { it.text("postId") in posts })
+            if (choice == LanSyncChoice.KEEP_PHONE) {
+                assertEquals(2, plan.snapshot.records.size); assertEquals("手机后续编辑", posts.values.single().text("text"))
+            } else { assertEquals(3, tasks.size); assertEquals(2, posts.size) }
+            assertTrue("moment_posts/post" in plan.resolvedRecordKeys)
+            val nextBase = common(plan.snapshot)
+            val repeat = LanSyncCompare.compare(plan.snapshot, plan.snapshot.copy(deviceId = "phone"), nextBase)
+            assertTrue(repeat.conflicts.isEmpty())
+        }
+        assertEquals("SYNC_COMPONENT_HISTORY_MISSING", assertFailsWith<IllegalArgumentException> {
+            LanSyncCompare.compare(pc, phone, baseline.copy(componentRecords = emptyMap()))
+        }.message)
+    }
+
+    @Test fun commonMembershipKeepsDeletedTaskLinkSoPostDeletionIsNotMistakenForAFreshAddition() {
+        val base = LanSyncSnapshot(deviceId = "computer", records = listOf(task(pending.copy(postId = posted.id)), post(posted)))
+        val pc = base.copy(records = listOf(post(posted.copy(text = "电脑编辑后保留"))))
+        val phone = base.copy(deviceId = "phone", records = emptyList())
+        val baseline = common(base)
+        val conflict = LanSyncCompare.compare(pc, phone, baseline).conflicts.single()
+        assertEquals("moment-task/task", conflict.unit)
+        assertTrue(conflict.phoneDeleted)
+        val plan = LanSyncPlanner.plan(pc, phone, baseline, mapOf(conflict.unit to LanSyncChoice.KEEP_PHONE), "selected-delete")
+        assertTrue(plan.snapshot.records.isEmpty())
+        assertTrue("moment_posts/post" in plan.resolvedRecordKeys)
+    }
+
+    @Test fun joiningTwoCommonGroupsReviewsTheUnionAndKeepBothCopiesEveryLinkOnlyOnce() {
+        val other = posted.copy(id = "other-post")
+        val firstTask = pending.copy(postId = posted.id)
+        val secondTask = pending.copy(id = "other-task", postId = other.id)
+        val base = LanSyncSnapshot(deviceId = "computer", records = listOf(task(firstTask), task(secondTask), post(posted), post(other)))
+        val pc = base.copy(records = listOf(task(firstTask), task(secondTask.copy(postId = posted.id)), post(posted), post(other)))
+        val phone = base.copy(deviceId = "phone")
+        val baseline = common(base)
+        val comparison = LanSyncCompare.compare(pc, phone, baseline)
+        assertEquals(1, comparison.conflicts.size)
+        assertTrue(comparison.automatic.isEmpty())
+        val unit = comparison.conflicts.single().unit
+        val plan = LanSyncPlanner.plan(pc, phone, baseline, mapOf(unit to LanSyncChoice.KEEP_BOTH), "selected-both")
+        assertEquals(8, plan.snapshot.records.size)
+        assertEquals(8, plan.snapshot.records.map { it.key }.distinct().size)
+        val posts = plan.snapshot.records.filter { it.type == "moment_posts" }.map { it.id }.toSet()
+        assertTrue(plan.snapshot.records.filter { it.type == "moment_tasks" }.all { it.text("postId") in posts })
+        LanSyncScope.validateGraph(plan.snapshot)
+    }
 
     @Test fun pendingToReservedOrCompletedKeepsTaskAnchorAndHistoricalLinksStayOutsideChat() {
         val before = LanSyncSnapshot(deviceId = "synthetic", records = listOf(task(pending)))

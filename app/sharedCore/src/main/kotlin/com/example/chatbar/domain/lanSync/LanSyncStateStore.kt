@@ -37,7 +37,9 @@ data class LanSyncPairOffer(val protocol: Int = LAN_SYNC_PROTOCOL, val host: Str
 data class LanSyncPending(val peerId: String, val plan: LanSyncPlan,
     val expectedLocal: Map<String, String>, val expectedRemote: Map<String, String>, val localApplied: Boolean = false,
     val ownerId: String? = null, val localProjectionHash: String? = null,
-    val deferredDeletion: LanSyncDeferredDeletion? = null)
+    val deferredDeletion: LanSyncDeferredDeletion? = null,
+    val expectedLocalComponents: Map<String, Set<String>> = emptyMap(),
+    val expectedRemoteComponents: Map<String, Set<String>> = emptyMap())
 
 @Serializable
 data class LanSyncDeferredDeletion(val previousTransaction: String, val recordKeys: Set<String>)
@@ -74,7 +76,8 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
     @Synchronized fun complete(peer: String, owner: String, plan: LanSyncPlan) {
         val previous = baseline(peer, owner)
         val baseline = LanSyncBaseline(peer, plan.transaction, plan.snapshot.hashes(),
-            (previous.receipts + plan.transaction).takeLast(64), owner, plan.snapshot.coveredTypes, projection(peer, owner).digest())
+            (previous.receipts + plan.transaction).takeLast(64), owner, plan.snapshot.coveredTypes, projection(peer, owner).digest(),
+            LanSyncMoments.components(plan.snapshot))
         write("baseline-${key(peer)}.json", lanSyncJson.encodeToString(baseline))
         val previousParents = read("receipt-${key(peer)}.json")?.let { lanSyncJson.decodeFromString<Map<String, String>>(it) }.orEmpty()
         write("receipt-${key(peer)}.json", lanSyncJson.encodeToString(previousParents + plan.parents))

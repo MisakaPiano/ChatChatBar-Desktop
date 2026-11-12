@@ -42,7 +42,8 @@ object LanSyncScope {
     /** Only previously supported bodies are reconsidered; the frozen legacy envelope is never rewritten. */
     internal fun validateLegacyPending(snapshot: LanSyncSnapshot) {
         try {
-            require(snapshot.protocol in setOf(1, 2) && legacyChatTypes.containsAll(snapshot.coveredTypes))
+            val allowed = if (snapshot.protocol == 3) legacyChatTypes + LanSyncMoments.types else legacyChatTypes
+            require(snapshot.protocol in 1..3 && allowed.containsAll(snapshot.coveredTypes))
             val compatible = snapshot.copy(protocol = LAN_SYNC_PROTOCOL,
                 records = snapshot.records.map { it.copy(body = normalize(it.type, it.body)) })
             compatible.validate(); validateGraph(compatible)

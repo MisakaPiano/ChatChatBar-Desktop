@@ -6,14 +6,15 @@ import kotlinx.serialization.json.*
 @Serializable
 data class LanSyncPlan(val transaction: String, val snapshot: LanSyncSnapshot, val parents: Map<String, String>,
     val supersedes: String? = null, val commonCoveredTypesBefore: Set<String>? = null,
-    val resolvedUnits: Set<String> = emptySet())
+    val resolvedUnits: Set<String> = emptySet(), val resolvedRecordKeys: Set<String> = emptySet())
 
 object LanSyncPlanner {
     fun plan(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
         choices: Map<String, LanSyncChoice>, transaction: String): LanSyncPlan {
         val comparison = LanSyncCompare.compare(computer, phone, baseline)
         require(choices.keys == comparison.conflicts.map { it.unit }.toSet()) { "SYNC_CHOICES" }
-        val left = computer.units(); val right = phone.units()
+        val left = comparison.computerUnits; val right = comparison.phoneUnits
+        val resolvedSourceKeys = choices.keys.flatMap { left[it].orEmpty() + right[it].orEmpty() }.map { it.key }.toSet()
         val retained = mutableListOf<LanSyncRecord>()
         val incoming = mutableListOf<LanSyncRecord>()
         val identity = LanSyncIdentity(transaction = transaction)
@@ -66,6 +67,7 @@ object LanSyncPlanner {
         LanSyncScope.validateGraph(result)
         require(result.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }
         return LanSyncPlan(transaction, result, parents, commonCoveredTypesBefore = baseline.coveredTypes,
-            resolvedUnits = choices.keys.toSet())
+            resolvedUnits = choices.keys.toSet(), resolvedRecordKeys = resolvedSourceKeys +
+                incoming.zip(rewritten).filter { it.first.key in resolvedSourceKeys }.map { it.second.key })
     }
 }

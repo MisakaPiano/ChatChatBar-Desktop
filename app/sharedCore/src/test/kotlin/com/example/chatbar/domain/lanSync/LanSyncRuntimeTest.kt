@@ -360,7 +360,9 @@ class LanSyncRuntimeTest {
                     a.store.baseline(b.id, a.id).revision == b.store.baseline(a.id, b.id).revision
             }
             for (end in listOf(a, b)) {
-                assertEquals(setOf("电脑应用后修改", "手机应用后新增", "phone-format"), end.names())
+                val cardNames = end.workspace.capture(end.id).use { capture -> capture.snapshot.records
+                    .filter { it.type == "character_cards" }.mapNotNull { it.text("name") }.toSet() }
+                assertEquals(setOf("电脑应用后修改", "手机应用后新增"), cardNames)
                 assertFalse(Files.exists(end.root.resolve("entities/format_cards/pc-format.json")))
                 assertTrue(Files.exists(end.root.resolve("entities/format_cards/phone-format.json")))
                 assertTrue(ancestor.transaction in end.store.baseline(if (end === a) b.id else a.id, end.id).receipts)
@@ -459,8 +461,47 @@ class LanSyncRuntimeTest {
             assertFalse(Files.exists(a.root.resolve("entities/chat_sessions")))
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun newDuplicateMomentLinkAndOtherSidePostEditCommitChosenComponentAndRepeatStably() = runBlocking {
+        for (choice in listOf(LanSyncChoice.KEEP_PHONE, LanSyncChoice.KEEP_BOTH)) {
+            val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+            val left = MomentRepository(JsonFileStorage(a.root, a.gate)); val right = MomentRepository(JsonFileStorage(b.root, b.gate))
+            val post = MomentPost("p", "missing-card", "missing-session", senderName = "合成历史作者", text = "共同原文", scheduledAt = 1, generatedAt = 1)
+            val task = MomentTask("t", post.characterCardId, post.sessionId, 1, MomentTaskStatus.COMPLETED, post.id, createdAt = 1)
+            for (repo in listOf(left, right)) { repo.savePost(post); repo.saveTask(task) }
+            val host = a.runtime(); val phone = b.runtime()
+            try {
+                pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+                val common = a.store.baseline(b.id, a.id)
+                assertEquals(mapOf("moment-task/t" to setOf("moment_tasks/t", "moment_posts/p")), common.componentRecords)
+                assertEquals(common.componentRecords, LanSyncStateStore(a.stateRoot, { it }, { it }).baseline(b.id, a.id).componentRecords)
+                left.saveTask(task.copy(id = "a")); right.savePost(post.copy(text = "手机后续编辑"))
+                host.requestSync(); until("duplicate link stays in the existing common review group") { host.state.value.conflicts.size == 1 }
+                val conflict = host.state.value.conflicts.single()
+                assertEquals("moment-task/t", conflict.unit)
+                assertEquals(3, conflict.computerRecords); assertEquals(2, conflict.phoneRecords)
+                host.resolveConflicts(mapOf(conflict.unit to choice)); completed(a, b, common.revision)
+                val expectedTasks = if (choice == LanSyncChoice.KEEP_PHONE) 1 else 3
+                val expectedPosts = if (choice == LanSyncChoice.KEEP_PHONE) 1 else 2
+                for (end in listOf(a, b)) {
+                    end.workspace.capture(end.id).use { capture ->
+                        val rows = capture.snapshot.records
+                        val posts = rows.filter { it.type == "moment_posts" }.associateBy { it.id }
+                        val tasks = rows.filter { it.type == "moment_tasks" }
+                        assertEquals(expectedTasks, tasks.size); assertEquals(expectedPosts, posts.size)
+                        assertTrue(tasks.all { it.text("postId") in posts })
+                        assertEquals(rows.size, rows.map { it.key }.distinct().size)
+                        if (choice == LanSyncChoice.KEEP_PHONE) assertEquals("手机后续编辑", posts.values.single().text("text"))
+                    }
+                }
+                val before = a.workspace.capture(a.id).use { it.snapshot.records.map { it.key }.toSet() }
+                val revision = a.store.baseline(b.id, a.id).revision
+                phone.requestSync(); completed(a, b, revision)
+                assertEquals(before, a.workspace.capture(a.id).use { it.snapshot.records.map { it.key }.toSet() })
+            } finally { host.closeAndDrain(); phone.closeAndDrain() }
+        }
+    }
     @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {
-        for (legacyProtocol in listOf(1, 2)) for (bothApplied in listOf(false, true)) {
+        for (legacyProtocol in listOf(1, 2, 3)) for (bothApplied in listOf(false, true)) {
             val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
             for (end in listOf(a, b)) end.write("card", "同一合成角色")
             a.writeConversation("电脑版本", "pc-local-model"); b.writeConversation("手机版本", "phone-local-model")

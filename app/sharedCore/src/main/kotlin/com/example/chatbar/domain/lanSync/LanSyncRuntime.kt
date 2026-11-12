@@ -252,10 +252,14 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     else -> computer.snapshot.hashes() != previous.expectedLocal || phoneSnapshot.hashes() != previous.expectedRemote
                 })
                 val prepared = if (previous == null || needsRebase) {
-                    val ancestor = if (previous != null && (computerApplied || phoneApplied))
+                    val recoveryHashes = previous?.takeIf { computerApplied || phoneApplied }?.let {
+                        LanSyncRebase.ancestorHashes(it, baseline, computer.snapshot, phoneSnapshot, computerApplied)
+                    }
+                    val ancestor = if (previous != null && recoveryHashes != null)
                         LanSyncBaseline(peerId, "recovery:${previous.plan.transaction}",
-                            LanSyncRebase.ancestorHashes(previous, baseline, computer.snapshot, phoneSnapshot, computerApplied),
-                            ownerId = identity.fingerprint, coveredTypes = baseline.coveredTypes)
+                            recoveryHashes, ownerId = identity.fingerprint, coveredTypes = baseline.coveredTypes,
+                            componentRecords = LanSyncRebase.ancestorComponents(previous, baseline, recoveryHashes, computerApplied,
+                                if (computerApplied) phoneSnapshot else computer.snapshot))
                         else baseline
                     if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
                     val comparison = LanSyncCompare.compare(computer.snapshot, phoneSnapshot, ancestor)
@@ -266,7 +270,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     val planned = LanSyncPlanner.plan(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
                     val plan = planned.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents, supersedes = previous?.plan?.transaction)
                     prepareLocalPending(peerId, plan, computer.snapshot.hashes(), phoneSnapshot.hashes(),
-                        previous, computer.snapshot, computerApplied).also {
+                        previous, computer.snapshot, computerApplied, phoneSnapshot).also {
                         if (previous == null) store.pending(it) else store.replacePending(it)
                     }
                 } else previous
@@ -428,11 +432,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     }
     private fun prepareLocalPending(peer: String, plan: LanSyncPlan, expectedLocal: Map<String, String>,
         expectedRemote: Map<String, String>, previous: LanSyncPending?, current: LanSyncSnapshot,
-        previousApplied: Boolean): LanSyncPending {
+        previousApplied: Boolean, remote: LanSyncSnapshot? = null): LanSyncPending {
         val deferred = LanSyncRebase.deferred(previous, current, plan, previousApplied)
         // Validate the complete local graph before publishing a superseding pending envelope.
         LanSyncRebase.localPlan(plan, deferred, previous?.plan)
-        return LanSyncPending(peer, plan, expectedLocal, expectedRemote, deferredDeletion = deferred)
+        return LanSyncPending(peer, plan, expectedLocal, expectedRemote, deferredDeletion = deferred,
+            expectedLocalComponents = LanSyncMoments.components(current).filterKeys { it in expectedLocal },
+            expectedRemoteComponents = remote?.let(LanSyncMoments::components).orEmpty().filterKeys { it in expectedRemote })
     }
     private suspend fun applyPrepared(pending: LanSyncPending, blobs: Map<String, java.nio.file.Path>) {
         platform.exclusive {
@@ -523,6 +529,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_PROTOCOL" -> "两端同步协议版本不同，请使用匹配的双端同步版本"
             "SYNC_LEGACY_PLAN_UNSUPPORTED" -> "旧同步计划无法由此版本安全接续，原计划与已应用成果已保留；请使用对应版本完成或核对恢复记录"
             "SYNC_DEFERRED_DELETION_PROOF", "SYNC_REBASE_POLICY" -> "范围扩展后的本机修改尚不能安全接续，原资料与恢复记录已保留；请检查同步记录后重试"
+            "SYNC_COMPONENT_HISTORY_MISSING" -> "关联动态的共同成员记录缺失，已停止写入并保留资料；请检查同步恢复记录"
             "SYNC_MOMENT_ADMISSION_STORAGE" -> "本机朋友圈调度授权未能安全保存，尚未开始写入同步资料；请检查后重试"
             "SYNC_CONFLICT_TIMEOUT" -> "冲突选择等待已结束，现有资料和恢复记录已保留；请重新点同步检查"
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"
