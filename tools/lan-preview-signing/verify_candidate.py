@@ -29,6 +29,14 @@ def main(request_path, source_dir, output_dir, build_tools):
     assert request['certificateSha256'] == CERTIFICATE
     assert re.fullmatch('[a-f0-9]{40}', request['sourceSha'])
     assert set(request['entries']) == set(ROLES)
+    raw = json.loads((source_dir/'raw-manifest.json').read_text(encoding='utf8'))
+    frozen = json.loads((source_dir/'source-request.json').read_text(encoding='utf8'))
+    assert raw['sourceSha'] == frozen['sourceSha'] == request['sourceSha']
+    assert frozen['series'] == 'next' and frozen['versions'] == [81, 82]
+    assert raw['controlSha'] == request['originalArtifact']['controlSha']
+    assert len(raw['inputs']) == 3
+    inputs = {row['filename']: row for row in raw['inputs']}
+    assert len(inputs) == 3
     output_dir.mkdir(parents=True, exist_ok=False)
     rows = []
     for role, (package, version) in ROLES.items():
@@ -38,6 +46,12 @@ def main(request_path, source_dir, output_dir, build_tools):
         source = source_dir / filename
         assert source.is_file() and not source.is_symlink()
         receipt = entry['publicSigning']
+        original = inputs[filename]
+        assert original['package'] == package
+        assert original['sha256'] == receipt['sourceSha256']
+        assert original['bytes'] == source.stat().st_size
+        if version is not None:
+            assert original['versionCode'] == version
         assert receipt['purpose'] == 'ISOLATED_LAN_NEXT_PREVIEW'
         assert receipt['certificateSha256'] == CERTIFICATE
         output = output_dir / (role + '.apk')

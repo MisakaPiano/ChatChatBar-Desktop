@@ -1,0 +1,76 @@
+name: Frozen next LAN preview signing inputs
+on:
+  push:
+    branches: ['codex/lan-preview-signing-*']
+    paths: [.github/lan-next-preview-build-request.json]
+permissions:
+  contents: read
+jobs:
+  raw-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze source and validate isolated-series request
+        run: |
+          sourceSha=$(python3 -c 'import json,re; r=json.load(open(".github/lan-next-preview-build-request.json")); s=r["sourceSha"]; assert re.fullmatch("[a-f0-9]{40}",s); assert r["series"]=="next" and r["versions"]==[81,82]; print(s)')
+          sourceDir="$RUNNER_TEMP/ccb-lan-next-source"
+          git worktree add --detach "$sourceDir" "$sourceSha"
+          test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
+          echo "LAN_NEXT_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+          mkdir raw-inputs
+          cp .github/lan-next-preview-build-request.json raw-inputs/source-request.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build isolated81 and its instrumentation APK
+        run: |
+          cd "$LAN_NEXT_SOURCE/app"
+          chmod +x gradlew
+          ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=81 --no-daemon --stacktrace
+      - name: Preserve81 inputs before the next variant build
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil
+          app=pathlib.Path(os.environ['LAN_NEXT_SOURCE'])/'app/app/build/outputs/apk'
+          for pattern,name in [('lanPreview/*.apk','base-input.apk'),('androidTest/lanPreview/*.apk','tests-input.apk')]:
+              files=list(app.glob(pattern)); assert len(files)==1
+              shutil.copyfile(files[0], pathlib.Path('raw-inputs')/name)
+          PY
+      - name: Build isolated82 with matching source and retained fixture
+        run: |
+          cd "$LAN_NEXT_SOURCE/app"
+          ./gradlew :app:assembleLanPreview -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=82 --no-daemon --stacktrace
+      - name: Pin all raw inputs and verify manifest identities
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re,shutil,subprocess
+          app=pathlib.Path(os.environ['LAN_NEXT_SOURCE'])/'app/app/build/outputs/apk/lanPreview'
+          files=list(app.glob('*.apk')); assert len(files)==1
+          root=pathlib.Path('raw-inputs'); shutil.copyfile(files[0],root/'upgrade-input.apk')
+          rows=[]
+          for name,package,version in [('base-input.apk','com.example.chatbar.lansyncnext',81),('upgrade-input.apk','com.example.chatbar.lansyncnext',82),('tests-input.apk','com.example.chatbar.lansyncnext.test',None)]:
+              p=root/name
+              text=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/aapt','dump','badging',str(p)],text=True)
+              (root/(name+'.badging.txt')).write_text(text,encoding='utf8')
+              match=re.search(r"^package: name='([^']+)' versionCode='([0-9]+)'",text,re.M)
+              assert match and match.group(1)==package
+              if version is not None: assert int(match.group(2))==version
+              assert "sdkVersion:'26'" in text
+              with p.open('rb') as stream: digest=hashlib.file_digest(stream,'sha256').hexdigest()
+              rows.append({'filename':name,'package':package,'versionCode':int(match.group(2)),'sha256':digest,'bytes':p.stat().st_size})
+          request=json.load(open('.github/lan-next-preview-build-request.json'))
+          json.dump({'sourceSha':request['sourceSha'],'controlSha':os.environ['GITHUB_SHA'],'inputs':rows,'persistentSigningApplied':False,'deviceUpgradeTested':False,'userDelivered':False},open(root/'raw-manifest.json','w'),indent=2)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ccb-lan-next-signing-inputs
+          path: raw-inputs/

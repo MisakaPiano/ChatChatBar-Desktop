@@ -30,7 +30,8 @@ jobs:
               return json.load(urllib.request.urlopen(urllib.request.Request(api+path, headers=headers)))
           run = get('runs/'+str(original['runId']))
           artifact = get('artifacts/'+str(original['id']))
-          assert run['head_sha'] == artifact['workflow_run']['head_sha'] == request['sourceSha']
+          assert re.fullmatch('[a-f0-9]{40}', original['controlSha'])
+          assert run['head_sha'] == artifact['workflow_run']['head_sha'] == original['controlSha']
           assert run['conclusion'] == 'success'
           assert artifact['workflow_run']['id'] == original['runId'] and artifact['name'] == original['name'] and not artifact['expired']
           assert artifact['size_in_bytes'] == original['bytes']
