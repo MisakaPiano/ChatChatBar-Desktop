@@ -27,6 +27,7 @@ object LanSyncPlanner {
                 LanSyncChoice.KEEP_COMPUTER -> retained += left[conflict.unit].orEmpty()
                 LanSyncChoice.KEEP_PHONE -> incoming += right[conflict.unit].orEmpty()
                 LanSyncChoice.KEEP_BOTH -> {
+                    require(conflict.canKeepBoth) { "SYNC_SINGLETON_KEEP_BOTH" }
                     retained += left[conflict.unit].orEmpty()
                     val fork = right[conflict.unit].orEmpty()
                     fork.forEach { record -> identity.declarations(record).forEach { (type, id) ->

@@ -530,6 +530,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_LEGACY_PLAN_UNSUPPORTED" -> "旧同步计划无法由此版本安全接续，原计划与已应用成果已保留；请使用对应版本完成或核对恢复记录"
             "SYNC_DEFERRED_DELETION_PROOF", "SYNC_REBASE_POLICY" -> "范围扩展后的本机修改尚不能安全接续，原资料与恢复记录已保留；请检查同步记录后重试"
             "SYNC_COMPONENT_HISTORY_MISSING" -> "关联动态的共同成员记录缺失，已停止写入并保留资料；请检查同步恢复记录"
+            "SYNC_STORAGE_SHAPE" -> "资料存放位置与当前版本不符，已停止写入并保留原文件；请检查后重试"
+            "SYNC_SINGLETON_KEEP_BOTH" -> "全局设定只能保留一个生效版本，请选择电脑或手机的版本"
             "SYNC_MOMENT_ADMISSION_STORAGE" -> "本机朋友圈调度授权未能安全保存，尚未开始写入同步资料；请检查后重试"
             "SYNC_CONFLICT_TIMEOUT" -> "冲突选择等待已结束，现有资料和恢复记录已保留；请重新点同步检查"
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"

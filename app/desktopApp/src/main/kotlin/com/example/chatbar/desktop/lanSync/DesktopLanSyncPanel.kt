@@ -54,8 +54,10 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
             StatusText("双方都修改的内容需选择；保留两份会保留独立会话分支及其依赖。")
             state.conflicts.forEach { conflict ->
                 StatusText("${conflict.title} · 电脑 ${if (conflict.computerDeleted) "已删除" else "${conflict.computerRecords} 条"} / 手机 ${if (conflict.phoneDeleted) "已删除" else "${conflict.phoneRecords} 条"}")
+                if (!conflict.canKeepBoth) StatusText("此项是全局设定，请选择保留其中一端的版本。")
                 ActionRow {
-                    listOf(LanSyncChoice.KEEP_COMPUTER to "保留电脑", LanSyncChoice.KEEP_PHONE to "保留手机", LanSyncChoice.KEEP_BOTH to "保留两份").forEach { (choice, label) ->
+                    listOf(LanSyncChoice.KEEP_COMPUTER to "保留电脑", LanSyncChoice.KEEP_PHONE to "保留手机", LanSyncChoice.KEEP_BOTH to "保留两份")
+                        .filter { it.first != LanSyncChoice.KEEP_BOTH || conflict.canKeepBoth }.forEach { (choice, label) ->
                         BootstrapButton((if (selected[conflict.unit] == choice) "✓ " else "") + label, secondary = selected[conflict.unit] != choice) { selected[conflict.unit] = choice }
                     }
                 }

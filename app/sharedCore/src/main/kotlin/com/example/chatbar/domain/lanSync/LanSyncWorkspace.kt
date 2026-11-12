@@ -37,21 +37,27 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         if (Files.exists(entities, LinkOption.NOFOLLOW_LINKS)) {
             lanSyncSafe(entities, true)
             Files.newDirectoryStream(entities).use { entries -> entries.forEach { directory ->
-                val type = directory.fileName.toString()
+                val name = directory.fileName.toString()
+                val folded = name.lowercase(java.util.Locale.ROOT).removeSuffix(".json")
+                val type = name.removeSuffix(".json")
+                if (folded in LanSyncScope.schemas) require(name == if (LanSyncScope.isSingleton(folded)) "$folded.json" else folded) { "SYNC_STORAGE_SHAPE" }
                 if (type in setOf("memory_commit_journals", "pending_deletions") && Files.isDirectory(directory)) {
                     require(Files.newDirectoryStream(directory).use { !it.iterator().hasNext() }) { "SYNC_PENDING_REPOSITORY_WORK" }
                 }
-                if (type !in LanSyncScope.schemas || !Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
+                if (type !in LanSyncScope.schemas) {
                     excluded += type.removeSuffix(".json"); return@forEach
                 }
-                lanSyncSafe(directory, true)
-                Files.newDirectoryStream(directory).use { files -> files.sortedBy { it.fileName.toString() }.forEach { file ->
+                val singleton = LanSyncScope.isSingleton(type)
+                require(if (singleton) Files.isRegularFile(directory, LinkOption.NOFOLLOW_LINKS)
+                    else Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) { "SYNC_STORAGE_SHAPE" }
+                lanSyncSafe(directory, !singleton)
+                fun process(file: Path) {
                     require(file.fileName.toString().endsWith(".json")) { "SYNC_UNFINISHED_ENTITY" }
                     val raw = lanSyncRead(file, MAX_RECORD)
                     val body = lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                     val id = requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_ENTITY_ID" }
                     val original = LanSyncRecord(type, id, body); LanSyncScope.validateRecord(original)
-                    require(file.fileName.toString() == "${LanSyncScope.storageId(original)}.json") { "SYNC_STORAGE_ID" }
+                    require(dataRoot.relativize(file).toString().replace('\\', '/') == LanSyncScope.relativePath(original)) { "SYNC_STORAGE_ID" }
                     val normalized = LanSyncScope.normalize(type, mapResources(body) { reference, field ->
                         if (reference.isBlank() || reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) ||
                             type == "save_slots" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
@@ -82,7 +88,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     sourceFiles[dataRoot.relativize(file).toString().replace('\\', '/')] = lanSyncHash(raw)
                     records += record
                     require(records.size <= 100_000) { "SYNC_RECORD_LIMIT" }
-                } }
+                }
+                if (singleton) process(directory) else Files.newDirectoryStream(directory).use { files ->
+                    files.sortedBy { it.fileName.toString() }.forEach(::process)
+                }
             } }
         }
         val snapshot = LanSyncSnapshot(deviceId = deviceId, records = projection.rewrite(records), resources = resources, excludedTypes = excluded)
@@ -119,7 +128,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val checkedResources = hashSetOf<Pair<String, String>>()
         val localRecords = projection.rewrite(plan.snapshot.records, toLocal = true)
         val desired = plan.snapshot.records.zip(localRecords).associate { (wire, local) ->
-            "entities/${local.type}/${LanSyncScope.storageId(local)}.json" to (wire to local)
+            LanSyncScope.relativePath(local) to (wire to local)
         }
         val currentRecords = current.snapshot.records.associateBy { it.key }
         desired.forEach { (relative, pair) ->
@@ -248,8 +257,12 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     private fun target(relative: String): Path {
         val parts = relative.split('/')
-        require(parts.size == 3 && parts[0] == "entities" && parts[1] in (LanSyncScope.schemas.keys + setOf("chat_message_indexes", "chat_message_order_backups")) &&
-            parts[2].endsWith(".json") && parts[2].none { it == '\\' || it == ':' || it.code < 32 } && parts.none { it == "." || it == ".." }) { "SYNC_TARGET_PATH" }
+        val singleton = parts.size == 2 && parts[1].endsWith(".json") &&
+            parts[1].removeSuffix(".json").let { it in LanSyncScope.schemas && LanSyncScope.isSingleton(it) }
+        val entity = parts.size == 3 && !LanSyncScope.isSingleton(parts[1]) &&
+            parts[1] in (LanSyncScope.schemas.keys + setOf("chat_message_indexes", "chat_message_order_backups")) && parts[2].endsWith(".json")
+        require(parts[0] == "entities" && (singleton || entity) &&
+            parts.all { part -> part.isNotEmpty() && part.none { it == '\\' || it == ':' || it.code < 32 } && part != "." && part != ".." }) { "SYNC_TARGET_PATH" }
         val path = dataRoot.resolve(relative).normalize(); require(path.startsWith(dataRoot))
         return path
     }

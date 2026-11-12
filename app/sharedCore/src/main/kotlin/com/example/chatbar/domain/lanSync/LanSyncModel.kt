@@ -11,7 +11,7 @@ const val LAN_SYNC_PROTOCOL = 4
 @Serializable
 data class LanSyncRecord(val type: String, val id: String, val body: JsonObject) {
     internal val value get() = body
-    internal val singleton get() = false
+    internal val singleton get() = LanSyncScope.isSingleton(type)
     internal fun text(field: String) = (body[field] as? JsonPrimitive)?.contentOrNull
     internal fun comparisonBody(): JsonObject {
         val ignored = if (!text("sourcePresetKey").isNullOrBlank()) setOf("updatedAt", "createdAt") else setOf("updatedAt")
@@ -93,6 +93,7 @@ data class LanSyncConflict(
     val phoneDeleted: Boolean,
     val computerRecords: Int,
     val phoneRecords: Int,
+    val canKeepBoth: Boolean = true,
 )
 
 data class LanSyncComparison(
@@ -130,8 +131,9 @@ object LanSyncCompare {
                         ?: (l + r).firstOrNull { it.type == "moment_posts" } ?: (l + r).first()
                     val title = listOf("displayTitleOverride", "title", "name", "senderName").firstNotNullOfOrNull {
                         (owner.body[it] as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank)
-                    } ?: if (owner.type == "moment_tasks") "朋友圈计划" else owner.type
-                    conflicts += LanSyncConflict(key, title.take(160), a == null, b == null, l.size, r.size)
+                    } ?: when (owner.type) { "moment_tasks" -> "朋友圈计划"; "player_setting" -> "全局玩家设定"; else -> owner.type }
+                    conflicts += LanSyncConflict(key, title.take(160), a == null, b == null, l.size, r.size,
+                        canKeepBoth = (l + r).none { it.singleton })
                 }
             }
         }

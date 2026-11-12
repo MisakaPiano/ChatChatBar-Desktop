@@ -6,6 +6,7 @@ import kotlinx.serialization.json.*
 
 /** V1 is an explicit data scope. Accounts, device preferences and running jobs never cross it. */
 object LanSyncScope {
+    internal fun isSingleton(type: String) = type == "player_setting"
     internal val legacyChatTypes = setOf("character_cards", "format_cards", "world_books", "chat_sessions", "chat_messages",
         "vector_chunks", "memory_nodes", "memory_states", "memory_tier_revisions", "memory_compression_transactions",
         "memory_commits", "generated_voice_messages", "save_slots", "voice_anchor_states")
@@ -20,9 +21,10 @@ object LanSyncScope {
         "save_slots" to SaveSlot.serializer(),
         "voice_anchor_states" to VoiceAnchorState.serializer(),
         "moment_posts" to MomentPost.serializer(), "moment_tasks" to MomentTask.serializer(),
+        "player_setting" to PlayerSetting.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "同时保留旧式及 v8 会话存档、朋友圈及其图片版本和计划。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
@@ -31,6 +33,8 @@ object LanSyncScope {
         "chat_sessions" -> JsonObject(body.filterKeys { it !in localFields })
         "format_cards" -> JsonObject(body + ("isDefault" to JsonPrimitive(false)))
         "moment_tasks" -> JsonObject(body + ("requiresLocalScheduleApproval" to JsonPrimitive(true)))
+        "player_setting" -> lanSyncJson.encodeToJsonElement(PlayerSetting.serializer(),
+            lanSyncJson.decodeFromJsonElement(PlayerSetting.serializer(), body)).jsonObject
         else -> body
     }
     internal fun retainedLocalFields(type: String) = when (type) {
@@ -54,6 +58,7 @@ object LanSyncScope {
     }
 
     fun identity(type: String, body: JsonObject): String? {
+        if (isSingleton(type)) return "singleton"
         if (type == "voice_anchor_states") {
             val message = (body["messageId"] as? JsonPrimitive)?.contentOrNull ?: return null
             val version = (body["messageVersionId"] as? JsonPrimitive)?.contentOrNull ?: return message
@@ -63,6 +68,8 @@ object LanSyncScope {
     }
     fun storageId(record: LanSyncRecord): String = if (record.type == "chat_messages")
         "${requireNotNull(record.text("sessionId"))}_${record.id}" else record.id
+    internal fun relativePath(record: LanSyncRecord) = if (isSingleton(record.type)) "entities/${record.type}.json"
+        else "entities/${record.type}/${storageId(record)}.json"
 
     fun validateRecord(record: LanSyncRecord) {
         val serializer = requireNotNull(schemas[record.type]) { "SYNC_UNSUPPORTED_TYPE" }
