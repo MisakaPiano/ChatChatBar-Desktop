@@ -6,6 +6,9 @@ import kotlinx.serialization.json.*
 
 /** V1 is an explicit data scope. Accounts, device preferences and running jobs never cross it. */
 object LanSyncScope {
+    internal val legacyChatTypes = setOf("character_cards", "format_cards", "world_books", "chat_sessions", "chat_messages",
+        "vector_chunks", "memory_nodes", "memory_states", "memory_tier_revisions", "memory_compression_transactions",
+        "memory_commits", "generated_voice_messages", "save_slots", "voice_anchor_states")
     val schemas: Map<String, KSerializer<*>> = mapOf(
         "character_cards" to CharacterCard.serializer(), "format_cards" to FormatCard.serializer(),
         "world_books" to WorldBook.serializer(), "chat_sessions" to ChatSession.serializer(),
@@ -32,6 +35,19 @@ object LanSyncScope {
         "chat_sessions" -> localFields
         "format_cards" -> setOf("isDefault")
         else -> emptySet()
+    }
+
+    /** Only previously supported bodies are reconsidered; the frozen legacy envelope is never rewritten. */
+    internal fun validateLegacyPending(snapshot: LanSyncSnapshot) {
+        try {
+            require(snapshot.protocol in setOf(1, 2) && legacyChatTypes.containsAll(snapshot.coveredTypes))
+            val compatible = snapshot.copy(protocol = LAN_SYNC_PROTOCOL,
+                records = snapshot.records.map { it.copy(body = normalize(it.type, it.body)) })
+            compatible.validate(); validateGraph(compatible)
+            require(compatible.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL)
+        } catch (failure: Exception) {
+            throw IllegalArgumentException("SYNC_LEGACY_PLAN_UNSUPPORTED", failure)
+        }
     }
 
     fun identity(type: String, body: JsonObject): String? {

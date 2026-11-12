@@ -3,6 +3,9 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.FormatCard
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.MessageRole
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.net.*
@@ -50,6 +53,16 @@ class LanSyncRuntimeTest {
         fun writeFormat(id: String) {
             val path = root.resolve("entities/format_cards/$id.json"); Files.createDirectories(path.parent)
             Files.writeString(path, lanSyncJson.encodeToJsonElement(FormatCard.serializer(), FormatCard(id, id, "合成格式", createdAt = 1)).toString())
+        }
+        fun writeConversation(text: String, model: String) {
+            val session = ChatSession("session", "card", "合成会话", modelId = model, createdAt = 1, updatedAt = 1)
+            val message = ChatMessage("message", session.id, MessageRole.ASSISTANT, text,
+                alternatives = listOf("旧版本", text), alternativeVersionIds = listOf("version-0", "version-1"),
+                currentAlternativeIndex = 1, currentAlternativeVersionId = "version-1", createdAt = 1, updatedAt = 1, orderKey = 1_000_000)
+            val sessions = root.resolve("entities/chat_sessions"); val messages = root.resolve("entities/chat_messages")
+            Files.createDirectories(sessions); Files.createDirectories(messages)
+            Files.writeString(sessions.resolve("session.json"), lanSyncJson.encodeToJsonElement(ChatSession.serializer(), session).toString())
+            Files.writeString(messages.resolve("session_message.json"), lanSyncJson.encodeToJsonElement(ChatMessage.serializer(), message).toString())
         }
         fun names(): Set<String> = workspace.capture(id).use { capture -> capture.snapshot.records.mapNotNull { it.text("name") }.toSet() }
     }
@@ -270,5 +283,56 @@ class LanSyncRuntimeTest {
             assertTrue(previous.transaction in a.store.baseline(b.id, a.id).receipts)
             assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
+    @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {
+        for (legacyProtocol in listOf(1, 2)) for (bothApplied in listOf(false, true)) {
+            val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+            for (end in listOf(a, b)) end.write("card", "同一合成角色")
+            a.writeConversation("电脑版本", "pc-local-model"); b.writeConversation("手机版本", "phone-local-model")
+            val left = a.workspace.capture(a.id); val right = b.workspace.capture(b.id)
+            val oldTransaction = java.util.UUID.randomUUID().toString()
+            val selected = LanSyncPlanner.plan(left.snapshot, right.snapshot, LanSyncBaseline(b.id, ownerId = a.id),
+                mapOf("conversation/session" to LanSyncChoice.KEEP_BOTH), oldTransaction)
+            val fork = selected.parents.keys.single()
+            try {
+                // The disk journal's exact entity payload is transport-version independent. Materialize
+                // that compatible payload, then retain the earlier envelope as the interrupted plan.
+                b.workspace.apply(selected, right.snapshot.hashes(), b.id, emptyMap())
+                if (bothApplied) a.workspace.apply(selected, left.snapshot.hashes(), a.id, emptyMap())
+                val legacy = selected.copy(snapshot = selected.snapshot.copy(protocol = legacyProtocol, coveredTypes = LanSyncScope.legacyChatTypes))
+                a.store.pending(LanSyncPending(b.id, legacy, left.snapshot.hashes(), right.snapshot.hashes(), localApplied = bothApplied))
+                b.store.pending(LanSyncPending(a.id, legacy, right.snapshot.hashes(), emptyMap(), localApplied = true))
+                if (bothApplied) a.writeConversation("电脑应用后编辑", "pc-local-model")
+                val before = Files.walk(b.root.resolve("entities")).use { paths -> paths.filter { Files.isRegularFile(it) }.toList().associateWith {
+                    Files.readAllBytes(it) to Files.readAttributes(it, java.nio.file.attribute.BasicFileAttributes::class.java).fileKey()
+                } }
+                val host = a.runtime(); val phone = b.runtime()
+                try {
+                    pair(host, phone, a, b); phone.requestSync(); completed(a, b, oldTransaction)
+                    assertNotEquals(oldTransaction, a.store.baseline(b.id, a.id).revision)
+                    assertEquals(a.workspace.capture(a.id).use { it.snapshot.hashes() }, b.workspace.capture(b.id).use { it.snapshot.hashes() })
+                    for (end in listOf(a, b)) {
+                        val sessions = Files.newDirectoryStream(end.root.resolve("entities/chat_sessions")).use { it.toList() }
+                        assertEquals(setOf("session.json", "$fork.json"), sessions.map { it.fileName.toString() }.toSet())
+                        val copied = lanSyncJson.decodeFromString(ChatSession.serializer(), Files.readString(end.root.resolve("entities/chat_sessions/$fork.json")))
+                        assertEquals(oldTransaction, copied.lanSyncOrigin?.transaction)
+                        assertEquals("session", copied.lanSyncOrigin?.parentSessionId)
+                        if (!bothApplied) {
+                            val old = lanSyncJson.decodeFromString<LanSyncPending>(Files.readString(end.stateRoot.resolve("superseded-$oldTransaction.json")))
+                            assertEquals(legacyProtocol, old.plan.snapshot.protocol); assertEquals(selected.parents, old.plan.parents)
+                        }
+                    }
+                    before.forEach { (path, proof) ->
+                        if (!bothApplied || path != b.root.resolve("entities/chat_messages/session_message.json")) {
+                            assertContentEquals(proof.first, Files.readAllBytes(path))
+                            assertEquals(proof.second, Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes::class.java).fileKey())
+                        }
+                    }
+                    if (bothApplied) assertEquals("电脑应用后编辑", lanSyncJson.decodeFromString(ChatMessage.serializer(),
+                        Files.readString(b.root.resolve("entities/chat_messages/session_message.json"))).content)
+                    assertEquals("session", lanSyncJson.parseToJsonElement(Files.readString(b.stateRoot.resolve("receipt-${a.id}.json"))).jsonObject[fork]?.jsonPrimitive?.content)
+                } finally { host.closeAndDrain(); phone.closeAndDrain() }
+            } finally { left.close(); right.close() }
+        }
     }
 }

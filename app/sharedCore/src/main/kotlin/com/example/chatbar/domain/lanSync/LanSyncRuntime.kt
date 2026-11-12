@@ -221,12 +221,28 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 require(lanSyncJson.decodeFromString<Map<String, String>>(wire.text()) == phoneSnapshot.hashes()) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
                 val computerApplied = previous?.let { workspace.applied(it.plan.transaction) } == true
                 val phoneApplied = previous != null && hello.pendingTransaction == previous.plan.transaction && hello.locallyApplied
-                val needsRebase = previous != null && when {
+                val protocolChanged = previous != null && previous.plan.snapshot.protocol != LAN_SYNC_PROTOCOL
+                if (protocolChanged) try { LanSyncScope.validateLegacyPending(requireNotNull(previous).plan.snapshot) }
+                catch (failure: IllegalArgumentException) {
+                    requested = false; wire.sendText("SYNC_LEGACY_PLAN_UNSUPPORTED"); throw failure
+                }
+                if (protocolChanged && computerApplied && phoneApplied) {
+                    val finished = requireNotNull(previous)
+                    // Both endpoints have already published the old payload. Finish its receipts
+                    // without replaying it over later edits, then run a fresh current-protocol round.
+                    wire.sendText("LEGACY_FINISH:${finished.plan.transaction}")
+                    require(wire.text() == "LEGACY_COMMITTED:${finished.plan.transaction}") { "SYNC_COMMIT_RECEIPT" }
+                    complete(peerId, finished.plan); store.clearPending(peerId, finished.plan.transaction)
+                    requested = true; wire.sendText("DONE")
+                    _state.value = _state.value.copy(busy = false, status = "旧同步回执已确认，正在核对后续修改")
+                    return@withLock
+                }
+                val needsRebase = previous != null && (protocolChanged || when {
                     computerApplied && phoneApplied -> false
                     computerApplied -> phoneSnapshot.hashes() != previous.expectedRemote
                     phoneApplied -> computer.snapshot.hashes() != previous.expectedLocal
                     else -> computer.snapshot.hashes() != previous.expectedLocal || phoneSnapshot.hashes() != previous.expectedRemote
-                }
+                })
                 val prepared = if (previous == null || needsRebase) {
                     val ancestor = if (previous != null && (computerApplied || phoneApplied))
                         LanSyncBaseline(peerId, "recovery:${previous.plan.transaction}",
@@ -333,6 +349,19 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     planText = wire.text()
                 }
                 require(planText != "SYNC_CONFLICT_TIMEOUT") { "SYNC_CONFLICT_TIMEOUT" }
+                require(planText != "SYNC_LEGACY_PLAN_UNSUPPORTED") { "SYNC_LEGACY_PLAN_UNSUPPORTED" }
+                if (planText.startsWith("LEGACY_FINISH:")) {
+                    val finished = requireNotNull(pending) { "SYNC_RECEIPT_WITHOUT_APPLY" }
+                    require(planText == "LEGACY_FINISH:${finished.plan.transaction}" && workspace.applied(finished.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
+                    LanSyncScope.validateLegacyPending(finished.plan.snapshot)
+                    complete(peer.fingerprint, finished.plan)
+                    wire.sendText("LEGACY_COMMITTED:${finished.plan.transaction}")
+                    require(wire.text() == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
+                    store.clearPending(peer.fingerprint, finished.plan.transaction)
+                    requested = true
+                    _state.value = _state.value.copy(busy = false, status = "旧同步回执已确认，正在核对后续修改")
+                    return
+                }
                 val plan = lanSyncJson.decodeFromString<LanSyncPlan>(planText)
                 val expected = lanSyncJson.decodeFromString<Map<String, String>>(wire.text())
                 val received = LanSyncTransfer.receive(wire, store.root, peer.fingerprint)
@@ -464,6 +493,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_PAIR_EXPIRED" -> "配对码已过期，请在电脑生成新的二维码"
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"
             "SYNC_PROTOCOL" -> "两端同步协议版本不同，请使用匹配的双端同步版本"
+            "SYNC_LEGACY_PLAN_UNSUPPORTED" -> "旧同步计划无法由此版本安全接续，原计划与已应用成果已保留；请使用对应版本完成或核对恢复记录"
             "SYNC_CONFLICT_TIMEOUT" -> "冲突选择等待已结束，现有资料和恢复记录已保留；请重新点同步检查"
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"
             "SYNC_BASELINE_MISMATCH" -> "两端共同基线不一致，已保留资料和回执，需恢复上次同步"
