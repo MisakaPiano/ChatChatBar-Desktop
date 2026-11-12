@@ -34,6 +34,7 @@ def inspect(directory, control_sha, build_tools):
         rows.append({'filename': name, 'package': package, 'versionCode': actual_version,
                      'sha256': digest, 'bytes': apk.stat().st_size})
     result = {'sourceSha': frozen['sourceSha'], 'controlSha': control_sha, 'inputs': rows,
+              'testFixtureOverlay': frozen.get('testFixtureOverlay'),
               'persistentSigningApplied': False, 'deviceUpgradeTested': False, 'userDelivered': False}
     (directory/'raw-manifest.json').write_text(json.dumps(result, indent=2), encoding='utf8')
     print(json.dumps(result))

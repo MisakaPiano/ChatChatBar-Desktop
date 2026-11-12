@@ -34,6 +34,7 @@ def main(request_path, source_dir, output_dir, build_tools):
     raw = json.loads((source_dir/'raw-manifest.json').read_text(encoding='utf8'))
     frozen = json.loads((source_dir/'source-request.json').read_text(encoding='utf8'))
     assert raw['sourceSha'] == frozen['sourceSha'] == request['sourceSha']
+    assert raw.get('testFixtureOverlay') == frozen.get('testFixtureOverlay') == request.get('testFixtureOverlay')
     assert frozen['series'] == 'next' and frozen['versions'] == [81, 82]
     assert raw['controlSha'] == request['originalArtifact']['controlSha']
     assert len(raw['inputs']) == 3
@@ -92,7 +93,8 @@ def main(request_path, source_dir, output_dir, build_tools):
                          output_dir/'tamper-rejection.txt', False)
     assert 'DOES NOT VERIFY' in rejection
     tampered.unlink()
-    result = {'kind': request['kind'], 'sourceSha': request['sourceSha'], 'entries': rows,
+    result = {'kind': request['kind'], 'sourceSha': request['sourceSha'],
+              'testFixtureOverlay': request.get('testFixtureOverlay'), 'entries': rows,
               'protectedByteTamperRejected': True, 'privateKeyUploaded': False,
               'localApkWritten': False, 'firstPreviewUpgradeCompatible': False,
               'deviceUpgradeTested': False, 'humanAcceptance': False, 'userDelivered': False}

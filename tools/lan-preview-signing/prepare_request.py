@@ -54,6 +54,7 @@ def main(directory, artifact_path, keyfile, output):
         assert first['purpose'] == 'ISOLATED_LAN_NEXT_PREVIEW'
         entries[role] = {'filename': name, 'publicSigning': first}
     request = {'kind': 'CCB_LAN_NEXT_PREVIEW_PUBLIC_SIGNING', 'sourceSha': source,
+               'testFixtureOverlay': frozen.get('testFixtureOverlay'),
                'originalArtifact': artifact, 'certificateSha256': CERTIFICATE,
                'entries': entries, 'sameIdentityAcrossReopen': True,
                'firstPreviewUpgradeCompatible': False, 'userDelivered': False}

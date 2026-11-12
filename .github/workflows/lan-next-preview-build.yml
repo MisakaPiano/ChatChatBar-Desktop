@@ -5,6 +5,7 @@ on:
     paths: [.github/lan-next-preview-build-request.json]
 permissions:
   contents: read
+  actions: read
 jobs:
   raw-inputs:
     runs-on: ubuntu-latest
@@ -23,6 +24,17 @@ jobs:
           echo "LAN_NEXT_SOURCE=$sourceDir" >> "$GITHUB_ENV"
           mkdir raw-inputs
           cp .github/lan-next-preview-build-request.json raw-inputs/source-request.json
+      - name: Apply only declared test API compatibility overlay
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/lan-preview-signing/prepare_fixture_overlay.py
+      - uses: actions/download-artifact@v4
+        if: env.LAN_NEXT_FIXTURE_ONLY == 'true'
+        with:
+          name: ccb-lan-next-signing-inputs
+          run-id: ${{ env.LAN_NEXT_REUSED_RUN }}
+          github-token: ${{ github.token }}
+          path: reused-original
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -32,11 +44,13 @@ jobs:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
       - name: Build isolated81 and its instrumentation APK
+        if: env.LAN_NEXT_FIXTURE_ONLY != 'true'
         run: |
           cd "$LAN_NEXT_SOURCE/app"
           chmod +x gradlew
           ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=81 --no-daemon --stacktrace
       - name: Preserve81 inputs before the next variant build
+        if: env.LAN_NEXT_FIXTURE_ONLY != 'true'
         run: |
           python3 - <<'PY'
           import os, pathlib, shutil
@@ -46,16 +60,33 @@ jobs:
               shutil.copyfile(files[0], pathlib.Path('raw-inputs')/name)
           PY
       - name: Build isolated82 with matching source and retained fixture
+        if: env.LAN_NEXT_FIXTURE_ONLY != 'true'
         run: |
           cd "$LAN_NEXT_SOURCE/app"
           ./gradlew :app:assembleLanPreview -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=82 --no-daemon --stacktrace
+      - name: Compile only corrected instrumentation APK against frozen81
+        if: env.LAN_NEXT_FIXTURE_ONLY == 'true'
+        run: |
+          cd "$LAN_NEXT_SOURCE/app"
+          chmod +x gradlew
+          ./gradlew :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=81 --no-daemon --stacktrace
       - name: Pin all raw inputs and verify manifest identities
         run: |
           python3 - <<'PY'
           import hashlib,json,os,pathlib,re,shutil,subprocess
           app=pathlib.Path(os.environ['LAN_NEXT_SOURCE'])/'app/app/build/outputs/apk/lanPreview'
-          files=list(app.glob('*.apk')); assert len(files)==1
-          root=pathlib.Path('raw-inputs'); shutil.copyfile(files[0],root/'upgrade-input.apk')
+          root=pathlib.Path('raw-inputs')
+          if os.environ.get('LAN_NEXT_FIXTURE_ONLY') == 'true':
+              expected={'base-input.apk':'4a65cc6da4b53cdef75cb848e3783a72ab08afe0f0870a14d6f5b3c25d80acdf','upgrade-input.apk':'199abde5981160325a02789d4694ba818aeb2a4512d6e4c51817daf9e9fb7f91'}
+              for name,digest in expected.items():
+                  p=pathlib.Path('reused-original')/name
+                  with p.open('rb') as f: assert hashlib.file_digest(f,'sha256').hexdigest()==digest
+                  shutil.copyfile(p,root/name)
+              files=list(app.parent.glob('androidTest/lanPreview/*.apk')); assert len(files)==1
+              shutil.copyfile(files[0],root/'tests-input.apk')
+          else:
+              files=list(app.glob('*.apk')); assert len(files)==1
+              shutil.copyfile(files[0],root/'upgrade-input.apk')
           rows=[]
           for name,package,version in [('base-input.apk','com.example.chatbar.lansyncnext',81),('upgrade-input.apk','com.example.chatbar.lansyncnext',82),('tests-input.apk','com.example.chatbar.lansyncnext.test',None)]:
               p=root/name
@@ -69,7 +100,7 @@ jobs:
               with p.open('rb') as stream: digest=hashlib.file_digest(stream,'sha256').hexdigest()
               rows.append({'filename':name,'package':package,'versionCode':int(match.group(2)) if match.group(2) else None,'sha256':digest,'bytes':p.stat().st_size})
           request=json.load(open('.github/lan-next-preview-build-request.json'))
-          json.dump({'sourceSha':request['sourceSha'],'controlSha':os.environ['GITHUB_SHA'],'inputs':rows,'persistentSigningApplied':False,'deviceUpgradeTested':False,'userDelivered':False},open(root/'raw-manifest.json','w'),indent=2)
+          json.dump({'sourceSha':request['sourceSha'],'controlSha':os.environ['GITHUB_SHA'],'inputs':rows,'testFixtureOverlay':request.get('testFixtureOverlay'),'persistentSigningApplied':False,'deviceUpgradeTested':False,'userDelivered':False},open(root/'raw-manifest.json','w'),indent=2)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
