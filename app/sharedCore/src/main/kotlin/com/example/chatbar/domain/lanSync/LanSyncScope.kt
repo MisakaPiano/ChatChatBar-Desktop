@@ -23,7 +23,16 @@ object LanSyncScope {
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
 
-    fun normalize(type: String, body: JsonObject): JsonObject = if (type == "chat_sessions") JsonObject(body.filterKeys { it !in localFields }) else body
+    fun normalize(type: String, body: JsonObject): JsonObject = when (type) {
+        "chat_sessions" -> JsonObject(body.filterKeys { it !in localFields })
+        "format_cards" -> JsonObject(body + ("isDefault" to JsonPrimitive(false)))
+        else -> body
+    }
+    internal fun retainedLocalFields(type: String) = when (type) {
+        "chat_sessions" -> localFields
+        "format_cards" -> setOf("isDefault")
+        else -> emptySet()
+    }
 
     fun identity(type: String, body: JsonObject): String? {
         if (type == "voice_anchor_states") {
@@ -50,6 +59,7 @@ object LanSyncScope {
 
     fun validateGraph(snapshot: LanSyncSnapshot) {
         snapshot.records.forEach(::validateRecord)
+        require(snapshot.records.none { it.type == "format_cards" && it.body["isDefault"] != JsonPrimitive(false) }) { "SYNC_DEVICE_DEFAULT_ON_WIRE" }
         val referenced = linkedSetOf<String>()
         val mediaIdentities = linkedMapOf<String, String>()
         snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->

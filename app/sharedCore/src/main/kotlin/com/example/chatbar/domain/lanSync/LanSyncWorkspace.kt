@@ -160,9 +160,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     }
                 }
             }
-            val localBody = existing?.takeIf { wire.type == "chat_sessions" }?.let {
+            val retainedFields = LanSyncScope.retainedLocalFields(wire.type)
+            val localBody = existing?.takeIf { retainedFields.isNotEmpty() }?.let {
                 val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD))).jsonObject
-                JsonObject(materialized + original.filterKeys { it in LanSyncScope.localFields })
+                JsonObject(materialized + original.filterKeys { it in retainedFields })
             } ?: materialized
             LanSyncScope.validateRecord(local.copy(body = localBody))
             changes[relative] = lanSyncJson.encodeToString(JsonObject.serializer(), localBody).toByteArray(Charsets.UTF_8)
