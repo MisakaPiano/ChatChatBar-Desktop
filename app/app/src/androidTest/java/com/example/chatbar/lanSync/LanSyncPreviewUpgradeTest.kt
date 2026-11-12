@@ -14,6 +14,7 @@ import com.example.chatbar.domain.lanSync.*
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.KeyStore
 import java.util.UUID
 import kotlinx.coroutines.flow.first
@@ -59,7 +60,7 @@ class LanSyncPreviewUpgradeTest {
         val protection = AndroidLanSyncKeyProtection(KEY_ALIAS)
         return LanSyncStateStore(root.resolve("state"), protection::protect, protection::unprotect)
     }
-    private fun workspace(root: Path) = LanSyncWorkspace(root.resolve("data"), root.resolve("capture-scratch"), { Path.of(it) })
+    private fun workspace(root: Path) = LanSyncWorkspace(root.resolve("data"), root.resolve("capture-scratch"), { Paths.get(it) })
 
     @Test fun seedSyntheticRepositoryAndProtectedPeerIdentity(): Unit = runBlocking {
         val root = root(context(81))
@@ -126,10 +127,10 @@ class LanSyncPreviewUpgradeTest {
         val history = studio.history.first().single()
         assertEquals("合成升级原文\n保留第二行", history.recipe.basePrompt)
         assertEquals(VIBE, NovelAiInlinePayloadStore(data.toFile()).resolve(requireNotNull(history.recipe.imageGuidance.vibes.single().encodedVibe)))
-        assertArrayEquals(image(), Files.readAllBytes(Path.of(history.images.single().path)))
+        assertArrayEquals(image(), Files.readAllBytes(Paths.get(history.images.single().path)))
         val processed = requireNotNull(storage.loadEntity(LanSyncPostProcess.TYPE, "upgrade-result", NovelAiPostProcessResultRecord.serializer()))
         processed.validateMetadata()
-        assertEquals(processed.imageSha256, lanSyncHash(Files.readAllBytes(Path.of(processed.imagePath))))
+        assertEquals(processed.imageSha256, lanSyncHash(Files.readAllBytes(Paths.get(processed.imagePath))))
         workspace(root).capture(identity.fingerprint).use { assertEquals(baseline.hashes, it.snapshot.hashes()) }
         assertEquals(expected, inventory(root).filterKeys { it != "proof.json" })
         println("LAN_UPGRADE_VERIFIED package=$PACKAGE code=82 identity=${identity.fingerprint} files=${expected.size} repositories=readable")
