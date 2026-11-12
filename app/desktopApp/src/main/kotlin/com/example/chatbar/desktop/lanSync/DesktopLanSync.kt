@@ -32,7 +32,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
     }, "CCB 电脑") }
     fun recoverBeforeRepositories() = workspace.recover()
-    fun stop() = runtime.stop()
+    suspend fun closeAndDrain() = runtime.closeAndDrain()
 }
 
 internal object DesktopLanSyncStartup {

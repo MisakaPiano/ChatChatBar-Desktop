@@ -136,8 +136,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                         val target = if (packageSource != null) dataRoot.resolve("save_slot_packages").resolve(packageSource)
                             else dataRoot.resolve(parts[1]).resolve("lan-${parts[2]}.${parts[3]}")
                         Files.createDirectories(target.parent); lanSyncSafe(target.parent, true)
-                        if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) require(hashFile(target, size) == parts[2]) { "SYNC_RESOURCE_COLLISION" }
-                        else { require(copyHash(source, target, size) == parts[2]) { "SYNC_RESOURCE_DAMAGED" } }
+                        LanSyncBlobs.publish(source, target, size, parts[2], stateRoot)
                         if (packageSource != null) target.fileName.toString() else target.toString()
                     }
                 }

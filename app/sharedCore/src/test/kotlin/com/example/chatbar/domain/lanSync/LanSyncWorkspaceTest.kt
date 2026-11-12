@@ -45,7 +45,7 @@ class LanSyncWorkspaceTest {
         assertEquals(plan.snapshot.hashes(), reopened.capture("synthetic").snapshot.hashes())
         assertFalse(Files.exists(root.resolve("entities/character_cards/old.json")))
         assertEquals("synthetic-local-device-record", Files.readString(uncovered))
-        assertTrue(LanSyncCompare.compare(plan.snapshot, reopened.capture("synthetic"),
+        assertTrue(LanSyncCompare.compare(plan.snapshot, reopened.capture("synthetic").use { it.snapshot },
             LanSyncBaseline("synthetic", transaction, plan.snapshot.hashes(), ownerId = "synthetic")).conflicts.isEmpty())
     }
     @Test fun changesAfterCaptureAreRefusedWithoutOverwriting() {

@@ -15,6 +15,7 @@ object LanSyncScope {
         "memory_compression_transactions" to MemoryCompressionTransaction.serializer(),
         "memory_commits" to MemoryCommit.serializer(), "generated_voice_messages" to GeneratedVoiceMessage.serializer(),
         "save_slots" to SaveSlot.serializer(),
+        "voice_anchor_states" to VoiceAnchorState.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
         "同时保留旧式及 v8 会话存档。不含账户和密钥、设备设置、输入草稿、朋友圈、生图工作室和历史。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
@@ -24,8 +25,14 @@ object LanSyncScope {
 
     fun normalize(type: String, body: JsonObject): JsonObject = if (type == "chat_sessions") JsonObject(body.filterKeys { it !in localFields }) else body
 
-    fun identity(type: String, body: JsonObject): String? =
-        (body[if (type == "memory_states") "sessionId" else "id"] as? JsonPrimitive)?.contentOrNull
+    fun identity(type: String, body: JsonObject): String? {
+        if (type == "voice_anchor_states") {
+            val message = (body["messageId"] as? JsonPrimitive)?.contentOrNull ?: return null
+            val version = (body["messageVersionId"] as? JsonPrimitive)?.contentOrNull ?: return message
+            return java.util.UUID.nameUUIDFromBytes("$message\u0000$version".toByteArray(Charsets.UTF_8)).toString()
+        }
+        return (body[if (type == "memory_states") "sessionId" else "id"] as? JsonPrimitive)?.contentOrNull
+    }
 
     fun validateRecord(record: LanSyncRecord) {
         val serializer = requireNotNull(schemas[record.type]) { "SYNC_UNSUPPORTED_TYPE" }

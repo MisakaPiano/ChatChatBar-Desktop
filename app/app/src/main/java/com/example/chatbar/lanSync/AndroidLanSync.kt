@@ -35,9 +35,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             }
         }, audioResource = { _, _, hash, source ->
             val target = dataRoot.resolve("audio/lan-$hash.mp3")
-            Files.createDirectories(target.parent)
-            if (Files.notExists(target, LinkOption.NOFOLLOW_LINKS)) Files.copy(source, target)
-            require(LanSyncWorkspace.hashFile(target, Files.size(source)) == hash)
+            LanSyncBlobs.publish(source, target, Files.size(source), hash, root)
             target.toString()
         })
     val runtime by lazy { LanSyncRuntime(store, workspace, object : LanSyncPlatform {

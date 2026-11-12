@@ -840,7 +840,7 @@ class DesktopAppContainer internal constructor(
     )
 
     suspend fun close() {
-        if (lanSyncOwner.isInitialized()) lanSyncOwner.value.stop()
+        if (lanSyncOwner.isInitialized()) lanSyncOwner.value.closeAndDrain()
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {

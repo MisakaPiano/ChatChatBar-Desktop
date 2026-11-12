@@ -29,7 +29,8 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
 class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace: LanSyncWorkspace,
     private val platform: LanSyncPlatform, private val name: String,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    private val observe: (String, String) -> Unit = { _, _ -> }) {
+    private val observe: (String, String) -> Unit = { _, _ -> },
+    private val network: LanSyncNetwork = LanSyncNetwork.Local) {
     private val identity by lazy { store.identity() }
     private val _state = MutableStateFlow(LanSyncUiState())
     val state = _state.asStateFlow()
@@ -40,6 +41,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private var listener: SSLServerSocket? = null
     private var listening: Job? = null
     private var polling: Job? = null
+    private var pairing: Job? = null
     private var discovery: Job? = null
     private var discoverySocket: java.net.DatagramSocket? = null
     private var choices: CompletableDeferred<Map<String, LanSyncChoice>>? = null
@@ -55,12 +57,13 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     fun startHost() {
         if (listening?.isActive == true) return
         listening = scope.launch { safely {
-            val addresses = LanSyncTls.localAddresses(); require(addresses.isNotEmpty()) { "SYNC_NO_LOCAL_NETWORK" }
+            val addresses = network.addresses(); require(addresses.isNotEmpty()) { "SYNC_NO_LOCAL_NETWORK" }
             val context = identity.context { peer -> store.peers().any { it.fingerprint == peer } || offer?.expiresAt?.let { it > System.currentTimeMillis() } == true }
             val server = context.serverSocketFactory.createServerSocket() as SSLServerSocket
             server.reuseAddress = false; server.needClientAuth = true
             server.bind(InetSocketAddress(0)); listener = server
-            discovery = scope.launch {
+            network.listening(identity.fingerprint, server.localPort)
+            if (network.discoveryEnabled) discovery = scope.launch {
                 try {
                     LanSyncDiscovery.listen(identity.fingerprint, server.localPort).use { udp ->
                         discoverySocket = udp
@@ -93,10 +96,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         _state.value = _state.value.copy(offer = value, status = "配对码两分钟内有效；请仅在自己的手机上确认")
     }
 
-    fun pair(code: String) { scope.launch { operation.withLock { safely {
+    fun pair(code: String) { pairing = scope.launch { operation.withLock { safely {
         val value = LanSyncPairOffer.parse(code)
         _state.value = _state.value.copy(busy = true, status = "正在验证电脑身份")
-        LanSyncTls.connect(identity, value.host, value.port, value.fingerprint).use { socket ->
+        network.connect(identity, LanSyncPeer(value.fingerprint, "电脑", value.host, value.port)).use { socket ->
             sockets += socket
             try { LanSyncWire(socket).use { wire ->
                 wire.sendText(lanSyncJson.encodeToString(LanSyncHello("PAIR", name, value.token)))
@@ -128,7 +131,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     }
 
     private suspend fun handleHost(socket: SSLSocket) {
-        require(socket.inetAddress.isSiteLocalAddress && !socket.inetAddress.isLoopbackAddress) { "SYNC_LOCAL_ADDRESS" }
+        require(network.accepts(socket.inetAddress)) { "SYNC_LOCAL_ADDRESS" }
         LanSyncTls.configure(socket); socket.startHandshake()
         val peerId = LanSyncTls.peerFingerprint(socket)
         LanSyncWire(socket).use { wire ->
@@ -221,10 +224,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
 
     private suspend fun phoneAttempt(peer: LanSyncPeer) {
         val baseline = store.baseline(peer.fingerprint, identity.fingerprint)
-        val socket = try { LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint) }
+        val socket = try { network.connect(identity, peer) }
         catch (failure: java.io.IOException) {
-            val address = LanSyncDiscovery.find(peer.fingerprint) ?: throw failure
-            LanSyncTls.connect(identity, address.first, address.second, peer.fingerprint).also {
+            val address = network.discover(peer.fingerprint) ?: throw failure
+            network.connect(identity, peer.copy(host = address.first, port = address.second)).also {
                 store.trust(peer.copy(host = address.first, port = address.second))
             }
         }
@@ -361,8 +364,14 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     }
     fun stop() {
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null
+        pairing?.cancel(); pairing = null
         listening?.cancel(); listening = null; listener?.close(); listener = null
         discovery?.cancel(); discovery = null; discoverySocket?.close(); discoverySocket = null
         sockets.forEach { runCatching { it.close() } }; sockets.clear()
+    }
+    suspend fun closeAndDrain() {
+        val jobs = listOfNotNull(listening, polling, pairing, discovery)
+        stop()
+        jobs.joinAll()
     }
 }
