@@ -82,8 +82,15 @@ class LanSyncRuntimeTest {
             previous = a.store.baseline(b.id, a.id).revision
             phone.requestSync(); completed(a, b, previous)
             assertEquals(setOf("手机独有", "重开电脑后新增"), a.names())
-            listOf(a.stateRoot, b.stateRoot, a.stateRoot.resolve("workspace"), b.stateRoot.resolve("workspace")).forEach { root ->
-                val scratch = Files.newDirectoryStream(root).use { it.filter { path -> path.fileName.toString().startsWith("capture-") || path.fileName.toString().startsWith("received-") || path.fileName.toString().startsWith("transfer-") }.toList() }
+            val roots = listOf(a.stateRoot, b.stateRoot, a.stateRoot.resolve("workspace"), b.stateRoot.resolve("workspace"))
+            fun scratchFiles(root: Path) = Files.newDirectoryStream(root).use { it.filter { path ->
+                path.fileName.toString().startsWith("capture-") || path.fileName.toString().startsWith("received-") || path.fileName.toString().startsWith("transfer-")
+            }.toList() }
+            // Bilateral data receipts precede each endpoint's finally tail. Wait for that owned
+            // tail, bounded by the same runtime-test deadline; a genuine retained file still fails.
+            until("invocation transfer cleanup must finish") { roots.all { scratchFiles(it).isEmpty() } }
+            roots.forEach { root ->
+                val scratch = scratchFiles(root)
                 assertTrue(scratch.isEmpty(), "temporary data must be released: $scratch")
             }
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
