@@ -121,6 +121,21 @@ class LanSyncGroupPublicationQueueTest {
         assertTrue(plan.blobs.values.all { f.backend.metadata(it.key)?.descriptor == it.descriptor })
     }
 
+    @Test fun aLiveCustodyProviderCannotPublishFromAnObsoleteIsolatedLedgerObject() = withRoot { root ->
+        val f = Fixture(root); val prepared = f.prepare(); var current = f.ledger
+        val key = SyncStreamingCipher.create(f.cipher.group)
+        val rotated = f.sign(f.genesis.copy(id = SyncStoreId.random(), parent = f.genesis.reference(), sequence = 2,
+            epoch = key.epoch, keyCommitment = key.keyCommitment()))
+        val publisher = LanSyncGroupPublicationQueue(f.publications, f.ledger, f.outbox, f.sender.fingerprint,
+            observe = { stage -> if (stage == "ALL_BLOBS_READY") {
+                current = SyncDeviceLedger(f.ledger.trustAnchor).also { it.offer(f.genesis); it.offer(rotated) }
+            } }, currentLedger = { current })
+        val plan = publisher.prepare(prepared.metadata, listOf(prepared.unit), prepared.operations, emptyList())
+        assertEquals("SYNC_GROUP_PUBLICATION_EPOCH_CHANGED", assertFailsWith<IllegalArgumentException> { publisher.upload(plan.metadata.operation, f.backend) }.message)
+        assertEquals(f.genesis.reference(), f.ledger.current().reference())
+        assertNull(f.backend.metadata(plan.metadata.key)); assertNull(publisher.receipt(plan.metadata.operation))
+    }
+
     @Test fun lostCompletionAfterMetadataPublicationRetriesByObservationAndDamagedReceiptRefuses() = withRoot { root ->
         val f = Fixture(root); val prepared = f.prepare()
         val publisher = f.publisher { if (it == "METADATA_READY") throw IOException("synthetic publication receipt loss") }

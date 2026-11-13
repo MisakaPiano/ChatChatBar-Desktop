@@ -213,17 +213,32 @@ class SyncGroupLargeNativeProofTest {
             val dependencies = LanSyncGroupDependencies(cipher.group, backend, custody(), work, targetWorkspace.resourceStore, { kind, _, _ ->
                 require(kind in setOf("documents", "packages")) { "SYNTHETIC_GROUP_PROOF_RESOURCE_KIND" }
             })
-            val available = version.changes.keys.map { unit ->
+            val evidence = LanSyncGroupRecordEvidence(requireNotNull(reconciled.history), requireNotNull(reconciled.ledgerCheckpoint))
+            val dependencyResults = version.changes.keys.associate { unit ->
+                val membership = dependencies.membership(reconciled, receivedVersion, unit)
+                assertEquals(LanSyncGroupDependencyStage.RECORD_MEMBERSHIP_AVAILABLE, membership.stage, membership.code)
+                evidence.offer(requireNotNull(membership.membership))
                 val result = dependencies.inspect(reconciled, receivedVersion, unit)
                 assertEquals(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE, result.stage, result.code)
-                requireNotNull(result.available)
+                LanSyncGroupMembershipRequest(version.reference(), unit) to result
             }
+            val available = dependencyResults.values.map { requireNotNull(it.available) }
             val decoded = available.map { it.decoded }
-            val resources = available.flatMap { it.resources.entries }.associate { it.toPair() }
-            val snapshot = LanSyncSnapshot(deviceId = phone.fingerprint, records = decoded.flatMap { it.payload.records },
-                resources = decoded.flatMap { it.payload.resources.entries }.associate { it.toPair() }, coveredTypes = genesis.coveredTypes)
-            targetWorkspace.capture(phone.fingerprint).use { before -> targetWorkspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()),
-                before.snapshot.hashes(), phone.fingerprint, resources) }
+            val nativePlan = targetWorkspace.capture(phone.fingerprint).use { before ->
+                LanSyncGroupNativePlanner.prepare(before, reconciled, emptyMap(), dependencyResults, evidence)
+            }
+            assertEquals(version.changes.keys, nativePlan.advances.keys)
+            val control = directory("native-control")
+            fun nativeOwner() = LanSyncGroupNativeApplyOwner(control, targetWorkspace, ledger.trustAnchor,
+                Base64.getEncoder().encodeToString(phone.certificate.encoded), LanSyncProjection(), { custody().ledger() }, { inbox.reconcile() },
+                { it.reversedArray() }, { it.reversedArray() })
+            nativeOwner().initializeNewEnrollment()
+            val nativeReceipt = requireNotNull(nativeOwner().apply(nativePlan))
+            assertEquals(LanSyncGroupNativeApplyStatus.APPLIED, nativeReceipt.status)
+            assertEquals(version.changes.keys, nativeReceipt.advancedUnits)
+            assertEquals(nativeReceipt, nativeOwner().apply(nativePlan))
+            assertEquals(1L, nativeOwner().state().completedSequence)
+            assertEquals(version.changes.keys, nativeOwner().state().units.keys)
             LanSyncWorkspace(target, targetState, { Path.of(it) }).capture(phone.fingerprint).use { reopened ->
                 assertEquals(expectedHashes, reopened.snapshot.hashes()); assertEquals(expected, reopened.snapshot.resources)
                 reopened.blobs.forEach { (hash, path) -> assertEquals(hash, LanSyncResourceStore.hashFile(path, expected.getValue(hash))) }
@@ -239,6 +254,8 @@ class SyncGroupLargeNativeProofTest {
                 put("sourceAndCaptureDeletedBeforeUpload", true); put("interruptedUploadRetried", true); put("nativeUnits", decoded.size)
                 put("rootRecipientCount", members.size); put("wholeResourceHashesVerified", true); put("sharedNativeWorkspaceReopened", true)
                 put("inboxReconciled", true); put("perUnitDependenciesVerified", true)
+                put("perUnitNativePlanVerified", true); put("protectedNativeControlReopened", true)
+                put("nativeAppliedUnitReceipts", nativeReceipt.advancedUnits.size); put("nativeRepeatedApplyObservedOnly", true)
                 put("independentSourceCheckpointVerified", true); put("sourceRawOriginals", rawOriginals)
                 put("approvedAuthorSequence", authorJournal().state().committedSequence)
                 put("elapsedMillis", (System.nanoTime() - started) / 1_000_000); put("sampledPeakHeapBytes", peakHeap); put("minimumSampledFreeDiskBytes", minimumFree)

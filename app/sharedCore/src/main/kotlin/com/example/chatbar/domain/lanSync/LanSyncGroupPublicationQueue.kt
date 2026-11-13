@@ -24,10 +24,11 @@ import kotlinx.serialization.Serializable
  * Encrypted delivery ordering only. The native writer still owns approved changes, durable author
  * sequence, proposals and independent recovery custody; this queue never activates app data.
  */
-class LanSyncGroupPublicationQueue(private val root: Path, private val ledger: SyncDeviceLedger,
+class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLedger,
     private val outbox: SyncEncryptedOutbox, private val localDevice: String,
     private val observe: (String) -> Unit = {}, private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
-    private val keyQueue: SyncKeyDeliveryQueue? = null) {
+    private val keyQueue: SyncKeyDeliveryQueue? = null, private val currentLedger: () -> SyncDeviceLedger = { ledger }) {
+    private val ledger: SyncDeviceLedger get() = currentLedger()
     private val lock: ReentrantLock
     init {
         lanSyncSafe(root, true); require(localDevice.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_PUBLICATION_DEVICE" }
