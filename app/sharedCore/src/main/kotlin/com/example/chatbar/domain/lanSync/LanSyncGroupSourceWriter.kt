@@ -19,7 +19,7 @@ class LanSyncGroupSourceCommit internal constructor(val entry: SyncAuthorJournal
     val publication: LanSyncGroupPublishPlan, internal val expectedApplied: Map<String, LanSyncGroupAppliedUnit?>,
     internal val coverage: Set<String>)
 
-/** Source signing owner; all calls require the platform exclusive native-data gate. No network in commit/resume. */
+/** Source signing owner; native preparation requires the platform data gate. Queue-only delivery/receipt do not. */
 class LanSyncGroupSourceWriter(private val root: Path, private val workspace: LanSyncWorkspace, private val identity: LanSyncTlsIdentity,
     private val journal: SyncAuthorJournal, private val authority: () -> SyncDeviceLedger,
     private val cipher: (SyncStoreId) -> SyncStreamingCipher, private val outbox: (SyncStoreId) -> SyncEncryptedOutbox,
@@ -121,6 +121,14 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         val source = requireNotNull(readSource(operation)) { "SYNC_GROUP_SOURCE_PREPARATION_MISSING" }
         val entry = requireNotNull(journal.entry(operation)) { "SYNC_GROUP_SOURCE_NOT_SIGNED" }
         val result = finish(source, entry); publisher(result.metadata.context.epoch).upload(result.publication.metadata.operation, backend, target)
+    }
+    /** Delivery of an already prepared commit touches only private queues, not native data or approval. */
+    fun uploadPrepared(commit: LanSyncGroupSourceCommit, backend: CiphertextStore, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt = guarded {
+        val source = requireNotNull(readSource(commit.entry.request.operation)) { "SYNC_GROUP_SOURCE_PREPARATION_MISSING" }
+        require(journal.entry(source.operation) == commit.entry && commit.entry.request == request(source) &&
+            commit.publication.reference == commit.entry.version.reference() && commit.publication.metadata.key == commit.metadata.context.key &&
+            commit.publication.metadata.descriptor == commit.metadata.metadata.descriptor) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
+        publisher(commit.metadata.context.epoch).upload(commit.publication.metadata.operation, backend, target)
     }
     /** Current-epoch route observation only. Inspection does not prepare, re-key or contact a backend. */
     fun receipt(operation: SyncStoreId, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt? = guarded {
