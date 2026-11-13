@@ -76,6 +76,7 @@ object SyncKeyDeliveryCodec {
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }))
 }
 
+/** uploaded describes some prior backend response; publication target receipts own per-route completion. */
 data class SyncKeyDeliveryEntry(val delivery: SyncGroupKeyDelivery, val request: CiphertextPutRequest, val uploaded: Boolean)
 
 /** Exact encrypted capsule is forced locally before any remote I/O; no cleartext group key is stored. */

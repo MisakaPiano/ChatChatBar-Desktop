@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
     val reference: SyncVersionRef, val metadata: LanSyncGroupPublishObject, val blobs: Map<String, LanSyncGroupPublishObject>,
     val kind: SyncGroupObjectKind = SyncGroupObjectKind.VERSION, val keyDeliveries: Map<String, LanSyncGroupPublishKey> = emptyMap())
 @Serializable data class LanSyncGroupPublishReceipt(val planHash: String, val metadata: CiphertextDescriptor, val resourceCount: Long,
-    val recipientCount: Long = 0, val keyDeliveryCount: Long = 0)
+    val recipientCount: Long = 0, val keyDeliveryCount: Long = 0, val target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY)
 
 /**
  * Encrypted delivery ordering only. The native writer still owns approved changes, durable author
@@ -35,7 +35,9 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         lock = locks.computeIfAbsent(root) { ReentrantLock() }
     }
     private fun planPath(operation: SyncStoreId) = root.resolve("publication-${operation.value}.json")
-    private fun receiptPath(operation: SyncStoreId) = root.resolve("publication-receipt-${operation.value}.json")
+    private fun receiptPath(operation: SyncStoreId, target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY) = root.resolve(
+        if (target == SyncDeliveryTarget.LEGACY) "publication-receipt-${operation.value}.json"
+        else "publication-receipt-${operation.value}-${target.kind.name.lowercase(java.util.Locale.ROOT)}-${target.id.value}.json")
 
     fun prepare(metadata: SyncPreparedGroupObject, units: Collection<LanSyncDecodedGroupUnit>,
         blobOperations: Map<String, SyncStoreId>, knownVersions: Collection<SyncCausalVersion>,
@@ -102,10 +104,10 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         plan
     }
 
-    fun upload(operation: SyncStoreId, backend: CiphertextStore): LanSyncGroupPublishReceipt = guarded {
+    fun upload(operation: SyncStoreId, backend: CiphertextStore, target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY): LanSyncGroupPublishReceipt = guarded {
         val plan = requireNotNull(readPlan(operation)) { "SYNC_GROUP_PUBLICATION_PLAN_MISSING" }
         requireBound(operation)
-        readReceipt(operation, plan)?.let { return@guarded it }
+        readReceipt(operation, plan, target)?.let { return@guarded it }
         requirePlanCurrent(plan)
         val actual = SyncGroupObjectCodec(root, metadataBudget).readQueued(outbox, operation, plan.reference)
         require(actual.envelope.kind == plan.kind && actual.context == SyncEncryptionContext(plan.group, plan.epoch, plan.metadata.key) &&
@@ -138,15 +140,15 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         observe("METADATA_READY")
         requirePlanCurrent(plan)
         val receipt = LanSyncGroupPublishReceipt(hash(planPath(operation)), plan.metadata.descriptor, plan.blobs.size.toLong(),
-            recipientCount(plan), plan.keyDeliveries.size.toLong())
-        LanSyncJsonFiles.write(receiptPath(operation), LanSyncGroupPublishReceipt.serializer(), receipt)
+            recipientCount(plan), plan.keyDeliveries.size.toLong(), target)
+        LanSyncJsonFiles.write(receiptPath(operation, target), LanSyncGroupPublishReceipt.serializer(), receipt)
         observe("RECEIPT_RECORDED")
         receipt
     }
-    fun receipt(operation: SyncStoreId): LanSyncGroupPublishReceipt? = guarded {
+    fun receipt(operation: SyncStoreId, target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY): LanSyncGroupPublishReceipt? = guarded {
         val plan = readPlan(operation)
-        require(plan != null || !Files.exists(receiptPath(operation), NOFOLLOW_LINKS)) { "SYNC_GROUP_PUBLICATION_PLAN_MISSING" }
-        plan?.let { readReceipt(operation, it) }
+        require(plan != null || !Files.exists(receiptPath(operation, target), NOFOLLOW_LINKS)) { "SYNC_GROUP_PUBLICATION_PLAN_MISSING" }
+        plan?.let { readReceipt(operation, it, target) }
     }
     private fun deliver(item: LanSyncGroupPublishObject, plan: LanSyncGroupPublishPlan, backend: CiphertextStore) {
         val entry = requireNotNull(outbox.entry(item.operation)) { "SYNC_GROUP_PUBLICATION_OBJECT_MISSING" }
@@ -197,14 +199,14 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
                 plan.keyDeliveries.values.map { it.operation }.toSet().size == plan.keyDeliveries.size) { "SYNC_GROUP_PUBLICATION_PLAN_CHANGED" }
         }
     }
-    private fun readReceipt(operation: SyncStoreId, plan: LanSyncGroupPublishPlan): LanSyncGroupPublishReceipt? {
-        val path = receiptPath(operation)
+    private fun readReceipt(operation: SyncStoreId, plan: LanSyncGroupPublishPlan, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt? {
+        val path = receiptPath(operation, target)
         if (!Files.exists(path, NOFOLLOW_LINKS)) return null
         requireBound(operation)
         metadataBudget.validate(path)
         return requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupPublishReceipt.serializer())).also {
             require(it.planHash == hash(planPath(operation)) && it.metadata == plan.metadata.descriptor && it.resourceCount == plan.blobs.size.toLong() &&
-                it.recipientCount == recipientCount(plan) && it.keyDeliveryCount == plan.keyDeliveries.size.toLong()) { "SYNC_GROUP_PUBLICATION_RECEIPT_CHANGED" }
+                it.recipientCount == recipientCount(plan) && it.keyDeliveryCount == plan.keyDeliveries.size.toLong() && it.target == target) { "SYNC_GROUP_PUBLICATION_RECEIPT_CHANGED" }
         }
     }
     private fun hash(path: Path) = LanSyncResourceStore.hashFile(path, Files.size(path))

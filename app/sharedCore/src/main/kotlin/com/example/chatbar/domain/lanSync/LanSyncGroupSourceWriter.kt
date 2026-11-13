@@ -117,10 +117,22 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             SyncStoreId.parse(path.fileName.toString().removePrefix("source-").removeSuffix(".json")).also { requireNotNull(readSource(it)) }
         } }
     }
-    fun upload(operation: SyncStoreId, backend: CiphertextStore): LanSyncGroupPublishReceipt = guarded {
+    fun upload(operation: SyncStoreId, backend: CiphertextStore, target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY): LanSyncGroupPublishReceipt = guarded {
         val source = requireNotNull(readSource(operation)) { "SYNC_GROUP_SOURCE_PREPARATION_MISSING" }
         val entry = requireNotNull(journal.entry(operation)) { "SYNC_GROUP_SOURCE_NOT_SIGNED" }
-        val result = finish(source, entry); publisher(result.metadata.context.epoch).upload(result.publication.metadata.operation, backend)
+        val result = finish(source, entry); publisher(result.metadata.context.epoch).upload(result.publication.metadata.operation, backend, target)
+    }
+    /** Current-epoch route observation only. Inspection does not prepare, re-key or contact a backend. */
+    fun receipt(operation: SyncStoreId, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt? = guarded {
+        val source = readSource(operation) ?: return@guarded null
+        val current = authority().current(); val path = deliveryPath(operation, current.epoch)
+        if (!Files.exists(path, NOFOLLOW_LINKS)) return@guarded null
+        LanSyncMetadataBudget().validate(path)
+        val delivery = requireNotNull(LanSyncJsonFiles.read(path, Delivery.serializer()))
+        val entry = requireNotNull(journal.entry(operation)) { "SYNC_GROUP_SOURCE_NOT_SIGNED" }
+        require(entry.request == request(source) && delivery.source == hash(source) && delivery.version == entry.version.reference() &&
+            delivery.epoch == current.epoch && delivery.commitment == current.keyCommitment) { "SYNC_GROUP_SOURCE_DELIVERY_CHANGED" }
+        publisher(current.epoch).receipt(delivery.metadataOperation, target)
     }
     private fun sign(source: Source): SyncAuthorJournalEntry = journal.commitApprovedLive(request(source), authority, SyncAuthorCommitAdmission {
         requireView(source.ledger, source.heads, source.coverage); verifyCustody(source)
@@ -131,7 +143,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
     private fun finish(source: Source, entry: SyncAuthorJournalEntry): LanSyncGroupSourceCommit {
         require(entry.request == request(source) && entry.version.author == identity.fingerprint) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
         verifyCustody(source)
-        val key = currentKey(); val queue = outbox(key.epoch); val path = root.resolve("delivery-${source.operation.value}-${key.epoch.value}.json")
+        val key = currentKey(); val queue = outbox(key.epoch); val path = deliveryPath(source.operation, key.epoch)
         val sourceHash = hash(source)
         val delivery = LanSyncJsonFiles.read(path, Delivery.serializer()) ?: Delivery(sourceHash, entry.version.reference(), key.epoch, key.keyCommitment(),
             SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), source.blobs.mapValues { (_, slot) ->
@@ -201,6 +213,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
     }
     private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publications, authority(), outbox(epoch), identity.fingerprint, currentLedger = authority)
     private fun sourcePath(operation: SyncStoreId) = root.resolve("source-${operation.value}.json")
+    private fun deliveryPath(operation: SyncStoreId, epoch: SyncStoreId) = root.resolve("delivery-${operation.value}-${epoch.value}.json")
     private fun hash(source: Source) = lanSyncHash(lanSyncJson.encodeToJsonElement(Source.serializer(), source))
     private fun rawBinding(files: Map<String, String>) = lanSyncHashSequence(files.toSortedMap().asSequence().map { (path, hash) -> buildJsonObject { put("path", path); put("hash", hash) } })
     private fun <T> guarded(work: () -> T): T {

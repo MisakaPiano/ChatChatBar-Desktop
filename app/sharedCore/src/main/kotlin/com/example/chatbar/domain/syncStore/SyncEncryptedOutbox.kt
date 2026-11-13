@@ -13,6 +13,7 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 
+/** uploaded is an observation on some backend, not a target-specific completion or cloud checkpoint. */
 data class SyncOutboxEntry(val context: SyncEncryptionContext, val request: CiphertextPutRequest, val uploaded: Boolean,
     val plaintext: SyncPlaintextIdentity)
 class SyncQueuedPlaintext internal constructor(val entry: SyncOutboxEntry, val plaintext: SyncAuthenticatedPlaintext,
