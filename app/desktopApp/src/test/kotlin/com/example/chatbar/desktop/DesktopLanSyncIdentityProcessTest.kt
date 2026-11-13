@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.desktop.security.WindowsDpapiSecretProtector
 import com.example.chatbar.domain.lanSync.*
+import com.example.chatbar.domain.syncStore.*
 import java.nio.file.*
 import java.util.concurrent.TimeUnit
 import kotlin.test.*
@@ -33,6 +34,9 @@ object DesktopLanSyncIdentityChild {
         val protector = WindowsDpapiSecretProtector()
         val store = LanSyncStateStore(root.resolve("state"), protector::protect, protector::unprotect)
         val identity = store.identity()
+        val recipientRoot = root.resolve("group-recipient")
+        if (args[1] == "write") Files.createDirectory(recipientRoot)
+        val recipientCustody = SyncDeviceKeyCustody(recipientRoot, identity.fingerprint, protector::protect, protector::unprotect)
         if (args[1] == "write") {
             Files.writeString(root.resolve("fingerprint.txt"), identity.fingerprint, StandardOpenOption.CREATE_NEW)
             store.trust(LanSyncPeer("f".repeat(64), "synthetic trusted peer"))
@@ -40,11 +44,18 @@ object DesktopLanSyncIdentityChild {
             val protected = protector.protect(plaintext)
             check(!protected.toString(Charsets.ISO_8859_1).contains(plaintext.toString(Charsets.US_ASCII)))
             Files.write(root.resolve("probe.protected"), protected, StandardOpenOption.CREATE_NEW)
+            val recipient = recipientCustody.createIfAbsent()
+            Files.writeString(root.resolve("recipient-public.txt"), recipient.publicKey.encoded, StandardOpenOption.CREATE_NEW)
+            val encrypted = recipient.publicKey.encrypt("synthetic native recipient secret".toByteArray(), "synthetic native context".toByteArray())
+            Files.write(root.resolve("recipient-probe.bin"), encrypted, StandardOpenOption.CREATE_NEW)
         } else {
             check(args[1] == "read")
             check(identity.fingerprint == Files.readString(root.resolve("fingerprint.txt")))
             check(store.peers().single().fingerprint == "f".repeat(64))
             check(protector.unprotect(Files.readAllBytes(root.resolve("probe.protected"))).contentEquals("invented-lan-private-protection-probe".toByteArray()))
+            val recipient = recipientCustody.open(Files.readString(root.resolve("recipient-public.txt")))
+            check(recipient.decrypt(Files.readAllBytes(root.resolve("recipient-probe.bin")), "synthetic native context".toByteArray())
+                .contentEquals("synthetic native recipient secret".toByteArray()))
         }
         val ciphertext = Files.readAllBytes(root.resolve("state/identity.protected"))
         check(runCatching { LanSyncTlsIdentity.decode(ciphertext) }.isFailure)
