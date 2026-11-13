@@ -65,9 +65,11 @@ data class DesktopTransportDiagnosticEntry(
     val logicalTaskId: String? = null,
     val templateVersion: String? = null,
     val promptStages: List<DesktopPromptStageIdentity> = emptyList(),
+    val preparationStage: DesktopChatPreparationStage? = null,
+    val preparationFailureKind: String? = null,
 )
 
-/** Bounded, process-local final-provider-request evidence. Never participates in request construction. */
+/** Bounded, process-local lifecycle and final-provider evidence. Never constructs a request. */
 internal class DesktopTransportDiagnosticsOwner(
     private val maxEntries: Int = 40,
     private val clock: () -> Long = System::currentTimeMillis,
@@ -86,6 +88,27 @@ internal class DesktopTransportDiagnosticsOwner(
     /** Clear only the completed rows explicitly shown to the user; never a running request. */
     fun clearCompleted(ids: Set<String>) = synchronized(lock) {
         mutableEntries.value = mutableEntries.value.filterNot { it.taskId in ids && it.status != DesktopTaskStatus.RUNNING }
+    }
+
+    fun beginPreparation(taskId: String, sessionId: String) = synchronized(lock) {
+        mutableEntries.value = (listOf(DesktopTransportDiagnosticEntry(taskId, sessionId,
+            modelDisplayName = "发送准备", modelName = "", startedAt = clock(), scenario = "CHAT",
+            logicalTaskId = taskId, preparationStage = DesktopChatPreparationStage.CONFIGURATION)) +
+            mutableEntries.value).take(maxEntries)
+    }
+
+    fun preparationStage(taskId: String, stage: DesktopChatPreparationStage) =
+        update(taskId) { it.copy(preparationStage = stage) }
+
+    fun finishPreparation(taskId: String, status: DesktopTaskStatus, safeError: String?, failure: Throwable?) {
+        // Exception messages may contain source content or credentials unknown to the chat model.
+        // Retain only a bounded class chain; the user-facing reason is chosen from fixed labels.
+        val kind = generateSequence(failure) { it.cause }.take(6)
+            .map { it.javaClass.simpleName.take(80).replace(Regex("[^A-Za-z0-9_$]"), "") }
+            .joinToString(" → ").takeIf(String::isNotBlank)
+        update(taskId) { it.copy(status = status, completedAt = clock(), error = safeError,
+            preparationFailureKind = kind,
+            cancellationObserved = status in setOf(DesktopTaskStatus.CANCELLED, DesktopTaskStatus.USER_STOPPED)) }
     }
 
     fun beginFishMedia(sessionId: String, modelId: String, credential: String, accountId: String?,
@@ -116,25 +139,31 @@ internal class DesktopTransportDiagnosticsOwner(
 
     fun begin(taskId: String, sessionId: String, model: ModelConfig,
         usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.OTHER),
-        promptContext: DesktopPromptDiagnosticContext? = null): DesktopTransportDiagnosticRecorder {
+        promptContext: DesktopPromptDiagnosticContext? = null,
+        preparationStarted: Boolean = false): DesktopTransportDiagnosticRecorder {
         val scrubber = DesktopDiagnosticScrubber(model.apiKey)
         val promptIdentity = promptContext?.let { DesktopPromptDiagnosticIdentity.identify(it) }
         synchronized(lock) {
-            mutableEntries.value = (
-                listOf(
-                    DesktopTransportDiagnosticEntry(
-                        taskId = taskId,
-                        sessionId = sessionId,
-                        modelDisplayName = scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT),
-                        modelName = scrubber.text(model.modelName, SHORT_LIMIT),
-                        startedAt = clock(),
-                        scenario = usageContext.source.name,
-                        logicalTaskId = usageContext.taskId?.let { scrubber.text(it, SHORT_LIMIT) },
-                        templateVersion = promptIdentity?.templateVersion,
-                        promptStages = listOfNotNull(promptIdentity),
-                    ),
-                ) + mutableEntries.value
-            ).take(maxEntries)
+            val preparation = if (preparationStarted) mutableEntries.value.firstOrNull { it.taskId == taskId } else null
+            // Clearing a running preparation must not resurrect it when transport starts.
+            if (!preparationStarted || preparation != null) {
+                mutableEntries.value = (
+                    listOf(
+                        DesktopTransportDiagnosticEntry(
+                            taskId = taskId,
+                            sessionId = sessionId,
+                            modelDisplayName = scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT),
+                            modelName = scrubber.text(model.modelName, SHORT_LIMIT),
+                            startedAt = preparation?.startedAt ?: clock(),
+                            scenario = usageContext.source.name,
+                            logicalTaskId = usageContext.taskId?.let { scrubber.text(it, SHORT_LIMIT) },
+                            templateVersion = promptIdentity?.templateVersion,
+                            promptStages = listOfNotNull(promptIdentity),
+                            preparationStage = preparation?.preparationStage,
+                        ),
+                    ) + if (preparationStarted) mutableEntries.value.filterNot { it.taskId == taskId } else mutableEntries.value
+                ).take(maxEntries)
+            }
         }
         return DesktopTransportDiagnosticRecorder(this, taskId, scrubber, clock,
             model.promptEstimateTarget(scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT)), model.baseUrl,

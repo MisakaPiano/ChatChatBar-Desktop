@@ -47,6 +47,7 @@ data class DesktopRealChatStreamUpdate(
 fun interface DesktopRealChatObserver {
     fun onUpdate(update: DesktopRealChatStreamUpdate)
     fun onUserMessagePersisted(messageId: String) { }
+    fun onPreparationStage(stage: DesktopChatPreparationStage) { }
 }
 
 data class DesktopRealChatResult(
@@ -145,10 +146,12 @@ class DesktopRealChatRuntime internal constructor(
         attachments: List<DesktopPendingImage>,
         control: DesktopChatGenerationControl?,
     ): DesktopRealChatResult {
+        observer.onPreparationStage(DesktopChatPreparationStage.CONFIGURATION)
         val turn = resolveTurn(sessionId)
         var preparedContent = content
         var inputNotice: String? = null
         if (attachments.isNotEmpty() && !turn.model.isMultimodal) {
+            observer.onPreparationStage(DesktopChatPreparationStage.INPUT)
             val understanding = com.example.chatbar.domain.chat.ImageUnderstandingService(modelResolver) { encoded, model, onDelta ->
                 DesktopAuxiliaryImageUnderstanding(transportFactory(turn.settings.allowCleartextModelApi))
                     .describe(encoded, model, onDelta)
@@ -170,8 +173,11 @@ class DesktopRealChatRuntime internal constructor(
                 sessionId = sessionId,
                 inputs = turn.inputs,
                 readOnlyRepositoryAccess = false,
+                onPreparationStage = observer::onPreparationStage,
+                onPersistedUserResolved = { observer.onUserMessagePersisted(it.id) },
             )
         } else {
+            observer.onPreparationStage(DesktopChatPreparationStage.USER_PERSISTENCE)
             val persistedUser = if (attachments.isNotEmpty()) requireNotNull(images).persistUser(sessionId, preparedContent, attachments)
             else chatRepository.addMessage(
                 ChatMessage.create(
@@ -186,6 +192,7 @@ class DesktopRealChatRuntime internal constructor(
                 currentUser = persistedUser,
                 inputs = turn.inputs,
                 readOnlyRepositoryAccess = false,
+                onPreparationStage = observer::onPreparationStage,
             )
         }
 
@@ -202,6 +209,7 @@ class DesktopRealChatRuntime internal constructor(
         diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics = { ProviderTransportDiagnostics.NONE },
     ): DesktopRealChatResult = coroutineScope {
         val operation = async(start = CoroutineStart.LAZY) {
+            observer.onPreparationStage(DesktopChatPreparationStage.CONFIGURATION)
             val selected = requireNotNull(chatRepository.getMessage(messageId, sessionId)) { "回复不存在" }
             // Reject before any indexed read can repair/persist an old timeline index.
             val nearby = chatRepository.getMessagesReadOnly(sessionId)
@@ -215,7 +223,8 @@ class DesktopRealChatRuntime internal constructor(
             val turn = resolveTurn(sessionId)
             if (selected.id != target.id) chatRepository.deleteMessage(selected.id, sessionId)
             val plan = requestPlanner.planRegeneration(sessionId, target.id,
-                turn.inputs.copy(previousNarrativeMode = MessageAlternativeVersionPolicy.activeVersion(target).narrativeMode))
+                turn.inputs.copy(previousNarrativeMode = MessageAlternativeVersionPolicy.activeVersion(target).narrativeMode),
+                onPreparationStage = observer::onPreparationStage)
             observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id))
             plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id, status = it)) }
             generate(turn, plan, observer, diagnosticsFactory, target, control).copy(inputNotice = plan.knowledgeNotice)
@@ -269,6 +278,7 @@ class DesktopRealChatRuntime internal constructor(
         try {
             val diagnostics = diagnosticsFactory(turn.model)
             (diagnostics as? DesktopChatPlanDiagnostics)?.onPlan(plan)
+            observer.onPreparationStage(DesktopChatPreparationStage.MAIN_REPLY)
             transportFactory(turn.settings.allowCleartextModelApi).streamMainChat(
                 messages = plan.assembly.messages,
                 modelConfig = turn.model,

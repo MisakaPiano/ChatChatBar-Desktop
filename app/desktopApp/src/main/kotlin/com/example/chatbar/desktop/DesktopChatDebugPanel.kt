@@ -35,7 +35,7 @@ internal fun desktopDiagnosticSystemMessages(entry: DesktopTransportDiagnosticEn
         }
 }.getOrNull()
 
-/** Uses recorded requests only. Opening, selecting and clearing logs never builds or sends a request. */
+/** Uses recorded lifecycle/provider evidence only; viewing and clearing never builds or sends a request. */
 @Composable
 internal fun DesktopChatDebugOverlay(owner: DesktopTransportDiagnosticsOwner, sessionId: String,
     onClose: () -> Unit, onMemory: (() -> Unit)? = null, maintenance: DesktopChatMaintenanceController? = null,
@@ -101,6 +101,8 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                 selected?.let { entry -> key(entry.taskId) {
                     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatusText("模型：${entry.modelDisplayName} · ${entry.modelName}")
+                        entry.preparationStage?.let { StatusText("发送阶段：${it.label}") }
+                        entry.preparationFailureKind?.let { StatusText("准备失败类型：$it") }
                         SelectionContainer { StatusText("请求地址：${entry.requestUrl ?: "尚未发送"}") }
                         StatusText(if (entry.media == null && entry.image == null) "状态：${entry.status} · 结束原因：${entry.finishReason ?: "尚未报告"}" else "状态：${entry.status}")
                         entry.completedAt?.let { StatusText("耗时：${(it - entry.startedAt).coerceAtLeast(0)} ms") }

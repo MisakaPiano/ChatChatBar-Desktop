@@ -449,8 +449,15 @@ internal class DesktopTaskRuntime(
                 var terminalStatus = DesktopTaskStatus.CANCELLED
                 var terminalMessage = "Cancelled"
                 var terminalCompletion: com.example.chatbar.domain.chat.ProviderCompletionMetadata? = null
+                var preparationStage = DesktopChatPreparationStage.CONFIGURATION
+                var preparationFailure: Throwable? = null
+                diagnostics.beginPreparation(taskId, sessionId)
                 try {
                     val observer = object : DesktopRealChatObserver {
+                        override fun onPreparationStage(stage: DesktopChatPreparationStage) {
+                            preparationStage = stage
+                            diagnostics.preparationStage(taskId, stage)
+                        }
                         override fun onUserMessagePersisted(messageId: String) {
                             update(taskId) { it.copy(persistedUserMessageId = messageId) }
                         }
@@ -480,7 +487,8 @@ internal class DesktopTaskRuntime(
                         com.example.chatbar.domain.chat.ProviderTransportDiagnostics = { model ->
                         diagnostics.begin(taskId, sessionId, model,
                             DesktopUsageContext(DesktopUsageSource.CHAT, taskId = taskId, sessionId = sessionId),
-                            DesktopPromptDiagnosticContext("CHAT", "GENERATE")).also { recorder = it }
+                            DesktopPromptDiagnosticContext("CHAT", "GENERATE"),
+                            preparationStarted = true).also { recorder = it }
                     }
                     val generated = if (messageId == null) {
                         realChat.sendText(sessionId, content, observer, control, diagnosticFactory, attachments)
@@ -512,7 +520,11 @@ internal class DesktopTaskRuntime(
                     terminalMessage = "Cancelled"
                 } catch (failure: Throwable) {
                     terminalStatus = DesktopTaskStatus.FAILED
-                    terminalMessage = failure.message ?: failure::class.simpleName ?: "Task failed"
+                    if (recorder == null) {
+                        preparationFailure = failure
+                        terminalMessage = desktopChatPreparationFailure(preparationStage, failure,
+                            tasks.value.firstOrNull { it.taskId == taskId }?.persistedUserMessageId != null)
+                    } else terminalMessage = failure.message ?: failure::class.simpleName ?: "Task failed"
                 } finally {
                     val safeMessage = recorder?.safeText(terminalMessage)
                         ?: DesktopDiagnosticScrubber("").text(terminalMessage, PREVIEW_LIMIT)
@@ -521,6 +533,8 @@ internal class DesktopTaskRuntime(
                         terminalMessage.takeIf { terminalStatus == DesktopTaskStatus.FAILED },
                         terminalCompletion,
                     )
+                    if (recorder == null) diagnostics.finishPreparation(taskId, terminalStatus,
+                        safeMessage.takeIf { terminalStatus == DesktopTaskStatus.FAILED }, preparationFailure)
                     synchronized(lock) {
                         activeJobs.remove(taskId)
                         activeSessions.remove(sessionId)

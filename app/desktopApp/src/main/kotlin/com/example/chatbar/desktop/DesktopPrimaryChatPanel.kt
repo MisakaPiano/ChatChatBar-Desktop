@@ -424,8 +424,7 @@ internal fun DesktopPrimaryChatPanel(
                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                             state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                             state.error?.let { StatusText(t.status(it), colors.destructive) }
-                            tasks.firstOrNull { it.sessionId == selected.id }
-                                ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
+                            desktopLatestChatFailure(tasks, selected.id)
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == null }?.let { imageTask ->
                                 StatusText(imageTask.message)
