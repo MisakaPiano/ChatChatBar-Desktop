@@ -45,6 +45,8 @@ import kotlinx.serialization.Serializable
 
 /** Pinned owner admits/revokes identities; ordinary content authors do not need the owner online. */
 class SyncDeviceLedger(private val trust: SyncGroupTrust) {
+    val trustAnchor: SyncGroupTrust get() = trust
+    val ownerCertificate: String get() = trust.ownerCertificate
     private val owner = SyncDeviceSignatures.decode(trust.ownerCertificate)
     private val records = linkedMapOf<SyncStoreId, SyncDeviceLedgerRecord>()
     private val admitted = linkedSetOf<SyncStoreId>()
@@ -97,6 +99,14 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
     @Synchronized fun failure(id: SyncStoreId) = rejected[id]
     @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && records[reference.id]?.reference() == reference
     @Synchronized fun record(reference: SyncVersionRef): SyncDeviceLedgerRecord? = records[reference.id]?.takeIf { contains(reference) }
+    @Synchronized fun hasKey(epoch: SyncStoreId, commitment: String, at: SyncVersionRef = current().reference()): Boolean {
+        var row = record(at)
+        while (row != null) {
+            if (row.epoch == epoch && row.keyCommitment == commitment) return true
+            row = row.parent?.let(::record)
+        }
+        return false
+    }
     @Synchronized fun current(): SyncDeviceLedgerRecord {
         val parents = admitted.mapNotNull { records.getValue(it).parent?.id }.toSet()
         val heads = admitted.filterNot(parents::contains)
