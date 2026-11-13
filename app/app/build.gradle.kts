@@ -139,7 +139,7 @@ android {
     }
 
     sourceSets.getByName("androidTest") {
-        java.srcDir(rootProject.file("../tools/lan-sync/fixtures"))
+        kotlin.directories += rootProject.file("../tools/lan-sync/fixtures").absolutePath
         assets.srcDir(rootProject.file("interop-fixtures/phase3f"))
     }
 }
