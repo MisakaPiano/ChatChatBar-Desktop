@@ -165,7 +165,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 reload(preview.currentRecords.filter { record -> record.type == "chat_sessions" }.mapTo(linkedSetOf()) { record -> record.id })
             }
         }
-        refreshRestorations(); restored
+        restored
     }
 
     private suspend fun refreshRestorations() = exclusive {
