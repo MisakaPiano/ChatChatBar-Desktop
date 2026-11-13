@@ -117,7 +117,8 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     LaunchedEffect(controller) { controller.load(); translation = controller.translationEnabled() }
     fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) {
         val boundary = controller.textHistories.takeBoundary()
-        scope.launch { controller.editFromField(boundary, change) }
+        // Register accepted typing with the controller mutex before the UI callback returns.
+        scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { controller.editFromField(boundary, change) }
     }
     fun imageAction(work: suspend () -> Unit) { scope.launch {
         try { imageError = ""; work() }

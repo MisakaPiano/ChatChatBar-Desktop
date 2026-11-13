@@ -123,13 +123,17 @@ internal class DesktopNovelAiStudioController(
     val designComposer = mutableDesignComposer.asStateFlow()
 
     /** Task idleness is acquired before this owner mutex; exclusive storage follows inside. */
-    suspend fun withLanSyncOwner(work: suspend () -> Unit) = mutex.withLock {
+    suspend fun withLanSyncOwner(work: suspend () -> Unit) {
         withContext(StudioLanSyncUiDispatcher) {
-            check(presetSelection == null && fullPromptSelection == null) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
             repository.requireLanSyncEditorsCommitted()
             textHistories.beginLanSyncMaintenance()
         }
-        try { work() } finally { withContext(NonCancellable + StudioLanSyncUiDispatcher) { textHistories.endLanSyncMaintenance() } }
+        try {
+            mutex.withLock {
+                check(presetSelection == null && fullPromptSelection == null) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
+                work()
+            }
+        } finally { withContext(NonCancellable + StudioLanSyncUiDispatcher) { textHistories.endLanSyncMaintenance() } }
     }
 
     suspend fun reloadStudioAfterLanSync() {
