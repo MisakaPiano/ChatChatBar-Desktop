@@ -78,6 +78,7 @@ class SyncGroupLargeNativeProofTest {
             minimumFree = minOf(minimumFree, Files.getFileStore(root).usableSpace); delay(100)
         } }
         fun directory(name: String) = Files.createDirectory(root.resolve(name))
+        var network: LanSyncGroupLoopbackTransport? = null
         try {
             val source = directory("source"); val sourceState = directory("source-state"); val work = directory("work")
             val queue = directory("queue"); val publications = directory("publications")
@@ -97,7 +98,11 @@ class SyncGroupLargeNativeProofTest {
             fun authorJournal() = SyncAuthorJournal(authorRoot, trust, members.getValue(owner.fingerprint).certificate, { it.reversedArray() }, { it.reversedArray() })
             authorJournal().initializeNewEnrollment()
             val ledger = SyncDeviceLedger(trust).also { it.offer(genesis) }
-            val outbox = SyncEncryptedOutbox(queue, cipher); val backend = FileCiphertextStore(root.resolve("backend"))
+            val outbox = SyncEncryptedOutbox(queue, cipher); val fileBackend = FileCiphertextStore(root.resolve("backend"))
+            network = if (System.getenv("CCB_GROUP_LARGE_TLS_PROOF") == "true")
+                LanSyncGroupLoopbackTransport(directory("mutual-tls"), owner, ledger, fileBackend) else null
+            val backend: CiphertextStore = network?.remote(owner, "owner") ?: fileBackend
+            val receiveBackend: CiphertextStore = network?.remote(phone, "phone") ?: fileBackend
             val codec = SyncGroupObjectCodec(work)
             val keyRoot = directory("key-queue")
             fun keyQueue() = SyncKeyDeliveryQueue(keyRoot, trust, owner.fingerprint, { ledger })
@@ -110,9 +115,9 @@ class SyncGroupLargeNativeProofTest {
             val rootPlan = rootPublisher.prepare(rootMetadata, emptyList(), emptyMap(), emptyList(), keyOperations)
             rootPublisher.upload(rootPlan.metadata.operation, backend)
             val receiver = recipients.getValue(phone.fingerprint)
-            val keyMetadata = requireNotNull(backend.metadata(rootPlan.keyDeliveries.getValue("${cipher.epoch.value}:${phone.fingerprint}").key))
-            val tentative = SyncKeyDeliveryCodec.read(backend, keyMetadata, trust, receiver)
-            val rootRead = codec.read(backend, tentative.cipher, rootMetadata.context, rootMetadata.request.descriptor)
+            val keyMetadata = requireNotNull(receiveBackend.metadata(rootPlan.keyDeliveries.getValue("${cipher.epoch.value}:${phone.fingerprint}").key))
+            val tentative = SyncKeyDeliveryCodec.read(receiveBackend, keyMetadata, trust, receiver)
+            val rootRead = codec.read(receiveBackend, tentative.cipher, rootMetadata.context, rootMetadata.request.descriptor)
             val receivedLedger = SyncDeviceLedger(trust).also { it.offer(requireNotNull(rootRead.envelope.deviceLedger)) }
             val groupCustodyRoot = directory("group-custody")
             fun custody() = SyncGroupCustody(groupCustodyRoot, cipher.group, receiver, { it.reversedArray() }, { it.reversedArray() })
@@ -203,8 +208,11 @@ class SyncGroupLargeNativeProofTest {
             val completed = sourceWriter(recoveredWorkspace).upload(sourceOperation, interrupted)
             assertEquals(plan.blobs.values.sumOf { it.descriptor.length }, committed.get())
             assertTrue(committed.get() > total); assertTrue(attempted.get() > committed.get())
-            val firstAttempted = attempted.get(); assertEquals(completed, sourceWriter(recoveredWorkspace).upload(sourceOperation, interrupted)); assertEquals(firstAttempted, attempted.get())
-            val inbox = SyncGroupInbox(directory("inbox"), backend, custody(), receiver)
+            val firstAttempted = attempted.get(); val networkBeforeRepeat = network?.uploadBytes?.get()
+            assertEquals(completed, sourceWriter(recoveredWorkspace).upload(sourceOperation, interrupted)); assertEquals(firstAttempted, attempted.get())
+            assertEquals(networkBeforeRepeat, network?.uploadBytes?.get())
+            network?.let { assertTrue(it.maximumUploadResume.get() >= 64L * 1024 * 1024) }
+            val inbox = SyncGroupInbox(directory("inbox"), receiveBackend, custody(), receiver)
             var cursor: CommitCursor? = null
             do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
             val reconciled = inbox.reconcile(); assertFalse(reconciled.trustBlocked)
@@ -212,7 +220,7 @@ class SyncGroupLargeNativeProofTest {
             val receivedVersion = reconciled.authenticatedVersions.single { it.envelope.version?.reference() == version.reference() }
             val target = directory("target"); val targetState = directory("target-state")
             val targetWorkspace = LanSyncWorkspace(target, targetState, { Path.of(it) })
-            val dependencies = LanSyncGroupDependencies(cipher.group, backend, custody(), work, targetWorkspace.resourceStore, { kind, _, _ ->
+            val dependencies = LanSyncGroupDependencies(cipher.group, receiveBackend, custody(), work, targetWorkspace.resourceStore, { kind, _, _ ->
                 require(kind in setOf("documents", "packages")) { "SYNTHETIC_GROUP_PROOF_RESOURCE_KIND" }
             })
             val evidence = LanSyncGroupRecordEvidence(requireNotNull(reconciled.history), requireNotNull(reconciled.ledgerCheckpoint))
@@ -249,6 +257,7 @@ class SyncGroupLargeNativeProofTest {
             val packageFile = target.resolve("save_slot_packages").resolve(restored.packageRef!!.fileName)
             LanSyncSlotPackages.validate(packageFile, lanSyncJson.encodeToJsonElement(SaveSlot.serializer(), restored).jsonObject)
             assertEquals(packageHash, LanSyncResourceStore.hashFile(packageFile, Files.size(packageFile)))
+            network?.let { assertTrue(it.uploadBytes.get() > total); assertTrue(it.downloadBytes.get() > total) }
             sampler.cancelAndJoin()
             println("CCB_GROUP_LARGE_PROOF " + buildJsonObject {
                 put("fullyWrittenResourceBytes", total); put("largestOrdinaryResourceBytes", length); put("v8Bytes", slot.packageRef!!.byteLength)
@@ -261,9 +270,12 @@ class SyncGroupLargeNativeProofTest {
                 put("independentSourceCheckpointVerified", true); put("sourceRawOriginals", rawOriginals)
                 put("nativeSourceWriterVerified", true); put("nativeSourceReceiptReopened", true)
                 put("sourceWorkspaceCacheRebuiltAfterDeletion", true)
+                put("actualMutualTlsCiphertextTransport", network != null)
+                network?.let { put("tlsUploadedCiphertextChunkBytes", it.uploadBytes.get()); put("tlsDownloadedCiphertextChunkBytes", it.downloadBytes.get())
+                    put("tlsLargestVerifiedUploadResume", it.maximumUploadResume.get()); put("tlsRepeatedPublicationChunkBytes", 0) }
                 put("approvedAuthorSequence", authorJournal().state().committedSequence)
                 put("elapsedMillis", (System.nanoTime() - started) / 1_000_000); put("sampledPeakHeapBytes", peakHeap); put("minimumSampledFreeDiskBytes", minimumFree)
             })
-        } finally { sampler.cancelAndJoin(); check(root.toFile().deleteRecursively()) }
+        } finally { sampler.cancelAndJoin(); try { network?.close() } finally { check(root.toFile().deleteRecursively()) } }
     }
 }

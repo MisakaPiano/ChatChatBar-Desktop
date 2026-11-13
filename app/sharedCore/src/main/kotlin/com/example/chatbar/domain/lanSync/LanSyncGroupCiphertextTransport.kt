@@ -156,6 +156,7 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
             (request.offset == expected.length || request.offset % GroupStoreWire.CHUNK_BYTES == 0L)) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" }
         if (expected.length == 0L) { GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), done = true)); return }
         val path = cached(store, metadata)
+        observe("CIPHERTEXT_DOWNLOAD_RESUME", request.offset)
         GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), offset = request.offset))
         FileChannel.open(path, READ, NOFOLLOW_LINKS).use { channel ->
             var offset = request.offset; channel.position(offset)
