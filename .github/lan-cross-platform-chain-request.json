@@ -1,6 +1,6 @@
 {
   "kind": "CCB_LAN_CROSS_PLATFORM_SYNTHETIC_CHAIN",
-  "sourceSha": "3fc21fbf4dede6b75bd87c875ebf1f02ba17ed16",
+  "sourceSha": "80890e581043b0d9aef0d47fd6008061f0dbcb0e",
   "protocol": 5,
   "declaredTypes": 19,
   "populatedTypes": [
@@ -13,5 +13,14 @@
     "desktop_image_post_process_results"
   ],
   "otherTypesEmpty": 12,
-  "purpose": "Three actual platform legs use one frozen source and original synthetic exchange archives. No network/TLS pairing, provider calls, real data or human acceptance claim. Frozen08 candidate and first37 remain separate."
+  "purpose": "Three actual platform legs use one frozen source and original synthetic exchange archives. No network/TLS pairing, provider calls, real data or human acceptance claim. Frozen08 candidate and first37 remain separate.",
+  "attempt": 2,
+  "previousSourceFailure": {
+    "sourceSha": "3fc21fbf4dede6b75bd87c875ebf1f02ba17ed16",
+    "engineeringRunId": 43333791557,
+    "jobId": 131584722755,
+    "cause": "AGP9 Kotlin androidTest did not include tools fixture directory registered via java.srcDir; unresolved LanCrossPlatformFixture/F.80890 registers kotlin.directories; c345 also adds full first-import hashes and metadata checks.",
+    "originalThreeLegRunId": 43335156170,
+    "originalThreeLegStatus": "Windows origin live at re-freeze; not claimed stopped or complete"
+  }
 }
