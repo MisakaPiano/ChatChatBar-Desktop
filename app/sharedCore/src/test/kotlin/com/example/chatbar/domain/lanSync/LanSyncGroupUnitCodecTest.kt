@@ -105,4 +105,21 @@ class LanSyncGroupUnitCodecTest {
         }
         assertTrue(Files.newDirectoryStream(f.units).use { !it.iterator().hasNext() })
     }
+
+    @Test fun aUnitCannotReplaceTheNativeWireReferenceContractWithAnArbitraryResourceAlias() = withRoot { root ->
+        val f = Fixture(root); val image = f.data.resolve("images/original.png"); Files.createDirectories(image.parent)
+        Files.write(image, LanSyncPreviewSample.image()); f.card(image)
+        f.workspace.capture("source").use { capture -> f.codec.prepare(capture, "character_cards/card").use { prepared ->
+            val payload = prepared.decoded.payload; val hash = payload.resources.keys.single()
+            val invalid = payload.copy(records = payload.records.map { it.copy(body = JsonObject(it.body +
+                ("avatar" to JsonPrimitive("ccb-lan-v1/images/not-a-native-identity/$hash/png")))) })
+            val file = root.resolve("invalid-reference.json"); LanSyncJsonFiles.write(file, LanSyncGroupUnitPayload.serializer(), invalid)
+            val identity = f.identity(file)
+            f.transfer(file, identity).use { plaintext ->
+                assertEquals("SYNC_EXTERNAL_WIRE_REFERENCE", assertFailsWith<IllegalArgumentException> {
+                    f.codec.read(plaintext, "character_cards/card", SyncUnitChange(prepared.decoded.valueHash, identity, emptySet()))
+                }.message)
+            }
+        } }
+    }
 }

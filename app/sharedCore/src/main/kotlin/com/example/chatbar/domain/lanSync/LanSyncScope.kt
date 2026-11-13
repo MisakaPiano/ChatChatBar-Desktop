@@ -112,6 +112,29 @@ object LanSyncScope {
         LanSyncStudioCurrent.validateGraph(snapshot.records)
         require(snapshot.records.none { it.type == "format_cards" && it.body["isDefault"] != JsonPrimitive(false) }) { "SYNC_DEVICE_DEFAULT_ON_WIRE" }
         require(snapshot.records.none { it.type == "moment_tasks" && it.body["requiresLocalScheduleApproval"] != JsonPrimitive(true) }) { "SYNC_SCHEDULE_AUTHORITY_ON_WIRE" }
+        validateResourceReferences(snapshot)
+        val ids = snapshot.records.groupBy { it.type }.mapValues { (_, rows) -> rows.map { it.id }.toSet() }
+        val messages = snapshot.records.filter { it.type == "chat_messages" }.associateBy { it.id }
+        snapshot.records.forEach { record ->
+            val session = record.text("sessionId")
+            if (session != null && record.type !in LanSyncMoments.types) require(session in ids["chat_sessions"].orEmpty()) { "SYNC_ORPHAN_SESSION" }
+            if (record.type == "chat_sessions") {
+                // Existing archived conversations deliberately retain a missing card identity.
+                require(!record.text("characterCardId").isNullOrBlank()) { "SYNC_MISSING_CHARACTER_ID" }
+                record.text("formatCardId")?.let { require(it in ids["format_cards"].orEmpty()) { "SYNC_MISSING_FORMAT" } }
+            }
+            if (record.type == "generated_voice_messages") {
+                val message = requireNotNull(messages[record.text("messageId")]) { "SYNC_ORPHAN_VOICE" }
+                require(message.text("sessionId") == session) { "SYNC_VOICE_OWNER" }
+            }
+        }
+        // Reuses the established shared memory ancestry checks without rewriting text.
+        LanSyncMemoryProofs(snapshot.records.filter { it.type != "save_slots" }, LanSyncIdentity())
+        snapshot.records.filter { it.type == "save_slots" }.forEach { LanSyncMemoryProofs(listOf(it), LanSyncIdentity()) }
+    }
+
+    /** Same reference contract for a decoded unit, without inventing its absent cross-unit dependencies. */
+    internal fun validateResourceReferences(snapshot: LanSyncSnapshot) {
         val referenced = linkedSetOf<String>()
         val mediaIdentities = linkedMapOf<String, String>()
         snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
@@ -135,24 +158,6 @@ object LanSyncScope {
             reference
         } }
         require(referenced == snapshot.resources.keys) { "SYNC_UNREFERENCED_RESOURCE" }
-        val ids = snapshot.records.groupBy { it.type }.mapValues { (_, rows) -> rows.map { it.id }.toSet() }
-        val messages = snapshot.records.filter { it.type == "chat_messages" }.associateBy { it.id }
-        snapshot.records.forEach { record ->
-            val session = record.text("sessionId")
-            if (session != null && record.type !in LanSyncMoments.types) require(session in ids["chat_sessions"].orEmpty()) { "SYNC_ORPHAN_SESSION" }
-            if (record.type == "chat_sessions") {
-                // Existing archived conversations deliberately retain a missing card identity.
-                require(!record.text("characterCardId").isNullOrBlank()) { "SYNC_MISSING_CHARACTER_ID" }
-                record.text("formatCardId")?.let { require(it in ids["format_cards"].orEmpty()) { "SYNC_MISSING_FORMAT" } }
-            }
-            if (record.type == "generated_voice_messages") {
-                val message = requireNotNull(messages[record.text("messageId")]) { "SYNC_ORPHAN_VOICE" }
-                require(message.text("sessionId") == session) { "SYNC_VOICE_OWNER" }
-            }
-        }
-        // Reuses the established shared memory ancestry checks without rewriting text.
-        LanSyncMemoryProofs(snapshot.records.filter { it.type != "save_slots" }, LanSyncIdentity())
-        snapshot.records.filter { it.type == "save_slots" }.forEach { LanSyncMemoryProofs(listOf(it), LanSyncIdentity()) }
     }
 
     fun referencedResources(records: List<LanSyncRecord>): Set<String> = buildSet {

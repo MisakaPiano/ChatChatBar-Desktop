@@ -64,7 +64,15 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
 
     fun read(plaintext: SyncAuthenticatedPlaintext, expectedUnit: String, change: SyncUnitChange): LanSyncDecodedGroupUnit {
         require(change.content == plaintext.identity && change.valueHash != null) { "SYNC_GROUP_UNIT_PLAINTEXT" }
-        val decoded = parse(plaintext.path, plaintext.identity)
+        return checked(plaintext.path, plaintext.identity, expectedUnit, change)
+    }
+    fun readCached(store: LanSyncResourceStore, expectedUnit: String, change: SyncUnitChange): LanSyncDecodedGroupUnit {
+        val identity = requireNotNull(change.content) { "SYNC_GROUP_UNIT_PLAINTEXT" }
+        val path = requireNotNull(store.completed(identity.sha256, identity.length)) { "SYNC_GROUP_UNIT_MISSING" }
+        return checked(path, identity, expectedUnit, change)
+    }
+    private fun checked(path: Path, identity: SyncPlaintextIdentity, expectedUnit: String, change: SyncUnitChange): LanSyncDecodedGroupUnit {
+        val decoded = parse(path, identity)
         require(decoded.payload.unit == expectedUnit && decoded.valueHash == change.valueHash) { "SYNC_GROUP_UNIT_BINDING" }
         return decoded
     }
@@ -87,6 +95,7 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
         }
         require(snapshot.units().keys == setOf(payload.unit)) { "SYNC_GROUP_UNIT_MEMBERSHIP" }
         require(LanSyncScope.referencedResources(payload.records) == payload.resources.keys) { "SYNC_GROUP_UNIT_RESOURCES" }
+        LanSyncScope.validateResourceReferences(snapshot)
         return snapshot.hashes().getValue(payload.unit)
     }
 }

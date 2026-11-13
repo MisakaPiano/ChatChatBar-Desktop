@@ -14,9 +14,9 @@ class LanSyncGroupPublicationQueueTest {
         val root = Files.createTempDirectory("group-native-publication-").toRealPath()
         try { work(root) } finally { check(root.toFile().deleteRecursively()) }
     }
-    private data class Prepared(val metadata: SyncPreparedGroupObject, val unit: LanSyncDecodedGroupUnit,
+    internal data class Prepared(val metadata: SyncPreparedGroupObject, val unit: LanSyncDecodedGroupUnit,
         val operations: Map<String, SyncStoreId>)
-    private class Fixture(val root: Path) {
+    internal class Fixture(val root: Path) {
         val owner = LanSyncTlsIdentity.create(); val sender = LanSyncTlsIdentity.create(); val cipher = SyncStreamingCipher.create()
         val data = Files.createDirectory(root.resolve("data")); val state = Files.createDirectory(root.resolve("state"))
         val work = Files.createDirectory(root.resolve("work")); val unitRoot = Files.createDirectory(root.resolve("units"))

@@ -95,6 +95,7 @@ class SyncCausalHistory(private val group: SyncStoreId, private val admission: S
         else -> null
     }
     @Synchronized fun failure(id: SyncStoreId): String? = rejected[id]
+    @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && versions[reference.id]?.reference() == reference
     @Synchronized fun heads(): Set<SyncVersionRef> {
         val parents = admitted.flatMap { versions.getValue(it).parents }.map { it.id }.toSet()
         return admitted.filterNot(parents::contains).map { versions.getValue(it).reference() }.toSet()

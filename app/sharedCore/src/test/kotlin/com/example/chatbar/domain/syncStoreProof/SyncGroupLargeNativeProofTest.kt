@@ -177,41 +177,43 @@ class SyncGroupLargeNativeProofTest {
             assertEquals(plan.blobs.values.sumOf { it.descriptor.length }, committed.get())
             assertTrue(committed.get() > total); assertTrue(attempted.get() > committed.get())
             val firstAttempted = attempted.get(); assertEquals(completed, publisher().upload(plan.metadata.operation, interrupted)); assertEquals(firstAttempted, attempted.get())
-            val openedKey = custody().key(cipher.epoch)
-            val read = codec.read(backend, openedKey, metadata.context, metadata.request.descriptor, version.reference())
-            val history = SyncCausalHistory(cipher.group, custody().ledger().admission(listOf(version), listOf(read)))
-            assertEquals(SyncVersionState.ADMITTED, history.offer(requireNotNull(read.envelope.version)))
-            val decoded = version.changes.map { (unit, change) ->
-                val content = requireNotNull(change.content)
-                blobs.read(backend, openedKey, read.envelope.blobs.getValue(content.sha256), content).use {
-                    LanSyncGroupUnitCodec(unitWork).read(it, unit, change)
-                }
+            val inbox = SyncGroupInbox(directory("inbox"), backend, custody(), receiver)
+            var cursor: CommitCursor? = null
+            do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
+            val reconciled = inbox.reconcile(); assertFalse(reconciled.trustBlocked)
+            assertEquals(SyncVersionState.ADMITTED, reconciled.history?.state(version.id))
+            val receivedVersion = reconciled.authenticatedVersions.single { it.envelope.version?.reference() == version.reference() }
+            val target = directory("target"); val targetState = directory("target-state")
+            val targetWorkspace = LanSyncWorkspace(target, targetState, { Path.of(it) })
+            val dependencies = LanSyncGroupDependencies(cipher.group, backend, custody(), work, targetWorkspace.resourceStore, { kind, _, _ ->
+                require(kind in setOf("documents", "packages")) { "SYNTHETIC_GROUP_PROOF_RESOURCE_KIND" }
+            })
+            val available = version.changes.keys.map { unit ->
+                val result = dependencies.inspect(reconciled, receivedVersion, unit)
+                assertEquals(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE, result.stage, result.code)
+                requireNotNull(result.available)
             }
-            val resources = decoded.flatMap { it.dependencies }.toSet().associateWith { identity ->
-                blobs.read(backend, openedKey, read.envelope.blobs.getValue(identity.sha256), identity)
+            val decoded = available.map { it.decoded }
+            val resources = available.flatMap { it.resources.entries }.associate { it.toPair() }
+            val snapshot = LanSyncSnapshot(deviceId = phone.fingerprint, records = decoded.flatMap { it.payload.records },
+                resources = decoded.flatMap { it.payload.resources.entries }.associate { it.toPair() }, coveredTypes = genesis.coveredTypes)
+            targetWorkspace.capture(phone.fingerprint).use { before -> targetWorkspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()),
+                before.snapshot.hashes(), phone.fingerprint, resources) }
+            LanSyncWorkspace(target, targetState, { Path.of(it) }).capture(phone.fingerprint).use { reopened ->
+                assertEquals(expectedHashes, reopened.snapshot.hashes()); assertEquals(expected, reopened.snapshot.resources)
+                reopened.blobs.forEach { (hash, path) -> assertEquals(hash, LanSyncResourceStore.hashFile(path, expected.getValue(hash))) }
             }
-            try {
-                val target = directory("target"); val targetState = directory("target-state")
-                val targetWorkspace = LanSyncWorkspace(target, targetState, { Path.of(it) })
-                val snapshot = LanSyncSnapshot(deviceId = phone.fingerprint, records = decoded.flatMap { it.payload.records },
-                    resources = decoded.flatMap { it.payload.resources.entries }.associate { it.toPair() }, coveredTypes = genesis.coveredTypes)
-                targetWorkspace.capture(phone.fingerprint).use { before -> targetWorkspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()),
-                    before.snapshot.hashes(), phone.fingerprint, resources.entries.associate { it.key.sha256 to it.value.path }) }
-                LanSyncWorkspace(target, targetState, { Path.of(it) }).capture(phone.fingerprint).use { reopened ->
-                    assertEquals(expectedHashes, reopened.snapshot.hashes()); assertEquals(expected, reopened.snapshot.resources)
-                    reopened.blobs.forEach { (hash, path) -> assertEquals(hash, LanSyncResourceStore.hashFile(path, expected.getValue(hash))) }
-                }
-                val restored = JsonFileStorage(target).loadAll("save_slots", SaveSlot.serializer()).single()
-                val packageFile = target.resolve("save_slot_packages").resolve(restored.packageRef!!.fileName)
-                LanSyncSlotPackages.validate(packageFile, lanSyncJson.encodeToJsonElement(SaveSlot.serializer(), restored).jsonObject)
-                assertEquals(packageHash, LanSyncResourceStore.hashFile(packageFile, Files.size(packageFile)))
-            } finally { resources.values.forEach { it.close() } }
+            val restored = JsonFileStorage(target).loadAll("save_slots", SaveSlot.serializer()).single()
+            val packageFile = target.resolve("save_slot_packages").resolve(restored.packageRef!!.fileName)
+            LanSyncSlotPackages.validate(packageFile, lanSyncJson.encodeToJsonElement(SaveSlot.serializer(), restored).jsonObject)
+            assertEquals(packageHash, LanSyncResourceStore.hashFile(packageFile, Files.size(packageFile)))
             sampler.cancelAndJoin()
             println("CCB_GROUP_LARGE_PROOF " + buildJsonObject {
                 put("fullyWrittenResourceBytes", total); put("largestOrdinaryResourceBytes", length); put("v8Bytes", slot.packageRef!!.byteLength)
                 put("committedBlobCiphertextBytes", committed.get()); put("attemptedBlobCiphertextBytes", attempted.get()); put("repeatedPublicationBlobBytes", 0)
                 put("sourceAndCaptureDeletedBeforeUpload", true); put("interruptedUploadRetried", true); put("nativeUnits", decoded.size)
                 put("rootRecipientCount", members.size); put("wholeResourceHashesVerified", true); put("sharedNativeWorkspaceReopened", true)
+                put("inboxReconciled", true); put("perUnitDependenciesVerified", true)
                 put("elapsedMillis", (System.nanoTime() - started) / 1_000_000); put("sampledPeakHeapBytes", peakHeap); put("minimumSampledFreeDiskBytes", minimumFree)
             })
         } finally { sampler.cancelAndJoin(); check(root.toFile().deleteRecursively()) }
