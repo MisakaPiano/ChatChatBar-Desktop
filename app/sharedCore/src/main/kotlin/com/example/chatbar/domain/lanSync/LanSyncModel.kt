@@ -66,9 +66,9 @@ data class LanSyncSnapshot(
 }
 
 internal fun lanSyncUnitHashes(units: Map<String, List<LanSyncRecord>>): Map<String, String> = units.mapValues { (_, records) ->
-    lanSyncHash(JsonArray(records.sortedBy { it.key }.map {
+    lanSyncHashSequence(records.sortedBy { it.key }.asSequence().map {
         buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.comparisonBody()) }
-    }))
+    })
 }
 
 /** Missing entries after a shared baseline are tombstones, never fresh additions. */
@@ -150,13 +150,30 @@ object LanSyncCompare {
     }
 }
 
-internal fun lanSyncCanonical(value: JsonElement): String = when (value) {
-    is JsonObject -> value.toSortedMap().entries.joinToString(",", "{", "}") { (key, child) -> "${JsonPrimitive(key)}:${lanSyncCanonical(child)}" }
-    is JsonArray -> value.joinToString(",", "[", "]", transform = ::lanSyncCanonical)
-    else -> value.toString()
+private fun MessageDigest.canonical(value: JsonElement) {
+    fun token(text: String) { update(text.toByteArray(Charsets.UTF_8)) }
+    when (value) {
+        is JsonObject -> {
+            token("{")
+            value.toSortedMap().entries.forEachIndexed { index, (key, child) ->
+                if (index > 0) token(",")
+                token(JsonPrimitive(key).toString()); token(":"); canonical(child)
+            }
+            token("}")
+        }
+        is JsonArray -> { token("["); value.forEachIndexed { index, child -> if (index > 0) token(","); canonical(child) }; token("]") }
+        else -> token(value.toString())
+    }
 }
-
-fun lanSyncHash(value: JsonElement): String = lanSyncHash(lanSyncCanonical(value).toByteArray(Charsets.UTF_8))
+private fun MessageDigest.hex() = digest().joinToString("") { "%02x".format(it) }
+internal fun lanSyncHashSequence(values: Sequence<JsonElement>): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    digest.update('['.code.toByte())
+    values.forEachIndexed { index, value -> if (index > 0) digest.update(','.code.toByte()); digest.canonical(value) }
+    digest.update(']'.code.toByte())
+    return digest.hex()
+}
+fun lanSyncHash(value: JsonElement): String = MessageDigest.getInstance("SHA-256").apply { canonical(value) }.hex()
 fun lanSyncHash(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 internal fun lanSyncDerivedId(transaction: String, source: String): String =
     UUID.nameUUIDFromBytes("ccb-lan-v1\u0000$transaction\u0000$source".toByteArray(Charsets.UTF_8)).toString()

@@ -23,6 +23,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val resourceReference: (String, Path) -> String = { _, path -> path.toString() },
     private val recoveryVault: LanSyncRecoveryVault? = null,
     private val budget: LanSyncResourceBudget = LanSyncResourceBudget(),
+    private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
     val recovery: LanSyncRecoveryVault by lazy {
@@ -46,6 +47,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val records = mutableListOf<LanSyncRecord>(); val sourceFiles = linkedMapOf<String, String>()
         val checkedResources = hashSetOf<Triple<String, String, String>>()
         val excluded = linkedSetOf<String>()
+        var decodedCost = 0L
         val entities = dataRoot.resolve("entities")
         if (Files.exists(entities, LinkOption.NOFOLLOW_LINKS)) {
             lanSyncSafe(entities, true)
@@ -66,6 +68,9 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 lanSyncSafe(directory, !singleton)
                 fun process(file: Path) {
                     require(file.fileName.toString().endsWith(".json")) { "SYNC_UNFINISHED_ENTITY" }
+                    require(Files.size(file) <= budget.maximumRecordBytes) { "SYNC_FILE_LIMIT" }
+                    decodedCost = lanSyncAddLength(decodedCost, metadataBudget.validate(file))
+                    require(decodedCost <= metadataBudget.maximumDecodedCost) { "SYNC_METADATA_WORKING_BUDGET" }
                     val raw = lanSyncRead(file, budget.maximumRecordBytes)
                     val body = lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                     val id = requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_ENTITY_ID" }
@@ -148,7 +153,21 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
         recovery.protect(dataRoot, current, plan)
         Files.createDirectory(transaction)
-        val changes = linkedMapOf<String, ByteArray?>()
+        val entries = mutableListOf<LanSyncJournalEntry>()
+        fun stage(relative: String, body: JsonObject?) {
+            val index = entries.size
+            val path = target(relative)
+            val old = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncRead(path, budget.maximumRecordBytes) else null
+            old?.let { lanSyncAtomicWrite(transaction.resolve("$index.old"), it) }
+            val prepared = body?.let {
+                transaction.resolve("$index.new").also { file ->
+                    LanSyncJsonFiles.write(file, JsonObject.serializer(), it)
+                    require(Files.size(file) <= budget.maximumRecordBytes) { "SYNC_FILE_LIMIT" }
+                }
+            }
+            entries += LanSyncJournalEntry(relative, old?.let(::lanSyncHash),
+                prepared?.let { LanSyncResourceStore.hashFile(it, Files.size(it)) }, index)
+        }
         val checkedResources = hashSetOf<Triple<String, String, String>>()
         val localRecords = projection.rewrite(plan.snapshot.records, toLocal = true)
         val desired = plan.snapshot.records.zip(localRecords).associate { (wire, local) ->
@@ -210,28 +229,22 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 LanSyncStudioCurrent.restoreLocal(wire.type, retainedBody, localDraft)
             } else retainedBody
             LanSyncScope.validateRecord(local.copy(body = localBody))
-            changes[relative] = lanSyncJson.encodeToString(JsonObject.serializer(), localBody).toByteArray(Charsets.UTF_8)
+            stage(relative, localBody)
         }
-        current.sourceFiles.keys.filter { it !in desired }.forEach { changes[it] = null }
+        current.sourceFiles.keys.filter { it !in desired }.forEach { stage(it, null) }
         // Derived indexes belong to the local repository. Invalidating them preserves message order keys.
         val changedSessions = (current.snapshot.units().keys + plan.snapshot.units().keys).filter {
             it.startsWith("conversation/") && current.snapshot.hashes()[it] != plan.snapshot.hashes()[it]
         }.map { it.removePrefix("conversation/") }
         changedSessions.forEach { id -> listOf("chat_message_indexes", "chat_message_order_backups").forEach { type ->
             val relative = "entities/$type/$id.json"
-            if (Files.exists(target(relative), LinkOption.NOFOLLOW_LINKS)) changes[relative] = null
+            if (Files.exists(target(relative), LinkOption.NOFOLLOW_LINKS)) stage(relative, null)
         } }
-        val entries = changes.entries.mapIndexed { index, (relative, bytes) ->
-            val path = target(relative)
-            val old = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncRead(path, budget.maximumRecordBytes) else null
-            old?.let { lanSyncAtomicWrite(transaction.resolve("$index.old"), it) }
-            bytes?.let { lanSyncAtomicWrite(transaction.resolve("$index.new"), it) }
-            LanSyncJournalEntry(relative, old?.let(::lanSyncHash), bytes?.let(::lanSyncHash), index)
-        }
         val journal = LanSyncJournal(plan.transaction, entries)
-        lanSyncAtomicWrite(transaction.resolve("journal.json"), lanSyncJson.encodeToString(journal).toByteArray(Charsets.UTF_8))
+        LanSyncJsonFiles.write(transaction.resolve("journal.json"), LanSyncJournal.serializer(), journal)
         // This marker is the only recovery authority; earlier preparation is inert evidence.
-        lanSyncAtomicWrite(transaction.resolve("authorized"), lanSyncHash(lanSyncRead(transaction.resolve("journal.json"), LanSyncWire.MAX_MESSAGE)).toByteArray())
+        val journalFile = transaction.resolve("journal.json")
+        lanSyncAtomicWrite(transaction.resolve("authorized"), LanSyncResourceStore.hashFile(journalFile, Files.size(journalFile)).toByteArray())
         observeJournal("AUTHORIZED", -1)
         recoverTransaction(transaction)
         } finally { current.close() }
@@ -252,7 +265,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(transactionId.matches(Regex("[a-f0-9-]{36}")))
         val transaction = stateRoot.resolve("transaction-$transactionId")
         if (!Files.exists(transaction.resolve("applied")) || Files.exists(transaction.resolve("retired"))) return
-        val journal = lanSyncJson.decodeFromString<LanSyncJournal>(lanSyncUtf8(lanSyncRead(transaction.resolve("journal.json"), LanSyncWire.MAX_MESSAGE)))
+        val journal = requireNotNull(LanSyncJsonFiles.read(transaction.resolve("journal.json"), LanSyncJournal.serializer()))
         require(journal.transaction == transactionId)
         val payloads = journal.entries.flatMap { entry -> listOfNotNull(
             entry.oldHash?.let { transaction.resolve("${entry.index}.old") to it },
@@ -263,10 +276,12 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     private fun recoverTransaction(transaction: Path) {
-        val bytes = lanSyncRead(transaction.resolve("journal.json"), LanSyncWire.MAX_MESSAGE)
-        require(lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128)) == lanSyncHash(bytes)) { "SYNC_JOURNAL_DAMAGED" }
-        val journal = lanSyncJson.decodeFromString<LanSyncJournal>(lanSyncUtf8(bytes))
+        val journalFile = transaction.resolve("journal.json")
+        require(lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128)) ==
+            LanSyncResourceStore.hashFile(journalFile, Files.size(journalFile))) { "SYNC_JOURNAL_DAMAGED" }
+        val journal = requireNotNull(LanSyncJsonFiles.read(journalFile, LanSyncJournal.serializer()))
         require(transaction.fileName.toString() == "transaction-${journal.transaction}" && journal.entries.map { it.path }.toSet().size == journal.entries.size)
+        require(journal.entries.size <= 300_000 && journal.entries.withIndex().all { (index, entry) -> entry.index == index }) { "SYNC_JOURNAL_DAMAGED" }
         // Validate the entire recovery authority before the first entity changes.
         journal.entries.forEach { entry ->
             require(entry.index in journal.entries.indices)

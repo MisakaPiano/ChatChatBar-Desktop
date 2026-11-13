@@ -122,4 +122,19 @@ class LanSyncWorkspaceTest {
         assertEquals(listOf("real-avatar"), seen)
         assertEquals("cdn/remote-art", mapped["voice"]?.jsonObject?.get("coverImage")?.jsonPrimitive?.content)
     }
+    @Test fun aggregateMetadataWorkingPolicyRefusesBeforeRetainingTooManyRecordsAndCanBeConfigured() {
+        val data = root(); val state = root()
+        try {
+            write(data, card("a", "x".repeat(2048))); write(data, card("b", "x".repeat(2048)))
+            val cost = LanSyncMetadataBudget(maximumDecodedCost = 1024 * 1024)
+                .validate(data.resolve("entities/character_cards/a.json"))
+            val tight = LanSyncWorkspace(data, state, { Path.of(it) },
+                metadataBudget = LanSyncMetadataBudget(maximumDecodedCost = cost + cost / 2))
+            assertEquals("SYNC_METADATA_WORKING_BUDGET", assertFailsWith<IllegalArgumentException> { tight.capture("synthetic") }.message)
+            assertFalse(Files.newDirectoryStream(state, "capture-*").use { it.iterator().hasNext() })
+            val roomy = LanSyncWorkspace(data, state, { Path.of(it) },
+                metadataBudget = LanSyncMetadataBudget(maximumDecodedCost = cost * 3))
+            roomy.capture("synthetic").use { assertEquals(2, it.snapshot.records.size) }
+        } finally { check(data.toFile().deleteRecursively()); check(state.toFile().deleteRecursively()) }
+    }
 }

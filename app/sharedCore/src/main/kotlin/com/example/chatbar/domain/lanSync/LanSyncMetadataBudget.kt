@@ -14,7 +14,7 @@ data class LanSyncMetadataBudget(
 ) {
     init { require(maximumDecodedCost > 0 && maximumDepth > 0 && maximumStringCharacters > 0) }
 
-    internal fun validate(path: Path) {
+    internal fun validate(path: Path): Long {
         lanSyncSafe(path)
         var cost = 0L; var depth = 0; var quoted = false; var escaped = false
         var stringCharacters = 0L; var scalar = false
@@ -52,5 +52,6 @@ data class LanSyncMetadataBudget(
         }
         // Full JSON grammar and bracket matching are independently checked by the typed decoder.
         require(!quoted && depth == 0) { "SYNC_METADATA_STRUCTURE" }
+        return cost
     }
 }
