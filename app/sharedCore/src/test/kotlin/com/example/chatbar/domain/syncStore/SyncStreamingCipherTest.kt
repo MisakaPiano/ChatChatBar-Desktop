@@ -65,6 +65,27 @@ class SyncStreamingCipherTest {
         assertEquals(0, count(root))
     }
 
+    @Test fun boundedPublicHeaderIsOnlyADiscoveryHintAndRetaggingCannotAuthenticateTheBody() = privateRoot { root ->
+        val cipher = SyncStreamingCipher.create(); val binding = context(cipher, CiphertextObjectKind.COMMIT)
+        val bytes = "只有完整验证后才可读取的合成正文".toByteArray(Charsets.UTF_8)
+        cipher.encrypt(bytes.inputStream(), binding, root).use { encrypted ->
+            val encoded = Files.readAllBytes(encrypted.path)
+            var closed = false
+            val source = object : ByteArrayInputStream(encoded) { override fun close() { closed = true; super.close() } }
+            assertEquals(SyncCiphertextHint(binding, cipher.keyCommitment()), SyncCiphertextHeader.peek(source))
+            assertEquals(encoded.size - SyncCiphertextHeader.size, source.available()); assertFalse(closed)
+            val wrong = SyncStreamingCipher.create(cipher.group, cipher.epoch)
+            val retagged = encoded.copyOf()
+            SyncCiphertextHeader.encode(binding, wrong.keyCommitment()).copyInto(retagged)
+            assertEquals(wrong.keyCommitment(), SyncCiphertextHeader.peek(retagged.inputStream()).keyCommitment)
+            assertFails { wrong.decrypt(retagged.inputStream(), binding, root).close() }
+            assertEquals(1, count(root))
+            assertFails { SyncCiphertextHeader.peek(encoded.copyOf(SyncCiphertextHeader.size - 1).inputStream()) }
+            cipher.decrypt(encoded.inputStream(), binding, root).use { assertContentEquals(bytes, Files.readAllBytes(it.path)) }
+        }
+        assertEquals(0, count(root))
+    }
+
     @Test fun tamperTruncationAndTailFailureNeverReturnOrRetainAnAuthenticatedPlaintextFile() = privateRoot { root ->
         val cipher = SyncStreamingCipher.create(); val binding = context(cipher)
         val plain = ByteArray(2 * 1024 * 1024 + 211) { (it % 233).toByte() }
