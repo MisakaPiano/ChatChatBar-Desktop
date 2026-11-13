@@ -166,6 +166,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
   implementation(project(":sharedCore"))
+  implementation("com.google.crypto.tink:tink-android:1.23.0")
   coreLibraryDesugaring(libs.desugar.jdk.libs)
   val composeBom = platform(libs.androidx.compose.bom)
   implementation(composeBom)
