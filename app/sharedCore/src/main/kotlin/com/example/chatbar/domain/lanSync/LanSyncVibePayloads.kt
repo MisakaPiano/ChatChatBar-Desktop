@@ -24,7 +24,7 @@ internal object LanSyncVibePayloads {
             val hash = value.removePrefix(NovelAiInlinePayloadStore.PREFIX)
             require(hash.matches(Regex("[0-9a-f]{64}")))
             val path = root.resolve("novelai-vibe-payloads").resolve(hash)
-            lanSyncSafe(path); require(Files.size(path) in 1..LanSyncSnapshot.MAX_RESOURCE)
+            lanSyncSafe(path); require(Files.size(path) > 0)
             store.copyResolved(value, discard)
             path
         } else {
@@ -39,7 +39,7 @@ internal object LanSyncVibePayloads {
     }
     fun validate(path: Path) = checked {
         lanSyncSafe(path)
-        require(Files.size(path) in 1..LanSyncSnapshot.MAX_RESOURCE)
+        require(Files.size(path) > 0)
         Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use {
             NovelAiInlinePayloadStore(path.parent.toFile()).validateStream(it)
         }

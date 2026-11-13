@@ -36,7 +36,7 @@ object LanSyncScope {
         LanSyncStudioCurrent.HISTORY to NovelAiStudioHistoryJournal.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。工作室当前草稿、撤销历史和参考图检查点共同选择，电脑撤销时间线可往返保留。电脑后处理记录与结果图片需回电脑查看。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、聊天输入草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。工作室当前草稿、撤销历史和参考图检查点共同选择，电脑撤销时间线可往返保留。电脑后处理记录与结果图片需回电脑查看。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、聊天输入草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，当前一次连接一台可信设备；附件分块续传并复用已校验内容，实际处理仍需足够磁盘空间。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
@@ -61,13 +61,14 @@ object LanSyncScope {
             val allowed = when (snapshot.protocol) {
                 3 -> legacyChatTypes + LanSyncMoments.types
                 4 -> legacyChatTypes + LanSyncMoments.types + "player_setting"
+                5 -> legacyChatTypes + LanSyncMoments.types + "player_setting" + "novelai_generation_history" + LanSyncPostProcess.TYPE + LanSyncStudioCurrent.types
                 else -> legacyChatTypes
             }
-            require(snapshot.protocol in 1..4 && allowed.containsAll(snapshot.coveredTypes))
+            require(snapshot.protocol in 1..5 && allowed.containsAll(snapshot.coveredTypes))
             val compatible = snapshot.copy(protocol = LAN_SYNC_PROTOCOL,
                 records = snapshot.records.map { it.copy(body = normalize(it.type, it.body)) })
             compatible.validate(); validateGraph(compatible)
-            require(compatible.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL)
+            LanSyncResourceBudget().total(compatible.resources.values)
         } catch (failure: Exception) {
             throw IllegalArgumentException("SYNC_LEGACY_PLAN_UNSUPPORTED", failure)
         }

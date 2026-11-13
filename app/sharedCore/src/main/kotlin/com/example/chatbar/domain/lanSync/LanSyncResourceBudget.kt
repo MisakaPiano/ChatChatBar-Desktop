@@ -8,11 +8,17 @@ data class LanSyncResourceBudget(
     val maximumResourceBytes: Long? = null,
     val maximumTotalBytes: Long? = null,
     val minimumFreeBytes: Long = 32L * 1024 * 1024,
+    val maximumArchiveEntries: Int = 65_536,
+    val maximumArchiveLineBytes: Int = 8 * 1024 * 1024,
+    val maximumRecordBytes: Int = 8 * 1024 * 1024,
+    val maximumExpandedArchiveBytes: Long? = null,
 ) {
     init {
         require(maximumResourceBytes == null || maximumResourceBytes > 0)
         require(maximumTotalBytes == null || maximumTotalBytes > 0)
         require(minimumFreeBytes >= 0)
+        require(maximumArchiveEntries > 0 && maximumArchiveLineBytes > 0 && maximumRecordBytes > 0)
+        require(maximumExpandedArchiveBytes == null || maximumExpandedArchiveBytes > 0)
     }
 
     fun requireResource(length: Long) {

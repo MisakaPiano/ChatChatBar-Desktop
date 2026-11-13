@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 import java.security.MessageDigest
 import java.util.UUID
 
-const val LAN_SYNC_PROTOCOL = 5
+const val LAN_SYNC_PROTOCOL = 6
 
 /** Protocol identities are independent of filenames, clocks, IP addresses and display names. */
 @Serializable
@@ -56,13 +56,13 @@ data class LanSyncSnapshot(
             require(it.type.matches(Regex("[a-z_]+")) && it.id.isNotBlank() && it.id.length <= 256) { "SYNC_ID" }
             require(it.type in coveredTypes && LanSyncScope.identity(it.type, it.body) == it.id) { "SYNC_BODY_ID" }
         }
-        require(resources.keys.all { it.matches(Regex("[0-9a-f]{64}")) } && resources.values.all { it in 1..MAX_RESOURCE }) { "SYNC_RESOURCE" }
+        require(resources.keys.all { it.matches(Regex("[0-9a-f]{64}")) } && resources.values.all { it > 0 }) { "SYNC_RESOURCE" }
+        LanSyncResourceBudget().total(resources.values)
     }
 
     fun units(): Map<String, List<LanSyncRecord>> = LanSyncMoments.units(records)
     fun hashes(): Map<String, String> = lanSyncUnitHashes(units())
 
-    companion object { const val MAX_RESOURCE: Long = 256L * 1024 * 1024 }
 }
 
 internal fun lanSyncUnitHashes(units: Map<String, List<LanSyncRecord>>): Map<String, String> = units.mapValues { (_, records) ->

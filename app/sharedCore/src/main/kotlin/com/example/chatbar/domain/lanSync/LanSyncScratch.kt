@@ -17,6 +17,12 @@ internal class LanSyncScratch(parent: Path, prefix: String) : Closeable {
         files[path] = Files.readAttributes(path, BasicFileAttributes::class.java).fileKey()
         return path
     }
+    fun remove(path: Path) {
+        require(path in files) { "SYNC_SCRATCH_UNKNOWN_CHILD" }
+        lanSyncSafe(path)
+        require(Files.readAttributes(path, BasicFileAttributes::class.java).fileKey() == files[path]) { "SYNC_SCRATCH_CHANGED" }
+        Files.delete(path); files.remove(path)
+    }
     override fun close() {
         lanSyncSafe(directory, true)
         require(Files.readAttributes(directory, BasicFileAttributes::class.java).fileKey() == directoryKey) { "SYNC_SCRATCH_CHANGED" }

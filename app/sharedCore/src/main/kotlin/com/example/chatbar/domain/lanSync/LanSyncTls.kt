@@ -104,35 +104,39 @@ object LanSyncTls {
 class LanSyncWire(private val socket: SSLSocket) : Closeable {
     private val input = DataInputStream(BufferedInputStream(socket.inputStream))
     private val output = DataOutputStream(BufferedOutputStream(socket.outputStream))
-    fun send(bytes: ByteArray) {
+    @Synchronized fun send(bytes: ByteArray) {
         require(bytes.size <= MAX_MESSAGE) { "SYNC_MESSAGE_LIMIT" }
         output.writeInt(bytes.size); output.write(bytes); output.flush()
     }
-    fun receive(): ByteArray {
-        val size = input.readInt(); require(size in 0..MAX_MESSAGE) { "SYNC_MESSAGE_LIMIT" }
+    fun receive(maximumBytes: Int = MAX_MESSAGE): ByteArray {
+        require(maximumBytes in 0..MAX_MESSAGE)
+        val size = input.readInt(); require(size in 0..maximumBytes) { "SYNC_MESSAGE_LIMIT" }
         return ByteArray(size).also(input::readFully)
     }
     fun sendText(value: String) = send(value.toByteArray(Charsets.UTF_8))
-    fun text(): String = lanSyncUtf8(receive())
+    fun text(maximumBytes: Int = MAX_MESSAGE): String = lanSyncUtf8(receive(maximumBytes))
     fun sendBlob(source: InputStream, length: Long) {
-        require(length in 1..LanSyncSnapshot.MAX_RESOURCE)
+        require(length in 1..BINARY_CHUNK_BYTES)
         output.writeLong(length)
         var count = 0L; val buffer = ByteArray(64 * 1024)
         while (count < length) {
             val n = source.read(buffer, 0, minOf(buffer.size.toLong(), length - count).toInt())
-            require(n > 0) { "SYNC_SOURCE_TRUNCATED" }; output.write(buffer, 0, n); count += n
+            require(n > 0) { "SYNC_SOURCE_TRUNCATED" }; output.write(buffer, 0, n); count = lanSyncAddLength(count, n.toLong())
         }
         require(source.read() == -1) { "SYNC_SOURCE_CHANGED" }; output.flush()
     }
     fun receiveBlob(destination: OutputStream, length: Long, expectedHash: String) {
-        require(length in 1..LanSyncSnapshot.MAX_RESOURCE && input.readLong() == length) { "SYNC_BLOB_LENGTH" }
+        require(length in 1..BINARY_CHUNK_BYTES && input.readLong() == length) { "SYNC_BLOB_LENGTH" }
         val digest = MessageDigest.getInstance("SHA-256"); var count = 0L; val buffer = ByteArray(64 * 1024)
         while (count < length) {
             val n = input.read(buffer, 0, minOf(buffer.size.toLong(), length - count).toInt())
-            require(n > 0) { "SYNC_BLOB_TRUNCATED" }; destination.write(buffer, 0, n); digest.update(buffer, 0, n); count += n
+            require(n > 0) { "SYNC_BLOB_TRUNCATED" }; destination.write(buffer, 0, n); digest.update(buffer, 0, n); count = lanSyncAddLength(count, n.toLong())
         }
         require(digest.digest().joinToString("") { "%02x".format(it) } == expectedHash) { "SYNC_BLOB_DAMAGED" }
     }
     override fun close() = socket.close()
-    companion object { const val MAX_MESSAGE = 64 * 1024 * 1024 }
+    companion object {
+        const val MAX_MESSAGE = 64 * 1024 * 1024
+        const val BINARY_CHUNK_BYTES = 1024L * 1024
+    }
 }

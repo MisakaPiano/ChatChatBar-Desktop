@@ -42,12 +42,18 @@ class LanSyncRuntimeTest {
             } catch (failure: Throwable) { plain.close(); throw failure }
         }
     }
-    private class End(val name: String, val network: SyntheticLan, private val observe: (String, String) -> Unit = { _, _ -> }) {
+    private class End(val name: String, val network: SyntheticLan,
+        private val protection: (String) -> Unit = {},
+        private val journal: (String, Int) -> Unit = { _, _ -> },
+        private val progress: (String, Long) -> Unit = { _, _ -> },
+        private val observe: (String, String) -> Unit = { _, _ -> }) {
         val root = Files.createTempDirectory("ccb-lan-$name-").toRealPath()
         val stateRoot = Files.createTempDirectory("ccb-lan-$name-state-").toRealPath()
         val store = LanSyncStateStore(stateRoot, { it }, { it })
         val id = store.identity().fingerprint
-        val workspace = LanSyncWorkspace(root, stateRoot.resolve("workspace"), { raw -> Path.of(raw) })
+        val workspace = LanSyncWorkspace(root, stateRoot.resolve("workspace"), { raw -> Path.of(raw) },
+            observeJournal = journal,
+            recoveryVault = LanSyncRecoveryVault(stateRoot.resolve("workspace/recovery"), observe = protection))
         val gate = LanSyncOperationGate()
         val storage = JsonFileStorage(root, gate)
         val studio by lazy { NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true) }
@@ -61,7 +67,7 @@ class LanSyncRuntimeTest {
                 storage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
                 if (studioCurrent) studio.reloadAfterLanSync()
             }
-        }, name, observe = observe, network = network)
+        }, name, observe = observe, network = network, transferProgress = progress)
         fun write(id: String, name: String, image: String? = null) {
             writeCard(CharacterCard(id, name, avatar = image, createdAt = 1, updatedAt = 1))
         }
@@ -100,6 +106,74 @@ class LanSyncRuntimeTest {
     private suspend fun completed(a: End, b: End, previous: String? = null) = until("bilateral receipts") {
         val left = a.store.baseline(b.id, a.id).revision; val right = b.store.baseline(a.id, b.id).revision
         left != null && left == right && left != previous && a.store.pending(b.id) == null && b.store.pending(a.id) == null
+    }
+    @Test fun neitherEndpointPublishesUntilBothRecoverySealsExistAndEitherProtectionFailureCanRetry() = runBlocking {
+        for (failingSide in listOf("computer", "phone")) {
+            val network = SyntheticLan()
+            val refuse = java.util.concurrent.atomic.AtomicBoolean()
+            val protectedComputer = java.util.concurrent.atomic.AtomicBoolean()
+            val protectedPhone = java.util.concurrent.atomic.AtomicBoolean()
+            val requireBoth = java.util.concurrent.atomic.AtomicBoolean()
+            fun protection(side: String): (String) -> Unit = { phase ->
+                if (phase == "BEFORE_SEAL" && failingSide == side && refuse.get()) error("SYNC_TEST_PROTECTION")
+            }
+            val journal: (String, Int) -> Unit = { phase, _ ->
+                if (phase == "AUTHORIZED" && requireBoth.get()) {
+                    check(protectedComputer.get() && protectedPhone.get()) { "Publication preceded bilateral recovery" }
+                }
+            }
+            val a = End("computer", network, protection("computer"), journal) { phase, _ ->
+                if (phase == "HOST_PROTECTED") protectedComputer.set(true)
+            }
+            val b = End("phone", network, protection("phone"), journal) { phase, _ ->
+                if (phase == "PHONE_PROTECTED") protectedPhone.set(true)
+            }
+            a.write("a", "原甲"); a.write("b", "原乙")
+            val host = a.runtime(); val phone = b.runtime()
+            try {
+                pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+                val common = a.store.baseline(b.id, a.id).revision
+                a.write("a", "电脑修改甲"); b.write("b", "手机修改乙")
+                protectedComputer.set(false); protectedPhone.set(false); requireBoth.set(true); refuse.set(true)
+                host.requestSync()
+                until("failed $failingSide protection is visible") {
+                    (if (failingSide == "computer") host else phone).state.value.failureCode == "SYNC_TEST_PROTECTION"
+                }
+                assertEquals(setOf("电脑修改甲", "原乙"), a.names())
+                assertEquals(setOf("原甲", "手机修改乙"), b.names())
+                assertEquals(common, a.store.baseline(b.id, a.id).revision)
+                assertEquals(common, b.store.baseline(a.id, b.id).revision)
+                assertFalse(a.workspace.applied(requireNotNull(a.store.pending(b.id)).plan.transaction))
+                assertFalse(b.workspace.applied(requireNotNull(b.store.pending(a.id)).plan.transaction))
+                refuse.set(false); host.requestSync(); phone.requestSync(); completed(a, b, common)
+                assertEquals(setOf("电脑修改甲", "手机修改乙"), a.names()); assertEquals(a.names(), b.names())
+                assertTrue(protectedComputer.get() && protectedPhone.get())
+                assertTrue(a.workspace.recovery.list().isNotEmpty()); assertTrue(b.workspace.recovery.list().isNotEmpty())
+            } finally { host.closeAndDrain(); phone.closeAndDrain() }
+        }
+    }
+    @Test fun actualWireExchangesOnlyMissingResourceChunksAndReusesBothEndpointsOwnCaptures() = runBlocking {
+        val network = SyntheticLan()
+        val sent = java.util.concurrent.atomic.AtomicLong()
+        val progress: (String, Long) -> Unit = { phase, bytes -> if (phase == "RESOURCE_CHUNK_SENT_BYTES") sent.addAndGet(bytes) }
+        val a = End("computer", network, progress = progress); val b = End("phone", network, progress = progress)
+        val file = a.root.resolve("images/ordinary.bin"); Files.createDirectories(file.parent)
+        val content = ByteArray(2 * 1024 * 1024 + 19) { (it % 251).toByte() }; Files.write(file, content)
+        a.write("a", "附件卡", file.toString())
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            assertEquals(content.size.toLong(), sent.get())
+            var previous = a.store.baseline(b.id, a.id).revision
+            sent.set(0); phone.requestSync(); completed(a, b, previous); assertEquals(0L, sent.get())
+            previous = a.store.baseline(b.id, a.id).revision
+            content[0] = 9; Files.write(file, content); sent.set(0)
+            host.requestSync(); completed(a, b, previous); assertEquals(content.size.toLong(), sent.get())
+            b.workspace.capture(b.id).use { captured ->
+                assertEquals(lanSyncHash(content), captured.snapshot.resources.keys.single())
+                assertContentEquals(content, Files.readAllBytes(captured.blobs.values.single()))
+            }
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun actualPairSnapshotApplyRepeatDeletionAndReopenedHostAddress() = runBlocking {
         val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
@@ -648,7 +722,7 @@ class LanSyncRuntimeTest {
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {
-        for (legacyProtocol in listOf(1, 2, 3, 4)) for (bothApplied in listOf(false, true)) {
+        for (legacyProtocol in listOf(1, 2, 3, 4, 5)) for (bothApplied in listOf(false, true)) {
             val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
             for (end in listOf(a, b)) end.write("card", "同一合成角色")
             a.writeConversation("电脑版本", "pc-local-model"); b.writeConversation("手机版本", "phone-local-model")

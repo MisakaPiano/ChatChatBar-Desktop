@@ -22,9 +22,11 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val validateResource: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> },
     private val resourceReference: (String, Path) -> String = { _, path -> path.toString() },
     private val recoveryVault: LanSyncRecoveryVault? = null,
+    private val budget: LanSyncResourceBudget = LanSyncResourceBudget(),
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
     val recovery: LanSyncRecoveryVault by lazy { recoveryVault ?: LanSyncRecoveryVault(stateRoot.resolve("recovery")) }
+    val resourceStore: LanSyncResourceStore by lazy { LanSyncResourceStore(stateRoot.resolve("resources"), budget) }
 
     fun protectBeforeApply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = capture(deviceId, projection).use { current ->
@@ -62,7 +64,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 lanSyncSafe(directory, !singleton)
                 fun process(file: Path) {
                     require(file.fileName.toString().endsWith(".json")) { "SYNC_UNFINISHED_ENTITY" }
-                    val raw = lanSyncRead(file, MAX_RECORD)
+                    val raw = lanSyncRead(file, budget.maximumRecordBytes)
                     val body = lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                     val id = requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_ENTITY_ID" }
                     val original = LanSyncRecord(type, id, body); LanSyncScope.validateRecord(original)
@@ -80,7 +82,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             } else (if (field == "packageFile") dataRoot.resolve("save_slot_packages").resolve(reference) else resolveResource(reference)).also { source ->
                                 require(source.toAbsolutePath().normalize().startsWith(dataRoot)) { "SYNC_EXTERNAL_RESOURCE" }
                             }
-                            if (field == "packageFile") LanSyncSlotPackages.validate(resource, body)
+                            if (field == "packageFile") LanSyncSlotPackages.validate(resource, body, budget)
                             val hash = freeze(resource, frozen, blobs, resources, scratch)
                             if (kind == "payloads") {
                                 LanSyncVibePayloads.validate(requireNotNull(blobs[hash]))
@@ -114,7 +116,6 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         }
         val snapshot = LanSyncSnapshot(deviceId = deviceId, records = projection.rewrite(records), resources = resources, excludedTypes = excluded)
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
-        require(lanSyncJson.encodeToString(snapshot).toByteArray(Charsets.UTF_8).size <= LanSyncWire.MAX_MESSAGE) { "SYNC_SNAPSHOT_LIMIT" }
         returned = true
         return LanSyncCapture(snapshot, blobs, sourceFiles, scratch::close)
         } finally { if (!returned) scratch.close() }
@@ -122,13 +123,15 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     private fun freeze(source: Path, frozen: Path, blobs: MutableMap<String, Path>, resources: MutableMap<String, Long>, scratch: LanSyncScratch): String {
         lanSyncSafe(source); val before = Files.readAttributes(source, java.nio.file.attribute.BasicFileAttributes::class.java)
-        require(before.size() in 1..LanSyncSnapshot.MAX_RESOURCE) { "SYNC_RESOURCE_LIMIT" }
+        budget.requireResource(before.size())
+        budget.requireSpace(frozen, before.size())
         val part = frozen.resolve("blob-${UUID.randomUUID()}")
         val hash = copyHash(source, part, before.size(), scratch::own)
         val after = Files.readAttributes(source, java.nio.file.attribute.BasicFileAttributes::class.java)
         require(before.fileKey() == after.fileKey() && before.size() == after.size() && before.lastModifiedTime() == after.lastModifiedTime()) { "SYNC_SOURCE_CHANGED" }
-        if (hash !in blobs) { blobs[hash] = part; resources[hash] = before.size() }
-        require(resources.values.sum() <= MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }
+        if (hash !in blobs) { blobs[hash] = resourceStore.retain(part, hash, before.size()); resources[hash] = before.size() }
+        scratch.remove(part)
+        budget.total(resources.values)
         return hash
     }
 
@@ -175,14 +178,14 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             val ref = requireNotNull(local.body["packageRef"]).jsonObject
                             // Validate against the retained source envelope before choosing a new library filename.
                             val nested = java.util.zip.ZipFile(source.toFile()).use { zip ->
-                                val entry = requireNotNull(zip.getEntry("manifest.json")); require(entry.size in 1..256 * 1024)
+                                val entry = requireNotNull(zip.getEntry("manifest.json")); require(entry.size in 1..budget.maximumRecordBytes.toLong())
                                 val raw = zip.getInputStream(entry).use { it.readBytes() }
                                 lanSyncJson.parseToJsonElement(lanSyncUtf8(raw)).jsonObject
                             }
                             val sourceId = nested.getValue("id").jsonPrimitive.content
                             val filename = if (local.id != sourceId) "${local.id}.cbsave" else "lan-${parts[2]}-${parts[3]}.cbsave"
                             val library = JsonObject(local.body + ("packageRef" to JsonObject(ref + ("fileName" to JsonPrimitive(filename)))))
-                            LanSyncSlotPackages.validate(source, library)
+                            LanSyncSlotPackages.validate(source, library, budget)
                             filename
                         } else null
                         val target = if (packageSource != null) dataRoot.resolve("save_slot_packages").resolve(packageSource)
@@ -195,13 +198,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             }
             val retainedFields = LanSyncScope.retainedLocalFields(wire.type)
             val retainedBody = existing?.takeIf { retainedFields.isNotEmpty() }?.let {
-                val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD))).jsonObject
+                val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), budget.maximumRecordBytes))).jsonObject
                 JsonObject(materialized + original.filterKeys { it in retainedFields })
             } ?: materialized
             val localBody = if (wire.type in LanSyncStudioCurrent.types) {
                 val path = dataRoot.resolve("entities/${LanSyncStudioCurrent.DRAFT}.json")
                 val localDraft = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS))
-                    lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(path, MAX_RECORD))).jsonObject else null
+                    lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(path, budget.maximumRecordBytes))).jsonObject else null
                 LanSyncStudioCurrent.restoreLocal(wire.type, retainedBody, localDraft)
             } else retainedBody
             LanSyncScope.validateRecord(local.copy(body = localBody))
@@ -218,7 +221,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         } }
         val entries = changes.entries.mapIndexed { index, (relative, bytes) ->
             val path = target(relative)
-            val old = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncRead(path, MAX_RECORD) else null
+            val old = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncRead(path, budget.maximumRecordBytes) else null
             old?.let { lanSyncAtomicWrite(transaction.resolve("$index.old"), it) }
             bytes?.let { lanSyncAtomicWrite(transaction.resolve("$index.new"), it) }
             LanSyncJournalEntry(relative, old?.let(::lanSyncHash), bytes?.let(::lanSyncHash), index)
@@ -252,7 +255,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val payloads = journal.entries.flatMap { entry -> listOfNotNull(
             entry.oldHash?.let { transaction.resolve("${entry.index}.old") to it },
             entry.newHash?.let { transaction.resolve("${entry.index}.new") to it }) }
-        payloads.forEach { (path, hash) -> require(lanSyncHash(lanSyncRead(path, MAX_RECORD)) == hash) { "SYNC_JOURNAL_DAMAGED" } }
+        payloads.forEach { (path, hash) -> require(lanSyncHash(lanSyncRead(path, budget.maximumRecordBytes)) == hash) { "SYNC_JOURNAL_DAMAGED" } }
         lanSyncAtomicWrite(transaction.resolve("retired"), transactionId.toByteArray())
         payloads.forEach { (path, _) -> Files.delete(path) }
     }
@@ -266,16 +269,16 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         journal.entries.forEach { entry ->
             require(entry.index in journal.entries.indices)
             val path = target(entry.path)
-            entry.oldHash?.let { require(lanSyncHash(lanSyncRead(transaction.resolve("${entry.index}.old"), MAX_RECORD)) == it) { "SYNC_JOURNAL_DAMAGED" } }
-            entry.newHash?.let { require(lanSyncHash(lanSyncRead(transaction.resolve("${entry.index}.new"), MAX_RECORD)) == it) { "SYNC_JOURNAL_DAMAGED" } }
-            val current = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncHash(lanSyncRead(path, MAX_RECORD)) else null
+            entry.oldHash?.let { require(lanSyncHash(lanSyncRead(transaction.resolve("${entry.index}.old"), budget.maximumRecordBytes)) == it) { "SYNC_JOURNAL_DAMAGED" } }
+            entry.newHash?.let { require(lanSyncHash(lanSyncRead(transaction.resolve("${entry.index}.new"), budget.maximumRecordBytes)) == it) { "SYNC_JOURNAL_DAMAGED" } }
+            val current = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncHash(lanSyncRead(path, budget.maximumRecordBytes)) else null
             require(current == entry.oldHash || current == entry.newHash) { "SYNC_FOREIGN_CHANGE_RECOVERY_REFUSED" }
         }
         journal.entries.forEach { entry ->
             val path = target(entry.path)
-            val old = entry.oldHash?.let { lanSyncRead(transaction.resolve("${entry.index}.old"), MAX_RECORD).also { raw -> require(lanSyncHash(raw) == it) } }
-            val next = entry.newHash?.let { lanSyncRead(transaction.resolve("${entry.index}.new"), MAX_RECORD).also { raw -> require(lanSyncHash(raw) == it) } }
-            val current = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncHash(lanSyncRead(path, MAX_RECORD)) else null
+            val old = entry.oldHash?.let { lanSyncRead(transaction.resolve("${entry.index}.old"), budget.maximumRecordBytes).also { raw -> require(lanSyncHash(raw) == it) } }
+            val next = entry.newHash?.let { lanSyncRead(transaction.resolve("${entry.index}.new"), budget.maximumRecordBytes).also { raw -> require(lanSyncHash(raw) == it) } }
+            val current = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncHash(lanSyncRead(path, budget.maximumRecordBytes)) else null
             require(current == entry.oldHash || current == entry.newHash) { "SYNC_FOREIGN_CHANGE_RECOVERY_REFUSED" }
             if (current != entry.newHash) {
                 if (next == null) Files.delete(path) else lanSyncAtomicWrite(path, next)
@@ -299,7 +302,6 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     companion object {
         const val MAX_RECORD = 8 * 1024 * 1024
-        const val MAX_TOTAL = 1024L * 1024 * 1024
         /** Mirrors the existing backup registry's contextual path recognition. */
         fun mapResources(body: JsonObject, transform: (String, String) -> String): JsonObject {
             fun visit(value: JsonElement, fields: List<String>): JsonElement {
@@ -324,11 +326,11 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             return visit(body, emptyList()).jsonObject
         }
         fun hashFile(path: Path, length: Long): String {
-            lanSyncSafe(path); require(Files.size(path) == length && length in 1..LanSyncSnapshot.MAX_RESOURCE)
+            lanSyncSafe(path); require(Files.size(path) == length && length > 0)
             val digest = MessageDigest.getInstance("SHA-256")
             Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
                 val buffer = ByteArray(64 * 1024); var count = 0L
-                while (true) { val n = input.read(buffer); if (n < 0) break; count += n; require(count <= length); digest.update(buffer, 0, n) }
+                while (true) { val n = input.read(buffer); if (n < 0) break; count = lanSyncAddLength(count, n.toLong()); require(count <= length); digest.update(buffer, 0, n) }
                 require(count == length)
             }
             return digest.digest().joinToString("") { "%02x".format(it) }
@@ -340,7 +342,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 java.nio.channels.FileChannel.open(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { channel ->
                     onCreated(target)
                     val buffer = ByteArray(64 * 1024); var count = 0L
-                    while (true) { val n = input.read(buffer); if (n < 0) break; count += n; require(count <= length); digest.update(buffer, 0, n)
+                    while (true) { val n = input.read(buffer); if (n < 0) break; count = lanSyncAddLength(count, n.toLong()); require(count <= length); digest.update(buffer, 0, n)
                         val block = java.nio.ByteBuffer.wrap(buffer, 0, n); while (block.hasRemaining()) channel.write(block) }
                     require(count == length); channel.force(true)
                 }

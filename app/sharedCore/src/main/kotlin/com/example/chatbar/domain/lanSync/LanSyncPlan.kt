@@ -66,7 +66,7 @@ object LanSyncPlanner {
             excludedTypes = computer.excludedTypes + phone.excludedTypes, coveredTypes = computer.coveredTypes)
         result.validate()
         LanSyncScope.validateGraph(result)
-        require(result.resources.values.sum() <= LanSyncWorkspace.MAX_TOTAL) { "SYNC_TOTAL_LIMIT" }
+        LanSyncResourceBudget().total(result.resources.values)
         return LanSyncPlan(transaction, result, parents, commonCoveredTypesBefore = baseline.coveredTypes,
             resolvedUnits = choices.keys.toSet(), resolvedRecordKeys = resolvedSourceKeys +
                 incoming.zip(rewritten).filter { it.first.key in resolvedSourceKeys }.map { it.second.key })
