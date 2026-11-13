@@ -161,4 +161,62 @@ class SyncGroupKeyDeliveryTest {
         Files.write(path, SyncKeyDeliveryCodec.encode(changed))
         assertEquals("SYNC_KEY_DELIVERY_SIGNATURE", assertFailsWith<IllegalArgumentException> { queue.entry(key.id) }.message)
     }
+
+    @Test fun protectedGroupCustodyReopensKeysAndAdvancesTheKnownCheckpointBeforeReturningAuthority() {
+        val group = Group(); val source = group.ledger()
+        val root = Files.createTempDirectory("synthetic-group-custody").toRealPath()
+        fun custody() = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        assertEquals("SYNC_GROUP_CUSTODY_MISSING", assertFailsWith<IllegalArgumentException> { custody().ledger() }.message)
+        custody().enroll(group.trust, listOf(group.genesis))
+        custody().rememberKey(group.tentative(group.delivery(source)).admit(custody().ledger()))
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+        val (rotated, key) = group.rotate(); source.offer(rotated)
+        val interrupted = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() }) {
+            if (it == "GROUP_LEDGER_EVIDENCE_RETAINED") throw IOException("SYNTHETIC_LOST_CHECKPOINT_REPLY")
+        }
+        assertFailsWith<IOException> { interrupted.update(listOf(rotated)) }
+        val reopened = custody().ledger()
+        assertEquals(rotated.reference(), reopened.current().reference())
+        assertEquals(rotated.reference(), reopened.trustAnchor.checkpoint)
+        custody().rememberKey(group.tentative(group.delivery(source, key)).admit(reopened))
+        assertEquals(key.keyCommitment(), custody().key(key.epoch).keyCommitment())
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+        assertEquals(rotated.reference(), custody().update(listOf(group.genesis)).current().reference())
+        assertEquals(rotated.reference(), custody().enroll(group.trust, listOf(group.genesis)).current().reference())
+        assertFails { custody().enroll(group.trust.copy(genesis = SyncVersionRef(SyncStoreId.random(), "c".repeat(64))), listOf(group.genesis)) }
+    }
+
+    @Test fun groupCustodyRetainsOldLocalKeysAfterRevocationAndRetainsForkEvidenceWithoutSelectingAWinner() {
+        val group = Group(); val source = group.ledger()
+        val root = Files.createTempDirectory("synthetic-group-custody-revoked").toRealPath()
+        fun custody() = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        custody().enroll(group.trust, listOf(group.genesis))
+        val admitted = group.tentative(group.delivery(source)).admit(source); custody().rememberKey(admitted)
+        val (revocation, _) = group.rotate(revoke = true)
+        custody().update(listOf(revocation))
+        assertFalse(custody().ledger().current().members.getValue(group.peer.fingerprint).active)
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+        assertEquals("SYNC_GROUP_CUSTODY_RECIPIENT", assertFailsWith<IllegalArgumentException> { custody().rememberKey(admitted) }.message)
+        val (sibling, _) = group.rotate()
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { custody().update(listOf(sibling)) }.message)
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { custody().ledger() }.message)
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+    }
+
+    @Test fun failedProtectionAndWrongNativeRecipientCannotReplacePreviouslyRetainedGroupTrust() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-group-custody-protection").toRealPath()
+        var fail = false
+        val custody = SyncGroupCustody(root, group.key.group, group.recipient,
+            { if (fail) throw IOException("SYNTHETIC_PROTECTION_UNAVAILABLE") else it.reversedArray() }, { it.reversedArray() })
+        custody.enroll(group.trust, listOf(group.genesis))
+        val path = root.resolve("group.protected"); val before = Files.readAllBytes(path)
+        fail = true
+        val (rotated, _) = group.rotate()
+        assertFailsWith<IOException> { custody.update(listOf(rotated)) }
+        assertContentEquals(before, Files.readAllBytes(path))
+        assertEquals(group.genesis.reference(), custody.ledger().current().reference())
+        val wrong = SyncGroupCustody(root, group.key.group, group.ownerRecipient, { it.reversedArray() }, { it.reversedArray() })
+        assertEquals("SYNC_GROUP_CUSTODY_CONTEXT", assertFailsWith<IllegalArgumentException> { wrong.ledger() }.message)
+        assertContentEquals(before, Files.readAllBytes(path))
+    }
 }
