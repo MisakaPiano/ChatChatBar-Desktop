@@ -21,12 +21,14 @@ import kotlinx.serialization.json.encodeToStream
 }
 @Serializable data class SyncGroupEnvelope(val format: Int, val kind: SyncGroupObjectKind,
     val version: SyncCausalVersion? = null, val deviceLedger: SyncDeviceLedgerRecord? = null,
-    val blobs: Map<String, SyncEnvelopeBlobBinding> = emptyMap()) {
+    val blobs: Map<String, SyncEnvelopeBlobBinding> = emptyMap(), val ledgerHistory: List<SyncDeviceLedgerRecord> = emptyList()) {
     init {
         require(format == 2 && when (kind) {
-            SyncGroupObjectKind.VERSION -> version != null && deviceLedger == null
+            SyncGroupObjectKind.VERSION -> version != null && deviceLedger == null && ledgerHistory.isEmpty()
             SyncGroupObjectKind.DEVICE_LEDGER -> deviceLedger != null && version == null && blobs.isEmpty()
-        } && blobs.all { (hash, binding) -> hash == binding.plaintext.sha256 }) { "SYNC_GROUP_ENVELOPE" }
+        } && blobs.all { (hash, binding) -> hash == binding.plaintext.sha256 } &&
+            ledgerHistory.all { it.group == deviceLedger?.group && it.id != deviceLedger?.id } &&
+            ledgerHistory.map { it.id }.toSet().size == ledgerHistory.size) { "SYNC_GROUP_ENVELOPE" }
     }
     val group get() = version?.group ?: requireNotNull(deviceLedger).group
     fun reference() = version?.reference() ?: requireNotNull(deviceLedger).reference()
@@ -100,11 +102,12 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
             (if (sorted) values.sortedBy { it.id.value } else values.toList()).toCollection(linkedSetOf()))
         val version = envelope.version?.let { row -> row.copy(parents = refs(row.parents),
             changes = Collections.unmodifiableMap((if (sorted) row.changes.toSortedMap() else row.changes).mapValues { (_, change) -> change.copy(previous = refs(change.previous)) })) }
-        val ledger = envelope.deviceLedger?.let { row -> row.copy(
+        fun ledger(row: SyncDeviceLedgerRecord) = row.copy(
             members = Collections.unmodifiableMap((if (sorted) row.members.toSortedMap() else row.members).toMap()),
             coveredTypes = Collections.unmodifiableSet((if (sorted) row.coveredTypes.sorted() else row.coveredTypes.toList()).toCollection(linkedSetOf())),
-            acceptedHeads = refs(row.acceptedHeads)) }
-        return envelope.copy(version = version, deviceLedger = ledger,
+            acceptedHeads = refs(row.acceptedHeads))
+        return envelope.copy(version = version, deviceLedger = envelope.deviceLedger?.let(::ledger),
+            ledgerHistory = Collections.unmodifiableList(envelope.ledgerHistory.map(::ledger)),
             blobs = Collections.unmodifiableMap((if (sorted) envelope.blobs.toSortedMap() else envelope.blobs).toMap()))
     }
 }

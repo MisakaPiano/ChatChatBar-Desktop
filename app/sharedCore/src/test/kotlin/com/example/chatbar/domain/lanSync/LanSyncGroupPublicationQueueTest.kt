@@ -23,12 +23,26 @@ class LanSyncGroupPublicationQueueTest {
         val queue = Files.createDirectory(root.resolve("queue")); val publications = Files.createDirectory(root.resolve("publications"))
         val outbox = SyncEncryptedOutbox(queue, cipher); val backend = FileCiphertextStore(root.resolve("backend"))
         val blobs = SyncGroupBlobStore(cipher.group, work); val codec = SyncGroupObjectCodec(work)
+        val recipients = listOf(owner, sender).associate { it.fingerprint to SyncDeviceEncryptionKey.create(it.fingerprint) }
         val members = listOf(owner, sender).associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded),
-            SyncDeviceEncryptionKey.create(it.fingerprint).publicKey.encoded) }
+            recipients.getValue(it.fingerprint).publicKey.encoded) }
         val genesis = sign(SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(), LanSyncScope.schemas.keys, members, emptySet(), "unsigned"))
         val ledger = SyncDeviceLedger(SyncGroupTrust(cipher.group, genesis.reference(), members.getValue(owner.fingerprint).certificate)).also { it.offer(genesis) }
         fun sign(row: SyncDeviceLedgerRecord) = row.copy(signature = Base64.getEncoder().encodeToString(owner.signSyncGroupPayload(row.signingBytes())))
         fun publisher(observe: (String) -> Unit = {}) = LanSyncGroupPublicationQueue(publications, ledger, outbox, sender.fingerprint, observe)
+        val keysRoot = Files.createDirectory(root.resolve("recipient-keys"))
+        fun keyQueue() = SyncKeyDeliveryQueue(keysRoot, ledger.trustAnchor, owner.fingerprint, { ledger })
+        fun rootPublisher(observe: (String) -> Unit = {}) = LanSyncGroupPublicationQueue(publications, ledger, outbox, owner.fingerprint,
+            observe, keyQueue = keyQueue())
+        fun prepareLedger(): Pair<SyncPreparedGroupObject, Map<String, SyncStoreId>> {
+            val current = ledger.current()
+            val operations = current.members.filterValues { it.active }.keys.associateWith { recipient -> SyncStoreId.random().also {
+                keyQueue().prepare(it, cipher, recipient, owner::signSyncGroupPayload)
+            } }
+            val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
+                SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = current, ledgerHistory = ledger.history().dropLast(1)))
+            return metadata to operations
+        }
         fun prepare(): Prepared {
             val image = data.resolve("images/image.png"); Files.createDirectories(image.parent); Files.write(image, LanSyncPreviewSample.image())
             val card = data.resolve("entities/character_cards/card.json"); Files.createDirectories(card.parent)
@@ -136,5 +150,79 @@ class LanSyncGroupPublicationQueueTest {
         other.ledger.offer(revoked)
         assertEquals("SYNC_GROUP_PUBLICATION_DEVICE_REVOKED", assertFailsWith<IllegalArgumentException> { queue.upload(pending.metadata.operation, other.backend) }.message)
         assertTrue(pending.blobs.values.all { other.backend.metadata(it.key) == null }); assertNull(other.backend.metadata(pending.metadata.key))
+    }
+
+    @Test fun everyActiveRecipientKeyPrecedesTheLedgerAndLostRepliesResumeForAnOfflineRecipient() = withRoot { root ->
+        val f = Fixture(root); val (metadata, keys) = f.prepareLedger(); val publisher = f.rootPublisher()
+        val plan = publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys)
+        var lose = true; val observed = mutableListOf<CiphertextObjectKey>()
+        val unreliable = object : CiphertextStore by f.backend {
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
+                if (request.key == metadata.request.key) assertTrue(plan.keyDeliveries.values.all { f.backend.metadata(it.key)?.descriptor == it.descriptor })
+                observed += request.key
+                val result = f.backend.put(request, source)
+                if (lose) { lose = false; throw IOException("SYNTHETIC_LOST_RECIPIENT_REPLY") }
+                return result
+            }
+        }
+        assertFailsWith<IOException> { publisher.upload(plan.metadata.operation, unreliable) }
+        assertNull(f.backend.metadata(metadata.request.key)); assertNull(publisher.receipt(plan.metadata.operation))
+        val reopened = f.rootPublisher(); val receipt = reopened.upload(plan.metadata.operation, unreliable)
+        assertEquals(2L, receipt.recipientCount); assertEquals(0L, receipt.resourceCount)
+        assertEquals(metadata.request.key, observed.last()); assertEquals(3, observed.size)
+        val before = observed.size; assertEquals(receipt, reopened.upload(plan.metadata.operation, unreliable)); assertEquals(before, observed.size)
+        // No root signer is needed when the previously offline recipient later consumes retained objects.
+        val recipientKey = f.recipients.getValue(f.sender.fingerprint)
+        val capsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue(f.sender.fingerprint).key))
+        val tentative = SyncKeyDeliveryCodec.read(f.backend, capsule, f.ledger.trustAnchor, recipientKey)
+        val read = f.codec.read(f.backend, tentative.cipher, metadata.context, metadata.request.descriptor, plan.reference)
+        val recipientLedger = SyncDeviceLedger(f.ledger.trustAnchor)
+        read.envelope.ledgerHistory.forEach { recipientLedger.offer(it) }; recipientLedger.offer(requireNotNull(read.envelope.deviceLedger))
+        assertEquals(f.cipher.keyCommitment(), tentative.admit(recipientLedger).cipher.keyCommitment())
+    }
+
+    @Test fun missingSubstitutedRecipientPackagesAndOrdinaryAuthorsCannotPublishADeviceLedger() = withRoot { root ->
+        val f = Fixture(root); val (metadata, keys) = f.prepareLedger()
+        assertEquals("SYNC_GROUP_PUBLICATION_KEYS", assertFailsWith<IllegalArgumentException> {
+            f.rootPublisher().prepare(metadata, emptyList(), emptyMap(), emptyList(), keys.entries.drop(1).associate { it.toPair() })
+        }.message)
+        assertEquals("SYNC_GROUP_PUBLICATION_KEYS", assertFailsWith<IllegalArgumentException> {
+            f.rootPublisher().prepare(metadata, emptyList(), emptyMap(), emptyList(), keys.mapValues { keys.values.first() })
+        }.message)
+        assertEquals("SYNC_GROUP_PUBLICATION_LEDGER", assertFailsWith<IllegalArgumentException> {
+            f.publisher().prepare(metadata, emptyList(), emptyMap(), emptyList(), keys)
+        }.message)
+        assertTrue(f.backend.listCommits().entries.isEmpty())
+        val latest = f.sign(f.genesis.copy(id = SyncStoreId.random(), sequence = 2, parent = f.genesis.reference(),
+            coveredTypes = f.genesis.coveredTypes + "synthetic_expansion"))
+        val queue = f.rootPublisher { if (it == "ALL_RECIPIENT_KEYS_READY") f.ledger.offer(latest) }
+        val plan = queue.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys)
+        assertEquals("SYNC_GROUP_PUBLICATION_LEDGER", assertFailsWith<IllegalArgumentException> { queue.upload(plan.metadata.operation, f.backend) }.message)
+        assertNull(f.backend.metadata(metadata.request.key)); assertNull(queue.receipt(plan.metadata.operation))
+        assertTrue(plan.keyDeliveries.values.all { f.backend.metadata(it.key)?.descriptor == it.descriptor })
+    }
+
+    @Test fun aNewLedgerCarriesTheCompleteSignedAncestryEvenIfIntermediatePublicationNeverHappened() = withRoot { root ->
+        val f = Fixture(root)
+        val middle = f.sign(f.genesis.copy(id = SyncStoreId.random(), sequence = 2, parent = f.genesis.reference()))
+        val latest = f.sign(middle.copy(id = SyncStoreId.random(), sequence = 3, parent = middle.reference(),
+            coveredTypes = middle.coveredTypes + "synthetic_expansion"))
+        f.ledger.offer(middle); f.ledger.offer(latest)
+        val (metadata, keys) = f.prepareLedger(); val queue = f.rootPublisher()
+        val missingHistory = f.codec.enqueue(f.outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()),
+            f.cipher, metadata.envelope.copy(ledgerHistory = emptyList()))
+        assertEquals("SYNC_GROUP_PUBLICATION_LEDGER", assertFailsWith<IllegalArgumentException> {
+            queue.prepare(missingHistory, emptyList(), emptyMap(), emptyList(), keys)
+        }.message)
+        val plan = queue.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys); queue.upload(plan.metadata.operation, f.backend)
+        val capsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue(f.sender.fingerprint).key))
+        val tentative = SyncKeyDeliveryCodec.read(f.backend, capsule, f.ledger.trustAnchor, f.recipients.getValue(f.sender.fingerprint))
+        val read = f.codec.read(f.backend, tentative.cipher, metadata.context, metadata.request.descriptor)
+        val fresh = SyncDeviceLedger(f.ledger.trustAnchor)
+        assertEquals(SyncVersionState.WAITING_FOR_PARENTS, fresh.offer(requireNotNull(read.envelope.deviceLedger)))
+        read.envelope.ledgerHistory.asReversed().forEach { fresh.offer(it) }
+        assertEquals(latest.reference(), fresh.current().reference())
+        assertEquals(f.cipher.keyCommitment(), tentative.admit(fresh).cipher.keyCommitment())
+        assertEquals(listOf(f.genesis.reference(), middle.reference(), latest.reference()), fresh.history().map { it.reference() })
     }
 }

@@ -99,6 +99,15 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
     @Synchronized fun failure(id: SyncStoreId) = rejected[id]
     @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && records[reference.id]?.reference() == reference
     @Synchronized fun record(reference: SyncVersionRef): SyncDeviceLedgerRecord? = records[reference.id]?.takeIf { contains(reference) }
+    @Synchronized fun history(reference: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> {
+        var row = requireNotNull(record(reference)) { "SYNC_GROUP_LEDGER_MISSING" }
+        val result = mutableListOf<SyncDeviceLedgerRecord>()
+        while (true) {
+            result += row
+            row = row.parent?.let { requireNotNull(record(it)) { "SYNC_GROUP_LEDGER_MISSING" } } ?: break
+        }
+        return Collections.unmodifiableList(result.asReversed())
+    }
     @Synchronized fun hasKey(epoch: SyncStoreId, commitment: String, at: SyncVersionRef = current().reference()): Boolean {
         var row = record(at)
         while (row != null) {
