@@ -68,7 +68,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
             StatusText("已记住：${peer.name} · ${peer.fingerprint.take(16)}")
             BootstrapButton("撤销配对", secondary = true, enabled = !state.busy) { runtime.revoke(peer.fingerprint) }
         }
-        if (state.excluded.isNotEmpty()) StatusText("本次未参与：" + state.excluded.sorted().joinToString("、"))
+        lanSyncExcludedSummary(state.excluded)?.let { StatusText(it) }
         StatusText("保持两端同步页面打开。首次连接如 Windows 提示网络访问，仅允许可信的专用网络；不要关闭防火墙。连接失败可重新生成二维码或使用备用配对码。")
     }
 }

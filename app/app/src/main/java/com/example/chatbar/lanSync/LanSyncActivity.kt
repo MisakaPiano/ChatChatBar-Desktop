@@ -66,7 +66,7 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
             CbText("已记住：${peer.name} · ${peer.fingerprint.take(16)}")
             CbButton("撤销配对", { runtime.revoke(peer.fingerprint) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
-        if (state.excluded.isNotEmpty()) CbText("本次未参与：" + state.excluded.sorted().joinToString("、"))
+        lanSyncExcludedSummary(state.excluded)?.let { CbText(it) }
         CbText("保持此页面与电脑同步页面打开；首次冲突请在电脑逐项选择。系统询问相机或局域网权限时，只为此功能授权。不要关闭防火墙。")
         CbButton("返回", close, enabled = !state.busy, variant = ButtonVariant.Secondary)
     }
