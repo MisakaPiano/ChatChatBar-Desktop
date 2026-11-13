@@ -104,7 +104,8 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
     @Synchronized fun confirmReview(peer: String, owner: String, unit: String, binding: String) {
         val queued = requireNotNull(reviewQueue(peer, owner)) { "SYNC_REVIEW_MISSING" }
         require(queued.transaction in baseline(peer, owner).receipts) { "SYNC_REVIEW_RECEIPT_PENDING" }
-        require(queued.held.any { it.unit == unit && it.binding == binding && it.dependencyOf.isEmpty() }) { "SYNC_REVIEW_BINDING" }
+        val proof = requireNotNull(queued.held.firstOrNull { it.unit == unit && it.binding == binding && it.dependencyOf.isEmpty() }) { "SYNC_REVIEW_BINDING" }
+        require(!proof.dependencyIssue) { "SYNC_REVIEW_DEPENDENCY_TARGET" }
         write("review-confirmed-${key(peer)}.json", reviewConfirmations(peer, owner) + (unit to binding))
     }
     @Synchronized fun pending(peer: String): LanSyncPending? = read<LanSyncPending>("pending-${key(peer)}.json")?.also { value ->

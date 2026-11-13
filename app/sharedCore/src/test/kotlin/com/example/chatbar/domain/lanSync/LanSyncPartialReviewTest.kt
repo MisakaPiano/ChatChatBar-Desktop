@@ -117,4 +117,49 @@ class LanSyncPartialReviewTest {
         val confirmed = LanSyncPartialReview.prepare(preserved, pc, phone, nextShared, mapOf(proof.unit to proof.binding))
         assertTrue(confirmed.heldReviews.isEmpty()); assertTrue(confirmed.snapshot.records.isEmpty())
     }
+    @Test fun concurrentlyAddedSessionCannotLoseItsRequiredFormatAndUnrelatedAdditionsStillAdvance() {
+        val format = LanSyncRecord("format_cards", "format", lanSyncJson.encodeToJsonElement(FormatCard.serializer(),
+            FormatCard("format", "关联格式", "合成格式", createdAt = 1)).jsonObject)
+        val old = snapshot("computer", card("card"), format)
+        val left = snapshot("computer", card("card"))
+        val session = LanSyncRecord("chat_sessions", "new-session", lanSyncJson.encodeToJsonElement(ChatSession.serializer(),
+            ChatSession("new-session", "card", "另一端新增会话", formatCardId = "format", createdAt = 1, updatedAt = 1)).jsonObject)
+        val right = snapshot("phone", card("card"), format, session, card("independent"))
+        val common = baseline(old)
+        assertEquals("SYNC_MISSING_FORMAT", assertFailsWith<IllegalArgumentException> { proposed(left, right, common) }.message)
+        val draft = LanSyncPlanner.draft(left, right, common, emptyMap(), UUID.randomUUID().toString())
+        val plan = LanSyncPartialReview.prepare(draft, left, right, common)
+        assertEquals(setOf("format_cards/format", "conversation/new-session"), plan.heldReviews.map { it.unit }.toSet())
+        val held = plan.heldReviews.single { it.unit == "format_cards/format" }; assertTrue(held.dependencyIssue)
+        val pc = LanSyncPartialReview.localPlan(plan, "computer").snapshot
+        val phone = LanSyncPartialReview.localPlan(plan, "phone").snapshot
+        assertFalse(pc.records.any { it.type in setOf("format_cards", "chat_sessions") })
+        assertTrue(phone.records.any { it.key == "chat_sessions/new-session" })
+        assertTrue(phone.records.any { it.key == "format_cards/format" })
+        assertTrue(pc.records.any { it.id == "independent" })
+        val stillBlocked = LanSyncPartialReview.prepare(draft, left, right, common, mapOf(held.unit to held.binding))
+        assertTrue(stillBlocked.heldReviews.single { it.unit == held.unit }.dependencyIssue)
+        LanSyncScope.validateGraph(stillBlocked.snapshot)
+    }
+    @Test fun sharedResourceIdentityDefersItsDependentNewRecordWithoutRenamingOrMixingResourceVersions() {
+        val identity = "11111111-1111-1111-1111-111111111111"
+        val first = "1".repeat(64); val second = "2".repeat(64)
+        fun image(id: String, hash: String) = card(id).let { it.copy(body = JsonObject(it.body +
+            ("avatar" to JsonPrimitive("ccb-lan-v1/images/$identity/$hash/png")))) }
+        val left = snapshot("computer", image("left", first)).copy(resources = mapOf(first to 5L))
+        val right = snapshot("phone", image("left", second), image("new-dependent", second), card("independent"))
+            .copy(resources = mapOf(second to 7L))
+        val common = baseline(left)
+        val draft = proposed(left, right, common)
+        val plan = LanSyncPartialReview.prepare(draft, left, right, common)
+        assertEquals(setOf("character_cards/left", "character_cards/new-dependent"), plan.heldReviews.map { it.unit }.toSet())
+        val pc = LanSyncPartialReview.localPlan(plan, "computer").snapshot
+        val phone = LanSyncPartialReview.localPlan(plan, "phone").snapshot
+        assertEquals(setOf(first), pc.resources.keys); assertEquals(setOf(second), phone.resources.keys)
+        assertFalse(pc.records.any { it.id == "new-dependent" }); assertTrue(phone.records.any { it.id == "new-dependent" })
+        assertTrue(pc.records.any { it.id == "independent" })
+        val root = plan.heldReviews.single { it.unit == "character_cards/left" }
+        val confirmed = LanSyncPartialReview.prepare(draft, left, right, common, mapOf(root.unit to root.binding))
+        assertTrue(confirmed.heldReviews.isEmpty()); assertEquals(setOf(second), confirmed.snapshot.resources.keys)
+    }
 }

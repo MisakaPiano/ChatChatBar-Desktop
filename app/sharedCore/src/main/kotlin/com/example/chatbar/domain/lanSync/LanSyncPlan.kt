@@ -11,7 +11,13 @@ data class LanSyncPlan(val transaction: String, val snapshot: LanSyncSnapshot, v
 
 object LanSyncPlanner {
     fun plan(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
-        choices: Map<String, LanSyncChoice>, transaction: String): LanSyncPlan {
+        choices: Map<String, LanSyncChoice>, transaction: String): LanSyncPlan = build(computer, phone, baseline, choices, transaction, false)
+
+    internal fun draft(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
+        choices: Map<String, LanSyncChoice>, transaction: String): LanSyncPlan = build(computer, phone, baseline, choices, transaction, true)
+
+    private fun build(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
+        choices: Map<String, LanSyncChoice>, transaction: String, deferDependencyValidation: Boolean): LanSyncPlan {
         val comparison = LanSyncCompare.compare(computer, phone, baseline)
         require(choices.keys == comparison.conflicts.map { it.unit }.toSet()) { "SYNC_CHOICES" }
         val left = comparison.computerUnits; val right = comparison.phoneUnits
@@ -62,11 +68,12 @@ object LanSyncPlanner {
             record.copy(id = requireNotNull(LanSyncScope.identity(record.type, body)), body = body)
         }
         val records = retained + rewritten
+        val references = LanSyncScope.referencedResources(records)
         val result = LanSyncSnapshot(deviceId = computer.deviceId, records = records,
-            resources = (computer.resources + phone.resources).filterKeys { it in LanSyncScope.referencedResources(records) },
+            resources = (computer.resources + phone.resources).filterKeys(references::contains),
             excludedTypes = computer.excludedTypes + phone.excludedTypes, coveredTypes = computer.coveredTypes)
         result.validate()
-        LanSyncScope.validateGraph(result)
+        if (!deferDependencyValidation) LanSyncScope.validateGraph(result)
         LanSyncResourceBudget().total(result.resources.values)
         return LanSyncPlan(transaction, result, parents, commonCoveredTypesBefore = baseline.coveredTypes,
             resolvedUnits = choices.keys.toSet(), resolvedRecordKeys = resolvedSourceKeys +

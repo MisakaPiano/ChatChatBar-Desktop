@@ -420,7 +420,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                         if (failure.message == "SYNC_CONFLICT_TIMEOUT") { finishRequest(requestToken); wire.sendText("SYNC_CONFLICT_TIMEOUT") }
                         throw failure
                     }
-                    val planned = LanSyncPlanner.plan(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
+                    val planned = LanSyncPlanner.draft(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
                     val queuedProposal = LanSyncPartialReview.preserveQueuedProposals(planned, computer.snapshot, phoneSnapshot,
                         store.reviewQueue(peerId, identity.fingerprint)?.held.orEmpty())
                     val plan = LanSyncPartialReview.prepare(queuedProposal.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents,

@@ -31,8 +31,11 @@ data class LanSyncResourceBudget(
             requireResource(length)
             total = lanSyncAddLength(total, length)
         }
-        require(maximumTotalBytes == null || total <= maximumTotalBytes) { "SYNC_TOTAL_BUDGET" }
+        requireTotal(total)
         return total
+    }
+    fun requireTotal(total: Long) {
+        require(total >= 0 && (maximumTotalBytes == null || total <= maximumTotalBytes)) { "SYNC_TOTAL_BUDGET" }
     }
 
     fun requireSpace(existingRoot: Path, additionalBytes: Long, copies: Int = 1) {

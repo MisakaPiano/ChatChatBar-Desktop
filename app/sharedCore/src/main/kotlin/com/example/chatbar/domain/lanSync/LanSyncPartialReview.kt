@@ -20,6 +20,7 @@ data class LanSyncHeldReview(
     val proposalHash: String,
     val proposed: List<LanSyncRecord>,
     val dependencyOf: Set<String> = emptySet(),
+    val dependencyIssue: Boolean = false,
 )
 
 /** Partial-publication policy: an unconfirmed reduction preserves each endpoint's own view. */
@@ -64,6 +65,36 @@ object LanSyncPartialReview {
             links.getOrPut(owner) { linkedSetOf() }.add(dependency)
             links.getOrPut(dependency) { linkedSetOf() }.add(owner)
         }
+        val targetFormats = plan.snapshot.records.filter { it.type == "format_cards" }.map { it.id }.toSet()
+        val incompatible = linkedSetOf<String>()
+        plan.snapshot.records.filter { it.type == "chat_sessions" }.forEach { session ->
+            val format = session.text("formatCardId") ?: return@forEach
+            if (format !in targetFormats) {
+                val unit = requireNotNull(keyOwners["format_cards/$format"]) { "SYNC_MISSING_FORMAT" }
+                held.getOrPut(unit) { linkedSetOf() }; incompatible += unit
+            }
+        }
+        // One reference identity names one immutable resource value across the graph.
+        // Keep every dependent unit on its own original view when that value is deferred.
+        val resourceOwners = linkedMapOf<String, MutableSet<String>>()
+        (computer.records + phone.records + plan.snapshot.records).forEach { row ->
+            val owner = keyOwners[row.key] ?: return@forEach
+            LanSyncWorkspace.mapResources(row.body) { reference, _ ->
+                if (reference.startsWith("ccb-lan-v1/")) {
+                    val parts = reference.split('/')
+                    require(parts.size == 5) { "SYNC_RESOURCE_REFERENCE" }
+                    resourceOwners.getOrPut("${parts[1]}/${parts[2]}") { linkedSetOf() }.add(owner)
+                }
+                reference
+            }
+        }
+        resourceOwners.values.forEach { owners ->
+            val first = owners.first()
+            owners.drop(1).forEach { next ->
+                links.getOrPut(first) { linkedSetOf() }.add(next)
+                links.getOrPut(next) { linkedSetOf() }.add(first)
+            }
+        }
         val queue = java.util.ArrayDeque(held.keys)
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
@@ -89,10 +120,17 @@ object LanSyncPartialReview {
             LanSyncHeldReview(unit, reviewBinding(unit, beforeLeft, beforeRight, baseline, proposalHash), computer.deviceId, phone.deviceId,
                 beforeLeft, beforeRight, keys.toSet(), resources, commonBaseline.hashes.filterKeys(ancestorUnits::contains),
                 commonBaseline.componentRecords.filterKeys(ancestorUnits::contains), baseline.hashes.filterKeys(comparisonUnits::contains),
-                baseline.componentRecords.filterKeys(comparisonUnits::contains), proposalHash, keys.mapNotNull(desired::get), dependencies)
+                baseline.componentRecords.filterKeys(comparisonUnits::contains), proposalHash, keys.mapNotNull(desired::get), dependencies,
+                unit in incompatible)
         }
-        return plan.copy(heldReviews = result).also {
+        val blocked = result.flatMap { it.recordKeys }.toSet()
+        val transportRecords = plan.snapshot.records.filterNot { it.key in blocked } + result.flatMap { it.computer }
+        val transportReferences = LanSyncScope.referencedResources(transportRecords)
+        val transportResources = (computer.resources + phone.resources + plan.snapshot.resources)
+            .filterKeys(transportReferences::contains)
+        return plan.copy(snapshot = plan.snapshot.copy(records = transportRecords, resources = transportResources), heldReviews = result).also {
             // Both graphs must be valid before this partial envelope has publication authority.
+            it.snapshot.validate(); LanSyncScope.validateGraph(it.snapshot)
             localPlan(it, computer.deviceId); localPlan(it, phone.deviceId)
         }
     }
@@ -125,8 +163,9 @@ object LanSyncPartialReview {
             }
         }
         val records = plan.snapshot.records.filterNot { it.key in blocked } + local
+        val references = LanSyncScope.referencedResources(records)
         val resources = (plan.snapshot.resources + plan.heldReviews.flatMap { it.resources.entries }.associate { it.key to it.value })
-            .filterKeys { it in LanSyncScope.referencedResources(records) }
+            .filterKeys(references::contains)
         val snapshot = plan.snapshot.copy(deviceId = deviceId, records = records, resources = resources)
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
         return plan.copy(snapshot = snapshot, heldReviews = emptyList())
@@ -165,8 +204,9 @@ object LanSyncPartialReview {
                 records = records.filterNot { it.key in proof.recordKeys } + proof.proposed
             }
         }
-        val snapshot = plan.snapshot.copy(records = records, resources = resources.filterKeys { it in LanSyncScope.referencedResources(records) })
-        snapshot.validate(); LanSyncScope.validateGraph(snapshot)
+        val references = LanSyncScope.referencedResources(records)
+        val snapshot = plan.snapshot.copy(records = records, resources = resources.filterKeys(references::contains))
+        snapshot.validate()
         return plan.copy(snapshot = snapshot)
     }
 
@@ -195,9 +235,12 @@ object LanSyncPartialReview {
             require((proof.computer + proof.phone).all { it.key in proof.recordKeys }) { "SYNC_REVIEW_IDENTITIES" }
             val ancestor = LanSyncBaseline(proof.phoneDevice, ownerId = proof.computerDevice,
                 hashes = proof.comparisonHashes, componentRecords = proof.comparisonComponents)
-            require(proof.proposalHash == lanSyncUnitHashes(mapOf(proof.unit to plan.snapshot.records.filter { it.key in proof.recordKeys })).getValue(proof.unit) &&
+            require(proof.proposed.all { it.key in proof.recordKeys } &&
                 proof.proposalHash == lanSyncUnitHashes(mapOf(proof.unit to proof.proposed)).getValue(proof.unit) &&
                 reviewBinding(proof.unit, proof.computer, proof.phone, ancestor, proof.proposalHash) == proof.binding) { "SYNC_REVIEW_BINDING" }
+            require(lanSyncUnitHashes(mapOf(proof.unit to proof.computer)) ==
+                lanSyncUnitHashes(mapOf(proof.unit to plan.snapshot.records.filter { it.key in proof.recordKeys }))) { "SYNC_REVIEW_TRANSPORT" }
+            proof.proposed.forEach(LanSyncScope::validateRecord)
             require(proof.resources.keys == LanSyncScope.referencedResources(proof.computer + proof.phone)) { "SYNC_REVIEW_RESOURCES" }
             require(proof.resources.keys.all { it.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_REVIEW_RESOURCES" }
             LanSyncResourceBudget().total(proof.resources.values)

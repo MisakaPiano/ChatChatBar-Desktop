@@ -238,6 +238,34 @@ class LanSyncRuntimeTest {
             until("image references are released with the completed review") { host.state.value.imagePreview == null && phone.state.value.imagePreview == null }
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun requiredFormatDeletionAndAConcurrentDependentSessionHoldTogetherWhileAnotherCardSynchronizes() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("card", "共同角色"); a.writeFormat("format")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completedReceiptOnly(a, b)
+            val common = a.store.baseline(b.id, a.id)
+            Files.delete(a.root.resolve("entities/format_cards/format.json"))
+            val session = ChatSession("new-session", "card", "依赖旧格式的新会话", modelId = "phone-local",
+                formatCardId = "format", createdAt = 1, updatedAt = 1)
+            val path = b.root.resolve("entities/chat_sessions/new-session.json"); Files.createDirectories(path.parent)
+            Files.writeString(path, lanSyncJson.encodeToString(ChatSession.serializer(), session))
+            b.write("independent", "独立新增应先同步")
+            host.requestSync(); completedReceiptOnly(a, b, common.revision)
+            assertTrue("独立新增应先同步" in a.names())
+            assertFalse(Files.exists(a.root.resolve("entities/format_cards/format.json")))
+            assertFalse(Files.exists(a.root.resolve("entities/chat_sessions/new-session.json")))
+            assertTrue(Files.exists(b.root.resolve("entities/format_cards/format.json"))); assertTrue(Files.exists(path))
+            val held = requireNotNull(a.store.reviewQueue(b.id, a.id)).held
+            assertEquals(setOf("format_cards/format", "conversation/new-session"), held.map { it.unit }.toSet())
+            val dependency = held.single { it.unit == "format_cards/format" }; assertTrue(dependency.dependencyIssue)
+            assertEquals("SYNC_REVIEW_DEPENDENCY_TARGET", assertFailsWith<IllegalArgumentException> {
+                a.store.confirmReview(b.id, a.id, dependency.unit, dependency.binding)
+            }.message)
+            assertEquals(common.hashes["format_cards/format"], a.store.baseline(b.id, a.id).hashes["format_cards/format"])
+            assertNull(host.state.value.failureCode); assertNull(phone.state.value.failureCode)
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun neitherEndpointPublishesUntilBothRecoverySealsExistAndEitherProtectionFailureCanRetry() = runBlocking {
         for (failingSide in listOf("computer", "phone")) {
             val network = SyntheticLan()

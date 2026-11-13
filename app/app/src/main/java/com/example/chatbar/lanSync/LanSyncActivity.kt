@@ -81,6 +81,7 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
             state.pendingReviews.forEach { held ->
                 val impact = remember(held.binding) { LanSyncImpactReview.reductionSummary(held.computer, held.phone, held.proposed) }
                 CbText(held.unit + if (held.dependencyOf.isEmpty()) " · 待确认" else " · 随关联项暂缓")
+                if (held.dependencyIssue) CbText("有关联会话继续依赖此内容，当前目标不能单独执行；请先核对或调整关联内容，再重新比较。", color = ChatBarTheme.colors.warning)
                 CbText("两端合计将移除 ${impact.recordsRemoved} 条记录（其中 ${impact.liveMessagesRemoved} 条实时消息）、${impact.versionsRemoved} 个消息版本、${impact.attachmentReferencesRemoved} 条附件引用；覆盖 ${impact.recordsOverwritten} 条记录。")
                 val detail = remember(held.binding) { LanSyncDetailedReview.detail(held.unit, held.computer, held.phone, held.ancestorHashes[held.unit]) }
                 val header = detail.header
@@ -89,7 +90,7 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
                 if (held.proposed.isNotEmpty()) LanSyncDetail(LanSyncDetailedUnit(
                     header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true, runtime = runtime)
                 if (held.dependencyOf.isEmpty()) CbButton("确认按此目标同步删除或精简",
-                    { runtime.confirmReview(held.unit, held.binding) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+                    { runtime.confirmReview(held.unit, held.binding) }, enabled = !state.busy && !held.dependencyIssue, variant = ButtonVariant.Secondary)
             }
         }
         CbButton("查看本机保全与恢复记录", runtime::refreshRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)

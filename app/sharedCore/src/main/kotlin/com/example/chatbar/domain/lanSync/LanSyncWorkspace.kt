@@ -122,6 +122,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val checkedResources = hashSetOf<Triple<String, String, String>>()
         val excluded = linkedSetOf<String>()
         var decodedCost = 0L
+        var resourceBytes = 0L
         val entities = dataRoot.resolve("entities")
         if (Files.exists(entities, LinkOption.NOFOLLOW_LINKS)) {
             lanSyncSafe(entities, true)
@@ -164,7 +165,9 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                                 require(source.toAbsolutePath().normalize().startsWith(dataRoot)) { "SYNC_EXTERNAL_RESOURCE" }
                             }
                             if (field == "packageFile") LanSyncSlotPackages.validate(resource, body, budget)
-                            val hash = freeze(resource, frozen, blobs, resources, scratch)
+                            val hash = freeze(resource, frozen, blobs, resources, scratch) { size ->
+                                val next = lanSyncAddLength(resourceBytes, size); budget.requireTotal(next); resourceBytes = next
+                            }
                             if (kind == "payloads") {
                                 LanSyncVibePayloads.validate(requireNotNull(blobs[hash]))
                                 if (reference.startsWith(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX))
@@ -202,7 +205,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         } finally { if (!returned) scratch.close() }
     }
 
-    private fun freeze(source: Path, frozen: Path, blobs: MutableMap<String, Path>, resources: MutableMap<String, Long>, scratch: LanSyncScratch): String {
+    private fun freeze(source: Path, frozen: Path, blobs: MutableMap<String, Path>, resources: MutableMap<String, Long>, scratch: LanSyncScratch,
+        acceptResource: (Long) -> Unit): String {
         lanSyncSafe(source); val before = Files.readAttributes(source, java.nio.file.attribute.BasicFileAttributes::class.java)
         budget.requireResource(before.size())
         budget.requireSpace(frozen, before.size())
@@ -210,9 +214,11 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val hash = copyHash(source, part, before.size(), scratch::own)
         val after = Files.readAttributes(source, java.nio.file.attribute.BasicFileAttributes::class.java)
         require(before.fileKey() == after.fileKey() && before.size() == after.size() && before.lastModifiedTime() == after.lastModifiedTime()) { "SYNC_SOURCE_CHANGED" }
-        if (hash !in blobs) { blobs[hash] = resourceStore.retain(part, hash, before.size()); resources[hash] = before.size() }
+        if (hash !in blobs) {
+            acceptResource(before.size())
+            blobs[hash] = resourceStore.retain(part, hash, before.size()); resources[hash] = before.size()
+        }
         scratch.remove(part)
-        budget.total(resources.values)
         return hash
     }
 
