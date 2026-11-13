@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.EmbeddingConfig
 import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.addModelApiAuthorization
 import com.example.chatbar.domain.chat.OpenAiSseParser
+import com.example.chatbar.domain.model.isModelAuthenticationConfigured
 import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -23,7 +24,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  */
 internal class DesktopEmbeddingGateway(
     private val config: suspend () -> EmbeddingConfig,
-    allowCleartext: () -> Boolean = { false },
+    private val allowCleartext: () -> Boolean = { false },
     private val beforeRequest: suspend () -> Unit = {},
     private val client: OkHttpClient = ProxyAwareClient.modelApiBuilder(allowCleartext)
         .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
@@ -43,6 +44,8 @@ internal class DesktopEmbeddingGateway(
         val selected = config()
         check(expected == null || selected == expected) { "向量模型或凭据已变化，请重试" }
         check(DesktopRagEmbeddingIdentity.from(selected) == batch.identity) { "向量模型已变化，请重试" }
+        if (!isModelAuthenticationConfigured(selected.baseUrl, selected.apiKey, allowCleartext()))
+            throw DesktopEmbeddingAuthenticationException()
         val body = buildJsonObject {
             put("model", selected.modelName)
             put("input", buildJsonArray { batch.pieces.forEach { add(it.first) } })

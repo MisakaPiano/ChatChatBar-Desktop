@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.rag.*
 import com.example.chatbar.domain.prompt.MemoryRagTextClient
+import com.example.chatbar.domain.model.isModelAuthenticationConfigured
 import com.example.chatbar.ui.chat.*
 
 internal data class DesktopChatKnowledge(val cards: List<RetrievedKnowledgeCard> = emptyList(), val notice: String? = null)
@@ -29,6 +30,10 @@ internal class DesktopChatRetrieval(
             documents(card, identity) else emptyList()
         val memory = if (prefs.memoryRagTopK > 0) memories(session.id, active, identity) else emptyList()
         if (doc.isEmpty() && memory.isEmpty()) return DesktopChatKnowledge()
+        // Check the hydrated runtime configuration, never the sanitized JSON field. Preserve
+        // the shared opt-in keyless HTTP policy and avoid an auxiliary paid call before refusal.
+        if (!isModelAuthenticationConfigured(config.baseUrl, config.apiKey, prefs.allowCleartextModelApi))
+            throw DesktopEmbeddingAuthenticationException()
         val credentials = buildRagRetrievalCredentialMessages(context, user.id, user.displayContent)
         val planned = RetrievalPlanner(textClient).plan(user.displayContent, credentials, card.name, inputs.retrievalModel)
         val plan = planned.plan

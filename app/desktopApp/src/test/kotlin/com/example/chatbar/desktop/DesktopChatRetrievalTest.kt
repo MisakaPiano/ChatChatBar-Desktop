@@ -64,4 +64,27 @@ class DesktopChatRetrievalTest {
         }).retrieve(card, session, user, listOf(user), inputs, false) }
         Unit
     }
+
+    @Test fun `missing hydrated remote embedding credential refuses before paid planner and keyless opt in stays legal`() = runBlocking {
+        var selected = config.copy(apiKey = "")
+        var prefs = AppSettings(docRagTopK = 1, memoryRagTopK = 0)
+        val retrieval = DesktopChatRetrieval({ selected }, { prefs },
+            { _, _ -> listOf(chunk("doc", ChunkSourceType.DOCUMENT)) }, { _, _, _ -> emptyList() },
+            { _, _ -> vectors++; listOf(1f, 0f) }, text)
+        assertFailsWith<DesktopEmbeddingAuthenticationException> {
+            retrieval.retrieve(card, session, user, listOf(user), inputs, false)
+        }
+        assertEquals(0, requests); assertEquals(0, vectors)
+        selected = selected.copy(baseUrl = "http://127.0.0.1:12345/v1")
+        prefs = prefs.copy(allowCleartextModelApi = true)
+        assertTrue(retrieval.retrieve(card, session, user, listOf(user), inputs, false).cards.isNotEmpty())
+        assertEquals(1, requests); assertEquals(1, vectors)
+    }
+
+    @Test fun `unused empty inventory does not require an embedding credential`() = runBlocking {
+        val retrieval = DesktopChatRetrieval({ config.copy(apiKey = "") }, { AppSettings() },
+            { _, _ -> emptyList() }, { _, _, _ -> emptyList() }, { _, _ -> error("must not embed") }, text)
+        assertTrue(retrieval.retrieve(card, session, user, listOf(user), inputs, false).cards.isEmpty())
+        assertEquals(0, requests)
+    }
 }

@@ -16,6 +16,23 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopTransportDiagnosticsTest {
+    @Test fun `preparation promotes the same row and clearing an active preparation cannot resurrect it`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        owner.beginPreparation("same", "session")
+        val start = owner.entries.value.single().startedAt
+        owner.preparationStage("same", DesktopChatPreparationStage.REQUEST_ASSEMBLY)
+        val recorder = owner.begin("same", "session", model("synthetic"), preparationStarted = true)
+        assertEquals(1, owner.entries.value.size)
+        assertEquals(start, owner.entries.value.single().startedAt)
+        assertEquals(DesktopChatPreparationStage.REQUEST_ASSEMBLY, owner.entries.value.single().preparationStage)
+        owner.clear("session")
+        recorder.finish(DesktopTaskStatus.COMPLETED, null, null)
+        owner.beginPreparation("cleared", "session")
+        owner.clear("session")
+        owner.begin("cleared", "session", model("synthetic"), preparationStarted = true)
+            .finish(DesktopTaskStatus.FAILED, "fixed safe message", null)
+        assertTrue(owner.entries.value.isEmpty())
+    }
     @Test fun `budget uses complete wire before scrub and truncation without retaining input in numeric report`() {
         val owner = DesktopTransportDiagnosticsOwner()
         val source = "fake-api-secret" + "合成正文".repeat(20_000)

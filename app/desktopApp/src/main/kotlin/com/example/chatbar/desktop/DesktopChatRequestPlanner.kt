@@ -63,6 +63,7 @@ internal class DesktopChatRequestPlanner(
         currentUser: ChatMessage,
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
+        onPreparationStage: (DesktopChatPreparationStage) -> Unit = {},
     ): DesktopChatRequestPlan {
         return planCurrentUser(
             sessionId = sessionId,
@@ -70,6 +71,7 @@ internal class DesktopChatRequestPlanner(
             currentUserPersisted = true,
             inputs = inputs,
             readOnlyRepositoryAccess = readOnlyRepositoryAccess,
+            onPreparationStage = onPreparationStage,
         )
     }
 
@@ -77,7 +79,9 @@ internal class DesktopChatRequestPlanner(
         sessionId: String,
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
+        onPreparationStage: (DesktopChatPreparationStage) -> Unit = {},
     ): DesktopChatRequestPlan {
+        onPreparationStage(DesktopChatPreparationStage.HISTORY_AND_MEMORY)
         val latest = if (readOnlyRepositoryAccess) {
             chatRepository.getMessagesReadOnly(sessionId).lastOrNull()
         } else {
@@ -95,6 +99,7 @@ internal class DesktopChatRequestPlanner(
             currentUserPersisted = persistedUser != null,
             inputs = inputs,
             readOnlyRepositoryAccess = readOnlyRepositoryAccess,
+            onPreparationStage = onPreparationStage,
         )
     }
 
@@ -113,7 +118,9 @@ internal class DesktopChatRequestPlanner(
         sessionId: String,
         targetMessageId: String,
         inputs: DesktopFakeChatInputs,
+        onPreparationStage: (DesktopChatPreparationStage) -> Unit = {},
     ): DesktopChatRequestPlan {
+        onPreparationStage(DesktopChatPreparationStage.HISTORY_AND_MEMORY)
         val candidates = chatRepository.getContextCandidateMessages(
             sessionId, recentTurnCount = inputs.effectiveContextWindowSize.coerceAtLeast(0) + 6,
         ).filterNot { it.id == targetMessageId }
@@ -126,6 +133,7 @@ internal class DesktopChatRequestPlanner(
             currentUserPersisted = user != null, inputs = inputs, readOnlyRepositoryAccess = false,
             regenerationTargetId = targetMessageId, regenerationContext = context,
             includeCurrentUser = user != null,
+            onPreparationStage = onPreparationStage,
         )
     }
 
@@ -138,7 +146,9 @@ internal class DesktopChatRequestPlanner(
         regenerationTargetId: String? = null,
         regenerationContext: List<ChatMessage>? = null,
         includeCurrentUser: Boolean = true,
+        onPreparationStage: (DesktopChatPreparationStage) -> Unit = {},
     ): DesktopChatRequestPlan {
+        onPreparationStage(DesktopChatPreparationStage.HISTORY_AND_MEMORY)
         val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }.let { latest ->
             inputs.capturedNarrativeMode?.let { latest.copy(narrativeMode = it) } ?: latest
         }
@@ -230,7 +240,9 @@ internal class DesktopChatRequestPlanner(
                     earlierHistoryMessages = promptGroups.historyMessages,
                 ),
         )
+        onPreparationStage(DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL)
         val knowledge = retrieveKnowledge(card, session, currentUser, contextMessages, inputs, readOnlyRepositoryAccess)
+        onPreparationStage(DesktopChatPreparationStage.REQUEST_ASSEMBLY)
         val renderMeasurements = mutableListOf<PromptRenderMeasurement>()
         val promptLayers = promptAssembler.assembleCachePromptLayers(
             characterCard = card,
