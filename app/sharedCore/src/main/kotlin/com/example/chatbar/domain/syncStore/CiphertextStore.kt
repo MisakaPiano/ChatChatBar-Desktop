@@ -4,10 +4,13 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
+import kotlinx.serialization.Serializable
 
 /** An opaque random identifier, never a title, path or hash of unencrypted user content. */
 @JvmInline
+@Serializable
 value class SyncStoreId private constructor(val value: String) {
+    init { require(value.matches(Regex("[0-9a-f]{32}"))) { "Invalid opaque store identifier" } }
     companion object {
         private val pattern = Regex("[0-9a-f]{32}")
 
@@ -23,7 +26,9 @@ value class SyncStoreId private constructor(val value: String) {
 
 /** SHA-256 of ciphertext bytes, not a plaintext fingerprint and not proof of authenticity. */
 @JvmInline
+@Serializable
 value class CiphertextSha256 private constructor(val hex: String) {
+    init { require(hex.matches(Regex("[0-9a-f]{64}"))) { "Invalid ciphertext checksum" } }
     companion object {
         private val pattern = Regex("[0-9a-f]{64}")
 
@@ -34,11 +39,11 @@ value class CiphertextSha256 private constructor(val hex: String) {
     }
 }
 
-enum class CiphertextObjectKind(internal val storageCode: Int) { BLOB(1), COMMIT(2) }
+@Serializable enum class CiphertextObjectKind(internal val storageCode: Int) { BLOB(1), COMMIT(2) }
 
-data class CiphertextObjectKey(val kind: CiphertextObjectKind, val id: SyncStoreId)
+@Serializable data class CiphertextObjectKey(val kind: CiphertextObjectKind, val id: SyncStoreId)
 
-data class CiphertextDescriptor(val length: Long, val sha256: CiphertextSha256) {
+@Serializable data class CiphertextDescriptor(val length: Long, val sha256: CiphertextSha256) {
     init {
         require(length >= 0) { "Negative ciphertext length" }
     }

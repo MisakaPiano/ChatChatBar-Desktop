@@ -3,6 +3,7 @@ package com.example.chatbar.domain.syncStore
 import com.example.chatbar.domain.lanSync.LanSyncTlsIdentity
 import java.security.MessageDigest
 import java.util.Base64
+import java.nio.file.Files
 import kotlin.test.*
 
 /** Actual existing device certificates/signatures; native enrollment/key delivery are separate. */
@@ -29,6 +30,27 @@ class SyncDeviceLedgerTest {
                 previous?.authorSequence?.plus(1) ?: 1, previous?.reference(), parents, changes, "unsigned")
             return unsigned.copy(signature = Base64.getEncoder().encodeToString(devices[actor].signSyncGroupPayload(unsigned.signingBytes())))
         }
+        fun policy(state: SyncDeviceLedger, known: List<SyncCausalVersion>, epochs: Map<SyncVersionRef, SyncStoreId>): SyncVersionAdmission {
+            val root = Files.createTempDirectory("sync-ledger-actual-aead-").toRealPath()
+            try {
+                val codec = SyncGroupObjectCodec(root)
+                val backend = FileCiphertextStore(root.resolve("backend"))
+                val keys = epochs.values.toSet().associateWith { SyncStreamingCipher.create(group, it) }
+                val objects = epochs.map { (reference, epoch) ->
+                    val cipher = keys.getValue(epoch)
+                    val directory = root.resolve(epoch.value)
+                    if (!Files.exists(directory)) Files.createDirectory(directory)
+                    val outbox = SyncEncryptedOutbox(directory, cipher)
+                    val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
+                    val operation = SyncStoreId.random()
+                    val envelope = SyncGroupEnvelope(1, SyncGroupObjectKind.VERSION, version = known.first { it.reference() == reference })
+                    val ready = codec.enqueue(outbox, operation, key, cipher, envelope)
+                    outbox.upload(operation, backend)
+                    codec.read(backend, cipher, ready.context, ready.request.descriptor, reference)
+                }
+                return state.admission(known, objects)
+            } finally { check(root.toFile().deleteRecursively()) }
+        }
     }
 
     @Test fun pinnedGenesisAndOwnerSignaturesControlOutOfOrderEnrollmentAndExistingDeviceIdentityReopens() {
@@ -37,11 +59,11 @@ class SyncDeviceLedgerTest {
         assertEquals(SyncVersionState.WAITING_FOR_PARENTS, state.offer(enrollment))
         assertEquals(SyncVersionState.ADMITTED, state.offer(group.genesis)); assertEquals(enrollment, state.current())
         val version = group.version(2, enrollment, changes = mapOf("card/a" to group.value("新设备内容")))
-        val graph = SyncCausalHistory(group.group, state.admission(listOf(version), mapOf(version.reference() to enrollment.epoch)))
+        val graph = SyncCausalHistory(group.group, group.policy(state, listOf(version), mapOf(version.reference() to enrollment.epoch)))
         assertEquals(SyncVersionState.ADMITTED, graph.offer(version))
         val beforeAdmission = group.version(2, group.genesis)
         assertEquals("SYNC_GROUP_AUTHOR_NOT_ADMITTED", assertFailsWith<IllegalArgumentException> {
-            state.admission(listOf(beforeAdmission), mapOf(beforeAdmission.reference() to enrollment.epoch)).requireAuthorized(beforeAdmission)
+            group.policy(state, listOf(beforeAdmission), mapOf(beforeAdmission.reference() to enrollment.epoch)).requireAuthorized(beforeAdmission)
         }.message)
         val reopenedOwner = LanSyncTlsIdentity.decode(group.devices[0].encode())
         assertEquals(group.devices[0].fingerprint, reopenedOwner.fingerprint)
@@ -65,13 +87,13 @@ class SyncDeviceLedgerTest {
         val state = group.state(); state.offer(revoked); state.offer(group.genesis)
         val known = listOf(initial, accepted, late, offline)
         val oldProofs = known.associate { it.reference() to group.genesis.epoch }
-        val oldPolicy = state.admission(known, oldProofs)
+        val oldPolicy = group.policy(state, known, oldProofs)
         oldPolicy.requireAuthorized(initial); oldPolicy.requireAuthorized(accepted)
         assertEquals("SYNC_GROUP_REVOKED_VERSION", assertFailsWith<IllegalArgumentException> { oldPolicy.requireAuthorized(late) }.message)
         assertEquals("SYNC_GROUP_CURRENT_EPOCH_REQUIRED", assertFailsWith<IllegalArgumentException> { oldPolicy.requireAuthorized(offline) }.message)
         // An active device re-encrypts the same signed offline version under the new epoch;
         // its logical ID, author predecessor and content ancestry remain unchanged.
-        val policy = state.admission(known, oldProofs + (offline.reference() to revoked.epoch) + (late.reference() to revoked.epoch))
+        val policy = group.policy(state, known, oldProofs + (offline.reference() to revoked.epoch) + (late.reference() to revoked.epoch))
         policy.requireAuthorized(offline)
         assertEquals("SYNC_GROUP_REVOKED_VERSION", assertFailsWith<IllegalArgumentException> { policy.requireAuthorized(late) }.message)
         val graph = SyncCausalHistory(group.group, policy)
@@ -108,7 +130,7 @@ class SyncDeviceLedgerTest {
         val a = group.next(group.genesis); val b = group.next(group.genesis)
         state.offer(a); state.offer(b)
         assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { state.current() }.message)
-        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { state.admission(emptyList(), emptyMap()) }.message)
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { state.admission(emptyList(), emptyList()) }.message)
     }
 
     @Test fun missingFenceBodiesAndForgedContentNeverBecomeImplicitAuthorization() {
@@ -118,11 +140,20 @@ class SyncDeviceLedgerTest {
             SyncStoreId.random(), setOf(accepted.reference()))
         val state = group.state(); state.offer(group.genesis); state.offer(revoked)
         assertEquals("SYNC_GROUP_FENCE_CONTENT_MISSING", assertFailsWith<IllegalArgumentException> {
-            state.admission(emptyList(), emptyMap()).requireAuthorized(initial)
+            state.admission(emptyList(), emptyList()).requireAuthorized(initial)
         }.message)
-        val policy = state.admission(listOf(initial, accepted), emptyMap())
+        val policy = state.admission(listOf(initial, accepted), emptyList())
         policy.requireAuthorized(initial); policy.requireAuthorized(accepted)
         val forged = initial.copy(changes = mapOf("card/a" to group.value("伪造正文")))
         assertEquals("SYNC_GROUP_VERSION_SIGNATURE", assertFailsWith<IllegalArgumentException> { policy.requireAuthorized(forged) }.message)
+    }
+
+    @Test fun anAlreadyObservedLedgerCheckpointCannotBeReplacedByAnOlderBackendView() {
+        val group = Group(); val latest = group.next(group.genesis)
+        val reopened = SyncDeviceLedger(group.trust.copy(checkpoint = latest.reference()))
+        reopened.offer(group.genesis)
+        assertEquals("SYNC_GROUP_KNOWN_CHECKPOINT_MISSING", assertFailsWith<IllegalArgumentException> { reopened.current() }.message)
+        reopened.offer(latest); assertEquals(latest.reference(), reopened.current().reference())
+        reopened.offer(group.genesis); assertEquals(latest.reference(), reopened.current().reference())
     }
 }

@@ -5,15 +5,28 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.Collections
+import kotlinx.serialization.Serializable
 
-data class SyncVersionRef(val id: SyncStoreId, val bodyHash: String)
-data class SyncVersionContent(val objectId: SyncStoreId, val descriptor: CiphertextDescriptor)
-data class SyncUnitChange(val valueHash: String?, val content: SyncVersionContent?, val previous: Set<SyncVersionRef>)
+@Serializable data class SyncVersionRef(val id: SyncStoreId, val bodyHash: String) {
+    init { require(bodyHash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_VERSION_REFERENCE" } }
+}
+@Serializable data class SyncVersionContent(val objectId: SyncStoreId, val descriptor: CiphertextDescriptor)
+@Serializable data class SyncUnitChange(val valueHash: String?, val content: SyncVersionContent?, val previous: Set<SyncVersionRef>) {
+    init {
+        require((valueHash == null) == (content == null) && (valueHash == null || valueHash.matches(Regex("[a-f0-9]{64}"))) &&
+            (content == null || content.descriptor.length > 0) && previous.map { it.id }.toSet().size == previous.size) { "SYNC_VERSION_CONTENT" }
+    }
+}
 
 /** References and hashes are inside the encrypted version envelope, never remote filenames. */
-data class SyncCausalVersion(val group: SyncStoreId, val id: SyncStoreId, val deviceLedger: SyncVersionRef,
+@Serializable data class SyncCausalVersion(val group: SyncStoreId, val id: SyncStoreId, val deviceLedger: SyncVersionRef,
     val author: String, val authorSequence: Long, val previousByAuthor: SyncVersionRef?,
     val parents: Set<SyncVersionRef>, val changes: Map<String, SyncUnitChange>, val signature: String) {
+    init {
+        require(author.matches(Regex("[a-f0-9]{64}")) && authorSequence > 0 && signature.length in 1..1024) { "SYNC_VERSION_IDENTITY" }
+        require(parents.none { it.id == id } && parents.map { it.id }.toSet().size == parents.size) { "SYNC_VERSION_PARENT_BINDING" }
+        require(changes.keys.all { it.length in 1..600 && it.none { char -> char.code < 32 } }) { "SYNC_VERSION_UNIT" }
+    }
     fun reference() = SyncVersionRef(id, bodyHash())
     fun signingBytes() = ("CCB-SYNC-VERSION-SIGNATURE/1\n" + bodyHash()).toByteArray(Charsets.US_ASCII)
     fun bodyHash(): String {

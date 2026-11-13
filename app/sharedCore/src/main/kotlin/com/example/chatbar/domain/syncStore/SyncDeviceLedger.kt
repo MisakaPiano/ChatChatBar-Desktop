@@ -5,12 +5,19 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.Collections
+import kotlinx.serialization.Serializable
 
-data class SyncGroupMember(val certificate: String, val active: Boolean = true)
-data class SyncGroupTrust(val group: SyncStoreId, val genesis: SyncVersionRef, val ownerCertificate: String)
-data class SyncDeviceLedgerRecord(val group: SyncStoreId, val id: SyncStoreId, val parent: SyncVersionRef?,
+@Serializable data class SyncGroupMember(val certificate: String, val active: Boolean = true)
+@Serializable data class SyncGroupTrust(val group: SyncStoreId, val genesis: SyncVersionRef, val ownerCertificate: String,
+    val checkpoint: SyncVersionRef = genesis)
+@Serializable data class SyncDeviceLedgerRecord(val group: SyncStoreId, val id: SyncStoreId, val parent: SyncVersionRef?,
     val sequence: Long, val epoch: SyncStoreId, val members: Map<String, SyncGroupMember>,
     val acceptedHeads: Set<SyncVersionRef>, val signature: String) {
+    init {
+        require(sequence > 0 && parent?.id != id && signature.length in 1..256 &&
+            members.isNotEmpty() && members.all { (id, member) -> id.matches(Regex("[a-f0-9]{64}")) && member.certificate.length in 1..8192 } &&
+            acceptedHeads.map { it.id }.toSet().size == acceptedHeads.size) { "SYNC_GROUP_LEDGER" }
+    }
     fun reference() = SyncVersionRef(id, bodyHash())
     fun signingBytes() = ("CCB-SYNC-DEVICE-LEDGER-SIGNATURE/1\n" + bodyHash()).toByteArray(Charsets.US_ASCII)
     fun bodyHash(): String {
@@ -82,7 +89,11 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
         val parents = admitted.mapNotNull { records.getValue(it).parent?.id }.toSet()
         val heads = admitted.filterNot(parents::contains)
         require(heads.size == 1) { "SYNC_GROUP_LEDGER_FORK_OR_MISSING" }
-        return records.getValue(heads.single())
+        val head = records.getValue(heads.single())
+        var cursor: SyncDeviceLedgerRecord? = head
+        while (cursor != null && cursor.reference() != trust.checkpoint) cursor = cursor.parent?.let { records.getValue(it.id) }
+        require(cursor != null) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
+        return head
     }
     private fun validateChild(row: SyncDeviceLedgerRecord, parent: SyncDeviceLedgerRecord) {
         require(parent.sequence < Long.MAX_VALUE && row.sequence == parent.sequence + 1 &&
@@ -104,12 +115,13 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
 
     /** New immutable authorization view after every membership update/discovery rescan. */
     @Synchronized fun admission(knownVersions: Collection<SyncCausalVersion>,
-        authenticatedEpochs: Map<SyncVersionRef, SyncStoreId>): SyncVersionAdmission {
+        authenticatedObjects: Collection<SyncAuthenticatedGroupObject>): SyncVersionAdmission {
         val latest = current()
         val ledgers = admitted.associate { id -> val row = records.getValue(id); row.reference() to row }
         val certificates = latest.members.mapValues { SyncDeviceSignatures.decode(it.value.certificate) }
         // Supplied only by complete AEAD envelope authentication; no claimed epoch from JSON is proof.
-        val epochs = authenticatedEpochs.toMap()
+        val epochs = authenticatedObjects.filter { it.context.group == trust.group && it.envelope.version != null }
+            .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, objects) -> objects.map { it.context.epoch }.toSet() }
         val known = knownVersions.filter { it.group == trust.group }.associate { version ->
             val frozen = version.copy(parents = version.parents.toSet(), changes = version.changes.mapValues { it.value.copy(previous = it.value.previous.toSet()) })
             frozen.reference() to frozen.parents
@@ -134,7 +146,7 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
             val certificate = requireNotNull(certificates[version.author]) { "SYNC_GROUP_AUTHOR_NOT_ADMITTED" }
             require(certificate.verifies(version.signingBytes(), version.signature)) { "SYNC_GROUP_VERSION_SIGNATURE" }
             val active = latest.members[version.author]?.active == true
-            if (!active || epochs[version.reference()] != latest.epoch) {
+            if (!active || latest.epoch !in epochs[version.reference()].orEmpty()) {
                 require(fenced(version.reference())) { if (active) "SYNC_GROUP_CURRENT_EPOCH_REQUIRED" else "SYNC_GROUP_REVOKED_VERSION" }
             }
         }
