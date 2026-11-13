@@ -3,12 +3,16 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
 import com.example.chatbar.domain.image.NovelAiPostProcessResultRecord
+import com.example.chatbar.domain.image.NovelAiStudioDraft
+import com.example.chatbar.domain.image.NovelAiStudioUndoDraft
+import com.example.chatbar.domain.image.NovelAiGuidanceEditorCheckpoint
+import com.example.chatbar.domain.image.NovelAiStudioHistoryJournal
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.*
 
 /** V1 is an explicit data scope. Accounts, device preferences and running jobs never cross it. */
 object LanSyncScope {
-    internal fun isSingleton(type: String) = type == "player_setting"
+    internal fun isSingleton(type: String) = type == "player_setting" || type in LanSyncStudioCurrent.types
     internal val legacyChatTypes = setOf("character_cards", "format_cards", "world_books", "chat_sessions", "chat_messages",
         "vector_chunks", "memory_nodes", "memory_states", "memory_tier_revisions", "memory_compression_transactions",
         "memory_commits", "generated_voice_messages", "save_slots", "voice_anchor_states")
@@ -26,9 +30,13 @@ object LanSyncScope {
         "player_setting" to PlayerSetting.serializer(),
         "novelai_generation_history" to NovelAiGenerationHistoryEntry.serializer(),
         LanSyncPostProcess.TYPE to NovelAiPostProcessResultRecord.serializer(),
+        LanSyncStudioCurrent.DRAFT to NovelAiStudioDraft.serializer(),
+        LanSyncStudioCurrent.UNDO to NovelAiStudioUndoDraft.serializer(),
+        LanSyncStudioCurrent.CHECKPOINT to NovelAiGuidanceEditorCheckpoint.serializer(),
+        LanSyncStudioCurrent.HISTORY to NovelAiStudioHistoryJournal.serializer(),
     )
     val description = "同步角色卡、格式卡、世界书、会话、消息及其版本、记忆、RAG、图片、文档和已生成语音。" +
-        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。电脑后处理记录与结果图片可往返保留，需回电脑查看。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、输入草稿、工作室当前草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
+        "同时保留旧式及 v8 会话存档、全局玩家设定与头像、朋友圈及其图片版本和计划，以及生图历史的图片、配方和参考资源。工作室当前草稿、撤销历史和参考图检查点共同选择，电脑撤销时间线可往返保留。电脑后处理记录与结果图片需回电脑查看。同步计划需本机明确恢复后才参与自动生成，中断记录不自动重试。不含账户和密钥、设备设置、聊天输入草稿。模型绑定保留各设备现有选择，新会话需在本机选模型。两端需打开同步页面，首版一次连接一台可信设备、单次上限 1 GiB。"
     internal val localFields = setOf("modelId", "imageModelId", "defaultModelId", "defaultImageModelId")
     internal val resources = setOf("avatar", "coverImage", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground",
         "chatBackgroundImages", "senderAvatar", "imagePath", "audioPath", "filePath", "filePaths", "images", "path")
@@ -39,7 +47,7 @@ object LanSyncScope {
         "moment_tasks" -> JsonObject(body + ("requiresLocalScheduleApproval" to JsonPrimitive(true)))
         "player_setting" -> lanSyncJson.encodeToJsonElement(PlayerSetting.serializer(),
             lanSyncJson.decodeFromJsonElement(PlayerSetting.serializer(), body)).jsonObject
-        else -> body
+        else -> if (type in LanSyncStudioCurrent.types) LanSyncStudioCurrent.normalize(type, body) else body
     }
     internal fun retainedLocalFields(type: String) = when (type) {
         "chat_sessions" -> localFields
@@ -84,6 +92,11 @@ object LanSyncScope {
         lanSyncJson.decodeFromJsonElement(serializer, record.body)
         if (record.type in LanSyncMoments.types) LanSyncMoments.validate(record)
         LanSyncPostProcess.validate(record)
+        if (record.type == LanSyncStudioCurrent.HISTORY) {
+            val journal = lanSyncJson.decodeFromJsonElement(NovelAiStudioHistoryJournal.serializer(), record.body)
+            require(journal.pending == null) { "SYNC_STUDIO_PENDING_ON_WIRE" }
+            journal.committed.validate()
+        }
         require(identity(record.type, record.body) == record.id) { "SYNC_BODY_ID" }
         // Pending state-machine journals have their own owner; do not transport an active transaction.
         if (record.type == "chat_sessions") {
@@ -95,6 +108,7 @@ object LanSyncScope {
 
     fun validateGraph(snapshot: LanSyncSnapshot) {
         snapshot.records.forEach(::validateRecord)
+        LanSyncStudioCurrent.validateGraph(snapshot.records)
         require(snapshot.records.none { it.type == "format_cards" && it.body["isDefault"] != JsonPrimitive(false) }) { "SYNC_DEVICE_DEFAULT_ON_WIRE" }
         require(snapshot.records.none { it.type == "moment_tasks" && it.body["requiresLocalScheduleApproval"] != JsonPrimitive(true) }) { "SYNC_SCHEDULE_AUTHORITY_ON_WIRE" }
         val referenced = linkedSetOf<String>()

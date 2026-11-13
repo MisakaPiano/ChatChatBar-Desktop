@@ -181,10 +181,16 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 }
             }
             val retainedFields = LanSyncScope.retainedLocalFields(wire.type)
-            val localBody = existing?.takeIf { retainedFields.isNotEmpty() }?.let {
+            val retainedBody = existing?.takeIf { retainedFields.isNotEmpty() }?.let {
                 val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), MAX_RECORD))).jsonObject
                 JsonObject(materialized + original.filterKeys { it in retainedFields })
             } ?: materialized
+            val localBody = if (wire.type in LanSyncStudioCurrent.types) {
+                val path = dataRoot.resolve("entities/${LanSyncStudioCurrent.DRAFT}.json")
+                val localDraft = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS))
+                    lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(path, MAX_RECORD))).jsonObject else null
+                LanSyncStudioCurrent.restoreLocal(wire.type, retainedBody, localDraft)
+            } else retainedBody
             LanSyncScope.validateRecord(local.copy(body = localBody))
             changes[relative] = lanSyncJson.encodeToString(JsonObject.serializer(), localBody).toByteArray(Charsets.UTF_8)
         }

@@ -18,6 +18,7 @@ import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.applyDesignedPromptPlan
 import com.example.chatbar.domain.image.applyReversePromptPlan
 import com.example.chatbar.domain.image.applyHistoryRecipe
+import com.example.chatbar.domain.image.ownedAssetPaths
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,11 +41,74 @@ open class NovelAiStudioStateRepository(
     private val draftMutex = Mutex()
     private val draftStateLock = Any()
     private var draftDirty = false
+    private val editorGuards = linkedMapOf<Any, () -> Boolean>()
+    private val _lanSyncRevision = MutableStateFlow(0L)
+    val lanSyncRevision: StateFlow<Long> = _lanSyncRevision.asStateFlow()
     private val undoMutex = Mutex()
     private val _undoAvailable = MutableStateFlow(false)
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
     protected val historyMutex = Mutex()
     private val foreignHistory by lazy { ForeignStudioEditHistoryCustody(storage) }
+
+    /** Guards cover local editors whose content has not reached stageDraft yet. */
+    fun registerLanSyncEditorGuard(owner: Any, uncommitted: () -> Boolean) {
+        synchronized(editorGuards) { editorGuards[owner] = uncommitted }
+    }
+
+    fun unregisterLanSyncEditorGuard(owner: Any) {
+        synchronized(editorGuards) { editorGuards.remove(owner) }
+    }
+
+    fun requireLanSyncEditorsCommitted() {
+        check(synchronized(editorGuards) { editorGuards.values.toList() }.none { it() }) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
+    }
+
+    /** Called after platform writers drain and while storage admission is exclusive. */
+    open suspend fun prepareForLanSync() {
+        requireLanSyncEditorsCommitted()
+        if (synchronized(draftStateLock) { draftDirty }) flushLatestDraft()
+        if (preserveForeignEditHistory) foreignHistory.prepareForLanSync()
+    }
+
+    /** Refresh an existing owner without creating a default file or resolving an account/model. */
+    open suspend fun reloadAfterLanSync() = draftMutex.withDataAccess {
+        val loaded = storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())
+        val undo = storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())
+        synchronized(draftStateLock) {
+            val previous = _draft.value
+            if (previous != null) {
+                val next = loaded ?: emptyDraft().copy(aiDesignModelId = previous.aiDesignModelId)
+                if (previous.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0) !=
+                    next.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0)) {
+                    val revision = maxOf(previous.contentRevision, previous.promptContentRevision,
+                        next.contentRevision, next.promptContentRevision) + 1L
+                    _draft.value = next.copy(contentRevision = revision, promptContentRevision = revision)
+                }
+            }
+            draftDirty = false
+        }
+        _undoAvailable.value = undo?.draft != null
+        _pendingGuidanceEditorTarget.value = null
+        _lanSyncRevision.value++
+    }
+
+    private fun emptyDraft() = NovelAiStudioDraft(
+        followDefaultNovelAiImageModel = true,
+        v45Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V4_5_FULL),
+        v5Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V5_FULL))
+
+    /** Persistent recipes and foreign undo steps also own native guidance images. */
+    suspend fun <T> withRetainedGuidanceResources(additional: Set<String>, operation: suspend (Set<String>) -> T): T =
+        withStudioDataAccess { draftMutex.withLock { historyMutex.withLock {
+            val retained = additional.toMutableSet()
+            synchronized(draftStateLock) { _draft.value?.imageGuidance?.ownedAssetPaths()?.let(retained::addAll) }
+            storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())?.imageGuidance?.ownedAssetPaths()?.let(retained::addAll)
+            storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())?.draft?.imageGuidance?.ownedAssetPaths()?.let(retained::addAll)
+            storage.loadSingleton(GUIDANCE_CHECKPOINT_ENTITY, NovelAiGuidanceEditorCheckpoint.serializer())?.guidance?.ownedAssetPaths()?.let(retained::addAll)
+            foreignHistory.retainedHistoryDrafts().forEach { retained += it.imageGuidance.ownedAssetPaths() }
+            storage.loadAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer()).forEach { retained += it.recipe.imageGuidance.ownedAssetPaths() }
+            operation(retained)
+        } } }
 
     protected suspend fun <T> withStudioDataAccess(operation: suspend () -> T): T =
         storage.withNormalOperation(operation)
@@ -79,11 +143,7 @@ open class NovelAiStudioStateRepository(
                 _draft.value?.let { return@withDataAccess it }
             }
             val loaded = storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())
-                ?: NovelAiStudioDraft(
-                    followDefaultNovelAiImageModel = true,
-                    v45Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V4_5_FULL),
-                    v5Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V5_FULL)
-                )
+                ?: emptyDraft()
             synchronized(draftStateLock) {
                 _draft.value ?: loaded.also { _draft.value = it }
             }

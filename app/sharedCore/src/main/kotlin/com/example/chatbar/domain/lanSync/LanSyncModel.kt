@@ -28,6 +28,7 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
     }
     val key: String get() = "$type/$id"
     val unit: String get() = when {
+        type in LanSyncStudioCurrent.types -> LanSyncStudioCurrent.UNIT
         type == "moment_posts" -> "moment-post/$id"
         type == "moment_tasks" -> "moment-task/$id"
         type == "chat_sessions" -> "conversation/$id"
@@ -136,6 +137,7 @@ object LanSyncCompare {
                         "player_setting" -> "全局玩家设定"
                         "novelai_generation_history" -> "生图历史"
                         LanSyncPostProcess.TYPE -> "电脑后处理历史"
+                        in LanSyncStudioCurrent.types -> "工作室当前草稿与撤销历史"
                         else -> owner.type
                     }
                     conflicts += LanSyncConflict(key, title.take(160), a == null, b == null, l.size, r.size,

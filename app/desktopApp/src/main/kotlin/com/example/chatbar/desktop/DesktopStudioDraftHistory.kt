@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.NovelAiStudioStateRepository
+import com.example.chatbar.data.repository.loadStudioDraftStrict
+import com.example.chatbar.data.repository.loadStudioHistoryJournalStrict
 import com.example.chatbar.domain.image.NovelAiStudioDraft
 import com.example.chatbar.domain.image.NovelAiInlinePayloadStore
 import com.example.chatbar.domain.image.ownedAssetPaths
@@ -78,6 +80,32 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         loadDraft()
         super.updateDraft(resetPromptEditors = false) { it }
         loaded(snapshot(loadDraft())); Unit
+    }
+
+    override suspend fun prepareForLanSync() = withEditHistoryDataAccess {
+        super.prepareForLanSync()
+        val persisted = storage.loadStudioDraftStrict()
+        val journal = storage.loadStudioHistoryJournalStrict()
+        if (journal != null) {
+            val resolved = journal.resolved(snapshot(requireNotNull(persisted) { "SYNC_STUDIO_DRAFT_MISSING" }))
+            if (journal.pending != null) store(DesktopStudioHistoryJournal(resolved))
+            publish(resolved)
+        }
+    }
+
+    override suspend fun reloadAfterLanSync() = withEditHistoryDataAccess {
+        super.reloadAfterLanSync()
+        timeline = null
+        lastTypingKey = null
+        val persisted = storage.loadStudioDraftStrict()
+        val journal = storage.loadStudioHistoryJournalStrict()
+        if (journal != null) {
+            check(journal.pending == null) { "SYNC_STUDIO_PENDING_ON_WIRE" }
+            publish(journal.resolved(snapshot(requireNotNull(persisted))), replay = true)
+        } else {
+            // Absence is retained. loaded() may create a timeline on the next actual local edit.
+            available.value = DesktopStudioHistoryAvailability(replayRevision = available.value.replayRevision + 1)
+        }
     }
 
     override suspend fun updateDraft(resetPromptEditors: Boolean,

@@ -50,11 +50,16 @@ class LanSyncRuntimeTest {
         val workspace = LanSyncWorkspace(root, stateRoot.resolve("workspace"), { raw -> Path.of(raw) })
         val gate = LanSyncOperationGate()
         val storage = JsonFileStorage(root, gate)
+        val studio by lazy { NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true) }
         val exclusiveCalls = java.util.concurrent.atomic.AtomicInteger()
-        fun runtime() = LanSyncRuntime(store, workspace, object : LanSyncPlatform {
-            override suspend fun exclusive(work: suspend () -> Unit) { exclusiveCalls.incrementAndGet(); gate.exclusive(work) }
+        fun runtime(studioCurrent: Boolean = false) = LanSyncRuntime(store, workspace, object : LanSyncPlatform {
+            override suspend fun exclusive(work: suspend () -> Unit) { exclusiveCalls.incrementAndGet(); gate.exclusive {
+                if (studioCurrent) studio.prepareForLanSync()
+                work()
+            } }
             override suspend fun reload(sessionIds: Set<String>) {
                 storage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
+                if (studioCurrent) studio.reloadAfterLanSync()
             }
         }, name, observe = observe, network = network)
         fun write(id: String, name: String, image: String? = null) {
@@ -431,6 +436,54 @@ class LanSyncRuntimeTest {
                     assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
                     assertEquals(a.names(), b.names())
                     assertEquals(setOf(if (bothApplied) "双方应用后修改" else "旧范围原卡"), a.names())
+                } finally { host.closeAndDrain(); phone.closeAndDrain() }
+            } finally { left.close(); right.close() }
+        }
+    }
+
+    @Test fun oldNineteenTypePendingExpandsToOneStudioChoiceAndRefreshesLoadedOwnersWithoutResetOrHistoryLoss() = runBlocking {
+        for (bothApplied in listOf(false, true)) {
+            val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+            listOf(a, b).forEach { it.write("card", "旧共同卡") }
+            val oldTypes = LanSyncScope.schemas.keys - LanSyncStudioCurrent.types
+            val left = a.workspace.capture(a.id); val right = b.workspace.capture(b.id)
+            val old = LanSyncPlan(java.util.UUID.randomUUID().toString(), left.snapshot.copy(coveredTypes = oldTypes), emptyMap())
+            try {
+                b.workspace.apply(old, right.snapshot.hashes(), b.id, emptyMap())
+                if (bothApplied) a.workspace.apply(old, left.snapshot.hashes(), a.id, emptyMap())
+                a.store.pending(LanSyncPending(b.id, old, left.snapshot.hashes(), right.snapshot.hashes(), localApplied = bothApplied))
+                b.store.pending(LanSyncPending(a.id, old, right.snapshot.hashes(), emptyMap(), localApplied = true))
+                for (end in listOf(a, b)) {
+                    end.studio.loadDraft()
+                    val value = end.studio.updateDraft { it.copy(basePrompt = "${end.name}原文", negativePrompt = "固定负面原文", aiDesignModelId = "${end.name}-local-model") }
+                    end.studio.saveUndoDraft(value.copy(basePrompt = "${end.name}旧撤销"))
+                    end.studio.saveGuidanceCheckpoint(value.imageGuidance)
+                    end.storage.saveSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal(
+                        NovelAiStudioHistoryTimeline(listOf(value.toEditHistorySnapshot(end.storage::retainStudioPayload)))), NovelAiStudioHistoryJournal.serializer())
+                }
+                val host = a.runtime(studioCurrent = true); val phone = b.runtime(studioCurrent = true)
+                try {
+                    pair(host, phone, a, b); phone.requestSync()
+                    until("expanded current editor requires exactly one joint choice") { host.state.value.conflicts.size == 1 }
+                    val conflict = host.state.value.conflicts.single()
+                    assertEquals(LanSyncStudioCurrent.UNIT, conflict.unit); assertFalse(conflict.canKeepBoth)
+                    assertEquals(4, conflict.computerRecords); assertEquals(4, conflict.phoneRecords)
+                    host.resolveConflicts(mapOf(conflict.unit to LanSyncChoice.KEEP_PHONE)); completed(a, b, old.transaction)
+                    for (end in listOf(a, b)) {
+                        assertEquals("phone原文", end.studio.draft.value?.basePrompt)
+                        assertEquals("${end.name}-local-model", end.studio.draft.value?.aiDesignModelId)
+                        assertEquals("phone旧撤销", end.studio.loadUndoDraft()?.basePrompt)
+                        assertEquals(LanSyncScope.schemas.keys, end.store.baseline(if (end === a) b.id else a.id, end.id).coveredTypes)
+                    }
+                    val revision = a.store.baseline(b.id, a.id).revision
+                    b.studio.stageDraft { it.copy(extraPrompt = "手机在已加载owner内继续编辑") }
+                    phone.requestSync(); completed(a, b, revision)
+                    assertEquals("手机在已加载owner内继续编辑", a.studio.draft.value?.extraPrompt)
+                    for (end in listOf(a, b)) {
+                        val history = requireNotNull(end.storage.loadSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal.serializer()))
+                        assertEquals(2, history.committed.entries.size); assertNull(history.pending)
+                    }
+                    assertEquals(a.workspace.capture(a.id).use { it.snapshot.hashes() }, b.workspace.capture(b.id).use { it.snapshot.hashes() })
                 } finally { host.closeAndDrain(); phone.closeAndDrain() }
             } finally { left.close(); right.close() }
         }

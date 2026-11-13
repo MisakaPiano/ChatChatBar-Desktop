@@ -11,22 +11,45 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonDecoder
 
+private fun <T> JsonFileStorage.strictStudioSerializer(serializer: KSerializer<T>) = object : KSerializer<T> {
+    private val strictJson = Json(json) { ignoreUnknownKeys = false }
+    override val descriptor = serializer.descriptor
+    override fun serialize(encoder: Encoder, value: T) = serializer.serialize(encoder, value)
+    override fun deserialize(decoder: Decoder): T {
+        val json = decoder as? JsonDecoder ?: throw SerializationException("Studio history requires JSON")
+        return strictJson.decodeFromJsonElement(serializer, json.decodeJsonElement())
+    }
+}
+
+suspend fun JsonFileStorage.loadStudioHistoryJournalStrict(): NovelAiStudioHistoryJournal? =
+    loadSingleton("desktop_studio_edit_history", strictStudioSerializer(NovelAiStudioHistoryJournal.serializer()))
+
+suspend fun JsonFileStorage.loadStudioDraftStrict(): NovelAiStudioDraft? =
+    loadSingleton("novelai_studio_draft", strictStudioSerializer(NovelAiStudioDraft.serializer()))
+
 /** Android retains an imported Desktop timeline; it never invents one for an ordinary Android draft. */
 internal class ForeignStudioEditHistoryCustody(private val storage: JsonFileStorage) {
-    private val strictJson = Json(storage.json) { ignoreUnknownKeys = false }
-    private fun <T> strict(serializer: KSerializer<T>) = object : KSerializer<T> {
-        override val descriptor = serializer.descriptor
-        override fun serialize(encoder: Encoder, value: T) = serializer.serialize(encoder, value)
-        override fun deserialize(decoder: Decoder): T {
-            val json = decoder as? JsonDecoder ?: throw SerializationException("Studio history requires JSON")
-            return strictJson.decodeFromJsonElement(serializer, json.decodeJsonElement())
-        }
-    }
-    private val journalSerializer = strict(NovelAiStudioHistoryJournal.serializer())
-    private val draftSerializer = strict(NovelAiStudioDraft.serializer())
+    private val journalSerializer = storage.strictStudioSerializer(NovelAiStudioHistoryJournal.serializer())
+    private val draftSerializer = storage.strictStudioSerializer(NovelAiStudioDraft.serializer())
     private fun snapshot(draft: NovelAiStudioDraft) = draft.toEditHistorySnapshot(storage::retainStudioPayload)
     private fun size(entries: List<NovelAiStudioDraft>) = storage.json.encodeToString(
         NovelAiStudioHistoryTimeline.serializer(), NovelAiStudioHistoryTimeline(entries)).toByteArray(Charsets.UTF_8).size
+
+    suspend fun prepareForLanSync() {
+        val journal = storage.loadSingleton(ENTITY, journalSerializer) ?: return
+        val draft = requireNotNull(storage.loadSingleton(DRAFT, draftSerializer)) { "SYNC_STUDIO_DRAFT_MISSING" }
+        val resolved = journal.resolved(snapshot(draft))
+        if (journal.pending != null) storage.saveSingleton(ENTITY,
+            NovelAiStudioHistoryJournal(resolved), NovelAiStudioHistoryJournal.serializer())
+    }
+
+    suspend fun retainedHistoryDrafts(): List<NovelAiStudioDraft> {
+        val journal = storage.loadSingleton(ENTITY, journalSerializer) ?: return emptyList()
+        journal.committed.validate(); journal.pending?.validate()
+        val current = requireNotNull(storage.loadSingleton(DRAFT, draftSerializer)) { "SYNC_STUDIO_DRAFT_MISSING" }
+        journal.resolved(snapshot(current))
+        return journal.committed.entries + journal.pending?.entries.orEmpty()
+    }
 
     /** Called under the repository's ordinary admission and draft mutex, once per exact draft write. */
     suspend fun persist(draft: NovelAiStudioDraft, writeDraft: suspend () -> Unit) {

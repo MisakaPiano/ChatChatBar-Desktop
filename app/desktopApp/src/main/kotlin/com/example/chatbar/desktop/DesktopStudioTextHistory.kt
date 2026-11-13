@@ -14,16 +14,30 @@ internal data class DesktopStudioTextBoundary(val separate: Boolean = false, val
 /** Stable field keys survive disclosure/role reordering; no text or key handler escapes Studio. */
 internal class DesktopStudioTextHistories {
     private val fields = linkedMapOf<String, DesktopStudioTextHistory>()
+    private val expandedEditors = linkedMapOf<Any, () -> Boolean>()
+    private var lanSyncMaintenance = false
+    fun beginLanSyncMaintenance() {
+        check(!hasUncommittedEditor()) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
+        lanSyncMaintenance = true
+    }
+    fun endLanSyncMaintenance() { lanSyncMaintenance = false }
+    fun registerExpandedEditor(owner: Any, uncommitted: () -> Boolean) = synchronized(expandedEditors) {
+        expandedEditors[owner] = uncommitted
+    }
+    fun unregisterExpandedEditor(owner: Any) = synchronized(expandedEditors) { expandedEditors.remove(owner); Unit }
+    fun hasUncommittedEditor() = synchronized(fields) { fields.values.toList() }.any { it.value.composition != null } ||
+        synchronized(expandedEditors) { expandedEditors.values.toList() }.any { it() }
     var authorityRevision by mutableLongStateOf(0)
         private set
     var annotationRevision by mutableLongStateOf(0)
         private set
     private var boundary = DesktopStudioTextBoundary()
     fun takeBoundary() = boundary.also { boundary = DesktopStudioTextBoundary() }
-    fun field(key: String, text: String): DesktopStudioTextHistory {
+    fun field(key: String, text: String): DesktopStudioTextHistory = synchronized(fields) {
         fields[key]?.let { return it }
         if (fields.size >= 256) fields.remove(fields.keys.first())
-        return DesktopStudioTextHistory(text,
+        DesktopStudioTextHistory(text,
+            canEdit = { !lanSyncMaintenance },
             onReplay = { boundary = DesktopStudioTextBoundary(separate = true, discrete = true) },
             onTypingBoundary = { boundary = boundary.copy(separate = true) }).also { fields[key] = it }
     }
@@ -32,7 +46,8 @@ internal class DesktopStudioTextHistories {
 }
 
 internal class DesktopStudioTextHistory(text: String, private val clock: () -> Long = System::nanoTime,
-    private val onReplay: () -> Unit = {}, private val onTypingBoundary: () -> Unit = {}) {
+    private val onReplay: () -> Unit = {}, private val onTypingBoundary: () -> Unit = {},
+    private val canEdit: () -> Boolean = { true }) {
     var value by mutableStateOf(TextFieldValue(text, TextRange(text.length)))
         private set
     private val undo = mutableListOf<TextFieldValue>()
@@ -46,6 +61,7 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
     fun endTyping() { merging = false; onTypingBoundary() }
 
     fun edit(next: TextFieldValue, publish: (String) -> Unit) {
+        if (!canEdit()) return
         settledAuthority = null
         if (next.composition != null) {
             if (compositionOrigin == null) compositionOrigin = value.copy(composition = null)
@@ -95,6 +111,7 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
     }
 
     fun replay(forward: Boolean, publish: (String) -> Unit): Boolean {
+        if (!canEdit()) return false
         if (value.composition != null) return false
         val source = if (forward) redo else undo
         var target = source.removeLastOrNull() ?: return true // Consume locally even at its boundary.
@@ -117,7 +134,7 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
         edit(next.copy(composition = null), publish)
     }
 
-    fun fork() = DesktopStudioTextHistory(value.text, clock).also {
+    fun fork() = DesktopStudioTextHistory(value.text, clock, canEdit = canEdit).also {
         it.value = value; it.undo.addAll(undo); it.redo.addAll(redo)
     }
 

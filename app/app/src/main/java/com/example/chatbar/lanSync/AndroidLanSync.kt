@@ -35,7 +35,10 @@ class AndroidLanSync(private val app: ChatBarApp) {
         override suspend fun exclusive(work: suspend () -> Unit) {
             require(app.lanSyncStartupReady) { "SYNC_INITIALIZING" }
             app.momentScheduler.withLanSyncMaintenance {
-                AiBackgroundWorkManager.withLanSyncMaintenance { gate.exclusive { work() } }
+                AiBackgroundWorkManager.withLanSyncMaintenance { gate.exclusive {
+                    app.novelAiStudioRepository.prepareForLanSync()
+                    work()
+                } }
             }
         }
         override suspend fun reload(sessionIds: Set<String>) {
@@ -44,6 +47,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             app.momentRepository.refreshFromStorage()
             app.settingsRepository.refreshPlayerSettingFromStorage()
             app.novelAiStudioRepository.initialize()
+            app.novelAiStudioRepository.reloadAfterLanSync()
         }
     }, android.os.Build.MODEL.take(80)) }
     fun recoverBeforeRepositories() = workspace.recover()

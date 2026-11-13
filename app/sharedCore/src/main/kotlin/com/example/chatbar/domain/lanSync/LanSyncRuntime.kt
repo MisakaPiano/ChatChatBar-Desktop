@@ -554,6 +554,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             "SYNC_PROJECTION_STATE", "SYNC_PROJECTION_DEVICE", "SYNC_PROJECTION_PROOF" -> "本机同步身份映射缺失或不一致，已停止继续写入并保留资料；请检查同步恢复记录"
             "SYNC_BASELINE_MISMATCH" -> "两端共同基线不一致，已保留资料和回执，需恢复上次同步"
             "SYNC_BUSY_MEMORY", "SYNC_PENDING_REPOSITORY_WORK" -> "本机仍有资料处理或恢复任务，请完成后重试"
+            "SYNC_STUDIO_EDITOR_UNCOMMITTED" -> "工作室仍有未确认的展开编辑或画布，请先确认或关闭，再重试同步"
+            "SYNC_STUDIO_DRAFT_MISSING", "SYNC_STUDIO_PENDING_ON_WIRE", "SYNC_STUDIO_HISTORY_MISMATCH" -> "工作室草稿与撤销历史尚未通过一致性检查；原资料保留，请检查后重试"
             "SYNC_ONE_PEER_ONLY" -> "首版一次连接一台可信设备；请先撤销已有配对再连接另一台"
             "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机仍在生成或处理资料，请完成后点同步重试"
             "SYNC_INITIALIZING" -> "本机资料仍在初始化，请稍后点同步重试"

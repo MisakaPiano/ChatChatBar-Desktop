@@ -32,7 +32,7 @@ class LanSyncWorkspaceTest {
     @Test fun actualApplyReopenRepeatAndDeletionPreserveUncoveredStores() {
         val root = root(); val state = root().resolve("workspace")
         val ws = workspace(root, state)
-        val uncovered = root.resolve("entities/novelai_studio_draft.json")
+        val uncovered = root.resolve("entities/device_preferences.json")
         Files.createDirectories(uncovered.parent); Files.writeString(uncovered, "synthetic-local-device-record")
         write(root, card("old", "旧卡"))
         val before = ws.capture("synthetic")

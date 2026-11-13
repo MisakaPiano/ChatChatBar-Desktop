@@ -1141,6 +1141,12 @@ private fun StudioFullscreenPromptEditor(
 ) {
     val field = request.field ?: return
     val editorState = rememberFullscreenTextEditorState(request.value)
+    val editorGuardOwner = remember { Any() }
+    val uncommittedEditor = rememberUpdatedState(editorState.value.text != request.value.text || editorState.value.composition != null)
+    DisposableEffect(viewModel, editorGuardOwner) {
+        viewModel.registerLanSyncEditorGuard(editorGuardOwner) { uncommittedEditor.value }
+        onDispose { viewModel.unregisterLanSyncEditorGuard(editorGuardOwner) }
+    }
     var lastTranslationText by remember { mutableStateOf<String?>(null) }
     var suppressSuggestionFor by remember { mutableStateOf<Pair<String, Int>?>(null) }
     val wrappingTransformation = promptTagWrappingOutputTransformation(request.naturalLanguage)

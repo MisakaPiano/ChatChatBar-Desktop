@@ -19,6 +19,11 @@ import kotlinx.coroutines.sync.withLock
 
 private class DesktopStudioUndoUnavailable : IllegalStateException()
 
+private object StudioLanSyncUiDispatcher : CoroutineDispatcher() {
+    override fun isDispatchNeeded(context: kotlin.coroutines.CoroutineContext) = !java.awt.EventQueue.isDispatchThread()
+    override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) = java.awt.EventQueue.invokeLater(block)
+}
+
 internal data class DesktopNovelAiStudioState(
     val ready: Boolean = false,
     val credentialConfigured: Boolean = false,
@@ -116,6 +121,24 @@ internal class DesktopNovelAiStudioController(
     private val composerMutex = Mutex()
     private val mutableDesignComposer = MutableStateFlow(DesktopDesignComposerState())
     val designComposer = mutableDesignComposer.asStateFlow()
+
+    /** Task idleness is acquired before this owner mutex; exclusive storage follows inside. */
+    suspend fun withLanSyncOwner(work: suspend () -> Unit) = mutex.withLock {
+        withContext(StudioLanSyncUiDispatcher) {
+            check(presetSelection == null && fullPromptSelection == null) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
+            repository.requireLanSyncEditorsCommitted()
+            textHistories.beginLanSyncMaintenance()
+        }
+        try { work() } finally { withContext(NonCancellable + StudioLanSyncUiDispatcher) { textHistories.endLanSyncMaintenance() } }
+    }
+
+    suspend fun reloadStudioAfterLanSync() {
+        repository.reloadAfterLanSync()
+        if (state.value.ready) {
+            textHistories.authorityChanged()
+            mutableState.update { it.copy(results = history.first().firstOrNull()?.images.orEmpty().map { image -> image.path }) }
+        }
+    }
 
     suspend fun initializeDesignComposer() = composerMutex.withLock {
         if (designComposer.value.initialized) return@withLock

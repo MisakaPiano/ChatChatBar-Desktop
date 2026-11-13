@@ -88,6 +88,11 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     var reverseSource by remember { mutableStateOf<ByteArray?>(null) }
     var viewingIndex by remember { mutableStateOf(0) }
     var guidanceEditor by remember { mutableStateOf<Triple<ByteArray, ByteArray?, NovelAiFocusedInpaintRegion?>?>(null) }
+    val guidanceGuardOwner = remember { Any() }
+    DisposableEffect(controller, guidanceGuardOwner) {
+        controller.repository.registerLanSyncEditorGuard(guidanceGuardOwner) { guidanceEditor != null }
+        onDispose { controller.repository.unregisterLanSyncEditorGuard(guidanceGuardOwner) }
+    }
     var auxiliary by remember { mutableStateOf<String?>(null) }
     var auxiliaryActivation by remember { mutableIntStateOf(0) }
     fun openAuxiliary(surface: String) { auxiliary = surface; auxiliaryActivation++ }

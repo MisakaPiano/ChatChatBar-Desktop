@@ -49,9 +49,16 @@ class DesktopAppContainer internal constructor(
     private val lanSyncOwner = lazy { DesktopLanSync(this,
         exclusive = { work ->
             if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot()
-            val reserved: suspend () -> Unit = { withBackupIoMaintenance(work = {
-                dataOperationCoordinator.withExclusiveMaintenance { work() }
-            }) }
+            val reserved: suspend () -> Unit = {
+                val publish: suspend () -> Unit = { withBackupIoMaintenance(work = {
+                    dataOperationCoordinator.withExclusiveMaintenance {
+                        if (novelAiStudioOwner.isInitialized()) novelAiStudioController.repository.prepareForLanSync()
+                        else DesktopStudioHistoryRepository(jsonFileStorage).prepareForLanSync()
+                        work()
+                    }
+                }) }
+                if (novelAiStudioOwner.isInitialized()) novelAiStudioController.withLanSyncOwner(publish) else publish()
+            }
             if (momentsOwner.isInitialized() || "moment_tasks" in com.example.chatbar.domain.lanSync.LanSyncScope.schemas) momentsController.withLanSyncMaintenance(
                 synchronizeTasks = "moment_tasks" in com.example.chatbar.domain.lanSync.LanSyncScope.schemas, work = reserved)
             else taskRuntime.withIdleMaintenance(reserved)
@@ -61,7 +68,10 @@ class DesktopAppContainer internal constructor(
             chatRepository.reloadAfterLanSync(); voiceRepository.reload()
             settingsRepository.refreshPlayerSettingFromStorage()
             jsonFileStorage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
-            if (novelAiStudioOwner.isInitialized()) check(novelAiStudioController.reloadPostProcessResults()) { "SYNC_POSTPROCESS_RELOAD" }
+            if (novelAiStudioOwner.isInitialized()) {
+                novelAiStudioController.reloadStudioAfterLanSync()
+                check(novelAiStudioController.reloadPostProcessResults()) { "SYNC_POSTPROCESS_RELOAD" }
+            }
             if (primaryChatControllerOwner.isInitialized()) primaryChatController.refresh()
             if (momentsOwner.isInitialized()) momentsController.refresh()
         }, resolve = { reference ->

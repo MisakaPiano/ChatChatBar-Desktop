@@ -10,6 +10,35 @@ import kotlin.test.*
 class DesktopStudioDraftHistoryTest {
     private fun NovelAiStudioDraft.content() = copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0)
 
+    @Test fun lanSyncPreparationAndReloadUseThePersistedPairWithoutDefaultsAndReplayTheIncomingTimeline() = runBlocking {
+        val root = Files.createTempDirectory("studio-lan-reload-")
+        try {
+            val storage = JsonFileStorage(root); val repository = DesktopStudioHistoryRepository(storage)
+            repository.prepareForLanSync()
+            assertFalse(Files.exists(root.resolve("entities/novelai_studio_draft.json")))
+            repository.loadDraft(); repository.initializeHistory()
+            repository.updateDraft { it.copy(basePrompt = "本机旧内容") }
+            val incoming = repository.loadDraft().copy(basePrompt = "同步选定的新内容", contentRevision = 0, promptContentRevision = 0, updatedAt = 0)
+            val previous = incoming.copy(basePrompt = "对端的上一步")
+            storage.saveSingleton("novelai_studio_draft", incoming, NovelAiStudioDraft.serializer())
+            storage.saveSingleton(DesktopStudioHistoryRepository.ENTITY,
+                DesktopStudioHistoryJournal(DesktopStudioHistoryTimeline(listOf(previous, incoming), 1)), DesktopStudioHistoryJournal.serializer())
+            val physical = Files.readAllBytes(root.resolve("entities/novelai_studio_draft.json"))
+            repository.reloadAfterLanSync()
+            assertEquals(incoming.basePrompt, repository.draft.value?.basePrompt)
+            assertTrue(repository.historyAvailability.value.undo)
+            assertContentEquals(physical, Files.readAllBytes(root.resolve("entities/novelai_studio_draft.json")))
+            assertTrue(repository.replay(false)); assertEquals(previous.basePrompt, repository.loadDraft().basePrompt)
+            assertTrue(repository.replay(true)); assertEquals(incoming.basePrompt, repository.loadDraft().basePrompt)
+            storage.saveSingleton(DesktopStudioHistoryRepository.ENTITY,
+                DesktopStudioHistoryJournal(DesktopStudioHistoryTimeline(listOf(previous)), DesktopStudioHistoryTimeline(listOf(previous, incoming), 1)),
+                DesktopStudioHistoryJournal.serializer())
+            repository.prepareForLanSync()
+            assertNull(storage.loadSingleton(DesktopStudioHistoryRepository.ENTITY, DesktopStudioHistoryJournal.serializer())?.pending)
+            assertEquals(incoming.content(), storage.loadSingleton(DesktopStudioHistoryRepository.ENTITY, DesktopStudioHistoryJournal.serializer())?.committed?.current())
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
     @Test fun `mixed draft operations undo and redo many steps persist cursor and truncate only the new branch`() = runBlocking {
         val root = Files.createTempDirectory("studio-multistep-")
         try {
