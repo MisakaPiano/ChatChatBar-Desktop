@@ -36,9 +36,9 @@ class LanSyncGroupPublicationQueueTest {
             observe, keyQueue = keyQueue())
         fun prepareLedger(): Pair<SyncPreparedGroupObject, Map<String, SyncStoreId>> {
             val current = ledger.current()
-            val operations = current.members.filterValues { it.active }.keys.associateWith { recipient -> SyncStoreId.random().also {
-                keyQueue().prepare(it, cipher, recipient, owner::signSyncGroupPayload)
-            } }
+            val operations = current.members.filterValues { it.active }.keys.associate { recipient ->
+                "${cipher.epoch.value}:$recipient" to SyncStoreId.random().also { keyQueue().prepare(it, cipher, recipient, owner::signSyncGroupPayload) }
+            }
             val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
                 SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = current, ledgerHistory = ledger.history().dropLast(1)))
             return metadata to operations
@@ -173,7 +173,7 @@ class LanSyncGroupPublicationQueueTest {
         val before = observed.size; assertEquals(receipt, reopened.upload(plan.metadata.operation, unreliable)); assertEquals(before, observed.size)
         // No root signer is needed when the previously offline recipient later consumes retained objects.
         val recipientKey = f.recipients.getValue(f.sender.fingerprint)
-        val capsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue(f.sender.fingerprint).key))
+        val capsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue("${f.cipher.epoch.value}:${f.sender.fingerprint}").key))
         val tentative = SyncKeyDeliveryCodec.read(f.backend, capsule, f.ledger.trustAnchor, recipientKey)
         val read = f.codec.read(f.backend, tentative.cipher, metadata.context, metadata.request.descriptor, plan.reference)
         val recipientLedger = SyncDeviceLedger(f.ledger.trustAnchor)
@@ -215,7 +215,7 @@ class LanSyncGroupPublicationQueueTest {
             queue.prepare(missingHistory, emptyList(), emptyMap(), emptyList(), keys)
         }.message)
         val plan = queue.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys); queue.upload(plan.metadata.operation, f.backend)
-        val capsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue(f.sender.fingerprint).key))
+        val capsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue("${f.cipher.epoch.value}:${f.sender.fingerprint}").key))
         val tentative = SyncKeyDeliveryCodec.read(f.backend, capsule, f.ledger.trustAnchor, f.recipients.getValue(f.sender.fingerprint))
         val read = f.codec.read(f.backend, tentative.cipher, metadata.context, metadata.request.descriptor)
         val fresh = SyncDeviceLedger(f.ledger.trustAnchor)
@@ -224,5 +224,37 @@ class LanSyncGroupPublicationQueueTest {
         assertEquals(latest.reference(), fresh.current().reference())
         assertEquals(f.cipher.keyCommitment(), tentative.admit(fresh).cipher.keyCommitment())
         assertEquals(listOf(f.genesis.reference(), middle.reference(), latest.reference()), fresh.history().map { it.reference() })
+    }
+
+    @Test fun newlyAdmittedDevicesReceiveHistoricalKeysAndRevokedDevicesReceiveNoEpochs() = withRoot { root ->
+        val f = Fixture(root); val newPhone = LanSyncTlsIdentity.create(); val recipient = SyncDeviceEncryptionKey.create(newPhone.fingerprint)
+        val currentKey = SyncStreamingCipher.create(f.cipher.group, SyncStoreId.random())
+        val latest = f.sign(f.genesis.copy(id = SyncStoreId.random(), sequence = 2, parent = f.genesis.reference(),
+            epoch = currentKey.epoch, keyCommitment = currentKey.keyCommitment(), members = f.members +
+                (f.sender.fingerprint to f.members.getValue(f.sender.fingerprint).copy(active = false)) +
+                (newPhone.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(newPhone.certificate.encoded), recipient.publicKey.encoded))))
+        f.ledger.offer(latest)
+        val keys = listOf(f.cipher, currentKey).flatMap { cipher -> latest.members.filterValues { it.active }.keys.map { device ->
+            "${cipher.epoch.value}:$device" to SyncStoreId.random().also { f.keyQueue().prepare(it, cipher, device, f.owner::signSyncGroupPayload) }
+        } }.toMap()
+        assertTrue(keys.keys.none { it.endsWith(":" + f.sender.fingerprint) })
+        val outbox = SyncEncryptedOutbox(Files.createDirectory(root.resolve("new-epoch-queue")), currentKey)
+        val metadata = f.codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), currentKey,
+            SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = latest, ledgerHistory = f.ledger.history().dropLast(1)))
+        val publisher = LanSyncGroupPublicationQueue(f.publications, f.ledger, outbox, f.owner.fingerprint, keyQueue = f.keyQueue())
+        assertEquals("SYNC_GROUP_PUBLICATION_KEYS", assertFailsWith<IllegalArgumentException> {
+            publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys.filterKeys { it.startsWith(currentKey.epoch.value) })
+        }.message)
+        val plan = publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys)
+        val receipt = publisher.upload(plan.metadata.operation, f.backend)
+        assertEquals(2L, receipt.recipientCount); assertEquals(4L, receipt.keyDeliveryCount)
+        val currentCapsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue("${currentKey.epoch.value}:${newPhone.fingerprint}").key))
+        val tentative = SyncKeyDeliveryCodec.read(f.backend, currentCapsule, f.ledger.trustAnchor, recipient)
+        val read = f.codec.read(f.backend, tentative.cipher, metadata.context, metadata.request.descriptor)
+        val fresh = SyncDeviceLedger(f.ledger.trustAnchor)
+        read.envelope.ledgerHistory.forEach { fresh.offer(it) }; fresh.offer(requireNotNull(read.envelope.deviceLedger))
+        assertEquals(currentKey.keyCommitment(), tentative.admit(fresh).cipher.keyCommitment())
+        val oldCapsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue("${f.cipher.epoch.value}:${newPhone.fingerprint}").key))
+        assertEquals(f.cipher.keyCommitment(), SyncKeyDeliveryCodec.read(f.backend, oldCapsule, f.ledger.trustAnchor, recipient).admit(fresh).cipher.keyCommitment())
     }
 }

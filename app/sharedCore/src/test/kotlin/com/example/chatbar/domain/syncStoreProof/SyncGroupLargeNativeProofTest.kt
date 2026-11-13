@@ -99,16 +99,16 @@ class SyncGroupLargeNativeProofTest {
             val codec = SyncGroupObjectCodec(work); val blobs = SyncGroupBlobStore(cipher.group, work)
             val keyRoot = directory("key-queue")
             fun keyQueue() = SyncKeyDeliveryQueue(keyRoot, trust, owner.fingerprint, { ledger })
-            val keyOperations = members.keys.associateWith { recipient -> SyncStoreId.random().also {
-                keyQueue().prepare(it, cipher, recipient, owner::signSyncGroupPayload)
-            } }
+            val keyOperations = members.keys.associate { recipient ->
+                "${cipher.epoch.value}:$recipient" to SyncStoreId.random().also { keyQueue().prepare(it, cipher, recipient, owner::signSyncGroupPayload) }
+            }
             val rootMetadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
                 SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = genesis))
             val rootPublisher = LanSyncGroupPublicationQueue(publications, ledger, outbox, owner.fingerprint, keyQueue = keyQueue())
             val rootPlan = rootPublisher.prepare(rootMetadata, emptyList(), emptyMap(), emptyList(), keyOperations)
             rootPublisher.upload(rootPlan.metadata.operation, backend)
             val receiver = recipients.getValue(phone.fingerprint)
-            val keyMetadata = requireNotNull(backend.metadata(rootPlan.keyDeliveries.getValue(phone.fingerprint).key))
+            val keyMetadata = requireNotNull(backend.metadata(rootPlan.keyDeliveries.getValue("${cipher.epoch.value}:${phone.fingerprint}").key))
             val tentative = SyncKeyDeliveryCodec.read(backend, keyMetadata, trust, receiver)
             val rootRead = codec.read(backend, tentative.cipher, rootMetadata.context, rootMetadata.request.descriptor)
             val receivedLedger = SyncDeviceLedger(trust).also { it.offer(requireNotNull(rootRead.envelope.deviceLedger)) }
