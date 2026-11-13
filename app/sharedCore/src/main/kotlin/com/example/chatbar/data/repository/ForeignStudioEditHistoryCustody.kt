@@ -46,18 +46,19 @@ internal class ForeignStudioEditHistoryCustody(private val storage: JsonFileStor
 
     sealed interface Outcome {
         data object Unmanaged : Outcome
-        data class Proved(val draft: NovelAiStudioDraft) : Outcome
+        data class Proved(val draft: NovelAiStudioDraft, val requestedWasPublished: Boolean) : Outcome
         data class Unproved(val failure: Exception) : Outcome
     }
 
     /** A reported write failure is not evidence that the draft write rolled back. */
-    suspend fun outcomeAfterFailure(): Outcome = withContext(NonCancellable) {
+    suspend fun outcomeAfterFailure(requested: NovelAiStudioDraft): Outcome = withContext(NonCancellable) {
         try {
             val journal = storage.loadSingleton(ENTITY, journalSerializer)
             if (journal == null) Outcome.Unmanaged else {
                 val actual = requireNotNull(storage.loadSingleton(DRAFT, draftSerializer)) { "Studio history requires its persisted draft" }
-                journal.resolved(snapshot(actual))
-                Outcome.Proved(actual)
+                val actualSnapshot = snapshot(actual)
+                journal.resolved(actualSnapshot)
+                Outcome.Proved(actual, actualSnapshot == snapshot(requested))
             }
         } catch (failure: Exception) { Outcome.Unproved(failure) }
     }

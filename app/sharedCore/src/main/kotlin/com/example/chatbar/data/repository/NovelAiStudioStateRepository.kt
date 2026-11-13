@@ -39,6 +39,7 @@ open class NovelAiStudioStateRepository(
         _pendingGuidanceEditorTarget.asStateFlow()
     private val draftMutex = Mutex()
     private val draftStateLock = Any()
+    private var draftDirty = false
     private val undoMutex = Mutex()
     private val _undoAvailable = MutableStateFlow(false)
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
@@ -92,12 +93,17 @@ open class NovelAiStudioStateRepository(
     fun stageDraft(
         resetPromptEditors: Boolean = false,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
-    ): NovelAiStudioDraft = synchronized(draftStateLock) {
+    ): NovelAiStudioDraft = stageDraftChange(resetPromptEditors, transform).after
+
+    private data class DraftChange(val before: NovelAiStudioDraft, val wasDirty: Boolean, val after: NovelAiStudioDraft)
+
+    private fun stageDraftChange(resetPromptEditors: Boolean, transform: (NovelAiStudioDraft) -> NovelAiStudioDraft): DraftChange = synchronized(draftStateLock) {
         val current = checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
+        val wasDirty = draftDirty
         val transformed = transform(current)
-        if (transformed == current) return@synchronized current
+        if (transformed == current) return@synchronized DraftChange(current, wasDirty, current)
         val revision = current.contentRevision + 1L
-        transformed.copy(
+        val next = transformed.copy(
             contentRevision = revision,
             promptContentRevision = if (resetPromptEditors) {
                 revision
@@ -105,7 +111,10 @@ open class NovelAiStudioStateRepository(
                 current.promptContentRevision
             },
             updatedAt = maxOf(System.currentTimeMillis(), current.updatedAt + 1L)
-        ).also { _draft.value = it }
+        )
+        draftDirty = true
+        _draft.value = next
+        DraftChange(current, wasDirty, next)
     }
 
     suspend fun flushLatestDraft(): NovelAiStudioDraft {
@@ -118,7 +127,7 @@ open class NovelAiStudioStateRepository(
                 val write: suspend () -> Unit = { storage.saveSingleton(DRAFT_ENTITY, snapshot, NovelAiStudioDraft.serializer()) }
                 if (preserveForeignEditHistory) foreignHistory.persist(snapshot, write) else write()
                 val latest = synchronized(draftStateLock) {
-                    checkNotNull(_draft.value)
+                    checkNotNull(_draft.value).also { if (it.contentRevision == snapshot.contentRevision) draftDirty = false }
                 }
                 if (latest.contentRevision == snapshot.contentRevision) return@withDataAccess latest
             }
@@ -130,20 +139,30 @@ open class NovelAiStudioStateRepository(
         resetPromptEditors: Boolean = false,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
     ): NovelAiStudioDraft = withStudioDataAccess {
-        val before = synchronized(draftStateLock) {
-            checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
-        }
-        val next = stageDraft(resetPromptEditors, transform)
+        val change = stageDraftChange(resetPromptEditors, transform)
+        val before = change.before
+        val next = change.after
         try {
             flushLatestDraft()
             next
         } catch (error: Throwable) {
-            val outcome = if (preserveForeignEditHistory) foreignHistory.outcomeAfterFailure() else ForeignStudioEditHistoryCustody.Outcome.Unmanaged
+            val outcome = if (preserveForeignEditHistory) foreignHistory.outcomeAfterFailure(next) else ForeignStudioEditHistoryCustody.Outcome.Unmanaged
             synchronized(draftStateLock) {
                 if (_draft.value?.contentRevision == next.contentRevision) {
                     when (outcome) {
-                        ForeignStudioEditHistoryCustody.Outcome.Unmanaged -> _draft.value = before
-                        is ForeignStudioEditHistoryCustody.Outcome.Proved -> _draft.value = outcome.draft
+                        ForeignStudioEditHistoryCustody.Outcome.Unmanaged -> {
+                            _draft.value = before
+                            draftDirty = change.wasDirty
+                        }
+                        is ForeignStudioEditHistoryCustody.Outcome.Proved -> {
+                            if (!outcome.requestedWasPublished && change.wasDirty) {
+                                _draft.value = before
+                                draftDirty = true
+                            } else {
+                                _draft.value = outcome.draft
+                                draftDirty = false
+                            }
+                        }
                         is ForeignStudioEditHistoryCustody.Outcome.Unproved -> Unit
                     }
                 }
