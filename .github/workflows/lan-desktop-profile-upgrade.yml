@@ -1,0 +1,49 @@
+name: Exact delivered LAN Desktop profile upgrade
+on:
+  push:
+    branches: ['codex/lan-preview-signing-*']
+    paths: [.github/lan-desktop-profile-upgrade-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-program-swap:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Pin both original successful package artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python tools/lan-preview-signing/prove_desktop_profile_upgrade.py --provenance-only
+          if ($LASTEXITCODE -ne 0) { throw 'ORIGINAL_PACKAGE_PROVENANCE' }
+      - uses: actions/download-artifact@v4
+        with:
+          name: ccb-lan-next-independent-desktop
+          run-id: 43329188881
+          github-token: ${{ github.token }}
+          path: input-lan2
+      - uses: actions/download-artifact@v4
+        with:
+          name: ccb-lan-next-independent-desktop
+          run-id: 43349245943
+          github-token: ${{ github.token }}
+          path: input-lan3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - name: Native old populated launch Program swap new launch and cold reopen
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python tools/lan-preview-signing/prove_desktop_profile_upgrade.py
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_PROFILE_UPGRADE' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-desktop-profile-upgrade-evidence
+          path: |
+            profile-upgrade-evidence/*.json

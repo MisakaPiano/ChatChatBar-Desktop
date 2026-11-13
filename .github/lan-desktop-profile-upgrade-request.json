@@ -1,0 +1,32 @@
+{
+  "kind": "CCB_EXACT_DELIVERED_DESKTOP_PROFILE_UPGRADE",
+  "packages": [
+    {
+      "series": "lan2",
+      "version": "0.1.0-lan.2",
+      "sourceSha": "08db90c2cec1611b7f56c688fb5f219ea7f051c5",
+      "controlSha": "0718e65e8c150b1fc9096637b1b76ee849d97cd7",
+      "runId": 43329188881,
+      "artifactId": 13994708280,
+      "outerBytes": 205646129,
+      "outerSha256": "963aef6fb8d6a0f3fa83301d77ab35df462242efa3f9848467b28ef081b7c056",
+      "filename": "CCB-0.1.0-lan.2-independent-windows-x64.zip",
+      "innerBytes": 205535205,
+      "innerSha256": "d687e9c656304bd53dce6e58ee95689cf3ba398b7e1d7ef63fc03ca51d4d8332"
+    },
+    {
+      "series": "lan3",
+      "version": "0.1.0-lan.3",
+      "sourceSha": "10b14a8c89d2fc4b2ed2188546af4339b0e42b57",
+      "controlSha": "8946caa73a1c6346a1a4f81bb0135795241c7738",
+      "runId": 43349245943,
+      "artifactId": 14002799032,
+      "outerBytes": 205733879,
+      "outerSha256": "f0dfffbf754785f909e078ec418fabc48054d60056598a691e0b43247b719d2d",
+      "filename": "CCB-0.1.0-lan.3-independent-windows-x64.zip",
+      "innerBytes": 205622880,
+      "innerSha256": "6314a42a25c44d7604f5d211e912460f71bd14a5bd3d4c93011abd90dbba7611"
+    }
+  ],
+  "purpose": "Cloud-only four native original-package launches with same UserData path: old fresh, old synthetic populated, Program-only swap, new cold reopen. Actual root byte-lock, all prior entity hashes and absolute synthetic PNG references, original launcher and outside bootstrap inventory checked. No application rebuild, local JVM/app/device run, user data or automatic installation. No paired peer or identity seeded, no pixel/manual UI acceptance claim."
+}
