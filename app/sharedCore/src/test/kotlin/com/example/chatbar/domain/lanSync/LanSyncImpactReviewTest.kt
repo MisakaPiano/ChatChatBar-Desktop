@@ -51,4 +51,24 @@ class LanSyncImpactReviewTest {
         val addition = LanSyncImpactReview.changes(emptyList(), listOf(record(before))).single()
         assertFalse(addition.needsProtection); assertFalse(addition.needsConfirmation)
     }
+
+    @Test fun replacingADistinctReferenceWithASecondOccurrenceOfSurvivingEqualBytesStillRequiresConfirmation() {
+        val before = message()
+        val after = before.copy(images = listOf(before.images[1], before.images[1]))
+        val impact = LanSyncImpactReview.changes(listOf(record(before)), listOf(record(after))).single()
+        assertEquals(1, impact.removedAttachmentReferences)
+        assertTrue(impact.needsConfirmation)
+    }
+
+    @Test fun legacyInlineSlotMessageAndVersionReductionsAreReviewedWithinTheRetainedSlotRecord() {
+        val first = message(); val second = first.copy(id = "another-message")
+        val slot = SaveSlot(id = "slot", sessionId = session.id, name = "合成旧内联存档", messages = listOf(first, second), createdAt = 1)
+        fun row(value: SaveSlot) = LanSyncRecord("save_slots", value.id, lanSyncJson.encodeToJsonElement(SaveSlot.serializer(), value).jsonObject)
+        val reduced = first.copy(alternatives = listOf(first.content), alternativeVersionIds = listOf("v1"), currentAlternativeIndex = 0)
+        val impact = LanSyncImpactReview.changes(listOf(row(slot)), listOf(row(slot.copy(messages = listOf(reduced))))).single()
+        assertEquals(LanSyncRecordChange.REPLACE, impact.change)
+        assertEquals(setOf(second.id), impact.removedEmbeddedMessageIds)
+        assertTrue("${first.id}/v0" in impact.removedVersionIds)
+        assertTrue(impact.needsConfirmation)
+    }
 }

@@ -54,6 +54,23 @@ class LanSyncResourceStore(
         catch (failure: Throwable) { release(); throw failure }
     }
 
+    fun retain(source: Path, hash: String, length: Long): Path = open(hash, length).use { partial ->
+        if (partial.offset < length) {
+            lanSyncSafe(source)
+            FileChannel.open(source, StandardOpenOption.READ).use { channel ->
+                require(channel.size() == length) { "SYNC_RESOURCE_LENGTH" }
+                channel.position(partial.offset)
+                while (partial.offset < length) {
+                    val bytes = ByteArray(minOf(chunkBytes.toLong(), length - partial.offset).toInt())
+                    val block = ByteBuffer.wrap(bytes)
+                    while (block.hasRemaining()) require(channel.read(block) > 0) { "SYNC_SOURCE_TRUNCATED" }
+                    partial.append(partial.offset, bytes, lanSyncHash(bytes))
+                }
+            }
+        }
+        partial.finish()
+    }
+
     private fun validateIdentity(hash: String, length: Long) {
         require(hash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_RESOURCE_HASH" }
         budget.requireResource(length)
@@ -168,7 +185,7 @@ class LanSyncResourceStore(
             val missing = mutableListOf<Path>()
             var existing = path
             while (!Files.exists(existing, LinkOption.NOFOLLOW_LINKS)) {
-                missing += existing
+                missing.add(existing)
                 existing = requireNotNull(existing.parent) { "SYNC_UNSAFE_PATH" }
             }
             lanSyncSafe(existing, true)

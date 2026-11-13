@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.SaveSlot
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -19,8 +20,10 @@ data class LanSyncRecordImpact(
     val removedVersionIds: Set<String> = emptySet(),
     val removedAttachmentReferences: Int = 0,
     val fields: List<LanSyncFieldChange> = emptyList(),
+    val removedEmbeddedMessageIds: Set<String> = emptySet(),
 ) {
-    val needsConfirmation: Boolean get() = change == LanSyncRecordChange.REMOVE || removedVersionIds.isNotEmpty() || removedAttachmentReferences > 0
+    val needsConfirmation: Boolean get() = change == LanSyncRecordChange.REMOVE || removedVersionIds.isNotEmpty() ||
+        removedAttachmentReferences > 0 || removedEmbeddedMessageIds.isNotEmpty()
     val needsProtection: Boolean get() = change != LanSyncRecordChange.ADD
 }
 
@@ -37,6 +40,8 @@ data class LanSyncUnitReview(
     val computerImpact: List<LanSyncRecordImpact>,
     val phoneImpact: List<LanSyncRecordImpact>,
     val automaticComputer: Boolean?,
+    val computerArchivedMessages: Int = 0,
+    val phoneArchivedMessages: Int = 0,
 ) {
     // The old baseline contains hashes, never an invented ancestor's plaintext.
     val ancestorBodyAvailable: Boolean get() = false
@@ -57,7 +62,8 @@ object LanSyncImpactReview {
                 .map { LanSyncFieldChange(it, oldBody[it], newBody[it]) }
             val oldResources = resourceCounts(a); val newResources = resourceCounts(b)
             val removedReferences = oldResources.entries.sumOf { (identity, count) -> maxOf(0, count - newResources.getOrDefault(identity, 0)) }
-            LanSyncRecordImpact(key, change, (a ?: b)?.type == "chat_messages", versions(a) - versions(b), removedReferences, fields)
+            LanSyncRecordImpact(key, change, (a ?: b)?.type == "chat_messages", versions(a) - versions(b), removedReferences, fields,
+                embeddedMessages(a).map { it.id }.toSet() - embeddedMessages(b).map { it.id }.toSet())
         }
     }
 
@@ -67,7 +73,8 @@ object LanSyncImpactReview {
             val result = if (computer) left else right
             LanSyncUnitReview(unit, comparison.computerHashes[unit], comparison.phoneHashes[unit], baseline.hashes[unit],
                 left.size, right.size, left.count { it.type == "chat_messages" }, right.count { it.type == "chat_messages" },
-                changes(left, result), changes(right, result), computer)
+                changes(left, result), changes(right, result), computer,
+                left.sumOf { embeddedMessages(it).size }, right.sumOf { embeddedMessages(it).size })
         }
 
     fun binding(comparison: LanSyncComparison): String = lanSyncHash(buildJsonObject {
@@ -76,9 +83,19 @@ object LanSyncImpactReview {
     })
 
     private fun versions(record: LanSyncRecord?): Set<String> {
+        if (record?.type == "save_slots") return embeddedMessages(record).flatMap { message ->
+            val normalized = MessageAlternativeVersionPolicy.normalize(message)
+            (normalized.alternativeVersionIds + listOfNotNull(normalized.currentAlternativeVersionId)).map { "${message.id}/$it" }
+        }.toSet()
         if (record?.type != "chat_messages") return emptySet()
         val message = MessageAlternativeVersionPolicy.normalize(lanSyncJson.decodeFromJsonElement(ChatMessage.serializer(), record.body))
         return message.alternativeVersionIds.toSet() + listOfNotNull(message.currentAlternativeVersionId)
+    }
+
+    private fun embeddedMessages(record: LanSyncRecord?): List<ChatMessage> {
+        if (record?.type != "save_slots") return emptyList()
+        val slot = lanSyncJson.decodeFromJsonElement(SaveSlot.serializer(), record.body)
+        return if (slot.packageRef == null) slot.messages else emptyList()
     }
 
     private fun resourceCounts(record: LanSyncRecord?): Map<String, Int> {
@@ -88,8 +105,13 @@ object LanSyncImpactReview {
             if (value.startsWith("ccb-lan-v1/")) {
                 val parts = value.split('/')
                 require(parts.size == 5) { "SYNC_REVIEW_RESOURCE" }
-                val key = "${parts[1]}/${parts[3]}/${parts[4]}"
+                // Equal bytes can still be independently retained references. One repeated
+                // surviving alias must not compensate for the removal of a distinct alias.
+                val key = value
                 counts[key] = Math.addExact(counts.getOrDefault(key, 0), 1)
+            } else if (value.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
+                value.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) {
+                counts[value] = Math.addExact(counts.getOrDefault(value, 0), 1)
             }
             value
         }
