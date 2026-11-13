@@ -47,6 +47,10 @@ data class LanSyncDeferredDeletion(val previousTransaction: String, val recordKe
 
 @Serializable private data class LanSyncDeviceProjection(val peerId: String, val ownerId: String, val projection: LanSyncProjection)
 
+@Serializable
+data class LanSyncReviewQueue(val peerId: String, val ownerId: String, val transaction: String,
+    val held: List<LanSyncHeldReview>)
+
 /** The platform supplies an app-private, device-local root, excluded from portable user-data exports. */
 class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> ByteArray,
     private val unprotect: (ByteArray) -> ByteArray) {
@@ -76,12 +80,32 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
     }
     @Synchronized fun complete(peer: String, owner: String, plan: LanSyncPlan) {
         val previous = baseline(peer, owner)
-        val baseline = LanSyncBaseline(peer, plan.transaction, plan.snapshot.hashes(),
+        val (hashes, components) = LanSyncPartialReview.baseline(plan, previous)
+        write("review-${key(peer)}.json", LanSyncReviewQueue(peer, owner, plan.transaction, plan.heldReviews))
+        val baseline = LanSyncBaseline(peer, plan.transaction, hashes,
             (previous.receipts + plan.transaction).takeLast(64), owner, plan.snapshot.coveredTypes, projection(peer, owner).digest(),
-            LanSyncMoments.components(plan.snapshot))
+            components)
         write("baseline-${key(peer)}.json", baseline)
         val previousParents = read<Map<String, String>>("receipt-${key(peer)}.json").orEmpty()
-        write("receipt-${key(peer)}.json", previousParents + plan.parents)
+        val held = plan.heldReviews.flatMap { it.recordKeys }.toSet()
+        write("receipt-${key(peer)}.json", previousParents + plan.parents.filterKeys { "chat_sessions/$it" !in held })
+        val stillRelevant = plan.heldReviews.associate { it.unit to it.binding }
+        write("review-confirmed-${key(peer)}.json", reviewConfirmations(peer, owner).filter { stillRelevant[it.key] == it.value })
+    }
+    @Synchronized fun reviewQueue(peer: String, owner: String): LanSyncReviewQueue? = read<LanSyncReviewQueue>("review-${key(peer)}.json")?.also {
+        require(it.peerId == peer && it.ownerId == owner && it.transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_REVIEW_DEVICE" }
+    }
+    @Synchronized fun reviewConfirmations(peer: String, owner: String): Map<String, String> {
+        require(owner == identity().fingerprint) { "SYNC_REVIEW_DEVICE" }
+        return read<Map<String, String>>("review-confirmed-${key(peer)}.json").orEmpty().also { values ->
+            require(values.size <= 100_000 && values.all { (unit, binding) -> unit.length in 1..600 && binding.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_REVIEW_CONFIRMATION" }
+        }
+    }
+    @Synchronized fun confirmReview(peer: String, owner: String, unit: String, binding: String) {
+        val queued = requireNotNull(reviewQueue(peer, owner)) { "SYNC_REVIEW_MISSING" }
+        require(queued.transaction in baseline(peer, owner).receipts) { "SYNC_REVIEW_RECEIPT_PENDING" }
+        require(queued.held.any { it.unit == unit && it.binding == binding && it.dependencyOf.isEmpty() }) { "SYNC_REVIEW_BINDING" }
+        write("review-confirmed-${key(peer)}.json", reviewConfirmations(peer, owner) + (unit to binding))
     }
     @Synchronized fun pending(peer: String): LanSyncPending? = read<LanSyncPending>("pending-${key(peer)}.json")?.also { value ->
         require(value.peerId == peer) { "SYNC_PENDING_DEVICE" }

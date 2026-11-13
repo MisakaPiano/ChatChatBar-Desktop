@@ -129,6 +129,11 @@ class LanSyncLargeRuntimeProofTest {
             sent.set(0); received.set(0); host.requestSync(); completed(a, b, previous)
             assertEquals(length, sent.get()); assertEquals(length, received.get())
             val thirdBytes = sent.get()
+            val queued = requireNotNull(a.store.reviewQueue(b.id, a.id)).held.single { it.dependencyOf.isEmpty() }
+            assertEquals("character_cards/card", queued.unit)
+            previous = a.store.baseline(b.id, a.id).revision
+            sent.set(0); received.set(0); host.confirmReview(queued.unit, queued.binding); completed(a, b, previous)
+            assertEquals(0L, sent.get()); assertEquals(0L, received.get())
             host.closeAndDrain(); phone.closeAndDrain()
             for (end in listOf(a, b)) {
                 val reopened = LanSyncWorkspace(end.root, end.stateRoot.resolve("workspace"), { Path.of(it) })
@@ -147,6 +152,7 @@ class LanSyncLargeRuntimeProofTest {
             println("CCB_LARGE_PROOF " + buildJsonObject {
                 put("protocol", LAN_SYNC_PROTOCOL); put("fullyWrittenResourceBytes", total); put("v8Bytes", slot.packageRef!!.byteLength)
                 put("largestOrdinaryResourceBytes", length); put("firstWireBytes", firstBytes); put("secondWireBytes", 0L); put("thirdWireBytes", thirdBytes)
+                put("explicitConfirmationWireBytes", 0L)
                 put("reopenedEndpoints", 2); put("wholeResourceHashesVerified", true); put("elapsedMillis", (System.nanoTime() - began) / 1_000_000)
                 put("sampledPeakHeapBytes", largestHeap); put("minimumSampledFreeDiskBytes", minimumFree)
             })

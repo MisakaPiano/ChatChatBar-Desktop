@@ -59,6 +59,7 @@ class LanSyncRuntimeTest {
         val storage = JsonFileStorage(root, gate)
         val studio by lazy { NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true) }
         val exclusiveCalls = java.util.concurrent.atomic.AtomicInteger()
+        var active: LanSyncRuntime? = null
         fun runtime(studioCurrent: Boolean = false) = LanSyncRuntime(store, workspace, object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) { exclusiveCalls.incrementAndGet(); gate.exclusive {
                 if (studioCurrent) studio.prepareForLanSync()
@@ -68,7 +69,7 @@ class LanSyncRuntimeTest {
                 storage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
                 if (studioCurrent) studio.reloadAfterLanSync()
             }
-        }, name, observe = observe, network = network, transferProgress = progress)
+        }, name, observe = observe, network = network, transferProgress = progress).also { active = it }
         fun write(id: String, name: String, image: String? = null) {
             writeCard(CharacterCard(id, name, avatar = image, createdAt = 1, updatedAt = 1))
         }
@@ -104,9 +105,85 @@ class LanSyncRuntimeTest {
         until("mutual pairing") { a.store.peers().size == 1 && b.store.peers().size == 1 }
         phone.startPhone()
     }
-    private suspend fun completed(a: End, b: End, previous: String? = null) = until("bilateral receipts") {
+    private suspend fun completedReceiptOnly(a: End, b: End, previous: String? = null) = until("bilateral receipts") {
         val left = a.store.baseline(b.id, a.id).revision; val right = b.store.baseline(a.id, b.id).revision
         left != null && left == right && left != previous && a.store.pending(b.id) == null && b.store.pending(a.id) == null
+    }
+    // Existing regression scenarios explicitly approve reductions so their later assertions
+    // can keep testing the original feature. The default-safety case below never uses this driver.
+    private suspend fun completedAfterExplicitReview(a: End, b: End, previous: String? = null) {
+        completedReceiptOnly(a, b, previous)
+        repeat(4) {
+            val held = a.store.reviewQueue(b.id, a.id)?.held.orEmpty().filter { it.dependencyOf.isEmpty() }
+            if (held.isEmpty()) return
+            val revision = a.store.baseline(b.id, a.id).revision
+            held.forEach { a.store.confirmReview(b.id, a.id, it.unit, it.binding) }
+            requireNotNull(a.active).requestSync(); completedReceiptOnly(a, b, revision)
+        }
+        fail("Explicitly approved reductions did not reach a completed review")
+    }
+    @Test fun defaultDeletionStaysPendingAcrossReopenWithoutResurrectionWhileIndependentChangesComplete() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("deleted", "待确认的原件")
+        var host = a.runtime(); var phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completedReceiptOnly(a, b)
+            val shared = a.store.baseline(b.id, a.id)
+            Files.delete(b.root.resolve("entities/character_cards/deleted.json"))
+            a.write("new-a", "电脑独立新增"); b.write("new-b", "手机独立新增")
+            host.requestSync(); completedReceiptOnly(a, b, shared.revision)
+            val partial = a.store.baseline(b.id, a.id)
+            assertEquals(shared.hashes.getValue("character_cards/deleted"), partial.hashes["character_cards/deleted"])
+            assertEquals(setOf("待确认的原件", "电脑独立新增", "手机独立新增"), a.names())
+            assertEquals(setOf("电脑独立新增", "手机独立新增"), b.names())
+            val queued = requireNotNull(a.store.reviewQueue(b.id, a.id)).held.single()
+            assertEquals(queued, requireNotNull(b.store.reviewQueue(a.id, b.id)).held.single())
+            assertTrue(queued.proposed.isEmpty()); assertNull(a.store.pending(b.id)); assertNull(b.store.pending(a.id))
+            host.closeAndDrain(); phone.closeAndDrain(); host = a.runtime(); phone = b.runtime()
+            host.startHost(); phone.startPhone()
+            until("durable held review is visible after reopening both runtimes") {
+                host.state.value.pendingReviews.size == 1 && phone.state.value.pendingReviews.size == 1
+            }
+            phone.requestSync(); completedReceiptOnly(a, b, partial.revision)
+            assertTrue("待确认的原件" in a.names()); assertFalse("待确认的原件" in b.names())
+            val still = requireNotNull(b.store.reviewQueue(a.id, b.id)).held.single()
+            assertEquals(queued.binding, still.binding)
+            val revision = a.store.baseline(b.id, a.id).revision
+            phone.confirmReview(still.unit, still.binding); completedReceiptOnly(a, b, revision)
+            assertEquals(setOf("电脑独立新增", "手机独立新增"), a.names()); assertEquals(a.names(), b.names())
+            assertTrue(requireNotNull(a.store.reviewQueue(b.id, a.id)).held.isEmpty())
+            assertFalse(a.store.baseline(b.id, a.id).hashes.containsKey("character_cards/deleted"))
+            assertTrue(a.workspace.recovery.list().isNotEmpty())
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
+    @Test fun pruningAMessageVersionRequiresFreshExplicitApprovalAndRetainsItsOriginalVersionInRecovery() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("card", "角色"); a.writeConversation("保留正文", "computer-local")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completedReceiptOnly(a, b)
+            val previous = a.store.baseline(b.id, a.id).revision
+            val path = b.root.resolve("entities/chat_messages/session_message.json")
+            val original = lanSyncJson.decodeFromString(ChatMessage.serializer(), Files.readString(path))
+            val reduced = original.copy(alternatives = listOf(original.alternatives.last()),
+                alternativeVersionIds = listOf("version-1"), currentAlternativeIndex = 0)
+            Files.writeString(path, lanSyncJson.encodeToString(ChatMessage.serializer(), reduced))
+            b.write("independent", "独立新增")
+            phone.requestSync(); completedReceiptOnly(a, b, previous)
+            fun stored(end: End) = lanSyncJson.decodeFromString(ChatMessage.serializer(),
+                Files.readString(end.root.resolve("entities/chat_messages/session_message.json")))
+            assertEquals(2, stored(a).alternativeVersionIds.size); assertEquals(1, stored(b).alternativeVersionIds.size)
+            assertTrue("独立新增" in a.names())
+            val queued = requireNotNull(a.store.reviewQueue(b.id, a.id)).held.single()
+            assertEquals("conversation/session", queued.unit)
+            val revision = a.store.baseline(b.id, a.id).revision
+            host.confirmReview(queued.unit, queued.binding); completedReceiptOnly(a, b, revision)
+            assertEquals(listOf("version-1"), stored(a).alternativeVersionIds)
+            val recovered = a.workspace.recovery.list().map { a.workspace.recovery.snapshot(it) }
+                .flatMap { it.records }.filter { it.type == "chat_messages" }
+            assertTrue(recovered.any { row -> lanSyncJson.decodeFromJsonElement(ChatMessage.serializer(), row.body)
+                .alternativeVersionIds == listOf("version-0", "version-1") })
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun neitherEndpointPublishesUntilBothRecoverySealsExistAndEitherProtectionFailureCanRetry() = runBlocking {
         for (failingSide in listOf("computer", "phone")) {
@@ -132,7 +209,7 @@ class LanSyncRuntimeTest {
             a.write("a", "原甲"); a.write("b", "原乙")
             val host = a.runtime(); val phone = b.runtime()
             try {
-                pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+                pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
                 val common = a.store.baseline(b.id, a.id).revision
                 a.write("a", "电脑修改甲"); b.write("b", "手机修改乙")
                 protectedComputer.set(false); protectedPhone.set(false); requireBoth.set(true); refuse.set(true)
@@ -146,7 +223,7 @@ class LanSyncRuntimeTest {
                 assertEquals(common, b.store.baseline(a.id, b.id).revision)
                 assertFalse(a.workspace.applied(requireNotNull(a.store.pending(b.id)).plan.transaction))
                 assertFalse(b.workspace.applied(requireNotNull(b.store.pending(a.id)).plan.transaction))
-                refuse.set(false); host.requestSync(); phone.requestSync(); completed(a, b, common)
+                refuse.set(false); host.requestSync(); phone.requestSync(); completedAfterExplicitReview(a, b, common)
                 assertEquals(setOf("电脑修改甲", "手机修改乙"), a.names()); assertEquals(a.names(), b.names())
                 assertTrue(protectedComputer.get() && protectedPhone.get())
                 assertTrue(a.workspace.recovery.list().isNotEmpty()); assertTrue(b.workspace.recovery.list().isNotEmpty())
@@ -163,13 +240,13 @@ class LanSyncRuntimeTest {
         a.write("a", "附件卡", file.toString())
         val host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             assertEquals(content.size.toLong(), sent.get())
             var previous = a.store.baseline(b.id, a.id).revision
-            sent.set(0); phone.requestSync(); completed(a, b, previous); assertEquals(0L, sent.get())
+            sent.set(0); phone.requestSync(); completedAfterExplicitReview(a, b, previous); assertEquals(0L, sent.get())
             previous = a.store.baseline(b.id, a.id).revision
             content[0] = 9; Files.write(file, content); sent.set(0)
-            host.requestSync(); completed(a, b, previous); assertEquals(content.size.toLong(), sent.get())
+            host.requestSync(); completedAfterExplicitReview(a, b, previous); assertEquals(content.size.toLong(), sent.get())
             b.workspace.capture(b.id).use { captured ->
                 assertEquals(lanSyncHash(content), captured.snapshot.resources.keys.single())
                 assertContentEquals(content, Files.readAllBytes(captured.blobs.values.single()))
@@ -190,7 +267,7 @@ class LanSyncRuntimeTest {
             assertEquals("手机原文", detail.fieldPage("character_cards/card", "name", false, 0).first)
             assertEquals(0, detail.computerMessages); assertEquals(0L, detail.phoneArchivedMessages)
             phone.resolveConflicts(mapOf(mobile.conflicts.single().unit to LanSyncChoice.KEEP_PHONE), mobile.reviewBinding)
-            completed(a, b); assertEquals(setOf("手机原文"), a.names()); assertEquals(a.names(), b.names())
+            completedAfterExplicitReview(a, b); assertEquals(setOf("手机原文"), a.names()); assertEquals(a.names(), b.names())
             until("review text is released after the completion tail") {
                 host.state.value.reviewBinding == null && phone.state.value.reviewBinding == null
             }
@@ -204,7 +281,7 @@ class LanSyncRuntimeTest {
             val fresh = phone.state.value
             phone.resolveConflicts(mapOf(fresh.conflicts.single().unit to LanSyncChoice.KEEP_COMPUTER), mobile.reviewBinding)
             phone.resolveConflicts(mapOf(fresh.conflicts.single().unit to LanSyncChoice.KEEP_PHONE), fresh.reviewBinding)
-            completed(a, b, previous)
+            completedAfterExplicitReview(a, b, previous)
             assertEquals(setOf("手机第二轮"), a.names()); assertEquals(a.names(), b.names())
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
@@ -213,20 +290,20 @@ class LanSyncRuntimeTest {
         a.write("a", "电脑独有"); b.write("b", "手机独有")
         var host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             assertEquals(setOf("电脑独有", "手机独有"), a.names()); assertEquals(a.names(), b.names())
             var previous = a.store.baseline(b.id, a.id).revision
-            host.requestSync(); completed(a, b, previous)
+            host.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(2, a.names().size)
             previous = a.store.baseline(b.id, a.id).revision
             Files.delete(b.root.resolve("entities/character_cards/a.json"))
-            host.requestSync(); completed(a, b, previous)
+            host.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(setOf("手机独有"), a.names())
             host.closeAndDrain(); host = a.runtime(); host.startHost()
             until("new random host port") { host.state.value.addresses.isNotEmpty() }
             b.write("c", "重开电脑后新增")
             previous = a.store.baseline(b.id, a.id).revision
-            phone.requestSync(); completed(a, b, previous)
+            phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(setOf("手机独有", "重开电脑后新增"), a.names())
             val roots = listOf(a.stateRoot, b.stateRoot, a.stateRoot.resolve("workspace"), b.stateRoot.resolve("workspace"))
             fun scratchFiles(root: Path) = Files.newDirectoryStream(root).use { it.filter { path ->
@@ -271,7 +348,7 @@ class LanSyncRuntimeTest {
         a.write("card", "原卡")
         val host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             val revision = a.store.baseline(b.id, a.id).revision
             val wrong = a.root.resolve("entities/character_cards.json")
             Files.writeString(wrong, "synthetic wrong storage shape must remain")
@@ -286,7 +363,7 @@ class LanSyncRuntimeTest {
             assertEquals("synthetic wrong storage shape must remain", Files.readString(wrong))
             Files.delete(wrong); a.write("later", "修正后新增")
             // Only the failed owner needs an explicit retry; the peer has retained its poll.
-            host.requestSync(); completed(a, b, revision)
+            host.requestSync(); completedAfterExplicitReview(a, b, revision)
             assertEquals(setOf("原卡", "修正后新增"), b.names())
             assertNull(host.state.value.failureCode); assertNull(phone.state.value.failureCode)
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
@@ -300,7 +377,7 @@ class LanSyncRuntimeTest {
             pair(host, phone, a, b); phone.requestSync()
             until("injected durable-baseline window") { crashed }
             b.write("b", "回执丢失后新增")
-            completed(a, b)
+            completedAfterExplicitReview(a, b)
             until("new edit really arrived after pending cleanup") { "回执丢失后新增" in a.names() }
             assertEquals(a.names(), b.names())
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
@@ -321,7 +398,7 @@ class LanSyncRuntimeTest {
             pair(host, phone, a, b); phone.requestSync()
             until("phone applied") { interrupted }
             b.write("b", "手机之后新增")
-            completed(a, b)
+            completedAfterExplicitReview(a, b)
             assertEquals(setOf("电脑之后修改", "手机之后新增"), a.names())
             assertEquals(a.names(), b.names())
             val revisions = Files.newDirectoryStream(a.stateRoot, "superseded-*").use { it.count() }
@@ -346,7 +423,7 @@ class LanSyncRuntimeTest {
         val excludedBytes = "synthetic excluded phone-card phone-person".toByteArray(); Files.write(excluded, excludedBytes)
         var host = a.runtime(); var phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             val mapping = b.store.projection(a.id, b.id); assertEquals(2, mapping.bindings.size)
             assertEquals(setOf("同源卡"), a.names()); assertEquals(a.names(), b.names())
             assertFalse(Files.exists(b.root.resolve("entities/character_cards/pc-card.json")))
@@ -354,7 +431,7 @@ class LanSyncRuntimeTest {
             host.closeAndDrain(); phone.closeAndDrain(); host = a.runtime(); phone = b.runtime()
             host.startHost(); phone.startPhone()
             b.writeCard(b.readCard("phone-card").copy(name = "手机重开后编辑"))
-            phone.requestSync(); completed(a, b, previous)
+            phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals("手机重开后编辑", a.readCard("pc-card").name)
             previous = a.store.baseline(b.id, a.id).revision
             a.writeCard(a.readCard("pc-card").copy(name = "电脑分歧")); b.writeCard(b.readCard("phone-card").copy(name = "手机分歧"))
@@ -363,16 +440,16 @@ class LanSyncRuntimeTest {
             assertEquals(1, host.state.value.conflicts.size)
             assertTrue(phone.state.value.busy)
             host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_PHONE))
-            completed(a, b, previous); assertEquals("手机分歧", a.readCard("pc-card").name)
-            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            completedAfterExplicitReview(a, b, previous); assertEquals("手机分歧", a.readCard("pc-card").name)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(mapping, b.store.projection(a.id, b.id)); assertEquals(1, a.names().size); assertEquals(1, b.names().size)
             previous = a.store.baseline(b.id, a.id).revision
             a.writeCard(a.readCard("pc-card").copy(name = "电脑两份")); b.writeCard(b.readCard("phone-card").copy(name = "手机两份"))
             host.requestSync(); until("projected keep both conflict") { host.state.value.conflicts.size == 1 }
             host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_BOTH))
-            completed(a, b, previous)
+            completedAfterExplicitReview(a, b, previous)
             assertEquals(setOf("电脑两份", "手机两份"), a.names()); assertEquals(a.names(), b.names())
-            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(2, a.names().size); assertEquals(2, b.names().size)
             assertEquals("phone-person", b.readCard("phone-card").characters.single().id)
             assertContentEquals(excludedBytes, Files.readAllBytes(excluded))
@@ -387,7 +464,7 @@ class LanSyncRuntimeTest {
         b.writeCard(a.readCard("pc").copy(id = "phone", createdAt = 2, updatedAt = 2))
         val host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             assertTrue(interrupted)
             assertEquals(listOf(LanSyncIdBinding("character_cards", "phone", "pc")), b.store.projection(a.id, b.id).bindings)
             assertEquals(setOf("同源卡"), a.names()); assertEquals(a.names(), b.names())
@@ -422,7 +499,7 @@ class LanSyncRuntimeTest {
             val phone = b.runtime()
             try {
                 // Rejected unauthenticated capabilities must not pause subsequent trusted work.
-                pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+                pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
                 assertEquals(setOf("原资料"), b.names())
             } finally { phone.closeAndDrain() }
         } finally { host.closeAndDrain() }
@@ -451,14 +528,14 @@ class LanSyncRuntimeTest {
         a.writeFormat("pc-format"); b.writeFormat("phone-format")
         val host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b, previous.transaction)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b, previous.transaction)
             until("new type deletion only after shared expanded receipt") {
                 common.get() && !Files.exists(a.root.resolve("entities/format_cards/pc-format.json")) &&
                     a.store.pending(b.id) == null && b.store.pending(a.id) == null &&
                     a.store.baseline(b.id, a.id).revision == b.store.baseline(a.id, b.id).revision
             }
             val expandedRevision = a.store.baseline(b.id, a.id).revision
-            host.requestSync(); completed(a, b, expandedRevision)
+            host.requestSync(); completedAfterExplicitReview(a, b, expandedRevision)
             assertTrue(interrupted.get())
             for (end in listOf(a, b)) {
                 assertFalse(Files.exists(end.root.resolve("entities/character_cards/deleted.json")))
@@ -520,7 +597,7 @@ class LanSyncRuntimeTest {
                 assertTrue(ancestor.transaction in end.store.baseline(if (end === a) b.id else a.id, end.id).receipts)
             }
             val revision = a.store.baseline(b.id, a.id).revision
-            host.requestSync(); completed(a, b, revision)
+            host.requestSync(); completedAfterExplicitReview(a, b, revision)
             assertEquals(a.names(), b.names())
             assertEquals(1, Files.newDirectoryStream(a.stateRoot, "superseded-*").use { it.count() })
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
@@ -539,7 +616,7 @@ class LanSyncRuntimeTest {
                 if (bothApplied) a.write("card", "双方应用后修改")
                 val host = a.runtime(); val phone = b.runtime()
                 try {
-                    pair(host, phone, a, b); phone.requestSync(); completed(a, b, old.transaction)
+                    pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b, old.transaction)
                     assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
                     assertEquals(a.names(), b.names())
                     assertEquals(setOf(if (bothApplied) "双方应用后修改" else "旧范围原卡"), a.names())
@@ -575,7 +652,7 @@ class LanSyncRuntimeTest {
                     val conflict = host.state.value.conflicts.single()
                     assertEquals(LanSyncStudioCurrent.UNIT, conflict.unit); assertFalse(conflict.canKeepBoth)
                     assertEquals(4, conflict.computerRecords); assertEquals(4, conflict.phoneRecords)
-                    host.resolveConflicts(mapOf(conflict.unit to LanSyncChoice.KEEP_PHONE)); completed(a, b, old.transaction)
+                    host.resolveConflicts(mapOf(conflict.unit to LanSyncChoice.KEEP_PHONE)); completedAfterExplicitReview(a, b, old.transaction)
                     for (end in listOf(a, b)) {
                         assertEquals("phone原文", end.studio.draft.value?.basePrompt)
                         assertEquals("${end.name}-local-model", end.studio.draft.value?.aiDesignModelId)
@@ -584,7 +661,7 @@ class LanSyncRuntimeTest {
                     }
                     val revision = a.store.baseline(b.id, a.id).revision
                     b.studio.stageDraft { it.copy(extraPrompt = "手机在已加载owner内继续编辑") }
-                    phone.requestSync(); completed(a, b, revision)
+                    phone.requestSync(); completedAfterExplicitReview(a, b, revision)
                     assertEquals("手机在已加载owner内继续编辑", a.studio.draft.value?.extraPrompt)
                     for (end in listOf(a, b)) {
                         val history = requireNotNull(end.storage.loadSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal.serializer()))
@@ -620,7 +697,7 @@ class LanSyncRuntimeTest {
         right.saveTask(running.copy(id = "phone-pending", status = MomentTaskStatus.PENDING, postId = null, scheduledAt = Long.MAX_VALUE))
         val host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             assertFalse(left.getAllTasks().single { it.id == "pc-pending" }.requiresLocalScheduleApproval)
             assertTrue(right.getAllTasks().single { it.id == "pc-pending" }.requiresLocalScheduleApproval)
             assertFalse(right.getAllTasks().single { it.id == "phone-pending" }.requiresLocalScheduleApproval)
@@ -634,10 +711,10 @@ class LanSyncRuntimeTest {
             imported.desktopImageVersions.forEach { assertContentEquals(bytes, Files.readAllBytes(Path.of(it.imagePath))) }
             var previous = a.store.baseline(b.id, a.id).revision
             val edited = right.getAllTasks().single { it.id == "pc-pending" }.copy(scheduledAt = Long.MAX_VALUE - 1)
-            right.saveTask(edited); phone.requestSync(); completed(a, b, previous)
+            right.saveTask(edited); phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertTrue(left.getAllTasks().single { it.id == edited.id }.requiresLocalScheduleApproval)
             right.saveTask(edited.copy(requiresLocalScheduleApproval = false))
-            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertTrue(left.getAllTasks().single { it.id == edited.id }.requiresLocalScheduleApproval)
             assertFalse(right.getAllTasks().single { it.id == edited.id }.requiresLocalScheduleApproval)
             left.savePost(requireNotNull(left.getPost(post.id)).copy(text = "电脑分歧"))
@@ -645,17 +722,17 @@ class LanSyncRuntimeTest {
             previous = a.store.baseline(b.id, a.id).revision; host.requestSync()
             until("one linked Moment conflict separate from chat") { host.state.value.conflicts.size == 1 }
             assertEquals("moment-task/pc-completed", host.state.value.conflicts.single().unit)
-            host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_BOTH)); completed(a, b, previous)
+            host.resolveConflicts(mapOf(host.state.value.conflicts.single().unit to LanSyncChoice.KEEP_BOTH)); completedAfterExplicitReview(a, b, previous)
             for (repo in listOf(left, right)) {
                 val tasks = repo.getAllTasks().filter { it.status == MomentTaskStatus.COMPLETED }
                 assertEquals(2, tasks.size)
                 assertEquals(setOf("电脑分歧", "手机分歧"), tasks.map { requireNotNull(repo.getPost(requireNotNull(it.postId))).text }.toSet())
                 tasks.forEach { assertEquals(2, requireNotNull(repo.getPost(requireNotNull(it.postId))).desktopImageVersions.size) }
             }
-            previous = a.store.baseline(b.id, a.id).revision; host.requestSync(); completed(a, b, previous)
+            previous = a.store.baseline(b.id, a.id).revision; host.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(5, right.getAllTasks().size)
             right.deletePost(placeholder.id)
-            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertNull(left.getPost(placeholder.id))
             assertEquals(MomentTaskStatus.RUNNING, left.getAllTasks().single { it.id == running.id }.status)
             assertFalse(Files.exists(a.root.resolve("entities/chat_sessions")))
@@ -670,7 +747,7 @@ class LanSyncRuntimeTest {
             for (repo in listOf(left, right)) { repo.savePost(post); repo.saveTask(task) }
             val host = a.runtime(); val phone = b.runtime()
             try {
-                pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+                pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
                 val common = a.store.baseline(b.id, a.id)
                 assertEquals(mapOf("moment-task/t" to setOf("moment_tasks/t", "moment_posts/p")), common.componentRecords)
                 assertEquals(common.componentRecords, LanSyncStateStore(a.stateRoot, { it }, { it }).baseline(b.id, a.id).componentRecords)
@@ -679,7 +756,7 @@ class LanSyncRuntimeTest {
                 val conflict = host.state.value.conflicts.single()
                 assertEquals("moment-task/t", conflict.unit)
                 assertEquals(3, conflict.computerRecords); assertEquals(2, conflict.phoneRecords)
-                host.resolveConflicts(mapOf(conflict.unit to choice)); completed(a, b, common.revision)
+                host.resolveConflicts(mapOf(conflict.unit to choice)); completedAfterExplicitReview(a, b, common.revision)
                 val expectedTasks = if (choice == LanSyncChoice.KEEP_PHONE) 1 else 3
                 val expectedPosts = if (choice == LanSyncChoice.KEEP_PHONE) 1 else 2
                 for (end in listOf(a, b)) {
@@ -695,7 +772,7 @@ class LanSyncRuntimeTest {
                 }
                 val before = a.workspace.capture(a.id).use { it.snapshot.records.map { it.key }.toSet() }
                 val revision = a.store.baseline(b.id, a.id).revision
-                phone.requestSync(); completed(a, b, revision)
+                phone.requestSync(); completedAfterExplicitReview(a, b, revision)
                 assertEquals(before, a.workspace.capture(a.id).use { it.snapshot.records.map { it.key }.toSet() })
             } finally { host.closeAndDrain(); phone.closeAndDrain() }
         }
@@ -715,7 +792,7 @@ class LanSyncRuntimeTest {
         left.saveHistory(original)
         val host = a.runtime(); val phone = b.runtime()
         try {
-            pair(host, phone, a, b); phone.requestSync(); completed(a, b)
+            pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b)
             val imported = right.history.first().single() // actual post-commit cache publication
             assertEquals(recipe.basePrompt, imported.recipe.basePrompt)
             assertEquals(imported.images.single().path, imported.recipe.imageGuidance.baseImage?.path)
@@ -723,7 +800,7 @@ class LanSyncRuntimeTest {
             assertEquals(encoding, NovelAiInlinePayloadStore(b.root.toFile()).resolve(requireNotNull(imported.recipe.imageGuidance.vibes.single().encodedVibe)))
             var previous = a.store.baseline(b.id, a.id).revision
             right.saveHistory(imported.copy(recipe = imported.recipe.copy(basePrompt = "手机反向修改")))
-            phone.requestSync(); completed(a, b, previous)
+            phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals("手机反向修改", left.history.first().single().recipe.basePrompt)
             left.saveHistory(left.history.first().single().let { it.copy(recipe = it.recipe.copy(basePrompt = "电脑保留配方")) })
             right.saveHistory(right.history.first().single().let { it.copy(recipe = it.recipe.copy(basePrompt = "手机保留配方")) })
@@ -731,7 +808,7 @@ class LanSyncRuntimeTest {
             until("one complete Studio history batch conflict") { host.state.value.conflicts.size == 1 }
             val conflict = host.state.value.conflicts.single()
             assertEquals("novelai_generation_history/history", conflict.unit)
-            host.resolveConflicts(mapOf(conflict.unit to LanSyncChoice.KEEP_BOTH)); completed(a, b, previous)
+            host.resolveConflicts(mapOf(conflict.unit to LanSyncChoice.KEEP_BOTH)); completedAfterExplicitReview(a, b, previous)
             for ((end, repo) in listOf(a to left, b to right)) {
                 val entries = repo.history.first()
                 assertEquals(2, entries.size)
@@ -745,11 +822,11 @@ class LanSyncRuntimeTest {
                 }
             }
             val ids = right.history.first().map { it.id }.toSet()
-            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(ids, right.history.first().map { it.id }.toSet())
             val fork = ids.single { it != original.id }
             right.deleteHistory(fork)
-            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completed(a, b, previous)
+            previous = a.store.baseline(b.id, a.id).revision; phone.requestSync(); completedAfterExplicitReview(a, b, previous)
             assertEquals(listOf(original.id), left.history.first().map { it.id })
             assertContentEquals(bytes, Files.readAllBytes(Path.of(left.history.first().single().images.single().path)))
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
@@ -778,7 +855,7 @@ class LanSyncRuntimeTest {
                 } }
                 val host = a.runtime(); val phone = b.runtime()
                 try {
-                    pair(host, phone, a, b); phone.requestSync(); completed(a, b, oldTransaction)
+                    pair(host, phone, a, b); phone.requestSync(); completedAfterExplicitReview(a, b, oldTransaction)
                     assertNotEquals(oldTransaction, a.store.baseline(b.id, a.id).revision)
                     assertEquals(a.workspace.capture(a.id).use { it.snapshot.hashes() }, b.workspace.capture(b.id).use { it.snapshot.hashes() })
                     for (end in listOf(a, b)) {

@@ -94,4 +94,27 @@ class LanSyncPartialReviewTest {
         val (hashes, _) = LanSyncPartialReview.baseline(plan, common)
         assertEquals(common.hashes.getValue("conversation/session"), hashes["conversation/session"])
     }
+    @Test fun recoveryComparisonHashesNeverBecomeSharedDeletionAuthorityOrResurrectAHeldCopy() {
+        val left = snapshot("computer", card("newly-covered")); val right = snapshot("phone")
+        val comparisonAncestor = baseline(left)
+        val shared = LanSyncBaseline("phone", ownerId = "computer")
+        val held = LanSyncPartialReview.prepare(proposed(left, right, comparisonAncestor), left, right, comparisonAncestor,
+            commonBaseline = shared)
+        assertTrue(held.heldReviews.single().ancestorHashes.isEmpty())
+        val (hashes, components) = LanSyncPartialReview.baseline(held, shared)
+        assertTrue(hashes.isEmpty())
+        val nextShared = shared.copy(revision = held.transaction, hashes = hashes, componentRecords = components)
+        val pc = LanSyncPartialReview.localPlan(held, "computer").snapshot
+        val phone = LanSyncPartialReview.localPlan(held, "phone").snapshot
+        val freshAddition = proposed(pc, phone, nextShared)
+        assertTrue(freshAddition.snapshot.records.any { it.id == "newly-covered" })
+        val preserved = LanSyncPartialReview.preserveQueuedProposals(freshAddition, pc, phone, held.heldReviews)
+        assertTrue(preserved.snapshot.records.isEmpty())
+        val stillHeld = LanSyncPartialReview.prepare(preserved, pc, phone, nextShared)
+        assertEquals(1, stillHeld.heldReviews.size)
+        assertTrue(LanSyncPartialReview.localPlan(stillHeld, "phone").snapshot.records.isEmpty())
+        val proof = stillHeld.heldReviews.single()
+        val confirmed = LanSyncPartialReview.prepare(preserved, pc, phone, nextShared, mapOf(proof.unit to proof.binding))
+        assertTrue(confirmed.heldReviews.isEmpty()); assertTrue(confirmed.snapshot.records.isEmpty())
+    }
 }

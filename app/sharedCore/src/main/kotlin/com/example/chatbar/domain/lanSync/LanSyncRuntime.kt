@@ -23,7 +23,8 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
     val peers: List<LanSyncPeer> = emptyList(), val addresses: List<String> = emptyList(),
     val offer: LanSyncPairOffer? = null, val conflicts: List<LanSyncConflict> = emptyList(),
     val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null, val failureCode: String? = null,
-    val reviewBinding: String? = null, val reviewDetails: List<LanSyncDetailedUnit> = emptyList())
+    val reviewBinding: String? = null, val reviewDetails: List<LanSyncDetailedUnit> = emptyList(),
+    val pendingReviews: List<LanSyncHeldReview> = emptyList())
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
@@ -60,7 +61,24 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private val sockets = java.util.concurrent.ConcurrentHashMap.newKeySet<SSLSocket>()
     @Volatile private var retryPaused = false
 
-    fun refresh() { _state.value = _state.value.copy(peers = store.peers()) }
+    fun refresh() {
+        _state.value = _state.value.copy(peers = store.peers())
+        scope.launch { operation.withLock { safely { refreshReviews() } } }
+    }
+    private fun refreshReviews() {
+        val peer = store.peers().singleOrNull()
+        val queue = peer?.let { store.reviewQueue(it.fingerprint, identity.fingerprint) }
+        val ready = queue == null || queue.transaction in store.baseline(queue.peerId, identity.fingerprint).receipts
+        _state.value = _state.value.copy(pendingReviews = if (ready) queue?.held.orEmpty() else emptyList())
+        if (!ready) _state.value = _state.value.copy(status = "上次同步回执仍待接续，已有保全和确认记录保留")
+    }
+    fun confirmReview(unit: String, binding: String) {
+        scope.launch { operation.withLock { safely {
+            val peer = requireNotNull(store.peers().singleOrNull()) { "SYNC_REVIEW_DEVICE" }
+            store.confirmReview(peer.fingerprint, identity.fingerprint, unit, binding)
+            requestSync()
+        } } }
+    }
     fun requestSync() { retryPaused = false; queueSync(); _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接", failureCode = null) }
     fun resolveConflicts(values: Map<String, LanSyncChoice>, binding: String? = _state.value.reviewBinding) {
         if (binding != null && binding == _state.value.reviewBinding) choices?.complete(values)
@@ -96,6 +114,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
 
     fun startHost() {
         if (listening?.isActive == true) return
+        refresh()
         listening = scope.launch { safely {
             val addresses = network.addresses(); require(addresses.isNotEmpty()) { "SYNC_NO_LOCAL_NETWORK" }
             val context = identity.context { peer -> store.peers().any { it.fingerprint == peer } || offer?.expiresAt?.let { it > System.currentTimeMillis() } == true }
@@ -240,6 +259,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 if (projection.bindings.isNotEmpty()) phoneSnapshot = phoneSnapshot.copy(records = projection.rewrite(phoneSnapshot.records))
                 phoneSnapshot.validate(); LanSyncScope.validateGraph(phoneSnapshot)
                 require(LanSyncFramedJson.receive(wire, store.root, MapSerializer(String.serializer(), String.serializer())) == phoneSnapshot.hashes()) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
+                val remoteConfirmations = LanSyncFramedJson.receive(wire, store.root, MapSerializer(String.serializer(), String.serializer()))
+                val confirmations = store.reviewConfirmations(peerId, identity.fingerprint) + remoteConfirmations
                 val computerApplied = previous?.let { workspace.applied(it.plan.transaction) } == true
                 val phoneApplied = previous != null && hello.pendingTransaction == previous.plan.transaction && hello.locallyApplied
                 val protocolChanged = previous != null && previous.plan.snapshot.protocol != LAN_SYNC_PROTOCOL
@@ -283,7 +304,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                         throw failure
                     }
                     val planned = LanSyncPlanner.plan(computer.snapshot, phoneSnapshot, ancestor, decisions, UUID.randomUUID().toString())
-                    val plan = planned.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents, supersedes = previous?.plan?.transaction)
+                    val queuedProposal = LanSyncPartialReview.preserveQueuedProposals(planned, computer.snapshot, phoneSnapshot,
+                        store.reviewQueue(peerId, identity.fingerprint)?.held.orEmpty())
+                    val plan = LanSyncPartialReview.prepare(queuedProposal.copy(parents = previous?.plan?.parents.orEmpty() + planned.parents,
+                        supersedes = previous?.plan?.transaction), computer.snapshot, phoneSnapshot, ancestor, confirmations, commonBaseline = baseline)
                     prepareLocalPending(peerId, plan, computer.snapshot.hashes(), phoneSnapshot.hashes(),
                         previous, computer.snapshot, computerApplied, phoneSnapshot).also {
                         if (previous == null) store.pending(it) else store.replacePending(it)
@@ -312,7 +336,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 observe("HOST_PENDING_CLEARED", prepared.plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
                     phoneApplied && phoneSnapshot.hashes() != prepared.plan.snapshot.hashes())
-                _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes, failureCode = null,
+                _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = completedStatus(prepared.plan), excluded = output.excludedTypes, failureCode = null,
                     reviewBinding = null, reviewDetails = emptyList())
                 wire.sendText("DONE")
                 } finally { computer.close() }
@@ -383,6 +407,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                     phoneSnapshot = phoneSnapshot.copy(records = offer.projection.rewrite(phoneSnapshot.records))
                 } else require(offer.sourceHashes.isEmpty() && offer.computerPresets.isEmpty()) { "SYNC_PROJECTION_PROOF" }
                 LanSyncFramedJson.send(wire, store.root, MapSerializer(String.serializer(), String.serializer()), phoneSnapshot.hashes())
+                LanSyncFramedJson.send(wire, store.root, MapSerializer(String.serializer(), String.serializer()),
+                    store.reviewConfirmations(peer.fingerprint, identity.fingerprint))
                 val decisionDeadline = System.nanoTime() + 10 * 60_000_000_000L
                 var planText = wire.text(8192)
                 if (planText == "REVIEW") {
@@ -438,7 +464,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 store.clearPending(peer.fingerprint, plan.transaction)
                 observe("PHONE_PENDING_CLEARED", plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
-                _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes, failureCode = null,
+                _state.value = _state.value.copy(busy = false, status = completedStatus(plan), excluded = plan.snapshot.excludedTypes, failureCode = null,
                     reviewBinding = null, reviewDetails = emptyList())
                 } finally { received.close() }
                 } finally { phone.close() }
@@ -526,8 +552,9 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         expectedRemote: Map<String, String>, previous: LanSyncPending?, current: LanSyncSnapshot,
         previousApplied: Boolean, remote: LanSyncSnapshot? = null): LanSyncPending {
         val deferred = LanSyncRebase.deferred(previous, current, plan, previousApplied)
+        LanSyncPartialReview.requireOriginal(plan, current)
         // Validate the complete local graph before publishing a superseding pending envelope.
-        LanSyncRebase.localPlan(plan, deferred, previous?.plan)
+        LanSyncRebase.localPlan(LanSyncPartialReview.localPlan(plan, identity.fingerprint), deferred, previous?.plan)
         return LanSyncPending(peer, plan, expectedLocal, expectedRemote, deferredDeletion = deferred,
             expectedLocalComponents = LanSyncMoments.components(current).filterKeys { it in expectedLocal },
             expectedRemoteComponents = remote?.let(LanSyncMoments::components).orEmpty().filterKeys { it in expectedRemote })
@@ -537,7 +564,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             require(workspace.applied(proof.previousTransaction)) { "SYNC_DEFERRED_DELETION_PROOF" }
             store.superseded(pending.peerId, proof.previousTransaction)?.plan
         }
-        return LanSyncRebase.localPlan(pending.plan, pending.deferredDeletion, old)
+        return LanSyncRebase.localPlan(LanSyncPartialReview.localPlan(pending.plan, identity.fingerprint), pending.deferredDeletion, old)
     }
     private suspend fun protectPrepared(pending: LanSyncPending) {
         platform.exclusive {
@@ -562,8 +589,12 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             withContext(NonCancellable) {
                 workspace.recover()
                 if (!workspace.applied(pending.plan.transaction)) {
-                    workspace.apply(localPlan(pending),
-                        pending.expectedLocal, identity.fingerprint, blobs, store.projection(pending.peerId, identity.fingerprint))
+                    val local = localPlan(pending)
+                    val available = local.snapshot.resources.mapValues { (hash, size) ->
+                        blobs[hash] ?: requireNotNull(workspace.resourceStore.completed(hash, size)) { "SYNC_RESOURCE_MISSING" }
+                    }
+                    workspace.apply(local,
+                        pending.expectedLocal, identity.fingerprint, available, store.projection(pending.peerId, identity.fingerprint))
                 }
                 val sessions = pending.plan.snapshot.records.filter { it.type == "chat_sessions" }.map { it.id }.toSet()
                 platform.reload(sessions)
@@ -593,6 +624,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private fun complete(peer: String, plan: LanSyncPlan) {
         val previous = store.baseline(peer, identity.fingerprint).revision
         store.complete(peer, identity.fingerprint, plan)
+        refreshReviews()
         try {
         if (previous != null && previous != plan.transaction) workspace.retire(previous)
         val retiredPlans = mutableListOf(plan)
@@ -622,6 +654,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             _state.value = _state.value.copy(cleanupNotice = "同步结果与回执已保存；部分旧临时资料未能安全回收，已保留供检查。")
         }
     }
+    private fun completedStatus(plan: LanSyncPlan) = if (plan.heldReviews.isEmpty()) "同步完成，两端已确认" else
+        "其余内容已同步；${plan.heldReviews.count { it.dependencyOf.isEmpty() }} 项删除或精简待确认，关联内容与各端现状保留"
     private suspend fun safely(work: suspend () -> Unit) {
         try { work() }
         catch (cancelled: CancellationException) { throw cancelled }

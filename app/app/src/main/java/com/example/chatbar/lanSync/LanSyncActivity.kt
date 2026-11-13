@@ -75,6 +75,22 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
             CbButton("按以上选择继续", { runtime.resolveConflicts(selected.toMap(), state.reviewBinding) },
                 enabled = state.conflicts.all { it.unit in selected })
         }
+        if (state.pendingReviews.isNotEmpty()) {
+            CbText("以下删除或精简尚未执行；各端现状保留，其余独立内容已同步。")
+            state.pendingReviews.forEach { held ->
+                val impact = remember(held.binding) { LanSyncImpactReview.reductionSummary(held.computer, held.phone, held.proposed) }
+                CbText(held.unit + if (held.dependencyOf.isEmpty()) " · 待确认" else " · 随关联项暂缓")
+                CbText("两端合计将移除 ${impact.recordsRemoved} 条记录（其中 ${impact.liveMessagesRemoved} 条实时消息）、${impact.versionsRemoved} 个消息版本、${impact.attachmentReferencesRemoved} 条附件引用；覆盖 ${impact.recordsOverwritten} 条记录。")
+                val header = LanSyncReviewHeader(held.unit, null, null, held.ancestorHashes[held.unit],
+                    held.computer.map { it.key }.toSet(), held.phone.map { it.key }.toSet())
+                LanSyncDetail(LanSyncDetailedUnit(header, held.computer, held.phone))
+                CbText("确认后的目标共 ${held.proposed.size} 条记录；目标为空表示移除此组。")
+                if (held.proposed.isNotEmpty()) LanSyncDetail(LanSyncDetailedUnit(
+                    header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true)
+                if (held.dependencyOf.isEmpty()) CbButton("确认按此目标同步删除或精简",
+                    { runtime.confirmReview(held.unit, held.binding) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            }
+        }
         confirm?.let { offer ->
             CbText("请确认这是你的电脑：${offer.host}，设备身份 ${offer.fingerprint.take(16)}。确认后会记住此设备，后续无需重新扫码。")
             CbButton("确认可信设备并配对", { runtime.pair(code); confirm = null; code = "" }, enabled = !state.busy)
@@ -90,13 +106,15 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
 }
 
 @Composable
-private fun LanSyncDetail(detail: LanSyncDetailedUnit) {
+private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false) {
     var expanded by remember(detail.header) { mutableStateOf(false) }
-    CbButton(if (expanded) "收起双方内容" else "查看双方正文、版本与存储字段", { expanded = !expanded }, variant = ButtonVariant.Secondary)
+    CbButton(if (expanded) "收起内容" else if (singleSide) "查看将应用的目标内容" else "查看双方正文、版本与存储字段", { expanded = !expanded }, variant = ButtonVariant.Secondary)
     if (!expanded) return
-    CbText("电脑：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
-    CbText("手机：${detail.phone.size} 条记录 / ${detail.phoneMessages} 条实时消息 / ${detail.phoneArchivedMessages} 条存档消息")
-    CbText("比较起点仅有指纹，无法显示其历史正文。")
+    CbText("${if (singleSide) "目标" else "电脑"}：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
+    if (!singleSide) {
+        CbText("手机：${detail.phone.size} 条记录 / ${detail.phoneMessages} 条实时消息 / ${detail.phoneArchivedMessages} 条存档消息")
+        CbText("比较起点仅有指纹，无法显示其历史正文。")
+    }
     var recordIndex by remember(detail.header) { mutableStateOf(0) }
     var fieldIndex by remember(detail.header, recordIndex) { mutableStateOf(0) }
     var page by remember(detail.header, recordIndex, fieldIndex) { mutableStateOf(0) }
@@ -117,7 +135,8 @@ private fun LanSyncDetail(detail: LanSyncDetailedUnit) {
     val left = detail.fieldPage(key, field, true, page); val right = detail.fieldPage(key, field, false, page)
     val pages = maxOf(left.second, right.second)
     SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        CbText("电脑"); CbText(left.first); CbText("手机"); CbText(right.first)
+        CbText(if (singleSide) "目标" else "电脑"); CbText(left.first)
+        if (!singleSide) { CbText("手机"); CbText(right.first) }
     } }
     if (pages > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CbButton("上一页正文", { page-- }, enabled = page > 0, variant = ButtonVariant.Secondary)

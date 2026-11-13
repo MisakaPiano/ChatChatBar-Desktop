@@ -9,6 +9,9 @@ import kotlinx.serialization.json.*
 @Serializable
 enum class LanSyncRecordChange { ADD, REPLACE, REMOVE }
 
+data class LanSyncReductionSummary(val recordsRemoved: Long, val liveMessagesRemoved: Long,
+    val versionsRemoved: Long, val attachmentReferencesRemoved: Long, val recordsOverwritten: Long)
+
 @Serializable
 data class LanSyncFieldChange(val field: String, val before: JsonElement?, val after: JsonElement?)
 
@@ -50,6 +53,14 @@ data class LanSyncUnitReview(
 
 /** Pure, frozen-capture review. Publication still performs the original fresh source CAS. */
 object LanSyncImpactReview {
+    fun reductionSummary(computer: List<LanSyncRecord>, phone: List<LanSyncRecord>, proposed: List<LanSyncRecord>): LanSyncReductionSummary {
+        val impacts = changes(computer, proposed) + changes(phone, proposed)
+        fun count(select: (LanSyncRecordImpact) -> Long) = impacts.fold(0L) { total, row -> lanSyncAddLength(total, select(row)) }
+        return LanSyncReductionSummary(count { if (it.change == LanSyncRecordChange.REMOVE) 1 else 0 },
+            count { if (it.message && it.change == LanSyncRecordChange.REMOVE) 1 else 0 },
+            count { it.removedVersionIds.size.toLong() }, count { it.removedAttachmentReferences.toLong() },
+            count { if (it.change == LanSyncRecordChange.REPLACE) 1 else 0 })
+    }
     fun changes(before: List<LanSyncRecord>, after: List<LanSyncRecord>): List<LanSyncRecordImpact> {
         val old = before.associateBy { it.key }; val desired = after.associateBy { it.key }
         require(old.size == before.size && desired.size == after.size) { "SYNC_REVIEW_IDENTITIES" }

@@ -66,6 +66,23 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
             }
             BootstrapButton("按以上选择继续", enabled = state.conflicts.all { it.unit in selected }) { runtime.resolveConflicts(selected.toMap(), state.reviewBinding) }
         }
+        if (state.pendingReviews.isNotEmpty()) {
+            StatusText("以下删除或精简尚未执行；各端现状保留，其余独立内容已同步。")
+            state.pendingReviews.forEach { held ->
+                val impact = remember(held.binding) { LanSyncImpactReview.reductionSummary(held.computer, held.phone, held.proposed) }
+                StatusText(held.unit + if (held.dependencyOf.isEmpty()) " · 待确认" else " · 随关联项暂缓")
+                StatusText("两端合计将移除 ${impact.recordsRemoved} 条记录（其中 ${impact.liveMessagesRemoved} 条实时消息）、${impact.versionsRemoved} 个消息版本、${impact.attachmentReferencesRemoved} 条附件引用；覆盖 ${impact.recordsOverwritten} 条记录。")
+                val header = LanSyncReviewHeader(held.unit, null, null, held.ancestorHashes[held.unit],
+                    held.computer.map { it.key }.toSet(), held.phone.map { it.key }.toSet())
+                DesktopLanSyncDetail(LanSyncDetailedUnit(header, held.computer, held.phone))
+                StatusText("确认后的目标共 ${held.proposed.size} 条记录；目标为空表示移除此组。")
+                if (held.proposed.isNotEmpty()) DesktopLanSyncDetail(LanSyncDetailedUnit(
+                    header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true)
+                if (held.dependencyOf.isEmpty()) BootstrapButton("确认按此目标同步删除或精简", secondary = true, enabled = !state.busy) {
+                    runtime.confirmReview(held.unit, held.binding)
+                }
+            }
+        }
         state.peers.forEach { peer ->
             StatusText("已记住：${peer.name} · ${peer.fingerprint.take(16)}")
             BootstrapButton("撤销配对", secondary = true, enabled = !state.busy) { runtime.revoke(peer.fingerprint) }
@@ -76,13 +93,15 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
 }
 
 @Composable
-private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit) {
+private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false) {
     var expanded by remember(detail.header) { mutableStateOf(false) }
-    BootstrapButton(if (expanded) "收起双方内容" else "查看双方正文、版本与存储字段", secondary = true) { expanded = !expanded }
+    BootstrapButton(if (expanded) "收起内容" else if (singleSide) "查看将应用的目标内容" else "查看双方正文、版本与存储字段", secondary = true) { expanded = !expanded }
     if (!expanded) return
-    StatusText("电脑：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
-    StatusText("手机：${detail.phone.size} 条记录 / ${detail.phoneMessages} 条实时消息 / ${detail.phoneArchivedMessages} 条存档消息")
-    StatusText("比较起点仅有指纹，无法显示其历史正文。${detail.header.ancestorHash?.let { " 指纹：$it" } ?: " 此项没有共同起点。"}")
+    StatusText("${if (singleSide) "目标" else "电脑"}：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
+    if (!singleSide) {
+        StatusText("手机：${detail.phone.size} 条记录 / ${detail.phoneMessages} 条实时消息 / ${detail.phoneArchivedMessages} 条存档消息")
+        StatusText("比较起点仅有指纹，无法显示其历史正文。${detail.header.ancestorHash?.let { " 指纹：$it" } ?: " 此项没有共同起点。"}")
+    }
     var recordIndex by remember(detail.header) { mutableStateOf(0) }
     var fieldIndex by remember(detail.header, recordIndex) { mutableStateOf(0) }
     var page by remember(detail.header, recordIndex, fieldIndex) { mutableStateOf(0) }
@@ -103,10 +122,12 @@ private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit) {
     val left = detail.fieldPage(key, field, true, page); val right = detail.fieldPage(key, field, false, page)
     val pages = maxOf(left.second, right.second)
     SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("电脑 · ${if (detail.record(key, true) == null) "此端无此记录" else "字段正文"}")
+        StatusText("${if (singleSide) "目标" else "电脑"} · ${if (detail.record(key, true) == null) "此端无此记录" else "字段正文"}")
         StatusText(left.first)
-        StatusText("手机 · ${if (detail.record(key, false) == null) "此端无此记录" else "字段正文"}")
-        StatusText(right.first)
+        if (!singleSide) {
+            StatusText("手机 · ${if (detail.record(key, false) == null) "此端无此记录" else "字段正文"}")
+            StatusText(right.first)
+        }
     } }
     if (pages > 1) ActionRow {
         BootstrapButton("上一页正文", secondary = true, enabled = page > 0) { page-- }
