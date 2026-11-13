@@ -33,7 +33,7 @@ class SyncCausalHistoryTest {
             return unsigned.copy(signature = Base64.getEncoder().encodeToString(signed))
         }
         fun value(text: String, previous: Set<SyncVersionRef> = emptySet()) = SyncUnitChange(hash(text),
-            SyncVersionContent(SyncStoreId.random(), CiphertextDescriptor(117, CiphertextSha256.parse(hash("synthetic ciphertext $text")))), previous)
+            SyncVersionContent(117, hash("synthetic unit plaintext $text")), previous)
     }
 
     @Test fun fourDevicesConvergeOutOfOrderWithoutResurrectingADeletedUnitFromAnOfflineUnrelatedBranch() {

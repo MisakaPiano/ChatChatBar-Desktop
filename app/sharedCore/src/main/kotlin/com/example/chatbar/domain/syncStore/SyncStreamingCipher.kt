@@ -19,6 +19,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
 import java.security.DigestInputStream
 import java.security.DigestOutputStream
+import kotlinx.serialization.Serializable
 
 /** All associated-data fields are opaque. Plaintext names, hashes and paths never enter them. */
 data class SyncEncryptionContext(val group: SyncStoreId, val epoch: SyncStoreId, val key: CiphertextObjectKey) {
@@ -33,10 +34,14 @@ class SyncPreparedCiphertext internal constructor(private val file: PrivateSyncF
     override fun close() = file.close()
 }
 
-internal data class SyncPlaintextIdentity(val length: Long, val sha256: String)
+/** Plaintext identity stays inside local custody or an authenticated encrypted manifest. */
+@Serializable data class SyncPlaintextIdentity(val length: Long, val sha256: String) {
+    init { require(length >= 0 && sha256.matches(Regex("[a-f0-9]{64}"))) { "SYNC_PLAINTEXT_IDENTITY" } }
+}
 
 /** Only constructed after reading the complete AEAD stream, including its authenticated end. */
-class SyncAuthenticatedPlaintext internal constructor(private val file: PrivateSyncFile, val length: Long) : Closeable {
+class SyncAuthenticatedPlaintext internal constructor(private val file: PrivateSyncFile, val identity: SyncPlaintextIdentity) : Closeable {
+    val length: Long get() = identity.length
     val path: Path get() = file.path
     override fun close() = file.close()
 }
@@ -110,12 +115,13 @@ class SyncStreamingCipher private constructor(val group: SyncStoreId, val epoch:
         val file = PrivateSyncFile.create(privateDirectory)
         try {
             val borrowed = object : FilterInputStream(source) { override fun close() {} }
+            val digest = MessageDigest.getInstance("SHA-256")
             val length = primitive.newDecryptingStream(borrowed, context.associatedData()).use { clear ->
                 FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
-                    val count = copy(clear, Channels.newOutputStream(channel)); channel.force(true); count
+                    val count = copy(clear, DigestOutputStream(Channels.newOutputStream(channel), digest)); channel.force(true); count
                 }
             }
-            return SyncAuthenticatedPlaintext(file, length)
+            return SyncAuthenticatedPlaintext(file, SyncPlaintextIdentity(length, digest.digest().joinToString("") { "%02x".format(it) }))
         } catch (failure: Throwable) { file.close(); throw failure }
     }
 

@@ -23,7 +23,7 @@ class SyncDeviceLedgerTest {
             epoch: SyncStoreId = parent.epoch, accepted: Set<SyncVersionRef> = parent.acceptedHeads) =
             sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), parent.reference(), parent.sequence + 1, epoch, nextMembers, accepted, "unsigned"))
         fun value(text: String, previous: Set<SyncVersionRef> = emptySet()) = SyncUnitChange(hash(text),
-            SyncVersionContent(SyncStoreId.random(), CiphertextDescriptor(119, CiphertextSha256.parse(hash("synthetic ciphertext $text")))), previous)
+            SyncVersionContent(119, hash("synthetic unit plaintext $text")), previous)
         fun version(actor: Int, ledger: SyncDeviceLedgerRecord = genesis, parents: Set<SyncVersionRef> = emptySet(),
             changes: Map<String, SyncUnitChange> = emptyMap(), previous: SyncCausalVersion? = null): SyncCausalVersion {
             val unsigned = SyncCausalVersion(group, SyncStoreId.random(), ledger.reference(), devices[actor].fingerprint,
@@ -43,7 +43,7 @@ class SyncDeviceLedgerTest {
                     val outbox = SyncEncryptedOutbox(directory, cipher)
                     val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
                     val operation = SyncStoreId.random()
-                    val envelope = SyncGroupEnvelope(1, SyncGroupObjectKind.VERSION, version = known.first { it.reference() == reference })
+                    val envelope = SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = known.first { it.reference() == reference })
                     val ready = codec.enqueue(outbox, operation, key, cipher, envelope)
                     outbox.upload(operation, backend)
                     codec.read(backend, cipher, ready.context, ready.request.descriptor, reference)

@@ -15,13 +15,18 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.encodeToStream
 
 @Serializable enum class SyncGroupObjectKind { VERSION, DEVICE_LEDGER }
+@Serializable data class SyncEnvelopeBlobBinding(val plaintext: SyncPlaintextIdentity, val key: CiphertextObjectKey,
+    val epoch: SyncStoreId, val descriptor: CiphertextDescriptor) {
+    init { require(key.kind == CiphertextObjectKind.BLOB && descriptor.length > 0) { "SYNC_GROUP_BLOB_BINDING" } }
+}
 @Serializable data class SyncGroupEnvelope(val format: Int, val kind: SyncGroupObjectKind,
-    val version: SyncCausalVersion? = null, val deviceLedger: SyncDeviceLedgerRecord? = null) {
+    val version: SyncCausalVersion? = null, val deviceLedger: SyncDeviceLedgerRecord? = null,
+    val blobs: Map<String, SyncEnvelopeBlobBinding> = emptyMap()) {
     init {
-        require(format == 1 && when (kind) {
+        require(format == 2 && when (kind) {
             SyncGroupObjectKind.VERSION -> version != null && deviceLedger == null
-            SyncGroupObjectKind.DEVICE_LEDGER -> deviceLedger != null && version == null
-        }) { "SYNC_GROUP_ENVELOPE" }
+            SyncGroupObjectKind.DEVICE_LEDGER -> deviceLedger != null && version == null && blobs.isEmpty()
+        } && blobs.all { (hash, binding) -> hash == binding.plaintext.sha256 }) { "SYNC_GROUP_ENVELOPE" }
     }
     val group get() = version?.group ?: requireNotNull(deviceLedger).group
     fun reference() = version?.reference() ?: requireNotNull(deviceLedger).reference()
@@ -61,7 +66,7 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
             require(metadata.key == context.key) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
             Files.newInputStream(ciphertext.path, NOFOLLOW_LINKS).use { input -> cipher.decrypt(input, context, privateDirectory).use { plaintext ->
                 metadataBudget.validate(plaintext.path)
-                val envelope = requireNotNull(LanSyncJsonFiles.read(plaintext.path, SyncGroupEnvelope.serializer())) { "SYNC_GROUP_ENVELOPE" }
+                val envelope = requireNotNull(LanSyncJsonFiles.read(plaintext.path, SyncGroupEnvelope.serializer(), plaintext.identity.sha256)) { "SYNC_GROUP_ENVELOPE" }
                 require(envelope.group == context.group && (expectedReference == null || envelope.reference() == expectedReference)) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
                 return SyncAuthenticatedGroupObject(context, metadata, freeze(envelope, sorted = false))
             } }
@@ -75,6 +80,7 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
             changes = Collections.unmodifiableMap((if (sorted) row.changes.toSortedMap() else row.changes).mapValues { (_, change) -> change.copy(previous = refs(change.previous)) })) }
         val ledger = envelope.deviceLedger?.let { row -> row.copy(
             members = Collections.unmodifiableMap((if (sorted) row.members.toSortedMap() else row.members).toMap()), acceptedHeads = refs(row.acceptedHeads)) }
-        return envelope.copy(version = version, deviceLedger = ledger)
+        return envelope.copy(version = version, deviceLedger = ledger,
+            blobs = Collections.unmodifiableMap((if (sorted) envelope.blobs.toSortedMap() else envelope.blobs).toMap()))
     }
 }

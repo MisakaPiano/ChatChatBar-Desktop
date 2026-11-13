@@ -10,11 +10,12 @@ import kotlinx.serialization.Serializable
 @Serializable data class SyncVersionRef(val id: SyncStoreId, val bodyHash: String) {
     init { require(bodyHash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_VERSION_REFERENCE" } }
 }
-@Serializable data class SyncVersionContent(val objectId: SyncStoreId, val descriptor: CiphertextDescriptor)
+/** Logical content is independent of the encryption epoch and physical ciphertext container. */
+typealias SyncVersionContent = SyncPlaintextIdentity
 @Serializable data class SyncUnitChange(val valueHash: String?, val content: SyncVersionContent?, val previous: Set<SyncVersionRef>) {
     init {
         require((valueHash == null) == (content == null) && (valueHash == null || valueHash.matches(Regex("[a-f0-9]{64}"))) &&
-            (content == null || content.descriptor.length > 0) && previous.map { it.id }.toSet().size == previous.size) { "SYNC_VERSION_CONTENT" }
+            (content == null || content.length > 0) && previous.map { it.id }.toSet().size == previous.size) { "SYNC_VERSION_CONTENT" }
     }
 }
 
@@ -36,7 +37,7 @@ import kotlinx.serialization.Serializable
             override fun write(bytes: ByteArray, offset: Int, length: Int) {}
         }
         DataOutputStream(DigestOutputStream(sink, digest)).use { output ->
-            output.writeUTF("CCB-SYNC-VERSION/1"); output.writeUTF(group.value); output.writeUTF(id.value)
+            output.writeUTF("CCB-SYNC-VERSION/2"); output.writeUTF(group.value); output.writeUTF(id.value)
             fun ref(value: SyncVersionRef) { output.writeUTF(value.id.value); output.writeUTF(value.bodyHash) }
             fun refs(values: Set<SyncVersionRef>) {
                 output.writeInt(values.size); values.sortedBy { it.id.value }.forEach(::ref)
@@ -49,7 +50,7 @@ import kotlinx.serialization.Serializable
                 change.valueHash?.let { hash ->
                     output.writeUTF(hash)
                     val content = requireNotNull(change.content) { "SYNC_VERSION_CONTENT" }
-                    output.writeUTF(content.objectId.value); output.writeLong(content.descriptor.length); output.writeUTF(content.descriptor.sha256.hex)
+                    output.writeLong(content.length); output.writeUTF(content.sha256)
                 }
                 refs(change.previous)
             }
@@ -172,7 +173,7 @@ class SyncCausalHistory(private val group: SyncStoreId, private val admission: S
         require(version.changes.keys.all { it.length in 1..600 && it.none { c -> c.code < 32 } }) { "SYNC_VERSION_UNIT" }
         version.changes.values.forEach { change ->
             require((change.valueHash == null) == (change.content == null) && (change.valueHash == null || change.valueHash.matches(HEX)) &&
-                (change.content == null || change.content.descriptor.length > 0) && change.previous.all(::valid) &&
+                (change.content == null || change.content.length > 0) && change.previous.all(::valid) &&
                 change.previous.map { it.id }.toSet().size == change.previous.size) { "SYNC_VERSION_CONTENT" }
         }
     }

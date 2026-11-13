@@ -35,8 +35,8 @@ class SyncGroupObjectCodecTest {
         }
         val marker = "仅在加密内容里的合成标记"
         val version = SyncCausalVersion(cipher.group, SyncStoreId.random(), ledger.reference(), device.fingerprint, 1,
-            null, emptySet(), mapOf(marker to SyncUnitChange(hash("合成正文"), SyncVersionContent(SyncStoreId.random(),
-                CiphertextDescriptor(123, CiphertextSha256.parse(hash("synthetic ciphertext reference")))), emptySet())), "unsigned").let {
+            null, emptySet(), mapOf(marker to SyncUnitChange(hash("合成正文"), SyncVersionContent(123,
+                hash("synthetic unit plaintext")), emptySet())), "unsigned").let {
             it.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(it.signingBytes())))
         }
         fun publish(envelope: SyncGroupEnvelope): SyncOutboxEntry {
@@ -48,8 +48,8 @@ class SyncGroupObjectCodecTest {
 
     @Test fun signedLedgerAndVersionPassActualEncryptionQueueBackendDecodeAndEpochAdmission() = withRoot { root ->
         val f = Fixture(root)
-        val a = f.publish(SyncGroupEnvelope(1, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = f.ledger))
-        val b = f.publish(SyncGroupEnvelope(1, SyncGroupObjectKind.VERSION, version = f.version))
+        val a = f.publish(SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = f.ledger))
+        val b = f.publish(SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = f.version))
         assertNotEquals(f.version.id, b.context.key.id)
         val ledgerObject = f.codec.read(f.backend, f.cipher, a.context, a.request.descriptor, f.ledger.reference())
         val versionObject = f.codec.read(f.backend, f.cipher, b.context, b.request.descriptor, f.version.reference())
@@ -72,7 +72,7 @@ class SyncGroupObjectCodecTest {
     }
 
     @Test fun expectedReferencesObjectContextAndMetadataBudgetRefuseWithoutLeavingPlaintext() = withRoot { root ->
-        val f = Fixture(root); val ready = f.publish(SyncGroupEnvelope(1, SyncGroupObjectKind.VERSION, version = f.version))
+        val f = Fixture(root); val ready = f.publish(SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = f.version))
         assertEquals("SYNC_GROUP_ENVELOPE_CONTEXT", assertFailsWith<IllegalArgumentException> {
             f.codec.read(f.backend, f.cipher, ready.context, expectedReference = f.version.reference().copy(bodyHash = hash("wrong reference")))
         }.message)
@@ -89,7 +89,7 @@ class SyncGroupObjectCodecTest {
     }
 
     @Test fun validStorageMetadataCannotAuthorizeTamperedCiphertextOrMalformedAuthenticatedJson() = withRoot { root ->
-        val f = Fixture(root); val ready = f.publish(SyncGroupEnvelope(1, SyncGroupObjectKind.VERSION, version = f.version))
+        val f = Fixture(root); val ready = f.publish(SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = f.version))
         val bytes = ByteArrayOutputStream().also { f.backend.readTo(ready.context.key, it) }.toByteArray()
         bytes[bytes.lastIndex] = (bytes.last().toInt() xor 1).toByte()
         val tampered = object : CiphertextStore by f.backend {
@@ -98,7 +98,7 @@ class SyncGroupObjectCodecTest {
             }
         }
         assertFails { f.codec.read(tampered, f.cipher, ready.context) }; assertTrue(f.emptyPreparation())
-        for (invalid in listOf("{\"format\":2,\"kind\":\"VERSION\"}".toByteArray(), byteArrayOf(0xC0.toByte(), 0xAF.toByte()))) {
+        for (invalid in listOf("{\"format\":3,\"kind\":\"VERSION\"}".toByteArray(), byteArrayOf(0xC0.toByte(), 0xAF.toByte()))) {
             val source = root.resolve("malformed.json"); Files.write(source, invalid)
             val operation = SyncStoreId.random(); val context = SyncEncryptionContext(f.cipher.group, f.cipher.epoch,
                 CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()))

@@ -34,11 +34,13 @@ class SyncEncryptedOutbox(private val root: Path, private val cipher: SyncStream
             CiphertextPutRequest(binding.context.key, binding.operation, descriptor), uploaded)
     }
 
-    fun prepare(operation: SyncStoreId, context: SyncEncryptionContext, source: Path): SyncOutboxEntry = guarded {
+    fun prepare(operation: SyncStoreId, context: SyncEncryptionContext, source: Path,
+        expectedPlaintext: SyncPlaintextIdentity? = null): SyncOutboxEntry = guarded {
         require(context.group == cipher.group && context.epoch == cipher.epoch) { "SYNC_OUTBOX_CONTEXT" }
         PrivateSyncFile.checked(source)
         require(!source.startsWith(root)) { "SYNC_OUTBOX_SOURCE" }
         val plain = identity(source)
+        require(expectedPlaintext == null || expectedPlaintext == plain) { "SYNC_OUTBOX_SOURCE_CHANGED" }
         val requested = Binding(operation, context, plain)
         val directory = directory(operation, create = true)
         // Only this operation's invocation-owned staging names are reclaimable under both locks.
