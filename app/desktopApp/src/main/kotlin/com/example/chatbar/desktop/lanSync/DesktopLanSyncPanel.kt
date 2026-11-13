@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -18,7 +19,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
     val state by runtime.state.collectAsState()
     DisposableEffect(runtime) { runtime.startHost(); onDispose { runtime.stop() } }
     val selected = remember { mutableStateMapOf<String, LanSyncChoice>() }
-    LaunchedEffect(state.conflicts) { selected.clear() }
+    LaunchedEffect(state.reviewBinding) { selected.clear() }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DesktopDataSectionHeading("局域网同步")
         StatusText(LanSyncScope.description)
@@ -54,6 +55,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
             StatusText("双方都修改的内容需选择；保留两份会保留独立会话分支及其依赖。")
             state.conflicts.forEach { conflict ->
                 StatusText("${conflict.title} · 电脑 ${if (conflict.computerDeleted) "已删除" else "${conflict.computerRecords} 条"} / 手机 ${if (conflict.phoneDeleted) "已删除" else "${conflict.phoneRecords} 条"}")
+                state.reviewDetails.firstOrNull { it.header.unit == conflict.unit }?.let { DesktopLanSyncDetail(it) }
                 if (!conflict.canKeepBoth) StatusText("此项是全局设定，请选择保留其中一端的版本。")
                 ActionRow {
                     listOf(LanSyncChoice.KEEP_COMPUTER to "保留电脑", LanSyncChoice.KEEP_PHONE to "保留手机", LanSyncChoice.KEEP_BOTH to "保留两份")
@@ -62,7 +64,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
                     }
                 }
             }
-            BootstrapButton("按以上选择继续", enabled = state.conflicts.all { it.unit in selected }) { runtime.resolveConflicts(selected.toMap()) }
+            BootstrapButton("按以上选择继续", enabled = state.conflicts.all { it.unit in selected }) { runtime.resolveConflicts(selected.toMap(), state.reviewBinding) }
         }
         state.peers.forEach { peer ->
             StatusText("已记住：${peer.name} · ${peer.fingerprint.take(16)}")
@@ -70,5 +72,45 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
         }
         lanSyncExcludedSummary(state.excluded)?.let { StatusText(it) }
         StatusText("保持两端同步页面打开。首次连接如 Windows 提示网络访问，仅允许可信的专用网络；不要关闭防火墙。连接失败可重新生成二维码或使用备用配对码。")
+    }
+}
+
+@Composable
+private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit) {
+    var expanded by remember(detail.header) { mutableStateOf(false) }
+    BootstrapButton(if (expanded) "收起双方内容" else "查看双方正文、版本与存储字段", secondary = true) { expanded = !expanded }
+    if (!expanded) return
+    StatusText("电脑：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
+    StatusText("手机：${detail.phone.size} 条记录 / ${detail.phoneMessages} 条实时消息 / ${detail.phoneArchivedMessages} 条存档消息")
+    StatusText("比较起点仅有指纹，无法显示其历史正文。${detail.header.ancestorHash?.let { " 指纹：$it" } ?: " 此项没有共同起点。"}")
+    var recordIndex by remember(detail.header) { mutableStateOf(0) }
+    var fieldIndex by remember(detail.header, recordIndex) { mutableStateOf(0) }
+    var page by remember(detail.header, recordIndex, fieldIndex) { mutableStateOf(0) }
+    val keys = detail.recordKeys
+    val key = keys.getOrNull(recordIndex) ?: return
+    val fields = detail.fields(key)
+    val field = fields.getOrNull(fieldIndex) ?: return
+    StatusText("记录 ${recordIndex + 1}/${keys.size} · $key")
+    ActionRow {
+        BootstrapButton("上一条记录", secondary = true, enabled = recordIndex > 0) { recordIndex-- }
+        BootstrapButton("下一条记录", secondary = true, enabled = recordIndex + 1 < keys.size) { recordIndex++ }
+    }
+    StatusText("字段 ${fieldIndex + 1}/${fields.size} · $field")
+    ActionRow {
+        BootstrapButton("上一字段", secondary = true, enabled = fieldIndex > 0) { fieldIndex-- }
+        BootstrapButton("下一字段", secondary = true, enabled = fieldIndex + 1 < fields.size) { fieldIndex++ }
+    }
+    val left = detail.fieldPage(key, field, true, page); val right = detail.fieldPage(key, field, false, page)
+    val pages = maxOf(left.second, right.second)
+    SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatusText("电脑 · ${if (detail.record(key, true) == null) "此端无此记录" else "字段正文"}")
+        StatusText(left.first)
+        StatusText("手机 · ${if (detail.record(key, false) == null) "此端无此记录" else "字段正文"}")
+        StatusText(right.first)
+    } }
+    if (pages > 1) ActionRow {
+        BootstrapButton("上一页正文", secondary = true, enabled = page > 0) { page-- }
+        StatusText("${page + 1}/$pages")
+        BootstrapButton("下一页正文", secondary = true, enabled = page + 1 < pages) { page++ }
     }
 }

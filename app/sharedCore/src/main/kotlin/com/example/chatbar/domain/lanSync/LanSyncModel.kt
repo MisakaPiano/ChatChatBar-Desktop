@@ -105,6 +105,7 @@ data class LanSyncComparison(
     val phoneHashes: Map<String, String>,
     val computerUnits: Map<String, List<LanSyncRecord>> = emptyMap(),
     val phoneUnits: Map<String, List<LanSyncRecord>> = emptyMap(),
+    val ancestorHashes: Map<String, String> = emptyMap(),
 )
 
 /** Three-way comparison deliberately has no last-write-wins or timestamp tie breaker. */
@@ -146,7 +147,7 @@ object LanSyncCompare {
                 }
             }
         }
-        return LanSyncComparison(automatic, conflicts, left, right, leftUnits, rightUnits)
+        return LanSyncComparison(automatic, conflicts, left, right, leftUnits, rightUnits, grouped.ancestor)
     }
 }
 

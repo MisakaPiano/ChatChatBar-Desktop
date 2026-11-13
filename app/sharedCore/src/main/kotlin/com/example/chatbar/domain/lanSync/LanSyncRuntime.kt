@@ -22,7 +22,8 @@ import javax.net.ssl.SSLSocket
 data class LanSyncUiState(val status: String = "两端打开此页面后可同步", val busy: Boolean = false,
     val peers: List<LanSyncPeer> = emptyList(), val addresses: List<String> = emptyList(),
     val offer: LanSyncPairOffer? = null, val conflicts: List<LanSyncConflict> = emptyList(),
-    val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null, val failureCode: String? = null)
+    val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null, val failureCode: String? = null,
+    val reviewBinding: String? = null, val reviewDetails: List<LanSyncDetailedUnit> = emptyList())
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
@@ -61,7 +62,9 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
 
     fun refresh() { _state.value = _state.value.copy(peers = store.peers()) }
     fun requestSync() { retryPaused = false; queueSync(); _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接", failureCode = null) }
-    fun resolveConflicts(values: Map<String, LanSyncChoice>) { choices?.complete(values) }
+    fun resolveConflicts(values: Map<String, LanSyncChoice>, binding: String? = _state.value.reviewBinding) {
+        if (binding != null && binding == _state.value.reviewBinding) choices?.complete(values)
+    }
     fun revoke(fingerprint: String) { store.revoke(fingerprint); refresh() }
     fun createPreviewSample() { sample = scope.launch { operation.withLock { safely {
         _state.value = _state.value.copy(busy = true, status = "正在建立离线合成样例")
@@ -275,7 +278,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                         else baseline
                     if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
                     val comparison = LanSyncCompare.compare(computer.snapshot, phoneSnapshot, ancestor)
-                    val decisions = try { decide(comparison, wire) } catch (failure: IllegalArgumentException) {
+                    val decisions = try { decide(comparison, ancestor, computer, wire) } catch (failure: IllegalArgumentException) {
                         if (failure.message == "SYNC_CONFLICT_TIMEOUT") { finishRequest(requestToken); wire.sendText("SYNC_CONFLICT_TIMEOUT") }
                         throw failure
                     }
@@ -309,7 +312,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 observe("HOST_PENDING_CLEARED", prepared.plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
                     phoneApplied && phoneSnapshot.hashes() != prepared.plan.snapshot.hashes())
-                _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes, failureCode = null)
+                _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = "同步完成，两端已确认", excluded = output.excludedTypes, failureCode = null,
+                    reviewBinding = null, reviewDetails = emptyList())
                 wire.sendText("DONE")
                 } finally { computer.close() }
                 } finally { phone.close() }
@@ -381,6 +385,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 LanSyncFramedJson.send(wire, store.root, MapSerializer(String.serializer(), String.serializer()), phoneSnapshot.hashes())
                 val decisionDeadline = System.nanoTime() + 10 * 60_000_000_000L
                 var planText = wire.text(8192)
+                if (planText == "REVIEW") {
+                    reviewOnPhone(wire, phoneSnapshot)
+                    planText = wire.text(8192)
+                }
                 while (planText == "WAIT_DECISION") {
                     require(System.nanoTime() <= decisionDeadline) { "SYNC_CONFLICT_TIMEOUT" }
                     _state.value = _state.value.copy(status = "等待在电脑选择冲突内容，连接保持中")
@@ -430,7 +438,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 store.clearPending(peer.fingerprint, plan.transaction)
                 observe("PHONE_PENDING_CLEARED", plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
-                _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes, failureCode = null)
+                _state.value = _state.value.copy(busy = false, status = "同步完成，两端已确认", excluded = plan.snapshot.excludedTypes, failureCode = null,
+                    reviewBinding = null, reviewDetails = emptyList())
                 } finally { received.close() }
                 } finally { phone.close() }
             } } finally { sockets -= socket }
@@ -442,20 +451,76 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         platform.exclusive { workspace.recover(); value = workspace.capture(identity.fingerprint, currentProjection()) }
         return requireNotNull(value)
     }
-    private suspend fun decide(comparison: LanSyncComparison, wire: LanSyncWire): Map<String, LanSyncChoice> {
+    private fun validateChoices(description: LanSyncReviewDescription, values: Map<String, LanSyncChoice>) {
+        require(values.keys == description.conflicts.map { it.unit }.toSet()) { "SYNC_CHOICES" }
+        require(description.conflicts.all { it.canKeepBoth || values[it.unit] != LanSyncChoice.KEEP_BOTH }) { "SYNC_SINGLETON_KEEP_BOTH" }
+    }
+    private suspend fun decide(comparison: LanSyncComparison, baseline: LanSyncBaseline,
+        computer: LanSyncCapture, wire: LanSyncWire): Map<String, LanSyncChoice> {
         if (comparison.conflicts.isEmpty()) return emptyMap()
+        val description = LanSyncDetailedReview.description(comparison, baseline)
+        wire.sendText("REVIEW")
+        LanSyncTransfer.send(wire, store.root, computer, transferProgress)
+        LanSyncFramedJson.send(wire, store.root, LanSyncReviewContext.serializer(),
+            LanSyncReviewContext(baseline.copy(revision = null, receipts = emptyList(), localProjectionHash = null), description))
         val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
         choices = answer
-        _state.value = _state.value.copy(status = "请逐项选择双方修改的内容", conflicts = comparison.conflicts)
-        return coroutineScope {
-            val keepalive = launch { while (isActive) { wire.sendText("WAIT_DECISION"); delay(5_000) } }
-            try {
-                withTimeoutOrNull(10 * 60_000) { answer.await() } ?: throw IllegalArgumentException("SYNC_CONFLICT_TIMEOUT")
-            } finally {
-                choices = null
-                withContext(NonCancellable) { keepalive.cancelAndJoin() }
+        _state.value = _state.value.copy(status = "两端均可查看冻结内容并选择；先收到的完整选择生效", conflicts = comparison.conflicts,
+            reviewBinding = description.binding, reviewDetails = LanSyncDetailedReview.details(description, comparison))
+        val deadline = System.nanoTime() + 10 * 60_000_000_000L
+        try {
+            while (true) {
+                require(System.nanoTime() <= deadline) { "SYNC_CONFLICT_TIMEOUT" }
+                // One poll/response is always drained before selecting a winner. Concurrent
+                // UI submissions cannot leave an unread late vote inside the next stage.
+                wire.sendText("REVIEW_POLL")
+                val voteText = wire.text(8192)
+                val vote = if (voteText == "REVIEW_WAIT") LanSyncReviewVote(description.binding) else
+                    LanSyncFramedJson.receive(wire, store.root, LanSyncReviewVote.serializer(), voteText)
+                require(vote.binding == description.binding) { "SYNC_REVIEW_BINDING" }
+                if (vote.choices.isNotEmpty()) { validateChoices(description, vote.choices); answer.complete(vote.choices) }
+                if (answer.isCompleted) {
+                    val selected = answer.await(); validateChoices(description, selected)
+                    wire.sendText("REVIEW_SELECTED")
+                    LanSyncFramedJson.send(wire, store.root, LanSyncReviewVote.serializer(), LanSyncReviewVote(description.binding, selected))
+                    return selected
+                }
+                delay(500)
             }
-        }
+        } finally { choices = null }
+    }
+    private suspend fun reviewOnPhone(wire: LanSyncWire, phone: LanSyncSnapshot) {
+        val preview = LanSyncTransfer.receive(wire, store.root, requireNotNull(store.peers().singleOrNull()).fingerprint,
+            workspace.resourceStore, transferProgress)
+        try {
+            val context = LanSyncFramedJson.receive(wire, store.root, LanSyncReviewContext.serializer())
+            require(context.ancestor.ownerId == preview.snapshot.deviceId && context.ancestor.peerId == identity.fingerprint &&
+                context.ancestor.revision == null && context.ancestor.localProjectionHash == null && context.ancestor.receipts.isEmpty()) { "SYNC_REVIEW_DEVICE" }
+            val comparison = LanSyncCompare.compare(preview.snapshot, phone, context.ancestor)
+            require(context.description == LanSyncDetailedReview.description(comparison, context.ancestor)) { "SYNC_REVIEW_BINDING" }
+            val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
+            choices = answer
+            _state.value = _state.value.copy(status = "可在本机或电脑查看内容并选择；比较起点仅保留指纹", conflicts = context.description.conflicts,
+                reviewBinding = context.description.binding, reviewDetails = LanSyncDetailedReview.details(context.description, comparison))
+            try {
+                while (true) when (wire.text(8192)) {
+                    "REVIEW_POLL" -> {
+                        val selected = if (answer.isCompleted) answer.await().also { validateChoices(context.description, it) } else emptyMap()
+                        if (selected.isEmpty()) wire.sendText("REVIEW_WAIT") else
+                            LanSyncFramedJson.send(wire, store.root, LanSyncReviewVote.serializer(), LanSyncReviewVote(context.description.binding, selected))
+                    }
+                    "REVIEW_SELECTED" -> {
+                        val selected = LanSyncFramedJson.receive(wire, store.root, LanSyncReviewVote.serializer())
+                        require(selected.binding == context.description.binding) { "SYNC_REVIEW_BINDING" }
+                        validateChoices(context.description, selected.choices)
+                        _state.value = _state.value.copy(conflicts = emptyList(), status = "两端已核对选择，正在准备保全与写入")
+                        return
+                    }
+                    "SYNC_CONFLICT_TIMEOUT" -> error("SYNC_CONFLICT_TIMEOUT")
+                    else -> error("SYNC_REVIEW_STAGE")
+                }
+            } finally { choices = null }
+        } finally { preview.close() }
     }
     private fun prepareLocalPending(peer: String, plan: LanSyncPlan, expectedLocal: Map<String, String>,
         expectedRemote: Map<String, String>, previous: LanSyncPending?, current: LanSyncSnapshot,
@@ -594,9 +659,11 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 "暂时连不上电脑：请保持两端页面打开，检查同一局域网、防火墙和电脑地址；会自动重连"
                 else "同步未完成，资料和恢复记录已保留。" + (code?.let { " 原因：$it" } ?: "请检查连接后重试。")
         }
-        _state.value = _state.value.copy(status = text, busy = false, conflicts = emptyList(), failureCode = code)
+        _state.value = _state.value.copy(status = text, busy = false, conflicts = emptyList(), failureCode = code,
+            reviewBinding = null, reviewDetails = emptyList())
     }
     fun stop() {
+        _state.value = _state.value.copy(conflicts = emptyList(), reviewBinding = null, reviewDetails = emptyList())
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null
         pairing?.cancel(); pairing = null
         sample?.cancel(); sample = null

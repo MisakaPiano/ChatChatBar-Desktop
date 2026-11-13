@@ -176,6 +176,38 @@ class LanSyncRuntimeTest {
             }
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun phoneCanInspectTheSameFrozenConflictAndChooseWithoutAComputerClick() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("card", "电脑原文"); b.write("card", "手机原文")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync()
+            until("both endpoints show one frozen conflict") { host.state.value.conflicts.size == 1 && phone.state.value.conflicts.size == 1 }
+            val pc = host.state.value; val mobile = phone.state.value
+            assertEquals(pc.reviewBinding, mobile.reviewBinding); assertEquals(pc.reviewDetails, mobile.reviewDetails)
+            val detail = mobile.reviewDetails.single()
+            assertEquals("电脑原文", detail.fieldPage("character_cards/card", "name", true, 0).first)
+            assertEquals("手机原文", detail.fieldPage("character_cards/card", "name", false, 0).first)
+            assertEquals(0, detail.computerMessages); assertEquals(0L, detail.phoneArchivedMessages)
+            phone.resolveConflicts(mapOf(mobile.conflicts.single().unit to LanSyncChoice.KEEP_PHONE), mobile.reviewBinding)
+            completed(a, b); assertEquals(setOf("手机原文"), a.names()); assertEquals(a.names(), b.names())
+            until("review text is released after the completion tail") {
+                host.state.value.reviewBinding == null && phone.state.value.reviewBinding == null
+            }
+            assertNull(host.state.value.reviewBinding); assertNull(phone.state.value.reviewBinding)
+            assertTrue(host.state.value.reviewDetails.isEmpty() && phone.state.value.reviewDetails.isEmpty())
+            val previous = a.store.baseline(b.id, a.id).revision
+            a.write("card", "电脑第二轮"); b.write("card", "手机第二轮"); host.requestSync()
+            until("a fresh conflict binding is visible on the phone") {
+                phone.state.value.conflicts.size == 1 && phone.state.value.reviewBinding != mobile.reviewBinding
+            }
+            val fresh = phone.state.value
+            phone.resolveConflicts(mapOf(fresh.conflicts.single().unit to LanSyncChoice.KEEP_COMPUTER), mobile.reviewBinding)
+            phone.resolveConflicts(mapOf(fresh.conflicts.single().unit to LanSyncChoice.KEEP_PHONE), fresh.reviewBinding)
+            completed(a, b, previous)
+            assertEquals(setOf("手机第二轮"), a.names()); assertEquals(a.names(), b.names())
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun actualPairSnapshotApplyRepeatDeletionAndReopenedHostAddress() = runBlocking {
         val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
         a.write("a", "电脑独有"); b.write("b", "手机独有")

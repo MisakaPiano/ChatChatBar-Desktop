@@ -15,6 +15,7 @@ data class LanSyncHeldReview(
     val resources: Map<String, Long>,
     val ancestorHashes: Map<String, String>,
     val ancestorComponents: Map<String, Set<String>>,
+    val proposalHash: String,
     val dependencyOf: Set<String> = emptySet(),
 )
 
@@ -25,7 +26,6 @@ object LanSyncPartialReview {
         require(plan.heldReviews.isEmpty()) { "SYNC_REVIEW_ALREADY_PREPARED" }
         computer.validate(); phone.validate(); plan.snapshot.validate()
         val comparison = LanSyncCompare.compare(computer, phone, baseline)
-        val reviews = LanSyncImpactReview.automaticReviews(comparison, baseline).filter { it.needsConfirmation }
         val allUnits = linkedMapOf<String, MutableSet<String>>()
         (comparison.computerUnits.entries + comparison.phoneUnits.entries).forEach { (unit, rows) ->
             allUnits.getOrPut(unit) { linkedSetOf() }.addAll(rows.map { it.key })
@@ -36,16 +36,19 @@ object LanSyncPartialReview {
         }
         val left = computer.records.associateBy { it.key }; val right = phone.records.associateBy { it.key }
         val desired = plan.snapshot.records.associateBy { it.key }
-        val proposals = reviews.associateBy { it.unit }
-        val held = linkedMapOf<String, MutableSet<String>>()
-        for (review in reviews) {
-            val keys = allUnits.getValue(review.unit)
+        val proposals = comparison.automatic.keys.filter { unit ->
+            val keys = allUnits.getValue(unit)
             val target = keys.mapNotNull(desired::get)
-            val selected = if (review.automaticComputer == true) comparison.computerUnits[review.unit].orEmpty()
-                else comparison.phoneUnits[review.unit].orEmpty()
-            require(lanSyncUnitHashes(mapOf(review.unit to target)) == lanSyncUnitHashes(mapOf(review.unit to selected))) { "SYNC_REVIEW_PROPOSAL_CHANGED" }
-            val binding = reviewBinding(review.unit, keys.mapNotNull(left::get), keys.mapNotNull(right::get), baseline)
-            if (confirmedBindings[review.unit] != binding) held[review.unit] = linkedSetOf()
+            (LanSyncImpactReview.changes(keys.mapNotNull(left::get), target) +
+                LanSyncImpactReview.changes(keys.mapNotNull(right::get), target)).any { it.needsConfirmation }
+        }.toSet()
+        val held = linkedMapOf<String, MutableSet<String>>()
+        for (unit in proposals) {
+            val keys = allUnits.getValue(unit)
+            val target = keys.mapNotNull(desired::get)
+            val binding = reviewBinding(unit, keys.mapNotNull(left::get), keys.mapNotNull(right::get), baseline,
+                lanSyncUnitHashes(mapOf(unit to target)).getValue(unit))
+            if (confirmedBindings[unit] != binding) held[unit] = linkedSetOf()
         }
         // A format is a strict live-session edge. Preserve its connected conversations when
         // either endpoint's original view must be retained, including postponed new forks.
@@ -75,9 +78,10 @@ object LanSyncPartialReview {
             val resources = (computer.resources + phone.resources).filterKeys {
                 it in referenced
             }
-            LanSyncHeldReview(unit, reviewBinding(unit, beforeLeft, beforeRight, baseline), computer.deviceId, phone.deviceId,
+            val proposalHash = lanSyncUnitHashes(mapOf(unit to keys.mapNotNull(desired::get))).getValue(unit)
+            LanSyncHeldReview(unit, reviewBinding(unit, beforeLeft, beforeRight, baseline, proposalHash), computer.deviceId, phone.deviceId,
                 beforeLeft, beforeRight, keys.toSet(), resources, baseline.hashes.filterKeys(ancestorUnits::contains),
-                baseline.componentRecords.filterKeys(ancestorUnits::contains), dependencies)
+                baseline.componentRecords.filterKeys(ancestorUnits::contains), proposalHash, dependencies)
         }
         return plan.copy(heldReviews = result).also {
             // Both graphs must be valid before this partial envelope has publication authority.
@@ -85,10 +89,13 @@ object LanSyncPartialReview {
         }
     }
 
-    fun reviewBinding(unit: String, computer: List<LanSyncRecord>, phone: List<LanSyncRecord>, baseline: LanSyncBaseline): String {
+    fun reviewBinding(unit: String, computer: List<LanSyncRecord>, phone: List<LanSyncRecord>, baseline: LanSyncBaseline,
+        proposalHash: String = lanSyncUnitHashes(mapOf(unit to emptyList())).getValue(unit)): String {
         val keys = (computer + phone).map { it.key }.toSet()
         return lanSyncHash(buildJsonObject {
             put("unit", unit)
+            put("computerDevice", baseline.ownerId?.let(::JsonPrimitive) ?: JsonNull); put("phoneDevice", baseline.peerId)
+            put("proposal", proposalHash)
             put("computer", lanSyncUnitHashes(mapOf(unit to computer)).getValue(unit))
             put("phone", lanSyncUnitHashes(mapOf(unit to phone)).getValue(unit))
             put("ancestor", baseline.hashes[unit]?.let(::JsonPrimitive) ?: JsonNull)
@@ -142,7 +149,8 @@ object LanSyncPartialReview {
             require((proof.computer + proof.phone).all { it.key in proof.recordKeys }) { "SYNC_REVIEW_IDENTITIES" }
             val ancestor = LanSyncBaseline(proof.phoneDevice, ownerId = proof.computerDevice,
                 hashes = proof.ancestorHashes, componentRecords = proof.ancestorComponents)
-            require(reviewBinding(proof.unit, proof.computer, proof.phone, ancestor) == proof.binding) { "SYNC_REVIEW_BINDING" }
+            require(proof.proposalHash == lanSyncUnitHashes(mapOf(proof.unit to plan.snapshot.records.filter { it.key in proof.recordKeys })).getValue(proof.unit) &&
+                reviewBinding(proof.unit, proof.computer, proof.phone, ancestor, proof.proposalHash) == proof.binding) { "SYNC_REVIEW_BINDING" }
             require(proof.resources.keys == LanSyncScope.referencedResources(proof.computer + proof.phone)) { "SYNC_REVIEW_RESOURCES" }
             require(proof.resources.keys.all { it.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_REVIEW_RESOURCES" }
             LanSyncResourceBudget().total(proof.resources.values)
