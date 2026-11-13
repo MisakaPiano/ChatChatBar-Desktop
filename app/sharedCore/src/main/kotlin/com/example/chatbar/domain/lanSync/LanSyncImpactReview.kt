@@ -101,12 +101,12 @@ object LanSyncImpactReview {
     private fun resourceCounts(record: LanSyncRecord?): Map<String, Int> {
         if (record == null) return emptyMap()
         val counts = linkedMapOf<String, Int>()
-        LanSyncWorkspace.mapResources(record.body) { value, _ ->
-            if (value.startsWith("ccb-lan-v1/")) {
+        LanSyncWorkspace.mapResources(record.comparisonBody()) { value, _ ->
+            if (value.startsWith("ccb-lan-content/")) {
                 val parts = value.split('/')
                 require(parts.size == 5) { "SYNC_REVIEW_RESOURCE" }
-                // Equal bytes can still be independently retained references. One repeated
-                // surviving alias must not compensate for the removal of a distinct alias.
+                // comparisonBody retains within-record alias groups, independent of device
+                // filenames: [A,B] and [C,D] align, while [A,B] to [B,B] loses one group.
                 val key = value
                 counts[key] = Math.addExact(counts.getOrDefault(key, 0), 1)
             } else if (value.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||

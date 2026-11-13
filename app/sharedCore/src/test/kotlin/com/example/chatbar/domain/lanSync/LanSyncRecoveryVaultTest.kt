@@ -7,6 +7,9 @@ import java.nio.file.Path
 import java.util.UUID
 import kotlinx.serialization.json.*
 import kotlin.test.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class LanSyncRecoveryVaultTest {
     private fun row(id: String, name: String, avatar: String? = null) = LanSyncRecord("character_cards", id,
@@ -64,5 +67,38 @@ class LanSyncRecoveryVaultTest {
                 healthy.verify(saved)
             }
         } finally { check(root.toFile().deleteRecursively()); check(state.toFile().deleteRecursively()) }
+    }
+
+    @Test fun concurrentVaultInstancesNeverRewriteASealedEntryEvenAfterItsLiveSourceWasDeleted() {
+        val root = Files.createTempDirectory("lan-recovery-concurrent-data-").toRealPath()
+        val state = Files.createTempDirectory("lan-recovery-concurrent-state-").toRealPath()
+        val pool = Executors.newFixedThreadPool(2)
+        try {
+            write(root, row("card", "并发保全原文"))
+            val workspace = LanSyncWorkspace(root, state, { Path.of(it) })
+            val plan = LanSyncPlan(UUID.randomUUID().toString(), LanSyncSnapshot(deviceId = "pc", records = emptyList()), emptyMap())
+            val beforeSeal = CountDownLatch(1); val secondWaiting = CountDownLatch(1)
+            val first = LanSyncRecoveryVault(state.resolve("recovery"), observe = { phase ->
+                if (phase == "BEFORE_SEAL") { beforeSeal.countDown(); check(secondWaiting.await(10, TimeUnit.SECONDS)) }
+            })
+            val second = LanSyncRecoveryVault(state.resolve("recovery"), observe = { phase ->
+                if (phase == "ENTRY_WAITING") secondWaiting.countDown()
+                check(phase != "RESOURCES_PROTECTED") { "A second writer must read the sealed entry, never enter its preparation" }
+            })
+            workspace.capture("pc").use { capture ->
+                val a = pool.submit<LanSyncRecoveryEntry> {
+                    requireNotNull(first.protect(root, capture, plan)).also { Files.delete(root.resolve("entities/character_cards/card.json")) }
+                }
+                check(beforeSeal.await(10, TimeUnit.SECONDS))
+                val b = pool.submit<LanSyncRecoveryEntry> { requireNotNull(second.protect(root, capture, plan)) }
+                val entry = a.get(20, TimeUnit.SECONDS)
+                assertEquals(entry, b.get(20, TimeUnit.SECONDS)); second.verify(entry)
+                assertEquals(listOf(entry), second.list())
+                assertFalse(Files.exists(root.resolve("entities/character_cards/card.json")))
+            }
+        } finally {
+            pool.shutdownNow(); check(pool.awaitTermination(20, TimeUnit.SECONDS))
+            check(root.toFile().deleteRecursively()); check(state.toFile().deleteRecursively())
+        }
     }
 }

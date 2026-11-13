@@ -60,6 +60,17 @@ class LanSyncImpactReviewTest {
         assertTrue(impact.needsConfirmation)
     }
 
+    @Test fun aRealBodyEditWithEquivalentRenamedIndependentAliasesDoesNotInventAttachmentDeletion() {
+        val before = message()
+        val after = before.copy(content = "真实修改的新正文", alternatives = listOf("旧正文", "真实修改的新正文"), images = before.images.mapIndexed { index, path ->
+            path.replace(if (index == 0) "11111111-1111-1111-1111-111111111111" else "22222222-2222-2222-2222-222222222222",
+                if (index == 0) "33333333-3333-3333-3333-333333333333" else "44444444-4444-4444-4444-444444444444")
+        })
+        val impact = LanSyncImpactReview.changes(listOf(record(before)), listOf(record(after))).single()
+        assertEquals(0, impact.removedAttachmentReferences)
+        assertFalse(impact.needsConfirmation); assertTrue(impact.needsProtection)
+    }
+
     @Test fun legacyInlineSlotMessageAndVersionReductionsAreReviewedWithinTheRetainedSlotRecord() {
         val first = message(); val second = first.copy(id = "another-message")
         val slot = SaveSlot(id = "slot", sessionId = session.id, name = "合成旧内联存档", messages = listOf(first, second), createdAt = 1)

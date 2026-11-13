@@ -7,6 +7,8 @@ import java.nio.file.StandardOpenOption
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
 
 @Serializable
 data class LanSyncRecoveryEntry(
@@ -51,7 +53,12 @@ class LanSyncRecoveryVault(
     private fun binding(snapshot: LanSyncSnapshot) = lanSyncHash(JsonObject(snapshot.hashes().mapValues { JsonPrimitive(it.value) }))
 
     @OptIn(ExperimentalSerializationApi::class)
-    fun protect(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan): LanSyncRecoveryEntry? {
+    fun protect(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan): LanSyncRecoveryEntry? = withEntry(plan.transaction) {
+        protectOwned(dataRoot, current, plan)
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun protectOwned(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan): LanSyncRecoveryEntry? {
         val changes = LanSyncImpactReview.changes(current.snapshot.records, plan.snapshot.records)
         if (changes.none { it.needsProtection }) return null
         require(current.sourceFiles.size == current.snapshot.records.size) { "SYNC_RECOVERY_SOURCE" }
@@ -198,5 +205,24 @@ class LanSyncRecoveryVault(
 
     fun blobs(entry: LanSyncRecoveryEntry): Map<String, Path> = snapshot(entry).resources.mapValues { (hash, size) ->
         requireNotNull(objects.completed(hash, size)) { "SYNC_RECOVERY_RESOURCE_MISSING" }
+    }
+
+    private fun <T> withEntry(transaction: String, operation: () -> T): T {
+        val key = directory(transaction).toAbsolutePath().normalize().toString()
+        val lease = requireNotNull(locks.compute(key) { _, previous -> (previous ?: EntryLock()).also { it.users++ } })
+        fun unregister() { locks.compute(key) { _, current ->
+            check(current === lease); lease.users--; if (lease.users == 0) null else lease
+        } }
+        if (lease.lock.isHeldByCurrentThread) { unregister(); error("SYNC_RECOVERY_ALREADY_OPEN") }
+        try { observe("ENTRY_WAITING") }
+        catch (failure: Throwable) { unregister(); throw failure }
+        lease.lock.lock()
+        try { return operation() }
+        finally { lease.lock.unlock(); unregister() }
+    }
+
+    companion object {
+        private class EntryLock(val lock: ReentrantLock = ReentrantLock(), var users: Int = 0)
+        private val locks = ConcurrentHashMap<String, EntryLock>()
     }
 }

@@ -191,7 +191,8 @@ class LanSyncResourceStore(
             lanSyncSafe(existing, true)
             for (directory in missing.asReversed()) {
                 lanSyncSafe(requireNotNull(directory.parent), true)
-                Files.createDirectory(directory)
+                try { Files.createDirectory(directory) }
+                catch (_: java.nio.file.FileAlreadyExistsException) { /* Validate the racing occupant below. */ }
                 lanSyncSafe(directory, true)
             }
             lanSyncSafe(path, true)
