@@ -356,6 +356,20 @@ class FileCiphertextStoreTest {
     }
 
     @Test
+    fun `parent traversal cannot erase a symbolic ancestor and silently select another root`() = withRoot { root ->
+        val outside = Files.createTempDirectory("ccb-store-parent-outside-")
+        val link = root.resolve("linked")
+        try {
+            try { Files.createSymbolicLink(link, outside) }
+            catch (failure: Exception) { assumeNoException("This path probe requires symbolic-link support", failure) }
+            assertFailure(CiphertextStoreFailure.UNSAFE_PATH) { FileCiphertextStore(link.resolve("../must-not-be-created")) }
+            assertFalse(Files.exists(root.resolve("must-not-be-created")))
+            assertFalse(Files.exists(outside.parent.resolve("must-not-be-created")))
+            assertEquals(0L, Files.list(outside).use { it.count() })
+        } finally { Files.deleteIfExists(link); Files.deleteIfExists(outside) }
+    }
+
+    @Test
     fun `reentrant caller source is rejected instead of taking overlapping process locks`() = withRoot { root ->
         val store = FileCiphertextStore(root)
         val bytes = byteArrayOf(0x56)

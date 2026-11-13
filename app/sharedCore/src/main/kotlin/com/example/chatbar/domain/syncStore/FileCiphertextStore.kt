@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock
  * File force is not a portable guarantee that directory entries survive sudden power loss.
  */
 class FileCiphertextStore(root: Path, private val bufferBytes: Int = 64 * 1024) : CiphertextStore {
-    private val root = root.toAbsolutePath().normalize()
+    private val root = checkedRoot(root)
     private val blobs = this.root.resolve("objects")
     private val commits = this.root.resolve("commits")
     private val operations = this.root.resolve("operations")
@@ -322,6 +322,11 @@ class FileCiphertextStore(root: Path, private val bufferBytes: Int = 64 * 1024) 
             ByteArray(length).also { DataInputStream(input).readFully(it) }
 
         private fun fail(failure: CiphertextStoreFailure): Nothing = throw CiphertextStoreException(failure)
+
+        private fun checkedRoot(path: Path): Path {
+            if (!path.isAbsolute || path.normalize() != path) fail(CiphertextStoreFailure.UNSAFE_PATH)
+            return path
+        }
 
         private fun interrupted() {
             if (Thread.currentThread().isInterrupted) throw InterruptedIOException("Ciphertext store interrupted")
