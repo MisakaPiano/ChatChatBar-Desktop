@@ -1,0 +1,56 @@
+name: Isolated Android group native custody proof
+on:
+  push:
+    branches: ['codex/lan-sync-*']
+    paths: [.github/lan-sync-group-device-request.json]
+permissions:
+  contents: read
+jobs:
+  android26:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze exact requested source
+        run: |
+          sourceSha=$(python3 -c 'import json; print(json.load(open(".github/lan-sync-group-device-request.json"))["sourceSha"])')
+          [[ "$sourceSha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          sourceDir="$RUNNER_TEMP/ccb-group-native-platform-source"
+          git worktree add --detach "$sourceDir" "$sourceSha"
+          test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
+          echo "CCB_GROUP_PLATFORM_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile isolated app and instrumentation
+        run: |
+          cd "$CCB_GROUP_PLATFORM_SOURCE/app"
+          chmod +x gradlew
+          ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true --no-daemon --stacktrace
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Real Keystore and source receipt across two instrumentation processes
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash "$CCB_GROUP_PLATFORM_SOURCE/tools/lan-sync/run-group-native-android.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: group-native-android-api26-evidence
+          path: lan-sync-group-native-evidence/
