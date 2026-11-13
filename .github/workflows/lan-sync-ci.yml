@@ -98,6 +98,11 @@ jobs:
                           'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncGroupBlobStore',
                           'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncGroupObjectCodec',
                           'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroup',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncRecoveryVault',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncResource',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncScope',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncSlotPackages',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncWorkspace',
                           'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/',
                           '.github/workflows/lan-sync-ci.yml')
               group_large = any(path.startswith(group_io) for path in paths)

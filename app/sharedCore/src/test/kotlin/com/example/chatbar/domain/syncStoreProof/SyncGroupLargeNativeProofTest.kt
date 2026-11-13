@@ -122,15 +122,18 @@ class SyncGroupLargeNativeProofTest {
                 DocumentInfo("document-$index", path.fileName.toString(), path.toString(), "application/octet-stream", addedAt = 1)
             }
             write(source, "character_cards", "card", CharacterCard.serializer(), CharacterCard("card", "合成加密大资料", customDocuments = documents, createdAt = 1, updatedAt = 1))
-            write(source, "chat_sessions", "session", ChatSession.serializer(), ChatSession("session", "card", "加密大资料", createdAt = 1, updatedAt = 1))
+            write(source, "chat_sessions", "session", ChatSession.serializer(), ChatSession("session", "card", "加密大资料", modelId = "synthetic-private-model", createdAt = 1, updatedAt = 1))
             val (slot, packageHash) = archive(source); expected[packageHash] = slot.packageRef!!.byteLength
             write(source, "save_slots", slot.id, SaveSlot.serializer(), slot)
             val total = expected.values.fold(0L, Math::addExact); assertTrue(total > 1024L * 1024 * 1024)
             val bindings = linkedMapOf<String, SyncEnvelopeBlobBinding>(); val operations = linkedMapOf<String, SyncStoreId>()
             val units = mutableListOf<LanSyncDecodedGroupUnit>(); lateinit var expectedHashes: Map<String, String>
             val workspace = LanSyncWorkspace(source, sourceState, { Path.of(it) })
+            val sourceHistory = LanSyncRecoveryVault(directory("source-history"))
+            lateinit var sourceCheckpoint: LanSyncRecoveryEntry
             workspace.capture(owner.fingerprint).use { capture ->
                 expectedHashes = capture.snapshot.hashes()
+                sourceCheckpoint = requireNotNull(sourceHistory.checkpointSource(source, capture, cipher.group, UUID.randomUUID().toString()))
                 fun enqueue(path: Path, identity: SyncPlaintextIdentity) {
                     if (identity.sha256 in bindings) return
                     val operation = SyncStoreId.random()
@@ -151,6 +154,15 @@ class SyncGroupLargeNativeProofTest {
             fun publisher() = LanSyncGroupPublicationQueue(publications, ledger, SyncEncryptedOutbox(queue, cipher), owner.fingerprint)
             val plan = publisher().prepare(metadata, units, operations, emptyList())
             check(source.toFile().deleteRecursively()); check(sourceState.toFile().deleteRecursively())
+            sourceHistory.verify(sourceCheckpoint)
+            assertEquals(expected, sourceHistory.snapshot(sourceCheckpoint).resources)
+            var rawOriginals = 0
+            sourceHistory.originals(sourceCheckpoint) { original, path ->
+                rawOriginals++
+                if (original.relative == "entities/chat_sessions/session.json") assertEquals("synthetic-private-model",
+                    LanSyncJsonFiles.read(path, ChatSession.serializer())?.modelId)
+            }
+            assertEquals(3, rawOriginals)
             var inject = true; val attempted = AtomicLong(); val committed = AtomicLong()
             val interrupted = object : CiphertextStore by backend {
                 override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
@@ -214,6 +226,7 @@ class SyncGroupLargeNativeProofTest {
                 put("sourceAndCaptureDeletedBeforeUpload", true); put("interruptedUploadRetried", true); put("nativeUnits", decoded.size)
                 put("rootRecipientCount", members.size); put("wholeResourceHashesVerified", true); put("sharedNativeWorkspaceReopened", true)
                 put("inboxReconciled", true); put("perUnitDependenciesVerified", true)
+                put("independentSourceCheckpointVerified", true); put("sourceRawOriginals", rawOriginals)
                 put("elapsedMillis", (System.nanoTime() - started) / 1_000_000); put("sampledPeakHeapBytes", peakHeap); put("minimumSampledFreeDiskBytes", minimumFree)
             })
         } finally { sampler.cancelAndJoin(); check(root.toFile().deleteRecursively()) }

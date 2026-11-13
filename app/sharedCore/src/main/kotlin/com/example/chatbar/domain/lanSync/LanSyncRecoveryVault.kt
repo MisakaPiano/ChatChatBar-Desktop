@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.lanSync
 
+import com.example.chatbar.domain.syncStore.SyncStoreId
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -33,6 +34,7 @@ data class LanSyncRecoveryEntry(
     val originalCount: Long = recordCount,
     val publicationTransaction: String? = null,
     val rawSourceBinding: String? = null,
+    val sourceCheckpointGroup: String? = null,
 )
 
 @Serializable
@@ -56,7 +58,7 @@ class LanSyncRecoveryVault(
 
     @Serializable private data class Preparation(val transaction: String, val source: String, val target: String,
         val projectionHash: String? = null, val custodyDevice: String? = null, val hasLocalOriginals: Boolean = true,
-        val rawSourceBinding: String? = null)
+        val rawSourceBinding: String? = null, val sourceCheckpointGroup: String? = null)
     private fun directory(transaction: String): Path {
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_ID" }
         return entries.resolve(transaction)
@@ -76,6 +78,17 @@ class LanSyncRecoveryVault(
         protectOwned(dataRoot, current, plan, projection)
     }
 
+    /** Prepublication source custody, including raw local choices; not a publication/approval receipt. */
+    fun checkpointSource(dataRoot: Path, current: LanSyncCapture, group: SyncStoreId, revision: String,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = withEntry(revision) {
+        current.snapshot.validate(); LanSyncScope.validateGraph(current.snapshot); projection.validate()
+        if (current.snapshot.records.isEmpty()) {
+            require(!Files.exists(directory(revision), LinkOption.NOFOLLOW_LINKS)) { "SYNC_RECOVERY_PLAN_CHANGED" }
+            return@withEntry null
+        }
+        protectOwned(dataRoot, current, LanSyncPlan(revision, current.snapshot, emptyMap()), projection, sourceCheckpointGroup = group.value)
+    }
+
     fun protectPeer(ownerDevice: String, peer: LanSyncCapture, peerTarget: LanSyncPlan,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? {
         require(ownerDevice.isNotBlank() && peer.snapshot.deviceId != ownerDevice && peer.sourceFiles.isEmpty()) { "SYNC_RECOVERY_DEVICE" }
@@ -93,28 +106,33 @@ class LanSyncRecoveryVault(
     @OptIn(ExperimentalSerializationApi::class)
     private fun protectOwned(dataRoot: Path?, current: LanSyncCapture, plan: LanSyncPlan, projection: LanSyncProjection,
         custodyDevice: String = current.snapshot.deviceId, hasLocalOriginals: Boolean = true,
-        publicationTransaction: String? = null): LanSyncRecoveryEntry? {
+        publicationTransaction: String? = null, sourceCheckpointGroup: String? = null): LanSyncRecoveryEntry? {
         val changes = LanSyncImpactReview.changes(current.snapshot.records, plan.snapshot.records)
-        if (changes.none { it.needsProtection }) return null
+        if (sourceCheckpointGroup == null && changes.none { it.needsProtection } || sourceCheckpointGroup != null && current.snapshot.records.isEmpty()) return null
+        require(sourceCheckpointGroup == null || sourceCheckpointGroup.matches(Regex("[a-f0-9]{32}")) &&
+            hasLocalOriginals && custodyDevice == current.snapshot.deviceId && plan.snapshot == current.snapshot) { "SYNC_RECOVERY_SOURCE_CHECKPOINT" }
         require(if (hasLocalOriginals) dataRoot != null && current.sourceFiles.size == current.snapshot.records.size
             else dataRoot == null && current.sourceFiles.isEmpty()) { "SYNC_RECOVERY_SOURCE" }
         val beforeUnits = current.snapshot.units()
-        val affectedKeys = changes.filter { it.needsProtection }.map { it.key }.toSet()
+        val affectedKeys = if (sourceCheckpointGroup != null) current.snapshot.records.map { it.key }.toSet()
+            else changes.filter { it.needsProtection }.map { it.key }.toSet()
         val affected = beforeUnits.filterValues { rows -> rows.any { it.key in affectedKeys } }.keys.sorted()
         require(affected.isNotEmpty()) { "SYNC_RECOVERY_SOURCE" }
         val raw = if (hasLocalOriginals) rawBinding(current.sourceFiles) else rawBinding(current.snapshot)
-        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot), projection.digest(), custodyDevice, hasLocalOriginals, raw)
+        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot), projection.digest(), custodyDevice, hasLocalOriginals, raw, sourceCheckpointGroup)
         fun variant(): LanSyncRecoveryEntry? {
             val publication = publicationTransaction ?: plan.transaction
-            val id = java.util.UUID.nameUUIDFromBytes("ccb-lan-custody-raw/$publication/$custodyDevice/${current.snapshot.deviceId}/$hasLocalOriginals/$raw"
+            val domain = if (sourceCheckpointGroup == null) "ccb-lan-custody-raw" else "ccb-group-source-custody/$sourceCheckpointGroup"
+            val id = java.util.UUID.nameUUIDFromBytes("$domain/$publication/$custodyDevice/${current.snapshot.deviceId}/$hasLocalOriginals/$raw"
                 .toByteArray(Charsets.UTF_8)).toString()
             require(id != plan.transaction) { "SYNC_RECOVERY_PLAN_CHANGED" }
             return withEntry(id) { protectOwned(dataRoot, current, plan.copy(transaction = id), projection,
-                custodyDevice, hasLocalOriginals, publication) }
+                custodyDevice, hasLocalOriginals, publication, sourceCheckpointGroup) }
         }
         val directory = directory(plan.transaction)
         read(plan.transaction)?.let { existing ->
             require(existing.sourceBinding == preparation.source && existing.targetBinding == preparation.target) { "SYNC_RECOVERY_PLAN_CHANGED" }
+            require(existing.sourceCheckpointGroup == sourceCheckpointGroup) { "SYNC_RECOVERY_SOURCE_CHECKPOINT" }
             require((existing.custodyDevice ?: existing.sourceDevice) == custodyDevice && existing.hasLocalOriginals == hasLocalOriginals) { "SYNC_RECOVERY_DEVICE" }
             val originalProjection = sourceProjection(existing)
             require(originalProjection == projection || originalProjection == null && projection.bindings.isEmpty()) { "SYNC_RECOVERY_PROJECTION" }
@@ -190,7 +208,7 @@ class LanSyncRecoveryVault(
             LanSyncResourceStore.hashFile(affectedFile, Files.size(affectedFile)), Files.size(affectedFile), affected.size.toLong(),
             current.snapshot.records.size.toLong(), current.snapshot.records.count { it.type == "chat_messages" }.toLong(),
             LanSyncResourceStore.hashFile(projectionFile, Files.size(projectionFile)), Files.size(projectionFile),
-            custodyDevice, hasLocalOriginals, current.sourceFiles.size.toLong(), publicationTransaction, raw)
+            custodyDevice, hasLocalOriginals, current.sourceFiles.size.toLong(), publicationTransaction, raw, sourceCheckpointGroup)
         verifyFiles(entry)
         observe("BEFORE_SEAL")
         lanSyncAtomicWrite(directory.resolve("entry.json"), lanSyncJson.encodeToString(LanSyncRecoveryEntry.serializer(), entry).toByteArray(Charsets.UTF_8))
@@ -216,6 +234,8 @@ class LanSyncRecoveryVault(
         require(entry.sourceDevice.isNotBlank() && (entry.custodyDevice == null || entry.custodyDevice.isNotBlank()) &&
             entry.recordCount > 0 && entry.messageCount in 0..entry.recordCount && entry.affectedUnits > 0 &&
             (entry.rawSourceBinding == null || entry.rawSourceBinding.matches(Regex("[a-f0-9]{64}"))) &&
+            (entry.sourceCheckpointGroup == null || entry.sourceCheckpointGroup.matches(Regex("[a-f0-9]{32}")) &&
+                entry.hasLocalOriginals && (entry.custodyDevice ?: entry.sourceDevice) == entry.sourceDevice && entry.sourceBinding == entry.targetBinding) &&
             (entry.hasLocalOriginals || entry.custodyDevice != null && entry.custodyDevice != entry.sourceDevice)) { "SYNC_RECOVERY_DAMAGED" }
         val directory = directory(entry.transaction)
         for ((name, hash, length) in listOf(Triple("snapshot.json", entry.snapshotHash, entry.snapshotBytes),
