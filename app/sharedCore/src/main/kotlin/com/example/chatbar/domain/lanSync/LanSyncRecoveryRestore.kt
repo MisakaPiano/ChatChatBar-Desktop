@@ -12,7 +12,7 @@ data class LanSyncRestorePreview(val id: String, val sourceTransaction: String, 
 @Serializable
 data class LanSyncRestoreRevision(val revision: String, val sourceTransaction: String, val sourceSnapshotHash: String,
     val unit: String, val sourceDevice: String, val previewBinding: String, val createdAt: Long,
-    val applied: Boolean = false)
+    val applied: Boolean = false, val restoredUnits: Set<String> = emptySet())
 
 /** Replaces only the selected historical unit and its required missing dependencies. */
 object LanSyncRecoveryRestore {

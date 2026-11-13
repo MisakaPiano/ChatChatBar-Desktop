@@ -17,20 +17,22 @@ import kotlinx.serialization.json.*
 
 class LanSyncGroupSourceCommit internal constructor(val entry: SyncAuthorJournalEntry, val metadata: SyncAuthenticatedGroupObject,
     val publication: LanSyncGroupPublishPlan, internal val expectedApplied: Map<String, LanSyncGroupAppliedUnit?>,
-    internal val coverage: Set<String>)
+    internal val coverage: Set<String>, internal val restorations: Map<String, Set<String>> = emptyMap())
 
 /** Source signing owner; native preparation requires the platform data gate. Queue-only delivery/receipt do not. */
 class LanSyncGroupSourceWriter(private val root: Path, private val workspace: LanSyncWorkspace, private val identity: LanSyncTlsIdentity,
     private val journal: SyncAuthorJournal, private val authority: () -> SyncDeviceLedger,
     private val cipher: (SyncStoreId) -> SyncStreamingCipher, private val outbox: (SyncStoreId) -> SyncEncryptedOutbox,
     private val currentView: () -> SyncInboxReconciliation, private val nativeState: () -> LanSyncGroupNativeState,
-    private val projection: LanSyncProjection = LanSyncProjection(), private val observe: (String) -> Unit = {}) {
+    private val projection: LanSyncProjection = LanSyncProjection(), private val observe: (String) -> Unit = {},
+    private val restorationRevisions: () -> Map<String, Set<String>> = { emptyMap() }) {
     @Serializable private data class Blob(val operation: SyncStoreId, val key: CiphertextObjectKey, val plaintext: SyncPlaintextIdentity)
     @Serializable private data class Source(val format: Int, val operation: SyncStoreId, val device: String, val group: SyncStoreId,
         val ledger: SyncVersionRef, val heads: Set<SyncVersionRef>, val parents: Set<SyncVersionRef>, val authorHead: SyncVersionRef?, val coverage: Set<String>,
         val changes: Map<String, SyncUnitChange>, val review: String, val checkpoint: String, val checkpointHash: String?,
         val rawSource: String, val sourceHashes: Map<String, String>, val projection: String,
-        val applied: Map<String, LanSyncGroupAppliedUnit?>, val epoch: SyncStoreId, val commitment: String, val blobs: Map<String, Blob>)
+        val applied: Map<String, LanSyncGroupAppliedUnit?>, val epoch: SyncStoreId, val commitment: String, val blobs: Map<String, Blob>,
+        val restorations: Map<String, Set<String>> = emptyMap())
     @Serializable private data class Delivery(val source: String, val version: SyncVersionRef, val epoch: SyncStoreId, val commitment: String,
         val metadataOperation: SyncStoreId, val metadataKey: CiphertextObjectKey, val blobs: Map<String, Blob>)
     private val lock: ReentrantLock
@@ -83,7 +85,10 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
                         changes, authorization.binding, checkpoint?.transaction ?: revision, checkpoint?.snapshotHash,
                         rawBinding(capture.sourceFiles), capture.snapshot.hashes(), projection.digest(), selected.associateWith { native.appliedBefore[it] },
                         key.epoch, key.keyCommitment(), paths.mapValues { (_, value) -> Blob(SyncStoreId.random(),
-                            CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), value.first) }).also {
+                            CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), value.first) },
+                        restorationRevisions().filterKeys(selected::contains).mapValues { it.value.toSortedSet() }).also {
+                        require(it.restorations.values.all { revisions -> revisions.isNotEmpty() &&
+                            revisions.all { id -> id.matches(Regex("[a-f0-9-]{36}")) } }) { "SYNC_GROUP_SOURCE_RESTORATIONS" }
                         LanSyncJsonFiles.write(sourcePath(operation), Source.serializer(), it); observe("SOURCE_PREPARATION_RETAINED")
                     }
                 }
@@ -111,11 +116,23 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         require(journal.state().pendingApproved?.request == request(source)) { "SYNC_GROUP_SOURCE_APPROVAL_NOT_RESERVED" }
         finish(source, sign(source))
     }
-    fun operations(): List<SyncStoreId> = guarded {
+    fun operations(): List<SyncStoreId> = guarded { sourceOperations() }
+    private fun sourceOperations(): List<SyncStoreId> =
         Files.newDirectoryStream(root, "source-*.json").use { files -> files.map { path ->
             PrivateSyncFile.checked(path)
             SyncStoreId.parse(path.fileName.toString().removePrefix("source-").removeSuffix(".json")).also { requireNotNull(readSource(it)) }
         } }
+    /** A protected approved signature binds these exact IDs through the complete source hash. */
+    fun acknowledgedRestorations(): Map<String, Set<String>> = guarded {
+        val result = linkedMapOf<String, MutableSet<String>>()
+        sourceOperations().forEach { operation ->
+            val source = requireNotNull(readSource(operation))
+            journal.entry(operation)?.let { entry ->
+                require(entry.request == request(source)) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
+                source.restorations.forEach { (unit, revisions) -> result.getOrPut(unit) { linkedSetOf() }.addAll(revisions) }
+            }
+        }
+        result.mapValues { Collections.unmodifiableSet(it.value.toSet()) }
     }
     fun upload(operation: SyncStoreId, backend: CiphertextStore, target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY): LanSyncGroupPublishReceipt = guarded {
         val source = requireNotNull(readSource(operation)) { "SYNC_GROUP_SOURCE_PREPARATION_MISSING" }
@@ -185,7 +202,8 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         val publication = publisher(key.epoch).prepare(metadata, proofs, delivery.blobs.mapValues { it.value.operation }, known)
         observe("SOURCE_SIGNED_DELIVERY_READY")
         return LanSyncGroupSourceCommit(entry, SyncGroupObjectCodec(work).readQueued(queue, delivery.metadataOperation, entry.version.reference()), publication,
-            Collections.unmodifiableMap(source.applied.toMap()), Collections.unmodifiableSet(source.coverage.toSet()))
+            Collections.unmodifiableMap(source.applied.toMap()), Collections.unmodifiableSet(source.coverage.toSet()),
+            Collections.unmodifiableMap(source.restorations.mapValues { Collections.unmodifiableSet(it.value.toSet()) }))
     }
     private fun request(source: Source) = SyncAuthorCommitRequest(source.operation, source.ledger, source.parents, source.changes,
         source.checkpoint, source.rawSource, lanSyncHash(buildJsonObject { put("review", source.review); put("preparation", hash(source)) }),
@@ -205,7 +223,9 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         LanSyncMetadataBudget().validate(path)
         return requireNotNull(LanSyncJsonFiles.read(path, Source.serializer())).also {
             require(it.format == 1 && it.operation == operation && it.device == identity.fingerprint && it.group == authority().trustAnchor.group &&
-                it.projection == projection.digest() && it.blobs.all { (hash, slot) -> hash == slot.plaintext.sha256 && slot.key.kind == CiphertextObjectKind.BLOB }) { "SYNC_GROUP_SOURCE_PRIVATE_CONTEXT" }
+                it.projection == projection.digest() && it.blobs.all { (hash, slot) -> hash == slot.plaintext.sha256 && slot.key.kind == CiphertextObjectKind.BLOB } &&
+                it.restorations.all { (unit, revisions) -> unit in it.changes && revisions.isNotEmpty() &&
+                    revisions.all { revision -> revision.matches(Regex("[a-f0-9-]{36}")) } }) { "SYNC_GROUP_SOURCE_PRIVATE_CONTEXT" }
         }
     }
     private fun requireView(checkpoint: SyncVersionRef, heads: Set<SyncVersionRef>, coverage: Set<String>) {
@@ -223,7 +243,11 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
     private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publications, authority(), outbox(epoch), identity.fingerprint, currentLedger = authority)
     private fun sourcePath(operation: SyncStoreId) = root.resolve("source-${operation.value}.json")
     private fun deliveryPath(operation: SyncStoreId, epoch: SyncStoreId) = root.resolve("delivery-${operation.value}-${epoch.value}.json")
-    private fun hash(source: Source) = lanSyncHash(lanSyncJson.encodeToJsonElement(Source.serializer(), source))
+    private fun hash(source: Source): String {
+        val json = lanSyncJson.encodeToJsonElement(Source.serializer(), source).jsonObject
+        // Preserve existing approved request/delivery hashes when the optional extension is absent.
+        return lanSyncHash(if (source.restorations.isEmpty()) JsonObject(json - "restorations") else json)
+    }
     private fun rawBinding(files: Map<String, String>) = lanSyncHashSequence(files.toSortedMap().asSequence().map { (path, hash) -> buildJsonObject { put("path", path); put("hash", hash) } })
     private fun <T> guarded(work: () -> T): T {
         check(!lock.isHeldByCurrentThread) { "SYNC_GROUP_SOURCE_REENTRY" }; lock.lockInterruptibly()

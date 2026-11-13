@@ -126,4 +126,31 @@ class LanSyncGroupNodeTest {
         assertEquals("SYNC_AUTHOR_ORIGIN_MISSING", assertFailsWith<IllegalArgumentException> { end.open().inspect() }.message)
         assertFalse(Files.exists(origin)); assertEquals("保留原资料", end.name("a")); assertFalse(end.gated)
     }
+
+    @Test fun restoringAnOwnAlreadySignedValueSurvivesRestartAsExactlyOneFreshLogicalRevision() = withGroup { g ->
+        val end = g.End(0); var node = end.enroll(); val unit = "character_cards/a"
+        end.card("a", "已签名的旧原文")
+        val original = node.commit(node.inspect().review(setOf(unit)))
+        end.card("a", "尚未签名的临时编辑")
+        val preview = node.prepareRecovery(original.entry.request.sourceCheckpoint, unit)
+        assertTrue(preview.hasChanges)
+        val restored = node.applyRecovery(preview)
+        assertTrue(restored.applied); assertEquals(setOf(unit), restored.restoredUnits)
+        assertEquals("已签名的旧原文", end.name("a"))
+        node = end.open(); val fresh = node.inspect()
+        assertEquals(LanSyncGroupNativeStage.LOCAL_PROPOSAL, fresh.plan?.units?.get(unit)?.stage)
+        assertEquals(setOf(original.entry.version.reference()), fresh.nativeState.units.getValue(unit).frontiers)
+        val revision = node.commit(fresh.review(setOf(unit)))
+        assertEquals(2L, revision.entry.version.authorSequence)
+        assertEquals(original.entry.version.changes.getValue(unit).valueHash, revision.entry.version.changes.getValue(unit).valueHash)
+        assertNotEquals(original.entry.version.reference(), revision.entry.version.reference())
+        assertEquals(mapOf(unit to setOf(restored.revision)), revision.restorations)
+        val completed = end.open().inspect()
+        assertEquals(LanSyncGroupNativeStage.UNCHANGED, completed.plan?.units?.get(unit)?.stage)
+        // The signed acknowledgment of one exact restore cannot swallow a subsequent restore of that unit.
+        end.card("a", "又一次临时编辑")
+        val later = node.applyRecovery(node.prepareRecovery(original.entry.request.sourceCheckpoint, unit))
+        assertNotEquals(restored.revision, later.revision)
+        assertEquals(LanSyncGroupNativeStage.LOCAL_PROPOSAL, end.open().inspect().plan?.units?.get(unit)?.stage)
+    }
 }

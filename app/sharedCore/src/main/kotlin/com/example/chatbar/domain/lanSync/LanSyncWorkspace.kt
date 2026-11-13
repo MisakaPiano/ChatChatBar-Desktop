@@ -98,7 +98,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         previous?.let {
             require(it.revision == preview.id && it.sourceTransaction == preview.sourceTransaction &&
                 it.sourceSnapshotHash == preview.sourceSnapshotHash && it.unit == preview.unit && it.sourceDevice == deviceId &&
-                it.previewBinding == preview.binding) { "SYNC_RECOVERY_REVISION" }
+                it.previewBinding == preview.binding && (it.restoredUnits.isEmpty() || it.restoredUnits == preview.restoredUnits)) { "SYNC_RECOVERY_REVISION" }
             if (applied(it.revision)) return finishRecoveryRevision(path, it)
         }
         capture(deviceId, projection).use { current ->
@@ -106,7 +106,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 current.snapshot, preview.unit, preview.id)
             require(fresh.binding == preview.binding && fresh.hasChanges) { "SYNC_RECOVERY_SOURCE_CHANGED" }
             val revision = previous ?: LanSyncRestoreRevision(preview.id, entry.transaction, entry.snapshotHash,
-                preview.unit, deviceId, preview.binding, System.currentTimeMillis())
+                preview.unit, deviceId, preview.binding, System.currentTimeMillis(), restoredUnits = preview.restoredUnits)
             if (previous == null) LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), revision)
             val localFields = recovery.restoredLocalFields(entry, fresh.restoredRecords.map { it.key }.toSet(), projection)
             apply(fresh.plan, fresh.expected, deviceId, current.blobs + recovery.blobs(entry), projection, localFields)
@@ -121,6 +121,20 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         if (complete != revision) LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), complete)
         return complete
     }
+
+    /** Receipt-backed local revisions, never timestamps or content equality as causal evidence. */
+    fun completedRecoveries(deviceId: String): List<LanSyncRestoreRevision> =
+        Files.newDirectoryStream(stateRoot, "restore-intent-*.json").use { files -> files.mapNotNull { path ->
+            metadataBudget.validate(path)
+            val revision = requireNotNull(LanSyncJsonFiles.read(path, LanSyncRestoreRevision.serializer()))
+            require(revision.revision.matches(Regex("[a-f0-9-]{36}")) && path.fileName.toString() == "restore-intent-${revision.revision}.json") { "SYNC_RECOVERY_REVISION" }
+            if (revision.sourceDevice != deviceId || !revision.applied) return@mapNotNull null
+            require(applied(revision.revision)) { "SYNC_RECOVERY_REVISION" }
+            val entry = requireNotNull(recovery.read(revision.sourceTransaction)) { "SYNC_RECOVERY_MISSING" }
+            require(entry.snapshotHash == revision.sourceSnapshotHash && (entry.custodyDevice ?: entry.sourceDevice) == deviceId &&
+                revision.unit in recovery.affected(entry)) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+            revision.copy(restoredUnits = revision.restoredUnits.ifEmpty { setOf(revision.unit) }.toSet())
+        } }
 
     fun capture(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture {
         lanSyncSafe(dataRoot, true)

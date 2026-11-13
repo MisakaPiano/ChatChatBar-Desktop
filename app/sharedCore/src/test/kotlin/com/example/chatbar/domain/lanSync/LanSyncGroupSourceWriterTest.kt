@@ -9,6 +9,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlin.test.*
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 /** Actual source capture/custody, approval, signed journal and AEAD publication. Control protection is synthetic. */
 class LanSyncGroupSourceWriterTest {
@@ -88,6 +90,17 @@ class LanSyncGroupSourceWriterTest {
         val read = SyncGroupObjectCodec(n.f.source.work).read(n.f.source.backend, n.f.source.cipher, resumed.metadata.context,
             resumed.metadata.metadata.descriptor, commit.entry.version.reference())
         assertEquals(commit.entry.version, read.envelope.version)
+    }
+    @Test fun anAbsentOptionalRestoreExtensionPreservesExistingApprovedRequestAndDeliveryHashes() = withNode { n ->
+        val unit = "character_cards/a"; n.localCard("a", "旧格式源端准备")
+        val operation = SyncStoreId.random(); val original = n.writer().commit(n.review(setOf(unit)).authorize(), operation)
+        val path = n.sourceRoot.resolve("source-${operation.value}.json")
+        val json = lanSyncJson.parseToJsonElement(Files.readString(path)).jsonObject
+        Files.writeString(path, JsonObject(json - "restorations").toString())
+        val reopened = n.writer().resume(operation)
+        assertEquals(original.entry, reopened.entry); assertEquals(original.publication, reopened.publication)
+        assertTrue(n.writer().acknowledgedRestorations().isEmpty())
+        assertEquals(1L, n.journal().state().committedSequence)
     }
     @Test fun anUnsignedDeletionAllocatesNothingWhileAnIndependentAdditionCanCommitAndLaterConfirmationDeletesOnlyItsUnit() = withNode { n ->
         val a = "character_cards/a"; val b = "character_cards/b"
