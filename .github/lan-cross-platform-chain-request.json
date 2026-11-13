@@ -1,8 +1,9 @@
 {
   "kind": "CCB_LAN_CROSS_PLATFORM_SYNTHETIC_CHAIN",
-  "sourceSha": "80890e581043b0d9aef0d47fd6008061f0dbcb0e",
+  "sourceSha": "28f526296bf0cc086310a15c0e7ce3e7c28bda49",
   "protocol": 5,
-  "declaredTypes": 19,
+  "declaredTypes": 23,
+  "fixtureSchema": "ccb-lan-cross-platform-fixture-v2",
   "populatedTypes": [
     "character_cards",
     "chat_sessions",
@@ -10,17 +11,27 @@
     "moment_posts",
     "novelai_generation_history",
     "player_setting",
-    "desktop_image_post_process_results"
+    "desktop_image_post_process_results",
+    "novelai_studio_draft",
+    "novelai_studio_history_undo",
+    "novelai_studio_guidance_checkpoint",
+    "desktop_studio_edit_history"
   ],
   "otherTypesEmpty": 12,
-  "purpose": "Three actual platform legs use one frozen source and original synthetic exchange archives. No network/TLS pairing, provider calls, real data or human acceptance claim. Frozen08 candidate and first37 remain separate.",
-  "attempt": 2,
-  "previousSourceFailure": {
+  "attempt": 3,
+  "purpose": "Current Studio four-record joint unit through actual Windows owner -> actual Android subclass stage/prepare/reopen -> Windows existing/fresh owner reload/undo/redo. Original7 reused in expanded fixture; only11 populated, not all23. No network/TLS/QR/physical phone/human acceptance claim; delivered08 and first37 unchanged.",
+  "previousChain": {
+    "runId": 43336629408,
+    "sourceSha": "80890e581043b0d9aef0d47fd6008061f0dbcb0e",
+    "state": "success",
+    "populatedTypes": 7,
+    "coveredTypes": 19,
+    "receipt": 118
+  },
+  "retainedInitialFailure": {
+    "runId": 43335156170,
     "sourceSha": "3fc21fbf4dede6b75bd87c875ebf1f02ba17ed16",
-    "engineeringRunId": 43333791557,
-    "jobId": 131584722755,
-    "cause": "AGP9 Kotlin androidTest did not include tools fixture directory registered via java.srcDir; unresolved LanCrossPlatformFixture/F.80890 registers kotlin.directories; c345 also adds full first-import hashes and metadata checks.",
-    "originalThreeLegRunId": 43335156170,
-    "originalThreeLegStatus": "Windows origin live at re-freeze; not claimed stopped or complete"
+    "state": "failure",
+    "androidCause": "AGP9 androidTest fixture source directory omitted; no actual Android method; Windows export alone passed; return skipped"
   }
 }
