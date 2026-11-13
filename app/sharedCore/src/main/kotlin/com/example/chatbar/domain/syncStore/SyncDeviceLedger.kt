@@ -126,6 +126,18 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
         require(cursor != null) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
         return head
     }
+    /** Root preparation validation only. This never admits an unsigned record or changes authority. */
+    @Synchronized fun validateProposedChild(row: SyncDeviceLedgerRecord) {
+        val parent = current()
+        require(row.group == trust.group && row.parent == parent.reference() && row.id !in records &&
+            row.members[owner.fingerprint]?.let { it.active && it.certificate == owner.encoded } == true) { "SYNC_GROUP_LEDGER_PROPOSAL" }
+        row.members.forEach { (id, member) ->
+            val certificate = SyncDeviceSignatures.decode(member.certificate)
+            require(certificate.fingerprint == id && certificate.encoded == member.certificate &&
+                SyncRecipientPublicKey.parse(member.recipientKey).encoded == member.recipientKey) { "SYNC_GROUP_MEMBER" }
+        }
+        validateChild(row, parent)
+    }
     private fun validateChild(row: SyncDeviceLedgerRecord, parent: SyncDeviceLedgerRecord) {
         require(parent.sequence < Long.MAX_VALUE && row.sequence == parent.sequence + 1 &&
             row.members.keys.containsAll(parent.members.keys)) { "SYNC_GROUP_LEDGER_SEQUENCE" }
