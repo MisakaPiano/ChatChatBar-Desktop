@@ -234,7 +234,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     /** Prepares a durable local journal before changing any entity. Media are immutable additions. */
     fun apply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String, blobs: Map<String, Path>,
-        projection: LanSyncProjection = LanSyncProjection(), restoreLocalFields: Map<String, JsonObject> = emptyMap()) {
+        projection: LanSyncProjection = LanSyncProjection(), restoreLocalFields: Map<String, JsonObject> = emptyMap(),
+        expectedSourceFiles: Map<String, String>? = null) {
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
         require(restoreLocalFields.keys.all { key -> plan.snapshot.records.any { it.key == key } }) { "SYNC_RECOVERY_LOCAL_FIELDS" }
         restoreLocalFields.forEach { (key, value) ->
@@ -246,6 +247,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val current = capture(deviceId, projection)
         try {
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
+        require(expectedSourceFiles == null || current.sourceFiles == expectedSourceFiles) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
         val transaction = stateRoot.resolve("transaction-${plan.transaction.also { require(it.matches(Regex("[a-f0-9-]{36}"))) }}")
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
         recovery.protect(dataRoot, current, plan, projection)
