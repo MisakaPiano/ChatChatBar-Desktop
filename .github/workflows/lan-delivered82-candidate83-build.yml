@@ -1,0 +1,60 @@
+name: Explicit delivered82 to candidate83 four input build
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-next-sync-control-build-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  four-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate explicit request and create separate source worktrees
+        shell: bash
+        run: |
+          candidate=$(python3 -B -c 'import sys;sys.path.insert(0,"tools/lan-next-control");from contract import load,validate_build;print(validate_build(load(".github/lan-next-sync-control-build-request.json"))["sourceSha"])')
+          seed="$RUNNER_TEMP/ccb-exact82-seed-source"
+          next="$RUNNER_TEMP/ccb-candidate83-source"
+          git worktree add --detach "$seed" 10b14a8c89d2fc4b2ed2188546af4339b0e42b57
+          git worktree add --detach "$next" "$candidate"
+          python3 -B tools/lan-next-control/build_control.py prepare --request .github/lan-next-sync-control-build-request.json --seed-dir "$seed" --candidate-dir "$next" --output raw-inputs
+          echo "CCB_LAN_SEED_SOURCE=$seed" >> "$GITHUB_ENV"
+          echo "CCB_LAN_CANDIDATE_SOURCE=$next" >> "$GITHUB_ENV"
+      - name: Validate exact delivered82 original artifact provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/lan-next-control/provenance.py --output raw-inputs/original82-artifact-provenance.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: ccb-lan-next-signing-inputs
+          run-id: 43349245949
+          github-token: ${{ github.token }}
+          path: original82
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build only new test companion against exact82 production source
+        working-directory: ${{ env.CCB_LAN_SEED_SOURCE }}/app
+        run: bash ./gradlew :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=82 --no-daemon --stacktrace
+      - name: Build candidate83 and its separate verifier companion
+        working-directory: ${{ env.CCB_LAN_CANDIDATE_SOURCE }}/app
+        run: bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=83 --no-daemon --stacktrace
+      - name: Pin four independent inputs and preserve original82 bytes
+        run: python3 -B tools/lan-next-control/build_control.py collect --request .github/lan-next-sync-control-build-request.json --seed-dir "$CCB_LAN_SEED_SOURCE" --candidate-dir "$CCB_LAN_CANDIDATE_SOURCE" --original-dir original82 --output raw-inputs --control-sha "$GITHUB_SHA" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ccb-lan-delivered82-candidate83-inputs
+          path: raw-inputs/
+          if-no-files-found: error
