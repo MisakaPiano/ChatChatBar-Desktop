@@ -1,4 +1,4 @@
-name: Focused Desktop UI and diagnostic regression
+name: Focused chat preparation failure regression
 
 on:
   push:
@@ -43,10 +43,15 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
-          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
+          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; applicationSource = '027407024fb45001bdd0e018e8006e6849ed60d3'; scope = 'synthetic chat preparation and adjacent transport tests only; loopback HTTP; no installer, user profile, release or real provider' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopChatPreparationFailureTest' `
+            --tests 'com.example.chatbar.desktop.DesktopTransportDiagnosticsTest' `
+            --tests 'com.example.chatbar.desktop.DesktopChatDebugPanelTest' `
+            --tests 'com.example.chatbar.desktop.DesktopTaskRuntimeTest' `
+            --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeTest' `
+            --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
