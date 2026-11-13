@@ -1,5 +1,5 @@
 {
-  "sourceSha": "670741d5eb04885b8eaaf0569645bf06cb0a7dd7",
-  "purpose": "Synthetic API26 real Keystore source and native receipt reopen across two instrumentation processes",
+  "sourceSha": "a7e74d0208a0af4cd8619be845ff53c064ad1d7b",
+  "purpose": "Recheck real API26 Keystore source and receipt reopen after correcting the primary native free-space query",
   "artifacts": "Reports only; no app roots, keys, credentials or APK"
 }
