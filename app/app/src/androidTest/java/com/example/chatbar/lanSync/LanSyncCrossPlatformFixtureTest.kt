@@ -54,6 +54,9 @@ class LanSyncCrossPlatformFixtureTest {
         assertEquals(F.POST, moments.getAllPosts().single().id)
         assertEquals("电脑合成玩家", settings.playerSetting.first().playerName)
         assertEquals(F.HISTORY, studio.history.first().single().id)
+        gate.exclusive { workspace.capture("android").use { imported ->
+            assertEquals(packet.snapshot.hashes(), imported.snapshot.hashes())
+        } }
         fun decode(paths: Map<java.nio.file.Path, String>) {
             val firstHash = facts.getValue("firstHash").jsonPrimitive.content
             paths.forEach { (path, hash) ->

@@ -193,7 +193,8 @@ object LanCrossPlatformFixture {
             val hash = if (index == 0) firstHash else secondHash
             image(version.imagePath, hash); image(version.generatedImageMetadata?.imagePath, hash)
         }
-        image(post.imagePath, secondHash); require(post.imagePath == post.desktopImageVersions[1].imagePath)
+        image(post.imagePath, secondHash); require(post.imagePath == post.desktopImageVersions[1].imagePath &&
+            post.generatedImageMetadata == post.desktopImageVersions[1].generatedImageMetadata)
         val settings = SettingsRepository(storage); settings.refreshPlayerSettingFromStorage(); val player = settings.playerSetting.first()
         require(player.id == "cross-native-player" && player.globalPersona == "玩家原文\n第二行" &&
             player.playerName == if (modified) "手机修改玩家" else "电脑合成玩家"); image(player.desktopAvatar, firstHash)
@@ -206,6 +207,7 @@ object LanCrossPlatformFixture {
         require(recipe.negativePrompt == "合成负面原文" && recipe.characters.single().id == "cross-platform-scoped-role")
         require(recipe.settings == fixtureRecipe("", "", firstHash, secondHash, "").settings)
         require(guidance.baseImage?.id == "cross-asset-a" && guidance.maskImage?.id == "cross-asset-b" && guidance.vibes.single().id == "cross-vibe")
+        require(guidance.baseImage?.sha256 == firstHash && guidance.maskImage?.sha256 == secondHash)
         image(guidance.baseImage?.path, firstHash); image(guidance.maskImage?.path, secondHash)
         val encoded = requireNotNull(guidance.vibes.single().encodedVibe); require(encoded.startsWith(NovelAiInlinePayloadStore.PREFIX))
         require(NovelAiInlinePayloadStore(root.toFile()).resolve(encoded) == vibe)
