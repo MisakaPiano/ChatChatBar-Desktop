@@ -298,13 +298,15 @@ class LanSyncGroupPublicationQueueTest {
         val outbox = SyncEncryptedOutbox(Files.createDirectory(root.resolve("new-epoch-queue")), currentKey)
         val metadata = f.codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), currentKey,
             SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = latest, ledgerHistory = f.ledger.history().dropLast(1)))
-        val publisher = LanSyncGroupPublicationQueue(f.publications, f.ledger, outbox, f.owner.fingerprint, keyQueue = f.keyQueue())
+        val noticeQueue = SyncLedgerNoticeQueue(Files.createDirectory(root.resolve("revoked-notices")), f.ledger.trustAnchor, f.owner.fingerprint, { f.ledger })
+        val noticeOperation = SyncStoreId.random(); noticeQueue.prepare(noticeOperation, f.sender.fingerprint, f.owner::signSyncGroupPayload)
+        val publisher = LanSyncGroupPublicationQueue(f.publications, f.ledger, outbox, f.owner.fingerprint, keyQueue = f.keyQueue(), noticeQueue = noticeQueue)
         assertEquals("SYNC_GROUP_PUBLICATION_KEYS", assertFailsWith<IllegalArgumentException> {
             publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys.filterKeys { it.startsWith(currentKey.epoch.value) })
         }.message)
-        val plan = publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys)
+        val plan = publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), keys, mapOf(f.sender.fingerprint to noticeOperation))
         val receipt = publisher.upload(plan.metadata.operation, f.backend)
-        assertEquals(2L, receipt.recipientCount); assertEquals(4L, receipt.keyDeliveryCount)
+        assertEquals(2L, receipt.recipientCount); assertEquals(4L, receipt.keyDeliveryCount); assertEquals(1L, receipt.revocationNoticeCount)
         val currentCapsule = requireNotNull(f.backend.metadata(plan.keyDeliveries.getValue("${currentKey.epoch.value}:${newPhone.fingerprint}").key))
         val tentative = SyncKeyDeliveryCodec.read(f.backend, currentCapsule, f.ledger.trustAnchor, recipient)
         val read = f.codec.read(f.backend, tentative.cipher, metadata.context, metadata.request.descriptor)
