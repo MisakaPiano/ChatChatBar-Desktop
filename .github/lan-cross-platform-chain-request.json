@@ -1,0 +1,17 @@
+{
+  "kind": "CCB_LAN_CROSS_PLATFORM_SYNTHETIC_CHAIN",
+  "sourceSha": "3fc21fbf4dede6b75bd87c875ebf1f02ba17ed16",
+  "protocol": 5,
+  "declaredTypes": 19,
+  "populatedTypes": [
+    "character_cards",
+    "chat_sessions",
+    "chat_messages",
+    "moment_posts",
+    "novelai_generation_history",
+    "player_setting",
+    "desktop_image_post_process_results"
+  ],
+  "otherTypesEmpty": 12,
+  "purpose": "Three actual platform legs use one frozen source and original synthetic exchange archives. No network/TLS pairing, provider calls, real data or human acceptance claim. Frozen08 candidate and first37 remain separate."
+}

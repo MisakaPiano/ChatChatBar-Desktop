@@ -1,0 +1,71 @@
+name: Frozen Windows Android Windows LAN data chain
+on:
+  push:
+    branches: ['codex/lan-preview-signing-*']
+    paths: [.github/lan-cross-platform-chain-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows-origin:
+    uses: ./.github/workflows/lan-cross-platform-windows-leg.yml
+    with:
+      phase: EXPORT
+  android:
+    needs: windows-origin
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze the same source as Windows
+        run: |
+          sourceSha=$(python3 -c 'import json,re; r=json.load(open(".github/lan-cross-platform-chain-request.json")); s=r["sourceSha"]; assert re.fullmatch("[a-f0-9]{40}",s); print(s)')
+          sourceDir="$RUNNER_TEMP/ccb-lan-chain-source"
+          git worktree add --detach "$sourceDir" "$sourceSha"
+          test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
+          echo "CCB_CHAIN_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+          echo "CCB_CHAIN_SOURCE_SHA=$sourceSha" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: lan-chain-windows-EXPORT
+          path: origin-input
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build matched app and instrumentation once before emulator startup
+        run: |
+          cd "$CCB_CHAIN_SOURCE/app"
+          chmod +x gradlew
+          ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true --no-daemon --stacktrace
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Actual API26 repository import mutation and binary return
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 tools/lan-sync-chain/android_leg.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-chain-android
+          path: chain-android-evidence/
+  windows-return:
+    needs: android
+    uses: ./.github/workflows/lan-cross-platform-windows-leg.yml
+    with:
+      phase: VERIFY

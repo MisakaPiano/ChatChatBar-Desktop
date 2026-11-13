@@ -1,0 +1,88 @@
+name: Frozen LAN synthetic Windows artifact leg
+on:
+  workflow_call:
+    inputs:
+      phase:
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze source and canonical owned NTFS roots
+        env:
+          CHAIN_PHASE: ${{ inputs.phase }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:CHAIN_PHASE -cnotin @('EXPORT','VERIFY')) { throw 'PHASE' }
+          $r = Get-Content .github/lan-cross-platform-chain-request.json -Raw | ConvertFrom-Json
+          if ($r.sourceSha -cnotmatch '^[a-f0-9]{40}$') { throw 'SOURCE_SHA' }
+          $base = Join-Path ($env:SystemDrive + '\') ('ccbchain-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $base | Out-Null
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          $source = Join-Path $base 'source'
+          git worktree add --detach $source $r.sourceSha
+          if ($LASTEXITCODE -ne 0 -or (git -C $source rev-parse HEAD) -cne $r.sourceSha) { throw 'SOURCE_MISMATCH' }
+          $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp')
+          $evidence = New-Item -ItemType Directory -Path (Join-Path $base 'evidence')
+          @("CCB_CHAIN_SOURCE=$source", "CCB_LAN_CHAIN_SOURCE_SHA=$($r.sourceSha)", "CCB_LAN_CHAIN_PHASE=$env:CHAIN_PHASE", "CCB_LAN_CHAIN_ROOT=$(Join-Path $temp.FullName 'chain')", "CCB_CHAIN_EVIDENCE=$($evidence.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+          Copy-Item -LiteralPath .github/lan-cross-platform-chain-request.json -Destination (Join-Path $evidence 'source-request.json')
+      - uses: actions/download-artifact@v4
+        if: inputs.phase == 'VERIFY'
+        with:
+          name: lan-chain-windows-EXPORT
+          path: chain-origin-input
+      - uses: actions/download-artifact@v4
+        if: inputs.phase == 'VERIFY'
+        with:
+          name: lan-chain-android
+          path: chain-android-input
+      - name: Bind original artifact inputs for return leg
+        if: inputs.phase == 'VERIFY'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $origin = @(Get-ChildItem chain-origin-input -Recurse -File -Filter windows-origin.zip)
+          $returned = @(Get-ChildItem chain-android-input -Recurse -File -Filter return.zip)
+          if ($origin.Count -ne 1 -or $returned.Count -ne 1) { throw 'INPUT_COUNT' }
+          @("CCB_LAN_CHAIN_ORIGIN=$($origin[0].FullName)", "CCB_LAN_CHAIN_RETURN=$($returned[0].FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Execute only the actual requested Windows fixture method
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $method = if ($env:CCB_LAN_CHAIN_PHASE -ceq 'EXPORT') { 'exportSyntheticWindowsSnapshot' } else { 'verifyAndroidReturnWithRealDesktopOwners' }
+          Set-Location (Join-Path $env:CCB_CHAIN_SOURCE 'app')
+          if (Test-Path desktopApp/build/test-results/test) { throw 'STALE_RESULTS' }
+          .\gradlew.bat :desktopApp:test --tests "com.example.chatbar.desktop.DesktopCrossPlatformLanFixtureTest.$method" --no-build-cache --no-daemon --stacktrace
+          if ($LASTEXITCODE -ne 0) { throw 'WINDOWS_CHAIN_METHOD_FAILED' }
+          python "$env:GITHUB_WORKSPACE/tools/lan-sync-chain/verify_xml.py" desktopApp/build/test-results/test com.example.chatbar.desktop.DesktopCrossPlatformLanFixtureTest $method
+          if ($LASTEXITCODE -ne 0) { throw 'ORIGINAL_METHOD_NOT_PASS' }
+      - name: Retain only original reports and synthetic exchange packages
+        if: always() && env.CCB_CHAIN_EVIDENCE != ''
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $results = Join-Path $env:CCB_CHAIN_SOURCE 'app/desktopApp/build/test-results/test'
+          if (Test-Path -LiteralPath $results) { Copy-Item -LiteralPath $results -Destination (Join-Path $env:CCB_CHAIN_EVIDENCE 'original-test-results') -Recurse }
+          if (Test-Path -LiteralPath $env:CCB_LAN_CHAIN_ROOT) {
+            Get-ChildItem -LiteralPath $env:CCB_LAN_CHAIN_ROOT -File | Where-Object { $_.Name -like 'windows-*.zip' -or $_.Name -like 'windows-*-report.json' } | Copy-Item -Destination $env:CCB_CHAIN_EVIDENCE
+          }
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_CHAIN_EVIDENCE != ''
+        with:
+          name: lan-chain-windows-${{ inputs.phase }}
+          path: ${{ env.CCB_CHAIN_EVIDENCE }}/
