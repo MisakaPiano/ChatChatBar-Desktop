@@ -11,10 +11,10 @@ import kotlinx.serialization.Serializable
 @Serializable data class SyncGroupTrust(val group: SyncStoreId, val genesis: SyncVersionRef, val ownerCertificate: String,
     val checkpoint: SyncVersionRef = genesis)
 @Serializable data class SyncDeviceLedgerRecord(val group: SyncStoreId, val id: SyncStoreId, val parent: SyncVersionRef?,
-    val sequence: Long, val epoch: SyncStoreId, val members: Map<String, SyncGroupMember>,
+    val sequence: Long, val epoch: SyncStoreId, val keyCommitment: String, val members: Map<String, SyncGroupMember>,
     val acceptedHeads: Set<SyncVersionRef>, val signature: String) {
     init {
-        require(sequence > 0 && parent?.id != id && signature.length in 1..256 &&
+        require(sequence > 0 && parent?.id != id && signature.length in 1..256 && keyCommitment.matches(Regex("[a-f0-9]{64}")) &&
             members.isNotEmpty() && members.all { (id, member) -> id.matches(Regex("[a-f0-9]{64}")) && member.certificate.length in 1..8192 } &&
             acceptedHeads.map { it.id }.toSet().size == acceptedHeads.size) { "SYNC_GROUP_LEDGER" }
     }
@@ -24,9 +24,9 @@ import kotlinx.serialization.Serializable
         val digest = MessageDigest.getInstance("SHA-256")
         val sink = object : OutputStream() { override fun write(value: Int) {}; override fun write(bytes: ByteArray, offset: Int, length: Int) {} }
         DataOutputStream(DigestOutputStream(sink, digest)).use { out ->
-            out.writeUTF("CCB-SYNC-DEVICE-LEDGER/1"); out.writeUTF(group.value); out.writeUTF(id.value)
+            out.writeUTF("CCB-SYNC-DEVICE-LEDGER/2"); out.writeUTF(group.value); out.writeUTF(id.value)
             fun ref(value: SyncVersionRef) { out.writeUTF(value.id.value); out.writeUTF(value.bodyHash) }
-            out.writeBoolean(parent != null); parent?.let(::ref); out.writeLong(sequence); out.writeUTF(epoch.value)
+            out.writeBoolean(parent != null); parent?.let(::ref); out.writeLong(sequence); out.writeUTF(epoch.value); out.writeUTF(keyCommitment)
             out.writeInt(members.size)
             members.toSortedMap().forEach { (id, member) -> out.writeUTF(id); out.writeUTF(member.certificate); out.writeBoolean(member.active) }
             out.writeInt(acceptedHeads.size); acceptedHeads.sortedBy { it.id.value }.forEach(::ref)
@@ -85,6 +85,7 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
         in records -> SyncVersionState.WAITING_FOR_PARENTS; else -> null
     }
     @Synchronized fun failure(id: SyncStoreId) = rejected[id]
+    @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && records[reference.id]?.reference() == reference
     @Synchronized fun current(): SyncDeviceLedgerRecord {
         val parents = admitted.mapNotNull { records.getValue(it).parent?.id }.toSet()
         val heads = admitted.filterNot(parents::contains)
@@ -102,7 +103,10 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
             next.certificate == old.certificate && (old.active || !next.active) }) { "SYNC_GROUP_MEMBER_REACTIVATION" }
         val revoked = parent.members.any { (id, member) -> member.active && !row.members.getValue(id).active }
         require(!revoked || row.epoch != parent.epoch) { "SYNC_GROUP_REVOCATION_EPOCH" }
-        if (row.epoch == parent.epoch) require(row.acceptedHeads == parent.acceptedHeads) { "SYNC_GROUP_FENCE_CHANGED" }
+        if (row.epoch == parent.epoch) {
+            require(row.keyCommitment == parent.keyCommitment) { "SYNC_GROUP_KEY_COMMITMENT_CHANGED" }
+            require(row.acceptedHeads == parent.acceptedHeads) { "SYNC_GROUP_FENCE_CHANGED" }
+        }
         else {
             require(row.acceptedHeads.containsAll(parent.acceptedHeads)) { "SYNC_GROUP_FENCE_LOST" }
             var old: SyncDeviceLedgerRecord? = parent
@@ -120,7 +124,7 @@ class SyncDeviceLedger(private val trust: SyncGroupTrust) {
         val ledgers = admitted.associate { id -> val row = records.getValue(id); row.reference() to row }
         val certificates = latest.members.mapValues { SyncDeviceSignatures.decode(it.value.certificate) }
         // Supplied only by complete AEAD envelope authentication; no claimed epoch from JSON is proof.
-        val epochs = authenticatedObjects.filter { it.context.group == trust.group && it.envelope.version != null }
+        val epochs = authenticatedObjects.filter { it.context.group == trust.group && it.envelope.version != null && it.keyCommitment == latest.keyCommitment }
             .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, objects) -> objects.map { it.context.epoch }.toSet() }
         val known = knownVersions.filter { it.group == trust.group }.associate { version ->
             val frozen = version.copy(parents = version.parents.toSet(), changes = version.changes.mapValues { it.value.copy(previous = it.value.previous.toSet()) })

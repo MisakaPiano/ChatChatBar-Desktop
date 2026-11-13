@@ -8,6 +8,7 @@ permissions:
 jobs:
   large-resources:
     needs: android
+    if: needs.android.outputs.legacy_large == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -34,8 +35,38 @@ jobs:
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      legacy_large: ${{ steps.proof_scope.outputs.legacy_large }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Select changed transport proof scope
+        id: proof_scope
+        env:
+          CCB_SYNC_DIFF_BASE: ${{ github.event.before }}
+        run: |
+          python - <<'PY'
+          import os, re, subprocess
+          base = os.environ.get('CCB_SYNC_DIFF_BASE', '')
+          available = bool(re.fullmatch('[0-9a-f]{40}', base)) and base != '0' * 40
+          available = available and subprocess.run(['git', 'cat-file', '-e', base + '^{commit}'], capture_output=True).returncode == 0
+          large = True
+          if available:
+              raw = subprocess.check_output(['git', 'diff', '--name-only', '-z', base, os.environ['GITHUB_SHA']])
+              paths = [os.fsdecode(path) for path in raw.split(b'\0') if path]
+              group_only = ('app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/',
+                            'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStore/',
+                            'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroup',
+                            'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroup',
+                            '.agents/skills/chatbar-lan-sync/', '.agents/skills/chatbar-sync-object-store/')
+              large = any(not path.startswith(group_only) for path in paths)
+          print('LEGACY_TRANSPORT_PROOF_REQUIRED' if large else 'GROUP_ONLY_CHANGES_REUSE_EXISTING_TRANSPORT_PROOF')
+          if not available:
+              print('DIFF_BASE_UNAVAILABLE_FULL_TRANSPORT_PROOF_REQUIRED')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write('legacy_large=' + str(large).lower() + '\n')
+          PY
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

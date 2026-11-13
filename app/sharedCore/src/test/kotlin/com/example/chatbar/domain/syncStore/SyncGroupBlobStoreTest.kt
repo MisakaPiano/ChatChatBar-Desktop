@@ -27,9 +27,9 @@ class SyncGroupBlobStoreTest {
         val oldBinding = blobs.enqueue(oldOutbox, oldBlobOperation, oldBlobKey, oldCipher, source, expected)
         val device = LanSyncTlsIdentity.create(); val member = SyncGroupMember(Base64.getEncoder().encodeToString(device.certificate.encoded))
         fun sign(row: SyncDeviceLedgerRecord) = row.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(row.signingBytes())))
-        val genesis = sign(SyncDeviceLedgerRecord(oldCipher.group, SyncStoreId.random(), null, 1, oldCipher.epoch,
+        val genesis = sign(SyncDeviceLedgerRecord(oldCipher.group, SyncStoreId.random(), null, 1, oldCipher.epoch, oldCipher.keyCommitment(),
             mapOf(device.fingerprint to member), emptySet(), "unsigned"))
-        val latest = sign(genesis.copy(id = SyncStoreId.random(), parent = genesis.reference(), sequence = 2, epoch = newCipher.epoch))
+        val latest = sign(genesis.copy(id = SyncStoreId.random(), parent = genesis.reference(), sequence = 2, epoch = newCipher.epoch, keyCommitment = newCipher.keyCommitment()))
         val version = SyncCausalVersion(oldCipher.group, SyncStoreId.random(), genesis.reference(), device.fingerprint, 1,
             null, emptySet(), mapOf("conversation/a" to SyncUnitChange(expected.sha256, expected, emptySet())), "unsigned").let {
             it.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(it.signingBytes())))

@@ -29,7 +29,7 @@ class SyncGroupObjectCodecTest {
         val backend = FileCiphertextStore(root.resolve("backend"))
         val device = LanSyncTlsIdentity.create()
         val member = SyncGroupMember(Base64.getEncoder().encodeToString(device.certificate.encoded))
-        val ledger = SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch,
+        val ledger = SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(),
             mapOf(device.fingerprint to member), emptySet(), "unsigned").let {
             it.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(it.signingBytes())))
         }
@@ -39,7 +39,7 @@ class SyncGroupObjectCodecTest {
                 hash("synthetic unit plaintext")), emptySet())), "unsigned").let {
             it.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(it.signingBytes())))
         }
-        fun publish(envelope: SyncGroupEnvelope): SyncOutboxEntry {
+        fun publish(envelope: SyncGroupEnvelope): SyncPreparedGroupObject {
             val operation = SyncStoreId.random(); val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
             val ready = codec.enqueue(outbox, operation, key, cipher, envelope); outbox.upload(operation, backend); return ready
         }
@@ -86,6 +86,19 @@ class SyncGroupObjectCodecTest {
                 f.backend.readTo(ready.context.key, destination, expected)?.copy(key = key)
         }
         assertFails { f.codec.read(aliased, f.cipher, alias) }; assertTrue(f.emptyPreparation())
+    }
+
+    @Test fun aDifferentSecretWithTheSameGroupAndEpochLabelsCannotCreateCurrentEpochAuthority() = withRoot { root ->
+        val f = Fixture(root)
+        val wrong = SyncStreamingCipher.create(f.cipher.group, f.cipher.epoch)
+        val queue = Files.createDirectory(root.resolve("wrong-key-queue")); val outbox = SyncEncryptedOutbox(queue, wrong)
+        val prepared = f.codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()),
+            wrong, SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = f.version))
+        val ledger = SyncDeviceLedger(SyncGroupTrust(f.cipher.group, f.ledger.reference(), f.member.certificate)); ledger.offer(f.ledger)
+        assertNotEquals(f.ledger.keyCommitment, prepared.authenticated.keyCommitment)
+        assertEquals("SYNC_GROUP_CURRENT_EPOCH_REQUIRED", assertFailsWith<IllegalArgumentException> {
+            ledger.admission(listOf(f.version), listOf(prepared.authenticated)).requireAuthorized(f.version)
+        }.message)
     }
 
     @Test fun validStorageMetadataCannotAuthorizeTamperedCiphertextOrMalformedAuthenticatedJson() = withRoot { root ->

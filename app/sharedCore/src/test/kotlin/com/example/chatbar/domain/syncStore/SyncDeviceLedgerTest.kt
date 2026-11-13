@@ -12,16 +12,19 @@ class SyncDeviceLedgerTest {
     private inner class Group(initialMembers: Int = 4) {
         val devices = List(4) { LanSyncTlsIdentity.create() }
         val group = SyncStoreId.random()
+        private val keyring = linkedMapOf<SyncStoreId, SyncStreamingCipher>()
+        fun keyFor(epoch: SyncStoreId) = keyring.getOrPut(epoch) { SyncStreamingCipher.create(group, epoch) }
+        val initialKey = keyFor(SyncStoreId.random())
         val members = devices.associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded)) }
         fun sign(record: SyncDeviceLedgerRecord, signer: Int = 0) = record.copy(signature =
             Base64.getEncoder().encodeToString(devices[signer].signSyncGroupPayload(record.signingBytes())))
-        val genesis = sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), null, 1, SyncStoreId.random(),
+        val genesis = sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), null, 1, initialKey.epoch, initialKey.keyCommitment(),
             members.filterKeys { id -> devices.take(initialMembers).any { it.fingerprint == id } }, emptySet(), "unsigned"))
         val trust = SyncGroupTrust(group, genesis.reference(), members.getValue(devices[0].fingerprint).certificate)
         fun state() = SyncDeviceLedger(trust)
         fun next(parent: SyncDeviceLedgerRecord, nextMembers: Map<String, SyncGroupMember> = parent.members,
             epoch: SyncStoreId = parent.epoch, accepted: Set<SyncVersionRef> = parent.acceptedHeads) =
-            sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), parent.reference(), parent.sequence + 1, epoch, nextMembers, accepted, "unsigned"))
+            sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), parent.reference(), parent.sequence + 1, epoch, keyFor(epoch).keyCommitment(), nextMembers, accepted, "unsigned"))
         fun value(text: String, previous: Set<SyncVersionRef> = emptySet()) = SyncUnitChange(hash(text),
             SyncVersionContent(119, hash("synthetic unit plaintext $text")), previous)
         fun version(actor: Int, ledger: SyncDeviceLedgerRecord = genesis, parents: Set<SyncVersionRef> = emptySet(),
@@ -35,7 +38,7 @@ class SyncDeviceLedgerTest {
             try {
                 val codec = SyncGroupObjectCodec(root)
                 val backend = FileCiphertextStore(root.resolve("backend"))
-                val keys = epochs.values.toSet().associateWith { SyncStreamingCipher.create(group, it) }
+                val keys = epochs.values.toSet().associateWith(::keyFor)
                 val objects = epochs.map { (reference, epoch) ->
                     val cipher = keys.getValue(epoch)
                     val directory = root.resolve(epoch.value)
@@ -117,6 +120,8 @@ class SyncDeviceLedgerTest {
         assertEquals(SyncVersionState.REJECTED, state.offer(lostFence)); assertEquals("SYNC_GROUP_FENCE_LOST", state.failure(lostFence.id))
         val reused = group.next(revoked, epoch = group.genesis.epoch)
         assertEquals(SyncVersionState.REJECTED, state.offer(reused)); assertEquals("SYNC_GROUP_EPOCH_REUSED", state.failure(reused.id))
+        val changedKey = group.sign(group.next(revoked).copy(keyCommitment = "0".repeat(64)))
+        assertEquals(SyncVersionState.REJECTED, state.offer(changedKey)); assertEquals("SYNC_GROUP_KEY_COMMITMENT_CHANGED", state.failure(changedKey.id))
         assertEquals(revoked.reference(), state.current().reference())
     }
 

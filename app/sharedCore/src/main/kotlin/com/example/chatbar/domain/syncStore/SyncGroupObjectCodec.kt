@@ -34,7 +34,13 @@ import kotlinx.serialization.json.encodeToStream
 
 /** Construction stays in the complete AEAD/decode owner; a claimed epoch in JSON cannot create it. */
 class SyncAuthenticatedGroupObject internal constructor(val context: SyncEncryptionContext,
-    val metadata: CiphertextObjectMetadata, val envelope: SyncGroupEnvelope)
+    val metadata: CiphertextObjectMetadata, val envelope: SyncGroupEnvelope, val keyCommitment: String)
+
+class SyncPreparedGroupObject internal constructor(val entry: SyncOutboxEntry, val envelope: SyncGroupEnvelope,
+    internal val authenticated: SyncAuthenticatedGroupObject) {
+    val context get() = entry.context
+    val request get() = entry.request
+}
 
 /** Metadata envelope owner only. It authenticates data; ledger/history still decide activation. */
 class SyncGroupObjectCodec(private val privateDirectory: Path,
@@ -43,7 +49,7 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
 
     @OptIn(ExperimentalSerializationApi::class)
     fun enqueue(outbox: SyncEncryptedOutbox, operation: SyncStoreId, key: CiphertextObjectKey,
-        cipher: SyncStreamingCipher, envelope: SyncGroupEnvelope): SyncOutboxEntry {
+        cipher: SyncStreamingCipher, envelope: SyncGroupEnvelope): SyncPreparedGroupObject {
         require(key.kind == CiphertextObjectKind.COMMIT && envelope.group == cipher.group) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
         val normalized = freeze(envelope, sorted = true)
         PrivateSyncFile.create(privateDirectory).use { source ->
@@ -51,7 +57,11 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
                 lanSyncJson.encodeToStream(SyncGroupEnvelope.serializer(), normalized, Channels.newOutputStream(channel)); channel.force(true)
             }
             metadataBudget.validate(source.path)
-            return outbox.prepare(operation, SyncEncryptionContext(cipher.group, cipher.epoch, key), source.path)
+            val ready = outbox.prepare(operation, SyncEncryptionContext(cipher.group, cipher.epoch, key), source.path)
+            val verified = requireNotNull(outbox.entry(operation)) { "SYNC_GROUP_OBJECT_MISSING" }
+            require(ready.request == verified.request && ready.context == verified.context && ready.plaintext == verified.plaintext) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
+            return SyncPreparedGroupObject(verified, normalized, SyncAuthenticatedGroupObject(verified.context,
+                CiphertextObjectMetadata(key, verified.request.descriptor), normalized, cipher.keyCommitment()))
         }
     }
 
@@ -68,7 +78,7 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
                 metadataBudget.validate(plaintext.path)
                 val envelope = requireNotNull(LanSyncJsonFiles.read(plaintext.path, SyncGroupEnvelope.serializer(), plaintext.identity.sha256)) { "SYNC_GROUP_ENVELOPE" }
                 require(envelope.group == context.group && (expectedReference == null || envelope.reference() == expectedReference)) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
-                return SyncAuthenticatedGroupObject(context, metadata, freeze(envelope, sorted = false))
+                return SyncAuthenticatedGroupObject(context, metadata, freeze(envelope, sorted = false), cipher.keyCommitment())
             } }
         }
     }

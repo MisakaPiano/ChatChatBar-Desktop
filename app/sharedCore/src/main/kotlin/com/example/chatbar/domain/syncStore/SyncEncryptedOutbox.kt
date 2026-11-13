@@ -13,7 +13,8 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 
-data class SyncOutboxEntry(val context: SyncEncryptionContext, val request: CiphertextPutRequest, val uploaded: Boolean)
+data class SyncOutboxEntry(val context: SyncEncryptionContext, val request: CiphertextPutRequest, val uploaded: Boolean,
+    val plaintext: SyncPlaintextIdentity)
 
 /**
  * Private local queue, not a remote store or portable backup. A forced immutable source binding
@@ -31,7 +32,7 @@ class SyncEncryptedOutbox(private val root: Path, private val cipher: SyncStream
     private data class Binding(val operation: SyncStoreId, val context: SyncEncryptionContext, val plain: SyncPlaintextIdentity)
     private data class Ready(val binding: Binding, val descriptor: CiphertextDescriptor) {
         fun entry(uploaded: Boolean) = SyncOutboxEntry(binding.context,
-            CiphertextPutRequest(binding.context.key, binding.operation, descriptor), uploaded)
+            CiphertextPutRequest(binding.context.key, binding.operation, descriptor), uploaded, binding.plain)
     }
 
     fun prepare(operation: SyncStoreId, context: SyncEncryptionContext, source: Path,

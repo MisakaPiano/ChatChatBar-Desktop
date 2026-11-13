@@ -83,6 +83,17 @@ class SyncStreamingCipher private constructor(val group: SyncStoreId, val epoch:
     private val handle: KeysetHandle) {
     private val primitive: StreamingAead = handle.getPrimitive(RegistryConfiguration.get(), StreamingAead::class.java)
 
+    /** Pinned by the signed device ledger; an epoch label alone is not proof of its actual key. */
+    fun keyCommitment(): String {
+        val bytes = ByteArrayOutputStream().also { CleartextKeysetHandle.write(handle, BinaryKeysetWriter.withOutputStream(it)) }.toByteArray()
+        try {
+            val digest = MessageDigest.getInstance("SHA-256")
+            digest.update(("CCB-SYNC-GROUP-KEY-COMMITMENT/1\n${group.value}\n${epoch.value}\n").toByteArray(Charsets.US_ASCII))
+            digest.update(bytes)
+            return digest.digest().joinToString("") { "%02x".format(it) }
+        } finally { bytes.fill(0) }
+    }
+
     fun encrypt(source: InputStream, context: SyncEncryptionContext, privateDirectory: Path): SyncPreparedCiphertext {
         requireContext(context)
         val file = PrivateSyncFile.create(privateDirectory)

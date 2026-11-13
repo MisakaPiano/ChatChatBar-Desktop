@@ -25,6 +25,8 @@ class SyncStreamingCipherTest {
         val input = object : ByteArrayInputStream(plain) { override fun close() { closed = true; super.close() } }
         val protected = cipher.protectedKeyset(::protect); val frozen = protected.copyOf()
         val reopened = SyncStreamingCipher.open(cipher.group, cipher.epoch, protected, ::protect)
+        assertEquals(cipher.keyCommitment(), reopened.keyCommitment())
+        assertNotEquals(cipher.keyCommitment(), SyncStreamingCipher.create(cipher.group, cipher.epoch).keyCommitment())
         assertContentEquals(frozen, protected)
         val store = FileCiphertextStore(root.resolve("backend"))
         cipher.encrypt(input, binding, root).use { encrypted ->
