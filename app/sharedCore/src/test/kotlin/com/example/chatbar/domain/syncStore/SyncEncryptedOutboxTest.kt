@@ -10,13 +10,13 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.*
 
 class SyncEncryptedOutboxTest {
-    private fun <T> privateRoot(work: (Path, Path, Path) -> T): T {
+    private fun privateRoot(work: (Path, Path, Path) -> Unit) {
         val root = Files.createTempDirectory("sync-outbox-synthetic-").toRealPath()
         try {
             val outbox = Files.createDirectory(root.resolve("outbox"))
             val source = root.resolve("source.bin")
             Files.write(source, ByteArray(1024 * 1024 + 117) { (it % 251).toByte() })
-            return work(root, outbox, source)
+            work(root, outbox, source)
         } finally { check(root.toFile().deleteRecursively()) }
     }
     private fun context(cipher: SyncStreamingCipher) = SyncEncryptionContext(cipher.group, cipher.epoch,

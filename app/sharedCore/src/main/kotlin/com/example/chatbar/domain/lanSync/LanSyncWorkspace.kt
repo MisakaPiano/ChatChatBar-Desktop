@@ -63,7 +63,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     fun protectPeerBeforeApply(plan: LanSyncPlan, peerBefore: LanSyncSnapshot, deviceId: String,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? {
-        val target = LanSyncPartialReview.localPlan(plan, peerBefore.deviceId)
+        val overlay = LanSyncPartialReview.localPlan(plan, peerBefore.deviceId)
+        val target = overlay.copy(snapshot = overlay.snapshot.copy(deviceId = peerBefore.deviceId))
         val blobs = peerBefore.resources.mapValues { (hash, size) ->
             requireNotNull(resourceStore.completed(hash, size)) { "SYNC_RECOVERY_RESOURCE_MISSING" }
         }

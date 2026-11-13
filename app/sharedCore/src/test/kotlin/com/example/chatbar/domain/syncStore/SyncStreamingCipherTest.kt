@@ -10,9 +10,9 @@ import kotlin.test.*
 class SyncStreamingCipherTest {
     private fun context(cipher: SyncStreamingCipher, kind: CiphertextObjectKind = CiphertextObjectKind.BLOB) =
         SyncEncryptionContext(cipher.group, cipher.epoch, CiphertextObjectKey(kind, SyncStoreId.random()))
-    private fun <T> privateRoot(work: (Path) -> T): T {
+    private fun privateRoot(work: (Path) -> Unit) {
         val root = Files.createTempDirectory("sync-aead-synthetic-").toRealPath()
-        try { return work(root) } finally { check(root.toFile().deleteRecursively()) }
+        try { work(root) } finally { check(root.toFile().deleteRecursively()) }
     }
     // Synthetic reversible protection tests only the key-envelope boundary, never platform custody.
     private fun protect(bytes: ByteArray) = bytes.reversedArray()

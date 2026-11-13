@@ -105,9 +105,13 @@ class LanSyncRuntimeTest {
         until("mutual pairing") { a.store.peers().size == 1 && b.store.peers().size == 1 }
         phone.startPhone()
     }
-    private suspend fun completedReceiptOnly(a: End, b: End, previous: String? = null) = until("bilateral receipts") {
-        val left = a.store.baseline(b.id, a.id).revision; val right = b.store.baseline(a.id, b.id).revision
-        left != null && left == right && left != previous && a.store.pending(b.id) == null && b.store.pending(a.id) == null
+    private suspend fun completedReceiptOnly(a: End, b: End, previous: String? = null) {
+        try { until("bilateral receipts") {
+            val left = a.store.baseline(b.id, a.id).revision; val right = b.store.baseline(a.id, b.id).revision
+            left != null && left == right && left != previous && a.store.pending(b.id) == null && b.store.pending(a.id) == null
+        } } catch (failure: TimeoutCancellationException) {
+            throw AssertionError("Bilateral receipt timeout; body-free failures: computer=${a.active?.state?.value?.failureCode}, phone=${b.active?.state?.value?.failureCode}", failure)
+        }
     }
     // Existing regression scenarios explicitly approve reductions so their later assertions
     // can keep testing the original feature. The default-safety case below never uses this driver.
