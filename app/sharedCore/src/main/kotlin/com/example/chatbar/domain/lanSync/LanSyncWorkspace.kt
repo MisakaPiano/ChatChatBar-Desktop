@@ -21,8 +21,17 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val observeJournal: (String, Int) -> Unit = { _, _ -> },
     private val validateResource: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> },
     private val resourceReference: (String, Path) -> String = { _, path -> path.toString() },
+    private val recoveryVault: LanSyncRecoveryVault? = null,
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
+    val recovery: LanSyncRecoveryVault by lazy { recoveryVault ?: LanSyncRecoveryVault(stateRoot.resolve("recovery")) }
+
+    fun protectBeforeApply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = capture(deviceId, projection).use { current ->
+        plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
+        require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
+        recovery.protect(dataRoot, current, plan)
+    }
 
     fun capture(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture {
         lanSyncSafe(dataRoot, true)
@@ -132,6 +141,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
         val transaction = stateRoot.resolve("transaction-${plan.transaction.also { require(it.matches(Regex("[a-f0-9-]{36}"))) }}")
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
+        recovery.protect(dataRoot, current, plan)
         Files.createDirectory(transaction)
         val changes = linkedMapOf<String, ByteArray?>()
         val checkedResources = hashSetOf<Triple<String, String, String>>()
