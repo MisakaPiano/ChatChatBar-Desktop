@@ -35,7 +35,7 @@ internal fun desktopDiagnosticSystemMessages(entry: DesktopTransportDiagnosticEn
         }
 }.getOrNull()
 
-/** Uses recorded requests only. Opening, selecting and clearing logs never builds or sends a request. */
+/** Uses recorded lifecycle/provider evidence only; viewing and clearing never builds or sends a request. */
 @Composable
 internal fun DesktopChatDebugOverlay(owner: DesktopTransportDiagnosticsOwner, sessionId: String,
     onClose: () -> Unit, onMemory: (() -> Unit)? = null, maintenance: DesktopChatMaintenanceController? = null,

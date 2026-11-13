@@ -174,6 +174,7 @@ class DesktopRealChatRuntime internal constructor(
                 inputs = turn.inputs,
                 readOnlyRepositoryAccess = false,
                 onPreparationStage = observer::onPreparationStage,
+                onPersistedUserResolved = { observer.onUserMessagePersisted(it.id) },
             )
         } else {
             observer.onPreparationStage(DesktopChatPreparationStage.USER_PERSISTENCE)

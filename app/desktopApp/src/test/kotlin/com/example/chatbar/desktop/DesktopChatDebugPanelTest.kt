@@ -29,6 +29,28 @@ class DesktopChatDebugPanelTest {
         frames(scene)
     }
 
+    @Test fun `actual debug panel shows local preparation failure before any main request at narrow and wide widths`() = runBlocking(edt) {
+        for (width in listOf(480, 1120)) {
+            val owner = DesktopTransportDiagnosticsOwner()
+            owner.beginPreparation("preparation", "current")
+            owner.preparationStage("preparation", DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL)
+            val failure = DesktopEmbeddingAuthenticationException()
+            val safe = desktopChatPreparationFailure(DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL, failure, true)
+            owner.finishPreparation("preparation", DesktopTaskStatus.FAILED, safe, failure)
+            val scene = ImageComposeScene(width, 760, coroutineContext = edt) {
+                DesktopChatDebugPanel(owner, "current", onClose = {})
+            }
+            try {
+                frames(scene)
+                assertTrue(nodes(scene).any { it.label("发送阶段：召回知识") })
+                assertTrue(nodes(scene).any { it.label("准备失败类型：DesktopEmbeddingAuthenticationException") })
+                assertTrue(nodes(scene).any { it.label("请求地址：尚未发送") })
+                assertTrue(nodes(scene).any { it.label(safe) })
+                assertNull(owner.entries.value.single().serializedRequestBody)
+            } finally { scene.close() }
+        }
+    }
+
     @Test fun `console filters session and clears only after confirmation in compact and wide layouts`() = runBlocking(edt) {
         for (width in listOf(480, 1120)) {
             val owner = DesktopTransportDiagnosticsOwner()

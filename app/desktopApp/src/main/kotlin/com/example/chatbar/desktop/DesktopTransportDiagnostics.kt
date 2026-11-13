@@ -144,7 +144,7 @@ internal class DesktopTransportDiagnosticsOwner(
         val scrubber = DesktopDiagnosticScrubber(model.apiKey)
         val promptIdentity = promptContext?.let { DesktopPromptDiagnosticIdentity.identify(it) }
         synchronized(lock) {
-            val preparation = mutableEntries.value.firstOrNull { it.taskId == taskId }
+            val preparation = if (preparationStarted) mutableEntries.value.firstOrNull { it.taskId == taskId } else null
             // Clearing a running preparation must not resurrect it when transport starts.
             if (!preparationStarted || preparation != null) {
                 mutableEntries.value = (
@@ -161,7 +161,7 @@ internal class DesktopTransportDiagnosticsOwner(
                             promptStages = listOfNotNull(promptIdentity),
                             preparationStage = preparation?.preparationStage,
                         ),
-                    ) + mutableEntries.value.filterNot { it.taskId == taskId }
+                    ) + if (preparationStarted) mutableEntries.value.filterNot { it.taskId == taskId } else mutableEntries.value
                 ).take(maxEntries)
             }
         }

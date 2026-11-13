@@ -54,7 +54,9 @@ class DesktopChatPreparationFailureTest {
             assertEquals(failed, desktopLatestChatFailure(f.runtime.tasks.value, session))
             val entry = f.runtime.diagnostics.entries.value.single()
             assertEquals(DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL, entry.preparationStage)
-            assertEquals("DesktopEmbeddingAuthenticationException", entry.preparationFailureKind)
+            // Coroutine stack recovery may retain a copied exception as its original cause.
+            assertTrue(entry.preparationFailureKind.orEmpty().split(" → ")
+                .all { it == "DesktopEmbeddingAuthenticationException" })
             assertNull(entry.requestAt); assertNull(entry.serializedRequestBody); assertNull(entry.usage)
             assertEquals(0, f.server.requestCount); assertTrue(f.usages.isEmpty())
             assertFalse(entry.toString().contains("PRIVATE_SYNTHETIC_USER"))
@@ -62,6 +64,11 @@ class DesktopChatPreparationFailureTest {
             val user = f.app.chatRepository.getMessage(failed.persistedUserMessageId!!, session)
             assertEquals("PRIVATE_SYNTHETIC_USER", user?.content)
             assertTrue(f.app.chatRepository.getMessages(session).none { it.role == MessageRole.ASSISTANT && it.content.startsWith("错误:") })
+
+            val retried = f.terminal(f.runtime.launchChat(session, ""))
+            assertEquals(DesktopTaskStatus.FAILED, retried.status)
+            assertEquals(failed.persistedUserMessageId, retried.persistedUserMessageId)
+            assertEquals(0, f.server.requestCount); assertTrue(f.usages.isEmpty())
 
             f.retrieval = { DesktopChatKnowledge() }
             f.server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
@@ -73,7 +80,7 @@ class DesktopChatPreparationFailureTest {
             val completed = f.runtime.diagnostics.entries.value.first()
             assertEquals(DesktopChatPreparationStage.MAIN_REPLY, completed.preparationStage)
             assertNotNull(completed.requestAt)
-            assertEquals(2, f.runtime.diagnostics.entries.value.size)
+            assertEquals(3, f.runtime.diagnostics.entries.value.size)
             assertEquals(1, f.usages.map { it.id }.distinct().size)
         } finally { f.close() }
     }
@@ -89,7 +96,7 @@ class DesktopChatPreparationFailureTest {
             assertFalse(task.message.contains("PRIVATE_"))
             val entry = f.runtime.diagnostics.entries.value.single()
             assertFalse(entry.toString().contains("PRIVATE_"))
-            assertEquals("IllegalStateException", entry.preparationFailureKind)
+            assertTrue(entry.preparationFailureKind.orEmpty().split(" → ").all { it == "IllegalStateException" })
             assertEquals(0, f.server.requestCount); assertTrue(f.usages.isEmpty())
             assertEquals(1, f.app.chatRepository.getMessages(session).count { it.role == MessageRole.USER })
         } finally { f.close() }

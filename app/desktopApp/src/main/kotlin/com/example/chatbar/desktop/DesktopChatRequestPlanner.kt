@@ -80,6 +80,7 @@ internal class DesktopChatRequestPlanner(
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
         onPreparationStage: (DesktopChatPreparationStage) -> Unit = {},
+        onPersistedUserResolved: (ChatMessage) -> Unit = {},
     ): DesktopChatRequestPlan {
         onPreparationStage(DesktopChatPreparationStage.HISTORY_AND_MEMORY)
         val latest = if (readOnlyRepositoryAccess) {
@@ -88,6 +89,7 @@ internal class DesktopChatRequestPlanner(
             chatRepository.getRecentMessages(sessionId, 1).lastOrNull()
         }
         val persistedUser = latest?.takeIf { it.role == MessageRole.USER }
+        persistedUser?.let(onPersistedUserResolved)
         val currentUser = persistedUser ?: ChatMessage.create(
             sessionId = sessionId,
             role = MessageRole.USER,
