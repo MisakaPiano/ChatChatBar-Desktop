@@ -6,7 +6,8 @@ import kotlinx.serialization.json.*
 @Serializable
 data class LanSyncPlan(val transaction: String, val snapshot: LanSyncSnapshot, val parents: Map<String, String>,
     val supersedes: String? = null, val commonCoveredTypesBefore: Set<String>? = null,
-    val resolvedUnits: Set<String> = emptySet(), val resolvedRecordKeys: Set<String> = emptySet())
+    val resolvedUnits: Set<String> = emptySet(), val resolvedRecordKeys: Set<String> = emptySet(),
+    val heldReviews: List<LanSyncHeldReview> = emptyList())
 
 object LanSyncPlanner {
     fun plan(computer: LanSyncSnapshot, phone: LanSyncSnapshot, baseline: LanSyncBaseline,
