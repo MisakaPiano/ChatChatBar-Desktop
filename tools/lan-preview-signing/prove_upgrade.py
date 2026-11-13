@@ -42,5 +42,10 @@ receipt = {'kind': 'CCB_LAN_NEXT_PREVIEW_UPGRADE_PROOF', 'api': 26,
            'fixtureStagesPassed': 2, 'uninstallOrClearData': False,
            'physicalPhoneTested': False, 'firstPreviewMigrated': False,
            'humanAcceptance': False, 'userDelivered': False}
+verification = json.loads((ROOT/'verification.json').read_text(encoding='utf8'))
+receipt['sourceSha'] = verification['sourceSha']
+receipt['previousDeliveredBase'] = verification.get('previousDeliveredBase')
+receipt['baseSha256'] = next(row['sha256'] for row in verification['entries'] if row['role'] == 'base')
+receipt['upgradeSha256'] = next(row['sha256'] for row in verification['entries'] if row['role'] == 'upgrade')
 (ROOT/'upgrade-proof.json').write_text(json.dumps(receipt, indent=2), encoding='utf8')
 print(json.dumps(receipt))

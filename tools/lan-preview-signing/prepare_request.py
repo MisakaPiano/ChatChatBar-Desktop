@@ -52,9 +52,13 @@ def main(directory, artifact_path, keyfile, output):
         second = prepare(apk, keyfile)
         assert first == second and first['certificateSha256'] == CERTIFICATE
         assert first['purpose'] == 'ISOLATED_LAN_NEXT_PREVIEW'
+        if role == 'base' and frozen.get('previousDeliveredBase'):
+            base = frozen['previousDeliveredBase']
+            assert row['sha256'] == base['rawBaseSha256']
+            assert first['outputSha256'] == base['deliveredBaseSha256']
         entries[role] = {'filename': name, 'publicSigning': first}
     request = {'kind': 'CCB_LAN_NEXT_PREVIEW_PUBLIC_SIGNING', 'sourceSha': source,
-               'testFixtureOverlay': frozen.get('testFixtureOverlay'),
+               'testFixtureOverlay': frozen.get('testFixtureOverlay'), 'previousDeliveredBase': frozen.get('previousDeliveredBase'),
                'originalArtifact': artifact, 'certificateSha256': CERTIFICATE,
                'entries': entries, 'sameIdentityAcrossReopen': True,
                'firstPreviewUpgradeCompatible': False, 'userDelivered': False}

@@ -31,10 +31,15 @@ def inspect(directory, control_sha, build_tools):
         assert "sdkVersion:'26'" in text
         with apk.open('rb') as stream:
             digest = hashlib.file_digest(stream, 'sha256').hexdigest()
-        rows.append({'filename': name, 'package': package, 'versionCode': actual_version,
+        input_source = frozen['sourceSha']
+        if name == 'base-input.apk' and frozen.get('previousDeliveredBase'):
+            base = frozen['previousDeliveredBase']
+            assert digest == base['rawBaseSha256']
+            input_source = base['sourceSha']
+        rows.append({'filename': name, 'package': package, 'versionCode': actual_version, 'sourceSha': input_source,
                      'sha256': digest, 'bytes': apk.stat().st_size})
     result = {'sourceSha': frozen['sourceSha'], 'controlSha': control_sha, 'inputs': rows,
-              'testFixtureOverlay': frozen.get('testFixtureOverlay'),
+              'testFixtureOverlay': frozen.get('testFixtureOverlay'), 'previousDeliveredBase': frozen.get('previousDeliveredBase'),
               'persistentSigningApplied': False, 'deviceUpgradeTested': False, 'userDelivered': False}
     (directory/'raw-manifest.json').write_text(json.dumps(result, indent=2), encoding='utf8')
     print(json.dumps(result))

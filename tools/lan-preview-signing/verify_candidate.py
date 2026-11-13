@@ -35,6 +35,7 @@ def main(request_path, source_dir, output_dir, build_tools):
     frozen = json.loads((source_dir/'source-request.json').read_text(encoding='utf8'))
     assert raw['sourceSha'] == frozen['sourceSha'] == request['sourceSha']
     assert raw.get('testFixtureOverlay') == frozen.get('testFixtureOverlay') == request.get('testFixtureOverlay')
+    assert raw.get('previousDeliveredBase') == frozen.get('previousDeliveredBase') == request.get('previousDeliveredBase')
     assert frozen['series'] == 'next' and frozen['versions'] == [81, 82]
     assert raw['controlSha'] == request['originalArtifact']['controlSha']
     assert len(raw['inputs']) == 3
@@ -59,6 +60,8 @@ def main(request_path, source_dir, output_dir, build_tools):
         assert receipt['certificateSha256'] == CERTIFICATE
         output = output_dir / (role + '.apk')
         assemble(source, receipt, output)
+        if role == 'base' and request.get('previousDeliveredBase'):
+            assert file_hash(output) == request['previousDeliveredBase']['deliveredBaseSha256']
         signature = run_tool(build_tools/'apksigner', ['verify', '--verbose', '--print-certs', str(output)],
                              output_dir/(role+'-apksigner.txt'))
         assert 'Verified using v2 scheme (APK Signature Scheme v2): true' in signature
@@ -94,7 +97,7 @@ def main(request_path, source_dir, output_dir, build_tools):
     assert 'DOES NOT VERIFY' in rejection
     tampered.unlink()
     result = {'kind': request['kind'], 'sourceSha': request['sourceSha'],
-              'testFixtureOverlay': request.get('testFixtureOverlay'), 'entries': rows,
+              'testFixtureOverlay': request.get('testFixtureOverlay'), 'previousDeliveredBase': request.get('previousDeliveredBase'), 'entries': rows,
               'protectedByteTamperRejected': True, 'privateKeyUploaded': False,
               'localApkWritten': False, 'firstPreviewUpgradeCompatible': False,
               'deviceUpgradeTested': False, 'humanAcceptance': False, 'userDelivered': False}

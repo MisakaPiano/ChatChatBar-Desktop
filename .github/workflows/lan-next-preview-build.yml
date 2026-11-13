@@ -28,6 +28,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 tools/lan-preview-signing/prepare_fixture_overlay.py
+      - name: Validate exact previous delivered base provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/lan-preview-signing/prepare_delivered_base.py
+      - uses: actions/download-artifact@v4
+        if: env.LAN_NEXT_DELIVERED_BASE == 'true'
+        with:
+          name: ccb-lan-next-signing-inputs
+          run-id: ${{ env.LAN_NEXT_DELIVERED_BASE_RUN }}
+          github-token: ${{ github.token }}
+          path: delivered-base-original
       - uses: actions/download-artifact@v4
         if: env.LAN_NEXT_FIXTURE_ONLY == 'true'
         with:
@@ -57,7 +68,16 @@ jobs:
           app=pathlib.Path(os.environ['LAN_NEXT_SOURCE'])/'app/app/build/outputs/apk'
           for pattern,name in [('lanPreview/*.apk','base-input.apk'),('androidTest/lanPreview/*.apk','tests-input.apk')]:
               files=list(app.glob(pattern)); assert len(files)==1
-              shutil.copyfile(files[0], pathlib.Path('raw-inputs')/name)
+              if name != 'base-input.apk' or os.environ.get('LAN_NEXT_DELIVERED_BASE') != 'true':
+                  shutil.copyfile(files[0], pathlib.Path('raw-inputs')/name)
+          if os.environ.get('LAN_NEXT_DELIVERED_BASE') == 'true':
+              import hashlib,json
+              base=json.load(open('.github/lan-next-preview-build-request.json'))['previousDeliveredBase']
+              p=pathlib.Path('delivered-base-original/base-input.apk')
+              with p.open('rb') as f: assert hashlib.file_digest(f,'sha256').hexdigest()==base['rawBaseSha256']
+              manifest=json.load(open('delivered-base-original/raw-manifest.json'))
+              assert manifest['sourceSha']==base['sourceSha'] and manifest['controlSha']==base['controlSha']
+              shutil.copyfile(p, pathlib.Path('raw-inputs/base-input.apk'))
           PY
       - name: Build isolated82 with matching source and retained fixture
         if: env.LAN_NEXT_FIXTURE_ONLY != 'true'
@@ -100,7 +120,9 @@ jobs:
               with p.open('rb') as stream: digest=hashlib.file_digest(stream,'sha256').hexdigest()
               rows.append({'filename':name,'package':package,'versionCode':int(match.group(2)) if match.group(2) else None,'sha256':digest,'bytes':p.stat().st_size})
           request=json.load(open('.github/lan-next-preview-build-request.json'))
-          json.dump({'sourceSha':request['sourceSha'],'controlSha':os.environ['GITHUB_SHA'],'inputs':rows,'testFixtureOverlay':request.get('testFixtureOverlay'),'persistentSigningApplied':False,'deviceUpgradeTested':False,'userDelivered':False},open(root/'raw-manifest.json','w'),indent=2)
+          for row in rows:
+              row['sourceSha']=request['previousDeliveredBase']['sourceSha'] if row['filename']=='base-input.apk' and request.get('previousDeliveredBase') else request['sourceSha']
+          json.dump({'sourceSha':request['sourceSha'],'controlSha':os.environ['GITHUB_SHA'],'inputs':rows,'previousDeliveredBase':request.get('previousDeliveredBase'),'testFixtureOverlay':request.get('testFixtureOverlay'),'persistentSigningApplied':False,'deviceUpgradeTested':False,'userDelivered':False},open(root/'raw-manifest.json','w'),indent=2)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
