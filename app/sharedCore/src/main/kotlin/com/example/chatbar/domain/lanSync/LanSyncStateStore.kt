@@ -40,7 +40,8 @@ data class LanSyncPending(val peerId: String, val plan: LanSyncPlan,
     val ownerId: String? = null, val localProjectionHash: String? = null,
     val deferredDeletion: LanSyncDeferredDeletion? = null,
     val expectedLocalComponents: Map<String, Set<String>> = emptyMap(),
-    val expectedRemoteComponents: Map<String, Set<String>> = emptyMap())
+    val expectedRemoteComponents: Map<String, Set<String>> = emptyMap(),
+    val peerBefore: LanSyncSnapshot? = null)
 
 @Serializable
 data class LanSyncDeferredDeletion(val previousTransaction: String, val recordKeys: Set<String>)

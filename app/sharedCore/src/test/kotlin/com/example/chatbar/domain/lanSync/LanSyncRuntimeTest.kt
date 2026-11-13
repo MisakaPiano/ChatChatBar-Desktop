@@ -156,6 +156,47 @@ class LanSyncRuntimeTest {
             assertTrue(a.workspace.recovery.list().isNotEmpty())
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun theDeletionInitiatorMustSealItsPeerCopyBeforeEitherPublishesAndCanRestoreWithoutThePeer() = runBlocking {
+        val network = SyntheticLan(); val refusePortable = java.util.concurrent.atomic.AtomicBoolean()
+        val a = End("computer", network)
+        val b = End("phone", network, protection = { phase ->
+            if (phase == "BEFORE_SEAL" && refusePortable.get()) error("SYNC_TEST_PEER_CUSTODY")
+        })
+        val bytes = byteArrayOf(2, 7, 1, 8, 2, 8)
+        val resource = a.root.resolve("images/old.bin"); Files.createDirectories(resource.parent); Files.write(resource, bytes)
+        a.write("card", "删除前原件", resource.toString())
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completedReceiptOnly(a, b)
+            var previous = a.store.baseline(b.id, a.id).revision
+            Files.delete(b.root.resolve("entities/character_cards/card.json"))
+            phone.requestSync(); completedReceiptOnly(a, b, previous)
+            val held = requireNotNull(b.store.reviewQueue(a.id, b.id)).held.single()
+            previous = a.store.baseline(b.id, a.id).revision
+            refusePortable.set(true); phone.confirmReview(held.unit, held.binding)
+            until("the initiator cannot acknowledge protection before its portable seal") { phone.state.value.failureCode == "SYNC_TEST_PEER_CUSTODY" }
+            assertEquals(setOf("删除前原件"), a.names()); assertTrue(b.names().isEmpty())
+            assertEquals(previous, a.store.baseline(b.id, a.id).revision); assertEquals(previous, b.store.baseline(a.id, b.id).revision)
+            val pending = requireNotNull(b.store.pending(a.id)); assertEquals(a.id, pending.peerBefore?.deviceId)
+            assertFalse(a.workspace.applied(pending.plan.transaction)); assertFalse(b.workspace.applied(pending.plan.transaction))
+            refusePortable.set(false); host.requestSync(); phone.requestSync(); completedReceiptOnly(a, b, previous)
+            assertTrue(a.names().isEmpty()); assertTrue(b.names().isEmpty())
+            val local = a.workspace.recovery.list().single(); val portable = b.workspace.recovery.list().single()
+            assertTrue(local.hasLocalOriginals); assertFalse(portable.hasLocalOriginals)
+            assertEquals(a.id, portable.sourceDevice); assertEquals(b.id, portable.custodyDevice)
+            assertEquals(pending.plan.transaction, portable.publicationTransaction)
+            for ((end, entry) in listOf(a to local, b to portable)) {
+                end.workspace.recovery.verify(entry)
+                assertEquals("删除前原件", end.workspace.recovery.snapshot(entry).records.single().text("name"))
+                assertContentEquals(bytes, Files.readAllBytes(end.workspace.recovery.blobs(entry).values.single()))
+            }
+            host.closeAndDrain(); phone.closeAndDrain()
+            val reopened = LanSyncWorkspace(b.root, b.stateRoot.resolve("workspace"), { Path.of(it) })
+            reopened.applyRecovery(reopened.prepareRecovery(portable.transaction, "character_cards/card", b.id), b.id)
+            assertEquals(setOf("删除前原件"), b.names()); assertTrue(a.names().isEmpty())
+            assertContentEquals(bytes, Files.readAllBytes(Path.of(b.readCard("card").avatar!!)))
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun pruningAMessageVersionRequiresFreshExplicitApprovalAndRetainsItsOriginalVersionInRecovery() = runBlocking {
         val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
         a.write("card", "角色"); a.writeConversation("保留正文", "computer-local")
@@ -919,7 +960,7 @@ class LanSyncRuntimeTest {
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
     @Test fun appliedLegacyProtocolsRebaseOrFinishWithoutReplayingOrDuplicatingConversationCopies() = runBlocking {
-        for (legacyProtocol in listOf(1, 2, 3, 4, 5)) for (bothApplied in listOf(false, true)) {
+        for (legacyProtocol in listOf(1, 2, 3, 4, 5, 6)) for (bothApplied in listOf(false, true)) {
             val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
             for (end in listOf(a, b)) end.write("card", "同一合成角色")
             a.writeConversation("电脑版本", "pc-local-model"); b.writeConversation("手机版本", "phone-local-model")

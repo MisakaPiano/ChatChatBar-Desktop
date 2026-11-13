@@ -378,6 +378,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 require(LanSyncFramedJson.receive(wire, store.root, MapSerializer(String.serializer(), String.serializer())) == phoneSnapshot.hashes()) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
                 val remoteConfirmations = LanSyncFramedJson.receive(wire, store.root, MapSerializer(String.serializer(), String.serializer()))
                 val confirmations = store.reviewConfirmations(peerId, identity.fingerprint) + remoteConfirmations
+                wire.sendText("COMPUTER_CAPTURE")
+                LanSyncTransfer.send(wire, store.root, computer, transferProgress)
                 val computerApplied = previous?.let { workspace.applied(it.plan.transaction) } == true
                 val phoneApplied = previous != null && hello.pendingTransaction == previous.plan.transaction && hello.locallyApplied
                 val protocolChanged = previous != null && previous.plan.snapshot.protocol != LAN_SYNC_PROTOCOL
@@ -416,7 +418,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                         else baseline
                     if (previous != null) _state.value = _state.value.copy(status = "保留上次已应用结果，重新核对两端后续修改")
                     val comparison = LanSyncCompare.compare(computer.snapshot, phoneSnapshot, ancestor)
-                    val decisions = try { decide(comparison, ancestor, computer, wire) } catch (failure: IllegalArgumentException) {
+                    val decisions = try { decide(comparison, ancestor, wire) } catch (failure: IllegalArgumentException) {
                         if (failure.message == "SYNC_CONFLICT_TIMEOUT") { finishRequest(requestToken); wire.sendText("SYNC_CONFLICT_TIMEOUT") }
                         throw failure
                     }
@@ -439,7 +441,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 LanSyncFramedJson.send(wire, store.root, MapSerializer(String.serializer(), String.serializer()), prepared.expectedRemote)
                 LanSyncTransfer.send(wire, store.root, LanSyncCapture(output, available, emptyMap()), transferProgress)
                 awaitStage(wire, "PROTECTED:${prepared.plan.transaction}", "WAIT_PROTECTION", "SYNC_PHONE_PROTECTION")
-                withStageHeartbeat(wire, "WAIT_PROTECTION") { protectPrepared(prepared) }
+                withStageHeartbeat(wire, "WAIT_PROTECTION") { protectPrepared(prepared, phoneSnapshot) }
                 observe("HOST_PROTECTED", prepared.plan.transaction)
                 wire.sendText("PUBLISH:${prepared.plan.transaction}")
                 awaitStage(wire, "APPLIED:${prepared.plan.transaction}", "WAIT_APPLY", "SYNC_PHONE_RECEIPT")
@@ -527,65 +529,69 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 LanSyncFramedJson.send(wire, store.root, MapSerializer(String.serializer(), String.serializer()), phoneSnapshot.hashes())
                 LanSyncFramedJson.send(wire, store.root, MapSerializer(String.serializer(), String.serializer()),
                     store.reviewConfirmations(peer.fingerprint, identity.fingerprint))
-                val decisionDeadline = System.nanoTime() + 10 * 60_000_000_000L
-                var planText = wire.text(8192)
-                if (planText == "REVIEW") {
-                    reviewOnPhone(wire, phoneSnapshot)
-                    planText = wire.text(8192)
-                }
-                while (planText == "WAIT_DECISION") {
-                    require(System.nanoTime() <= decisionDeadline) { "SYNC_CONFLICT_TIMEOUT" }
-                    _state.value = _state.value.copy(status = "等待在电脑选择冲突内容，连接保持中")
-                    planText = wire.text(8192)
-                }
-                require(planText != "SYNC_CONFLICT_TIMEOUT") { "SYNC_CONFLICT_TIMEOUT" }
-                require(planText != "SYNC_LEGACY_PLAN_UNSUPPORTED") { "SYNC_LEGACY_PLAN_UNSUPPORTED" }
-                if (planText.startsWith("APPLIED_FINISH:")) {
-                    val finished = requireNotNull(pending) { "SYNC_RECEIPT_WITHOUT_APPLY" }
-                    require(planText == "APPLIED_FINISH:${finished.plan.transaction}" && workspace.applied(finished.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
-                    if (finished.plan.snapshot.protocol != LAN_SYNC_PROTOCOL) LanSyncScope.validateLegacyPending(finished.plan.snapshot)
-                    else { finished.plan.snapshot.validate(); LanSyncScope.validateGraph(finished.plan.snapshot) }
-                    complete(peer.fingerprint, finished.plan)
-                    wire.sendText("APPLIED_COMMITTED:${finished.plan.transaction}")
-                    require(wire.text(8192) == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
-                    store.clearPending(peer.fingerprint, finished.plan.transaction)
-                    queueSync()
-                    _state.value = _state.value.copy(busy = false, status = "旧同步回执已确认，正在核对后续修改")
-                    return
-                }
-                val plan = LanSyncFramedJson.receive(wire, store.root, LanSyncPlan.serializer(), planText)
-                val expected = LanSyncFramedJson.receive(wire, store.root, MapSerializer(String.serializer(), String.serializer()))
-                val received = LanSyncTransfer.receive(wire, store.root, peer.fingerprint, workspace.resourceStore, transferProgress)
+                require(wire.text(8192) == "COMPUTER_CAPTURE") { "SYNC_SOURCE_CAPTURE" }
+                val computerBefore = LanSyncTransfer.receive(wire, store.root, peer.fingerprint, workspace.resourceStore, transferProgress)
                 try {
-                require(received.snapshot.hashes() == plan.snapshot.hashes()) { "SYNC_PLAN_MISMATCH" }
-                val prior = store.pending(peer.fingerprint)
-                require(prior == null || prior.plan.transaction == plan.transaction || plan.supersedes == prior.plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
-                val prepared = if (prior?.plan?.transaction == plan.transaction) prior else
-                    prepareLocalPending(peer.fingerprint, plan, expected, emptyMap(), prior, phoneSnapshot,
-                        prior?.let { workspace.applied(it.plan.transaction) } == true).also {
-                        if (prior == null) store.pending(it) else store.replacePending(it)
+                    val decisionDeadline = System.nanoTime() + 10 * 60_000_000_000L
+                    var planText = wire.text(8192)
+                    if (planText == "REVIEW") {
+                        reviewOnPhone(wire, phoneSnapshot, computerBefore.snapshot)
+                        planText = wire.text(8192)
                     }
-                val alreadyApplied = workspace.applied(plan.transaction)
-                retainBlobs(plan, received.blobs)
-                withStageHeartbeat(wire, "WAIT_PROTECTION") { protectPrepared(prepared) }
-                observe("PHONE_PROTECTED", plan.transaction)
-                wire.sendText("PROTECTED:${plan.transaction}")
-                awaitStage(wire, "PUBLISH:${plan.transaction}", "WAIT_PROTECTION", "SYNC_HOST_PROTECTION")
-                withStageHeartbeat(wire, "WAIT_APPLY") { applyPrepared(prepared, received.blobs) }
-                observe("PHONE_APPLIED", plan.transaction)
-                wire.sendText("APPLIED:${plan.transaction}")
-                awaitStage(wire, "COMMIT:${plan.transaction}", "WAIT_APPLY", "SYNC_COMMIT_RECEIPT")
-                complete(peer.fingerprint, plan)
-                observe("PHONE_BASELINE", plan.transaction)
-                wire.sendText("COMMITTED:${plan.transaction}")
-                require(wire.text(8192) == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
-                store.clearPending(peer.fingerprint, plan.transaction)
-                observe("PHONE_PENDING_CLEARED", plan.transaction)
-                finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
-                closeImagePreview()
-                _state.value = _state.value.copy(busy = false, status = completedStatus(plan), excluded = plan.snapshot.excludedTypes, failureCode = null,
-                    reviewBinding = null, reviewDetails = emptyList())
-                } finally { received.close() }
+                    while (planText == "WAIT_DECISION") {
+                        require(System.nanoTime() <= decisionDeadline) { "SYNC_CONFLICT_TIMEOUT" }
+                        _state.value = _state.value.copy(status = "等待在电脑选择冲突内容，连接保持中")
+                        planText = wire.text(8192)
+                    }
+                    require(planText != "SYNC_CONFLICT_TIMEOUT") { "SYNC_CONFLICT_TIMEOUT" }
+                    require(planText != "SYNC_LEGACY_PLAN_UNSUPPORTED") { "SYNC_LEGACY_PLAN_UNSUPPORTED" }
+                    if (planText.startsWith("APPLIED_FINISH:")) {
+                        val finished = requireNotNull(pending) { "SYNC_RECEIPT_WITHOUT_APPLY" }
+                        require(planText == "APPLIED_FINISH:${finished.plan.transaction}" && workspace.applied(finished.plan.transaction)) { "SYNC_RECEIPT_WITHOUT_APPLY" }
+                        if (finished.plan.snapshot.protocol != LAN_SYNC_PROTOCOL) LanSyncScope.validateLegacyPending(finished.plan.snapshot)
+                        else { finished.plan.snapshot.validate(); LanSyncScope.validateGraph(finished.plan.snapshot) }
+                        complete(peer.fingerprint, finished.plan)
+                        wire.sendText("APPLIED_COMMITTED:${finished.plan.transaction}")
+                        require(wire.text(8192) == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
+                        store.clearPending(peer.fingerprint, finished.plan.transaction)
+                        queueSync()
+                        _state.value = _state.value.copy(busy = false, status = "旧同步回执已确认，正在核对后续修改")
+                        return
+                    }
+                    val plan = LanSyncFramedJson.receive(wire, store.root, LanSyncPlan.serializer(), planText)
+                    val expected = LanSyncFramedJson.receive(wire, store.root, MapSerializer(String.serializer(), String.serializer()))
+                    val received = LanSyncTransfer.receive(wire, store.root, peer.fingerprint, workspace.resourceStore, transferProgress)
+                    try {
+                    require(received.snapshot.hashes() == plan.snapshot.hashes()) { "SYNC_PLAN_MISMATCH" }
+                    val prior = store.pending(peer.fingerprint)
+                    require(prior == null || prior.plan.transaction == plan.transaction || plan.supersedes == prior.plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
+                    val prepared = if (prior?.plan?.transaction == plan.transaction) prior else
+                        prepareLocalPending(peer.fingerprint, plan, expected, emptyMap(), prior, phoneSnapshot,
+                            prior?.let { workspace.applied(it.plan.transaction) } == true, computerBefore.snapshot).also {
+                            if (prior == null) store.pending(it) else store.replacePending(it)
+                        }
+                    val alreadyApplied = workspace.applied(plan.transaction)
+                    retainBlobs(plan, received.blobs)
+                    withStageHeartbeat(wire, "WAIT_PROTECTION") { protectPrepared(prepared, computerBefore.snapshot) }
+                    observe("PHONE_PROTECTED", plan.transaction)
+                    wire.sendText("PROTECTED:${plan.transaction}")
+                    awaitStage(wire, "PUBLISH:${plan.transaction}", "WAIT_PROTECTION", "SYNC_HOST_PROTECTION")
+                    withStageHeartbeat(wire, "WAIT_APPLY") { applyPrepared(prepared, received.blobs) }
+                    observe("PHONE_APPLIED", plan.transaction)
+                    wire.sendText("APPLIED:${plan.transaction}")
+                    awaitStage(wire, "COMMIT:${plan.transaction}", "WAIT_APPLY", "SYNC_COMMIT_RECEIPT")
+                    complete(peer.fingerprint, plan)
+                    observe("PHONE_BASELINE", plan.transaction)
+                    wire.sendText("COMMITTED:${plan.transaction}")
+                    require(wire.text(8192) == "DONE") { "SYNC_FINAL_RECEIPT_PENDING" }
+                    store.clearPending(peer.fingerprint, plan.transaction)
+                    observe("PHONE_PENDING_CLEARED", plan.transaction)
+                    finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
+                    closeImagePreview()
+                    _state.value = _state.value.copy(busy = false, status = completedStatus(plan), excluded = plan.snapshot.excludedTypes, failureCode = null,
+                        reviewBinding = null, reviewDetails = emptyList())
+                    } finally { received.close() }
+                } finally { computerBefore.close() }
                 } finally { phone.close() }
             } } finally { sockets -= socket }
         }
@@ -601,11 +607,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         require(description.conflicts.all { it.canKeepBoth || values[it.unit] != LanSyncChoice.KEEP_BOTH }) { "SYNC_SINGLETON_KEEP_BOTH" }
     }
     private suspend fun decide(comparison: LanSyncComparison, baseline: LanSyncBaseline,
-        computer: LanSyncCapture, wire: LanSyncWire): Map<String, LanSyncChoice> {
+        wire: LanSyncWire): Map<String, LanSyncChoice> {
         if (comparison.conflicts.isEmpty()) return emptyMap()
         val description = LanSyncDetailedReview.description(comparison, baseline)
         wire.sendText("REVIEW")
-        LanSyncTransfer.send(wire, store.root, computer, transferProgress)
         LanSyncFramedJson.send(wire, store.root, LanSyncReviewContext.serializer(),
             LanSyncReviewContext(baseline.copy(revision = null, receipts = emptyList(), localProjectionHash = null), description))
         val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
@@ -634,38 +639,34 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             }
         } finally { choices = null }
     }
-    private suspend fun reviewOnPhone(wire: LanSyncWire, phone: LanSyncSnapshot) {
-        val preview = LanSyncTransfer.receive(wire, store.root, requireNotNull(store.peers().singleOrNull()).fingerprint,
-            workspace.resourceStore, transferProgress)
+    private suspend fun reviewOnPhone(wire: LanSyncWire, phone: LanSyncSnapshot, computer: LanSyncSnapshot) {
+        val context = LanSyncFramedJson.receive(wire, store.root, LanSyncReviewContext.serializer())
+        require(context.ancestor.ownerId == computer.deviceId && context.ancestor.peerId == identity.fingerprint &&
+            context.ancestor.revision == null && context.ancestor.localProjectionHash == null && context.ancestor.receipts.isEmpty()) { "SYNC_REVIEW_DEVICE" }
+        val comparison = LanSyncCompare.compare(computer, phone, context.ancestor)
+        require(context.description == LanSyncDetailedReview.description(comparison, context.ancestor)) { "SYNC_REVIEW_BINDING" }
+        val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
+        choices = answer
+        _state.value = _state.value.copy(status = "可在本机或电脑查看内容并选择；比较起点仅保留指纹", conflicts = context.description.conflicts,
+            reviewBinding = context.description.binding, reviewDetails = LanSyncDetailedReview.details(context.description, comparison))
         try {
-            val context = LanSyncFramedJson.receive(wire, store.root, LanSyncReviewContext.serializer())
-            require(context.ancestor.ownerId == preview.snapshot.deviceId && context.ancestor.peerId == identity.fingerprint &&
-                context.ancestor.revision == null && context.ancestor.localProjectionHash == null && context.ancestor.receipts.isEmpty()) { "SYNC_REVIEW_DEVICE" }
-            val comparison = LanSyncCompare.compare(preview.snapshot, phone, context.ancestor)
-            require(context.description == LanSyncDetailedReview.description(comparison, context.ancestor)) { "SYNC_REVIEW_BINDING" }
-            val answer = CompletableDeferred<Map<String, LanSyncChoice>>()
-            choices = answer
-            _state.value = _state.value.copy(status = "可在本机或电脑查看内容并选择；比较起点仅保留指纹", conflicts = context.description.conflicts,
-                reviewBinding = context.description.binding, reviewDetails = LanSyncDetailedReview.details(context.description, comparison))
-            try {
-                while (true) when (wire.text(8192)) {
-                    "REVIEW_POLL" -> {
-                        val selected = if (answer.isCompleted) answer.await().also { validateChoices(context.description, it) } else emptyMap()
-                        if (selected.isEmpty()) wire.sendText("REVIEW_WAIT") else
-                            LanSyncFramedJson.send(wire, store.root, LanSyncReviewVote.serializer(), LanSyncReviewVote(context.description.binding, selected))
-                    }
-                    "REVIEW_SELECTED" -> {
-                        val selected = LanSyncFramedJson.receive(wire, store.root, LanSyncReviewVote.serializer())
-                        require(selected.binding == context.description.binding) { "SYNC_REVIEW_BINDING" }
-                        validateChoices(context.description, selected.choices)
-                        _state.value = _state.value.copy(conflicts = emptyList(), status = "两端已核对选择，正在准备保全与写入")
-                        return
-                    }
-                    "SYNC_CONFLICT_TIMEOUT" -> error("SYNC_CONFLICT_TIMEOUT")
-                    else -> error("SYNC_REVIEW_STAGE")
+            while (true) when (wire.text(8192)) {
+                "REVIEW_POLL" -> {
+                    val selected = if (answer.isCompleted) answer.await().also { validateChoices(context.description, it) } else emptyMap()
+                    if (selected.isEmpty()) wire.sendText("REVIEW_WAIT") else
+                        LanSyncFramedJson.send(wire, store.root, LanSyncReviewVote.serializer(), LanSyncReviewVote(context.description.binding, selected))
                 }
-            } finally { choices = null }
-        } finally { preview.close() }
+                "REVIEW_SELECTED" -> {
+                    val selected = LanSyncFramedJson.receive(wire, store.root, LanSyncReviewVote.serializer())
+                    require(selected.binding == context.description.binding) { "SYNC_REVIEW_BINDING" }
+                    validateChoices(context.description, selected.choices)
+                    _state.value = _state.value.copy(conflicts = emptyList(), status = "两端已核对选择，正在准备保全与写入")
+                    return
+                }
+                "SYNC_CONFLICT_TIMEOUT" -> error("SYNC_CONFLICT_TIMEOUT")
+                else -> error("SYNC_REVIEW_STAGE")
+            }
+        } finally { choices = null }
     }
     private fun prepareLocalPending(peer: String, plan: LanSyncPlan, expectedLocal: Map<String, String>,
         expectedRemote: Map<String, String>, previous: LanSyncPending?, current: LanSyncSnapshot,
@@ -676,7 +677,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         LanSyncRebase.localPlan(LanSyncPartialReview.localPlan(plan, identity.fingerprint), deferred, previous?.plan)
         return LanSyncPending(peer, plan, expectedLocal, expectedRemote, deferredDeletion = deferred,
             expectedLocalComponents = LanSyncMoments.components(current).filterKeys { it in expectedLocal },
-            expectedRemoteComponents = remote?.let(LanSyncMoments::components).orEmpty().filterKeys { it in expectedRemote })
+            expectedRemoteComponents = remote?.let(LanSyncMoments::components).orEmpty().filterKeys { it in expectedRemote }, peerBefore = remote)
     }
     private fun localPlan(pending: LanSyncPending): LanSyncPlan {
         val old = pending.deferredDeletion?.let { proof ->
@@ -685,13 +686,17 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         }
         return LanSyncRebase.localPlan(LanSyncPartialReview.localPlan(pending.plan, identity.fingerprint), pending.deferredDeletion, old)
     }
-    private suspend fun protectPrepared(pending: LanSyncPending) {
+    private suspend fun protectPrepared(pending: LanSyncPending, currentPeerBefore: LanSyncSnapshot) {
         platform.exclusive {
             workspace.recover()
             if (!workspace.applied(pending.plan.transaction)) {
                 workspace.protectBeforeApply(localPlan(pending), pending.expectedLocal,
                     identity.fingerprint, store.projection(pending.peerId, identity.fingerprint))
             }
+            val peerBefore = pending.peerBefore ?: currentPeerBefore
+            require(peerBefore.deviceId == pending.peerId) { "SYNC_RECOVERY_DEVICE" }
+            workspace.protectPeerBeforeApply(pending.plan, peerBefore, identity.fingerprint,
+                store.projection(pending.peerId, identity.fingerprint))
         }
     }
     private suspend fun withStageHeartbeat(wire: LanSyncWire, marker: String, work: suspend () -> Unit) = coroutineScope {

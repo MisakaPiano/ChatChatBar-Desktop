@@ -61,10 +61,10 @@ object LanSyncScope {
             val allowed = when (snapshot.protocol) {
                 3 -> legacyChatTypes + LanSyncMoments.types
                 4 -> legacyChatTypes + LanSyncMoments.types + "player_setting"
-                5 -> legacyChatTypes + LanSyncMoments.types + "player_setting" + "novelai_generation_history" + LanSyncPostProcess.TYPE + LanSyncStudioCurrent.types
+                5, 6 -> legacyChatTypes + LanSyncMoments.types + "player_setting" + "novelai_generation_history" + LanSyncPostProcess.TYPE + LanSyncStudioCurrent.types
                 else -> legacyChatTypes
             }
-            require(snapshot.protocol in 1..5 && allowed.containsAll(snapshot.coveredTypes))
+            require(snapshot.protocol in 1..6 && allowed.containsAll(snapshot.coveredTypes))
             val compatible = snapshot.copy(protocol = LAN_SYNC_PROTOCOL,
                 records = snapshot.records.map { it.copy(body = normalize(it.type, it.body)) })
             compatible.validate(); validateGraph(compatible)

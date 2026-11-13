@@ -98,6 +98,7 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
         val recoveryPages = maxOf(1, (state.recoveryEntries.size + 9) / 10)
         state.recoveryEntries.drop(recoveryPage * 10).take(10).forEach { entry ->
             CbText("${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(entry.createdAt))} · ${entry.affectedUnits} 组受影响内容 · ${entry.recordCount} 条记录 / ${entry.messageCount} 条实时消息")
+            CbText(if (entry.hasLocalOriginals) "本机原始内容与本机选择已保全" else "对端同步内容已保全；不含对端账户和本机模型选择")
             CbButton("浏览此保全记录", { runtime.openRecovery(entry.transaction) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
         if (recoveryPages > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

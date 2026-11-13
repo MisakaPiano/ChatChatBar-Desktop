@@ -61,6 +61,15 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         recovery.protect(dataRoot, current, plan, projection)
     }
 
+    fun protectPeerBeforeApply(plan: LanSyncPlan, peerBefore: LanSyncSnapshot, deviceId: String,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? {
+        val target = LanSyncPartialReview.localPlan(plan, peerBefore.deviceId)
+        val blobs = peerBefore.resources.mapValues { (hash, size) ->
+            requireNotNull(resourceStore.completed(hash, size)) { "SYNC_RECOVERY_RESOURCE_MISSING" }
+        }
+        return recovery.protectPeer(deviceId, LanSyncCapture(peerBefore, blobs, emptyMap()), target, projection)
+    }
+
     fun prepareRecovery(transaction: String, unit: String, deviceId: String,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRestorePreview {
         recover()
@@ -81,7 +90,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         recover()
         require(preview.id.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_REVISION" }
         val entry = requireNotNull(recovery.read(preview.sourceTransaction)) { "SYNC_RECOVERY_MISSING" }
-        require(entry.snapshotHash == preview.sourceSnapshotHash && entry.sourceDevice == deviceId) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+        require(entry.snapshotHash == preview.sourceSnapshotHash && (entry.custodyDevice ?: entry.sourceDevice) == deviceId) { "SYNC_RECOVERY_SOURCE_CHANGED" }
         requireRecoveryProjection(entry, projection)
         val path = stateRoot.resolve("restore-intent-${preview.id}.json")
         val previous = LanSyncJsonFiles.read(path, LanSyncRestoreRevision.serializer())

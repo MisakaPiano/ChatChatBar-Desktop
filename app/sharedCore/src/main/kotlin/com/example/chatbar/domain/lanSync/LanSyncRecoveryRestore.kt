@@ -19,7 +19,7 @@ object LanSyncRecoveryRestore {
     fun prepare(entry: LanSyncRecoveryEntry, old: LanSyncSnapshot, affected: Set<String>, current: LanSyncSnapshot,
         unit: String, revision: String = UUID.randomUUID().toString()): LanSyncRestorePreview {
         require(revision.matches(Regex("[a-f0-9-]{36}")) && revision != entry.transaction) { "SYNC_RECOVERY_REVISION" }
-        require(entry.sourceDevice == old.deviceId && current.deviceId == old.deviceId) { "SYNC_RECOVERY_DEVICE" }
+        require(entry.sourceDevice == old.deviceId && current.deviceId == (entry.custodyDevice ?: entry.sourceDevice)) { "SYNC_RECOVERY_DEVICE" }
         old.validate(); current.validate(); LanSyncScope.validateGraph(old); LanSyncScope.validateGraph(current)
         require(unit in affected) { "SYNC_RECOVERY_UNIT" }
         val retained = requireNotNull(old.units()[unit]) { "SYNC_RECOVERY_UNIT" }.toMutableList()

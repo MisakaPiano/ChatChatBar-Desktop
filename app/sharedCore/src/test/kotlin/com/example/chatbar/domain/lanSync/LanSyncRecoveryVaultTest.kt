@@ -19,6 +19,31 @@ class LanSyncRecoveryVaultTest {
         Files.createDirectories(file.parent); Files.write(file, record.body.toString().toByteArray(Charsets.UTF_8))
     }
 
+    @Test fun aSealedProtocolSixEntryReopensWithoutRewritingItsOriginalEvidence() {
+        val root = Files.createTempDirectory("lan-legacy-vault-data-").toRealPath()
+        val state = Files.createTempDirectory("lan-legacy-vault-state-").toRealPath()
+        try {
+            write(root, row("card", "历史保全"))
+            val workspace = LanSyncWorkspace(root, state, { Path.of(it) })
+            val transaction = UUID.randomUUID().toString()
+            val entry = workspace.capture("pc").use { before -> requireNotNull(workspace.recovery.protect(root, before,
+                LanSyncPlan(transaction, before.snapshot.copy(records = emptyList()), emptyMap()))) }
+            // Build an old-format synthetic fixture, outside any real recovery root.
+            val snapshotFile = state.resolve("recovery/entries/$transaction/snapshot.json")
+            LanSyncJsonFiles.write(snapshotFile, LanSyncSnapshot.serializer(), workspace.recovery.snapshot(entry).copy(protocol = 6))
+            val legacy = entry.copy(snapshotHash = LanSyncResourceStore.hashFile(snapshotFile, Files.size(snapshotFile)),
+                snapshotBytes = Files.size(snapshotFile), custodyDevice = null, rawSourceBinding = null)
+            val entryFile = snapshotFile.resolveSibling("entry.json")
+            LanSyncJsonFiles.write(entryFile, LanSyncRecoveryEntry.serializer(), legacy)
+            val frozenSnapshot = Files.readAllBytes(snapshotFile); val frozenEntry = Files.readAllBytes(entryFile)
+            val reopened = LanSyncWorkspace(root, state, { Path.of(it) }).recovery
+            reopened.verify(requireNotNull(reopened.read(transaction)))
+            assertEquals(LAN_SYNC_PROTOCOL, reopened.snapshot(legacy).protocol)
+            assertEquals("历史保全", reopened.snapshot(legacy).records.single().text("name"))
+            assertContentEquals(frozenSnapshot, Files.readAllBytes(snapshotFile)); assertContentEquals(frozenEntry, Files.readAllBytes(entryFile))
+        } finally { check(root.toFile().deleteRecursively()); check(state.toFile().deleteRecursively()) }
+    }
+
     @Test fun actualOverwriteProtectsOriginalRawBytesAllDependentResourcesAndReopensAfterWalRetirement() {
         val root = Files.createTempDirectory("lan-recovery-data-").toRealPath()
         val state = Files.createTempDirectory("lan-recovery-state-").toRealPath()

@@ -18,6 +18,75 @@ class LanSyncRecoveryRestoreTest {
     private fun workspace(root: Path, state: Path, observe: (String, Int) -> Unit = { _, _ -> }) =
         LanSyncWorkspace(root, state, { Path.of(it) }, observeJournal = observe)
 
+    @Test fun peerCustodyKeepsTrueSourceIdentityAndRestoresOnItsOwnerWithoutForeignModelBindings() {
+        val roots = List(4) { Files.createTempDirectory("lan-peer-custody-").toRealPath() }
+        val (localRoot, localState, peerRoot, peerState) = roots
+        try {
+            val document = peerRoot.resolve("documents/old.bin"); Files.createDirectories(document.parent)
+            val bytes = byteArrayOf(3, 1, 4, 1, 5); Files.write(document, bytes)
+            card(peerRoot, "card", "对端原件", document)
+            write(peerRoot, "chat_sessions", "session", ChatSession.serializer(),
+                ChatSession("session", "card", "对端会话", modelId = "peer-private-model", createdAt = 1, updatedAt = 1))
+            val local = workspace(localRoot, localState); val peer = workspace(peerRoot, peerState)
+            val publication = UUID.randomUUID().toString()
+            val entry = peer.capture("peer").use { before ->
+                before.blobs.forEach { (hash, file) -> local.resourceStore.retain(file, hash, before.snapshot.resources.getValue(hash)) }
+                requireNotNull(local.protectPeerBeforeApply(LanSyncPlan(publication,
+                    LanSyncSnapshot(deviceId = "local", records = emptyList()), emptyMap()), before.snapshot, "local"))
+            }
+            assertEquals("peer", entry.sourceDevice); assertEquals("local", entry.custodyDevice)
+            assertEquals(publication, entry.publicationTransaction); assertNotEquals(publication, entry.transaction)
+            assertFalse(entry.hasLocalOriginals); assertEquals(0L, entry.originalCount)
+            local.recovery.originals(entry) { _, _ -> fail("Portable custody must not invent peer raw files") }
+            assertNull(local.recovery.snapshot(entry).records.single { it.type == "chat_sessions" }.body["modelId"])
+            assertEquals("SYNC_RECOVERY_DEVICE", assertFailsWith<IllegalArgumentException> {
+                local.prepareRecovery(entry.transaction, "conversation/session", "peer")
+            }.message)
+            check(peerRoot.toFile().deleteRecursively()); check(peerState.toFile().deleteRecursively())
+            val reopened = workspace(localRoot, localState); reopened.recovery.verify(entry)
+            reopened.applyRecovery(reopened.prepareRecovery(entry.transaction, "character_cards/card", "local"), "local")
+            reopened.applyRecovery(reopened.prepareRecovery(entry.transaction, "conversation/session", "local"), "local")
+            val restored = lanSyncJson.decodeFromString(CharacterCard.serializer(), Files.readString(localRoot.resolve("entities/character_cards/card.json")))
+            assertContentEquals(bytes, Files.readAllBytes(Path.of(restored.customDocuments.single().filePath)))
+            val sessionFile = localRoot.resolve("entities/chat_sessions/session.json")
+            val session = lanSyncJson.decodeFromString(ChatSession.serializer(), Files.readString(sessionFile))
+            assertNull(session.modelId)
+            write(localRoot, "chat_sessions", "session", ChatSession.serializer(), session.copy(modelId = "current-local-model", name = "本机后改名"))
+            reopened.applyRecovery(reopened.prepareRecovery(entry.transaction, "conversation/session", "local"), "local")
+            assertEquals("current-local-model", lanSyncJson.decodeFromString(ChatSession.serializer(), Files.readString(sessionFile)).modelId)
+        } finally { roots.forEach { if (Files.exists(it)) check(it.toFile().deleteRecursively()) } }
+    }
+
+    @Test fun aLaterLocalModelChoiceGetsAnImmutableRawVariantBeforeTheSamePlanPublishes() {
+        val root = Files.createTempDirectory("lan-raw-variant-data-").toRealPath()
+        val state = Files.createTempDirectory("lan-raw-variant-state-").toRealPath()
+        try {
+            card(root, "card", "角色")
+            val session = ChatSession("session", "card", "会话", modelId = "first-local-model", createdAt = 1, updatedAt = 1)
+            write(root, "chat_sessions", "session", ChatSession.serializer(), session)
+            val ws = workspace(root, state); val transaction = UUID.randomUUID().toString()
+            val plan = LanSyncPlan(transaction, LanSyncSnapshot(deviceId = "pc", records = emptyList()), emptyMap())
+            val first = ws.capture("pc").use { requireNotNull(ws.recovery.protect(root, it, plan)) }
+            val sealedFile = state.resolve("recovery/entries/$transaction/entry.json"); val sealedBytes = Files.readAllBytes(sealedFile)
+            write(root, "chat_sessions", "session", ChatSession.serializer(), session.copy(modelId = "latest-local-model"))
+            val second = ws.capture("pc").use { before ->
+                assertEquals(ws.recovery.snapshot(first).hashes(), before.snapshot.hashes())
+                requireNotNull(ws.recovery.protect(root, before, plan)).also {
+                    assertEquals(it, ws.recovery.protect(root, before, plan))
+                    ws.apply(plan, before.snapshot.hashes(), "pc", emptyMap())
+                }
+            }
+            assertNotEquals(first.transaction, second.transaction); assertEquals(transaction, second.publicationTransaction)
+            assertNotEquals(first.rawSourceBinding, second.rawSourceBinding)
+            assertContentEquals(sealedBytes, Files.readAllBytes(sealedFile)); ws.recovery.verify(first); ws.recovery.verify(second)
+            ws.applyRecovery(ws.prepareRecovery(second.transaction, "conversation/session", "pc"), "pc")
+            assertEquals("latest-local-model", lanSyncJson.decodeFromString(ChatSession.serializer(),
+                Files.readString(root.resolve("entities/chat_sessions/session.json"))).modelId)
+            assertEquals("first-local-model", ws.recovery.restoredLocalFields(first, setOf("chat_sessions/session"),
+                LanSyncProjection()).getValue("chat_sessions/session")["modelId"]?.jsonPrimitive?.content)
+        } finally { check(root.toFile().deleteRecursively()); check(state.toFile().deleteRecursively()) }
+    }
+
     @Test fun selectedUnitRestoresAsANewRevisionWithOriginalModelAndMediaWithoutRewindingUnrelatedRecords() {
         val root = Files.createTempDirectory("lan-restore-data-").toRealPath()
         val state = Files.createTempDirectory("lan-restore-state-").toRealPath()

@@ -28,6 +28,11 @@ data class LanSyncRecoveryEntry(
     val messageCount: Long,
     val projectionHash: String? = null,
     val projectionBytes: Long = 0,
+    val custodyDevice: String? = null,
+    val hasLocalOriginals: Boolean = true,
+    val originalCount: Long = recordCount,
+    val publicationTransaction: String? = null,
+    val rawSourceBinding: String? = null,
 )
 
 @Serializable
@@ -50,12 +55,19 @@ class LanSyncRecoveryVault(
     }
 
     @Serializable private data class Preparation(val transaction: String, val source: String, val target: String,
-        val projectionHash: String? = null)
+        val projectionHash: String? = null, val custodyDevice: String? = null, val hasLocalOriginals: Boolean = true,
+        val rawSourceBinding: String? = null)
     private fun directory(transaction: String): Path {
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_ID" }
         return entries.resolve(transaction)
     }
     private fun binding(snapshot: LanSyncSnapshot) = lanSyncHash(JsonObject(snapshot.hashes().mapValues { JsonPrimitive(it.value) }))
+    private fun rawBinding(files: Map<String, String>) = lanSyncHashSequence(files.toSortedMap().asSequence().map { (path, hash) ->
+        buildJsonObject { put("path", path); put("hash", hash) }
+    })
+    private fun rawBinding(snapshot: LanSyncSnapshot) = lanSyncHashSequence(snapshot.records.sortedBy { it.key }.asSequence().map {
+        buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.body) }
+    })
 
     @OptIn(ExperimentalSerializationApi::class)
     fun protect(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan,
@@ -64,21 +76,54 @@ class LanSyncRecoveryVault(
         protectOwned(dataRoot, current, plan, projection)
     }
 
+    fun protectPeer(ownerDevice: String, peer: LanSyncCapture, peerTarget: LanSyncPlan,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? {
+        require(ownerDevice.isNotBlank() && peer.snapshot.deviceId != ownerDevice && peer.sourceFiles.isEmpty()) { "SYNC_RECOVERY_DEVICE" }
+        peer.snapshot.validate(); LanSyncScope.validateGraph(peer.snapshot); projection.validate()
+        peerTarget.snapshot.validate(); LanSyncScope.validateGraph(peerTarget.snapshot)
+        require(peerTarget.snapshot.deviceId == peer.snapshot.deviceId) { "SYNC_RECOVERY_DEVICE" }
+        val entryId = java.util.UUID.nameUUIDFromBytes("ccb-lan-peer-custody/$ownerDevice/${peer.snapshot.deviceId}/${peerTarget.transaction}"
+            .toByteArray(Charsets.UTF_8)).toString()
+        return withEntry(entryId) {
+            protectOwned(null, peer, peerTarget.copy(transaction = entryId), projection,
+                ownerDevice, false, peerTarget.transaction)
+        }
+    }
+
     @OptIn(ExperimentalSerializationApi::class)
-    private fun protectOwned(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan, projection: LanSyncProjection): LanSyncRecoveryEntry? {
+    private fun protectOwned(dataRoot: Path?, current: LanSyncCapture, plan: LanSyncPlan, projection: LanSyncProjection,
+        custodyDevice: String = current.snapshot.deviceId, hasLocalOriginals: Boolean = true,
+        publicationTransaction: String? = null): LanSyncRecoveryEntry? {
         val changes = LanSyncImpactReview.changes(current.snapshot.records, plan.snapshot.records)
         if (changes.none { it.needsProtection }) return null
-        require(current.sourceFiles.size == current.snapshot.records.size) { "SYNC_RECOVERY_SOURCE" }
+        require(if (hasLocalOriginals) dataRoot != null && current.sourceFiles.size == current.snapshot.records.size
+            else dataRoot == null && current.sourceFiles.isEmpty()) { "SYNC_RECOVERY_SOURCE" }
         val beforeUnits = current.snapshot.units()
         val affectedKeys = changes.filter { it.needsProtection }.map { it.key }.toSet()
         val affected = beforeUnits.filterValues { rows -> rows.any { it.key in affectedKeys } }.keys.sorted()
         require(affected.isNotEmpty()) { "SYNC_RECOVERY_SOURCE" }
-        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot), projection.digest())
+        val raw = if (hasLocalOriginals) rawBinding(current.sourceFiles) else rawBinding(current.snapshot)
+        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot), projection.digest(), custodyDevice, hasLocalOriginals, raw)
+        fun variant(): LanSyncRecoveryEntry? {
+            val publication = publicationTransaction ?: plan.transaction
+            val id = java.util.UUID.nameUUIDFromBytes("ccb-lan-custody-raw/$publication/$custodyDevice/${current.snapshot.deviceId}/$hasLocalOriginals/$raw"
+                .toByteArray(Charsets.UTF_8)).toString()
+            require(id != plan.transaction) { "SYNC_RECOVERY_PLAN_CHANGED" }
+            return withEntry(id) { protectOwned(dataRoot, current, plan.copy(transaction = id), projection,
+                custodyDevice, hasLocalOriginals, publication) }
+        }
         val directory = directory(plan.transaction)
         read(plan.transaction)?.let { existing ->
             require(existing.sourceBinding == preparation.source && existing.targetBinding == preparation.target) { "SYNC_RECOVERY_PLAN_CHANGED" }
+            require((existing.custodyDevice ?: existing.sourceDevice) == custodyDevice && existing.hasLocalOriginals == hasLocalOriginals) { "SYNC_RECOVERY_DEVICE" }
             val originalProjection = sourceProjection(existing)
             require(originalProjection == projection || originalProjection == null && projection.bindings.isEmpty()) { "SYNC_RECOVERY_PROJECTION" }
+            val previousRaw = existing.rawSourceBinding ?: if (hasLocalOriginals) {
+                val originalHashes = linkedMapOf<String, String>()
+                originals(existing) { original, _ -> originalHashes[original.relative] = original.hash }
+                rawBinding(originalHashes)
+            } else rawBinding(snapshot(existing))
+            if (previousRaw != raw) return variant()
             verify(existing)
             return existing
         }
@@ -86,7 +131,12 @@ class LanSyncRecoveryVault(
         lanSyncSafe(directory, true)
         val preparationFile = directory.resolve("preparing.json")
         if (Files.exists(preparationFile, LinkOption.NOFOLLOW_LINKS)) {
-            require(lanSyncJson.decodeFromString(Preparation.serializer(), lanSyncUtf8(lanSyncRead(preparationFile, 4096))) == preparation) { "SYNC_RECOVERY_PLAN_CHANGED" }
+            val before = lanSyncJson.decodeFromString(Preparation.serializer(), lanSyncUtf8(lanSyncRead(preparationFile, 4096)))
+            if (before != preparation) {
+                require(before.rawSourceBinding != raw && before.copy(rawSourceBinding = raw,
+                    custodyDevice = before.custodyDevice ?: current.snapshot.deviceId) == preparation) { "SYNC_RECOVERY_PLAN_CHANGED" }
+                return variant()
+            }
         } else {
             require(Files.newDirectoryStream(directory).use { !it.iterator().hasNext() }) { "SYNC_RECOVERY_UNKNOWN_FILES" }
             lanSyncAtomicWrite(preparationFile, lanSyncJson.encodeToString(Preparation.serializer(), preparation).toByteArray(Charsets.UTF_8))
@@ -107,9 +157,11 @@ class LanSyncRecoveryVault(
         }
         val originalsFile = freshFile("originals.jsonl") { file ->
             Files.newBufferedWriter(file, Charsets.UTF_8, StandardOpenOption.CREATE_NEW).use { output ->
+                if (!hasLocalOriginals) output.write("[]\n")
                 for ((relative, hash) in current.sourceFiles.toSortedMap()) {
-                    val source = dataRoot.resolve(relative).normalize()
-                    require(source.startsWith(dataRoot)) { "SYNC_RECOVERY_SOURCE" }
+                    val originalRoot = requireNotNull(dataRoot)
+                    val source = originalRoot.resolve(relative).normalize()
+                    require(source.startsWith(originalRoot)) { "SYNC_RECOVERY_SOURCE" }
                     validateOriginalPath(relative)
                     lanSyncSafe(source)
                     val length = Files.size(source)
@@ -137,7 +189,8 @@ class LanSyncRecoveryVault(
             LanSyncResourceStore.hashFile(originalsFile, Files.size(originalsFile)), Files.size(originalsFile),
             LanSyncResourceStore.hashFile(affectedFile, Files.size(affectedFile)), Files.size(affectedFile), affected.size.toLong(),
             current.snapshot.records.size.toLong(), current.snapshot.records.count { it.type == "chat_messages" }.toLong(),
-            LanSyncResourceStore.hashFile(projectionFile, Files.size(projectionFile)), Files.size(projectionFile))
+            LanSyncResourceStore.hashFile(projectionFile, Files.size(projectionFile)), Files.size(projectionFile),
+            custodyDevice, hasLocalOriginals, current.sourceFiles.size.toLong(), publicationTransaction, raw)
         verifyFiles(entry)
         observe("BEFORE_SEAL")
         lanSyncAtomicWrite(directory.resolve("entry.json"), lanSyncJson.encodeToString(LanSyncRecoveryEntry.serializer(), entry).toByteArray(Charsets.UTF_8))
@@ -160,6 +213,10 @@ class LanSyncRecoveryVault(
     }
 
     private fun verifyFiles(entry: LanSyncRecoveryEntry) {
+        require(entry.sourceDevice.isNotBlank() && (entry.custodyDevice == null || entry.custodyDevice.isNotBlank()) &&
+            entry.recordCount > 0 && entry.messageCount in 0..entry.recordCount && entry.affectedUnits > 0 &&
+            (entry.rawSourceBinding == null || entry.rawSourceBinding.matches(Regex("[a-f0-9]{64}"))) &&
+            (entry.hasLocalOriginals || entry.custodyDevice != null && entry.custodyDevice != entry.sourceDevice)) { "SYNC_RECOVERY_DAMAGED" }
         val directory = directory(entry.transaction)
         for ((name, hash, length) in listOf(Triple("snapshot.json", entry.snapshotHash, entry.snapshotBytes),
             Triple("originals.jsonl", entry.originalsHash, entry.originalsBytes), Triple("affected.jsonl", entry.affectedHash, entry.affectedBytes)) +
@@ -180,9 +237,17 @@ class LanSyncRecoveryVault(
     @OptIn(ExperimentalSerializationApi::class)
     fun snapshot(entry: LanSyncRecoveryEntry): LanSyncSnapshot {
         verifyFiles(entry)
-        return requireNotNull(LanSyncJsonFiles.read(directory(entry.transaction).resolve("snapshot.json"),
-            LanSyncSnapshot.serializer(), entry.snapshotHash)).also {
-            it.validate(); LanSyncScope.validateGraph(it); require(binding(it) == entry.sourceBinding) { "SYNC_RECOVERY_DAMAGED" }
+        val stored = requireNotNull(LanSyncJsonFiles.read(directory(entry.transaction).resolve("snapshot.json"),
+            LanSyncSnapshot.serializer(), entry.snapshotHash))
+        val compatible = if (stored.protocol == LAN_SYNC_PROTOCOL) stored else {
+            LanSyncScope.validateLegacyPending(stored)
+            stored.copy(protocol = LAN_SYNC_PROTOCOL, records = stored.records.map { it.copy(body = LanSyncScope.normalize(it.type, it.body)) })
+        }
+        return compatible.also {
+            it.validate(); LanSyncScope.validateGraph(it)
+            require(it.deviceId == entry.sourceDevice && binding(it) == entry.sourceBinding &&
+                it.records.size.toLong() == entry.recordCount &&
+                it.records.count { row -> row.type == "chat_messages" }.toLong() == entry.messageCount) { "SYNC_RECOVERY_DAMAGED" }
         }
     }
 
@@ -226,6 +291,10 @@ class LanSyncRecoveryVault(
 
     fun originals(entry: LanSyncRecoveryEntry, visit: (LanSyncRecoveryOriginal, Path) -> Unit) {
         verifyFiles(entry)
+        if (!entry.hasLocalOriginals) {
+            require(entry.originalCount == 0L && lanSyncUtf8(lanSyncRead(directory(entry.transaction).resolve("originals.jsonl"), 16)) == "[]\n") { "SYNC_RECOVERY_INDEX" }
+            return
+        }
         val seen = hashSetOf<String>()
         Files.newInputStream(directory(entry.transaction).resolve("originals.jsonl"), LinkOption.NOFOLLOW_LINKS).buffered().use { input ->
             while (true) {
@@ -245,7 +314,7 @@ class LanSyncRecoveryVault(
                 visit(original, path)
             }
         }
-        require(seen.size.toLong() == entry.recordCount) { "SYNC_RECOVERY_INDEX" }
+        require(seen.size.toLong() == entry.originalCount && entry.originalCount == entry.recordCount) { "SYNC_RECOVERY_INDEX" }
     }
 
     private fun validateOriginalPath(relative: String) {
