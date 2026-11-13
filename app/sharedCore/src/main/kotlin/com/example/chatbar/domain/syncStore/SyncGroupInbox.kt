@@ -14,7 +14,7 @@ import java.util.concurrent.CancellationException
 
 enum class SyncInboxStage {
     MIRRORED, WAITING_FOR_KEY, WAITING_FOR_LEDGER, WAITING_FOR_CURRENT_EPOCH, NOT_FOR_DEVICE,
-    KEY_ADMITTED, LEDGER_ADMITTED, CAUSAL_ADMITTED, WAITING_FOR_PARENTS, REJECTED, TRUST_BLOCKED, LOCAL_CUSTODY_BLOCKED, INVALID_OBJECT
+    KEY_ADMITTED, LEDGER_ADMITTED, DEVICE_REVOKED, CAUSAL_ADMITTED, WAITING_FOR_PARENTS, REJECTED, TRUST_BLOCKED, LOCAL_CUSTODY_BLOCKED, INVALID_OBJECT
 }
 data class SyncInboxObservation(val key: CiphertextObjectKey, val stage: SyncInboxStage, val code: String? = null)
 data class SyncInboxDiscovery(val nextCursor: CommitCursor?, val observations: List<SyncInboxObservation>)
@@ -83,10 +83,29 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                             if (delivery.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
                             else tentative[metadata.key] = delivery.openTentative(trust, recipient, metadata.key)
                         }
+                        SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
+                            val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
+                            notice.verifyOwner(trust, metadata.key)
+                            if (notice.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
+                            else {
+                                val verified = notice.open(trust, recipient, metadata.key)
+                                val updated = localCustody { custody.update(verified.records) }
+                                require(updated.current().members[recipient.device]?.active == false) { "SYNC_LEDGER_NOTICE_REVOCATION" }
+                                status(metadata.key, SyncInboxStage.DEVICE_REVOKED)
+                            }
+                        }
                         else -> error("SYNC_INBOX_FORMAT")
                     }
                 }
-            } catch (failure: Exception) { status(metadata.key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+            } catch (failure: Exception) {
+                val code = code(failure)
+                status(metadata.key, when (code) {
+                    "SYNC_GROUP_LEDGER_FORK_OR_MISSING" -> SyncInboxStage.TRUST_BLOCKED
+                    "SYNC_INBOX_LOCAL_CUSTODY" -> SyncInboxStage.LOCAL_CUSTODY_BLOCKED
+                    else -> SyncInboxStage.INVALID_OBJECT
+                }, code)
+            }
         }
         val codec = SyncGroupObjectCodec(work)
         val decoded = linkedMapOf<CiphertextObjectKey, SyncAuthenticatedGroupObject>()

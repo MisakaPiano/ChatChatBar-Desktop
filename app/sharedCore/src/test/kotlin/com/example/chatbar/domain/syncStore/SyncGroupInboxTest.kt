@@ -25,7 +25,7 @@ class SyncGroupInboxTest {
             setOf("synthetic_records"), members, emptySet(), "unsigned"))
         val trust = SyncGroupTrust(initialKey.group, genesis.reference(), members.getValue(owner.fingerprint).certificate)
         val ledger = SyncDeviceLedger(trust).also { it.offer(genesis) }
-        val work = dir("work"); val publications = dir("publications"); val keyRoot = dir("keys")
+        val work = dir("work"); val publications = dir("publications"); val keyRoot = dir("keys"); val noticeRoot = dir("notices")
         val queueRoots = linkedMapOf<SyncStoreId, Path>()
         fun outbox(key: SyncStreamingCipher) = SyncEncryptedOutbox(queueRoots.getOrPut(key.epoch) { dir("queue-${key.epoch.value}") }, key)
         val codec = SyncGroupObjectCodec(work); val backend = FileCiphertextStore(root.resolve("backend"))
@@ -33,7 +33,7 @@ class SyncGroupInboxTest {
         fun custody() = SyncGroupCustody(custodyRoot, initialKey.group, recipient, { it.reversedArray() }, { it.reversedArray() })
         init { custody().enroll(trust, listOf(genesis)) }
         fun inbox(store: CiphertextStore = backend) = SyncGroupInbox(receiverRoot, store, custody(), recipient)
-        fun publishLedger() {
+        fun publishLedger(): LanSyncGroupPublishPlan {
             val current = ledger.current(); val currentKey = keys.getValue(current.epoch)
             val queue = SyncKeyDeliveryQueue(keyRoot, trust, owner.fingerprint, { ledger })
             val operations = keys.values.flatMap { key -> current.members.filterValues { it.active }.keys.map { recipient ->
@@ -42,9 +42,14 @@ class SyncGroupInboxTest {
             val outbox = outbox(currentKey)
             val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), currentKey,
                 SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = current, ledgerHistory = ledger.history().dropLast(1)))
-            val publisher = LanSyncGroupPublicationQueue(publications, ledger, outbox, owner.fingerprint, keyQueue = queue)
-            val plan = publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), operations)
+            val notices = SyncLedgerNoticeQueue(noticeRoot, trust, owner.fingerprint, { ledger })
+            val noticeOperations = SyncLedgerNotice.revocations(ledger).keys.associateWith { recipient ->
+                SyncStoreId.random().also { notices.prepare(it, recipient, owner::signSyncGroupPayload) }
+            }
+            val publisher = LanSyncGroupPublicationQueue(publications, ledger, outbox, owner.fingerprint, keyQueue = queue, noticeQueue = notices)
+            val plan = publisher.prepare(metadata, emptyList(), emptyMap(), emptyList(), operations, noticeOperations)
             publisher.upload(plan.metadata.operation, backend)
+            return plan
         }
         fun version(unit: String, sequence: Long = 1, parent: SyncCausalVersion? = null, peerAuthor: Boolean = false): SyncCausalVersion {
             val author = if (peerAuthor) peer else owner
@@ -170,5 +175,28 @@ class SyncGroupInboxTest {
         assertEquals(g.genesis.reference(), complete.ledgerCheckpoint)
         assertNull(g.backend.metadata(parentObject.context.key)); assertNull(g.backend.metadata(childObject.context.key))
         assertEquals(complete.history?.heads(), g.inbox(unavailable).reconcile(listOf(parentObject, childObject)).history?.heads())
+    }
+
+    @Test fun anOfflineRevokedRecipientPersistsItsRevocationWithoutReceivingTheNewGroupKeyOrFutureRoster() = withGroup { g ->
+        g.publishLedger(); g.scan()
+        assertEquals(g.initialKey.keyCommitment(), g.custody().key(g.initialKey.epoch).keyCommitment())
+        val nextKey = SyncStreamingCipher.create(g.initialKey.group); g.keys[nextKey.epoch] = nextKey
+        val revoked = g.sign(g.genesis.copy(id = SyncStoreId.random(), parent = g.genesis.reference(), sequence = 2,
+            epoch = nextKey.epoch, keyCommitment = nextKey.keyCommitment(), members = g.members +
+                (g.peer.fingerprint to g.members.getValue(g.peer.fingerprint).copy(active = false))))
+        g.ledger.offer(revoked)
+        // The revoked device missed this publication; only a later root revision reaches the backend.
+        val later = g.sign(revoked.copy(id = SyncStoreId.random(), parent = revoked.reference(), sequence = 3))
+        g.ledger.offer(later); val plan = g.publishLedger()
+        assertTrue(plan.keyDeliveries.keys.none { it.endsWith(g.peer.fingerprint) }); assertEquals(1, plan.revocationNotices.size)
+        val result = g.scan(g.inbox())
+        assertFalse(result.trustBlocked); assertEquals(revoked.reference(), result.ledgerCheckpoint)
+        assertEquals(SyncInboxStage.DEVICE_REVOKED, result.observations.single { it.key == plan.revocationNotices.getValue(g.peer.fingerprint).key }.stage)
+        assertEquals(SyncInboxStage.WAITING_FOR_KEY, result.observations.single { it.key == plan.metadata.key }.stage)
+        val reopened = g.custody(); assertFalse(reopened.ledger().current().members.getValue(g.peer.fingerprint).active)
+        assertEquals(revoked.reference(), reopened.trust().checkpoint)
+        assertEquals(g.initialKey.keyCommitment(), reopened.key(g.initialKey.epoch).keyCommitment())
+        assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { reopened.key(nextKey.epoch) }.message)
+        assertEquals(revoked.reference(), g.inbox().reconcile().ledgerCheckpoint)
     }
 }

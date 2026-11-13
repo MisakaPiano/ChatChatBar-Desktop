@@ -218,6 +218,47 @@ class LanSyncGroupPublicationQueueTest {
         assertTrue(plan.keyDeliveries.values.all { f.backend.metadata(it.key)?.descriptor == it.descriptor })
     }
 
+    @Test fun revokedRecipientsRequireTheirOwnNoticeBeforeAnyLatestLedgerCanCompleteOnEachDestination() = withRoot { root ->
+        val f = Fixture(root); val currentKey = SyncStreamingCipher.create(f.cipher.group)
+        val revoked = f.sign(f.genesis.copy(id = SyncStoreId.random(), parent = f.genesis.reference(), sequence = 2,
+            epoch = currentKey.epoch, keyCommitment = currentKey.keyCommitment(), members = f.members +
+                (f.sender.fingerprint to f.members.getValue(f.sender.fingerprint).copy(active = false))))
+        f.ledger.offer(revoked)
+        val outbox = SyncEncryptedOutbox(Files.createDirectory(root.resolve("new-queue")), currentKey)
+        val metadata = f.codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), currentKey,
+            SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = revoked, ledgerHistory = listOf(f.genesis)))
+        val keys = listOf(f.cipher, currentKey).associate { cipher -> "${cipher.epoch.value}:${f.owner.fingerprint}" to
+            SyncStoreId.random().also { f.keyQueue().prepare(it, cipher, f.owner.fingerprint, f.owner::signSyncGroupPayload) } }
+        val notices = SyncLedgerNoticeQueue(Files.createDirectory(root.resolve("notices")), f.ledger.trustAnchor, f.owner.fingerprint, { f.ledger })
+        val noticeOperation = SyncStoreId.random(); notices.prepare(noticeOperation, f.sender.fingerprint, f.owner::signSyncGroupPayload)
+        fun publisher() = LanSyncGroupPublicationQueue(f.publications, f.ledger, outbox, f.owner.fingerprint, keyQueue = f.keyQueue(), noticeQueue = notices)
+        assertEquals("SYNC_GROUP_PUBLICATION_NOTICES", assertFailsWith<IllegalArgumentException> {
+            publisher().prepare(metadata, emptyList(), emptyMap(), emptyList(), keys)
+        }.message)
+        assertEquals("SYNC_GROUP_PUBLICATION_NOTICES", assertFailsWith<IllegalArgumentException> {
+            publisher().prepare(metadata, emptyList(), emptyMap(), emptyList(), keys, mapOf(f.owner.fingerprint to noticeOperation))
+        }.message)
+        assertTrue(f.backend.listCommits().entries.isEmpty())
+        val plan = publisher().prepare(metadata, emptyList(), emptyMap(), emptyList(), keys, mapOf(f.sender.fingerprint to noticeOperation))
+        var lost = true
+        val unreliable = object : CiphertextStore by f.backend {
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
+                if (request.key == metadata.request.key) assertTrue(plan.revocationNotices.values.all { f.backend.metadata(it.key)?.descriptor == it.descriptor })
+                val result = f.backend.put(request, source)
+                if (lost) { lost = false; throw IOException("SYNTHETIC_NOTICE_REPLY_LOST") }; return result
+            }
+        }
+        val local = SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random())
+        assertFailsWith<IOException> { publisher().upload(plan.metadata.operation, unreliable, local) }
+        assertNull(f.backend.metadata(metadata.request.key)); assertNull(publisher().receipt(plan.metadata.operation, local))
+        val receipt = publisher().upload(plan.metadata.operation, unreliable, local)
+        assertEquals(1L, receipt.revocationNoticeCount); assertEquals(2L, receipt.keyDeliveryCount); assertEquals(1L, receipt.recipientCount)
+        val cloud = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, SyncStoreId.random()); val other = FileCiphertextStore(root.resolve("cloud-role"))
+        assertNull(publisher().receipt(plan.metadata.operation, cloud)); publisher().upload(plan.metadata.operation, other, cloud)
+        assertTrue(plan.revocationNotices.values.all { other.metadata(it.key)?.descriptor == it.descriptor })
+        assertEquals(receipt, publisher().upload(plan.metadata.operation, f.backend, local))
+    }
+
     @Test fun aNewLedgerCarriesTheCompleteSignedAncestryEvenIfIntermediatePublicationNeverHappened() = withRoot { root ->
         val f = Fixture(root)
         val middle = f.sign(f.genesis.copy(id = SyncStoreId.random(), sequence = 2, parent = f.genesis.reference()))

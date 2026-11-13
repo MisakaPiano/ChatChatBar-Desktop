@@ -206,9 +206,10 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             !view.trustBlocked && view.ledgerCheckpoint == checkpoint && view.history?.heads() == heads) { "SYNC_GROUP_SOURCE_VIEW_CHANGED" }
     }
     private fun currentKey(): SyncStreamingCipher {
-        val ledger = authority(); val current = ledger.current(); val key = cipher(current.epoch)
-        require(current.members[identity.fingerprint]?.let { it.active && it.certificate == Base64.getEncoder().encodeToString(identity.certificate.encoded) } == true &&
-            key.group == current.group && key.epoch == current.epoch && key.keyCommitment() == current.keyCommitment) { "SYNC_GROUP_SOURCE_AUTHORITY_CHANGED" }
+        val ledger = authority(); val current = ledger.current()
+        require(current.members[identity.fingerprint]?.let { it.active && it.certificate == Base64.getEncoder().encodeToString(identity.certificate.encoded) } == true) { "SYNC_GROUP_SOURCE_AUTHORITY_CHANGED" }
+        val key = cipher(current.epoch)
+        require(key.group == current.group && key.epoch == current.epoch && key.keyCommitment() == current.keyCommitment) { "SYNC_GROUP_SOURCE_AUTHORITY_CHANGED" }
         return key
     }
     private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publications, authority(), outbox(epoch), identity.fingerprint, currentLedger = authority)

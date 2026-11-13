@@ -16,9 +16,11 @@ import kotlinx.serialization.Serializable
 @Serializable data class LanSyncGroupPublishKey(val operation: SyncStoreId, val key: CiphertextObjectKey, val descriptor: CiphertextDescriptor)
 @Serializable data class LanSyncGroupPublishPlan(val group: SyncStoreId, val epoch: SyncStoreId, val keyCommitment: String,
     val reference: SyncVersionRef, val metadata: LanSyncGroupPublishObject, val blobs: Map<String, LanSyncGroupPublishObject>,
-    val kind: SyncGroupObjectKind = SyncGroupObjectKind.VERSION, val keyDeliveries: Map<String, LanSyncGroupPublishKey> = emptyMap())
+    val kind: SyncGroupObjectKind = SyncGroupObjectKind.VERSION, val keyDeliveries: Map<String, LanSyncGroupPublishKey> = emptyMap(),
+    val revocationNotices: Map<String, LanSyncGroupPublishKey> = emptyMap())
 @Serializable data class LanSyncGroupPublishReceipt(val planHash: String, val metadata: CiphertextDescriptor, val resourceCount: Long,
-    val recipientCount: Long = 0, val keyDeliveryCount: Long = 0, val target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY)
+    val recipientCount: Long = 0, val keyDeliveryCount: Long = 0, val target: SyncDeliveryTarget = SyncDeliveryTarget.LEGACY,
+    val revocationNoticeCount: Long = 0)
 
 /**
  * Encrypted delivery ordering only. The native writer still owns approved changes, durable author
@@ -27,7 +29,8 @@ import kotlinx.serialization.Serializable
 class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLedger,
     private val outbox: SyncEncryptedOutbox, private val localDevice: String,
     private val observe: (String) -> Unit = {}, private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
-    private val keyQueue: SyncKeyDeliveryQueue? = null, private val currentLedger: () -> SyncDeviceLedger = { ledger }) {
+    private val keyQueue: SyncKeyDeliveryQueue? = null, private val currentLedger: () -> SyncDeviceLedger = { ledger },
+    private val noticeQueue: SyncLedgerNoticeQueue? = null) {
     private val ledger: SyncDeviceLedger get() = currentLedger()
     private val lock: ReentrantLock
     init {
@@ -41,7 +44,7 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
 
     fun prepare(metadata: SyncPreparedGroupObject, units: Collection<LanSyncDecodedGroupUnit>,
         blobOperations: Map<String, SyncStoreId>, knownVersions: Collection<SyncCausalVersion>,
-        keyOperations: Map<String, SyncStoreId> = emptyMap()): LanSyncGroupPublishPlan = guarded {
+        keyOperations: Map<String, SyncStoreId> = emptyMap(), noticeOperations: Map<String, SyncStoreId> = emptyMap()): LanSyncGroupPublishPlan = guarded {
         val latest = requireCurrent(metadata.context.group, metadata.context.epoch, metadata.authenticated.keyCommitment)
         val envelope = metadata.envelope
         val expected = linkedMapOf<String, SyncPlaintextIdentity>()
@@ -51,8 +54,9 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         val native = units.associateBy { it.payload.unit }
         require(native.size == units.size) { "SYNC_GROUP_PUBLICATION_UNIT" }
         val keys = linkedMapOf<String, LanSyncGroupPublishKey>()
+        val notices = linkedMapOf<String, LanSyncGroupPublishKey>()
         if (envelope.kind == SyncGroupObjectKind.VERSION) {
-            require(keyOperations.isEmpty()) { "SYNC_GROUP_PUBLICATION_KEYS" }
+            require(keyOperations.isEmpty() && noticeOperations.isEmpty()) { "SYNC_GROUP_PUBLICATION_KEYS" }
             val version = requireNotNull(envelope.version)
             ledger.admission(knownVersions + version, listOf(metadata.authenticated)).requireAuthorized(version)
             val authoredScope = requireNotNull(ledger.record(version.deviceLedger)) { "SYNC_GROUP_PUBLICATION_LEDGER" }.coveredTypes
@@ -78,6 +82,16 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
                 require(operation != metadata.request.operationId && entry.request.key != metadata.request.key) { "SYNC_GROUP_PUBLICATION_KEYS" }
                 keys[slot] = keyFrom(entry)
             }
+            val requiredNotices = SyncLedgerNotice.revocations(ledger)
+            require(noticeOperations.keys == requiredNotices.keys &&
+                (noticeOperations.values + keyOperations.values + metadata.request.operationId).toSet().size ==
+                    noticeOperations.size + keyOperations.size + 1) { "SYNC_GROUP_PUBLICATION_NOTICES" }
+            noticeOperations.toSortedMap().forEach { (recipient, operation) ->
+                val entry = requireNotNull(noticeQueue?.entry(operation)) { "SYNC_GROUP_PUBLICATION_NOTICE_NOT_READY" }
+                requireNotice(entry, recipient, requiredNotices.getValue(recipient))
+                require(entry.request.key != metadata.request.key && keys.values.none { it.key == entry.request.key }) { "SYNC_GROUP_PUBLICATION_NOTICES" }
+                notices[recipient] = noticeFrom(entry)
+            }
         }
         require(envelope.blobs.keys == expected.keys && blobOperations.keys == expected.keys) { "SYNC_GROUP_PUBLICATION_DEPENDENCY" }
         val blobs = expected.toSortedMap().mapValues { (hash, identity) ->
@@ -91,7 +105,7 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         val retainedMetadata = requireNotNull(outbox.entry(metadata.request.operationId)) { "SYNC_GROUP_PUBLICATION_METADATA_NOT_READY" }
         require(retainedMetadata.context == metadata.context && retainedMetadata.request == metadata.request &&
             retainedMetadata.plaintext == metadata.entry.plaintext && retainedMetadata.request.key.kind == CiphertextObjectKind.COMMIT) { "SYNC_GROUP_PUBLICATION_METADATA_CHANGED" }
-        val plan = LanSyncGroupPublishPlan(latest.group, latest.epoch, latest.keyCommitment, envelope.reference(), objectFrom(retainedMetadata), blobs, envelope.kind, keys)
+        val plan = LanSyncGroupPublishPlan(latest.group, latest.epoch, latest.keyCommitment, envelope.reference(), objectFrom(retainedMetadata), blobs, envelope.kind, keys, notices)
         val path = planPath(plan.metadata.operation)
         val previous = readPlan(plan.metadata.operation)
         if (previous != null) require(previous == plan) { "SYNC_GROUP_PUBLICATION_PLAN_CHANGED" }
@@ -122,6 +136,17 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         }
         requirePlanCurrent(plan)
         observe("ALL_BLOBS_READY")
+        for ((recipient, notice) in plan.revocationNotices) {
+            requirePlanCurrent(plan)
+            val queue = requireNotNull(noticeQueue) { "SYNC_GROUP_PUBLICATION_NOTICE_NOT_READY" }
+            val entry = requireNotNull(queue.entry(notice.operation)) { "SYNC_GROUP_PUBLICATION_NOTICE_NOT_READY" }
+            requireNotice(entry, recipient, SyncLedgerNotice.revocations(ledger).getValue(recipient))
+            require(noticeFrom(entry) == notice) { "SYNC_GROUP_PUBLICATION_NOTICE_CHANGED" }
+            val remote = backend.metadata(notice.key)
+            if (remote == null) queue.upload(notice.operation, backend)
+            else require(remote == CiphertextObjectMetadata(notice.key, notice.descriptor)) { "SYNC_GROUP_PUBLICATION_REMOTE_CONFLICT" }
+            requirePlanCurrent(plan); observe("REVOCATION_NOTICE_READY")
+        }
         for ((slot, key) in plan.keyDeliveries) {
             val latest = requirePlanCurrent(plan)
             val queue = requireNotNull(keyQueue) { "SYNC_GROUP_PUBLICATION_KEY_NOT_READY" }
@@ -140,7 +165,7 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         observe("METADATA_READY")
         requirePlanCurrent(plan)
         val receipt = LanSyncGroupPublishReceipt(hash(planPath(operation)), plan.metadata.descriptor, plan.blobs.size.toLong(),
-            recipientCount(plan), plan.keyDeliveries.size.toLong(), target)
+            recipientCount(plan), plan.keyDeliveries.size.toLong(), target, plan.revocationNotices.size.toLong())
         LanSyncJsonFiles.write(receiptPath(operation, target), LanSyncGroupPublishReceipt.serializer(), receipt)
         observe("RECEIPT_RECORDED")
         receipt
@@ -171,8 +196,9 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
     private fun requirePlanCurrent(plan: LanSyncGroupPublishPlan): SyncDeviceLedgerRecord = requireCurrent(plan.group, plan.epoch, plan.keyCommitment).also {
         if (plan.kind == SyncGroupObjectKind.DEVICE_LEDGER) require(it.reference() == plan.reference &&
             localDevice == SyncDeviceSignatures.decode(ledger.ownerCertificate).fingerprint &&
-            plan.keyDeliveries.keys == keySlots(it).keys && plan.blobs.isEmpty()) { "SYNC_GROUP_PUBLICATION_LEDGER" }
-        else require(plan.keyDeliveries.isEmpty()) { "SYNC_GROUP_PUBLICATION_KEYS" }
+            plan.keyDeliveries.keys == keySlots(it).keys && plan.revocationNotices.keys == SyncLedgerNotice.revocations(ledger).keys &&
+            plan.blobs.isEmpty()) { "SYNC_GROUP_PUBLICATION_LEDGER" }
+        else require(plan.keyDeliveries.isEmpty() && plan.revocationNotices.isEmpty()) { "SYNC_GROUP_PUBLICATION_KEYS" }
     }
     private fun keySlots(latest: SyncDeviceLedgerRecord): Map<String, Pair<SyncStoreId, String>> =
         ledger.history(latest.reference()).map { it.epoch }.distinct().flatMap { epoch ->
@@ -187,6 +213,13 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
             context.recipientKeyHash == SyncRecipientPublicKey.parse(latest.members.getValue(recipient).recipientKey).hash) { "SYNC_GROUP_PUBLICATION_KEY_CHANGED" }
     }
     private fun keyFrom(entry: SyncKeyDeliveryEntry) = LanSyncGroupPublishKey(entry.request.operationId, entry.request.key, entry.request.descriptor)
+    private fun requireNotice(entry: SyncLedgerNoticeEntry, recipient: String, revision: SyncVersionRef) {
+        entry.notice.verifyOwner(ledger.trustAnchor, entry.request.key)
+        val context = entry.notice.context
+        require(context.recipient == recipient && context.revocation == revision && context.recipientKeyHash ==
+            SyncRecipientPublicKey.parse(requireNotNull(ledger.record(revision)).members.getValue(recipient).recipientKey).hash) { "SYNC_GROUP_PUBLICATION_NOTICE_CHANGED" }
+    }
+    private fun noticeFrom(entry: SyncLedgerNoticeEntry) = LanSyncGroupPublishKey(entry.request.operationId, entry.request.key, entry.request.descriptor)
     private fun objectFrom(entry: SyncOutboxEntry) = LanSyncGroupPublishObject(entry.request.operationId, entry.request.key, entry.request.descriptor, entry.plaintext)
     private fun readPlan(operation: SyncStoreId): LanSyncGroupPublishPlan? {
         val path = planPath(operation)
@@ -196,7 +229,9 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
             require(plan.metadata.operation == operation && plan.metadata.key.kind == CiphertextObjectKind.COMMIT && plan.keyCommitment.matches(Regex("[a-f0-9]{64}")) &&
                 plan.blobs.all { (hash, blob) -> blob.key.kind == CiphertextObjectKind.BLOB && hash == blob.plaintext.sha256 } &&
                 plan.keyDeliveries.all { (slot, key) -> slot.matches(Regex("[a-f0-9]{32}:[a-f0-9]{64}")) && key.key.kind == CiphertextObjectKind.COMMIT } &&
-                plan.keyDeliveries.values.map { it.operation }.toSet().size == plan.keyDeliveries.size) { "SYNC_GROUP_PUBLICATION_PLAN_CHANGED" }
+                plan.revocationNotices.all { (recipient, notice) -> recipient.matches(Regex("[a-f0-9]{64}")) && notice.key.kind == CiphertextObjectKind.COMMIT } &&
+                (plan.keyDeliveries.values + plan.revocationNotices.values).map { it.operation }.toSet().size ==
+                    plan.keyDeliveries.size + plan.revocationNotices.size) { "SYNC_GROUP_PUBLICATION_PLAN_CHANGED" }
         }
     }
     private fun readReceipt(operation: SyncStoreId, plan: LanSyncGroupPublishPlan, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt? {
@@ -206,7 +241,8 @@ class LanSyncGroupPublicationQueue(private val root: Path, ledger: SyncDeviceLed
         metadataBudget.validate(path)
         return requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupPublishReceipt.serializer())).also {
             require(it.planHash == hash(planPath(operation)) && it.metadata == plan.metadata.descriptor && it.resourceCount == plan.blobs.size.toLong() &&
-                it.recipientCount == recipientCount(plan) && it.keyDeliveryCount == plan.keyDeliveries.size.toLong() && it.target == target) { "SYNC_GROUP_PUBLICATION_RECEIPT_CHANGED" }
+                it.recipientCount == recipientCount(plan) && it.keyDeliveryCount == plan.keyDeliveries.size.toLong() && it.target == target &&
+                it.revocationNoticeCount == plan.revocationNotices.size.toLong()) { "SYNC_GROUP_PUBLICATION_RECEIPT_CHANGED" }
         }
     }
     private fun hash(path: Path) = LanSyncResourceStore.hashFile(path, Files.size(path))
