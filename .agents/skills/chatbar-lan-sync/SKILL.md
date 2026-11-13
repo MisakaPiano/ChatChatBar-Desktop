@@ -5,7 +5,7 @@ description: Maintain paired same-LAN Android/Desktop sync, mutual TLS discovery
 
 # LAN Sync
 
-- Offline ciphertext and AEAD preparation have their own map in `../chatbar-sync-object-store/SKILL.md`; they are not yet application/group-sync authority.
+- Offline ciphertext, AEAD preparation and signed group-history/device-ledger kernels have their own map in `../chatbar-sync-object-store/SKILL.md`; they are not yet application/group-sync authority. The existing protected TLS identity also signs the two strict group digest domains through `signSyncGroupPayload`.
 
 - Copied conversations persist optional `ChatSession.lanSyncOrigin` (parent, transaction, source device) in their user-data record; cumulative peer receipts retain mappings as well. Message physical keys follow the existing `<sessionId>_<messageId>` contract. Android observes the repository's sync revision to refresh messages/memory/slots without replacing its composer.
 - Android `lanPreview` is a separate `com.example.chatbar.lansync` application/data area, named CCB 局域网预览. Ordinary debug/release identity remains unchanged. It is a Fork test build, not official Android integration or permission to overwrite an existing phone install.

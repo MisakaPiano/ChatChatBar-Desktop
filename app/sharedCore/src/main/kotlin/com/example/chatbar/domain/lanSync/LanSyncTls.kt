@@ -19,6 +19,14 @@ class LanSyncTlsIdentity private constructor(val keyStore: KeyStore, val certifi
     val fingerprint: String get() = lanSyncHash(certificate.encoded)
     fun encode(): ByteArray = ByteArrayOutputStream().also { keyStore.store(it, PASSWORD) }.toByteArray()
 
+    /** The same protected device owner signs only the two domain-separated group digest protocols. */
+    fun signSyncGroupPayload(payload: ByteArray): ByteArray {
+        require(com.example.chatbar.domain.syncStore.SyncDeviceSignatures.isPayload(payload)) { "SYNC_GROUP_SIGNATURE_DOMAIN" }
+        return Signature.getInstance("SHA256withECDSA").run {
+            initSign(keyStore.getKey("device", PASSWORD) as PrivateKey); update(payload); sign()
+        }
+    }
+
     fun context(acceptPeer: (String) -> Boolean): SSLContext {
         val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply { init(keyStore, PASSWORD) }
         val trust = object : X509TrustManager {
