@@ -6,6 +6,10 @@ import com.example.chatbar.domain.image.*
 import java.nio.file.*
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
@@ -160,5 +164,40 @@ class LanSyncStudioCurrentTest {
         val restored = LanSyncStudioCurrent.restoreLocal(LanSyncStudioCurrent.DRAFT, right.records.first().body, local)
         assertEquals(JsonPrimitive(NovelAiImageModel.V5_FULL.name), restored["selectedModel"])
         assertEquals(JsonPrimitive("pc-model"), restored["aiDesignModelId"])
+    }
+
+    @Test fun queuedUndoAndAnUnrefreshedEditorCannotStageOldTextAfterPublicationButRefreshedUndoCan() = runBlocking {
+        val root = root(); val gate = LanSyncOperationGate()
+        try {
+            val storage = JsonFileStorage(root, gate); val owner = NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true)
+            owner.loadDraft(); owner.updateDraft { it.copy(basePrompt = "手机B") }
+            owner.prepareForLanSync()
+            val oldObserved = owner.lanSyncRevision.value
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            coroutineScope {
+                val maintenance = async { gate.exclusive {
+                    entered.complete(Unit); release.await()
+                    storage.saveSingleton(LanSyncStudioCurrent.DRAFT, draft("采用电脑C"), NovelAiStudioDraft.serializer())
+                    owner.reloadAfterLanSync()
+                } }
+                entered.await()
+                val queuedUndo = async(start = CoroutineStart.UNDISPATCHED) { gate.withNormalOperation {
+                    owner.tryCurrentLanSyncEditor(oldObserved, oldObserved) { owner.stageDraft { it.copy(basePrompt = "旧栈A") } }
+                } }
+                release.complete(Unit); maintenance.await()
+                assertFalse(queuedUndo.await())
+                assertFalse(gate.withNormalOperation {
+                    owner.tryCurrentLanSyncEditor(owner.lanSyncRevision.value, oldObserved) { owner.stageDraft { it.copy(basePrompt = "旧栈A") } }
+                })
+                assertEquals("采用电脑C", owner.draft.value?.basePrompt)
+                assertEquals("采用电脑C", storage.loadSingleton(LanSyncStudioCurrent.DRAFT, NovelAiStudioDraft.serializer())?.basePrompt)
+                assertTrue(gate.withNormalOperation {
+                    val refreshed = owner.lanSyncRevision.value
+                    owner.tryCurrentLanSyncEditor(refreshed, refreshed) { owner.stageDraft { it.copy(basePrompt = "选定资料的真实上一步") } }
+                })
+                owner.flushLatestDraft()
+                assertEquals("选定资料的真实上一步", storage.loadSingleton(LanSyncStudioCurrent.DRAFT, NovelAiStudioDraft.serializer())?.basePrompt)
+            }
+        } finally { check(root.toFile().deleteRecursively()) }
     }
 }

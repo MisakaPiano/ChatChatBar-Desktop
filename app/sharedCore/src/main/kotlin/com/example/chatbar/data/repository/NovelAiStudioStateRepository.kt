@@ -71,6 +71,14 @@ open class NovelAiStudioStateRepository(
         synchronized(draftStateLock) { editorHistoryProvider = owner to history }
     }
 
+    /** Called inside normal admission, including deferred synchronous UI edits and undo/redo. */
+    fun tryCurrentLanSyncEditor(capturedRevision: Long, observedRevision: Long?, operation: () -> Unit): Boolean {
+        val current = _lanSyncRevision.value
+        if (capturedRevision != current || observedRevision != current) return false
+        operation()
+        return true
+    }
+
     suspend fun loadEditorTimelineForLanSync(): NovelAiStudioHistoryTimeline? = foreignHistory.currentEditorTimeline()
 
     private suspend fun studioSyncSignature(): String {

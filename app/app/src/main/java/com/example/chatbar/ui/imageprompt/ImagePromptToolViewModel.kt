@@ -366,9 +366,15 @@ class ImagePromptToolViewModel : ViewModel() {
     }
 
     private fun admitDraftEdit(expectedEditorRevision: Long? = null, operation: () -> Unit) {
+        val syncRevision = repository.lanSyncRevision.value
         val edit: () -> Unit = {
-            if (expectedEditorRevision == null || _uiState.value.promptEditorRevision == expectedEditorRevision &&
-                repository.draft.value?.promptContentRevision == expectedEditorRevision) operation()
+            val admitted = repository.tryCurrentLanSyncEditor(syncRevision, observedLanSyncRevision) {
+                if (expectedEditorRevision == null || _uiState.value.promptEditorRevision == expectedEditorRevision &&
+                    repository.draft.value?.promptContentRevision == expectedEditorRevision) operation()
+            }
+            if (!admitted && _uiState.value.draftLoaded) _uiState.update {
+                it.copy(error = "工作室已由同步更新，正在接续所选内容；请稍后重新操作")
+            }
         }
         if (app.lanSyncOwner.gate.tryWithImmediateNormalOperation(edit)) return
         viewModelScope.launch {
@@ -861,8 +867,10 @@ class ImagePromptToolViewModel : ViewModel() {
         guidanceEditorActive = false
         guidanceCheckpointJob?.cancel()
         val expectedRevision = _uiState.value.promptEditorRevision
+        val syncRevision = repository.lanSyncRevision.value
         launchImagePublication(CoroutineStart.UNDISPATCHED) {
-            if (repository.draft.value?.promptContentRevision != expectedRevision) {
+            if (repository.draft.value?.promptContentRevision != expectedRevision || repository.lanSyncRevision.value != syncRevision ||
+                observedLanSyncRevision != syncRevision) {
                 _uiState.update { it.copy(error = "工作室已更新；画布未覆盖新草稿，请重新打开后确认") }
                 return@launchImagePublication
             }
