@@ -23,7 +23,7 @@ import kotlinx.serialization.json.encodeToStream
 /** Streaming local metadata; network frame budgets are not a limit on persisted JSON documents. */
 @OptIn(ExperimentalSerializationApi::class)
 internal object LanSyncJsonFiles {
-    fun <T> read(path: Path, serializer: KSerializer<T>): T? {
+    fun <T> read(path: Path, serializer: KSerializer<T>, expectedHash: String? = null): T? {
         if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return null
         lanSyncSafe(path)
         return FileChannel.open(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS).use { channel ->
@@ -36,6 +36,7 @@ internal object LanSyncJsonFiles {
                     while (reader.read(buffer) >= 0) { /* Validate without retaining a complete text/byte copy. */ }
                 } catch (failure: CharacterCodingException) { throw IllegalArgumentException("SYNC_INVALID_UTF8", failure) }
                 val expected = firstDigest.digest()
+                if (expectedHash != null) require(expected.joinToString("") { "%02x".format(it) } == expectedHash) { "SYNC_METADATA_DAMAGED" }
                 channel.position(0)
                 val secondDigest = MessageDigest.getInstance("SHA-256")
                 val input = DigestInputStream(Channels.newInputStream(channel), secondDigest).buffered()

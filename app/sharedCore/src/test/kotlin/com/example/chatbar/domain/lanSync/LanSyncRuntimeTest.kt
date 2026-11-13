@@ -185,6 +185,31 @@ class LanSyncRuntimeTest {
                 .alternativeVersionIds == listOf("version-0", "version-1") })
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun localRecoveryBrowsesPreviewsAndPublishesANewRevisionThenSynchronizesAsANewLocalChange() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        a.write("card", "需要恢复的原正文")
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync(); completedReceiptOnly(a, b)
+            val first = a.store.baseline(b.id, a.id).revision
+            b.write("card", "后来选定的新正文"); phone.requestSync(); completedReceiptOnly(a, b, first)
+            assertEquals(setOf("后来选定的新正文"), a.names())
+            val protected = a.workspace.recovery.list().single()
+            host.refreshRecovery(); until("local protection appears in the browser") { host.state.value.recoveryEntries.any { it.transaction == protected.transaction } }
+            host.openRecovery(protected.transaction); until("affected groups are visible") { host.state.value.recoveryBrowse?.units?.contains("character_cards/card") == true }
+            host.previewRecovery(protected.transaction, "character_cards/card"); until("exact restore target is available") { host.state.value.recoveryPreview != null }
+            val preview = requireNotNull(host.state.value.recoveryPreview)
+            assertEquals("后来选定的新正文", preview.currentRecords.single().text("name"))
+            assertEquals("需要恢复的原正文", preview.restoredRecords.single().text("name"))
+            val previous = a.store.baseline(b.id, a.id).revision
+            host.applyRecovery(preview.id); completedReceiptOnly(a, b, previous)
+            assertEquals(setOf("需要恢复的原正文"), a.names()); assertEquals(a.names(), b.names())
+            assertTrue(a.workspace.applied(preview.id)); assertNotEquals(preview.id, a.store.baseline(b.id, a.id).revision)
+            val revision = requireNotNull(LanSyncJsonFiles.read(a.stateRoot.resolve("workspace/restore-intent-${preview.id}.json"), LanSyncRestoreRevision.serializer()))
+            assertTrue(revision.applied); assertEquals(protected.transaction, revision.sourceTransaction)
+            assertEquals("需要恢复的原正文", a.workspace.recovery.snapshot(protected).records.single().text("name"))
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun neitherEndpointPublishesUntilBothRecoverySealsExistAndEitherProtectionFailureCanRetry() = runBlocking {
         for (failingSide in listOf("computer", "phone")) {
             val network = SyntheticLan()

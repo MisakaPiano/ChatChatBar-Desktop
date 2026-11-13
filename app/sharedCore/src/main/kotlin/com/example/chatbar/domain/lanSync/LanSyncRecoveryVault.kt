@@ -26,6 +26,8 @@ data class LanSyncRecoveryEntry(
     val affectedUnits: Long,
     val recordCount: Long,
     val messageCount: Long,
+    val projectionHash: String? = null,
+    val projectionBytes: Long = 0,
 )
 
 @Serializable
@@ -47,7 +49,8 @@ class LanSyncRecoveryVault(
         lanSyncSafe(entries, true)
     }
 
-    @Serializable private data class Preparation(val transaction: String, val source: String, val target: String)
+    @Serializable private data class Preparation(val transaction: String, val source: String, val target: String,
+        val projectionHash: String? = null)
     private fun directory(transaction: String): Path {
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_ID" }
         return entries.resolve(transaction)
@@ -55,12 +58,14 @@ class LanSyncRecoveryVault(
     private fun binding(snapshot: LanSyncSnapshot) = lanSyncHash(JsonObject(snapshot.hashes().mapValues { JsonPrimitive(it.value) }))
 
     @OptIn(ExperimentalSerializationApi::class)
-    fun protect(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan): LanSyncRecoveryEntry? = withEntry(plan.transaction) {
-        protectOwned(dataRoot, current, plan)
+    fun protect(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = withEntry(plan.transaction) {
+        projection.validate()
+        protectOwned(dataRoot, current, plan, projection)
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private fun protectOwned(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan): LanSyncRecoveryEntry? {
+    private fun protectOwned(dataRoot: Path, current: LanSyncCapture, plan: LanSyncPlan, projection: LanSyncProjection): LanSyncRecoveryEntry? {
         val changes = LanSyncImpactReview.changes(current.snapshot.records, plan.snapshot.records)
         if (changes.none { it.needsProtection }) return null
         require(current.sourceFiles.size == current.snapshot.records.size) { "SYNC_RECOVERY_SOURCE" }
@@ -68,10 +73,12 @@ class LanSyncRecoveryVault(
         val affectedKeys = changes.filter { it.needsProtection }.map { it.key }.toSet()
         val affected = beforeUnits.filterValues { rows -> rows.any { it.key in affectedKeys } }.keys.sorted()
         require(affected.isNotEmpty()) { "SYNC_RECOVERY_SOURCE" }
-        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot))
+        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot), projection.digest())
         val directory = directory(plan.transaction)
         read(plan.transaction)?.let { existing ->
             require(existing.sourceBinding == preparation.source && existing.targetBinding == preparation.target) { "SYNC_RECOVERY_PLAN_CHANGED" }
+            val originalProjection = sourceProjection(existing)
+            require(originalProjection == projection || originalProjection == null && projection.bindings.isEmpty()) { "SYNC_RECOVERY_PROJECTION" }
             verify(existing)
             return existing
         }
@@ -123,12 +130,14 @@ class LanSyncRecoveryVault(
                 lanSyncJson.encodeToStream(LanSyncSnapshot.serializer(), current.snapshot, it)
             }
         }
+        val projectionFile = freshFile("projection.json") { file -> LanSyncJsonFiles.write(file, LanSyncProjection.serializer(), projection) }
         observe("METADATA_PROTECTED")
         val entry = LanSyncRecoveryEntry(plan.transaction, current.snapshot.deviceId, System.currentTimeMillis(),
             preparation.source, preparation.target, LanSyncResourceStore.hashFile(snapshotFile, Files.size(snapshotFile)), Files.size(snapshotFile),
             LanSyncResourceStore.hashFile(originalsFile, Files.size(originalsFile)), Files.size(originalsFile),
             LanSyncResourceStore.hashFile(affectedFile, Files.size(affectedFile)), Files.size(affectedFile), affected.size.toLong(),
-            current.snapshot.records.size.toLong(), current.snapshot.records.count { it.type == "chat_messages" }.toLong())
+            current.snapshot.records.size.toLong(), current.snapshot.records.count { it.type == "chat_messages" }.toLong(),
+            LanSyncResourceStore.hashFile(projectionFile, Files.size(projectionFile)), Files.size(projectionFile))
         verifyFiles(entry)
         observe("BEFORE_SEAL")
         lanSyncAtomicWrite(directory.resolve("entry.json"), lanSyncJson.encodeToString(LanSyncRecoveryEntry.serializer(), entry).toByteArray(Charsets.UTF_8))
@@ -153,17 +162,66 @@ class LanSyncRecoveryVault(
     private fun verifyFiles(entry: LanSyncRecoveryEntry) {
         val directory = directory(entry.transaction)
         for ((name, hash, length) in listOf(Triple("snapshot.json", entry.snapshotHash, entry.snapshotBytes),
-            Triple("originals.jsonl", entry.originalsHash, entry.originalsBytes), Triple("affected.jsonl", entry.affectedHash, entry.affectedBytes))) {
+            Triple("originals.jsonl", entry.originalsHash, entry.originalsBytes), Triple("affected.jsonl", entry.affectedHash, entry.affectedBytes)) +
+            listOfNotNull(entry.projectionHash?.let { Triple("projection.json", it, entry.projectionBytes) })) {
             require(LanSyncResourceStore.hashFile(directory.resolve(name), length) == hash) { "SYNC_RECOVERY_DAMAGED" }
         }
+        require(entry.projectionHash != null || entry.projectionBytes == 0L) { "SYNC_RECOVERY_DAMAGED" }
+    }
+
+    fun sourceProjection(entry: LanSyncRecoveryEntry): LanSyncProjection? {
+        val hash = entry.projectionHash ?: return null
+        require(entry.projectionBytes > 0) { "SYNC_RECOVERY_DAMAGED" }
+        val file = directory(entry.transaction).resolve("projection.json")
+        require(Files.size(file) == entry.projectionBytes) { "SYNC_RECOVERY_DAMAGED" }
+        return requireNotNull(LanSyncJsonFiles.read(file, LanSyncProjection.serializer(), hash)).also { it.validate() }
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     fun snapshot(entry: LanSyncRecoveryEntry): LanSyncSnapshot {
         verifyFiles(entry)
-        return Files.newInputStream(directory(entry.transaction).resolve("snapshot.json"), LinkOption.NOFOLLOW_LINKS).buffered().use {
-            lanSyncJson.decodeFromStream(LanSyncSnapshot.serializer(), it)
-        }.also { it.validate(); LanSyncScope.validateGraph(it); require(binding(it) == entry.sourceBinding) { "SYNC_RECOVERY_DAMAGED" } }
+        return requireNotNull(LanSyncJsonFiles.read(directory(entry.transaction).resolve("snapshot.json"),
+            LanSyncSnapshot.serializer(), entry.snapshotHash)).also {
+            it.validate(); LanSyncScope.validateGraph(it); require(binding(it) == entry.sourceBinding) { "SYNC_RECOVERY_DAMAGED" }
+        }
+    }
+
+    fun affected(entry: LanSyncRecoveryEntry): Set<String> {
+        verifyFiles(entry)
+        val result = linkedSetOf<String>()
+        Files.newInputStream(directory(entry.transaction).resolve("affected.jsonl"), LinkOption.NOFOLLOW_LINKS).buffered().use { input ->
+            while (true) {
+                val line = java.io.ByteArrayOutputStream()
+                var ended = false
+                while (true) {
+                    val value = input.read()
+                    if (value < 0) { require(line.size() == 0) { "SYNC_RECOVERY_INDEX" }; ended = true; break }
+                    if (value == 10) break
+                    require(line.size() < 4096) { "SYNC_RECOVERY_INDEX" }; line.write(value)
+                }
+                if (ended) break
+                require(line.size() > 0) { "SYNC_RECOVERY_INDEX" }
+                val unit = lanSyncJson.parseToJsonElement(lanSyncUtf8(line.toByteArray())).jsonPrimitive.content
+                require(unit.length in 1..600 && result.add(unit)) { "SYNC_RECOVERY_INDEX" }
+            }
+        }
+        require(result.size.toLong() == entry.affectedUnits) { "SYNC_RECOVERY_INDEX" }
+        return result
+    }
+
+    fun restoredLocalFields(entry: LanSyncRecoveryEntry, keys: Set<String>, projection: LanSyncProjection): Map<String, JsonObject> = buildMap {
+        originals(entry) { original, file ->
+            val type = original.relative.split('/')[1].removeSuffix(".json")
+            val fields = if (type == "format_cards") emptySet() else if (type == LanSyncStudioCurrent.DRAFT) setOf("aiDesignModelId", "selectedModel", "followDefaultNovelAiImageModel")
+                else LanSyncScope.retainedLocalFields(type)
+            if (fields.isNotEmpty()) {
+                val body = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(file, budget.maximumRecordBytes))).jsonObject
+                val record = LanSyncRecord(type, requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_RECOVERY_SOURCE" }, body)
+                LanSyncScope.validateRecord(record)
+                val wireKey = projection.rewrite(listOf(record)).single().key
+                if (wireKey in keys) put(wireKey, JsonObject(body.filterKeys(fields::contains)))
+            }
+        }
     }
 
     fun originals(entry: LanSyncRecoveryEntry, visit: (LanSyncRecoveryOriginal, Path) -> Unit) {

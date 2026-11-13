@@ -46,6 +46,9 @@ data class LanSyncDetailedUnit(val header: LanSyncReviewHeader, val computer: Li
 }
 
 object LanSyncDetailedReview {
+    fun detail(unit: String, computer: List<LanSyncRecord>, phone: List<LanSyncRecord>, ancestorHash: String? = null): LanSyncDetailedUnit =
+        LanSyncDetailedUnit(LanSyncReviewHeader(unit, lanSyncUnitHashes(mapOf(unit to computer)).getValue(unit),
+            lanSyncUnitHashes(mapOf(unit to phone)).getValue(unit), ancestorHash, computer.map { it.key }.toSet(), phone.map { it.key }.toSet()), computer, phone)
     fun description(comparison: LanSyncComparison, baseline: LanSyncBaseline): LanSyncReviewDescription {
         val headers = comparison.conflicts.sortedBy { it.unit }.map { conflict ->
             LanSyncReviewHeader(conflict.unit, comparison.computerHashes[conflict.unit], comparison.phoneHashes[conflict.unit],

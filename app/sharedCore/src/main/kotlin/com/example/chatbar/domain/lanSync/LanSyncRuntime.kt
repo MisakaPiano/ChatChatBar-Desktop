@@ -24,7 +24,11 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
     val offer: LanSyncPairOffer? = null, val conflicts: List<LanSyncConflict> = emptyList(),
     val excluded: Set<String> = emptySet(), val cleanupNotice: String? = null, val failureCode: String? = null,
     val reviewBinding: String? = null, val reviewDetails: List<LanSyncDetailedUnit> = emptyList(),
-    val pendingReviews: List<LanSyncHeldReview> = emptyList())
+    val pendingReviews: List<LanSyncHeldReview> = emptyList(),
+    val recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(),
+    val recoveryBrowse: LanSyncRecoveryBrowse? = null, val recoveryPreview: LanSyncRestorePreview? = null)
+
+data class LanSyncRecoveryBrowse(val entry: LanSyncRecoveryEntry, val units: Set<String>)
 
 @Serializable private data class LanSyncHello(val command: String, val name: String,
     val token: String? = null, val revision: String? = null, val pendingTransaction: String? = null,
@@ -59,11 +63,14 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private var discoverySocket: java.net.DatagramSocket? = null
     private var choices: CompletableDeferred<Map<String, LanSyncChoice>>? = null
     private val sockets = java.util.concurrent.ConcurrentHashMap.newKeySet<SSLSocket>()
+    private val auxiliaryJobs = java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
+    private val recoverySelection = java.util.concurrent.atomic.AtomicReference<Any?>(null)
+    @Volatile private var auxiliaryStopped = false
     @Volatile private var retryPaused = false
 
     fun refresh() {
         _state.value = _state.value.copy(peers = store.peers())
-        scope.launch { operation.withLock { safely { refreshReviews() } } }
+        launchAuxiliary { refreshReviews() }
     }
     private fun refreshReviews() {
         val peer = store.peers().singleOrNull()
@@ -73,11 +80,67 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         if (!ready) _state.value = _state.value.copy(status = "上次同步回执仍待接续，已有保全和确认记录保留")
     }
     fun confirmReview(unit: String, binding: String) {
-        scope.launch { operation.withLock { safely {
+        launchAuxiliary {
             val peer = requireNotNull(store.peers().singleOrNull()) { "SYNC_REVIEW_DEVICE" }
             store.confirmReview(peer.fingerprint, identity.fingerprint, unit, binding)
             requestSync()
-        } } }
+        }
+    }
+    private fun launchAuxiliary(work: suspend () -> Unit) {
+        if (auxiliaryStopped) return
+        val job = scope.launch(start = CoroutineStart.LAZY) { operation.withLock { safely { work() } } }
+        auxiliaryJobs += job; job.invokeOnCompletion { auxiliaryJobs -= job }
+        if (auxiliaryStopped) job.cancel() else job.start()
+    }
+    fun refreshRecovery() {
+        recoverySelection.set(null)
+        launchAuxiliary {
+            _state.value = _state.value.copy(busy = true, status = "正在读取本机保全记录", recoveryBrowse = null, recoveryPreview = null)
+            val entries = workspace.recovery.list()
+            _state.value = _state.value.copy(recoveryEntries = entries, status = "已找到 ${entries.size} 条本机保全记录")
+        }
+    }
+    fun openRecovery(transaction: String) {
+        val token = Any(); recoverySelection.set(token)
+        launchAuxiliary {
+            if (recoverySelection.get() !== token) return@launchAuxiliary
+            _state.value = _state.value.copy(busy = true, status = "正在核对保全记录", recoveryPreview = null)
+            val entry = requireNotNull(workspace.recovery.read(transaction)) { "SYNC_RECOVERY_MISSING" }
+            val units = workspace.recovery.affected(entry)
+            if (recoverySelection.get() === token) _state.value = _state.value.copy(recoveryBrowse = LanSyncRecoveryBrowse(entry, units),
+                status = "请选择要恢复的内容组；预览会同时列出当前内容和恢复目标")
+        }
+    }
+    fun previewRecovery(transaction: String, unit: String) {
+        val token = Any(); recoverySelection.set(token)
+        launchAuxiliary {
+            if (recoverySelection.get() !== token) return@launchAuxiliary
+            require(_state.value.recoveryBrowse?.entry?.transaction == transaction) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+            _state.value = _state.value.copy(busy = true, status = "正在准备本机恢复预览", recoveryPreview = null)
+            var preview: LanSyncRestorePreview? = null
+            platform.exclusive { preview = workspace.prepareRecovery(transaction, unit, identity.fingerprint, currentProjection()) }
+            if (recoverySelection.get() === token) _state.value = _state.value.copy(recoveryPreview = requireNotNull(preview),
+                status = if (preview?.hasChanges == true) "请核对当前内容与恢复目标，确认后会生成本机新修订" else "当前内容已是此版本")
+        }
+    }
+    fun cancelRecoveryPreview() {
+        recoverySelection.set(null)
+        _state.value = _state.value.copy(recoveryPreview = null, recoveryBrowse = null)
+    }
+    fun applyRecovery(previewId: String) {
+        launchAuxiliary {
+            val preview = requireNotNull(_state.value.recoveryPreview?.takeIf { it.id == previewId }) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+            require(preview.hasChanges) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+            _state.value = _state.value.copy(busy = true, status = "正在保全当前内容并恢复为新修订")
+            platform.exclusive { withContext(NonCancellable) {
+                workspace.applyRecovery(preview, identity.fingerprint, currentProjection())
+                try { platform.reload(preview.plan.snapshot.records.filter { it.type == "chat_sessions" }.map { it.id }.toSet()) }
+                catch (failure: Exception) { throw IllegalStateException("SYNC_RECOVERY_RELOAD_PENDING", failure) }
+            } }
+            recoverySelection.set(null); retryPaused = false; queueSync()
+            _state.value = _state.value.copy(recoveryEntries = workspace.recovery.list(), recoveryBrowse = null, recoveryPreview = null,
+                status = "已恢复为本机新修订；已请求与另一端重新比较")
+        }
     }
     fun requestSync() { retryPaused = false; queueSync(); _state.value = _state.value.copy(status = "已请求同步，等待另一端页面连接", failureCode = null) }
     fun resolveConflicts(values: Map<String, LanSyncChoice>, binding: String? = _state.value.reviewBinding) {
@@ -113,6 +176,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     fun cancelPairing() { synchronized(offerLock) { offer = null }; _state.value = _state.value.copy(offer = null) }
 
     fun startHost() {
+        auxiliaryStopped = false
         if (listening?.isActive == true) return
         refresh()
         listening = scope.launch { safely {
@@ -181,6 +245,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     }
 
     fun startPhone() {
+        auxiliaryStopped = false
         if (polling?.isActive == true) return
         refresh()
         polling = scope.launch {
@@ -668,6 +733,10 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         val text = when (code) {
             "SYNC_INVALID_UTF8" -> "文字资料含损坏编码，已停止继续写入并保留现有文件；请检查资料后重试"
             "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" -> "同步期间本机资料变化，尚未覆盖；请重试并重新检查"
+            "SYNC_RECOVERY_SOURCE_CHANGED" -> "恢复预览后本机内容或选择已变化，尚未按旧预览覆盖；请重新预览"
+            "SYNC_RECOVERY_RELOAD_PENDING" -> "本机新修订已写入，但界面尚未完成刷新；保全与修订凭据已保留，请重新打开核对"
+            "SYNC_RECOVERY_PROJECTION" -> "此保全记录的身份映射与当前配对不同，尚未恢复；原记录完整保留，需先核对映射"
+            "SYNC_RECOVERY_ID_COLLISION" -> "其他会话已使用此记录身份，尚未覆盖；原保全与当前会话均保留"
             "SYNC_PAIR_EXPIRED" -> "配对码已过期，请在电脑生成新的二维码"
             "SYNC_SCOPE_MISMATCH" -> "两端支持的同步范围不同，请使用匹配的同步版本"
             "SYNC_PROTOCOL" -> "两端同步协议版本不同，请使用匹配的双端同步版本"
@@ -697,7 +766,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             reviewBinding = null, reviewDetails = emptyList())
     }
     fun stop() {
-        _state.value = _state.value.copy(conflicts = emptyList(), reviewBinding = null, reviewDetails = emptyList())
+        auxiliaryStopped = true; recoverySelection.set(null); auxiliaryJobs.forEach { it.cancel() }
+        _state.value = _state.value.copy(conflicts = emptyList(), reviewBinding = null, reviewDetails = emptyList(), recoveryPreview = null, recoveryBrowse = null)
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null
         pairing?.cancel(); pairing = null
         sample?.cancel(); sample = null
@@ -706,8 +776,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         sockets.forEach { runCatching { it.close() } }; sockets.clear()
     }
     suspend fun closeAndDrain() {
-        val jobs = listOfNotNull(listening, polling, pairing, sample, discovery)
+        val jobs = listOfNotNull(listening, polling, pairing, sample, discovery) + auxiliaryJobs.toList()
         stop()
-        jobs.joinAll()
+        (jobs + auxiliaryJobs.toList()).distinct().joinAll()
     }
 }

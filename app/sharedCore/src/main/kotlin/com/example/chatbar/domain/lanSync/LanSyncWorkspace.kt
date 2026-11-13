@@ -35,7 +35,58 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = capture(deviceId, projection).use { current ->
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
-        recovery.protect(dataRoot, current, plan)
+        recovery.protect(dataRoot, current, plan, projection)
+    }
+
+    fun prepareRecovery(transaction: String, unit: String, deviceId: String,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRestorePreview {
+        recover()
+        val entry = requireNotNull(recovery.read(transaction)) { "SYNC_RECOVERY_MISSING" }
+        requireRecoveryProjection(entry, projection)
+        return capture(deviceId, projection).use { current ->
+            LanSyncRecoveryRestore.prepare(entry, recovery.snapshot(entry), recovery.affected(entry), current.snapshot, unit)
+        }
+    }
+
+    private fun requireRecoveryProjection(entry: LanSyncRecoveryEntry, projection: LanSyncProjection) {
+        val original = recovery.sourceProjection(entry)
+        require(original == projection || original == null && projection.bindings.isEmpty()) { "SYNC_RECOVERY_PROJECTION" }
+    }
+
+    fun applyRecovery(preview: LanSyncRestorePreview, deviceId: String,
+        projection: LanSyncProjection = LanSyncProjection()): LanSyncRestoreRevision {
+        recover()
+        require(preview.id.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_REVISION" }
+        val entry = requireNotNull(recovery.read(preview.sourceTransaction)) { "SYNC_RECOVERY_MISSING" }
+        require(entry.snapshotHash == preview.sourceSnapshotHash && entry.sourceDevice == deviceId) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+        requireRecoveryProjection(entry, projection)
+        val path = stateRoot.resolve("restore-intent-${preview.id}.json")
+        val previous = LanSyncJsonFiles.read(path, LanSyncRestoreRevision.serializer())
+        previous?.let {
+            require(it.revision == preview.id && it.sourceTransaction == preview.sourceTransaction &&
+                it.sourceSnapshotHash == preview.sourceSnapshotHash && it.unit == preview.unit && it.sourceDevice == deviceId &&
+                it.previewBinding == preview.binding) { "SYNC_RECOVERY_REVISION" }
+            if (applied(it.revision)) return finishRecoveryRevision(path, it)
+        }
+        capture(deviceId, projection).use { current ->
+            val fresh = LanSyncRecoveryRestore.prepare(entry, recovery.snapshot(entry), recovery.affected(entry),
+                current.snapshot, preview.unit, preview.id)
+            require(fresh.binding == preview.binding && fresh.hasChanges) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+            val revision = previous ?: LanSyncRestoreRevision(preview.id, entry.transaction, entry.snapshotHash,
+                preview.unit, deviceId, preview.binding, System.currentTimeMillis())
+            if (previous == null) LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), revision)
+            val localFields = recovery.restoredLocalFields(entry, fresh.restoredRecords.map { it.key }.toSet(), projection)
+            apply(fresh.plan, fresh.expected, deviceId, current.blobs + recovery.blobs(entry), projection, localFields)
+            return finishRecoveryRevision(path, revision)
+        }
+    }
+
+    private fun finishRecoveryRevision(path: Path, revision: LanSyncRestoreRevision): LanSyncRestoreRevision {
+        require(path.fileName.toString() == "restore-intent-${revision.revision}.json" &&
+            revision.revision.matches(Regex("[a-f0-9-]{36}")) && applied(revision.revision)) { "SYNC_RECOVERY_REVISION" }
+        val complete = revision.copy(applied = true)
+        if (complete != revision) LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), complete)
+        return complete
     }
 
     fun capture(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture {
@@ -144,14 +195,21 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     /** Prepares a durable local journal before changing any entity. Media are immutable additions. */
     fun apply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String, blobs: Map<String, Path>,
-        projection: LanSyncProjection = LanSyncProjection()) {
+        projection: LanSyncProjection = LanSyncProjection(), restoreLocalFields: Map<String, JsonObject> = emptyMap()) {
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
+        require(restoreLocalFields.keys.all { key -> plan.snapshot.records.any { it.key == key } }) { "SYNC_RECOVERY_LOCAL_FIELDS" }
+        restoreLocalFields.forEach { (key, value) ->
+            val type = key.substringBefore('/')
+            val allowed = if (type == LanSyncStudioCurrent.DRAFT) setOf("aiDesignModelId", "selectedModel", "followDefaultNovelAiImageModel")
+                else LanSyncScope.retainedLocalFields(type)
+            require(value.keys.all(allowed::contains)) { "SYNC_RECOVERY_LOCAL_FIELDS" }
+        }
         val current = capture(deviceId, projection)
         try {
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
         val transaction = stateRoot.resolve("transaction-${plan.transaction.also { require(it.matches(Regex("[a-f0-9-]{36}"))) }}")
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
-        recovery.protect(dataRoot, current, plan)
+        recovery.protect(dataRoot, current, plan, projection)
         Files.createDirectory(transaction)
         val entries = mutableListOf<LanSyncJournalEntry>()
         fun stage(relative: String, body: JsonObject?) {
@@ -221,11 +279,12 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             val retainedBody = existing?.takeIf { retainedFields.isNotEmpty() }?.let {
                 val original = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(dataRoot.resolve(relative), budget.maximumRecordBytes))).jsonObject
                 JsonObject(materialized + original.filterKeys { it in retainedFields })
-            } ?: materialized
+            } ?: restoreLocalFields[wire.key]?.let { JsonObject(materialized + it.filterKeys(retainedFields::contains)) } ?: materialized
             val localBody = if (wire.type in LanSyncStudioCurrent.types) {
                 val path = dataRoot.resolve("entities/${LanSyncStudioCurrent.DRAFT}.json")
                 val localDraft = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS))
-                    lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(path, budget.maximumRecordBytes))).jsonObject else null
+                    lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(path, budget.maximumRecordBytes))).jsonObject
+                    else restoreLocalFields["${LanSyncStudioCurrent.DRAFT}/singleton"]
                 LanSyncStudioCurrent.restoreLocal(wire.type, retainedBody, localDraft)
             } else retainedBody
             LanSyncScope.validateRecord(local.copy(body = localBody))
@@ -255,6 +314,12 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             lanSyncSafe(transaction, true)
             if (Files.exists(transaction.resolve("authorized"), LinkOption.NOFOLLOW_LINKS) &&
                 !Files.exists(transaction.resolve("applied"), LinkOption.NOFOLLOW_LINKS)) recoverTransaction(transaction)
+        } }
+        Files.newDirectoryStream(stateRoot, "restore-intent-*.json").use { paths -> paths.forEach { path ->
+            val revision = requireNotNull(LanSyncJsonFiles.read(path, LanSyncRestoreRevision.serializer()))
+            require(revision.revision.matches(Regex("[a-f0-9-]{36}")) && path.fileName.toString() == "restore-intent-${revision.revision}.json") { "SYNC_RECOVERY_REVISION" }
+            if (applied(revision.revision)) finishRecoveryRevision(path, revision)
+            else require(!revision.applied) { "SYNC_RECOVERY_REVISION" }
         } }
     }
 

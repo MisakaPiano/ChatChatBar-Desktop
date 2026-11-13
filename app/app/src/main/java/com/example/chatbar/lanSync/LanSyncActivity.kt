@@ -81,15 +81,44 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
                 val impact = remember(held.binding) { LanSyncImpactReview.reductionSummary(held.computer, held.phone, held.proposed) }
                 CbText(held.unit + if (held.dependencyOf.isEmpty()) " · 待确认" else " · 随关联项暂缓")
                 CbText("两端合计将移除 ${impact.recordsRemoved} 条记录（其中 ${impact.liveMessagesRemoved} 条实时消息）、${impact.versionsRemoved} 个消息版本、${impact.attachmentReferencesRemoved} 条附件引用；覆盖 ${impact.recordsOverwritten} 条记录。")
-                val header = LanSyncReviewHeader(held.unit, null, null, held.ancestorHashes[held.unit],
-                    held.computer.map { it.key }.toSet(), held.phone.map { it.key }.toSet())
-                LanSyncDetail(LanSyncDetailedUnit(header, held.computer, held.phone))
+                val detail = remember(held.binding) { LanSyncDetailedReview.detail(held.unit, held.computer, held.phone, held.ancestorHashes[held.unit]) }
+                val header = detail.header
+                LanSyncDetail(detail)
                 CbText("确认后的目标共 ${held.proposed.size} 条记录；目标为空表示移除此组。")
                 if (held.proposed.isNotEmpty()) LanSyncDetail(LanSyncDetailedUnit(
                     header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true)
                 if (held.dependencyOf.isEmpty()) CbButton("确认按此目标同步删除或精简",
                     { runtime.confirmReview(held.unit, held.binding) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
             }
+        }
+        CbButton("查看本机保全与恢复记录", runtime::refreshRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)
+        var recoveryPage by remember(state.recoveryEntries) { mutableStateOf(0) }
+        val recoveryPages = maxOf(1, (state.recoveryEntries.size + 9) / 10)
+        state.recoveryEntries.drop(recoveryPage * 10).take(10).forEach { entry ->
+            CbText("${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(entry.createdAt))} · ${entry.affectedUnits} 组受影响内容 · ${entry.recordCount} 条记录 / ${entry.messageCount} 条实时消息")
+            CbButton("浏览此保全记录", { runtime.openRecovery(entry.transaction) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+        }
+        if (recoveryPages > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CbButton("上一页记录", { recoveryPage-- }, enabled = !state.busy && recoveryPage > 0, variant = ButtonVariant.Secondary)
+            CbText("${recoveryPage + 1}/$recoveryPages")
+            CbButton("下一页记录", { recoveryPage++ }, enabled = !state.busy && recoveryPage + 1 < recoveryPages, variant = ButtonVariant.Secondary)
+        }
+        state.recoveryBrowse?.let { browse ->
+            CbText("恢复只作用于所选内容组和必需的缺失依赖；其他本机内容保留。")
+            browse.units.sorted().forEach { unit ->
+                CbButton("预览恢复 · $unit", { runtime.previewRecovery(browse.entry.transaction, unit) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            }
+        }
+        state.recoveryPreview?.let { preview ->
+            val header = LanSyncReviewHeader("recovery/${preview.id}", null, null, null,
+                preview.currentRecords.map { it.key }.toSet(), preview.restoredRecords.map { it.key }.toSet())
+            val impact = remember(preview.id) { LanSyncImpactReview.reductionSummary(preview.currentRecords, emptyList(), preview.restoredRecords) }
+            CbText("本机将移除 ${impact.recordsRemoved} 条记录、${impact.versionsRemoved} 个消息版本和 ${impact.attachmentReferencesRemoved} 条附件引用，覆盖 ${impact.recordsOverwritten} 条记录；写入前会再次保全当前内容。")
+            LanSyncDetail(LanSyncDetailedUnit(header, preview.currentRecords, emptyList()), singleSide = true, singleLabel = "当前本机")
+            LanSyncDetail(LanSyncDetailedUnit(header.copy(unit = header.unit + "/target"), preview.restoredRecords, emptyList()), singleSide = true, singleLabel = "恢复目标")
+            if (preview.restoredUnits.size > 1) CbText("同时恢复必需依赖：${preview.restoredUnits.joinToString("、")}")
+            CbButton("恢复此组为本机新修订", { runtime.applyRecovery(preview.id) }, enabled = !state.busy && preview.hasChanges)
+            CbButton("取消恢复预览", runtime::cancelRecoveryPreview, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
         confirm?.let { offer ->
             CbText("请确认这是你的电脑：${offer.host}，设备身份 ${offer.fingerprint.take(16)}。确认后会记住此设备，后续无需重新扫码。")
@@ -106,11 +135,11 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
 }
 
 @Composable
-private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false) {
+private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false, singleLabel: String = "目标") {
     var expanded by remember(detail.header) { mutableStateOf(false) }
-    CbButton(if (expanded) "收起内容" else if (singleSide) "查看将应用的目标内容" else "查看双方正文、版本与存储字段", { expanded = !expanded }, variant = ButtonVariant.Secondary)
+    CbButton(if (expanded) "收起内容" else if (singleSide) "查看${singleLabel}内容" else "查看双方正文、版本与存储字段", { expanded = !expanded }, variant = ButtonVariant.Secondary)
     if (!expanded) return
-    CbText("${if (singleSide) "目标" else "电脑"}：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
+    CbText("${if (singleSide) singleLabel else "电脑"}：${detail.computer.size} 条记录 / ${detail.computerMessages} 条实时消息 / ${detail.computerArchivedMessages} 条存档消息")
     if (!singleSide) {
         CbText("手机：${detail.phone.size} 条记录 / ${detail.phoneMessages} 条实时消息 / ${detail.phoneArchivedMessages} 条存档消息")
         CbText("比较起点仅有指纹，无法显示其历史正文。")
@@ -135,7 +164,7 @@ private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = fal
     val left = detail.fieldPage(key, field, true, page); val right = detail.fieldPage(key, field, false, page)
     val pages = maxOf(left.second, right.second)
     SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        CbText(if (singleSide) "目标" else "电脑"); CbText(left.first)
+        CbText(if (singleSide) singleLabel else "电脑"); CbText(left.first)
         if (!singleSide) { CbText("手机"); CbText(right.first) }
     } }
     if (pages > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
