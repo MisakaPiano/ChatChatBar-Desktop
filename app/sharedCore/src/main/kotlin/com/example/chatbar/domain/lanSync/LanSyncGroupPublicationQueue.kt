@@ -45,11 +45,12 @@ class LanSyncGroupPublicationQueue(private val root: Path, private val ledger: S
         if (envelope.kind == SyncGroupObjectKind.VERSION) {
             val version = requireNotNull(envelope.version)
             ledger.admission(knownVersions + version, listOf(metadata.authenticated)).requireAuthorized(version)
+            val authoredScope = requireNotNull(ledger.record(version.deviceLedger)) { "SYNC_GROUP_PUBLICATION_LEDGER" }.coveredTypes
             val changed = version.changes.filterValues { it.content != null }
             require(native.keys == changed.keys) { "SYNC_GROUP_PUBLICATION_UNIT" }
             changed.forEach { (unit, change) ->
                 val proof = native.getValue(unit)
-                require(proof.plaintext == change.content && proof.valueHash == change.valueHash) { "SYNC_GROUP_PUBLICATION_UNIT" }
+                require(proof.plaintext == change.content && proof.valueHash == change.valueHash && proof.payload.coveredTypes == authoredScope) { "SYNC_GROUP_PUBLICATION_UNIT" }
                 add(proof.plaintext); proof.dependencies.forEach(::add)
             }
         } else {

@@ -28,8 +28,8 @@ class SyncGroupObjectCodecTest {
         val outbox = SyncEncryptedOutbox(queue, cipher)
         val backend = FileCiphertextStore(root.resolve("backend"))
         val device = LanSyncTlsIdentity.create()
-        val member = SyncGroupMember(Base64.getEncoder().encodeToString(device.certificate.encoded))
-        val ledger = SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(),
+        val member = SyncGroupMember(Base64.getEncoder().encodeToString(device.certificate.encoded), SyncDeviceEncryptionKey.create(device.fingerprint).publicKey.encoded)
+        val ledger = SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(), setOf("synthetic_records"),
             mapOf(device.fingerprint to member), emptySet(), "unsigned").let {
             it.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(it.signingBytes())))
         }

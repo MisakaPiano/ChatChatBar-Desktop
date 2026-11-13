@@ -25,9 +25,10 @@ class SyncGroupBlobStoreTest {
         val expected = SyncPlaintextIdentity(bytes.size.toLong(), hash(bytes))
         val oldBlobOperation = SyncStoreId.random(); val oldBlobKey = CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random())
         val oldBinding = blobs.enqueue(oldOutbox, oldBlobOperation, oldBlobKey, oldCipher, source, expected)
-        val device = LanSyncTlsIdentity.create(); val member = SyncGroupMember(Base64.getEncoder().encodeToString(device.certificate.encoded))
+        val device = LanSyncTlsIdentity.create(); val member = SyncGroupMember(Base64.getEncoder().encodeToString(device.certificate.encoded),
+            SyncDeviceEncryptionKey.create(device.fingerprint).publicKey.encoded)
         fun sign(row: SyncDeviceLedgerRecord) = row.copy(signature = Base64.getEncoder().encodeToString(device.signSyncGroupPayload(row.signingBytes())))
-        val genesis = sign(SyncDeviceLedgerRecord(oldCipher.group, SyncStoreId.random(), null, 1, oldCipher.epoch, oldCipher.keyCommitment(),
+        val genesis = sign(SyncDeviceLedgerRecord(oldCipher.group, SyncStoreId.random(), null, 1, oldCipher.epoch, oldCipher.keyCommitment(), setOf("synthetic_records"),
             mapOf(device.fingerprint to member), emptySet(), "unsigned"))
         val latest = sign(genesis.copy(id = SyncStoreId.random(), parent = genesis.reference(), sequence = 2, epoch = newCipher.epoch, keyCommitment = newCipher.keyCommitment()))
         val version = SyncCausalVersion(oldCipher.group, SyncStoreId.random(), genesis.reference(), device.fingerprint, 1,

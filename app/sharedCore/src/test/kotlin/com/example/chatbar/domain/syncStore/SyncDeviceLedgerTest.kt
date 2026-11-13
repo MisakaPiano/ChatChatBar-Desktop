@@ -15,16 +15,17 @@ class SyncDeviceLedgerTest {
         private val keyring = linkedMapOf<SyncStoreId, SyncStreamingCipher>()
         fun keyFor(epoch: SyncStoreId) = keyring.getOrPut(epoch) { SyncStreamingCipher.create(group, epoch) }
         val initialKey = keyFor(SyncStoreId.random())
-        val members = devices.associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded)) }
+        val members = devices.associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded),
+            SyncDeviceEncryptionKey.create(it.fingerprint).publicKey.encoded) }
         fun sign(record: SyncDeviceLedgerRecord, signer: Int = 0) = record.copy(signature =
             Base64.getEncoder().encodeToString(devices[signer].signSyncGroupPayload(record.signingBytes())))
-        val genesis = sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), null, 1, initialKey.epoch, initialKey.keyCommitment(),
+        val genesis = sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), null, 1, initialKey.epoch, initialKey.keyCommitment(), setOf("synthetic_records"),
             members.filterKeys { id -> devices.take(initialMembers).any { it.fingerprint == id } }, emptySet(), "unsigned"))
         val trust = SyncGroupTrust(group, genesis.reference(), members.getValue(devices[0].fingerprint).certificate)
         fun state() = SyncDeviceLedger(trust)
         fun next(parent: SyncDeviceLedgerRecord, nextMembers: Map<String, SyncGroupMember> = parent.members,
             epoch: SyncStoreId = parent.epoch, accepted: Set<SyncVersionRef> = parent.acceptedHeads) =
-            sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), parent.reference(), parent.sequence + 1, epoch, keyFor(epoch).keyCommitment(), nextMembers, accepted, "unsigned"))
+            sign(SyncDeviceLedgerRecord(group, SyncStoreId.random(), parent.reference(), parent.sequence + 1, epoch, keyFor(epoch).keyCommitment(), parent.coveredTypes, nextMembers, accepted, "unsigned"))
         fun value(text: String, previous: Set<SyncVersionRef> = emptySet()) = SyncUnitChange(hash(text),
             SyncVersionContent(119, hash("synthetic unit plaintext $text")), previous)
         fun version(actor: Int, ledger: SyncDeviceLedgerRecord = genesis, parents: Set<SyncVersionRef> = emptySet(),
@@ -160,5 +161,20 @@ class SyncDeviceLedgerTest {
         assertEquals("SYNC_GROUP_KNOWN_CHECKPOINT_MISSING", assertFailsWith<IllegalArgumentException> { reopened.current() }.message)
         reopened.offer(latest); assertEquals(latest.reference(), reopened.current().reference())
         reopened.offer(group.genesis); assertEquals(latest.reference(), reopened.current().reference())
+    }
+
+    @Test fun recipientKeysRemainPinnedAndCoverageExpansionRetainsTheExactHistoricalScope() {
+        val group = Group(); val state = group.state(); state.offer(group.genesis)
+        val id = group.devices[2].fingerprint
+        val replacement = group.next(group.genesis, group.members + (id to group.members.getValue(id).copy(
+            recipientKey = SyncDeviceEncryptionKey.create(id).publicKey.encoded)))
+        assertEquals(SyncVersionState.REJECTED, state.offer(replacement))
+        assertEquals("SYNC_GROUP_MEMBER_KEY_CHANGED", state.failure(replacement.id))
+        val expanded = group.sign(group.next(group.genesis).copy(coveredTypes = group.genesis.coveredTypes + "expanded_records"))
+        assertEquals(SyncVersionState.ADMITTED, state.offer(expanded))
+        assertEquals(group.genesis.coveredTypes, state.record(group.genesis.reference())?.coveredTypes)
+        assertEquals(expanded.coveredTypes, state.record(expanded.reference())?.coveredTypes)
+        val shrink = group.sign(group.next(expanded).copy(coveredTypes = group.genesis.coveredTypes))
+        assertEquals(SyncVersionState.REJECTED, state.offer(shrink)); assertEquals("SYNC_GROUP_SCOPE_SHRINK", state.failure(shrink.id))
     }
 }

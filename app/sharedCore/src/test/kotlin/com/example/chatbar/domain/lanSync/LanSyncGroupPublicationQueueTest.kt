@@ -23,8 +23,9 @@ class LanSyncGroupPublicationQueueTest {
         val queue = Files.createDirectory(root.resolve("queue")); val publications = Files.createDirectory(root.resolve("publications"))
         val outbox = SyncEncryptedOutbox(queue, cipher); val backend = FileCiphertextStore(root.resolve("backend"))
         val blobs = SyncGroupBlobStore(cipher.group, work); val codec = SyncGroupObjectCodec(work)
-        val members = listOf(owner, sender).associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded)) }
-        val genesis = sign(SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(), members, emptySet(), "unsigned"))
+        val members = listOf(owner, sender).associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded),
+            SyncDeviceEncryptionKey.create(it.fingerprint).publicKey.encoded) }
+        val genesis = sign(SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(), LanSyncScope.schemas.keys, members, emptySet(), "unsigned"))
         val ledger = SyncDeviceLedger(SyncGroupTrust(cipher.group, genesis.reference(), members.getValue(owner.fingerprint).certificate)).also { it.offer(genesis) }
         fun sign(row: SyncDeviceLedgerRecord) = row.copy(signature = Base64.getEncoder().encodeToString(owner.signSyncGroupPayload(row.signingBytes())))
         fun publisher(observe: (String) -> Unit = {}) = LanSyncGroupPublicationQueue(publications, ledger, outbox, sender.fingerprint, observe)
