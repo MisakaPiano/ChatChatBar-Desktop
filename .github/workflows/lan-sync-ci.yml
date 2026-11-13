@@ -6,6 +6,32 @@ on:
 permissions:
   contents: read
 jobs:
+  group-large-resources:
+    needs: android
+    if: needs.android.outputs.group_large == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CCB_GROUP_LARGE_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written encrypted group and native v8 proof
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupLargeNativeProofTest' --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
   large-resources:
     needs: android
     if: needs.android.outputs.legacy_large == 'true'
@@ -37,6 +63,7 @@ jobs:
     timeout-minutes: 45
     outputs:
       legacy_large: ${{ steps.proof_scope.outputs.legacy_large }}
+      group_large: ${{ steps.proof_scope.outputs.group_large }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,20 +79,36 @@ jobs:
           available = bool(re.fullmatch('[0-9a-f]{40}', base)) and base != '0' * 40
           available = available and subprocess.run(['git', 'cat-file', '-e', base + '^{commit}'], capture_output=True).returncode == 0
           large = True
+          group_large = True
           if available:
               raw = subprocess.check_output(['git', 'diff', '--name-only', '-z', base, os.environ['GITHUB_SHA']])
               paths = [os.fsdecode(path) for path in raw.split(b'\0') if path]
               group_only = ('app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/',
                             'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStore/',
+                            'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/',
                             'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroup',
                             'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroup',
                             '.agents/skills/chatbar-lan-sync/', '.agents/skills/chatbar-sync-object-store/')
               large = any(not path.startswith(group_only) for path in paths)
+              group_io = ('app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncStreamingCipher',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/FileCiphertextStore',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/CiphertextStore',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncCiphertextHeader',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncEncryptedOutbox',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncGroupBlobStore',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncGroupObjectCodec',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupUnitCodec',
+                          'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupPublicationQueue',
+                          'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/',
+                          '.github/workflows/lan-sync-ci.yml')
+              group_large = any(path.startswith(group_io) for path in paths)
           print('LEGACY_TRANSPORT_PROOF_REQUIRED' if large else 'GROUP_ONLY_CHANGES_REUSE_EXISTING_TRANSPORT_PROOF')
+          print('GROUP_RESOURCE_PROOF_REQUIRED' if group_large else 'GROUP_RESOURCE_PATH_UNCHANGED_REUSE_EXISTING_PROOF')
           if not available:
               print('DIFF_BASE_UNAVAILABLE_FULL_TRANSPORT_PROOF_REQUIRED')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write('legacy_large=' + str(large).lower() + '\n')
+              output.write('group_large=' + str(group_large).lower() + '\n')
           PY
       - uses: actions/setup-java@v4
         with:
