@@ -129,4 +129,14 @@ class SyncAuthorJournalTest {
         assertEquals("SYNC_AUTHOR_PRIVATE_CONTEXT", assertFailsWith<IllegalArgumentException> { g.journal().state() }.message)
         assertEquals(1, g.signerCalls.get())
     }
+
+    @Test fun aMissingHistoricalOperationIndexCannotTurnAnOldRequestIntoANewCommit() = withGroup { g ->
+        g.journal().initializeNewEnrollment(); val request = g.request()
+        g.journal().commitApproved(request, g.ledger, g.approved, g::signer)
+        Files.delete(g.journalRoot.resolve("operation-${request.operation.value}.protected"))
+        assertEquals("SYNC_AUTHOR_INDEX_MISSING_OR_EXTRA", assertFailsWith<IllegalArgumentException> {
+            g.journal().commitApproved(request, g.ledger, g.approved, g::signer)
+        }.message)
+        assertEquals(1, g.signerCalls.get())
+    }
 }

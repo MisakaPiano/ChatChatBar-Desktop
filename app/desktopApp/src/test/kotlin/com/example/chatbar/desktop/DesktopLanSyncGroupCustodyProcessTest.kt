@@ -6,6 +6,8 @@ import com.example.chatbar.domain.syncStore.*
 import java.nio.file.*
 import java.util.Base64
 import java.util.concurrent.TimeUnit
+import java.security.MessageDigest
+import java.util.UUID
 import kotlin.test.*
 
 class DesktopLanSyncGroupCustodyProcessTest {
@@ -53,6 +55,15 @@ object DesktopLanSyncGroupCustodyChild {
             val capsule = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), identity::signSyncGroupPayload)
             val opened = capsule.openTentative(trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, capsule.context.objectId)).admit(ledger)
             custody.rememberKey(opened)
+            val authorRoot = Files.createDirectory(root.resolve("author"))
+            val journal = SyncAuthorJournal(authorRoot, group, member.certificate, protector::protect, protector::unprotect)
+            journal.initializeNewEnrollment()
+            val hash = MessageDigest.getInstance("SHA-256").digest(content).joinToString("") { "%02x".format(it) }
+            val request = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
+                mapOf("synthetic/content" to SyncUnitChange(hash, SyncPlaintextIdentity(content.size.toLong(), hash), emptySet())),
+                UUID.randomUUID().toString(), hash, hash)
+            journal.commitApproved(request, ledger, SyncAuthorCommitAdmission { check(it.approvalBinding == hash) }, identity::signSyncGroupPayload)
+            Files.writeString(root.resolve("author-operation.txt"), request.operation.value, StandardOpenOption.CREATE_NEW)
             val blob = SyncStoreId.random()
             key.encrypt(content.inputStream(), SyncEncryptionContext(group, key.epoch, CiphertextObjectKey(CiphertextObjectKind.BLOB, blob)), root).use {
                 Files.move(it.path, root.resolve("probe.ciphertext"), StandardCopyOption.ATOMIC_MOVE)
@@ -65,6 +76,14 @@ object DesktopLanSyncGroupCustodyChild {
             val ledger = custody.ledger(); val latest = ledger.current()
             check(ledger.trustAnchor.checkpoint == latest.reference())
             val key = custody.key(latest.epoch); check(key.keyCommitment() == latest.keyCommitment)
+            val journal = SyncAuthorJournal(root.resolve("author"), group,
+                Base64.getEncoder().encodeToString(identity.certificate.encoded), protector::protect, protector::unprotect)
+            check(journal.state().committedSequence == 1L)
+            val entry = requireNotNull(journal.entry(SyncStoreId.parse(Files.readString(root.resolve("author-operation.txt")))))
+            check(entry.version.author == identity.fingerprint && entry.version.authorSequence == 1L)
+            check(journal.commitApproved(entry.request, ledger, SyncAuthorCommitAdmission { error("SYNTHETIC_MUST_NOT_REAPPROVE") }) {
+                error("SYNTHETIC_MUST_NOT_RESIGN")
+            } == entry)
             val blob = SyncStoreId.parse(Files.readString(root.resolve("blob-id.txt")))
             Files.newInputStream(root.resolve("probe.ciphertext")).use { input ->
                 key.decrypt(input, SyncEncryptionContext(group, latest.epoch, CiphertextObjectKey(CiphertextObjectKind.BLOB, blob)), root).use {

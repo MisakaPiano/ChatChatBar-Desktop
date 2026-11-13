@@ -89,6 +89,9 @@ class SyncGroupLargeNativeProofTest {
             }
             val members = listOf(owner, phone).associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded),
                 recipients.getValue(it.fingerprint).publicKey.encoded) }
+            val authorRoot = directory("author-journal")
+            fun authorJournal() = SyncAuthorJournal(authorRoot, cipher.group, members.getValue(owner.fingerprint).certificate, { it.reversedArray() }, { it.reversedArray() })
+            authorJournal().initializeNewEnrollment()
             val genesis = SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(),
                 LanSyncScope.schemas.keys, members, emptySet(), "unsigned").let { row ->
                 row.copy(signature = Base64.getEncoder().encodeToString(owner.signSyncGroupPayload(row.signingBytes())))
@@ -145,10 +148,19 @@ class SyncGroupLargeNativeProofTest {
                     prepared.decoded.dependencies.forEach { enqueue(requireNotNull(capture.blobs[it.sha256]), it) }
                 } }
             }
-            val version = SyncCausalVersion(cipher.group, SyncStoreId.random(), genesis.reference(), owner.fingerprint, 1, null, emptySet(),
-                units.associate { it.payload.unit to SyncUnitChange(it.valueHash, it.plaintext, emptySet()) }, "unsigned").let { row ->
-                row.copy(signature = Base64.getEncoder().encodeToString(owner.signSyncGroupPayload(row.signingBytes())))
-            }
+            val authorRequest = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
+                units.associate { it.payload.unit to SyncUnitChange(it.valueHash, it.plaintext, emptySet()) }, sourceCheckpoint.transaction,
+                requireNotNull(sourceCheckpoint.rawSourceBinding), sourceCheckpoint.snapshotHash)
+            val version = authorJournal().commitApproved(authorRequest, ledger, SyncAuthorCommitAdmission { request ->
+                sourceHistory.verify(sourceCheckpoint)
+                require(sourceHistory.read(sourceCheckpoint.transaction) == sourceCheckpoint && request.approvalBinding == sourceCheckpoint.snapshotHash &&
+                    request.changes.mapValues { it.value.valueHash } == expectedHashes) { "SYNTHETIC_SOURCE_ADMISSION_CHANGED" }
+                val originals = linkedMapOf<String, String>(); sourceHistory.originals(sourceCheckpoint) { original, _ -> originals[original.relative] = original.hash }
+                workspace.capture(owner.fingerprint).use { fresh ->
+                    require(fresh.sourceFiles == originals && fresh.snapshot.hashes() == expectedHashes) { "SYNTHETIC_SOURCE_ADMISSION_CHANGED" }
+                }
+            }, owner::signSyncGroupPayload).version
+            assertEquals(1L, authorJournal().state().committedSequence)
             val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
                 SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = version, blobs = bindings))
             fun publisher() = LanSyncGroupPublicationQueue(publications, ledger, SyncEncryptedOutbox(queue, cipher), owner.fingerprint)
@@ -227,6 +239,7 @@ class SyncGroupLargeNativeProofTest {
                 put("rootRecipientCount", members.size); put("wholeResourceHashesVerified", true); put("sharedNativeWorkspaceReopened", true)
                 put("inboxReconciled", true); put("perUnitDependenciesVerified", true)
                 put("independentSourceCheckpointVerified", true); put("sourceRawOriginals", rawOriginals)
+                put("approvedAuthorSequence", authorJournal().state().committedSequence)
                 put("elapsedMillis", (System.nanoTime() - started) / 1_000_000); put("sampledPeakHeapBytes", peakHeap); put("minimumSampledFreeDiskBytes", minimumFree)
             })
         } finally { sampler.cancelAndJoin(); check(root.toFile().deleteRecursively()) }

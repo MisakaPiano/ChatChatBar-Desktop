@@ -122,33 +122,47 @@ class SyncAuthorJournal(private val root: Path, private val group: SyncStoreId, 
             }
         }
         // No approved/signed sequence may vanish behind a rolled-back mutable head.
-        val sequences = Files.newDirectoryStream(root, "intent-*.protected").use { files -> files.map {
-            val name = it.fileName.toString(); require(name.matches(Regex("intent-[0-9]{19}\\.protected"))) { "SYNC_AUTHOR_INVENTORY" }
-            requireNotNull(name.removePrefix("intent-").removeSuffix(".protected").toLongOrNull()).also { sequence -> require(sequence > 0) { "SYNC_AUTHOR_INVENTORY" } }
-        }.sorted() }
-        sequences.forEachIndexed { index, sequence -> require(sequence == index.toLong() + 1) { "SYNC_AUTHOR_PARENT_MISSING" } }
-        require((head?.sequence ?: 0) <= sequences.size.toLong()) { "SYNC_AUTHOR_PARENT_MISSING" }
-        val signedSequences = Files.newDirectoryStream(root, "signed-*.protected").use { files -> files.map {
-            val name = it.fileName.toString(); require(name.matches(Regex("signed-[0-9]{19}\\.protected"))) { "SYNC_AUTHOR_INVENTORY" }
-            requireNotNull(name.removePrefix("signed-").removeSuffix(".protected").toLongOrNull())
-        }.sorted() }
-        signedSequences.forEachIndexed { index, sequence -> require(sequence == index.toLong() + 1) { "SYNC_AUTHOR_SIGNED_ENTRY_MISSING" } }
-        require((head?.sequence ?: 0) <= signedSequences.size.toLong() && signedSequences.size <= sequences.size) { "SYNC_AUTHOR_SIGNED_ENTRY_MISSING" }
+        val intents = inventory("intent", "SYNC_AUTHOR_PARENT_MISSING")
+        require((head?.sequence ?: 0) <= intents) { "SYNC_AUTHOR_PARENT_MISSING" }
+        val signed = inventory("signed", "SYNC_AUTHOR_SIGNED_ENTRY_MISSING")
+        require((head?.sequence ?: 0) <= signed && signed <= intents) { "SYNC_AUTHOR_SIGNED_ENTRY_MISSING" }
         while (true) {
+            if (head?.sequence == Long.MAX_VALUE) break
             val sequence = (head?.sequence ?: 0) + 1
-            if (sequence !in sequences) break
+            if (sequence > intents) break
             val intent = requireIntent(sequence)
             require(intent.version.previousByAuthor == last?.version?.reference()) { "SYNC_AUTHOR_PARENT_CHANGED" }
             ensureIndex(intent)
             val signed = read(signedPath(sequence), "SIGNED", SyncAuthorJournalEntry.serializer())
             if (signed == null) {
-                require(sequence == sequences.last()) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
+                require(sequence == intents) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
+                requireIndexes(intents)
                 return SyncAuthorJournalState(head?.sequence ?: 0, last, intent)
             }
             validateSigned(signed, intent); advance(signed); last = signed
             head = Head(sequence, signed.request.operation, signed.version.reference())
         }
+        requireIndexes(intents)
         return SyncAuthorJournalState(head?.sequence ?: 0, last, null)
+    }
+    /** Fixed-width filenames are unique, so positive count == maximum proves a dense sequence without a list. */
+    private fun inventory(prefix: String, missingCode: String): Long {
+        var count = 0L; var maximum = 0L
+        Files.newDirectoryStream(root, "$prefix-*.protected").use { files -> files.forEach { path ->
+            PrivateSyncFile.checked(path)
+            val name = path.fileName.toString(); require(name.matches(Regex("$prefix-[0-9]{19}\\.protected"))) { "SYNC_AUTHOR_INVENTORY" }
+            val sequence = requireNotNull(name.removePrefix("$prefix-").removeSuffix(".protected").toLongOrNull()) { "SYNC_AUTHOR_INVENTORY" }
+            require(sequence > 0 && count < Long.MAX_VALUE) { "SYNC_AUTHOR_INVENTORY" }; count++; maximum = maxOf(maximum, sequence)
+        } }
+        require(count == maximum) { missingCode }; return count
+    }
+    private fun requireIndexes(expected: Long) {
+        var count = 0L
+        Files.newDirectoryStream(root, "operation-*.protected").use { files -> files.forEach { path ->
+            PrivateSyncFile.checked(path)
+            require(path.fileName.toString().matches(Regex("operation-[a-f0-9]{32}\\.protected")) && count < Long.MAX_VALUE) { "SYNC_AUTHOR_INDEX" }; count++
+        } }
+        require(count == expected) { "SYNC_AUTHOR_INDEX_MISSING_OR_EXTRA" }
     }
     private fun requireIntent(sequence: Long): SyncAuthorJournalEntry = requireNotNull(read(intentPath(sequence), "INTENT", SyncAuthorJournalEntry.serializer())) {
         "SYNC_AUTHOR_INTENT_MISSING"
