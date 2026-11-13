@@ -183,6 +183,29 @@ def inventory(directory):
     return {str(p.relative_to(directory)).replace('\\', '/'): sha(p) for p in directory.rglob('*') if p.is_file()}
 
 
+def json_bodies(directory, paths):
+    values = {}
+    for path in paths:
+        if path.endswith('.json'):
+            values[path] = json.loads((directory/path).read_text(encoding='utf8'))
+    return values
+
+
+def changes(before, after, bodies, directory):
+    result = []
+    for path in sorted(set(before) | set(after)):
+        if before.get(path) == after.get(path):
+            continue
+        row = {'path': path, 'beforeSha256': before.get(path), 'afterSha256': after.get(path)}
+        if path in bodies and path in after:
+            current = json.loads((directory/path).read_text(encoding='utf8'))
+            previous = bodies[path]
+            if isinstance(current, dict) and isinstance(previous, dict):
+                row['changedTopLevelFields'] = [k for k in sorted(set(previous) | set(current)) if previous.get(k) != current.get(k)]
+        result.append(row)
+    return result
+
+
 def verify_seed(data, image):
     def read(name):
         return json.loads((data/'entities'/name).read_text(encoding='utf8'))
@@ -225,7 +248,12 @@ def main(request):
         image = seed(data)
         phases.append(native.launch('lan2-populated', environment))
         verify_seed(data, image)
-        before = inventory(data/'entities'); image_before = sha(image)
+        control_before = inventory(data/'entities'); control_bodies = json_bodies(data/'entities', control_before)
+        phases.append(native.launch('lan2-warm-control', environment))
+        verify_seed(data, image)
+        before = inventory(data/'entities'); bodies = json_bodies(data/'entities', before); image_before = sha(image)
+        result['oldWarmControlChanges'] = changes(control_before, before, control_bodies, data/'entities')
+        result['baselineEntityFileCount'] = len(before)
         require(json.loads((data/'entities/character_cards/profile-upgrade-card.json').read_text(encoding='utf8'))['avatar'] == str(image), 'SEED_ABSOLUTE_PATH')
         backup = root/'Program-lan2-preserved'
         for p in [root, root/'Program', replacement/'Program']:
@@ -233,10 +261,14 @@ def main(request):
         require(not backup.exists() and not native.owned(), 'PROGRAM_SWAP_BUSY')
         (root/'Program').rename(backup); (replacement/'Program').rename(root/'Program')
         phases.append(native.launch('lan3-upgraded', environment))
+        verify_seed(data, image)
+        result['upgradedSyntheticSemanticChecksPassed'] = True
         after = inventory(data/'entities')
+        result['upgradedEntityChanges'] = changes(before, after, bodies, data/'entities')
         require(all(after.get(path) == digest for path, digest in before.items()), 'PREEXISTING_ENTITY_BYTES_CHANGED')
         phases.append(native.launch('lan3-cold-reopen', environment))
         cold = inventory(data/'entities')
+        result['coldEntityChanges'] = changes(before, cold, bodies, data/'entities')
         require(all(cold.get(path) == digest for path, digest in before.items()), 'COLD_ENTITY_BYTES_CHANGED')
         require(sha(image) == image_before == hashlib.sha256(PNG).hexdigest(), 'MEDIA_CHANGED')
         verify_seed(data, image)
@@ -245,6 +277,9 @@ def main(request):
                       newEntityPaths=sorted(set(cold)-set(before)), absoluteMediaReferenceUnchanged=True,
                       imageSha256=image_before, userDataRootNotMoved=True, oldProgramPreserved=True,
                       outsideProfileInventoryUnchanged=True, syntheticOnly=True)
+    except Exception as failure:
+        result['failure'] = {'type': type(failure).__name__, 'message': str(failure)}
+        raise
     finally:
         write_json(OUTPUT/'native-upgrade-result.json', result)
     print(json.dumps({'passed': result['passed'], 'nativeLaunches': len(phases), 'preservedEntities': result.get('preexistingEntityFilesPreserved')}))

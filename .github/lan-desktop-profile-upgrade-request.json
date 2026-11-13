@@ -28,14 +28,14 @@
       "innerSha256": "6314a42a25c44d7604f5d211e912460f71bd14a5bd3d4c93011abd90dbba7611"
     }
   ],
-  "purpose": "Cloud-only four native original-package launches with same UserData path: old fresh, old synthetic populated, Program-only swap, new cold reopen. Actual root byte-lock, all prior entity hashes and absolute synthetic PNG references, original launcher and outside bootstrap inventory checked. No application rebuild, local JVM/app/device run, user data or automatic installation. No paired peer or identity seeded, no pixel/manual UI acceptance claim.",
-  "attempt": 2,
+  "purpose": "Original exact delivered packages only. Five native launches: old fresh/populated/warm control, Program-only swap new, new cold reopen. Retain every native result and source-bound field-name/hash changes without raw profile upload. Diagnose startup writes versus upgrade effects before changing any assertion. No app rebuild/user root operation/pixel/paired identity claim.",
+  "attempt": 3,
   "previousAttempt": {
-    "runId": 43354759243,
-    "controlSha": "99b44fa68b92fb5f28b7995b0e31f3c9371ec2ca",
+    "runId": 43355041406,
+    "controlSha": "f9ecd96ee49d8c9105e99da05ecfe97c7f9825c0",
     "state": "failure",
-    "jobId": 131654019912,
-    "stage": "actions/checkout@v4",
-    "cause": "Repository archived deep evidence path exceeds Windows filename length; no helper/provenance/package/native step ran. Add established core.longpaths and sparse-checkout only the2 control files; preserve old failure."
+    "jobId": 131654966590,
+    "stage": "PREEXISTING_ENTITY_BYTES_CHANGED after3 native launches",
+    "cause": "Exact hashes differed, but prior helper did not retain changed paths/field names. No data loss conclusion. Add old warm-reopen control and field-name-only/hash diagnostics plus synthetic semantics before assertion; keep strict assertion pending diagnosis."
   }
 }
