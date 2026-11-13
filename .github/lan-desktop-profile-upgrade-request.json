@@ -28,5 +28,14 @@
       "innerSha256": "6314a42a25c44d7604f5d211e912460f71bd14a5bd3d4c93011abd90dbba7611"
     }
   ],
-  "purpose": "Cloud-only four native original-package launches with same UserData path: old fresh, old synthetic populated, Program-only swap, new cold reopen. Actual root byte-lock, all prior entity hashes and absolute synthetic PNG references, original launcher and outside bootstrap inventory checked. No application rebuild, local JVM/app/device run, user data or automatic installation. No paired peer or identity seeded, no pixel/manual UI acceptance claim."
+  "purpose": "Cloud-only four native original-package launches with same UserData path: old fresh, old synthetic populated, Program-only swap, new cold reopen. Actual root byte-lock, all prior entity hashes and absolute synthetic PNG references, original launcher and outside bootstrap inventory checked. No application rebuild, local JVM/app/device run, user data or automatic installation. No paired peer or identity seeded, no pixel/manual UI acceptance claim.",
+  "attempt": 2,
+  "previousAttempt": {
+    "runId": 43354759243,
+    "controlSha": "99b44fa68b92fb5f28b7995b0e31f3c9371ec2ca",
+    "state": "failure",
+    "jobId": 131654019912,
+    "stage": "actions/checkout@v4",
+    "cause": "Repository archived deep evidence path exceeds Windows filename length; no helper/provenance/package/native step ran. Add established core.longpaths and sparse-checkout only the2 control files; preserve old failure."
+  }
 }

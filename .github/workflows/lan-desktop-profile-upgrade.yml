@@ -11,9 +11,14 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
+      - run: git config --global core.longpaths true
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/lan-desktop-profile-upgrade-request.json
+            /tools/lan-preview-signing/prove_desktop_profile_upgrade.py
       - name: Pin both original successful package artifacts
         env:
           GH_TOKEN: ${{ github.token }}
