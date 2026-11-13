@@ -14,6 +14,7 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     private val revocationNotice: (String) -> SyncLedgerNoticeEntry?) : CiphertextStore {
     private val local = SyncDeviceSignatures.decode(localCertificate)
     private val peer = SyncDeviceSignatures.decode(peerCertificate)
+    val group: SyncStoreId get() = trust.group
     @Volatile private var checkedNotice: Pair<SyncVersionRef, CiphertextObjectMetadata>? = null
     override val capabilities get() = backend.capabilities
 
@@ -42,6 +43,9 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         if (!active(ledger) && (write || notice(ledger).key != key)) denied()
     }
     private fun denied(): Nothing = throw CiphertextStoreException(CiphertextStoreFailure.PERMISSION)
+    /** Recheck before each network chunk even when ciphertext is already in a verified local cache. */
+    fun requireReadAllowed(key: CiphertextObjectKey) = authorize(key)
+    fun requireWriteAllowed(key: CiphertextObjectKey) = authorize(key, true)
 
     override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
         authorize(request.key, true)
