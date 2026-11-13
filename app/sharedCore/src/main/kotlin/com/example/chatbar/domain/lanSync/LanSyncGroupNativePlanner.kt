@@ -21,7 +21,7 @@ data class LanSyncGroupNativeUnit(val unit: String, val stage: LanSyncGroupNativ
 class LanSyncGroupNativePlan internal constructor(val before: LanSyncSnapshot, val plan: LanSyncPlan, val checkpoint: SyncVersionRef,
     val heads: Set<SyncVersionRef>, val expected: Map<String, String>, val sourceFiles: Map<String, String>,
     val units: Map<String, LanSyncGroupNativeUnit>, val appliedBefore: Map<String, LanSyncGroupAppliedUnit>,
-    val advances: Map<String, LanSyncGroupAppliedUnit>)
+    val advances: Map<String, LanSyncGroupAppliedUnit>, val components: Map<String, Set<String>>)
 
 /** Frozen native planning only. Source proposals stay unsigned; OS admission/custody/WAL still own mutation. */
 object LanSyncGroupNativePlanner {
@@ -106,7 +106,10 @@ object LanSyncGroupNativePlanner {
         val owners = records.groupBy({ it.second.key }, { it.first }).mapValues { it.value.toSet() }
         owners.values.forEach(::link)
         records.filter { it.second.type == "chat_sessions" }.forEach { (unit, session) ->
-            session.text("formatCardId")?.let { format -> link(owners["format_cards/$format"].orEmpty() + unit) }
+            session.text("formatCardId")?.let { format ->
+                val key = "format_cards/$format"
+                link(owners[key].orEmpty() + listOfNotNull(key.takeIf { it in allUnits }) + unit)
+            }
         }
         val mediaOwners = linkedMapOf<String, MutableSet<String>>()
         records.forEach { (unit, record) -> LanSyncWorkspace.mapResources(record.body) { reference, _ ->
@@ -117,11 +120,13 @@ object LanSyncGroupNativePlanner {
         } }
         mediaOwners.values.forEach { link(it) }
         val remaining = allUnits.toMutableSet(); val processed = linkedSetOf<String>()
+        val components = linkedMapOf<String, Set<String>>()
         var target = source
         while (remaining.isNotEmpty()) {
             val component = linkedSetOf<String>(); val queue = java.util.ArrayDeque<String>(); queue.add(remaining.first())
             while (queue.isNotEmpty()) { val unit = queue.removeFirst(); if (component.add(unit)) queue.addAll(links.getValue(unit)) }
             remaining.removeAll(component)
+            val frozen = Collections.unmodifiableSet(component.toSet()); component.forEach { components[it] = frozen }
             val ready = component.filter { rows.getValue(it).stage in readyStages }.toSet()
             if (ready.isEmpty()) continue
             if (component.any { rows.getValue(it).stage !in readyStages + LanSyncGroupNativeStage.UNCHANGED }) {
@@ -147,7 +152,7 @@ object LanSyncGroupNativePlanner {
         return LanSyncGroupNativePlan(source, LanSyncPlan(transaction, target, emptyMap()), checkpoint, Collections.unmodifiableSet(history.heads()),
             Collections.unmodifiableMap(hashes), Collections.unmodifiableMap(current.sourceFiles.toMap()), Collections.unmodifiableMap(rows),
             Collections.unmodifiableMap(applied.mapValues { (_, value) -> value.copy(frontiers = Collections.unmodifiableSet(value.frontiers.toSet())) }),
-            Collections.unmodifiableMap(advances))
+            Collections.unmodifiableMap(advances), Collections.unmodifiableMap(components))
     }
     private val readyStages = setOf(LanSyncGroupNativeStage.READY_CONTENT, LanSyncGroupNativeStage.READY_DELETION, LanSyncGroupNativeStage.READY_OBSERVATION)
     private fun replace(current: LanSyncSnapshot, units: Set<String>, rows: Map<String, LanSyncGroupNativeUnit>): LanSyncSnapshot {

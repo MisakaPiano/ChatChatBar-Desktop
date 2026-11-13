@@ -6,7 +6,8 @@ import kotlinx.serialization.json.*
 
 data class LanSyncGroupSourceUnitReview(val unit: String, val binding: String, val current: List<LanSyncRecord>,
     val versions: Map<SyncVersionRef, List<LanSyncRecord>>, val missingBodies: Set<LanSyncGroupMembershipRequest>,
-    val impact: Map<SyncVersionRef, List<LanSyncRecordImpact>>, val records: LanSyncGroupRecordGate, val needsConfirmation: Boolean)
+    val impact: Map<SyncVersionRef, List<LanSyncRecordImpact>>, val records: LanSyncGroupRecordGate,
+    val dependencies: Set<String>, val needsConfirmation: Boolean)
 class LanSyncGroupSourceAuthorization internal constructor(val native: LanSyncGroupNativePlan,
     val units: Map<String, LanSyncGroupSourceUnitReview>, val binding: String)
 
@@ -16,6 +17,7 @@ class LanSyncGroupSourceReview private constructor(private val native: LanSyncGr
     val requiredBindings: Map<String, String> get() = units.filterValues { it.needsConfirmation }.mapValues { it.value.binding }
     fun authorize(confirmations: Map<String, String> = emptyMap()): LanSyncGroupSourceAuthorization {
         require(units.values.all { it.missingBodies.isEmpty() && it.records.missing.isEmpty() }) { "SYNC_GROUP_SOURCE_REVIEW_EVIDENCE_MISSING" }
+        require(units.values.all { it.dependencies.isEmpty() }) { "SYNC_GROUP_SOURCE_DEPENDENCY_REVIEW_REQUIRED" }
         require(confirmations == requiredBindings) { "SYNC_GROUP_SOURCE_CONFIRMATION_REQUIRED" }
         return LanSyncGroupSourceAuthorization(native, units, binding)
     }
@@ -30,7 +32,8 @@ class LanSyncGroupSourceReview private constructor(private val native: LanSyncGr
             val result = selected.sorted().associateWith { unit ->
                 val row = native.units.getValue(unit)
                 require(row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL, LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW,
-                    LanSyncGroupNativeStage.CONFLICT, LanSyncGroupNativeStage.RECORD_REVIEW)) { "SYNC_GROUP_SOURCE_NOT_A_PROPOSAL" }
+                    LanSyncGroupNativeStage.CONFLICT, LanSyncGroupNativeStage.RECORD_REVIEW,
+                    LanSyncGroupNativeStage.DEPENDENCY_HELD)) { "SYNC_GROUP_SOURCE_NOT_A_PROPOSAL" }
                 require(row.currentHash != null || row.frontiers.isNotEmpty()) { "SYNC_GROUP_SOURCE_EMPTY_TOMBSTONE" }
                 val references = row.applied?.frontiers.orEmpty() + row.frontiers.map { it.version }
                 val before = linkedMapOf<SyncVersionRef, List<LanSyncRecord>>(); val missing = linkedSetOf<LanSyncGroupMembershipRequest>()
@@ -50,7 +53,10 @@ class LanSyncGroupSourceReview private constructor(private val native: LanSyncGr
                     native.appliedBefore[former]?.frontiers?.any { history.isAncestorOrSelf(removal, it) } == true
                 }
                 val conflict = row.frontiers.isNotEmpty() && row.frontiers.map { it.version }.toSet() != row.applied?.frontiers
-                val needsConfirmation = conflict || gate.removals.isNotEmpty() || missing.isNotEmpty() ||
+                val related = native.components.getValue(unit).filterTo(linkedSetOf()) {
+                    it !in selected && native.units.getValue(it).stage != LanSyncGroupNativeStage.UNCHANGED
+                }
+                val needsConfirmation = conflict || related.isNotEmpty() || gate.removals.isNotEmpty() || missing.isNotEmpty() ||
                     impacts.values.flatten().any { it.needsConfirmation }
                 val unitBinding = lanSyncHash(buildJsonObject {
                     put("unit", unit); put("current", row.currentHash?.let(::JsonPrimitive) ?: JsonNull)
@@ -64,9 +70,10 @@ class LanSyncGroupSourceReview private constructor(private val native: LanSyncGr
                         buildJsonObject { put("record", it.record); put("unit", it.formerUnit); put("removal", refJson(it.removal)) }
                     }))
                     put("requiresConfirmation", needsConfirmation)
+                    put("dependencies", JsonArray(related.sorted().map(::JsonPrimitive)))
                 })
                 LanSyncGroupSourceUnitReview(unit, unitBinding, Collections.unmodifiableList(proposed.toList()), Collections.unmodifiableMap(before),
-                    Collections.unmodifiableSet(missing), Collections.unmodifiableMap(impacts), gate, needsConfirmation)
+                    Collections.unmodifiableSet(missing), Collections.unmodifiableMap(impacts), gate, Collections.unmodifiableSet(related), needsConfirmation)
             }
             val binding = lanSyncHash(buildJsonObject {
                 put("checkpoint", refJson(native.checkpoint)); put("heads", refs(native.heads))

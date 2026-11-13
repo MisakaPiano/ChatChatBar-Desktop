@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
 import java.nio.file.Files
@@ -133,5 +135,33 @@ class LanSyncGroupSourceWriterTest {
         val read = SyncGroupObjectCodec(n.f.source.work).read(n.f.source.backend, key, rotated.metadata.context,
             rotated.metadata.metadata.descriptor, initial.entry.version.reference())
         assertEquals(initial.entry.version, read.envelope.version)
+    }
+
+    @Test fun aPendingFormatDeletionHoldsItsSessionSourceWhileAnIndependentCardStillCommits() = withNode { n ->
+        val formatUnit = "format_cards/format"; val sessionUnit = "conversation/session"; val independent = "character_cards/independent"
+        val format = n.f.source.data.resolve("entities/format_cards/format.json"); Files.createDirectories(format.parent)
+        LanSyncJsonFiles.write(format, FormatCard.serializer(), FormatCard("format", "合成格式", "合成内容", createdAt = 1))
+        val session = ChatSession("session", "card", "合成关联会话", formatCardId = "format", createdAt = 1, updatedAt = 1)
+        val path = n.f.source.data.resolve("entities/chat_sessions/session.json"); Files.createDirectories(path.parent)
+        LanSyncJsonFiles.write(path, ChatSession.serializer(), session)
+        val first = n.f.publish(setOf(formatUnit, sessionUnit)); n.applied = n.f.apply(n.f.plan(emptyMap()))
+        Files.delete(n.f.target.resolve("entities/format_cards/format.json"))
+        LanSyncJsonFiles.write(n.f.target.resolve("entities/chat_sessions/session.json"), ChatSession.serializer(), session.copy(formatCardId = null))
+        n.localCard("independent", "独立提交")
+        val partial = n.review(setOf(sessionUnit))
+        assertEquals(setOf(formatUnit), partial.units.getValue(sessionUnit).dependencies)
+        assertEquals("SYNC_GROUP_SOURCE_DEPENDENCY_REVIEW_REQUIRED", assertFailsWith<IllegalArgumentException> { partial.authorize(partial.requiredBindings) }.message)
+        assertEquals(0L, n.journal().state().committedSequence)
+        val card = n.writer().commit(n.review(setOf(independent)).authorize(), SyncStoreId.random()); n.acknowledge(card)
+        assertEquals(setOf(first.reference()), n.applied.getValue(formatUnit).frontiers)
+        assertEquals(setOf(first.reference()), n.applied.getValue(sessionUnit).frontiers)
+        val whole = n.review(setOf(formatUnit, sessionUnit)); assertEquals(setOf(formatUnit), whole.requiredBindings.keys)
+        val resolved = n.writer().commit(whole.authorize(whole.requiredBindings), SyncStoreId.random())
+        assertEquals(setOf(formatUnit, sessionUnit), resolved.entry.version.changes.keys)
+        assertNull(resolved.entry.version.changes.getValue(formatUnit).content)
+        assertEquals(2L, resolved.entry.version.authorSequence)
+        n.acknowledge(resolved)
+        assertEquals(setOf(resolved.entry.version.reference()), n.applied.getValue(sessionUnit).frontiers)
+        assertEquals(setOf(card.entry.version.reference()), n.applied.getValue(independent).frontiers)
     }
 }
