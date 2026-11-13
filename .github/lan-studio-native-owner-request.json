@@ -1,0 +1,10 @@
+{
+  "kind": "CCB_LAN_STUDIO_NATIVE_OWNER_REQUEST",
+  "productionSourceSha": "398a2a4f30b157a4c5894b33106030fd455c11f3",
+  "fixtureSourceSha": "80f6c4a2aec25ce41a4d75218f9225b1913115ba",
+  "fixturePath": "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncStudioForeignOwnerTest.kt",
+  "fixtureSha256": "5537f3554cb572198dfe67f2cdba1b738f52619ead5ac0a6355cbeacbf6530ca",
+  "testClass": "com.example.chatbar.lanSync.LanSyncStudioForeignOwnerTest",
+  "api": 26,
+  "scope": "Only real Android Studio repository foreign journal preservation/staging/flush/reopen/native payload and ordinary draft. No UI/provider/transport scope claim or new user package."
+}

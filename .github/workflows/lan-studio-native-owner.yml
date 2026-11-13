@@ -1,0 +1,68 @@
+name: Frozen actual Android Studio foreign-history owner
+on:
+  push:
+    branches: ['codex/lan-preview-signing-*']
+    paths: [.github/lan-studio-native-owner-request.json]
+permissions:
+  contents: read
+jobs:
+  android26:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze production source and exactly one added native test
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re,subprocess
+          r=json.load(open('.github/lan-studio-native-owner-request.json'))
+          assert r['kind']=='CCB_LAN_STUDIO_NATIVE_OWNER_REQUEST' and r['api']==26
+          for k in ('productionSourceSha','fixtureSourceSha'): assert re.fullmatch('[a-f0-9]{40}',r[k])
+          assert r['fixturePath']=='app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncStudioForeignOwnerTest.kt'
+          assert r['testClass']=='com.example.chatbar.lanSync.LanSyncStudioForeignOwnerTest'
+          source=pathlib.Path(os.environ['RUNNER_TEMP'])/'ccb-native-studio-source'
+          subprocess.run(['git','worktree','add','--detach',str(source),r['productionSourceSha']],check=True)
+          assert subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip()==r['productionSourceSha']
+          target=source/r['fixturePath']; assert not target.exists()
+          fixture=subprocess.check_output(['git','show',r['fixtureSourceSha']+':'+r['fixturePath']])
+          assert hashlib.sha256(fixture).hexdigest()==r['fixtureSha256']
+          target.write_bytes(fixture)
+          dirty=subprocess.check_output(['git','-C',str(source),'status','--porcelain'],text=True).splitlines()
+          assert dirty==['?? '+r['fixturePath']]
+          json.dump({'request':r,'controlSha':os.environ['GITHUB_SHA'],'onlyAddedNativeTest':dirty},open('studio-native-source.json','w'),indent=2)
+          with open(os.environ['GITHUB_ENV'],'a') as env: env.write('CCB_STUDIO_SOURCE='+str(source)+'\n')
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Execute only real Android owner custody method
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: cd "$CCB_STUDIO_SOURCE/app" && chmod +x gradlew && ./gradlew :app:connectedLanPreviewAndroidTest -PlanSyncDeviceTests=true -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.lanSync.LanSyncStudioForeignOwnerTest --no-build-cache --no-daemon --stacktrace
+      - name: Require one original executed JUnit method
+        run: python3 tools/lan-sync-chain/verify_xml.py "$CCB_STUDIO_SOURCE/app/app/build/outputs/androidTest-results" com.example.chatbar.lanSync.LanSyncStudioForeignOwnerTest actualAndroidOwnerPreservesImportedDesktopTimelineAcrossStagingFlushAndReopen
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-studio-native-owner-evidence
+          path: |
+            studio-native-source.json
+            ${{ env.CCB_STUDIO_SOURCE }}/app/app/build/outputs/androidTest-results/
