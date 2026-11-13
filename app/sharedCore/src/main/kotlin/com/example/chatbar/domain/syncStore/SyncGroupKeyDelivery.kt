@@ -34,12 +34,15 @@ import kotlinx.serialization.Serializable
     private fun wrappedBytes() = Base64.getDecoder().decode(wrappedKey).also {
         require(it.size in 1..64 * 1024) { "SYNC_KEY_DELIVERY_BUDGET" }
     }
+    fun verifyOwner(trust: SyncGroupTrust, objectKey: CiphertextObjectKey) {
+        require(context.group == trust.group && objectKey == CiphertextObjectKey(CiphertextObjectKind.COMMIT, context.objectId)) { "SYNC_KEY_DELIVERY_CONTEXT" }
+        require(SyncDeviceSignatures.decode(trust.ownerCertificate).verifies(signingBytes(), signature)) { "SYNC_KEY_DELIVERY_SIGNATURE" }
+    }
     /** Tentative keys can read a missing signed ledger, but cannot yet enter native key custody. */
     fun openTentative(trust: SyncGroupTrust, recipient: SyncDeviceEncryptionKey, objectKey: CiphertextObjectKey): SyncTentativeGroupKey {
         require(context.group == trust.group && objectKey == CiphertextObjectKey(CiphertextObjectKind.COMMIT, context.objectId) &&
             context.recipient == recipient.device && context.recipientKeyHash == recipient.publicKey.hash) { "SYNC_KEY_DELIVERY_RECIPIENT" }
-        val owner = SyncDeviceSignatures.decode(trust.ownerCertificate)
-        require(owner.verifies(signingBytes(), signature)) { "SYNC_KEY_DELIVERY_SIGNATURE" }
+        verifyOwner(trust, objectKey)
         val key = SyncStreamingCipher.open(context.group, context.epoch, wrappedBytes()) { recipient.decrypt(it, context.bytes()) }
         require(key.keyCommitment() == context.keyCommitment) { "SYNC_KEY_DELIVERY_KEY_CHANGED" }
         return SyncTentativeGroupKey(context, key, trust)

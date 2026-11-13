@@ -101,7 +101,9 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
         val version = envelope.version?.let { row -> row.copy(parents = refs(row.parents),
             changes = Collections.unmodifiableMap((if (sorted) row.changes.toSortedMap() else row.changes).mapValues { (_, change) -> change.copy(previous = refs(change.previous)) })) }
         val ledger = envelope.deviceLedger?.let { row -> row.copy(
-            members = Collections.unmodifiableMap((if (sorted) row.members.toSortedMap() else row.members).toMap()), acceptedHeads = refs(row.acceptedHeads)) }
+            members = Collections.unmodifiableMap((if (sorted) row.members.toSortedMap() else row.members).toMap()),
+            coveredTypes = Collections.unmodifiableSet((if (sorted) row.coveredTypes.sorted() else row.coveredTypes.toList()).toCollection(linkedSetOf())),
+            acceptedHeads = refs(row.acceptedHeads)) }
         return envelope.copy(version = version, deviceLedger = ledger,
             blobs = Collections.unmodifiableMap((if (sorted) envelope.blobs.toSortedMap() else envelope.blobs).toMap()))
     }
