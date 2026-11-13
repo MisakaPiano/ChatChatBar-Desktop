@@ -1,7 +1,7 @@
 name: Frozen isolated LAN Desktop package
 on:
   push:
-    branches: ['codex/lan-sync-*']
+    branches: ['codex/lan-sync-v1-20261113']
     paths: [.github/lan-sync-package-request.json]
 permissions:
   contents: read

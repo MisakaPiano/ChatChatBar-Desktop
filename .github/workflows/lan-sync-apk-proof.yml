@@ -1,7 +1,7 @@
 name: Frozen LAN APK identity proof
 on:
   push:
-    branches: ['codex/lan-sync-*']
+    branches: ['codex/lan-sync-v1-20261113']
     paths: [.github/lan-sync-apk-request.json]
 permissions:
   contents: read
