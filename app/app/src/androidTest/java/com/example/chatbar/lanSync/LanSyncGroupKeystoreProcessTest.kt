@@ -29,6 +29,7 @@ class LanSyncGroupKeystoreProcessTest {
         val root = Files.createTempDirectory(cache, "ccb-native-group-android-").toRealPath()
         pointer.toFile().writeText(root.toString(), Charsets.UTF_8)
         val phase = Phase(root, true)
+        report("ROOT_CREATION_AND_LEDGER_SEED_PASS")
         phase.card("synthetic-keystore-original")
         val view = phase.view
         val evidence = LanSyncGroupRecordEvidence(requireNotNull(view.history), requireNotNull(view.ledgerCheckpoint))
@@ -54,6 +55,7 @@ class LanSyncGroupKeystoreProcessTest {
         check(root.startsWith(cache) && root.fileName.toString().startsWith("ccb-native-group-android-"))
         assertNotEquals(root.resolve("seed-pid.txt").toFile().readText(Charsets.UTF_8).toInt(), android.os.Process.myPid())
         val phase = Phase(root, false)
+        report("ROOT_CREATION_AND_LEDGER_REOPEN_PASS")
         val commit = phase.writer().resume(SyncStoreId.parse(root.resolve("source-operation.txt").toFile().readText(Charsets.UTF_8)))
         phase.observeOwn(commit); assertNotNull(phase.control().state().pendingTransaction)
         phase.card("synthetic-keystore-later-edit")
@@ -79,23 +81,39 @@ class LanSyncGroupKeystoreProcessTest {
         val identity = LanSyncStateStore(root.resolve("identity"), protection::protect, protection::unprotect).identity()
         private val recipientCustody = SyncDeviceKeyCustody(directory("recipient"), identity.fingerprint, protection::protect, protection::unprotect)
         private val recipient = if (seed) recipientCustody.createIfAbsent() else recipientCustody.open(text("recipient-public.txt"))
-        private val initial = if (seed) SyncStreamingCipher.create() else null
-        private val group = initial?.group ?: SyncStoreId.parse(text("group-id.txt"))
+        private val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
+        private val creation = SyncRootGroupCreation(directory("creation"), certificate, recipient, protection::protect, protection::unprotect)
+        private val creationOperation = if (seed) SyncStoreId.random().also { save("creation-operation.txt", it.value) }
+            else SyncStoreId.parse(text("creation-operation.txt"))
+        private val created = if (seed) creation.create(SyncRootGroupCreateRequest(creationOperation, LanSyncScope.schemas.keys, "a".repeat(64)),
+            SyncRootGroupCreateAdmission {}, identity::signSyncGroupPayload)
+            else creation.resume(creationOperation) { error("SYNTHETIC_GENESIS_MUST_NOT_RESIGN") }
+        private val group = created.trust.group
         private val custody = SyncGroupCustody(directory("group"), group, recipient, protection::protect, protection::unprotect)
+        private val rootJournal = SyncRootLedgerJournal(directory("root-actions"), created.trust, certificate, protection::protect, protection::unprotect)
         init {
             if (seed) {
-                val key = requireNotNull(initial)
-                val member = SyncGroupMember(Base64.getEncoder().encodeToString(identity.certificate.encoded), recipient.publicKey.encoded)
-                val genesis = SyncDeviceLedgerRecord(group, SyncStoreId.random(), null, 1, key.epoch, key.keyCommitment(), LanSyncScope.schemas.keys,
-                    mapOf(identity.fingerprint to member), emptySet(), "unsigned").let {
-                    it.copy(signature = Base64.getEncoder().encodeToString(identity.signSyncGroupPayload(it.signingBytes())))
-                }
-                val trust = SyncGroupTrust(group, genesis.reference(), member.certificate)
-                val ledger = custody.enroll(trust, listOf(genesis))
+                val initialLedger = created.enrollCreator(custody)
+                rootJournal.initializeNewEnrollment(initialLedger)
+                val parent = initialLedger.current()
+                val request = SyncRootLedgerRequest(SyncStoreId.random(), parent.reference(), parent.members, parent.coveredTypes,
+                    parent.acceptedHeads, true, "b".repeat(64))
+                save("root-operation.txt", request.operation.value)
+                val commit = rootJournal.commit(request, custody::ledger, SyncRootLedgerAdmission {}, identity::signSyncGroupPayload)
+                val ledger = rootJournal.applyToCustody(commit, custody); val key = custody.key(ledger.current().epoch)
                 val delivery = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), identity::signSyncGroupPayload)
-                custody.rememberKey(delivery.openTentative(trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, delivery.context.objectId)).admit(ledger))
+                custody.rememberKey(delivery.openTentative(created.trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, delivery.context.objectId)).admit(ledger))
                 save("actor.txt", identity.fingerprint); save("recipient-public.txt", recipient.publicKey.encoded); save("group-id.txt", group.value)
-            } else check(identity.fingerprint == text("actor.txt"))
+            } else {
+                check(identity.fingerprint == text("actor.txt") && group.value == text("group-id.txt"))
+                val ledger = custody.ledger()
+                check(ledger.current().epoch != created.genesis.epoch && custody.key(created.genesis.epoch).keyCommitment() == created.genesis.keyCommitment)
+                check(rootJournal.state().completedSequence == 1L && rootJournal.nextRecoveryRequest(ledger) == null)
+                val entry = requireNotNull(rootJournal.entry(SyncStoreId.parse(text("root-operation.txt"))))
+                check(entry.record.reference() == ledger.current().reference())
+                check(rootJournal.commit(entry.request, custody::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_ROOT_MUST_NOT_REAPPROVE") },
+                    { error("SYNTHETIC_ROOT_MUST_NOT_RESIGN") }).entry == entry)
+            }
         }
         private val ledger = custody.ledger(); private val trust = ledger.trustAnchor
         private val key = custody.key(ledger.current().epoch)

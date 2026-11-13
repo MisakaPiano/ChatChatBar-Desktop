@@ -24,6 +24,7 @@ class DesktopLanSyncGroupCustodyProcessTest {
                 assertTrue(process.waitFor(90, TimeUnit.SECONDS), "synthetic group child timeout")
                 assertEquals(0, process.exitValue(), Files.readString(log).take(1000))
                 assertTrue(Files.readString(log).contains("GROUP_CUSTODY_${mode.uppercase()}_PASS"))
+                assertTrue(Files.readString(log).contains("ROOT_CREATION_LEDGER_${mode.uppercase()}_PASS"))
             } finally { if (process.isAlive) process.destroyForcibly().waitFor(5, TimeUnit.SECONDS) }
         }
     }
@@ -39,19 +40,31 @@ object DesktopLanSyncGroupCustodyChild {
         if (writing) { Files.createDirectory(recipientRoot); Files.createDirectory(groupRoot) }
         val recipientCustody = SyncDeviceKeyCustody(recipientRoot, identity.fingerprint, protector::protect, protector::unprotect)
         val recipient = if (writing) recipientCustody.createIfAbsent() else recipientCustody.open(Files.readString(root.resolve("recipient-public.txt")))
-        val cipher = if (writing) SyncStreamingCipher.create() else null
-        val group = cipher?.group ?: SyncStoreId.parse(Files.readString(root.resolve("group-id.txt")))
+        val creationRoot = root.resolve("creation"); val rootJournalPath = root.resolve("root-actions")
+        if (writing) { Files.createDirectory(creationRoot); Files.createDirectory(rootJournalPath) }
+        val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
+        val creation = SyncRootGroupCreation(creationRoot, certificate, recipient, protector::protect, protector::unprotect)
+        val creationOperation = if (writing) SyncStoreId.random().also {
+            Files.writeString(root.resolve("creation-operation.txt"), it.value, StandardOpenOption.CREATE_NEW)
+        } else SyncStoreId.parse(Files.readString(root.resolve("creation-operation.txt")))
+        val created = if (writing) creation.create(SyncRootGroupCreateRequest(creationOperation, setOf("synthetic_records"), "a".repeat(64)),
+            SyncRootGroupCreateAdmission {}, identity::signSyncGroupPayload) else creation.resume(creationOperation) { error("SYNTHETIC_GENESIS_MUST_NOT_RESIGN") }
+        val group = created.trust.group
+        if (!writing) check(group.value == Files.readString(root.resolve("group-id.txt")))
         val custody = SyncGroupCustody(groupRoot, group, recipient, protector::protect, protector::unprotect)
+        val rootJournal = SyncRootLedgerJournal(rootJournalPath, created.trust, certificate, protector::protect, protector::unprotect)
         val content = "synthetic native protected group content".toByteArray(Charsets.US_ASCII)
         if (writing) {
-            val key = requireNotNull(cipher)
-            val member = SyncGroupMember(Base64.getEncoder().encodeToString(identity.certificate.encoded), recipient.publicKey.encoded)
-            val genesis = SyncDeviceLedgerRecord(group, SyncStoreId.random(), null, 1, key.epoch, key.keyCommitment(), setOf("synthetic_records"),
-                mapOf(identity.fingerprint to member), emptySet(), "unsigned").let { row ->
-                row.copy(signature = Base64.getEncoder().encodeToString(identity.signSyncGroupPayload(row.signingBytes())))
-            }
-            val trust = SyncGroupTrust(group, genesis.reference(), member.certificate)
-            val ledger = custody.enroll(trust, listOf(genesis))
+            val initialLedger = created.enrollCreator(custody)
+            rootJournal.initializeNewEnrollment(initialLedger)
+            val parent = initialLedger.current()
+            val rootRequest = SyncRootLedgerRequest(SyncStoreId.random(), parent.reference(), parent.members, parent.coveredTypes,
+                parent.acceptedHeads, true, "b".repeat(64))
+            val rootCommit = rootJournal.commit(rootRequest, custody::ledger, SyncRootLedgerAdmission {}, identity::signSyncGroupPayload)
+            Files.writeString(root.resolve("root-operation.txt"), rootRequest.operation.value, StandardOpenOption.CREATE_NEW)
+            val ledger = rootJournal.applyToCustody(rootCommit, custody)
+            val key = custody.key(ledger.current().epoch); val trust = created.trust
+            val member = ledger.current().members.getValue(identity.fingerprint)
             val capsule = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), identity::signSyncGroupPayload)
             val opened = capsule.openTentative(trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, capsule.context.objectId)).admit(ledger)
             custody.rememberKey(opened)
@@ -59,7 +72,7 @@ object DesktopLanSyncGroupCustodyChild {
             val journal = SyncAuthorJournal(authorRoot, trust, member.certificate, protector::protect, protector::unprotect)
             journal.initializeNewEnrollment()
             val hash = MessageDigest.getInstance("SHA-256").digest(content).joinToString("") { "%02x".format(it) }
-            val request = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
+            val request = SyncAuthorCommitRequest(SyncStoreId.random(), ledger.current().reference(), emptySet(),
                 mapOf("synthetic/content" to SyncUnitChange(hash, SyncPlaintextIdentity(content.size.toLong(), hash), emptySet())),
                 UUID.randomUUID().toString(), hash, hash)
             journal.commitApproved(request, ledger, SyncAuthorCommitAdmission { check(it.approvalBinding == hash) }, identity::signSyncGroupPayload)
@@ -76,6 +89,12 @@ object DesktopLanSyncGroupCustodyChild {
             val ledger = custody.ledger(); val latest = ledger.current()
             check(ledger.trustAnchor.checkpoint == latest.reference())
             val key = custody.key(latest.epoch); check(key.keyCommitment() == latest.keyCommitment)
+            check(latest.epoch != created.genesis.epoch && custody.key(created.genesis.epoch).keyCommitment() == created.genesis.keyCommitment)
+            check(rootJournal.state().completedSequence == 1L && rootJournal.nextRecoveryRequest(ledger) == null)
+            val rootEntry = requireNotNull(rootJournal.entry(SyncStoreId.parse(Files.readString(root.resolve("root-operation.txt")))))
+            check(rootEntry.record.reference() == latest.reference())
+            check(rootJournal.commit(rootEntry.request, custody::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_ROOT_MUST_NOT_REAPPROVE") },
+                { error("SYNTHETIC_ROOT_MUST_NOT_RESIGN") }).entry == rootEntry)
             val journal = SyncAuthorJournal(root.resolve("author"), ledger.trustAnchor,
                 Base64.getEncoder().encodeToString(identity.certificate.encoded), protector::protect, protector::unprotect)
             check(journal.state().committedSequence == 1L)
@@ -91,6 +110,7 @@ object DesktopLanSyncGroupCustodyChild {
                 }
             }
         }
+        println("ROOT_CREATION_LEDGER_${args[1].uppercase()}_PASS")
         println("GROUP_CUSTODY_${args[1].uppercase()}_PASS")
     }
 }
