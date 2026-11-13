@@ -10,7 +10,7 @@ import kotlin.test.*
 
 /** Actual source capture/custody, approval, signed journal and AEAD publication. Control protection is synthetic. */
 class LanSyncGroupSourceWriterTest {
-    private class Node(val root: Path) {
+    internal class Node(val root: Path) {
         val f = LanSyncGroupNativePlannerTest.Fixture(root)
         val author = Files.createDirectory(root.resolve("source-author")); val sourceRoot = Files.createDirectory(root.resolve("source-writer"))
         val queues = Files.createDirectory(root.resolve("source-queues"))
@@ -38,7 +38,7 @@ class LanSyncGroupSourceWriterTest {
             val path = f.target.resolve("entities/character_cards/$id.json"); Files.createDirectories(path.parent)
             LanSyncJsonFiles.write(path, CharacterCard.serializer(), CharacterCard(id, name, createdAt = 1, updatedAt = 1))
         }
-        private fun inputs(): Triple<SyncInboxReconciliation, LanSyncGroupRecordEvidence, Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>> {
+        fun inputs(): Triple<SyncInboxReconciliation, LanSyncGroupRecordEvidence, Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>> {
             val view = view(); val evidence = LanSyncGroupRecordEvidence(requireNotNull(view.history), requireNotNull(view.ledgerCheckpoint))
             val service = LanSyncGroupDependencies(f.source.cipher.group, f.source.backend, f.custody(), f.source.work, f.workspace.resourceStore, { _, _, _ -> })
             val dependencies = linkedMapOf<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>()

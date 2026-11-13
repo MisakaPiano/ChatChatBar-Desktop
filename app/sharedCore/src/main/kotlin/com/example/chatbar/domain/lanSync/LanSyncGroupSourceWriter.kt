@@ -8,6 +8,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.WRITE
 import java.util.Base64
+import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
@@ -15,7 +16,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 class LanSyncGroupSourceCommit internal constructor(val entry: SyncAuthorJournalEntry, val metadata: SyncAuthenticatedGroupObject,
-    val publication: LanSyncGroupPublishPlan)
+    val publication: LanSyncGroupPublishPlan, internal val expectedApplied: Map<String, LanSyncGroupAppliedUnit?>,
+    internal val coverage: Set<String>)
 
 /** Source signing owner; all calls require the platform exclusive native-data gate. No network in commit/resume. */
 class LanSyncGroupSourceWriter(private val root: Path, private val workspace: LanSyncWorkspace, private val identity: LanSyncTlsIdentity,
@@ -162,7 +164,8 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         val known = currentView().authenticatedVersions.mapNotNull { it.envelope.version }
         val publication = publisher(key.epoch).prepare(metadata, proofs, delivery.blobs.mapValues { it.value.operation }, known)
         observe("SOURCE_SIGNED_DELIVERY_READY")
-        return LanSyncGroupSourceCommit(entry, SyncGroupObjectCodec(work).readQueued(queue, delivery.metadataOperation, entry.version.reference()), publication)
+        return LanSyncGroupSourceCommit(entry, SyncGroupObjectCodec(work).readQueued(queue, delivery.metadataOperation, entry.version.reference()), publication,
+            Collections.unmodifiableMap(source.applied.toMap()), Collections.unmodifiableSet(source.coverage.toSet()))
     }
     private fun request(source: Source) = SyncAuthorCommitRequest(source.operation, source.ledger, source.parents, source.changes,
         source.checkpoint, source.rawSource, lanSyncHash(buildJsonObject { put("review", source.review); put("preparation", hash(source)) }),
