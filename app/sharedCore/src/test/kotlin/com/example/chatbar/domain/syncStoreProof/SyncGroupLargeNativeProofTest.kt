@@ -12,7 +12,6 @@ import java.nio.channels.FileChannel
 import java.nio.file.*
 import java.security.MessageDigest
 import java.util.Base64
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
@@ -81,7 +80,7 @@ class SyncGroupLargeNativeProofTest {
         fun directory(name: String) = Files.createDirectory(root.resolve(name))
         try {
             val source = directory("source"); val sourceState = directory("source-state"); val work = directory("work")
-            val queue = directory("queue"); val publications = directory("publications"); val unitWork = directory("unit-work")
+            val queue = directory("queue"); val publications = directory("publications")
             val owner = LanSyncTlsIdentity.create(); val phone = LanSyncTlsIdentity.create(); val cipher = SyncStreamingCipher.create()
             val recipients = listOf(owner, phone).associate { identity ->
                 val custody = SyncDeviceKeyCustody(directory("recipient-${identity.fingerprint}"), identity.fingerprint, { it.reversedArray() }, { it.reversedArray() })
@@ -99,7 +98,7 @@ class SyncGroupLargeNativeProofTest {
             authorJournal().initializeNewEnrollment()
             val ledger = SyncDeviceLedger(trust).also { it.offer(genesis) }
             val outbox = SyncEncryptedOutbox(queue, cipher); val backend = FileCiphertextStore(root.resolve("backend"))
-            val codec = SyncGroupObjectCodec(work); val blobs = SyncGroupBlobStore(cipher.group, work)
+            val codec = SyncGroupObjectCodec(work)
             val keyRoot = directory("key-queue")
             fun keyQueue() = SyncKeyDeliveryQueue(keyRoot, trust, owner.fingerprint, { ledger })
             val keyOperations = members.keys.associate { recipient ->
@@ -129,44 +128,47 @@ class SyncGroupLargeNativeProofTest {
             val (slot, packageHash) = archive(source); expected[packageHash] = slot.packageRef!!.byteLength
             write(source, "save_slots", slot.id, SaveSlot.serializer(), slot)
             val total = expected.values.fold(0L, Math::addExact); assertTrue(total > 1024L * 1024 * 1024)
-            val bindings = linkedMapOf<String, SyncEnvelopeBlobBinding>(); val operations = linkedMapOf<String, SyncStoreId>()
-            val units = mutableListOf<LanSyncDecodedGroupUnit>(); lateinit var expectedHashes: Map<String, String>
-            val workspace = LanSyncWorkspace(source, sourceState, { Path.of(it) })
             val sourceHistory = LanSyncRecoveryVault(directory("source-history"))
-            lateinit var sourceCheckpoint: LanSyncRecoveryEntry
-            workspace.capture(owner.fingerprint).use { capture ->
-                expectedHashes = capture.snapshot.hashes()
-                sourceCheckpoint = requireNotNull(sourceHistory.checkpointSource(source, capture, cipher.group, UUID.randomUUID().toString()))
-                fun enqueue(path: Path, identity: SyncPlaintextIdentity) {
-                    if (identity.sha256 in bindings) return
-                    val operation = SyncStoreId.random()
-                    bindings[identity.sha256] = blobs.enqueue(outbox, operation, CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), cipher, path, identity)
-                    operations[identity.sha256] = operation
-                }
-                capture.snapshot.hashes().keys.sorted().forEach { unit -> LanSyncGroupUnitCodec(unitWork).prepare(capture, unit).use { prepared ->
-                    units += prepared.decoded; enqueue(prepared.path, prepared.decoded.plaintext)
-                    enqueue(prepared.membershipPath, prepared.decoded.membership)
-                    prepared.decoded.dependencies.forEach { enqueue(requireNotNull(capture.blobs[it.sha256]), it) }
-                } }
+            fun sourceWorkspace() = LanSyncWorkspace(source, sourceState, { Path.of(it) }, recoveryVault = sourceHistory)
+            val workspace = sourceWorkspace()
+            val sourceControl = directory("source-native-control"); val sourceWriterRoot = directory("source-writer")
+            val emptyHistory = SyncCausalHistory(cipher.group, ledger.admission(emptyList(), emptyList()))
+            var sourceView = SyncInboxReconciliation(emptyList(), emptyHistory, emptyList(), false, genesis.reference())
+            fun sourceNative(ws: LanSyncWorkspace) = LanSyncGroupNativeApplyOwner(sourceControl, ws, trust,
+                members.getValue(owner.fingerprint).certificate, LanSyncProjection(), { ledger }, { sourceView },
+                { it.reversedArray() }, { it.reversedArray() }, authorJournal = authorJournal())
+            sourceNative(workspace).initializeNewEnrollment()
+            val initialPlan = workspace.capture(owner.fingerprint).use { capture ->
+                LanSyncGroupNativePlanner.prepare(capture, sourceView, emptyMap(), emptyMap(), LanSyncGroupRecordEvidence(emptyHistory, genesis.reference()))
             }
-            val authorRequest = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
-                units.associate { it.payload.unit to SyncUnitChange(it.valueHash, it.plaintext, emptySet(), it.membership) }, sourceCheckpoint.transaction,
-                requireNotNull(sourceCheckpoint.rawSourceBinding), sourceCheckpoint.snapshotHash)
-            val version = authorJournal().commitApproved(authorRequest, ledger, SyncAuthorCommitAdmission { request ->
-                sourceHistory.verify(sourceCheckpoint)
-                require(sourceHistory.read(sourceCheckpoint.transaction) == sourceCheckpoint && request.approvalBinding == sourceCheckpoint.snapshotHash &&
-                    request.changes.mapValues { it.value.valueHash } == expectedHashes) { "SYNTHETIC_SOURCE_ADMISSION_CHANGED" }
-                val originals = linkedMapOf<String, String>(); sourceHistory.originals(sourceCheckpoint) { original, _ -> originals[original.relative] = original.hash }
-                workspace.capture(owner.fingerprint).use { fresh ->
-                    require(fresh.sourceFiles == originals && fresh.snapshot.hashes() == expectedHashes) { "SYNTHETIC_SOURCE_ADMISSION_CHANGED" }
-                }
-            }, owner::signSyncGroupPayload).version
+            val expectedHashes = initialPlan.expected
+            val review = LanSyncGroupSourceReview.prepare(initialPlan, sourceView, expectedHashes.keys, emptyMap(),
+                LanSyncGroupRecordEvidence(emptyHistory, genesis.reference()))
+            assertTrue(review.requiredBindings.isEmpty())
+            fun sourceWriter(ws: LanSyncWorkspace) = LanSyncGroupSourceWriter(sourceWriterRoot, ws, owner, authorJournal(), { ledger },
+                { epoch -> require(epoch == cipher.epoch); cipher }, { epoch -> require(epoch == cipher.epoch); SyncEncryptedOutbox(queue, cipher) },
+                { sourceView }, { sourceNative(ws).state() })
+            val sourceOperation = SyncStoreId.random()
+            val sourceCommit = sourceWriter(workspace).commit(review.authorize(), sourceOperation)
+            val version = sourceCommit.entry.version
+            val ownHistory = SyncCausalHistory(cipher.group, ledger.admission(listOf(version), listOf(sourceCommit.metadata)))
+            assertEquals(SyncVersionState.ADMITTED, ownHistory.offer(version))
+            sourceView = SyncInboxReconciliation(emptyList(), ownHistory, listOf(sourceCommit.metadata), false, genesis.reference())
+            val sourceReceipt = sourceNative(workspace).recordSource(sourceCommit)
+            assertEquals(LanSyncGroupNativeApplyStatus.SOURCE_COMMIT_RECORDED, sourceReceipt.status)
+            assertEquals(expectedHashes.keys, sourceReceipt.advancedUnits)
+            val sourceCheckpoint = requireNotNull(sourceHistory.read(sourceCommit.entry.request.sourceCheckpoint))
             assertEquals(1L, authorJournal().state().committedSequence)
-            val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
-                SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = version, blobs = bindings))
-            fun publisher() = LanSyncGroupPublicationQueue(publications, ledger, SyncEncryptedOutbox(queue, cipher), owner.fingerprint)
-            val plan = publisher().prepare(metadata, units, operations, emptyList())
+            val plan = sourceCommit.publication
+            fun publisher() = LanSyncGroupPublicationQueue(sourceWriterRoot.resolve("publications"), ledger, SyncEncryptedOutbox(queue, cipher), owner.fingerprint,
+                currentLedger = { ledger })
             check(source.toFile().deleteRecursively()); check(sourceState.toFile().deleteRecursively())
+            val recoveredWorkspace = sourceWorkspace()
+            val resumedSource = sourceWriter(recoveredWorkspace).resume(sourceOperation)
+            assertEquals(sourceCommit.entry, resumedSource.entry); assertEquals(plan, resumedSource.publication)
+            assertEquals(sourceReceipt, sourceNative(recoveredWorkspace).recordSource(resumedSource))
+            assertEquals(expectedHashes.keys, sourceNative(recoveredWorkspace).state().units.keys)
+            assertFalse(Files.exists(source))
             sourceHistory.verify(sourceCheckpoint)
             assertEquals(expected, sourceHistory.snapshot(sourceCheckpoint).resources)
             var rawOriginals = 0
@@ -196,12 +198,12 @@ class SyncGroupLargeNativeProofTest {
                     return result
                 }
             }
-            assertFailsWith<IOException> { publisher().upload(plan.metadata.operation, interrupted) }
-            assertFalse(inject); assertNull(backend.metadata(metadata.request.key)); assertNull(publisher().receipt(plan.metadata.operation))
-            val completed = publisher().upload(plan.metadata.operation, interrupted)
+            assertFailsWith<IOException> { sourceWriter(recoveredWorkspace).upload(sourceOperation, interrupted) }
+            assertFalse(inject); assertNull(backend.metadata(plan.metadata.key)); assertNull(publisher().receipt(plan.metadata.operation))
+            val completed = sourceWriter(recoveredWorkspace).upload(sourceOperation, interrupted)
             assertEquals(plan.blobs.values.sumOf { it.descriptor.length }, committed.get())
             assertTrue(committed.get() > total); assertTrue(attempted.get() > committed.get())
-            val firstAttempted = attempted.get(); assertEquals(completed, publisher().upload(plan.metadata.operation, interrupted)); assertEquals(firstAttempted, attempted.get())
+            val firstAttempted = attempted.get(); assertEquals(completed, sourceWriter(recoveredWorkspace).upload(sourceOperation, interrupted)); assertEquals(firstAttempted, attempted.get())
             val inbox = SyncGroupInbox(directory("inbox"), backend, custody(), receiver)
             var cursor: CommitCursor? = null
             do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
@@ -257,6 +259,8 @@ class SyncGroupLargeNativeProofTest {
                 put("perUnitNativePlanVerified", true); put("protectedNativeControlReopened", true)
                 put("nativeAppliedUnitReceipts", nativeReceipt.advancedUnits.size); put("nativeRepeatedApplyObservedOnly", true)
                 put("independentSourceCheckpointVerified", true); put("sourceRawOriginals", rawOriginals)
+                put("nativeSourceWriterVerified", true); put("nativeSourceReceiptReopened", true)
+                put("sourceWorkspaceCacheRebuiltAfterDeletion", true)
                 put("approvedAuthorSequence", authorJournal().state().committedSequence)
                 put("elapsedMillis", (System.nanoTime() - started) / 1_000_000); put("sampledPeakHeapBytes", peakHeap); put("minimumSampledFreeDiskBytes", minimumFree)
             })
