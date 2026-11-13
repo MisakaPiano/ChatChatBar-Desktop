@@ -38,12 +38,20 @@ class SyncGroupBlobStoreTest {
         codec.enqueue(oldOutbox, oldMetadataOperation, oldMetadataKey, oldCipher,
             SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = version, blobs = mapOf(expected.sha256 to oldBinding)))
         // Learn a key rotation before either old offline object reaches the backend.
+        Files.delete(source)
+        val protected = oldCipher.protectedKeyset { it.reversedArray() }
+        val reopenedKey = SyncStreamingCipher.open(oldCipher.group, oldCipher.epoch, protected) { it.reversedArray() }
+        val reopenedQueue = SyncEncryptedOutbox(oldQueue, reopenedKey)
+        val recoveredMetadata = codec.readQueued(reopenedQueue, oldMetadataOperation, version.reference())
+        assertEquals(version, recoveredMetadata.envelope.version)
         val newBlobOperation = SyncStoreId.random(); val newBlobKey = CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random())
-        val newBinding = blobs.enqueue(newOutbox, newBlobOperation, newBlobKey, newCipher, source, expected)
+        val newBinding = reopenedQueue.readPlaintext(oldBlobOperation, work).use { preserved ->
+            blobs.enqueue(newOutbox, newBlobOperation, newBlobKey, newCipher, preserved.plaintext.path, expected)
+        }
         newOutbox.upload(newBlobOperation, backend)
         val newMetadataOperation = SyncStoreId.random(); val newMetadataKey = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
         val metadata = codec.enqueue(newOutbox, newMetadataOperation, newMetadataKey, newCipher,
-            SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = version, blobs = mapOf(expected.sha256 to newBinding)))
+            recoveredMetadata.envelope.copy(blobs = mapOf(expected.sha256 to newBinding)))
         newOutbox.upload(newMetadataOperation, backend)
         val read = codec.read(backend, newCipher, metadata.context, metadata.request.descriptor, version.reference())
         assertEquals(version, read.envelope.version); assertEquals(1L, read.envelope.version?.authorSequence)

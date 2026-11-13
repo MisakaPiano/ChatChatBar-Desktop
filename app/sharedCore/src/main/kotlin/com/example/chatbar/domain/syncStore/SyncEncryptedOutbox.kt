@@ -15,6 +15,10 @@ import java.util.concurrent.locks.ReentrantLock
 
 data class SyncOutboxEntry(val context: SyncEncryptionContext, val request: CiphertextPutRequest, val uploaded: Boolean,
     val plaintext: SyncPlaintextIdentity)
+class SyncQueuedPlaintext internal constructor(val entry: SyncOutboxEntry, val plaintext: SyncAuthenticatedPlaintext,
+    val keyCommitment: String) : Closeable {
+    override fun close() = plaintext.close()
+}
 
 /**
  * Private local queue, not a remote store or portable backup. A forced immutable source binding
@@ -85,6 +89,20 @@ class SyncEncryptedOutbox(private val root: Path, private val cipher: SyncStream
         if (!Files.exists(directory, NOFOLLOW_LINKS)) return@guarded null
         val binding = readBinding(directory, operation)
         readReady(directory, binding)?.let { it.entry(uploaded(directory, it)) }
+    }
+
+    /** Re-key/review reads the retained original, even after its source file and process are gone. */
+    fun readPlaintext(operation: SyncStoreId, privateDirectory: Path): SyncQueuedPlaintext = guarded {
+        require(!privateDirectory.startsWith(root)) { "SYNC_OUTBOX_PRIVATE_PREPARATION" }
+        val directory = directory(operation, false); val binding = readBinding(directory, operation)
+        val ready = requireNotNull(readReady(directory, binding)) { "SYNC_OUTBOX_NOT_READY" }
+        val plaintext = Files.newInputStream(directory.resolve("ciphertext.bin"), NOFOLLOW_LINKS).use {
+            cipher.decrypt(it, binding.context, privateDirectory)
+        }
+        try {
+            require(plaintext.identity == binding.plain) { "SYNC_OUTBOX_CIPHERTEXT_CHANGED" }
+            SyncQueuedPlaintext(ready.entry(uploaded(directory, ready)), plaintext, cipher.keyCommitment())
+        } catch (failure: Throwable) { plaintext.close(); throw failure }
     }
 
     /** Immutable delivery authority; separate from an upload response and never sent remotely. */

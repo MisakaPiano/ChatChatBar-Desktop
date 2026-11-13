@@ -75,12 +75,24 @@ class SyncGroupObjectCodec(private val privateDirectory: Path,
             }
             require(metadata.key == context.key) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
             Files.newInputStream(ciphertext.path, NOFOLLOW_LINKS).use { input -> cipher.decrypt(input, context, privateDirectory).use { plaintext ->
-                metadataBudget.validate(plaintext.path)
-                val envelope = requireNotNull(LanSyncJsonFiles.read(plaintext.path, SyncGroupEnvelope.serializer(), plaintext.identity.sha256)) { "SYNC_GROUP_ENVELOPE" }
-                require(envelope.group == context.group && (expectedReference == null || envelope.reference() == expectedReference)) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
-                return SyncAuthenticatedGroupObject(context, metadata, freeze(envelope, sorted = false), cipher.keyCommitment())
+                return decode(plaintext, context, metadata, cipher.keyCommitment(), expectedReference)
             } }
         }
+    }
+
+    fun readQueued(outbox: SyncEncryptedOutbox, operation: SyncStoreId,
+        expectedReference: SyncVersionRef? = null): SyncAuthenticatedGroupObject = outbox.readPlaintext(operation, privateDirectory).use { queued ->
+        require(queued.entry.context.key.kind == CiphertextObjectKind.COMMIT) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
+        decode(queued.plaintext, queued.entry.context, CiphertextObjectMetadata(queued.entry.request.key, queued.entry.request.descriptor),
+            queued.keyCommitment, expectedReference)
+    }
+
+    private fun decode(plaintext: SyncAuthenticatedPlaintext, context: SyncEncryptionContext, metadata: CiphertextObjectMetadata,
+        keyCommitment: String, expectedReference: SyncVersionRef?): SyncAuthenticatedGroupObject {
+        metadataBudget.validate(plaintext.path)
+        val envelope = requireNotNull(LanSyncJsonFiles.read(plaintext.path, SyncGroupEnvelope.serializer(), plaintext.identity.sha256)) { "SYNC_GROUP_ENVELOPE" }
+        require(envelope.group == context.group && (expectedReference == null || envelope.reference() == expectedReference)) { "SYNC_GROUP_ENVELOPE_CONTEXT" }
+        return SyncAuthenticatedGroupObject(context, metadata, freeze(envelope, sorted = false), keyCommitment)
     }
 
     private fun freeze(envelope: SyncGroupEnvelope, sorted: Boolean): SyncGroupEnvelope {
