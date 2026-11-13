@@ -87,6 +87,25 @@ class SyncEncryptedOutbox(private val root: Path, private val cipher: SyncStream
         readReady(directory, binding)?.let { it.entry(uploaded(directory, it)) }
     }
 
+    /** Immutable delivery authority; separate from an upload response and never sent remotely. */
+    fun bindDeliveryHash(operation: SyncStoreId, sha256: String) = guarded {
+        require(sha256.matches(Regex("[a-f0-9]{64}"))) { "SYNC_OUTBOX_DELIVERY_BINDING" }
+        val directory = directory(operation, false)
+        requireNotNull(readReady(directory, readBinding(directory, operation))) { "SYNC_OUTBOX_NOT_READY" }
+        val file = directory.resolve("delivery.sha256")
+        if (Files.exists(file, NOFOLLOW_LINKS)) require(readSmall(file).contentEquals(sha256.toByteArray(Charsets.US_ASCII))) { "SYNC_OUTBOX_DELIVERY_CHANGED" }
+        else publishSmall(file, sha256.toByteArray(Charsets.US_ASCII))
+        observe("DELIVERY_BOUND")
+    }
+    fun deliveryHash(operation: SyncStoreId): String? = guarded {
+        val directory = directory(operation, false)
+        requireNotNull(readReady(directory, readBinding(directory, operation))) { "SYNC_OUTBOX_NOT_READY" }
+        val file = directory.resolve("delivery.sha256")
+        if (!Files.exists(file, NOFOLLOW_LINKS)) null else String(readSmall(file), Charsets.US_ASCII).also {
+            require(it.matches(Regex("[a-f0-9]{64}"))) { "SYNC_OUTBOX_DELIVERY_BINDING" }
+        }
+    }
+
     fun upload(operation: SyncStoreId, backend: CiphertextStore): CiphertextPutResult = guarded {
         val directory = directory(operation, false)
         val binding = readBinding(directory, operation)
