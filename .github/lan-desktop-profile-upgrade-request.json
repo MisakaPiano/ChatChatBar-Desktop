@@ -29,13 +29,23 @@
     }
   ],
   "purpose": "Original exact delivered packages only. Five native launches: old fresh/populated/warm control, Program-only swap new, new cold reopen. Retain every native result and source-bound field-name/hash changes without raw profile upload. Diagnose startup writes versus upgrade effects before changing any assertion. No app rebuild/user root operation/pixel/paired identity claim.",
-  "attempt": 3,
+  "attempt": 4,
   "previousAttempt": {
-    "runId": 43355041406,
-    "controlSha": "f9ecd96ee49d8c9105e99da05ecfe97c7f9825c0",
+    "runId": 43355597386,
+    "controlSha": "ee473030ef226fb74057cfc1dcee94fbc853f07b",
     "state": "failure",
-    "jobId": 131654966590,
-    "stage": "PREEXISTING_ENTITY_BYTES_CHANGED after3 native launches",
-    "cause": "Exact hashes differed, but prior helper did not retain changed paths/field names. No data loss conclusion. Add old warm-reopen control and field-name-only/hash diagnostics plus synthetic semantics before assertion; keep strict assertion pending diagnosis."
+    "jobId": 131656773725,
+    "stage": "PREEXISTING_ENTITY_BYTES_CHANGED",
+    "originalArtifactId": 14005902136,
+    "cause": "Diagnostic found exactly1 changed store chat_scroll_positions/profile-upgrade-session.json, top-level capturedAt only, also changed in old warm control; synthetic semantics passed. Preserve old strict-byte failure; require all other files exact and only this typed monotonic timestamp with identical position/session may update."
+  },
+  "timestampContract": {
+    "unchangedSourceFilesAtBothPackageCommits": [
+      "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt",
+      "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt",
+      "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt"
+    ],
+    "normalWrite": "Writer.submit copies snapshot with monotonic capturedAt; ChatRepository.updateScrollPosition persists newer capture only. DTO sessionId/anchorMessageId/fallbackMessageIndex/scrollOffset remain equality inputs. Both exact source commits have no diff in these3 files.",
+    "allowedException": "Only observed old-control same-path capturedAt with valid typed schema/strict increase and identical all other fields. Missing/changed other business data still fail; all changed paths/hash metadata retained."
   }
 }

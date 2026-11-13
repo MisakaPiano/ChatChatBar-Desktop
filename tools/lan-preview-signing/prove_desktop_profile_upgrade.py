@@ -206,6 +206,27 @@ def changes(before, after, bodies, directory):
     return result
 
 
+def verify_retained_entities(before, after, bodies, directory, old_control):
+    differences = changes(before, after, bodies, directory)
+    verified = []
+    for row in differences:
+        path = row['path']
+        if path not in before:  # New defaults are reported separately; no old record is omitted.
+            continue
+        require(path in after, 'PREEXISTING_ENTITY_DELETED')
+        require(path.startswith('chat_scroll_positions/') and path.endswith('.json'), 'PREEXISTING_ENTITY_BYTES_CHANGED')
+        require(any(r['path'] == path and r.get('changedTopLevelFields') == ['capturedAt'] for r in old_control), 'SCROLL_CONTROL_NOT_OBSERVED')
+        previous = bodies[path]; current = json.loads((directory/path).read_text(encoding='utf8'))
+        require(set(previous) == set(current) and set(current) <= {'sessionId', 'anchorMessageId', 'fallbackMessageIndex', 'scrollOffset', 'capturedAt'}, 'SCROLL_SCHEMA_CHANGED')
+        require(previous['sessionId'] == current['sessionId'] == Path(path).stem, 'SCROLL_OWNER_CHANGED')
+        require(type(previous['capturedAt']) is int and type(current['capturedAt']) is int and current['capturedAt'] > previous['capturedAt'] >= 0, 'SCROLL_CAPTURE_TIME_INVALID')
+        require({k: v for k, v in previous.items() if k != 'capturedAt'} == {k: v for k, v in current.items() if k != 'capturedAt'}, 'READING_POSITION_CHANGED')
+        verified.append({'path': path, 'changedField': 'capturedAt', 'readingPositionAndSessionUnchanged': True,
+                         'monotonicTimestamp': True, 'sameOldVersionControlObserved': True})
+    return {'rawBytesUnchanged': sum(after.get(p) == h for p, h in before.items()),
+            'timestampOnlyChanges': verified, 'preexistingEntityFilesRetained': len(before)}
+
+
 def verify_seed(data, image):
     def read(name):
         return json.loads((data/'entities'/name).read_text(encoding='utf8'))
@@ -265,15 +286,15 @@ def main(request):
         result['upgradedSyntheticSemanticChecksPassed'] = True
         after = inventory(data/'entities')
         result['upgradedEntityChanges'] = changes(before, after, bodies, data/'entities')
-        require(all(after.get(path) == digest for path, digest in before.items()), 'PREEXISTING_ENTITY_BYTES_CHANGED')
+        result['upgradedEntityRetention'] = verify_retained_entities(before, after, bodies, data/'entities', result['oldWarmControlChanges'])
         phases.append(native.launch('lan3-cold-reopen', environment))
         cold = inventory(data/'entities')
         result['coldEntityChanges'] = changes(before, cold, bodies, data/'entities')
-        require(all(cold.get(path) == digest for path, digest in before.items()), 'COLD_ENTITY_BYTES_CHANGED')
+        result['coldEntityRetention'] = verify_retained_entities(before, cold, bodies, data/'entities', result['oldWarmControlChanges'])
         require(sha(image) == image_before == hashlib.sha256(PNG).hexdigest(), 'MEDIA_CHANGED')
         verify_seed(data, image)
         require(inventory(outside) == outside_before, 'OUTSIDE_PROFILE_CHANGED')
-        result.update(passed=True, preexistingEntityFilesPreserved=len(before), entityHashesBefore=before,
+        result.update(passed=True, preexistingEntityFilesRetained=len(before), entityHashesBefore=before,
                       newEntityPaths=sorted(set(cold)-set(before)), absoluteMediaReferenceUnchanged=True,
                       imageSha256=image_before, userDataRootNotMoved=True, oldProgramPreserved=True,
                       outsideProfileInventoryUnchanged=True, syntheticOnly=True)
@@ -282,7 +303,7 @@ def main(request):
         raise
     finally:
         write_json(OUTPUT/'native-upgrade-result.json', result)
-    print(json.dumps({'passed': result['passed'], 'nativeLaunches': len(phases), 'preservedEntities': result.get('preexistingEntityFilesPreserved')}))
+    print(json.dumps({'passed': result['passed'], 'nativeLaunches': len(phases), 'retainedEntities': result.get('preexistingEntityFilesRetained')}))
 
 
 if __name__ == '__main__':
