@@ -186,6 +186,7 @@ val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
 
 kotlin {
     jvmToolchain(17)
+    sourceSets.getByName("test").kotlin.srcDir(rootProject.file("../tools/lan-sync/fixtures"))
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }

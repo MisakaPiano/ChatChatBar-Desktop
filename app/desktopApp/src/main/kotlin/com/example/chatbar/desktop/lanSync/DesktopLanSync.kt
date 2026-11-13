@@ -26,18 +26,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                     app.voiceAudioStore.persist(session, artifact, it, Files.size(source)).path
                 }
             }
-        }, validateResource = { kind, path, record ->
-            if (kind == "images") {
-                val result = LanSyncPostProcess.record(record)
-                if (result != null) {
-                    require(Files.size(path) <= DesktopPostProcessRaster.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
-                    DesktopPostProcessRaster.decode(Files.readAllBytes(path), com.example.chatbar.domain.image.NovelAiPostProcessTab.valueOf(result.operation), longestSide = 256).flush()
-                } else {
-                    require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
-                    DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
-                }
-            }
-        }, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) })
+        }, validateResource = ::validateDesktopLanSyncResource, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) })
     val runtime by lazy { LanSyncRuntime(stateStore, workspace, object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
@@ -61,5 +50,18 @@ internal object DesktopLanSyncStartup {
         val workspace = localRoot(root).resolve("workspace")
         if (!Files.exists(workspace, LinkOption.NOFOLLOW_LINKS)) return
         LanSyncWorkspace(root, workspace, resolveResource = { error("SYNC_STARTUP_RESOURCE_ACCESS") }).recover()
+    }
+}
+
+internal fun validateDesktopLanSyncResource(kind: String, path: Path, record: LanSyncRecord) {
+    if (kind == "images") {
+        val result = LanSyncPostProcess.record(record)
+        if (result != null) {
+            require(Files.size(path) <= DesktopPostProcessRaster.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
+            DesktopPostProcessRaster.decode(Files.readAllBytes(path), com.example.chatbar.domain.image.NovelAiPostProcessTab.valueOf(result.operation), longestSide = 256).flush()
+        } else {
+            require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
+            DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
+        }
     }
 }

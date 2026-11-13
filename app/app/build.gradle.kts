@@ -139,6 +139,7 @@ android {
     }
 
     sourceSets.getByName("androidTest") {
+        java.srcDir(rootProject.file("../tools/lan-sync/fixtures"))
         assets.srcDir(rootProject.file("interop-fixtures/phase3f"))
     }
 }

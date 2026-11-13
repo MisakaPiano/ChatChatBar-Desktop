@@ -19,15 +19,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
     private val protection = AndroidLanSyncKeyProtection()
     private val store = LanSyncStateStore(root, protection::protect, protection::unprotect)
     private val workspace = LanSyncWorkspace(dataRoot, root.resolve("workspace"),
-        resolveResource = { reference ->
-            val path = java.nio.file.Paths.get(reference)
-            val alias = app.filesDir.toPath()
-            when {
-                path.isAbsolute && path.startsWith(alias) -> dataRoot.resolve(alias.relativize(path))
-                path.isAbsolute -> path
-                else -> dataRoot.resolve(reference)
-            }
-        }, assetResource = { reference ->
+        resolveResource = { reference -> androidLanSyncResourcePath(dataRoot, app.filesDir.toPath(), reference) }, assetResource = { reference ->
             app.assets.open(reference.removePrefix("asset:").removePrefix("/")).use { input ->
                 val result = java.io.ByteArrayOutputStream(); val buffer = ByteArray(16 * 1024)
                 while (true) { val count = input.read(buffer); if (count < 0) break
@@ -38,19 +30,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             val target = dataRoot.resolve("audio/lan-$hash.mp3")
             LanSyncBlobs.publish(source, target, Files.size(source), hash, root)
             target.toString()
-        }, validateResource = { kind, path, record ->
-            if (kind == "images") {
-                val result = LanSyncPostProcess.record(record)
-                require(Files.size(path) <= if (result == null) 32L * 1024 * 1024 else
-                    com.example.chatbar.domain.image.NovelAiPostProcessResultRecord.MAX_IMAGE_BYTES.toLong()) { "SYNC_IMAGE_BUDGET" }
-                val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { android.graphics.BitmapFactory.decodeStream(it, null, options) }
-                val pixels = if (result == null) 32_000_000L else com.example.chatbar.domain.image.NovelAiPostProcessPolicy.MAX_PIXELS *
-                    if (result.operation == com.example.chatbar.domain.image.NovelAiPostProcessTab.UPSCALE.name) 4 else 1
-                require(options.outWidth > 0 && options.outHeight > 0 && options.outWidth.toLong() * options.outHeight <= pixels &&
-                    (result == null || options.outMimeType == "image/png")) { "SYNC_IMAGE_INVALID" }
-            }
-        })
+        }, validateResource = ::validateAndroidLanSyncResource)
     val runtime by lazy { LanSyncRuntime(store, workspace, object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) {
             require(app.lanSyncStartupReady) { "SYNC_INITIALIZING" }
