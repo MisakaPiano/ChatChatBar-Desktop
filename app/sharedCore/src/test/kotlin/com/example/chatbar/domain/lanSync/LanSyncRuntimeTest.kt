@@ -210,6 +210,34 @@ class LanSyncRuntimeTest {
             assertEquals("需要恢复的原正文", a.workspace.recovery.snapshot(protected).records.single().text("name"))
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
+    @Test fun eitherEndpointCanReadTheOtherFrozenImageWhileConflictVotingOwnsTheOperationMutex() = runBlocking {
+        val network = SyntheticLan(); val a = End("computer", network); val b = End("phone", network)
+        val pcBytes = LanSyncPreviewSample.image(); val phoneBytes = LanSyncPreviewSample.image(warm = true)
+        val pcImage = a.root.resolve("images/pc.png"); val phoneImage = b.root.resolve("images/phone.png")
+        Files.createDirectories(pcImage.parent); Files.createDirectories(phoneImage.parent)
+        Files.write(pcImage, pcBytes); Files.write(phoneImage, phoneBytes)
+        a.write("card", "电脑冻结图", pcImage.toString()); b.write("card", "手机冻结图", phoneImage.toString())
+        val host = a.runtime(); val phone = b.runtime()
+        try {
+            pair(host, phone, a, b); phone.requestSync()
+            until("both image conflicts are frozen") { host.state.value.conflicts.size == 1 && phone.state.value.conflicts.size == 1 }
+            val detail = phone.state.value.reviewDetails.single()
+            val pcRow = detail.computer.single(); val mobileRow = detail.phone.single()
+            val pcReference = LanSyncReviewImages.references(pcRow).single().reference
+            val mobileReference = LanSyncReviewImages.references(mobileRow).single().reference
+            phone.previewImage(pcRow, pcReference); host.previewImage(mobileRow, mobileReference)
+            until("frozen image IO must not wait for the conflict's publication mutex") { phone.state.value.imagePreview != null && host.state.value.imagePreview != null }
+            assertContentEquals(pcBytes, phone.readImagePreview(requireNotNull(phone.state.value.imagePreview).id))
+            assertContentEquals(phoneBytes, host.readImagePreview(requireNotNull(host.state.value.imagePreview).id))
+            phone.previewImage(pcRow, mobileReference)
+            until("a reference from the wrong frozen record is refused without clearing choices") { phone.state.value.imagePreviewError != null }
+            assertEquals(1, phone.state.value.conflicts.size); assertNull(phone.state.value.failureCode)
+            val state = phone.state.value
+            phone.resolveConflicts(mapOf(state.conflicts.single().unit to LanSyncChoice.KEEP_PHONE), state.reviewBinding)
+            completedReceiptOnly(a, b)
+            until("image references are released with the completed review") { host.state.value.imagePreview == null && phone.state.value.imagePreview == null }
+        } finally { host.closeAndDrain(); phone.closeAndDrain() }
+    }
     @Test fun neitherEndpointPublishesUntilBothRecoverySealsExistAndEitherProtectionFailureCanRetry() = runBlocking {
         for (failingSide in listOf("computer", "phone")) {
             val network = SyntheticLan()

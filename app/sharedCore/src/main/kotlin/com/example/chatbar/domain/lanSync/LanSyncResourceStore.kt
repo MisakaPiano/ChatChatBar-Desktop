@@ -31,6 +31,12 @@ class LanSyncResourceStore(
         require(hashFile(path, length) == hash) { "SYNC_CACHED_RESOURCE_DAMAGED" }
         return path
     }
+    internal fun cached(hash: String): Path {
+        require(hash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_RESOURCE_HASH" }
+        val file = root.resolve(hash)
+        lanSyncSafe(file)
+        return requireNotNull(completed(hash, Files.size(file))) { "SYNC_RESOURCE_MISSING" }
+    }
 
     fun open(hash: String, length: Long): Partial {
         validateIdentity(hash, length)

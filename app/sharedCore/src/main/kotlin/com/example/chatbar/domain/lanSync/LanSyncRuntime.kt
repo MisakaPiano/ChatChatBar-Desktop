@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
@@ -26,7 +27,9 @@ data class LanSyncUiState(val status: String = "两端打开此页面后可同�
     val reviewBinding: String? = null, val reviewDetails: List<LanSyncDetailedUnit> = emptyList(),
     val pendingReviews: List<LanSyncHeldReview> = emptyList(),
     val recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(),
-    val recoveryBrowse: LanSyncRecoveryBrowse? = null, val recoveryPreview: LanSyncRestorePreview? = null)
+    val recoveryBrowse: LanSyncRecoveryBrowse? = null, val recoveryPreview: LanSyncRestorePreview? = null,
+    val imagePreview: LanSyncImagePreview? = null, val imagePreviewError: String? = null,
+    val imagePreviewFailureCode: String? = null)
 
 data class LanSyncRecoveryBrowse(val entry: LanSyncRecoveryEntry, val units: Set<String>)
 
@@ -65,6 +68,8 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
     private val sockets = java.util.concurrent.ConcurrentHashMap.newKeySet<SSLSocket>()
     private val auxiliaryJobs = java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
     private val recoverySelection = java.util.concurrent.atomic.AtomicReference<Any?>(null)
+    private val imageSelection = java.util.concurrent.atomic.AtomicReference<Any?>(null)
+    private val imageAdmission = kotlinx.coroutines.sync.Semaphore(1)
     @Volatile private var auxiliaryStopped = false
     @Volatile private var retryPaused = false
 
@@ -92,7 +97,51 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         auxiliaryJobs += job; job.invokeOnCompletion { auxiliaryJobs -= job }
         if (auxiliaryStopped) job.cancel() else job.start()
     }
+    private fun ownsImage(record: LanSyncRecord, reference: String): Boolean {
+        val state = _state.value
+        val rows = state.reviewDetails.asSequence().flatMap { (it.computer + it.phone).asSequence() } +
+            state.pendingReviews.asSequence().flatMap { (it.computer + it.phone + it.proposed).asSequence() } +
+            state.recoveryPreview?.let { (it.currentRecords + it.restoredRecords).asSequence() }.orEmpty()
+        return rows.any { it == record && LanSyncReviewImages.references(it).any { image -> image.reference == reference } }
+    }
+    fun previewImage(record: LanSyncRecord, reference: String) {
+        if (auxiliaryStopped) return
+        val token = Any(); imageSelection.set(token)
+        _state.value = _state.value.copy(imagePreview = null, imagePreviewError = null, imagePreviewFailureCode = null)
+        // Frozen cache reads must remain available while the data-operation mutex waits for
+        // a human conflict vote. They never acquire publication authority or mutate records.
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            try { imageAdmission.withPermit {
+                if (imageSelection.get() !== token) return@withPermit
+                require(ownsImage(record, reference)) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+                val preview = workspace.previewImage(record, reference)
+                currentCoroutineContext().ensureActive()
+                if (imageSelection.get() === token && ownsImage(record, reference)) _state.value = _state.value.copy(imagePreview = preview)
+            } } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]+")) } ?: "SYNC_IMAGE_VALIDATION_FAILED"
+                val message = when (code) {
+                    "SYNC_IMAGE_BUDGET" -> "此图片超出本机图片处理范围，原资料和当前选择保留"
+                    "SYNC_IMAGE_PREVIEW_EXPIRED" -> "此图片已不属于当前审阅，请重新打开内容"
+                    else -> "此冻结图片未能通过读取与格式校验，原资料和当前选择保留"
+                }
+                if (imageSelection.get() === token) _state.value = _state.value.copy(imagePreviewError = message, imagePreviewFailureCode = code)
+            }
+        }
+        auxiliaryJobs += job; job.invokeOnCompletion { auxiliaryJobs -= job }
+        if (auxiliaryStopped) job.cancel() else job.start()
+    }
+    fun readImagePreview(id: String): ByteArray {
+        val preview = requireNotNull(_state.value.imagePreview?.takeIf { it.id == id }) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+        require(ownsImage(preview.record, preview.reference)) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+        return workspace.readImagePreview(preview)
+    }
+    fun closeImagePreview() {
+        imageSelection.set(null)
+        _state.value = _state.value.copy(imagePreview = null, imagePreviewError = null, imagePreviewFailureCode = null)
+    }
     fun refreshRecovery() {
+        closeImagePreview()
         recoverySelection.set(null)
         launchAuxiliary {
             _state.value = _state.value.copy(busy = true, status = "正在读取本机保全记录", recoveryBrowse = null, recoveryPreview = null)
@@ -101,6 +150,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         }
     }
     fun openRecovery(transaction: String) {
+        closeImagePreview()
         val token = Any(); recoverySelection.set(token)
         launchAuxiliary {
             if (recoverySelection.get() !== token) return@launchAuxiliary
@@ -112,6 +162,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         }
     }
     fun previewRecovery(transaction: String, unit: String) {
+        closeImagePreview()
         val token = Any(); recoverySelection.set(token)
         launchAuxiliary {
             if (recoverySelection.get() !== token) return@launchAuxiliary
@@ -124,6 +175,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         }
     }
     fun cancelRecoveryPreview() {
+        closeImagePreview()
         recoverySelection.set(null)
         _state.value = _state.value.copy(recoveryPreview = null, recoveryBrowse = null)
     }
@@ -137,7 +189,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 try { platform.reload(preview.plan.snapshot.records.filter { it.type == "chat_sessions" }.map { it.id }.toSet()) }
                 catch (failure: Exception) { throw IllegalStateException("SYNC_RECOVERY_RELOAD_PENDING", failure) }
             } }
-            recoverySelection.set(null); retryPaused = false; queueSync()
+            recoverySelection.set(null); closeImagePreview(); retryPaused = false; queueSync()
             _state.value = _state.value.copy(recoveryEntries = workspace.recovery.list(), recoveryBrowse = null, recoveryPreview = null,
                 status = "已恢复为本机新修订；已请求与另一端重新比较")
         }
@@ -401,6 +453,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 observe("HOST_PENDING_CLEARED", prepared.plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || computerApplied && computer.snapshot.hashes() != prepared.plan.snapshot.hashes() ||
                     phoneApplied && phoneSnapshot.hashes() != prepared.plan.snapshot.hashes())
+                closeImagePreview()
                 _state.value = _state.value.copy(busy = false, conflicts = emptyList(), status = completedStatus(prepared.plan), excluded = output.excludedTypes, failureCode = null,
                     reviewBinding = null, reviewDetails = emptyList())
                 wire.sendText("DONE")
@@ -529,6 +582,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
                 store.clearPending(peer.fingerprint, plan.transaction)
                 observe("PHONE_PENDING_CLEARED", plan.transaction)
                 finishRequest(requestToken, prepared.deferredDeletion != null || alreadyApplied && phoneSnapshot.hashes() != plan.snapshot.hashes())
+                closeImagePreview()
                 _state.value = _state.value.copy(busy = false, status = completedStatus(plan), excluded = plan.snapshot.excludedTypes, failureCode = null,
                     reviewBinding = null, reviewDetails = emptyList())
                 } finally { received.close() }
@@ -728,6 +782,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
         finally { _state.value = _state.value.copy(busy = false) }
     }
     private fun showFailure(failure: Exception, pauseRetry: Boolean = true) {
+        closeImagePreview()
         if (pauseRetry && failure !is java.io.IOException) retryPaused = true
         val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]+")) }
         val text = when (code) {
@@ -766,6 +821,7 @@ class LanSyncRuntime(private val store: LanSyncStateStore, private val workspace
             reviewBinding = null, reviewDetails = emptyList())
     }
     fun stop() {
+        closeImagePreview()
         auxiliaryStopped = true; recoverySelection.set(null); auxiliaryJobs.forEach { it.cancel() }
         _state.value = _state.value.copy(conflicts = emptyList(), reviewBinding = null, reviewDetails = emptyList(), recoveryPreview = null, recoveryBrowse = null)
         cancelPairing(); choices?.cancel(); polling?.cancel(); polling = null

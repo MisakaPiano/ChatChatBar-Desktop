@@ -31,6 +31,29 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
     val resourceStore: LanSyncResourceStore by lazy { LanSyncResourceStore(stateRoot.resolve("resources"), budget) }
 
+    fun previewImage(record: LanSyncRecord, reference: String): LanSyncImagePreview {
+        val image = requireNotNull(LanSyncReviewImages.references(record).firstOrNull { it.reference == reference }) { "SYNC_IMAGE_REFERENCE" }
+        val file = resourceStore.cached(image.hash)
+        val postProcess = LanSyncPostProcess.record(record) != null
+        val maximum = if (postProcess) com.example.chatbar.domain.image.NovelAiPostProcessResultRecord.MAX_IMAGE_BYTES else 32 * 1024 * 1024
+        require(Files.size(file) <= maximum) { "SYNC_IMAGE_BUDGET" }
+        LanSyncPostProcess.validateImageHash(record, image.field, image.hash)
+        validateResource("images", file, record)
+        return LanSyncImagePreview(UUID.randomUUID().toString(), record, reference, image.hash, file, postProcess)
+    }
+
+    fun readImagePreview(preview: LanSyncImagePreview): ByteArray {
+        val expected = requireNotNull(LanSyncReviewImages.references(preview.record).firstOrNull { it.reference == preview.reference }) { "SYNC_IMAGE_REFERENCE" }
+        val path = resourceStore.cached(expected.hash)
+        require(path == preview.path && expected.hash == preview.hash) { "SYNC_IMAGE_REFERENCE" }
+        val maximum = if (LanSyncPostProcess.record(preview.record) == null) 32 * 1024 * 1024
+            else com.example.chatbar.domain.image.NovelAiPostProcessResultRecord.MAX_IMAGE_BYTES
+        val bytes = lanSyncRead(path, maximum)
+        require(lanSyncHash(bytes) == expected.hash) { "SYNC_IMAGE_DAMAGED" }
+        validateResource("images", path, preview.record)
+        return bytes
+    }
+
     fun protectBeforeApply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = capture(deviceId, projection).use { current ->
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)

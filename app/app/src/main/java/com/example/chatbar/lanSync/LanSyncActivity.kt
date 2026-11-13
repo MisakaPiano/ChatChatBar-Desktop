@@ -53,6 +53,7 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
         CbText(LanSyncScope.description)
         CbText(state.status)
         state.cleanupNotice?.let { CbText(it, color = ChatBarTheme.colors.warning) }
+        state.imagePreviewError?.let { CbText(it, color = ChatBarTheme.colors.warning) }
         if (com.example.chatbar.BuildConfig.BUILD_TYPE == "lanPreview")
             CbButton("载入离线验收样例", runtime::createPreviewSample, enabled = !state.busy, variant = ButtonVariant.Secondary)
         CbButton("同步 / 接续", runtime::requestSync, enabled = !state.busy && state.peers.isNotEmpty())
@@ -65,7 +66,7 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
             CbText("可在手机或电脑核对并选择；先收到的完整选择生效。")
             state.conflicts.forEach { conflict ->
                 CbText(conflict.title)
-                state.reviewDetails.firstOrNull { it.header.unit == conflict.unit }?.let { LanSyncDetail(it) }
+                state.reviewDetails.firstOrNull { it.header.unit == conflict.unit }?.let { LanSyncDetail(it, runtime = runtime) }
                 listOf(LanSyncChoice.KEEP_COMPUTER to "保留电脑", LanSyncChoice.KEEP_PHONE to "保留手机", LanSyncChoice.KEEP_BOTH to "保留两份")
                     .filter { it.first != LanSyncChoice.KEEP_BOTH || conflict.canKeepBoth }.forEach { (choice, label) ->
                         CbButton((if (selected[conflict.unit] == choice) "✓ " else "") + label,
@@ -83,10 +84,10 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
                 CbText("两端合计将移除 ${impact.recordsRemoved} 条记录（其中 ${impact.liveMessagesRemoved} 条实时消息）、${impact.versionsRemoved} 个消息版本、${impact.attachmentReferencesRemoved} 条附件引用；覆盖 ${impact.recordsOverwritten} 条记录。")
                 val detail = remember(held.binding) { LanSyncDetailedReview.detail(held.unit, held.computer, held.phone, held.ancestorHashes[held.unit]) }
                 val header = detail.header
-                LanSyncDetail(detail)
+                LanSyncDetail(detail, runtime = runtime)
                 CbText("确认后的目标共 ${held.proposed.size} 条记录；目标为空表示移除此组。")
                 if (held.proposed.isNotEmpty()) LanSyncDetail(LanSyncDetailedUnit(
-                    header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true)
+                    header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true, runtime = runtime)
                 if (held.dependencyOf.isEmpty()) CbButton("确认按此目标同步删除或精简",
                     { runtime.confirmReview(held.unit, held.binding) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
             }
@@ -114,8 +115,8 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
                 preview.currentRecords.map { it.key }.toSet(), preview.restoredRecords.map { it.key }.toSet())
             val impact = remember(preview.id) { LanSyncImpactReview.reductionSummary(preview.currentRecords, emptyList(), preview.restoredRecords) }
             CbText("本机将移除 ${impact.recordsRemoved} 条记录、${impact.versionsRemoved} 个消息版本和 ${impact.attachmentReferencesRemoved} 条附件引用，覆盖 ${impact.recordsOverwritten} 条记录；写入前会再次保全当前内容。")
-            LanSyncDetail(LanSyncDetailedUnit(header, preview.currentRecords, emptyList()), singleSide = true, singleLabel = "当前本机")
-            LanSyncDetail(LanSyncDetailedUnit(header.copy(unit = header.unit + "/target"), preview.restoredRecords, emptyList()), singleSide = true, singleLabel = "恢复目标")
+            LanSyncDetail(LanSyncDetailedUnit(header, preview.currentRecords, emptyList()), singleSide = true, singleLabel = "当前本机", runtime = runtime)
+            LanSyncDetail(LanSyncDetailedUnit(header.copy(unit = header.unit + "/target"), preview.restoredRecords, emptyList()), singleSide = true, singleLabel = "恢复目标", runtime = runtime)
             if (preview.restoredUnits.size > 1) CbText("同时恢复必需依赖：${preview.restoredUnits.joinToString("、")}")
             CbButton("恢复此组为本机新修订", { runtime.applyRecovery(preview.id) }, enabled = !state.busy && preview.hasChanges)
             CbButton("取消恢复预览", runtime::cancelRecoveryPreview, enabled = !state.busy, variant = ButtonVariant.Secondary)
@@ -132,10 +133,11 @@ private fun LanSyncScreen(runtime: LanSyncRuntime, close: () -> Unit) {
         CbText("保持此页面与电脑同步页面打开；冲突可在任意一端逐项核对并选择。系统询问相机或局域网权限时，只为此功能授权。不要关闭防火墙。")
         CbButton("返回", close, enabled = !state.busy, variant = ButtonVariant.Secondary)
     }
+    state.imagePreview?.let { LanSyncFrozenImageDialog(it, runtime::closeImagePreview) }
 }
 
 @Composable
-private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false, singleLabel: String = "目标") {
+private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false, singleLabel: String = "目标", runtime: LanSyncRuntime) {
     var expanded by remember(detail.header) { mutableStateOf(false) }
     CbButton(if (expanded) "收起内容" else if (singleSide) "查看${singleLabel}内容" else "查看双方正文、版本与存储字段", { expanded = !expanded }, variant = ButtonVariant.Secondary)
     if (!expanded) return
@@ -149,6 +151,20 @@ private fun LanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = fal
     var page by remember(detail.header, recordIndex, fieldIndex) { mutableStateOf(0) }
     val keys = detail.recordKeys
     val key = keys.getOrNull(recordIndex) ?: return
+    val images = remember(detail.header, key) {
+        listOfNotNull(detail.record(key, true)?.let { row -> Triple(if (singleSide) singleLabel else "电脑", row, LanSyncReviewImages.references(row)) },
+            detail.record(key, false)?.takeUnless { singleSide }?.let { row -> Triple("手机", row, LanSyncReviewImages.references(row)) })
+            .flatMap { (label, row, refs) -> refs.map { Triple(label, row, it) } }
+    }
+    var imagePage by remember(detail.header, key) { mutableStateOf(0) }
+    images.drop(imagePage * 10).take(10).forEachIndexed { index, (label, row, image) ->
+        CbButton("查看$label 图片 ${imagePage * 10 + index + 1} · ${image.field}", { runtime.previewImage(row, image.reference) }, variant = ButtonVariant.Secondary)
+    }
+    if (images.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CbButton("上一页图片", { imagePage-- }, enabled = imagePage > 0, variant = ButtonVariant.Secondary)
+        CbText("${imagePage + 1}/${(images.size + 9) / 10}")
+        CbButton("下一页图片", { imagePage++ }, enabled = (imagePage + 1) * 10 < images.size, variant = ButtonVariant.Secondary)
+    }
     val fields = detail.fields(key)
     val field = fields.getOrNull(fieldIndex) ?: return
     CbText("记录 ${recordIndex + 1}/${keys.size} · $key")

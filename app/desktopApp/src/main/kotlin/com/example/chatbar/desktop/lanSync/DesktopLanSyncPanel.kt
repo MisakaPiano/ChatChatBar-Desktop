@@ -25,6 +25,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
         StatusText(LanSyncScope.description)
         StatusText(state.status)
         state.cleanupNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        state.imagePreviewError?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (remember { DesktopBuildIdentity.load().version.substringAfter('-', "").startsWith("lan.") })
             BootstrapButton("载入离线验收样例", secondary = true, enabled = !state.busy) { runtime.createPreviewSample() }
         ActionRow {
@@ -55,7 +56,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
             StatusText("双方都修改的内容需选择；保留两份会保留独立会话分支及其依赖。")
             state.conflicts.forEach { conflict ->
                 StatusText("${conflict.title} · 电脑 ${if (conflict.computerDeleted) "已删除" else "${conflict.computerRecords} 条"} / 手机 ${if (conflict.phoneDeleted) "已删除" else "${conflict.phoneRecords} 条"}")
-                state.reviewDetails.firstOrNull { it.header.unit == conflict.unit }?.let { DesktopLanSyncDetail(it) }
+                state.reviewDetails.firstOrNull { it.header.unit == conflict.unit }?.let { DesktopLanSyncDetail(it, runtime = runtime) }
                 if (!conflict.canKeepBoth) StatusText("此项是全局设定，请选择保留其中一端的版本。")
                 ActionRow {
                     listOf(LanSyncChoice.KEEP_COMPUTER to "保留电脑", LanSyncChoice.KEEP_PHONE to "保留手机", LanSyncChoice.KEEP_BOTH to "保留两份")
@@ -74,10 +75,10 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
                 StatusText("两端合计将移除 ${impact.recordsRemoved} 条记录（其中 ${impact.liveMessagesRemoved} 条实时消息）、${impact.versionsRemoved} 个消息版本、${impact.attachmentReferencesRemoved} 条附件引用；覆盖 ${impact.recordsOverwritten} 条记录。")
                 val detail = remember(held.binding) { LanSyncDetailedReview.detail(held.unit, held.computer, held.phone, held.ancestorHashes[held.unit]) }
                 val header = detail.header
-                DesktopLanSyncDetail(detail)
+                DesktopLanSyncDetail(detail, runtime = runtime)
                 StatusText("确认后的目标共 ${held.proposed.size} 条记录；目标为空表示移除此组。")
                 if (held.proposed.isNotEmpty()) DesktopLanSyncDetail(LanSyncDetailedUnit(
-                    header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true)
+                    header.copy(unit = header.unit + "/target"), held.proposed, emptyList()), singleSide = true, runtime = runtime)
                 if (held.dependencyOf.isEmpty()) BootstrapButton("确认按此目标同步删除或精简", secondary = true, enabled = !state.busy) {
                     runtime.confirmReview(held.unit, held.binding)
                 }
@@ -106,8 +107,8 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
                 preview.currentRecords.map { it.key }.toSet(), preview.restoredRecords.map { it.key }.toSet())
             val impact = remember(preview.id) { LanSyncImpactReview.reductionSummary(preview.currentRecords, emptyList(), preview.restoredRecords) }
             StatusText("本机将移除 ${impact.recordsRemoved} 条记录、${impact.versionsRemoved} 个消息版本和 ${impact.attachmentReferencesRemoved} 条附件引用，覆盖 ${impact.recordsOverwritten} 条记录；写入前会再次保全当前内容。")
-            DesktopLanSyncDetail(LanSyncDetailedUnit(header, preview.currentRecords, emptyList()), singleSide = true, singleLabel = "当前本机")
-            DesktopLanSyncDetail(LanSyncDetailedUnit(header.copy(unit = header.unit + "/target"), preview.restoredRecords, emptyList()), singleSide = true, singleLabel = "恢复目标")
+            DesktopLanSyncDetail(LanSyncDetailedUnit(header, preview.currentRecords, emptyList()), singleSide = true, singleLabel = "当前本机", runtime = runtime)
+            DesktopLanSyncDetail(LanSyncDetailedUnit(header.copy(unit = header.unit + "/target"), preview.restoredRecords, emptyList()), singleSide = true, singleLabel = "恢复目标", runtime = runtime)
             if (preview.restoredUnits.size > 1) StatusText("同时恢复必需依赖：${preview.restoredUnits.joinToString("、")}")
             ActionRow {
                 BootstrapButton("恢复此组为本机新修订", enabled = !state.busy && preview.hasChanges) { runtime.applyRecovery(preview.id) }
@@ -121,10 +122,14 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
         lanSyncExcludedSummary(state.excluded)?.let { StatusText(it) }
         StatusText("保持两端同步页面打开。首次连接如 Windows 提示网络访问，仅允许可信的专用网络；不要关闭防火墙。连接失败可重新生成二维码或使用备用配对码。")
     }
+    state.imagePreview?.let { preview ->
+        DesktopTransientImagePreview(preview.id, { runtime.readImagePreview(preview.id) },
+            postProcessOutput = preview.postProcessOutput, onClose = runtime::closeImagePreview)
+    }
 }
 
 @Composable
-private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false, singleLabel: String = "目标") {
+private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolean = false, singleLabel: String = "目标", runtime: LanSyncRuntime) {
     var expanded by remember(detail.header) { mutableStateOf(false) }
     BootstrapButton(if (expanded) "收起内容" else if (singleSide) "查看${singleLabel}内容" else "查看双方正文、版本与存储字段", secondary = true) { expanded = !expanded }
     if (!expanded) return
@@ -138,6 +143,20 @@ private fun DesktopLanSyncDetail(detail: LanSyncDetailedUnit, singleSide: Boolea
     var page by remember(detail.header, recordIndex, fieldIndex) { mutableStateOf(0) }
     val keys = detail.recordKeys
     val key = keys.getOrNull(recordIndex) ?: return
+    val images = remember(detail.header, key) {
+        listOfNotNull(detail.record(key, true)?.let { row -> Triple(if (singleSide) singleLabel else "电脑", row, LanSyncReviewImages.references(row)) },
+            detail.record(key, false)?.takeUnless { singleSide }?.let { row -> Triple("手机", row, LanSyncReviewImages.references(row)) })
+            .flatMap { (label, row, refs) -> refs.map { Triple(label, row, it) } }
+    }
+    var imagePage by remember(detail.header, key) { mutableStateOf(0) }
+    images.drop(imagePage * 10).take(10).forEachIndexed { index, (label, row, image) ->
+        BootstrapButton("查看$label 图片 ${imagePage * 10 + index + 1} · ${image.field}", secondary = true) { runtime.previewImage(row, image.reference) }
+    }
+    if (images.size > 10) ActionRow {
+        BootstrapButton("上一页图片", secondary = true, enabled = imagePage > 0) { imagePage-- }
+        StatusText("${imagePage + 1}/${(images.size + 9) / 10}")
+        BootstrapButton("下一页图片", secondary = true, enabled = (imagePage + 1) * 10 < images.size) { imagePage++ }
+    }
     val fields = detail.fields(key)
     val field = fields.getOrNull(fieldIndex) ?: return
     StatusText("记录 ${recordIndex + 1}/${keys.size} · $key")
