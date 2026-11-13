@@ -180,7 +180,7 @@ class LanSyncResourceStore(
     companion object {
         private class LockEntry(val lock: ReentrantLock = ReentrantLock(), var users: Int = 0)
         private val locks = ConcurrentHashMap<String, LockEntry>()
-        private fun createCheckedRoot(path: Path) {
+        internal fun createCheckedRoot(path: Path) {
             require(path.isAbsolute && path.normalize() == path && path.parent != null) { "SYNC_UNSAFE_PATH" }
             val missing = mutableListOf<Path>()
             var existing = path

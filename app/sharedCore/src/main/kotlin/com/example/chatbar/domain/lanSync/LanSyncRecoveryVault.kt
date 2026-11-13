@@ -36,10 +36,12 @@ class LanSyncRecoveryVault(
     private val root: Path,
     private val budget: LanSyncResourceBudget = LanSyncResourceBudget(),
     private val observe: (String) -> Unit = {},
+    objectStore: LanSyncResourceStore? = null,
 ) {
-    private val objects = LanSyncResourceStore(root.resolve("objects"), budget)
+    private val objects = objectStore ?: LanSyncResourceStore(root.resolve("objects"), budget)
     private val entries = root.resolve("entries")
     init {
+        LanSyncResourceStore.createCheckedRoot(root)
         lanSyncSafe(root, true)
         if (!Files.exists(entries, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(entries)
         lanSyncSafe(entries, true)

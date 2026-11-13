@@ -32,7 +32,8 @@ class LanSyncRecoveryVaultTest {
             val plan = LanSyncPlan(transaction, LanSyncSnapshot(deviceId = "pc", records = listOf(row("card", "选定的新正文"))), emptyMap())
             workspace.capture("pc").use { before -> workspace.apply(plan, before.snapshot.hashes(), "pc", emptyMap()) }
             workspace.retire(transaction)
-            val reopened = LanSyncRecoveryVault(state.resolve("recovery"))
+            val reopenedWorkspace = LanSyncWorkspace(root, state, { Path.of(it) })
+            val reopened = reopenedWorkspace.recovery
             val entry = requireNotNull(reopened.read(transaction)); reopened.verify(entry)
             assertEquals(1L, entry.recordCount); assertEquals(0L, entry.messageCount); assertEquals(1L, entry.affectedUnits)
             assertEquals("必须保全的旧正文", reopened.snapshot(entry).records.single().text("name"))

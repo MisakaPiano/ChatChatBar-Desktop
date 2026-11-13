@@ -25,7 +25,9 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val budget: LanSyncResourceBudget = LanSyncResourceBudget(),
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
-    val recovery: LanSyncRecoveryVault by lazy { recoveryVault ?: LanSyncRecoveryVault(stateRoot.resolve("recovery")) }
+    val recovery: LanSyncRecoveryVault by lazy {
+        recoveryVault ?: LanSyncRecoveryVault(stateRoot.resolve("recovery"), budget, objectStore = resourceStore)
+    }
     val resourceStore: LanSyncResourceStore by lazy { LanSyncResourceStore(stateRoot.resolve("resources"), budget) }
 
     fun protectBeforeApply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String,

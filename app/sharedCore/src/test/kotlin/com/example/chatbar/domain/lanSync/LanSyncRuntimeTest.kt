@@ -24,7 +24,7 @@ import javax.net.ssl.SSLSocket
 import kotlin.test.*
 
 class LanSyncRuntimeTest {
-    private class SyntheticLan : LanSyncNetwork {
+    internal class SyntheticLan : LanSyncNetwork {
         private val endpoints = java.util.concurrent.ConcurrentHashMap<String, Int>()
         val connections = java.util.concurrent.atomic.AtomicInteger()
         override fun addresses() = listOf("192.168.1.2")
@@ -42,7 +42,7 @@ class LanSyncRuntimeTest {
             } catch (failure: Throwable) { plain.close(); throw failure }
         }
     }
-    private class End(val name: String, val network: SyntheticLan,
+    internal class End(val name: String, val network: SyntheticLan,
         private val protection: (String) -> Unit = {},
         private val journal: (String, Int) -> Unit = { _, _ -> },
         private val progress: (String, Long) -> Unit = { _, _ -> },
@@ -53,7 +53,8 @@ class LanSyncRuntimeTest {
         val id = store.identity().fingerprint
         val workspace = LanSyncWorkspace(root, stateRoot.resolve("workspace"), { raw -> Path.of(raw) },
             observeJournal = journal,
-            recoveryVault = LanSyncRecoveryVault(stateRoot.resolve("workspace/recovery"), observe = protection))
+            recoveryVault = LanSyncRecoveryVault(stateRoot.resolve("workspace/recovery"), observe = protection,
+                objectStore = LanSyncResourceStore(stateRoot.resolve("workspace/resources"))))
         val gate = LanSyncOperationGate()
         val storage = JsonFileStorage(root, gate)
         val studio by lazy { NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true) }
