@@ -33,13 +33,14 @@ fun interface SyncAuthorCommitAdmission { fun requireApproved(request: SyncAutho
 data class SyncAuthorJournalState(val committedSequence: Long, val last: SyncAuthorJournalEntry?, val pendingApproved: SyncAuthorJournalEntry?)
 
 /** Approved intent is forced before signing; an interrupted signer resumes the same body/ID/counter. */
-class SyncAuthorJournal(private val root: Path, private val group: SyncStoreId, private val actorCertificate: String,
+class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrust, private val actorCertificate: String,
     private val protect: (ByteArray) -> ByteArray, private val unprotect: (ByteArray) -> ByteArray,
     private val observe: (String) -> Unit = {}) {
     private val actor = SyncDeviceSignatures.decode(actorCertificate)
+    private val group get() = trust.group
     private val lock: ReentrantLock
     private var incarnation: SyncStoreId? = null
-    @Serializable private data class Origin(val format: Int, val group: SyncStoreId, val certificate: String, val incarnation: SyncStoreId)
+    @Serializable private data class Origin(val format: Int, val trust: SyncGroupTrust, val certificate: String, val incarnation: SyncStoreId)
     @Serializable private data class Head(val sequence: Long, val operation: SyncStoreId, val reference: SyncVersionRef)
     @Serializable private data class Index(val sequence: Long, val operation: SyncStoreId)
     @Serializable private data class ProtectedFrame(val domain: String, val group: SyncStoreId, val actor: String, val incarnation: SyncStoreId,
@@ -47,6 +48,7 @@ class SyncAuthorJournal(private val root: Path, private val group: SyncStoreId, 
     init {
         PrivateSyncFile.checked(root, true)
         require(actor.encoded == actorCertificate) { "SYNC_AUTHOR_CERTIFICATE" }
+        require(SyncDeviceSignatures.decode(trust.ownerCertificate).encoded == trust.ownerCertificate) { "SYNC_AUTHOR_TRUST_CHANGED" }
         lock = locks.computeIfAbsent(root) { ReentrantLock() }
     }
 
@@ -54,7 +56,7 @@ class SyncAuthorJournal(private val root: Path, private val group: SyncStoreId, 
     fun initializeNewEnrollment() = guarded {
         require(!Files.exists(root.resolve("origin.protected"), NOFOLLOW_LINKS)) { "SYNC_AUTHOR_ALREADY_ENROLLED" }
         require(Files.newDirectoryStream(root).use { files -> files.all { it.fileName.toString() == "author.lock" } }) { "SYNC_AUTHOR_EXISTING_EVIDENCE" }
-        write(root.resolve("origin.protected"), "ORIGIN", Origin.serializer(), Origin(1, group, actorCertificate, SyncStoreId.random()))
+        write(root.resolve("origin.protected"), "ORIGIN", Origin.serializer(), Origin(1, trust, actorCertificate, SyncStoreId.random()))
         observe("AUTHOR_ORIGIN_RETAINED")
     }
     fun state(): SyncAuthorJournalState = guarded { recover() }
@@ -106,12 +108,14 @@ class SyncAuthorJournal(private val root: Path, private val group: SyncStoreId, 
         return entry
     }
     private fun requireActive(ledger: SyncDeviceLedger) {
+        require(sameAnchor(ledger.trustAnchor, trust)) { "SYNC_AUTHOR_TRUST_CHANGED" }
+        require(ledger.contains(trust.checkpoint)) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
         val current = ledger.current()
         require(current.group == group && current.members[actor.fingerprint]?.let { it.active && it.certificate == actorCertificate } == true) { "SYNC_AUTHOR_REVOKED_OR_CHANGED" }
     }
     private fun recover(): SyncAuthorJournalState {
         val origin = requireNotNull(read(root.resolve("origin.protected"), "ORIGIN", Origin.serializer())) { "SYNC_AUTHOR_ORIGIN_MISSING" }
-        require(origin.format == 1 && origin.group == group && origin.certificate == actorCertificate) { "SYNC_AUTHOR_ORIGIN_CHANGED" }
+        require(origin.format == 1 && sameAnchor(origin.trust, trust) && origin.certificate == actorCertificate) { "SYNC_AUTHOR_ORIGIN_CHANGED" }
         var head = read(root.resolve("head.protected"), "HEAD", Head.serializer())
         require(head == null || head.sequence > 0) { "SYNC_AUTHOR_HEAD" }
         var last = head?.let {
@@ -187,6 +191,7 @@ class SyncAuthorJournal(private val root: Path, private val group: SyncStoreId, 
     }
     private fun freeze(request: SyncAuthorCommitRequest) = request.copy(parents = Collections.unmodifiableSet(request.parents.toSet()),
         changes = Collections.unmodifiableMap(request.changes.mapValues { it.value.copy(previous = Collections.unmodifiableSet(it.value.previous.toSet())) }))
+    private fun sameAnchor(a: SyncGroupTrust, b: SyncGroupTrust) = a.group == b.group && a.genesis == b.genesis && a.ownerCertificate == b.ownerCertificate
     private fun intentPath(sequence: Long) = root.resolve("intent-${sequence.toString().padStart(19, '0')}.protected")
     private fun signedPath(sequence: Long) = root.resolve("signed-${sequence.toString().padStart(19, '0')}.protected")
     private fun indexPath(operation: SyncStoreId) = root.resolve("operation-${operation.value}.protected")

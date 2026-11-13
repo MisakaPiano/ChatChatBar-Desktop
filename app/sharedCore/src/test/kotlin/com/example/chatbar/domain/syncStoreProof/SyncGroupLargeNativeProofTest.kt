@@ -89,14 +89,14 @@ class SyncGroupLargeNativeProofTest {
             }
             val members = listOf(owner, phone).associate { it.fingerprint to SyncGroupMember(Base64.getEncoder().encodeToString(it.certificate.encoded),
                 recipients.getValue(it.fingerprint).publicKey.encoded) }
-            val authorRoot = directory("author-journal")
-            fun authorJournal() = SyncAuthorJournal(authorRoot, cipher.group, members.getValue(owner.fingerprint).certificate, { it.reversedArray() }, { it.reversedArray() })
-            authorJournal().initializeNewEnrollment()
             val genesis = SyncDeviceLedgerRecord(cipher.group, SyncStoreId.random(), null, 1, cipher.epoch, cipher.keyCommitment(),
                 LanSyncScope.schemas.keys, members, emptySet(), "unsigned").let { row ->
                 row.copy(signature = Base64.getEncoder().encodeToString(owner.signSyncGroupPayload(row.signingBytes())))
             }
             val trust = SyncGroupTrust(cipher.group, genesis.reference(), members.getValue(owner.fingerprint).certificate)
+            val authorRoot = directory("author-journal")
+            fun authorJournal() = SyncAuthorJournal(authorRoot, trust, members.getValue(owner.fingerprint).certificate, { it.reversedArray() }, { it.reversedArray() })
+            authorJournal().initializeNewEnrollment()
             val ledger = SyncDeviceLedger(trust).also { it.offer(genesis) }
             val outbox = SyncEncryptedOutbox(queue, cipher); val backend = FileCiphertextStore(root.resolve("backend"))
             val codec = SyncGroupObjectCodec(work); val blobs = SyncGroupBlobStore(cipher.group, work)

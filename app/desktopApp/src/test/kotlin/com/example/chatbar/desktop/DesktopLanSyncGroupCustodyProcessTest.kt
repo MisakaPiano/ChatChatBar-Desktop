@@ -56,7 +56,7 @@ object DesktopLanSyncGroupCustodyChild {
             val opened = capsule.openTentative(trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, capsule.context.objectId)).admit(ledger)
             custody.rememberKey(opened)
             val authorRoot = Files.createDirectory(root.resolve("author"))
-            val journal = SyncAuthorJournal(authorRoot, group, member.certificate, protector::protect, protector::unprotect)
+            val journal = SyncAuthorJournal(authorRoot, trust, member.certificate, protector::protect, protector::unprotect)
             journal.initializeNewEnrollment()
             val hash = MessageDigest.getInstance("SHA-256").digest(content).joinToString("") { "%02x".format(it) }
             val request = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
@@ -76,7 +76,7 @@ object DesktopLanSyncGroupCustodyChild {
             val ledger = custody.ledger(); val latest = ledger.current()
             check(ledger.trustAnchor.checkpoint == latest.reference())
             val key = custody.key(latest.epoch); check(key.keyCommitment() == latest.keyCommitment)
-            val journal = SyncAuthorJournal(root.resolve("author"), group,
+            val journal = SyncAuthorJournal(root.resolve("author"), ledger.trustAnchor,
                 Base64.getEncoder().encodeToString(identity.certificate.encoded), protector::protect, protector::unprotect)
             check(journal.state().committedSequence == 1L)
             val entry = requireNotNull(journal.entry(SyncStoreId.parse(Files.readString(root.resolve("author-operation.txt")))))

@@ -24,7 +24,7 @@ class SyncAuthorJournalTest {
         val journalRoot = Files.createDirectory(root.resolve("author"))
         val signerCalls = AtomicInteger()
         fun signer(bytes: ByteArray): ByteArray { signerCalls.incrementAndGet(); return author.signSyncGroupPayload(bytes) }
-        fun journal(observe: (String) -> Unit = {}) = SyncAuthorJournal(journalRoot, key.group, members.getValue(author.fingerprint).certificate,
+        fun journal(observe: (String) -> Unit = {}) = SyncAuthorJournal(journalRoot, ledger.trustAnchor, members.getValue(author.fingerprint).certificate,
             { it.reversedArray() }, { it.reversedArray() }, observe)
         fun request(unit: String = "synthetic/one") = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
             mapOf(unit to SyncUnitChange("a".repeat(64), SyncPlaintextIdentity(1, "b".repeat(64)), emptySet())),
@@ -123,7 +123,7 @@ class SyncAuthorJournalTest {
     @Test fun aDifferentEnrollmentOriginCannotBeGraftedOntoAnExistingAuthorHistory() = withGroup { g ->
         g.journal().initializeNewEnrollment(); g.journal().commitApproved(g.request(), g.ledger, g.approved, g::signer)
         val other = Files.createDirectory(g.root.resolve("different-enrollment"))
-        SyncAuthorJournal(other, g.key.group, g.members.getValue(g.author.fingerprint).certificate,
+        SyncAuthorJournal(other, g.ledger.trustAnchor, g.members.getValue(g.author.fingerprint).certificate,
             { it.reversedArray() }, { it.reversedArray() }).initializeNewEnrollment()
         Files.copy(other.resolve("origin.protected"), g.journalRoot.resolve("origin.protected"), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         assertEquals("SYNC_AUTHOR_PRIVATE_CONTEXT", assertFailsWith<IllegalArgumentException> { g.journal().state() }.message)
@@ -138,5 +138,14 @@ class SyncAuthorJournalTest {
             g.journal().commitApproved(request, g.ledger, g.approved, g::signer)
         }.message)
         assertEquals(1, g.signerCalls.get())
+    }
+
+    @Test fun aLedgerWithTheSameGroupLabelCannotReplaceTheEnrolledTrustAnchorForAuthoring() = withGroup { g ->
+        g.journal().initializeNewEnrollment()
+        val foreign = SyncDeviceLedger(g.ledger.trustAnchor.copy(genesis = SyncVersionRef(SyncStoreId.random(), "f".repeat(64))))
+        assertEquals("SYNC_AUTHOR_TRUST_CHANGED", assertFailsWith<IllegalArgumentException> {
+            g.journal().commitApproved(g.request(), foreign, g.approved, g::signer)
+        }.message)
+        assertEquals(0, g.signerCalls.get()); assertEquals(0L, g.journal().state().committedSequence); assertNull(g.journal().state().pendingApproved)
     }
 }
