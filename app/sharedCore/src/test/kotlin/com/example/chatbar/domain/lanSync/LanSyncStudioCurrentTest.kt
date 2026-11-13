@@ -75,6 +75,20 @@ class LanSyncStudioCurrentTest {
                 val imported = requireNotNull(owner.draft.value)
                 assertContentEquals(Files.readAllBytes(image), Files.readAllBytes(Paths.get(requireNotNull(imported.imageGuidance.baseImage).path)))
                 assertEquals(vibe, NovelAiInlinePayloadStore(b.toFile()).resolve(requireNotNull(imported.imageGuidance.vibes.single().encodedVibe)))
+                val importedJournal = requireNotNull(storageB.loadSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal.serializer()))
+                val sameCurrent = requireNotNull(importedJournal.committed.current())
+                storageB.saveSingleton(LanSyncStudioCurrent.HISTORY, importedJournal.copy(committed =
+                    importedJournal.committed.copy(entries = importedJournal.committed.entries + sameCurrent.copy(extraPrompt = "只改变重做分支"))),
+                    NovelAiStudioHistoryJournal.serializer())
+                wsB.capture("phone").use { historyOnly -> wsA.capture("pc").use { existing ->
+                    assertEquals(existing.snapshot.records.single { it.type == LanSyncStudioCurrent.DRAFT }.comparisonBody(),
+                        historyOnly.snapshot.records.single { it.type == LanSyncStudioCurrent.DRAFT }.comparisonBody())
+                    wsA.apply(LanSyncPlan(UUID.randomUUID().toString(), historyOnly.snapshot, emptyMap()), existing.snapshot.hashes(), "pc", historyOnly.blobs)
+                    val physical = requireNotNull(storageA.loadSingleton(LanSyncStudioCurrent.DRAFT, NovelAiStudioDraft.serializer()))
+                    val journal = requireNotNull(storageA.loadSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal.serializer()))
+                    assertEquals(physical.imageGuidance, journal.committed.current()?.imageGuidance)
+                    NovelAiStudioStateRepository(JsonFileStorage(a), preserveForeignEditHistory = true).prepareForLanSync()
+                } }
                 owner.stageDraft { it.copy(extraPrompt = "手机后续输入") }; owner.prepareForLanSync()
                 val history = requireNotNull(storageB.loadSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal.serializer()))
                 assertEquals(3, history.committed.entries.size); assertNull(history.pending)

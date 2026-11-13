@@ -140,10 +140,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             LanSyncScope.relativePath(local) to (wire to local)
         }
         val currentRecords = current.snapshot.records.associateBy { it.key }
+        val studioChanged = current.snapshot.hashes()[LanSyncStudioCurrent.UNIT] != plan.snapshot.hashes()[LanSyncStudioCurrent.UNIT]
         desired.forEach { (relative, pair) ->
             val (wire, local) = pair
             val existing = currentRecords[wire.key]
-            if (existing?.comparisonBody() == wire.comparisonBody()) return@forEach
+            // A history-only edit can otherwise retain the old current path while publishing
+            // an equivalent incoming journal path. Native owners require their exact pair.
+            if (existing?.comparisonBody() == wire.comparisonBody() && !(studioChanged && wire.type in LanSyncStudioCurrent.types)) return@forEach
             val materialized = mapResources(local.body) { reference, field ->
                 if (!reference.startsWith("ccb-lan-v1/")) reference else {
                     val parts = reference.split('/')
