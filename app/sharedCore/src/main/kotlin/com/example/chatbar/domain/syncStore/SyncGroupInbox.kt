@@ -52,7 +52,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         return SyncInboxDiscovery(page.nextCursor, observations)
     }
 
-    fun reconcile(): SyncInboxReconciliation {
+    fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation {
         val trust = localCustody { custody.trust() }
         val statuses = linkedMapOf<CiphertextObjectKey, SyncInboxObservation>()
         fun status(key: CiphertextObjectKey, stage: SyncInboxStage, code: String? = null) {
@@ -169,6 +169,19 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 status(key, if (code == "SYNC_INBOX_LOCAL_CUSTODY") SyncInboxStage.LOCAL_CUSTODY_BLOCKED else SyncInboxStage.INVALID_OBJECT, code)
             }
         }
+        // Retained outbox AEAD witnesses keep this device's approved, not-yet-uploaded facts in
+        // its causal view while offline. They cannot introduce local ledger/key trust.
+        for (actual in localVersions.toList()) {
+            try {
+                require(actual.context.group == trust.group && actual.envelope.group == trust.group &&
+                    actual.context.key.kind == CiphertextObjectKind.COMMIT && actual.context.key == actual.metadata.key &&
+                    actual.envelope.version != null) { "SYNC_INBOX_LOCAL_VERSION_CONTEXT" }
+                val retained = versions.firstOrNull { it.context.key == actual.context.key }
+                require(retained == null || retained.context == actual.context && retained.metadata == actual.metadata &&
+                    retained.envelope == actual.envelope && retained.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_IMMUTABLE_CONFLICT" }
+                if (retained == null) versions += actual
+            } catch (failure: Exception) { status(actual.context.key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+        }
         val logical = versions.map { requireNotNull(it.envelope.version) }
         val history = SyncCausalHistory(trust.group, ledger.admission(logical, versions))
         for (actual in versions) {
@@ -183,6 +196,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             }
         }
         versions.forEach { actual -> if (statuses[actual.context.key]?.stage !in setOf(SyncInboxStage.REJECTED,
+            SyncInboxStage.INVALID_OBJECT, SyncInboxStage.LOCAL_CUSTODY_BLOCKED,
             SyncInboxStage.WAITING_FOR_LEDGER, SyncInboxStage.WAITING_FOR_CURRENT_EPOCH)) {
             val version = requireNotNull(actual.envelope.version)
             status(actual.context.key, when (history.state(version.id)) {

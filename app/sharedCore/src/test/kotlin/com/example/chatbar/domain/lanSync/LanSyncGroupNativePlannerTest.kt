@@ -143,4 +143,16 @@ class LanSyncGroupNativePlannerTest {
         assertTrue(plan.advances.isEmpty())
         f.workspace.capture(f.source.owner.fingerprint).use { assertEquals(setOf(a), it.snapshot.units().keys) }
     }
+
+    @Test fun thisDevicesAlreadyCommittedExactValueCanBeAcknowledgedWithoutAnotherSourceRevision() = withFixture { f ->
+        val a = "character_cards/a"; f.card("a", "原角色"); f.publish(setOf(a), author = 1)
+        val baseline = f.apply(f.plan(emptyMap()))
+        LanSyncJsonFiles.write(f.target.resolve("entities/character_cards/a.json"), CharacterCard.serializer(), CharacterCard("a", "本机已批准内容", createdAt = 1, updatedAt = 7))
+        f.card("a", "本机已批准内容"); val committed = f.publish(setOf(a), author = 1)
+        val plan = f.plan(baseline)
+        assertEquals(LanSyncGroupNativeStage.READY_OBSERVATION, plan.units.getValue(a).stage)
+        assertEquals(setOf(committed.reference()), f.apply(plan).getValue(a).frontiers)
+        assertEquals(7L, LanSyncJsonFiles.read(f.target.resolve("entities/character_cards/a.json"), CharacterCard.serializer())?.updatedAt)
+        assertTrue(f.plan(plan.appliedBefore + plan.advances).advances.isEmpty())
+    }
 }

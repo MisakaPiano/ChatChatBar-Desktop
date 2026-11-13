@@ -144,4 +144,31 @@ class SyncGroupInboxTest {
         assertEquals("SYNC_INBOX_LOCAL_CUSTODY", assertFailsWith<IllegalStateException> { inbox.reconcile() }.message)
         assertEquals(SyncVersionState.ADMITTED, g.inbox().reconcile().history?.state(version.id))
     }
+
+    @Test fun offlineQueuedVersionsKeepTheirExactAuthorChainWithoutCreatingLedgerTrustOrPretendingTheyWereUploaded() = withGroup { g ->
+        g.publishLedger(); val independent = g.version("synthetic/remote"); g.publish(independent); g.scan()
+        val parent = g.version("synthetic/local", peerAuthor = true)
+        val child = g.version("synthetic/local", 2, parent, peerAuthor = true)
+        val outbox = g.outbox(g.initialKey)
+        fun queued(envelope: SyncGroupEnvelope): SyncAuthenticatedGroupObject {
+            val prepared = g.codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()),
+                g.initialKey, envelope)
+            assertNull(g.backend.metadata(prepared.request.key))
+            return g.codec.readQueued(outbox, prepared.request.operationId)
+        }
+        val parentObject = queued(SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = parent))
+        val childObject = queued(SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = child))
+        val ledgerObject = queued(SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = g.genesis))
+        val unavailable = object : CiphertextStore by g.backend {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = throw IOException("SYNTHETIC_OFFLINE")
+        }
+        val inbox = g.inbox(unavailable)
+        assertEquals(SyncVersionState.WAITING_FOR_PARENTS, inbox.reconcile(listOf(childObject)).history?.state(child.id))
+        val complete = inbox.reconcile(listOf(childObject, parentObject, ledgerObject))
+        assertEquals(setOf(independent.reference(), child.reference()), complete.history?.heads())
+        assertEquals(SyncInboxStage.INVALID_OBJECT, complete.observations.single { it.key == ledgerObject.context.key }.stage)
+        assertEquals(g.genesis.reference(), complete.ledgerCheckpoint)
+        assertNull(g.backend.metadata(parentObject.context.key)); assertNull(g.backend.metadata(childObject.context.key))
+        assertEquals(complete.history?.heads(), g.inbox(unavailable).reconcile(listOf(parentObject, childObject)).history?.heads())
+    }
 }

@@ -63,7 +63,10 @@ object LanSyncGroupNativePlanner {
             fun row(stage: LanSyncGroupNativeStage, available: LanSyncGroupAvailableUnit? = null,
                 records: LanSyncGroupRecordGate? = null, code: String? = null) =
                 LanSyncGroupNativeUnit(unit, stage, local, before, Collections.unmodifiableSet(frontier), Collections.unmodifiableMap(incomingViews), available, records, code)
-            val dirty = unit in freshLocalRevisions || if (before == null) local != null else local != before.valueHash
+            val ownCommittedValue = unit !in freshLocalRevisions && frontier.singleOrNull()?.let { fact ->
+                versions.getValue(fact.version).author == source.deviceId && fact.change.valueHash == local
+            } == true
+            val dirty = !ownCommittedValue && (unit in freshLocalRevisions || if (before == null) local != null else local != before.valueHash)
             if (dirty) {
                 val gate = recordEvidence.checkProposal(unit, localUnits[unit].orEmpty().map { it.key }.toSet()) { former, removal ->
                     applied[former]?.frontiers?.any { history.isAncestorOrSelf(removal, it) } == true

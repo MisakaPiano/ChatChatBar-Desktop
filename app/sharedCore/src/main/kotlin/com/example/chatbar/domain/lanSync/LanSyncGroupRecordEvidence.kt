@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
+import java.util.Collections
 
 data class LanSyncGroupMembershipRequest(val version: SyncVersionRef, val unit: String)
 data class LanSyncGroupRecordRemoval(val record: String, val formerUnit: String, val removal: SyncVersionRef)
@@ -66,7 +67,7 @@ class LanSyncGroupRecordEvidence(history: SyncCausalHistory, private val checkpo
                 (formerlyPresent - currentlyPresent).forEach { removals += LanSyncGroupRecordRemoval(it, unit, frontier.version) }
             }
         }
-        return LanSyncGroupRecordGate(missing, removals)
+        return LanSyncGroupRecordGate(Collections.unmodifiableSet(missing), Collections.unmodifiableSet(removals))
     }
     /** Disjoint fixed namespaces need no unrelated history; dynamic conversation/Moments owners remain conservative. */
     private fun couldBelong(unit: String, key: String): Boolean {
