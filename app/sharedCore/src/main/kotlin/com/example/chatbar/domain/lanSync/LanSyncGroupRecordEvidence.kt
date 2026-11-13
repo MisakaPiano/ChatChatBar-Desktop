@@ -12,6 +12,9 @@ data class LanSyncGroupRecordGate(val missing: Set<LanSyncGroupMembershipRequest
 class LanSyncGroupRecordEvidence(history: SyncCausalHistory, private val checkpoint: SyncVersionRef) {
     private val history = history.snapshot()
     private val members = linkedMapOf<LanSyncGroupMembershipRequest, LanSyncGroupMembershipEvidence>()
+    fun requireView(history: SyncCausalHistory, checkpoint: SyncVersionRef) {
+        require(this.checkpoint == checkpoint && this.history.heads() == history.heads()) { "SYNC_GROUP_RECORD_EVIDENCE_VIEW" }
+    }
     fun offer(evidence: LanSyncGroupMembershipEvidence) {
         require(evidence.checkpoint == checkpoint && history.contains(evidence.version)) { "SYNC_GROUP_RECORD_EVIDENCE_VIEW" }
         val version = history.admittedVersions().single { it.reference() == evidence.version }
