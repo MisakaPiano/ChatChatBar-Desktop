@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import com.example.chatbar.domain.image.NovelAiStudioHistoryTimeline
 import com.example.chatbar.domain.image.NovelAiStudioHistoryJournal
+import com.example.chatbar.domain.image.toEditHistorySnapshot
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -46,10 +47,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     suspend fun updateFromField(boundary: DesktopStudioTextBoundary, transform: (NovelAiStudioDraft) -> NovelAiStudioDraft) =
         withContext(DesktopStudioEditingContext(boundary)) { updateDraft(transform = transform) }
 
-    private fun snapshot(draft: NovelAiStudioDraft) = draft.copy(contentRevision = 0, promptContentRevision = 0,
-        updatedAt = 0, imageGuidance = draft.imageGuidance.copy(vibes = draft.imageGuidance.vibes.map { vibe ->
-            vibe.copy(encodedVibe = vibe.encodedVibe?.let { if (it.startsWith(NovelAiInlinePayloadStore.PREFIX)) it else storage.retainStudioPayload(it) })
-        }))
+    private fun snapshot(draft: NovelAiStudioDraft) = draft.toEditHistorySnapshot(storage::retainStudioPayload)
 
     private suspend fun store(value: DesktopStudioHistoryJournal) =
         storage.saveSingleton(ENTITY, value, DesktopStudioHistoryJournal.serializer())
@@ -148,7 +146,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     companion object {
         const val ENTITY = "desktop_studio_edit_history"
         const val MAX_ENTRIES = NovelAiStudioHistoryTimeline.MAX_ENTRIES
-        private const val MAX_BYTES = 3 * 1024 * 1024
+        private const val MAX_BYTES = NovelAiStudioHistoryTimeline.MIN_BYTE_BUDGET
     }
 }
 

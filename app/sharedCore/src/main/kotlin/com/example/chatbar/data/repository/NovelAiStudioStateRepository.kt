@@ -29,7 +29,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 open class NovelAiStudioStateRepository(
-    protected val storage: JsonFileStorage
+    protected val storage: JsonFileStorage,
+    private val preserveForeignEditHistory: Boolean = false,
 ) {
     private val _draft = MutableStateFlow<NovelAiStudioDraft?>(null)
     val draft: StateFlow<NovelAiStudioDraft?> = _draft.asStateFlow()
@@ -42,6 +43,7 @@ open class NovelAiStudioStateRepository(
     private val _undoAvailable = MutableStateFlow(false)
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
     protected val historyMutex = Mutex()
+    private val foreignHistory by lazy { ForeignStudioEditHistoryCustody(storage) }
 
     protected suspend fun <T> withStudioDataAccess(operation: suspend () -> T): T =
         storage.withNormalOperation(operation)
@@ -113,7 +115,8 @@ open class NovelAiStudioStateRepository(
                 val snapshot = synchronized(draftStateLock) {
                     checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
                 }
-                storage.saveSingleton(DRAFT_ENTITY, snapshot, NovelAiStudioDraft.serializer())
+                val write: suspend () -> Unit = { storage.saveSingleton(DRAFT_ENTITY, snapshot, NovelAiStudioDraft.serializer()) }
+                if (preserveForeignEditHistory) foreignHistory.persist(snapshot, write) else write()
                 val latest = synchronized(draftStateLock) {
                     checkNotNull(_draft.value)
                 }
@@ -135,11 +138,17 @@ open class NovelAiStudioStateRepository(
             flushLatestDraft()
             next
         } catch (error: Throwable) {
+            val outcome = if (preserveForeignEditHistory) foreignHistory.outcomeAfterFailure() else ForeignStudioEditHistoryCustody.Outcome.Unmanaged
             synchronized(draftStateLock) {
                 if (_draft.value?.contentRevision == next.contentRevision) {
-                    _draft.value = before
+                    when (outcome) {
+                        ForeignStudioEditHistoryCustody.Outcome.Unmanaged -> _draft.value = before
+                        is ForeignStudioEditHistoryCustody.Outcome.Proved -> _draft.value = outcome.draft
+                        is ForeignStudioEditHistoryCustody.Outcome.Unproved -> Unit
+                    }
                 }
             }
+            if (outcome is ForeignStudioEditHistoryCustody.Outcome.Unproved && outcome.failure !== error) error.addSuppressed(outcome.failure)
             throw error
         }
     }

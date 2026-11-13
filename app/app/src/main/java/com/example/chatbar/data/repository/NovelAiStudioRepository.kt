@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
 class NovelAiStudioRepository(
     storage: JsonFileStorage,
     private val imageStorage: NovelAiImageStorage
-) : NovelAiStudioStateRepository(storage) {
+) : NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true) {
     suspend fun deleteHistoryImages(
         selections: List<NovelAiHistoryImageSelection>
     ): NovelAiHistoryImageDeleteResult = withStudioDataAccess { historyMutex.withLock {

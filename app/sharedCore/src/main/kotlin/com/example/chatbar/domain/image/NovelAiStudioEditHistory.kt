@@ -12,8 +12,25 @@ data class NovelAiStudioHistoryTimeline(
     fun validate() {
         require(entries.isNotEmpty() && entries.size <= MAX_ENTRIES && cursor in entries.indices)
     }
-    companion object { const val MAX_ENTRIES = 101 }
+    fun appendSnapshot(snapshot: NovelAiStudioDraft, encodedSize: (List<NovelAiStudioDraft>) -> Int): NovelAiStudioHistoryTimeline {
+        validate()
+        if (current() == snapshot) return this
+        var next = entries.take(cursor + 1) + snapshot
+        val budget = maxOf(MIN_BYTE_BUDGET, encodedSize(listOf(requireNotNull(current()), snapshot)))
+        while (next.size > 2 && (next.size > MAX_ENTRIES || encodedSize(next) > budget)) next = next.drop(1)
+        return NovelAiStudioHistoryTimeline(next, next.lastIndex)
+    }
+    companion object {
+        const val MAX_ENTRIES = 101
+        const val MIN_BYTE_BUDGET = 3 * 1024 * 1024
+    }
 }
+
+fun NovelAiStudioDraft.toEditHistorySnapshot(retainPayload: (String) -> String): NovelAiStudioDraft =
+    copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0,
+        imageGuidance = imageGuidance.copy(vibes = imageGuidance.vibes.map { vibe ->
+            vibe.copy(encodedVibe = vibe.encodedVibe?.let { if (it.startsWith(NovelAiInlinePayloadStore.PREFIX)) it else retainPayload(it) })
+        }))
 
 /** Both alternatives remain referenced until the original owner's persisted draft proves one. */
 @Serializable
