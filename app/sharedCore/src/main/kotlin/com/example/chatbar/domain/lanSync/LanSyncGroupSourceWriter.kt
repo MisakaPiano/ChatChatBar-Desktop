@@ -1,0 +1,210 @@
+package com.example.chatbar.domain.lanSync
+
+import com.example.chatbar.domain.syncStore.*
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption.CREATE
+import java.nio.file.StandardOpenOption.WRITE
+import java.util.Base64
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
+
+class LanSyncGroupSourceCommit internal constructor(val entry: SyncAuthorJournalEntry, val metadata: SyncAuthenticatedGroupObject,
+    val publication: LanSyncGroupPublishPlan)
+
+/** Source signing owner; all calls require the platform exclusive native-data gate. No network in commit/resume. */
+class LanSyncGroupSourceWriter(private val root: Path, private val workspace: LanSyncWorkspace, private val identity: LanSyncTlsIdentity,
+    private val journal: SyncAuthorJournal, private val authority: () -> SyncDeviceLedger,
+    private val cipher: (SyncStoreId) -> SyncStreamingCipher, private val outbox: (SyncStoreId) -> SyncEncryptedOutbox,
+    private val currentView: () -> SyncInboxReconciliation, private val nativeState: () -> LanSyncGroupNativeState,
+    private val projection: LanSyncProjection = LanSyncProjection(), private val observe: (String) -> Unit = {}) {
+    @Serializable private data class Blob(val operation: SyncStoreId, val key: CiphertextObjectKey, val plaintext: SyncPlaintextIdentity)
+    @Serializable private data class Source(val format: Int, val operation: SyncStoreId, val device: String, val group: SyncStoreId,
+        val ledger: SyncVersionRef, val heads: Set<SyncVersionRef>, val parents: Set<SyncVersionRef>, val authorHead: SyncVersionRef?, val coverage: Set<String>,
+        val changes: Map<String, SyncUnitChange>, val review: String, val checkpoint: String, val checkpointHash: String?,
+        val rawSource: String, val sourceHashes: Map<String, String>, val projection: String,
+        val applied: Map<String, LanSyncGroupAppliedUnit?>, val epoch: SyncStoreId, val commitment: String, val blobs: Map<String, Blob>)
+    @Serializable private data class Delivery(val source: String, val version: SyncVersionRef, val epoch: SyncStoreId, val commitment: String,
+        val metadataOperation: SyncStoreId, val metadataKey: CiphertextObjectKey, val blobs: Map<String, Blob>)
+    private val lock: ReentrantLock
+    private val work: Path; private val publications: Path
+    init {
+        PrivateSyncFile.checked(root, true); projection.validate(); lock = locks.computeIfAbsent(root) { ReentrantLock() }
+        fun directory(name: String) = root.resolve(name).also { if (!Files.exists(it, NOFOLLOW_LINKS)) Files.createDirectory(it); PrivateSyncFile.checked(it, true) }
+        work = directory("preparations"); publications = directory("publications")
+    }
+    fun commit(authorization: LanSyncGroupSourceAuthorization, operation: SyncStoreId): LanSyncGroupSourceCommit = guarded {
+        val existing = readSource(operation)
+        if (existing != null) {
+            require(existing.review == authorization.binding) { "SYNC_GROUP_SOURCE_OPERATION_CHANGED" }
+            journal.entry(operation)?.let { return@guarded finish(existing, it) }
+            val pending = journal.state().pendingApproved
+            if (pending?.request?.operation == operation) return@guarded finish(existing, sign(existing))
+        }
+        val native = authorization.native
+        require(native.before.deviceId == identity.fingerprint && authorization.units.isNotEmpty()) { "SYNC_GROUP_SOURCE_DEVICE" }
+        requireView(native.checkpoint, native.heads, native.before.coveredTypes)
+        val selected = authorization.units.keys
+        require(nativeState().units.filterKeys(selected::contains) == native.appliedBefore.filterKeys(selected::contains)) { "SYNC_GROUP_SOURCE_CONTROL_CHANGED" }
+        workspace.capture(identity.fingerprint, projection).use { capture ->
+            require(capture.sourceFiles == native.sourceFiles && capture.snapshot.hashes() == native.expected) { "SYNC_GROUP_SOURCE_CHANGED" }
+            val author = journal.state(); require(author.pendingApproved == null) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
+            val history = requireNotNull(currentView().history)
+            val authorHead = author.last?.version?.reference()
+            require(authorHead == null || history.contains(authorHead)) { "SYNC_GROUP_SOURCE_LOCAL_HISTORY_MISSING" }
+            val key = currentKey(); val queue = outbox(key.epoch)
+            val prepared = mutableListOf<LanSyncPreparedGroupUnit>()
+            try {
+                val unitProofs = selected.filter { it in capture.snapshot.units() }.associateWith { unit ->
+                    LanSyncGroupUnitCodec(work, capture.snapshot.coveredTypes).prepare(capture, unit).also { prepared += it }
+                }
+                val paths = linkedMapOf<String, Pair<SyncPlaintextIdentity, Path>>()
+                unitProofs.values.forEach { unit ->
+                    paths[unit.decoded.plaintext.sha256] = unit.decoded.plaintext to unit.path
+                    paths[unit.decoded.membership.sha256] = unit.decoded.membership to unit.membershipPath
+                    unit.decoded.dependencies.forEach { paths[it.sha256] = it to capture.blobs.getValue(it.sha256) }
+                }
+                val parents = native.heads + listOfNotNull(authorHead)
+                val changes = selected.associateWith { unit ->
+                    val previous = history.frontier(unit, parents).map { it.version }.toSet(); val proof = unitProofs[unit]?.decoded
+                    SyncUnitChange(proof?.valueHash, proof?.plaintext, previous, proof?.membership)
+                }
+                val source = existing ?: run {
+                    val revision = UUID.randomUUID().toString()
+                    val checkpoint = workspace.recovery.checkpointSource(workspace.dataRoot, capture, key.group, revision, projection)
+                    Source(1, operation, identity.fingerprint, key.group, native.checkpoint, native.heads, parents, authorHead, capture.snapshot.coveredTypes,
+                        changes, authorization.binding, checkpoint?.transaction ?: revision, checkpoint?.snapshotHash,
+                        rawBinding(capture.sourceFiles), capture.snapshot.hashes(), projection.digest(), selected.associateWith { native.appliedBefore[it] },
+                        key.epoch, key.keyCommitment(), paths.mapValues { (_, value) -> Blob(SyncStoreId.random(),
+                            CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), value.first) }).also {
+                        LanSyncJsonFiles.write(sourcePath(operation), Source.serializer(), it); observe("SOURCE_PREPARATION_RETAINED")
+                    }
+                }
+                require(source.changes == changes && source.authorHead == authorHead && source.parents == parents && source.epoch == key.epoch &&
+                    source.commitment == key.keyCommitment() && source.rawSource == rawBinding(capture.sourceFiles) &&
+                    source.sourceHashes == capture.snapshot.hashes() && source.blobs.mapValues { it.value.plaintext } == paths.mapValues { it.value.first }) { "SYNC_GROUP_SOURCE_PREPARATION_CHANGED" }
+                verifyCustody(source)
+                source.blobs.forEach { (hash, slot) ->
+                    val (plain, path) = paths.getValue(hash)
+                    workspace.resourceStore.retain(path, plain.sha256, plain.length)
+                    SyncGroupBlobStore(source.group, work).enqueue(queue, slot.operation, slot.key, key, path, plain)
+                }
+                // Do not acquire native-control again from the journal's locked admission callback.
+                require(nativeState().units.filterKeys(selected::contains) == native.appliedBefore.filterKeys(selected::contains)) { "SYNC_GROUP_SOURCE_CONTROL_CHANGED" }
+                finish(source, sign(source))
+            } finally { prepared.asReversed().forEach { it.close() } }
+        }
+    }
+
+    /** Resume only a protected already-approved intent or signed fact, never a merely prepared proposal. */
+    fun resume(operation: SyncStoreId): LanSyncGroupSourceCommit = guarded {
+        val source = requireNotNull(readSource(operation)) { "SYNC_GROUP_SOURCE_PREPARATION_MISSING" }
+        val committed = journal.entry(operation)
+        if (committed != null) return@guarded finish(source, committed)
+        require(journal.state().pendingApproved?.request == request(source)) { "SYNC_GROUP_SOURCE_APPROVAL_NOT_RESERVED" }
+        finish(source, sign(source))
+    }
+    fun operations(): List<SyncStoreId> = guarded {
+        Files.newDirectoryStream(root, "source-*.json").use { files -> files.map { path ->
+            PrivateSyncFile.checked(path)
+            SyncStoreId.parse(path.fileName.toString().removePrefix("source-").removeSuffix(".json")).also { requireNotNull(readSource(it)) }
+        } }
+    }
+    fun upload(operation: SyncStoreId, backend: CiphertextStore): LanSyncGroupPublishReceipt = guarded {
+        val source = requireNotNull(readSource(operation)) { "SYNC_GROUP_SOURCE_PREPARATION_MISSING" }
+        val entry = requireNotNull(journal.entry(operation)) { "SYNC_GROUP_SOURCE_NOT_SIGNED" }
+        val result = finish(source, entry); publisher(result.metadata.context.epoch).upload(result.publication.metadata.operation, backend)
+    }
+    private fun sign(source: Source): SyncAuthorJournalEntry = journal.commitApprovedLive(request(source), authority, SyncAuthorCommitAdmission {
+        requireView(source.ledger, source.heads, source.coverage); verifyCustody(source)
+        workspace.capture(identity.fingerprint, projection).use { fresh ->
+            require(fresh.snapshot.hashes() == source.sourceHashes && rawBinding(fresh.sourceFiles) == source.rawSource) { "SYNC_GROUP_SOURCE_CHANGED" }
+        }
+    }, identity::signSyncGroupPayload)
+    private fun finish(source: Source, entry: SyncAuthorJournalEntry): LanSyncGroupSourceCommit {
+        require(entry.request == request(source) && entry.version.author == identity.fingerprint) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
+        verifyCustody(source)
+        val key = currentKey(); val queue = outbox(key.epoch); val path = root.resolve("delivery-${source.operation.value}-${key.epoch.value}.json")
+        val sourceHash = hash(source)
+        val delivery = LanSyncJsonFiles.read(path, Delivery.serializer()) ?: Delivery(sourceHash, entry.version.reference(), key.epoch, key.keyCommitment(),
+            SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), source.blobs.mapValues { (_, slot) ->
+                if (source.epoch == key.epoch) slot else Blob(SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), slot.plaintext)
+            }).also { LanSyncJsonFiles.write(path, Delivery.serializer(), it); observe("SOURCE_DELIVERY_SLOTS_RETAINED") }
+        require(delivery.source == sourceHash && delivery.version == entry.version.reference() && delivery.epoch == key.epoch &&
+            delivery.commitment == key.keyCommitment() && delivery.blobs.mapValues { it.value.plaintext } == source.blobs.mapValues { it.value.plaintext }) { "SYNC_GROUP_SOURCE_DELIVERY_CHANGED" }
+        val bindings = delivery.blobs.mapValues { (hash, slot) ->
+            val ready = queue.entry(slot.operation)
+            if (ready != null) {
+                require(ready.context == SyncEncryptionContext(source.group, key.epoch, slot.key) && ready.plaintext == slot.plaintext) { "SYNC_GROUP_SOURCE_BLOB_CHANGED" }
+                SyncEnvelopeBlobBinding(ready.plaintext, ready.request.key, ready.context.epoch, ready.request.descriptor)
+            } else outbox(source.epoch).readPlaintext(source.blobs.getValue(hash).operation, work).use { original ->
+                require(original.plaintext.identity == slot.plaintext && original.entry.context == SyncEncryptionContext(source.group, source.epoch,
+                    source.blobs.getValue(hash).key) && original.keyCommitment == source.commitment) { "SYNC_GROUP_SOURCE_BLOB_CHANGED" }
+                SyncGroupBlobStore(source.group, work).enqueue(queue, slot.operation, slot.key, key, original.plaintext.path, slot.plaintext)
+            }
+        }
+        val metadata = SyncGroupObjectCodec(work).enqueue(queue, delivery.metadataOperation, delivery.metadataKey, key,
+            SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = entry.version, blobs = bindings))
+        val proofs = source.changes.filterValues { it.content != null }.map { (unit, change) ->
+            val plain = requireNotNull(change.content)
+            if (workspace.resourceStore.completed(plain.sha256, plain.length) == null) outbox(source.epoch).readPlaintext(source.blobs.getValue(plain.sha256).operation, work).use {
+                require(it.plaintext.identity == plain && it.entry.context == SyncEncryptionContext(source.group, source.epoch,
+                    source.blobs.getValue(plain.sha256).key) && it.keyCommitment == source.commitment) { "SYNC_GROUP_SOURCE_BLOB_CHANGED" }
+                workspace.resourceStore.retain(it.plaintext.path, plain.sha256, plain.length)
+            }
+            LanSyncGroupUnitCodec(work, source.coverage).readCached(workspace.resourceStore, unit, change)
+        }
+        val known = currentView().authenticatedVersions.mapNotNull { it.envelope.version }
+        val publication = publisher(key.epoch).prepare(metadata, proofs, delivery.blobs.mapValues { it.value.operation }, known)
+        observe("SOURCE_SIGNED_DELIVERY_READY")
+        return LanSyncGroupSourceCommit(entry, SyncGroupObjectCodec(work).readQueued(queue, delivery.metadataOperation, entry.version.reference()), publication)
+    }
+    private fun request(source: Source) = SyncAuthorCommitRequest(source.operation, source.ledger, source.parents, source.changes,
+        source.checkpoint, source.rawSource, lanSyncHash(buildJsonObject { put("review", source.review); put("preparation", hash(source)) }),
+        SyncAuthorHeadExpectation(source.authorHead))
+    private fun verifyCustody(source: Source) {
+        val entry = workspace.recovery.read(source.checkpoint)
+        if (entry == null) require(source.checkpointHash == null && source.sourceHashes.isEmpty() && source.rawSource == rawBinding(emptyMap())) { "SYNC_GROUP_SOURCE_ORIGINALS_MISSING" }
+        else {
+            require(entry.sourceCheckpointGroup == source.group.value && entry.sourceDevice == identity.fingerprint && entry.hasLocalOriginals &&
+                entry.snapshotHash == source.checkpointHash && entry.rawSourceBinding == source.rawSource &&
+                workspace.recovery.snapshot(entry).hashes() == source.sourceHashes && workspace.recovery.sourceProjection(entry) == projection) { "SYNC_GROUP_SOURCE_ORIGINALS_CHANGED" }
+            workspace.recovery.verify(entry)
+        }
+    }
+    private fun readSource(operation: SyncStoreId): Source? {
+        val path = sourcePath(operation); if (!Files.exists(path, NOFOLLOW_LINKS)) return null
+        LanSyncMetadataBudget().validate(path)
+        return requireNotNull(LanSyncJsonFiles.read(path, Source.serializer())).also {
+            require(it.format == 1 && it.operation == operation && it.device == identity.fingerprint && it.group == authority().trustAnchor.group &&
+                it.projection == projection.digest() && it.blobs.all { (hash, slot) -> hash == slot.plaintext.sha256 && slot.key.kind == CiphertextObjectKind.BLOB }) { "SYNC_GROUP_SOURCE_PRIVATE_CONTEXT" }
+        }
+    }
+    private fun requireView(checkpoint: SyncVersionRef, heads: Set<SyncVersionRef>, coverage: Set<String>) {
+        val key = currentKey(); val ledger = authority(); val view = currentView()
+        require(ledger.current().reference() == checkpoint && ledger.current().epoch == key.epoch && ledger.current().coveredTypes == coverage &&
+            !view.trustBlocked && view.ledgerCheckpoint == checkpoint && view.history?.heads() == heads) { "SYNC_GROUP_SOURCE_VIEW_CHANGED" }
+    }
+    private fun currentKey(): SyncStreamingCipher {
+        val ledger = authority(); val current = ledger.current(); val key = cipher(current.epoch)
+        require(current.members[identity.fingerprint]?.let { it.active && it.certificate == Base64.getEncoder().encodeToString(identity.certificate.encoded) } == true &&
+            key.group == current.group && key.epoch == current.epoch && key.keyCommitment() == current.keyCommitment) { "SYNC_GROUP_SOURCE_AUTHORITY_CHANGED" }
+        return key
+    }
+    private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publications, authority(), outbox(epoch), identity.fingerprint, currentLedger = authority)
+    private fun sourcePath(operation: SyncStoreId) = root.resolve("source-${operation.value}.json")
+    private fun hash(source: Source) = lanSyncHash(lanSyncJson.encodeToJsonElement(Source.serializer(), source))
+    private fun rawBinding(files: Map<String, String>) = lanSyncHashSequence(files.toSortedMap().asSequence().map { (path, hash) -> buildJsonObject { put("path", path); put("hash", hash) } })
+    private fun <T> guarded(work: () -> T): T {
+        check(!lock.isHeldByCurrentThread) { "SYNC_GROUP_SOURCE_REENTRY" }; lock.lockInterruptibly()
+        try { PrivateSyncFile.checked(root, true); val path = root.resolve("source.lock")
+            FileChannel.open(path, CREATE, WRITE, NOFOLLOW_LINKS).use { channel -> PrivateSyncFile.checked(path); channel.lock().use { return work() } }
+        } finally { lock.unlock() }
+    }
+    companion object { private val locks = ConcurrentHashMap<Path, ReentrantLock>() }
+}

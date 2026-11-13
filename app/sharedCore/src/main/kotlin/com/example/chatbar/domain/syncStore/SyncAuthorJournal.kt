@@ -19,9 +19,10 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
+@Serializable data class SyncAuthorHeadExpectation(val reference: SyncVersionRef?)
 @Serializable data class SyncAuthorCommitRequest(val operation: SyncStoreId, val deviceLedger: SyncVersionRef,
     val parents: Set<SyncVersionRef>, val changes: Map<String, SyncUnitChange>, val sourceCheckpoint: String,
-    val sourceRawBinding: String, val approvalBinding: String) {
+    val sourceRawBinding: String, val approvalBinding: String, val expectedAuthorHead: SyncAuthorHeadExpectation? = null) {
     init {
         require(sourceCheckpoint.matches(Regex("[a-f0-9-]{36}")) && sourceRawBinding.matches(Regex("[a-f0-9]{64}")) &&
             approvalBinding.matches(Regex("[a-f0-9]{64}")) && changes.isNotEmpty()) { "SYNC_AUTHOR_REQUEST" }
@@ -70,9 +71,12 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     }
 
     fun commitApproved(request: SyncAuthorCommitRequest, ledger: SyncDeviceLedger, admission: SyncAuthorCommitAdmission,
+        sign: (ByteArray) -> ByteArray): SyncAuthorJournalEntry = commitApprovedLive(request, { ledger }, admission, sign)
+
+    fun commitApprovedLive(request: SyncAuthorCommitRequest, ledger: () -> SyncDeviceLedger, admission: SyncAuthorCommitAdmission,
         sign: (ByteArray) -> ByteArray): SyncAuthorJournalEntry = guarded {
         val input = freeze(request); val state = recover()
-        requireActive(ledger)
+        requireActive(ledger())
         val index = read(indexPath(input.operation), "INDEX", Index.serializer())
         if (index != null) {
             require(index.operation == input.operation) { "SYNC_AUTHOR_INDEX" }
@@ -82,10 +86,11 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
             return@guarded signAndRetain(intent, ledger, sign)
         }
         require(state.pendingApproved == null) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
-        require(ledger.current().reference() == input.deviceLedger) { "SYNC_AUTHOR_LEDGER_CHANGED" }
+        require(input.expectedAuthorHead == null || input.expectedAuthorHead.reference == state.last?.version?.reference()) { "SYNC_AUTHOR_HEAD_CHANGED" }
+        require(ledger().current().reference() == input.deviceLedger) { "SYNC_AUTHOR_LEDGER_CHANGED" }
         admission.requireApproved(input)
-        requireActive(ledger)
-        require(ledger.current().reference() == input.deviceLedger) { "SYNC_AUTHOR_LEDGER_CHANGED" }
+        requireActive(ledger())
+        require(ledger().current().reference() == input.deviceLedger) { "SYNC_AUTHOR_LEDGER_CHANGED" }
         require(state.committedSequence < Long.MAX_VALUE) { "SYNC_AUTHOR_SEQUENCE_EXHAUSTED" }
         val previous = state.last?.version?.reference()
         val version = SyncCausalVersion(group, SyncStoreId.random(), input.deviceLedger, actor.fingerprint, state.committedSequence + 1,
@@ -97,10 +102,11 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         signAndRetain(intent, ledger, sign)
     }
 
-    private fun signAndRetain(intent: SyncAuthorJournalEntry, ledger: SyncDeviceLedger, sign: (ByteArray) -> ByteArray): SyncAuthorJournalEntry {
-        requireActive(ledger)
-        require(ledger.record(intent.version.deviceLedger)?.members?.get(actor.fingerprint)?.active == true) { "SYNC_AUTHOR_LEDGER_MISSING" }
+    private fun signAndRetain(intent: SyncAuthorJournalEntry, ledger: () -> SyncDeviceLedger, sign: (ByteArray) -> ByteArray): SyncAuthorJournalEntry {
+        requireActive(ledger())
+        require(ledger().record(intent.version.deviceLedger)?.members?.get(actor.fingerprint)?.active == true) { "SYNC_AUTHOR_LEDGER_MISSING" }
         val version = intent.version.copy(signature = Base64.getEncoder().encodeToString(sign(intent.version.signingBytes())))
+        requireActive(ledger())
         val entry = intent.copy(version = version); validateSigned(entry, intent)
         write(signedPath(version.authorSequence), "SIGNED", SyncAuthorJournalEntry.serializer(), entry)
         observe("SIGNED_AUTHOR_ENTRY_RETAINED")

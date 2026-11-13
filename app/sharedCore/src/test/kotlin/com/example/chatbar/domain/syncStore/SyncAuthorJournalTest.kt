@@ -60,6 +60,29 @@ class SyncAuthorJournalTest {
         assertTrue(SyncDeviceSignatures.decode(g.members.getValue(g.author.fingerprint).certificate).verifies(second.version.signingBytes(), second.version.signature))
     }
 
+    @Test fun anExplicitAuthorHeadExpectationRejectsStaleNativeReviewBeforeAllocatingAnotherSequence() = withGroup { g ->
+        g.journal().initializeNewEnrollment()
+        g.journal().commitApproved(g.request().copy(expectedAuthorHead = SyncAuthorHeadExpectation(null)), g.ledger, g.approved, g::signer)
+        val stale = g.request("synthetic/two").copy(expectedAuthorHead = SyncAuthorHeadExpectation(null))
+        assertEquals("SYNC_AUTHOR_HEAD_CHANGED", assertFailsWith<IllegalArgumentException> {
+            g.journal().commitApproved(stale, g.ledger, SyncAuthorCommitAdmission { error("SYNTHETIC_STALE_REVIEW_MUST_NOT_RUN") }, g::signer)
+        }.message)
+        assertEquals(1L, g.journal().state().committedSequence); assertNull(g.journal().state().pendingApproved); assertEquals(1, g.signerCalls.get())
+    }
+
+    @Test fun aNativeLiveProviderSeesAReplacedLedgerSnapshotBeforeReservingOrSigning() = withGroup { g ->
+        g.journal().initializeNewEnrollment()
+        var current = SyncDeviceLedger(g.ledger.trustAnchor).also { it.offer(g.genesis) }
+        val original = current
+        assertEquals("SYNC_AUTHOR_REVOKED_OR_CHANGED", assertFailsWith<IllegalArgumentException> {
+            g.journal().commitApprovedLive(g.request(), { current }, SyncAuthorCommitAdmission {
+                g.revoke(); current = SyncDeviceLedger(g.ledger.trustAnchor).also { copy -> g.ledger.history().forEach(copy::offer) }
+            }, g::signer)
+        }.message)
+        assertEquals(g.genesis.reference(), original.current().reference())
+        assertEquals(0L, g.journal().state().committedSequence); assertNull(g.journal().state().pendingApproved); assertEquals(0, g.signerCalls.get())
+    }
+
     @Test fun lostIntentAndSignedRepliesResumeTheSameBodyAndRolledBackHeadsCannotReuseACounter() = withGroup { g ->
         g.journal().initializeNewEnrollment(); val request = g.request()
         val interrupted = g.journal { if (it == "APPROVED_AUTHOR_INTENT_RETAINED") throw IOException("SYNTHETIC_LOST_INTENT_REPLY") }
