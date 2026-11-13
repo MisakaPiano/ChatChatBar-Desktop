@@ -51,7 +51,7 @@ class LanSyncRecoveryRestoreTest {
             val sessionFile = localRoot.resolve("entities/chat_sessions/session.json")
             val session = lanSyncJson.decodeFromString(ChatSession.serializer(), Files.readString(sessionFile))
             assertNull(session.modelId)
-            write(localRoot, "chat_sessions", "session", ChatSession.serializer(), session.copy(modelId = "current-local-model", name = "本机后改名"))
+            write(localRoot, "chat_sessions", "session", ChatSession.serializer(), session.copy(modelId = "current-local-model", title = "本机后改名"))
             reopened.applyRecovery(reopened.prepareRecovery(entry.transaction, "conversation/session", "local"), "local")
             assertEquals("current-local-model", lanSyncJson.decodeFromString(ChatSession.serializer(), Files.readString(sessionFile)).modelId)
         } finally { roots.forEach { if (Files.exists(it)) check(it.toFile().deleteRecursively()) } }
