@@ -59,6 +59,7 @@ class LanSyncGroupPublicationQueue(private val root: Path, private val ledger: S
                 val proof = native.getValue(unit)
                 require(proof.plaintext == change.content && proof.valueHash == change.valueHash && proof.payload.coveredTypes == authoredScope) { "SYNC_GROUP_PUBLICATION_UNIT" }
                 add(proof.plaintext); proof.dependencies.forEach(::add)
+                change.membership?.let { require(it == proof.membership) { "SYNC_GROUP_PUBLICATION_MEMBERSHIP" }; add(it) }
             }
         } else {
             require(native.isEmpty() && envelope.deviceLedger == latest &&

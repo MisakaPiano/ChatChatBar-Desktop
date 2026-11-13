@@ -12,10 +12,12 @@ import kotlinx.serialization.Serializable
 }
 /** Logical content is independent of the encryption epoch and physical ciphertext container. */
 typealias SyncVersionContent = SyncPlaintextIdentity
-@Serializable data class SyncUnitChange(val valueHash: String?, val content: SyncVersionContent?, val previous: Set<SyncVersionRef>) {
+@Serializable data class SyncUnitChange(val valueHash: String?, val content: SyncVersionContent?, val previous: Set<SyncVersionRef>,
+    val membership: SyncPlaintextIdentity? = null) {
     init {
         require((valueHash == null) == (content == null) && (valueHash == null || valueHash.matches(Regex("[a-f0-9]{64}"))) &&
-            (content == null || content.length > 0) && previous.map { it.id }.toSet().size == previous.size) { "SYNC_VERSION_CONTENT" }
+            (content == null || content.length > 0) && (membership == null || content != null && membership.length > 0) &&
+            previous.map { it.id }.toSet().size == previous.size) { "SYNC_VERSION_CONTENT" }
     }
 }
 
@@ -37,7 +39,8 @@ typealias SyncVersionContent = SyncPlaintextIdentity
             override fun write(bytes: ByteArray, offset: Int, length: Int) {}
         }
         DataOutputStream(DigestOutputStream(sink, digest)).use { output ->
-            output.writeUTF("CCB-SYNC-VERSION/2"); output.writeUTF(group.value); output.writeUTF(id.value)
+            val format = if (changes.values.any { it.membership != null }) 3 else 2
+            output.writeUTF("CCB-SYNC-VERSION/$format"); output.writeUTF(group.value); output.writeUTF(id.value)
             fun ref(value: SyncVersionRef) { output.writeUTF(value.id.value); output.writeUTF(value.bodyHash) }
             fun refs(values: Set<SyncVersionRef>) {
                 output.writeInt(values.size); values.sortedBy { it.id.value }.forEach(::ref)
@@ -51,6 +54,10 @@ typealias SyncVersionContent = SyncPlaintextIdentity
                     output.writeUTF(hash)
                     val content = requireNotNull(change.content) { "SYNC_VERSION_CONTENT" }
                     output.writeLong(content.length); output.writeUTF(content.sha256)
+                }
+                if (format >= 3) {
+                    output.writeBoolean(change.membership != null)
+                    change.membership?.let { output.writeLong(it.length); output.writeUTF(it.sha256) }
                 }
                 refs(change.previous)
             }
@@ -96,6 +103,9 @@ class SyncCausalHistory(private val group: SyncStoreId, private val admission: S
     }
     @Synchronized fun failure(id: SyncStoreId): String? = rejected[id]
     @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && versions[reference.id]?.reference() == reference
+    @Synchronized fun admittedVersions(): List<SyncCausalVersion> = Collections.unmodifiableList(admitted.map { versions.getValue(it) })
+    @Synchronized fun isAncestorOrSelf(ancestor: SyncVersionRef, descendant: SyncVersionRef): Boolean =
+        contains(ancestor) && contains(descendant) && ancestor.id in closure(setOf(descendant))
     @Synchronized fun heads(): Set<SyncVersionRef> {
         val parents = admitted.flatMap { versions.getValue(it).parents }.map { it.id }.toSet()
         return admitted.filterNot(parents::contains).map { versions.getValue(it).reference() }.toSet()

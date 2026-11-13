@@ -47,6 +47,12 @@ class LanSyncGroupDependencies(private val group: SyncStoreId, private val backe
             }
             fetch(change.content)
             val decoded = LanSyncGroupUnitCodec(privateDirectory, scope, metadataBudget).readCached(cache, unit, change)
+            change.membership?.let { identity ->
+                val path = fetch(identity)
+                val keys = decoded.payload.records.map { it.key }.toSet(); var count = 0L
+                LanSyncGroupMembership.visit(path, identity) { key -> require(key in keys) { "SYNC_GROUP_MEMBERSHIP_CHANGED" }; count++ }
+                require(count == keys.size.toLong()) { "SYNC_GROUP_MEMBERSHIP_CHANGED" }
+            }
             val resources = decoded.dependencies.associate { it.sha256 to fetch(it) }
             val checked = hashSetOf<Triple<String, String, String>>()
             decoded.payload.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->

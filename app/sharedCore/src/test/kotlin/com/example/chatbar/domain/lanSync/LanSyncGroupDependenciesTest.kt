@@ -43,6 +43,7 @@ class LanSyncGroupDependenciesTest {
     @Test fun missingImageWaitsThenVerifiedUnitAppliesAndReopensWithoutRedownloadingCachedContent() = withRoot { root ->
         val f = Fixture(root); val source = f.source
         source.outbox.upload(f.prepared.operations.getValue(f.prepared.unit.plaintext.sha256), source.backend)
+        source.outbox.upload(f.prepared.operations.getValue(f.prepared.unit.membership.sha256), source.backend)
         val (reconciled, metadata) = f.received(); val unit = f.prepared.unit.payload.unit
         val before = f.service().inspect(reconciled, metadata, unit)
         assertEquals(LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE, before.stage); assertNull(before.available)

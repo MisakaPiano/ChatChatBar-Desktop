@@ -55,9 +55,10 @@ class LanSyncGroupPublicationQueueTest {
                     bindings[identity.sha256] = blobs.enqueue(outbox, operation, key, cipher, path, identity); operations[identity.sha256] = operation
                 }
                 prepareBlob(unit.path, unit.decoded.plaintext)
+                prepareBlob(unit.membershipPath, unit.decoded.membership)
                 unit.decoded.dependencies.forEach { prepareBlob(requireNotNull(capture.blobs[it.sha256]), it) }
                 val version = SyncCausalVersion(cipher.group, SyncStoreId.random(), genesis.reference(), sender.fingerprint, 1, null, emptySet(),
-                    mapOf(unit.decoded.payload.unit to SyncUnitChange(unit.decoded.valueHash, unit.decoded.plaintext, emptySet())), "unsigned").let {
+                    mapOf(unit.decoded.payload.unit to SyncUnitChange(unit.decoded.valueHash, unit.decoded.plaintext, emptySet(), unit.decoded.membership)), "unsigned").let {
                     it.copy(signature = Base64.getEncoder().encodeToString(sender.signSyncGroupPayload(it.signingBytes())))
                 }
                 val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
@@ -84,8 +85,8 @@ class LanSyncGroupPublicationQueueTest {
         assertNull(publisher.receipt(plan.metadata.operation)); assertNull(f.backend.metadata(plan.metadata.key))
         check(f.data.toFile().deleteRecursively())
         val reopened = f.publisher(); val receipt = reopened.upload(plan.metadata.operation, unreliable)
-        assertEquals(2L, receipt.resourceCount); assertEquals(CiphertextObjectKind.COMMIT, puts.last())
-        assertEquals(listOf(CiphertextObjectKind.BLOB, CiphertextObjectKind.BLOB, CiphertextObjectKind.COMMIT), puts)
+        assertEquals(3L, receipt.resourceCount); assertEquals(CiphertextObjectKind.COMMIT, puts.last())
+        assertEquals(listOf(CiphertextObjectKind.BLOB, CiphertextObjectKind.BLOB, CiphertextObjectKind.BLOB, CiphertextObjectKind.COMMIT), puts)
         assertEquals(plan.metadata.descriptor, f.backend.metadata(plan.metadata.key)?.descriptor)
         val count = puts.size; assertEquals(receipt, reopened.upload(plan.metadata.operation, unreliable)); assertEquals(count, puts.size)
         val read = f.codec.read(f.backend, f.cipher, prepared.metadata.context, prepared.metadata.request.descriptor, plan.reference)

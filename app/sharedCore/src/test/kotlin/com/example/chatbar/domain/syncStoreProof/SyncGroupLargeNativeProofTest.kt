@@ -145,11 +145,12 @@ class SyncGroupLargeNativeProofTest {
                 }
                 capture.snapshot.hashes().keys.sorted().forEach { unit -> LanSyncGroupUnitCodec(unitWork).prepare(capture, unit).use { prepared ->
                     units += prepared.decoded; enqueue(prepared.path, prepared.decoded.plaintext)
+                    enqueue(prepared.membershipPath, prepared.decoded.membership)
                     prepared.decoded.dependencies.forEach { enqueue(requireNotNull(capture.blobs[it.sha256]), it) }
                 } }
             }
             val authorRequest = SyncAuthorCommitRequest(SyncStoreId.random(), genesis.reference(), emptySet(),
-                units.associate { it.payload.unit to SyncUnitChange(it.valueHash, it.plaintext, emptySet()) }, sourceCheckpoint.transaction,
+                units.associate { it.payload.unit to SyncUnitChange(it.valueHash, it.plaintext, emptySet(), it.membership) }, sourceCheckpoint.transaction,
                 requireNotNull(sourceCheckpoint.rawSourceBinding), sourceCheckpoint.snapshotHash)
             val version = authorJournal().commitApproved(authorRequest, ledger, SyncAuthorCommitAdmission { request ->
                 sourceHistory.verify(sourceCheckpoint)

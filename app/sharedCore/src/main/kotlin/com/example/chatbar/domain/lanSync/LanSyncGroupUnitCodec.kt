@@ -22,12 +22,14 @@ import kotlinx.serialization.json.encodeToStream
 class LanSyncDecodedGroupUnit internal constructor(val payload: LanSyncGroupUnitPayload,
     val plaintext: SyncPlaintextIdentity, val valueHash: String) {
     val dependencies: Set<SyncPlaintextIdentity> get() = payload.resources.map { (hash, size) -> SyncPlaintextIdentity(size, hash) }.toSet()
+    val membership: SyncPlaintextIdentity = LanSyncGroupMembership.identity(payload.records)
 }
 
-class LanSyncPreparedGroupUnit internal constructor(private val file: PrivateSyncFile,
+class LanSyncPreparedGroupUnit internal constructor(private val file: PrivateSyncFile, private val members: PrivateSyncFile,
     val decoded: LanSyncDecodedGroupUnit) : Closeable {
     val path: Path get() = file.path
-    override fun close() = file.close()
+    val membershipPath: Path get() = members.path
+    override fun close() { try { file.close() } finally { members.close() } }
 }
 
 /** Native unit/resource manifest. Cross-unit graph validation still precedes Workspace publication. */
@@ -50,6 +52,7 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
             capture.snapshot.resources.filterKeys(references::contains).toSortedMap())
         val expectedValue = validate(payload)
         val file = PrivateSyncFile.create(privateDirectory)
+        var members: PrivateSyncFile? = null
         try {
             FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
                 lanSyncJson.encodeToStream(LanSyncGroupUnitPayload.serializer(), payload, Channels.newOutputStream(channel)); channel.force(true)
@@ -58,8 +61,10 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
             val identity = SyncPlaintextIdentity(length, LanSyncResourceStore.hashFile(file.path, length))
             val decoded = parse(file.path, identity)
             require(decoded.valueHash == expectedValue) { "SYNC_GROUP_UNIT_SOURCE_CHANGED" }
-            return LanSyncPreparedGroupUnit(file, decoded)
-        } catch (failure: Throwable) { file.close(); throw failure }
+            val memberFile = PrivateSyncFile.create(privateDirectory); members = memberFile
+            require(LanSyncGroupMembership.write(memberFile.path, payload.records) == decoded.membership) { "SYNC_GROUP_MEMBERSHIP_CHANGED" }
+            return LanSyncPreparedGroupUnit(file, memberFile, decoded)
+        } catch (failure: Throwable) { try { file.close() } finally { members?.close() }; throw failure }
     }
 
     fun read(plaintext: SyncAuthenticatedPlaintext, expectedUnit: String, change: SyncUnitChange): LanSyncDecodedGroupUnit {
@@ -74,6 +79,7 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
     private fun checked(path: Path, identity: SyncPlaintextIdentity, expectedUnit: String, change: SyncUnitChange): LanSyncDecodedGroupUnit {
         val decoded = parse(path, identity)
         require(decoded.payload.unit == expectedUnit && decoded.valueHash == change.valueHash) { "SYNC_GROUP_UNIT_BINDING" }
+        require(change.membership == null || change.membership == decoded.membership) { "SYNC_GROUP_MEMBERSHIP_CHANGED" }
         return decoded
     }
 
