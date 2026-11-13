@@ -121,4 +121,31 @@ class LanSyncGroupDependenciesTest {
         assertEquals(LanSyncGroupDependencyStage.AUTHOR_FORK, conflict.stage); assertNull(conflict.available)
         f.workspace.capture(source.owner.fingerprint).use { assertTrue(it.snapshot.records.isEmpty()) }
     }
+
+    @Test fun signedMembershipLoadsWithoutHistoricalPayloadOrImageAndBrokenPrimaryManifestDoesNotDeriveAFallback() = withRoot { root ->
+        val f = Fixture(root); val source = f.source; val unit = f.prepared.unit.payload.unit
+        source.outbox.upload(f.prepared.operations.getValue(f.prepared.unit.membership.sha256), source.backend)
+        val (reconciled, actual) = f.received()
+        assertNull(source.backend.metadata(f.prepared.metadata.envelope.blobs.getValue(f.prepared.unit.plaintext.sha256).key))
+        val membership = f.service().membership(reconciled, actual, unit)
+        assertEquals(LanSyncGroupDependencyStage.RECORD_MEMBERSHIP_AVAILABLE, membership.stage)
+        val evidence = requireNotNull(membership.membership); assertFalse(evidence.validatedAgainstNativePayload)
+        val keys = mutableListOf<String>(); LanSyncGroupMembership.visit(evidence.path, evidence.identity, keys::add)
+        assertEquals(listOf("character_cards/card"), keys)
+        assertEquals(LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE, f.service().inspect(reconciled, actual, unit).stage)
+        source.outbox.upload(f.prepared.operations.getValue(f.prepared.unit.plaintext.sha256), source.backend)
+        val original = requireNotNull(f.prepared.metadata.envelope.version)
+        val legacy = original.copy(changes = original.changes.mapValues { it.value.copy(membership = null) }, signature = "unsigned").let {
+            it.copy(signature = Base64.getEncoder().encodeToString(source.sender.signSyncGroupPayload(it.signingBytes())))
+        }
+        val oldMetadata = source.codec.enqueue(source.outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), source.cipher,
+            f.prepared.metadata.envelope.copy(version = legacy))
+        val (oldReconciliation, oldRead) = f.received(oldMetadata)
+        val derived = f.service().membership(oldReconciliation, oldRead, unit)
+        assertEquals("SYNC_GROUP_LEGACY_MEMBERSHIP_FROM_UNIT", derived.code); assertTrue(requireNotNull(derived.membership).validatedAgainstNativePayload)
+        val broken = source.codec.enqueue(source.outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), source.cipher,
+            f.prepared.metadata.envelope.copy(blobs = f.prepared.metadata.envelope.blobs - f.prepared.unit.membership.sha256))
+        val (badReconciliation, badRead) = f.received(broken)
+        assertEquals("SYNC_GROUP_DEPENDENCY_BINDING_MISSING", f.service().membership(badReconciliation, badRead, unit).code)
+    }
 }

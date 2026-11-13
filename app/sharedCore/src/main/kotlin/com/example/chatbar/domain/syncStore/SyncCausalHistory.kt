@@ -104,6 +104,10 @@ class SyncCausalHistory(private val group: SyncStoreId, private val admission: S
     @Synchronized fun failure(id: SyncStoreId): String? = rejected[id]
     @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && versions[reference.id]?.reference() == reference
     @Synchronized fun admittedVersions(): List<SyncCausalVersion> = Collections.unmodifiableList(admitted.map { versions.getValue(it) })
+    /** Retains this exact admission/fact view while the discovery owner continues receiving versions. */
+    @Synchronized fun snapshot(): SyncCausalHistory = SyncCausalHistory(group, admission).also { copy ->
+        copy.versions.putAll(versions); copy.admitted.addAll(admitted); copy.rejected.putAll(rejected)
+    }
     @Synchronized fun isAncestorOrSelf(ancestor: SyncVersionRef, descendant: SyncVersionRef): Boolean =
         contains(ancestor) && contains(descendant) && ancestor.id in closure(setOf(descendant))
     @Synchronized fun heads(): Set<SyncVersionRef> {
