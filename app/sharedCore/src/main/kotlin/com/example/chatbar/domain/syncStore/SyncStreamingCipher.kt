@@ -17,6 +17,8 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.WRITE
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
+import java.security.DigestInputStream
+import java.security.DigestOutputStream
 
 /** All associated-data fields are opaque. Plaintext names, hashes and paths never enter them. */
 data class SyncEncryptionContext(val group: SyncStoreId, val epoch: SyncStoreId, val key: CiphertextObjectKey) {
@@ -25,10 +27,13 @@ data class SyncEncryptionContext(val group: SyncStoreId, val epoch: SyncStoreId,
 }
 
 class SyncPreparedCiphertext internal constructor(private val file: PrivateSyncFile,
-    val context: SyncEncryptionContext, val descriptor: CiphertextDescriptor) : Closeable {
+    val context: SyncEncryptionContext, val descriptor: CiphertextDescriptor,
+    internal val plaintextIdentity: SyncPlaintextIdentity) : Closeable {
     val path: Path get() = file.path
     override fun close() = file.close()
 }
+
+internal data class SyncPlaintextIdentity(val length: Long, val sha256: String)
 
 /** Only constructed after reading the complete AEAD stream, including its authenticated end. */
 class SyncAuthenticatedPlaintext internal constructor(private val file: PrivateSyncFile, val length: Long) : Closeable {
@@ -77,15 +82,17 @@ class SyncStreamingCipher private constructor(val group: SyncStoreId, val epoch:
         requireContext(context)
         val file = PrivateSyncFile.create(privateDirectory)
         try {
-            FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
+            val plainDigest = MessageDigest.getInstance("SHA-256")
+            val plainLength = FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
                 val output = Channels.newOutputStream(channel)
                 // Closing the AEAD stream writes its final authenticated segment; retain the channel for force.
                 val borrowed = object : FilterOutputStream(output) {
                     override fun write(bytes: ByteArray, offset: Int, length: Int) = output.write(bytes, offset, length)
                     override fun close() { flush() }
                 }
-                primitive.newEncryptingStream(borrowed, context.associatedData()).use { copy(source, it) }
+                val length = primitive.newEncryptingStream(borrowed, context.associatedData()).use { copy(DigestInputStream(source, plainDigest), it) }
                 channel.force(true)
+                length
             }
             val digest = MessageDigest.getInstance("SHA-256")
             Files.newInputStream(file.path, NOFOLLOW_LINKS).use { input ->
@@ -93,7 +100,8 @@ class SyncStreamingCipher private constructor(val group: SyncStoreId, val epoch:
                 while (true) { interrupted(); val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
             }
             val hash = CiphertextSha256.parse(digest.digest().joinToString("") { "%02x".format(it) })
-            return SyncPreparedCiphertext(file, context, CiphertextDescriptor(Files.size(file.path), hash))
+            return SyncPreparedCiphertext(file, context, CiphertextDescriptor(Files.size(file.path), hash),
+                SyncPlaintextIdentity(plainLength, plainDigest.digest().joinToString("") { "%02x".format(it) }))
         } catch (failure: Throwable) { file.close(); throw failure }
     }
 
@@ -127,6 +135,21 @@ class SyncStreamingCipher private constructor(val group: SyncStoreId, val epoch:
 
     private fun requireContext(context: SyncEncryptionContext) {
         require(context.group == group && context.epoch == epoch) { "SYNC_AEAD_CONTEXT" }
+    }
+
+    /** Recovery verification consumes plaintext only into a digest; no partial content escapes. */
+    internal fun verify(source: InputStream, context: SyncEncryptionContext): SyncPlaintextIdentity {
+        requireContext(context)
+        val borrowed = object : FilterInputStream(source) { override fun close() {} }
+        val digest = MessageDigest.getInstance("SHA-256")
+        val sink = object : OutputStream() {
+            override fun write(value: Int) {}
+            override fun write(bytes: ByteArray, offset: Int, length: Int) {}
+        }
+        val length = primitive.newDecryptingStream(borrowed, context.associatedData()).use {
+            copy(it, DigestOutputStream(sink, digest))
+        }
+        return SyncPlaintextIdentity(length, digest.digest().joinToString("") { "%02x".format(it) })
     }
 
     companion object {
