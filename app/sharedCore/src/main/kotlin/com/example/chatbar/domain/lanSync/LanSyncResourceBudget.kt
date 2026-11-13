@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.lanSync
 
-import java.nio.file.Files
 import java.nio.file.Path
 
 /** Storage policy, separate from bounded transport frames and native image decode budgets. */
@@ -43,7 +42,9 @@ data class LanSyncResourceBudget(
         val multiplied = try { Math.multiplyExact(additionalBytes, copies.toLong()) }
             catch (failure: ArithmeticException) { throw IllegalArgumentException("SYNC_LENGTH_OVERFLOW", failure) }
         val required = lanSyncAddLength(multiplied, minimumFreeBytes)
-        require(Files.getFileStore(existingRoot).usableSpace >= required) { "SYNC_DISK_SPACE" }
+        lanSyncSafe(existingRoot, true)
+        // Android deliberately refuses FileStore queries; File's volume query supports both native platforms.
+        require(existingRoot.toFile().usableSpace >= required) { "SYNC_DISK_SPACE" }
     }
 }
 

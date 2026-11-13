@@ -82,6 +82,10 @@ class LanSyncResourceStoreTest {
         assertFailsWith<IllegalArgumentException> { LanSyncResourceBudget(maximumResourceBytes = 16).requireResource(17) }
         val root = Files.createTempDirectory("lan-budget-").toRealPath()
         try {
+            defaults.requireSpace(root, 0)
+            assertEquals("SYNC_LENGTH_OVERFLOW", assertFailsWith<IllegalArgumentException> {
+                defaults.requireSpace(root, Long.MAX_VALUE, copies = 2)
+            }.message)
             assertEquals("SYNC_DISK_SPACE", assertFailsWith<IllegalArgumentException> {
                 LanSyncResourceBudget(minimumFreeBytes = Long.MAX_VALUE).requireSpace(root, 0)
             }.message)
