@@ -18,7 +18,7 @@ def adb(arguments, filename):
 
 
 def stage(method, expected_version):
-    output = adb(['shell', 'am', 'instrument', '-w', '-e', 'lanSyncUpgradeFixture', 'true',
+    output = adb(['shell', 'am', 'instrument', '-w', '-r', '-e', 'lanSyncUpgradeFixture', 'true',
                   '-e', 'class', CLASS+'#'+method,
                   PACKAGE+'.test/androidx.test.runner.AndroidJUnitRunner'], method+'.txt')
     assert re.search(r'OK \(1 test\)', output), method
