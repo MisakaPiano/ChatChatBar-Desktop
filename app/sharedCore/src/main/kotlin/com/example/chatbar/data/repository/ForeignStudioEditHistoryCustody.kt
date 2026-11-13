@@ -51,6 +51,29 @@ internal class ForeignStudioEditHistoryCustody(private val storage: JsonFileStor
         return journal.committed.entries + journal.pending?.entries.orEmpty()
     }
 
+    suspend fun currentEditorTimeline(): NovelAiStudioHistoryTimeline? {
+        val journal = storage.loadSingleton(ENTITY, journalSerializer) ?: return null
+        val current = requireNotNull(storage.loadSingleton(DRAFT, draftSerializer)) { "SYNC_STUDIO_DRAFT_MISSING" }
+        return journal.resolved(snapshot(current))
+    }
+
+    /** An explicit snapshot preparation may persist live Android undo, without changing ordinary flush behavior. */
+    suspend fun retainEditorTimeline(timeline: NovelAiStudioHistoryTimeline) {
+        val persisted = storage.loadSingleton(DRAFT, draftSerializer)
+        if (persisted == null) {
+            require(timeline.entries.size == 1) { "SYNC_STUDIO_DRAFT_MISSING" }
+            return
+        }
+        val normalized = timeline.copy(entries = timeline.entries.map(::snapshot))
+        normalized.validate()
+        require(normalized.current() == snapshot(persisted)) { "SYNC_STUDIO_HISTORY_MISMATCH" }
+        val existing = currentEditorTimeline()
+        if (existing == null && normalized.entries.size == 1) return
+        require(size(normalized.entries) <= 8 * 1024 * 1024) { "SYNC_RECORD_LIMIT" }
+        if (existing != normalized) storage.saveSingleton(ENTITY,
+            NovelAiStudioHistoryJournal(normalized), NovelAiStudioHistoryJournal.serializer())
+    }
+
     /** Called under the repository's ordinary admission and draft mutex, once per exact draft write. */
     suspend fun persist(draft: NovelAiStudioDraft, writeDraft: suspend () -> Unit) {
         val journal = storage.loadSingleton(ENTITY, journalSerializer)

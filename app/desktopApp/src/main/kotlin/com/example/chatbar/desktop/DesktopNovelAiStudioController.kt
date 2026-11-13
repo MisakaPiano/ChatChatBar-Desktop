@@ -133,9 +133,10 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun reloadStudioAfterLanSync() {
+        val before = repository.lanSyncRevision.value
         repository.reloadAfterLanSync()
         if (state.value.ready) {
-            textHistories.authorityChanged()
+            if (before != repository.lanSyncRevision.value) textHistories.authorityChanged()
             mutableState.update { it.copy(results = history.first().firstOrNull()?.images.orEmpty().map { image -> image.path }) }
         }
     }

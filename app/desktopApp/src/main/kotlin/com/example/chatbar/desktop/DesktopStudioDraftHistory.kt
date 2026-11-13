@@ -91,10 +91,13 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
             if (journal.pending != null) store(DesktopStudioHistoryJournal(resolved))
             publish(resolved)
         }
+        rememberLanSyncPreparedState()
     }
 
     override suspend fun reloadAfterLanSync() = withEditHistoryDataAccess {
+        val before = lanSyncRevision.value
         super.reloadAfterLanSync()
+        if (before == lanSyncRevision.value) return@withEditHistoryDataAccess
         timeline = null
         lastTypingKey = null
         val persisted = storage.loadStudioDraftStrict()

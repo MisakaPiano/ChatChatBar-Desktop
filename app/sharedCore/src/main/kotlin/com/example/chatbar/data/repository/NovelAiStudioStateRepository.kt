@@ -19,6 +19,11 @@ import com.example.chatbar.domain.image.applyDesignedPromptPlan
 import com.example.chatbar.domain.image.applyReversePromptPlan
 import com.example.chatbar.domain.image.applyHistoryRecipe
 import com.example.chatbar.domain.image.ownedAssetPaths
+import com.example.chatbar.domain.image.NovelAiStudioHistoryTimeline
+import com.example.chatbar.domain.lanSync.LanSyncStudioCurrent
+import com.example.chatbar.domain.lanSync.lanSyncHash
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +49,8 @@ open class NovelAiStudioStateRepository(
     private val editorGuards = linkedMapOf<Any, () -> Boolean>()
     private val _lanSyncRevision = MutableStateFlow(0L)
     val lanSyncRevision: StateFlow<Long> = _lanSyncRevision.asStateFlow()
+    private var lanSyncPreparedSignature: String? = null
+    private var editorHistoryProvider: Pair<Any, () -> NovelAiStudioHistoryTimeline?>? = null
     private val undoMutex = Mutex()
     private val _undoAvailable = MutableStateFlow(false)
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
@@ -57,7 +64,23 @@ open class NovelAiStudioStateRepository(
 
     fun unregisterLanSyncEditorGuard(owner: Any) {
         synchronized(editorGuards) { editorGuards.remove(owner) }
+        synchronized(draftStateLock) { if (editorHistoryProvider?.first === owner) editorHistoryProvider = null }
     }
+
+    fun registerLanSyncEditorHistory(owner: Any, history: () -> NovelAiStudioHistoryTimeline?) {
+        synchronized(draftStateLock) { editorHistoryProvider = owner to history }
+    }
+
+    suspend fun loadEditorTimelineForLanSync(): NovelAiStudioHistoryTimeline? = foreignHistory.currentEditorTimeline()
+
+    private suspend fun studioSyncSignature(): String {
+        val values = LanSyncStudioCurrent.types.associateWith { type ->
+            storage.loadSingleton(type, JsonObject.serializer())?.let { LanSyncStudioCurrent.normalize(type, it) } ?: JsonNull
+        }
+        return lanSyncHash(JsonObject(values))
+    }
+
+    protected suspend fun rememberLanSyncPreparedState() { lanSyncPreparedSignature = studioSyncSignature() }
 
     fun requireLanSyncEditorsCommitted() {
         check(synchronized(editorGuards) { editorGuards.values.toList() }.none { it() }) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
@@ -68,15 +91,19 @@ open class NovelAiStudioStateRepository(
         requireLanSyncEditorsCommitted()
         if (synchronized(draftStateLock) { draftDirty }) flushLatestDraft()
         if (preserveForeignEditHistory) foreignHistory.prepareForLanSync()
+        synchronized(draftStateLock) { editorHistoryProvider?.second }?.invoke()?.let { foreignHistory.retainEditorTimeline(it) }
+        rememberLanSyncPreparedState()
     }
 
     /** Refresh an existing owner without creating a default file or resolving an account/model. */
-    open suspend fun reloadAfterLanSync() = draftMutex.withDataAccess {
+    open suspend fun reloadAfterLanSync(): Unit = draftMutex.withDataAccess {
+        val signature = studioSyncSignature()
+        val changed = lanSyncPreparedSignature != signature
         val loaded = storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())
         val undo = storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())
         synchronized(draftStateLock) {
             val previous = _draft.value
-            if (previous != null) {
+            if (previous != null && changed) {
                 val next = loaded ?: emptyDraft().copy(aiDesignModelId = previous.aiDesignModelId)
                 if (previous.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0) !=
                     next.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0)) {
@@ -88,8 +115,11 @@ open class NovelAiStudioStateRepository(
             draftDirty = false
         }
         _undoAvailable.value = undo?.draft != null
-        _pendingGuidanceEditorTarget.value = null
-        _lanSyncRevision.value++
+        if (changed) {
+            _pendingGuidanceEditorTarget.value = null
+            _lanSyncRevision.value++
+        }
+        lanSyncPreparedSignature = signature
     }
 
     private fun emptyDraft() = NovelAiStudioDraft(

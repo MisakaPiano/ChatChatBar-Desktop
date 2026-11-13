@@ -26,7 +26,9 @@ internal object LanSyncStudioCurrent {
         }
         fun draft(value: JsonObject) = JsonObject(value + mapOf(
             "aiDesignModelId" to JsonNull, "contentRevision" to JsonPrimitive(0L),
-            "promptContentRevision" to JsonPrimitive(0L), "updatedAt" to JsonPrimitive(0L)))
+            "promptContentRevision" to JsonPrimitive(0L), "updatedAt" to JsonPrimitive(0L)) +
+            if (value["followDefaultNovelAiImageModel"] == JsonPrimitive(true))
+                mapOf("selectedModel" to JsonPrimitive(NovelAiImageModel.V4_5_FULL.name)) else emptyMap())
         fun timeline(value: JsonElement): JsonElement {
             if (value !is JsonObject) return value
             val entries = value["entries"] as? JsonArray ?: return value
@@ -42,14 +44,35 @@ internal object LanSyncStudioCurrent {
 
     fun restoreLocal(type: String, body: JsonObject, localDraft: JsonObject?): JsonObject {
         val localModel = localDraft?.get("aiDesignModelId") ?: JsonNull
+        val localImageModel = localDraft?.get("selectedModel") ?: JsonPrimitive(NovelAiImageModel.V4_5_FULL.name)
         fun visit(value: JsonElement): JsonElement = when (value) {
             is JsonObject -> JsonObject(value.mapValues { (key, child) ->
-                if (key == "aiDesignModelId") localModel else visit(child)
+                when {
+                    key == "aiDesignModelId" -> localModel
+                    key == "selectedModel" && value["followDefaultNovelAiImageModel"] == JsonPrimitive(true) -> localImageModel
+                    else -> visit(child)
+                }
             })
             is JsonArray -> JsonArray(value.map(::visit))
             else -> value
         }
         return if (type in types) visit(body).jsonObject else body
+    }
+
+    /** Adjacent steps that differ only in device-owned controls remain stored but add no wire change. */
+    fun comparison(type: String, body: JsonObject): JsonObject {
+        if (type != HISTORY) return body
+        val timeline = body["committed"]?.jsonObject ?: return body
+        val entries = timeline["entries"]?.jsonArray ?: return body
+        val cursor = timeline.getValue("cursor").jsonPrimitive.int
+        val retained = mutableListOf<JsonElement>()
+        var mappedCursor = cursor
+        entries.forEachIndexed { index, value ->
+            if (retained.lastOrNull() != value) retained += value
+            if (index == cursor) mappedCursor = retained.lastIndex
+        }
+        return JsonObject(body + ("committed" to JsonObject(timeline + mapOf(
+            "entries" to JsonArray(retained), "cursor" to JsonPrimitive(mappedCursor)))))
     }
 
     fun validateGraph(records: List<LanSyncRecord>, requireWire: Boolean = true) {

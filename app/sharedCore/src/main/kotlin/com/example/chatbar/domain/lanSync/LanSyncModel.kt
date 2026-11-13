@@ -16,7 +16,7 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
     internal fun comparisonBody(): JsonObject {
         val ignored = if (!text("sourcePresetKey").isNullOrBlank()) setOf("updatedAt", "createdAt") else setOf("updatedAt")
         val aliases = linkedMapOf<String, Int>()
-        return LanSyncWorkspace.mapResources(JsonObject(body.filterKeys { it !in ignored })) { reference, _ ->
+        val normalized = LanSyncWorkspace.mapResources(JsonObject(body.filterKeys { it !in ignored })) { reference, _ ->
             if (reference.startsWith("ccb-lan-v1/")) {
                 val parts = reference.split('/')
                 if (parts.size == 5) {
@@ -25,6 +25,7 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
                 } else reference
             } else reference
         }
+        return LanSyncStudioCurrent.comparison(type, normalized)
     }
     val key: String get() = "$type/$id"
     val unit: String get() = when {

@@ -46,6 +46,7 @@ import com.example.chatbar.domain.image.NovelAiPromptTranslationParser
 import com.example.chatbar.domain.image.NovelAiPromptTranslationSegment
 import com.example.chatbar.domain.image.NovelAiSeedMode
 import com.example.chatbar.domain.image.NovelAiStudioDraft
+import com.example.chatbar.domain.image.NovelAiStudioHistoryTimeline
 import com.example.chatbar.domain.image.NovelAiStudioMetadataSelection
 import com.example.chatbar.domain.image.NovelAiStudioPngMetadata
 import com.example.chatbar.domain.image.NovelAiTagCandidate
@@ -267,6 +268,7 @@ class ImagePromptToolViewModel : ViewModel() {
     private val draftRedo = mutableListOf<NovelAiStudioDraft>()
     private var lastDraftHistoryKey: String? = null
     private var lastDraftHistoryAt = 0L
+    private var observedLanSyncRevision: Long? = null
     private var tokenCountRevision = 0L
     private var promptTranslationRevision = 0L
     private var promptTranslationFailureShown = false
@@ -274,6 +276,12 @@ class ImagePromptToolViewModel : ViewModel() {
 
     init {
         repository.registerLanSyncEditorGuard(this) { guidanceEditorActive || _uiState.value.guidanceBusy }
+        repository.registerLanSyncEditorHistory(this) {
+            val current = repository.draft.value
+            if (current == null || !_uiState.value.draftLoaded || observedLanSyncRevision != repository.lanSyncRevision.value ||
+                current.contentRevision != _uiState.value.draft.contentRevision) null
+            else NovelAiStudioHistoryTimeline(draftUndo + current + draftRedo.asReversed(), draftUndo.size)
+        }
         app.novelAiTagSuggestionService.warmUp()
         viewModelScope.launch {
             app.streamingStopRequested.collect { stop ->
@@ -285,8 +293,23 @@ class ImagePromptToolViewModel : ViewModel() {
             repository.loadDraft()
             val guidanceCheckpoint = repository.loadGuidanceCheckpoint()
             _uiState.update { it.copy(guidanceCheckpoint = guidanceCheckpoint) }
-            combine(repository.draft, repository.lanSyncRevision) { draft, _ -> draft }.collect { draft ->
+            combine(repository.draft, repository.lanSyncRevision) { draft, revision -> draft to revision }.collect { (draft, syncRevision) ->
                 draft ?: return@collect
+                val syncPublished = observedLanSyncRevision != null && observedLanSyncRevision != syncRevision
+                if (observedLanSyncRevision == null || syncPublished) {
+                    val selectedHistory = repository.loadEditorTimelineForLanSync()
+                    draftUndo.clear(); draftRedo.clear()
+                    if (selectedHistory != null) {
+                        draftUndo += selectedHistory.entries.take(selectedHistory.cursor)
+                        draftRedo += selectedHistory.entries.drop(selectedHistory.cursor + 1).asReversed()
+                    }
+                    observedLanSyncRevision = syncRevision
+                    resetDraftCoalescing()
+                    if (syncPublished) {
+                        draftSaveJob?.cancel(); guidanceCheckpointJob?.cancel()
+                        clearTagSuggestions()
+                    }
+                }
                 val currentState = _uiState.value
                 if (currentState.draftLoaded &&
                     currentState.promptEditorRevision != draft.promptContentRevision
@@ -304,6 +327,8 @@ class ImagePromptToolViewModel : ViewModel() {
                         guidanceCheckpoint = latestGuidanceCheckpoint,
                         vibeCacheMisses = countVibeCacheMisses(draft),
                         hasHistoryUndo = repository.loadUndoDraft() != null,
+                        canUndoDraft = draftUndo.isNotEmpty(),
+                        canRedoDraft = draftRedo.isNotEmpty(),
                         selectedCharacterCardId = draft.importedCharacterCardId,
                         phase = state.phase.afterDraftSync(draft.basePrompt.isBlank())
                     )
@@ -342,7 +367,8 @@ class ImagePromptToolViewModel : ViewModel() {
 
     private fun admitDraftEdit(expectedEditorRevision: Long? = null, operation: () -> Unit) {
         val edit: () -> Unit = {
-            if (expectedEditorRevision == null || _uiState.value.promptEditorRevision == expectedEditorRevision) operation()
+            if (expectedEditorRevision == null || _uiState.value.promptEditorRevision == expectedEditorRevision &&
+                repository.draft.value?.promptContentRevision == expectedEditorRevision) operation()
         }
         if (app.lanSyncOwner.gate.tryWithImmediateNormalOperation(edit)) return
         viewModelScope.launch {
@@ -836,7 +862,7 @@ class ImagePromptToolViewModel : ViewModel() {
         guidanceCheckpointJob?.cancel()
         val expectedRevision = _uiState.value.promptEditorRevision
         launchImagePublication(CoroutineStart.UNDISPATCHED) {
-            if (_uiState.value.promptEditorRevision != expectedRevision) {
+            if (repository.draft.value?.promptContentRevision != expectedRevision) {
                 _uiState.update { it.copy(error = "工作室已更新；画布未覆盖新草稿，请重新打开后确认") }
                 return@launchImagePublication
             }
@@ -887,11 +913,14 @@ class ImagePromptToolViewModel : ViewModel() {
     fun saveGuidanceCheckpoint(guidance: NovelAiImageGuidanceDraft) {
         if (!guidanceEditorActive) return
         guidanceCheckpointJob?.cancel()
+        val syncRevision = repository.lanSyncRevision.value
         guidanceCheckpointJob = viewModelScope.launch {
             delay(350)
-            if (!guidanceEditorActive) return@launch
-            repository.saveGuidanceCheckpoint(guidance)
-            _uiState.update { it.copy(guidanceCheckpoint = guidance) }
+            app.lanSyncOwner.gate.withNormalOperation {
+                if (!guidanceEditorActive || repository.lanSyncRevision.value != syncRevision) return@withNormalOperation
+                repository.saveGuidanceCheckpoint(guidance)
+                _uiState.update { it.copy(guidanceCheckpoint = guidance) }
+            }
         }
     }
 
@@ -899,9 +928,13 @@ class ImagePromptToolViewModel : ViewModel() {
         guidanceEditorActive = false
         guidanceCheckpointJob?.cancel()
         _uiState.update { it.copy(guidanceCheckpoint = null) }
+        val syncRevision = repository.lanSyncRevision.value
         viewModelScope.launch {
-            repository.clearGuidanceCheckpoint()
-            cleanupGuidanceAssets(_uiState.value.draft)
+            app.lanSyncOwner.gate.withNormalOperation {
+                if (repository.lanSyncRevision.value != syncRevision) return@withNormalOperation
+                repository.clearGuidanceCheckpoint()
+                cleanupGuidanceAssets(_uiState.value.draft)
+            }
         }
     }
 

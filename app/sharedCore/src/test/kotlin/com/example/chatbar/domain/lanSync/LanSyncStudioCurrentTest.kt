@@ -106,4 +106,59 @@ class LanSyncStudioCurrentTest {
             assertFalse(Files.exists(root.resolve("entities/${LanSyncStudioCurrent.HISTORY}.json")))
         } finally { check(root.toFile().deleteRecursively()) }
     }
+
+    @Test fun explicitPreparationRetainsLiveAndroidUndoAndOnlyActualStudioPublicationAdvancesItsReloadRevision() = runBlocking {
+        val root = root()
+        try {
+            val storage = JsonFileStorage(root); val owner = NovelAiStudioStateRepository(storage, preserveForeignEditHistory = true)
+            val first = owner.loadDraft(); var observed = owner.lanSyncRevision.value
+            var live = NovelAiStudioHistoryTimeline(listOf(first))
+            owner.registerLanSyncEditorHistory(this) { live.takeIf { observed == owner.lanSyncRevision.value } }
+            owner.prepareForLanSync()
+            assertFalse(Files.exists(root.resolve("entities/${LanSyncStudioCurrent.DRAFT}.json")))
+            val second = owner.stageDraft { it.copy(basePrompt = "手机尚未导出的多步编辑") }
+            live = NovelAiStudioHistoryTimeline(listOf(first, second), 1)
+            owner.prepareForLanSync()
+            assertEquals(2, owner.loadEditorTimelineForLanSync()?.entries?.size)
+            owner.reloadAfterLanSync(); assertEquals(observed, owner.lanSyncRevision.value)
+            val oldRevision = requireNotNull(owner.draft.value).promptContentRevision
+            val selected = draft("采用电脑C").copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0)
+            val old = selected.copy(basePrompt = "电脑C的上一步")
+            val redo = selected.copy(basePrompt = "电脑C的下一步")
+            storage.saveSingleton(LanSyncStudioCurrent.DRAFT, selected, NovelAiStudioDraft.serializer())
+            storage.saveSingleton(LanSyncStudioCurrent.HISTORY, NovelAiStudioHistoryJournal(
+                NovelAiStudioHistoryTimeline(listOf(old, selected, redo), 1)), NovelAiStudioHistoryJournal.serializer())
+            owner.reloadAfterLanSync()
+            assertEquals(observed + 1, owner.lanSyncRevision.value)
+            assertTrue(requireNotNull(owner.draft.value).promptContentRevision > oldRevision)
+            assertEquals(listOf(old, selected, redo), owner.loadEditorTimelineForLanSync()?.entries)
+            // A delayed, not-yet-refreshed UI provider cannot overwrite the selected history.
+            owner.prepareForLanSync()
+            assertEquals(listOf(old, selected, redo), owner.loadEditorTimelineForLanSync()?.entries)
+            observed = owner.lanSyncRevision.value; live = requireNotNull(owner.loadEditorTimelineForLanSync())
+            owner.prepareForLanSync()
+            storage.saveSingleton(LanSyncStudioCurrent.CHECKPOINT, NovelAiGuidanceEditorCheckpoint(NovelAiImageGuidanceDraft()), NovelAiGuidanceEditorCheckpoint.serializer())
+            val editorRevision = owner.draft.value?.promptContentRevision
+            owner.reloadAfterLanSync()
+            assertEquals(observed + 1, owner.lanSyncRevision.value)
+            assertEquals(editorRevision, owner.draft.value?.promptContentRevision)
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test fun followedImageModelCacheAndDeviceOnlyUndoStepsDoNotCauseWireChurnOrEraseStoredSteps() {
+        val current = draft("同一跟随默认模型的草稿", "pc-model").copy(followDefaultNovelAiImageModel = true, selectedModel = NovelAiImageModel.V5_FULL)
+        val left = LanSyncSnapshot(deviceId = "pc", records = records(current))
+        val rightRows = records(current.copy(aiDesignModelId = "phone-model", selectedModel = NovelAiImageModel.V4_5_FULL)).toMutableList()
+        val wire = lanSyncJson.decodeFromJsonElement(NovelAiStudioHistoryJournal.serializer(), rightRows.last().body)
+        val same = requireNotNull(wire.committed.current())
+        rightRows[rightRows.lastIndex] = record(LanSyncStudioCurrent.HISTORY, lanSyncJson.encodeToJsonElement(NovelAiStudioHistoryJournal.serializer(),
+            wire.copy(committed = wire.committed.copy(entries = wire.committed.entries + same, cursor = 2))).jsonObject)
+        val right = left.copy(deviceId = "phone", records = rightRows)
+        assertEquals(left.hashes(), right.hashes())
+        assertEquals(3, lanSyncJson.decodeFromJsonElement(NovelAiStudioHistoryJournal.serializer(), right.records.last().body).committed.entries.size)
+        val local = lanSyncJson.encodeToJsonElement(NovelAiStudioDraft.serializer(), current).jsonObject
+        val restored = LanSyncStudioCurrent.restoreLocal(LanSyncStudioCurrent.DRAFT, right.records.first().body, local)
+        assertEquals(JsonPrimitive(NovelAiImageModel.V5_FULL.name), restored["selectedModel"])
+        assertEquals(JsonPrimitive("pc-model"), restored["aiDesignModelId"])
+    }
 }
