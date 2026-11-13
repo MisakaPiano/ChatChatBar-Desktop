@@ -3,6 +3,7 @@ package com.example.chatbar.domain.lanSync
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.serializer
 import java.nio.file.*
 import java.nio.channels.FileChannel
 import java.util.UUID
@@ -55,18 +56,18 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
         if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return LanSyncTlsIdentity.decode(unprotect(lanSyncRead(path, 32 * 1024)))
         return LanSyncTlsIdentity.create().also { lanSyncAtomicWrite(path, protect(it.encode())) }
     }
-    @Synchronized fun peers(): List<LanSyncPeer> = read("peers.json")?.let { lanSyncJson.decodeFromString(it) } ?: emptyList()
+    @Synchronized fun peers(): List<LanSyncPeer> = read<List<LanSyncPeer>>("peers.json") ?: emptyList()
     @Synchronized fun trust(peer: LanSyncPeer) {
         require(peer.fingerprint.matches(Regex("[0-9a-f]{64}")))
         require(peers().none { it.fingerprint != peer.fingerprint }) { "SYNC_ONE_PEER_ONLY" }
-        write("peers.json", lanSyncJson.encodeToString(peers().filterNot { it.fingerprint == peer.fingerprint } + peer.copy(name = peer.name.take(80))))
+        write("peers.json", peers().filterNot { it.fingerprint == peer.fingerprint } + peer.copy(name = peer.name.take(80)))
     }
     @Synchronized fun revoke(fingerprint: String) {
-        write("peers.json", lanSyncJson.encodeToString(peers().filterNot { it.fingerprint == fingerprint }))
+        write("peers.json", peers().filterNot { it.fingerprint == fingerprint })
         // Baselines/evidence remain; revocation only removes authentication authority.
     }
     @Synchronized fun baseline(peer: String, owner: String): LanSyncBaseline {
-        val baseline = read("baseline-${key(peer)}.json")?.let { lanSyncJson.decodeFromString<LanSyncBaseline>(it) }
+        val baseline = read<LanSyncBaseline>("baseline-${key(peer)}.json")
             ?: LanSyncBaseline(peerId = peer, ownerId = owner)
         require(baseline.peerId == peer && baseline.ownerId == owner) { "SYNC_BASELINE_DEVICE" }
         if (baseline.localProjectionHash != null) require(baseline.localProjectionHash == projection(peer, owner).digest()) { "SYNC_PROJECTION_STATE" }
@@ -78,42 +79,38 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
         val baseline = LanSyncBaseline(peer, plan.transaction, plan.snapshot.hashes(),
             (previous.receipts + plan.transaction).takeLast(64), owner, plan.snapshot.coveredTypes, projection(peer, owner).digest(),
             LanSyncMoments.components(plan.snapshot))
-        write("baseline-${key(peer)}.json", lanSyncJson.encodeToString(baseline))
-        val previousParents = read("receipt-${key(peer)}.json")?.let { lanSyncJson.decodeFromString<Map<String, String>>(it) }.orEmpty()
-        write("receipt-${key(peer)}.json", lanSyncJson.encodeToString(previousParents + plan.parents))
+        write("baseline-${key(peer)}.json", baseline)
+        val previousParents = read<Map<String, String>>("receipt-${key(peer)}.json").orEmpty()
+        write("receipt-${key(peer)}.json", previousParents + plan.parents)
     }
-    @Synchronized fun pending(peer: String): LanSyncPending? = read("pending-${key(peer)}.json")?.let { raw ->
-        lanSyncJson.decodeFromString<LanSyncPending>(raw).also { value ->
-            require(value.peerId == peer) { "SYNC_PENDING_DEVICE" }
-            if (value.ownerId != null) require(value.ownerId == identity().fingerprint) { "SYNC_PENDING_DEVICE" }
-            if (value.localProjectionHash != null) require(value.localProjectionHash == projection(peer, identity().fingerprint).digest()) { "SYNC_PROJECTION_STATE" }
-        }
+    @Synchronized fun pending(peer: String): LanSyncPending? = read<LanSyncPending>("pending-${key(peer)}.json")?.also { value ->
+        require(value.peerId == peer) { "SYNC_PENDING_DEVICE" }
+        if (value.ownerId != null) require(value.ownerId == identity().fingerprint) { "SYNC_PENDING_DEVICE" }
+        if (value.localProjectionHash != null) require(value.localProjectionHash == projection(peer, identity().fingerprint).digest()) { "SYNC_PROJECTION_STATE" }
     }
     @Synchronized fun pending(value: LanSyncPending) {
         val owner = identity().fingerprint
         require(value.ownerId == null || value.ownerId == owner) { "SYNC_PENDING_DEVICE" }
         val hash = projection(value.peerId, owner).digest()
         require(value.localProjectionHash == null || value.localProjectionHash == hash) { "SYNC_PROJECTION_STATE" }
-        write("pending-${key(value.peerId)}.json", lanSyncJson.encodeToString(value.copy(ownerId = owner, localProjectionHash = hash)))
+        write("pending-${key(value.peerId)}.json", value.copy(ownerId = owner, localProjectionHash = hash))
     }
     @Synchronized fun replacePending(value: LanSyncPending) {
         pending(value.peerId)?.let { previous ->
             require(value.plan.supersedes == previous.plan.transaction) { "SYNC_PENDING_OTHER_TRANSACTION" }
-            write("superseded-${previous.plan.transaction}.json", lanSyncJson.encodeToString(previous))
+            write("superseded-${previous.plan.transaction}.json", previous)
         }
         pending(value)
     }
     @Synchronized fun superseded(peer: String, transaction: String): LanSyncPending? {
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
-        return read("superseded-$transaction.json")?.let { raw ->
-            lanSyncJson.decodeFromString<LanSyncPending>(raw).also {
-                require(it.peerId == peer && it.plan.transaction == transaction) { "SYNC_SUPERSEDED_IDENTITY" }
-                require(it.ownerId == null || it.ownerId == identity().fingerprint) { "SYNC_SUPERSEDED_IDENTITY" }
-            }
+        return read<LanSyncPending>("superseded-$transaction.json")?.also {
+            require(it.peerId == peer && it.plan.transaction == transaction) { "SYNC_SUPERSEDED_IDENTITY" }
+            require(it.ownerId == null || it.ownerId == identity().fingerprint) { "SYNC_SUPERSEDED_IDENTITY" }
         }
     }
-    @Synchronized fun projection(peer: String, owner: String): LanSyncProjection = read("projection-${key(peer)}.json")?.let { raw ->
-        lanSyncJson.decodeFromString<LanSyncDeviceProjection>(raw).also {
+    @Synchronized fun projection(peer: String, owner: String): LanSyncProjection = read<LanSyncDeviceProjection>("projection-${key(peer)}.json")?.let { stored ->
+        stored.also {
             require(it.peerId == peer && it.ownerId == owner) { "SYNC_PROJECTION_DEVICE" }; it.projection.validate()
         }.projection
     } ?: LanSyncProjection()
@@ -123,17 +120,15 @@ class LanSyncStateStore(val root: Path, private val protect: (ByteArray) -> Byte
         require(baseline(peer, owner).revision == null && pending(peer) == null) { "SYNC_PROJECTION_BASELINE_EXISTS" }
         val previous = projection(peer, owner)
         require(previous.bindings.isEmpty() || previous == value) { "SYNC_PROJECTION_ALREADY_ASSIGNED" }
-        write("projection-${key(peer)}.json", lanSyncJson.encodeToString(LanSyncDeviceProjection(peer, owner, value)))
+        write("projection-${key(peer)}.json", LanSyncDeviceProjection(peer, owner, value))
     }
     @Synchronized fun clearPending(peer: String, transaction: String) {
         val pending = pending(peer) ?: return
         require(pending.plan.transaction == transaction)
         Files.delete(root.resolve("pending-${key(peer)}.json"))
     }
-    private fun read(name: String): String? = root.resolve(name).let {
-        if (Files.notExists(it, LinkOption.NOFOLLOW_LINKS)) null else lanSyncUtf8(lanSyncRead(it, LanSyncWire.MAX_MESSAGE))
-    }
-    private fun write(name: String, value: String) = lanSyncAtomicWrite(root.resolve(name), value.toByteArray(Charsets.UTF_8))
+    private inline fun <reified T> read(name: String): T? = LanSyncJsonFiles.read(root.resolve(name), serializer<T>())
+    private inline fun <reified T> write(name: String, value: T) = LanSyncJsonFiles.write(root.resolve(name), serializer<T>(), value)
     private fun key(peer: String): String = peer.also { require(it.matches(Regex("[0-9a-f]{64}"))) }
 }
 
