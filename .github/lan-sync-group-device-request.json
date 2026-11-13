@@ -1,0 +1,5 @@
+{
+  "sourceSha": "670741d5eb04885b8eaaf0569645bf06cb0a7dd7",
+  "purpose": "Synthetic API26 real Keystore source and native receipt reopen across two instrumentation processes",
+  "artifacts": "Reports only; no app roots, keys, credentials or APK"
+}
