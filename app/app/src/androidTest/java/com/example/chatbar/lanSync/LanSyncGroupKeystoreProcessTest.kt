@@ -69,7 +69,7 @@ class LanSyncGroupKeystoreProcessTest {
         report("GROUP_NATIVE_KEYSTORE_REOPEN_PASS")
     }
 
-    private class Phase(val root: Path, seed: Boolean) {
+    private class Phase(val root: Path, private val seed: Boolean) {
         val json = Json { encodeDefaults = true }
         private fun directory(name: String) = root.resolve(name).also { if (seed) Files.createDirectory(it); check(Files.isDirectory(it)) }
         private fun text(name: String) = root.resolve(name).toFile().readText(Charsets.UTF_8)
