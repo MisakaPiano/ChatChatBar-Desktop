@@ -51,10 +51,30 @@ jobs:
           assert artifact['size_in_bytes'] == original['bytes']
           assert artifact['digest'] == 'sha256:'+original['outerSha256']
           json.dump({'runSha': run['head_sha'], 'artifact': artifact}, open('original-provenance.json','w'), indent=2)
+          if request.get('previousDeliveredBase'):
+              # Seed81 with the fixture already proved against that production ABI.
+              priorRun=get('runs/43334665379')
+              priorArtifact=get('artifacts/13996312948')
+              assert priorRun['conclusion']=='success'
+              assert priorRun['head_sha']==priorArtifact['workflow_run']['head_sha']=='d92db6a2e3ac2cf370d0aa898c088424169a27ca'
+              assert priorArtifact['workflow_run']['id']==43334665379 and not priorArtifact['expired']
+              assert priorArtifact['name']=='lan-next-preview-verified-apks'
+              assert priorArtifact['size_in_bytes']==212823865
+              assert priorArtifact['digest']=='sha256:862f7d41fd72cb04fc1482bdd066f39874cc2ce9dce79e424d2dc7c0caa4eba8'
+              json.dump({'runSha':priorRun['head_sha'],'artifact':priorArtifact},open('previous-test-provenance.json','w'),indent=2)
+              with open(os.environ['GITHUB_ENV'],'a') as env:
+                  env.write('LAN_NEXT_PREVIOUS_TESTS=true\n')
           with open(os.environ['GITHUB_ENV'], 'a') as env:
               env.write('LAN_NEXT_ORIGINAL_RUN='+str(original['runId'])+'\n')
               env.write('LAN_NEXT_ORIGINAL_NAME='+original['name']+'\n')
           PY
+      - uses: actions/download-artifact@v4
+        if: env.LAN_NEXT_PREVIOUS_TESTS == 'true'
+        with:
+          name: lan-next-preview-verified-apks
+          run-id: 43334665379
+          github-token: ${{ github.token }}
+          path: previous-verified
       - uses: actions/download-artifact@v4
         with:
           name: ${{ env.LAN_NEXT_ORIGINAL_NAME }}
@@ -72,8 +92,9 @@ jobs:
         run: |
           controlSha=$(python3 -c 'import json; print(json.load(open(".github/lan-next-preview-signing-request.json"))["originalArtifact"]["controlSha"])')
           python3 tools/lan-preview-signing/inspect_raw_inputs.py --directory original --control-sha "$controlSha" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
-          python3 tools/lan-preview-signing/verify_candidate.py --request .github/lan-next-preview-signing-request.json --source-dir original --output-dir candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+          python3 tools/lan-preview-signing/verify_candidate.py --request .github/lan-next-preview-signing-request.json --source-dir original --output-dir candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0" --previous-tests previous-verified/tests.apk
           cp original-provenance.json candidate/
+          if [ -f previous-test-provenance.json ]; then cp previous-test-provenance.json candidate/; fi
       - name: Enable cloud emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules

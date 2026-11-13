@@ -31,20 +31,24 @@ def stage(method, expected_version):
     assert re.search(r'\bversionCode='+str(expected_version)+r'\b', package)
 
 
+verification = json.loads((ROOT/'verification.json').read_text(encoding='utf8'))
+seed_fixture = verification.get('previousSeedFixture')
 assert 'Success' in adb(['install', str(ROOT/'base.apk')], 'install-base.txt')
-assert 'Success' in adb(['install', str(ROOT/'tests.apk')], 'install-tests.txt')
+assert 'Success' in adb(['install', str(ROOT/('seed-tests.apk' if seed_fixture else 'tests.apk'))], 'install-tests.txt')
 stage('seedSyntheticRepositoryAndProtectedPeerIdentity', 81)
 adb(['shell', 'am', 'force-stop', PACKAGE], 'stop-before-upgrade.txt')
 assert 'Success' in adb(['install', '-r', str(ROOT/'upgrade.apk')], 'install-upgrade.txt')
+if seed_fixture:
+    assert 'Success' in adb(['install', '-r', str(ROOT/'tests.apk')], 'install-upgrade-tests.txt')
 stage('verifySyntheticRepositoryAndProtectedPeerIdentityAfterUpgrade', 82)
 receipt = {'kind': 'CCB_LAN_NEXT_PREVIEW_UPGRADE_PROOF', 'api': 26,
            'package': PACKAGE, 'versions': [81, 82], 'sameSignerUpgradeAccepted': True,
            'fixtureStagesPassed': 2, 'uninstallOrClearData': False,
            'physicalPhoneTested': False, 'firstPreviewMigrated': False,
            'humanAcceptance': False, 'userDelivered': False}
-verification = json.loads((ROOT/'verification.json').read_text(encoding='utf8'))
 receipt['sourceSha'] = verification['sourceSha']
 receipt['previousDeliveredBase'] = verification.get('previousDeliveredBase')
+receipt['previousSeedFixture'] = seed_fixture
 receipt['baseSha256'] = next(row['sha256'] for row in verification['entries'] if row['role'] == 'base')
 receipt['upgradeSha256'] = next(row['sha256'] for row in verification['entries'] if row['role'] == 'upgrade')
 (ROOT/'upgrade-proof.json').write_text(json.dumps(receipt, indent=2), encoding='utf8')

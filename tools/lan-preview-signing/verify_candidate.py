@@ -25,7 +25,7 @@ def run_tool(tool, arguments, path, success=True):
     return result.stdout
 
 
-def main(request_path, source_dir, output_dir, build_tools):
+def main(request_path, source_dir, output_dir, build_tools, previous_tests=None):
     request = json.loads(request_path.read_text(encoding='utf8'))
     assert request['kind'] == 'CCB_LAN_NEXT_PREVIEW_PUBLIC_SIGNING'
     assert request['certificateSha256'] == CERTIFICATE
@@ -96,8 +96,25 @@ def main(request_path, source_dir, output_dir, build_tools):
                          output_dir/'tamper-rejection.txt', False)
     assert 'DOES NOT VERIFY' in rejection
     tampered.unlink()
+    seed = None
+    if request.get('previousDeliveredBase'):
+        assert previous_tests is not None and previous_tests.is_file() and not previous_tests.is_symlink()
+        assert previous_tests.stat().st_size == 1834351
+        assert file_hash(previous_tests) == '802a0b7eb40e23aaf3c0eaed6c3782bb7acc99e97c2a837f2743884527163e6b'
+        previous_signature = run_tool(build_tools/'apksigner', ['verify', '--verbose', '--print-certs', str(previous_tests)],
+                                      output_dir/'seed-tests-apksigner.txt')
+        assert 'Verified using v2 scheme (APK Signature Scheme v2): true' in previous_signature
+        assert 'Number of signers: 1' in previous_signature
+        assert re.search(r'^Signer #1 certificate SHA-256 digest: '+CERTIFICATE+r'\s*$', previous_signature, re.M)
+        previous_badging = run_tool(build_tools/'aapt', ['dump', 'badging', str(previous_tests)], output_dir/'seed-tests-badging.txt')
+        assert re.search(r"^package: name='com[.]example[.]chatbar[.]lansyncnext[.]test' ", previous_badging, re.M)
+        shutil.copyfile(previous_tests, output_dir/'seed-tests.apk')
+        seed = {'sourceSha': '08db90c2cec1611b7f56c688fb5f219ea7f051c5',
+                'testFixtureOverlaySourceSha': '1de0b42fc62272f2ebca5b210357c07797aa4a1d',
+                'verifiedRunId': 43334665379, 'verifiedArtifactId': 13996312948,
+                'sha256': file_hash(previous_tests), 'bytes': previous_tests.stat().st_size}
     result = {'kind': request['kind'], 'sourceSha': request['sourceSha'],
-              'testFixtureOverlay': request.get('testFixtureOverlay'), 'previousDeliveredBase': request.get('previousDeliveredBase'), 'entries': rows,
+              'testFixtureOverlay': request.get('testFixtureOverlay'), 'previousDeliveredBase': request.get('previousDeliveredBase'), 'previousSeedFixture': seed, 'entries': rows,
               'protectedByteTamperRejected': True, 'privateKeyUploaded': False,
               'localApkWritten': False, 'firstPreviewUpgradeCompatible': False,
               'deviceUpgradeTested': False, 'humanAcceptance': False, 'userDelivered': False}
@@ -109,5 +126,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     for name in ['request', 'source-dir', 'output-dir', 'build-tools']:
         parser.add_argument('--'+name, type=Path, required=True)
+    parser.add_argument('--previous-tests', type=Path)
     args = parser.parse_args()
-    main(args.request, args.source_dir, args.output_dir, args.build_tools)
+    main(args.request, args.source_dir, args.output_dir, args.build_tools, args.previous_tests)
