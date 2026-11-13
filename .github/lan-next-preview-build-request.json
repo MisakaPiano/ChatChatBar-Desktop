@@ -1,24 +1,21 @@
 {
   "kind": "CCB_LAN_NEXT_PREVIEW_BUILD",
-  "sourceSha": "08db90c2cec1611b7f56c688fb5f219ea7f051c5",
+  "sourceSha": "10b14a8c89d2fc4b2ed2188546af4339b0e42b57",
   "series": "next",
   "versions": [
     81,
     82
   ],
-  "attempt": 3,
-  "testFixtureOverlay": {
-    "path": "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncPreviewUpgradeTest.kt",
-    "sourceSha": "1de0b42fc62272f2ebca5b210357c07797aa4a1d",
-    "sha256": "15c3edd5db40101438e098830d478969e3587e98dd9b7993c20604200e9461c9"
+  "attempt": 4,
+  "previousDeliveredBase": {
+    "sourceSha": "08db90c2cec1611b7f56c688fb5f219ea7f051c5",
+    "runId": 43333044270,
+    "artifactId": 13995997920,
+    "controlSha": "7da4418a300d03ffd808b31b4095f10ee8d55469",
+    "outerBytes": 212829843,
+    "outerSha256": "56f8f6bf8d3ee0d7f383d4eae63a5a71b467ba797cb23d00aa35c014d9b5c376",
+    "rawBaseSha256": "4a65cc6da4b53cdef75cb848e3783a72ab08afe0f0870a14d6f5b3c25d80acdf",
+    "deliveredBaseSha256": "98c925a0ffd30f0dff38970a1b57157c0a3c9c64c88f47fd210c220909653554"
   },
-  "reusedOriginalArtifact": {
-    "id": 13993664446,
-    "runId": 43330457689,
-    "controlSha": "a2ce60578f4f1aea08bf3ff481ed2cc6b738f65c",
-    "name": "ccb-lan-next-signing-inputs",
-    "bytes": 212828338,
-    "outerSha256": "49a18facd34ea776c2530be7005c5132222a24760fef71b1edda7492d3211f39"
-  },
-  "purpose": "Only cloud compile test APK with exact API26 Paths.get delta; reuse frozen original81/82 application bytes. Previous actual seed failure retained; no production APK rebuild or assertion removal."
+  "purpose": "Keep exact delivered08/code81 raw base; build current-source82 and current instrumentation. Signing stage must reproduce delivered81 hash; old proven fixture seeds81, then new-source fixture verifies82. No local APK or private key cloud transfer, delivery or human acceptance claim."
 }

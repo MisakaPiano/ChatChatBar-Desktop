@@ -1,8 +1,8 @@
 {
   "kind": "CCB_LAN_FROZEN_INDEPENDENT_PACKAGE",
-  "sourceSha": "08db90c2cec1611b7f56c688fb5f219ea7f051c5",
-  "version": "0.1.0-lan.2",
-  "installerVersion": "0.1.40002",
-  "buildNumber": "40002",
-  "purpose": "Frozen protocol5 nineteen-type independent Windows candidate; no first delivery overwrite, ordinary install or real data changes."
+  "sourceSha": "10b14a8c89d2fc4b2ed2188546af4339b0e42b57",
+  "version": "0.1.0-lan.3",
+  "installerVersion": "0.1.40003",
+  "buildNumber": "40003",
+  "purpose": "Frozen protocol5/23-store independent Windows candidate, including four-record current Studio unit. Original08/110 and first37 delivery untouched; no ordinary install, real data changes or public release."
 }

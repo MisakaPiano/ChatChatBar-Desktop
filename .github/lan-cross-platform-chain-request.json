@@ -1,6 +1,6 @@
 {
   "kind": "CCB_LAN_CROSS_PLATFORM_SYNTHETIC_CHAIN",
-  "sourceSha": "28f526296bf0cc086310a15c0e7ce3e7c28bda49",
+  "sourceSha": "10b14a8c89d2fc4b2ed2188546af4339b0e42b57",
   "protocol": 5,
   "declaredTypes": 23,
   "fixtureSchema": "ccb-lan-cross-platform-fixture-v2",
@@ -18,7 +18,7 @@
     "desktop_studio_edit_history"
   ],
   "otherTypesEmpty": 12,
-  "attempt": 3,
+  "attempt": 4,
   "purpose": "Current Studio four-record joint unit through actual Windows owner -> actual Android subclass stage/prepare/reopen -> Windows existing/fresh owner reload/undo/redo. Original7 reused in expanded fixture; only11 populated, not all23. No network/TLS/QR/physical phone/human acceptance claim; delivered08 and first37 unchanged.",
   "previousChain": {
     "runId": 43336629408,
@@ -33,5 +33,12 @@
     "sourceSha": "3fc21fbf4dede6b75bd87c875ebf1f02ba17ed16",
     "state": "failure",
     "androidCause": "AGP9 androidTest fixture source directory omitted; no actual Android method; Windows export alone passed; return skipped"
+  },
+  "previousV2Attempt": {
+    "sourceSha": "28f526296bf0cc086310a15c0e7ce3e7c28bda49",
+    "controlSha": "5b77ada753c3f6d0efc5e781f928f7218856c4c2",
+    "runId": 43348507439,
+    "statusAtRefreeze": "Windows origin in progress; not stopped or declared failed",
+    "reason": "a0 changes Studio whole-group materialization when only history differs;10b drains accepted Desktop text before snapshot. New final candidate source needs affected native owner chain."
   }
 }
