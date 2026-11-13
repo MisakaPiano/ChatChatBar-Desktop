@@ -545,7 +545,7 @@ class LanSyncRuntimeTest {
             assertEquals(LanSyncScope.schemas.keys, a.store.baseline(b.id, a.id).coveredTypes)
         } finally { host.closeAndDrain(); phone.closeAndDrain() }
     }
-    @Test fun oneAppliedScopeExpansionRetainsLaterDeletionUntilBilateralAuthorityWithoutRestoringLocalFile() = runBlocking {
+    @Test fun oneAppliedScopeExpansionRetainsLaterDeletionUntilBilateralAuthorityAndExplicitConfirmationWithoutRestoringLocalFile() = runBlocking {
         val network = SyntheticLan()
         val interrupted = java.util.concurrent.atomic.AtomicBoolean()
         val expanded = java.util.concurrent.atomic.AtomicBoolean()
@@ -583,11 +583,17 @@ class LanSyncRuntimeTest {
         val host = a.runtime(); val phone = b.runtime()
         try {
             pair(host, phone, a, b); phone.requestSync()
-            until("deferred local deletion propagates only after the first common expanded receipt") {
-                expanded.get() && !Files.exists(a.root.resolve("entities/format_cards/pc-format.json")) &&
+            until("deferred deletion remains pending after the first common expanded receipt") {
+                expanded.get() && a.store.reviewQueue(b.id, a.id)?.held?.any { it.unit == "format_cards/pc-format" } == true &&
                     a.store.pending(b.id) == null && b.store.pending(a.id) == null &&
                     a.store.baseline(b.id, a.id).revision == b.store.baseline(a.id, b.id).revision
             }
+            assertTrue(Files.exists(a.root.resolve("entities/format_cards/pc-format.json")))
+            assertFalse(Files.exists(b.root.resolve("entities/format_cards/pc-format.json")))
+            val held = requireNotNull(a.store.reviewQueue(b.id, a.id)).held.single { it.unit == "format_cards/pc-format" }
+            val partialRevision = a.store.baseline(b.id, a.id).revision
+            host.confirmReview(held.unit, held.binding)
+            completedReceiptOnly(a, b, partialRevision)
             for (end in listOf(a, b)) {
                 val cardNames = end.workspace.capture(end.id).use { capture -> capture.snapshot.records
                     .filter { it.type == "character_cards" }.mapNotNull { it.text("name") }.toSet() }
