@@ -57,16 +57,19 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         val state = read(); val ledger = build(state); advance(state, ledger)
         build(read()).also { it.current() }
     }
+    fun trust(): SyncGroupTrust = guarded { read().trust }
 
     /** Signed waiting/rejected/fork evidence persists before trying to select a new current head. */
     fun update(records: Collection<SyncDeviceLedgerRecord>): SyncDeviceLedger = guarded {
         val state = read(); val ledger = build(state)
         val rows = state.ledgers.associateByTo(linkedMapOf()) { it.id }
+        var changed = false
         records.map(::freeze).forEach { row ->
             ledger.offer(row)
             rows[row.id]?.let { require(it.reference() == row.reference()) { "SYNC_GROUP_LEDGER_ID_COLLISION" } }
-            rows.putIfAbsent(row.id, row)
+            if (rows.putIfAbsent(row.id, row) == null) changed = true
         }
+        if (!changed) { advance(state, ledger); return@guarded build(read()).also { it.current() } }
         val retained = state.copy(ledgers = rows.values.sortedWith(compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value }))
         write(retained)
         observe("GROUP_LEDGER_EVIDENCE_RETAINED")

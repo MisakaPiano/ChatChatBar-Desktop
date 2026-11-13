@@ -10,6 +10,7 @@ data class SyncCiphertextHint(val context: SyncEncryptionContext, val keyCommitm
 object SyncCiphertextHeader {
     private val MAGIC = "CCB-SYNC-AEAD/2\n".toByteArray(Charsets.US_ASCII)
     val size: Int get() = MAGIC.size + 1 + 32 * 3 + 64
+    internal fun hasPrefix(bytes: ByteArray) = bytes.size >= MAGIC.size && MAGIC.indices.all { bytes[it] == MAGIC[it] }
 
     internal fun encode(context: SyncEncryptionContext, keyCommitment: String): ByteArray {
         require(keyCommitment.matches(Regex("[a-f0-9]{64}"))) { "SYNC_AEAD_HEADER" }

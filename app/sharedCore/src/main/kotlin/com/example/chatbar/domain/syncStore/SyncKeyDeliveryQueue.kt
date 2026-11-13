@@ -21,6 +21,7 @@ import java.util.concurrent.locks.ReentrantLock
 object SyncKeyDeliveryCodec {
     private val magic = "CCB-SYNC-KEY-CAPSULE/1\n".toByteArray(Charsets.US_ASCII)
     const val MAX_BYTES = 128 * 1024
+    internal fun hasPrefix(bytes: ByteArray) = bytes.size >= magic.size && magic.indices.all { bytes[it] == magic[it] }
 
     fun encode(delivery: SyncGroupKeyDelivery): ByteArray {
         val json = lanSyncJson.encodeToString(SyncGroupKeyDelivery.serializer(), delivery).toByteArray(Charsets.UTF_8)
