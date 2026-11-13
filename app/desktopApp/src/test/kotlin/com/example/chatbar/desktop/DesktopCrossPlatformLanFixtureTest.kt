@@ -63,6 +63,20 @@ class DesktopCrossPlatformLanFixtureTest {
         val processed = DesktopPostProcessResults(JsonFileStorage(root), resources, DesktopDataOperationCoordinator())
             .persist(firstBytes, secondBytes, NovelAiPostProcessTab.UPSCALE, NovelAiEnhanceOptions())
         val facts = F.seed(root, first, second, processed)
+        val studioStorage = JsonFileStorage(root)
+        val studio = DesktopStudioHistoryRepository(studioStorage)
+        studio.loadDraft(); studio.initializeHistory()
+        val encoded = NovelAiInlinePayloadStore(root.toFile()).retain(F.vibe)
+        val recipe = F.fixtureRecipe(first, second, facts.getValue("firstHash").jsonPrimitive.content,
+            facts.getValue("secondHash").jsonPrimitive.content, encoded)
+        val previous = studio.updateDraft(resetPromptEditors = true) { it.copy(basePrompt = "电脑工作室上一步",
+            negativePrompt = "合成工作室负面原文", characters = recipe.characters,
+            selectedModel = NovelAiImageModel.V5_FULL, followDefaultNovelAiImageModel = false,
+            v5Settings = recipe.settings, imageGuidance = recipe.imageGuidance, aiDesignModelId = F.WINDOWS_MODEL) }
+        studio.updateDraft(resetPromptEditors = true) { it.copy(basePrompt = F.STUDIO_CURRENT_PROMPT) }
+        studio.saveUndoDraft(previous); studio.saveGuidanceCheckpoint(recipe.imageGuidance)
+        studio.prepareForLanSync()
+        assertTrue(studio.historyAvailability.value.undo)
         decode(F.verify(root, facts, modified = false, absolutePaths = false, model = F.WINDOWS_MODEL), facts)
         val output = io.resolve("windows-origin.zip")
         workspace(root, state).capture("windows").use { capture ->
@@ -76,7 +90,7 @@ class DesktopCrossPlatformLanFixtureTest {
                 put("resourceCount", capture.snapshot.resources.size); put("facts", facts)
             }.toString())
         }
-        println("LAN_CHAIN_WINDOWS_EXPORTED source=$source records=7 archive=${F.fileHash(output)}")
+        println("LAN_CHAIN_WINDOWS_EXPORTED source=$source records=11 archive=${F.fileHash(output)}")
     }
 
     @Test fun verifyAndroidReturnWithRealDesktopOwners(): Unit = runBlocking {
@@ -92,11 +106,17 @@ class DesktopCrossPlatformLanFixtureTest {
         for (fresh in listOf(false, true)) {
             val root = Files.createTempDirectory(io, if (fresh) "windows-fresh-" else "windows-existing-").toRealPath()
             val state = Files.createTempDirectory(io, "return-state-").toRealPath(); val workspace = workspace(root, state)
+            val studioStorage = JsonFileStorage(root); val studio = DesktopStudioHistoryRepository(studioStorage)
             if (!fresh) {
                 workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), origin.snapshot, emptyMap()), emptyMap(), "windows", origin.blobs)
                 val chats = ChatRepository(JsonFileStorage(root))
                 chats.updateSession(requireNotNull(chats.getSession(F.SESSION)).copy(modelId = F.WINDOWS_MODEL))
+                studio.loadDraft(); studio.initializeHistory()
+                studio.updateDraft { it.copy(aiDesignModelId = F.WINDOWS_MODEL) }
+            } else {
+                studio.loadDraft() // The existing cache must refresh without materializing a default file.
             }
+            studio.prepareForLanSync()
             workspace.capture("windows").use { before ->
                 val plan = if (fresh) LanSyncPlan(UUID.randomUUID().toString(), returned.snapshot, emptyMap()) else {
                     assertEquals(origin.snapshot.hashes(), before.snapshot.hashes())
@@ -107,7 +127,12 @@ class DesktopCrossPlatformLanFixtureTest {
                         emptyMap(), UUID.randomUUID().toString())
                 }
                 workspace.apply(plan, before.snapshot.hashes(), "windows", origin.blobs + returned.blobs)
+                studio.reloadAfterLanSync()
             }
+            assertEquals(F.STUDIO_ANDROID_EDIT, studio.draft.value?.extraPrompt)
+            assertEquals(if (fresh) null else F.WINDOWS_MODEL, studio.draft.value?.aiDesignModelId)
+            assertTrue(studio.replay(false)); assertEquals("", studio.loadDraft().extraPrompt)
+            assertTrue(studio.replay(true)); assertEquals(F.STUDIO_ANDROID_EDIT, studio.loadDraft().extraPrompt)
             val paths = F.verify(root, facts, modified = true, absolutePaths = false, model = if (fresh) null else F.WINDOWS_MODEL)
             decode(paths, facts)
             val owner = DesktopPostProcessResults(JsonFileStorage(root), DesktopCharacterResourceStore(root), DesktopDataOperationCoordinator())
@@ -120,10 +145,11 @@ class DesktopCrossPlatformLanFixtureTest {
         Files.writeString(io.resolve("windows-return-report.json"), buildJsonObject {
             put("sourceSha", source); put("originArchiveSha256", F.fileHash(originPath)); put("returnArchiveSha256", F.fileHash(returnPath))
             put("existingReceiver", "passed"); put("freshReceiver", "passed"); put("postProcessOwnerRead", "passed")
+            put("desktopStudioOwnerReloadUndoRedo", "passed"); put("localStudioModelRetained", "passed")
             put("recordCount", returned.snapshot.records.size); put("coveredCount", returned.snapshot.coveredTypes.size)
             put("populatedTypes", JsonArray(F.populatedTypes.sorted().map(::JsonPrimitive)))
             put("emptyTypes", JsonArray((returned.snapshot.coveredTypes - F.populatedTypes).sorted().map(::JsonPrimitive)))
         }.toString())
-        println("LAN_CHAIN_WINDOWS_RETURN_VERIFIED source=$source receivers=2 records=7")
+        println("LAN_CHAIN_WINDOWS_RETURN_VERIFIED source=$source receivers=2 records=11")
     }
 }

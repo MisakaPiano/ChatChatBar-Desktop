@@ -27,9 +27,16 @@ object LanCrossPlatformFixture {
     const val HISTORY = "cross-platform-history"
     const val WINDOWS_MODEL = "synthetic-windows-local-model"
     const val ANDROID_MODEL = "synthetic-android-local-model"
+    const val STUDIO_DRAFT = "novelai_studio_draft"
+    const val STUDIO_UNDO = "novelai_studio_history_undo"
+    const val STUDIO_CHECKPOINT = "novelai_studio_guidance_checkpoint"
+    const val STUDIO_TIMELINE = "desktop_studio_edit_history"
+    const val STUDIO_CURRENT_PROMPT = "电脑工作室当前原文\n{\"path\":\"工作室正文保持原样\"}"
+    const val STUDIO_ANDROID_EDIT = "手机工作室追加原文\n第二行"
+    val studioTypes = setOf(STUDIO_DRAFT, STUDIO_UNDO, STUDIO_CHECKPOINT, STUDIO_TIMELINE)
     val vibe = "synthetic-cross-platform-vibe-".repeat(240)
     val populatedTypes = setOf("character_cards", "chat_sessions", "chat_messages", "moment_posts",
-        "novelai_generation_history", "player_setting", LanSyncPostProcess.TYPE)
+        "novelai_generation_history", "player_setting", LanSyncPostProcess.TYPE) + studioTypes
     val json = Json { encodeDefaults = true; ignoreUnknownKeys = false }
     private const val MAX = 8 * 1024 * 1024
 
@@ -47,10 +54,10 @@ object LanCrossPlatformFixture {
     fun write(path: Path, source: String, stage: String, capture: LanSyncCapture, facts: JsonObject, parent: String? = null) {
         require(source.matches(Regex("[a-f0-9]{40}")) && stage in setOf("windows", "android"))
         require(!Files.exists(path) && capture.snapshot.coveredTypes == LanSyncScope.schemas.keys)
-        require(capture.snapshot.records.size == 7 && capture.snapshot.records.map { it.type }.toSet() == populatedTypes && capture.snapshot.resources.size == 3)
+        require(capture.snapshot.records.size == 11 && capture.snapshot.records.map { it.type }.toSet() == populatedTypes && capture.snapshot.resources.size == 3)
         val snapshot = json.encodeToJsonElement(LanSyncSnapshot.serializer(), capture.snapshot).toString().toByteArray(Charsets.UTF_8)
         val contract = buildJsonObject {
-            put("schema", "ccb-lan-cross-platform-fixture-v1"); put("sourceSha", source); put("stage", stage)
+            put("schema", "ccb-lan-cross-platform-fixture-v2"); put("sourceSha", source); put("stage", stage)
             put("protocol", LAN_SYNC_PROTOCOL); put("snapshotSha256", lanSyncHash(snapshot))
             put("coveredTypes", JsonArray(capture.snapshot.coveredTypes.sorted().map(::JsonPrimitive)))
             put("populatedTypes", JsonArray(populatedTypes.sorted().map(::JsonPrimitive)))
@@ -97,13 +104,14 @@ object LanCrossPlatformFixture {
         fun text(bytes: ByteArray) = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT).decode(java.nio.ByteBuffer.wrap(bytes)).toString()
         val contract = json.parseToJsonElement(text(requireNotNull(raw["contract.json"]))).jsonObject
-        require(contract.getValue("schema").jsonPrimitive.content == "ccb-lan-cross-platform-fixture-v1")
+        require(contract.getValue("schema").jsonPrimitive.content == "ccb-lan-cross-platform-fixture-v2")
         require(contract.getValue("sourceSha").jsonPrimitive.content == source && source.matches(Regex("[a-f0-9]{40}")))
         require(contract.getValue("stage").jsonPrimitive.content == stage && contract.getValue("protocol").jsonPrimitive.int == LAN_SYNC_PROTOCOL)
         val bytes = requireNotNull(raw["snapshot.json"]); require(lanSyncHash(bytes) == contract.getValue("snapshotSha256").jsonPrimitive.content)
         val snapshot = json.decodeFromJsonElement(LanSyncSnapshot.serializer(), json.parseToJsonElement(text(bytes)))
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
-        require(snapshot.coveredTypes == LanSyncScope.schemas.keys && snapshot.records.map { it.type }.toSet() == populatedTypes)
+        require(snapshot.coveredTypes == LanSyncScope.schemas.keys && snapshot.records.size == 11 &&
+            snapshot.records.map { it.type }.toSet() == populatedTypes && snapshot.resources.size == 3)
         fun types(key: String) = contract.getValue(key).jsonArray.map { it.jsonPrimitive.content }.toSet()
         require(types("coveredTypes") == snapshot.coveredTypes && types("populatedTypes") == populatedTypes &&
             types("emptyTypes") == snapshot.coveredTypes - populatedTypes)
@@ -155,7 +163,7 @@ object LanCrossPlatformFixture {
     }
 
     /** Actual shared repository mutation, not an edited snapshot or a reconstructed Android recipe. */
-    suspend fun editOnAndroid(root: Path) {
+    suspend fun editOnAndroid(root: Path, studio: NovelAiStudioStateRepository = NovelAiStudioStateRepository(JsonFileStorage(root))) {
         val storage = JsonFileStorage(root); val characters = CharacterRepository(storage)
         characters.save(requireNotNull(characters.getById(CARD)).copy(name = "手机修改角色"))
         val chats = ChatRepository(storage); val session = requireNotNull(chats.getSession(SESSION))
@@ -164,12 +172,12 @@ object LanCrossPlatformFixture {
         chats.updateMessage(message.copy(content = "手机修改当前版本", alternatives = listOf("电脑旧版本", "手机修改当前版本")))
         val moments = MomentRepository(storage); moments.updatePostText(POST, "手机修改动态"); moments.toggleLike(POST)
         SettingsRepository(storage).updatePlayerSetting { it.copy(playerName = "手机修改玩家") }
-        val studio = NovelAiStudioStateRepository(storage); studio.initialize()
+        studio.initialize()
         val history = studio.history.first().single()
         studio.saveHistory(history.copy(recipe = history.recipe.copy(basePrompt = "手机修改配方\n正文保持原样")))
     }
 
-    suspend fun verify(root: Path, facts: JsonObject, modified: Boolean, absolutePaths: Boolean, model: String?): Map<Path, String> {
+    suspend fun verify(root: Path, facts: JsonObject, modified: Boolean, absolutePaths: Boolean, model: String?, studioModel: String? = model): Map<Path, String> {
         val storage = JsonFileStorage(root); val paths = linkedMapOf<Path, String>()
         val firstHash = facts.getValue("firstHash").jsonPrimitive.content; val secondHash = facts.getValue("secondHash").jsonPrimitive.content
         fun image(reference: String?, hash: String) {
@@ -211,6 +219,27 @@ object LanCrossPlatformFixture {
         image(guidance.baseImage?.path, firstHash); image(guidance.maskImage?.path, secondHash)
         val encoded = requireNotNull(guidance.vibes.single().encodedVibe); require(encoded.startsWith(NovelAiInlinePayloadStore.PREFIX))
         require(NovelAiInlinePayloadStore(root.toFile()).resolve(encoded) == vibe)
+        val current = requireNotNull(storage.loadSingleton(STUDIO_DRAFT, NovelAiStudioDraft.serializer()))
+        require(current.basePrompt == STUDIO_CURRENT_PROMPT && current.negativePrompt == "合成工作室负面原文")
+        require(current.extraPrompt == if (modified) STUDIO_ANDROID_EDIT else "")
+        require(current.aiDesignModelId == studioModel && !current.followDefaultNovelAiImageModel)
+        require(current.characters == recipe.characters && current.v5Settings == fixtureRecipe("", "", firstHash, secondHash, "").settings)
+        image(current.imageGuidance.baseImage?.path, firstHash); image(current.imageGuidance.maskImage?.path, secondHash)
+        require(current.imageGuidance.baseImage?.id == "cross-asset-a" && current.imageGuidance.vibes.single().id == "cross-vibe")
+        require(NovelAiInlinePayloadStore(root.toFile()).resolve(requireNotNull(current.imageGuidance.vibes.single().encodedVibe)) == vibe)
+        val undo = requireNotNull(storage.loadSingleton(STUDIO_UNDO, NovelAiStudioUndoDraft.serializer())?.draft)
+        require(undo.basePrompt == "电脑工作室上一步" && undo.negativePrompt == current.negativePrompt)
+        image(undo.imageGuidance.baseImage?.path, firstHash)
+        val checkpoint = requireNotNull(storage.loadSingleton(STUDIO_CHECKPOINT, NovelAiGuidanceEditorCheckpoint.serializer())?.guidance)
+        image(checkpoint.baseImage?.path, firstHash); image(checkpoint.maskImage?.path, secondHash)
+        val timeline = requireNotNull(storage.loadSingleton(STUDIO_TIMELINE, NovelAiStudioHistoryJournal.serializer()))
+        require(timeline.pending == null && timeline.committed.entries.size == if (modified) 4 else 3)
+        require(timeline.committed.entries[1].basePrompt == undo.basePrompt && timeline.committed.entries[2].basePrompt == STUDIO_CURRENT_PROMPT)
+        require(timeline.resolved(current.toEditHistorySnapshot(storage::retainStudioPayload)).current() == current.toEditHistorySnapshot(storage::retainStudioPayload))
+        timeline.committed.entries.drop(1).forEach { entry ->
+            image(entry.imageGuidance.baseImage?.path, firstHash); image(entry.imageGuidance.maskImage?.path, secondHash)
+            require(NovelAiInlinePayloadStore(root.toFile()).resolve(requireNotNull(entry.imageGuidance.vibes.single().encodedVibe)) == vibe)
+        }
         val original = json.decodeFromJsonElement(NovelAiPostProcessResultRecord.serializer(), facts.getValue("processed"))
         require(original.sourceSha256 == firstHash && original.imageSha256 == secondHash)
         val processed = requireNotNull(storage.loadEntity(LanSyncPostProcess.TYPE, original.id, NovelAiPostProcessResultRecord.serializer()))
