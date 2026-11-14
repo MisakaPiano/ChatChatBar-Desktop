@@ -9,8 +9,8 @@ import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ImageBatchRunPlanTest {
-    private fun plan(count: Int = 1, total: Int = 3, seconds: Int = 2, budget: Long = 0) =
-        ImageBatchRunPlan(count, total, ImageBatchPacing(fixedSeconds = seconds), budget, ImageBatchOrigin.STUDIO)
+    private fun plan(count: Int = 1, total: Int = 3, seconds: Int = 2, allowAnlas: Boolean = false) =
+        ImageBatchRunPlan(count, total, ImageBatchPacing(fixedSeconds = seconds), allowAnlas, ImageBatchOrigin.STUDIO)
     private val free: suspend (Int) -> ImageBatchQuote? = { ImageBatchQuote(0, 100) }
 
     @Test fun `single request has no pacing and saves once`() = runTest {
@@ -24,15 +24,15 @@ class ImageBatchRunPlanTest {
         assertEquals(10, events.count { it == "saved" }); assertEquals(9, events.count { it == "wait" })
         assertEquals("saved", events.first()); assertEquals("saved", events.last())
     }
-    @Test fun `ten requested images partition into 4 4 2 and count commits only`() = runTest {
+    @Test fun `four images times three batches saves exactly twelve without a partial tail`() = runTest {
         val counts = mutableListOf<Int>(); val states = mutableListOf<ImageBatchProgress>()
-        val saved = ImageBatchRunner(sleep = {}).run(plan(4, 10), ImageBatchControl(), free, onProgress = { states += it }) { counts += it; it }
-        assertEquals(listOf(4, 4, 2), counts); assertEquals(10, saved); assertEquals(10, states.last().saved)
+        val saved = ImageBatchRunner(sleep = {}).run(plan(4, 3), ImageBatchControl(), free, onProgress = { states += it }) { counts += it; it }
+        assertEquals(listOf(4, 4, 4), counts); assertEquals(12, saved); assertEquals(12, states.last().saved)
     }
-    @Test fun `invalid ranges counts budget and overflow are rejected`() {
+    @Test fun `invalid ranges counts and overflow are rejected`() {
         for (config in listOf(ImageBatchConfiguration(requestCount = 0), ImageBatchConfiguration(requestCount = 5),
-            ImageBatchConfiguration(continuous = true, target = 101), ImageBatchConfiguration(budget = -1),
-            ImageBatchConfiguration(budget = Long.MAX_VALUE), ImageBatchConfiguration(pacing = ImageBatchPacing(minSeconds = 46)),
+            ImageBatchConfiguration(numberOfBatches = 0), ImageBatchConfiguration(numberOfBatches = 26),
+            ImageBatchConfiguration(numberOfBatches = Int.MAX_VALUE), ImageBatchConfiguration(pacing = ImageBatchPacing(minSeconds = 46)),
             ImageBatchConfiguration(pacing = ImageBatchPacing(fixedSeconds = Int.MAX_VALUE)),
             ImageBatchConfiguration(pacing = ImageBatchPacing(minSeconds = -1)))) assertNotNull(config.validationError())
     }
@@ -40,6 +40,25 @@ class ImageBatchRunPlanTest {
         val random = Random(25); val values = List(40) { ImageBatchPacing(ImageBatchInterval.RANGE, minSeconds = 15, maxSeconds = 45).sampleSeconds(random) }
         assertTrue(values.all { it in 15..45 }); assertTrue(values.distinct().size > 10)
         assertEquals(15, ImageBatchPacing(ImageBatchInterval.RANGE, minSeconds = 15, maxSeconds = 15).sampleSeconds(random))
+    }
+    @Test fun `fractional waits round trip exactly and run only after each preceding commit`() = runTest {
+        assertEquals(1500L, ImageBatchPacing.parseSeconds("1.5"))
+        assertEquals(2300L, ImageBatchPacing.parseSeconds("2.3"))
+        assertNull(ImageBatchPacing.parseSeconds("1.0001"))
+        assertNull(ImageBatchPacing.parseSeconds("NaN"))
+        val pacing = ImageBatchPacing(fixedSeconds = 2, fixedMillis = 1500)
+        assertEquals(pacing, Json.decodeFromString<ImageBatchPacing>(Json.encodeToString(ImageBatchPacing.serializer(), pacing)))
+        val events = mutableListOf<String>()
+        ImageBatchRunner(sleep = { events += "wait:$it" }).run(plan(total = 2).copy(pacing = pacing), ImageBatchControl(), free) {
+            events += "saved"; it
+        }
+        assertEquals(listOf("saved", "wait:1000", "wait:500", "saved"), events)
+        val range = ImageBatchPacing(ImageBatchInterval.RANGE, minSeconds = 2, maxSeconds = 3, minMillis = 1500, maxMillis = 2300)
+        val random = Random(5)
+        val samples = List(100) { range.sampleMillis(random) }
+        assertTrue(samples.all { it in 1500..2300L })
+        assertTrue(samples.any { it % 1000 != 0L })
+        assertEquals(7000L, ImageBatchPacing(fixedSeconds = 7).sampleMillis())
     }
     @Test fun `stop during delay never requests next batch`() = runTest {
         var calls = 0; val waiting = CompletableDeferred<Unit>()
@@ -83,17 +102,59 @@ class ImageBatchRunPlanTest {
         val result = runCatching { ImageBatchRunner().run(plan(), ImageBatchControl(), { null }) { calls++; it } }
         assertTrue(result.exceptionOrNull() is ImageBatchStopped); assertEquals(0, calls)
     }
-    @Test fun `budget is rechecked each batch and cannot switch silently to paid`() = runTest {
+    @Test fun `disabled Anlas permission cannot switch silently from free to paid`() = runTest {
         var calls = 0
-        val result = runCatching { ImageBatchRunner(sleep = {}).run(plan(budget = 0), ImageBatchControl(), {
+        val result = runCatching { ImageBatchRunner(sleep = {}).run(plan(), ImageBatchControl(), {
             ImageBatchQuote(if (calls == 0) 0 else 3, 100)
         }) { calls++; it } }
         assertTrue(result.exceptionOrNull() is ImageBatchStopped); assertEquals(1, calls)
     }
-    @Test fun `cumulative budget includes request reservations`() = runTest {
+    @Test fun `one run quote covers unchanged later batches but never another task`() = runTest {
         var calls = 0
-        val result = runCatching { ImageBatchRunner(sleep = {}).run(plan(budget = 4), ImageBatchControl(), { ImageBatchQuote(3, 100) }) { calls++; it } }
-        assertTrue(result.exceptionOrNull() is ImageBatchStopped); assertEquals(1, calls)
+        var confirmations = 0
+        val control = ImageBatchControl()
+        ImageBatchRunner(sleep = {}).run(plan(allowAnlas = true), control, { ImageBatchQuote(3, 100) }, onProgress = {
+            it.paymentTicket?.let { ticket -> confirmations++; assertTrue(control.approvePayment(ticket)) }
+        }) { calls++; it }
+        assertEquals(3, calls); assertEquals(1, confirmations)
+        assertFalse(ImageBatchControl().paymentApproved(1, 3, 9))
+    }
+    @Test fun `higher corresponding batch quote requires confirmation even below the approved run total`() = runTest {
+        val control = ImageBatchControl()
+        val payment = control.requestPayment(1, 20, listOf(10, 5, 5))
+        assertTrue(control.approvePayment(payment.ticket))
+        assertTrue(control.paymentApproved(2, 5, 15))
+        assertFalse(control.paymentApproved(2, 6, 16))
+        assertFalse(control.paymentApproved(1, 10, 21))
+        val newer = control.requestPayment(2, 16, listOf(6, 5))
+        control.resume()
+        assertTrue(control.isPaused, "Pacing resume is not payment approval")
+        assertFalse(control.approvePayment(payment.ticket))
+        assertTrue(control.approvePayment(newer.ticket))
+        assertTrue(control.paymentApproved(2, 6, 16))
+        val another = ImageBatchControl()
+        another.requestPayment(1, 20, listOf(10, 5, 5))
+        assertFalse(another.approvePayment(newer.ticket))
+        assertTrue(another.isPaused)
+    }
+    @Test fun `actual runner pauses for a higher second quote despite savings below the confirmed total`() = runTest {
+        val control = ImageBatchControl()
+        var quotes = 0; var calls = 0; var approvals = 0
+        val states = mutableListOf<ImageBatchProgress>()
+        val job = launch {
+            ImageBatchRunner(sleep = {}).run(plan(allowAnlas = true), control,
+                quote = { ImageBatchQuote(when (++quotes) { 1 -> 10; 2 -> 4; else -> 6 }, 100, followingBatchAnlas = 5) },
+                onProgress = { update ->
+                    states += update
+                    if (approvals == 0) update.paymentTicket?.let { approvals++; control.approvePayment(it) }
+                }) { calls++; it }
+        }
+        runCurrent()
+        assertEquals(1, calls)
+        assertEquals(1, states.last().saved)
+        assertEquals(15L, states.last().confirmationEstimatedTotal)
+        assertTrue(control.isPaused)
+        job.cancelAndJoin()
     }
     @Test fun `missing owner stops before next request preserving committed progress`() = runTest {
         var calls = 0; var valid = true; val states = mutableListOf<ImageBatchProgress>()

@@ -14,6 +14,7 @@ import java.util.UUID
 import javax.imageio.ImageIO
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.json.*
 import okhttp3.*
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -23,10 +24,46 @@ import kotlin.test.*
 
 class DesktopStudioBatchRuntimeTest {
     private val usage = NovelAiAccountUsage(1000000L, 3, true, 100.0, false)
-    private fun plan(origin: ImageBatchOrigin) = ImageBatchRunPlan(4, 10,
-        ImageBatchPacing(ImageBatchInterval.NONE), 100000, origin)
+    private fun plan(origin: ImageBatchOrigin) = ImageBatchRunPlan(4, 3,
+        ImageBatchPacing(ImageBatchInterval.NONE), true, origin)
 
-    @Test fun `actual chat owner designs once then quotes each batch and cold repository retains ten linked images`() = runBlocking {
+    @Test fun `automatic completion uses saved session plan only after separate opt in`() = runBlocking {
+        fixture { transport ->
+            val f = DesktopAssistantImageActionTest.Fixture(transport.client)
+            try {
+                f.initialize()
+                val c = f.c
+                val session = c.chatRepository.getSession("session")!!
+                c.chatRepository.saveSessionSettingsDraft(session, session.copy(imageBatchPreferences =
+                    ImageBatchPreferences(true, 4, 3, ImageBatchPacing(ImageBatchInterval.NONE), true)))
+                val owner = DesktopChatImageRegeneration(c.chatRepository, c.characterRepository, c.settingsRepository,
+                    c.characterResourceStore, c.dataOperationCoordinator, c.desktopSecretStore, c.taskRuntime,
+                    c.novelAiInfrastructure, f.resolver, transport.client, accountForBatch = { usage })
+                val automatic = DesktopAutomaticChatImages(c.chatRepository, c.characterRepository, c.settingsRepository,
+                    f.resolver, { error("Legacy designer must not run") }, c.characterResourceStore,
+                    c.dataOperationCoordinator, c.desktopSecretStore,
+                    launch = { _, _, _ -> error("Legacy request path must not run") },
+                    generateWithSessionPlan = { original, stopped -> owner.generateFromAssistant(original, automatic = true, stopped = stopped) })
+                val result = DesktopRealChatResult(ChatMessage.create("session", MessageRole.USER, "Synthetic input"), true,
+                    f.source, com.example.chatbar.domain.chat.ProviderCompletionMetadata("stop"))
+                assertNull(automatic.completed(result) { false })
+                assertTrue(transport.counts.isEmpty())
+                val disabled = c.chatRepository.getSession("session")!!
+                c.chatRepository.saveSessionSettingsDraft(disabled, disabled.copy(automaticImageGenerationEnabled = true))
+                assertEquals("自动生图已启动", automatic.completed(result) { false })
+                val task = c.taskRuntime.tasks.value.first { it.targetMessageId == f.source.id }.taskId
+                val approval = launch { owner.batchProgress.collect { values ->
+                    values[f.source.id]?.paymentTicket?.let { owner.confirmBatchPayment(f.source.id, it) }
+                } }
+                try { assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(task).status) }
+                finally { approval.cancelAndJoin() }
+                assertEquals(listOf(4, 4, 4), transport.counts.toList())
+                assertEquals(3, c.chatRepository.getMessages("session").count { it.generatedFromMessageId == f.source.id })
+            } finally { f.close() }
+        }
+    }
+
+    @Test fun `actual chat owner designs once then quotes each batch and cold repository retains twelve linked images`() = runBlocking {
         fixture { transport ->
             val f = DesktopAssistantImageActionTest.Fixture(transport.client)
             try {
@@ -36,15 +73,28 @@ class DesktopStudioBatchRuntimeTest {
                 val owner = DesktopChatImageRegeneration(c.chatRepository, c.characterRepository, c.settingsRepository,
                     c.characterResourceStore, c.dataOperationCoordinator, c.desktopSecretStore, c.taskRuntime,
                     c.novelAiInfrastructure, f.resolver, transport.client, accountForBatch = { quotes++; usage })
+                val session = c.chatRepository.getSession("session")!!
+                c.chatRepository.saveSessionSettingsDraft(session, session.copy(imageBatchPreferences =
+                    ImageBatchPreferences(true, 4, 3, ImageBatchPacing(ImageBatchInterval.NONE), true)))
                 val task = owner.generateFromAssistant(f.source, DesktopChatImageRequirements("synthetic hint", "synthetic preference", false,
-                    plan(ImageBatchOrigin.CHAT_MANUAL)))
-                assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(task).status)
-                assertEquals(listOf(4, 4, 2), transport.counts.toList())
-                assertEquals(3, quotes)
+                    batchPlan = null))
+                val approval = launch { owner.batchProgress.collect { values ->
+                    values[f.source.id]?.paymentTicket?.let {
+                        owner.pauseBatch(f.source.id)
+                        owner.confirmBatchPayment(f.source.id, it)
+                        assertNull(owner.batchProgress.value[f.source.id]?.paymentTicket)
+                        assertTrue(owner.batchPaused(f.source.id))
+                        owner.resumeBatch(f.source.id)
+                    }
+                } }
+                try { assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(task).status) }
+                finally { approval.cancelAndJoin() }
+                assertEquals(listOf(4, 4, 4), transport.counts.toList())
+                assertEquals(4, quotes, "First paid quote is rechecked after current-run confirmation")
                 assertEquals(2, f.design.requests.size, "Only the original plan and final design stages; no redesign per batch")
                 val messages = com.example.chatbar.data.repository.ChatRepository(JsonFileStorage(c.appDataRoot)).getMessages("session")
                 val images = messages.filter { it.generatedFromMessageId == f.source.id }
-                assertEquals(listOf(4, 4, 2), images.map { it.images.size })
+                assertEquals(listOf(4, 4, 4), images.map { it.images.size })
                 assertEquals(f.source, messages.single { it.id == f.source.id })
                 assertEquals("saved-preference-fixture", c.chatRepository.getSession("session")!!.imagePromptPreference)
                 assertTrue(images.flatMap { it.images }.all { c.characterResourceStore.readBytes(it).isNotEmpty() })
@@ -85,26 +135,30 @@ class DesktopStudioBatchRuntimeTest {
                 freezeCredential = { DesktopCredentialCall(c.desktopSecretStore, DesktopCredentialKey.NovelAiToken, "synthetic-account", f.token) })
             controller.load()
             controller.edit { it.copy(basePrompt = "synthetic scene", followDefaultNovelAiImageModel = false,
-                continuousModeEnabled = true, continuousTargetCount = 10,
+                batchCount = 3,
                 v45Settings = NovelAiGenerationSettings(count = 4, customWidth = 512, customHeight = 512)) }
             controller.generate()
             assertNotNull(controller.state.value.pendingBatchDraft)
             assertTrue(f.counts.isEmpty(), "Opening confirmation must not request images")
             assertTrue(controller.confirmBatch(plan(ImageBatchOrigin.STUDIO)))
+            val approval = launch { controller.state.collect { state ->
+                state.batchProgress?.paymentTicket?.let(controller::confirmBatchPayment)
+            } }
             val task = assertNotNull(controller.state.value.generationTaskId)
-            assertEquals(DesktopTaskStatus.COMPLETED, terminal(c.taskRuntime, task).status)
-            assertEquals(listOf(4, 4, 2), f.counts.toList())
-            assertEquals(10, controller.state.value.batchProgress?.saved)
+            try { assertEquals(DesktopTaskStatus.COMPLETED, terminal(c.taskRuntime, task).status) }
+            finally { approval.cancelAndJoin() }
+            assertEquals(listOf(4, 4, 4), f.counts.toList())
+            assertEquals(12, controller.state.value.batchProgress?.saved)
             assertFalse(controller.manualBatchRunning)
             f.reopen()
             val repository = NovelAiStudioStateRepository(JsonFileStorage(f.root))
             repository.initialize()
             val history = repository.history.first()
             assertEquals(3, history.size)
-            assertEquals(10, history.sumOf { it.images.size })
+            assertEquals(12, history.sumOf { it.images.size })
             assertTrue(history.all { it.images.size == it.recipe.settings.count })
             assertTrue(history.flatMap { it.images }.all { f.app.characterResourceStore.readBytes(it.path).isNotEmpty() })
-            assertEquals(listOf(4, 4, 2), f.counts.toList())
+            assertEquals(listOf(4, 4, 4), f.counts.toList())
         }
     }
 
@@ -124,19 +178,20 @@ class DesktopStudioBatchRuntimeTest {
             }, client = f.client)
             val settings = NovelAiGenerationSettings(count = 4, customWidth = 512, customHeight = 512)
             val draft = NovelAiStudioDraft(basePrompt = "synthetic scene").withActiveSettings(settings)
-            runDesktopManualImageBatch(plan(ImageBatchOrigin.CHAT_MANUAL), ImageBatchControl(), f.token,
+            val control = ImageBatchControl()
+            runDesktopManualImageBatch(plan(ImageBatchOrigin.CHAT_MANUAL), control, f.token,
                 account = { usage }, estimate = { count, account -> NovelAiImageCostEstimator.estimate(settings.copy(count = count), account) },
-                validateOwner = { check(eligible()) }, onProgress = {},
+                validateOwner = { check(eligible()) }, onProgress = { update -> update.paymentTicket?.let { control.approvePayment(it) } },
                 runner = ImageBatchRunner(admission = c.taskRuntime.imageBatchAdmission)) { count, _ ->
                 runtime.generate(draft.withActiveSettings(settings.copy(count = count)), promptPlan = prompt, safeBatchRequest = true).images.size
             }
             f.reopen()
             val messages = f.app.chatRepository.getMessages("session")
             assertEquals(original, messages.first())
-            assertEquals(listOf(4, 4, 2), messages.drop(1).map { it.images.size })
+            assertEquals(listOf(4, 4, 4), messages.drop(1).map { it.images.size })
             assertTrue(messages.drop(1).all { it.generatedFromMessageId == original.id })
-            assertEquals(listOf(4, 4, 2), f.counts.toList())
-            assertEquals((1..10).toList(), messages.drop(1).flatMap { it.images }.map {
+            assertEquals(listOf(4, 4, 4), f.counts.toList())
+            assertEquals((1..12).toList(), messages.drop(1).flatMap { it.images }.map {
                 DesktopImageEditing.decode(f.app.characterResourceStore.readBytes(it)).getRGB(0, 0) and 0xff
             })
         }

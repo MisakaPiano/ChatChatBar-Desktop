@@ -127,7 +127,8 @@ class DesktopPhase7R2R1Test {
         c.desktopSecretStore.save(DesktopCredentialKey.NovelAiToken, "synthetic-fixture-token")
         val service = DesktopChatImageRegeneration(c.chatRepository, c.characterRepository, c.settingsRepository,
             c.characterResourceStore, c.dataOperationCoordinator, c.desktopSecretStore, c.taskRuntime,
-            c.novelAiInfrastructure, c.effectiveModelResolver, client)
+            c.novelAiInfrastructure, c.effectiveModelResolver, client,
+            accountForBatch = { NovelAiAccountUsage(1000000, 3, true, 100.0, false) })
         val original = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "source"))
         val draft = NovelAiImageRegenerationDraft("fixture-base", emptyList(), "fixture-negative", "fixture", 512, 512, "fixture-style")
         val settings = NovelAiGenerationSettings(seedMode = NovelAiSeedMode.FIXED, seed = 37, customWidth = 512, customHeight = 512)

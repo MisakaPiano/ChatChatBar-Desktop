@@ -39,6 +39,8 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     var requestedSource by remember(message.id) { mutableStateOf<ChatMessage?>(null) }
     var persistPreference by remember(message.id) { mutableStateOf(false) }
     var batchConfig by remember(message.id) { mutableStateOf(ImageBatchConfiguration()) }
+    var batchEnabled by remember(message.id) { mutableStateOf(false) }
+    var preferencesBaseline by remember(message.id) { mutableStateOf(requireNotNull(state.selectedSession)) }
     var confirmed by remember(message.id, batchConfig) { mutableStateOf(false) }
     var previewRefresh by remember(message.id) { mutableStateOf(0) }
     var handledPreviewRefresh by remember(message.id) { mutableStateOf(0) }
@@ -78,7 +80,11 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
             if (readiness != DesktopChatImagePreflight.READY) imageStatus = readiness.reason
             else {
                 requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
-                persistPreference = savePreference; batchConfig = ImageBatchConfiguration(); confirmed = false; requirementsOpen = true
+                persistPreference = savePreference
+                preferencesBaseline = state.selectedSession
+                batchConfig = state.selectedSession.imageBatchPreferences.configuration(useSavedBatch = true)
+                batchEnabled = state.selectedSession.imageBatchPreferences.enabled
+                confirmed = false; requirementsOpen = true
             }
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { imageStatus = "无法读取生图配置，请检查后重试" }
@@ -86,7 +92,7 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     actionBar {
         if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
             DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) {
-                openRequirements(false)
+                requestedSource = message; generate(null)
             }
             DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = interactionEnabled) {
                 openRequirements(true)
@@ -99,7 +105,10 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         batches[message.id]?.let { progress ->
             StatusText(progress.label())
             if (running && owner.batchRunning(message.id)) StudioActions {
-                if (progress.stage == ImageBatchStage.PAUSED || owner.batchPaused(message.id))
+                if (progress.paymentTicket != null) BootstrapButton("确认本轮约 ${progress.confirmationEstimatedTotal} Anlas") {
+                    owner.confirmBatchPayment(message.id, progress.paymentTicket)
+                }
+                else if (progress.stage == ImageBatchStage.PAUSED || owner.batchPaused(message.id))
                     BootstrapButton("继续批次") { owner.resumeBatch(message.id) }
                 else BootstrapButton("暂停批次", secondary = true) { owner.pauseBatch(message.id) }
                 StatusText("暂停在当前批次完成后生效；停止请使用下方任务按钮。")
@@ -123,7 +132,21 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running || !interactionEnabled,
             imageStatus, { requirementsOpen = false }, canGenerate = confirmedPlan != null,
             options = {
+                StudioSwitch("启用会话批量计划", batchEnabled) { batchEnabled = !batchEnabled }
                 DesktopImageBatchOptions(batchConfig, ImageBatchOrigin.CHAT_MANUAL, { batchConfig = it }, confirmed, { confirmed = it })
+                BootstrapButton("保存会话生图计划", enabled = batchConfig.validationError() == null && !running, secondary = true) {
+                    scope.launch {
+                        try {
+                            requireNotNull(controller.imageRegeneration).savePreferences(message, preferencesBaseline,
+                                ImageBatchPreferences(batchEnabled, batchConfig.requestCount, batchConfig.numberOfBatches,
+                                    batchConfig.pacing, batchConfig.allowAnlasSpending), preference)
+                            controller.refreshAfterTerminalTask(message.sessionId)
+                            preferencesBaseline = requireNotNull(controller.state.value.selectedSession)
+                            imageStatus = "会话生图计划已保存；未开启自动生图或启动请求"
+                        } catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { imageStatus = "保存未完成，来源或会话设置可能已变化，请重新打开" }
+                    }
+                }
                 StatusText(if (previewBusy) "正在查询费用预览……" else preview)
                 BootstrapButton("刷新费用预览", enabled = !previewBusy, secondary = true) { previewRefresh++ }
             }) {

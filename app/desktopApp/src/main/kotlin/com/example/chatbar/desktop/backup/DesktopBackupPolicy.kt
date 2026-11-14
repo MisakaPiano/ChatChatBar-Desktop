@@ -60,6 +60,9 @@ internal object DesktopBackupPolicy {
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =
         DesktopMomentBackupExtension.hasVersions(value) ||
+        (value["imageBatchPreferences"] as? JsonObject)?.let {
+            backupJson.decodeFromJsonElement(ImageBatchPreferences.serializer(), it) != ImageBatchPreferences()
+        } == true ||
         value["desktopPlayerRole"] is JsonObject ||
         (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||

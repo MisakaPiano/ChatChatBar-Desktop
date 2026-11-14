@@ -263,12 +263,16 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
     StudioDisclosure("高级设置", studioAdvancedSummary(s)) {
         StudioAdvancedSettings(s, ::change)
     }
-    StudioSwitch("连续生成", draft.continuousModeEnabled) { edit { it.copy(continuousModeEnabled = !it.continuousModeEnabled) } }
-    if (draft.continuousModeEnabled) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("目标图片数")
-        StudioNumericInput("目标图片数", draft.continuousTargetCount.toString(), Modifier.width(80.dp)) { raw -> raw.toIntOrNull()?.takeIf { it > 0 }?.let { value -> edit { it.copy(continuousTargetCount = value) } } }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatusText("生成批数")
+        StudioNumericInput("生成批数", draft.batchCount.toString(), Modifier.width(80.dp)) { raw ->
+            raw.toIntOrNull()?.takeIf { it in 1..25 }?.let { value -> edit { it.copy(batchCount = value, continuousModeEnabled = false) } }
+        }
+        StatusText("每批 ${s.count} 张 · 合计 ${s.count * draft.batchCount} 张")
     }
-    if (draft.continuousModeEnabled) DesktopImageBatchPacing(draft.batchPacing) { value -> edit { it.copy(batchPacing = value) } }
+    if (draft.continuousModeEnabled) StatusText("旧连续目标仅保留在预设中；请按每批张数与批数重新确认计划。", DesktopBootstrapColors.warning)
+    DesktopImageBatchPacing(draft.batchPacing) { value -> edit { it.copy(batchPacing = value) } }
+    StudioSwitch("允许消耗 Anlas", draft.allowBatchAnlasSpending) { edit { it.copy(allowBatchAnlasSpending = !it.allowBatchAnlasSpending) } }
     s.requestValidationError(draft.characters.size)?.let { StatusText(it, DesktopBootstrapColors.warning) }
     }
     if (customSize) StudioCustomSizeDialog(s, onClose = { customSize = false }) { width, height ->

@@ -33,6 +33,7 @@ internal suspend fun runDesktopManualImageBatch(
     validateOwner: suspend () -> Unit,
     onProgress: (ImageBatchProgress) -> Unit,
     runner: ImageBatchRunner = ImageBatchRunner(),
+    estimateFollowing: (suspend (Int, NovelAiAccountUsage) -> NovelAiGenerationCost)? = null,
     generateAndSave: suspend (Int, NovelAiGenerationCost) -> Int,
 ): Int {
     require(credential.isNotBlank())
@@ -45,12 +46,9 @@ internal suspend fun runDesktopManualImageBatch(
             catch (_: Exception) { throw ImageBatchStopped("账户状态获取失败；本批请求尚未发出，请重新检查并确认") })
         val cost = estimate(count, current)
         admittedCost = cost
-        ImageBatchQuote(cost.anlas.toLong(), current.anlas, cost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE)
-    }, validateOwner = validateOwner, onProgress = { update ->
-        onProgress(update.copy(detail = listOf(update.detail,
-            "本次剩余估算预算 ${(plan.maxEstimatedAnlas - update.estimatedSpent).coerceAtLeast(0)} Anlas")
-            .filter { it.isNotBlank() }.joinToString("\n")))
-    }) { count ->
+        ImageBatchQuote(cost.anlas.toLong(), current.anlas, cost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE,
+            estimateFollowing?.invoke(count, current)?.anlas?.toLong() ?: cost.anlas.toLong())
+    }, validateOwner = validateOwner, onProgress = onProgress) { count ->
         validateOwner()
         currentCoroutineContext().ensureActive()
         val cost = requireNotNull(admittedCost)

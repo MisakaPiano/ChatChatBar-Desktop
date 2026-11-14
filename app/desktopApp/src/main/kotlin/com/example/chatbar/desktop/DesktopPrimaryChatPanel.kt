@@ -1407,8 +1407,11 @@ internal fun DesktopSessionSettingsBody(
         controller.editSessionSettings { it.copy(novelAiNaturalLanguageMode = !it.novelAiNaturalLanguageMode) }
     }
     StatusText("自然语言偏好仅在实际生图模型为 V5 时生效；V4.5 保留偏好但暂停使用。")
-    BootstrapButton(if (draft.automaticImageGenerationEnabled) "自动聊天图片偏好：开启" else "自动聊天图片偏好：关闭", secondary = true) {
+    StudioSwitch("自动聊天图片", draft.automaticImageGenerationEnabled) {
         controller.editSessionSettings { it.copy(automaticImageGenerationEnabled = !it.automaticImageGenerationEnabled) }
+    }
+    DesktopSessionImageBatchSettings(draft.imageBatchPreferences) { preferences ->
+        controller.editSessionSettings { it.copy(imageBatchPreferences = preferences) }
     }
     }
     if (tab == DesktopSessionSettingsTab.RAG) {

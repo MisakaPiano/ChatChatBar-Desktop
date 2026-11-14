@@ -1,0 +1,65 @@
+name: Desktop saved batch plan and current-run quote verification
+on:
+  push:
+    branches: [codex/desktop-batch-ux-alignment-20261115]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind native canonical temporary directory for synthetic repositories
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-reply-fixtures'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class ReplyFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+      - name: Verify exact batches current-run prices fractional waits and portable settings
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest'
+          --tests 'com.example.chatbar.domain.image.NovelAiBatchPresetCustodyTest'
+          --tests 'com.example.chatbar.data.repository.SettingsDraftMergeTest'
+          --tests 'com.example.chatbar.domain.chat.SaveSlotSharedContractTest'
+          --tests 'com.example.chatbar.domain.chat.SaveSlotSerializationTest'
+          --no-daemon --stacktrace
+      - name: Verify real Desktop task owners session backup and compact UI
+        working-directory: app
+        env:
+          CCB_IMAGE_BATCH_REVIEW_DIR: ${{ runner.temp }}/ccb-batch-ux-review
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopManualImageBatchTest'
+          --tests 'com.example.chatbar.desktop.DesktopStudioBatchRuntimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopImageBatchOptionsTest'
+          --tests 'com.example.chatbar.desktop.DesktopAssistantImageActionTest'
+          --tests 'com.example.chatbar.desktop.DesktopAssistantImagePresentationTest'
+          --tests 'com.example.chatbar.desktop.DesktopPhase7R2R1Test'
+          --tests 'com.example.chatbar.desktop.DesktopPhase7StudioTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopBatchPreferencesBackupTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-batch-ux-alignment-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/
+            ${{ runner.temp }}/ccb-batch-ux-review/

@@ -77,6 +77,14 @@ internal class DesktopChatImageRegeneration(
         progress.update { values -> values[messageId]?.let { values + (messageId to it.copy(detail = "已请求继续；仍遵守剩余等待")) } ?: values }
     }
     fun batchPaused(messageId: String): Boolean = controls[messageId]?.isPaused == true
+    fun confirmBatchPayment(messageId: String, ticket: String) {
+        val control = controls[messageId] ?: return
+        if (control.approvePayment(ticket)) progress.update { values ->
+            val current = values[messageId]?.takeIf { it.paymentTicket == ticket } ?: return@update values
+            values + (messageId to current.copy(paymentTicket = null, confirmationEstimatedTotal = null,
+                detail = if (control.isPaused) "费用已确认；任务仍暂停，可点击继续批次" else "本轮费用已确认，发出请求前仍会重新核费"))
+        }
+    }
     fun batchRunning(messageId: String): Boolean = controls.containsKey(messageId)
     private suspend fun credential(): DesktopCredentialCall {
         val key = DesktopCredentialKey.NovelAiToken
@@ -115,14 +123,29 @@ internal class DesktopChatImageRegeneration(
         val result = preflight(original)
         if (result != DesktopChatImagePreflight.READY) throw DesktopChatImagePreflightException(result)
     }
+    suspend fun savePreferences(original: ChatMessage, baseline: ChatSession, preferences: ImageBatchPreferences,
+        imagePreference: String) {
+        require(baseline.id == original.sessionId)
+        preferences.validationError()?.let { error(it) }
+        require(chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original))
+        require(chats.getSession(baseline.id)?.characterCardId == baseline.characterCardId)
+        chats.saveSessionSettingsDraft(baseline, baseline.copy(imageBatchPreferences = preferences,
+            imagePromptPreference = imagePreference))
+    }
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
-    suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
+    suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null,
+        automatic: Boolean = false, stopped: () -> Boolean = { false }): String {
         requirePreflight(original)
         val openingSession = requireNotNull(chats.getSession(original.sessionId))
-        val batchPlan = requirements?.batchPlan
-        if (batchPlan != null) require(batchPlan.origin == ImageBatchOrigin.CHAT_MANUAL)
-        suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
-            (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value?.characterCardId == openingSession.characterCardId
+        val origin = if (automatic) ImageBatchOrigin.CHAT_AUTOMATIC else ImageBatchOrigin.CHAT_MANUAL
+        val batchPlan = requirements?.batchPlan ?: openingSession.imageBatchPreferences.configuration().freeze(origin)
+        require(batchPlan.origin == origin)
+        suspend fun eligible(): Boolean {
+            val current = (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value ?: return false
+            return !stopped() && (!automatic || current.automaticImageGenerationEnabled) &&
+                current.characterCardId == openingSession.characterCardId &&
+                chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)
+        }
         require(eligible())
         val session = openingSession
         val originalCard = requireNotNull(characters.getById(session.characterCardId))
@@ -139,15 +162,18 @@ internal class DesktopChatImageRegeneration(
         // A retry retains its request snapshot without writing over a later session preference.
         if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
             openingSession.copy(imagePromptPreference = preference))
-        val control = batchPlan?.let { ImageBatchControl() }
-        if (control != null) {
-            check(controls.putIfAbsent(original.id, control) == null)
-            progress.update { it + (original.id to ImageBatchProgress(target = requireNotNull(batchPlan).targetTotalImages,
-                batches = batchPlan.batches.size, detail = "正在准备本次图片；尚未发出生图请求")) }
-        }
+        val control = ImageBatchControl()
+        check(controls.putIfAbsent(original.id, control) == null)
         try {
-        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = batchPlan == null, queueIfBusy = true,
-            batchManagedWork = batchPlan != null, onFinished = { if (control != null) controls.remove(original.id, control) }) { report -> withContext(frozen) {
+        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id,
+            retryable = !automatic && batchPlan.targetTotalImages == 1, queueIfBusy = true,
+            batchManagedWork = true, onFinished = { controls.remove(original.id, control) }) { report ->
+            val runControl = controls[original.id]?.takeIf { it === control } ?: ImageBatchControl().also {
+                check(controls.putIfAbsent(original.id, it) == null)
+            }
+            progress.update { it + (original.id to ImageBatchProgress(target = batchPlan.targetTotalImages,
+                batches = batchPlan.batches.size, detail = "正在准备本次图片；尚未发出生图请求")) }
+            withContext(frozen) {
             try {
             require(eligible())
             val plan = infrastructure.promptDesigner().design(messages,
@@ -169,10 +195,7 @@ internal class DesktopChatImageRegeneration(
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible,
                     expectedCharacterCardId = openingSession.characterCardId)
             }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics)
-            if (batchPlan == null) ImageBatchRunner.ordinaryStudioRequest {
-                runtime.generate(draft, promptPlan = plan, maxRateLimitRetries = 10,
-                    onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") })
-            } else runDesktopManualImageBatch(batchPlan, requireNotNull(control), requireNotNull(frozen.read()),
+            runDesktopManualImageBatch(batchPlan, runControl, requireNotNull(frozen.read()),
                 runner = ImageBatchRunner(admission = tasks.imageBatchAdmission),
                 account = { accountForBatch?.invoke() ?: accountService.fetchCancellable(requireNotNull(frozen.read())) },
                 estimate = { count, usage -> NovelAiImageCostEstimator.estimate(launch.copy(count = count), usage) },
@@ -191,14 +214,37 @@ internal class DesktopChatImageRegeneration(
             } catch (cancelled: CancellationException) {
                 progress.update { values -> values[original.id]?.let { values + (original.id to it.copy(detail = "已停止；已保存图片保留，请核对已提交请求的计费")) } ?: values }
                 throw cancelled
-            } finally { if (control != null) controls.remove(original.id, control) }
+            } finally { controls.remove(original.id, runControl) }
         } }
         } catch (failure: Throwable) {
-            if (control != null) controls.remove(original.id, control)
+            controls.remove(original.id, control)
             throw failure
         }
     }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
+    suspend fun sessionBatchPreferences(message: ChatMessage): ImageBatchPreferences =
+        requireNotNull(chats.getSession(message.sessionId)).imageBatchPreferences
+    suspend fun saveBatchPreferences(message: ChatMessage, baseline: ImageBatchPreferences, preferences: ImageBatchPreferences) {
+        val session = requireNotNull(chats.getSession(message.sessionId))
+        require(session.imageBatchPreferences == baseline) { "会话计划已变化，请重新打开" }
+        savePreferences(message, session, preferences, session.imagePromptPreference)
+    }
+
+    suspend fun previewRegeneration(message: ChatMessage, launch: NovelAiGenerationSettings,
+        useSessionPlan: Boolean, allowAnlas: Boolean): String {
+        val config = if (useSessionPlan) sessionBatchPreferences(message).configuration(useSavedBatch = true)
+            else ImageBatchConfiguration(allowAnlasSpending = allowAnlas)
+        config.validationError()?.let { return "重新生成 · $it" }
+        val frozen = credential()
+        val token = frozen.read()?.takeIf(String::isNotBlank) ?: return "重新生成 · 费用未知"
+        val usage = withContext(frozen) { previewAccounts.read(token) {
+            accountForBatch?.invoke() ?: accountService.fetchCancellable(token)
+        } } ?: return "重新生成 · 费用未知"
+        val perBatch = NovelAiImageCostEstimator.estimate(launch.copy(count = config.requestCount), usage).anlas.toLong()
+        val total = perBatch * config.numberOfBatches
+        return "重新生成 · " + (if (total == 0L) "估算免 Anlas" else "整轮约 $total Anlas") +
+            "（每批 $perBatch Anlas · ${config.requestCount} 张 × ${config.numberOfBatches} 批）"
+    }
     suspend fun initialSettings(message: ChatMessage, draft: NovelAiImageRegenerationDraft): NovelAiGenerationSettings {
         val session = requireNotNull(chats.getSession(message.sessionId))
         val card = characters.getById(session.characterCardId)
@@ -206,28 +252,53 @@ internal class DesktopChatImageRegeneration(
             card?.defaultNovelAiImageModel, settings.getAppSettings().novelAiImageModel), guidance = 8f,
             customWidth = draft.width, customHeight = draft.height)
             .let { card?.defaultImageGenerationSettings?.applyTo(it) ?: it }
+            .copy(customWidth = draft.width, customHeight = draft.height, count = 1)
     }
-    suspend fun generate(original: ChatMessage, draft: NovelAiImageRegenerationDraft, launch: NovelAiGenerationSettings): String {
+    suspend fun generate(original: ChatMessage, draft: NovelAiImageRegenerationDraft, launch: NovelAiGenerationSettings,
+        useSessionPlan: Boolean = false, allowAnlas: Boolean = false): String {
         require(draft.canRegenerate)
-        launch.validationError(draft.characterPrompts.size)?.let { error(it) }
+        val session = requireNotNull(chats.getSession(original.sessionId))
+        val configuration = if (useSessionPlan) session.imageBatchPreferences.configuration(useSavedBatch = true)
+            else ImageBatchConfiguration(allowAnlasSpending = allowAnlas)
+        val batchPlan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
+        val requestSettings = launch.copy(count = batchPlan.requestCount)
+        requestSettings.validationError(draft.characterPrompts.size)?.let { error(it) }
         val plan = draft.toPromptPlan()
         val studio = NovelAiStudioDraft(stylePrompt = draft.stylePrompt, basePrompt = draft.baseCaption,
             negativePrompt = draft.negativePrompt, characters = draft.characterPrompts.map {
                 NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt)
-            }).withActiveSettings(launch)
+            }).withActiveSettings(requestSettings)
         suspend fun eligible(): Boolean = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
-            chats.readSessionDurable(original.sessionId) is EntityReadResult.Valid
+            (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value?.characterCardId == session.characterCardId
         require(eligible())
         val frozen = credential()
         require(!frozen.read().isNullOrBlank())
-        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id, retryable = true, queueIfBusy = true) { report -> withContext(frozen) {
+        val control = ImageBatchControl()
+        check(controls.putIfAbsent(original.id, control) == null)
+        try { return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id, retryable = batchPlan.targetTotalImages == 1,
+            queueIfBusy = true, batchManagedWork = true, onFinished = { controls.remove(original.id, control) }) { report ->
+            val runControl = controls[original.id]?.takeIf { it === control } ?: ImageBatchControl().also {
+                check(controls.putIfAbsent(original.id, it) == null)
+            }
+            try { withContext(frozen) {
             require(eligible())
             report.generationStatus("正在生成图片")
-            DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
-                persistDesktopChatImages(chats, resources, coordinator, original, plan, launch.imageSize(), bytes, recipe, ::eligible)
-            }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
-                onIntermediate = { _, step, _ -> report.generationStatus("重新生成 · Step $step") })
-        } }
+            val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
+                persistDesktopChatImages(chats, resources, coordinator, original, plan, requestSettings.imageSize(), bytes, recipe,
+                    ::eligible, session.characterCardId)
+            }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics)
+            runDesktopManualImageBatch(batchPlan, runControl, requireNotNull(frozen.read()),
+                account = { accountForBatch?.invoke() ?: accountService.fetchCancellable(requireNotNull(frozen.read())) },
+                estimate = { count, usage -> NovelAiImageCostEstimator.estimate(requestSettings.copy(count = count), usage) },
+                validateOwner = { require(eligible()) },
+                onProgress = { update -> progress.update { it + (original.id to update) }; report(update.label()) },
+                runner = ImageBatchRunner(admission = tasks.imageBatchAdmission)) { count, _ ->
+                runtime.generate(studio.withActiveSettings(requestSettings.copy(count = count)), promptPlan = plan,
+                    safeBatchRequest = true,
+                    onIntermediate = { _, step, _ -> report.generationStatus("重新生成 · Step $step") }).images.size
+            }
+        } } finally { controls.remove(original.id, runControl) }
+        } } catch (failure: Throwable) { controls.remove(original.id, control); throw failure }
     }
 }
 

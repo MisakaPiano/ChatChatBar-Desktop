@@ -587,7 +587,11 @@ class DesktopAppContainer internal constructor(
         DesktopAutomaticChatImages(chatRepository, characterRepository, settingsRepository, effectiveModelResolver,
             novelAiInfrastructure::promptDesigner, characterResourceStore, dataOperationCoordinator, desktopSecretStore,
             diagnostics = { taskRuntime.diagnostics },
-            launch = { sessionId, messageId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, messageId, retryable = true, work = work) })
+            launch = { _, _, _ -> error("SESSION_IMAGE_PLAN_OWNER_REQUIRED") },
+            generateWithSessionPlan = { original, stopped ->
+                requireNotNull(primaryChatController.imageRegeneration).generateFromAssistant(original,
+                    automatic = true, stopped = stopped)
+            })
     }
 
     internal val characterResidency by lazy {

@@ -59,7 +59,8 @@ class DesktopAssistantImageActionTest {
         }.build()
         val service = DesktopChatImageRegeneration(c.chatRepository, c.characterRepository, c.settingsRepository,
             c.characterResourceStore, c.dataOperationCoordinator, c.desktopSecretStore, c.taskRuntime,
-            c.novelAiInfrastructure, resolver, client)
+            c.novelAiInfrastructure, resolver, client,
+            accountForBatch = { NovelAiAccountUsage(1000000, 3, true, 100.0, false) })
         lateinit var source: ChatMessage
         suspend fun initialize() {
             c.modelRepository.saveModel(model)

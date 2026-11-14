@@ -24,6 +24,7 @@ internal class DesktopAutomaticChatImages(
     private val secrets: DesktopSecretStore,
     private val diagnostics: () -> DesktopTransportDiagnosticsOwner? = { null },
     private val launch: (String, String, suspend ((String) -> Unit) -> Unit) -> String,
+    private val generateWithSessionPlan: (suspend (ChatMessage, () -> Boolean) -> String)? = null,
 ) {
     suspend fun completed(result: DesktopRealChatResult, stopped: () -> Boolean): String? {
         val original = result.assistant
@@ -36,6 +37,10 @@ internal class DesktopAutomaticChatImages(
             ?: if (stopped()) "回复已停止" else null
         if (reason != null) return "自动生图已跳过：$reason"
         if (!eligible(original, stopped)) return "自动生图已跳过：消息或设置已变化"
+        generateWithSessionPlan?.let { generate ->
+            return try { generate(original, stopped); "自动生图已启动" }
+            catch (_: DesktopTaskAdmissionException) { "自动生图已跳过：已有图像任务运行" }
+        }
         return try {
             launch(original.sessionId, original.id) { report ->
                 require(eligible(original, stopped))

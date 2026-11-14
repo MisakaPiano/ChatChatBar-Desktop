@@ -19,7 +19,7 @@ class DesktopImageBatchOptionsTest {
 
     @Test fun `narrow and wide chat confirmation keeps submit visible and changing plan invalidates consent`() = runBlocking(edt) {
         for (width in listOf(380, 900)) {
-            var config by mutableStateOf(ImageBatchConfiguration(4, true, 10))
+            var config by mutableStateOf(ImageBatchConfiguration(4, 3))
             var submission: ImageBatchRunPlan? = null
             val scene = ImageComposeScene(width, 700, coroutineContext = edt) {
                 var confirmed by remember(config) { mutableStateOf(false) }
@@ -34,18 +34,18 @@ class DesktopImageBatchOptionsTest {
                 assertTrue(scene.action("生成").config.contains(SemanticsProperties.Disabled))
                 val button = scene.action("生成").boundsInRoot
                 assertTrue(button.width > 0 && button.left >= 0 && button.right <= width && button.bottom <= 700)
-                assertTrue(scene.nodes().any { n -> n.config.getOrNull(SemanticsProperties.Text)?.any { "4 + 4 + 2" in it.text } == true })
+                assertTrue(scene.nodes().any { n -> n.config.getOrNull(SemanticsProperties.Text)?.any { "4 张 × 3 批 = 12 张" in it.text } == true })
                 scene.capture("batch-options-top-$width.png")
                 scene.scroll(10000f)
                 scene.capture("batch-options-bottom-$width.png")
-                val checkbox = scene.action("我确认本次请求计划和估算预算")
+                val checkbox = scene.action("我确认本次请求计划")
                 assertTrue(checkbox.boundsInRoot.height > 0 && checkbox.boundsInRoot.top >= 0 && checkbox.boundsInRoot.bottom <= button.top,
                     "Confirmation must actually be visible: ${checkbox.boundsInRoot}, footer=$button")
                 assertTrue(checkbox.config[SemanticsActions.OnClick].action!!.invoke()); scene.frames()
                 assertFalse(scene.action("生成").config.contains(SemanticsProperties.Disabled))
                 scene.capture("batch-options-confirm-$width.png")
                 scene.action("生成").config[SemanticsActions.OnClick].action!!.invoke()
-                assertEquals(listOf(4, 4, 2), assertNotNull(submission).batches)
+                assertEquals(listOf(4, 4, 4), assertNotNull(submission).batches)
                 scene.scroll(-10000f)
                 scene.action("1").config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
                 assertTrue(scene.action("生成").config.contains(SemanticsProperties.Disabled))
@@ -55,7 +55,7 @@ class DesktopImageBatchOptionsTest {
     }
 
     @Test fun `reversed wait range keeps actual confirmation submit disabled`() = runBlocking(edt) {
-        var config by mutableStateOf(ImageBatchConfiguration(4, true, 10,
+        var config by mutableStateOf(ImageBatchConfiguration(4, 3,
             ImageBatchPacing(ImageBatchInterval.RANGE, minSeconds = 40, maxSeconds = 10)))
         var confirmed by mutableStateOf(true)
         var calls = 0
@@ -85,7 +85,7 @@ class DesktopImageBatchOptionsTest {
     private suspend fun ImageComposeScene.scroll(delta: Float) {
         val node = nodes().filter { it.config.contains(SemanticsActions.ScrollBy) &&
             (it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)?.maxValue?.invoke() ?: 0f) > 0f }
-            .maxBy { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
+            .maxByOrNull { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() } ?: return
         val range = node.config[SemanticsProperties.VerticalScrollAxisRange]
         val target = (range.value() + delta).coerceIn(0f, range.maxValue())
         node.config[SemanticsActions.ScrollBy].action!!.invoke(0f, target - range.value())

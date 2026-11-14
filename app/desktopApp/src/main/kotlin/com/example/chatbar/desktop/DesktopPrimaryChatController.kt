@@ -636,6 +636,10 @@ internal class DesktopPrimaryChatController(
                 val baseline = settingsBaseline ?: return false
                 val draft = current.sessionSettingsDraft ?: return false
                 check(baseline.id == draft.id && current.selectedSession?.id == draft.id)
+                draft.imageBatchPreferences.validationError()?.let { failure ->
+                    mutableState.update { it.copy(error = failure) }
+                    return false
+                }
                 sessionId = draft.id
                 sessionSaveGeneration.incrementAndGet()
                 mutableState.update { it.copy(sessionSettingsSaving = true, error = null, status = null) }

@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.image
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 
 /** Explicit generation settings only. Account, card, model-endpoint and editor state are not transport fields. */
 @Serializable
@@ -12,6 +14,7 @@ data class NovelAiPresetCharacter(
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class NovelAiGenerationPreset(
     @kotlinx.serialization.Required val format: String = FORMAT,
     @kotlinx.serialization.Required val version: Int = 1,
@@ -28,10 +31,15 @@ data class NovelAiGenerationPreset(
     val v5Settings: NovelAiGenerationSettings,
     val imageGuidance: NovelAiImageGuidanceDraft,
     val batchPacing: ImageBatchPacing = ImageBatchPacing(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val batchCount: Int = 1,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val allowBatchAnlasSpending: Boolean = false,
 ) {
     fun validate() {
         require(format == FORMAT && version == 1) { "生图预设格式或版本不支持" }
         require(batchPacing.validationError() == null)
+        require(batchCount in 1..25)
         require(continuousTargetCount > 0) { "连续生成目标图片数必须大于零" }
         require(v45Settings.model == NovelAiImageModel.V4_5_FULL && v5Settings.model == NovelAiImageModel.V5_FULL)
         require(v45Settings.validationError(0) == null && v5Settings.validationError(0) == null)
@@ -66,7 +74,7 @@ data class NovelAiGenerationPreset(
             naturalLanguageMode = naturalLanguageMode, selectedModel = selectedModel,
             continuousModeEnabled = continuousModeEnabled, continuousTargetCount = continuousTargetCount,
             v45Settings = v45Settings, v5Settings = v5Settings, imageGuidance = materializedGuidance,
-            batchPacing = batchPacing,
+            batchPacing = batchPacing, batchCount = batchCount, allowBatchAnlasSpending = allowBatchAnlasSpending,
             followDefaultNovelAiImageModel = false, importedCharacterCardId = null,
             importedCharacterPromptSources = emptyList(), conversionSnapshot = null)
     }
@@ -82,7 +90,7 @@ data class NovelAiGenerationPreset(
             continuousModeEnabled = draft.continuousModeEnabled, continuousTargetCount = draft.continuousTargetCount,
             v45Settings = draft.v45Settings, v5Settings = draft.v5Settings,
             imageGuidance = draft.imageGuidance.mapPresetResources(imageResource, encodingResource),
-            batchPacing = draft.batchPacing)
+            batchPacing = draft.batchPacing, batchCount = draft.batchCount, allowBatchAnlasSpending = draft.allowBatchAnlasSpending)
             .also { it.validate() }
     }
 }

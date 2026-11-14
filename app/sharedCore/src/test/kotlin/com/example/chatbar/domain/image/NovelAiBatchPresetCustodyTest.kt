@@ -9,7 +9,7 @@ class NovelAiBatchPresetCustodyTest {
     @Test fun `full preset round trip replaces pacing without carrying running consent`() {
         val pacing = ImageBatchPacing(ImageBatchInterval.RANGE, minSeconds = 20, maxSeconds = 40)
         val source = NovelAiStudioDraft(basePrompt = "synthetic image", batchPacing = pacing,
-            continuousModeEnabled = true, continuousTargetCount = 9)
+            continuousModeEnabled = true, continuousTargetCount = 9, batchCount = 3, allowBatchAnlasSpending = true)
         val preset = NovelAiGenerationPreset.capture(source, { error("No resources") }, { error("No encodings") })
         val restored = json.decodeFromString<NovelAiGenerationPreset>(json.encodeToString(NovelAiGenerationPreset.serializer(), preset))
         val target = NovelAiStudioDraft(batchPacing = ImageBatchPacing(fixedSeconds = 4))
@@ -17,6 +17,8 @@ class NovelAiBatchPresetCustodyTest {
         assertEquals(pacing, applied.batchPacing)
         assertEquals(9, applied.continuousTargetCount)
         assertTrue(applied.continuousModeEnabled)
+        assertEquals(3, applied.batchCount)
+        assertTrue(applied.allowBatchAnlasSpending)
         val keys = json.encodeToJsonElement(NovelAiGenerationPreset.serializer(), restored).jsonObject.keys
         assertFalse(keys.any { it in setOf("budget", "control", "remainingSeconds", "estimatedSpent", "consent") })
     }

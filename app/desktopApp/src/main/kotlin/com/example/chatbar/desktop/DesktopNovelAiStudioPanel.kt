@@ -337,7 +337,10 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
             if (controller.manualBatchRunning) state.batchProgress?.let { progress ->
                 StatusText(progress.label())
                 StudioActions {
-                    if (progress.stage == ImageBatchStage.PAUSED || controller.batchPaused) BootstrapButton("继续批次", onClick = controller::resumeBatch)
+                    if (progress.paymentTicket != null) BootstrapButton("确认本轮约 ${progress.confirmationEstimatedTotal} Anlas") {
+                        controller.confirmBatchPayment(progress.paymentTicket)
+                    }
+                    else if (progress.stage == ImageBatchStage.PAUSED || controller.batchPaused) BootstrapButton("继续批次", onClick = controller::resumeBatch)
                     else BootstrapButton("暂停批次", secondary = true, onClick = controller::pauseBatch)
                     StatusText("暂停在当前请求完成后生效；停止可能仍有已提交请求计费。")
                 }

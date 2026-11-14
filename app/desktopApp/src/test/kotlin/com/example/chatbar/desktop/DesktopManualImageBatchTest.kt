@@ -12,8 +12,8 @@ import kotlin.test.*
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopManualImageBatchTest {
     private val usage = NovelAiAccountUsage(1000000, 3, true, 100.0, false)
-    private fun plan(total: Int = 3, budget: Long = 0) = ImageBatchRunPlan(1, total,
-        ImageBatchPacing(ImageBatchInterval.NONE), budget, ImageBatchOrigin.STUDIO)
+    private fun plan(total: Int = 3, allowAnlas: Boolean = false) = ImageBatchRunPlan(1, total,
+        ImageBatchPacing(ImageBatchInterval.NONE), allowAnlas, ImageBatchOrigin.STUDIO)
 
     @Test fun `preview cache is read only short lived credential scoped and explicitly refreshable`() = runTest {
         var time = 1L
@@ -43,21 +43,26 @@ class DesktopManualImageBatchTest {
         assertTrue(states.all { it.saved == 0 && it.estimatedSpent == 0L })
     }
 
-    @Test fun `fresh higher cost stops next batch without discarding committed first output`() = runTest {
+    @Test fun `fresh higher cost pauses for a new system quote without discarding committed first output`() = runTest {
         var quotes = 0
         var requests = 0
         val states = mutableListOf<ImageBatchProgress>()
-        val failure = runCatching {
-            runDesktopManualImageBatch(plan(budget = 3), ImageBatchControl(), UUID.randomUUID().toString(),
+        val control = ImageBatchControl()
+        val job = launch {
+            runDesktopManualImageBatch(plan(allowAnlas = true), control, UUID.randomUUID().toString(),
                 account = { usage }, estimate = { _, _ ->
-                    NovelAiGenerationCost(NovelAiGenerationChargeKind.ANLAS, anlas = if (++quotes == 1) 2 else 4)
-                }, validateOwner = {}, onProgress = { states += it }, generateAndSave = { _, _ -> requests++; 1 })
-        }.exceptionOrNull()
-        assertIs<ImageBatchStopped>(failure)
-        assertEquals(2, quotes)
+                    NovelAiGenerationCost(NovelAiGenerationChargeKind.ANLAS, anlas = if (++quotes <= 2) 2 else 4)
+                }, validateOwner = {}, onProgress = { update ->
+                    states += update
+                    if (requests == 0) update.paymentTicket?.let { control.approvePayment(it) }
+                }, generateAndSave = { _, _ -> requests++; 1 })
+        }
+        runCurrent()
         assertEquals(1, requests)
+        assertTrue(control.isPaused)
         assertEquals(1, states.last().saved)
         assertEquals(2L, states.last().estimatedSpent)
+        job.cancelAndJoin()
     }
 
     @Test fun `pacing releases original TaskRuntime image lane and Stop retires only its original job`() = runTest {

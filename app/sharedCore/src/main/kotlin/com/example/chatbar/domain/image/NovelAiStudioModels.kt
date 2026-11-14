@@ -207,6 +207,10 @@ data class NovelAiStudioDraft(
     val continuousModeEnabled: Boolean = false,
     val continuousTargetCount: Int = 10,
     val batchPacing: ImageBatchPacing = ImageBatchPacing(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val batchCount: Int = 1,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val allowBatchAnlasSpending: Boolean = false,
     val copyPositivePromptIgnoreStyle: Boolean = true,
     /** true 时跟随已导入角色卡与全局配置；selectedModel 缓存当前生效值。 */
     val followDefaultNovelAiImageModel: Boolean = false,

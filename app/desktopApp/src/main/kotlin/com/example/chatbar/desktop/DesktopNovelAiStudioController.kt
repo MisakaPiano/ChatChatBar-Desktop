@@ -112,6 +112,14 @@ internal class DesktopNovelAiStudioController(
         mutableState.update { it.copy(batchProgress = it.batchProgress?.copy(detail = "已请求继续；仍遵守剩余等待")) }
     }
     val batchPaused: Boolean get() = batchControl?.isPaused == true
+    fun confirmBatchPayment(ticket: String) {
+        val control = batchControl ?: return
+        if (control.approvePayment(ticket)) mutableState.update { current ->
+            val progress = current.batchProgress?.takeIf { it.paymentTicket == ticket } ?: return@update current
+            current.copy(batchProgress = progress.copy(paymentTicket = null, confirmationEstimatedTotal = null,
+                detail = if (control.isPaused) "费用已确认；任务仍暂停，可点击继续批次" else "本轮费用已确认，发出请求前仍会重新核费"))
+        }
+    }
     fun dismissBatchConfirmation() {
         pendingBatchIdentity = null
         mutableState.update { it.copy(pendingBatchDraft = null) }
@@ -654,15 +662,16 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun generate() {
-        var single = false
+        var immediate: ImageBatchRunPlan? = null
         action {
             val launch = resolveDefaultModel()
-            if (launch.continuousModeEnabled || launch.activeSettings.count > 1) {
-                pendingBatchIdentity = studioCredentialRead(credentialIdentity)
-                mutableState.update { it.copy(pendingBatchDraft = launch) }
-            } else single = true
+            pendingBatchIdentity = studioCredentialRead(credentialIdentity)
+            mutableState.update { it.copy(pendingBatchDraft = launch) }
+            if (launch.batchCount == 1 && launch.activeSettings.count == 1 && !launch.continuousModeEnabled)
+                immediate = ImageBatchConfiguration(1, 1, launch.batchPacing, launch.allowBatchAnlasSpending)
+                    .freeze(ImageBatchOrigin.STUDIO)
         }
-        if (single) generateSingle()
+        immediate?.let { confirmBatch(it) }
     }
 
     suspend fun confirmBatch(plan: ImageBatchRunPlan) = action {
@@ -692,6 +701,8 @@ internal class DesktopNovelAiStudioController(
                         account = { account() }, runner = ImageBatchRunner(admission = tasks.imageBatchAdmission),
                         estimate = { count, usage -> NovelAiImageCostEstimator.estimate(launch.activeSettings.copy(count = count), usage,
                             launch.imageGuidance, if (prepared == null) encodingMisses else 0) },
+                        estimateFollowing = { count, usage -> NovelAiImageCostEstimator.estimate(launch.activeSettings.copy(count = count), usage,
+                            launch.imageGuidance, 0) },
                         validateOwner = { currentCoroutineContext().ensureActive() },
                         onProgress = { progress ->
                             mutableState.update { it.copy(batchProgress = progress, status = progress.label()) }
@@ -730,53 +741,6 @@ internal class DesktopNovelAiStudioController(
             if (batchControl === control) batchControl = null
             throw failure
         }
-    }
-
-    private suspend fun generateSingle() = action {
-        val (taskIdentity, frozen) = studioCredentialRead { credentialIdentity() to freezeCredential() }
-        var taskAccount = state.value.account.takeIf { accountIdentity == taskIdentity }
-        val launch = resolveDefaultModel()
-        require(!launch.continuousModeEnabled && launch.activeSettings.count == 1)
-        require(launch.basePrompt.isNotBlank()) { "请填写基础 Prompt" }
-        launch.activeSettings.requestValidationError(launch.activeCharacters.size)?.let { error(it) }
-        launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
-        val id = tasks.launchNovelAi("NovelAI Studio", batchManagedWork = true) { report -> withContext(frozen) { tasks.withNovelAiWork {
-            try {
-                val encodingMisses = guidance.vibeCacheMisses(launch)
-                val prepared = guidance.prepare(launch)
-                val total = if (launch.continuousModeEnabled) launch.continuousTargetCount.coerceAtLeast(1) else launch.activeSettings.count
-                var completed = 0
-                while (completed < total) {
-                    currentCoroutineContext().ensureActive()
-                    val count = minOf(launch.activeSettings.count, total - completed)
-                    val batch = launch.copy(imageGuidance = prepared.retainedGuidance).withActiveSettings(launch.activeSettings.copy(count = count))
-                    val estimatedCost = NovelAiImageCostEstimator.estimate(batch.activeSettings, taskAccount,
-                        batch.imageGuidance, if (completed == 0) encodingMisses else 0)
-                    val result = ImageBatchRunner.ordinaryStudioRequest { runtime.generate(batch, guidance = prepared.guidance, requestSize = prepared.requestSize,
-                        composeResult = prepared.compose, retryRateLimitsUntilCancelled = launch.continuousModeEnabled,
-                        onRetry = { attempt, delay -> status("429 · 第 $attempt 次等待 ${delay}ms"); report("等待限流恢复") },
-                        onIntermediate = { bytes, step, progress ->
-                            mutableState.update { it.copy(preview = bytes, status = "$completed/$total · Step $step · ${(progress * 100).toInt()}%") }
-                            report("$completed/$total · Step $step")
-                        }) }
-                    completed += result.images.size
-                    withContext(NonCancellable) { mutableState.update { it.copy(results = it.results + result.images.map { image -> image.path }, preview = null, status = "已保存 $completed/$total") } }
-                    if (taskIdentity == studioCredentialRead(credentialIdentity)) {
-                        accountAfterSuccess(estimatedCost, result.images.size); taskAccount = state.value.account
-                    } else taskAccount = null
-                }
-            } catch (cancelled: CancellationException) {
-                status("已停止；历史中的已提交批次保留"); throw cancelled
-            } catch (failure: Exception) {
-                if (failure is DesktopStudioCredentialReadException) {
-                    invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE)
-                    status("账户读取失败；历史中已提交的批次保留")
-                } else status("生成失败，未发布不完整批次")
-                throw IllegalStateException("Studio generation failed")
-            }
-            finally { mutableState.update { it.copy(preview = null) } }
-        } } }
-        mutableState.update { it.copy(taskId = id, generationTaskId = id) }
     }
 
     suspend fun design(input: String, newConversation: Boolean = designComposer.value.composingNew, attach: Boolean = false) = action(designAction = true) {
