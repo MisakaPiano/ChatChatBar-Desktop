@@ -17,7 +17,12 @@ class Fixture {
   var marker=Environment.GetEnvironmentVariable("CCB_UPDATE_TEST_MARKER");
   if (args.Length>0 && args[0].StartsWith("old")) {
    var ms=(long)(Process.GetCurrentProcess().StartTime.ToUniversalTime()-new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc)).TotalMilliseconds;
-   File.WriteAllText(marker+".start",ms.ToString()); Thread.Sleep(1700); if(args[0]=="old-fail") Environment.Exit(2); return;
+   File.WriteAllText(marker+".start",ms.ToString());
+   if(args[0].StartsWith("old-completion")) {
+    var until=DateTime.UtcNow.AddSeconds(15);
+    while(!File.Exists(marker+".release") && DateTime.UtcNow<until) Thread.Sleep(20);
+   } else Thread.Sleep(1700);
+   if(args[0].EndsWith("fail")) Environment.Exit(2); return;
   }
   File.WriteAllText(marker,"SYNTHETIC INSTALLER CALLED");
  }
@@ -84,7 +89,7 @@ class HandoffTest(unittest.TestCase):
                 cache = case / 'cache'; cache.mkdir(); (cache / 'owner.txt').write_text('ccb-desktop-nsis-v1')
                 marker = case / 'executed.txt'; ack = case / 'completion.ready'
                 env = dict(os.environ, CCB_UPDATE_TEST_MARKER=str(marker), CCB_UPDATE_TEST_CACHE=str(cache))
-                old = subprocess.Popen([str(self.fixture), 'old-fail' if defect == 'exit' else 'old'], env=env)
+                old = subprocess.Popen([str(self.fixture), 'old-completion-fail' if defect == 'exit' else 'old-completion'], env=env)
                 helper = subprocess.Popen([str(self.handoff), '--complete', str(root), current, str(old.pid), str(self.fixture), str(ack),
                                            '0.1.0-preview.120', ('a' if defect == 'source' else 'b')*40], env=env)
                 try:
@@ -93,6 +98,7 @@ class HandoffTest(unittest.TestCase):
                         self.assertLess(time.monotonic(), deadline); time.sleep(.02)
                     self.assertIsNone(old.poll())
                     self.assertFalse((cache / 'confirmations').exists())
+                    Path(str(marker) + '.release').write_text('release synthetic installer')
                     self.assertEqual(0 if defect is None else 2, helper.wait(timeout=20))
                     records = list((cache / 'confirmations').glob('*.json'))
                     self.assertEqual(1 if defect is None else 0, len(records))
