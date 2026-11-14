@@ -59,6 +59,28 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         incarnation = origin.incarnation
         write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(0, null))
     }
+    /** Explicit pending-profile initialization only; never called by ordinary open/recovery. */
+    internal fun resumeNewEnrollment(): LanSyncGroupNativeState = guarded {
+        val author = requireNotNull(authorJournal) { "SYNC_GROUP_NATIVE_SOURCE_JOURNAL_MISSING" }.state()
+        require(author.committedSequence == 0L && author.pendingApproved == null) { "SYNC_GROUP_NATIVE_ALREADY_USED" }
+        if (Files.exists(root.resolve("head.protected"), NOFOLLOW_LINKS)) {
+            val state = publicState(load())
+            require(state.completedSequence == 0L && state.pendingTransaction == null && state.units.isEmpty()) { "SYNC_GROUP_NATIVE_ALREADY_USED" }
+            return@guarded state
+        }
+        require(Files.newDirectoryStream(root).use { files -> files.all {
+            it.fileName.toString() in setOf("native.lock", "origin.protected")
+        } }) { "SYNC_GROUP_NATIVE_EXISTING_EVIDENCE" }
+        val origin = requireNotNull(read(root.resolve("origin.protected"), "ORIGIN", Origin.serializer())) { "SYNC_GROUP_NATIVE_ORIGIN_MISSING" }
+        require(sameAnchor(origin.trust, trust) && origin.certificate == actorCertificate && origin.projection == projection.digest()) {
+            "SYNC_GROUP_NATIVE_ORIGIN_CHANGED"
+        }
+        originTrust = origin.trust; requireAuthority(authority())
+        // read retained the original incarnation; never generate a replacement origin.
+        write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(0, null))
+        observe("INITIAL_NATIVE_HEAD_COMPLETED")
+        publicState(load())
+    }
     fun state(): LanSyncGroupNativeState = guarded { publicState(load()) }
     fun recover(): LanSyncGroupNativeState = guarded { recoverOwned(); publicState(load()) }
 

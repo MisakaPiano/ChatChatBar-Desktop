@@ -51,7 +51,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
         }
     }
     val runtime by lazy { LanSyncRuntime(store, workspace, platform, android.os.Build.MODEL.take(80)) }
-    val groupEnrollment by lazy {
+    private val groupEnrollmentOwner = lazy {
         val profile = root.resolve("group-profile")
         if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
             require(Files.isRegularFile(root.resolve("identity.protected"), LinkOption.NOFOLLOW_LINKS)) { "SYNC_GROUP_DAILY_IDENTITY_MISSING" }
@@ -61,6 +61,8 @@ class AndroidLanSync(private val app: ChatBarApp) {
         LanSyncGroupEnrollment(profile, workspace, platform, daily, protection::protect,
             protection::unprotect, ::validateAndroidLanSyncResource)
     }
+    val groupEnrollment get() = groupEnrollmentOwner.value
+    fun lockGroupManagement() { if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement() }
     fun recoverBeforeRepositories() = workspace.recover()
 
 }

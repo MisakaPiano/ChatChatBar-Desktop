@@ -216,6 +216,19 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 dialogOwner.attach(window)
                                 onDispose { dialogOwner.detach(window) }
                             }
+                            DisposableEffect(window, appContainer) {
+                                val listener = object : java.awt.event.WindowAdapter() {
+                                    override fun windowLostFocus(event: java.awt.event.WindowEvent) {
+                                        val ownedDialog = generateSequence(event.oppositeWindow) { it.owner }.any { it === window }
+                                        if (!ownedDialog) appContainer.lockLanSyncGroupManagement()
+                                    }
+                                }
+                                window.addWindowFocusListener(listener)
+                                onDispose { window.removeWindowFocusListener(listener); appContainer.lockLanSyncGroupManagement() }
+                            }
+                            LaunchedEffect(trayState.windowVisible) {
+                                if (!trayState.windowVisible) appContainer.lockLanSyncGroupManagement()
+                            }
                             val systemDark = isSystemInDarkTheme()
                             val palette = remember(appearance.themeMode, appearance.themeColor, appearance.colorStyle, systemDark) {
                                 desktopSemanticColors(appearance.themeMode, appearance.themeColor, systemDark, appearance.colorStyle)

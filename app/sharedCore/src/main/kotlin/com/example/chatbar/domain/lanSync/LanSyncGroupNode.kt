@@ -62,7 +62,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 require(state.committedSequence == 0L && state.pendingApproved == null) { "SYNC_GROUP_NODE_ALREADY_USED" }
             } else author.initializeNewEnrollment()
             if (Files.exists(nativeRoot.resolve("origin.protected"), NOFOLLOW_LINKS)) {
-                val state = native.state()
+                val state = native.resumeNewEnrollment()
                 require(state.completedSequence == 0L && state.pendingTransaction == null && state.units.isEmpty()) { "SYNC_GROUP_NODE_ALREADY_USED" }
             } else native.initializeNewEnrollment()
         }

@@ -25,7 +25,7 @@ class LanSyncActivity : ComponentActivity() {
         setContent { ChatBarTheme { LanSyncScreen(runtime) { finish() } } }
     }
     override fun onStart() { super.onStart(); runtime.startPhone() }
-    override fun onStop() { runtime.stop(); super.onStop() }
+    override fun onStop() { ChatBarApp.instance.lanSyncOwner.lockGroupManagement(); runtime.stop(); super.onStop() }
 }
 
 @Composable
