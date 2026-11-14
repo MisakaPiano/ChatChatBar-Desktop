@@ -30,21 +30,14 @@ jobs:
           if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
           "TEMP=$buffer" >> $env:GITHUB_ENV
           "TMP=$buffer" >> $env:GITHUB_ENV
-      - name: Verify delayed payment publication and retained plan guards
-        working-directory: app
-        run: >-
-          .\gradlew.bat :sharedCore:test
-          --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest'
-          --no-daemon --stacktrace
-      - name: Verify real Desktop task owners session backup and compact UI
+      # Source612e payment owner and45 affected methods already passed; only waiting UI changes here.
+      - name: Verify wait mode draft recovery and compact plan controls
         working-directory: app
         env:
           CCB_IMAGE_BATCH_REVIEW_DIR: ${{ runner.temp }}/ccb-batch-ux-review
         run: >-
           .\gradlew.bat :desktopApp:test
-          --tests 'com.example.chatbar.desktop.DesktopManualImageBatchTest'
-          --tests 'com.example.chatbar.desktop.DesktopStudioBatchRuntimeTest'
-          --tests 'com.example.chatbar.desktop.DesktopPhase7StudioTest'
+          --tests 'com.example.chatbar.desktop.DesktopImageBatchOptionsTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()

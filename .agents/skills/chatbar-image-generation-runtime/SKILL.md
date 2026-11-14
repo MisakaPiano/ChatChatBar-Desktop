@@ -347,3 +347,5 @@ Desktop image persistence calls `ChatRepository.addMessageAfter` with an optiona
 Chat manual-plan previews use `DesktopImageBatchAccountPreview`, a credential-digest-scoped monotonic30-second read-only cache with explicit refresh. Possible designed canvases are priced conservatively before Prompt design; actual batch admission always fetches fresh usage and actual-canvas pricing independently. Preview failure remains unknown, not permission to submit. Dialog consent resets on reopening or plan edits and click-time submission compares the current plan again.
 
 Batch progress publication uses the live control pending ticket. A delayed PAUSED callback must not resurrect an already approved quote in Chat or Studio; keep independent manual pause and fresh-quote admission unchanged.
+
+Desktop wait-mode selection normalizes only invalid now-hidden inputs; valid dormant decimal waits are preserved. Active input and persisted pacing validation stay strict, so switching away from an unfinished/random-reversed field can resume configuration without admitting invalid transport data.

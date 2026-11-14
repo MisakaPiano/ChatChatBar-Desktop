@@ -8,12 +8,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
 
+/** Discard unfinished hidden inputs on an explicit mode change, preserving valid dormant values. */
+internal fun desktopImageBatchPacingMode(pacing: ImageBatchPacing, mode: ImageBatchInterval): ImageBatchPacing {
+    val defaults = ImageBatchPacing()
+    var next = pacing.copy(mode = mode)
+    if (mode != ImageBatchInterval.FIXED && (pacing.fixedSeconds !in 0..3600 ||
+            pacing.fixedMillis?.let { it !in 0..3600000L } == true))
+        next = next.copy(fixedSeconds = defaults.fixedSeconds, fixedMillis = null)
+    if (mode != ImageBatchInterval.RANGE && (pacing.minSeconds !in 0..3600 || pacing.maxSeconds !in 0..3600 ||
+            listOfNotNull(pacing.minMillis, pacing.maxMillis).any { it !in 0..3600000L } || pacing.minWaitMillis > pacing.maxWaitMillis))
+        next = next.copy(minSeconds = defaults.minSeconds, maxSeconds = defaults.maxSeconds, minMillis = null, maxMillis = null)
+    return next
+}
+
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 internal fun DesktopImageBatchPacing(pacing: ImageBatchPacing, change: (ImageBatchPacing) -> Unit) {
     CompactChoice("批次间等待", ImageBatchInterval.entries.toList(), pacing.mode,
         { when (it) { ImageBatchInterval.NONE -> "不等待"; ImageBatchInterval.FIXED -> "固定"; ImageBatchInterval.RANGE -> "范围随机" } }) {
-        change(pacing.copy(mode = it))
+        change(desktopImageBatchPacingMode(pacing, it))
     }
     when (pacing.mode) {
         ImageBatchInterval.NONE -> StatusText("不等待会连续提交后续批次；开始前仍需确认请求计划。", DesktopBootstrapColors.warning)
