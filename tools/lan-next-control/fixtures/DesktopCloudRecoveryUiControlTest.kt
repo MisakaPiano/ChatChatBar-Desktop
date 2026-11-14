@@ -135,7 +135,7 @@ class DesktopCloudRecoveryUiControlTest {
                             check(target.uploadCloud(attempts, parts).objects.isNotEmpty())
                         } finally { transport.close(); client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
                     }
-                    founder.close(); apps.remove(founder) // Old device is offline before receiver recovery starts.
+                    closeAsApplication(founder, "$mode-source"); apps.remove(founder) // Old device is offline before receiver recovery starts.
                     phase = "$mode-empty-app-initialize"
                     val (receiver, resolved) = makeApp("receiver"); receiver.initializePersistentState()
                     val rc = receiver.lanSyncGroupCoordinator; val recovery = checkNotNull(rc.cloudRecovery); val rs = show(receiver)
@@ -195,7 +195,9 @@ class DesktopCloudRecoveryUiControlTest {
                     val catalog = daily.work.resolve("cloud-connections/cloud-routes.protected")
                     val protectedCatalog = if (save) Files.readAllBytes(catalog) else null
                     if (protectedCatalog != null) check(!String(protectedCatalog, Charsets.ISO_8859_1).contains(checkNotNull(password)))
-                    rs.close(); scenes.remove(rs); receiver.close(); apps.remove(receiver)
+                    phase = "$mode-close-recovered-app-with-production-notice"
+                    rs.close(); scenes.remove(rs)
+                    closeAsApplication(receiver, "$mode-receiver"); apps.remove(receiver)
                     phase = "$mode-cold-app-start-without-sync-page"
                     val cold = newContainer(resolved).also(apps::add); cold.initializePersistentState()
                     withTimeout(60_000L) {
@@ -206,7 +208,8 @@ class DesktopCloudRecoveryUiControlTest {
                     check(cold.characterRepository.getById(card.id) == card)
                     check(coldDaily.cloudRoutes().rows() == routes)
                     if (protectedCatalog != null) check(Files.readAllBytes(catalog).contentEquals(protectedCatalog))
-                    cold.close(); apps.remove(cold); code = null
+                    phase = "$mode-close-cold-app-with-production-notice"
+                    closeAsApplication(cold, "$mode-cold"); apps.remove(cold); code = null
                 }
             }
         } catch (failure: Throwable) {
@@ -233,6 +236,13 @@ class DesktopCloudRecoveryUiControlTest {
         fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
         return scene.semanticsOwners.map { walk(it.rootSemanticsNode).filter { node -> node.config.contains(SemanticsActions.SetText) } }
             .singleOrNull { it.size == 4 }.orEmpty()
+    }
+    private suspend fun closeAsApplication(app: DesktopAppContainer, label: String) {
+        val notices = mutableListOf<String>()
+        // Use the same strict safe-teardown/advisory boundary as real Main, without a system modal.
+        closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { notices.add(it); Unit })
+        check(notices.size <= 1 && notices.all { it == DesktopLanSyncIncompleteNotice.message })
+        println("SYNTHETIC_RECOVERY_CLOSE mode=$label notices=${notices.size}")
     }
     private suspend fun setRecoveryInputs(scene: ImageComposeScene, endpoint: String, username: String, password: String, code: String) {
         // Rendered nodes can precede initial LaunchedEffects and keyed secret-field replacement.

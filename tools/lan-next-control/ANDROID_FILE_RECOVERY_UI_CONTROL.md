@@ -45,3 +45,10 @@ This is a fresh synthetic file recovery proof, not DocumentsUI interaction,
 physical-device acceptance, arbitrary crash/Doze survival, cloud/TLS/GB transfer
 or a stale-manager repair test. Adding this profile or passing pure guards does
 not constitute native success.
+
+The first native run43635851154 compiled and reached real export, source-offline
+selection and first review, then failed to fetch the recreated dialog's input
+button. It did not execute phase two. The control now waits for the actual
+visible fresh-input state and rendered node, directly checks the editable input
+is empty, then repeats the real picker/read/confirmation flow. Only enum/Boolean
+and node-count diagnostics are added. No Owner state or callback is patched.

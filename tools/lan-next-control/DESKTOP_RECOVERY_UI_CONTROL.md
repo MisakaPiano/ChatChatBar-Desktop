@@ -78,3 +78,12 @@ save=true registration/connection/native checks were not reached. Clicks now
 settle before as well as after the real action, and identity Off/On is asserted.
 Controlled phases include only observed enums and Booleans, never input, status
 or error-message contents. Registration and completion conditions remain strict.
+
+Run43636780857 reached save=true native/identity/enabled-catalog assertions and
+then failed in raw receiver.close. Its stale phase label and disposed-modal state
+were not proof that recovery was unfinished. The controller now uses real Main's
+closeDesktopWithLanSyncCompletionNotice, retaining its strict completed-teardown,
+suppressed-error and root-ownership checks. A test sink records only the actual
+production notice and checks it outside the wrapper. Unsafe/timeout closes still
+fail. A completion notice never establishes cloud delivery; cold reopen and exact
+catalog/data assertions remain required.

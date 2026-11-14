@@ -49,6 +49,8 @@ import org.junit.runners.model.Statement
 class LanSyncGroupFileRecoveryUiControlTest {
     private val compose = createEmptyComposeRule()
     private var phase = "rule"
+    private var observedState: (() -> String)? = null
+    private var inputNodeCount = -1
     @get:Rule val guardedCompose: TestRule = TestRule { base, description ->
         object : Statement() {
             override fun evaluate() {
@@ -58,7 +60,8 @@ class LanSyncGroupFileRecoveryUiControlTest {
         }
     }
     private fun sanitized(failure: Throwable): AssertionError =
-        AssertionError("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}").also {
+        AssertionError("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
+            (observedState?.invoke()?.let { " OBSERVED[$it,nodes=$inputNodeCount]" } ?: "")).also {
             // Keep original locations; do not retain a cause/message that may contain the code or UI tree.
             it.stackTrace = failure.stackTrace
         }
@@ -179,6 +182,11 @@ class LanSyncGroupFileRecoveryUiControlTest {
             click("从加密文件恢复设备组")
             selectAndRead(uri, code)
             val recovery = checkNotNull(coordinator.fileRecovery)
+            observedState = {
+                val value = recovery.state.value
+                "visible=${value.visible},busy=${value.busy},review=${value.review != null}," +
+                    "complete=${value.complete},error=${value.error != null}"
+            }
             await(120_000) { !recovery.state.value.busy && (recovery.state.value.review != null || recovery.state.value.error != null) }
             check(recovery.state.value.error == null)
             val reviewed = checkNotNull(recovery.state.value.review)
@@ -189,6 +197,14 @@ class LanSyncGroupFileRecoveryUiControlTest {
             launched.recreate()
             await { launched.state == Lifecycle.State.RESUMED && !recovery.state.value.visible }
             click("从加密文件恢复设备组")
+            await { recovery.state.value.visible && recovery.state.value.review == null && !recovery.state.value.complete }
+            compose.waitUntil(30_000) {
+                inputNodeCount = compose.onAllNodesWithText("读取并核对设备组").fetchSemanticsNodes().size
+                inputNodeCount == 1
+            }
+            val cleared = compose.onNode(hasSetTextAction() and hasAnyAncestor(isDialog()), useUnmergedTree = true)
+                .fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.EditableText].text
+            check(cleared.isEmpty())
             compose.onNodeWithText("读取并核对设备组").performScrollTo().assertIsNotEnabled()
             selectAndRead(uri, code)
             await(120_000) { !recovery.state.value.busy && recovery.state.value.review != null }
