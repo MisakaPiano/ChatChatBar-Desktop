@@ -21,13 +21,14 @@ import kotlinx.serialization.Serializable
 @Serializable data class SyncManagementVaultContext(val format: Int, val group: SyncStoreId, val objectId: SyncStoreId,
     val genesis: SyncVersionRef, val owner: String, val recipientKey: String) {
     init { require(format == 1 && owner.matches(Regex("[a-f0-9]{64}")) && recipientKey.matches(Regex("[a-f0-9]{64}"))) { "SYNC_MANAGEMENT_CONTEXT" } }
+    val key get() = CiphertextObjectKey(CiphertextObjectKind.BLOB, objectId)
     fun bytes(): ByteArray = ByteArrayOutputStream().also { bytes -> DataOutputStream(bytes).use {
         it.writeUTF("CCB-SYNC-MANAGEMENT-VAULT/1"); it.writeUTF(group.value); it.writeUTF(objectId.value)
         it.writeUTF(genesis.id.value); it.writeUTF(genesis.bodyHash); it.writeUTF(owner); it.writeUTF(recipientKey)
     } }.toByteArray()
 }
 class SyncManagementVaultBlob internal constructor(val context: SyncManagementVaultContext, private val value: ByteArray) {
-    val key get() = CiphertextObjectKey(CiphertextObjectKind.COMMIT, context.objectId)
+    val key get() = context.key
     fun bytes() = value.copyOf()
     override fun toString() = "SyncManagementVaultBlob(encrypted)"
 }
@@ -124,6 +125,8 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
         }
         fun open(recoveryCode: String, vaultBytes: ByteArray, lifetimeSeconds: Long = 300,
             now: () -> Long = System::nanoTime): SyncManagementSession {
+            require(vaultBytes.size in MAGIC.size + 9..MAX_PLAIN + 8192) { "SYNC_MANAGEMENT_VAULT_BUDGET" }
+            val retainedVault = vaultBytes.copyOf()
             val codeBytes = decodeCode(recoveryCode)
             var secret: ByteArray? = null
             try {
@@ -131,7 +134,7 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
                 secret = Base64.getUrlDecoder().decode(code.keyset)
                 require(secret.size in 1..4096) { "SYNC_MANAGEMENT_CODE_FORMAT" }
                 AeadConfig.register(); val handle = CleartextKeysetHandle.read(BinaryKeysetReader.withBytes(secret))
-                val aead = primitive(handle); val (context, encrypted) = decode(vaultBytes)
+                val aead = primitive(handle); val (context, encrypted) = decode(retainedVault)
                 require(context == code.context) { "SYNC_MANAGEMENT_VAULT_CONTEXT" }
                 val plain = try { aead.decrypt(encrypted, context.bytes()) } catch (failure: Exception) {
                     throw IllegalArgumentException("SYNC_MANAGEMENT_VAULT_AUTHENTICATION", failure)
@@ -150,7 +153,7 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
                         val probe = ("CCB-SYNC-KEY-DELIVERY-SIGNATURE/1\n" + digest.joinToString("") { "%02x".format(it) }).toByteArray(Charsets.US_ASCII)
                         require(certificate.verifies(probe, Base64.getEncoder().encodeToString(identity.signSyncGroupPayload(probe)))) { "SYNC_MANAGEMENT_VAULT_IDENTITY" }
                         return SyncManagementSession(identity, recipient, secret.copyOf(), aead, context, now(), lifetime(lifetimeSeconds), now).also {
-                            it.sealed = SyncManagementVaultBlob(context, vaultBytes.copyOf())
+                            it.sealed = SyncManagementVaultBlob(context, retainedVault)
                         }
                     } finally { identityBytes.fill(0); recipientBytes.fill(0) }
                 } finally { plain.fill(0) }

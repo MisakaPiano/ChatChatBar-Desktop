@@ -114,4 +114,17 @@ class SyncManagementVaultTest {
         assertEquals("SyncManagementSession(REDACTED)", session.toString())
         assertEquals("SyncManagementVaultBlob(encrypted)", blob.toString())
     }
+    @Test fun openingRetainsTheSameFrozenBytesItAuthenticatedWhenTheCallerMutatesItsInput() {
+        SyncManagementSession.create().use { session ->
+            val bound = trust(session); val blob = session.seal(bound); val code = session.recoveryCode()
+            val callerOwned = blob.bytes(); val before = callerOwned.copyOf()
+            SyncManagementSession.open(code, callerOwned, now = {
+                callerOwned[callerOwned.lastIndex] = (callerOwned.last().toInt() xor 1).toByte(); 0L
+            }).use { reopened ->
+                assertFalse(callerOwned.contentEquals(before))
+                assertContentEquals(before, reopened.seal(bound).bytes())
+                assertFalse(callerOwned.all { it == 0.toByte() })
+            }
+        }
+    }
 }
