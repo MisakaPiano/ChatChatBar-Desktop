@@ -224,19 +224,22 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         // Export never applies/recovers native plans. Shutdown callers additionally require a
         // settled source-only boundary after their final writer/source sealing has completed.
         if (!recoverNative) exclusive { requireSourceOnlyReady() }
-        // A cold Node has no warm localVersions. Import only retained local metadata before
-        // freezing, so a newly published local source cannot disappear from the selection.
-        kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
-            val local = inbox(localDependencies())
-            var cursor: CommitCursor? = null
-            do { cursor = local.discover(cursor).nextCursor } while (cursor != null)
-        }
-        val versions = localVersions.values.toList()
-        val reconciled = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { inbox().reconcile(versions) }
+        val reconciled = reconcileRetainedMetadata()
         val ledger = custody.ledger()
         val frozen = reconciled.copy(history = reconciled.history?.snapshot(),
             authenticatedVersions = reconciled.authenticatedVersions.toList(), observations = reconciled.observations.toList())
         return ledger to frozen
+    }
+
+    /** Cold queue replay and export share the same local-only metadata preflight. */
+    private suspend fun reconcileRetainedMetadata(): SyncInboxReconciliation {
+        val versions = localVersions.values.toList()
+        return kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+            val local = inbox(localDependencies())
+            var cursor: CommitCursor? = null
+            do { cursor = local.discover(cursor).nextCursor } while (cursor != null)
+            local.reconcile(versions)
+        }
     }
 
     /** Resource I/O deliberately stays outside the source/native operation mutex. */
@@ -487,6 +490,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
 
     suspend fun upload(operation: SyncStoreId, store: CiphertextStore, target: SyncDeliveryTarget, recoverNative: Boolean = true): LanSyncGroupPublishReceipt = serialized {
+        // A cold caller need not capture today's source or recover native state to replay a queue.
+        current = reconcileRetainedMetadata()
         // Re-key/preparation and source control are gated; slow immutable delivery is outside the gate.
         val commit = exclusive {
             if (!recoverNative) requireSourceOnlyReady()

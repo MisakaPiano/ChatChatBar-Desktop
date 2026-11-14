@@ -20,6 +20,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.*
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -69,7 +70,16 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         val recoveryRoot = shared.root.resolve("recovery-owner")
         val dailyRoot = shared.root.resolve("recovered-daily")
         val dailyData = shared.root.resolve("recovered-data")
-        private val dailyIdentity by lazy { LanSyncTlsIdentity.create() }
+        val dailyIdentityFile = shared.root.resolve("recovered-daily-identity.protected")
+        private val dailyIdentityLock = Any()
+        private val dailyIdentity: LanSyncTlsIdentity get() = synchronized(dailyIdentityLock) {
+            if (!Files.exists(dailyIdentityFile)) {
+                val encoded = LanSyncTlsIdentity.create().encode()
+                try { Files.write(dailyIdentityFile, encoded.reversedArray()) } finally { encoded.fill(0) }
+            }
+            val encoded = Files.readAllBytes(dailyIdentityFile).reversedArray()
+            try { LanSyncTlsIdentity.decode(encoded) } finally { encoded.fill(0) }
+        }
         private val workspace by lazy {
             LanSyncWorkspace(Files.createDirectory(dailyData), directory("recovered-workspace"), { Path.of(it) })
         }
@@ -185,6 +195,208 @@ class LanSyncGroupCloudRecoveryOwnerTest {
             SyncRootLedgerJournal(root.resolve("root-actions"), session.trust, session.ownerCertificate,
                 session::protectJournal, session::unprotectJournal).state()
         }
+    }
+
+    private fun managementEntry(f: Fixture, operation: SyncStoreId): SyncRootLedgerEntry {
+        val root = f.recoveryRoot.resolve("management")
+        return SyncManagementSession.open(f.original.code, Files.readAllBytes(root.resolve("management-vault.bin"))).use { session ->
+            requireNotNull(SyncRootLedgerJournal(root.resolve("root-actions"), session.trust, session.ownerCertificate,
+                session::protectJournal, session::unprotectJournal).entry(operation))
+        }
+    }
+
+    /** Read the actual retained intent without repairing the missing index/head crash window. */
+    private fun retainedRootIntent(f: Fixture, file: Path): SyncRootLedgerEntry {
+        val root = f.recoveryRoot.resolve("management")
+        return SyncManagementSession.open(f.original.code, Files.readAllBytes(root.resolve("management-vault.bin"))).use { session ->
+            val plain = session.unprotectJournal(Files.readAllBytes(file))
+            try {
+                val frame = lanSyncJson.parseToJsonElement(lanSyncUtf8(plain)).jsonObject
+                assertEquals("INTENT", frame.getValue("kind").jsonPrimitive.content)
+                lanSyncJson.decodeFromJsonElement(SyncRootLedgerEntry.serializer(), frame.getValue("payload"))
+            } finally { plain.fill(0) }
+        }
+    }
+
+    private fun fileBytes(root: Path): Map<String, ByteArray> = Files.walk(root).use { paths ->
+        paths.filter { Files.isRegularFile(it) }.toList().associate { root.relativize(it).toString() to Files.readAllBytes(it) }
+    }
+
+    private fun assertFilesUnchanged(expected: Map<String, ByteArray>, root: Path) {
+        val actual = fileBytes(root)
+        assertEquals(expected.keys, actual.keys)
+        expected.forEach { (name, bytes) -> assertContentEquals(bytes, actual.getValue(name), name) }
+    }
+
+    private suspend fun resumeApprovedRootAcrossBackends(f: Fixture, fromCloud: Boolean, point: String) {
+        f.publishCloud()
+        val originalAccess = requireNotNull(f.original.service.runtimeAccess())
+        val packageFile = f.shared.root.resolve("approved-root-switch.cbgroup")
+        val descriptor = originalAccess.prepareEncryptedFile(f.directory("approved-root-switch-export"), {}).use { prepared ->
+            Files.newOutputStream(packageFile).use { prepared.writeTo(it) }
+            prepared.descriptor
+        }
+        f.original.close()
+        val originalBefore = fileBytes(f.original.root)
+        val providerPuts = f.shared.dav.puts.toList()
+        val firstCloud = if (fromCloud) f.owner() else null
+        val firstFile = if (fromCloud) null else f.fileOwner()
+        val firstDevice = if (firstCloud != null) {
+            val initial = prepareReview(f, firstCloud)
+            assertTrue(f.recoveryRequests > 0)
+            firstCloud.lock(); firstCloud.closeAndDrain()
+            initial.device
+        } else {
+            val owner = requireNotNull(firstFile)
+            owner.open(); owner.prepare({ Files.newInputStream(packageFile) }, f.original.code)
+            val state = withTimeout(30_000) { owner.state.first { !it.busy && (it.review != null || it.error != null) } }
+            assertNull(state.error); assertFalse(state.complete)
+            val initial = requireNotNull(state.review)
+            assertEquals(0, f.recoveryRequests)
+            owner.lock(); owner.closeAndDrain()
+            initial.device
+        }
+        // The first UI preparation was never confirmed. This separate real management call
+        // explicitly acknowledges its own typed proof before faulting the actual root protocol.
+        assertEquals(0L, managementState(f).completedSequence)
+        assertNull(managementState(f).pendingOperation)
+        val daily = f.retainedJoining()
+        val member = requireNotNull(daily.recoveryMember())
+        assertEquals(firstDevice, member.first)
+        assertEquals(LanSyncGroupJoinStage.PREPARED, requireNotNull(daily.profile()).stage)
+        f.assertNoDailyActivation()
+        val managementRoot = f.recoveryRoot.resolve("management")
+        val actions = managementRoot.resolve("root-actions")
+        val origin = Files.readAllBytes(actions.resolve("origin.protected"))
+        val recipient = fileBytes(f.dailyRoot.resolve("joining/recipient"))
+        val identity = Files.readAllBytes(f.dailyIdentityFile)
+        val dailyProfile = Files.readAllBytes(f.dailyRoot.resolve("joining/profile.protected"))
+        val oldDelivery = fileBytes(managementRoot.resolve("root-delivery"))
+        val interrupted = AtomicBoolean()
+        val management = LanSyncGroupManagementRecovery(managementRoot, observe = {
+            if (it == point && interrupted.compareAndSet(false, true)) throw IOException("SYNTHETIC_APPROVED_ROOT_BACKEND_SWITCH")
+        })
+        val approved = try {
+            management.unlock(f.original.code)
+            val parent = management.ledger().current()
+            assertEquals(f.originalLedger, parent)
+            val preview = daily.prepareRecoveryDevice(management, "synthetic restored daily device")
+            assertEquals(member.first, preview.device); assertEquals(member.second, preview.proof.member)
+            assertEquals(parent.reference(), preview.request.expectedParent)
+            assertEquals(parent.members + member, preview.request.members)
+            assertEquals(parent.coveredTypes, preview.request.coveredTypes)
+            assertEquals(parent.acceptedHeads, preview.request.acceptedHeads); assertFalse(preview.request.rotateKey)
+            assertFailsWith<IOException> { management.addRecoveryDevice(preview.acknowledge(preview.request.approvalBinding)) }
+            assertTrue(interrupted.get(), point)
+            preview
+        } finally { management.close() }
+        val retained = fileBytes(actions).filterKeys { it.startsWith("intent-") || it.startsWith("signed-") || it.startsWith("operation-") }
+        val intentName = retained.keys.single { it.startsWith("intent-") }
+        val intent = retainedRootIntent(f, actions.resolve(intentName))
+        assertEquals(approved.request, intent.request)
+        assertEquals(f.originalLedger.reference(), intent.record.parent)
+        assertEquals(f.originalLedger.sequence + 1, intent.record.sequence)
+        assertEquals(f.originalLedger.members + member, intent.record.members)
+        assertEquals(f.originalLedger.epoch, intent.record.epoch)
+        assertEquals(f.originalLedger.keyCommitment, intent.record.keyCommitment)
+        val signed = retained.keys.filter { it.startsWith("signed-") }
+        assertEquals(if (point == "APPROVED_ROOT_INTENT_RETAINED") 0 else 1, signed.size)
+        assertEquals(if (point == "APPROVED_ROOT_INTENT_RETAINED") 0 else 1, retained.keys.count { it.startsWith("operation-") })
+        if (point != "ROOT_DELIVERY_SPEC_RETAINED") assertFalse(Files.exists(actions.resolve("head.protected")))
+        else {
+            val spec = "ledger-${intent.record.id.value}.json"
+            assertFalse(spec in oldDelivery)
+            assertTrue(spec in fileBytes(managementRoot.resolve("root-delivery")), "The fault must be the newly approved root's delivery spec")
+        }
+        assertContentEquals(origin, Files.readAllBytes(actions.resolve("origin.protected")))
+        assertFilesUnchanged(recipient, f.dailyRoot.resolve("joining/recipient"))
+        assertContentEquals(identity, Files.readAllBytes(f.dailyIdentityFile))
+        assertContentEquals(dailyProfile, Files.readAllBytes(f.dailyRoot.resolve("joining/profile.protected")))
+        assertEquals(0, f.readyCalls.get()); f.assertNoDailyActivation()
+        val requests = f.recoveryRequests; val seedRequests = f.shared.server.requestCount
+        val coldFile = if (fromCloud) f.fileOwner() else null
+        val coldCloud = if (fromCloud) null else f.owner()
+        val binding = if (coldFile != null) {
+            coldFile.open(); coldFile.prepare({ Files.newInputStream(packageFile) }, f.original.code)
+            val state = withTimeout(30_000) { coldFile.state.first { !it.busy && (it.review != null || it.error != null) } }
+            assertNull(state.error); assertFalse(state.complete)
+            requireNotNull(state.review).also { assertEquals(member.first, it.device) }.binding
+        } else prepareReview(f, requireNotNull(coldCloud)).also { assertEquals(member.first, it.device) }.binding
+        val resumed = managementState(f)
+        assertEquals(1L, resumed.completedSequence); assertNull(resumed.pendingOperation)
+        assertEquals(intent.record.reference(), resumed.last)
+        val entry = managementEntry(f, approved.request.operation)
+        assertEquals(approved.request, entry.request); assertEquals(intent.record.reference(), entry.record.reference())
+        assertTrue(SyncDeviceSignatures.decode(originalAccess.trust.ownerCertificate).verifies(entry.record.signingBytes(), entry.record.signature))
+        retained.forEach { (name, bytes) -> assertContentEquals(bytes, Files.readAllBytes(actions.resolve(name)), name) }
+        assertContentEquals(origin, Files.readAllBytes(actions.resolve("origin.protected")))
+        assertFilesUnchanged(recipient, f.dailyRoot.resolve("joining/recipient"))
+        assertContentEquals(identity, Files.readAllBytes(f.dailyIdentityFile))
+        assertContentEquals(dailyProfile, Files.readAllBytes(f.dailyRoot.resolve("joining/profile.protected")))
+        f.assertNoDailyActivation(); assertEquals(0, f.readyCalls.get())
+        val resumedActions = fileBytes(actions)
+        if (coldFile != null) coldFile.confirm(binding) else requireNotNull(coldCloud).confirm(binding)
+        if (coldFile != null) {
+            val state = withTimeout(30_000) { coldFile.state.first { !it.busy && (it.complete || it.error != null) } }
+            withTimeout(10_000) { coldFile.drain() }
+            assertNull(state.error, point); assertTrue(state.complete, point); assertFalse(state.pending)
+            assertEquals(requests, f.recoveryRequests)
+        } else {
+            val owner = requireNotNull(coldCloud)
+            val state = withTimeout(30_000) { owner.state.first { !it.busy && (it.complete || it.error != null) } }
+            withTimeout(10_000) { owner.drain() }
+            assertNull(state.error, point); assertTrue(state.complete, point)
+            assertTrue(f.recoveryRequests > requests)
+        }
+        val access = withTimeout(5_000) { f.ready.await() }
+        assertEquals(seedRequests, f.shared.server.requestCount)
+        assertEquals(providerPuts, f.shared.dav.puts.toList())
+        assertEquals(resumed, managementState(f)); assertFilesUnchanged(resumedActions, actions)
+        assertEquals(entry.record, access.ledger().current())
+        assertEquals(member.first, access.device); assertEquals(member.second.certificate, access.certificate)
+        assertEquals(member.second, access.ledger().current().members.getValue(access.device))
+        assertFilesUnchanged(recipient, f.dailyRoot.resolve("joining/recipient"))
+        assertContentEquals(identity, Files.readAllBytes(f.dailyIdentityFile))
+        assertFalse(Files.exists(access.work.resolve("cloud-connections")))
+        val card = f.dailyData.resolve("entities/character_cards/card.json")
+        val restored = requireNotNull(LanSyncJsonFiles.read(card, CharacterCard.serializer()))
+        assertEquals("synthetic owner recovery body", restored.name); assertEquals("retained original body", restored.basicSetting)
+        val expectedHash = f.source.entry.version.changes.getValue("character_cards/card").valueHash
+        assertEquals(expectedHash, access.node.inspect().nativeState.units.getValue("character_cards/card").valueHash)
+        val nativeBytes = fileBytes(f.dailyData)
+        val origins = listOf("author", "native").associateWith { Files.readAllBytes(f.dailyRoot.resolve("joining/node/$it/origin.protected")) }
+        val coldJoining = f.retainedJoining()
+        assertEquals(LanSyncGroupJoinStage.READY, requireNotNull(coldJoining.profile()).stage)
+        val coldAccess = requireNotNull(coldJoining.runtimeAccess())
+        assertEquals(access.device, coldAccess.device); assertEquals(access.certificate, coldAccess.certificate)
+        assertEquals(entry.record, coldAccess.ledger().current())
+        assertEquals(expectedHash, coldAccess.node.inspect().nativeState.units.getValue("character_cards/card").valueHash)
+        val author = SyncAuthorJournal(f.dailyRoot.resolve("joining/node/author"), coldAccess.trust, coldAccess.certificate,
+            { it.reversedArray() }, { it.reversedArray() })
+        assertEquals(0L, author.state().committedSequence); assertTrue(coldAccess.node.sourceOperations().isEmpty())
+        origins.forEach { (kind, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.dailyRoot.resolve("joining/node/$kind/origin.protected"))) }
+        assertFilesUnchanged(nativeBytes, f.dailyData); assertFilesUnchanged(originalBefore, f.original.root)
+        Files.newInputStream(packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, descriptor) }
+        assertEquals(1, f.readyCalls.get()); assertEquals(resumed, managementState(f))
+    }
+
+    @Test fun anApprovedCloudRootIntentColdResumesFromFileWithoutAnotherRootOperation() = fixture(https = true) {
+        resumeApprovedRootAcrossBackends(it, fromCloud = true, point = "APPROVED_ROOT_INTENT_RETAINED")
+    }
+    @Test fun aRetainedCloudRootSignatureColdResumesFromFileWithoutResigning() = fixture(https = true) {
+        resumeApprovedRootAcrossBackends(it, fromCloud = true, point = "ROOT_SIGNED_ENTRY_RETAINED")
+    }
+    @Test fun anInterruptedCloudRootLocalPublicationColdResumesFromFileWithoutAnotherRootOperation() = fixture(https = true) {
+        resumeApprovedRootAcrossBackends(it, fromCloud = true, point = "ROOT_DELIVERY_SPEC_RETAINED")
+    }
+    @Test fun anApprovedFileRootIntentColdResumesFromCloudWithoutAnotherRootOperation() = fixture(https = true) {
+        resumeApprovedRootAcrossBackends(it, fromCloud = false, point = "APPROVED_ROOT_INTENT_RETAINED")
+    }
+    @Test fun aRetainedFileRootSignatureColdResumesFromCloudWithoutResigning() = fixture(https = true) {
+        resumeApprovedRootAcrossBackends(it, fromCloud = false, point = "ROOT_SIGNED_ENTRY_RETAINED")
+    }
+    @Test fun anInterruptedFileRootLocalPublicationColdResumesFromCloudWithoutAnotherRootOperation() = fixture(https = true) {
+        resumeApprovedRootAcrossBackends(it, fromCloud = false, point = "ROOT_DELIVERY_SPEC_RETAINED")
     }
 
     @Test fun confirmedDataTransferContinuesPastFiveMinutesAfterManagementHasLocked() = fixture { f ->

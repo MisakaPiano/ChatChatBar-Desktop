@@ -309,6 +309,12 @@ class FileRecoveryOwnerTest {
             assertFalse(retained.contains(later.reference()))
         } finally { staleManager.close() }
 
+        val card = f.dailyData.resolve("entities/character_cards/original.json")
+        val restored = requireNotNull(LanSyncJsonFiles.read(card, CharacterCard.serializer()))
+        LanSyncJsonFiles.write(card, CharacterCard.serializer(), restored.copy(
+            basicSetting = "later local edit must survive refreshed management recovery", updatedAt = restored.updatedAt + 1))
+        val edited = Files.readAllBytes(card)
+
         val rootBefore = f.rootState()
         assertEquals(1L, rootBefore.completedSequence); assertNull(rootBefore.pendingOperation)
         assertEquals(recovered.reference(), rootBefore.last)
@@ -337,6 +343,81 @@ class FileRecoveryOwnerTest {
         assertEquals(authorBefore, f.author(access).state()); assertEquals(sourceBefore, access.node.sourceOperations())
         assertEquals(later, f.custody(access).ledger().current())
         assertEquals(later.keyCommitment, f.custody(access).key(later.epoch).keyCommitment())
+        Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
+        f.originalUnchanged()
+
+        // The positive input includes the complete B root-recipient capsules and a current-epoch
+        // container of the exact old signed fact. Rewrapping allocates no author/root revision.
+        retry.closeAndDrain()
+        access.reader.routes("completefuturefile", listOf(LanSyncGroupReplicaReader.Route("COMPLETE_FUTURE_FILE", future)))
+        try {
+            cursor = null
+            do { cursor = access.node.discover(future, cursor).nextCursor } while (cursor != null)
+        } finally { access.reader.removeRoutes("completefuturefile") }
+        hidden.forEach { assertNotNull(access.reader.cachedOnly().metadata(it)) }
+        val cipher = f.custody(access).key(later.epoch)
+        val queue = SyncEncryptedOutbox(Files.createDirectory(f.root.resolve("complete-future-version-outbox")), cipher)
+        val codec = SyncGroupObjectCodec(Files.createDirectory(f.root.resolve("complete-future-version-work")))
+        val wrapped = codec.enqueue(queue, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()),
+            cipher, f.source.metadata.envelope)
+        assertEquals(f.source.entry.version, wrapped.envelope.version)
+        queue.upload(wrapped.request.operationId, access.reader)
+        cursor = null
+        do { cursor = access.node.discoverLocal(cursor).nextCursor } while (cursor != null)
+        val currentView = access.node.reconcileForPrefetch()
+        assertFalse(currentView.trustBlocked)
+        assertTrue(requireNotNull(currentView.history).contains(f.source.entry.version.reference()))
+        assertTrue(currentView.authenticatedVersions.any {
+            it.context.epoch == later.epoch && it.envelope.version?.reference() == f.source.entry.version.reference()
+        })
+        val completeFile = f.root.resolve("complete-current-B.cbgroup")
+        var completeDescriptor: CiphertextDescriptor? = null
+        access.prepareEncryptedFile(Files.createDirectory(f.root.resolve("complete-current-B-export")), {}) { prepared ->
+            prepared.use { packageValue ->
+                Files.newOutputStream(completeFile).use { packageValue.writeTo(it) }
+                Files.newInputStream(completeFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, packageValue.descriptor) }
+                completeDescriptor = packageValue.descriptor
+            }
+        }
+        assertEquals(rootBefore, f.rootState()); assertEquals(recovered, f.managerLedger())
+        assertEquals(authorBefore, f.author(access).state()); assertEquals(sourceBefore, access.node.sourceOperations())
+        assertContentEquals(edited, Files.readAllBytes(card))
+        val managementOrigin = Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected"))
+        val managementSigned = files(f.recoveryRoot.resolve("management/root-actions")).filterKeys { it.contains("signed") || it.contains("origin") }
+        val dailyOrigins = listOf("author", "native").associateWith {
+            Files.readAllBytes(f.dailyRoot.resolve("joining/node/$it/origin.protected"))
+        }
+        val recipient = files(f.dailyRoot.resolve("joining/recipient"))
+        val fresh = f.owner()
+        val freshReview = review(f, fresh) { Files.newInputStream(completeFile) }
+        assertEquals(access.device, freshReview.device)
+        assertEquals("${later.id.value}:${later.bodyHash()}", freshReview.checkpoint)
+        assertEquals(later, f.managerLedger())
+        assertEquals(rootBefore, f.rootState())
+        assertContentEquals(managementOrigin, Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected")))
+        unchanged(nativeBefore, f.dailyData)
+        assertContentEquals(edited, Files.readAllBytes(card))
+        assertEquals(1, f.readyCalls.get())
+        fresh.confirm(freshReview.binding)
+        assertTrue(completed(fresh).pending, "The later unsent local edit must retain its normal source hold")
+        val resumed = requireNotNull(f.lastAccess.get())
+        assertEquals(later, resumed.ledger().current())
+        assertEquals(later, f.managerLedger())
+        assertEquals(rootBefore, f.rootState())
+        assertContentEquals(managementOrigin, Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected")))
+        val signedAfter = files(f.recoveryRoot.resolve("management/root-actions")).filterKeys { it.contains("signed") || it.contains("origin") }
+        assertEquals(managementSigned.keys, signedAfter.keys)
+        managementSigned.forEach { (path, bytes) -> assertContentEquals(bytes, signedAfter.getValue(path), path) }
+        dailyOrigins.forEach { (kind, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.dailyRoot.resolve("joining/node/$kind/origin.protected"))) }
+        unchanged(recipient, f.dailyRoot.resolve("joining/recipient"))
+        assertContentEquals(identityBefore, Files.readAllBytes(f.root.resolve("new-device.protected")))
+        unchanged(nativeBefore, f.dailyData)
+        assertContentEquals(edited, Files.readAllBytes(card))
+        assertEquals(authorBefore, f.author(resumed).state()); assertEquals(sourceBefore, resumed.node.sourceOperations())
+        assertEquals(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
+            requireNotNull(resumed.node.inspectLocal().plan).units.getValue("character_cards/original").stage)
+        assertEquals(2, f.readyCalls.get())
+        Files.newInputStream(completeFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, requireNotNull(completeDescriptor)) }
         Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
         f.originalUnchanged()
     }

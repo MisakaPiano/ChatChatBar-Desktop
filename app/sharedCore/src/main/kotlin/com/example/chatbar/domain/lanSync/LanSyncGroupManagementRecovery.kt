@@ -524,6 +524,20 @@ class LanSyncGroupManagementRecovery(private val root: Path,
         }
     }
 
+    /** A settled older manager must ingest complete known input before it can publish again. */
+    internal suspend fun requiresInputRefreshBeforeResume(): Boolean = guarded {
+        val value = requireActive(); val record = ready(value, checkKnown = false)
+        val known = knownCheckpoint() ?: return@guarded false
+        value.session.withRecipient { recipient ->
+            val custody = custody(value, record, recipient, false)
+            if (custody.ledger().contains(known)) false
+            else {
+                val journal = journal(value, record, false)
+                journal.state().pendingOperation == null && journal.nextRecoveryRequest(custody) == null
+            }
+        }
+    }
+
     suspend fun refresh(backend: CiphertextStore): LanSyncManagementRecoveryProfile = guarded {
         val value = requireActive(); val record = ready(value, checkKnown = false)
         value.session.withRecipient { recipient ->

@@ -132,6 +132,43 @@ class LanSyncGroupCoordinatorTest {
         } finally { probe.close() }
     }
 
+    @Test fun anActualPendingSetupRejectsBothExternalRecoveryEntriesBeforeTheirFactoriesOrInput() = runBlocking {
+        val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+        val factories = AtomicInteger(); val inputs = AtomicInteger()
+        val code = SyncManagementSession.create().use { session ->
+            session.seal(SyncGroupTrust(SyncStoreId.random(),
+                SyncVersionRef(SyncStoreId.random(), "a".repeat(64)), session.ownerCertificate))
+            session.recoveryCode()
+        }
+        val coordinator = LanSyncGroupCoordinator(hasExistingEvidence = { false },
+            enrollment = { factories.incrementAndGet(); error("SYNTHETIC_HELD_SETUP_MUST_NOT_OPEN_FOUNDER") },
+            joining = { factories.incrementAndGet(); error("SYNTHETIC_HELD_SETUP_MUST_NOT_OPEN_JOINING") },
+            network = noNetwork, deviceName = "synthetic pending setup", initiallyPaused = true,
+            beforeSetup = {
+                entered.complete(Unit); release.await()
+                error("SYNTHETIC_SETUP_STOPS_BEFORE_IDENTITY")
+            },
+            cloudRecoveryFactory = { factories.incrementAndGet(); error("SYNTHETIC_BUSY_SETUP_MUST_NOT_OPEN_CLOUD_RECOVERY") },
+            fileRecoveryFactory = { factories.incrementAndGet(); error("SYNTHETIC_BUSY_SETUP_MUST_NOT_OPEN_FILE_RECOVERY") })
+        val password = "synthetic unused password".toByteArray(Charsets.UTF_8)
+        try {
+            coordinator.createGroup()
+            withTimeout(5_000) { entered.await() }
+            val held = coordinator.state.value
+            assertEquals(LanSyncGroupPanelStage.EMPTY, held.stage); assertTrue(held.busy)
+            val draft = LanSyncGroupCloudDraft("synthetic pending setup", "https://synthetic.invalid/group/", "synthetic user", password)
+            repeat(2) {
+                coordinator.openCloudRecovery(); coordinator.openFileRecovery()
+                assertFalse(coordinator.prepareCloudRecovery(draft, code))
+                assertFalse(coordinator.prepareFileRecovery({ inputs.incrementAndGet(); ByteArrayInputStream(byteArrayOf()) }, code))
+                assertEquals(held, coordinator.state.value)
+                assertEquals(0, factories.get()); assertEquals(0, inputs.get())
+            }
+        } finally {
+            password.fill(0); release.complete(Unit); coordinator.closeAndDrain()
+        }
+    }
+
     @Test fun busyRecoveryPreparationRejectsTheOtherEntryWithoutOpeningItsStreamOrReplacingProgress() = runBlocking {
         val cloudEntered = CompletableDeferred<Unit>(); val cloudRelease = CompletableDeferred<Unit>()
         val fileEntered = CompletableDeferred<Unit>(); val fileRelease = CompletableDeferred<Unit>()
@@ -1225,7 +1262,7 @@ class LanSyncGroupCoordinatorTest {
                 override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? = touch()
                 override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = touch()
             }
-            access.reader.routes("paused-export-forbidden", listOf(LanSyncGroupReplicaReader.Route("paused-export-forbidden", forbidden)))
+            access.reader.routes("pausedexportforbidden", listOf(LanSyncGroupReplicaReader.Route("paused-export-forbidden", forbidden)))
             try {
                 storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic new edit for explicit paused export",
                     basicSetting = "retain this exact local edit", createdAt = 1, updatedAt = 2), CharacterCard.serializer())
@@ -1287,7 +1324,7 @@ class LanSyncGroupCoordinatorTest {
                 assertEquals(operations, access.node.sourceOperations()); assertEquals(2L, author.state().committedSequence)
                 assertTrue(coordinator.state.value.paused); assertEquals(reloads, f.reloads.get())
                 assertEquals(0, network.calls.get()); assertEquals(0, remoteCalls.get())
-            } finally { access.reader.removeRoutes("paused-export-forbidden") }
+            } finally { access.reader.removeRoutes("pausedexportforbidden") }
         }
     }
 

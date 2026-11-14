@@ -283,7 +283,12 @@ class LanSyncGroupFileRecoveryOwner internal constructor(private val root: () ->
         try {
             if (Files.exists(base.resolve("management/profile.protected"), NOFOLLOW_LINKS)) {
                 source.withBackend { management.resumeImport(value.input.code(), it) }
-                checkSession(value); management.resumeAdministration()
+                checkSession(value)
+                if (management.requiresInputRefreshBeforeResume()) {
+                    source.withBackend { management.refresh(it) }
+                    checkSession(value)
+                }
+                management.resumeAdministration()
                 val local = management.recoveryBootstrap()
                 source.withControl(vault, local) { management.refresh(it) }
             } else source.recover(vault, value.input.code(), management, LanSyncManagementRecoveryAdmission { trust ->

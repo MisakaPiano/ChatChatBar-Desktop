@@ -630,7 +630,7 @@ class LanSyncGroupTargetPublicationTest {
             }
             override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage { remoteCalls++; error("SYNTHETIC_OFFLINE_EXPORT_NETWORK") }
         }
-        f.access.reader.routes("synthetic-export-refusal", listOf(LanSyncGroupReplicaReader.Route("synthetic-export-refusal", forbidden)))
+        f.access.reader.routes("syntheticexportrefusal", listOf(LanSyncGroupReplicaReader.Route("synthetic-export-refusal", forbidden)))
         val directory = f.directory("actual-file-export")
         f.access.prepareEncryptedFile(directory) {}.use { prepared ->
             val bytes = ByteArrayOutputStream().also { prepared.writeTo(it) }.toByteArray()
@@ -647,7 +647,7 @@ class LanSyncGroupTargetPublicationTest {
             Files.newDirectoryStream(directory).use { paths -> assertTrue(paths.none { it.fileName.toString().startsWith("receipt-") }) }
         }
         assertEquals(0, remoteCalls)
-        f.access.reader.removeRoutes("synthetic-export-refusal")
+        f.access.reader.removeRoutes("syntheticexportrefusal")
         f.assertUnchanged()
     }
 

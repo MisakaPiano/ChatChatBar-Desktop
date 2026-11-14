@@ -138,7 +138,11 @@ internal class LanSyncGroupPartialTargetPublication(private val root: Path, priv
         return true
     }
     private fun storeId(path: Path): SyncStoreId {
-        PrivateSyncFile.checked(path, true); val id = path.resolve("store.id"); PrivateSyncFile.checked(id)
+        require(Files.isDirectory(path, NOFOLLOW_LINKS)) { "SYNC_GROUP_PARTIAL_ORIGIN_MISSING" }
+        PrivateSyncFile.checked(path, true)
+        val id = path.resolve("store.id")
+        require(Files.isRegularFile(id, NOFOLLOW_LINKS)) { "SYNC_GROUP_PARTIAL_ORIGIN_MISSING" }
+        PrivateSyncFile.checked(id)
         require(Files.size(id) == 32L) { "SYNC_GROUP_PARTIAL_ORIGIN_CHANGED" }
         return SyncStoreId.parse(Files.readString(id, Charsets.US_ASCII))
     }

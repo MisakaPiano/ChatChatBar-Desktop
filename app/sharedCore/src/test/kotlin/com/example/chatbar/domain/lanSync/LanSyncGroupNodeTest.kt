@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -62,7 +63,7 @@ class LanSyncGroupNodeTest {
                 }
                 override suspend fun reload(sessionIds: Set<String>) { check(gated); reloads++ }
             }
-            fun open() = LanSyncGroupNode(runtime, workspace, platform, identities[index], trust, custody(), recipients[index], backend,
+            fun open(dependencies: CiphertextStore = backend) = LanSyncGroupNode(runtime, workspace, platform, identities[index], trust, custody(), recipients[index], dependencies,
                 { it.reversedArray() }, { it.reversedArray() }, { emptySet() }, { _, _, _ -> }, observe = { hook(it) })
             suspend fun enroll(): LanSyncGroupNode {
                 val admitted = custody().enroll(trust, listOf(genesis))
@@ -103,6 +104,81 @@ class LanSyncGroupNodeTest {
         val after = retainedFiles(root)
         assertEquals(before.keys, after.keys)
         before.forEach { (name, bytes) -> assertContentEquals(bytes, after.getValue(name), name) }
+    }
+
+    @Test fun coldSourceOnlyRetriesWithOrWithoutMetadataPrefetchReuseTheOriginalLocalReceiptWithoutNativeOrLiveRouteWork() = withGroup { g ->
+        val end = g.End(0); val initial = end.enroll(); val unit = "character_cards/cold"
+        end.card("cold", "retained cold source original")
+        val source = initial.commit(initial.inspect().review(setOf(unit)))
+        val operation = source.entry.request.operation
+        val target = SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random())
+        val receipt = initial.upload(operation, g.backend, target, recoverNative = false)
+        var cursor: CommitCursor? = null
+        do { cursor = initial.discoverLocal(cursor, 1).nextCursor } while (cursor != null)
+        val checkpoint = requireNotNull(end.workspace.recovery.read(source.entry.request.sourceCheckpoint))
+        assertTrue(checkpoint.hasLocalOriginals)
+        end.workspace.recovery.verify(checkpoint)
+        val originals = linkedMapOf<String, Pair<Path, ByteArray>>()
+        val originalHashes = linkedSetOf<String>()
+        end.workspace.recovery.originals(checkpoint) { original, path ->
+            originalHashes += original.hash
+            originals[original.relative] = path to Files.readAllBytes(path)
+        }
+        assertTrue(originals.isNotEmpty())
+        val change = source.entry.version.changes.getValue(unit)
+        val content = requireNotNull(change.content)
+        // This fixture shares its recovery object store with the cache. Delete only signed unit
+        // bodies/manifests, after proving that none is an independently retained raw original.
+        val cachedProofs = listOfNotNull(change.content, change.membership).distinctBy { it.sha256 }.associateWith { plain ->
+            assertFalse(plain.sha256 in originalHashes)
+            requireNotNull(end.workspace.resourceStore.completed(plain.sha256, plain.length))
+        }
+        val authorBefore = retainedFiles(end.runtime.resolve("author"))
+        val nativeBefore = retainedFiles(end.runtime.resolve("native"))
+        val sourceBefore = retainedFiles(end.runtime.resolve("source"))
+        val queuesBefore = retainedFiles(end.runtime.resolve("queues"))
+        val dailyBefore = retainedFiles(end.data)
+        val recoveryBefore = retainedFiles(end.base.resolve("workspace/recovery"))
+        val authorState = end.author().state()
+        assertEquals(1L, authorState.committedSequence)
+        assertEquals(source.entry, end.author().entry(operation))
+        assertEquals(0, end.reloads)
+        var liveCalls = 0
+        val live = object : CiphertextStore by g.backend {
+            private fun refused(): Nothing { liveCalls++; error("SYNTHETIC_COLD_RETRY_LIVE_ROUTE_FORBIDDEN") }
+            override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = refused()
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = refused()
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? = refused()
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult = refused()
+        }
+        for ((index, prefetch) in listOf(true, false).withIndex()) {
+            cachedProofs.forEach { (plain, path) ->
+                Files.deleteIfExists(path)
+                assertNull(end.workspace.resourceStore.completed(plain.sha256, plain.length))
+            }
+            val reader = LanSyncGroupReplicaReader(g.backend, end.base.resolve("cold-reader-$index")) { _, error -> throw error }
+            reader.routes(listOf(LanSyncGroupReplicaReader.Route("SYNTHETIC_LIVE", live)))
+            val cold = end.open(reader)
+            if (prefetch) assertTrue(requireNotNull(cold.reconcileForPrefetch().history).contains(source.entry.version.reference()))
+            // No inspect/inspectLocal may initialize this fresh Node before its upload.
+            assertEquals(receipt, cold.upload(operation, g.backend, target, recoverNative = false))
+            assertEquals(receipt, cold.receipt(operation, target))
+            assertEquals(listOf(operation), cold.sourceOperations())
+            assertNotNull(end.workspace.resourceStore.completed(content.sha256, content.length))
+            assertEquals(authorState, end.author().state())
+            assertEquals(source.entry.version, requireNotNull(end.author().entry(operation)).version)
+            assertRetainedFiles(authorBefore, end.runtime.resolve("author"))
+            assertRetainedFiles(nativeBefore, end.runtime.resolve("native"))
+            assertRetainedFiles(sourceBefore, end.runtime.resolve("source"))
+            assertRetainedFiles(queuesBefore, end.runtime.resolve("queues"))
+            assertRetainedFiles(dailyBefore, end.data)
+            assertRetainedFiles(recoveryBefore, end.base.resolve("workspace/recovery"))
+            originals.forEach { (_, original) -> assertContentEquals(original.second, Files.readAllBytes(original.first)) }
+            end.workspace.recovery.verify(checkpoint)
+            assertEquals(0, end.reloads)
+            assertEquals(0, liveCalls)
+            assertFalse(end.gated)
+        }
     }
 
     @Test fun twoOfflineOperationsWaitForRotatedKeyThenColdDrainInAuthorOrderWithoutReauthoring() = withGroup { g ->
