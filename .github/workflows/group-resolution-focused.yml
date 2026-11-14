@@ -1,0 +1,37 @@
+name: Group resolution focused contracts
+on:
+  push:
+    branches: ['codex/group-resolution-20261114']
+permissions:
+  contents: read
+jobs:
+  shared:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record exact tested source
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p group-resolution-evidence
+          git rev-parse HEAD > group-resolution-evidence/source-sha.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Execute synthetic conflict resolution contracts
+        working-directory: app
+        run: |
+          bash ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupResolutionTest' --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: group-resolution-focused-evidence
+          path: |
+            group-resolution-evidence/source-sha.txt
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+          if-no-files-found: warn
