@@ -17,7 +17,8 @@ enum class LanSyncGroupNodeStage { READY, WAITING_FOR_KEY, DEVICE_REVOKED, TRUST
 class LanSyncGroupNodeView internal constructor(val stage: LanSyncGroupNodeStage, val reconciliation: SyncInboxReconciliation,
     val nativeState: LanSyncGroupNativeState, val plan: LanSyncGroupNativePlan?, val unsignedPreparations: Set<SyncStoreId>,
     private val dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>, private val evidence: LanSyncGroupRecordEvidence?,
-    val resolutions: List<LanSyncGroupResolutionLocalState> = emptyList(), val reservedUnits: Set<String> = emptySet()) {
+    val resolutions: List<LanSyncGroupResolutionLocalState> = emptyList(), val reservedUnits: Set<String> = emptySet(),
+    val incomingReview: LanSyncGroupIncomingReview? = null) {
     fun review(selected: Set<String>): LanSyncGroupSourceReview {
         require(selected.intersect(reservedUnits).isEmpty()) { "SYNC_GROUP_RESOLUTION_RESERVED" }
         return sourceReview(selected)
@@ -141,10 +142,11 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 unpublishedLocalUnits = pendingResolutions)
         } }
         val restricted = LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)
+        val incoming = LanSyncGroupIncomingReview.prepare(restricted)
         observe("NATIVE_PLAN_READY")
-        return LanSyncGroupNodeView(LanSyncGroupNodeStage.READY, view, state, restricted, Collections.unmodifiableSet(unsigned),
+        return LanSyncGroupNodeView(LanSyncGroupNodeStage.READY, view, state, incoming.defaultPlan, Collections.unmodifiableSet(unsigned),
             Collections.unmodifiableMap(dependencies), evidence, exclusive { resolutions.state() },
-            Collections.unmodifiableSet((pendingResolutions + heldResolutions).toSet()))
+            Collections.unmodifiableSet((pendingResolutions + heldResolutions).toSet()), incoming)
     }
 
     /** Dense author order, never random preparation-filename order or a reset counter. */
@@ -247,9 +249,15 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
 
     suspend fun apply(plan: LanSyncGroupNativePlan): LanSyncGroupNativeApplyReceipt? = serialized {
+        applyIncomingOwned(LanSyncGroupIncomingReview.prepare(plan).defaultPlan)
+    }
+    suspend fun applyIncoming(approval: LanSyncGroupIncomingApproval): LanSyncGroupNativeApplyReceipt? = serialized {
+        applyIncomingOwned(approval.review.confirmedPlan(approval))
+    }
+    private suspend fun applyIncomingOwned(plan: LanSyncGroupNativePlan): LanSyncGroupNativeApplyReceipt? {
         current = inbox().reconcile(localVersions.values)
         refreshResolutions()
-        exclusive {
+        return exclusive {
             native.apply(LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)).also { if (it?.status == LanSyncGroupNativeApplyStatus.APPLIED)
                 reload(plan.before.records.filter { record -> record.type == "chat_sessions" }.mapTo(linkedSetOf()) { record -> record.id }) }
         }
