@@ -59,12 +59,16 @@ class LanSyncGroupFileRecoveryUiControlTest {
             }
         }
     }
-    private fun sanitized(failure: Throwable): AssertionError =
-        AssertionError("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
+    private class SafeFailure(message: String) : AssertionError(message)
+    private fun sanitized(failure: Throwable): AssertionError {
+        // Keep the first safe snapshot: the outer Rule runs after method-finally closes the Activity.
+        if (failure is SafeFailure) return failure
+        return SafeFailure("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
             (observedState?.invoke()?.let { " OBSERVED[$it,nodes=$inputNodeCount]" } ?: "")).also {
             // Keep original locations; do not retain a cause/message that may contain the code or UI tree.
             it.stackTrace = failure.stackTrace
         }
+    }
 
     @Test fun realFilePickerResultRestoresLatestConversationWithSourceAlreadyOffline() = runBlocking {
         phase = "guards-and-fresh-real-app"
@@ -185,7 +189,10 @@ class LanSyncGroupFileRecoveryUiControlTest {
             observedState = {
                 val value = recovery.state.value
                 "visible=${value.visible},busy=${value.busy},review=${value.review != null}," +
-                    "complete=${value.complete},error=${value.error != null}"
+                    "complete=${value.complete},error=${value.error != null}," +
+                    "lifecycle=${runCatching { launched.state.name }.getOrDefault("UNAVAILABLE")}," +
+                    "sameOwner=${app.lanSyncOwner === owner},sameCoordinator=${owner.groupCoordinator === coordinator}," +
+                    "sameRecovery=${coordinator.fileRecovery === recovery}"
             }
             await(120_000) { !recovery.state.value.busy && (recovery.state.value.review != null || recovery.state.value.error != null) }
             check(recovery.state.value.error == null)
@@ -195,8 +202,10 @@ class LanSyncGroupFileRecoveryUiControlTest {
 
             phase = "review-recreate-clears-secrets-and-keeps-recipient"
             launched.recreate()
+            phase = "review-recreate-await-resumed-and-hidden"
             await { launched.state == Lifecycle.State.RESUMED && !recovery.state.value.visible }
             click("从加密文件恢复设备组")
+            phase = "review-reopen-await-visible-input"
             await { recovery.state.value.visible && recovery.state.value.review == null && !recovery.state.value.complete }
             compose.waitUntil(30_000) {
                 inputNodeCount = compose.onAllNodesWithText("读取并核对设备组").fetchSemanticsNodes().size

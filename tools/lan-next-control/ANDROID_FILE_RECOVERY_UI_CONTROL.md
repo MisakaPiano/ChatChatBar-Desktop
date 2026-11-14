@@ -52,3 +52,11 @@ button. It did not execute phase two. The control now waits for the actual
 visible fresh-input state and rendered node, directly checks the editable input
 is empty, then repeats the real picker/read/confirmation flow. Only enum/Boolean
 and node-count diagnostics are added. No Owner state or callback is patched.
+
+The second native run43639397849 failed before the input-node wait, with no
+phase-two execution. Its outer Rule sampled flags after Activity cleanup and
+overrode the first safe diagnostic. The next control preserves the first safe
+failure snapshot, splits lifecycle and reopened-input wait phases, and records
+only lifecycle enum and instance-equality Booleans. Original timeouts, UI actions,
+secret clearing, native and cold assertions are unchanged. This diagnostic-only
+change does not establish a product defect or a later-source fix.
