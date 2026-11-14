@@ -50,7 +50,10 @@ static class DesktopUpdateHandoff {
             var ackPath = Safe(args[5]);
             Require(Path.GetFileName(ackPath) == "completion.ready" && ackPath.StartsWith(Safe(Path.GetTempPath()).TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase), "UPDATE_COMPLETION_ACK");
             using (var ack = new FileStream(ackPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read)) ack.WriteByte(1);
-            Require(installer.WaitForExit(300000) && installer.ExitCode == 0, "UPDATE_COMPLETION_INSTALLER_UNCONFIRMED");
+            // A completed interactive installer may stay on its completion page indefinitely.
+            // Keep this captured process handle; elapsed UI dwell time is not failure or success.
+            installer.WaitForExit();
+            Require(installer.ExitCode == 0, "UPDATE_COMPLETION_INSTALLER_UNCONFIRMED");
         }
         Require(File.ReadAllText(Safe(Path.Combine(root, "install-owner.txt"))) == "ccb-desktop-nsis-v1" &&
                 File.ReadAllText(Safe(Path.Combine(root, "current.txt"))).Trim() == id, "UPDATE_COMPLETION_CURRENT");
