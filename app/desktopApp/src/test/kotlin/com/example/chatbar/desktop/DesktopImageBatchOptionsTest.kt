@@ -13,6 +13,18 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopImageBatchOptionsTest {
+    @Test fun `changing wait mode clears only invalid hidden edits and keeps storage validation strict`() {
+        val range = ImageBatchPacing(ImageBatchInterval.RANGE, fixedMillis = 1500, minMillis = 2300, maxMillis = 1200)
+        assertNotNull(range.validationError())
+        val fixed = desktopImageBatchPacingMode(range, ImageBatchInterval.FIXED)
+        assertNull(fixed.validationError()); assertEquals(1500L, fixed.fixedWaitMillis)
+        assertNotNull(desktopImageBatchPacingMode(range, ImageBatchInterval.RANGE).validationError())
+        val unfinishedFixed = fixed.copy(fixedMillis = -1, minMillis = 1500, maxMillis = 2300)
+        val none = desktopImageBatchPacingMode(unfinishedFixed, ImageBatchInterval.NONE)
+        assertNull(none.validationError()); assertEquals(1500L, none.minWaitMillis); assertEquals(2300L, none.maxWaitMillis)
+        assertEquals(0L, none.sampleMillis())
+        assertNotNull(unfinishedFixed.validationError(), "Untrusted or active invalid data is still refused")
+    }
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
@@ -69,7 +81,7 @@ class DesktopImageBatchOptionsTest {
             val input = scene.nodes().first { node -> node.config.contains(SemanticsActions.SetText) && node.matches("随机等待最小秒数") }
             input.config[SemanticsActions.SetText].action!!.invoke(androidx.compose.ui.text.AnnotatedString("5")); scene.frames()
             assertNull(config.validationError())
-            assertEquals(0, calls)
+            assertEquals(0L, calls)
         } finally { scene.close() }
     }
 
