@@ -75,11 +75,10 @@ static class DesktopUpdateHandoff {
         if (m.ContainsKey("buildNumber")) Require(Convert.ToInt64(m["buildNumber"]) == Convert.ToInt64(c["version"]), "UPDATE_COMPLETION_BUILD");
         Require((string)c["product"] == "ccb-desktop-nsis-v1" && (string)c["displayVersion"] == args[6] &&
                 (string)c["sourceSha"] == args[7] && Convert.ToInt64(c["version"]) > 0, "UPDATE_COMPLETION_CONFIG");
-#if HANDOFF_TEST
-        var cache = Safe(Environment.GetEnvironmentVariable("CCB_UPDATE_TEST_CACHE"));
-#else
-        var cache = Safe(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ChatChatBarDesktopUpdates"));
-#endif
+        // Match the existing application updater's LOCALAPPDATA owner, including isolated profiles.
+        var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        Require(!String.IsNullOrEmpty(local) && Path.IsPathRooted(local), "UPDATE_COMPLETION_CACHE_ROOT");
+        var cache = Safe(Path.Combine(local, "ChatChatBarDesktopUpdates"));
         if (!Directory.Exists(cache)) return 0;
         Require(File.ReadAllText(Safe(Path.Combine(cache, "owner.txt"))) == "ccb-desktop-nsis-v1", "UPDATE_COMPLETION_CACHE");
         var confirmations = Safe(Path.Combine(cache, "confirmations")); Directory.CreateDirectory(confirmations);

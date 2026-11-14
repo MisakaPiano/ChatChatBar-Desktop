@@ -86,9 +86,9 @@ class HandoffTest(unittest.TestCase):
                 (root / 'receipts').mkdir(); (root / 'receipts' / (current+'.sha256')).write_text(hashlib.sha256(manifest).hexdigest())
                 (runtime / 'update-config.json').write_text(json.dumps(dict(product='ccb-desktop-nsis-v1', displayVersion='0.1.0-preview.120', sourceSha='b'*40, version=120)))
                 (runtime / 'python.exe').write_bytes(self.fixture.read_bytes())
-                cache = case / 'cache'; cache.mkdir(); (cache / 'owner.txt').write_text('ccb-desktop-nsis-v1')
+                local = case / 'local'; cache = local / 'ChatChatBarDesktopUpdates'; cache.mkdir(parents=True); (cache / 'owner.txt').write_text('ccb-desktop-nsis-v1')
                 marker = case / 'executed.txt'; ack = case / 'completion.ready'
-                env = dict(os.environ, CCB_UPDATE_TEST_MARKER=str(marker), CCB_UPDATE_TEST_CACHE=str(cache))
+                env = dict(os.environ, CCB_UPDATE_TEST_MARKER=str(marker), LOCALAPPDATA=str(local))
                 old = subprocess.Popen([str(self.fixture), 'old-completion-fail' if defect == 'exit' else 'old-completion'], env=env)
                 helper = subprocess.Popen([str(self.handoff), '--complete', str(root), current, str(old.pid), str(self.fixture), str(ack),
                                            '0.1.0-preview.120', ('a' if defect == 'source' else 'b')*40], env=env)
