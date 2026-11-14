@@ -102,13 +102,19 @@ class ImageBatchRunPlanTest {
             validateOwner = { check(valid) }, onProgress = { states += it }) { calls++; valid = false; it } }
         assertTrue(result.isFailure); assertEquals(1, calls); assertEquals(1, states.last().saved)
     }
+    @Test fun `owner changed during account lookup stops before network admission`() = runTest {
+        var valid = true; var calls = 0
+        val result = runCatching { ImageBatchRunner().run(plan(total = 1), ImageBatchControl(),
+            quote = { valid = false; ImageBatchQuote(0, 100) }, validateOwner = { check(valid) }) { calls++; it } }
+        assertTrue(result.isFailure); assertEquals(0, calls)
+    }
     @Test fun `short successful save is failure and no next batch starts`() = runTest {
         var calls = 0
         val result = runCatching { ImageBatchRunner(sleep = {}).run(plan(4, 10), ImageBatchControl(), free) { calls++; it - 1 } }
         assertTrue(result.isFailure); assertEquals(1, calls)
     }
     @Test fun `old studio draft decodes safe defaults without launching anything`() {
-        val draft = Json { ignoreUnknownKeys = true }.decodeFromString<NovelAiStudioDraft>("""{"continuousModeEnabled":true,"continuousTargetCount":10}""")
+        val draft = Json { ignoreUnknownKeys = true }.decodeFromString<NovelAiStudioDraft>("""{"continuousModeEnabled":true,"continuousTargetCount":10,"updatedAt":1}""")
         assertEquals(ImageBatchPacing(), draft.batchPacing); assertTrue(draft.continuousModeEnabled)
         val copy = Json.decodeFromString<NovelAiStudioDraft>(Json.encodeToString(NovelAiStudioDraft.serializer(), draft))
         assertEquals(draft, copy)
@@ -121,8 +127,8 @@ class ImageBatchRunPlanTest {
         assertEquals(97L, ledger.reconcile(usage.copy(anlas = 97)).anlas)
     }
     @Test fun `safe retry header keeps full seconds and HTTP date`() {
-        assertEquals(120000L, NovelAiImageService.safeRetryAfterMillis("120"))
-        assertEquals(10000L, NovelAiImageService.safeRetryAfterMillis("invalid"))
-        assertEquals(60000L, NovelAiImageService.safeRetryAfterMillis("Thu, 01 Jan 1970 00:01:00 GMT", 0))
+        assertEquals(120000L, ImageBatchRetryAfterPolicy.delayMillis("120"))
+        assertEquals(10000L, ImageBatchRetryAfterPolicy.delayMillis("invalid"))
+        assertEquals(60000L, ImageBatchRetryAfterPolicy.delayMillis("Thu, 01 Jan 1970 00:01:00 GMT", 0))
     }
 }

@@ -8,6 +8,8 @@ jobs:
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      CHATBAR_VERSION_NAME: 1.4.12-safe-batch-n1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,7 +58,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.ImageBatchOptionsEditorTest --no-daemon --stacktrace
+            cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.ImageBatchOptionsEditorTest,com.example.chatbar.ui.components.ImageBatchOfflineRunTest --no-daemon --stacktrace
             adb pull /sdcard/Android/data/com.example.chatbar.safebatch.n1/files/safe-batch-review safe-batch-evidence/device-ui
       - name: Collect original reports and APK
         if: always()
