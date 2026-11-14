@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -88,7 +89,14 @@ assert_tag_if_present()
 if release is None:
     command(["gh", "release", "create", plan["tag"], "--repo", repo, "--target", plan["source"],
              "--title", plan["title"], "--notes-file", str(notes), "--draft", "--prerelease", "--latest=false"])
-    release = find_release()
+    # A just-created draft may not be visible in the immediately repeated list response.
+    for page_size in (99, 98, 97):
+        matches = [r for r in api(f"repos/{repo}/releases?per_page={page_size}") if r["tag_name"] == plan["tag"]]
+        assert len(matches) <= 1
+        if matches:
+            release = matches[0]
+            break
+        time.sleep(2)
 assert release is not None and release["target_commitish"] == plan["source"]
 release_id = release["id"]
 assets = {a["name"]: a for a in release["assets"]}
