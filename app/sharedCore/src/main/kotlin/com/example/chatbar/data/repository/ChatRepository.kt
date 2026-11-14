@@ -269,6 +269,18 @@ class ChatRepository internal constructor(
             transform = { it },
         ).sortedWith(ChatMessage.TimelineComparator)
 
+    /** Complete strict selected-session projection without rewriting its message index. */
+    suspend fun <T> mapMessagesReadOnlyStrict(sessionId: String, transform: (ChatMessage) -> T): List<T> =
+        messageAppendMutex.withDataAccess {
+            require(getSession(sessionId) != null) { "会话已不存在" }
+            storage.mapEntitiesByPrefixStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer(),
+                validate = { key, message ->
+                    require(message.sessionId == sessionId && key == messageStorageId(sessionId, message.id)) {
+                        "会话消息归属不一致，未显示不完整图库"
+                    }
+                }, transform = transform)
+        }
+
     /** 顺序分批读取会话消息；调用方每次只需持有一个小批次。 */
     suspend fun forEachMessage(
         sessionId: String,

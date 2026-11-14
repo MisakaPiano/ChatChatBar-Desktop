@@ -648,6 +648,12 @@ class JsonFileStorage(
     @OptIn(ExperimentalSerializationApi::class)
     suspend fun <T : Any> readEntitiesByPrefixStrict(entityType: String, prefix: String, serializer: KSerializer<T>,
         validate: (String, T) -> Unit = { _, _ -> }): List<T> =
+        mapEntitiesByPrefixStrict(entityType, prefix, serializer, validate) { it }
+
+    /** Project one strict record at a time without retaining every decoded body or repairing indexes. */
+    @OptIn(ExperimentalSerializationApi::class)
+    suspend fun <T : Any, R> mapEntitiesByPrefixStrict(entityType: String, prefix: String, serializer: KSerializer<T>,
+        validate: (String, T) -> Unit = { _, _ -> }, transform: (T) -> R): List<R> =
         mutexFor(entityType).withLock {
             require(entityType.matches(Regex("[a-z_]+")) && prefix.isNotBlank() && prefix.none { it == '/' || it == '\\' || it.code < 32 })
             withContext(Dispatchers.IO) {
@@ -659,9 +665,9 @@ class JsonFileStorage(
                             currentCoroutineContext().ensureActive()
                             val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
                             require(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther)
-                            Files.newInputStream(path).buffered().use { strict.decodeFromStream(serializer, it) }.also {
-                                validate(path.fileName.toString().removeSuffix(".json"), it)
-                            }
+                            val value = Files.newInputStream(path).buffered().use { strict.decodeFromStream(serializer, it) }
+                            validate(path.fileName.toString().removeSuffix(".json"), value)
+                            transform(value)
                         }
                 }
             }

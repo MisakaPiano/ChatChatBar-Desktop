@@ -159,6 +159,21 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
     extraActions: @Composable RowScope.(String) -> Unit = {}, onClose: () -> Unit) {
+    DesktopImageViewerBody(references, initialIndex, resources, picker, extraActions, null, onClose)
+}
+
+@Composable
+internal fun DesktopSessionImageViewer(snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int,
+    resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
+    onSource: (DesktopSessionImageOccurrence) -> Unit, onClose: () -> Unit) {
+    DesktopImageViewerBody(snapshot.occurrences.map { it.reference }, initialIndex, resources, picker, {},
+        { index -> snapshot.occurrences.getOrNull(index)?.let(onSource) }, onClose)
+}
+
+@Composable
+private fun DesktopImageViewerBody(references: List<String>, initialIndex: Int,
+    resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
+    extraActions: @Composable RowScope.(String) -> Unit, onSource: ((Int) -> Unit)?, onClose: () -> Unit) {
     val selection = remember { DesktopViewerSelection(references, initialIndex) }
     val reference = selection.reference ?: return
     val index = selection.index
@@ -203,10 +218,16 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
                     ProcessBuilder("explorer.exe", "/select,", path.toString()).start()
                 } }
                 DesktopChatIconAction("图像工具", DesktopAppIcons.Tools) { act { tools = resources.readBytes(reference) } }
+                onSource?.let { navigate -> DesktopViewerSourceAction(selection, navigate) }
                 extraActions(reference)
             }
         }
     }
+}
+
+@Composable
+internal fun DesktopViewerSourceAction(selection: DesktopViewerSelection, onSource: (Int) -> Unit) {
+    BootstrapButton("回到来源消息", secondary = true) { onSource(selection.index) }
 }
 
 @Composable

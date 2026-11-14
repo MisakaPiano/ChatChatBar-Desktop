@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Desktop full live-session image overview and exact source navigation: read `chatbar-desktop-session-gallery`. Message images shared by text alternatives and archive-only media retain separate ownership.
+
 Desktop reply alternatives and deletion confirmations: read `chatbar-desktop-reply-versions`. Stable-ID deletion, final-candidate removal and shared media custody are separate from AI format repair or creating a new reply.
 
 Desktop independent character originals, PNG card-data replacement and cover transfer/editor/backup custody: read `chatbar-desktop-character-cover`. Avatar/background and rendered export layouts retain separate owners.

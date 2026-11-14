@@ -461,6 +461,9 @@ internal class DesktopPrimaryChatController(
         return found
     }
 
+    suspend fun sessionImageGallery(sessionId: String): DesktopSessionImageGallerySnapshot =
+        DesktopSessionImageGallery(chats).read(sessionId)
+
     private suspend fun replaceReadingWindow(sessionId: String, first: Boolean): String? {
         var target: String? = null
         guarded {

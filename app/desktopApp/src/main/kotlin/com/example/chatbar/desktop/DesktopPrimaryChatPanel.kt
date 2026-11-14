@@ -122,6 +122,7 @@ internal fun DesktopPrimaryChatPanel(
         mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
     }
     var chatDebugOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
+    var imageGalleryOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var backgroundOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
@@ -357,6 +358,7 @@ internal fun DesktopPrimaryChatPanel(
                                         }) else null, multipleInlineStatuses = preferences.multipleInlineStatuses,
                                         onMultipleInlineStatuses = setMultipleInline)
                                 }
+                                BootstrapButton("图片", secondary = true) { imageGalleryOpen = true }
                                 controller.saveSlots?.let { slots ->
                                     BootstrapButton("存档", secondary = true) { scope.launch {
                                         if (state.sessionSettingsDirty) controller.requestSessionSettingsLeave { slots.open(selected.id) }
@@ -560,6 +562,9 @@ internal fun DesktopPrimaryChatPanel(
                     }
                 }
             } }
+        }
+        if (imageGalleryOpen) state.selectedSession?.let { session ->
+            DesktopSessionImageGalleryWindow(session.id, controller) { imageGalleryOpen = false }
         }
         if (chatDebugOpen) state.selectedSession?.let { session ->
             DesktopChatDebugOverlay(controller.taskRuntime.diagnostics, session.id, onClose = { chatDebugOpen = false },

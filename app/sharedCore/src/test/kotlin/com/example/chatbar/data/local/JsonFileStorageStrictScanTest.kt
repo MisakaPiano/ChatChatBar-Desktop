@@ -11,6 +11,19 @@ import kotlin.test.assertIs
 import kotlin.test.assertFailsWith
 
 class JsonFileStorageStrictScanTest {
+    @Test fun `strict prefix projection retains identity validation without scanning foreign prefix`(): Unit = runBlocking {
+        val root = Files.createTempDirectory("strict-prefix-projection-")
+        try {
+            val storage = JsonFileStorage(root)
+            storage.saveEntity("items", "s_one", "value", String.serializer())
+            Files.writeString(root.resolve("entities/items/other_bad.json"), "bad json")
+            val validate: (String, String) -> Unit = { id, value -> require(id == "s_one" && value == "value") }
+            assertEquals(listOf(5), storage.mapEntitiesByPrefixStrict("items", "s_", String.serializer(), validate) { it.length })
+            assertEquals(listOf("value"), storage.readEntitiesByPrefixStrict("items", "s_", String.serializer(), validate))
+            Files.writeString(root.resolve("entities/items/s_bad.json"), "bad json")
+            assertFailsWith<Exception> { storage.mapEntitiesByPrefixStrict("items", "s_", String.serializer(), validate) { it.length } }
+        } finally { root.toFile().deleteRecursively() }
+    }
     @Test fun `missing entity directory scans empty without creating data root`(): Unit = runBlocking {
         val parent = Files.createTempDirectory("strict-scan-missing-")
         try {
