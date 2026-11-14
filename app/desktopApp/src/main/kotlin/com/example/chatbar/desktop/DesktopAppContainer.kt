@@ -348,13 +348,16 @@ class DesktopAppContainer internal constructor(
             dataGate = dataOperationCoordinator,
             manualResourceAccess = { work -> dataOperationCoordinator.withSynchronousNormalOperation(work) },
             documentIndex = ragController,
+            backgroundLibrary = characterBackgrounds,
             speakerHistory = speakerTagHistoryService,
             imageModelSettings = settingsRepository.appSettings.map { it.novelAiImageModel },
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, current ->
                 val retained = current.flatMap(::desktopCharacterResourceReferences).toSet()
-                ownedImageCleanup.deleteUnreferenced(desktopCharacterResourceReferences(previous).filterNot(retained::contains))
+                val retainedBackgrounds = previous.chatBackgroundImages.toSet() + listOfNotNull(previous.chatBackground)
+                ownedImageCleanup.deleteUnreferenced(desktopCharacterResourceReferences(previous)
+                    .filterNot { it in retained || it in retainedBackgrounds })
             },
         ).also { editor ->
             editor.promptBudget = editorBudgetOwner.value

@@ -44,6 +44,58 @@ class DesktopPortableBackgroundGalleryTest {
         assertFalse(after.card.chatBackgroundResourceId in after.card.chatBackgroundImageResourceIds)
     }
 
+    @Test fun `editor gallery draft saves original bytes and removal retains old backgrounds and independent defaults`(): Unit = runBlocking {
+        withApp { app, _ ->
+            val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
+            val card = app.characterTransfers.importNew(source)
+            val preferred = card.chatBackgroundImages.first()
+            app.characterBackgrounds.prefer(card.id, preferred)
+            val editor = app.characterEditorController
+            editor.openExisting(card.id)
+            val encoded = bytes(source, source.card.chatBackgroundImageResourceIds.last())
+            editor.cropBackgroundAsset(encoded)
+            val staged = assertNotNull(editor.state.value.card).chatBackgroundImages.last()
+            assertFalse(staged in card.chatBackgroundImages)
+            editor.flushDraft()
+            assertTrue(editor.save())
+            val saved = assertNotNull(app.characterRepository.getById(card.id))
+            val added = saved.chatBackgroundImages.last()
+            assertEquals(card.chatBackground, saved.chatBackground)
+            assertEquals(preferred, app.characterBackgrounds.preferred(card.id))
+            assertNotNull(app.characterResourceStore.readBytes(added))
+            editor.openExisting(card.id)
+            editor.removeBackgroundAsset(added)
+            assertTrue(editor.save())
+            assertFalse(added in app.characterRepository.getById(card.id)!!.chatBackgroundImages)
+            assertNotNull(app.characterResourceStore.readBytes(added))
+            assertEquals(card.chatBackground, app.characterRepository.getById(card.id)!!.chatBackground)
+            assertEquals(preferred, app.characterBackgrounds.preferred(card.id))
+        }
+    }
+
+    @Test fun `gallery reference can be selected by session without duplicate media or changing platform defaults`(): Unit = runBlocking {
+        withApp { app, _ ->
+            val source = app.characterTransfers.decode(fixture("android-complete11.json").toString(Charsets.UTF_8))
+            val card = app.characterTransfers.importNew(source)
+            val encoded = bytes(source, source.card.chatBackgroundImageResourceIds.first())
+            val reference = app.characterBackgrounds.import(card.id, encoded)
+            val imported = assertNotNull(app.characterRepository.getById(card.id))
+            assertEquals(reference, imported.chatBackgroundImages.last())
+            assertEquals(card.chatBackground, imported.chatBackground)
+            app.characterBackgrounds.prefer(card.id, card.chatBackgroundImages.first())
+            val session = com.example.chatbar.data.local.entity.ChatSession.create(card.id, "Synthetic background selection")
+            app.chatRepository.createSession(session)
+            app.chatImages.selectBackgroundReference(session.id, reference)
+            assertEquals(reference, app.chatRepository.getSession(session.id)!!.chatBackground)
+            assertContentEquals(encoded, app.characterResourceStore.readBytes(reference))
+            app.chatImages.selectBackgroundReference(session.id, null)
+            assertNull(app.chatRepository.getSession(session.id)!!.chatBackground)
+            assertContentEquals(encoded, app.characterResourceStore.readBytes(reference))
+            assertEquals(imported.chatBackground, app.characterRepository.getById(card.id)!!.chatBackground)
+            assertEquals(card.chatBackgroundImages.first(), app.characterBackgrounds.preferred(card.id))
+        }
+    }
+
     @Test fun `actual Android JSON and PNG survive Desktop production import export reopen and second round without losing any backgrounds`(): Unit = runBlocking {
         for (extension in listOf("json", "png")) withApp { app, _ ->
             val input = fixture("android-complete11.$extension")

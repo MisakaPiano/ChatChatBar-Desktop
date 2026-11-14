@@ -111,6 +111,7 @@ internal class DesktopCharacterEditorController(
     val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
     private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
     val documentIndex: DesktopRagController? = null,
+    val backgroundLibrary: DesktopCharacterBackgrounds? = null,
     private val speakerHistory: SpeakerTagHistoryService = SpeakerTagHistoryService(characters, chats),
     val imageModelSettings: kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.image.NovelAiImageModel?> = kotlinx.coroutines.flow.flowOf(null),
     private val manualResourceAccess: ((() -> Unit) -> Unit) = { it() },
@@ -468,7 +469,7 @@ internal class DesktopCharacterEditorController(
             edit { it.copy(coverImage = reference) }
         } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
     }
-    fun chooseBackground(description: String = "Image") = chooseImage(description) { card, ref -> card.copy(chatBackground = ref) }
+    fun chooseBackground(description: String = "Image") = chooseImage(description) { card, ref -> card.copy(chatBackground = ref, chatBackgroundImages = (card.chatBackgroundImages + listOfNotNull(card.chatBackground) + ref).distinct()) }
     fun chooseAppearance(id: String, description: String = "Image") = chooseImage(description) { card, ref ->
         card.copy(characters = card.characters.map { if (it.id == id) it.copy(appearanceImage = ref) else it })
     }
@@ -490,7 +491,7 @@ internal class DesktopCharacterEditorController(
     }
 
     fun cropAvatar(bytes: ByteArray) = cropImage(bytes) { card, ref -> card.copy(avatar = ref) }
-    fun cropBackground(bytes: ByteArray) = cropImage(bytes) { card, ref -> card.copy(chatBackground = ref) }
+    fun cropBackground(bytes: ByteArray) = cropImage(bytes) { card, ref -> card.copy(chatBackground = ref, chatBackgroundImages = (card.chatBackgroundImages + listOfNotNull(card.chatBackground) + ref).distinct()) }
     fun cropAppearance(id: String, bytes: ByteArray) = cropImage(bytes) { card, ref ->
         card.copy(characters = card.characters.map { if (it.id == id) it.copy(appearanceImage = ref) else it })
     }
@@ -507,7 +508,20 @@ internal class DesktopCharacterEditorController(
 
     fun clearAvatar() = edit { it.copy(avatar = null) }
     fun clearCover() = edit { it.copy(coverImage = null) }
-    fun clearBackground() = edit { it.copy(chatBackground = null) }
+    fun clearBackground() = edit { it.copy(chatBackground = null,
+        chatBackgroundImages = (it.chatBackgroundImages + listOfNotNull(it.chatBackground)).distinct()) }
+    fun addBackgroundAsset() = chooseImage("添加角色卡背景") { card, ref ->
+        card.copy(chatBackgroundImages = (card.chatBackgroundImages + ref).distinct())
+    }
+    fun cropBackgroundAsset(bytes: ByteArray) = cropImage(bytes) { card, ref ->
+        card.copy(chatBackgroundImages = (card.chatBackgroundImages + ref).distinct())
+    }
+    fun removeBackgroundAsset(reference: String) = edit { it.copy(chatBackgroundImages = it.chatBackgroundImages - reference) }
+    fun selectCardBackground(reference: String) = edit {
+        require(reference in it.chatBackgroundImages)
+        it.copy(chatBackground = reference)
+    }
+
     fun clearAppearance(id: String) = updateCharacter(id) { it.copy(appearanceImage = null) }
 
     fun addDocumentFromPicker(description: String = "Text") {
@@ -660,6 +674,7 @@ internal class DesktopCharacterEditorController(
 
     private fun draftAssets(card: CharacterCard): List<String> = buildList {
         card.avatar?.let(::add); card.chatBackground?.let(::add); card.coverImage?.let(::add)
+        addAll(card.chatBackgroundImages)
         card.characters.mapNotNullTo(this) { it.appearanceImage }
         card.customDocuments.mapTo(this) { it.filePath }
     }.filter(resources::isDraft)

@@ -275,6 +275,39 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             EditorSection(t(DesktopUiText.CHARACTER_DEFAULT_BACKGROUND), Modifier.testTag("character-editor-background")) {
                 ImageSlot(t(DesktopUiText.CHAT_BACKGROUND_IMAGE), card.chatBackground,
                     { controller.chooseBackground(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearBackground, controller, controller::cropBackground)
+                StatusText("背景资产随角色卡保存；角色卡默认、Desktop 首选和会话覆盖分别生效。移除图库引用不会自动清理旧图片。")
+                BootstrapButton("添加角色卡背景", secondary = true, onClick = controller::addBackgroundAsset)
+                val backgrounds = card.chatBackgroundImages.distinct()
+                val library = controller.backgroundLibrary
+                val backgroundRevision = library?.revision?.collectAsState()?.value
+                var backgroundError by remember(card.id) { mutableStateOf<String?>(null) }
+                val preferred by produceState<String?>(null, card.id, backgroundRevision) {
+                    try { value = library?.preferred(card.id) }
+                    catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                    catch (_: Exception) { backgroundError = "Desktop 首选读取失败；原记录与资源保留，请重试。" }
+                }
+                fun preferBackground(reference: String?) { scope.launch {
+                    try { library?.prefer(card.id, reference); backgroundError = null }
+                    catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                    catch (_: Exception) { backgroundError = "Desktop 首选未确认保存；请核对原记录后重试。" }
+                } }
+                backgroundError?.let { StatusText(it, DesktopBootstrapColors.warning) }
+                if (library != null) BootstrapButton("清除 Desktop 首选", secondary = true,
+                    enabled = !state.dirty && !state.busy && preferred != null) { preferBackground(null) }
+                if (state.dirty && library != null) StatusText("图库改动随本页保存；保存后可设置 Desktop 首选。")
+                backgrounds.forEachIndexed { index, reference -> key(reference) {
+                    ImageSlot("背景 ${index + 1} · 裁剪后另存新背景", reference,
+                        controller::addBackgroundAsset, { controller.removeBackgroundAsset(reference) },
+                        controller, controller::cropBackgroundAsset)
+                    EditorActions {
+                        BootstrapButton(if (reference == card.chatBackground) "✓ 角色卡默认" else "设为角色卡默认", secondary = true) {
+                            if (reference !in card.chatBackgroundImages) controller.edit { it.copy(chatBackgroundImages = it.chatBackgroundImages + reference) }
+                            controller.selectCardBackground(reference)
+                        }
+                        if (library != null) BootstrapButton(if (reference == preferred) "✓ Desktop 首选" else "设为 Desktop 首选",
+                            secondary = true, enabled = !state.dirty && !state.busy) { preferBackground(reference) }
+                    }
+                } }
             }
             Box(Modifier.fillMaxWidth().testTag("character-editor-moments").bringIntoViewRequester(momentsFocus).onGloballyPositioned {
                 if (state.momentsFocusRevision > 0 && handledMomentsFocus != state.momentsFocusRevision) {

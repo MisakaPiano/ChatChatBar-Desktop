@@ -103,7 +103,7 @@ internal class DesktopCharacterBackgrounds(
         buildJsonObject { put("images", JsonArray(value.images.map(::JsonPrimitive))); put("preferred", value.preferred?.let(::JsonPrimitive) ?: JsonNull)
             if (value.migrated) put("migrated", true) }, JsonObject.serializer())
 
-    suspend fun import(id: String, bytes: ByteArray) = mutex.withLock {
+    suspend fun import(id: String, bytes: ByteArray): String = mutex.withLock {
         coordinator.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
             val previous = load(id) // Strict authority before allocating anything.
             DesktopImageEditing.requireStatic(bytes)
@@ -114,7 +114,7 @@ internal class DesktopCharacterBackgrounds(
                     System.currentTimeMillis(), "gallery${UUID.randomUUID()}")
                 updateCard(id) { it.copy(chatBackgroundImages = it.chatBackgroundImages + path) }
                 revision.value++
-                return@withContext
+                return@withContext path
             }
             val normalized = DesktopImageEditing.png(DesktopImageEditing.decode(bytes))
             val path = resources.materializeImage(PackagedImage("background.png", Base64.getEncoder().encodeToString(normalized)),
@@ -122,6 +122,7 @@ internal class DesktopCharacterBackgrounds(
             // An indeterminate write retains its exact newly allocated resource.
             save(id, previous.copy(images = previous.images + path))
             revision.value++
+            path
         } }
     }
     suspend fun prefer(id: String, path: String?) = mutex.withLock {

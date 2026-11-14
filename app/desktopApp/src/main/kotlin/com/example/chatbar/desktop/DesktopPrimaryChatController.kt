@@ -817,7 +817,13 @@ internal class DesktopPrimaryChatController(
             val path = imagePicker.pickOpenFile(DesktopFileType("会话背景", listOf("png", "jpg", "jpeg", "webp"))) ?: return@guarded
             kotlinx.coroutines.withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path).bytes }
         }
-        val cleanupWarning = requireNotNull(imageStore).replaceBackground(session.id, bytes)
+        val card = state.value.selectedCharacter?.takeIf { it.id == session.characterCardId }
+        val library = backgroundLibrary
+        val cleanupWarning = if (clear || (card != null && library != null)) {
+            val reference = bytes?.let { requireNotNull(library).import(requireNotNull(card).id, it) }
+            requireNotNull(imageStore).selectBackgroundReference(session.id, reference)
+            null
+        } else requireNotNull(imageStore).replaceBackground(session.id, bytes)
         val saved = requireNotNull(chats.getSession(session.id))
         stateLock.withLock {
             if (state.value.selectedSession?.id == session.id) {

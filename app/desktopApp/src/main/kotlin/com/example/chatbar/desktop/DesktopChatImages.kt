@@ -80,6 +80,15 @@ internal class DesktopChatImages(
             }
         }
 
+    /** Gallery owns the bytes. Changing the session selection never collects previous backgrounds. */
+    suspend fun selectBackgroundReference(sessionId: String, reference: String?) = gate.withNormalOperation {
+        withContext(NonCancellable + Dispatchers.IO) {
+            reference?.let(resources::readBytes)
+            val session = requireNotNull(chats.getSession(sessionId)) { "会话不存在" }
+            chats.saveSessionSettingsDraft(session, session.copy(chatBackground = reference))
+        }
+    }
+
     suspend fun replaceBackground(sessionId: String, bytes: ByteArray?): String? {
         val previous = gate.withNormalOperation {
             withContext(NonCancellable + Dispatchers.IO) {
