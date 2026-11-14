@@ -1,0 +1,60 @@
+name: LAN next actual Android group page control
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: ['.github/lan-next-group-ui-request.json']
+permissions:
+  contents: read
+jobs:
+  android-group-page:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: group-ui-control
+          persist-credentials: false
+      - name: Validate exact source and control fixture request
+        id: request
+        working-directory: group-ui-control
+        run: python3 -B tools/lan-next-control/group_ui_control.py request --request .github/lan-next-group-ui-request.json >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: ${{ steps.request.outputs.sourceSha }}
+          path: group-ui-app-source
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare only the cloud instrumentation companion
+        working-directory: group-ui-control
+        run: python3 -B tools/lan-next-control/group_ui_control.py prepare --request .github/lan-next-group-ui-request.json --source ../group-ui-app-source --evidence lan-next-group-ui-evidence
+      - name: Compile fixed application and companion instrumentation
+        working-directory: group-ui-app-source/app
+        run: |
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=83 --no-daemon --stacktrace
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise one actual group-page method
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 -B group-ui-control/tools/lan-next-control/group_ui_control.py run --request group-ui-control/.github/lan-next-group-ui-request.json --source group-ui-app-source --evidence group-ui-control/lan-next-group-ui-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-next-group-ui-api26-evidence
+          path: group-ui-control/lan-next-group-ui-evidence/
