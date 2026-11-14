@@ -261,7 +261,7 @@ private val advancedTutorialPages = listOf(
     ),
     TutorialPage(
         title = "消息与片段操作",
-        summary = "长按聊天内容，可编辑、删除、重新生成或制作长截图。",
+        summary = "长按聊天内容，可编辑、删除、重新生成或制作长截图。生成回复或处理存档时仍可长按复制文本，修改操作在处理完成后可用。",
         sections = listOf(
             TutorialSection(
                 title = "整条消息",

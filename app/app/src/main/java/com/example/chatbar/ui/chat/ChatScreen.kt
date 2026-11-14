@@ -310,6 +310,7 @@ fun ChatScreen(
     var clearConfirm by remember { mutableStateOf(false) }
     var fullComposer by remember { mutableStateOf(false) }
     var actionMessageId by remember { mutableStateOf<String?>(null) }
+    var copyOnlySnapshot by remember(sessionId) { mutableStateOf<String?>(null) }
     var actionSegment by remember { mutableStateOf<ChatBubbleSegmentAction?>(null) }
     var pendingVoiceGeneration by remember(sessionId) {
         mutableStateOf<PendingVoiceGeneration?>(null)
@@ -1268,8 +1269,16 @@ fun ChatScreen(
                         onVoiceLongPress = if (screenshotSelectionMode) null else ({ voice ->
                             voiceActionTarget = voice
                         }),
-                        onLongPress = { if (!isResponding && !screenshotSelectionMode) actionMessageId = message.id },
-                        onSegmentLongPress = if (!isResponding && !screenshotSelectionMode) ({ segment -> actionSegment = segment }) else null,
+                        onLongPress = {
+                            if (!screenshotSelectionMode) {
+                                if (isResponding || saveSlotOperation.busy) copyOnlySnapshot = PlaceholderRenderer.render(message.displayContent, renderPlayerName, renderBotName)
+                                else actionMessageId = message.id
+                            }
+                        },
+                        onSegmentLongPress = if (!screenshotSelectionMode) ({ segment ->
+                            if (isResponding || saveSlotOperation.busy) copyOnlySnapshot = segment.copyText
+                            else actionSegment = segment
+                        }) else null,
                         onImageClick = if (screenshotSelectionMode) null else ({ path ->
                             val frozen = previewImages.toList()
                             val index = frozen.indexOfFirst { it.messageId == message.id && it.path == path }
@@ -1854,6 +1863,17 @@ fun ChatScreen(
         WholeMessageDeletionConfirmation(
             onDismiss = { deleteMessageTargetId = null },
             onDelete = { viewModel.deleteMessage(messageId); deleteMessageTargetId = null })
+    }
+    copyOnlySnapshot?.let { captured ->
+        CbDialog(title = "复制文本", onDismissRequest = { copyOnlySnapshot = null },
+            dismiss = { CbButton("取消", { copyOnlySnapshot = null }, variant = ButtonVariant.Ghost) },
+            confirm = { CbButton("复制", {
+                clipboardManager.setText(AnnotatedString(captured))
+                copyOnlySnapshot = null
+                Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
+            }) }) {
+            CbText("当前仍在生成或处理存档，可以复制文本；编辑、删除和截图在处理完成后可用。", style = ChatBarTheme.typography.caption)
+        }
     }
     actionSegment?.let { segment ->
         val target = messages.find { it.id == segment.messageId }
