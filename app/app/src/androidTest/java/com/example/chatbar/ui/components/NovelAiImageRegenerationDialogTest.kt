@@ -58,7 +58,7 @@ class NovelAiImageRegenerationDialogTest {
             }
         }
 
-        composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performScrollTo()
+        scrollUntilVisible(composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1])
         recordGeometry("fullscreen-before-click", composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1])
         composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performClick()
 
@@ -78,7 +78,8 @@ class NovelAiImageRegenerationDialogTest {
         composeTestRule.onNodeWithText("图片操作").assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece, 1girl").performScrollTo().assertIsDisplayed()
 
-        composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performScrollTo().performClick()
+        scrollUntilVisible(composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1])
+        composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performClick()
         composeTestRule.onNodeWithText("masterpiece, 1girl")
             .performTextReplacement("confirmed prompt")
         composeTestRule.onNodeWithContentDescription("确认").performClick()
@@ -109,7 +110,7 @@ class NovelAiImageRegenerationDialogTest {
         composeTestRule.onNodeWithText("bad anatomy").assertIsDisplayed()
 
         androidx.test.espresso.Espresso.closeSoftKeyboard()
-        composeTestRule.onNodeWithText("添加角色").performScrollTo()
+        scrollUntilVisible(composeTestRule.onNodeWithText("添加角色"))
         recordGeometry("add-role-before-click", composeTestRule.onNodeWithText("添加角色"))
         composeTestRule.onNodeWithText("添加角色").performClick()
         try {
@@ -157,6 +158,21 @@ class NovelAiImageRegenerationDialogTest {
             .onNodeWithText("当前生成尺寸 1024×1024；不修改时保留原图尺寸。")
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("方图（1:1，1024×1024）").assertIsDisplayed()
+    }
+
+    /** ScrollTo can report success for a nested child whose clipped touch bounds are still empty. */
+    private fun scrollUntilVisible(target: SemanticsNodeInteraction) {
+        repeat(24) {
+            composeTestRule.waitForIdle()
+            val bounds = target.fetchSemanticsNode().boundsInRoot
+            if (bounds.width > 0f && bounds.height > 0f) {
+                target.assertIsDisplayed()
+                return
+            }
+            composeTestRule.onNode(hasScrollAction() and hasAnyDescendant(hasText("添加角色")))
+                .performTouchInput { swipeUp() }
+        }
+        target.assertIsDisplayed()
     }
 
     private fun recordGeometry(name: String, target: SemanticsNodeInteraction) {
