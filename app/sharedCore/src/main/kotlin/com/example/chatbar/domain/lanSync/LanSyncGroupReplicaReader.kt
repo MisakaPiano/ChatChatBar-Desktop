@@ -121,6 +121,12 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
         LanSyncResourceBudget().requireSpace(work, metadata.descriptor.length, copies = 2)
         var last: Exception? = null
         for (route in routes) {
+            // Strict immutable routes retain their metadata substitution check before payload I/O.
+            // Only an explicit quarantine view may offer several unauthenticated descriptors.
+            if (!route.store.capabilities.untrustedCandidateVariants) {
+                val advertised = route.store.metadata(key) ?: continue
+                require(advertised == metadata) { "SYNC_GROUP_REPLICA_OBJECT_CHANGED" }
+            }
             val copied = LanSyncScratch(work, "replica-read").use { scratch ->
                 val file = scratch.directory.resolve("ciphertext.bin")
                 var count = 0L
