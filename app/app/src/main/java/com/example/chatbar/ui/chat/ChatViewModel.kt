@@ -1,5 +1,7 @@
 package com.example.chatbar.ui.chat
 
+import com.example.chatbar.domain.image.*
+
 import android.net.Uri
 import android.content.Context
 import android.os.PowerManager
@@ -257,7 +259,9 @@ data class ImageGenerationState(
     val error: String? = null,
     val imageContentHint: String = "",
     val finalPromptRequirement: String = "",
-    val batchSize: Int = 1
+    val batchSize: Int = 1,
+    val manualBatch: Boolean = false,
+    val batchProgress: ImageBatchProgress? = null
 )
 
 data class MemoryNodeDiffUi(
@@ -1147,6 +1151,161 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
+    suspend fun previewManualImageRun(configuration: ImageBatchConfiguration): String {
+        val live = chatRepository.getSession(sessionId) ?: return "会话已删除"
+        val card = characterRepository.getById(live.characterCardId) ?: return "角色卡不存在"
+        val settings = settingsRepository.getAppSettings()
+        val target = live.resolvedNovelAiImageModel(card.defaultNovelAiImageModel, settings.novelAiImageModel)
+        val token = novelAiCredentials.load() ?: return "未配置 NovelAI Token，计费状态未知"
+        val usage = try { withContext(Dispatchers.IO) { NovelAiAccountService().fetch(token) } }
+            catch (error: Throwable) { if (error is CancellationException) throw error; null }
+        val generation = NovelAiGenerationSettings.legacy(0, configuration.requestCount, target)
+            .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
+        val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
+        val total = plan.batches.sumOf { count ->
+            NovelAiImageSizePreset.entries.maxOf { preset ->
+                val size = NovelAiImageSizePolicy.resolve(settings.novelAiImageAspectRatio, preset)
+                NovelAiImageCostEstimator.estimate(generation.copy(count = count, customWidth = size.width, customHeight = size.height), usage).anlas.toLong()
+            }
+        }
+        return "会话角色卡：${card.name} · 生图模型：${target.displayName}\n" +
+            (if (usage == null) "账户状态未知；任务将在请求前停止。" else "当前 Anlas ${usage.anlas} · V5 额度约 ${usage.v5AllowancePercent ?: "未知"}%（另计）") +
+            "\n按可能画幅预估整项任务 $total Anlas；AI 设计后按实际画幅重新核对，估算可能变化。"
+    }
+
+    private val manualBatchControls = ConcurrentHashMap<String, ImageBatchControl>()
+    fun pauseManualImageRun(taskId: String) { manualBatchControls[taskId]?.pause() }
+    fun resumeManualImageRun(taskId: String) { manualBatchControls[taskId]?.resume() }
+    fun stopManualImageRuns() {
+        manualBatchControls.keys.toList().forEach { id -> imageGenerationJobs[id]?.cancel(CancellationException("离开会话，停止手动生图")) }
+    }
+    private fun stopManualImageRunsForAnchor(messageId: String) {
+        imageGenerations.value.filter { it.manualBatch && it.anchorMessageId == messageId }.forEach {
+            imageGenerationJobs[it.taskId]?.cancel(CancellationException("生图锚点已修改或删除"))
+        }
+    }
+
+    /** Explicit user entry; automatic reply images keep the original one-image path. */
+    fun generateManualNovelAiImages(
+        anchorMessageId: String,
+        configuration: ImageBatchConfiguration,
+        imageContentHint: String = "",
+        imagePromptPreference: String? = null
+    ) {
+        if (imageGenerations.value.any { it.manualBatch && !it.isTerminal }) return
+        val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
+        val taskId = UUID.randomUUID().toString()
+        val control = ImageBatchControl()
+        manualBatchControls[taskId] = control
+        val preference = imagePromptPreference ?: _session.value?.imagePromptPreference.orEmpty()
+        putImageGeneration(ImageGenerationState(taskId, anchorMessageId, ImageGenerationPhase.DESIGNING,
+            finalPromptRequirement = preference, batchSize = configuration.requestCount, manualBatch = true))
+        // ViewModel ownership: leaving the screen cancels this manual run; no restart auto-resume.
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                AiBackgroundWorkManager.run(sessionId) {
+                    val session = chatRepository.getSession(sessionId) ?: error("会话已删除")
+                    val anchor = chatRepository.getMessage(anchorMessageId, sessionId) ?: error("生图消息已删除")
+                    val card = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+                    val settings = settingsRepository.getAppSettings()
+                    val token = novelAiCredentials.load() ?: error("未配置 NovelAI Token")
+                    val model = modelResolver.resolveImageModel(session.imageModelId, settings)
+                    require(model?.hasConfiguredAuthentication(settings) == true) { "生图设计模型/API Key 不可用" }
+                    val target = session.resolvedNovelAiImageModel(card.defaultNovelAiImageModel, settings.novelAiImageModel)
+                    val messages = chatRepository.getInitialMessagePage(sessionId, anchorMessageId).messages
+                    val player = session.playerName?.takeIf { it.isNotBlank() }
+                        ?: settingsRepository.getPlayerSetting().playerName
+                    val frozenSettings = NovelAiGenerationSettings.legacy(novelAiImageService.newSeed(), configuration.requestCount, target)
+                        .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
+                    suspend fun validateOwner() {
+                        val live = chatRepository.getSession(sessionId) ?: error("会话已删除，停止生图")
+                        val source = chatRepository.getMessage(anchorMessageId, sessionId) ?: error("生图锚点已删除")
+                        check(live.characterCardId == session.characterCardId && live.imageModelId == session.imageModelId &&
+                            live.novelAiImageModel == session.novelAiImageModel &&
+                            source.content == anchor.content && source.images == anchor.images) { "会话绑定、模型或锚点已改变，任务停止" }
+                        check(characterRepository.getById(card.id) == card) { "角色卡已改变，任务停止；请重新确认" }
+                        val liveSettings = settingsRepository.getAppSettings()
+                        check(liveSettings.novelAiImageModel == settings.novelAiImageModel &&
+                            liveSettings.novelAiImageAspectRatio == settings.novelAiImageAspectRatio) { "生图配置已改变，任务停止" }
+                    }
+                    val initialUsage = try { withContext(Dispatchers.IO) { NovelAiAccountService().fetch(token) } }
+                        catch (error: Throwable) { if (error is CancellationException) throw error; null }
+                    if (initialUsage == null) throw ImageBatchStopped("账户计费状态未知，未调用生图设计或图片请求；请检查后重新确认")
+                    val initialCost = plan.batches.sumOf { count -> NovelAiImageSizePreset.entries.maxOf { preset ->
+                        val size = NovelAiImageSizePolicy.resolve(settings.novelAiImageAspectRatio, preset)
+                        NovelAiImageCostEstimator.estimate(frozenSettings.copy(count = count, customWidth = size.width, customHeight = size.height), initialUsage).anlas.toLong()
+                    } }
+                    if (initialCost > plan.maxEstimatedAnlas) throw ImageBatchStopped("整项任务当前预估 $initialCost Anlas 超过本次预算，未调用生图设计或图片请求")
+                    val prompt = novelAiPromptDesigner.design(messages, anchorMessageId, card, requireNotNull(model),
+                        playerName = player, sessionId = sessionId, imageContentHint = imageContentHint,
+                        finalPromptRequirement = preference, targetImageModel = target,
+                        naturalLanguageMode = session.novelAiNaturalLanguageMode && target == NovelAiImageModel.V5_FULL) { draft ->
+                        updateImageGeneration(taskId) { it.copy(promptDraft = draft) }
+                    }
+                    val imageSize = NovelAiImageSizePolicy.resolve(settings.novelAiImageAspectRatio, prompt.sizePreset)
+                    val configured = frozenSettings.copy(customWidth = imageSize.width, customHeight = imageSize.height)
+                    configured.validationError(prompt.characterCaptions.size)?.let { error(it) }
+                    val ledger = ManualImageAccountLedgers.forCredential(token)
+                    var approvedCost: NovelAiGenerationCost? = null
+                    ImageBatchRunner().run(plan, control,
+                        quote = { count ->
+                            val usage = try { withContext(Dispatchers.IO) { NovelAiAccountService().fetch(token) } }
+                                catch (error: Throwable) { if (error is CancellationException) throw error; null }
+                            usage?.let {
+                                val effective = ledger.reconcile(it)
+                                val cost = NovelAiImageCostEstimator.estimate(configured.copy(count = count), effective)
+                                approvedCost = cost
+                                ImageBatchQuote(cost.anlas.toLong(), effective.anlas, cost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE)
+                            }
+                        }, validateOwner = { validateOwner() },
+                        onProgress = { progress -> updateImageGeneration(taskId) { it.copy(batchProgress = progress) } },
+                        generateAndSave = { count ->
+                            GlobalImageGenerationConcurrencyGate.instance.run {
+                                validateOwner()
+                                val request = configured.copy(count = count, seed = novelAiImageService.newSeed().toLong())
+                                ledger.reserve(requireNotNull(approvedCost), count)
+                                val images = mutableListOf<ByteArray>()
+                                updateImageGeneration(taskId) { it.copy(phase = ImageGenerationPhase.GENERATING, progress = 0f) }
+                                novelAiImageService.generate(token, prompt, imageSize, request,
+                                    maxRateLimitRetries = 0, safeBatchRequest = true).collect { event ->
+                                    when (event) {
+                                        is NovelAiImageEvent.Intermediate -> updateImageGeneration(taskId) {
+                                            it.copy(phase = ImageGenerationPhase.STREAMING, previewImage = event.image,
+                                                progress = (images.size + event.progress) / count)
+                                        }
+                                        is NovelAiImageEvent.Final -> images += event.image
+                                        is NovelAiImageEvent.Error -> {
+                                            if (event.httpCode == 429) throw ImageBatchRateLimited(event.retryAfterMillis ?: 10000)
+                                            error(event.message + "；请求可能已受理或计费，不自动重发")
+                                        }
+                                    }
+                                }
+                                check(images.size == count) { "最终图片数量不符；不自动重新提交" }
+                                validateOwner()
+                                withContext(NonCancellable) {
+                                    saveNovelAiImageResult(taskId, anchorMessageId, prompt, imageSize, images, keepTask = true)
+                                }
+                                updateImageGeneration(taskId) { it.copy(phase = ImageGenerationPhase.GENERATING) }
+                                images.size
+                            }
+                        })
+                    removeImageGeneration(taskId)
+                }
+            } catch (error: Throwable) {
+                updateImageGeneration(taskId) { it.copy(
+                    phase = if (error is CancellationException) ImageGenerationPhase.CANCELLED else ImageGenerationPhase.FAILED,
+                    error = if (error is CancellationException) "已停止；已发请求可能仍被处理或计费，已保存图片保留" else error.message) }
+                if (error is CancellationException) throw error
+            }
+        }
+        imageGenerationJobs[taskId] = job
+        job.invokeOnCompletion {
+            imageGenerationJobs.remove(taskId, job)
+            manualBatchControls.remove(taskId)
+        }
+        job.start()
+    }
+
     fun generateNovelAiImage(
         anchorMessageId: String,
         imageContentHint: String = "",
@@ -1163,6 +1322,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     fun retryNovelAiImageGeneration(taskId: String) {
+        if (imageGenerationState(taskId)?.manualBatch == true) return // New explicit plan/consent is required.
         val failed = imageGenerationState(taskId)?.takeIf { it.isTerminal } ?: return
         imageGenerationJobs.remove(taskId)?.cancel(CancellationException("用户重试生图"))
         val checkpoint = imageGenerationPromptCheckpoints[taskId]
@@ -2095,7 +2255,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         anchorMessageId: String,
         prompt: NovelAiPromptPlan,
         imageSize: NovelAiImageSize,
-        images: List<ByteArray>
+        images: List<ByteArray>,
+        keepTask: Boolean = false
     ) {
         require(images.isNotEmpty()) { "没有可保存的 NovelAI 图片" }
         updateImageGeneration(taskId) {
@@ -2137,7 +2298,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             throw error
         }
         refreshMessages()
-        removeImageGeneration(taskId)
+        if (!keepTask) removeImageGeneration(taskId)
     }
 
     private fun debugPrompt(prompt: NovelAiPromptPlan, imageSize: NovelAiImageSize): String = buildString {
@@ -3566,6 +3727,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     fun deleteMessage(messageId: String) {
+        stopManualImageRunsForAnchor(messageId)
         viewModelScope.launch {
             fishAudioCoordinator.cancelAndJoinForMessage(sessionId, messageId)
             val deletedMessage = chatRepository.getMessage(messageId, sessionId)
@@ -3680,6 +3842,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     /**
      */
     fun editMessage(messageId: String, content: String, imagePaths: List<String>) {
+        stopManualImageRunsForAnchor(messageId)
         viewModelScope.launch {
             val oldMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
             if (content.isBlank() && imagePaths.isEmpty()) return@launch
@@ -3699,6 +3862,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         endExclusive: Int,
         replacement: String
     ) {
+        stopManualImageRunsForAnchor(messageId)
         viewModelScope.launch {
             val oldMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
             val editOutcome = editRoleplayMessageSegment(

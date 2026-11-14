@@ -1,5 +1,8 @@
 package com.example.chatbar.ui.imageprompt
 
+import com.example.chatbar.domain.image.*
+import com.example.chatbar.ui.components.ImageBatchOptionsEditor
+
 import com.example.chatbar.ui.components.NovelAiGuidanceSlider
 import com.example.chatbar.ui.components.NovelAiCfgRescaleSlider
 import com.example.chatbar.ui.components.promptEditorTextStyle
@@ -176,6 +179,7 @@ fun ImagePromptToolScreen(
     var showImageTools by remember { mutableStateOf(false) }
     var showPostProcess by remember { mutableStateOf(false) }
     var showGenerationOptions by remember { mutableStateOf(false) }
+    var batchOptionsValid by remember { mutableStateOf(true) }
     var sizeEditorSettings by remember { mutableStateOf<NovelAiGenerationSettings?>(null) }
     var positionEditorDraft by remember { mutableStateOf<NovelAiStudioDraft?>(null) }
     var showGuidanceEditor by remember { mutableStateOf(false) }
@@ -517,15 +521,15 @@ fun ImagePromptToolScreen(
                                 if (generationCost.encodingAnlas > 0) append("（含编码 ${generationCost.encodingAnlas}）")
                                 if (generationCost.extraVibeAnlas > 0) append("（含额外 Vibe ${generationCost.extraVibeAnlas}）")
                             }
-                            generationCost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE -> "生成免费"
-                            generationCost.kind == NovelAiGenerationChargeKind.FREE -> "生成免费"
+                            generationCost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE -> "估算免 Anlas"
+                            generationCost.kind == NovelAiGenerationChargeKind.FREE -> "估算免 Anlas"
                             else -> "生成消耗 ${generationCost.anlas} Anlas"
                         },
                         onClick = when {
                             state.applyingHistory -> ({})
                             state.phase == ImagePromptToolPhase.CANCELLING -> ({})
                             state.isBusy -> viewModel::cancelActiveTask
-                            else -> viewModel::generateImage
+                            else -> ({ if (batchOptionsValid) viewModel.generateImage() else showGenerationOptions = true })
                         },
                         modifier = Modifier.weight(0.58f),
                         enabled = !state.applyingHistory && configured &&
@@ -621,11 +625,18 @@ fun ImagePromptToolScreen(
         )
     }
 
+    state.batchConfirmation?.let { summary ->
+        CbDialog(onDismissRequest = viewModel::dismissBatchConfirmation, title = "确认本次批量请求与估算预算",
+            dismiss = { CbButton("取消", viewModel::dismissBatchConfirmation, variant = ButtonVariant.Ghost) },
+            confirm = { CbButton("已了解风险，开始", viewModel::confirmBatchRun) }) {
+            Column(Modifier.verticalScroll(rememberScrollState())) { CbText(summary) }
+        }
+    }
     if (showGenerationOptions) {
         CbDialog(
             onDismissRequest = { showGenerationOptions = false },
             title = "生图选项",
-            confirm = { CbButton("完成", { showGenerationOptions = false }) }
+            confirm = { CbButton("完成", { showGenerationOptions = false }, enabled = batchOptionsValid || state.isBusy) }
         ) {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
@@ -639,25 +650,24 @@ fun ImagePromptToolScreen(
                         enabled = state.draftLoaded && !state.isBusy
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CbText("连续模式", Modifier.weight(1f))
-                    CbSwitch(state.autoModeEnabled, viewModel::setAutoMode, enabled = state.draftLoaded && !state.isBusy)
-                }
-                if (state.autoModeEnabled) {
-                    CbField("目标张数", description = "仅统计成功保存的图片；最后一批按剩余张数生成。") {
-                        CbNumberValueInput(
-                            value = state.autoTargetCount.toString(),
-                            onValueChange = { viewModel.setAutoTargetCount(it.toInt()) },
-                            enabled = state.draftLoaded && !state.isBusy,
-                            isValid = { it.toIntOrNull()?.let { count -> count > 0 } == true }
-                        )
+                if (state.isBusy) {
+                    state.batchProgress?.let { progress ->
+                        CbText(progress.label())
+                        CbButton("暂停下一批", viewModel::pauseBatchRun)
+                        CbButton("继续（保留剩余等待）", viewModel::resumeBatchRun)
+                        CbText("停止不会撤销已发请求，可能仍被计费；已保存图片保留。")
+                        CbButton("停止任务", viewModel::cancelActiveTask, variant = ButtonVariant.Destructive)
                     }
-                    CbText(
-                        "点击生图按钮开始。沿用启动时的 Prompt 与设置，遇到 HTTP 429 会等待后持续重试，不计入成功张数。其他错误会停止；达到目标后发送完成通知，也可随时手动停止。",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
+                } else ImageBatchOptionsEditor(
+                    value = ImageBatchConfiguration(state.draft.activeSettings.count, state.autoModeEnabled,
+                        state.draft.continuousTargetCount, state.draft.batchPacing, state.batchBudget),
+                    onChange = { config ->
+                        viewModel.updateDraft { it.copy(continuousModeEnabled = config.continuous,
+                            continuousTargetCount = config.target, batchPacing = config.pacing) }
+                        viewModel.setBatchBudget(config.budget)
+                    },
+                    onValidChange = { batchOptionsValid = it }, showCount = false)
+
             }
         }
     }

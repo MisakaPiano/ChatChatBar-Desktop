@@ -25,6 +25,44 @@ import org.junit.Test
 import org.msgpack.core.MessagePack
 
 class NovelAiImageRetryTest {
+    @Test fun `safe manual request returns typed 429 once with unshortened cooldown`() = runTest {
+        val calls = AtomicInteger()
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            calls.incrementAndGet(); response(chain.request(), 429, byteArrayOf(), retryAfter = "120")
+        }.build()
+        try {
+            val settings = NovelAiGenerationSettings()
+            val events = NovelAiImageService(client).generate("synthetic", NovelAiPromptPlan("scene", emptyList()),
+                settings.imageSize(), settings, maxRateLimitRetries = 0, safeBatchRequest = true).toList()
+            val error = events.single() as NovelAiImageEvent.Error
+            assertEquals(1, calls.get()); assertEquals(429, error.httpCode); assertEquals(120000L, error.retryAfterMillis)
+        } finally { client.closeTestResources() }
+    }
+    @Test fun `safe manual network failure is returned once without automatic reissue`() = runTest {
+        val calls = AtomicInteger()
+        val client = OkHttpClient.Builder().addInterceptor {
+            calls.incrementAndGet(); throw java.io.EOFException("synthetic accepted request then lost response")
+        }.build()
+        try {
+            val settings = NovelAiGenerationSettings()
+            val events = NovelAiImageService(client).generate("synthetic", NovelAiPromptPlan("scene", emptyList()),
+                settings.imageSize(), settings, maxRateLimitRetries = 0, safeBatchRequest = true).toList()
+            assertEquals(1, calls.get()); assertTrue(events.single() is NovelAiImageEvent.Error)
+        } finally { client.closeTestResources() }
+    }
+    @Test fun `safe manual authentication balance and server failures stop after one request`() = runTest {
+        for (code in listOf(401, 402, 403, 500, 503)) {
+            val calls = AtomicInteger()
+            val client = OkHttpClient.Builder().addInterceptor { chain -> calls.incrementAndGet(); response(chain.request(), code, byteArrayOf()) }.build()
+            try {
+                val settings = NovelAiGenerationSettings()
+                val events = NovelAiImageService(client).generate("synthetic", NovelAiPromptPlan("scene", emptyList()),
+                    settings.imageSize(), settings, maxRateLimitRetries = 0, safeBatchRequest = true).toList()
+                assertEquals(code, (events.single() as NovelAiImageEvent.Error).httpCode); assertEquals(1, calls.get())
+            } finally { client.closeTestResources() }
+        }
+    }
+
     @Test fun transparentPngBytesSurviveTheProductionStreamUnchanged() = runTest {
         val png = java.util.Base64.getDecoder().decode(
             "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAD0lEQVR4nGP4zwAE/xkaAAt+An+rqPSSAAAAAElFTkSuQmCC")

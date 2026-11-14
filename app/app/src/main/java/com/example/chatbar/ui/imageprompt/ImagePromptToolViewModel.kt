@@ -1,5 +1,7 @@
 package com.example.chatbar.ui.imageprompt
 
+import com.example.chatbar.domain.image.*
+
 import com.example.chatbar.domain.image.NovelAiPostProcessState
 import com.example.chatbar.domain.image.NovelAiImageSize
 import com.example.chatbar.domain.image.NovelAiPostProcessTab
@@ -224,6 +226,9 @@ data class ImagePromptToolUiState(
     val autoRunTarget: Int = 0,
     val autoCompletedCount: Int = 0,
     val rateLimitStatus: String? = null,
+    val batchProgress: ImageBatchProgress? = null,
+    val batchBudget: Long = 0,
+    val batchConfirmation: String? = null,
     val completionNotice: String? = null,
     val draftLoaded: Boolean = false,
     val promptEditorRevision: Long = 0L,
@@ -1388,12 +1393,46 @@ class ImagePromptToolViewModel : ViewModel() {
 
     fun consumeCompletionNotice() = _uiState.update { it.copy(completionNotice = null) }
 
+    private var pendingImageDraft: NovelAiStudioDraft? = null
+    private var pendingBatchPlan: ImageBatchRunPlan? = null
+    private var batchControl: ImageBatchControl? = null
+
+    fun setBatchBudget(value: Long) { if (!_uiState.value.isBusy) _uiState.update { it.copy(batchBudget = value) } }
+    fun pauseBatchRun() { batchControl?.pause() }
+    fun resumeBatchRun() { batchControl?.resume() }
+    fun dismissBatchConfirmation() {
+        pendingImageDraft = null; pendingBatchPlan = null
+        _uiState.update { it.copy(batchConfirmation = null) }
+    }
+    fun confirmBatchRun() {
+        val draft = pendingImageDraft ?: return
+        val plan = pendingBatchPlan ?: return
+        dismissBatchConfirmation()
+        startImageRun(draft, plan)
+    }
     fun generateImage() {
         if (_uiState.value.isBusy || imageJob?.isActive == true) return
         val draft = repository.draft.value ?: _uiState.value.draft
+        if (draft.continuousModeEnabled || draft.activeSettings.count > 1) {
+            val config = ImageBatchConfiguration(draft.activeSettings.count, draft.continuousModeEnabled,
+                draft.continuousTargetCount, draft.batchPacing, _uiState.value.batchBudget)
+            config.validationError()?.let { message -> _uiState.update { it.copy(error = message) }; return }
+            val plan = config.freeze(ImageBatchOrigin.STUDIO)
+            pendingImageDraft = draft; pendingBatchPlan = plan
+            val usage = _uiState.value.account.effectiveUsage
+            val total = plan.batches.mapIndexed { index, count -> NovelAiImageCostEstimator.estimate(
+                draft.activeSettings.copy(count = count), usage, draft.imageGuidance,
+                if (index == 0) countVibeCacheMisses(draft) else 0).anlas.toLong() }.sum()
+            _uiState.update { it.copy(batchConfirmation = plan.summary() +
+                "\n整项任务当前估算 $total Anlas（账户未知时按收费估算；每批重新核对）\n" + ImageBatchRiskText.NOTICE) }
+        } else startImageRun(draft, null)
+    }
+
+    private fun startImageRun(draft: NovelAiStudioDraft, safePlan: ImageBatchRunPlan?) {
+        if (_uiState.value.isBusy || imageJob?.isActive == true) return
         val configured = draft.activeSettings
-        val automatic = _uiState.value.autoModeEnabled
-        val target = if (automatic) _uiState.value.autoTargetCount else configured.count
+        val automatic = draft.continuousModeEnabled
+        val target = safePlan?.targetTotalImages ?: configured.count
         configured.validationError(draft.activeCharacters.size)?.let { message ->
             _uiState.update { it.copy(error = message) }
             return
@@ -1411,6 +1450,7 @@ class ImagePromptToolViewModel : ViewModel() {
                 phase = ImagePromptToolPhase.GENERATING,
                 autoRunTarget = if (automatic) target else 0,
                 autoCompletedCount = 0,
+                batchProgress = null,
                 rateLimitStatus = null,
                 completionNotice = null,
                 completedPreviews = emptyList(),
@@ -1418,6 +1458,7 @@ class ImagePromptToolViewModel : ViewModel() {
                 error = null
             )
         }
+        batchControl = safePlan?.let { ImageBatchControl() }
         app.streamingStopRequested.value = false
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             var pendingHistoryId: String? = null
@@ -1429,11 +1470,13 @@ class ImagePromptToolViewModel : ViewModel() {
                         return@run
                     }
                     var completed = 0
+                    val ledger = ManualImageAccountLedgers.forCredential(token)
+                    var approvedCost: NovelAiGenerationCost? = null
                     var generationSource = draft
-                    while (completed < target) {
+                    val executeBatch: suspend (Int) -> Int = { batchCount ->
                         currentCoroutineContext().ensureActive()
-                        val batchSettings = configured.copy(count = minOf(configured.count, target - completed))
-                        val estimatedCost = NovelAiImageCostEstimator.estimate(
+                        val batchSettings = configured.copy(count = batchCount)
+                        val estimatedCost = approvedCost ?: NovelAiImageCostEstimator.estimate(
                             batchSettings, _uiState.value.account.effectiveUsage,
                             generationSource.imageGuidance, countVibeCacheMisses(generationSource)
                         )
@@ -1446,6 +1489,7 @@ class ImagePromptToolViewModel : ViewModel() {
                         val plan = draft.toPromptPlan()
                         val historyId = UUID.randomUUID().toString()
                         pendingHistoryId = historyId
+                        if (safePlan != null) ledger.reserve(estimatedCost, batchCount)
                         val preparedResult = prepareImageGuidance(token, generationSource, requestSettings.model)
                         val preparedGuidance = preparedResult.guidance
                         val generationDraft = draft.copy(imageGuidance = preparedResult.updatedDraft)
@@ -1460,7 +1504,9 @@ class ImagePromptToolViewModel : ViewModel() {
                             requestImageSize,
                             requestSettings,
                             preparedGuidance,
-                            retryRateLimitsUntilCancelled = automatic,
+                            retryRateLimitsUntilCancelled = false,
+                            maxRateLimitRetries = if (safePlan != null) 0 else 2,
+                            safeBatchRequest = safePlan != null,
                             onRateLimitRetry = { attempt, delayMs ->
                                 _uiState.update { it.copy(rateLimitStatus =
                                     "HTTP 429 · 第 $attempt 次限流，${delayMs / 1000} 秒后自动重试") }
@@ -1512,7 +1558,10 @@ class ImagePromptToolViewModel : ViewModel() {
                                         )
                                     }
                                 }
-                                is NovelAiImageEvent.Error -> streamError = event.message
+                                is NovelAiImageEvent.Error -> {
+                                    if (safePlan != null && event.httpCode == 429) throw ImageBatchRateLimited(event.retryAfterMillis ?: 10000)
+                                    streamError = event.message
+                                }
                             }
                         }
                         check(streamError == null) { streamError.orEmpty() }
@@ -1560,7 +1609,26 @@ class ImagePromptToolViewModel : ViewModel() {
                             }
                         }
                         refreshAccountUsage()
+                        paths.size
                     }
+                    if (safePlan != null) {
+                        ImageBatchRunner().run(safePlan, requireNotNull(batchControl),
+                            quote = { count ->
+                                val usage = try { withContext(Dispatchers.IO) { accountService.fetch(token) } }
+                                    catch (error: Throwable) { if (error is CancellationException) throw error; null }
+                                usage?.let {
+                                    _uiState.update { state -> state.copy(account = state.account.reconcile(it)) }
+                                    val effective = ledger.reconcile(it)
+                                    val cost = NovelAiImageCostEstimator.estimate(configured.copy(count = count), effective,
+                                        generationSource.imageGuidance, countVibeCacheMisses(generationSource))
+                                    approvedCost = cost
+                                    ImageBatchQuote(cost.anlas.toLong(), effective.anlas,
+                                        cost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE)
+                                }
+                            },
+                            onProgress = { progress -> _uiState.update { it.copy(batchProgress = progress, rateLimitStatus = progress.label()) } },
+                            generateAndSave = { count -> GlobalImageGenerationConcurrencyGate.instance.run { executeBatch(count) } })
+                    } else GlobalImageGenerationConcurrencyGate.instance.run { executeBatch(configured.count) }
                     if (automatic) {
                         val notice = "连续生图完成：已成功生成 $completed 张"
                         _uiState.update { it.copy(completionNotice = notice) }
@@ -1583,7 +1651,7 @@ class ImagePromptToolViewModel : ViewModel() {
                                 else ImagePromptToolPhase.FAILED,
                             rateLimitStatus = null,
                             error = listOfNotNull(
-                                if (error is CancellationException) null else "生图失败：${error.message ?: "未知错误"}",
+                                if (error is CancellationException) null else if (error is ImageBatchStopped) error.message else "生图失败：${error.message ?: "未知错误"}；已发送请求可能已计费，不自动重发",
                                 cleanupError?.let { failure -> "图片清理失败：${failure.message ?: "未知错误"}" }
                             ).joinToString("\n").ifBlank { null }
                         )
@@ -1596,6 +1664,7 @@ class ImagePromptToolViewModel : ViewModel() {
         job.invokeOnCompletion { error ->
             if (imageJob === job) {
                 imageJob = null
+                batchControl = null
                 // A Job cancelled before its body starts never enters the catch above.
                 if (error is CancellationException) {
                     _uiState.update { state ->
