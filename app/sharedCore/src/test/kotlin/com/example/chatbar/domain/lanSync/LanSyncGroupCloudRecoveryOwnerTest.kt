@@ -136,13 +136,14 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         try { f.seed(); work(f) } finally { f.close() }
     } }
 
-    private suspend fun prepareReview(f: Fixture, owner: LanSyncGroupCloudRecoveryOwner): LanSyncGroupCloudRecoveryReview {
+    private suspend fun prepareReview(f: Fixture, owner: LanSyncGroupCloudRecoveryOwner,
+        expectFreshDaily: Boolean = true): LanSyncGroupCloudRecoveryReview {
         owner.open()
         val secret = f.password.toByteArray(Charsets.UTF_8)
         try { owner.prepare(f.draft(secret), f.original.code) } finally { secret.fill(0) }
         val prepared = withTimeout(30_000) { owner.state.first { !it.busy && (it.review != null || it.error != null) } }
         assertNull(prepared.error); assertFalse(prepared.complete)
-        f.assertNoDailyActivation()
+        if (expectFreshDaily) f.assertNoDailyActivation()
         return requireNotNull(prepared.review)
     }
 
@@ -383,14 +384,16 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         assertTrue(JsonFileStorage(f.dailyData).loadAll("character_cards", CharacterCard.serializer()).isEmpty())
         val approved = managementState(f)
         val origin = Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected"))
+        val dailyOrigin = Files.readAllBytes(f.dailyRoot.resolve("joining/node/author/origin.protected"))
         assertEquals(1L, approved.completedSequence)
         first.closeAndDrain(); f.joiningObserve = {}
         val roots = f.roots.get(); val requests = f.shared.server.requestCount
-        val second = f.owner(); val resumed = prepareReview(f, second)
+        val second = f.owner(); val resumed = prepareReview(f, second, expectFreshDaily = false)
         assertEquals(review.device, resumed.device); assertEquals(0, f.readyCalls.get())
         assertFalse(second.state.value.complete); assertNull(second.state.value.connectionEnabled)
         assertEquals(roots, f.roots.get()); assertEquals(requests, f.shared.server.requestCount)
         assertEquals(approved, managementState(f))
+        assertContentEquals(dailyOrigin, Files.readAllBytes(f.dailyRoot.resolve("joining/node/author/origin.protected")))
         second.confirm(resumed.binding, saveConnection = true)
         val access = withTimeout(30_000) { f.ready.await() }
         withTimeout(5_000) { second.drain() }

@@ -285,7 +285,7 @@ class WebDavHttpTransportDualStackTest {
                 }
                 val request = assertNotNull(proxy.takeRequest(2, TimeUnit.SECONDS))
                 assertEquals("CONNECT", request.method)
-                assertEquals("$HOST:${f.base.port}", request.path)
+                assertEquals("CONNECT $HOST:${f.base.port} HTTP/1.1", request.requestLine)
                 assertEquals(1, events.calls.get()); assertEquals(1, proxy.requestCount)
                 assertEquals(0, proxyAuth.get()); assertEquals(0, f.server.requestCount)
                 assertEquals(listOf(proxy.port), events.connects.map { it.port })

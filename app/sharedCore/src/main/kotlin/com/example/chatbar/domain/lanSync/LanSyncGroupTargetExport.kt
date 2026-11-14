@@ -134,8 +134,18 @@ internal class LanSyncGroupTargetStagePool(private val work: Path, private val l
 
 internal fun lanSyncTargetStage(work: Path, source: CiphertextStore, metadata: CiphertextObjectMetadata,
     live: () -> Unit): LanSyncGroupTargetStage = lanSyncTargetReceiveStage(work, metadata, live) {
-        source.readTo(metadata.key, it, metadata.descriptor)
+        try { source.readTo(metadata.key, it, metadata.descriptor) }
+        catch (failure: Exception) {
+            if (failure is CancellationException || failure is InterruptedException ||
+                failure is java.io.InterruptedIOException || failure is LanSyncGroupTargetSourceIoFailure ||
+                failure is CiphertextStoreException && failure.failure == CiphertextStoreFailure.INTEGRITY) throw failure
+            throw LanSyncGroupTargetSourceIoFailure(failure)
+        }
     }
+
+/** Acquisition failure stays terminal across candidate catches; decoder failures remain candidates. */
+internal class LanSyncGroupTargetSourceIoFailure(val original: Exception) :
+    java.io.IOException("SYNC_GROUP_TARGET_SOURCE_IO", original)
 
 /** Provider read observations enter an owned preparation, never a pretend strict write backend. */
 internal fun lanSyncTargetReceiveStage(work: Path, metadata: CiphertextObjectMetadata, live: () -> Unit,
@@ -210,5 +220,6 @@ internal fun lanSyncTargetPrefix(stage: LanSyncGroupTargetStage): ByteArray = Fi
 }
 
 internal fun lanSyncTargetCandidateFailure(failure: Exception) {
-    if (failure is CancellationException || failure is InterruptedException || failure is java.io.InterruptedIOException) throw failure
+    if (failure is CancellationException || failure is InterruptedException || failure is java.io.InterruptedIOException ||
+        failure is LanSyncGroupTargetSourceIoFailure) throw failure
 }

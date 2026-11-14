@@ -79,11 +79,23 @@ PURE_PREFIXES = (
 LEGACY_PROOF = "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSyncProof/"
 GROUP_PROOF = "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/"
 CLOUD_PROOF_NAMES = {"CloudFileDav.kt", "SyncGroupCloudLargeNativeProofTest.kt"}
+# Exact executable fixture dependencies, before the ordinary-test prefix exemption.
+# The legacy, group-TLS and cloud proofs construct different harnesses; none reuses the other two.
+LARGE_PROOF_HELPERS = {
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRuntimeTest.kt": (True, False, False),
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLoopbackTransport.kt": (False, True, False),
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAdministrationTest.kt": (False, False, True),
+}
 
 
 def classify(paths: list[str]) -> tuple[bool, bool]:
     legacy = group = False
     for path in paths:
+        helper = LARGE_PROOF_HELPERS.get(path)
+        if helper is not None:
+            legacy = legacy or helper[0]
+            group = group or helper[1]
+            continue
         if path in APP_CONTROLS or path.startswith("app/app/src/test/java/com/example/chatbar/lanSync/"):
             continue
         if path in PURE_FILES or path.startswith(PURE_PREFIXES) or path.startswith(".agents/skills/") and path.endswith(".md"):
@@ -111,6 +123,11 @@ def classify(paths: list[str]) -> tuple[bool, bool]:
 
 def classify_cloud(paths: list[str]) -> bool:
     for path in paths:
+        helper = LARGE_PROOF_HELPERS.get(path)
+        if helper is not None:
+            if helper[2]:
+                return True
+            continue
         if path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in CLOUD_PROOF_NAMES:
             return True
         if path.startswith(LAN) and path[len(LAN):] in CLOUD_LAN or path.startswith(STORE) and path[len(STORE):] in CLOUD_STORE:

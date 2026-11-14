@@ -621,6 +621,45 @@ class LanSyncGroupTargetPublicationTest {
         f.assertUnchanged()
     }
 
+    @Test fun aTerminalSourceReadFailureCannotBecomeAnIncompleteCandidateOrAPartialPreparationHold() = fixture { f ->
+        val content = requireNotNull(f.first.entry.version.changes.getValue("character_cards/card").content)
+        val key = f.first.metadata.envelope.blobs.getValue(content.sha256).key
+        val lost = IOException("SYNTHETIC_SOURCE_READ_FAILED")
+        val failing = object : CiphertextStore by f.access.reader {
+            override fun readTo(selected: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                if (selected == key) throw lost
+                return f.access.reader.readTo(selected, destination, expected)
+            }
+        }
+        val directory = f.directory("terminal-source")
+        val owner = f.owner(directory, target(), failing)
+        assertSame(lost, assertFailsWith<LanSyncGroupTargetSourceIoFailure> { owner.prepare() }.original)
+        assertNull(owner.receipt()); noReceipt(directory)
+        Files.newDirectoryStream(directory, "plan-*.json").use { assertFalse(it.iterator().hasNext()) }
+        f.assertUnchanged()
+    }
+
+    @Test fun aFullyReadBadShortCiphertextHeaderRemainsACandidateAndCannotBlockTheGoodRoot() = fixture { f ->
+        val original = f.owner(f.directory("header-base"), target()).prepare()
+        val root = original.objects.single { it.role == LanSyncGroupTargetObjectRole.LEDGER }
+        val short = bytes(f.access.reader, root).copyOf(32)
+        assertTrue(SyncCiphertextHeader.hasPrefix(short))
+        val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
+        val descriptor = CiphertextDescriptor(short.size.toLong(), CiphertextSha256.parse(lanSyncHash(short)))
+        val bad = CiphertextObjectMetadata(key, descriptor)
+        f.access.reader.put(CiphertextPutRequest(key, SyncStoreId.random(), descriptor), short.inputStream())
+        val badFirst = object : CiphertextStore by f.access.reader {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                val page = f.access.reader.listCommits(cursor, pageSize)
+                return if (cursor == null) CommitPage(listOf(bad) + page.entries.filterNot { it == bad }, page.nextCursor) else page
+            }
+        }
+        val selected = f.owner(f.directory("short-header-candidate"), target(), badFirst).prepare()
+        assertEquals(root.descriptor, selected.objects.single { it.role == LanSyncGroupTargetObjectRole.LEDGER }.descriptor)
+        assertTrue(selected.objects.none { it.key == key })
+        f.assertUnchanged()
+    }
+
     @Test fun badSameKeyCandidateArrivingFirstNeverPoisonsTheStrictDestinationAndRemainsRetained() = fixture { f ->
         val original = f.owner(f.directory("original-plan"), target()).prepare().objects.single { it.role == LanSyncGroupTargetObjectRole.VERSION }
         val corrupt = bytes(f.access.reader, original).also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }

@@ -143,6 +143,30 @@ class ProofScopeTest(unittest.TestCase):
             self.assertEqual((False, False), scope.classify([path]))
             self.assertFalse(scope.classify_cloud([path]))
 
+    def assert_helper_requires(self, path, required):
+        proven = run_evidence(101, FIRST, conclusion="success")
+        api = SyntheticApi([proven], {(101, 1): [job_evidence(proven, kind) for kind in scope.PROOF_JOBS]})
+        git = SyntheticGit({FIRST: [path]})
+        result = self.select(api, git)
+        self.assertEqual(required, result.required)
+        self.assertEqual(set(scope.PROOF_JOBS), set(result.baselines))
+        self.assertEqual([(FIRST, HEAD)], git.compared)
+
+    def test_cloud_administration_fixture_change_requires_only_cloud_with_all_successful_baselines(self):
+        self.assert_helper_requires(
+            "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAdministrationTest.kt",
+            {"legacy": False, "group": False, "cloud": True})
+
+    def test_legacy_runtime_harness_change_requires_only_legacy_with_all_successful_baselines(self):
+        self.assert_helper_requires(
+            "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRuntimeTest.kt",
+            {"legacy": True, "group": False, "cloud": False})
+
+    def test_group_loopback_harness_change_requires_only_group_with_all_successful_baselines(self):
+        self.assert_helper_requires(
+            "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLoopbackTransport.kt",
+            {"legacy": False, "group": True, "cloud": False})
+
     def test_failed_then_narrow_followup_compares_to_actual_success_instead_of_the_previous_push(self):
         failed = run_evidence(12, SECOND)
         proven = run_evidence(11, FIRST)
