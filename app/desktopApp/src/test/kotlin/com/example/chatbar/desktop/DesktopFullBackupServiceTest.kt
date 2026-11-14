@@ -4,10 +4,47 @@ import com.example.chatbar.desktop.backup.*
 import com.example.chatbar.data.local.entity.*
 import java.nio.file.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `immediate password retry from idle publication cannot resurrect the prior waiting row`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val file = f.base.resolve("saved.cbbackup")
+            val original = Files.readAllBytes(file)
+            val live = Files.readAllBytes(f.settings)
+            var picks = 0
+            val controller = DesktopFullBackupController(f.service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path { picks++; return file }
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            })
+            val password = "test-password".toCharArray()
+            val retried = java.util.concurrent.atomic.AtomicBoolean()
+            val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+                controller.state.collect { state ->
+                    if (!state.busy && state.passwordRequest != null && retried.compareAndSet(false, true)) {
+                        controller.retryFilePassword(password)
+                    }
+                }
+            }
+            try {
+                controller.verifyFile(null)
+                withTimeout(20000) { controller.state.first { !it.busy && it.summary != null } }
+                withTimeout(5000) { controller.workRows.first { rows -> rows.none { it.active } } }
+                assertTrue(retried.get()); assertEquals(1, picks)
+                assertNull(controller.state.value.passwordRequest)
+                assertTrue(password.all { it == '\u0000' })
+                assertContentEquals(original, Files.readAllBytes(file))
+                assertContentEquals(live, Files.readAllBytes(f.settings))
+            } finally {
+                observer.cancelAndJoin()
+                controller.closeAndDrain()
+            }
+        }
+    }
+
     @Test fun `file check asks only after encrypted selection and retries same source without changing live data`() = runBlocking {
         Fixture().use { f ->
             f.service.release(f.seed())
