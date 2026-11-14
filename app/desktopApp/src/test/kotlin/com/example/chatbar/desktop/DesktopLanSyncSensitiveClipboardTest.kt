@@ -25,6 +25,8 @@ class DesktopLanSyncSensitiveClipboardTest {
         fun GlobalUnlock(memory: Pointer): Boolean
     }
     @Test fun `sensitive native copy publishes exact Unicode plus exclusion marker and refuses a foreign owner`() {
+        org.junit.Assume.assumeTrue(System.getenv("CCB_LAN_SENSITIVE_CLIPBOARD_PROOF") == "true")
+        assertEquals("true", System.getenv("GITHUB_ACTIONS"))
         assertTrue(System.getProperty("os.name").startsWith("Windows"))
         val clip = Native.load("user32", Clip::class.java); val heap = Native.load("kernel32", Heap::class.java)
         val window = requireNotNull(User32.INSTANCE.CreateWindowEx(0, "STATIC", "CCB synthetic clipboard owner", 0,
@@ -44,8 +46,12 @@ class DesktopLanSyncSensitiveClipboardTest {
             assertFalse(DesktopLanSyncSensitiveClipboard.copyOwned("synthetic-must-not-publish", clip.GetDesktopWindow()))
         } finally {
             // Never clear a clipboard subsequently taken by any other process/window.
-            if (clip.GetClipboardOwner()?.let { Pointer.nativeValue(it) } == Pointer.nativeValue(window.pointer) && clip.OpenClipboard(window.pointer)) {
-                try { clip.EmptyClipboard() } finally { clip.CloseClipboard() }
+            if (clip.OpenClipboard(window.pointer)) {
+                try {
+                    if (clip.GetClipboardOwner()?.let { Pointer.nativeValue(it) } == Pointer.nativeValue(window.pointer)) {
+                        assertTrue(clip.EmptyClipboard())
+                    }
+                } finally { assertTrue(clip.CloseClipboard()) }
             }
             assertTrue(User32.INSTANCE.DestroyWindow(window))
         }

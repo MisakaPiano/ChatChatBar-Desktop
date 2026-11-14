@@ -47,16 +47,23 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
     var saved by remember(state.setupBinding, state.privacyRevision) { mutableStateOf(false) }
+    var copyFailed by remember(state.privacyRevision) { mutableStateOf(false) }
     fun copy(value: String) {
-        val clip = ClipData.newPlainText("设备组", value).apply {
-            description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+        copyFailed = try {
+            val clip = ClipData.newPlainText("设备组", value).apply {
+                description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+            }
+            (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
+            false
+        } catch (_: Exception) {
+            true
         }
-        (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
     }
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CbText("设备组同步", style = ChatBarTheme.typography.title)
         CbText(state.status)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+        if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             CbText(LanSyncScope.description)
             CbButton("创建新设备组", actions::createGroup, enabled = !state.busy)

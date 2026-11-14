@@ -103,6 +103,8 @@ jobs:
   desktop:
     runs-on: windows-latest
     timeout-minutes: 45
+    env:
+      CCB_LAN_SENSITIVE_CLIPBOARD_PROOF: 'true'
     steps:
       - run: git config --global core.longpaths true
       - uses: actions/checkout@v4
@@ -127,6 +129,14 @@ jobs:
       - name: Desktop compilation
         working-directory: app
         run: .\gradlew.bat :desktopApp:test --tests '*DesktopUpdateNoticesTest*' --tests '*DesktopStartupGateTest*' --tests '*DesktopLanSync*' --tests '*DormantPreservationPreparationTest*' --tests '*DesktopPreservationStoreTest*' --tests '*DesktopMomentVersionBackupTest*' --tests '*DesktopFullBackupWriterTest*' --tests '*DesktopMomentAdmissionStoreTest*' --tests '*DesktopPostProcessResultsTest*' --tests '*DesktopPostProcessRetainedMediaTest*' --tests '*DesktopPostProcessSourceIdentityTest*' --tests '*DesktopStudioDraftHistoryTest*' --no-daemon --stacktrace
+      - name: Require actual synthetic native clipboard execution
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [xml]$report = Get-Content -LiteralPath 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopLanSyncSensitiveClipboardTest.xml' -Raw
+          $suite = $report.testsuite
+          if ($suite.tests -ne '1' -or $suite.failures -ne '0' -or $suite.errors -ne '0' -or $suite.skipped -ne '0') { throw 'SENSITIVE_CLIPBOARD_PROOF_NOT_EXECUTED_SUCCESSFULLY' }
+          $cases = @($suite.testcase)
+          if ($cases.Count -ne 1 -or $cases[0].name -ne 'sensitive native copy publishes exact Unicode plus exclusion marker and refuses a foreign owner' -or $cases[0].skipped) { throw 'SENSITIVE_CLIPBOARD_PROOF_CASE_MISMATCH' }
       - name: Collect original results within one artifact root
         if: always()
         run: |
