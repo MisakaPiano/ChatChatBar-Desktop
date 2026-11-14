@@ -27,3 +27,5 @@ tools/lan-next-control/fixtures/DesktopGroupAppUiControlTest.kt text eol=lf
 tools/lan-next-control/fixtures/LanSyncGroupBackgroundUiControlTest.kt text eol=lf
 tools/lan-next-control/candidate84_*.kt text eol=lf
 tools/lan-next-control/candidate85_*.kt text eol=lf
+tools/lan-next-control/fixtures/RealWebDavInteropSmokeTest.kt text eol=lf
+tools/lan-next-control/run-real-webdav-interop.sh text eol=lf
