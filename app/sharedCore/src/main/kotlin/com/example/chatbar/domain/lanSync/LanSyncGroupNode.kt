@@ -183,7 +183,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     /** Approved native adoption, fresh source validation, then one bound causal author operation. */
     suspend fun resolve(candidate: LanSyncGroupResolvedCandidate): LanSyncGroupSourceCommit? = serialized {
         inspectOwned()
-        val revision = candidate.preview.operation; val operation = SyncStoreId.parse(revision.replace("-", ""))
+        val revision = candidate.preview.operation
         val adopted = try { exclusive { resolutions.adopt(candidate, writer.acknowledgedResolutions()) } }
         catch (failure: Throwable) {
             try { exclusive {
@@ -193,8 +193,19 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             } } catch (recovery: Throwable) { failure.addSuppressed(recovery) }
             throw failure
         }
+        finishResolution(revision, adopted, inspectOwned())
+    }
+    /** Explicit retry of a retained acknowledged decision after process death; no preview object required. */
+    suspend fun resumeResolution(revision: String): LanSyncGroupSourceCommit? = serialized {
+        require(UUID.fromString(revision).toString() == revision) { "SYNC_GROUP_RESOLUTION_OPERATION" }
         val after = inspectOwned()
-        if (adopted.resolvedUnits.isEmpty()) return@serialized null
+        val retained = after.resolutions.singleOrNull { it.operation == revision } ?: error("SYNC_GROUP_RESOLUTION_MISSING")
+        finishResolution(revision, retained, after)
+    }
+    private suspend fun finishResolution(revision: String, adopted: LanSyncGroupResolutionLocalState,
+        after: LanSyncGroupNodeView): LanSyncGroupSourceCommit? {
+        if (adopted.resolvedUnits.isEmpty()) return null
+        val operation = SyncStoreId.parse(revision.replace("-", ""))
         val commit = exclusive {
             val approved = author.entry(operation) != null || author.state().pendingApproved?.request?.operation == operation
             if (approved) writer.resumeResolved(operation, revision, resolutions.decisionBinding(revision))
@@ -203,7 +214,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 writer.commitResolvedLocal(after.sourceReview(approval.resolvedUnits).authorizeResolved(approval), operation)
             }
         }
-        remember(commit); exclusive { native.recordSource(commit) }; refreshResolutions(); commit
+        remember(commit); exclusive { native.recordSource(commit) }; refreshResolutions(); return commit
     }
 
     suspend fun prepareRecovery(transaction: String, unit: String): LanSyncRestorePreview = serialized {

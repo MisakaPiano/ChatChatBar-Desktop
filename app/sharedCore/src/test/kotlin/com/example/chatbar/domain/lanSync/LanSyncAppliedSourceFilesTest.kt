@@ -72,7 +72,7 @@ class LanSyncAppliedSourceFilesTest {
             LanSyncJsonFiles.write(journal, LanSyncJournal.serializer(), LanSyncJournal(tx, listOf(
                 LanSyncJournalEntry("entities/unrelated/ghost.json", null, "a".repeat(64), 0))))
             Files.writeString(directory.resolve("authorized"), LanSyncResourceStore.hashFile(journal, Files.size(journal)))
-            assertEquals("SYNC_JOURNAL_DAMAGED", assertFailsWith<IllegalArgumentException> { workspace.appliedSourceFiles(tx, emptyMap()) }.message)
+            assertEquals("SYNC_TARGET_PATH", assertFailsWith<IllegalArgumentException> { workspace.appliedSourceFiles(tx, emptyMap()) }.message)
             assertFalse(Files.exists(data.resolve("entities/unrelated/ghost.json")))
         } finally { check(root.toFile().deleteRecursively()) }
     }

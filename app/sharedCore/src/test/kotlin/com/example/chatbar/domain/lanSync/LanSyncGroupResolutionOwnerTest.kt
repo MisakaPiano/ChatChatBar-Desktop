@@ -176,4 +176,20 @@ class LanSyncGroupResolutionOwnerTest {
         assertEquals(setOf(s.unit), commit.entry.version.changes.keys); assertEquals(3L, s.sequence())
         assertFalse(Files.exists(s.a.data.resolve("entities/$copy.json"))); assertTrue(node.inspect().reservedUnits.isEmpty())
     }
+    @Test fun retainedAcknowledgedDecisionCanResumeByOperationWithoutItsOldPreviewObject() = withScene { s ->
+        var operation = ""; var interrupted = false
+        s.a.hook = { if (it == "RESOLUTION_POST_SOURCE_RETAINED" && !interrupted) { interrupted = true; throw IOException("SYNTHETIC_PROCESS_LOST") } }
+        run {
+            val preview = s.preview(LanSyncGroupResolutionSource.Version(s.right.entry.version.reference()))
+            operation = preview.operation
+            assertFailsWith<IOException> { s.an.resolve(s.acknowledge(preview)) }
+        }
+        s.a.hook = {}; val node = s.a.open()
+        val commit = requireNotNull(node.resumeResolution(operation))
+        assertEquals(3L, commit.entry.version.authorSequence)
+        assertEquals("right", s.a.name("a")); assertTrue(node.inspect().reservedUnits.isEmpty())
+        s.a.card("a", "later after retained retry")
+        assertEquals(commit.entry, s.a.open().resumeResolution(operation)?.entry)
+        assertEquals("later after retained retry", s.a.name("a")); assertEquals(3L, s.sequence())
+    }
 }
