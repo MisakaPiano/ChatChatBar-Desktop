@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 0f287c06bfac79fd06903c7c27ab8e78e130bd09
+          ref: 9e8fc69
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -40,7 +40,7 @@ jobs:
         working-directory: app
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest --tests '*SystemExitDiagnosticPolicyTest*' --tests '*ExpectedBackupExitPolicyTest*' --tests '*CrashDiagnosticReportTest*' --tests '*BackupRestoreTransactionTest*' :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:testDebugUnitTest --tests '*SystemExitDiagnosticPolicyTest*' --tests '*ExpectedBackupExitPolicyTest*' --tests '*CrashDiagnosticReportTest*' --tests '*BackupRestoreTransactionTest*' --tests '*CharacterImportFileProbeTest*' --tests '*SharedImportClassifierTest*' :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
