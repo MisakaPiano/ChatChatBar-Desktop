@@ -7,6 +7,11 @@ import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.WeakFixture
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavCandidate
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavChunkAssembly
+import com.example.chatbar.domain.syncStore.webdav.WebDavEndpointPolicy
+import com.example.chatbar.domain.syncStore.webdav.WebDavHttpTransport
+import com.example.chatbar.domain.syncStore.webdav.WebDavIoBudget
+import com.example.chatbar.domain.syncStore.webdav.WebDavStoreRecord
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavObservationOrigin
 import java.io.ByteArrayOutputStream
 import java.io.FilterInputStream
@@ -17,6 +22,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicLong
+import java.net.Proxy
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okio.Buffer
@@ -47,12 +55,13 @@ class LanSyncGroupTargetPublicationTest {
             access.node.upload(first.entry.request.operation, access.replica, access.localTarget); scan()
             origin = Files.readAllBytes(admin.profile.resolve("node/author/origin.protected"))
         }
-        suspend fun owner(directory: Path, target: SyncDeliveryTarget, source: CiphertextStore = access.reader): LanSyncGroupTargetPublication {
+        suspend fun owner(directory: Path, target: SyncDeliveryTarget, source: CiphertextStore = access.reader,
+            validateResource: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> }): LanSyncGroupTargetPublication {
             val reconciled = access.node.reconcileForPrefetch()
             val custody = admin.custody()
             val proof = LanSyncGroupTargetExport(access.trust, admin.identity.fingerprint, custody.ledger(),
                 reconciled.copy(history = reconciled.history?.snapshot()), access.vault, access.vaultDescriptor,
-                source, custody::ledger, custody::key, custody, admin.workspace.resourceStore, { _, _, _ -> })
+                source, custody::ledger, custody::key, custody, admin.workspace.resourceStore, validateResource)
             return LanSyncGroupTargetPublication(directory, target, proof)
         }
         fun without(key: CiphertextObjectKey): CiphertextStore = object : CiphertextStore by access.reader {
@@ -107,6 +116,147 @@ class LanSyncGroupTargetPublicationTest {
     }
     private fun weakPath(provider: WeakFixture, value: LanSyncGroupWeakTargetObservation) = provider.path(
         WeakWebDavCandidate(value.route, value.key, value.descriptor, value.operation, value.attempt))
+
+    @Test fun chunkTargetColdResumeHasSeparateAuthenticatedReceiptsAndPreservesOldObservationsAcrossSelections() = fixture { f ->
+        WeakFixture(f.directory("chunk-target-provider")).use { provider -> PartsBackend(provider).use { parts ->
+            val route = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)
+            val directory = f.directory("chunk-target-publication")
+            val first = f.access.targetPublication(directory, route); val plan = first.prepare()
+            provider.dav.loseNextReply = true
+            assertFailsWith<CiphertextStoreException> { first.upload(parts.open()) }
+            assertNull(first.chunkReceipt()); assertNull(first.weakReceipt()); assertNull(first.receipt())
+            val originalPhysical = provider.dav.files.mapValues { it.value.copyOf() }
+            assertEquals(1, originalPhysical.size)
+            val cold = f.owner(directory, route); assertEquals(plan, cold.prepare())
+            val receipt = cold.upload(parts.open())
+            assertEquals(plan.objects, receipt.objects.map { it.objectRequest })
+            receipt.objects.forEach { row ->
+                assertEquals(row.objectRequest.descriptor, row.readbackObservation.logicalDescriptor)
+                assertEquals(row.objectRequest.operation, row.readbackObservation.logicalOperation)
+                assertEquals(row.appendObservation.manifest, row.readbackObservation.manifest)
+                val manifest = row.readbackObservation.manifest
+                val path = "/sync/weak-assemblies-v1/${if (manifest.manifestKey.kind == CiphertextObjectKind.BLOB) "objects" else "commits"}/${manifest.manifestKey.id.value}/${manifest.manifestDescriptor.sha256.hex}/${manifest.manifestDescriptor.length}-${manifest.manifestOperation.value}-${manifest.attempt.value}.bin"
+                val input = provider.dav.files.getValue(path).inputStream()
+                assertEquals(manifest.manifestDescriptor, WebDavStoreRecord.readHeader(input, manifest.manifestKey).descriptor)
+                WebDavStoreRecord.transfer(input, WebDavStoreRecord.discard, manifest.manifestDescriptor, 8192)
+            }
+            originalPhysical.forEach { (path, body) ->
+                assertContentEquals(body, provider.dav.files.getValue(path)); assertEquals(1, provider.dav.puts.count { it == path })
+            }
+            assertNull(cold.weakReceipt()); assertNull(cold.receipt())
+            val before = provider.server.requestCount
+            assertEquals(receipt, cold.upload(parts.open())); assertEquals(before, provider.server.requestCount)
+            // Whole-object and chunk receipts are separate even on the same route and logical plan.
+            val whole = cold.upload(provider.store("whole-writer"))
+            assertEquals(plan.objects, whole.objects.map { it.objectRequest }); assertEquals(receipt, cold.chunkReceipt())
+            val priorObjects = provider.dav.files.mapValues { it.value.copyOf() }
+            val oldGets = AtomicLong(); val oldPuts = AtomicLong()
+            provider.dav.overrideRequest = { incoming ->
+                if (incoming.requestUrl!!.encodedPath in priorObjects) {
+                    if (incoming.method == "GET") oldGets.addAndGet(priorObjects.getValue(incoming.requestUrl!!.encodedPath).size.toLong())
+                    if (incoming.method == "PUT") oldPuts.addAndGet(incoming.bodySize)
+                }
+                null
+            }
+            message(f, "chunk-new", 2)
+            val next = f.access.targetPublication(directory, route); val changed = next.prepare()
+            val nextReceipt = next.upload(parts.open())
+            val oldKeys = plan.objects.map { it.key }.toSet()
+            assertTrue(changed.versions.size > plan.versions.size)
+            assertEquals(receipt.objects, nextReceipt.objects.filter { it.objectRequest.key in oldKeys })
+            assertEquals(0L, oldGets.get()); assertEquals(0L, oldPuts.get())
+            val record = Files.walk(directory.resolve("chunk-object-observations")).use { stream -> stream.filter {
+                it.fileName.toString().endsWith(".obj")
+            }.findFirst().orElseThrow() }
+            val recordBytes = Files.readAllBytes(record); Files.delete(record)
+            val requests = provider.server.requestCount
+            assertTrue(next.recoverObjectObservations()); assertContentEquals(recordBytes, Files.readAllBytes(record))
+            assertEquals(nextReceipt, next.chunkReceipt()); assertEquals(requests, provider.server.requestCount)
+        } }
+    }
+
+    @Test fun chunkPrimitiveObservationCannotCompleteTargetWhenItsNextAssemblyReadbackIsWrong() = fixture { f ->
+        WeakFixture(f.directory("chunk-readback-provider")).use { provider -> PartsBackend(provider).use { parts ->
+            val route = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)
+            val requests = provider.server.requestCount
+            val wrong = f.access.targetPublication(f.directory("chunk-wrong-route-publication"), target())
+            assertEquals("SYNC_GROUP_TARGET_ROUTE_CHANGED", assertFailsWith<IllegalArgumentException> { wrong.upload(parts.open()) }.message)
+            assertEquals(requests, provider.server.requestCount)
+            val directory = f.directory("chunk-readback-publication")
+            val owner = f.access.targetPublication(directory, route); owner.prepare(); var manifests = 0
+            provider.dav.overrideRequest = { incoming ->
+                if (incoming.method == "GET" && "/weak-assemblies-v1/" in incoming.requestUrl!!.encodedPath && ++manifests == 2) {
+                    val body = provider.dav.files.getValue(incoming.requestUrl!!.encodedPath)
+                    MockResponse().setResponseCode(200).setBody(Buffer().write(body.copyOf(body.size - 1)))
+                } else null
+            }
+            assertFailsWith<CiphertextStoreException> { owner.upload(parts.open()) }
+            assertEquals(2, manifests); assertNull(owner.chunkReceipt()); assertNull(owner.weakReceipt()); assertNull(owner.receipt())
+            Files.walk(directory.resolve("chunk-object-observations")).use { stream -> assertFalse(stream.anyMatch {
+                it.fileName.toString().endsWith(".obj")
+            }) }
+            provider.dav.overrideRequest = null
+            assertEquals(route, owner.upload(parts.open()).target)
+            f.assertUnchanged()
+        } }
+    }
+
+    @Test fun sharedTwoMiBImageHasOneSourceCiphertextStageAcrossVersionsWhileNativeRecordsRemainChecked() = fixture { f ->
+        val image = f.admin.data.resolve("images/shared-large.png"); Files.createDirectories(image.parent)
+        val png = largePng(); Files.write(image, png)
+        LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), CharacterCard("card", "synthetic relay original",
+            avatar = image.toString(), createdAt = 1, updatedAt = 2))
+        publish(f, "character_cards/card")
+        val first = message(f, "large-first", 3, listOf(image.toString()))
+        message(f, "large-second", 4); val third = message(f, "large-third", 5)
+        val blob = first.publication.blobs.getValue(lanSyncHash(png))
+        assertEquals(blob, third.publication.blobs.getValue(lanSyncHash(png)))
+        val directory = f.directory("shared-stage-publication")
+        var imageReads = 0; var peakLargeStages = 0; var nativeImages = 0
+        fun countLargeStages() {
+            val work = directory.resolve("preparations")
+            if (Files.exists(work)) Files.list(work).use { stream ->
+                peakLargeStages = maxOf(peakLargeStages, stream.filter { Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) &&
+                    Files.size(it) == blob.descriptor.length }.count().toInt())
+            }
+        }
+        val counted = object : CiphertextStore by f.access.reader {
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                countLargeStages(); if (key == blob.key) imageReads++
+                return f.access.reader.readTo(key, destination, expected).also { countLargeStages() }
+            }
+        }
+        val owner = f.owner(directory, target(), counted) { kind, _, _ -> if (kind == "images") nativeImages++ }
+        val plan = owner.prepare()
+        assertTrue(plan.versions.size >= 5)
+        assertEquals(1, imageReads, "Shared original ciphertext must be staged once, rather than once per historical version")
+        assertEquals(1, peakLargeStages)
+        assertTrue(nativeImages >= 4, "Per-version native resource validation remains separate from raw crypto memoization")
+        Files.newDirectoryStream(directory.resolve("preparations")).use { assertFalse(it.iterator().hasNext()) }
+        assertContentEquals(png, Files.readAllBytes(image))
+    }
+
+    private class PartsBackend(private val provider: WeakFixture) : AutoCloseable {
+        private val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(5, TimeUnit.SECONDS).build()
+        fun open(): WeakWebDavChunkAssembly {
+            val root = provider.root.resolve("parts-client"); if (!Files.exists(root)) Files.createDirectory(root)
+            val transport = WebDavHttpTransport(provider.server.url("/sync/").newBuilder().host("127.0.0.1").build(), client,
+                { "Bearer synthetic-only" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+            return WeakWebDavChunkAssembly(transport, root, provider.route, 64L * 1024,
+                WebDavIoBudget(minimumFreeBytes = 0))
+        }
+        override fun close() { client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll() }
+    }
+    private fun largePng(): ByteArray {
+        val png = LanSyncPreviewSample.image(); val type = "caCa".toByteArray(Charsets.US_ASCII)
+        require(String(png, png.size - 8, 4, Charsets.US_ASCII) == "IEND")
+        val payload = ByteArray(2 * 1024 * 1024) { (it % 211).toByte() }
+        val crc = java.util.zip.CRC32().apply { update(type); update(payload) }
+        return ByteArrayOutputStream().also { bytes -> java.io.DataOutputStream(bytes).use {
+            it.write(png, 0, png.size - 12); it.writeInt(payload.size); it.write(type); it.write(payload); it.writeInt(crc.value.toInt())
+            it.write(png, png.size - 12, 12)
+        } }.toByteArray()
+    }
 
     @Test fun addingANewMessageUsesZeroPutAndGetBytesForOldCiphertextAndKeepsItsOriginalObservedTime() = fixture { f ->
         val image = f.admin.data.resolve("images/retained-attachment.png"); Files.createDirectories(image.parent)

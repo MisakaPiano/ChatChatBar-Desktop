@@ -12,6 +12,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.*
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
@@ -27,6 +28,7 @@ class LanSyncGroupCloudRuntimeTest {
         val reports = mutableListOf<Map<SyncStoreId, LanSyncGroupCloudRouteProgress>>()
         val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(60, TimeUnit.SECONDS).build()
         val owners = mutableListOf<LanSyncGroupEnrollment>(); val runtimes = mutableListOf<LanSyncGroupCloudRuntime>()
+        val clock = AtomicLong()
         lateinit var access: LanSyncGroupRuntimeAccess
         lateinit var catalog: LanSyncGroupCloudRoutes
         lateinit var source: LanSyncGroupSourceCommit
@@ -59,8 +61,10 @@ class LanSyncGroupCloudRuntimeTest {
             try { return catalog.add(LanSyncGroupCloudDraft(name, provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString(),
                 "synthetic user", password, enabled)) } finally { password.fill(0) }
         }
-        fun runtime() = LanSyncGroupCloudRuntime(access, permitted::get, { wakes.incrementAndGet() },
-            { synchronized(reports) { reports += it } }, catalog, client, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).also(runtimes::add)
+        fun runtime(schedule: LanSyncGroupCloudSchedule = LanSyncGroupCloudSchedule(clock::get, { 0 })) =
+            LanSyncGroupCloudRuntime(access, permitted::get, { wakes.incrementAndGet() },
+                { synchronized(reports) { reports += it } }, catalog, client, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP,
+                schedule, clock::get).also(runtimes::add)
         fun latest() = synchronized(reports) { reports.lastOrNull().orEmpty() }
         suspend fun assertOriginal() {
             assertEquals(1L, author().state().committedSequence)
@@ -79,6 +83,39 @@ class LanSyncGroupCloudRuntimeTest {
     private fun fixture(work: suspend (Fixture) -> Unit) = runBlocking {
         val root = Files.createTempDirectory("synthetic-cloud-runtime-").toRealPath(); val f = Fixture(root)
         try { f.seed(); work(f) } finally { f.close(); check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test fun explicitlyAnonymousWebDavOmitsAuthorizationInsteadOfSendingAnEmptyBasicCredential() = fixture { f ->
+        WeakFixture(f.directory("anonymous-provider")).use { provider ->
+            val endpoint = provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString()
+            val id = f.catalog.add(LanSyncGroupCloudDraft("synthetic anonymous drive", endpoint, "", byteArrayOf(), enabled = true))
+            provider.dav.overrideRequest = { request ->
+                if (request.getHeader("Authorization") != null) MockResponse().setResponseCode(401) else null
+            }
+            assertTrue(f.runtime().cycle())
+            assertTrue(f.latest().getValue(id).selectionObserved)
+            val count = provider.server.requestCount
+            assertTrue(count > 0)
+            repeat(count) { assertNull(requireNotNull(provider.server.takeRequest(1, TimeUnit.SECONDS)).getHeader("Authorization")) }
+            f.assertOriginal()
+        }
+    }
+
+    @Test fun aDamagedProtectedCatalogIsVisibleAndRetainedWithoutAProviderRequestOrAReset() = fixture { f ->
+        WeakFixture(f.directory("damaged-catalog-provider")).use { provider ->
+            f.add(provider)
+            val file = f.root.resolve("catalog/cloud-routes.protected")
+            val damaged = byteArrayOf(1, 2, 3, 4, 5)
+            Files.write(file, damaged)
+            val runtime = f.runtime()
+            val failure = assertFailsWith<IllegalStateException> { runtime.prepareScheduledBatch() }
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message)
+            assertNull(failure.cause)
+            assertContentEquals(damaged, Files.readAllBytes(file))
+            assertEquals(0, provider.server.requestCount)
+            assertTrue(requireNotNull(runtime.nextDelayMillis()) > 0)
+            f.assertOriginal()
+        }
     }
 
     @Test fun platformDeniedDoesNotOpenTheCatalogAndDisabledOrEmptyTargetsNeverUseHttp() = fixture { f ->
@@ -109,7 +146,7 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(provider.dav.files.isNotEmpty()); assertEquals(1, f.wakes.get())
             val owner = f.access.targetPublication(f.access.work.resolve("cloud-runtime/${id.value}/target"),
                 SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false)
-            val receipt = requireNotNull(owner.weakReceipt())
+            val receipt = requireNotNull(owner.chunkReceipt())
             assertEquals(receipt.objects.maxOf { it.readbackObservation.observedAtMillis }, progress.lastObservedAt)
             val requests = provider.server.requestCount
             repeat(requests) {
@@ -162,7 +199,7 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(changed); assertFalse(f.catalog.rows().single().enabled)
             assertFalse(id in f.latest(), "Disabled routes must leave the current-enabled aggregate")
             val directory = f.access.work.resolve("cloud-runtime/${id.value}/target")
-            Files.newDirectoryStream(directory, "weak-receipt-*.json").use { assertFalse(it.iterator().hasNext()) }
+            Files.newDirectoryStream(directory, "chunk-receipt-*.json").use { assertFalse(it.iterator().hasNext()) }
             val retained = provider.dav.files.mapValues { it.value.copyOf() }
             assertTrue(retained.isNotEmpty())
             val before = provider.server.requestCount
@@ -277,6 +314,155 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(f.latest().getValue(id).selectionObserved)
             assertTrue(f.wakes.get() > 0)
             f.assertOriginal()
+        }
+    }
+
+    @Test fun localPreflightAndFrequentTimerChecksNeverCreateHttpForEmptyDisabledOrIdleRoutes() = fixture { f ->
+        WeakFixture(f.directory("scheduled-idle-provider")).use { provider ->
+            val runtime = f.runtime()
+            assertEquals(0L, runtime.nextDelayMillis())
+            assertFalse(runtime.prepareScheduledBatch()); assertNull(runtime.nextDelayMillis())
+            val id = f.add(provider, enabled = false)
+            assertFalse(runtime.prepareScheduledBatch()); assertNull(runtime.nextDelayMillis())
+            assertFalse(Files.exists(f.access.work.resolve("cloud-runtime")))
+            assertEquals(0, provider.server.requestCount)
+            f.catalog.setEnabled(id, true); runtime.configurationChanged()
+            assertTrue(runtime.prepareScheduledBatch()); assertEquals(0, provider.server.requestCount)
+            assertFalse(Files.exists(f.access.work.resolve("cloud-runtime")))
+            assertTrue(runtime.cycle(forceIdle = false))
+            val observed = requireNotNull(f.latest().getValue(id).lastObservedAt)
+            val requests = provider.server.requestCount
+            repeat(5) {
+                assertFalse(runtime.prepareScheduledBatch())
+                assertTrue(runtime.cycle(forceIdle = false)) // A skipped, already observed selection keeps its historical status.
+                assertEquals(requests, provider.server.requestCount)
+                assertEquals(observed, f.latest().getValue(id).lastObservedAt)
+                assertTrue(f.latest().getValue(id).selectionObserved)
+            }
+            assertEquals(60_000L, runtime.nextDelayMillis())
+            f.clock.addAndGet(59_999); assertFalse(runtime.prepareScheduledBatch())
+            f.clock.incrementAndGet(); assertTrue(runtime.prepareScheduledBatch())
+            assertEquals(requests, provider.server.requestCount)
+            assertTrue(runtime.cycle(forceIdle = false)); assertTrue(provider.server.requestCount > requests)
+            assertEquals(observed, f.latest().getValue(id).lastObservedAt)
+            f.assertOriginal()
+        }
+    }
+
+    @Test fun aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor() = fixture { f ->
+        WeakFixture(f.directory("retry-after-provider")).use { provider ->
+            val id = f.add(provider); val runtime = f.runtime()
+            provider.dav.overrideRequest = { request ->
+                if (request.method == "PROPFIND") MockResponse().setResponseCode(503).setHeader("Retry-After", "120") else null
+            }
+            assertTrue(runtime.prepareScheduledBatch()); assertFalse(runtime.cycle(forceIdle = false))
+            val requests = provider.server.requestCount; assertTrue(requests > 0)
+            assertEquals(120_000L, runtime.nextDelayMillis())
+            repeat(4) {
+                assertFalse(runtime.prepareScheduledBatch()); assertFalse(runtime.prepareScheduledBatch(forceIdle = true))
+                assertFalse(runtime.cycle()); assertFalse(runtime.cycle(forceIdle = false))
+                assertEquals(requests, provider.server.requestCount)
+            }
+            f.clock.addAndGet(119_999); assertFalse(runtime.prepareScheduledBatch(forceIdle = true))
+            f.clock.incrementAndGet(); provider.dav.overrideRequest = null
+            assertTrue(runtime.prepareScheduledBatch()); assertTrue(runtime.cycle(forceIdle = false))
+            assertTrue(provider.server.requestCount > requests); assertTrue(f.latest().getValue(id).selectionObserved)
+            assertNotNull(f.latest().getValue(id).lastObservedAt); f.assertOriginal()
+        }
+    }
+
+    @Test fun anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt() = fixture { f ->
+        WeakFixture(f.directory("scheduled-auth-provider")).use { failed ->
+            WeakFixture(f.directory("scheduled-healthy-provider")).use { healthy ->
+                val failing = f.add(failed); val good = f.add(healthy)
+                val schedule = LanSyncGroupCloudSchedule(f.clock::get, { 0 }); val runtime = f.runtime(schedule)
+                failed.dav.overrideRequest = { request -> if (request.method == "PROPFIND") MockResponse().setResponseCode(401) else null }
+                assertFalse(runtime.cycle())
+                val badRequests = failed.server.requestCount; val goodRequests = healthy.server.requestCount
+                val observed = requireNotNull(f.latest().getValue(good).lastObservedAt)
+                assertTrue(requireNotNull(schedule.state(failing)).needsConfiguration)
+                assertEquals(60_000L, runtime.nextDelayMillis())
+                assertTrue(runtime.prepareScheduledBatch(forceIdle = true))
+                assertFalse(runtime.cycle())
+                assertEquals(badRequests, failed.server.requestCount); assertTrue(healthy.server.requestCount > goodRequests)
+                assertFalse(f.latest().getValue(failing).selectionObserved)
+                assertTrue(f.latest().getValue(good).selectionObserved)
+                assertEquals(observed, f.latest().getValue(good).lastObservedAt)
+                f.assertOriginal()
+            }
+        }
+    }
+
+    @Test fun deniedPlatformDefersWithoutHttpAndAnExplicitWakeOnlyBypassesThatIdleWait() = fixture { f ->
+        WeakFixture(f.directory("platform-idle-provider")).use { provider ->
+            f.add(provider); val runtime = f.runtime(); f.permitted.set(false)
+            // Preflight precedes foreground promotion: it needs no transport permission or HTTP.
+            assertTrue(runtime.prepareScheduledBatch()); assertEquals(0, provider.server.requestCount)
+            assertFalse(runtime.cycle()); assertEquals(60_000L, runtime.nextDelayMillis())
+            assertEquals(0, provider.server.requestCount)
+            f.permitted.set(true)
+            assertFalse(runtime.prepareScheduledBatch()); assertEquals(60_000L, runtime.nextDelayMillis())
+            assertTrue(runtime.prepareScheduledBatch(forceIdle = true)); assertEquals(0, provider.server.requestCount)
+            provider.dav.overrideRequest = { request ->
+                if (request.method == "PROPFIND") MockResponse().setResponseCode(503).setHeader("Retry-After", "120") else null
+            }
+            assertFalse(runtime.cycle()); val requests = provider.server.requestCount
+            runtime.deferUntilWake()
+            assertFalse(runtime.prepareScheduledBatch(forceIdle = true)); assertEquals(120_000L, runtime.nextDelayMillis())
+            assertFalse(runtime.cycle()); assertEquals(requests, provider.server.requestCount)
+            f.assertOriginal()
+        }
+    }
+
+    @Test fun dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved() = fixture { f ->
+        WeakFixture(f.directory("dirty-in-flight-provider")).use { provider ->
+            val id = f.add(provider); val runtime = f.runtime(); val entered = CountDownLatch(1); val release = CountDownLatch(1)
+            val gated = AtomicBoolean(false)
+            provider.dav.overrideRequest = { request ->
+                if (request.method == "PUT" && gated.compareAndSet(false, true)) {
+                    entered.countDown(); check(release.await(30, TimeUnit.SECONDS))
+                }
+                null
+            }
+            try {
+                coroutineScope {
+                    val old = async(Dispatchers.IO) { runtime.cycle(recoverNative = false, outgoingOnly = true) }
+                    try {
+                        withContext(Dispatchers.IO) { assertTrue(entered.await(5, TimeUnit.SECONDS)) }
+                        LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), CharacterCard("card", "synthetic new dirty source", createdAt = 1, updatedAt = 2))
+                        val edited = Files.readAllBytes(f.card)
+                        val next = f.access.node.commit(f.access.node.inspect().review(setOf("character_cards/card")))
+                        f.access.node.upload(next.entry.request.operation, f.access.replica, f.access.localTarget)
+                        runtime.markDirty(); release.countDown()
+                        assertFalse(withTimeout(10_000) { old.await() })
+                        val historical = requireNotNull(f.latest().getValue(id).lastObservedAt)
+                        assertFalse(f.latest().getValue(id).selectionObserved)
+                        val target = f.access.work.resolve("cloud-runtime/${id.value}/target")
+                        Files.newDirectoryStream(target, "chunk-receipt-*.json").use { assertTrue(it.iterator().hasNext()) }
+                        assertFalse(runtime.prepareScheduledBatch()); assertTrue(runtime.prepareScheduledBatch(forceIdle = true))
+                        assertTrue(runtime.cycle(recoverNative = false, outgoingOnly = true))
+                        assertTrue(f.latest().getValue(id).selectionObserved)
+                        val receipt = requireNotNull(f.access.targetPublication(target, SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id),
+                            recoverNative = false, prepare = false).chunkReceipt())
+                        assertEquals(receipt.objects.maxOf { it.readbackObservation.observedAtMillis }, f.latest().getValue(id).lastObservedAt)
+                        val latest = f.latest().getValue(id).lastObservedAt; val requests = provider.server.requestCount
+                        assertTrue(runtime.cycle(recoverNative = false, outgoingOnly = true))
+                        assertEquals(requests, provider.server.requestCount); assertEquals(latest, f.latest().getValue(id).lastObservedAt)
+                        assertNotNull(historical)
+                        assertEquals(2L, f.author().state().committedSequence)
+                        assertEquals(f.source.entry, f.author().entry(f.source.entry.request.operation))
+                        assertEquals(next.entry, f.author().entry(next.entry.request.operation))
+                        assertContentEquals(edited, Files.readAllBytes(f.card)); assertContentEquals(f.origin,
+                            Files.readAllBytes(f.admin.profile.resolve("node/author/origin.protected")))
+                        val original = requireNotNull(f.admin.workspace.recovery.read(f.source.entry.request.sourceCheckpoint))
+                        var found = false
+                        f.admin.workspace.recovery.originals(original) { row, path -> if (row.relative == "entities/character_cards/card.json") {
+                            found = true; assertContentEquals(f.raw, Files.readAllBytes(path))
+                        } }
+                        assertTrue(found); assertEquals(0, f.reloads.get())
+                    } finally { release.countDown() }
+                }
+            } finally { release.countDown() }
         }
     }
 }

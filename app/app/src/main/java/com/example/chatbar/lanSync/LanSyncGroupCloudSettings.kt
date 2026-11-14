@@ -48,7 +48,7 @@ internal fun LanSyncGroupCloudSettings(state: LanSyncGroupCloudSettingsState, ac
         confirm = { CbButton("关闭", ::close, variant = ButtonVariant.Secondary) },
         dismiss = { CbButton("刷新", actions::refreshCloudSettings, enabled = !state.busy, variant = ButtonVariant.Ghost) }) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CbText("连接设置保存在此设备的受保护目录中。保存新连接后默认停止，不代表资料已上传。", color = ChatBarTheme.colors.mutedForeground)
+            CbText("支持提供 WebDAV 地址的网盘。连接设置保存在此设备的受保护目录中，新连接默认停止，不代表资料已上传。", color = ChatBarTheme.colors.mutedForeground)
             if (!state.canEnable) CbText("目前可保存连接设置，暂不可启用。", color = ChatBarTheme.colors.mutedForeground)
             state.notice?.let { CbText(it) }
             state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
@@ -94,7 +94,7 @@ internal fun LanSyncGroupCloudSettings(state: LanSyncGroupCloudSettingsState, ac
             CbText("添加新连接", style = ChatBarTheme.typography.heading)
             CbText("如需修改地址或账号，请添加新连接。已保存的密码不会回填。", color = ChatBarTheme.colors.mutedForeground)
             CbField("连接名称") { CbInput(name, enabled = !state.busy, singleLine = true) }
-            CbField("网盘目录地址（HTTPS）") { CbInput(endpoint, enabled = !state.busy, singleLine = true, placeholder = "https://…/") }
+            CbField("WebDAV 目录地址（HTTPS）") { CbInput(endpoint, enabled = !state.busy, singleLine = true, placeholder = "https://…/") }
             CbField("用户名") { CbInput(username, enabled = !state.busy, singleLine = true) }
             key(secretRevision) { CbField("密码或专用密码") { CbInput(password, { password = it }, enabled = !state.busy, secure = true) } }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

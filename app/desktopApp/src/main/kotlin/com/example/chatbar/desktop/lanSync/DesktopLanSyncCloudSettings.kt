@@ -34,7 +34,7 @@ internal fun DesktopLanSyncCloudSettings(state: LanSyncGroupCloudSettingsState, 
                 .background(DesktopBootstrapColors.card).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 DesktopDataSectionHeading("网盘连接")
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatusText("连接设置保存在此设备的受保护目录中。保存新连接后默认停止，不代表资料已上传。")
+                    StatusText("支持提供 WebDAV 地址的网盘。连接设置保存在此设备的受保护目录中，新连接默认停止，不代表资料已上传。")
                     if (!state.canEnable) StatusText("目前可保存连接设置，暂不可启用。")
                     state.notice?.let { StatusText(it) }
                     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
@@ -83,7 +83,7 @@ internal fun DesktopLanSyncCloudSettings(state: LanSyncGroupCloudSettingsState, 
                     StatusText("如需修改地址或账号，请添加新连接。已保存的密码不会回填。")
                     key(draftRevision) {
                         LabeledField("连接名称", name, enabled = !state.busy) { name = it }
-                        LabeledField("网盘目录地址（HTTPS）", endpoint, enabled = !state.busy) { endpoint = it }
+                        LabeledField("WebDAV 目录地址（HTTPS）", endpoint, enabled = !state.busy) { endpoint = it }
                         LabeledField("用户名", username, enabled = !state.busy) { username = it }
                         LabeledField("密码或专用密码", password, secret = true, enabled = !state.busy) { password = it }
                     }

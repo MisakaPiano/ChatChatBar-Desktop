@@ -5,6 +5,8 @@ import com.example.chatbar.domain.syncStore.webdav.WeakWebDavAttemptStore
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavCandidate
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavObservation
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavObservationOrigin
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavChunkAssembly
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavAssemblyObservation
 import java.io.FilterInputStream
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -42,6 +44,17 @@ import kotlinx.serialization.KSerializer
 /** Historical authenticated selection delivery through unique attempts; no immutable-store claim. */
 @Serializable data class LanSyncGroupWeakTargetReceipt(val planHash: String, val target: SyncDeliveryTarget,
     val checkpoint: SyncVersionRef, val objects: List<LanSyncGroupWeakTargetObjectReceipt>)
+/** Physical provider manifest identity; its descriptor is not the original ciphertext descriptor. */
+@Serializable data class LanSyncGroupChunkManifestLocator(val route: SyncStoreId, val manifestKey: CiphertextObjectKey,
+    val manifestDescriptor: CiphertextDescriptor, val manifestOperation: SyncStoreId, val attempt: SyncStoreId)
+@Serializable data class LanSyncGroupChunkTargetObservation(val logicalKey: CiphertextObjectKey,
+    val logicalDescriptor: CiphertextDescriptor, val logicalOperation: SyncStoreId, val manifest: LanSyncGroupChunkManifestLocator,
+    val chunkCount: Long, val observedAtMillis: Long)
+@Serializable data class LanSyncGroupChunkTargetObjectReceipt(val objectRequest: LanSyncGroupTargetObject,
+    val appendObservation: LanSyncGroupChunkTargetObservation, val readbackObservation: LanSyncGroupChunkTargetObservation)
+/** Authenticated historical assembly selection, distinct from whole-object/strict/native receipts. */
+@Serializable data class LanSyncGroupChunkTargetReceipt(val planHash: String, val target: SyncDeliveryTarget,
+    val checkpoint: SyncVersionRef, val objects: List<LanSyncGroupChunkTargetObjectReceipt>)
 
 /**
  * Daily, non-signing relay of a complete frozen admitted selection. Raw quarantine never becomes a
@@ -62,6 +75,8 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     @Serializable private data class ItemObservation(val binding: ItemBinding, val selectionId: String,
         val planHash: String, val receiptHash: String, val strict: LanSyncGroupTargetObjectReceipt? = null,
         val weak: LanSyncGroupWeakTargetObjectReceipt? = null)
+    @Serializable private data class ChunkItemObservation(val binding: ItemBinding, val selectionId: String,
+        val planHash: String, val receiptHash: String, val observation: LanSyncGroupChunkTargetObjectReceipt)
     private val lock = locks.computeIfAbsent(root) { ReentrantLock() }
     private fun directory(name: String) = root.resolve(name).also {
         PrivateSyncFile.checked(root, true)
@@ -73,6 +88,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     private val itemBindings = FileCiphertextStore(directory("item-bindings"))
     private val strictObservations = FileCiphertextStore(directory("strict-object-observations"))
     private val weakObservations = FileCiphertextStore(directory("weak-object-observations"))
+    private val chunkObservations = FileCiphertextStore(directory("chunk-object-observations"))
     private val ownerBinding = Binding(proof.trust.group, proof.trust.genesis, proof.device, target)
     private val selection = Selection(proof.trust.group, proof.current.reference(), target, proof.vault,
         proof.vaultDescriptor, proof.versions.mapTo(linkedSetOf()) { it.reference() })
@@ -80,6 +96,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     private val planPath = root.resolve("plan-$id.json")
     private val receiptPath = root.resolve("receipt-$id.json")
     private val weakReceiptPath = root.resolve("weak-receipt-$id.json")
+    private val chunkReceiptPath = root.resolve("chunk-receipt-$id.json")
     init {
         require(target != SyncDeliveryTarget.LEGACY) { "SYNC_GROUP_TARGET_EXPLICIT_ROUTE_REQUIRED" }
         guarded {
@@ -96,21 +113,24 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         val prior = readPlan()
         if (prior != null) { validate(prior, retained); ensureBindings(prior); return@guarded prior }
         val stages = mutableListOf<LanSyncGroupTargetStage>()
+        val pool = LanSyncGroupTargetStagePool(work, proof::requireLive)
+        fun borrow(metadata: CiphertextObjectMetadata) = pool.stage(metadata, proof.source)
         try {
             val items = mutableListOf<LanSyncGroupTargetObject>()
             fun add(role: LanSyncGroupTargetObjectRole, slot: String, stage: LanSyncGroupTargetStage) {
                 stages += stage
+                pool.pin(stage)
                 items += LanSyncGroupTargetObject(role, slot, stage.metadata.key, stage.metadata.descriptor,
                     itemBinding(stage.metadata.key, stage.metadata.descriptor).operation)
             }
-            add(LanSyncGroupTargetObjectRole.VAULT, "vault", stage(CiphertextObjectMetadata(proof.vault.key, proof.vaultDescriptor)))
+            add(LanSyncGroupTargetObjectRole.VAULT, "vault", borrow(CiphertextObjectMetadata(proof.vault.key, proof.vaultDescriptor)))
             var rootFound = false
             val slots = linkedSetOf<String>(); val notices = linkedSetOf<String>()
             for (metadata in inventory()) {
                 proof.requireLive()
                 var candidate: LanSyncGroupTargetStage? = null
                 try {
-                    candidate = stage(metadata)
+                    candidate = borrow(metadata)
                     val prefix = lanSyncTargetPrefix(candidate)
                     when {
                         SyncKeyDeliveryCodec.hasPrefix(prefix) && metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES -> {
@@ -134,7 +154,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
                         }
                     }
                 } catch (failure: Exception) { lanSyncTargetCandidateFailure(failure) }
-                finally { candidate?.close() }
+                finally { candidate?.let(pool::discard) }
             }
             proof.requireLive()
             require(rootFound && slots == proof.keySlots() && notices == SyncLedgerNotice.revocations(proof.ledger).keys) { "SYNC_GROUP_TARGET_ROOT_INCOMPLETE" }
@@ -147,17 +167,17 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
                     proof.requireLive()
                     val trial = mutableListOf<LanSyncGroupTargetStage>()
                     try {
-                        val metadata = stage(witness.metadata); trial += metadata
+                        val metadata = borrow(witness.metadata); trial += metadata
                         val actual = SyncGroupObjectCodec(work).read(lanSyncTargetLens(trial, proof::requireLive), proof.cipher(proof.current.epoch), witness.context,
                             witness.metadata.descriptor, version.reference())
                         proof.version(actual)
-                        actual.envelope.blobs.values.forEach { binding -> trial += stage(CiphertextObjectMetadata(binding.key, binding.descriptor)) }
-                        proof.dependencies(listOf(actual), lanSyncTargetLens(trial, proof::requireLive), work)
+                        actual.envelope.blobs.values.forEach { binding -> trial += borrow(CiphertextObjectMetadata(binding.key, binding.descriptor)) }
+                        proof.dependencies(listOf(actual), lanSyncTargetLens(trial, proof::requireLive), work, pool.checkedRaw)
                         add(LanSyncGroupTargetObjectRole.VERSION, version.id.value, trial.first())
                         trial.drop(1).forEach { add(LanSyncGroupTargetObjectRole.RESOURCE, it.metadata.key.id.value, it) }
                         trial.clear(); selected = true; break
                     } catch (failure: Exception) { lanSyncTargetCandidateFailure(failure) }
-                    finally { trial.asReversed().forEach { it.close() } }
+                    finally { trial.asReversed().forEach(pool::discard) }
                 }
                 require(selected) { "SYNC_GROUP_TARGET_VERSION_INCOMPLETE" }
             }
@@ -166,7 +186,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             val unique = items.distinctBy { it.key }.sortedWith(compareBy({ it.role.ordinal }, { it.key.id.value }))
             val plan = LanSyncGroupTargetPlan(proof.trust.group, proof.current.reference(), proof.current.epoch,
                 proof.current.keyCommitment, target, selection.versions, unique)
-            validate(plan, lanSyncTargetLens(stages, proof::requireLive))
+            validate(plan, lanSyncTargetLens(stages, proof::requireLive), pool)
             for (item in unique) {
                 proof.requireLive()
                 val actual = stages.first { it.metadata == CiphertextObjectMetadata(item.key, item.descriptor) }
@@ -176,7 +196,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             }
             proof.requireLive(); LanSyncJsonFiles.write(planPath, LanSyncGroupTargetPlan.serializer(), plan)
             plan
-        } finally { stages.asReversed().forEach { it.close() } }
+        } finally { pool.close() }
     } }
     /** Fixed-route historical receipt. Does not inspect remote freshness. */
     fun receipt(): LanSyncGroupTargetReceipt? = guarded {
@@ -276,6 +296,51 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             receipt
         } finally { readbacks.asReversed().forEach { it.close() } }
     } }
+    /** Physical chunks have independent receipts; the complete original ciphertext is authenticated. */
+    suspend fun upload(backend: WeakWebDavChunkAssembly): LanSyncGroupChunkTargetReceipt = runInterruptible(Dispatchers.IO) { guarded {
+        proof.requireLive()
+        require(target.kind == SyncDeliveryKind.CLOUD_STORE && backend.routeId == target.id) { "SYNC_GROUP_TARGET_ROUTE_CHANGED" }
+        val plan = requireNotNull(readPlan()) { "SYNC_GROUP_TARGET_PLAN_MISSING" }
+        validate(plan, retained); ensureBindings(plan)
+        readChunkReceipt(plan)?.let { cacheChunkSelection(plan, it); return@guarded it }
+        val origins = mutableMapOf<String, HistoricalSelection>()
+        val cachedItems = plan.objects.associateWith { readChunkObservation(it, origins) }
+        val observations = mutableListOf<LanSyncGroupChunkTargetObjectReceipt>()
+        val readbacks = mutableListOf<LanSyncGroupTargetStage>()
+        val historical = linkedSetOf<CiphertextObjectMetadata>()
+        try {
+            for (item in plan.objects) {
+                proof.requireLive()
+                val metadata = CiphertextObjectMetadata(item.key, item.descriptor)
+                val cached = cachedItems[item]?.observation
+                if (cached != null) {
+                    historical += metadata; observations += cached.copy(objectRequest = item); continue
+                }
+                val staged = stage(metadata, retained)
+                val appended = try {
+                    Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use {
+                        backend.append(CiphertextPutRequest(item.key, item.operation, item.descriptor), liveInput(it), proof::requireLive)
+                    }
+                } finally { staged.close() }
+                requireAssembly(item, appended)
+                var observed: WeakWebDavAssemblyObservation? = null
+                readbacks += lanSyncTargetReceiveStage(work, metadata, proof::requireLive) { output ->
+                    val actual = backend.readAssembly(appended.assembly, metadata, output, proof::requireLive)
+                        ?: return@lanSyncTargetReceiveStage null
+                    requireAssembly(item, actual)
+                    require(actual.assembly == appended.assembly && actual.chunkCount == appended.chunkCount) { "SYNC_GROUP_TARGET_ASSEMBLY_CHANGED" }
+                    observed = actual; metadata
+                }
+                observations += LanSyncGroupChunkTargetObjectReceipt(item, chunkObservation(appended), chunkObservation(requireNotNull(observed)))
+                proof.requireLive()
+            }
+            validate(plan, lanSyncTargetObservedLens(readbacks, historical, retained, proof::requireLive))
+            val receipt = LanSyncGroupChunkTargetReceipt(planHash(), target, plan.checkpoint, observations.toList())
+            proof.requireLive(); LanSyncJsonFiles.write(chunkReceiptPath, LanSyncGroupChunkTargetReceipt.serializer(), receipt)
+            cacheChunkSelection(plan, receipt)
+            receipt
+        } finally { readbacks.asReversed().forEach { it.close() } }
+    } }
     fun weakReceipt(): LanSyncGroupWeakTargetReceipt? = guarded {
         proof.requireLive()
         val plan = readPlan() ?: run {
@@ -284,15 +349,23 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         }
         readWeakReceipt(plan)
     }
+    fun chunkReceipt(): LanSyncGroupChunkTargetReceipt? = guarded {
+        proof.requireLive()
+        val plan = readPlan() ?: run {
+            require(!Files.exists(chunkReceiptPath, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_PLAN_MISSING" }; return@guarded null
+        }
+        readChunkReceipt(plan)
+    }
     /** Rebuilds missing derived indexes from typed history; no ciphertext or network I/O. */
     fun recoverObjectObservations(): Boolean = guarded {
         proof.requireLive()
         val plan = readPlan() ?: return@guarded false
-        val strict = readReceipt(plan); val weak = readWeakReceipt(plan)
-        if (strict == null && weak == null) return@guarded false
+        val strict = readReceipt(plan); val weak = readWeakReceipt(plan); val chunk = readChunkReceipt(plan)
+        if (strict == null && weak == null && chunk == null) return@guarded false
         ensureBindings(plan)
         strict?.let { cacheSelection(plan, strict = it) }
         weak?.let { cacheSelection(plan, weak = it) }
+        chunk?.let { cacheChunkSelection(plan, it) }
         proof.requireLive()
         true
     }
@@ -307,12 +380,13 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         } while (cursor != null)
         return values.sortedWith(compareBy({ it.key.id.value }, { it.descriptor.sha256.hex }))
     }
-    private fun validate(plan: LanSyncGroupTargetPlan, source: CiphertextStore) {
+    private fun validate(plan: LanSyncGroupTargetPlan, source: CiphertextStore, shared: LanSyncGroupTargetStagePool? = null) {
         proof.requireLive()
         validateHeader(plan)
         val staged = mutableListOf<LanSyncGroupTargetStage>()
+        val pool = shared ?: LanSyncGroupTargetStagePool(work, proof::requireLive)
         try {
-            plan.objects.forEach { staged += stage(CiphertextObjectMetadata(it.key, it.descriptor), source) }
+            plan.objects.forEach { staged += pool.stage(CiphertextObjectMetadata(it.key, it.descriptor), source) }
             val lens = lanSyncTargetLens(staged, proof::requireLive); val values = mutableListOf<SyncAuthenticatedGroupObject>()
             val slots = linkedSetOf<String>(); val notices = linkedSetOf<String>(); var roots = 0; var vaults = 0
             for ((index, item) in plan.objects.withIndex()) {
@@ -346,8 +420,8 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
                 values.map { it.envelope.reference() }.toSet() == selection.versions && values.size == selection.versions.size) { "SYNC_GROUP_TARGET_SELECTION_INCOMPLETE" }
             val blobs = values.flatMap { it.envelope.blobs.values }.map { CiphertextObjectMetadata(it.key, it.descriptor) }.toSet()
             require(plan.objects.filter { it.role == LanSyncGroupTargetObjectRole.RESOURCE }.map { CiphertextObjectMetadata(it.key, it.descriptor) }.toSet() == blobs) { "SYNC_GROUP_TARGET_RESOURCE_CHANGED" }
-            proof.dependencies(values, lens, work)
-        } finally { staged.asReversed().forEach { it.close() } }
+            proof.dependencies(values, lens, work, pool.checkedRaw)
+        } finally { if (shared == null) pool.close() }
         proof.requireLive()
     }
     private fun validateHeader(plan: LanSyncGroupTargetPlan) {
@@ -399,6 +473,33 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
                 }) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
         }
     }
+    private fun requireAssembly(item: LanSyncGroupTargetObject, value: WeakWebDavAssemblyObservation) {
+        require(value.request == CiphertextPutRequest(item.key, item.operation, item.descriptor) &&
+            value.assembly.route == target.id && value.assembly.key == item.key && value.chunkCount >= 0 &&
+            (value.chunkCount == 0L) == (item.descriptor.length == 0L)) { "SYNC_GROUP_TARGET_ASSEMBLY_CHANGED" }
+    }
+    private fun chunkObservation(value: WeakWebDavAssemblyObservation) = LanSyncGroupChunkTargetObservation(
+        value.request.key, value.request.descriptor, value.request.operationId,
+        LanSyncGroupChunkManifestLocator(value.assembly.route, value.assembly.key, value.assembly.descriptor,
+            value.assembly.operationId, value.assembly.attempt), value.chunkCount, value.observedAtMillis)
+    private fun readChunkReceipt(plan: LanSyncGroupTargetPlan, path: Path = chunkReceiptPath,
+        hash: String = planHash()): LanSyncGroupChunkTargetReceipt? {
+        if (!Files.exists(path, NOFOLLOW_LINKS)) return null
+        LanSyncMetadataBudget().validate(path)
+        return requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupChunkTargetReceipt.serializer())).also { receipt ->
+            require(receipt.planHash == hash && receipt.target == target && receipt.checkpoint == plan.checkpoint &&
+                receipt.objects.map { it.objectRequest } == plan.objects && receipt.objects.all { row ->
+                    fun matches(value: LanSyncGroupChunkTargetObservation) = value.logicalKey == row.objectRequest.key &&
+                        value.logicalDescriptor == row.objectRequest.descriptor && value.logicalOperation == row.objectRequest.operation &&
+                        value.manifest.route == target.id && value.manifest.manifestKey == row.objectRequest.key &&
+                        value.manifest.manifestDescriptor.length > 0 && value.chunkCount >= 0 && value.observedAtMillis >= 0 &&
+                        (value.chunkCount == 0L) == (row.objectRequest.descriptor.length == 0L)
+                    matches(row.appendObservation) && matches(row.readbackObservation) &&
+                        row.appendObservation.manifest == row.readbackObservation.manifest &&
+                        row.appendObservation.chunkCount == row.readbackObservation.chunkCount
+                }) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
+        }
+    }
     private fun itemBinding(key: CiphertextObjectKey, descriptor: CiphertextDescriptor, operation: SyncStoreId? = null): ItemBinding {
         val prior = readItem(itemBindings, key, ItemBinding.serializer())
         if (prior != null) {
@@ -418,7 +519,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         for (item in plan.objects) { proof.requireLive(); requireItemBinding(itemBinding(item.key, item.descriptor, item.operation), item) }
     }
     private class HistoricalSelection(val plan: LanSyncGroupTargetPlan, val planHash: String, val receiptHash: String,
-        val strict: LanSyncGroupTargetReceipt?, val weak: LanSyncGroupWeakTargetReceipt?)
+        val strict: LanSyncGroupTargetReceipt?, val weak: LanSyncGroupWeakTargetReceipt?, val chunk: LanSyncGroupChunkTargetReceipt? = null)
     private fun readObservation(item: LanSyncGroupTargetObject, weak: Boolean,
         origins: MutableMap<String, HistoricalSelection>): ItemObservation? {
         proof.requireLive()
@@ -437,7 +538,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         proof.requireLive()
         return cache
     }
-    private fun historicalSelection(selectionId: String, weak: Boolean): HistoricalSelection {
+    private fun historicalSelection(selectionId: String, weak: Boolean, chunk: Boolean = false): HistoricalSelection {
         require(selectionId.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
         val path = root.resolve("plan-$selectionId.json")
         require(Files.exists(path, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
@@ -445,14 +546,15 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         val plan = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupTargetPlan.serializer())) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
         require(plan.group == ownerBinding.group && plan.target == target && plan.objects.map { it.key }.toSet().size == plan.objects.size &&
             plan.objects.map { it.operation }.toSet().size == plan.objects.size) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
-        val receipt = root.resolve("${if (weak) "weak-receipt" else "receipt"}-$selectionId.json")
+        val receipt = root.resolve("${if (chunk) "chunk-receipt" else if (weak) "weak-receipt" else "receipt"}-$selectionId.json")
         require(Files.exists(receipt, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
         val planHash = LanSyncResourceStore.hashFile(path, Files.size(path))
         LanSyncMetadataBudget().validate(receipt)
         val receiptHash = LanSyncResourceStore.hashFile(receipt, Files.size(receipt))
         return HistoricalSelection(plan, planHash, receiptHash,
-            if (weak) null else requireNotNull(readReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" },
-            if (weak) requireNotNull(readWeakReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" } else null)
+            if (weak || chunk) null else requireNotNull(readReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" },
+            if (weak && !chunk) requireNotNull(readWeakReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" } else null,
+            if (chunk) requireNotNull(readChunkReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" } else null)
     }
     private fun recoverObservation(item: LanSyncGroupTargetObject, weak: Boolean,
         origins: MutableMap<String, HistoricalSelection>): ItemObservation? {
@@ -495,6 +597,55 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             val binding = itemBinding(item.key, item.descriptor, item.operation)
             val cache = ItemObservation(binding, id, frozenPlanHash, hash, strict?.objects?.get(index), weak?.objects?.get(index))
             writeItem(if (isWeak) weakObservations else strictObservations, item.key, "OBJECT-OBSERVATION", ItemObservation.serializer(), cache)
+        }
+        proof.requireLive()
+    }
+    private fun readChunkObservation(item: LanSyncGroupTargetObject,
+        origins: MutableMap<String, HistoricalSelection>): ChunkItemObservation? {
+        proof.requireLive()
+        val cache = readItem(chunkObservations, item.key, ChunkItemObservation.serializer())
+            ?: recoverChunkObservation(item, origins) ?: return null
+        requireItemBinding(cache.binding, item)
+        require(cache.selectionId.matches(Regex("[a-f0-9]{64}")) && cache.planHash.matches(Regex("[a-f0-9]{64}")) &&
+            cache.receiptHash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_TARGET_OBJECT_OBSERVATION_CHANGED" }
+        val origin = origins.getOrPut(cache.selectionId) { historicalSelection(cache.selectionId, weak = false, chunk = true) }
+        require(origin.planHash == cache.planHash && origin.receiptHash == cache.receiptHash) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val original = origin.plan.objects.singleOrNull { it.key == item.key && it.descriptor == item.descriptor && it.operation == item.operation }
+        require(original != null && origin.chunk?.objects?.singleOrNull { it.objectRequest == original } == cache.observation) {
+            "SYNC_GROUP_TARGET_OBJECT_OBSERVATION_CHANGED"
+        }
+        proof.requireLive(); return cache
+    }
+    private fun recoverChunkObservation(item: LanSyncGroupTargetObject,
+        origins: MutableMap<String, HistoricalSelection>): ChunkItemObservation? {
+        var conflict: CiphertextStoreException? = null
+        Files.newDirectoryStream(root, "chunk-receipt-*.json").use { files -> for (file in files) {
+            proof.requireLive()
+            val originId = file.fileName.toString().removePrefix("chunk-receipt-").removeSuffix(".json")
+            val origin = origins.getOrPut(originId) { historicalSelection(originId, weak = false, chunk = true) }
+            val original = origin.plan.objects.singleOrNull { it.key == item.key && it.descriptor == item.descriptor && it.operation == item.operation } ?: continue
+            val row = requireNotNull(origin.chunk).objects.single { it.objectRequest == original }
+            val cache = ChunkItemObservation(itemBinding(item.key, item.descriptor, item.operation), originId,
+                origin.planHash, origin.receiptHash, row)
+            try {
+                writeItem(chunkObservations, item.key, "OBJECT-OBSERVATION", ChunkItemObservation.serializer(), cache)
+                proof.requireLive(); return cache
+            } catch (failure: CiphertextStoreException) {
+                if (failure.failure != CiphertextStoreFailure.OPERATION_CONFLICT) throw failure
+                conflict = failure
+            }
+        } }
+        conflict?.let { throw it }; return null
+    }
+    private fun cacheChunkSelection(plan: LanSyncGroupTargetPlan, receipt: LanSyncGroupChunkTargetReceipt) {
+        val hash = LanSyncResourceStore.hashFile(chunkReceiptPath, Files.size(chunkReceiptPath))
+        val frozenPlanHash = planHash(); val origins = mutableMapOf<String, HistoricalSelection>()
+        for ((index, item) in plan.objects.withIndex()) {
+            proof.requireLive()
+            if (readChunkObservation(item, origins) != null) continue
+            val cache = ChunkItemObservation(itemBinding(item.key, item.descriptor, item.operation), id,
+                frozenPlanHash, hash, receipt.objects[index])
+            writeItem(chunkObservations, item.key, "OBJECT-OBSERVATION", ChunkItemObservation.serializer(), cache)
         }
         proof.requireLive()
     }

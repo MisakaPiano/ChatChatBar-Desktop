@@ -349,7 +349,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
         if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.destroyed(generation, expectedStop)
     }
     internal fun stopCloudFromNotification(generation: Long) {
-        if (cloudWorkOwner.isInitialized() && cloudWorkOwner.value.owns(generation)) pauseBackground()
+        if (!hooksClosed && cloudWorkOwner.isInitialized() && cloudWorkOwner.value.acceptsStop(generation)) pauseBackground()
     }
     fun stopLegacy() { if (runtimeOwner.isInitialized()) runtimeOwner.value.stop() }
     private fun groupProfileRoot(): Path {

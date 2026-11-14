@@ -6,6 +6,7 @@ import com.example.chatbar.ChatBarApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -24,9 +25,19 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** One finite cloud batch per actual dataSync promotion; no LAN or AI foreground lease is reused. */
-internal class AndroidLanSyncCloudWork(private val app: ChatBarApp,
+internal class AndroidLanSyncCloudWork(
+    private val applicationScope: CoroutineScope,
     private val canStart: () -> Boolean, private val canContinue: () -> Boolean,
-    private val cancelCloud: () -> Unit) {
+    private val cancelCloud: () -> Unit, private val startService: (Long) -> Unit) {
+    constructor(app: ChatBarApp, canStart: () -> Boolean, canContinue: () -> Boolean,
+        cancelCloud: () -> Unit) : this(
+        CoroutineScope(app.applicationScope.coroutineContext + Dispatchers.IO), canStart, canContinue, cancelCloud,
+        { generation ->
+            ContextCompat.startForegroundService(app, Intent(app, LanSyncGroupCloudTransferService::class.java)
+                .setAction(LanSyncGroupCloudTransferService.ACTION_START)
+                .putExtra(LanSyncGroupCloudTransferService.EXTRA_GENERATION, generation))
+        })
+
     private class Attempt(val generation: Long) {
         val ready = CompletableDeferred<Unit>()
         val stopped = CompletableDeferred<Unit>()
@@ -41,6 +52,7 @@ internal class AndroidLanSyncCloudWork(private val app: ChatBarApp,
     private val admission = Mutex()
     private val cancellationAdmission = Mutex()
     private var generation = 0L
+    private var latestIssuedGeneration: Long? = null
     private var active: Attempt? = null
     private var closed = false
     private val mutableFailure = MutableStateFlow<String?>(null)
@@ -66,12 +78,11 @@ internal class AndroidLanSyncCloudWork(private val app: ChatBarApp,
                 synchronized(lock) {
                     if (closed || active !== attempt || attempt.releasing) fail("PAUSED")
                     attempt.startIssued = true
+                    latestIssuedGeneration = attempt.generation
                 }
                 try {
                     // No lifecycle/state lock spans Binder or notification work.
-                    ContextCompat.startForegroundService(app, Intent(app, LanSyncGroupCloudTransferService::class.java)
-                        .setAction(LanSyncGroupCloudTransferService.ACTION_START)
-                        .putExtra(LanSyncGroupCloudTransferService.EXTRA_GENERATION, attempt.generation))
+                    startService(attempt.generation)
                 } catch (_: Exception) {
                     startFailed(attempt)
                     fail("START_FAILED")
@@ -150,6 +161,8 @@ internal class AndroidLanSyncCloudWork(private val app: ChatBarApp,
     fun promotionFailed(requested: Long) = lost(requested, "SYNC_GROUP_CLOUD_BACKGROUND_PROMOTION_FAILED")
     fun timedOut(requested: Long) = lost(requested, "SYNC_GROUP_CLOUD_BACKGROUND_TIME_LIMIT")
     fun owns(requested: Long): Boolean = synchronized(lock) { !closed && active?.let { it.generation == requested && it.alive && !it.releasing } == true }
+    /** A visible latest notification still carries user intent while its batch is stopping or stopped. */
+    fun acceptsStop(requested: Long): Boolean = synchronized(lock) { !closed && latestIssuedGeneration == requested }
 
     fun destroyed(requested: Long, expected: Boolean) {
         var cancel: Deferred<Boolean>? = null
@@ -205,7 +218,7 @@ internal class AndroidLanSyncCloudWork(private val app: ChatBarApp,
         }
         stop?.invoke()
     }
-    private fun cancelTransport(requested: Long): Job = app.applicationScope.launch(Dispatchers.IO) {
+    private fun cancelTransport(requested: Long): Job = applicationScope.launch {
         cancellationAdmission.withLock {
             // A delayed old cancellation cannot close a new batch's HTTP calls.
             if (synchronized(lock) { generation != requested }) return@withLock

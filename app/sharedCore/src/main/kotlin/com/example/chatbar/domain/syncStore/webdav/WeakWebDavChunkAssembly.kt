@@ -39,6 +39,7 @@ class WeakWebDavChunkAssembly(transport: WebDavHttpTransport, private val privat
     private val budget: WebDavIoBudget = WebDavIoBudget()) {
     private val chunks: WeakWebDavAttemptStore
     private val assemblies: WeakWebDavAttemptStore
+    val routeId: SyncStoreId get() = chunks.routeId
     private val requests: FileCiphertextStore
     private val lock: ReentrantLock
     init {

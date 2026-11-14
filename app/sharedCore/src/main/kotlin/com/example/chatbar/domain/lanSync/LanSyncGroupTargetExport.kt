@@ -65,7 +65,8 @@ internal class LanSyncGroupTargetExport(val trust: SyncGroupTrust, val device: S
             versions.any { it.reference() == version.reference() } && requireNotNull(view.history).contains(version.reference())) { "SYNC_GROUP_TARGET_CURRENT_CONTAINER_REQUIRED" }
         ledger.admission(versions, view.authenticatedVersions + value).requireAuthorized(version)
     }
-    fun dependencies(values: List<SyncAuthenticatedGroupObject>, store: CiphertextStore, work: Path) {
+    fun dependencies(values: List<SyncAuthenticatedGroupObject>, store: CiphertextStore, work: Path,
+        checkedRaw: MutableSet<LanSyncGroupTargetRawCheck>? = null) {
         val inspected = view.copy(authenticatedVersions = view.authenticatedVersions + values)
         val service = LanSyncGroupDependencies(trust.group, store, custody, work, cache, validateResource)
         for (actual in values) {
@@ -77,7 +78,13 @@ internal class LanSyncGroupTargetExport(val trust: SyncGroupTrust, val device: S
             for (binding in actual.envelope.blobs.values) {
                 requireLive()
                 // A plaintext cache hit is insufficient evidence that the original ciphertext exists.
-                SyncGroupBlobStore(trust.group, work).read(store, cipher(binding.epoch), binding, binding.plaintext).use { }
+                val key = cipher(binding.epoch)
+                val check = LanSyncGroupTargetRawCheck(trust.group, binding.epoch, key.keyCommitment(),
+                    CiphertextObjectMetadata(binding.key, binding.descriptor), binding.plaintext)
+                if (checkedRaw?.contains(check) != true) {
+                    SyncGroupBlobStore(trust.group, work).read(store, key, binding, binding.plaintext).use { }
+                    checkedRaw?.add(check)
+                }
             }
             for ((unit, change) in requireNotNull(actual.envelope.version).changes) if (change.content != null) {
                 val result = service.inspect(inspected, actual, unit)
@@ -94,6 +101,32 @@ internal class LanSyncGroupTargetExport(val trust: SyncGroupTrust, val device: S
 
 internal class LanSyncGroupTargetStage(val metadata: CiphertextObjectMetadata, val file: PrivateSyncFile) : AutoCloseable {
     override fun close() = file.close()
+}
+
+/** Invocation-only crypto identity; never a cross-call plaintext-cache substitute for raw custody. */
+internal data class LanSyncGroupTargetRawCheck(val group: SyncStoreId, val epoch: SyncStoreId,
+    val commitment: String, val metadata: CiphertextObjectMetadata, val plaintext: SyncPlaintextIdentity)
+
+/** One owned immutable private ciphertext file per exact metadata, shared by dependent trials. */
+internal class LanSyncGroupTargetStagePool(private val work: Path, private val live: () -> Unit) : AutoCloseable {
+    private val values = linkedMapOf<CiphertextObjectMetadata, LanSyncGroupTargetStage>()
+    private val pinned = hashSetOf<CiphertextObjectMetadata>()
+    val checkedRaw = hashSetOf<LanSyncGroupTargetRawCheck>()
+    fun stage(metadata: CiphertextObjectMetadata, source: CiphertextStore): LanSyncGroupTargetStage {
+        live()
+        return values[metadata] ?: lanSyncTargetStage(work, source, metadata, live).also { values[metadata] = it }
+    }
+    fun pin(stage: LanSyncGroupTargetStage) { require(values[stage.metadata] === stage); pinned += stage.metadata }
+    fun discard(stage: LanSyncGroupTargetStage) {
+        if (stage.metadata !in pinned && values[stage.metadata] === stage) { values.remove(stage.metadata); stage.close() }
+    }
+    override fun close() {
+        var failure: Throwable? = null
+        for (stage in values.values.toList().asReversed()) try { stage.close() }
+        catch (error: Throwable) { if (failure == null) failure = error else failure.addSuppressed(error) }
+        values.clear(); pinned.clear(); checkedRaw.clear()
+        failure?.let { throw it }
+    }
 }
 
 internal fun lanSyncTargetStage(work: Path, source: CiphertextStore, metadata: CiphertextObjectMetadata,
