@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 import zipfile
 
@@ -38,7 +39,8 @@ def build(image, destination, version, commit, installer_version, lan_sync_previ
         '资料目录与程序目录分开。若需移动数据请使用应用内的数据目录迁移功能。\n'
         '本包是独立使用入口，不提供应用内自动安装重启或损坏程序修复。\n')
     if lan_sync_preview:
-        if not version.startswith('0.1.0-lan.'):
+        series = re.fullmatch(r'0\.1\.0-lan\.([1-9][0-9]*)', version)
+        if series is None:
             raise ValueError('LAN_PREVIEW_VERSION_REQUIRED')
         guide = ('CCB 局域网独立预览 ' + version + '\n\n'
             '完整解压到新的本机目录，双击“启动独立资料版.cmd”。不要直接运行 Program 内的 EXE。\n'
@@ -48,6 +50,19 @@ def build(image, destination, version, commit, installer_version, lan_sync_previ
             '可先在一端点“载入离线验收样例”，同步后打开会话，编辑样例消息并再次同步；无需密钥或付费生成。\n'
             '同步时无需手工导出、搬运或选择备份。具体冲突在电脑逐项选择，未支持的数据不参与删除。\n'
             '这是独立资料预览，不代表官方安卓已支持，也未接管原版手机资料。\n')
+        if int(series.group(1)) >= 5:
+            guide = ('CCB 设备组独立预览 ' + version + '\n\n'
+                '完整解压到新的本机目录，双击“启动独立资料版.cmd”。不要直接运行 Program 内的 EXE。\n'
+                '本入口使用旁边的 UserData，保留日常版资料；本包不连接公开更新通道。保留既有预览的完整 UserData，升级时不要覆盖或清空它。\n'
+                '电脑：数据 → 局域网同步。安卓独立预览：管理 → 局域网同步，进入设备组同步。\n'
+                '首次只在一台设备创建新设备组，妥善保存恢复码并完成创建；其他设备扫描或粘贴已有组的短时邀请。\n'
+                '在已有设备核对新设备身份并确认加入。管理锁定时需临时输入恢复码；页面关闭会清除临时管理信息。\n'
+                '加入完成后可离开同步页面，在应用内编辑资料。电脑需保持程序运行；安卓请查看同步保护状态和通知，不能保证被系统结束后仍在线。\n'
+                '两端在同一局域网时检查已加入设备和同步状态。手机通知或同步页可停止设备组同步，停止后需明确恢复，普通切回应用不会取消暂停。\n'
+                '新增或普通修改会自动检查。删除、覆盖缩减和冲突请打开待审阅项，核对冻结详情后确认；未确认的删除继续保留。\n'
+                '“本机保全与恢复”可浏览已保全内容，先准备恢复目标，再核对并确认；保留两端原始资料与 UserData。\n'
+                '本候选的网盘送达仍待后续接入与验证；本机副本记录不代表其他设备或网盘已收到。\n'
+                '这是独立资料预览，不接管日常版或原版手机资料；具体增量验收以随包交付记录为准。\n')
     with zipfile.ZipFile(destination, 'x', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for item in report['files']:
             source = image / item['path']
