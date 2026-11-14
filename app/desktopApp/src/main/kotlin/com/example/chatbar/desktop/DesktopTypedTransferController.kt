@@ -247,7 +247,7 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun importFormat(path: Path) = runOperation(null, writing = true) {
-        val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { formatTransfers.decode(Files.readString(path, Charsets.UTF_8)) }
+        val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { formatTransfers.decode(DesktopTypedImportBytes.text(path)) }
         importFormatPackage(packageData)
     }
 
@@ -266,7 +266,7 @@ internal class DesktopTypedTransferController(
 
     suspend fun importWorldBook(path: Path) = runOperation(null, writing = true) {
         val fallback = path.fileName.toString().substringBeforeLast('.').ifBlank { "导入世界书" }
-        val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback) }
+        val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { worldBookTransfers.decode(DesktopTypedImportBytes.text(path), fallback) }
         importWorldPackage(packageData)
     }
 
@@ -728,7 +728,7 @@ internal class DesktopTypedTransferController(
     }
 
     private fun decodeCharacter(path: Path): CharacterCardImportRequest {
-        val bytes = Files.readAllBytes(path)
+        val bytes = DesktopTypedImportBytes.read(path)
         if (PngTextChunks.isPng(bytes)) {
             characterTransfers.decodePng(bytes)?.let { return CharacterCardImportRequest(it) }
             val stJson = SillyTavernCardParser.extractCharaChunk(bytes)

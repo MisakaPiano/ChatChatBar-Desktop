@@ -56,7 +56,7 @@ internal class DesktopModelTemplateTransferController(
         try {
             mutableState.value = mutableState.value.copy(busy = true, error = null, status = null,
                 pendingTargetId = null, deliveryError = null)
-            val raw = withContext(Dispatchers.IO) { Files.readString(path, Charsets.UTF_8) }
+            val raw = withContext(Dispatchers.IO) { DesktopTypedImportBytes.text(path) }
             importModel(templates.decode(raw))
         } catch (cancelled: CancellationException) { throw cancelled
         } catch (error: Exception) {

@@ -30,6 +30,19 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertContentEquals
 
 class DesktopTypedTransferControllerTest {
+    @Test fun `management picker refuses archive content before character decode without committing`() = runTest {
+        withFixture { f ->
+            val before = f.container.characterRepository.getAll()
+            val bytes = com.example.chatbar.desktop.backup.AppBackupCodec.magic + byteArrayOf(1, 2, 3)
+            val backup = f.write("misleading.png", bytes)
+            f.picker.opens.add(backup)
+            f.controller.chooseAndImportCharacter()
+            assertFalse(f.controller.state.value.busy)
+            assertTrue(f.controller.state.value.error.orEmpty().contains("数据 → 备份与导入"))
+            assertEquals(before, f.container.characterRepository.getAll())
+            assertContentEquals(bytes, Files.readAllBytes(backup))
+        }
+    }
     @Test fun `community imports share original conflicts and only an explicit same-source update can replace a read-only card`() = runTest {
         withFixture { f ->
             val data = packageData("Community card")
