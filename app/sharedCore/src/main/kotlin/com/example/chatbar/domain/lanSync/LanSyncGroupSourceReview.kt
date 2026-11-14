@@ -9,7 +9,8 @@ data class LanSyncGroupSourceUnitReview(val unit: String, val binding: String, v
     val impact: Map<SyncVersionRef, List<LanSyncRecordImpact>>, val records: LanSyncGroupRecordGate,
     val dependencies: Set<String>, val needsConfirmation: Boolean)
 class LanSyncGroupSourceAuthorization internal constructor(val native: LanSyncGroupNativePlan,
-    val units: Map<String, LanSyncGroupSourceUnitReview>, val binding: String)
+    val units: Map<String, LanSyncGroupSourceUnitReview>, val binding: String,
+    internal val resolution: LanSyncGroupResolvedLocalApproval? = null)
 
 /** Frozen review of actual signed before-bodies; hashes alone never become invented ancestor text. */
 class LanSyncGroupSourceReview private constructor(private val native: LanSyncGroupNativePlan,
@@ -20,6 +21,19 @@ class LanSyncGroupSourceReview private constructor(private val native: LanSyncGr
         require(units.values.all { it.dependencies.isEmpty() }) { "SYNC_GROUP_SOURCE_DEPENDENCY_REVIEW_REQUIRED" }
         require(confirmations == requiredBindings) { "SYNC_GROUP_SOURCE_CONFIRMATION_REQUIRED" }
         return LanSyncGroupSourceAuthorization(native, units, binding)
+    }
+    /** Bridge only a verified installed decision to a real freshly captured source review. */
+    internal fun authorizeResolved(approval: LanSyncGroupResolvedLocalApproval): LanSyncGroupSourceAuthorization {
+        require(native.checkpoint == approval.checkpoint && native.heads == approval.heads && native.expected == approval.targetHashes &&
+            native.sourceFiles == approval.postFiles && native.appliedBefore == approval.appliedBefore && units.keys == approval.resolvedUnits &&
+            units.keys == approval.previous.keys && units.keys.all { unit ->
+                native.units.getValue(unit).frontiers.map { it.version }.toSet() == approval.previous.getValue(unit)
+            }) { "SYNC_GROUP_RESOLUTION_SOURCE_REVIEW_CHANGED" }
+        val actual = authorize(requiredBindings)
+        val bound = lanSyncHash(buildJsonObject {
+            put("review", actual.binding); put("resolution", approval.binding); put("operation", approval.revision)
+        })
+        return LanSyncGroupSourceAuthorization(native, actual.units, bound, approval)
     }
     companion object {
         fun prepare(native: LanSyncGroupNativePlan, reconciled: SyncInboxReconciliation, selected: Set<String>,

@@ -28,7 +28,7 @@ object LanSyncGroupNativePlanner {
     fun prepare(current: LanSyncCapture, reconciled: SyncInboxReconciliation,
         applied: Map<String, LanSyncGroupAppliedUnit>, dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>,
         recordEvidence: LanSyncGroupRecordEvidence, freshLocalRevisions: Set<String> = emptySet(),
-        transaction: String = UUID.randomUUID().toString()): LanSyncGroupNativePlan {
+        transaction: String = UUID.randomUUID().toString(), unpublishedLocalUnits: Set<String> = emptySet()): LanSyncGroupNativePlan {
         val source = current.snapshot.let { it.copy(records = Collections.unmodifiableList(it.records.toList()),
             resources = Collections.unmodifiableMap(it.resources.toMap()), coveredTypes = Collections.unmodifiableSet(it.coveredTypes.toSet()),
             excludedTypes = Collections.unmodifiableSet(it.excludedTypes.toSet())) }
@@ -37,7 +37,8 @@ object LanSyncGroupNativePlanner {
         val history = reconciled.history.snapshot(); val checkpoint = reconciled.ledgerCheckpoint
         recordEvidence.requireView(history, checkpoint)
         val localUnits = source.units(); val hashes = source.hashes(); val versions = history.admittedVersions().associateBy { it.reference() }
-        val allUnits = (localUnits.keys + applied.keys + versions.values.flatMap { it.changes.keys }).toSortedSet()
+        require(unpublishedLocalUnits.all { it.length in 1..600 }) { "SYNC_GROUP_LOCAL_REVISION_UNIT" }
+        val allUnits = (localUnits.keys + applied.keys + versions.values.flatMap { it.changes.keys } + unpublishedLocalUnits).toSortedSet()
         require(freshLocalRevisions.all { it in allUnits }) { "SYNC_GROUP_LOCAL_REVISION_UNIT" }
         applied.forEach { (unit, state) ->
             require(unit.length in 1..600 && state.frontiers.all { reference ->
@@ -165,7 +166,7 @@ object LanSyncGroupNativePlanner {
         val snapshot = native.before.copy(records = Collections.unmodifiableList(rows), resources = Collections.unmodifiableMap(
             (native.before.resources + native.plan.snapshot.resources).filterKeys(references::contains)))
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
-        val units = native.units.mapValues { (unit, row) -> if (unit in blocked)
+        val units = native.units.mapValues { (unit, row) -> if (unit in blocked && row.stage != LanSyncGroupNativeStage.UNCHANGED)
             row.copy(stage = LanSyncGroupNativeStage.DEPENDENCY_HELD, code = "SYNC_GROUP_RESOLUTION_HELD") else row }
         return LanSyncGroupNativePlan(native.before, native.plan.copy(snapshot = snapshot), native.checkpoint, native.heads,
             native.expected, native.sourceFiles, Collections.unmodifiableMap(units), native.appliedBefore,

@@ -379,6 +379,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     fun applied(transaction: String): Boolean = Files.exists(stateRoot.resolve("transaction-$transaction/applied"), LinkOption.NOFOLLOW_LINKS)
+    internal fun authorized(transaction: String): Boolean {
+        require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
+        return Files.exists(stateRoot.resolve("transaction-$transaction/authorized"), LinkOption.NOFOLLOW_LINKS)
+    }
 
     /** Exact post-apply raw manifest, derived from authorized WAL rather than a later mutable capture. */
     internal fun appliedSourceFiles(transactionId: String, before: Map<String, String>): Map<String, String>? {

@@ -6,6 +6,7 @@ import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.util.Base64
 import java.util.Collections
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -15,9 +16,17 @@ import kotlinx.coroutines.withContext
 enum class LanSyncGroupNodeStage { READY, WAITING_FOR_KEY, DEVICE_REVOKED, TRUST_BLOCKED }
 class LanSyncGroupNodeView internal constructor(val stage: LanSyncGroupNodeStage, val reconciliation: SyncInboxReconciliation,
     val nativeState: LanSyncGroupNativeState, val plan: LanSyncGroupNativePlan?, val unsignedPreparations: Set<SyncStoreId>,
-    private val dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>, private val evidence: LanSyncGroupRecordEvidence?) {
-    fun review(selected: Set<String>): LanSyncGroupSourceReview = LanSyncGroupSourceReview.prepare(
+    private val dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>, private val evidence: LanSyncGroupRecordEvidence?,
+    val resolutions: List<LanSyncGroupResolutionLocalState> = emptyList(), val reservedUnits: Set<String> = emptySet()) {
+    fun review(selected: Set<String>): LanSyncGroupSourceReview {
+        require(selected.intersect(reservedUnits).isEmpty()) { "SYNC_GROUP_RESOLUTION_RESERVED" }
+        return sourceReview(selected)
+    }
+    internal fun sourceReview(selected: Set<String>) = LanSyncGroupSourceReview.prepare(
         requireNotNull(plan) { "SYNC_GROUP_NODE_NOT_READY" }, reconciliation, selected, dependencies, requireNotNull(evidence))
+    internal fun resolution(capture: LanSyncCapture, choices: Map<String, LanSyncGroupResolutionChoice>, operation: String) =
+        LanSyncGroupResolution.prepare(requireNotNull(plan) { "SYNC_GROUP_NODE_NOT_READY" }, capture, reconciliation,
+            dependencies, requireNotNull(evidence), choices, operation)
 }
 
 /**
@@ -33,6 +42,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private val operation = Mutex()
     private var current: SyncInboxReconciliation? = null
     private var pendingRestorations: Map<String, Set<String>> = emptyMap()
+    private var pendingResolutions: Set<String> = emptySet()
+    private var heldResolutions: Set<String> = emptySet()
     private val localVersions = linkedMapOf<SyncStoreId, SyncAuthenticatedGroupObject>()
     private val actorCertificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
     private fun directory(name: String): Path = root.resolve(name).also {
@@ -42,14 +53,16 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
     private val inboxRoot = directory("inbox"); private val work = directory("preparations"); private val queueRoot = directory("queues")
     private val authorRoot = directory("author"); private val nativeRoot = directory("native")
-    private val author = SyncAuthorJournal(authorRoot, trust, actorCertificate, protect, unprotect)
+    private val author = SyncAuthorJournal(authorRoot, trust, actorCertificate, protect, unprotect, observe)
     private val native = LanSyncGroupNativeApplyOwner(nativeRoot, workspace, trust, actorCertificate, projection,
         { custody.ledger() }, ::currentView, protect, unprotect, observe, author)
+    private val resolutions = LanSyncGroupResolutionOwner(directory("resolutions"), workspace, trust, actorCertificate, projection,
+        custody::ledger, ::currentView, native::state, author, protect, unprotect, observe)
     private val writer = LanSyncGroupSourceWriter(directory("source"), workspace, identity, author, { custody.ledger() }, custody::key,
         { epoch -> val path = queueRoot.resolve(epoch.value)
             if (!Files.exists(path, NOFOLLOW_LINKS)) Files.createDirectory(path)
             SyncEncryptedOutbox(path, custody.key(epoch)) }, ::currentView, native::state, projection, observe,
-        restorationRevisions = { pendingRestorations })
+        restorationRevisions = { pendingRestorations }, resolutionReservations = { pendingResolutions + heldResolutions })
     init { require(identity.fingerprint == recipient.device && trust.group == custody.trust().group) { "SYNC_GROUP_NODE_IDENTITY" } }
     private fun currentView() = requireNotNull(current) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
@@ -65,6 +78,9 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 val state = native.resumeNewEnrollment()
                 require(state.completedSequence == 0L && state.pendingTransaction == null && state.units.isEmpty()) { "SYNC_GROUP_NODE_ALREADY_USED" }
             } else native.initializeNewEnrollment()
+            if (Files.exists(root.resolve("resolutions/state.protected"), NOFOLLOW_LINKS)) {
+                require(resolutions.state().isEmpty()) { "SYNC_GROUP_NODE_ALREADY_USED" }
+            } else resolutions.initializeNewEnrollment()
         }
     }
 
@@ -80,6 +96,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         var state = exclusive {
             val before = native.state(); val recovered = native.recover(); author.state()
             if (before.pendingTransaction != null) reload()
+            val sessions = resolutions.recover()
+            if (resolutions.needsReload()) { reload(sessions); resolutions.acknowledgeReload() }
             recovered
         }
         fun held(stage: LanSyncGroupNodeStage) = LanSyncGroupNodeView(stage, currentView(), state, null, emptySet(), emptyMap(), null)
@@ -92,6 +110,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         }
         val unsigned = recoverSources()
         refreshRestorations()
+        refreshResolutions()
         state = exclusive { native.state() }
         val view = currentView(); val history = requireNotNull(view.history) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
         val evidence = LanSyncGroupRecordEvidence(history, requireNotNull(view.ledgerCheckpoint))
@@ -116,13 +135,16 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             service.inspect(view, actual, request.unit)
         }
         val plan = exclusive { workspace.capture(identity.fingerprint, projection).use {
-            val known = it.snapshot.units().keys + state.units.keys + history.admittedVersions().flatMap { version -> version.changes.keys }
+            val known = it.snapshot.units().keys + state.units.keys + history.admittedVersions().flatMap { version -> version.changes.keys } + pendingResolutions
             LanSyncGroupNativePlanner.prepare(it, view, state.units, dependencies, evidence,
-                freshLocalRevisions() + pendingRestorations.keys.filter { unit -> unit in known })
+                freshLocalRevisions() + (pendingRestorations.keys + pendingResolutions).filter { unit -> unit in known },
+                unpublishedLocalUnits = pendingResolutions)
         } }
+        val restricted = LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)
         observe("NATIVE_PLAN_READY")
-        return LanSyncGroupNodeView(LanSyncGroupNodeStage.READY, view, state, plan, Collections.unmodifiableSet(unsigned),
-            Collections.unmodifiableMap(dependencies), evidence)
+        return LanSyncGroupNodeView(LanSyncGroupNodeStage.READY, view, state, restricted, Collections.unmodifiableSet(unsigned),
+            Collections.unmodifiableMap(dependencies), evidence, exclusive { resolutions.state() },
+            Collections.unmodifiableSet((pendingResolutions + heldResolutions).toSet()))
     }
 
     /** Dense author order, never random preparation-filename order or a reset counter. */
@@ -150,8 +172,38 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     suspend fun commit(review: LanSyncGroupSourceReview, confirmations: Map<String, String> = emptyMap(),
         operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupSourceCommit = serialized {
         refreshRestorations()
+        refreshResolutions()
         val commit = exclusive { writer.commit(review.authorize(confirmations), operation) }
         remember(commit); exclusive { native.recordSource(commit) }; commit
+    }
+    suspend fun prepareResolution(choices: Map<String, LanSyncGroupResolutionChoice>, operation: String = UUID.randomUUID().toString()): LanSyncGroupResolutionPreview = serialized {
+        val view = inspectOwned()
+        exclusive { workspace.capture(identity.fingerprint, projection).use { view.resolution(it, choices, operation) } }
+    }
+    /** Approved native adoption, fresh source validation, then one bound causal author operation. */
+    suspend fun resolve(candidate: LanSyncGroupResolvedCandidate): LanSyncGroupSourceCommit? = serialized {
+        inspectOwned()
+        val revision = candidate.preview.operation; val operation = SyncStoreId.parse(revision.replace("-", ""))
+        val adopted = try { exclusive { resolutions.adopt(candidate, writer.acknowledgedResolutions()) } }
+        catch (failure: Throwable) {
+            try { exclusive {
+                workspace.recover()
+                if (workspace.applied(revision)) reload(candidate.preview.units.values.flatMap { it.current }
+                    .filter { it.type == "chat_sessions" }.mapTo(linkedSetOf()) { it.id })
+            } } catch (recovery: Throwable) { failure.addSuppressed(recovery) }
+            throw failure
+        }
+        val after = inspectOwned()
+        if (adopted.resolvedUnits.isEmpty()) return@serialized null
+        val commit = exclusive {
+            val approved = author.entry(operation) != null || author.state().pendingApproved?.request?.operation == operation
+            if (approved) writer.resumeResolved(operation, revision, resolutions.decisionBinding(revision))
+            else {
+                val approval = resolutions.approval(revision)
+                writer.commitResolvedLocal(after.sourceReview(approval.resolvedUnits).authorizeResolved(approval), operation)
+            }
+        }
+        remember(commit); exclusive { native.recordSource(commit) }; refreshResolutions(); commit
     }
 
     suspend fun prepareRecovery(transaction: String, unit: String): LanSyncRestorePreview = serialized {
@@ -178,11 +230,16 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         }
         pendingRestorations = pending.mapValues { Collections.unmodifiableSet(it.value.toSet()) }
     }
+    private suspend fun refreshResolutions() = exclusive {
+        pendingResolutions = resolutions.reservations(writer.acknowledgedResolutions())
+        heldResolutions = resolutions.holds()
+    }
 
     suspend fun apply(plan: LanSyncGroupNativePlan): LanSyncGroupNativeApplyReceipt? = serialized {
         current = inbox().reconcile(localVersions.values)
+        refreshResolutions()
         exclusive {
-            native.apply(plan).also { if (it?.status == LanSyncGroupNativeApplyStatus.APPLIED)
+            native.apply(LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)).also { if (it?.status == LanSyncGroupNativeApplyStatus.APPLIED)
                 reload(plan.before.records.filter { record -> record.type == "chat_sessions" }.mapTo(linkedSetOf()) { record -> record.id }) }
         }
     }

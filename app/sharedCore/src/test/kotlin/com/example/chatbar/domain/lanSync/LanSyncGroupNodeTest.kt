@@ -12,7 +12,7 @@ import kotlin.test.*
 
 /** Three actual native roots with real signatures/HPKE/AEAD and synthetic protection/file transport. */
 class LanSyncGroupNodeTest {
-    private class Group(val root: Path) {
+    internal class Group(val root: Path) {
         val identities = List(3) { LanSyncTlsIdentity.create() }
         val recipients = identities.map { SyncDeviceEncryptionKey.create(it.fingerprint) }
         val cipher = SyncStreamingCipher.create()
@@ -27,9 +27,13 @@ class LanSyncGroupNodeTest {
         inner class End(val index: Int) {
             val base = Files.createDirectory(root.resolve("node-$index")); val data = Files.createDirectory(base.resolve("data"))
             val runtime = Files.createDirectory(base.resolve("runtime")); val custodyRoot = Files.createDirectory(base.resolve("custody"))
-            val workspace = LanSyncWorkspace(data, Files.createDirectory(base.resolve("workspace")), { Path.of(it) })
+            var journalHook: (String, Int) -> Unit = { _, _ -> }
+            val workspace = LanSyncWorkspace(data, Files.createDirectory(base.resolve("workspace")), { Path.of(it) },
+                observeJournal = { stage, index -> journalHook(stage, index) })
             var gated = false; var reloads = 0; var hook: (String) -> Unit = {}
             fun custody() = SyncGroupCustody(custodyRoot, cipher.group, recipients[index], { it.reversedArray() }, { it.reversedArray() })
+            fun author() = SyncAuthorJournal(runtime.resolve("author"), trust,
+                Base64.getEncoder().encodeToString(identities[index].certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
             val platform = object : LanSyncPlatform {
                 override suspend fun exclusive(work: suspend () -> Unit) {
                     check(!gated); gated = true
