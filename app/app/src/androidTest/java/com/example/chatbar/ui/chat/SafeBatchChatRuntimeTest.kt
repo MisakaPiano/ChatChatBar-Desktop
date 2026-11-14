@@ -109,8 +109,8 @@ class SafeBatchChatRuntimeTest {
             val card = CharacterCard.create("Synthetic batch runtime ${UUID.randomUUID()}")
             val session = ChatSession.create(card.id, "Synthetic manual batch").copy(imageModelId = model.id,
                 modelId = model.id, novelAiImageModel = NovelAiImageModel.V4_5_FULL, longTermMemoryEnabled = false, automaticImageGenerationEnabled = false)
-            val anchor = ChatMessage.create(session.id, MessageRole.ASSISTANT, "Synthetic assistant anchor")
-            val later = ChatMessage.create(session.id, MessageRole.USER, "Synthetic later text")
+            val anchor = ChatMessage.create(session.id, MessageRole.ASSISTANT, "Synthetic assistant anchor", orderKey = MESSAGE_ORDER_STEP)
+            val later = ChatMessage.create(session.id, MessageRole.USER, "Synthetic later text", orderKey = 10 * MESSAGE_ORDER_STEP)
             runBlocking { app.modelRepository.saveModel(model); app.characterRepository.save(card); app.chatRepository.createSession(session)
                 app.chatRepository.addMessage(anchor); app.chatRepository.addMessage(later) }
             val planner = object : NovelAiTagSearchPlanner {

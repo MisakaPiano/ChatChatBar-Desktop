@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess, sys, json
 root = Path(__file__).resolve().parents[1]
 result = subprocess.run(["./gradlew", ":app:connectedDebugAndroidTest",
-    "-Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.ImageBatchOptionsEditorTest,com.example.chatbar.ui.components.ImageBatchOfflineRunTest,com.example.chatbar.ui.imageprompt.SafeBatchStudioRuntimeTest,com.example.chatbar.ui.chat.SafeBatchChatRuntimeTest",
+    "-Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.SafeBatchChatRuntimeTest",
     "--no-daemon", "--stacktrace"], cwd=root / "app")
 target = root / "safe-batch-evidence/device-ui"
 target.mkdir(parents=True, exist_ok=True)

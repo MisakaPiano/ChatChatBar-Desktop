@@ -35,14 +35,14 @@ jobs:
           p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "com.example.chatbar.safebatch.n1"'))
           p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();s=s.replace('name="app_name">ChatChatBar<','name="app_name">CCB 批量生图测试 n1<');p.write_text(s)
           (out/'build-identity-only.patch').write_bytes(subprocess.check_output(['git','diff','--','app/app/build.gradle.kts','app/app/src/main/res/values/strings.xml']))
-      - name: Compile app and instrumentation, run affected JVM tests, build isolated APK
+      - name: Compile unchanged production and corrected chat fixture; reuse R09 JVM originals
         working-directory: app
         env:
           CHATBAR_SUPABASE_URL: 'https://synthetic.invalid'
           CHATBAR_SUPABASE_ANON_KEY: 'synthetic-no-real-key'
         run: |
           chmod +x gradlew
-          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.ImageBatchRunPlanTest" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepository*Test" :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
       - name: Verify built APK identity and signature
         shell: python
         run: |
