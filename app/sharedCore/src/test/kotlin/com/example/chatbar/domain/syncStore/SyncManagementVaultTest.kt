@@ -27,7 +27,7 @@ class SyncManagementVaultTest {
         original.close(); assertFalse(original.isUnlocked)
         val recovered = SyncManagementSession.open(code, blob.bytes())
         try {
-            assertEquals(owner, recovered.ownerCertificate); assertEquals(recipient, recovered.recipientPublicKey)
+            assertEquals(owner, recovered.ownerCertificate); assertEquals(recipient.encoded, recovered.recipientPublicKey.encoded)
             assertEquals(trust, recovered.trust); assertEquals(code, recovered.recoveryCode())
             assertContentEquals(blob.bytes(), recovered.seal(trust).bytes())
             assertContentEquals("synthetic approved intent".toByteArray(), recovered.unprotectJournal(pendingJournal))
