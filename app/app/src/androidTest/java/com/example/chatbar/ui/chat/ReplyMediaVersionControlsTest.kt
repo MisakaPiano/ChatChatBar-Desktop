@@ -50,6 +50,21 @@ class ReplyMediaVersionControlsTest {
         rule.onNodeWithText("›").performClick()
         rule.runOnIdle { assertEquals("second.png", state.value.imagePath) }
     }
+    @Test fun actualReplyButtonsAcceptMultipleAndDuplicateChoicesWithoutGeneration() {
+        val selected = mutableListOf<String>()
+        val source = ChatMessage("choices", "s", MessageRole.ASSISTANT,
+            "已经发生的正文。\n---\n【行动选项】\n1. 靠近窗边\n2. 留在原地\n---",
+            createdAt = 1, updatedAt = 1)
+        rule.setContent { ChatBarTheme {
+            com.example.chatbar.ui.components.ChatBubble(source, assistantSegmentedBubblesEnabled = false,
+                onActionOption = { selected += it }, onGenerateImage = { error("Choice must never generate") })
+        } }
+        rule.onNodeWithText("1. 靠近窗边").performClick()
+        rule.onNodeWithText("2. 留在原地").performClick().performClick()
+        rule.runOnIdle { assertEquals(listOf("靠近窗边", "留在原地", "留在原地"), selected) }
+        capture("action-option-buttons.png")
+    }
+
     private fun capture(name: String) {
         rule.waitForIdle()
         val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()

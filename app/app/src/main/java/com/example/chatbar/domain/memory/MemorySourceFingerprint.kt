@@ -72,7 +72,8 @@ object MemorySourceFingerprint {
         })
     }
 
-    fun modelFacingBody(message: ChatMessage): String = message.displayContent.ifBlank {
+    fun modelFacingBody(message: ChatMessage): String = (if (message.role == com.example.chatbar.data.local.entity.MessageRole.ASSISTANT)
+        com.example.chatbar.domain.chat.ActionOptionPolicy.strip(message.displayContent) else message.displayContent).ifBlank {
         if (message.images.isNotEmpty()) "[图片]" else "（空）"
     }
 

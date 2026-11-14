@@ -106,3 +106,5 @@ After NAI prompt-flow code changes:
 - Run `.\gradlew.bat :app:compileDebugKotlin` from `app/`.
 - Run `.\gradlew.bat test` when prompt helpers, parsing, or generation decisions change.
 - Keep a request-shape test covering message roles before and after cleartext chat-template adaptation.
+
+- Chat-based contextForAnchor keeps the selected anchor, but projects out explicit unselected action choices before scene research/design. Stored messages and user-submitted chosen text remain unchanged; options-only anchors are unavailable rather than sent for image generation.

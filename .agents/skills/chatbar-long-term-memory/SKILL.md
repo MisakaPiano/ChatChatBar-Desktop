@@ -78,3 +78,5 @@ Use chatbar-prompt-pipeline when changing general prompt layering or final messa
 ## Stop Conditions
 
 Do not report completion while persisted compatibility, continuity checks, failure preservation, stale-source safety, and relevant tests remain unknown. Record untested real-model and device flows in handoff instead of claiming them complete.
+
+- New modelFacingBody and RAG assistant index input omit explicitly headed unselected action recommendations through ActionOptionPolicy. User actions and stored raw replies/fingerprints remain intact; this does not force regeneration of historical memory or existing indexes.

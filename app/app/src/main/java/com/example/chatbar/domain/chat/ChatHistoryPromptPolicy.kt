@@ -44,11 +44,8 @@ object ChatHistoryPromptPolicy {
             zone == ChatHistoryPromptZone.EARLIER_HISTORY &&
                 excludeAssistantStatusFromHistory &&
                 message.role == MessageRole.ASSISTANT
-        return if (shouldStripStatus) {
-            stripRoleplayStatusSegments(message.displayContent)
-        } else {
-            message.displayContent
-        }
+        val body = if (shouldStripStatus) stripRoleplayStatusSegments(message.displayContent) else message.displayContent
+        return if (message.role == MessageRole.ASSISTANT) ActionOptionPolicy.strip(body) else body
     }
 
     internal fun shouldIncludeFormatContinuityNotice(

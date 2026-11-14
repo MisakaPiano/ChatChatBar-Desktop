@@ -131,7 +131,7 @@ class BackupExportSelectionTest {
             id = sessionId, characterCardId = cardId, title = "备选保留离线验收", createdAt = 1, updatedAt = 1)))
         var reply = ChatMessage("version-review-reply", sessionId, MessageRole.ASSISTANT, "合成备选第1条", createdAt = 2, updatedAt = 2)
         repeat(25) { i -> reply = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.append(reply,
-            "合成备选第${i + 2}条：删除此版本不应影响其他版本。", "review-version-$i") }
+            "合成备选第${i + 2}条：删除此版本不应影响其他版本。\n---\n【行动选项】\n1. 靠近窗边\n2. 留在原地\n---", "review-version-$i") }
         write(root, "entities/chat_messages/${sessionId}_${reply.id}.json", backupJson.encodeToString(reply))
         val original = ChatMessage("version-review-repair", sessionId, MessageRole.ASSISTANT, "修复前的合成文本", createdAt = 3, updatedAt = 3)
         val repaired = com.example.chatbar.domain.chat.MessageFormatRepairPolicy.replaceCurrentDisplayContent(original,
