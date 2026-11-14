@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.net.InetAddress
 import java.net.Proxy
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,6 +15,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import okhttp3.Call
 import okhttp3.EventListener
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -237,19 +239,19 @@ class WebDavCiphertextStoreTest {
     }
 
     @Test fun httpIsExplicitlySyntheticAndRedirectsNeverForwardCredentials() = davFixture { f ->
-        assertFailsWith<IllegalArgumentException> { WebDavHttpTransport(f.server.url("/sync/"), f.client) }
+        assertFailsWith<IllegalArgumentException> { WebDavHttpTransport(f.url("/sync/"), f.client) }
         MockWebServer().use { other ->
             other.start()
             f.dav.overrideRequest = { MockResponse().setResponseCode(302).setHeader("Location", other.url("/capture")) }
             val marker = "Bearer synthetic-private-marker"
-            val transport = WebDavHttpTransport(f.server.url("/sync/"), f.client.newBuilder().followRedirects(true).build(),
+            val transport = WebDavHttpTransport(f.url("/sync/"), f.client.newBuilder().followRedirects(true).build(),
                 { marker }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
             val store = WebDavCiphertextStore(transport, f.work, f.route)
             val failure = assertFailsWith<CiphertextStoreException> {
                 store.metadata(CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()))
             }
             assertEquals(CiphertextStoreFailure.PERMISSION, failure.failure)
-            assertFalse(failure.toString().contains(marker)); assertFalse(failure.toString().contains(f.server.url("/").toString()))
+            assertFalse(failure.toString().contains(marker)); assertFalse(failure.toString().contains(f.url("/").toString()))
             assertEquals(0, other.requestCount)
         }
     }
@@ -264,7 +266,7 @@ class WebDavCiphertextStoreTest {
             assertEquals(expected, failure.failure); assertFalse(failure.toString().contains("private-body"))
         }
         val before = f.server.requestCount
-        val transport = WebDavHttpTransport(f.server.url("/sync/"), f.client, { "Bearer private\r\nheader" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+        val transport = WebDavHttpTransport(f.url("/sync/"), f.client, { "Bearer private\r\nheader" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
         davFailure(CiphertextStoreFailure.AUTHENTICATION) { WebDavCiphertextStore(transport, f.work, f.route).metadata(key) }
         assertEquals(before, f.server.requestCount)
     }
@@ -272,7 +274,7 @@ class WebDavCiphertextStoreTest {
 
 internal class DavFixture(val root: Path) : AutoCloseable {
     val dav = SyntheticDav()
-    val server = MockWebServer().apply { dispatcher = dav; start() }
+    val server = MockWebServer().apply { dispatcher = dav; start(InetAddress.getByName("127.0.0.1"), 0) }
     val receivedGetBytes = AtomicLong()
     val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(5, TimeUnit.SECONDS)
         .eventListener(object : EventListener() {
@@ -282,9 +284,10 @@ internal class DavFixture(val root: Path) : AutoCloseable {
         }).build()
     val route = SyncStoreId.random()
     val work = Files.createDirectory(root.resolve("dav-work"))
+    fun url(path: String): HttpUrl = server.url(path).newBuilder().host("127.0.0.1").build()
     fun store(privateRoot: Path = work, support: WebDavWriteSupport = WebDavWriteSupport.VERIFIED_CONDITIONAL_CREATE,
         budget: WebDavIoBudget = WebDavIoBudget()): WebDavCiphertextStore = WebDavCiphertextStore(
-        WebDavHttpTransport(server.url("/sync/"), client, { "Bearer synthetic-only" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP),
+        WebDavHttpTransport(url("/sync/"), client, { "Bearer synthetic-only" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP),
         privateRoot, route, support, budget)
     override fun close() { server.close(); client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll() }
 }

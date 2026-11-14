@@ -105,7 +105,7 @@ class WebDavDiscoveryTest {
         davFailure(CiphertextStoreFailure.INVALID_CURSOR) { store.listCommits(CommitCursor("../outside")) }
         assertEquals(before, f.server.requestCount)
         val otherRoot = Files.createDirectory(f.root.resolve("other-route"))
-        val differentRoute = WebDavCiphertextStore(WebDavHttpTransport(f.server.url("/sync/"), f.client,
+        val differentRoute = WebDavCiphertextStore(WebDavHttpTransport(f.url("/sync/"), f.client,
             policy = WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP), otherRoot, SyncStoreId.random())
         davFailure(CiphertextStoreFailure.INVALID_CURSOR) { differentRoute.listCommits(cursor) }
         assertEquals(before, f.server.requestCount)
