@@ -46,7 +46,7 @@ internal fun LanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, selectedU
                     CbButton((if (primary[unit] == source) "✓ " else "") + "作为采用目标 · $label",
                         { primary[unit] = source }, enabled = !busy && !blocked && available, variant = ButtonVariant.Secondary)
                     CbButton((if (copies[unit] == source) "✓ " else "") + "作为第二份 · $label",
-                        { copies[unit] = source }, enabled = !busy && !blocked && available && records.isNotEmpty() && records.none { it.singleton }, variant = ButtonVariant.Secondary)
+                        { copies[unit] = source }, enabled = !busy && !blocked && available && LanSyncGroupDisplay.canOfferCopy(records), variant = ButtonVariant.Secondary)
                 }
             }
         }

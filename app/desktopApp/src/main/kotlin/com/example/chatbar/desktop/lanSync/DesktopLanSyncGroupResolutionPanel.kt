@@ -42,7 +42,7 @@ internal fun DesktopLanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, se
                     DesktopGroupReviewButton((if (primary[unit] == source) "✓ " else "") + "作为采用目标 · $label",
                         { primary[unit] = source }, enabled = !busy && !blocked && available)
                     DesktopGroupReviewButton((if (copies[unit] == source) "✓ " else "") + "作为第二份 · $label",
-                        { copies[unit] = source }, enabled = !busy && !blocked && available && records.isNotEmpty() && records.none { it.singleton })
+                        { copies[unit] = source }, enabled = !busy && !blocked && available && LanSyncGroupDisplay.canOfferCopy(records))
                 }
             }
         }

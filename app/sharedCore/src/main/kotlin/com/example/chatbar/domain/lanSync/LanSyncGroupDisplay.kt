@@ -6,6 +6,8 @@ data class LanSyncGroupDisplayLabel(val title: String, val kind: String, val ide
 
 /** Presentation from frozen records only. Names never replace protocol identities or review bindings. */
 object LanSyncGroupDisplay {
+    /** Presentation eligibility only; the resolution owner still validates the complete copied graph. */
+    fun canOfferCopy(records: List<LanSyncRecord>): Boolean = records.isNotEmpty() && records.none { it.singleton }
     fun unit(unit: String, records: List<LanSyncRecord>): LanSyncGroupDisplayLabel {
         val kind = when (unit.substringBefore('/')) {
             "conversation" -> "会话"
