@@ -11,12 +11,13 @@ jobs:
     timeout-minutes: 50
     env:
       CHATBAR_VERSION_NAME: 1.4.12-versions-v1
+      VERSION_REVIEW_FIXTURE_DIR: ${{ github.workspace }}/version-review/fixtures
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: f336e7602d4d1ad8dbbc78191f5df03e93d940d5
+          ref: 65b71c0713ceb7c0e91b75513f99c03285937c81
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -52,7 +53,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest --no-daemon --stacktrace
+          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest --no-daemon --stacktrace && cd .. && adb pull /sdcard/Download/ccb-version-review version-review/ui
       - name: Verify APK identity and signature
         shell: python
         run: |
