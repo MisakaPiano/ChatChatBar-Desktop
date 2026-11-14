@@ -29,6 +29,19 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
+    @Test
+    fun `Gemini new preset uses official compatible endpoint without modifying saved models`() = runBlocking {
+        withFixture { fixture ->
+            val controller = fixture.controller
+            val before = fixture.container.modelRepository.getAllModels()
+            controller.startCreate()
+            controller.applyTemplate(com.example.chatbar.data.local.entity.ModelTemplate.GEMINI)
+            assertEquals(com.example.chatbar.domain.model.GeminiOpenAiEndpoint.BASE_URL, controller.state.value.editor?.baseUrl)
+            assertEquals("gemini-3.5-flash-lite", controller.state.value.editor?.modelName)
+            assertEquals(before, fixture.container.modelRepository.getAllModels())
+        }
+    }
+
     @Test fun `experimental protocol setting defaults off saves and participates in discard and dirty state`() = runBlocking {
         withFixture { fixture ->
             val controller = fixture.controller

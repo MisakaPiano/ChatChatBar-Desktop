@@ -13,6 +13,7 @@ import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.EffectiveModelConfiguration
 import com.example.chatbar.domain.model.ModelDiscoveryService
+import com.example.chatbar.domain.model.GeminiOpenAiEndpoint
 import com.example.chatbar.domain.model.resolveEffectiveModelApiKey
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
@@ -455,7 +456,7 @@ internal class DesktopModelSettingsController(
         val (url, name) = when (template) {
             ModelTemplate.OPENAI -> "https://api.openai.com/v1" to "gpt-4o-mini"
             ModelTemplate.CLAUDE -> "https://api.anthropic.com/v1" to "claude-3-5-sonnet-latest"
-            ModelTemplate.GEMINI -> "https://generativelanguage.googleapis.com/v1beta" to "gemini-2.5-flash"
+            ModelTemplate.GEMINI -> GeminiOpenAiEndpoint.BASE_URL to "gemini-3.5-flash-lite"
             ModelTemplate.CUSTOM -> "" to ""
         }
         return copy(
