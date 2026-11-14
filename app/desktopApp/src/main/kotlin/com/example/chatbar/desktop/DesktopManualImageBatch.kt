@@ -14,8 +14,8 @@ internal suspend fun runDesktopManualImageBatch(
     estimate: suspend (Int, NovelAiAccountUsage) -> NovelAiGenerationCost,
     validateOwner: suspend () -> Unit,
     onProgress: (ImageBatchProgress) -> Unit,
-    generateAndSave: suspend (Int, NovelAiGenerationCost) -> Int,
     runner: ImageBatchRunner = ImageBatchRunner(),
+    generateAndSave: suspend (Int, NovelAiGenerationCost) -> Int,
 ): Int {
     require(credential.isNotBlank())
     val ledger = ManualImageAccountLedgers.forCredential(credential)

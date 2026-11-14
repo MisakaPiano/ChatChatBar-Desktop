@@ -210,7 +210,13 @@ internal class DesktopChatImageRegeneration(
 internal suspend fun persistDesktopChatImages(chats: ChatRepository, resources: DesktopCharacterResourceStore,
     coordinator: DesktopDataOperationCoordinator, original: ChatMessage, plan: NovelAiPromptPlan,
     size: NovelAiImageSize, bytes: List<ByteArray>, recipe: NovelAiGenerationRecipe,
-    eligible: suspend () -> Boolean, expectedCharacterCardId: String? = null): NovelAiGenerationHistoryEntry = coordinator.withExclusiveMaintenance {
+    eligible: suspend () -> Boolean): NovelAiGenerationHistoryEntry =
+    persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, eligible, null)
+
+internal suspend fun persistDesktopChatImages(chats: ChatRepository, resources: DesktopCharacterResourceStore,
+    coordinator: DesktopDataOperationCoordinator, original: ChatMessage, plan: NovelAiPromptPlan,
+    size: NovelAiImageSize, bytes: List<ByteArray>, recipe: NovelAiGenerationRecipe,
+    eligible: suspend () -> Boolean, expectedCharacterCardId: String?): NovelAiGenerationHistoryEntry = coordinator.withExclusiveMaintenance {
     withContext(NonCancellable + Dispatchers.IO) {
         require(eligible()) { "生图来源已更改，未发布结果" }
         val id = UUID.randomUUID().toString()
