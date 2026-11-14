@@ -2,6 +2,7 @@ package com.example.chatbar.domain.syncStore
 
 import com.example.chatbar.domain.lanSync.lanSyncJson
 import com.example.chatbar.domain.lanSync.lanSyncUtf8
+import com.example.chatbar.domain.lanSync.lanSyncHash
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -43,6 +44,9 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
         val kind: String, val payload: JsonElement)
     @Serializable private data class Head(val sequence: Long, val operation: SyncStoreId, val reference: SyncVersionRef)
     @Serializable private data class Index(val sequence: Long, val operation: SyncStoreId)
+    @Serializable private data class Observed(val afterOwnedSequence: Long, val before: SyncVersionRef,
+        val previous: String?, val records: List<SyncDeviceLedgerRecord>)
+    @Serializable private data class ObservedHead(val count: Long, val binding: String)
     private data class Loaded(val ledger: SyncDeviceLedger, val sequence: Long, val last: SyncRootLedgerEntry?, val pending: SyncRootLedgerEntry?)
     init {
         PrivateSyncFile.checked(root, true)
@@ -61,6 +65,22 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
     fun state(): SyncRootLedgerState = guarded { load().let {
         SyncRootLedgerState(it.sequence, it.last?.record?.reference(), it.pending?.request?.operation)
     } }
+    /** Already signed foreign root progress, never a membership decision, signature or key admission. */
+    fun observeAdmitted(live: SyncDeviceLedger): SyncRootLedgerState = guarded {
+        val loaded = load(); requireOwner(live)
+        require(loaded.pending == null) { "SYNC_ROOT_PENDING_APPROVED_ACTION" }
+        require(live.contains(loaded.ledger.current().reference())) { "SYNC_ROOT_OBSERVED_PREFIX_CHANGED" }
+        if (live.current().reference() != loaded.ledger.current().reference()) {
+            val count = inventory("observation"); require(count < Long.MAX_VALUE) { "SYNC_ROOT_SEQUENCE_EXHAUSTED" }
+            val previous = read(root.resolve("observed-head.protected"), "OBSERVED_HEAD", ObservedHead.serializer())
+            require(previous?.count == count || previous == null && count == 0L) { "SYNC_ROOT_OBSERVED_HEAD_CHANGED" }
+            val value = Observed(loaded.sequence, loaded.ledger.current().reference(), previous?.binding, live.history())
+            write(observationPath(count + 1), "OBSERVED", Observed.serializer(), value)
+            observe("ROOT_OBSERVED_PREFIX_RETAINED")
+            // load verifies the signed lineage and completes a lost head notification.
+        }
+        load().let { SyncRootLedgerState(it.sequence, it.last?.record?.reference(), it.pending?.request?.operation) }
+    }
     fun entry(operation: SyncStoreId): SyncRootLedgerEntry? = guarded {
         load(); val index = read(indexPath(operation), "INDEX", Index.serializer()) ?: return@guarded null
         require(index.operation == operation) { "SYNC_ROOT_INDEX" }
@@ -73,17 +93,18 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
         val loaded = load(); val authority = custody.ledger(); requireOwner(authority)
         val current = authority.current()
         require(loaded.ledger.contains(current.reference())) { "SYNC_ROOT_FOREIGN_LEDGER_PROGRESS" }
-        val missing = loaded.ledger.current().sequence - current.sequence
-        if (missing > 0L) {
-            val next = loaded.sequence - missing + 1
-            require(next in 1..loaded.sequence) { "SYNC_ROOT_ORIGIN_PREFIX_NOT_APPLIED" }
-            return@guarded requireNotNull(read(signedPath(next), "SIGNED", SyncRootLedgerEntry.serializer())) { "SYNC_ROOT_SIGNED_MISSING" }.request
+        var owned = 0L
+        while (owned < loaded.sequence) {
+            owned++
+            val entry = requireNotNull(read(signedPath(owned), "SIGNED", SyncRootLedgerEntry.serializer())) { "SYNC_ROOT_SIGNED_MISSING" }
+            if (!authority.contains(entry.record.reference())) return@guarded entry.request
         }
-        val owned = signedKeys(loaded.sequence).associateBy { it.record.epoch }
+        require(authority.contains(loaded.ledger.current().reference())) { "SYNC_ROOT_ORIGIN_PREFIX_NOT_APPLIED" }
+        val ownedKeys = signedKeys(loaded.sequence).associateBy { it.record.epoch }
         loaded.ledger.history().distinctBy { it.epoch }.forEach { row ->
             val actual = try { custody.key(row.epoch) } catch (failure: IllegalArgumentException) {
                 if (failure.message != "SYNC_GROUP_CUSTODY_KEY_MISSING") throw failure
-                return@guarded requireNotNull(owned[row.epoch]) { "SYNC_ROOT_ORIGIN_KEY_RECOVERY_REQUIRED" }.request
+                return@guarded requireNotNull(ownedKeys[row.epoch]) { "SYNC_ROOT_ORIGIN_KEY_RECOVERY_REQUIRED" }.request
             }
             require(actual.group == row.group && actual.epoch == row.epoch && actual.keyCommitment() == row.keyCommitment) { "SYNC_ROOT_RECOVERY_KEY_CHANGED" }
         }
@@ -185,6 +206,28 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
         val head = read(root.resolve("head.protected"), "HEAD", Head.serializer())
         require(head == null || head.sequence in 1..signed) { "SYNC_ROOT_HEAD_CHANGED" }
         var last: SyncRootLedgerEntry? = null; var pending: SyncRootLedgerEntry? = null; var sequence = 0L
+        val observedCount = inventory("observation")
+        val observedHead = read(root.resolve("observed-head.protected"), "OBSERVED_HEAD", ObservedHead.serializer())
+        require(observedHead == null || observedHead.count in 1..observedCount) { "SYNC_ROOT_OBSERVED_HEAD_CHANGED" }
+        var observedIndex = 0L; var observedDigest: String? = null; var nextObserved: Observed? = null
+        fun applyObserved(after: Long) {
+            while (observedIndex < observedCount) {
+                val item = nextObserved ?: requireNotNull(read(observationPath(observedIndex + 1), "OBSERVED", Observed.serializer())) { "SYNC_ROOT_OBSERVED_HISTORY_MISSING" }
+                nextObserved = item
+                require(item.afterOwnedSequence in after..signed && item.previous == observedDigest) { "SYNC_ROOT_OBSERVED_HISTORY_CHANGED" }
+                if (item.afterOwnedSequence != after) return
+                require(item.before == ledger.current().reference() && item.records.isNotEmpty()) { "SYNC_ROOT_OBSERVED_PREFIX_CHANGED" }
+                val candidate = SyncDeviceLedger(origin.trust).also { state -> item.records.forEach { state.offer(it) } }
+                require(candidate.history() == item.records && candidate.contains(item.before) && candidate.current().reference() != item.before) { "SYNC_ROOT_OBSERVED_PREFIX_CHANGED" }
+                require(candidate.current().members[actor.fingerprint]?.let { it.active && it.certificate == actor.encoded } == true) { "SYNC_ROOT_AUTHORITY_CHANGED" }
+                item.records.forEach { ledger.offer(it) }
+                require(ledger.history() == item.records) { "SYNC_ROOT_OBSERVED_PREFIX_CHANGED" }
+                observedIndex++; observedDigest = observedBinding(item)
+                if (observedHead?.count == observedIndex) require(observedHead.binding == observedDigest) { "SYNC_ROOT_OBSERVED_HEAD_CHANGED" }
+                nextObserved = null
+            }
+        }
+        applyObserved(0)
         while (sequence < intents) {
             sequence++
             val intent = requireIntent(sequence)
@@ -196,13 +239,23 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
                 require(ledger.offer(entry.record) == SyncVersionState.ADMITTED) { "SYNC_ROOT_LEDGER_REJECTED" }
                 if (head?.sequence == sequence) require(head.operation == entry.request.operation && head.reference == entry.record.reference()) { "SYNC_ROOT_HEAD_CHANGED" }
                 last = entry
+                applyObserved(sequence)
             } else { key(intent); pending = intent }
         }
         require(ledger.contains(trust.checkpoint)) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
+        require(observedIndex == observedCount && nextObserved == null) { "SYNC_ROOT_OBSERVED_HISTORY_CHANGED" }
+        if (observedCount > 0 && observedHead?.count != observedCount) write(root.resolve("observed-head.protected"), "OBSERVED_HEAD",
+            ObservedHead.serializer(), ObservedHead(observedCount, requireNotNull(observedDigest)), true)
         requireIndexCount(intents)
         if (last != null && head?.sequence != signed) advance(signed, last)
         return Loaded(ledger, signed, last, pending)
     }
+    private fun observedBinding(value: Observed): String = lanSyncHash(buildJsonObject {
+        put("after", value.afterOwnedSequence); put("beforeId", value.before.id.value); put("beforeHash", value.before.bodyHash)
+        put("previous", value.previous?.let(::JsonPrimitive) ?: JsonNull)
+        put("records", JsonArray(value.records.map { JsonPrimitive("${it.id.value}:${it.bodyHash()}") }))
+    })
+    private fun observationPath(sequence: Long) = root.resolve("observation-${sequence.toString().padStart(19, '0')}.protected")
     private fun requireIntent(sequence: Long) = requireNotNull(read(intentPath(sequence), "INTENT", SyncRootLedgerEntry.serializer())) {
         "SYNC_ROOT_INTENT_MISSING"
     }.also { entry ->

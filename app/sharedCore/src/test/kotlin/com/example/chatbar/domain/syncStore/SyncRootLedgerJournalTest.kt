@@ -164,6 +164,49 @@ class SyncRootLedgerJournalTest {
         assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { reopened.key(owned.entry.record.epoch) }.message)
         assertEquals(f.f.cipher.keyCommitment(), reopened.key(f.f.cipher.epoch).keyCommitment())
     }
+    @Test fun observingAnotherManagersSignedPrefixPreservesOriginsAndOwnedCountersBeforeTheNextExactRootAction() = withFixture { f ->
+        fun foreign() {
+            val current = f.custody().ledger().current()
+            val next = f.f.sign(current.copy(id = SyncStoreId.random(), parent = current.reference(), sequence = current.sequence + 1))
+            f.custody().update(listOf(next))
+        }
+        val origin = Files.readAllBytes(f.journalRoot.resolve("origin.protected"))
+        foreign(); f.journal().observeAdmitted(f.custody().ledger())
+        foreign(); f.journal().observeAdmitted(f.custody().ledger())
+        assertEquals(0L, f.journal().state().completedSequence)
+        val first = f.commit(f.request(revoke = false, rotate = false)); f.journal().applyToCustody(first, f.custody())
+        foreign()
+        assertEquals("SYNC_ROOT_PARENT_CHANGED", assertFailsWith<IllegalArgumentException> { f.commit(f.request(revoke = false, rotate = false)) }.message)
+        f.journal().observeAdmitted(f.custody().ledger())
+        assertEquals(1L, f.journal().state().completedSequence)
+        val second = f.commit(f.request(revoke = false, rotate = false)); f.journal().applyToCustody(second, f.custody())
+        assertEquals(6L, f.custody().ledger().current().sequence); assertEquals(2L, f.journal().state().completedSequence)
+        assertContentEquals(origin, Files.readAllBytes(f.journalRoot.resolve("origin.protected")))
+        val repeated = f.journal().commit(first.entry.request, { f.custody().ledger() }, SyncRootLedgerAdmission { error("NO_NEW_APPROVAL") }, { error("NO_NEW_SIGNATURE") })
+        assertEquals(first.entry, repeated.entry); assertNull(f.journal().nextRecoveryRequest(f.custody()))
+        f.journal().applyToCustody(repeated, f.custody())
+        assertEquals(second.entry.record, f.custody().ledger().current())
+    }
+    @Test fun observedPrefixReplyLossCompletesItsProtectedHeadButPendingActionsAndForksCannotBeSkipped() = withFixture { f ->
+        val current = f.custody().ledger().current()
+        val other = f.f.sign(current.copy(id = SyncStoreId.random(), parent = current.reference(), sequence = current.sequence + 1))
+        f.custody().update(listOf(other))
+        assertFailsWith<IOException> { f.journal { if (it == "ROOT_OBSERVED_PREFIX_RETAINED") throw IOException("SYNTHETIC_OBSERVED_REPLY_LOST") }.observeAdmitted(f.custody().ledger()) }
+        assertEquals(0L, f.journal().state().completedSequence)
+        f.journal().observeAdmitted(f.custody().ledger())
+        val branch = SyncDeviceLedger(f.f.ledger.trustAnchor).also {
+            it.offer(f.f.genesis); it.offer(f.f.sign(f.f.genesis.copy(id = SyncStoreId.random(), parent = f.f.genesis.reference(), sequence = 2)))
+        }
+        assertEquals("SYNC_ROOT_OBSERVED_PREFIX_CHANGED", assertFailsWith<IllegalArgumentException> { f.journal().observeAdmitted(branch) }.message)
+        val request = f.request()
+        assertFailsWith<IOException> { f.journal { if (it == "APPROVED_ROOT_INTENT_RETAINED") throw IOException("SYNTHETIC_PENDING_ROOT") }
+            .commit(request, { f.custody().ledger() }, SyncRootLedgerAdmission {}, { error("SIGNER_NOT_REACHED") }) }
+        assertEquals("SYNC_ROOT_PENDING_APPROVED_ACTION", assertFailsWith<IllegalArgumentException> { f.journal().observeAdmitted(f.custody().ledger()) }.message)
+        assertEquals(request.operation, f.journal().state().pendingOperation)
+        Files.delete(f.journalRoot.resolve("observation-0000000000000000001.protected"))
+        assertFailsWith<IllegalArgumentException> { f.journal().state() }
+        assertEquals(other, f.custody().ledger().current())
+    }
     @Test fun aMissingOriginEpochKeyReportsItsEnrollmentOwnerInsteadOfPretendingRecoveryIsComplete() = withFixture { f ->
         val path = f.custodyRoot.resolve("group.protected")
         val state = lanSyncJson.parseToJsonElement(Files.readAllBytes(path).reversedArray().toString(Charsets.UTF_8)).jsonObject

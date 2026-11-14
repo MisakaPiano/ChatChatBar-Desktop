@@ -154,6 +154,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     suspend fun revokeDevice(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupRevocationApproval): LanSyncGroupAdministrationReceipt = guarded {
         requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
         val preview = approval.preview; val heads = administrationHeads(record); val journal = rootJournal(record, session)
+        journal.observeAdmitted(custody.ledger())
         val commit = journal.commit(preview.request, custody::ledger, SyncRootLedgerAdmission { request ->
             val current = custody.ledger().current(); val member = current.members[preview.device]
             require(request == preview.request && heads == preview.heads && request.expectedParent == current.reference() &&
@@ -172,6 +173,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     suspend fun addMember(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupMemberApproval): LanSyncGroupAdministrationReceipt = guarded {
         requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
         val preview = approval.preview; val journal = rootJournal(record, session)
+        journal.observeAdmitted(custody.ledger())
         val commit = journal.commit(preview.request, custody::ledger, SyncRootLedgerAdmission { request ->
             require(request == preview.request) { "SYNC_GROUP_MEMBER_REVIEW_CHANGED" }
             preview.invitation.requireCurrent(preview.peer)
@@ -192,6 +194,8 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     suspend fun resumeAdministration(draft: LanSyncGroupEnrollmentDraft): LanSyncGroupAdministrationReceipt = guarded {
         requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
         val journal = rootJournal(record, session)
+        val state = journal.state(); val live = custody.ledger()
+        if (state.pendingOperation == null && (state.last == null || live.contains(state.last))) journal.observeAdmitted(live)
         var previous: SyncRootLedgerRequest? = null
         while (true) {
             val request = journal.nextRecoveryRequest(custody) ?: break
