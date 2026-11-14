@@ -401,6 +401,58 @@ class LanSyncGroupCloudRuntimeTest {
         }
     }
 
+    @Test fun aRateLimitedAssemblyGetCannotReuseHistoricalCompletionOrBypassItsFailureFloor() {
+        for ((status, retryAfter) in listOf(429 to null, 503 to null, 429 to "120")) fixture { f ->
+            WeakFixture(f.directory("assembly-backoff-provider")).use { provider ->
+                val id = f.add(provider)
+                val schedule = LanSyncGroupCloudSchedule(f.clock::get, { 0 })
+                val runtime = f.runtime(schedule)
+                assertTrue(runtime.cycle())
+                val observed = requireNotNull(f.latest().getValue(id).lastObservedAt)
+                val target = f.access.work.resolve("cloud-runtime/${id.value}/target")
+                val original = requireNotNull(f.access.targetPublication(target,
+                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).chunkReceipt())
+                val wakes = f.wakes.get()
+                val throttled = AtomicInteger(); val requestsAtResponse = AtomicInteger()
+                provider.dav.overrideRequest = { request ->
+                    if (request.method == "GET" && request.requestUrl!!.encodedPath.contains("/weak-assemblies-v1/commits/")) {
+                        throttled.incrementAndGet(); requestsAtResponse.set(provider.server.requestCount)
+                        MockResponse().setResponseCode(status).apply { if (retryAfter != null) setHeader("Retry-After", retryAfter) }
+                    } else null
+                }
+                // Explicit wake bypasses the old success idle interval, but never a failed-request floor.
+                assertFalse(runtime.cycle())
+                assertEquals(1, throttled.get())
+                assertEquals(wakes, f.wakes.get())
+                val requests = provider.server.requestCount
+                assertEquals(requestsAtResponse.get(), requests, "No further provider HTTP is allowed after this route is throttled")
+                val floor = if (retryAfter == null) 15_000L else 120_000L
+                assertEquals(floor, runtime.nextDelayMillis())
+                assertEquals(LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT, schedule.state(id)?.failure)
+                assertFalse(f.latest().getValue(id).selectionObserved)
+                assertEquals(observed, f.latest().getValue(id).lastObservedAt)
+                assertEquals(original, f.access.targetPublication(target,
+                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).chunkReceipt())
+                repeat(2) {
+                    assertFalse(runtime.prepareScheduledBatch(forceIdle = true))
+                    assertFalse(runtime.cycle()); assertFalse(runtime.cycle(forceIdle = false))
+                    assertEquals(requests, provider.server.requestCount)
+                }
+                f.clock.addAndGet(floor - 1)
+                assertFalse(runtime.prepareScheduledBatch(forceIdle = true)); assertFalse(runtime.cycle())
+                assertEquals(requests, provider.server.requestCount)
+                f.clock.incrementAndGet(); provider.dav.overrideRequest = null
+                assertTrue(runtime.prepareScheduledBatch(forceIdle = true)); assertTrue(runtime.cycle())
+                assertTrue(provider.server.requestCount > requests)
+                assertTrue(f.latest().getValue(id).selectionObserved)
+                assertEquals(observed, f.latest().getValue(id).lastObservedAt)
+                assertEquals(original, f.access.targetPublication(target,
+                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).chunkReceipt())
+                f.assertOriginal()
+            }
+        }
+    }
+
     @Test fun aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor() = fixture { f ->
         WeakFixture(f.directory("retry-after-provider")).use { provider ->
             val id = f.add(provider); val runtime = f.runtime()
@@ -420,6 +472,25 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(runtime.prepareScheduledBatch()); assertTrue(runtime.cycle(forceIdle = false))
             assertTrue(provider.server.requestCount > requests); assertTrue(f.latest().getValue(id).selectionObserved)
             assertNotNull(f.latest().getValue(id).lastObservedAt); f.assertOriginal()
+        }
+    }
+
+    @Test fun aMissingAssemblyCandidateDoesNotBecomeARouteRateLimitWhenTheSelectionWasAlreadyObserved() = fixture { f ->
+        WeakFixture(f.directory("missing-assembly-provider")).use { provider ->
+            val id = f.add(provider); val schedule = LanSyncGroupCloudSchedule(f.clock::get, { 0 }); val runtime = f.runtime(schedule)
+            assertTrue(runtime.cycle())
+            val observed = requireNotNull(f.latest().getValue(id).lastObservedAt)
+            val missing = AtomicInteger()
+            provider.dav.overrideRequest = { request ->
+                if (request.method == "GET" && request.requestUrl!!.encodedPath.contains("/weak-assemblies-v1/commits/")) {
+                    missing.incrementAndGet(); MockResponse().setResponseCode(404)
+                } else null
+            }
+            assertTrue(runtime.cycle())
+            assertTrue(missing.get() > 0); assertNull(schedule.state(id)?.failure)
+            assertTrue(f.latest().getValue(id).selectionObserved)
+            assertEquals(observed, f.latest().getValue(id).lastObservedAt)
+            f.assertOriginal()
         }
     }
 

@@ -132,6 +132,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
         ScheduledSnapshot(catalog, revision, ids)
     } catch (cancelled: CancellationException) { throw cancelled }
     catch (_: Exception) {
+        currentCoroutineContext().ensureActive()
         configurationUnavailable(captured)
     } }
 
@@ -193,7 +194,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                     val revision = catalog.revision.value
                     val row = try { runInterruptible(Dispatchers.IO) { catalog.rows().singleOrNull { it.id == id && it.enabled } } }
                         catch (cancelled: CancellationException) { throw cancelled }
-                        catch (_: Exception) { configurationUnavailable(captured) }
+                        catch (_: Exception) { currentCoroutineContext().ensureActive(); configurationUnavailable(captured) }
                     if (row == null) {
                         complete = false
                         if (globallyActive(captured) && catalog.revision.value == revision) schedule.defer(id)
@@ -201,9 +202,11 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                     }
                     val responseFailure = AtomicReference<LanSyncGroupCloudSchedule.FailureCategory?>()
                     val serverWait = AtomicReference<RelativeWait?>()
+                    val providerBackoff = AtomicBoolean(false)
                     val active = {
                         checkActive(captured, catalog, revision)
-                        if ((serverWait.get()?.remaining(clockMillis()) ?: 0) > 0) throw IOException("SYNC_GROUP_CLOUD_RETRY_LATER")
+                        if (providerBackoff.get() || (serverWait.get()?.remaining(clockMillis()) ?: 0) > 0)
+                            throw IOException("SYNC_GROUP_CLOUD_RETRY_LATER")
                     }
                     var borrowedCredentials: LanSyncGroupCloudCredentials? = null
                     try {
@@ -220,6 +223,10 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                     403 -> LanSyncGroupCloudSchedule.FailureCategory.PERMISSION
                                     else -> LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT
                                 })
+                                // Candidate readers may retain/skip a transient provider claim. A
+                                // rate limit or unavailable service instead ends this route's batch,
+                                // even without Retry-After or after its supplied delay has elapsed.
+                                if (status == 429 || status == 503) providerBackoff.set(true)
                                 if (retryAfter != null) {
                                     val now = clockMillis()
                                     serverWait.updateAndGet { old -> if ((old?.remaining(now) ?: 0) >= retryAfter) old else RelativeWait(now, retryAfter) }
@@ -334,7 +341,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
         val revision = catalog.revision.value
         val enabled = try { runInterruptible(Dispatchers.IO) { catalog.rows().filter { it.enabled }.mapTo(linkedSetOf()) { it.id } } }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { configurationUnavailable(captured) }
+            catch (_: Exception) { currentCoroutineContext().ensureActive(); configurationUnavailable(captured) }
         synchronized(lock) {
             if (closed || captured != generation) return
             snapshotCatalog = catalog

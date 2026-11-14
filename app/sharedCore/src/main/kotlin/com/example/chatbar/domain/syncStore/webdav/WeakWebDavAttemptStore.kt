@@ -183,7 +183,7 @@ class WeakWebDavAttemptStore(private val transport: WebDavHttpTransport, private
             val observation = remember(candidate, origin, active)
             return WeakWebDavVerifiedRead(observation,
                 { destination -> activeIo(copyActive) { copyVerified(file.path, candidate.descriptor, destination, it) } },
-                { safeIo { file.close() } })
+                { file.close() })
         } catch (failure: Throwable) {
             try { file.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
             throw failure

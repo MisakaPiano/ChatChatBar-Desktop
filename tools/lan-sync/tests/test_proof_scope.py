@@ -43,6 +43,28 @@ class ProofScopeTest(unittest.TestCase):
     def test_pure_files_cannot_mask_an_independent_io_change_in_the_same_push(self):
         self.assertEqual((False, True), scope.classify(list(scope.PURE_FILES) + [scope.LAN + "LanSyncGroupNativePlanner.kt"]))
 
+    def test_cloud_only_bytes_select_the_cloud_proof_without_repeating_old_lan_proofs(self):
+        paths = [scope.LAN + name for name in scope.CLOUD_LAN] + [scope.STORE + name for name in scope.CLOUD_STORE]
+        for path in paths:
+            self.assertEqual((False, False), scope.classify([path]), path)
+            self.assertTrue(scope.classify_cloud([path]), path)
+
+    def test_cloud_fixture_is_not_the_legacy_group_resource_fixture(self):
+        for name in scope.CLOUD_PROOF_NAMES:
+            path = scope.GROUP_PROOF + name
+            self.assertEqual((False, False), scope.classify([path]))
+            self.assertTrue(scope.classify_cloud([path]))
+
+    def test_common_group_crypto_requires_both_group_and_cloud_byte_proofs(self):
+        for path in (scope.LAN + "LanSyncGroupNativePlanner.kt", scope.STORE + "SyncStreamingCipher.kt"):
+            self.assertEqual((False, True), scope.classify([path]))
+            self.assertTrue(scope.classify_cloud([path]))
+
+    def test_app_controls_require_native_checks_without_claiming_large_shared_coverage(self):
+        for path in scope.APP_CONTROLS:
+            self.assertEqual((False, False), scope.classify([path]))
+            self.assertFalse(scope.classify_cloud([path]))
+
 
 if __name__ == "__main__":
     unittest.main()

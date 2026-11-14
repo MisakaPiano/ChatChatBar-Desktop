@@ -3,6 +3,7 @@ package com.example.chatbar.domain.syncStore.webdav
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.io.InterruptedIOException
 import java.io.OutputStream
 import java.net.InetAddress
 import java.net.Proxy
@@ -25,6 +26,55 @@ import okio.Buffer
 import kotlin.test.*
 
 class WeakWebDavAttemptStoreTest {
+    @Test fun anInterruptedOwnerStillClosesItsVerifiedFileWhileCopyRemainsCancelled() = weakFixture { f ->
+        val bytes = ByteArray(20_019) { (it % 179).toByte() }
+        val readback = f.store("interrupt-close").appendAttemptReadback(davRequest(bytes), bytes.inputStream())
+        assertEquals(1L, f.preparations("interrupt-close"))
+        val requests = f.server.requestCount; val executor = Executors.newSingleThreadExecutor()
+        try {
+            executor.submit {
+                Thread.currentThread().interrupt()
+                try {
+                    val escaped = ByteArrayOutputStream()
+                    assertFailsWith<InterruptedIOException> { readback.copyTo(escaped) }
+                    assertEquals(0, escaped.size())
+                    readback.close()
+                    assertTrue(Thread.currentThread().isInterrupted, "Cleanup must preserve the owner's cancellation flag")
+                } finally { Thread.interrupted() }
+            }.get(5, TimeUnit.SECONDS)
+            assertEquals(0L, f.preparations("interrupt-close"))
+            assertEquals(requests, f.server.requestCount)
+            assertFailsWith<IllegalStateException> { readback.copyTo(ByteArrayOutputStream()) }
+        } finally {
+            executor.shutdownNow(); check(executor.awaitTermination(5, TimeUnit.SECONDS)); readback.close()
+        }
+    }
+
+    @Test fun anInterruptingCallerSinkKeepsItsFailureAndReleasesTheVerifiedFileThroughUse() = weakFixture { f ->
+        val bytes = ByteArray(20_023) { (it % 191).toByte() }
+        val readback = f.store("interrupt-sink").appendAttemptReadback(davRequest(bytes), bytes.inputStream())
+        val failure = InterruptedIOException("SYNTHETIC_CALLER_SINK_INTERRUPTED")
+        val requests = f.server.requestCount; val executor = Executors.newSingleThreadExecutor()
+        try {
+            executor.submit {
+                val output = object : OutputStream() {
+                    var writes = 0
+                    override fun write(value: Int) { writes++; Thread.currentThread().interrupt(); throw failure }
+                    override fun write(bytes: ByteArray, offset: Int, length: Int) { writes++; Thread.currentThread().interrupt(); throw failure }
+                }
+                try {
+                    assertSame(failure, assertFailsWith<InterruptedIOException> { readback.use { it.copyTo(output) } })
+                    assertEquals(1, output.writes); assertTrue(failure.suppressed.isEmpty())
+                    assertTrue(Thread.currentThread().isInterrupted)
+                } finally { Thread.interrupted() }
+            }.get(5, TimeUnit.SECONDS)
+            assertEquals(0L, f.preparations("interrupt-sink")); assertEquals(requests, f.server.requestCount)
+            assertEquals(1, f.dav.puts.size)
+        } finally {
+            executor.shutdownNow(); check(executor.awaitTermination(5, TimeUnit.SECONDS)); readback.close()
+        }
+    }
+
     @Test fun oneVerifiedGetCanFeedLocalCopiesWithoutASecondRequestOrASecondObservationTime() = weakFixture { f ->
         val bytes = ByteArray(80_019) { (it % 193).toByte() }; val request = davRequest(bytes)
         val gets = AtomicInteger()
