@@ -1,0 +1,60 @@
+name: LAN next API35 file recovery UI and cold process control
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: ['.github/lan-next-file-recovery-ui-request.json']
+permissions:
+  contents: read
+jobs:
+  android-file-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: file-recovery-ui-control
+          persist-credentials: false
+      - name: Validate exact source and control fixture request
+        id: request
+        working-directory: file-recovery-ui-control
+        run: python3 -B tools/lan-next-control/android_file_recovery_ui_control.py request --request .github/lan-next-file-recovery-ui-request.json >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: ${{ steps.request.outputs.sourceSha }}
+          path: file-recovery-ui-app-source
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare only the cloud instrumentation companion
+        working-directory: file-recovery-ui-control
+        run: python3 -B tools/lan-next-control/android_file_recovery_ui_control.py prepare --request .github/lan-next-file-recovery-ui-request.json --source ../file-recovery-ui-app-source --evidence lan-next-file-recovery-ui-evidence
+      - name: Compile fixed application and companion instrumentation
+        working-directory: file-recovery-ui-app-source/app
+        run: |
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=85 --no-daemon --stacktrace
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise two fixed API35 file recovery and cold process methods
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 -B file-recovery-ui-control/tools/lan-next-control/android_file_recovery_ui_control.py run --request file-recovery-ui-control/.github/lan-next-file-recovery-ui-request.json --source file-recovery-ui-app-source --evidence file-recovery-ui-control/lan-next-file-recovery-ui-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-next-file-recovery-ui-api35-evidence
+          path: file-recovery-ui-control/lan-next-file-recovery-ui-evidence/
