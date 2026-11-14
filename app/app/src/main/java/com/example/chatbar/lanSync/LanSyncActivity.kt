@@ -47,6 +47,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     val recoveryEntries by coordinator.recoveryEntries.collectAsState()
     val recoveryView by coordinator.recoveryView.collectAsState()
     val imageState by coordinator.images.collectAsState()
+    val cloudSettings by coordinator.cloudSettings.collectAsState()
     val backgroundState by owner.backgroundState.collectAsState()
     var legacySelected by remember(owner) { mutableStateOf(false) }
     LaunchedEffect(owner) { owner.openGroupPage() }
@@ -85,6 +86,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
             }
         }
     }
+    LanSyncGroupCloudSettings(cloudSettings, coordinator)
 }
 
 @Composable

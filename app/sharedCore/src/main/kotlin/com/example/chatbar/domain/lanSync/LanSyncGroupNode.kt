@@ -146,6 +146,28 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         inbox().reconcile(localVersions.values.toList())
     }
 
+    /** Freeze admission only; potentially long ciphertext/resource preparation stays outside this mutex. */
+    internal suspend fun targetPublication(directory: Path, target: SyncDeliveryTarget,
+        vault: SyncManagementVaultContext, vaultDescriptor: CiphertextDescriptor,
+        recoverNative: Boolean = true): LanSyncGroupTargetPublication {
+        val export = serialized {
+            // Export never applies/recovers native plans. Shutdown callers additionally require a
+            // settled source-only boundary after their final writer/source sealing has completed.
+            if (!recoverNative) exclusive { requireSourceOnlyReady() }
+            val reconciled = inbox().reconcile(localVersions.values.toList())
+            val ledger = custody.ledger()
+            val frozen = reconciled.copy(history = reconciled.history?.snapshot(),
+                authenticatedVersions = reconciled.authenticatedVersions.toList(), observations = reconciled.observations.toList())
+            LanSyncGroupTargetExport(trust, identity.fingerprint, ledger, frozen, vault, vaultDescriptor,
+                dependencyStore, custody::ledger, custody::key, custody, workspace.resourceStore, validateResource)
+        }
+        return withContext(Dispatchers.IO) {
+            val publication = LanSyncGroupTargetPublication(directory, target, export)
+            publication.prepare()
+            publication
+        }
+    }
+
     /** Resource I/O deliberately stays outside the source/native operation mutex. */
     suspend fun prefetch(view: SyncInboxReconciliation, applied: Map<String, LanSyncGroupAppliedUnit> = emptyMap()) = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
         if (view.trustBlocked || view.history == null || view.ledgerCheckpoint == null) return@runInterruptible

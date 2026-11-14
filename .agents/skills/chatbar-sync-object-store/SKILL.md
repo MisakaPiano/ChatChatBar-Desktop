@@ -5,6 +5,8 @@ description: Maintain immutable ciphertext backends, streaming encryption and au
 
 # Sync object store
 
+- `webdav/WeakWebDavAttemptStore` is separate from writable `CiphertextStore`: ordinary DAV has unique physical nonces, at most one PUT per retained attempt, forced local operation/endpoint binding, and complete GET length/hash/header/EOF verification. Retry checks old locators before consuming frozen source; partial/uncertain attempts remain preserved. Candidate listing/operation conflicts are untrusted claims, never canonical ownership or receipts. The optional per-chunk `checkActive` callback spans HTTP/listing/streaming/observation boundaries. Default CIPHERTEXT namespace remains `weak-attempts-v1`; CHUNKS/ASSEMBLIES have separate physical namespaces and local bindings but do not by themselves establish assembled-object or resume completion. `WeakWebDavXmlListing` uses bounded hardened SAX parsing.
+
 - Native application composition is now mapped in the LAN skill under LanSyncGroupCoordinator/RuntimeAccess: near-device ciphertext read-through cache is distinct from target-bound outgoing receipts; group enrollment and actual app lifecycle are not inferred from backend-only tests.
 
 - `CiphertextOperationBindings.reserveOperation` preserves one immutable request binding across COMMIT quarantine and ordinary BLOB publication, including old direct File-store bindings and cold reopen. Reservation creates neither visible objects nor receipts. ReplicaReader checks its own historical bindings and the common local binding before accepting payload bytes; raw candidate variants never permit operation-ID reuse for another kind/key/descriptor.

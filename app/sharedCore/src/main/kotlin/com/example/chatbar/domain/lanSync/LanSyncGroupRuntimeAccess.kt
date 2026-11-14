@@ -23,6 +23,13 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
     fun ledger() = custody.ledger()
     private val peerNames by lazy { LanSyncGroupPeerNames(work, trust, custody::ledger, peerNameProtect, peerNameUnprotect) }
+    private val cloudRouteCatalog by lazy {
+        val directory = work.resolve("cloud-connections")
+        if (!Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(directory)
+        lanSyncSafe(directory, true)
+        LanSyncGroupCloudRoutes(directory, trust, device, peerNameProtect, peerNameUnprotect)
+    }
+    fun cloudRoutes(): LanSyncGroupCloudRoutes = cloudRouteCatalog
     fun rememberPeerName(peer: LanSyncGroupInvitedPeer) = peerNames.remember(peer)
     fun peerDisplayName(device: String): String? = peerNames.displayName(device)
     private val managementRoot get() = work.resolve("recovered-management")
@@ -33,6 +40,10 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
         return LanSyncGroupManagementRecovery(managementRoot, knownCheckpoint = { ledger().current().reference() })
     }
     fun encryptedManagementBackup() = lanSyncReadManagementBackup(reader, vault, vaultDescriptor)
+    /** Uses only this profile's fixed opaque vault and Node's actual admitted history. No admin unlock. */
+    suspend fun targetPublication(directory: Path, target: SyncDeliveryTarget,
+        recoverNative: Boolean = true): LanSyncGroupTargetPublication =
+        node.targetPublication(directory, target, vault, vaultDescriptor, recoverNative)
     suspend fun invitation(storePort: Int): LanSyncGroupInvitation {
         val inspected = node.inspect(); val plan = requireNotNull(inspected.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
         require(plan.before.hashes().all { (unit, hash) -> inspected.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }

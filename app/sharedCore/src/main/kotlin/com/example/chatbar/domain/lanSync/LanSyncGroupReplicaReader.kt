@@ -92,7 +92,9 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
     override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
         if (key.kind == CiphertextObjectKind.COMMIT) return readCommit(key, destination, expected, routes)
         local.metadata(key)?.let { return local.readTo(key, destination, expected) }
-        val metadata = metadata(key) ?: return null
+        // An authenticated manifest already selected this exact ciphertext. Raw cloud claims for
+        // another descriptor must neither replace that selection nor prevent its exact lookup.
+        val metadata = expected?.let { CiphertextObjectMetadata(key, it) } ?: metadata(key) ?: return null
         require(expected == null || expected == metadata.descriptor) { "SYNC_GROUP_REPLICA_OBJECT_CHANGED" }
         LanSyncResourceBudget().requireSpace(work, metadata.descriptor.length, copies = 2)
         var last: Exception? = null

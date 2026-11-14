@@ -24,6 +24,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
     val recoveryEntries by coordinator.recoveryEntries.collectAsState()
     val recoveryView by coordinator.recoveryView.collectAsState()
     val imageState by coordinator.images.collectAsState()
+    val cloudSettings by coordinator.cloudSettings.collectAsState()
     var legacySelected by remember(coordinator) { mutableStateOf(false) }
     LaunchedEffect(coordinator) { coordinator.open() }
     DisposableEffect(coordinator) { onDispose { coordinator.lockManagement() } }
@@ -41,6 +42,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState) }
         }
     }
+    DesktopLanSyncCloudSettings(cloudSettings, coordinator)
 }
 
 @Composable

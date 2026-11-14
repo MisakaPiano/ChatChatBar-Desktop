@@ -19,7 +19,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val enrollment: () -> LanSyncGroupEnrollment, private val joining: () -> LanSyncGroupJoining,
     private val network: LanSyncNetwork = LanSyncNetwork.Local, private val deviceName: String,
     private val beforeSetup: suspend () -> Unit = {},
-    private val sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false) : LanSyncGroupPanelActions {
+    private val sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val admission = Mutex()
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
@@ -35,6 +35,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     val recoveryView = mutableRecoveryView.asStateFlow()
     private val mutableImages = MutableStateFlow(LanSyncGroupImageState())
     val images = mutableImages.asStateFlow()
+    private val mutableCloudSettings = MutableStateFlow(LanSyncGroupCloudSettingsState())
+    val cloudSettings = mutableCloudSettings.asStateFlow()
+    private val cloudAdmission = Mutex()
+    private val cloudGeneration = java.util.concurrent.atomic.AtomicLong()
+    private val cloudJobs = mutableSetOf<Job>()
     private val imageGeneration = java.util.concurrent.atomic.AtomicLong()
     private val imageAdmission = Semaphore(1)
     @Volatile private var imageContext: LanSyncGroupFrozenImageContext? = null
@@ -75,7 +80,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     @Volatile private var draft: LanSyncGroupEnrollmentDraft? = null
     @Volatile private var transport: LanSyncGroupAppTransport? = null
     @Volatile private var discovery: LanSyncGroupDiscovery? = null
-    private var access: LanSyncGroupRuntimeAccess? = null
+    @Volatile private var access: LanSyncGroupRuntimeAccess? = null
     private var invitation: LanSyncGroupInvitation? = null
     private var peer: LanSyncGroupMemberPreview? = null
     private var revocation: LanSyncGroupRevocationPreview? = null
@@ -261,6 +266,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
     }
     override fun lockManagement() = synchronized(lifecycle) {
+        closeCloudSettings()
         privacyGeneration++
         privacyExpiry?.cancel(); privacyExpiry = null
         draft?.close(); draft = null
@@ -350,7 +356,81 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun cancelRevocation() { revocation = null; mutableState.update { it.copy(revocation = null) } }
     override fun retry() = action("重新检查同步") { access?.let { attach(it) } ?: load() }
     override fun openCloudSettings() {
-        mutableState.update { it.copy(error = "此候选的网盘配置入口尚在接线；本地与同网同步可独立使用。") }
+        synchronized(lifecycle) {
+            if (closed) return
+            closeCloudSettings()
+            mutableCloudSettings.update { it.copy(visible = true,
+                notice = "连接设置仅保存在此设备，网盘送达功能尚未启用。") }
+        }
+        refreshCloudSettings()
+    }
+    override fun closeCloudSettings() = synchronized(lifecycle) {
+        cloudGeneration.incrementAndGet()
+        cloudJobs.toList().forEach { it.cancel() }
+        mutableCloudSettings.update { LanSyncGroupCloudSettingsState(revision = it.revision + 1) }
+    }
+    override fun refreshCloudSettings() = cloudAction("读取网盘连接") { null }
+    override fun saveCloudRoute(draft: LanSyncGroupCloudDraft) {
+        // The platform form erases its borrowed bytes as soon as this callback returns.
+        val secret = draft.password.copyOf()
+        val frozen = draft.copy(password = secret, enabled = false)
+        cloudAction("保存网盘连接", cleanup = { secret.fill(0) }) { catalog ->
+            catalog.add(frozen)
+            "连接已保存在此设备，当前保持停止；尚未上传资料。"
+        }
+    }
+    override fun setCloudRouteEnabled(id: SyncStoreId, enabled: Boolean) = cloudAction("更新网盘连接") { catalog ->
+        // A stored configuration is not a writable provider or a completed target publication.
+        require(!enabled) { "SYNC_GROUP_CLOUD_DELIVERY_NOT_AVAILABLE" }
+        catalog.setEnabled(id, false)
+        "此连接已停止；远端文件、本机原件和待传队列均保留。"
+    }
+    override fun removeCloudRoute(id: SyncStoreId) = cloudAction("移除本机网盘设置") { catalog ->
+        catalog.remove(id)
+        "已移除此设备的连接设置；远端文件、本机原件和待传队列均保留。"
+    }
+    private fun cloudAction(label: String, cleanup: () -> Unit = {}, work: (LanSyncGroupCloudRoutes) -> String?) {
+        val token = synchronized(lifecycle) {
+            if (closed || !mutableCloudSettings.value.visible) { cleanup(); return }
+            cloudGeneration.get() to actionGeneration.get()
+        }
+        fun current() = !closed && mutableCloudSettings.value.visible && cloudGeneration.get() == token.first && actionGeneration.get() == token.second
+        fun update(change: (LanSyncGroupCloudSettingsState) -> LanSyncGroupCloudSettingsState) = synchronized(lifecycle) {
+            if (current()) mutableCloudSettings.update(change)
+        }
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            cloudAdmission.withLock {
+                if (!current()) return@withLock
+                update { it.copy(busy = true, error = null) }
+                try {
+                    val result = runInterruptible(Dispatchers.IO) {
+                        val owner = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+                        val catalog = owner.cloudRoutes()
+                        val notice = work(catalog)
+                        Triple(catalog.rows(), notice, catalog.revision.value)
+                    }
+                    update { it.copy(rows = result.first, progress = emptyMap(), canEnable = false,
+                        notice = result.second ?: "连接设置仅保存在此设备，网盘送达功能尚未启用。", revision = result.third) }
+                    synchronized(lifecycle) {
+                        if (current()) mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus(
+                            if (result.first.isEmpty()) "此设备未配置网盘" else "已保存 ${result.first.size} 个本机连接；网盘送达尚未启用")) }
+                    }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (failure: Exception) {
+                    val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]{1,100}")) } ?: "SYNC_GROUP_CLOUD_SETTINGS_FAILED"
+                    update { it.copy(error = "$label：$code") }
+                } finally { update { it.copy(busy = false) } }
+            }
+        }
+        job.invokeOnCompletion { cleanup(); synchronized(lifecycle) { cloudJobs -= job } }
+        val start = synchronized(lifecycle) { if (current()) { cloudJobs += job; true } else false }
+        if (start) job.start() else job.cancel()
+    }
+    private suspend fun drainCloudSettings() {
+        closeCloudSettings()
+        val jobs = synchronized(lifecycle) { cloudJobs.toList() }
+        jobs.joinAll()
+        cloudAdmission.withLock { }
     }
     override fun cancelActionReview() = synchronized(reviewGeneration) {
         reviewGeneration.incrementAndGet()
@@ -669,6 +749,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
             }
             lockManagement(); closeRecovery()
+            drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()
             loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin()
             admission.withLock { }
@@ -688,6 +769,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
             }
             lockManagement(); closeRecovery()
+            drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()
             sourceObserver?.cancelAndJoin(); loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin()
             admission.withLock { }
