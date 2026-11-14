@@ -10,17 +10,25 @@ import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.WRITE
 import java.security.MessageDigest
+import java.util.Collections
 import java.util.concurrent.CancellationException
 
 enum class SyncInboxStage {
     MIRRORED, WAITING_FOR_KEY, WAITING_FOR_LEDGER, WAITING_FOR_CURRENT_EPOCH, NOT_FOR_DEVICE,
-    KEY_ADMITTED, LEDGER_ADMITTED, DEVICE_REVOKED, CAUSAL_ADMITTED, WAITING_FOR_PARENTS, REJECTED, TRUST_BLOCKED, LOCAL_CUSTODY_BLOCKED, INVALID_OBJECT
+    KEY_ADMITTED, LEDGER_ADMITTED, DEVICE_REVOKED, CAUSAL_ADMITTED, WAITING_FOR_PARENTS, REJECTED, TRUST_BLOCKED, LOCAL_CUSTODY_BLOCKED, INVALID_OBJECT,
+    ENROLLMENT_KEY_VERIFIED, ENROLLMENT_LEDGER_VERIFIED
 }
 data class SyncInboxObservation(val key: CiphertextObjectKey, val stage: SyncInboxStage, val code: String? = null)
 data class SyncInboxDiscovery(val nextCursor: CommitCursor?, val observations: List<SyncInboxObservation>)
 data class SyncInboxReconciliation(val observations: List<SyncInboxObservation>, val history: SyncCausalHistory?,
     val authenticatedVersions: List<SyncAuthenticatedGroupObject>, val trustBlocked: Boolean, val ledgerCheckpoint: SyncVersionRef?,
     val trustFailureCode: String? = null)
+
+enum class SyncGroupBootstrapStage { WAITING_FOR_LEDGER, WAITING_FOR_KEYS, READY, TRUST_BLOCKED, DEVICE_REVOKED }
+class SyncGroupBootstrapEvidence internal constructor(val trust: SyncGroupTrust, val records: List<SyncDeviceLedgerRecord>,
+    internal val keys: List<SyncAdmittedGroupKey>)
+data class SyncGroupBootstrapInspection(val stage: SyncGroupBootstrapStage, val evidence: SyncGroupBootstrapEvidence?,
+    val observations: List<SyncInboxObservation>, val code: String? = null)
 
 /**
  * Discovery and causal metadata admission only. Encrypted evidence survives process restart.
@@ -52,6 +60,104 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         return SyncInboxDiscovery(page.nextCursor, observations)
     }
 
+    /** Explicit joining only: external invitation pins trust. This reads no custody and enrolls/writes no keys. */
+    fun prepareEnrollment(trust: SyncGroupTrust): SyncGroupBootstrapInspection {
+        val statuses = linkedMapOf<CiphertextObjectKey, SyncInboxObservation>()
+        fun status(key: CiphertextObjectKey, stage: SyncInboxStage, failure: String? = null) {
+            statuses[key] = SyncInboxObservation(key, stage, failure).also(observe)
+        }
+        fun result(stage: SyncGroupBootstrapStage, failure: String? = null, evidence: SyncGroupBootstrapEvidence? = null) =
+            SyncGroupBootstrapInspection(stage, evidence, statuses.values.toList(), failure)
+        val ledger = SyncDeviceLedger(trust)
+        val records = linkedMapOf<SyncStoreId, SyncDeviceLedgerRecord>()
+        var collision = false
+        fun offer(rows: List<SyncDeviceLedgerRecord>) = rows.forEach { row ->
+            try { ledger.offer(row); records.putIfAbsent(row.id, row) }
+            catch (failure: Exception) {
+                if (code(failure) == "SYNC_GROUP_LEDGER_ID_COLLISION") collision = true
+                throw failure
+            }
+        }
+        val objects = mutableListOf<CiphertextObjectMetadata>(); var cursor: CommitCursor? = null
+        do { val page = mirror.listCommits(cursor); objects += page.entries; cursor = page.nextCursor } while (cursor != null)
+        val hints = linkedMapOf<CiphertextObjectKey, SyncCiphertextHint>()
+        val tentative = linkedMapOf<CiphertextObjectKey, SyncTentativeGroupKey>()
+        for (metadata in objects) {
+            try {
+                spool(mirror, metadata) { path ->
+                    val prefix = prefix(path)
+                    when {
+                        SyncCiphertextHeader.hasPrefix(prefix) -> {
+                            val hint = Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
+                            require(hint.context.group == trust.group && hint.context.key == metadata.key) { "SYNC_INBOX_CONTEXT" }
+                            hints[metadata.key] = hint
+                        }
+                        SyncKeyDeliveryCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES) { "SYNC_KEY_DELIVERY_BUDGET" }
+                            val delivery = SyncKeyDeliveryCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncKeyDeliveryCodec::read))
+                            delivery.verifyOwner(trust, metadata.key)
+                            if (delivery.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
+                            else tentative[metadata.key] = delivery.openTentative(trust, recipient, metadata.key)
+                        }
+                        SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
+                            val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
+                            notice.verifyOwner(trust, metadata.key)
+                            if (notice.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
+                            else { offer(notice.open(trust, recipient, metadata.key).records); status(metadata.key, SyncInboxStage.DEVICE_REVOKED) }
+                        }
+                        else -> error("SYNC_INBOX_FORMAT")
+                    }
+                }
+            } catch (failure: Exception) { status(metadata.key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+        }
+        val codec = SyncGroupObjectCodec(work)
+        val ledgerObjects = linkedMapOf<CiphertextObjectKey, SyncStoreId>()
+        for ((key, hint) in hints) {
+            try {
+                val candidate = tentative.values.firstOrNull {
+                    it.context.epoch == hint.context.epoch && it.context.keyCommitment == hint.keyCommitment
+                }
+                if (candidate == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
+                val actual = codec.read(mirror, candidate.cipher, hint.context)
+                val row = actual.envelope.deviceLedger ?: continue
+                require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
+                offer(actual.envelope.ledgerHistory + row)
+                ledgerObjects[key] = row.id
+            } catch (failure: Exception) { status(key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+        }
+        ledgerObjects.forEach { (key, id) -> status(key, when (ledger.state(id)) {
+            SyncVersionState.ADMITTED -> SyncInboxStage.ENROLLMENT_LEDGER_VERIFIED
+            SyncVersionState.WAITING_FOR_PARENTS -> SyncInboxStage.WAITING_FOR_LEDGER
+            else -> SyncInboxStage.REJECTED
+        }, ledger.failure(id)) }
+        if (collision || records.values.any { ledger.state(it.id) == SyncVersionState.REJECTED })
+            return result(SyncGroupBootstrapStage.TRUST_BLOCKED, "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT")
+        val current = try { ledger.current() } catch (failure: Exception) {
+            val admitted = records.values.filter { ledger.state(it.id) == SyncVersionState.ADMITTED }
+            val parents = admitted.mapNotNull { it.parent?.id }.toSet()
+            val fork = admitted.count { it.id !in parents } > 1
+            return result(if (fork) SyncGroupBootstrapStage.TRUST_BLOCKED else SyncGroupBootstrapStage.WAITING_FOR_LEDGER, code(failure))
+        }
+        if (records.values.any { ledger.state(it.id) == SyncVersionState.WAITING_FOR_PARENTS })
+            return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE")
+        val member = current.members[recipient.device]
+        if (member != null && !member.active) return result(SyncGroupBootstrapStage.DEVICE_REVOKED, "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED")
+        if (member?.recipientKey != recipient.publicKey.encoded)
+            return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING")
+        val keys = linkedMapOf<SyncStoreId, SyncAdmittedGroupKey>()
+        for ((key, candidate) in tentative) {
+            try {
+                val admitted = candidate.admit(ledger)
+                require(keys[candidate.context.epoch]?.cipher?.keyCommitment()?.let { it == admitted.cipher.keyCommitment() } != false) { "SYNC_INBOX_KEY_COMMITMENT" }
+                keys.putIfAbsent(candidate.context.epoch, admitted); status(key, SyncInboxStage.ENROLLMENT_KEY_VERIFIED)
+            } catch (failure: Exception) { status(key, SyncInboxStage.REJECTED, code(failure)) }
+        }
+        if (ledger.history().any { it.epoch !in keys }) return result(SyncGroupBootstrapStage.WAITING_FOR_KEYS, "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING")
+        return result(SyncGroupBootstrapStage.READY, evidence = SyncGroupBootstrapEvidence(trust,
+            ledger.history(), Collections.unmodifiableList(keys.values.toList())))
+    }
+
     fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation {
         val trust = localCustody { custody.trust() }
         val statuses = linkedMapOf<CiphertextObjectKey, SyncInboxObservation>()
@@ -65,11 +171,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         for (metadata in objects) {
             try {
                 spool(mirror, metadata) { path ->
-                    val prefix = Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
-                        val bytes = ByteArray(32); var read = 0
-                        while (read < bytes.size) { val count = input.read(bytes, read, bytes.size - read); if (count < 0) break; read += count }
-                        bytes.copyOf(read)
-                    }
+                    val prefix = prefix(path)
                     when {
                         SyncCiphertextHeader.hasPrefix(prefix) -> {
                             val hint = Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
@@ -227,6 +329,11 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         return SyncInboxReconciliation(statuses.values.toList(), history, versions.toList(), false, ledger.current().reference())
     }
 
+    private fun prefix(path: Path): ByteArray = Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
+        val bytes = ByteArray(32); var read = 0
+        while (read < bytes.size) { val count = input.read(bytes, read, bytes.size - read); if (count < 0) break; read += count }
+        bytes.copyOf(read)
+    }
     private fun retain(metadata: CiphertextObjectMetadata) {
         require(metadata.key.kind == CiphertextObjectKind.COMMIT) { "SYNC_INBOX_CONTEXT" }
         mirror.metadata(metadata.key)?.let { require(it == metadata) { "SYNC_INBOX_IMMUTABLE_CONFLICT" }; return }

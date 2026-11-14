@@ -69,10 +69,14 @@ class LanSyncGroupAdministrationTest {
             val owner = custody(); val ledger = owner.ledger()
             val joined = SyncGroupCustody(Files.createDirectory(root.resolve("joined-custody")), peer.trust.group, joiningKey,
                 { it.reversedArray() }, { it.reversedArray() })
-            joined.enroll(peer.trust, ledger.history())
             val inbox = SyncGroupInbox(Files.createDirectory(root.resolve("joined-inbox")), FileCiphertextStore(profile.resolve("local-replica")), joined, joiningKey)
             var cursor: CommitCursor? = null
             do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
+            val bootstrap = inbox.prepareEnrollment(peer.trust)
+            assertEquals(SyncGroupBootstrapStage.READY, bootstrap.stage)
+            assertFalse(Files.exists(root.resolve("joined-custody/group.protected")))
+            val evidence = requireNotNull(bootstrap.evidence)
+            joined.enrollWithKeys(evidence.trust, evidence.records, evidence.keys)
             assertFalse(inbox.reconcile().trustBlocked)
             ledger.history().map { it.epoch }.distinct().forEach { epoch ->
                 assertEquals(owner.key(epoch).keyCommitment(), joined.key(epoch).keyCommitment())

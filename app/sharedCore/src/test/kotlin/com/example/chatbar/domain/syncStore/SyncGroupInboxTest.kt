@@ -11,7 +11,7 @@ import kotlin.test.*
 
 /** Actual encrypted metadata/keys; content identities are placeholders, never native readiness. */
 class SyncGroupInboxTest {
-    private class Group(val root: Path) {
+    internal class Group(val root: Path) {
         fun dir(name: String) = Files.createDirectory(root.resolve(name))
         val owner = LanSyncTlsIdentity.create(); val peer = LanSyncTlsIdentity.create()
         val recipient = SyncDeviceEncryptionKey.create(peer.fingerprint)

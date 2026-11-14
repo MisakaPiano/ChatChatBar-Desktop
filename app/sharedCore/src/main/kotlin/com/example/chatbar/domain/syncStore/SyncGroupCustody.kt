@@ -78,7 +78,7 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         build(read()).also { it.current() }
     }
 
-    /** Explicit creator enrollment: signed ancestry, generated keys and checkpoint publish in one protected state. */
+    /** Explicit enrollment: signed ancestry, verified keys and checkpoint publish in one protected state. */
     fun enrollWithKeys(trust: SyncGroupTrust, records: Collection<SyncDeviceLedgerRecord>, keys: Collection<SyncAdmittedGroupKey>): SyncDeviceLedger = guarded {
         require(trust.group == group) { "SYNC_GROUP_IDENTITY" }
         val state = if (Files.exists(file, NOFOLLOW_LINKS)) read().also {
