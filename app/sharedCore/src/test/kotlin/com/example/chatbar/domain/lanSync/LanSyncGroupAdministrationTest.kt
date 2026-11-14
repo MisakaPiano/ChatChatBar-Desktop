@@ -123,6 +123,53 @@ class LanSyncGroupAdministrationTest {
         }
     }
 
+    @Test fun exactDeviceRevocationRotatesFutureKeyAndRetainsOnlyItsOwnFirstRevocationNotice() = withFixture { f ->
+        val (invitation, peer) = f.prove(); val membership = f.service.prepareMember(peer, invitation)
+        f.service.addMember(f.service.resume(f.code), membership.acknowledge(membership.request.approvalBinding))
+        val before = f.custody().ledger().current()
+        val preview = f.service.prepareRevocation(peer.device)
+        assertEquals(before, f.custody().ledger().current())
+        assertFailsWith<IllegalArgumentException> { preview.acknowledge("0".repeat(64)) }
+        val result = f.service.revokeDevice(f.service.resume(f.code), preview.acknowledge(preview.request.approvalBinding))
+        assertEquals(before.sequence + 1, result.ledger.sequence); assertNotEquals(before.epoch, result.ledger.epoch)
+        assertFalse(result.ledger.members.getValue(peer.device).active)
+        assertEquals(1L, result.localDelivery.revocationNoticeCount)
+        val backend = FileCiphertextStore(f.profile.resolve("local-replica")); var cursor: CommitCursor? = null; var notices = 0
+        do {
+            val page = backend.listCommits(cursor)
+            page.entries.forEach { metadata ->
+                val output = java.io.ByteArrayOutputStream(); backend.readTo(metadata.key, output, metadata.descriptor)
+                val bytes = output.toByteArray()
+                if (SyncKeyDeliveryCodec.hasPrefix(bytes)) {
+                    val capsule = SyncKeyDeliveryCodec.decode(bytes)
+                    assertFalse(capsule.context.recipient == peer.device && capsule.context.epoch == result.ledger.epoch)
+                }
+                if (SyncLedgerNoticeCodec.hasPrefix(bytes)) {
+                    val notice = SyncLedgerNoticeCodec.decode(bytes)
+                    if (notice.context.recipient == peer.device) {
+                        val opened = notice.open(peer.trust, f.joiningKey, metadata.key)
+                        assertEquals(result.ledger, opened.records.last()); notices++
+                    }
+                }
+            }
+            cursor = page.nextCursor
+        } while (cursor != null)
+        assertEquals(1, notices)
+        val retry = f.service.resumeAdministration(f.service.resume(f.code))
+        assertEquals(result.ledger, retry.ledger); assertEquals(result.localDelivery, retry.localDelivery)
+    }
+    @Test fun changedLedgerOrBackgroundLockRefusesAnOlderRevocationConfirmation() = withFixture { f ->
+        val (invitation, peer) = f.prove(); val membership = f.service.prepareMember(peer, invitation)
+        f.service.addMember(f.service.resume(f.code), membership.acknowledge(membership.request.approvalBinding))
+        val old = f.service.prepareRevocation(peer.device); f.rotateBeforeJoin()
+        val before = f.custody().ledger().current()
+        assertFails { f.service.revokeDevice(f.service.resume(f.code), old.acknowledge(old.request.approvalBinding)) }
+        assertEquals(before, f.custody().ledger().current())
+        val fresh = f.service.prepareRevocation(peer.device); val draft = f.service.resume(f.code); f.service.lockManagement()
+        assertFails { f.service.revokeDevice(draft, fresh.acknowledge(fresh.request.approvalBinding)) }
+        assertEquals(before, f.custody().ledger().current()); assertTrue(before.members.getValue(peer.device).active)
+        assertFails { f.service.prepareRevocation(f.identity.fingerprint) }
+    }
     @Test fun changedProofOrBackgroundLockCannotCreateAnUnapprovedRootAction() {
         for (change in listOf("proof", "background")) withFixture { f ->
             val (invitation, peer) = f.prove(); val preview = f.service.prepareMember(peer, invitation)

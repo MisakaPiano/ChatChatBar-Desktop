@@ -44,6 +44,14 @@ class LanSyncGroupMemberPreview internal constructor(val device: String, val nam
     }
 }
 class LanSyncGroupMemberApproval internal constructor(internal val preview: LanSyncGroupMemberPreview)
+class LanSyncGroupRevocationPreview internal constructor(val device: String, val request: SyncRootLedgerRequest,
+    internal val heads: Set<SyncVersionRef>) {
+    fun acknowledge(binding: String): LanSyncGroupRevocationApproval {
+        require(binding == request.approvalBinding) { "SYNC_GROUP_REVOCATION_CONFIRMATION_REQUIRED" }
+        return LanSyncGroupRevocationApproval(this)
+    }
+}
+class LanSyncGroupRevocationApproval internal constructor(internal val preview: LanSyncGroupRevocationPreview)
 data class LanSyncGroupAdministrationReceipt(val ledger: SyncDeviceLedgerRecord, val localDelivery: LanSyncGroupPublishReceipt)
 
 /** One local app profile: explicit founder enrollment, then ordinary reopen without admin authority. */
@@ -119,6 +127,46 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         val request = SyncRootLedgerRequest(operation, current.reference(), Collections.unmodifiableMap(current.members + (peer.device to peer.member)),
             Collections.unmodifiableSet(current.coveredTypes.toSet()), Collections.unmodifiableSet(current.acceptedHeads.toSet()), false, binding)
         LanSyncGroupMemberPreview(peer.device, peer.name, request, peer, invitation)
+    }
+    /** Exact current roster and observed causal heads, before any new root intent/key rotation. */
+    suspend fun prepareRevocation(device: String, operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupRevocationPreview = guarded {
+        requireNoAbandon(); val record = readyRecord(); val custody = custody(record); val current = custody.ledger().current()
+        require(device != identity.fingerprint && device != SyncDeviceSignatures.decode(record.trust.ownerCertificate).fingerprint &&
+            current.members[device]?.active == true) { "SYNC_GROUP_REVOCATION_TARGET" }
+        val heads = administrationHeads(record)
+        val accepted = Collections.unmodifiableSet((current.acceptedHeads + heads).toSet())
+        val members = Collections.unmodifiableMap(current.members + (device to current.members.getValue(device).copy(active = false)))
+        val binding = lanSyncHash(buildJsonObject {
+            put("action", "REVOKE_DEVICE"); put("group", record.trust.group.value); put("operation", operation.value)
+            put("device", device); put("parent", current.id.value); put("parentHash", current.bodyHash())
+            put("heads", kotlinx.serialization.json.JsonArray(heads.sortedBy { it.id.value }.map { kotlinx.serialization.json.JsonPrimitive("${it.id.value}:${it.bodyHash}") }))
+        })
+        LanSyncGroupRevocationPreview(device, SyncRootLedgerRequest(operation, current.reference(), members,
+            Collections.unmodifiableSet(current.coveredTypes.toSet()), accepted, true, binding), Collections.unmodifiableSet(heads.toSet()))
+    }
+    private suspend fun administrationHeads(record: Record): Set<SyncVersionRef> {
+        val node = node(record); val local = FileCiphertextStore(directory("local-replica", false)); var cursor: CommitCursor? = null
+        do { cursor = node.discover(local, cursor).nextCursor } while (cursor != null)
+        val view = node.inspect()
+        require(!view.reconciliation.trustBlocked) { "SYNC_GROUP_ADMINISTRATION_TRUST_BLOCKED" }
+        return requireNotNull(view.reconciliation.history) { "SYNC_GROUP_ADMINISTRATION_HISTORY_MISSING" }.heads()
+    }
+    suspend fun revokeDevice(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupRevocationApproval): LanSyncGroupAdministrationReceipt = guarded {
+        requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
+        val preview = approval.preview; val heads = administrationHeads(record); val journal = rootJournal(record, session)
+        val commit = journal.commit(preview.request, custody::ledger, SyncRootLedgerAdmission { request ->
+            val current = custody.ledger().current(); val member = current.members[preview.device]
+            require(request == preview.request && heads == preview.heads && request.expectedParent == current.reference() &&
+                preview.device != identity.fingerprint && preview.device != SyncDeviceSignatures.decode(record.trust.ownerCertificate).fingerprint &&
+                member?.active == true && request.members == current.members + (preview.device to member.copy(active = false)) &&
+                request.coveredTypes == current.coveredTypes && request.acceptedHeads == current.acceptedHeads + heads && request.rotateKey) {
+                "SYNC_GROUP_REVOCATION_REVIEW_CHANGED"
+            }
+        }, session::signRootPayload)
+        journal.applyToCustody(commit, custody)
+        val receipt = finishRootDelivery(record, session, custody)
+        releaseSession(session); observe("GROUP_DEVICE_LOCALLY_REVOKED")
+        LanSyncGroupAdministrationReceipt(custody.ledger().current(), receipt)
     }
     /** Exact UI acknowledgment plus current real peer proof gate the new root intent. */
     suspend fun addMember(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupMemberApproval): LanSyncGroupAdministrationReceipt = guarded {
