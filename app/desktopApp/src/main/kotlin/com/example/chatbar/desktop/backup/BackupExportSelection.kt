@@ -251,7 +251,7 @@ class BackupExportCatalog internal constructor(
                     fields.size == 1 && fields.single() in setOf("images", "generatedImageMetadata") -> "[]"
                 record.type == "moment_posts" && !selection.momentsImages &&
                     fields.size == 1 && fields.single() in setOf("imagePath", "generatedImageMetadata") -> "null"
-                record.type == "moment_posts" && !selection.momentsImages && fields == listOf("desktopImageVersions") -> "[]"
+                record.type == "moment_posts" && !selection.momentsImages && fields.size == 1 && fields.single() in setOf(DesktopMomentBackupExtension.FIELD, DesktopMomentBackupExtension.LEGACY_FIELD) -> "[]"
                 record.type.startsWith("novelai_studio_") && fields.lastOrNull() == "importedCharacterCardId" &&
                     record.strings(fields.joinToString(".")).any { it !in selection.characterIds } -> "null"
                 record.type.startsWith("novelai_studio_") && fields.lastOrNull() == "followDefaultNovelAiImageModel" &&
@@ -309,7 +309,7 @@ class BackupExportCatalog internal constructor(
                     } else file.length()
                     val withoutMomentImages = if (type == "moment_posts") sizeWithout { path ->
                         when {
-                            path == listOf("desktopImageVersions") -> "[]"
+                            path.size == 1 && path.single() in setOf(DesktopMomentBackupExtension.FIELD, DesktopMomentBackupExtension.LEGACY_FIELD) -> "[]"
                             path.size == 1 && path.single() in setOf("imagePath", "generatedImageMetadata") -> "null"
                             else -> null
                         }

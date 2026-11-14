@@ -9,6 +9,8 @@ Desktop `DesktopMomentsSettings` lives in management settings' own `MOMENTS` / �
 
 Desktop MomentStore.begin/edit retains the selected author's owned image reference, without copying it into a separate avatar file. Typed card overwrite/deletion must therefore use the AppContainer's Core postcommit full-reference cleanup, preserving existing `moment_posts.senderAvatar` and image/version references. Historical missing-avatar transfer tolerance is not permission to delete a currently valid referenced image. The actual container retention regression uses Store-produced posts and both Core deletion/overwrite.
 
+Portable image candidates serialize as `imageVersions`; the old Desktop key is an accepted read alias. Desktop keeps its Kotlin property and selected-image semantics. Missing Android per-version time is0/unknown and stays omitted, and a missing selected brief reuses only that post's known selected brief. Stored order and existing Desktop metadata are retained. Backup alias conflict/resource/omission handling lives in `DesktopMomentBackupExtension`; the old frozen Android four-field DTO does not establish lossless Desktop metadata round trips.
+
 ## Scope
 
 Use this skill before editing 朋友圈 code or docs:

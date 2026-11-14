@@ -112,7 +112,7 @@ internal object DesktopFullBackupSource {
                                             phase = "ENTITY_SCHEMA"
                                             when (val type = DesktopBackupPolicy.entityType(path)) {
                                                 "moment_posts" -> {
-                                                    if (DesktopMomentBackupExtension.FIELD in value) incompatible84 = true
+                                                    if (DesktopMomentBackupExtension.hasVersions(value)) incompatible84 = true
                                                     DesktopMomentBackupExtension.snapshot(value)
                                                     value["senderAvatar"]?.jsonPrimitive?.contentOrNull
                                                         ?.takeIf { it.startsWith(DesktopBackupPolicy.PREFIX) }?.let {

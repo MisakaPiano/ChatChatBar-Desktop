@@ -1,0 +1,51 @@
+name: Desktop portable Moment versions focused verification
+on:
+  push:
+    branches: [codex/desktop-portable-moment-versions-20261115]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind native canonical temporary directory for synthetic repositories
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-reply-fixtures'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class ReplyFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+      - name: Verify portable versions original metadata resource custody and selected backup paths
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageCleanupTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageCompletionSelectionTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsPanelTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMomentVersionBackupTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeOmittedImageRetentionTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergePreviewTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-portable-moment-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/

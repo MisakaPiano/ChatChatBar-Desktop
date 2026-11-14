@@ -59,7 +59,7 @@ internal object DesktopBackupPolicy {
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =
-        DesktopMomentBackupExtension.FIELD in value ||
+        DesktopMomentBackupExtension.hasVersions(value) ||
         value["desktopPlayerRole"] is JsonObject ||
         (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
@@ -111,7 +111,9 @@ internal object DesktopBackupPolicy {
             is JsonArray -> JsonArray(node.map { credentialFree(it, context) })
             else -> node
         }
-        val clean = credentialFree(value).jsonObject
+        val clean = credentialFree(value).jsonObject.let {
+            if (type == "moment_posts") DesktopMomentBackupExtension.canonical(it) else it
+        }
         if (type == "desktop_character_backgrounds") {
             require(clean.keys - "migrated" == setOf("images", "preferred"))
             clean["migrated"]?.jsonPrimitive?.let { require(!it.isString && it.booleanOrNull != null) }

@@ -29,6 +29,9 @@ internal object DesktopOfficialBackupEntitySchema {
         when (descriptor.kind) {
             StructureKind.CLASS, StructureKind.OBJECT -> {
                 val obj = value as? JsonObject ?: return // The actual serializer diagnoses its expected type.
+                if (typeName == "com.example.chatbar.data.local.entity.MomentPost") {
+                    require(!("imageVersions" in obj && "desktopImageVersions" in obj)) { "MOMENT_VERSION_ALIAS_CONFLICT" }
+                }
                 if (typeName in setOf("com.example.chatbar.data.local.entity.ChatSession", "com.example.chatbar.data.local.entity.SaveSlot")) {
                     require(!("characterParticipation" in obj && "desktopCharacterParticipation" in obj)) {
                         "OFFICIAL_PARTICIPATION_ALIAS_CONFLICT"

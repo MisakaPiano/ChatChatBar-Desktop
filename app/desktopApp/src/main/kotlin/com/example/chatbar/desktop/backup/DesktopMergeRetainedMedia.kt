@@ -104,7 +104,7 @@ internal class DesktopMergeRetainedMedia(
                     put("imagePath", old["imagePath"] ?: JsonNull)
                     put("generatedImageMetadata", old["generatedImageMetadata"] ?: JsonNull)
                     // Versions are one media owner; retaining only the selected image loses its alternatives.
-                    put(DesktopMomentBackupExtension.FIELD, old[DesktopMomentBackupExtension.FIELD] ?: JsonArray(emptyList()))
+                    put(DesktopMomentBackupExtension.FIELD, DesktopMomentBackupExtension.rawVersions(old) ?: JsonArray(emptyList()))
                 }
             }
             "novelai_generation_history" -> {
