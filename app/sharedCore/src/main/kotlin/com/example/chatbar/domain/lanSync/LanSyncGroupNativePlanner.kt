@@ -154,6 +154,23 @@ object LanSyncGroupNativePlanner {
             Collections.unmodifiableMap(applied.mapValues { (_, value) -> value.copy(frontiers = Collections.unmodifiableSet(value.frontiers.toSet())) }),
             Collections.unmodifiableMap(advances), Collections.unmodifiableMap(components))
     }
+    /** Rebuild both target and receipts from complete allowed components; never filter receipts alone. */
+    internal fun restrict(native: LanSyncGroupNativePlan, blockedUnits: Set<String>): LanSyncGroupNativePlan {
+        val blocked = blockedUnits.filter { it in native.units }.flatMap { native.components.getValue(it) }.toSet()
+        if (blocked.isEmpty()) return native
+        val advances = native.advances.filterKeys { it !in blocked }
+        val rows = native.before.units().filterKeys { it !in advances }.values.flatten() +
+            native.plan.snapshot.units().filterKeys { it in advances }.values.flatten()
+        val references = LanSyncScope.referencedResources(rows)
+        val snapshot = native.before.copy(records = Collections.unmodifiableList(rows), resources = Collections.unmodifiableMap(
+            (native.before.resources + native.plan.snapshot.resources).filterKeys(references::contains)))
+        snapshot.validate(); LanSyncScope.validateGraph(snapshot)
+        val units = native.units.mapValues { (unit, row) -> if (unit in blocked)
+            row.copy(stage = LanSyncGroupNativeStage.DEPENDENCY_HELD, code = "SYNC_GROUP_RESOLUTION_HELD") else row }
+        return LanSyncGroupNativePlan(native.before, native.plan.copy(snapshot = snapshot), native.checkpoint, native.heads,
+            native.expected, native.sourceFiles, Collections.unmodifiableMap(units), native.appliedBefore,
+            Collections.unmodifiableMap(advances), native.components)
+    }
     private val readyStages = setOf(LanSyncGroupNativeStage.READY_CONTENT, LanSyncGroupNativeStage.READY_DELETION, LanSyncGroupNativeStage.READY_OBSERVATION)
     private fun replace(current: LanSyncSnapshot, units: Set<String>, rows: Map<String, LanSyncGroupNativeUnit>): LanSyncSnapshot {
         val available = units.mapNotNull { rows.getValue(it).available }

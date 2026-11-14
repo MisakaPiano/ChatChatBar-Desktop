@@ -26,6 +26,36 @@ class LanSyncGroupNativeApplyOwnerTest {
         val root = Files.createTempDirectory("synthetic-native-group-control-").toRealPath()
         try { work(Node(root)) } finally { check(root.toFile().deleteRecursively()) }
     }
+    @Test fun restrictedTargetsKeepHeldDataAndReceiptsWhileIndependentIncomingContentReallyApplies() = withNode { n ->
+        val a = "character_cards/a"; val b = "character_cards/b"; val f = n.f
+        f.card("a", "held"); f.card("b", "independent"); val version = f.publish(setOf(a, b))
+        val restricted = LanSyncGroupNativePlanner.restrict(n.plan(), setOf(a))
+        assertEquals(setOf(b), restricted.advances.keys); assertEquals(setOf(b), restricted.plan.snapshot.units().keys)
+        val receipt = requireNotNull(n.owner().apply(restricted))
+        assertEquals(setOf(b), receipt.advancedUnits); assertFalse(a in n.owner().state().units)
+        assertEquals(setOf(version.reference()), n.owner().state().units.getValue(b).frontiers)
+        assertFalse(Files.exists(f.target.resolve("entities/character_cards/a.json"))); assertEquals("independent", n.readCard("b").name)
+        val allHeld = LanSyncGroupNativePlanner.restrict(n.plan(), setOf(a))
+        assertTrue(allHeld.advances.isEmpty()); assertEquals(allHeld.before.hashes(), allHeld.plan.snapshot.hashes())
+        val sequence = n.owner().state().completedSequence; assertNull(n.owner().apply(allHeld))
+        assertEquals(sequence, n.owner().state().completedSequence)
+    }
+    @Test fun restrictionKeepsAnEntireSharedMediaComponentOutOfTheNativeTarget() = withNode { n ->
+        val f = n.f; val units = setOf("character_cards/a", "character_cards/b", "character_cards/c")
+        val image = f.source.data.resolve("images/shared.png"); Files.createDirectories(image.parent)
+        Files.write(image, Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="))
+        for (id in listOf("a", "b")) {
+            val path = f.source.data.resolve("entities/character_cards/$id.json"); Files.createDirectories(path.parent)
+            LanSyncJsonFiles.write(path, CharacterCard.serializer(), CharacterCard(id, id, avatar = image.toString(), createdAt = 1, updatedAt = 1))
+        }
+        f.card("c", "independent"); f.publish(units)
+        val restricted = LanSyncGroupNativePlanner.restrict(n.plan(), setOf("character_cards/a"))
+        assertEquals(setOf("character_cards/c"), restricted.advances.keys)
+        assertEquals(setOf("character_cards/c"), restricted.plan.snapshot.units().keys); assertTrue(restricted.plan.snapshot.resources.isEmpty())
+        assertEquals(setOf("character_cards/c"), requireNotNull(n.owner().apply(restricted)).advancedUnits)
+        assertFalse(Files.exists(f.target.resolve("entities/character_cards/a.json")))
+        assertFalse(Files.exists(f.target.resolve("entities/character_cards/b.json")))
+    }
 
     @Test fun perUnitNativeReceiptsPreserveAnUnsignedLocalDeletionAcrossIndependentApplyAndRepeat() = withNode { n ->
         val a = "character_cards/a"; val b = "character_cards/b"; val f = n.f

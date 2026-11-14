@@ -380,6 +380,29 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     fun applied(transaction: String): Boolean = Files.exists(stateRoot.resolve("transaction-$transaction/applied"), LinkOption.NOFOLLOW_LINKS)
 
+    /** Exact post-apply raw manifest, derived from authorized WAL rather than a later mutable capture. */
+    internal fun appliedSourceFiles(transactionId: String, before: Map<String, String>): Map<String, String>? {
+        require(transactionId.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
+        if (!applied(transactionId)) return null
+        val transaction = stateRoot.resolve("transaction-$transactionId"); lanSyncSafe(transaction, true)
+        val file = transaction.resolve("journal.json")
+        require(lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128)) ==
+            LanSyncResourceStore.hashFile(file, Files.size(file))) { "SYNC_JOURNAL_DAMAGED" }
+        metadataBudget.validate(file)
+        val journal = requireNotNull(LanSyncJsonFiles.read(file, LanSyncJournal.serializer())) { "SYNC_JOURNAL_DAMAGED" }
+        require(journal.transaction == transactionId && journal.entries.size <= 300_000 &&
+            journal.entries.map { it.path }.toSet().size == journal.entries.size &&
+            journal.entries.withIndex().all { (index, entry) -> entry.index == index }) { "SYNC_JOURNAL_DAMAGED" }
+        val result = before.toMutableMap()
+        journal.entries.forEach { entry ->
+            target(entry.path)
+            require(listOfNotNull(entry.oldHash, entry.newHash).all { it.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_JOURNAL_DAMAGED" }
+            require(before[entry.path] == entry.oldHash) { "SYNC_JOURNAL_SOURCE_CHANGED" }
+            if (entry.newHash == null) result.remove(entry.path) else result[entry.path] = entry.newHash
+        }
+        return result.toMap()
+    }
+
     /** Called only after a newer bilateral completion. Preserve the receipt; release old payloads. */
     fun retire(transactionId: String) {
         require(transactionId.matches(Regex("[a-f0-9-]{36}")))
