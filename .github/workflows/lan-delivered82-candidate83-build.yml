@@ -53,6 +53,12 @@ jobs:
       - name: Pin four independent inputs and preserve original82 bytes
         run: python3 -B tools/lan-next-control/build_control.py collect --request .github/lan-next-sync-control-build-request.json --seed-dir "$CCB_LAN_SEED_SOURCE" --candidate-dir "$CCB_LAN_CANDIDATE_SOURCE" --original-dir original82 --output raw-inputs --control-sha "$GITHUB_SHA" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
       - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered82-candidate83-manifests
+          path: raw-inputs/*.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ccb-lan-delivered82-candidate83-inputs
