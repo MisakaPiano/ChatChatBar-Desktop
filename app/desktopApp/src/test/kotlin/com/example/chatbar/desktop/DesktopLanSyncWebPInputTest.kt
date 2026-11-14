@@ -72,6 +72,15 @@ class DesktopLanSyncWebPInputTest {
                 val actual = ByteArrayOutputStream(); val buffer = ByteArray(8)
                 while (true) { val count = input.read(buffer); if (count < 0) break; actual.write(buffer, 0, count) }
                 assertContentEquals(original, actual.toByteArray())
+                for (order in listOf(ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN)) {
+                    input.byteOrder = order
+                    for (position in listOf(10, 28)) {
+                        input.seek(position.toLong())
+                        assertEquals(ByteBuffer.wrap(original, position, 4).order(order).int, input.readInt())
+                        input.seek(position.toLong())
+                        assertEquals(ByteBuffer.wrap(original, position, 8).order(order).long, input.readLong())
+                    }
+                }
             }
             DesktopLanSyncRaster.decode(image, row, 256).let { try { assertEquals(16, it.width); assertEquals(12, it.height) } finally { it.flush() } }
             write(image, 17 * 1024 * 1024, 17 * 1024 * 1024)
