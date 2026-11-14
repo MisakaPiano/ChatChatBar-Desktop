@@ -2,6 +2,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
@@ -159,6 +160,37 @@ class DesktopSessionImageGalleryTest {
             action(); assertEquals(2, index)
             selection.previous(); action(); assertEquals(1, index)
             selection.previous(); action(); assertEquals(0, index)
+        } finally { scene.close() }
+    }
+
+    @Test fun `explicit new thumbnail replaces selection and source snapshot together`() = runBlocking(edt) {
+        val first = DesktopSessionImageGallerySnapshot("s", "Old snapshot", listOf(
+            DesktopSessionImageOccurrence("old-a", 0, "same", MessageRole.ASSISTANT, 0, 1),
+            DesktopSessionImageOccurrence("old-b", 1, "same", MessageRole.ASSISTANT, 0, 1)), 2, 0)
+        val newer = first.copy(title = "Refreshed", occurrences = first.occurrences.reversed())
+        var captured by mutableStateOf(first)
+        var initial by mutableIntStateOf(1)
+        var opening: DesktopSessionImageOpeningState? = null
+        var source: DesktopSessionImageOccurrence? = null
+        val scene = ImageComposeScene(400, 120, coroutineContext = edt) {
+            DesktopSessionImageOpening(captured, initial) { current ->
+                SideEffect { opening = current }
+                DesktopViewerSourceAction(current.selection) { source = current.snapshot.occurrences[it] }
+            }
+        }
+        fun action(): () -> Boolean = scene.nodes().first { it.label("回到来源消息") && it.config.contains(SemanticsActions.OnClick) }
+            .config[SemanticsActions.OnClick].action!!
+        try {
+            scene.frames(); val oldOpening = assertNotNull(opening)
+            action()(); assertEquals("old-b", source?.messageId)
+            oldOpening.selection.previous(); action()(); assertEquals("old-a", source?.messageId)
+            captured = newer; initial = 1; scene.frames()
+            assertNotSame(oldOpening, opening)
+            assertEquals(1, opening?.selection?.index)
+            action()(); assertEquals("old-a", source?.messageId)
+            captured = first; initial = 0; scene.frames()
+            assertEquals(0, opening?.selection?.index)
+            action()(); assertEquals("old-a", source?.messageId)
         } finally { scene.close() }
     }
 }

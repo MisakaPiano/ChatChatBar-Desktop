@@ -159,22 +159,24 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
     extraActions: @Composable RowScope.(String) -> Unit = {}, onClose: () -> Unit) {
-    DesktopImageViewerBody(references, initialIndex, resources, picker, extraActions, null, onClose)
+    val selection = remember { DesktopViewerSelection(references, initialIndex) }
+    DesktopImageViewerBody(selection, resources, picker, extraActions, null, onClose)
 }
 
 @Composable
 internal fun DesktopSessionImageViewer(snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
     onSource: (DesktopSessionImageOccurrence) -> Unit, onClose: () -> Unit) {
-    DesktopImageViewerBody(snapshot.occurrences.map { it.reference }, initialIndex, resources, picker, {},
-        { index -> snapshot.occurrences.getOrNull(index)?.let(onSource) }, onClose)
+    DesktopSessionImageOpening(snapshot, initialIndex) { opening ->
+        DesktopImageViewerBody(opening.selection, resources, picker, {},
+            { index -> opening.snapshot.occurrences.getOrNull(index)?.let(onSource) }, onClose)
+    }
 }
 
 @Composable
-private fun DesktopImageViewerBody(references: List<String>, initialIndex: Int,
+private fun DesktopImageViewerBody(selection: DesktopViewerSelection,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
     extraActions: @Composable RowScope.(String) -> Unit, onSource: ((Int) -> Unit)?, onClose: () -> Unit) {
-    val selection = remember { DesktopViewerSelection(references, initialIndex) }
     val reference = selection.reference ?: return
     val index = selection.index
     val count = selection.references.size

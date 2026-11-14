@@ -20,6 +20,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+internal class DesktopSessionImageOpeningState(val snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int) {
+    val selection = DesktopViewerSelection(snapshot.occurrences.map { it.reference }, initialIndex)
+}
+
+/** A new explicit thumbnail opening replaces the viewer as one unit, including its source mapping. */
+@Composable
+internal fun DesktopSessionImageOpening(snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int,
+    content: @Composable (DesktopSessionImageOpeningState) -> Unit) {
+    val opening = remember(snapshot, initialIndex) { DesktopSessionImageOpeningState(snapshot, initialIndex) }
+    key(opening) { content(opening) }
+}
+
 /** Refresh replaces the overview only. An opened viewer keeps its exact occurrence snapshot. */
 @Composable
 internal fun DesktopSessionImageGalleryWindow(sessionId: String, controller: DesktopPrimaryChatController,
