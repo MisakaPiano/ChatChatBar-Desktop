@@ -41,15 +41,22 @@ internal fun ChatPeopleDialog(
     error: String?,
     onPersonEnabled: (String, Boolean) -> Unit,
     onEditCard: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    statuses: Map<String, com.example.chatbar.domain.chat.ChatPersonStatus> = emptyMap(),
+    statusLoading: Boolean = false,
+    onRefreshStatus: () -> Unit = {}
 ) {
     val active = card.characters.count { SessionCharacterParticipationPolicy.isEnabled(session, card, it.id) }
+    val expanded = androidx.compose.runtime.remember(card.id) { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     CbDialog(
         title = "会话人物 · $active/${card.characters.size}",
         onDismissRequest = onDismiss,
         confirm = { CbButton("完成", onDismiss) }
     ) {
         CbText("开关仅影响本对话后续请求，聊天历史会保留。", style = ChatBarTheme.typography.caption)
+        CbText("剧情状态来自最近已保存且明确标注所属人物的状态栏；不会改写设定或启停人物。", style = ChatBarTheme.typography.caption)
+        CbButton(if (statusLoading) "读取剧情状态…" else "刷新剧情状态", onRefreshStatus,
+            enabled = !statusLoading, variant = ButtonVariant.Ghost)
         error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
         if (card.characters.isEmpty()) CbText("角色卡中还没有人物。")
         LazyColumn(
@@ -70,6 +77,14 @@ internal fun ChatPeopleDialog(
                         CharacterAvatar(person.appearanceImage, Modifier.size(40.dp))
                         Column(Modifier.weight(1f)) {
                             CbText(person.name)
+                            val status = statuses[person.id]
+                            if (status == null) CbText(if (statusLoading) "正在读取状态" else "暂无可明确归属的剧情状态",
+                                style = ChatBarTheme.typography.caption, color = ChatBarTheme.colors.mutedForeground)
+                            else {
+                                CbButton(if (expanded[person.id] == true) "收起剧情状态" else "查看剧情状态",
+                                    { expanded[person.id] = expanded[person.id] != true }, variant = ButtonVariant.Ghost)
+                                if (expanded[person.id] == true) CbText(status.text, style = ChatBarTheme.typography.caption)
+                            }
                             if (!person.enabled) CbText("卡内已关闭 · 点此编辑角色卡", style = ChatBarTheme.typography.caption,
                                 color = ChatBarTheme.colors.mutedForeground)
                         }

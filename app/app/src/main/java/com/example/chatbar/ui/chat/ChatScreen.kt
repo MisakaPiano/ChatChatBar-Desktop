@@ -55,6 +55,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -293,6 +294,19 @@ fun ChatScreen(
     var peopleOpen by remember(sessionId) { mutableStateOf(false) }
     var peopleSaving by remember(sessionId) { mutableStateOf(false) }
     var peopleError by remember(sessionId) { mutableStateOf<String?>(null) }
+    var peopleStatuses by remember(sessionId) { mutableStateOf<Map<String, com.example.chatbar.domain.chat.ChatPersonStatus>>(emptyMap()) }
+    var peopleStatusLoading by remember(sessionId) { mutableStateOf(false) }
+    var peopleStatusRevision by remember(sessionId) { mutableIntStateOf(0) }
+    LaunchedEffect(peopleOpen, peopleStatusRevision, characterCard?.id) {
+        if (peopleOpen) {
+            peopleStatusLoading = true
+            peopleStatuses = emptyMap()
+            try { peopleStatuses = viewModel.loadPeopleStatusSnapshot() }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) { peopleError = "剧情状态读取失败：${error.message}" }
+            finally { peopleStatusLoading = false }
+        }
+    }
     var clearConfirm by remember { mutableStateOf(false) }
     var fullComposer by remember { mutableStateOf(false) }
     var actionMessageId by remember { mutableStateOf<String?>(null) }
@@ -1615,7 +1629,9 @@ fun ChatScreen(
                 }
             },
             onEditCard = { peopleOpen = false; onEditCharacter(peopleCard.id) },
-            onDismiss = { peopleOpen = false }
+            onDismiss = { peopleOpen = false },
+            statuses = peopleStatuses, statusLoading = peopleStatusLoading,
+            onRefreshStatus = { peopleError = null; peopleStatusRevision++ }
         )
     }
     if (debugOpen) DebugLogDialog(sessionId, viewModel, { debugOpen = false })

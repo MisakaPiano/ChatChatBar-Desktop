@@ -4844,6 +4844,15 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
+    suspend fun loadPeopleStatusSnapshot(): Map<String, com.example.chatbar.domain.chat.ChatPersonStatus> =
+        withContext(Dispatchers.IO) {
+            val card = _characterCard.value ?: return@withContext emptyMap()
+            val collector = com.example.chatbar.domain.chat.ChatPeopleStatusCollector(card)
+            chatRepository.forEachMessage(sessionId) { collector.accept(it) }
+            check(_session.value?.characterCardId == card.id) { "会话绑定角色卡已变化，请重新打开人物列表" }
+            collector.snapshot()
+        }
+
     suspend fun addChatBackgroundToCard(path: String) = mutateChatBackgroundLibrary { card ->
         val file = File(path).canonicalFile
         val owned = File(ChatBarApp.instance.filesDir, "images").canonicalFile
