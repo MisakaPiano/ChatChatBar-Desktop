@@ -19,16 +19,21 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
         bitOffset = 0
         if (length == 0) return 0
         if (streamPos >= size) return -1
-        var low = 0; var high = parts.lastIndex
-        while (low < high) { val middle = (low + high + 1) ushr 1; if (parts[middle].start <= streamPos) low = middle else high = middle - 1 }
-        val part = parts[low]; val position = streamPos - part.start
-        val count = minOf(length.toLong(), part.length - position).toInt()
-        require(count > 0) { "SYNC_IMAGE_INVALID" }
-        val read = if (part.bytes != null) {
-            part.bytes.copyInto(bytes, offset, position.toInt(), position.toInt() + count); count
-        } else { source.seek(part.sourceOffset + position); source.read(bytes, offset, count).also { require(it > 0) { "SYNC_IMAGE_INVALID" } } }
-        streamPos += read
-        return read
+        val requested = minOf(length.toLong(), size - streamPos).toInt()
+        var completed = 0
+        // ImageInputStreamImpl primitive reads expect their full buffer, including across parts.
+        while (completed < requested) {
+            var low = 0; var high = parts.lastIndex
+            while (low < high) { val middle = (low + high + 1) ushr 1; if (parts[middle].start <= streamPos) low = middle else high = middle - 1 }
+            val part = parts[low]; val position = streamPos - part.start
+            val count = minOf((requested - completed).toLong(), part.length - position).toInt()
+            require(count > 0) { "SYNC_IMAGE_INVALID" }
+            val read = if (part.bytes != null) {
+                part.bytes.copyInto(bytes, offset + completed, position.toInt(), position.toInt() + count); count
+            } else { source.seek(part.sourceOffset + position); source.read(bytes, offset + completed, count).also { require(it > 0) { "SYNC_IMAGE_INVALID" } } }
+            streamPos += read; completed += read
+        }
+        return completed
     }
     override fun close() { try { super.close() } finally { source.close() } }
 

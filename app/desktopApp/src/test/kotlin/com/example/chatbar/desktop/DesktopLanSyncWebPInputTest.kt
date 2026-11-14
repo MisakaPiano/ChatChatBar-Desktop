@@ -67,6 +67,12 @@ class DesktopLanSyncWebPInputTest {
             val image = root.resolve("profile.webp")
             val ordinarySize = ICC_Profile.getInstance(ColorSpace.CS_sRGB).data.size
             write(image, ordinarySize, ordinarySize)
+            val original = Files.readAllBytes(image)
+            DesktopLanSyncWebPInput.open(image, true).use { input ->
+                val actual = ByteArrayOutputStream(); val buffer = ByteArray(8)
+                while (true) { val count = input.read(buffer); if (count < 0) break; actual.write(buffer, 0, count) }
+                assertContentEquals(original, actual.toByteArray())
+            }
             DesktopLanSyncRaster.decode(image, row, 256).let { try { assertEquals(16, it.width); assertEquals(12, it.height) } finally { it.flush() } }
             write(image, 17 * 1024 * 1024, 17 * 1024 * 1024)
             val hash = LanSyncLargePngFixture.hash(image)
