@@ -116,6 +116,32 @@ class DesktopControlTest(unittest.TestCase):
             with self.assertRaises(ValueError): d.verify_outer_and_extract(escaping, root / 'unsafe', changed)
             self.assertFalse((root / 'escaped.txt').exists())
 
+    def test_original_nested_inner_is_verified_without_flattening(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-control-nested-') as temporary:
+            root = Path(temporary); archive = root / 'nested.zip'; filename = d.BASE['filename']; inner = b'artificial old original'
+            with zipfile.ZipFile(archive, 'x') as z: z.writestr('output/' + filename, inner)
+            import hashlib
+            row = {'filename': filename, 'series': 'lan3', 'outerBytes': archive.stat().st_size,
+                   'outerSha256': file_hash(archive), 'innerBytes': len(inner), 'innerSha256': hashlib.sha256(inner).hexdigest()}
+            destination = root / 'nested-input'
+            result = d.verify_outer_and_extract(archive, destination, row)
+            self.assertEqual(result['innerRelativePath'], 'output/' + filename)
+            self.assertEqual((destination / 'output' / filename).read_bytes(), inner)
+            self.assertFalse((destination / filename).exists())
+            with self.assertRaisesRegex(ValueError, 'EXACT_ORIGINAL_INNER_BYTES'):
+                d.verify_outer_and_extract(archive, root / 'wrong-inner-hash', dict(row, innerSha256='0' * 64))
+
+    def test_two_nested_matching_original_filenames_are_ambiguous(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-control-ambiguous-') as temporary:
+            root = Path(temporary); archive = root / 'ambiguous.zip'; filename = d.BASE['filename']; inner = b'artificial old original'
+            with zipfile.ZipFile(archive, 'x') as z:
+                z.writestr('one/' + filename, inner); z.writestr('two/' + filename, inner)
+            import hashlib
+            row = {'filename': filename, 'series': 'lan3', 'outerBytes': archive.stat().st_size,
+                   'outerSha256': file_hash(archive), 'innerBytes': len(inner), 'innerSha256': hashlib.sha256(inner).hexdigest()}
+            with self.assertRaisesRegex(ValueError, 'SINGLE_ORIGINAL_INNER_REQUIRED'):
+                d.verify_outer_and_extract(archive, root / 'ambiguous-input', row)
+
     def test_timestamp_exception_needs_identical_sources_and_observed_old_typed_change(self):
         old = legacy()
         with tempfile.TemporaryDirectory(prefix='ccb-control-timestamp-') as temporary:

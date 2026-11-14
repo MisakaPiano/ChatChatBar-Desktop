@@ -222,9 +222,12 @@ def verify_outer_and_extract(archive, destination, row):
                     (item.external_attr >> 16) & 0o170000 != 0o120000 and '\\' not in item.filename, 'ORIGINAL_OUTER_ESCAPE_OR_LINK')
         destination.mkdir()
         z.extractall(destination)
-    inner = destination / row['filename']
+    matches = list(destination.rglob(row['filename']))
+    require(len(matches) == 1 and matches[0].is_file() and not matches[0].is_symlink(), 'SINGLE_ORIGINAL_INNER_REQUIRED')
+    inner = matches[0]
     require(descriptor(inner)['bytes'] == row['innerBytes'] and file_hash(inner) == row['innerSha256'], 'EXACT_ORIGINAL_INNER_BYTES')
-    return {'series': row['series'], 'outer': descriptor(archive), 'outerCrcPassed': True, 'outerMembers': names, 'inner': descriptor(inner)}
+    return {'series': row['series'], 'outer': descriptor(archive), 'outerCrcPassed': True, 'outerMembers': names,
+            'inner': descriptor(inner), 'innerRelativePath': inner.relative_to(destination).as_posix()}
 
 
 def fetch_originals(request, output):
