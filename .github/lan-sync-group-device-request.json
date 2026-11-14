@@ -1,5 +1,5 @@
 {
-  "sourceSha": "0813c316900f062f831b11bef1ca08ddc7190c05",
+  "sourceSha": "225c4e2a7cc3742dabe06d11b14f417da7b619ef",
   "purpose": "Verify independent random-code AEAD management identity/root journal across two API26 processes, lock admin before daily Keystore author/source recovery, retain atomic epoch/checkpoint/keys and later local edits",
   "artifacts": "Reports only; no app roots, synthetic recovery codes, keys, credentials or APK"
 }
