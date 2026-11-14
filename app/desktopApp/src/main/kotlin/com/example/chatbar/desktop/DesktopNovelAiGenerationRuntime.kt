@@ -28,6 +28,7 @@ internal class DesktopNovelAiGenerationRuntime(
         requestSize: NovelAiImageSize? = null,
         composeResult: (ByteArray) -> ByteArray = { it },
         promptPlan: NovelAiPromptPlan? = null,
+        safeBatchRequest: Boolean = false,
     ): NovelAiGenerationHistoryEntry = mutex.withLock {
         withContext(Dispatchers.IO) {
             var media: DesktopImageDiagnosticRecorder? = null
@@ -53,7 +54,9 @@ internal class DesktopNovelAiGenerationRuntime(
                 media = beginDesktopImageDiagnostics(diagnostics, secrets, token, settings.requestModel(guidance.action), settings.count)
                 NovelAiImageService(media?.client(client) ?: client, safeErrorsOnly = true).generate(
                     token, plan, requestSize ?: settings.imageSize(), settings, guidance,
-                    retryRateLimitsUntilCancelled = retryRateLimitsUntilCancelled, maxRateLimitRetries = maxRateLimitRetries,
+                    retryRateLimitsUntilCancelled = retryRateLimitsUntilCancelled && !safeBatchRequest,
+                    maxRateLimitRetries = if (safeBatchRequest) 0 else maxRateLimitRetries,
+                    safeBatchRequest = safeBatchRequest,
                     onRateLimitRetry = onRetry,
                     readTimeoutSeconds = if (retryRateLimitsUntilCancelled) 120 else 600,
                 ).collect { event ->
@@ -68,7 +71,12 @@ internal class DesktopNovelAiGenerationRuntime(
                             validate(composed)
                             images += composed
                         }
-                        is NovelAiImageEvent.Error -> throw DesktopNovelAiRequestException(event.message)
+                        is NovelAiImageEvent.Error -> {
+                            if (safeBatchRequest && event.httpCode == 429) {
+                                throw ImageBatchRateLimited(event.retryAfterMillis ?: 10000L)
+                            }
+                            throw DesktopNovelAiRequestException(event.message)
+                        }
                     }
                 }
                 check(images.size == settings.count)
@@ -78,6 +86,7 @@ internal class DesktopNovelAiGenerationRuntime(
                 // Cancellation before commit saves nothing; an entered durable batch completes atomically.
                 withContext(NonCancellable) { persist(images, recipe) }
             } catch (_: CancellationException) { media?.finish(DesktopUsageOutcome.CANCELLED); throw CancellationException("NovelAI 请求已取消") }
+            catch (limited: ImageBatchRateLimited) { media?.finish(DesktopUsageOutcome.FAILED); throw limited }
             catch (safe: DesktopNovelAiRequestException) { media?.finish(DesktopUsageOutcome.FAILED); throw safe }
             catch (_: Exception) { media?.finish(DesktopUsageOutcome.FAILED); throw DesktopNovelAiRequestException("NovelAI 生成或保存失败；未发布不完整批次") }
         }

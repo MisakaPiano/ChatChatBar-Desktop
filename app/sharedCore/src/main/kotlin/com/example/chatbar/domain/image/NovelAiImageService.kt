@@ -36,7 +36,7 @@ import org.msgpack.value.Value
 sealed class NovelAiImageEvent {
     data class Intermediate(val image: ByteArray, val step: Int, val progress: Float) : NovelAiImageEvent()
     data class Final(val image: ByteArray) : NovelAiImageEvent()
-    data class Error(val message: String) : NovelAiImageEvent()
+    data class Error(val message: String, val httpCode: Int? = null, val retryAfterMillis: Long? = null) : NovelAiImageEvent()
 }
 
 class NovelAiImageService(
@@ -71,13 +71,14 @@ class NovelAiImageService(
         onRequestStatus: (String) -> Unit = {},
         readTimeoutSeconds: Long = TimeUnit.MINUTES.toSeconds(READ_TIMEOUT_MINUTES),
         maxRateLimitRetries: Int = MAX_GENERATION_ATTEMPTS - 1,
-        enhance: NovelAiEnhanceRequestOptions? = null
+        enhance: NovelAiEnhanceRequestOptions? = null,
+        safeBatchRequest: Boolean = false
     ): Flow<NovelAiImageEvent> = callbackFlow {
         require(readTimeoutSeconds > 0)
         require(maxRateLimitRetries >= 0)
         val requestClient = client.newBuilder()
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
-            .apply { if (enhance != null) retryOnConnectionFailure(false) }
+            .apply { if (enhance != null || safeBatchRequest) retryOnConnectionFailure(false) }
             .build()
         val requestBody = buildRequestBody(prompt, imageSize, settings, imageGuidance, enhance).toRequestBody(JSON_MEDIA_TYPE)
         val activeCall = AtomicReference<Call?>()
@@ -115,6 +116,13 @@ class NovelAiImageService(
                         response.use {
                             if (!this@callbackFlow.isActive) return
                             if (!response.isSuccessful) {
+                                if (safeBatchRequest && response.code == 429) {
+                                    val cooldown = safeRetryAfterMillis(response.header("Retry-After"))
+                                    call.cancel()
+                                    trySend(NovelAiImageEvent.Error("HTTP 429 请求频率限制；任务暂停，等待手动继续 [request: $correlationId]", 429, cooldown))
+                                    close()
+                                    return
+                                }
                                 if (response.code == 429 && (retryRateLimitsUntilCancelled || attempt <= maxRateLimitRetries)) {
                                     val retryDelay = retryDelayMillis(attempt.coerceAtMost(30), response.header("Retry-After"))
                                         .coerceAtLeast(if (retryRateLimitsUntilCancelled) 1_000L else 0L)
@@ -141,7 +149,9 @@ class NovelAiImageService(
                                     503 -> "NovelAI 服务暂不可用"
                                     else -> "未知服务端错误"
                                 }
-                                trySend(NovelAiImageEvent.Error("NovelAI 生图失败 ($reason, HTTP ${response.code})${if (body.isNotEmpty()) ": $body" else ""}"))
+                                trySend(NovelAiImageEvent.Error("NovelAI 生图失败 ($reason, HTTP ${response.code})${if (body.isNotEmpty()) ": $body" else ""}",
+                                    httpCode = response.code,
+                                    retryAfterMillis = if (response.code == 429) safeRetryAfterMillis(response.header("Retry-After")) else null))
                                 close()
                                 return
                             }
@@ -456,6 +466,14 @@ class NovelAiImageService(
         fun randomSeed(): Int = kotlin.random.Random.nextInt(0, Int.MAX_VALUE)
         fun correlationId(): String = (1..6).map { ALPHANUMERIC.random() }.joinToString("")
         const val ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+        /** New bounded manual runs never shorten a server cooldown, including HTTP dates. */
+        fun safeRetryAfterMillis(header: String?, nowMillis: Long = System.currentTimeMillis()): Long {
+            val seconds = header?.trim()?.toLongOrNull()
+            if (seconds != null) return seconds.coerceIn(0, Long.MAX_VALUE / 1000) * 1000
+            val date = runCatching { java.time.ZonedDateTime.parse(header, java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toEpochMilli() }.getOrNull()
+            return date?.let { (it - nowMillis).coerceAtLeast(0) } ?: 10000L
+        }
 
         fun retryDelayMillis(failedAttempt: Int, retryAfterHeader: String?): Long {
             val retryAfterSeconds = retryAfterHeader

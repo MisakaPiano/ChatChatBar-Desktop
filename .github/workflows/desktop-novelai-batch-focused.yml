@@ -18,7 +18,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile shared and test batch plan and full preset custody
         working-directory: app
-        run: bash gradlew :sharedCore:test --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest' --tests 'com.example.chatbar.domain.image.NovelAiBatchPresetCustodyTest' --no-daemon --stacktrace
+        run: bash gradlew :sharedCore:test --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest' --tests 'com.example.chatbar.domain.image.NovelAiBatchPresetCustodyTest' --tests 'com.example.chatbar.domain.image.NovelAiManualBatchTransportTest' :desktopApp:compileKotlin --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
