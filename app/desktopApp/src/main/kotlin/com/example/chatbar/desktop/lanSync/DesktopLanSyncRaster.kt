@@ -6,14 +6,13 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.nio.file.Path
 import javax.imageio.ImageIO
-import javax.imageio.stream.FileImageInputStream
 
 /** File-backed sync decoding; no encoded-file byte array or unbounded Skia fallback. */
 internal object DesktopLanSyncRaster {
     fun decode(path: Path, record: LanSyncRecord, longestSide: Int, renderOrientation: Boolean = true): BufferedImage {
         require(longestSide in 1..2048)
         LanSyncRasterPolicy.checkPng(path, LanSyncPostProcess.record(record) != null)
-        FileImageInputStream(path.toFile()).use { input ->
+        DesktopLanSyncWebPInput.open(path, renderColorMetadata = renderOrientation).use { input ->
             val readers = ImageIO.getImageReaders(input)
             require(readers.hasNext()) { "SYNC_IMAGE_CODEC_UNAVAILABLE" }
             val reader = readers.next()

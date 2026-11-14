@@ -18,9 +18,9 @@ internal object DesktopImageMetadata {
         require(Files.size(file) in 1..100L * 1024 * 1024)
         // Read the original full, non-premultiplied raster; no orientation or thumbnail resampling.
         ImageIO.createImageInputStream(file.toFile()).use { input ->
-            val readers = ImageIO.getImageReaders(input)
-            if (!readers.hasNext()) return webpAlpha(file)
-            val reader = readers.next()
+            val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull {
+                if (it.formatName.equals("webp", ignoreCase = true)) { it.dispose(); false } else true
+            } ?: return webpAlpha(file)
             try {
                 reader.input = input
                 if (reader.formatName.lowercase() !in setOf("png", "webp")) return null

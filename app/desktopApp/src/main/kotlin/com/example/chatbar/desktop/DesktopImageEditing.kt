@@ -56,9 +56,11 @@ internal object DesktopImageEditing {
         require(maximumBytes in 1..100 * 1024 * 1024 && maximumPixels in 1..MAX_PIXELS)
         require(bytes.size in 1..maximumBytes) { "图片超过当前操作大小限制" }
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
-            val readers = ImageIO.getImageReaders(input)
-            if (readers.hasNext()) {
-                val reader = readers.next()
+            // The sync-only WebP plugin must not replace the established bounded Skia editor path.
+            val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull {
+                if (it.formatName.equals("webp", ignoreCase = true)) { it.dispose(); false } else true
+            }
+            if (reader != null) {
                 try {
                     reader.input = input
                     val sourceWidth = reader.getWidth(0)

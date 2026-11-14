@@ -31,7 +31,7 @@ class LanSyncLargeImageTest {
                 else LanSyncRecord(LanSyncPostProcess.TYPE, "result", Json.encodeToJsonElement(NovelAiPostProcessResultRecord.serializer(),
                     NovelAiPostProcessResultRecord("result", "a".repeat(64), "ENHANCE", "ORIGINAL", .5f, 0f, image.toString(), hash, 1)).jsonObject)
                 val entity = data.resolve("entities/${record.type}/${record.id}.json"); Files.createDirectories(entity.parent)
-                Files.writeString(entity, record.body.toString())
+                Files.write(entity, record.body.toString().toByteArray(Charsets.UTF_8))
                 Triple(image, hash, Files.readAllBytes(entity))
             }
             val targetData = Files.createDirectory(root.resolve("target"))

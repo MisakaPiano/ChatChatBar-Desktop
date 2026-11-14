@@ -29,6 +29,7 @@ object LanSyncRasterPolicy {
             var first = true
             var imageData = false
             var endedData = false
+            var palette = false
             val buffer = ByteArray(64 * 1024)
             while (consumed < size) {
                 require(size - consumed >= 12) { "SYNC_IMAGE_INVALID" }
@@ -41,6 +42,10 @@ object LanSyncRasterPolicy {
                 require(first || type != "IHDR") { "SYNC_IMAGE_INVALID" }
                 require(!staticPngRequired || type !in setOf("acTL", "fcTL", "fdAT")) { "SYNC_IMAGE_ANIMATED_RESULT" }
                 require(typeBytes[0].toInt() in 97..122 || type in setOf("IHDR", "PLTE", "IDAT", "IEND")) { "SYNC_IMAGE_INVALID" }
+                if (type == "PLTE") {
+                    require(!palette && !imageData && length in 3L..768L && length % 3 == 0L) { "SYNC_IMAGE_INVALID" }
+                    palette = true
+                }
                 if (type == "IDAT") { require(!endedData) { "SYNC_IMAGE_INVALID" }; imageData = true }
                 else if (imageData) endedData = true
                 val crc = CRC32().apply { update(typeBytes) }
