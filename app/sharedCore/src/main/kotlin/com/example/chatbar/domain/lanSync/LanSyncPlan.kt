@@ -50,6 +50,7 @@ object LanSyncPlanner {
         }
         // One remote-side namespace also rebinds remote conversations to a copied card/world book.
         val mapper = LanSyncGraphRemapper(phone.records, identity)
+        val mapResource = resourceNamespace(retained, incoming, transaction)
         val rewritten = incoming.map { record ->
             val body = (if (record.type == "save_slots" && record.body["packageRef"] is JsonObject) {
                 // The shared library envelope deliberately retains the complete immutable source archive.
@@ -65,7 +66,8 @@ object LanSyncPlanner {
                         }))
                 } else mapped
             }
-            record.copy(id = requireNotNull(LanSyncScope.identity(record.type, body)), body = body)
+            val withResources = LanSyncWorkspace.mapResources(body) { reference, _ -> mapResource(reference) }
+            record.copy(id = requireNotNull(LanSyncScope.identity(record.type, withResources)), body = withResources)
         }
         val records = retained + rewritten
         val references = LanSyncScope.referencedResources(records)
@@ -78,5 +80,38 @@ object LanSyncPlanner {
         return LanSyncPlan(transaction, result, parents, commonCoveredTypesBefore = baseline.coveredTypes,
             resolvedUnits = choices.keys.toSet(), resolvedRecordKeys = resolvedSourceKeys +
                 incoming.zip(rewritten).filter { it.first.key in resolvedSourceKeys }.map { it.second.key })
+    }
+    /** Preserve the retained side and every incoming alias relationship, including non-fork dependents. */
+    private fun resourceNamespace(retained: List<LanSyncRecord>, incoming: List<LanSyncRecord>, transaction: String): (String) -> String {
+        fun parts(reference: String): List<String>? = if (!reference.startsWith("ccb-lan-v1/")) null else
+            reference.split('/').takeIf { it.size == 5 && it[1] in setOf("images", "documents", "audio", "packages", "payloads") &&
+                it[2].matches(Regex("[a-f0-9-]{36}")) && it[3].matches(Regex("[a-f0-9]{64}")) }
+        val retainedHashes = linkedMapOf<String, String>(); val incomingHashes = linkedMapOf<String, String>(); val reserved = linkedSetOf<String>()
+        fun collect(records: List<LanSyncRecord>, hashes: MutableMap<String, String>) {
+            records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, _ ->
+                parts(reference)?.let {
+                    val id = "${it[1]}/${it[2]}"
+                    require(hashes[id]?.let { previous -> previous == it[3] } != false) { "SYNC_RESOURCE_ID_CHANGED" }
+                    hashes[id] = it[3]; reserved += id
+                }; reference
+            } }
+        }
+        collect(retained, retainedHashes); collect(incoming, incomingHashes)
+        val renamed = linkedMapOf<String, String>()
+        incomingHashes.toSortedMap().forEach { (original, hash) ->
+            if (retainedHashes[original]?.let { it != hash } == true) {
+                var attempt = 0L; var candidate: String
+                do {
+                    candidate = lanSyncDerivedId(transaction, "resource/$original/$hash/$attempt")
+                    attempt = Math.addExact(attempt, 1L)
+                } while ("${original.substringBefore('/')}/$candidate" in reserved)
+                reserved += "${original.substringBefore('/')}/$candidate"; renamed["$original/$hash"] = candidate
+            }
+        }
+        return map@ { reference ->
+            val value = parts(reference) ?: return@map reference
+            val replacement = renamed["${value[1]}/${value[2]}/${value[3]}"] ?: return@map reference
+            "ccb-lan-v1/${value[1]}/$replacement/${value[3]}/${value[4]}"
+        }
     }
 }
