@@ -619,6 +619,22 @@ class ChatRepository internal constructor(
 
     /** Return the exact saved object, including the repository-owned timestamp/order fields. */
     suspend fun updateMessageReturningSnapshot(message: ChatMessage): ChatMessage = messageAppendMutex.withDataAccess {
+        updateMessageLocked(message)
+    }
+
+    /** Confirmation snapshots cannot overwrite a later edit, selection or appended candidate. */
+    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+        require(expected.id == replacement.id && expected.sessionId == replacement.sessionId)
+        val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
+            is JsonFileStorage.EntityReadResult.Valid -> read.value
+            else -> return@withDataAccess false
+        }
+        if (current != expected) return@withDataAccess false
+        updateMessageLocked(replacement)
+        true
+    }
+
+    private suspend fun updateMessageLocked(message: ChatMessage): ChatMessage {
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),
@@ -638,7 +654,7 @@ class ChatRepository internal constructor(
                 )
             }
         }
-        updated
+        return updated
     }
 
     /**
@@ -860,6 +876,20 @@ class ChatRepository internal constructor(
     }
 
     suspend fun deleteMessage(messageId: String, sessionId: String) = messageAppendMutex.withDataAccess {
+        deleteMessageLocked(messageId, sessionId)
+    }
+
+    suspend fun deleteMessageIfUnchanged(expected: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+        val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
+            is JsonFileStorage.EntityReadResult.Valid -> read.value
+            else -> return@withDataAccess false
+        }
+        if (current != expected) return@withDataAccess false
+        deleteMessageLocked(expected.id, expected.sessionId)
+        true
+    }
+
+    private suspend fun deleteMessageLocked(messageId: String, sessionId: String) {
         val removed = getMessage(messageId, sessionId)
         val index = loadMessageIndex(sessionId)
         storage.deleteEntityUncached(MESSAGE_TYPE, messageStorageId(sessionId, messageId))

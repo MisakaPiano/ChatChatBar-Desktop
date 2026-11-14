@@ -1042,13 +1042,14 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun editMessageSegment(messageId: String, start: Int, endExclusive: Int,
-        replacement: String, expectedContent: String? = null): Boolean {
+        replacement: String, expectedContent: String? = null, expected: ChatMessage? = null): Boolean {
         var saved = false
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
             withMessageMutation(session.id, messageId) {
                 val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+                check(expected == null || message == expected) { "消息已变化，请重新打开分段操作" }
                 require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
                 check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
                 require(parseRoleplayTextSegments(message.displayContent).any {
@@ -1057,12 +1058,14 @@ internal class DesktopPrimaryChatController(
                 val outcome = editRoleplayMessageSegment(message, start, endExclusive, replacement)
                 val updated = outcome.message
                 if (updated == null) {
-                    val warning = deleteOwnedMessage(session.id, messageId)
+                    val warning = deleteOwnedMessage(session.id, messageId, message)
                     refreshAfterTerminalTask(session.id)
                     if (warning != null) mutableState.update { it.copy(status = warning) }
                     saved = true
                 } else {
-                    chats.updateMessage(updated.copy(formatRepairNotice = null))
+                    check(chats.updateMessageIfUnchanged(message, updated.copy(formatRepairNotice = null))) {
+                        "消息已变化，请重新打开分段操作"
+                    }
                     refreshAfterTerminalTask(session.id)
                     saved = true
                 }
@@ -1071,13 +1074,34 @@ internal class DesktopPrimaryChatController(
         return saved
     }
 
-    suspend fun deleteMessage(messageId: String): Boolean {
+    suspend fun deleteAssistantAlternative(expected: ChatMessage, versionId: String): Boolean {
+        var deleted = false
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            check(session.id == expected.sessionId && expected.role == MessageRole.ASSISTANT) { "回复不属于当前会话" }
+            check(!hasActiveTask(session.id)) { "生成期间不能删除备选" }
+            withMessageMutation(session.id, expected.id) {
+                val replacement = MessageAlternativeVersionPolicy.remove(expected, versionId)
+                val warning = if (replacement == null) deleteOwnedMessage(session.id, expected.id, expected)
+                else {
+                    check(chats.updateMessageIfUnchanged(expected, replacement)) { "消息已变化，请重新确认删除" }
+                    null
+                }
+                refreshAfterTerminalTask(session.id)
+                if (warning != null) mutableState.update { it.copy(status = warning) }
+                deleted = true
+            }
+        }
+        return deleted
+    }
+
+    suspend fun deleteMessage(messageId: String, expected: ChatMessage? = null): Boolean {
         var deleted = false
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
             withMessageMutation(session.id, messageId) {
-                val cleanupWarning = deleteOwnedMessage(session.id, messageId)
+                val cleanupWarning = deleteOwnedMessage(session.id, messageId, expected)
                 refreshAfterTerminalTask(session.id)
                 if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
                 deleted = true
@@ -1086,9 +1110,12 @@ internal class DesktopPrimaryChatController(
         return deleted
     }
 
-    private suspend fun deleteOwnedMessage(sessionId: String, messageId: String): String? {
+    private suspend fun deleteOwnedMessage(sessionId: String, messageId: String, expected: ChatMessage? = null): String? {
         val message = chats.getMessage(messageId, sessionId) ?: error("Message no longer exists")
-        chats.deleteMessage(messageId, sessionId)
+        check(expected == null || (expected.id == messageId && expected.sessionId == sessionId && expected == message)) {
+            "消息已变化，请重新确认删除"
+        }
+        check(chats.deleteMessageIfUnchanged(expected ?: message)) { "消息已变化，请重新确认删除" }
         voices?.removeDeletedMessage(sessionId, messageId)
         return imageStore?.cleanupRemoved(message.images)
     }

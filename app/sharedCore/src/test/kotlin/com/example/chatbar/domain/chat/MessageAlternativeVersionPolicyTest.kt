@@ -8,6 +8,38 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class MessageAlternativeVersionPolicyTest {
+    @Test fun `default append retains more than five identities with narrative modes`() {
+        var source = message(listOf("same"), listOf("v0"), 0, "v0")
+        repeat(12) { index ->
+            source = MessageAlternativeVersionPolicy.append(source, "same", "v${index + 1}", updatedAt = index + 10L,
+                narrativeMode = if (index % 2 == 0) ChatNarrativeMode.ADVANCE else null)
+        }
+        assertEquals(13, source.alternatives.size)
+        assertEquals((0..12).map { "v$it" }, source.alternativeVersionIds)
+        assertEquals(13, source.alternativeNarrativeModes.size)
+        assertEquals("v12", source.currentAlternativeVersionId)
+    }
+
+    @Test fun `stable deletion distinguishes identical text and retains surviving metadata`() {
+        val source = message(listOf("same", "same", "same"), listOf("a", "b", "c"), 1, "b").copy(
+            images = listOf("owned.png"), sourceTurnId = "turn", sourceTurnOrder = 7, orderKey = 42,
+            alternativeNarrativeModes = listOf(ChatNarrativeMode.ADVANCE, null, ChatNarrativeMode.FOCUS))
+        val inactive = requireNotNull(MessageAlternativeVersionPolicy.remove(source, "a", 20))
+        assertEquals(listOf("b", "c"), inactive.alternativeVersionIds)
+        assertEquals("b", inactive.currentAlternativeVersionId)
+        assertEquals(source.images, inactive.images)
+        assertEquals(source.sourceTurnId, inactive.sourceTurnId)
+        assertEquals(source.sourceTurnOrder, inactive.sourceTurnOrder)
+        assertEquals(source.orderKey, inactive.orderKey)
+        val active = requireNotNull(MessageAlternativeVersionPolicy.remove(source, "b", 21))
+        assertEquals(listOf("a", "c"), active.alternativeVersionIds)
+        assertEquals("c", active.currentAlternativeVersionId)
+        assertEquals(ChatNarrativeMode.FOCUS, active.narrativeMode)
+        val last = requireNotNull(MessageAlternativeVersionPolicy.remove(active, "a", 22))
+        assertEquals(null, MessageAlternativeVersionPolicy.remove(last, "c", 23))
+        assertEquals(listOf("a", "b", "c"), source.alternativeVersionIds)
+    }
+
     @Test
     fun `new version id skips regenerated bubble message id collision`() {
         val message = message(
@@ -148,7 +180,9 @@ class MessageAlternativeVersionPolicyTest {
         val removed = requireNotNull(editRoleplayMessageSegment(original, segment.start, segment.endExclusive, "", 20).message)
         assertEquals(listOf("first", "before  after", "last"), removed.alternatives)
         val full = original.copy(content = "[only]()", alternatives = listOf("first", "[only]()", "last"))
-        assertEquals(null, editRoleplayMessageSegment(full, 0, full.displayContent.length, "", 20).message)
+        val surviving = requireNotNull(editRoleplayMessageSegment(full, 0, full.displayContent.length, "", 20).message)
+        assertEquals(listOf("first", "last"), surviving.alternatives)
+        assertEquals(listOf("a", "c"), surviving.alternativeVersionIds)
         val withImage = full.copy(images = listOf("owned.png"))
         val outcome = editRoleplayMessageSegment(withImage, 0, withImage.displayContent.length, "", 20)
         assertEquals(true, outcome.deleteMemoryForMessage)

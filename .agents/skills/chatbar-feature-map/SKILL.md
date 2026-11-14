@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Desktop reply alternatives and deletion confirmations: read `chatbar-desktop-reply-versions`. Stable-ID deletion, final-candidate removal and shared media custody are separate from AI format repair or creating a new reply.
+
 Desktop independent character originals, PNG card-data replacement and cover transfer/editor/backup custody: read `chatbar-desktop-character-cover`. Avatar/background and rendered export layouts retain separate owners.
 
 Selectable document PDF uses `DesktopDocumentPdf` over the same `DesktopScreenshotDocumentBlock` snapshot as Word. `DesktopScreenshotExportFormat.DOCUMENT_PDF` is the default text document; `PDF` remains the explicitly named screenshot PDF. Both structured writers share `DesktopScreenshotDocuments.pictures` and `saveDesktopStructuredDocumentVerified` resource/source/atomic-write custody, independently of PNG preview. Bundled fonts and their licenses/source hashes live in `desktopApp/src/main/resources/document-fonts`; unavailable glyphs fail visibly. `DesktopDocumentPdfTest` extracts actual Unicode, verifies semantic sections/filters, media/page backgrounds, and failed/cancelled destination preservation; synthetic review files use `CCB_FORMAT_AI_REVIEW_DIR`.

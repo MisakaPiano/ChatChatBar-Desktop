@@ -215,7 +215,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     EDIT_WHOLE_MESSAGE("编辑整条", "Edit whole message"), DELETE_WHOLE_MESSAGE("删除整条", "Delete whole message"),
     SEGMENT("本段原文", "Raw segment"), COPY_SEGMENT("复制本段", "Copy segment"),
     EDIT_SEGMENT("编辑本段", "Edit segment"), DELETE_SEGMENT("删除本段", "Delete segment"),
-    DELETE_SEGMENT_WARNING("将删除本段内容；如果这是最后一段且没有图片，将删除整条消息。", "Delete this segment. If it is the final text and there are no images, the whole message will be deleted."),
+    DELETE_SEGMENT_WARNING("将删除本段内容；若当前备选已无文字或图片，将移除此备选并保留其他备选。最后一个备选删除后，前面的用户消息仍保留。", "Delete this segment. If no text or images remain, remove this candidate and preserve the others. Removing the final candidate keeps the preceding user message."),
     MODEL_DETAILS("模型详情", "Model details"), HIDE_SESSIONS("收起会话列表", "Hide sessions"),
     SHOW_SESSIONS("展开会话列表", "Show sessions"),
     ASSISTANT_ROLE("助手", "Assistant"), YOU_ROLE("你", "You"), SYSTEM_ROLE("系统", "System"),

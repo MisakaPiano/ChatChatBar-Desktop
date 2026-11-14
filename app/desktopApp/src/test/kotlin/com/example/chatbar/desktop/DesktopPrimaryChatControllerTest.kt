@@ -38,6 +38,74 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopPrimaryChatControllerTest {
+    @Test fun `candidate deletion keeps shared resources and refuses stale whole-message confirmation`() = runBlocking {
+        withContainer { app ->
+            val card = CharacterCard.create("Synthetic deletion", greeting = "Greeting")
+            app.characterRepository.save(card); configure(app)
+            val controller = app.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!.id
+            val user = app.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "Retained user"))
+            val first = app.chatRepository.addMessage(ChatMessage.create(session, MessageRole.ASSISTANT, "same")
+                .copy(alternatives = listOf("same", "same", "same"), alternativeVersionIds = listOf("a", "b", "c"),
+                    currentAlternativeIndex = 1, currentAlternativeVersionId = "b", images = listOf("images/retained.png")))
+            controller.selectSession(session)
+            assertTrue(controller.deleteAssistantAlternative(first, "b"))
+            val retained = assertNotNull(app.chatRepository.getMessage(first.id, session))
+            assertEquals(listOf("a", "c"), retained.alternativeVersionIds)
+            assertEquals(first.images, retained.images)
+            assertFalse(controller.deleteMessage(first.id, first))
+            assertFalse(controller.deleteAssistantAlternative(first, "a"))
+            assertEquals(retained, app.chatRepository.getMessage(first.id, session))
+            assertNotNull(app.chatRepository.getMessage(user.id, session))
+        }
+    }
+
+    @Test fun `deleting final AI candidate retains user and continuation does not duplicate user`() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            withContainer { app ->
+                val card = CharacterCard.create("Synthetic final deletion", greeting = "Greeting")
+                app.characterRepository.save(card); configure(app, server.url("/v1").toString())
+                val controller = app.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                val session = controller.state.value.selectedSession!!.id
+                val user = app.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "Retained input"))
+                val reply = app.chatRepository.addMessage(ChatMessage.create(session, MessageRole.ASSISTANT, "Only candidate"))
+                controller.selectSession(session)
+                assertTrue(controller.deleteAssistantAlternative(reply, reply.id))
+                assertNull(app.chatRepository.getMessage(reply.id, session))
+                assertNotNull(app.chatRepository.getMessage(user.id, session))
+                server.enqueue(success("Continued after deletion"))
+                val task = assertNotNull(controller.continueEmptyComposer(session))
+                awaitTask(app, task) { it.status == DesktopTaskStatus.COMPLETED }
+                val saved = app.chatRepository.getMessages(session)
+                assertEquals(listOf(user.id), saved.filter { it.role == MessageRole.USER }.map { it.id })
+                assertTrue(saved.any { it.displayContent == "Continued after deletion" })
+            }
+        }
+    }
+
+    @Test fun `removing last segment keeps other stable candidates and original user`() = runBlocking {
+        withContainer { app ->
+            val card = CharacterCard.create("Synthetic segment deletion", greeting = "Greeting")
+            app.characterRepository.save(card); configure(app)
+            val controller = app.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!.id
+            val user = app.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "Retain user"))
+            val reply = app.chatRepository.addMessage(ChatMessage.create(session, MessageRole.ASSISTANT, "Current text")
+                .copy(alternatives = listOf("Other text", "Current text"), alternativeVersionIds = listOf("a", "b"),
+                    currentAlternativeIndex = 1, currentAlternativeVersionId = "b"))
+            controller.selectSession(session)
+            assertTrue(controller.editMessageSegment(reply.id, 0, reply.displayContent.length, "", reply.displayContent, reply))
+            val retained = assertNotNull(app.chatRepository.getMessage(reply.id, session))
+            assertEquals(listOf("a"), retained.alternativeVersionIds)
+            assertEquals("Other text", retained.displayContent)
+            assertNotNull(app.chatRepository.getMessage(user.id, session))
+        }
+    }
+
     @Test fun `mode choice preserves unsent composer settings draft and existing messages`() = runBlocking {
         withContainer { container ->
             val card = CharacterCard.create("Synthetic mode", greeting = "Greeting")

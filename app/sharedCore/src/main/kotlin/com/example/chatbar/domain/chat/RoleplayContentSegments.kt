@@ -158,7 +158,10 @@ fun editRoleplayMessageSegment(
         replacement = replacement
     )
     if (updatedContent.isBlank() && message.images.isEmpty()) {
-        return RoleplaySegmentEditOutcome(message = null, deleteMemoryForMessage = false)
+        return RoleplaySegmentEditOutcome(
+            message = MessageAlternativeVersionPolicy.remove(message, MessageAlternativeVersionPolicy.activeVersionId(message), updatedAt),
+            deleteMemoryForMessage = false
+        )
     }
     return RoleplaySegmentEditOutcome(
         message = MessageAlternativeVersionPolicy.editCurrentContent(

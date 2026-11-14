@@ -663,7 +663,7 @@ internal fun DesktopPrimaryChatPanel(
                         scope.launch {
                             val source = segment.source!!
                             if (controller.editMessageSegment(message.id, source.start, source.endExclusive,
-                                    segmentText, message.displayContent)) editingSegment = null
+                                    segmentText, message.displayContent, message)) editingSegment = null
                         }
                     }
                 }
@@ -679,7 +679,7 @@ internal fun DesktopPrimaryChatPanel(
                         scope.launch {
                             val source = segment.source!!
                             if (controller.editMessageSegment(message.id, source.start, source.endExclusive,
-                                    "", message.displayContent)) deletingSegment = null
+                                    "", message.displayContent, message)) deletingSegment = null
                         }
                     }
                 }
@@ -706,13 +706,29 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         deletingMessage?.let { message ->
-            PrimaryModal(t(DesktopUiText.DELETE_MESSAGE_CONFIRM)) {
-                StatusText(t(DesktopUiText.DELETE_MESSAGE_WARNING), colors.warning)
+            val assistant = message.role == MessageRole.ASSISTANT
+            val versions = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.versions(message)
+            var deleteAll by remember(message) { mutableStateOf(false) }
+            PrimaryModal(if (assistant && !deleteAll) "删除当前备选" else t(DesktopUiText.DELETE_MESSAGE_CONFIRM)) {
+                if (assistant && !deleteAll && versions.size > 1) {
+                    DesktopDeleteAllAlternativesAction { deleteAll = true }
+                }
+                StatusText(if (assistant && !deleteAll) {
+                    if (versions.size > 1) "只删除当前显示的备选，保留其他备选和共用图片、录音。此操作无法撤销。"
+                    else "这是最后一个备选，将删除这条 AI 回复；保留前面的用户消息。此操作无法撤销。"
+                } else t(DesktopUiText.DELETE_MESSAGE_WARNING), colors.warning)
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
-                    BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { deletingMessage = null }
+                    BootstrapButton(if (assistant && deleteAll) "返回" else t(DesktopUiText.CANCEL), secondary = true) {
+                        if (assistant && deleteAll) deleteAll = false else deletingMessage = null
+                    }
                     BootstrapButton(t(DesktopUiText.DELETE), variant = DesktopActionVariant.DESTRUCTIVE) {
-                        scope.launch { if (controller.deleteMessage(message.id)) deletingMessage = null }
+                        scope.launch {
+                            val deleted = if (assistant && !deleteAll) controller.deleteAssistantAlternative(message,
+                                com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.activeVersionId(message))
+                            else controller.deleteMessage(message.id, message)
+                            if (deleted) deletingMessage = null
+                        }
                     }
                 }
             }
