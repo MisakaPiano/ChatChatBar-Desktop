@@ -4844,6 +4844,40 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
+    suspend fun addChatBackgroundToCard(path: String) = mutateChatBackgroundLibrary { card ->
+        val file = File(path).canonicalFile
+        val owned = File(ChatBarApp.instance.filesDir, "images").canonicalFile
+        require(file.toPath().startsWith(owned.toPath()) && file.isFile && file.length() > 0) { "背景图片不可读取" }
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeFile(file.absolutePath, bounds)
+        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "背景图片格式不可读取" }
+        card.copy(chatBackgroundImages = (card.chatBackgroundImages + path).distinct())
+    }
+
+    suspend fun removeChatBackgroundFromCard(path: String) = mutateChatBackgroundLibrary { card ->
+        // Removing a library entry must not rewrite a default or a conversation override.
+        card.copy(chatBackgroundImages = card.chatBackgroundImages.filterNot { it == path })
+    }
+
+    suspend fun setCardDefaultChatBackground(path: String?) = mutateChatBackgroundLibrary { card ->
+        require(path == null || path == card.chatBackground || path in card.chatBackgroundImages) { "图片不在角色背景库中" }
+        card.copy(chatBackground = path)
+    }
+
+    private suspend fun mutateChatBackgroundLibrary(change: (CharacterCard) -> CharacterCard): CharacterCard =
+        com.example.chatbar.domain.backup.LocalDataMaintenance.access {
+            val current = _session.value ?: error("会话尚未加载")
+            val cardId = current.characterCardId
+            val changed = withContext(Dispatchers.IO) {
+                characterRepository.updateBackgroundLibrary(cardId) { card ->
+                    require(!card.isCommunityDownload) { "下载角色卡只读，请复制后编辑" }
+                    change(card)
+                }
+            }
+            if (_session.value?.characterCardId == cardId) _characterCard.value = changed
+            changed
+        }
+
     fun copyUriToLocalFile(uri: Uri, onSuccess: (String) -> Unit) {
         viewModelScope.launch {
             com.example.chatbar.domain.backup.LocalDataMaintenance.access {

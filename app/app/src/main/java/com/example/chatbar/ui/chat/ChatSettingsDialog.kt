@@ -166,8 +166,18 @@ fun ChatSettingsDialog(
     var fullscreenField by remember { mutableStateOf<Pair<String, String>?>(null) }
     var fullscreenOnChange by remember { mutableStateOf<((String) -> Unit)?>(null) }
 
+    var backgroundLibraryStatus by remember { mutableStateOf<String?>(null) }
     val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { viewModel.copyUriToLocalFile(it) { path -> background = path } }
+        uri?.let { viewModel.copyUriToLocalFile(it) { path ->
+            scope.launch {
+                try {
+                    viewModel.addChatBackgroundToCard(path)
+                    background = path
+                    backgroundLibraryStatus = "图片已添加到角色卡图库，当前会话选图待保存。"
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (error: Exception) { backgroundLibraryStatus = "添加背景失败：${error.message}" }
+            }
+        } }
     }
     val exportSaveSlot = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
         val slotId = exportSlotId.also { exportSlotId = null }
@@ -391,8 +401,20 @@ fun ChatSettingsDialog(
                             longTermMemoryEnabled, { longTermMemoryEnabled = it }, { tab = 1 }, { tab = 2 },
                             { requestLeave(onClearHistory) },
                             ::openFullscreen,
-                            backgroundImages = (listOfNotNull(characterCard?.chatBackground) + characterCard?.chatBackgroundImages.orEmpty()).distinct(),
+                            backgroundImages = characterCard?.chatBackgroundImages.orEmpty(),
                             onSelectBackground = { background = it },
+                            onRemoveBackground = { path -> scope.launch {
+                                runCatching { viewModel.removeChatBackgroundFromCard(path) }
+                                    .onSuccess { backgroundLibraryStatus = "已从图库移除；已使用的默认和会话背景继续保留。" }
+                                    .onFailure { backgroundLibraryStatus = "移除失败：${it.message}" }
+                            } },
+                            cardDefaultBackground = characterCard?.chatBackground,
+                            onSetCardDefaultBackground = { path -> scope.launch {
+                                runCatching { viewModel.setCardDefaultChatBackground(path) }
+                                    .onSuccess { backgroundLibraryStatus = "Android 默认背景已保存；当前会话覆盖保持独立。" }
+                                    .onFailure { backgroundLibraryStatus = "默认背景保存失败：${it.message}" }
+                            } },
+                            backgroundLibraryStatus = backgroundLibraryStatus,
                             peopleCard = characterCard,
                             participation = participation,
                             onPersonEnabled = { personId, checked ->

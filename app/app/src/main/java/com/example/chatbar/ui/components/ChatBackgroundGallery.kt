@@ -14,7 +14,8 @@ import java.io.File
 @Composable
 internal fun ChatBackgroundGallery(
     images: List<String>, selected: String?, onSelect: (String) -> Unit,
-    onRemove: ((String) -> Unit)? = null, enabled: Boolean = true
+    onRemove: ((String) -> Unit)? = null, enabled: Boolean = true,
+    cardDefault: String? = null, onSetCardDefault: ((String) -> Unit)? = null
 ) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(images.filter(String::isNotBlank).distinct(), key = { _, path -> path }) { index, path ->
@@ -27,6 +28,10 @@ internal fun ChatBackgroundGallery(
                         variant = if (path == selected) ButtonVariant.Default else ButtonVariant.Outline,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (onSetCardDefault != null) CbButton(
+                        if (path == cardDefault) "Android 默认" else "设为 Android 默认",
+                        { onSetCardDefault(path) }, enabled = enabled && path != cardDefault,
+                        variant = ButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
                     if (onRemove != null) CbButton("移除背景 ${index + 1}", { onRemove(path) },
                         enabled = enabled, variant = ButtonVariant.Ghost, modifier = Modifier.fillMaxWidth())
                 }

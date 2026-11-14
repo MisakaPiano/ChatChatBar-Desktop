@@ -582,9 +582,9 @@ fun CharacterEditScreen(
                     CbButton("复制当前头像为封面原图", { viewModel.coverImage = viewModel.avatar }, variant = ButtonVariant.Ghost)
                 }
             }
-            CbField("聊天背景图库", description = "可以保存多张图片；默认背景用于新会话，每个会话也可单独选择。") {
+            CbField("聊天背景图库", description = "与会话共用同一图库；移除图库项不会改写已选默认或会话背景。") {
                 com.example.chatbar.ui.components.ChatBackgroundGallery(
-                    (listOfNotNull(viewModel.chatBackground) + viewModel.chatBackgroundImages).distinct(),
+                    viewModel.chatBackgroundImages.distinct(),
                     viewModel.chatBackground, viewModel::setDefaultChatBackground,
                     viewModel::removeChatBackground, enabled = !isSaving
                 )

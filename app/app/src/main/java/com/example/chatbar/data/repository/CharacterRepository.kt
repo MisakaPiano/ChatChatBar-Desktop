@@ -2,6 +2,8 @@ package com.example.chatbar.data.repository
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +21,7 @@ class CharacterRepository(private val storage: JsonFileStorage) {
     val characters: Flow<List<CharacterCard>> = _characters.asStateFlow()
 
     private var initialized = false
+    private val writes = Mutex()
 
     /** 初始化 - 从磁盘加载全部角色卡 */
     suspend fun initialize() {
@@ -41,9 +44,20 @@ class CharacterRepository(private val storage: JsonFileStorage) {
         return storage.loadEntity(ENTITY_TYPE, id, CharacterCard.serializer())
     }
 
-    suspend fun save(card: CharacterCard) {
+    suspend fun save(card: CharacterCard) = writes.withLock { saveLocked(card) }
+
+    private suspend fun saveLocked(card: CharacterCard) {
         storage.saveEntity(ENTITY_TYPE, card.id, card, CharacterCard.serializer())
         refreshCache()
+    }
+
+    /** Merge a library operation into the current formal card rather than a UI snapshot. */
+    suspend fun updateBackgroundLibrary(id: String, change: (CharacterCard) -> CharacterCard): CharacterCard = writes.withLock {
+        val current = getById(id) ?: error("角色卡不存在")
+        val next = change(current).copy(updatedAt = System.currentTimeMillis())
+        require(next.id == id) { "背景库不能更改角色卡身份" }
+        saveLocked(next)
+        next
     }
 
     suspend fun update(card: CharacterCard) {
@@ -51,7 +65,7 @@ class CharacterRepository(private val storage: JsonFileStorage) {
         save(updated)
     }
 
-    suspend fun delete(id: String) {
+    suspend fun delete(id: String) = writes.withLock {
         storage.deleteEntity<CharacterCard>(ENTITY_TYPE, id)
         _characters.value = _characters.value.filterNot { it.id == id }
     }

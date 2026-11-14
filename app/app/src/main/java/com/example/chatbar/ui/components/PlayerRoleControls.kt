@@ -19,6 +19,7 @@ internal fun PlayerRoleControls(card: CharacterCard?, role: SessionPlayerRole?, 
                 { id -> people.firstOrNull { it.id == id }?.name ?: "不关联角色" },
                 { id -> onChange(id?.let { SessionPlayerRole(card.id, it) }) })
         }
+        CbText("头像只用于显示；有效姓名会用于提示词和姓名变量。关联不会复制人物简介或附加状态，玩家描述仍来自会话玩家设定，留空时跟随全局。", style = ChatBarTheme.typography.caption)
         if (role != null) {
             if (valid == null) CbText("原关联角色已不可用，请重新选择。", color = ChatBarTheme.colors.warning)
             CbField("姓名跟随角色") { SettingsSwitch(role.followName,

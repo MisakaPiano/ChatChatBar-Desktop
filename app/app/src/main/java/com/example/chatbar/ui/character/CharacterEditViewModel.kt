@@ -2862,7 +2862,7 @@ class CharacterEditViewModel(
 
     fun removeChatBackground(path: String) {
         chatBackgroundImages = chatBackgroundImages.filterNot { it == path }
-        if (chatBackground == path) chatBackground = null
+        // Unlinking a gallery entry does not erase an independently selected default.
         scheduleDraftSave()
     }
 

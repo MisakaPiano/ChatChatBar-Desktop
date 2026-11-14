@@ -38,6 +38,10 @@ internal fun SessionSettingsContent(
     openFullscreen: (String, String, (String) -> Unit) -> Unit,
     backgroundImages: List<String> = emptyList(),
     onSelectBackground: (String) -> Unit = {},
+    onRemoveBackground: ((String) -> Unit)? = null,
+    cardDefaultBackground: String? = null,
+    onSetCardDefaultBackground: ((String?) -> Unit)? = null,
+    backgroundLibraryStatus: String? = null,
     peopleCard: CharacterCard? = null,
     participation: List<SessionCharacterParticipation> = emptyList(),
     onPersonEnabled: (String, Boolean) -> Unit = { _, _ -> },
@@ -122,9 +126,14 @@ internal fun SessionSettingsContent(
             SettingsDetails("聊天背景", if (background.isBlank()) "跟随角色卡／默认背景" else "本会话已指定", browser.target == "background") {
                 if (background.isNotBlank()) AsyncImage(File(background), "聊天背景预览", Modifier.fillMaxWidth().height(120.dp), contentScale = ContentScale.Crop)
                 if (backgroundImages.isNotEmpty()) {
-                    com.example.chatbar.ui.components.ChatBackgroundGallery(backgroundImages, background, onSelectBackground)
+                    com.example.chatbar.ui.components.ChatBackgroundGallery(backgroundImages, background, onSelectBackground,
+                        onRemoveBackground, cardDefault = cardDefaultBackground, onSetCardDefault = onSetCardDefaultBackground)
                 }
-                CbButton("选择图片", onPickBackground)
+                CbText("与角色卡共用图库；图库管理立即保存。会话选图在保存会话设置后生效。", style = ChatBarTheme.typography.caption)
+                backgroundLibraryStatus?.let { CbText(it, style = ChatBarTheme.typography.caption) }
+                CbButton("添加背景图片", onPickBackground)
+                if (cardDefaultBackground != null && onSetCardDefaultBackground != null)
+                    CbButton("清除 Android 默认背景", { onSetCardDefaultBackground(null) }, variant = ButtonVariant.Ghost)
                 if (background.isNotBlank()) CbButton("恢复角色默认背景", onClearBackground, variant = ButtonVariant.Ghost)
             }
         },
