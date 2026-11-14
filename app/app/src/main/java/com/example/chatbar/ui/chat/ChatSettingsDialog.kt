@@ -113,6 +113,7 @@ fun ChatSettingsDialog(
     onClearHistory: () -> Unit,
     onJumpToSource: (String) -> Unit = {},
     modifier: Modifier = Modifier,
+    initialImageSettings: Boolean = false,
     onRebindCharacter: () -> Unit = {},
     onOpenImageGallery: () -> Unit = {}
 ) {
@@ -140,6 +141,7 @@ fun ChatSettingsDialog(
     var novelAiImageModel by rememberSettingDraft(session?.novelAiImageModel)
     var novelAiNaturalLanguageMode by rememberSettingDraft(session?.novelAiNaturalLanguageMode ?: false)
     var automaticImageGenerationEnabled by rememberSettingDraft(session?.automaticImageGenerationEnabled ?: false)
+    var imageBatchPreferences by rememberSettingDraft(session?.imageBatchPreferences ?: com.example.chatbar.domain.image.ImageBatchPreferences())
     var formatId by rememberSettingDraft(session?.formatCardId)
     var replyLength by rememberSettingDraft((session?.replyLength ?: DEFAULT_REPLY_LENGTH_CHARS).toString())
     var replyLanguage by rememberSettingDraft(session?.replyLanguage ?: "")
@@ -224,6 +226,7 @@ fun ChatSettingsDialog(
             novelAiImageModel = it.novelAiImageModel
             novelAiNaturalLanguageMode = it.novelAiNaturalLanguageMode
             automaticImageGenerationEnabled = it.automaticImageGenerationEnabled
+            imageBatchPreferences = it.imageBatchPreferences
             formatId = it.formatCardId
             replyLength = it.replyLength.toString()
             replyLanguage = it.replyLanguage ?: ""
@@ -253,6 +256,7 @@ fun ChatSettingsDialog(
             novelAiImageModel != it.novelAiImageModel ||
             novelAiNaturalLanguageMode != it.novelAiNaturalLanguageMode ||
             automaticImageGenerationEnabled != it.automaticImageGenerationEnabled ||
+            imageBatchPreferences != it.imageBatchPreferences ||
             formatId != it.formatCardId ||
             parsedReplyLength != it.replyLength ||
             replyLanguage.takeIf(String::isNotBlank) != it.replyLanguage ||
@@ -283,7 +287,7 @@ fun ChatSettingsDialog(
         fullscreenOnChange = null
     }
 
-    val browser = remember { SettingsBrowserState() }
+    val browser = remember { SettingsBrowserState().apply { if (initialImageSettings) open("images", "image-batch") } }
     var saving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
     var pendingLeave by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -304,6 +308,7 @@ fun ChatSettingsDialog(
                                 novelAiImageModel = novelAiImageModel,
                                 novelAiNaturalLanguageMode = novelAiNaturalLanguageMode,
                                 automaticImageGenerationEnabled = automaticImageGenerationEnabled,
+                                imageBatchPreferences = imageBatchPreferences,
                                 formatCardId = formatId,
                                 replyLength = parsedReplyLength ?: DEFAULT_REPLY_LENGTH_CHARS,
                                 replyLanguage = replyLanguage.takeIf(String::isNotBlank),
@@ -386,6 +391,7 @@ fun ChatSettingsDialog(
                             characterCard?.defaultNovelAiImageModel != null,
                             novelAiNaturalLanguageMode, { novelAiNaturalLanguageMode = it },
                             automaticImageGenerationEnabled, { automaticImageGenerationEnabled = it },
+                            imageBatchPreferences, { imageBatchPreferences = it },
                             formatId, { formatId = it }, defaultFormatId, formats,
                             worldBooks, characterCard?.worldBookIds.orEmpty(), extraWorldBookIds, { extraWorldBookIds = it },
                             replyLength,

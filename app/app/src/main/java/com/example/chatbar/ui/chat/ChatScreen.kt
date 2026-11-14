@@ -1,5 +1,9 @@
 package com.example.chatbar.ui.chat
 
+import com.example.chatbar.domain.image.*
+import com.example.chatbar.ui.components.ImageBatchOptionsEditor
+import com.example.chatbar.ui.kit.CbSwitch
+
 import com.example.chatbar.ui.kit.AppIcons
 
 import android.Manifest
@@ -290,6 +294,7 @@ fun ChatScreen(
     var inputTouched by remember(sessionId) { mutableStateOf(false) }
     val selectedImages = remember { mutableStateListOf<String>() }
     var settingsOpen by remember { mutableStateOf(false) }
+    var initialImageSettings by remember { mutableStateOf(false) }
     var debugOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(sessionId) { mutableStateOf(false) }
     var peopleSaving by remember(sessionId) { mutableStateOf(false) }
@@ -340,6 +345,11 @@ fun ChatScreen(
         }
     }
     var imageActionTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var regenerationUseSavedBatch by remember { mutableStateOf(false) }
+    var regenerationEstimatedAnlas by remember { mutableStateOf<Long?>(null) }
+    var regenerationQuoteLoading by remember { mutableStateOf(false) }
+    val imagePaymentConfirmation by viewModel.imagePaymentConfirmation.collectAsState()
+
     var imageRegenerationDraft by remember(sessionId) { mutableStateOf<NovelAiImageRegenerationDraft?>(null) }
     var imageRegenerationLoading by remember(sessionId) { mutableStateOf(false) }
     var imageRegenerationError by remember(sessionId) { mutableStateOf<String?>(null) }
@@ -369,7 +379,21 @@ fun ChatScreen(
     var statusBlockExpansionOverrides by remember(sessionId) {
         mutableStateOf<Map<String, Boolean>>(emptyMap())
     }
+    var persistImagePreference by remember(sessionId) { mutableStateOf(false) }
     var imagePromptTargetId by remember(sessionId) { mutableStateOf<String?>(null) }
+    var batchConfiguration by remember(sessionId) { mutableStateOf(ImageBatchConfiguration()) }
+    var batchValid by remember(sessionId) { mutableStateOf(true) }
+    var batchConsent by remember(sessionId) { mutableStateOf(false) }
+    var batchPreviewRefresh by remember(sessionId) { mutableStateOf(0) }
+    var batchPreview by remember(sessionId) { mutableStateOf("计费状态尚未查询") }
+    LaunchedEffect(imagePromptTargetId, batchConfiguration, batchPreviewRefresh) {
+        batchConsent = false
+        if (imagePromptTargetId != null && batchConfiguration.validationError() == null) {
+            batchPreview = "正在查询当前账户及估算费用…"
+            kotlinx.coroutines.delay(400)
+            batchPreview = viewModel.previewManualImageRun(batchConfiguration)
+        }
+    }
     var imageContentHintDraft by remember(sessionId) { mutableStateOf("") }
     var imagePromptPreferenceDraft by remember(sessionId) { mutableStateOf("") }
 
@@ -430,6 +454,7 @@ fun ChatScreen(
 
     DisposableEffect(viewModel, sessionId) {
         onDispose {
+            viewModel.stopManualImageRuns()
             if (latestInitialScrollDone) {
                 ChatScrollPositionPolicy.capture(
                     sessionId = sessionId,
@@ -462,6 +487,7 @@ fun ChatScreen(
         imageRegenerationDraft = null
         imageRegenerationError = null
         imageRegenerationBatchSizeInput = "1"
+        regenerationUseSavedBatch = false
         if (target == null) {
             imageRegenerationLoading = false
         } else {
@@ -1304,7 +1330,9 @@ fun ChatScreen(
                             isModelUsable &&
                             message.role == MessageRole.ASSISTANT &&
                             message.displayContent.isNotBlank()
-                        ) ({ viewModel.generateNovelAiImage(message.id) }) else null,
+                        ) ({
+                            viewModel.requestSessionNovelAiImages(message.id)
+                        }) else null,
                         onGenerateImageLongPress = if (
                             !screenshotSelectionMode &&
                             novelAiConfigured &&
@@ -1313,6 +1341,8 @@ fun ChatScreen(
                             message.role == MessageRole.ASSISTANT &&
                             message.displayContent.isNotBlank()
                         ) ({
+                            persistImagePreference = true
+                            batchConfiguration = session?.imageBatchPreferences?.configuration() ?: ImageBatchConfiguration()
                             imagePromptTargetId = message.id
                             imageContentHintDraft = ""
                             imagePromptPreferenceDraft = session?.imagePromptPreference.orEmpty()
@@ -1346,7 +1376,9 @@ fun ChatScreen(
                                     viewModel.retryNovelAiImageGeneration(generation.taskId)
                                 },
                                 onDismiss = { viewModel.dismissNovelAiImageGeneration(generation.taskId) },
-                                onCancel = { viewModel.cancelNovelAiImageGeneration(generation.taskId) }
+                                onCancel = { viewModel.cancelNovelAiImageGeneration(generation.taskId) },
+                                onPause = { viewModel.pauseManualImageRun(generation.taskId) },
+                                onResume = { viewModel.resumeManualImageRun(generation.taskId) }
                             )
                         }
                     }
@@ -1358,7 +1390,9 @@ fun ChatScreen(
                                 viewModel.retryNovelAiImageGeneration(generation.taskId)
                             },
                             onDismiss = { viewModel.dismissNovelAiImageGeneration(generation.taskId) },
-                            onCancel = { viewModel.cancelNovelAiImageGeneration(generation.taskId) }
+                            onCancel = { viewModel.cancelNovelAiImageGeneration(generation.taskId) },
+                                onPause = { viewModel.pauseManualImageRun(generation.taskId) },
+                                onResume = { viewModel.resumeManualImageRun(generation.taskId) }
                         )
                     }
                 }
@@ -1561,7 +1595,7 @@ fun ChatScreen(
     imagePromptTargetId?.let { targetId ->
         CbDialog(
             onDismissRequest = { imagePromptTargetId = null },
-            title = "生图要求",
+            title = "本次生图偏好",
             dismiss = {
                 CbButton(
                     "取消",
@@ -1571,27 +1605,20 @@ fun ChatScreen(
             },
             confirm = {
                 CbButton(
-                    "生图",
+                    "确认并开始",
                     {
                         val contentHint = imageContentHintDraft
                         val preference = imagePromptPreferenceDraft
                         imagePromptTargetId = null
-                        viewModel.generateNovelAiImage(
-                            anchorMessageId = targetId,
-                            imageContentHint = contentHint,
-                            imagePromptPreference = preference,
-                            persistPreference = true
-                        )
-                    }
+                        viewModel.requestSessionNovelAiImages(targetId, contentHint = contentHint,
+                            promptPreference = preference, persistPreference = persistImagePreference)
+                    }, enabled = !batchPreview.startsWith("正在查询")
                 )
             }
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                CbText(
-                    "点击消息旁的生图按钮可直接生图，并会使用当前会话保存的生图偏好；长按可输入本次生图要求。",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CbText(batchPreview)
+                CbButton("会话生图设置", { imagePromptTargetId = null; initialImageSettings = true; settingsOpen = true }, variant = ButtonVariant.Outline)
                 CbField("图片内容提示") {
                     CbInput(
                         value = imageContentHintDraft,
@@ -1601,7 +1628,7 @@ fun ChatScreen(
                         minLines = 3
                     )
                 }
-                CbField("生图偏好") {
+                CbField(if (persistImagePreference) "生图偏好（确认后保存到会话）" else "本次生图偏好") {
                     CbInput(
                         value = imagePromptPreferenceDraft,
                         onValueChange = { imagePromptPreferenceDraft = it },
@@ -1616,14 +1643,15 @@ fun ChatScreen(
 
     if (settingsOpen) ChatSettingsDialog(
         viewModel = viewModel,
+        initialImageSettings = initialImageSettings,
         onRebindCharacter = {
             settingsOpen = false
             relinkSelectedId = null
             relinkError = null
             relinkOpen = true
         },
-        onDismiss = { settingsOpen = false },
-        onOpenImageGallery = { settingsOpen = false; imageGalleryOpen = true },
+        onDismiss = { settingsOpen = false; initialImageSettings = false },
+        onOpenImageGallery = { settingsOpen = false; initialImageSettings = false; imageGalleryOpen = true },
         onClearHistory = { clearConfirm = true },
         onJumpToSource = { sourceTurnId ->
             settingsOpen = false
@@ -1773,6 +1801,26 @@ fun ChatScreen(
             onShare = { shareImage(context, path, "分享长截图") }
         )
     }
+    LaunchedEffect(imageRegenerationDraft, regenerationUseSavedBatch, session?.imageBatchPreferences) {
+        regenerationEstimatedAnlas = null
+        imageRegenerationDraft?.let { draft ->
+            regenerationQuoteLoading = true
+            try {
+                val config = (session?.imageBatchPreferences ?: com.example.chatbar.domain.image.ImageBatchPreferences())
+                    .configuration(regenerationUseSavedBatch)
+                regenerationEstimatedAnlas = viewModel.estimateSessionImageRun(config, draft)
+            } finally { regenerationQuoteLoading = false }
+        }
+    }
+    imagePaymentConfirmation?.let { pending ->
+        CbDialog(onDismissRequest = viewModel::dismissImagePaymentConfirmation,
+            title = "确认本轮预计消费",
+            dismiss = { CbButton("取消", viewModel::dismissImagePaymentConfirmation, variant = ButtonVariant.Ghost) },
+            confirm = { CbButton("确认本轮 ${pending.estimatedAnlas} Anlas", viewModel::confirmImagePayment) }) {
+            CbText("${pending.configuration.requestCount} 张 × ${pending.configuration.numberOfBatches ?: 1} 批")
+            CbText("费用为估算。后续预计费用上涨会停止；本次确认不授权未来自动收费。")
+        }
+    }
     imageActionTarget?.let { (messageId, path) ->
         NovelAiImageRegenerationDialog(
             draft = imageRegenerationDraft,
@@ -1780,13 +1828,16 @@ fun ChatScreen(
             errorMessage = imageRegenerationError,
             onDraftChange = { imageRegenerationDraft = it },
             onDismiss = { imageActionTarget = null },
-            batchSizeInput = imageRegenerationBatchSizeInput,
-            onBatchSizeInputChange = { imageRegenerationBatchSizeInput = it },
+            batchSettings = session?.imageBatchPreferences ?: com.example.chatbar.domain.image.ImageBatchPreferences(),
+            useSavedBatch = regenerationUseSavedBatch,
+            onUseSavedBatchChange = { regenerationUseSavedBatch = it },
+            onOpenBatchSettings = { imageActionTarget = null; initialImageSettings = true; settingsOpen = true },
+            estimatedAnlas = regenerationEstimatedAnlas,
+            quoteLoading = regenerationQuoteLoading,
             onRegenerate = { draft ->
-                val batchSize = parseNovelAiBatchSize(imageRegenerationBatchSizeInput)
-                    ?: return@NovelAiImageRegenerationDialog
                 imageActionTarget = null
-                viewModel.regenerateNovelAiImage(messageId, path, draft, batchSize)
+                viewModel.requestSessionNovelAiImages(messageId, regeneration = draft,
+                    useSavedBatch = regenerationUseSavedBatch)
             },
             onDeleteImage = {
                 imageActionTarget = null
@@ -2779,7 +2830,9 @@ private fun NovelAiGenerationCard(
     state: ImageGenerationState,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onPause: () -> Unit = {},
+    onResume: () -> Unit = {}
 ) {
     val label = when (state.phase) {
         ImageGenerationPhase.QUEUED -> "等待生图额度"
@@ -2830,7 +2883,17 @@ private fun NovelAiGenerationCard(
                     )
                 }
             }
+            state.batchProgress?.let { progress ->
+                CbText(if (state.isTerminal) "任务已停止 · 已保存 ${progress.saved}/${progress.target} 张 · 预留估算 ${progress.estimatedSpent} Anlas"
+                    else progress.label(), style = ChatBarTheme.typography.caption)
+            }
             state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption) }
+            if (state.manualBatch && state.isCancellable) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CbButton("暂停下一批", onPause, variant = ButtonVariant.Outline)
+                    CbButton("继续", onResume, variant = ButtonVariant.Outline)
+                }
+            }
             if (state.isCancellable) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CbButton("停止", onCancel, variant = ButtonVariant.Outline)
@@ -2838,7 +2901,7 @@ private fun NovelAiGenerationCard(
             }
             if (state.isTerminal) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CbButton("重试", onRetry, variant = ButtonVariant.Outline)
+                    if (!state.manualBatch) CbButton("重试", onRetry, variant = ButtonVariant.Outline)
                     CbButton("关闭", onDismiss, variant = ButtonVariant.Ghost)
                 }
             }

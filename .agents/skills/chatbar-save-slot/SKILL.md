@@ -73,3 +73,5 @@ Whole-app .cbbackup is independent; use chatbar-app-backup. Per-session archive 
 - Player identity uses the existing Desktop-compatible SessionPlayerRole(cardId/personId/followName/followAvatar) and desktopPlayerRole/desktopPlayerAvatar fields. SaveSlot capture and both restore paths retain the explicit role; v8 packages validate/count/materialize avatar media under the selected image policy (NONE omits it), independently from background. SessionCopyService copies the avatar through the temporary package. Role is never reconstructed by name after card changes.
 
 - Lightweight SaveSlot summaries also stream desktopPlayerAvatar. Shared-image retention checks global/session player avatars and these archive summaries before deleting a character asset; it never reads message arrays for that check.
+
+- Session/SaveSlot optional `imageBatchPreferences` transfers count, batch count, pacing, enabled flag and default-off Anlas permission; runtime quote approval and running tasks are never serialized.

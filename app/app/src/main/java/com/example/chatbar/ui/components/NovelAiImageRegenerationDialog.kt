@@ -44,10 +44,17 @@ fun NovelAiImageRegenerationDialog(
     onRegenerate: (NovelAiImageRegenerationDraft) -> Unit,
     batchSizeInput: String? = null,
     onBatchSizeInputChange: (String) -> Unit = {},
-    onDeleteImage: (() -> Unit)? = null
+    onDeleteImage: (() -> Unit)? = null,
+    batchSettings: com.example.chatbar.domain.image.ImageBatchPreferences? = null,
+    useSavedBatch: Boolean = false,
+    onUseSavedBatchChange: (Boolean) -> Unit = {},
+    onOpenBatchSettings: () -> Unit = {},
+    estimatedAnlas: Long? = null,
+    quoteLoading: Boolean = false
 ) {
     var fullscreenTarget by remember { mutableStateOf<Int?>(null) }
     var activeTarget by remember { mutableStateOf<Int?>(null) }
+    var editPromptDetails by remember { mutableStateOf(false) }
     val editorValues = remember { mutableStateMapOf<Int, TextFieldValue>() }
     fun editorValue(target: Int, text: String): TextFieldValue =
         editorValues[target]?.takeIf { it.text == text } ?: TextFieldValue(text)
@@ -84,12 +91,19 @@ fun NovelAiImageRegenerationDialog(
                     )
                 }
                 CbButton(
-                    if (submitting) "生成中" else "重新生成",
+                    when {
+                        submitting -> "生成中"
+                        quoteLoading -> "查询费用…"
+                        batchSettings != null -> com.example.chatbar.domain.image.imageGenerationCostLabel("重新生成", estimatedAnlas)
+                        else -> "重新生成"
+                    },
                     { draft?.let(onRegenerate) },
+                    autoSizeText = true,
                     enabled = draft?.canRegenerate == true &&
                         (batchSizeInput == null || parseNovelAiBatchSize(batchSizeInput) != null) &&
-                        !loading &&
-                        !submitting
+                        !loading && !submitting &&
+                        (batchSettings == null || (!quoteLoading && estimatedAnlas != null &&
+                            (estimatedAnlas == 0L || batchSettings.allowAnlasSpending)))
                 )
             }
         }
@@ -98,6 +112,17 @@ fun NovelAiImageRegenerationDialog(
             modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (batchSettings != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CbText("使用已保存批量设置", androidx.compose.ui.Modifier.weight(1f))
+                    com.example.chatbar.ui.kit.CbSwitch(useSavedBatch, onUseSavedBatchChange)
+                }
+                val config = batchSettings.configuration(useSavedBatch)
+                CbText("${config.requestCount} 张 × ${config.numberOfBatches} 批")
+                CbButton("会话生图设置", onOpenBatchSettings, variant = ButtonVariant.Outline)
+                if (estimatedAnlas != null && estimatedAnlas > 0 && !batchSettings.allowAnlasSpending)
+                    CbText("允许消耗 Anlas 已关闭", color = ChatBarTheme.colors.destructive)
+            }
             if (loading) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -109,7 +134,12 @@ fun NovelAiImageRegenerationDialog(
                 errorMessage?.let {
                     CbText(it, color = ChatBarTheme.colors.destructive)
                 }
-                draft?.let { current ->
+                if (batchSettings != null) {
+                    CbText("沿用原图提示词和尺寸", style = ChatBarTheme.typography.caption)
+                    CbButton(if (editPromptDetails) "收起提示词与画面参数" else "编辑提示词与画面参数",
+                        { editPromptDetails = !editPromptDetails }, variant = ButtonVariant.Ghost)
+                }
+                draft?.takeIf { batchSettings == null || editPromptDetails }?.let { current ->
                     CbText(
                         buildString {
                             append("编辑本次使用的 NovelAI 提示词。每次使用新 seed。")
