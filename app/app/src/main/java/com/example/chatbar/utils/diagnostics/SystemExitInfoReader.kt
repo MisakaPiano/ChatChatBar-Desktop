@@ -15,7 +15,8 @@ import java.util.zip.GZIPInputStream
 
 internal data class SystemExitReadResult(
     val latestSeenTimestamp: Long,
-    val abnormalExit: DiagnosticSystemExitInfo?
+    val abnormalExit: DiagnosticSystemExitInfo?,
+    val expectedExitObserved: Boolean = false
 )
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -25,7 +26,8 @@ internal object SystemExitInfoReader {
     fun read(
         context: Context,
         lastHandledTimestamp: Long,
-        cutoffTimestamp: Long
+        cutoffTimestamp: Long,
+        expectedExit: ExpectedBackupExit? = null
     ): SystemExitReadResult? {
         val activityManager = context.getSystemService(ActivityManager::class.java) ?: return null
         val unseen = activityManager
@@ -33,17 +35,21 @@ internal object SystemExitInfoReader {
             .filter { it.timestamp > lastHandledTimestamp && it.timestamp >= cutoffTimestamp }
             .sortedByDescending(ApplicationExitInfo::getTimestamp)
         if (unseen.isEmpty()) return null
+        fun ApplicationExitInfo.isExpectedBackupExit() = ExpectedBackupExitPolicy.matches(
+            expectedExit, pid, timestamp, reason, status
+        )
         return SystemExitReadResult(
             latestSeenTimestamp = unseen.maxOf(ApplicationExitInfo::getTimestamp),
             abnormalExit = unseen
                 .firstOrNull {
-                    SystemExitDiagnosticPolicy.isDiagnosticAbnormalExit(
+                    !it.isExpectedBackupExit() && SystemExitDiagnosticPolicy.isDiagnosticAbnormalExit(
                         reason = it.reason,
                         status = it.status,
                         importance = it.importance
                     )
                 }
-                ?.toDiagnosticSystemExitInfo()
+                ?.toDiagnosticSystemExitInfo(),
+            expectedExitObserved = unseen.any { it.isExpectedBackupExit() }
         )
     }
 

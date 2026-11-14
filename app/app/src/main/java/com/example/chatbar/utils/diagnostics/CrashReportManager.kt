@@ -80,6 +80,14 @@ object CrashReportManager {
         refreshPendingState()
     }
 
+    /** Persist before the deliberate SIGKILL; never remove an existing crash report. */
+    fun recordExpectedBackupExit(context: Context): Result<Unit> = runCatching {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@runCatching
+        ExpectedBackupExitStore(context.noBackupFilesDir).record(
+            ExpectedBackupExit(Process.myPid(), System.currentTimeMillis())
+        )
+    }.onFailure { Log.w(TAG, "Unable to record expected backup exit", it) }
+
     fun recordBreadcrumb(category: String, message: String) {
         if (!initialized) return
         val entry = "${System.currentTimeMillis()} | " +
@@ -199,7 +207,11 @@ object CrashReportManager {
         val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastHandled = prefs.getLong(PREF_LAST_EXIT_TIMESTAMP, 0L)
         val cutoff = System.currentTimeMillis() - EXIT_LOOKBACK_MS
-        val result = SystemExitInfoReader.read(appContext, lastHandled, cutoff) ?: return
+        val expectedStore = ExpectedBackupExitStore(appContext.noBackupFilesDir)
+        val expected = expectedStore.read()
+        if (expected != null && expected.recordedAt < cutoff) expectedStore.clear()
+        val result = SystemExitInfoReader.read(appContext, lastHandled, cutoff, expected) ?: return
+        if (result.expectedExitObserved) expectedStore.clear()
         val exit = result.abnormalExit
         if (exit == null) {
             prefs.edit().putLong(PREF_LAST_EXIT_TIMESTAMP, result.latestSeenTimestamp).commit()
