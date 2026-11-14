@@ -37,8 +37,10 @@ class DesktopImageBatchOptionsTest {
                 assertTrue(scene.nodes().any { n -> n.config.getOrNull(SemanticsProperties.Text)?.any { "4 + 4 + 2" in it.text } == true })
                 scene.capture("batch-options-top-$width.png")
                 scene.scroll(10000f)
+                scene.capture("batch-options-bottom-$width.png")
                 val checkbox = scene.action("我确认本次请求计划和估算预算")
-                assertTrue(checkbox.boundsInRoot.height > 0 && checkbox.boundsInRoot.top >= 0 && checkbox.boundsInRoot.bottom <= button.top)
+                assertTrue(checkbox.boundsInRoot.height > 0 && checkbox.boundsInRoot.top >= 0 && checkbox.boundsInRoot.bottom <= button.top,
+                    "Confirmation must actually be visible: ${checkbox.boundsInRoot}, footer=$button")
                 assertTrue(checkbox.config[SemanticsActions.OnClick].action!!.invoke()); scene.frames()
                 assertFalse(scene.action("生成").config.contains(SemanticsProperties.Disabled))
                 scene.capture("batch-options-confirm-$width.png")
@@ -81,8 +83,12 @@ class DesktopImageBatchOptionsTest {
             config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true || children.any { it.matches(text) }
     private fun ImageComposeScene.action(text: String) = nodes().first { it.matches(text) && it.config.contains(SemanticsActions.OnClick) }
     private suspend fun ImageComposeScene.scroll(delta: Float) {
-        nodes().first { it.config.contains(SemanticsActions.ScrollBy) && it.config.contains(SemanticsProperties.VerticalScrollAxisRange) }
-            .config[SemanticsActions.ScrollBy].action!!.invoke(0f, delta)
+        val node = nodes().first { it.config.contains(SemanticsActions.ScrollBy) &&
+            (it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)?.maxValue?.invoke() ?: 0f) > 0f }
+        val range = node.config[SemanticsProperties.VerticalScrollAxisRange]
+        val target = (range.value() + delta).coerceIn(0f, range.maxValue())
+        node.config[SemanticsActions.ScrollBy].action!!.invoke(0f, target - range.value())
+        withTimeout(5000) { while (kotlin.math.abs(range.value() - target) > 1f) frames() }
         frames()
     }
     private fun ImageComposeScene.capture(name: String) {
