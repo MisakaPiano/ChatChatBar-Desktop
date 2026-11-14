@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: d2c86922e37807dbb28a7a5ed6d4a6ca2bb8894a
+          ref: 14f284628223b4b352b1cf2881d6ce55cd2d3a4e
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -53,7 +53,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: adb shell wm size 1080x1920 && adb shell wm density 480 && cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyDeletionConfirmationTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest --no-daemon --stacktrace && cd .. && adb pull /sdcard/Download/ccb-version-review version-review/ui
+          script: adb shell wm size 1080x1920 && adb shell wm density 480 && cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest,com.example.chatbar.ui.chat.ReplyDeletionConfirmationTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest --no-daemon --stacktrace && cd .. && adb pull /sdcard/Download/ccb-version-review version-review/ui
       - name: Verify APK identity and signature
         shell: python
         run: |
