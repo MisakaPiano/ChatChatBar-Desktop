@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.syncStore.*
 import java.net.InetAddress
 import java.net.Socket
@@ -9,6 +10,7 @@ import java.nio.file.Path
 import java.util.Base64
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonPrimitive
@@ -35,8 +37,8 @@ class LanSyncGroupCoordinatorResolutionTest {
         val coordinators = mutableListOf<LanSyncGroupCoordinator>()
         fun owner() = LanSyncGroupEnrollment(f.profile, f.workspace, platform, f.identity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(owners::add)
-        fun newCoordinator() = LanSyncGroupCoordinator({ true }, ::owner,
-            { error("SYNTHETIC_FOUNDER_ONLY") }, network, "synthetic resolution PC").also(coordinators::add)
+        fun newCoordinator(sourceChanges: Flow<Long>? = null) = LanSyncGroupCoordinator({ true }, ::owner,
+            { error("SYNTHETIC_FOUNDER_ONLY") }, network, "synthetic resolution PC", sourceChanges = sourceChanges).also(coordinators::add)
         lateinit var coordinator: LanSyncGroupCoordinator
         lateinit var access: LanSyncGroupRuntimeAccess
         lateinit var remote: LanSyncGroupNode
@@ -128,6 +130,101 @@ class LanSyncGroupCoordinatorResolutionTest {
         val scene = Scene(f, network)
         try { f.seed(); scene.seed(::await); work(scene) }
         finally { scene.close(); f.close(); check(root.toFile().deleteRecursively()) }
+    }
+
+    private fun retainedFiles(root: Path): Map<String, String> = Files.walk(root).use { paths ->
+        paths.iterator().asSequence().filter { Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.associate { path ->
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            Files.newInputStream(path, java.nio.file.LinkOption.NOFOLLOW_LINKS).use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) { val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
+            }
+            root.relativize(path).toString() to digest.digest().joinToString("") { "%02x".format(it) }
+        }
+    }
+
+    @Test fun damagedOptionalPeerDisplayHintsRemainVisibleWithoutBlockingColdOwnerOrIndependentStoragePublication() = scene { s ->
+        val operations = s.access.node.sourceOperations()
+        val entries = operations.map { requireNotNull(s.author().entry(it)) }
+        val conflict = requireNotNull(s.coordinator.view.value).nativeState.units.getValue(s.unit)
+        s.coordinator.closeAndDrain()
+        val origin = Files.readAllBytes(s.f.profile.resolve("node/author/origin.protected"))
+        val profile = Files.readAllBytes(s.f.profile.resolve("profile.protected"))
+        val ledger = s.access.ledger().history()
+        val custody = retainedFiles(s.f.profile.resolve("custody"))
+        val hints = s.f.profile.resolve("app-runtime/peer-display.protected")
+        val damaged = "synthetic invalid optional peer display hints".toByteArray(Charsets.UTF_8)
+        Files.write(hints, damaged)
+        val storage = JsonFileStorage(s.f.data)
+        val cold = s.newCoordinator(storage.committedRevisionFor(LanSyncScope.schemas.keys))
+        cold.startIfConfigured()
+        await {
+            cold.state.value.stage == LanSyncGroupPanelStage.READY && !cold.state.value.busy &&
+                cold.view.value?.plan?.units?.get(s.unit)?.stage == LanSyncGroupNativeStage.CONFLICT &&
+                cold.state.value.error?.contains("SYNC_GROUP_PEER_NAMES_") == true
+        }
+        assertTrue(cold.state.value.devices.any { it.id == s.f.joiningIdentity.fingerprint && !it.thisDevice && !it.managementIdentity })
+        assertEquals(operations, s.access.node.sourceOperations())
+        assertEquals(2L, s.author().state().committedSequence)
+        assertContentEquals(damaged, Files.readAllBytes(hints))
+        assertContentEquals(s.leftRaw, Files.readAllBytes(s.card))
+
+        val independentUnit = "character_cards/independent"
+        val independentPath = s.f.data.resolve("entities/character_cards/independent.json")
+        storage.saveEntity("character_cards", "independent",
+            CharacterCard("independent", "synthetic independent edit with damaged display hints", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+        val independentRaw = Files.readAllBytes(independentPath)
+        val targetHash = s.f.workspace.capture(s.f.identity.fingerprint).use { it.snapshot.hashes().getValue(independentUnit) }
+        await {
+            val plan = cold.view.value?.plan
+            !cold.state.value.busy && plan != null && plan.units[independentUnit]?.stage == LanSyncGroupNativeStage.UNCHANGED &&
+                plan.units[s.unit]?.stage == LanSyncGroupNativeStage.CONFLICT &&
+                plan.before.records.any { it.key == independentUnit && Scene.name(it) == "synthetic independent edit with damaged display hints" }
+        }
+        val publishedOperations = s.access.node.sourceOperations()
+        assertEquals(3, publishedOperations.size)
+        assertEquals(operations, publishedOperations.take(2))
+        assertEquals(3L, s.author().state().committedSequence)
+        val published = requireNotNull(s.author().entry(publishedOperations.last()))
+        assertEquals(3L, published.version.authorSequence)
+        assertEquals(s.left.version.reference(), published.version.previousByAuthor)
+        assertEquals(setOf(independentUnit), published.version.changes.keys)
+        val change = published.version.changes.getValue(independentUnit)
+        assertNotNull(change.content)
+        assertEquals(targetHash, change.valueHash)
+        assertTrue(change.previous.isEmpty())
+        assertNotNull(s.access.node.receipt(publishedOperations.last(), s.access.localTarget))
+        assertTrue(cold.state.value.error?.contains("SYNC_GROUP_PEER_NAMES_") == true)
+        assertEquals(conflict, requireNotNull(cold.view.value).nativeState.units.getValue(s.unit))
+        assertEquals(entries, operations.map { requireNotNull(s.author().entry(it)) })
+        assertEquals(1L, s.remoteAuthor.state().committedSequence)
+        assertEquals(s.right.entry, s.remoteAuthor.entry(s.right.entry.request.operation))
+        assertEquals(ledger, s.access.ledger().history())
+        assertEquals(custody, retainedFiles(s.f.profile.resolve("custody")))
+        assertContentEquals(profile, Files.readAllBytes(s.f.profile.resolve("profile.protected")))
+        assertContentEquals(origin, Files.readAllBytes(s.f.profile.resolve("node/author/origin.protected")))
+        assertContentEquals(damaged, Files.readAllBytes(hints))
+        assertContentEquals(s.leftRaw, Files.readAllBytes(s.card))
+        assertContentEquals(independentRaw, Files.readAllBytes(independentPath))
+        s.assertOriginal(s.original); s.assertOriginal(s.leftRaw)
+        val source = requireNotNull(s.f.workspace.recovery.read(published.request.sourceCheckpoint))
+        s.f.workspace.recovery.verify(source)
+        var retainedIndependent = false
+        s.f.workspace.recovery.originals(source) { row, path ->
+            if (row.relative == "entities/character_cards/independent.json") {
+                retainedIndependent = true
+                assertContentEquals(independentRaw, Files.readAllBytes(path))
+            }
+        }
+        assertTrue(retainedIndependent)
+        val beforeRetry = cold.view.value
+        cold.retry()
+        await { cold.view.value !== beforeRetry && !cold.state.value.busy && cold.state.value.error?.contains("SYNC_GROUP_PEER_NAMES_") == true }
+        assertEquals(publishedOperations, s.access.node.sourceOperations())
+        assertEquals(3L, s.author().state().committedSequence)
+        assertContentEquals(damaged, Files.readAllBytes(hints))
+        assertContentEquals(s.leftRaw, Files.readAllBytes(s.card))
+        assertContentEquals(independentRaw, Files.readAllBytes(independentPath))
     }
 
     @Test fun laterPreparationAndDismissalAreInertThenExplicitHoldSurvivesOwnerReopenWithoutSigning() = scene { s ->

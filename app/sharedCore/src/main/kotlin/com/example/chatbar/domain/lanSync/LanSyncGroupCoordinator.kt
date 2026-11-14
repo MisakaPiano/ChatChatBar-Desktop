@@ -160,7 +160,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val own = founder().profile()
         if (own != null) {
             if (own.stage == LanSyncGroupEnrollmentStage.READY) attach(requireNotNull(founder().runtimeAccess()))
-            else mutableState.update { it.copy(stage = LanSyncGroupPanelStage.PREPARED_LOCKED, localManagementAvailable = true, status = "设置尚未完成，请用已保存的恢复码继续") }
+            else synchronized(lifecycle) {
+                val prepared = draft?.takeIf { it.profile == own && it.session.isUnlocked }
+                if (prepared != null) mutableState.update { it.copy(stage = LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE,
+                    recoveryCode = prepared.recoveryCode(), setupBinding = prepared.operation.value,
+                    localManagementAvailable = true, managementUnlocked = true, status = "请确认已妥善保存恢复码后完成创建") }
+                else mutableState.update { it.copy(stage = LanSyncGroupPanelStage.PREPARED_LOCKED,
+                    recoveryCode = null, setupBinding = null, managementUnlocked = false,
+                    localManagementAvailable = true, status = "设置尚未完成，请用已保存的恢复码继续") }
+            }
         } else {
             val joined = member().profile()
             if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()))
@@ -297,7 +305,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (closed || generation != privacyGeneration || (if (recovered) recoveredManagement?.isUnlocked != true else draft == null)) { owner.close(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
         val offer = live.invitation(owner) { invited -> action("核对加入设备") {
             val preview = if (recovered) requireNotNull(recoveredManagement).prepareMember(invited, owner) else founder().prepareMember(invited, owner)
-            requireNotNull(access).rememberPeerName(invited)
+            try { requireNotNull(access).rememberPeerName(invited) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { failure("保存设备显示名称（成员核验结果保留）", error) }
             synchronized(lifecycle) {
                 require(!closed && generation == privacyGeneration && invitation === owner &&
                     (if (recovered) recoveredManagement?.isUnlocked == true else draft != null)) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
@@ -499,18 +509,27 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, localManagementAvailable = requireNotNull(access).localManagementAvailable,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             paused = paused, status = if (paused) "设备组同步尚未恢复，原件与待传队列已保留" else "设备组已就绪，应用正在检查同步") }
-        refreshDevices(); if (!paused) { cycle(force = true); startLoop() }
+        refreshDevices()
+        if (!paused) try { cycle(force = true) } finally { if (!paused && !closed) startLoop() }
     }
     private fun refreshDevices() {
         val current = access ?: return
         val ledger = current.ledger().current()
         val manager = SyncDeviceSignatures.decode(current.trust.ownerCertificate).fingerprint
-        mutableState.update { state -> state.copy(devices = ledger.members.map { (id, member) ->
-            LanSyncGroupDeviceRow(id, if (id == current.device) deviceName else if (id == manager) "组管理身份"
-                else current.peerDisplayName(id) ?: "已加入设备 · ${id.take(8)}",
-                if (member.active) "已加入" else "已撤销", id == current.device, id == manager,
-                state.managementUnlocked && member.active && id != current.device && id != manager)
-        }) }
+        var hintFailure: Exception? = null
+        val rows = ledger.members.map { (id, member) ->
+            val name = if (id == current.device) deviceName else if (id == manager) "组管理身份" else {
+                val hint = try { current.peerDisplayName(id) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (error: Exception) { if (hintFailure == null) hintFailure = error; null }
+                hint ?: "已加入设备 · ${id.take(8)}"
+            }
+            LanSyncGroupDeviceRow(id, name, if (member.active) "已加入" else "已撤销",
+                id == current.device, id == manager, false)
+        }
+        mutableState.update { state -> state.copy(devices = rows.map { row -> row.copy(canRevoke =
+            state.managementUnlocked && ledger.members.getValue(row.id).active && !row.thisDevice && !row.managementIdentity) }) }
+        hintFailure?.let { failure("读取设备显示名称（原文件已保留）", it) }
     }
     private fun startLoop() {
         if (loop?.isActive == true || closed || paused) return

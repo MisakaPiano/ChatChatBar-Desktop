@@ -12,8 +12,14 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonPrimitive
@@ -107,6 +113,49 @@ class LanSyncGroupCoordinatorTest {
         coordinator.closeAndDrain()
         assertNull(coordinator.view.value)
         assertFalse(Files.exists(f.profile.resolve("app-runtime")))
+    }
+
+    @Test fun reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode() = fixture { f ->
+        val coordinator = f.coordinator(initiallyPaused = true)
+        coordinator.createGroup()
+        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+        val code = requireNotNull(coordinator.state.value.recoveryCode)
+        val binding = requireNotNull(coordinator.state.value.setupBinding)
+        val prepared = Files.readAllBytes(f.profile.resolve("profile.protected"))
+        suspend fun reopen() = coroutineScope {
+            val completed = CompletableDeferred<Unit>()
+            val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+                var entered = false
+                coordinator.state.collect { state ->
+                    if (state.busy) entered = true else if (entered) completed.complete(Unit)
+                }
+            }
+            try { coordinator.open(); withTimeout(5_000) { completed.await() } }
+            finally { observer.cancelAndJoin() }
+        }
+        reopen()
+        assertTrue(coordinator.state.value.paused)
+        assertEquals(LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE, coordinator.state.value.stage)
+        assertEquals(code, coordinator.state.value.recoveryCode)
+        assertEquals(binding, coordinator.state.value.setupBinding)
+        assertTrue(coordinator.state.value.managementUnlocked)
+        assertContentEquals(prepared, Files.readAllBytes(f.profile.resolve("profile.protected")))
+        assertNull(coordinator.view.value)
+        assertFalse(Files.exists(f.profile.resolve("node")))
+        coordinator.lockManagement()
+        reopen()
+        assertEquals(LanSyncGroupPanelStage.PREPARED_LOCKED, coordinator.state.value.stage)
+        assertNull(coordinator.state.value.recoveryCode)
+        assertNull(coordinator.state.value.setupBinding)
+        assertFalse(coordinator.state.value.managementUnlocked)
+        assertContentEquals(prepared, Files.readAllBytes(f.profile.resolve("profile.protected")))
+        coordinator.unlockManagement(code)
+        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+        assertEquals(binding, coordinator.state.value.setupBinding)
+        coordinator.recoverySaved(binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.READY }
+        assertTrue(coordinator.state.value.paused)
+        assertEquals(0L, f.author(requireNotNull(f.founder().profile()).trust).state().committedSequence)
     }
 
     @Test fun explicitSavedCreationPublishesLocalReplicaAndReopenRunsWithManagementLocked() = fixture { f ->
@@ -359,6 +408,89 @@ class LanSyncGroupCoordinatorTest {
         assertContentEquals(edited, Files.readAllBytes(f.card))
         assertEquals(objects, retainedFiles(f.profile.resolve("local-replica")))
         assertSourceOriginal(f, firstEntry, original)
+    }
+
+    @Test fun dismissedDeletionCannotPublishWhileActualStorageWakePublishesExactlyTheNewBusinessValue() = fixture { f ->
+        val unit = "character_cards/card"
+        f.writeCard("synthetic initial original before dismissed deletion")
+        val original = Files.readAllBytes(f.card)
+        val storage = JsonFileStorage(f.data)
+        val coordinator = readyCoordinator(f, storage.committedRevisionFor(LanSyncScope.schemas.keys))
+        val access = requireNotNull(f.founder().runtimeAccess())
+        val author = f.author(access.trust)
+        val initialOperation = access.node.sourceOperations().single()
+        val initial = requireNotNull(author.entry(initialOperation))
+        val origin = Files.readAllBytes(f.profile.resolve("node/author/origin.protected"))
+        Files.delete(f.card)
+        coordinator.retry()
+        await { !coordinator.state.value.busy && coordinator.view.value?.plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW }
+        coordinator.prepareSourceReview(requireNotNull(coordinator.view.value), unit)
+        await { !coordinator.state.value.busy && coordinator.actionsReview.value?.source != null }
+        val dismissed = requireNotNull(coordinator.actionsReview.value)
+        assertTrue(dismissed.canConfirm)
+        assertTrue(requireNotNull(dismissed.source).units.getValue(unit).current.isEmpty())
+        assertEquals(listOf(initialOperation), access.node.sourceOperations())
+        assertEquals(1L, author.state().committedSequence)
+        coordinator.cancelActionReview()
+        assertNull(coordinator.actionsReview.value)
+
+        storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic final business edit after dismissed deletion", createdAt = 1, updatedAt = 2), CharacterCard.serializer())
+        val edited = Files.readAllBytes(f.card)
+        val targetHash = f.workspace.capture(f.identity.fingerprint).use { it.snapshot.hashes().getValue(unit) }
+        coordinator.confirmActionReview(dismissed.binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.error?.endsWith("SYNC_GROUP_REVIEW_DISMISSED") == true }
+        assertNull(coordinator.actionsReview.value)
+        await {
+            val plan = coordinator.view.value?.plan
+            !coordinator.state.value.busy &&
+                plan?.before?.records?.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "synthetic final business edit after dismissed deletion" &&
+                plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED
+        }
+        val operations = access.node.sourceOperations()
+        assertEquals(2, operations.size)
+        assertEquals(initialOperation, operations.first())
+        assertEquals(2L, author.state().committedSequence)
+        assertNull(author.state().pendingApproved)
+        val published = requireNotNull(author.entry(operations.last()))
+        assertEquals(2L, published.version.authorSequence)
+        assertEquals(initial.version.reference(), published.version.previousByAuthor)
+        assertEquals(setOf(unit), published.version.changes.keys)
+        val change = published.version.changes.getValue(unit)
+        assertNotNull(change.content, "The independent storage wake must publish the edited value, never the dismissed tombstone")
+        assertEquals(targetHash, change.valueHash)
+        assertEquals(setOf(initial.version.reference()), change.previous)
+        assertNotNull(access.node.receipt(operations.last(), access.localTarget))
+        assertEquals(initial, author.entry(initialOperation))
+        assertContentEquals(origin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+        assertContentEquals(edited, Files.readAllBytes(f.card))
+        assertTrue(f.workspace.completedRecoveries(f.identity.fingerprint).isEmpty())
+        Files.newDirectoryStream(f.root.resolve("workspace"), "restore-intent-*.json").use { assertFalse(it.iterator().hasNext()) }
+        assertSourceOriginal(f, initial, original)
+        assertSourceOriginal(f, published, edited)
+
+        val beforeRetry = coordinator.view.value
+        coordinator.retry()
+        await { coordinator.view.value !== beforeRetry && !coordinator.state.value.busy && coordinator.state.value.error == null }
+        assertNull(coordinator.state.value.error)
+        assertEquals(operations, access.node.sourceOperations())
+        assertEquals(2L, author.state().committedSequence)
+        coordinator.confirmActionReview(dismissed.binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.error?.endsWith("SYNC_GROUP_REVIEW_DISMISSED") == true }
+        assertNull(coordinator.actionsReview.value)
+        assertEquals(operations, access.node.sourceOperations())
+        val afterDismissal = coordinator.view.value
+        coordinator.retry()
+        await { coordinator.view.value !== afterDismissal && !coordinator.state.value.busy && coordinator.state.value.error == null }
+        assertNull(coordinator.state.value.error)
+        assertEquals(operations, access.node.sourceOperations())
+        assertEquals(2L, author.state().committedSequence)
+        assertEquals(initial, author.entry(initialOperation))
+        assertContentEquals(origin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+        assertContentEquals(edited, Files.readAllBytes(f.card))
+        assertTrue(f.workspace.completedRecoveries(f.identity.fingerprint).isEmpty())
+        Files.newDirectoryStream(f.root.resolve("workspace"), "restore-intent-*.json").use { assertFalse(it.iterator().hasNext()) }
+        assertSourceOriginal(f, initial, original)
+        assertSourceOriginal(f, published, edited)
     }
 
     @Test fun recoveryActionsBrowseFrozenOriginalAndOnlyConfirmedRestorePublishesAFreshRevisionWithBothRawPreimages() = fixture { f ->

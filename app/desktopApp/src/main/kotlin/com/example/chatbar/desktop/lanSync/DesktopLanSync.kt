@@ -4,6 +4,7 @@ import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.desktop.security.WindowsDpapiSecretProtector
 import com.example.chatbar.desktop.security.WindowsSecretRootResolver
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.nio.file.*
@@ -68,16 +69,75 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
             } }
         } catch (_: Exception) { true }
     }
-    private val groupCoordinatorOwner = lazy {
+    private val networkMonitorScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val networkMonitorLock = Any()
+    @Volatile private var networkMonitorClosed = false
+    private var networkMonitor: DesktopLanSyncNetworkMonitor? = null
+    private var networkMonitorObserver: Job? = null
+    private fun networkStageEligible(): Boolean = groupCoordinatorOwner.isInitialized() &&
+        groupCoordinatorOwner.value.state.value.stage in setOf(LanSyncGroupPanelStage.READY, LanSyncGroupPanelStage.JOINING)
+    private fun ensureNetworkMonitor() = synchronized(networkMonitorLock) {
+        if (!networkMonitorClosed && networkMonitor == null && networkStageEligible() && hasGroupEvidence()) {
+            networkMonitor = DesktopLanSyncNetworkMonitor(onNetworkAvailable = {
+                val current = synchronized(networkMonitorLock) {
+                    if (!networkMonitorClosed && networkStageEligible()) groupCoordinatorOwner.value else null
+                }
+                current?.onNetworkAvailable()
+            })
+        }
+    }
+    private suspend fun closeIneligibleNetworkMonitor() {
+        val monitor = synchronized(networkMonitorLock) {
+            if (!networkMonitorClosed && (!networkStageEligible() || !hasGroupEvidence())) networkMonitor else null
+        } ?: return
+        if (monitor.closeAndDrain()) {
+            synchronized(networkMonitorLock) { if (networkMonitor === monitor) networkMonitor = null }
+            ensureNetworkMonitor()
+        }
+    }
+    private suspend fun closeNetworkMonitorAndDrain() = withContext(NonCancellable) {
+        val (observer, monitor) = synchronized(networkMonitorLock) {
+            networkMonitorClosed = true
+            networkMonitorObserver to networkMonitor
+        }
+        observer?.cancelAndJoin()
+        monitor?.closeAndDrain()
+        networkMonitorScope.coroutineContext[Job]?.cancelAndJoin()
+    }
+    private val groupCoordinatorOwner: Lazy<LanSyncGroupCoordinator> = lazy {
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = "CCB 电脑",
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
-            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys))
+            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys)).also { coordinator ->
+                networkMonitorObserver = networkMonitorScope.launch {
+                    coordinator.state.collect {
+                        if (hasGroupEvidence() && networkStageEligible()) ensureNetworkMonitor()
+                        else closeIneligibleNetworkMonitor()
+                    }
+                }
+            }
     }
-    val groupCoordinator get() = groupCoordinatorOwner.value
-    fun startGroupIfConfigured() { if (hasGroupEvidence()) groupCoordinator.startIfConfigured() }
-    fun onForeground() { if (hasGroupEvidence()) groupCoordinator.onForeground() }
+    val groupCoordinator: LanSyncGroupCoordinator get() {
+        val current = synchronized(networkMonitorLock) {
+            check(!networkMonitorClosed || groupCoordinatorOwner.isInitialized()) { "SYNC_GROUP_COORDINATOR_CLOSED" }
+            groupCoordinatorOwner.value
+        }
+        ensureNetworkMonitor()
+        return current
+    }
+    private fun configuredCoordinatorIfOpen(): LanSyncGroupCoordinator? {
+        val current = synchronized(networkMonitorLock) {
+            if (networkMonitorClosed || !hasGroupEvidence()) null else groupCoordinatorOwner.value
+        }
+        if (current != null) ensureNetworkMonitor()
+        return current
+    }
+    fun startGroupIfConfigured() {
+        configuredCoordinatorIfOpen()?.startIfConfigured()
+    }
+    fun onForeground() { configuredCoordinatorIfOpen()?.onForeground() }
     suspend fun quiesceAndDrain() {
+        closeNetworkMonitorAndDrain()
         if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.quiesceAndDrain()
         if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
     }
@@ -124,6 +184,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() {
+        closeNetworkMonitorAndDrain()
         val pending = synchronized(finalFlushLock) { finalFlush }
         if (pending != null && !pending.isCompleted &&
             withTimeoutOrNull(30_000) { pending.join(); true } != true) throw DesktopLanSyncFinalFlushTimeoutException()
