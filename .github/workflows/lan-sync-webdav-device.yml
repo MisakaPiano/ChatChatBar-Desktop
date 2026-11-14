@@ -1,0 +1,60 @@
+name: Isolated Android API26 WebDAV production SAX probe
+on:
+  push:
+    branches: ['codex/webdav-api26-proof-20261114']
+    paths: [.github/lan-sync-webdav-device-request.json]
+permissions:
+  contents: read
+jobs:
+  android26:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze explicit source containing adapter and test-only probe
+        shell: bash
+        run: |
+          sourceSha=$(python3 -c 'import json,re; r=json.load(open(".github/lan-sync-webdav-device-request.json")); assert r["kind"]=="CCB_WEBDAV_API26_SAX_PROBE" and r["api"]==26; assert r["selector"]=="com.example.chatbar.lanSync.LanSyncWebDavPlatformTest#productionSaxRejectsDtdAndParsesSegmentedDavOnApi26"; s=r["sourceSha"]; assert re.fullmatch(r"[0-9a-f]{40}",s); print(s)')
+          sourceDir="$RUNNER_TEMP/ccb-webdav-platform-source"
+          git worktree add --detach "$sourceDir" "$sourceSha"
+          test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
+          test -f "$sourceDir/app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncWebDavPlatformTest.kt"
+          test -f "$sourceDir/tools/lan-sync/run-webdav-native-android.sh"
+          echo "CCB_WEBDAV_PLATFORM_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile isolated lanPreview and instrumentation
+        run: |
+          cd "$CCB_WEBDAV_PLATFORM_SOURCE/app"
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true --no-daemon --stacktrace
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Execute exact production SAX instrumentation selector
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash "$CCB_WEBDAV_PLATFORM_SOURCE/tools/lan-sync/run-webdav-native-android.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webdav-native-android-api26-evidence
+          path: |
+            webdav-native-api26-evidence/*.txt
+            webdav-native-api26-evidence/summary.json
+          if-no-files-found: warn
