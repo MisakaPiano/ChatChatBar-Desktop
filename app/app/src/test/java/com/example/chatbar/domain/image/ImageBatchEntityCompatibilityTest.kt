@@ -17,7 +17,7 @@ class ImageBatchEntityCompatibilityTest {
         assertEquals(ImageBatchPreferences(),slot.imageBatchPreferences)
     }
     @Test fun sessionAndSaveSlotRetainFractionalPacingWithoutApprovingRuntimePayment() {
-        val saved=ImageBatchPreferences(true,4,3,ImageBatchPacing(ImageBatchWaitMode.RANDOM_RANGE,
+        val saved=ImageBatchPreferences(true,4,3,ImageBatchPacing(ImageBatchInterval.RANGE,
             minMillis=1500,maxMillis=2300),allowAnlasSpending=true)
         val session=ChatSession.create("c","synthetic").copy(imageBatchPreferences=saved)
         val slot=SaveSlot(id="slot",sessionId=session.id,name="synthetic",createdAt=1,imageBatchPreferences=saved)
