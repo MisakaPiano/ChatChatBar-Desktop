@@ -60,7 +60,9 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: python3 -B tools/lan-next-control/prove_upgrade.py --directory candidate
+          script: |
+            python3 -B tools/lan-next-control/prove_upgrade.py --directory candidate
+            python3 -B tools/lan-next-control/ui_smoke_after_upgrade.py --directory candidate
       - uses: actions/upload-artifact@v4
         if: always()
         with:

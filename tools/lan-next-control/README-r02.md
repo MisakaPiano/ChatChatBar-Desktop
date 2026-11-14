@@ -51,6 +51,15 @@ install82 / seed / install83-without-clearing / verify flow. A successful build 
 Python check is not evidence that this Android execution passed. Evidence artifacts
 have r02-specific names; no old evidence is overwritten.
 
+After the actual two-pass upgrade proof, the same guarded cloud emulator runs
+`ui_smoke_after_upgrade.py` once, without any install/uninstall/clear command.
+It checks the same control/proof, installed83 identity and actual API26 emulator,
+then refuses an existing source90 `ccb-lan-preview-sample-v2-session.json` (and the
+legacy sample name) before selecting exactly `LanSyncUiTest`'s one method. Raw
+stdout must report its exact class/method, OK1test and statuses `[1,0]`, no skip.
+The small result covers Activity launch/recreate and repository image-file decode;
+it does not establish hold/conflict/recovery/FrozenImage UI or human acceptance.
+
 Light synthetic control checks (no JVM/SDK/native execution):
 
 ```text
