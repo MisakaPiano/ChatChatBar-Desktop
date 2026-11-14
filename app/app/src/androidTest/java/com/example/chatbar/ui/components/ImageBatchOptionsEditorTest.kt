@@ -16,38 +16,39 @@ import org.junit.Test
 
 class ImageBatchOptionsEditorTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
-    @Test fun batchRiskBudgetAndGroupingAreVisibleWithoutAnyAccountCall() {
+    @Test fun perBatchTimesBatchesShowsTwelveWithoutBudgetOrTargetFields() {
         rule.setContent {
-            var config by remember { mutableStateOf(ImageBatchConfiguration(4, true, 10)) }
-            ChatBarTheme { CbDialog(onDismissRequest = {}, title = "本次生图设置", confirm = { CbButton("确认", {}) }) {
+            var config by remember { mutableStateOf(ImageBatchPreferences(true, 4, 3).configuration()) }
+            ChatBarTheme { CbDialog(onDismissRequest = {}, title = "会话生图设置", confirm = { CbButton("保存", {}) }) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     ImageBatchOptionsEditor(config, { config = it })
                 }
             } }
         }
-        rule.onNodeWithContentDescription("批量生图数量", useUnmergedTree = true).assertExists()
-        rule.onNodeWithContentDescription("本次估算Anlas预算", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("预计 10 张", substring = true, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("4 + 4 + 2", substring = true, useUnmergedTree = true).assertIsDisplayed()
-        rule.onNodeWithText("一次请求多张通常", substring = true, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
-        screenshot("batch-cost-risk.png")
+        rule.onNodeWithContentDescription("每批张数", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("生成批数", useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("共 12 张", substring = true, useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("允许消耗 Anlas", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription("本次估算Anlas预算", useUnmergedTree = true).assertDoesNotExist()
+        rule.onNodeWithContentDescription("连续目标张数", useUnmergedTree = true).assertDoesNotExist()
+        screenshot("batch-simple-settings.png")
     }
-    @Test fun reversedRangeCannotBeAppliedAndCorrectedRangeBecomesValid() {
-        var valid = true
-        var actual = ImageBatchConfiguration(1, true, 3, ImageBatchPacing(ImageBatchInterval.RANGE))
+    @Test fun numericBoundsClampWithoutPublishingOverflow() {
+        var actual = ImageBatchPreferences(true, 1, 3).configuration()
         rule.setContent {
             var config by remember { mutableStateOf(actual) }
-            ChatBarTheme { CbDialog(onDismissRequest = {}, title = "范围随机", confirm = { CbButton("确认", {}) }) {
+            ChatBarTheme { CbDialog(onDismissRequest = {}, title = "会话生图设置", confirm = { CbButton("保存", {}) }) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    ImageBatchOptionsEditor(config, { config = it; actual = it }, { valid = it })
+                    ImageBatchOptionsEditor(config, { config = it; actual = it })
                 }
             } }
         }
-        input("随机最小秒数").performScrollTo().performTextReplacement("46")
-        rule.waitForIdle(); assertFalse(valid); assertEquals(15, actual.pacing.minSeconds)
-        input("随机最大秒数").performScrollTo().performTextReplacement("60")
-        rule.waitForIdle(); assertTrue(valid); assertEquals(46, actual.pacing.minSeconds); assertEquals(60, actual.pacing.maxSeconds)
-        screenshot("batch-random-range.png")
+        input("每批张数").performTextReplacement("99999999999999999999")
+        rule.waitForIdle(); assertEquals(4, actual.requestCount)
+        input("生成批数").performTextReplacement("1000")
+        rule.waitForIdle(); assertEquals(25, actual.numberOfBatches)
+        assertFalse(actual.allowAnlasSpending)
+        screenshot("batch-bounded-input.png")
     }
     private fun input(description: String) = rule.onNode(
         hasSetTextAction() and hasAnyAncestor(hasContentDescription(description)), useUnmergedTree = true)
