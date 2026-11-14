@@ -392,6 +392,7 @@ fun CbDialog(
     dismiss: (@Composable () -> Unit)? = null,
     dismissOnClickOutside: Boolean = true,
     dismissOnBackPress: Boolean = true,
+    titleActions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Dialog(
@@ -438,7 +439,14 @@ fun CbDialog(
                             .fillMaxWidth()
                             .padding(ChatBarSpacing.lg)
                     ) {
-                        CbText(title, style = ChatBarTheme.typography.heading)
+                        if (titleActions == null) {
+                            CbText(title, style = ChatBarTheme.typography.heading)
+                        } else {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                CbText(title, modifier = Modifier.weight(1f), style = ChatBarTheme.typography.heading)
+                                titleActions()
+                            }
+                        }
                         Spacer(Modifier.height(ChatBarSpacing.md))
                         Box(
                             Modifier

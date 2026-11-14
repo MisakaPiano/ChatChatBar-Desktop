@@ -1785,35 +1785,23 @@ fun ChatScreen(
             confirm = { CbButton("知道了", viewModel::clearMessageActionError) }) { CbText(error) }
     }
     deleteAlternativeTarget?.let { (messageId, versionId) ->
-        CbDialog(onDismissRequest = { deleteAlternativeTarget = null }, title = "删除当前备选",
-            dismiss = { CbButton("取消", { deleteAlternativeTarget = null }, variant = ButtonVariant.Ghost) },
-            confirm = { CbButton("删除此备选", {
+        val target = messages.find { it.id == messageId }
+        ReplyDeletionConfirmation(messageId, versionId,
+            canDeleteAlternative = target?.alternatives?.size?.let { it > 1 } == true,
+            onDismiss = { deleteAlternativeTarget = null },
+            onDeleteAlternative = {
                 viewModel.deleteMessageAlternative(messageId, versionId)
                 deleteAlternativeTarget = null
-            }, variant = ButtonVariant.Destructive) }) {
-            CbText("只删除所选回复版本；其他备选及消息图片、录音保留。此操作不可撤销。")
-        }
+            },
+            onDeleteWholeMessage = {
+                viewModel.deleteMessage(messageId)
+                deleteAlternativeTarget = null
+            })
     }
     deleteMessageTargetId?.let { messageId ->
-        CbDialog(
-            onDismissRequest = { deleteMessageTargetId = null },
-            title = "删除整条消息",
-            dismiss = {
-                CbButton("取消", { deleteMessageTargetId = null }, variant = ButtonVariant.Ghost)
-            },
-            confirm = {
-                CbButton(
-                    "删除",
-                    {
-                        viewModel.deleteMessage(messageId)
-                        deleteMessageTargetId = null
-                    },
-                    variant = ButtonVariant.Destructive
-                )
-            }
-        ) {
-            CbText("确定删除整条消息及全部备选回复？其中所有片段、图片和录音都会删除，此操作不可撤销。", color = ChatBarTheme.colors.mutedForeground)
-        }
+        WholeMessageDeletionConfirmation(
+            onDismiss = { deleteMessageTargetId = null },
+            onDelete = { viewModel.deleteMessage(messageId); deleteMessageTargetId = null })
     }
     actionSegment?.let { segment ->
         val target = messages.find { it.id == segment.messageId }
@@ -1860,17 +1848,15 @@ fun ChatScreen(
                     target?.let(::enterMessageScreenshotSelection)
                     actionSegment = null
                 }),
-            SegmentMenuAction("删除", "删除整条消息", AppIcons.Delete, enabled = target != null, destructive = true, onClick = {
-                deleteMessageTargetId = target?.id
+            SegmentMenuAction("删除", "删除消息或当前备选", AppIcons.Delete, enabled = target != null, destructive = true, onClick = {
+                target?.let {
+                    if (it.role == MessageRole.ASSISTANT)
+                        deleteAlternativeTarget = it.id to MessageAlternativeVersionPolicy.activeVersionId(it)
+                    else deleteMessageTargetId = it.id
+                }
                 actionSegment = null
             })
         )
-        if (target?.role == MessageRole.ASSISTANT && target.alternatives.size > 1) {
-            messageActions += SegmentMenuAction("删除当前备选", "保留其他备选回复", AppIcons.Delete, destructive = true, onClick = {
-                deleteAlternativeTarget = target.id to MessageAlternativeVersionPolicy.activeVersionId(target)
-                actionSegment = null
-            })
-        }
         val replyActions = mutableListOf<SegmentMenuAction>()
         if (canRegenerate) {
             replyActions += SegmentMenuAction("重新生成", "重新生成整条回复", AppIcons.Refresh, onClick = {
@@ -1980,13 +1966,12 @@ fun ChatScreen(
                 }
                 Spacer(Modifier.size(8.dp))
                 target?.let {
-                    if (it.role == MessageRole.ASSISTANT && it.alternatives.size > 1) {
-                        CbButton("删除当前备选", {
+                    CbButton("删除", {
+                        if (it.role == MessageRole.ASSISTANT)
                             deleteAlternativeTarget = it.id to MessageAlternativeVersionPolicy.activeVersionId(it)
-                            actionMessageId = null
-                        }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
-                    }
-                    CbButton("删除整条消息", { deleteMessageTargetId = it.id; actionMessageId = null }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
+                        else deleteMessageTargetId = it.id
+                        actionMessageId = null
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
                 }
                 if (canRegenerate) {
                     Spacer(Modifier.size(8.dp))
