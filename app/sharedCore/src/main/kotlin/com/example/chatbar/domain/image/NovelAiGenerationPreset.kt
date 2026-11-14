@@ -27,9 +27,11 @@ data class NovelAiGenerationPreset(
     val v45Settings: NovelAiGenerationSettings,
     val v5Settings: NovelAiGenerationSettings,
     val imageGuidance: NovelAiImageGuidanceDraft,
+    val batchPacing: ImageBatchPacing = ImageBatchPacing(),
 ) {
     fun validate() {
         require(format == FORMAT && version == 1) { "生图预设格式或版本不支持" }
+        require(batchPacing.validationError() == null)
         require(continuousTargetCount > 0) { "连续生成目标图片数必须大于零" }
         require(v45Settings.model == NovelAiImageModel.V4_5_FULL && v5Settings.model == NovelAiImageModel.V5_FULL)
         require(v45Settings.validationError(0) == null && v5Settings.validationError(0) == null)
@@ -64,6 +66,7 @@ data class NovelAiGenerationPreset(
             naturalLanguageMode = naturalLanguageMode, selectedModel = selectedModel,
             continuousModeEnabled = continuousModeEnabled, continuousTargetCount = continuousTargetCount,
             v45Settings = v45Settings, v5Settings = v5Settings, imageGuidance = materializedGuidance,
+            batchPacing = batchPacing,
             followDefaultNovelAiImageModel = false, importedCharacterCardId = null,
             importedCharacterPromptSources = emptyList(), conversionSnapshot = null)
     }
@@ -78,7 +81,8 @@ data class NovelAiGenerationPreset(
             naturalLanguageMode = draft.naturalLanguageMode, selectedModel = draft.selectedModel,
             continuousModeEnabled = draft.continuousModeEnabled, continuousTargetCount = draft.continuousTargetCount,
             v45Settings = draft.v45Settings, v5Settings = draft.v5Settings,
-            imageGuidance = draft.imageGuidance.mapPresetResources(imageResource, encodingResource))
+            imageGuidance = draft.imageGuidance.mapPresetResources(imageResource, encodingResource),
+            batchPacing = draft.batchPacing)
             .also { it.validate() }
     }
 }
