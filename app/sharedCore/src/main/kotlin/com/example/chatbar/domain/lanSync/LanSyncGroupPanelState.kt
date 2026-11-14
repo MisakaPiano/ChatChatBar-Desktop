@@ -18,7 +18,7 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val local: LanSyncGroupRouteStatus = LanSyncGroupRouteStatus("尚未开始"),
     val nearby: LanSyncGroupRouteStatus = LanSyncGroupRouteStatus("尚未连接"),
     val cloud: LanSyncGroupRouteStatus = LanSyncGroupRouteStatus("此设备未配置网盘"),
-    val privacyRevision: Long = 0) {
+    val privacyRevision: Long = 0, val recoveryJoining: Boolean = false) {
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 

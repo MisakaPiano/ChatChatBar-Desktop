@@ -25,9 +25,10 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
     val recoveryView by coordinator.recoveryView.collectAsState()
     val imageState by coordinator.images.collectAsState()
     val cloudSettings by coordinator.cloudSettings.collectAsState()
+    val cloudRecoveryOwner = remember(coordinator) { coordinator.cloudRecovery }
     var legacySelected by remember(coordinator) { mutableStateOf(false) }
     LaunchedEffect(coordinator) { coordinator.open() }
-    DisposableEffect(coordinator) { onDispose { coordinator.lockManagement() } }
+    DisposableEffect(coordinator, cloudRecoveryOwner) { onDispose { cloudRecoveryOwner?.lock(); coordinator.lockManagement() } }
     val legacyAllowed = !hasGroupEvidence() && state.stage == LanSyncGroupPanelStage.EMPTY
     Column(Modifier.fillMaxSize()) {
         if (legacySelected && legacyAllowed && legacy != null) {
@@ -39,10 +40,20 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             if (legacyAllowed && legacy != null) Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 BootstrapButton("打开旧版双端同步", secondary = true, enabled = !state.busy) { legacySelected = true }
             }
+            if (cloudRecoveryOwner != null && state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
+                    BootstrapButton("从网盘恢复设备组", secondary = true, enabled = !state.busy) { cloudRecoveryOwner.open() }
+                }
+            }
             Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState) }
         }
     }
     DesktopLanSyncCloudSettings(cloudSettings, coordinator)
+    cloudRecoveryOwner?.let { recovery ->
+        val recoveryState by recovery.state.collectAsState()
+        DesktopLanSyncCloudRecovery(recoveryState, state.privacyRevision, recovery::prepare, recovery::confirm,
+            { recovery.lock(); coordinator.open() })
+    }
 }
 
 @Composable

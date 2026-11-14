@@ -74,7 +74,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbText(lanSyncGroupDescription)
             CbButton("创建新设备组", actions::createGroup, enabled = !interactionBlocked)
         }
-        if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
+        if (!state.recoveryJoining && (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
             CbButton(if (joining) "扫描更新邀请" else "扫描设备组邀请", scanInvitation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请") {
@@ -112,7 +112,9 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
             CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
-        if (state.stage == LanSyncGroupPanelStage.JOINING) {
+        if (state.recoveryJoining) {
+            CbText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
+        } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
             CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
             CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         }

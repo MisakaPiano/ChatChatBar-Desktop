@@ -47,6 +47,7 @@ GROUP_IO = {
     "LanSyncGroupPeerStore.kt", "LanSyncGroupPublicationQueue.kt", "LanSyncGroupRecordEvidence.kt",
     "LanSyncGroupResolution.kt", "LanSyncGroupResolutionOwner.kt", "LanSyncGroupRootPublication.kt",
     "LanSyncGroupSourceReview.kt", "LanSyncGroupSourceWriter.kt", "LanSyncGroupUnitCodec.kt",
+    "LanSyncGroupJoining.kt", "LanSyncGroupManagementRecovery.kt", "LanSyncGroupRecoveryDeviceProof.kt",
 }
 STORE_IO = {
     "CiphertextStore.kt", "FileCiphertextStore.kt", "SyncAuthorJournal.kt", "SyncCausalHistory.kt",

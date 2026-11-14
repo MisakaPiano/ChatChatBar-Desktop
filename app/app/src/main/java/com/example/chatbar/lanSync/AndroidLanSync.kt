@@ -15,6 +15,7 @@ import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,7 +30,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-enum class AndroidLanSyncBackgroundPhase { NOT_CONFIGURED, WAITING_FOR_FOREGROUND, STARTING, RUNNING, STOPPING, PAUSED, FAILED }
+enum class AndroidLanSyncBackgroundPhase { NOT_CONFIGURED, RECOVERY_PENDING, WAITING_FOR_FOREGROUND, STARTING, RUNNING, STOPPING, PAUSED, FAILED }
 
 data class AndroidLanSyncBackgroundState(
     val phase: AndroidLanSyncBackgroundPhase = AndroidLanSyncBackgroundPhase.NOT_CONFIGURED,
@@ -165,7 +166,13 @@ class AndroidLanSync(private val app: ChatBarApp) {
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
             sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true,
             cloudWorkAllowed = { cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
-            cloudWork = ::runCloudWork).also { coordinator ->
+            cloudWork = ::runCloudWork,
+            cloudRecoveryFactory = { ready -> LanSyncGroupCloudRecoveryOwner(
+                root = { root.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
+                joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
+                beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
+                networkAllowed = { cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
+                cloudWork = ::runCloudWork, onReady = ready) }).also { coordinator ->
                 hookObserver = app.applicationScope.launch {
                     coordinator.state.collect {
                         if (hasGroupEvidence()) ensureApplicationHooks()
@@ -205,6 +212,17 @@ class AndroidLanSync(private val app: ChatBarApp) {
         if (userPaused) {
             if (phase !in setOf(AndroidLanSyncBackgroundPhase.STOPPING, AndroidLanSyncBackgroundPhase.FAILED))
                 backgroundStatus(AndroidLanSyncBackgroundPhase.PAUSED)
+            return@withLock
+        }
+        val recoveryPending = try {
+            groupJoining.profile()?.stage?.let { it != LanSyncGroupJoinStage.READY && groupJoining.recoveryAnchor() != null } == true
+        } catch (_: Exception) {
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            backgroundStatus(AndroidLanSyncBackgroundPhase.FAILED, "设备组本机进度暂时无法读取，已有文件已保留")
+            return@withLock
+        }
+        if (recoveryPending) {
+            backgroundStatus(AndroidLanSyncBackgroundPhase.RECOVERY_PENDING)
             return@withLock
         }
         if (phase in setOf(AndroidLanSyncBackgroundPhase.STARTING, AndroidLanSyncBackgroundPhase.RUNNING, AndroidLanSyncBackgroundPhase.STOPPING)) {

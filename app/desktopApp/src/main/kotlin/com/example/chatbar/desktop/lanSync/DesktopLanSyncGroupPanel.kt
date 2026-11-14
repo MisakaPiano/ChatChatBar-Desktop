@@ -40,7 +40,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             StatusText(lanSyncGroupDescription)
             BootstrapButton("创建新设备组", enabled = !interactionBlocked) { actions.createGroup() }
         }
-        if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
+        if (!state.recoveryJoining && (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
             key(state.privacyRevision) { LabeledField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请",
                 joinCode, secret = true, enabled = !interactionBlocked, onChange = { joinCode = it }) }
@@ -72,7 +72,9 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
             BootstrapButton("放弃未完成的设置", secondary = true, enabled = !interactionBlocked) { actions.abandonUnusedSetup() }
-        if (state.stage == LanSyncGroupPanelStage.JOINING) {
+        if (state.recoveryJoining) {
+            StatusText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
+        } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
             BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
             BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }
         }

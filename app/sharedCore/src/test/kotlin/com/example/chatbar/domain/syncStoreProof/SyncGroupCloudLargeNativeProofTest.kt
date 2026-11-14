@@ -227,7 +227,9 @@ class SyncGroupCloudLargeNativeProofTest {
             // Receiver has no source FileStore route or preinstalled epoch keys. All reads use actual HTTP assemblies.
             val transport = WebDavHttpTransport(dav.endpoint.toHttpUrl(), client,
                 { Credentials.basic(username, password, Charsets.UTF_8) }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).also { receiveTransport = it }
-            val parts = WeakWebDavChunkAssembly(transport, directory("receiver-parts"), route)
+            val receiverRoute = SyncStoreId.random()
+            assertNotEquals(route, receiverRoute)
+            val parts = WeakWebDavChunkAssembly(transport, directory("receiver-parts"), receiverRoute)
             val receive = LanSyncGroupChunkCloudReadRoute(parts)
             val receiverRoot = directory("receiver-custody")
             fun receiverCustody() = SyncGroupCustody(receiverRoot, peer.trust.group, admin.joiningKey,
@@ -301,6 +303,7 @@ class SyncGroupCloudLargeNativeProofTest {
                 put("aggregateExceedsOneGiB", total > 1024L * 1024 * 1024)
                 put("singleResourceExceedsOneGiB", expected.values.any { it > 1024L * 1024 * 1024 })
                 put("actualLoopbackHttp", true); put("syntheticBasicAuthenticationVerified", true)
+                put("independentReceiverLocalRoute", receiverRoute != route)
                 put("httpRequests", dav.requests.get()); put("serverReceivedPutBodyBytes", dav.putBytes.get())
                 put("serverPersistedPutBodyBytes", dav.storedPutBytes.get()); put("serverWrittenGetBodyBytes", dav.getBytes.get())
                 put("interruptionThresholdBytes", interruptThreshold); put("retainedPartialAttemptBytes", partialLength)

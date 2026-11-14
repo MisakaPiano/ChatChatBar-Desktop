@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.syncStore.webdav
 
 import com.example.chatbar.domain.syncStore.*
+import com.example.chatbar.domain.lanSync.LanSyncGroupChunkCloudReadRoute
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.InterruptedIOException
@@ -15,6 +16,110 @@ import kotlin.test.*
 
 /** Small synthetic HTTP resume/assembly proofs, not a real provider or large-upload acceptance. */
 class WeakWebDavChunkAssemblyTest {
+    @Test fun aNewDeviceRouteReadsTheSameEndpointWithoutChangingWriterManifestsOrClaimingItsRoute() = chunkFixture { f ->
+        val bytes = ByteArray(91) { (it % 79).toByte() }
+        val request = davRequest(bytes, CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()))
+        val writer = f.layer("writer")
+        val written = writer.append(request, bytes.inputStream())
+        val originalFiles = f.shared.dav.files.mapValues { it.value.copyOf() }
+        val originalPuts = f.shared.dav.puts.toList()
+        val route = SyncStoreId.random()
+        assertNotEquals(writer.routeId, route)
+        val reader = f.layer("independent-reader", requestedRoute = route)
+        val candidate = reader.listCommitAssemblies().entries.single()
+        assertEquals(route, candidate.route)
+        assertEquals(written.assembly.copy(route = route), candidate)
+        val output = ByteArrayOutputStream()
+        val observed = requireNotNull(reader.readExact(request.key, request.descriptor, output))
+        assertContentEquals(bytes, output.toByteArray())
+        assertEquals(request, observed.request)
+        assertEquals(route, observed.assembly.route)
+        assertNotEquals(written.assembly.route, observed.assembly.route)
+        assertEquals(written.assembly.attempt, observed.assembly.attempt)
+        assertEquals(written.assembly.operationId, observed.assembly.operationId)
+        assertEquals(written.assembly.descriptor, observed.assembly.descriptor)
+        assertEquals(originalFiles.keys, f.shared.dav.files.keys)
+        originalFiles.forEach { (path, body) -> assertContentEquals(body, f.shared.dav.files.getValue(path)) }
+        assertEquals(originalPuts, f.shared.dav.puts.toList(), "Reading never republishes chunks or manifests")
+
+        val calls = f.shared.server.requestCount
+        davFailure(CiphertextStoreFailure.OPERATION_CONFLICT) { f.layer("writer", requestedRoute = route).resume(request.operationId) }
+        davFailure(CiphertextStoreFailure.OPERATION_CONFLICT) { f.layer("writer", basePath = "/other/").resume(request.operationId) }
+        assertEquals(calls, f.shared.server.requestCount, "Local writer custody cannot be rebound to another route or endpoint")
+    }
+
+    @Test fun aFreshRouteDeliversActualEncryptedLedgerCapsulesAndVersionsToTheExistingInbox() = chunkFixture { f ->
+        val group = SyncGroupInboxTest.Group(Files.createDirectory(f.shared.root.resolve("actual-group")))
+        group.publishLedger()
+        val version = group.version("synthetic/one")
+        group.publish(version)
+        val writer = f.layer("group-writer", physicalChunkBytes = 1024)
+        var cursor: CommitCursor? = null
+        do {
+            val page = group.backend.listCommits(cursor, 1)
+            page.entries.forEach { metadata ->
+                val bytes = ByteArrayOutputStream().also { group.backend.readTo(metadata.key, it, metadata.descriptor) }.toByteArray()
+                writer.append(CiphertextPutRequest(metadata.key, SyncStoreId.random(), metadata.descriptor), bytes.inputStream())
+            }
+            cursor = page.nextCursor
+        } while (cursor != null)
+        val reader = f.layer("group-reader", requestedRoute = SyncStoreId.random(), physicalChunkBytes = 1024)
+        assertNotEquals(writer.routeId, reader.routeId)
+        assertFails { group.custody().key(group.initialKey.epoch) }
+        val readPort = LanSyncGroupChunkCloudReadRoute(reader)
+        val result = group.scan(group.inbox(readPort))
+        assertFalse(result.trustBlocked)
+        assertEquals(SyncVersionState.ADMITTED, result.history?.state(version.id))
+        assertEquals(setOf(version.reference()), result.history?.heads())
+        assertEquals(group.genesis.reference(), result.ledgerCheckpoint)
+        assertTrue(result.observations.none { it.stage == SyncInboxStage.INVALID_OBJECT })
+        assertEquals(group.initialKey.keyCommitment(), group.custody().key(group.initialKey.epoch).keyCommitment())
+    }
+
+    @Test fun anotherEndpointCannotRedirectWriterLocatorsAndItsTruncatedPartsNeverReachCallerOutput() = chunkFixture { f ->
+        val bytes = ByteArray(74) { (it % 61).toByte() }; val request = davRequest(bytes)
+        val written = f.layer("writer").append(request, bytes.inputStream())
+        val wrong = f.layer("different-endpoint", requestedRoute = SyncStoreId.random(), basePath = "/other/")
+        val candidate = written.assembly.copy(route = wrong.routeId)
+        val gets = Collections.synchronizedList(mutableListOf<String>())
+        f.shared.dav.overrideRequest = { incoming -> if (incoming.method == "GET") gets += incoming.requestUrl!!.encodedPath; null }
+        val escaped = ByteArrayOutputStream()
+        assertNull(wrong.readAssembly(candidate, CiphertextObjectMetadata(request.key, request.descriptor), escaped))
+        assertEquals(0, escaped.size())
+        // A real manifest on that other endpoint still cannot fetch parts from the writer endpoint.
+        val manifestPath = f.path(WeakWebDavNamespace.ASSEMBLIES, written.assembly)
+        f.shared.dav.files[manifestPath.replaceFirst("/sync/", "/other/")] = f.shared.dav.files.getValue(manifestPath).copyOf()
+        davFailure(CiphertextStoreFailure.TRANSIENT) {
+            wrong.readAssembly(candidate, CiphertextObjectMetadata(request.key, request.descriptor), escaped)
+        }
+        assertEquals(0, escaped.size())
+        val chunks = f.shared.dav.files.keys.filter { it.startsWith("/sync/weak-chunks-v1/") }.sorted()
+        chunks.forEach { path -> f.shared.dav.files[path.replaceFirst("/sync/", "/other/")] = f.shared.dav.files.getValue(path).copyOf() }
+        val damaged = chunks.last().replaceFirst("/sync/", "/other/")
+        f.shared.dav.files[damaged] = f.shared.dav.files.getValue(damaged).let { it.copyOf(it.size - 1) }
+        davFailure(CiphertextStoreFailure.INTEGRITY) {
+            wrong.readAssembly(candidate, CiphertextObjectMetadata(request.key, request.descriptor), escaped)
+        }
+        assertEquals(0, escaped.size())
+        assertTrue(gets.isNotEmpty()); assertTrue(gets.all { it.startsWith("/other/") })
+    }
+
+    @Test fun aFreshRouteStillRejectsAChangedManifestHashBeforeEmittingAnyCiphertext() = chunkFixture { f ->
+        val bytes = ByteArray(68) { it.toByte() }; val request = davRequest(bytes)
+        val written = f.layer("writer").append(request, bytes.inputStream())
+        val path = f.path(WeakWebDavNamespace.ASSEMBLIES, written.assembly)
+        val original = f.shared.dav.files.getValue(path).copyOf()
+        f.shared.dav.files[path] = original.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }
+        val reader = f.layer("hash-reader", requestedRoute = SyncStoreId.random())
+        val candidate = reader.listAssemblies(request.key).entries.single()
+        val output = ByteArrayOutputStream()
+        davFailure(CiphertextStoreFailure.INTEGRITY) { reader.readAssembly(candidate, CiphertextObjectMetadata(request.key, request.descriptor), output) }
+        assertEquals(0, output.size())
+        f.shared.dav.files[path] = original
+        assertNotNull(reader.readExact(request.key, request.descriptor, output))
+        assertContentEquals(bytes, output.toByteArray())
+    }
+
     @Test fun freshAndColdResumeEachFetchACompletedChunkOnceWhileIndependentReadbackStillFetchesItAgain() = chunkFixture { f ->
         val bytes = ByteArray(91) { (it % 67).toByte() }; val request = davRequest(bytes)
         val gets = Collections.synchronizedList(mutableListOf<String>())
@@ -128,14 +233,16 @@ class WeakWebDavChunkAssemblyTest {
         second.copyInto(manifest, header + 8); first.copyInto(manifest, header + entry + 8)
         val changed = CiphertextPutRequest(request.key, SyncStoreId.random(), WebDavStoreRecord.checksum(manifest))
         val fake = f.assemblyStore("alternate").appendAttempt(changed, manifest.inputStream())
-        assertEquals(request, f.layer("reader").inspectAssembly(fake.candidate)?.originalRequest,
+        val reader = f.layer("reader", requestedRoute = SyncStoreId.random())
+        val candidate = reader.listAssemblies(request.key).entries.single { it.attempt == fake.candidate.attempt }
+        assertEquals(request, reader.inspectAssembly(candidate)?.originalRequest,
             "A readable untrusted header does not establish that its chunks reconstruct the object")
         val output = ByteArrayOutputStream()
         davFailure(CiphertextStoreFailure.INTEGRITY) {
-            f.layer("reader").readAssembly(fake.candidate, CiphertextObjectMetadata(request.key, request.descriptor), output)
+            reader.readAssembly(candidate, CiphertextObjectMetadata(request.key, request.descriptor), output)
         }
         assertEquals(0, output.size())
-        assertNotNull(f.layer("reader").readExact(request.key, request.descriptor, output))
+        assertNotNull(reader.readExact(request.key, request.descriptor, output))
         assertContentEquals(bytes, output.toByteArray())
     }
 
@@ -171,9 +278,10 @@ class WeakWebDavChunkAssemblyTest {
 private class ChunkFixture(val shared: WeakFixture) : AutoCloseable {
     private val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).build()
     private fun root(name: String): Path = shared.root.resolve("chunk-$name").also { if (!Files.exists(it)) Files.createDirectory(it) }
-    private fun transport() = WebDavHttpTransport(shared.server.url("/sync/").newBuilder().host("127.0.0.1").build(), client,
+    private fun transport(basePath: String = "/sync/") = WebDavHttpTransport(shared.server.url(basePath).newBuilder().host("127.0.0.1").build(), client,
         { "Bearer synthetic-only" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
-    fun layer(name: String) = WeakWebDavChunkAssembly(transport(), root(name), shared.route, chunkBytes = 17,
+    fun layer(name: String, requestedRoute: SyncStoreId = shared.route, basePath: String = "/sync/",
+        physicalChunkBytes: Long = 17) = WeakWebDavChunkAssembly(transport(basePath), root(name), requestedRoute, chunkBytes = physicalChunkBytes,
         budget = WebDavIoBudget(bufferBytes = 7, minimumFreeBytes = 0))
     fun assemblyStore(name: String) = WeakWebDavAttemptStore(transport(), root(name), shared.route,
         WebDavIoBudget(minimumFreeBytes = 0), WeakWebDavNamespace.ASSEMBLIES)

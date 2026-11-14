@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
+import java.io.InputStream
+import java.io.OutputStream
 import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
@@ -29,8 +31,10 @@ class LanSyncGroupManagementRecovery(private val root: Path,
         val vaultOperation: SyncStoreId, val localReplica: SyncDeliveryTarget, val replicaIdentity: String? = null,
         val inboxIdentity: String? = null, val requiredCheckpoint: SyncVersionRef? = null)
     private class Active(val session: SyncManagementSession, val generation: Long)
+    private class RecoveryReview(val active: Active, val preview: LanSyncGroupRecoveryDevicePreview)
     private val lifecycle = Any()
     private var active: Active? = null
+    private var recoveryReview: RecoveryReview? = null
     private var generation = 0L
     private var closed = false
     private val mutex = locks.computeIfAbsent(root) { Mutex() }
@@ -64,6 +68,7 @@ class LanSyncGroupManagementRecovery(private val root: Path,
         val installed = synchronized(lifecycle) {
             check(!closed && expected == generation) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
             previous = active
+            recoveryReview = null
             Active(session, generation).also { active = it }
         }
         previous?.session?.close()
@@ -225,6 +230,116 @@ class LanSyncGroupManagementRecovery(private val root: Path,
         value.session.withRecipient { recipient -> custody(value, record, recipient, false).ledger() }
     }
 
+    /** Local recovery proves the new daily keys; preparing this review never signs a root fact. */
+    suspend fun prepareRecoveryDevice(identity: LanSyncTlsIdentity, recipient: SyncDeviceEncryptionKey,
+        name: String, operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupRecoveryDevicePreview = guarded {
+        val value = requireActive(); val record = ready(value)
+        value.session.withRecipient { rootRecipient ->
+            val current = custody(value, record, rootRecipient, false).ledger().current()
+            require(identity.fingerprint !in current.members && current.members.values.none {
+                it.recipientKey == recipient.publicKey.encoded
+            }) { "SYNC_GROUP_RECOVERY_DEVICE_ALREADY_KNOWN" }
+            val proof = LanSyncGroupRecoveryDeviceProof.create(record.trust.copy(checkpoint = current.reference()), identity, recipient, name)
+            val binding = lanSyncHash(buildJsonObject {
+                put("action", "RECOVERED_MANAGEMENT_ADD_LOCAL_DEVICE"); put("operation", operation.value)
+                put("proof", proof.binding); put("parent", current.id.value); put("parentHash", current.bodyHash())
+            })
+            val preview = LanSyncGroupRecoveryDevicePreview(proof.device, proof.name, SyncRootLedgerRequest(operation,
+                current.reference(), Collections.unmodifiableMap(current.members + (proof.device to proof.member)),
+                Collections.unmodifiableSet(current.coveredTypes.toSet()), Collections.unmodifiableSet(current.acceptedHeads.toSet()), false, binding), proof)
+            synchronized(lifecycle) { requireCurrent(value); recoveryReview = RecoveryReview(value, preview) }
+            preview
+        }
+    }
+
+    private fun requireRecoveryReview(value: Active, record: Record, preview: LanSyncGroupRecoveryDevicePreview,
+        current: SyncDeviceLedgerRecord) {
+        requireCurrent(value)
+        synchronized(lifecycle) {
+            require(recoveryReview?.let { it.active === value && it.preview === preview } == true) {
+                "SYNC_GROUP_RECOVERY_DEVICE_REVIEW_CHANGED"
+            }
+        }
+        preview.proof.requireFor(record.trust.copy(checkpoint = current.reference()))
+        val request = preview.request
+        require(preview.device == preview.proof.device && preview.name == preview.proof.name &&
+            preview.device !in current.members && current.members.values.none { it.recipientKey == preview.proof.member.recipientKey } &&
+            request.expectedParent == current.reference() && request.members == current.members + (preview.device to preview.proof.member) &&
+            request.coveredTypes == current.coveredTypes && request.acceptedHeads == current.acceptedHeads && !request.rotateKey) {
+            "SYNC_GROUP_RECOVERY_DEVICE_REVIEW_CHANGED"
+        }
+    }
+
+    /** Exact explicit acknowledgment enters the existing protected root journal and local publication. */
+    suspend fun addRecoveryDevice(approval: LanSyncGroupRecoveryDeviceApproval): LanSyncGroupAdministrationReceipt = guarded {
+        val value = requireActive(); val record = ready(value)
+        value.session.withRecipient { recipient ->
+            val custody = custody(value, record, recipient, false); val journal = journal(value, record, false)
+            val preview = approval.preview
+            requireRecoveryReview(value, record, preview, custody.ledger().current())
+            journal.observeAdmitted(custody.ledger())
+            val commit = journal.commit(preview.request, custody::ledger, SyncRootLedgerAdmission { request ->
+                requireKnownPrefix(custody.ledger())
+                require(request == preview.request) { "SYNC_GROUP_RECOVERY_DEVICE_REVIEW_CHANGED" }
+                requireRecoveryReview(value, record, preview, custody.ledger().current())
+            }, { sign(value, it, custody.ledger()) })
+            journal.applyToCustody(commit, custody)
+            synchronized(lifecycle) { if (recoveryReview?.preview === preview) recoveryReview = null }
+            LanSyncGroupAdministrationReceipt(custody.ledger().current(), publish(value, record, custody, local(record, false), record.localReplica))
+        }
+    }
+
+    /** Read-only ciphertext capability: no private key, path, network route or new root signature. */
+    suspend fun recoveryBootstrap(): LanSyncGroupRecoveryBootstrap = guarded {
+        val value = requireActive(); val record = ready(value)
+        value.session.withRecipient { recipient ->
+            val custody = custody(value, record, recipient, false); val current = custody.ledger().current()
+            val store = local(record, false)
+            lanSyncReadManagementBackup(store, record.vault, record.vaultDescriptor)
+            val anchor = LanSyncGroupRecoveryAnchor(record.trust.copy(checkpoint = current.reference()), record.vault,
+                record.vaultDescriptor, Collections.unmodifiableSet(heads(value, record, custody, recipient).toSet()))
+            fun live() {
+                requireCurrent(value)
+                val ledger = custody.ledger()
+                requireKnownPrefix(ledger)
+                require(ledger.current().reference() == anchor.trust.checkpoint) { "SYNC_GROUP_MANAGEMENT_CHECKPOINT_CHANGED" }
+            }
+            val source = object : CiphertextStore {
+                override val capabilities = store.capabilities
+                override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
+                    live(); error("SYNC_GROUP_MANAGEMENT_BOOTSTRAP_READ_ONLY")
+                }
+                override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? {
+                    live()
+                    if (key.kind != CiphertextObjectKind.COMMIT && key != anchor.vault.key) return null
+                    val actual = store.metadata(key)
+                    if (key == anchor.vault.key && actual != null) require(actual.descriptor == anchor.vaultDescriptor) {
+                        "SYNC_GROUP_MANAGEMENT_VAULT_CHANGED"
+                    }
+                    live(); return actual
+                }
+                override fun readTo(key: CiphertextObjectKey, destination: OutputStream,
+                    expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                    val selected = metadata(key) ?: return null
+                    require(expected == null || expected == selected.descriptor) { "SYNC_GROUP_MANAGEMENT_BOOTSTRAP_CHANGED" }
+                    val guarded = object : OutputStream() {
+                        override fun write(byte: Int) { live(); destination.write(byte); live() }
+                        override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                            live(); destination.write(bytes, offset, length); live()
+                        }
+                    }
+                    val actual = store.readTo(key, guarded, selected.descriptor)
+                    live(); require(actual == selected) { "SYNC_GROUP_MANAGEMENT_BOOTSTRAP_CHANGED" }; return actual
+                }
+                override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                    live(); val page = store.listCommits(cursor, pageSize); live(); return page
+                }
+                override fun toString() = "LanSyncGroupRecoveryBootstrapSource(REDACTED)"
+            }
+            live(); LanSyncGroupRecoveryBootstrap(anchor, source)
+        }
+    }
+
     suspend fun prepareMember(peer: LanSyncGroupInvitedPeer, invitation: LanSyncGroupInvitation,
         operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupMemberPreview = guarded {
         val value = requireActive(); val record = ready(value)
@@ -364,7 +479,7 @@ class LanSyncGroupManagementRecovery(private val root: Path,
         }
     }
     fun lock() {
-        val previous = synchronized(lifecycle) { generation++; val result = active; active = null; result }
+        val previous = synchronized(lifecycle) { generation++; recoveryReview = null; val result = active; active = null; result }
         previous?.session?.close()
     }
     override fun close() { synchronized(lifecycle) { closed = true }; lock() }

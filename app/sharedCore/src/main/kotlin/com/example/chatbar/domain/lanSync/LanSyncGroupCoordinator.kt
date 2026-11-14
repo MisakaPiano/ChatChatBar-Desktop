@@ -21,9 +21,19 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val beforeSetup: suspend () -> Unit = {},
     private val sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false,
     private val cloudWorkAllowed: () -> Boolean = { true },
-    private val cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
+    private val cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
+    private val cloudRecoveryFactory: ((suspend (LanSyncGroupRuntimeAccess) -> Unit) -> LanSyncGroupCloudRecoveryOwner)? = null) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val admission = Mutex()
+    private val cloudRecoveryOwner = lazy {
+        cloudRecoveryFactory?.invoke { restored -> admission.withLock {
+            check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
+            attach(restored)
+        } }
+    }
+    val cloudRecovery: LanSyncGroupCloudRecoveryOwner? get() = synchronized(lifecycle) {
+        if (closed) null else cloudRecoveryOwner.value
+    }
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
     private val mutableState = MutableStateFlow(LanSyncGroupPanelState(paused = initiallyPaused))
     val state = mutableState.asStateFlow()
@@ -128,7 +138,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (!closed && !paused && hasExistingEvidence()) { nearbyWake.trySend(Unit); requestCloudCheck() }
     }
     /** Platform timeout/lost protection cancels only this owner's cloud calls, preserving all queues. */
-    fun cancelCloudWork() { cloudRuntime?.pause() }
+    fun cancelCloudWork() {
+        cloudRuntime?.pause()
+        if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.lock()
+    }
     private fun requestCloudCheck(dirty: Boolean = false) {
         if (closed) return
         if (dirty) cloudRuntime?.markDirty()
@@ -199,8 +212,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val joined = member().profile()
             if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()))
             else if (joined != null) {
-                mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, status = "加入进度已保留，等待设备批准或重试") }
-                startLoop()
+                val recovery = member().recoveryAnchor() != null
+                mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = recovery,
+                    status = if (recovery) "网盘恢复进度已保留，请从网盘恢复入口接续" else "加入进度已保留，等待设备批准或重试") }
+                if (!recovery) startLoop()
             } else error("SYNC_GROUP_EXISTING_EVIDENCE_REQUIRES_RECOVERY")
         }
     }
@@ -286,18 +301,21 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
         }
     }
-    override fun lockManagement() = synchronized(lifecycle) {
-        closeCloudSettings()
-        privacyGeneration++
-        privacyExpiry?.cancel(); privacyExpiry = null
-        draft?.close(); draft = null
-        founder?.lockManagement()
-        recoveredManagement?.lock()
-        transport?.closeInvitation(); invitation?.close(); invitation = null; peer = null; revocation = null
-        mutableState.update { it.copy(recoveryCode = null, setupBinding = null, managementUnlocked = false, managementCanInvite = false,
-            invitation = null, peerConfirmation = null, revocation = null, privacyRevision = it.privacyRevision + 1,
-            devices = it.devices.map { row -> row.copy(canRevoke = false) },
-            stage = if (it.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE) LanSyncGroupPanelStage.PREPARED_LOCKED else it.stage) }
+    override fun lockManagement() {
+        if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.lock()
+        synchronized(lifecycle) {
+            closeCloudSettings()
+            privacyGeneration++
+            privacyExpiry?.cancel(); privacyExpiry = null
+            draft?.close(); draft = null
+            founder?.lockManagement()
+            recoveredManagement?.lock()
+            transport?.closeInvitation(); invitation?.close(); invitation = null; peer = null; revocation = null
+            mutableState.update { it.copy(recoveryCode = null, setupBinding = null, managementUnlocked = false, managementCanInvite = false,
+                invitation = null, peerConfirmation = null, revocation = null, privacyRevision = it.privacyRevision + 1,
+                devices = it.devices.map { row -> row.copy(canRevoke = false) },
+                stage = if (it.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE) LanSyncGroupPanelStage.PREPARED_LOCKED else it.stage) }
+        }
     }
     override fun beginJoin(code: String) = action("加入设备组", allowWhilePaused = true) {
         beforeSetup()
@@ -314,6 +332,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private suspend fun attemptJoin() {
         val owner = member(); val profile = owner.resumePreparation()
         if (profile.stage == LanSyncGroupJoinStage.READY) { attach(requireNotNull(owner.runtimeAccess())); return }
+        if (owner.recoveryAnchor() != null) {
+            mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = true,
+                status = "网盘恢复进度已保留，请从网盘恢复入口接续") }
+            return
+        }
         if (profile.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED)) {
             try { prove(owner) } catch (error: Exception) { failure("加入证明", error) }
         }
@@ -622,7 +645,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
         }
         }
-        mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, localManagementAvailable = requireNotNull(access).localManagementAvailable,
+        mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, recoveryJoining = false, localManagementAvailable = requireNotNull(access).localManagementAvailable,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             paused = paused, status = if (paused) "设备组同步尚未恢复，原件与待传队列已保留" else "设备组已就绪，应用正在检查同步") }
         refreshDevices()
@@ -846,6 +869,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
             }
             lockManagement(); closeRecovery()
+            if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.drain()
             cancelCloudWork()
             drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()
@@ -868,6 +892,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
             }
             lockManagement(); closeRecovery()
+            if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.closeAndDrain()
             cancelCloudWork()
             drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()

@@ -22,6 +22,14 @@ import kotlin.test.*
 
 /** Enabled route custody and actual enrolled/HTTP owners; no real credentials or provider endpoints. */
 class LanSyncGroupCloudRuntimeTest {
+    private fun assertSafeCatalogFailure(failure: Throwable) {
+        // Coroutine stack recovery may copy a safe exception and retain that safe original as cause.
+        generateSequence(failure) { it.cause }.forEach {
+            assertTrue(it is IllegalStateException)
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", it.message)
+        }
+    }
+
     private class Fixture(val root: Path) {
         val admin = LanSyncGroupAdministrationTest.Fixture(root)
         val reloads = AtomicInteger(); val wakes = AtomicInteger(); val permitted = AtomicBoolean(true)
@@ -110,7 +118,7 @@ class LanSyncGroupCloudRuntimeTest {
             val runtime = f.runtime()
             val failure = assertFailsWith<IllegalStateException> { runtime.prepareScheduledBatch() }
             assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message)
-            assertNull(failure.cause)
+            assertSafeCatalogFailure(failure)
             assertContentEquals(damaged, Files.readAllBytes(file))
             assertEquals(0, provider.server.requestCount)
             assertTrue(requireNotNull(runtime.nextDelayMillis()) > 0)
@@ -129,7 +137,7 @@ class LanSyncGroupCloudRuntimeTest {
             Files.write(file, damaged)
             val requests = provider.server.requestCount
             val failure = assertFailsWith<IllegalStateException> { runtime.prepareScheduledBatch(forceIdle = true) }
-            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message); assertNull(failure.cause)
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message); assertSafeCatalogFailure(failure)
             assertEquals(requests, provider.server.requestCount)
             assertEquals(setOf(id), f.latest().keys)
             val failed = f.latest().getValue(id)
@@ -155,7 +163,7 @@ class LanSyncGroupCloudRuntimeTest {
                 null
             }
             val failure = assertFailsWith<IllegalStateException> { runtime.cycle() }
-            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message); assertNull(failure.cause)
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message); assertSafeCatalogFailure(failure)
             assertTrue(corrupted.get()); assertTrue(provider.server.requestCount > requests)
             assertEquals(puts, provider.dav.puts.toList())
             assertEquals(setOf(id), f.latest().keys)

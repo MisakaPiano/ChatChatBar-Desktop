@@ -3,6 +3,7 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.syncStore.*
+import com.example.chatbar.domain.syncStore.webdav.WebDavEndpointPolicy
 import java.net.InetAddress
 import java.net.Socket
 import java.nio.file.Files
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.OkHttpClient
 import kotlin.test.*
 
 /** Shared application owner with real enrollment/ciphertext/TLS; protection is synthetic only. */
@@ -52,6 +54,71 @@ class LanSyncGroupCoordinatorTest {
         assertEquals(LanSyncGroupPanelStage.EMPTY, coordinator.state.value.stage)
         assertNull(coordinator.state.value.recoveryCode)
         assertNull(coordinator.view.value)
+    }
+
+    private class RecoveryCloseProbe(network: LanSyncNetwork) {
+        val factories = AtomicInteger(); val roots = AtomicInteger(); val joins = AtomicInteger()
+        val founders = AtomicInteger(); val ready = AtomicInteger(); val http = AtomicInteger()
+        private val client = OkHttpClient.Builder().addInterceptor {
+            http.incrementAndGet(); error("SYNTHETIC_CLOSED_RECOVERY_MUST_NOT_USE_HTTP")
+        }.build()
+        val coordinator = LanSyncGroupCoordinator({ false },
+            { founders.incrementAndGet(); error("SYNTHETIC_CLOSED_RECOVERY_MUST_NOT_OPEN_FOUNDER") },
+            { joins.incrementAndGet(); error("SYNTHETIC_CLOSED_RECOVERY_MUST_NOT_OPEN_JOINING") }, network,
+            "synthetic closed device", cloudRecoveryFactory = { callback ->
+                factories.incrementAndGet()
+                LanSyncGroupCloudRecoveryOwner(
+                    root = { roots.incrementAndGet(); error("SYNTHETIC_CLOSED_RECOVERY_MUST_NOT_CREATE_ROOT") },
+                    joining = { joins.incrementAndGet(); error("SYNTHETIC_CLOSED_RECOVERY_MUST_NOT_CREATE_JOINING") },
+                    deviceName = "synthetic closed device", onReady = { ready.incrementAndGet(); callback(it) },
+                    client = client, endpointPolicy = WebDavEndpointPolicy.HTTPS_ONLY)
+            })
+        fun assertUntouched(factoryCount: Int) {
+            assertEquals(factoryCount, factories.get()); assertEquals(0, roots.get()); assertEquals(0, joins.get())
+            assertEquals(0, founders.get()); assertEquals(0, ready.get()); assertEquals(0, http.get())
+        }
+        suspend fun close() {
+            try { coordinator.closeAndDrain() }
+            finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+        }
+    }
+
+    @Test fun aNeverOpenedRecoveryFactoryCannotBeCreatedAfterCoordinatorQuiescence() = runBlocking {
+        val probe = RecoveryCloseProbe(noNetwork)
+        try {
+            probe.coordinator.quiesceAndDrain()
+            repeat(2) { assertNull(probe.coordinator.cloudRecovery) }
+            probe.coordinator.open(); probe.coordinator.startIfConfigured()
+            assertNull(probe.coordinator.cloudRecovery)
+            probe.assertUntouched(0)
+        } finally { probe.close() }
+    }
+
+    @Test fun aRetainedRecoveryReferenceCannotReopenOrPrepareAfterCoordinatorQuiescence() = runBlocking {
+        val probe = RecoveryCloseProbe(noNetwork)
+        try {
+            val retained = requireNotNull(probe.coordinator.cloudRecovery)
+            retained.open(); assertTrue(retained.state.value.visible)
+            probe.assertUntouched(1)
+            probe.coordinator.quiesceAndDrain()
+            assertNull(probe.coordinator.cloudRecovery)
+            // Use a valid code so an accidentally live owner cannot pass merely by rejecting input.
+            val code = SyncManagementSession.create().use { session ->
+                session.seal(SyncGroupTrust(SyncStoreId.random(),
+                    SyncVersionRef(SyncStoreId.random(), "a".repeat(64)), session.ownerCertificate))
+                session.recoveryCode()
+            }
+            val password = "synthetic password".toByteArray(Charsets.UTF_8)
+            try {
+                retained.open()
+                retained.prepare(LanSyncGroupCloudDraft("synthetic recovery", "https://synthetic.invalid/group/",
+                    "synthetic user", password), code)
+            } finally { password.fill(0) }
+            withTimeout(5_000) { retained.drain() }
+            assertFalse(retained.state.value.visible); assertFalse(retained.state.value.busy)
+            assertFalse(retained.state.value.complete); assertNull(retained.state.value.review)
+            probe.assertUntouched(1)
+        } finally { probe.close() }
     }
 
     private class Fixture(val root: Path, val network: LanSyncNetwork) {

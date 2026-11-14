@@ -239,9 +239,12 @@ class WeakWebDavChunkAssembly(transport: WebDavHttpTransport, private val privat
                         while (index < header.chunkCount) {
                             checkActive(); val part = readEntry(data, index)
                             val length = minOf(remaining, header.chunkBytes)
-                            if (part.key.kind != CiphertextObjectKind.BLOB || part.descriptor.length != length || part.route != chunks.routeId)
+                            if (part.key.kind != CiphertextObjectKind.BLOB || part.descriptor.length != length)
                                 fail(CiphertextStoreFailure.INTEGRITY)
-                            if (chunks.readCandidate(part, whole, checkActive) == null) fail(CiphertextStoreFailure.TRANSIENT)
+                            // The manifest retains the writer's local route claim. GET ownership belongs
+                            // to this reader's fixed transport, not that untrusted claim or its receipts.
+                            val owned = part.copy(route = chunks.routeId)
+                            if (chunks.readCandidate(owned, whole, checkActive) == null) fail(CiphertextStoreFailure.TRANSIENT)
                             remaining -= length; index++
                         }
                         if (data.read() != -1 || remaining != 0L || whole.length != expected.descriptor.length ||

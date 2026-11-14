@@ -75,6 +75,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     private var networkMonitor: DesktopLanSyncNetworkMonitor? = null
     private var networkMonitorObserver: Job? = null
     private fun networkStageEligible(): Boolean = groupCoordinatorOwner.isInitialized() &&
+        !groupCoordinatorOwner.value.state.value.recoveryJoining &&
         groupCoordinatorOwner.value.state.value.stage in setOf(LanSyncGroupPanelStage.READY, LanSyncGroupPanelStage.JOINING)
     private fun ensureNetworkMonitor() = synchronized(networkMonitorLock) {
         if (!networkMonitorClosed && networkMonitor == null && networkStageEligible() && hasGroupEvidence()) {
@@ -108,7 +109,12 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = "CCB 电脑",
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
-            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys)).also { coordinator ->
+            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys),
+            cloudRecoveryFactory = { ready -> LanSyncGroupCloudRecoveryOwner(
+                root = { localRoot.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
+                joining = { groupJoining }, deviceName = "CCB 电脑",
+                beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
+                onReady = ready) }).also { coordinator ->
                 networkMonitorObserver = networkMonitorScope.launch {
                     coordinator.state.collect {
                         if (hasGroupEvidence() && networkStageEligible()) ensureNetworkMonitor()
