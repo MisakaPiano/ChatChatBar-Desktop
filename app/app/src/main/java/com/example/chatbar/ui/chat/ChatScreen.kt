@@ -1879,7 +1879,7 @@ fun ChatScreen(
             })
         }
         if (target?.role == MessageRole.ASSISTANT) {
-            replyActions += SegmentMenuAction("修复格式", "AI 修复整条消息格式", AppIcons.Tools, onClick = {
+            replyActions += SegmentMenuAction(if (MessageFormatRepairPolicy.applicableNotice(target!!) != null) "重新修复" else "修复格式", "重新请求 AI 修复整条消息格式", AppIcons.Tools, onClick = {
                 actionSegment = null
                 viewModel.repairMessageFormat(target.id)
             })
@@ -1973,7 +1973,7 @@ fun ChatScreen(
                         }
                     }
                     Spacer(Modifier.size(8.dp))
-                    CbButton("AI 修复格式", {
+                    CbButton(if (MessageFormatRepairPolicy.applicableNotice(target) != null) "重新修复格式（AI）" else "AI 修复格式", {
                         actionMessageId = null
                         viewModel.repairMessageFormat(target.id)
                     }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)

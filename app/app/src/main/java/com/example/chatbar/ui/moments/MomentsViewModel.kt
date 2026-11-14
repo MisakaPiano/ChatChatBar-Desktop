@@ -143,6 +143,19 @@ class MomentsViewModel : ViewModel() {
         }
     }
 
+    private suspend fun cleanupUncommittedMomentImage(postId: String, path: String) {
+        withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+            val latest = try { repository.getPost(postId) }
+            catch (error: Exception) {
+                Log.w(TAG, "Cannot verify image ownership after save; retaining file", error)
+                return@withContext
+            }
+            if (latest != null && MomentImageVersions.retained(latest).any { it.imagePath == path }) return@withContext
+            runCatching { imageStorage.deleteIfOwned(path) }
+                .onFailure { Log.w(TAG, "Failed to remove uncommitted image", it) }
+        }
+    }
+
     fun selectImageVersion(postId: String, versionId: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             try { repository.selectImageVersion(postId, versionId); onResult(null) }
@@ -238,12 +251,7 @@ class MomentsViewModel : ViewModel() {
                     repository.appendImageVersion(postId, imagePath, newImagePath, draft.baseCaption,
                         prompt.toGeneratedImageMetadata(newImagePath, imageSize))
                 } catch (error: Throwable) {
-                    withContext(Dispatchers.IO) {
-                        runCatching { imageStorage.deleteIfOwned(newImagePath) }
-                            .onFailure { cleanupError ->
-                                Log.w(TAG, "Failed to delete unused regenerated image: $newImagePath", cleanupError)
-                            }
-                    }
+                    cleanupUncommittedMomentImage(postId, newImagePath)
                     throw error
                 }
 
@@ -358,12 +366,7 @@ class MomentsViewModel : ViewModel() {
                     repository.appendImageVersion(postId, null, newImagePath, plan.baseCaption,
                         plan.toGeneratedImageMetadata(newImagePath, imageSize), imageBrief)
                 } catch (error: Throwable) {
-                    withContext(Dispatchers.IO) {
-                        runCatching { imageStorage.deleteIfOwned(newImagePath) }
-                            .onFailure { cleanupError ->
-                                Log.w(TAG, "Failed to delete unused on-demand image: $newImagePath", cleanupError)
-                            }
-                    }
+                    cleanupUncommittedMomentImage(postId, newImagePath)
                     throw error
                 }
             }

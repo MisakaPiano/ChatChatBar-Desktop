@@ -2,6 +2,8 @@ package com.example.chatbar.data.repository
 
 import com.example.chatbar.domain.moment.MomentImageVersions
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -54,8 +56,10 @@ class MomentRepository(private val storage: JsonFileStorage) {
 
     private suspend fun savePostLocked(post: MomentPost) {
         initialize()
-        storage.saveEntity(POST_TYPE, post.id, post, MomentPost.serializer())
-        _posts.value = (_posts.value.filterNot { it.id == post.id } + post).sortedByDescending { it.generatedAt }
+        withContext(NonCancellable) {
+            storage.saveEntity(POST_TYPE, post.id, post, MomentPost.serializer())
+            _posts.value = (_posts.value.filterNot { it.id == post.id } + post).sortedByDescending { it.generatedAt }
+        }
     }
 
     suspend fun appendImageVersion(postId: String, expectedPath: String?, path: String, prompt: String,
