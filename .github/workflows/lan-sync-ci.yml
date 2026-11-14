@@ -6,9 +6,33 @@ on:
 permissions:
   contents: read
 jobs:
+  proof_scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      legacy_large: ${{ steps.proof_scope.outputs.legacy_large }}
+      group_large: ${{ steps.proof_scope.outputs.group_large }}
+      cloud_large: ${{ steps.proof_scope.outputs.cloud_large }}
+      file_large: ${{ steps.proof_scope.outputs.file_large }}
+      android_mode: ${{ steps.proof_scope.outputs.android_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select independent large proofs and explicit Android test scope
+        id: proof_scope
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -m unittest discover -s tools/lan-sync/tests -p test_proof_scope.py
+          python -m unittest discover -s tools/lan-next-control -p test_instrumentation_report.py
+          python tools/lan-sync/select-proof-scope.py
   file-large-resources:
-    needs: android
-    if: needs.android.outputs.file_large == 'true'
+    needs: proof_scope
+    if: needs.proof_scope.outputs.file_large == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -48,8 +72,8 @@ jobs:
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
   cloud-large-resources:
-    needs: android
-    if: needs.android.outputs.cloud_large == 'true'
+    needs: proof_scope
+    if: needs.proof_scope.outputs.cloud_large == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -89,8 +113,8 @@ jobs:
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
   group-large-resources:
-    needs: android
-    if: needs.android.outputs.group_large == 'true'
+    needs: proof_scope
+    if: needs.proof_scope.outputs.group_large == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -116,8 +140,8 @@ jobs:
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
   large-resources:
-    needs: android
-    if: needs.android.outputs.legacy_large == 'true'
+    needs: proof_scope
+    if: needs.proof_scope.outputs.legacy_large == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -142,28 +166,25 @@ jobs:
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
   android:
+    name: Android (${{ needs.proof_scope.outputs.android_mode }})
+    needs: proof_scope
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      legacy_large: ${{ steps.proof_scope.outputs.legacy_large }}
-      group_large: ${{ steps.proof_scope.outputs.group_large }}
-      cloud_large: ${{ steps.proof_scope.outputs.cloud_large }}
-      file_large: ${{ steps.proof_scope.outputs.file_large }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Select large proof scope from successful ancestral evidence
-        id: proof_scope
+      - name: Record explicit Android validation scope
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          ANDROID_TEST_SCOPE: ${{ needs.proof_scope.outputs.android_mode }}
         run: |
-          python -m unittest discover -s tools/lan-sync/tests -p test_proof_scope.py
-          python -m unittest discover -s tools/lan-next-control -p test_instrumentation_report.py
-          python tools/lan-sync/select-proof-scope.py
+          case "$ANDROID_TEST_SCOPE" in
+            full) echo "FULL shared protocol suite and existing Android compilation/unit gate" ;;
+            file-recovery-owner)
+              echo "FOCUS FileRecoveryOwnerTest only; this does not replace the failed full suite"
+              echo "Baseline78 retains 682 shared cases / 681 passed / 1 failed; separate 44-case shared focus retains 43 passed / 1 failed"
+              echo "Existing AndroidLanSyncCloudWorkTest is a separate unit gate, not 43 Android cases"
+              ;;
+            *) echo "ANDROID_TEST_SCOPE_INVALID"; exit 1 ;;
+          esac
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -172,11 +193,18 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Shared protocol tests and Android compilation
+      - name: FULL shared protocol tests and Android compilation
+        if: needs.proof_scope.outputs.android_mode == 'full'
         working-directory: app
         run: |
           chmod +x gradlew
           ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.*' --tests 'com.example.chatbar.domain.syncStore.*' --tests 'com.example.chatbar.data.local.StorageCommitRevisionTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
+      - name: FOCUS FileRecoveryOwnerTest only and Android compilation (prior full suite remains failed)
+        if: needs.proof_scope.outputs.android_mode == 'file-recovery-owner'
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.FileRecoveryOwnerTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
       - name: Locate failed synthetic shared cases
         if: always()
         working-directory: app

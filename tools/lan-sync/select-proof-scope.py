@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -16,7 +17,7 @@ LAN = "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/"
 STORE = "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/"
 CLOUD_LAN = {
     "LanSyncGroupCloudRuntime.kt", "LanSyncGroupCloudSchedule.kt", "LanSyncGroupCloudRoutes.kt",
-    "LanSyncGroupCloudSettingsState.kt", "LanSyncGroupTargetExport.kt", "LanSyncGroupTargetPublication.kt",
+    "LanSyncGroupCloudSettingsState.kt", "LanSyncGroupCloudTargetReceipt.kt", "LanSyncGroupTargetExport.kt", "LanSyncGroupTargetPublication.kt",
     "LanSyncGroupPartialTargetExport.kt", "LanSyncGroupPartialTargetPublication.kt",
     "LanSyncGroupChunkCloudReadRoute.kt", "LanSyncGroupWeakCloudReadRoute.kt",
     "LanSyncGroupCloudRecoverySource.kt", "LanSyncGroupCloudRecoveryOwner.kt", "LanSyncGroupCoordinator.kt",
@@ -36,6 +37,16 @@ FILE_SHARED_LAN = {
     "LanSyncGroupCoordinator.kt", "LanSyncGroupRuntimeAccess.kt", "LanSyncGroupRecoveryInput.kt",
     "RecoveryControlSnapshot.kt", "LanSyncGroupTargetExport.kt", "LanSyncGroupTargetPublication.kt",
 }
+# The older group proof composes its lower-level owners directly. These exact app/group
+# owners belong to the newer cloud/file paths, not to that proof or the legacy Runtime.
+CLOUD_FILE_OWNERS = {
+    "LanSyncGroupEnrollment.kt", "LanSyncGroupInvitation.kt", "LanSyncGroupNode.kt",
+    "LanSyncGroupRootPublication.kt", "LanSyncGroupJoining.kt", "LanSyncGroupManagementRecovery.kt",
+    "LanSyncGroupRecoveryDeviceProof.kt", "LanSyncGroupResolution.kt", "LanSyncGroupResolutionOwner.kt",
+    "LanSyncGroupIncomingReview.kt", "LanSyncGroupRuntimeAccess.kt", "LanSyncGroupRecoveryInput.kt",
+    "RecoveryControlSnapshot.kt", "LanSyncGroupManagementBackup.kt",
+}
+GROUP_CONTROL_STORE = {"SyncManagementVault.kt", "SyncRootGroupCreation.kt", "SyncRootLedgerJournal.kt"}
 # These app callers are compiled/checked by their native jobs; neither old large shared proof runs them.
 APP_CONTROLS = {
     "app/app/src/main/java/com/example/chatbar/lanSync/" + name for name in (
@@ -49,6 +60,9 @@ APP_CONTROLS = {
 } | {
     "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupFileForegroundTest.kt",
     "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupCloudForegroundTest.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataWorkspace.kt",
 }
 COMMON_IO = {
     "LanSyncBlobs.kt", "LanSyncFramedJson.kt", "LanSyncGraphRemapper.kt", "LanSyncIdentity.kt",
@@ -63,6 +77,7 @@ LEGACY_IO = {
     "LanSyncNetwork.kt", "LanSyncDiscovery.kt", "LanSyncMoments.kt", "LanSyncMemoryProofs.kt",
 }
 GROUP_IO = {
+    "LanSyncGroupBlobReuse.kt",
     "LanSyncGroupCiphertextTransport.kt", "LanSyncGroupDependencies.kt", "LanSyncGroupEnrollment.kt",
     "LanSyncGroupIncomingReview.kt", "LanSyncGroupInvitation.kt", "LanSyncGroupMembership.kt",
     "LanSyncGroupNativeApplyOwner.kt", "LanSyncGroupNativePlanner.kt", "LanSyncGroupNode.kt",
@@ -72,7 +87,7 @@ GROUP_IO = {
     "LanSyncGroupJoining.kt", "LanSyncGroupManagementRecovery.kt", "LanSyncGroupRecoveryDeviceProof.kt",
 }
 STORE_IO = {
-    "CiphertextStore.kt", "FileCiphertextStore.kt", "SyncAuthorJournal.kt", "SyncCausalHistory.kt",
+    "CiphertextStore.kt", "FileCiphertextStore.kt", "SyncAuthorJournal.kt", "SyncCausalHistory.kt", "SyncCiphertextCandidates.kt",
     "SyncCiphertextHeader.kt", "SyncDeliveryTarget.kt", "SyncDeviceEncryptionKey.kt", "SyncDeviceKeyCustody.kt",
     "SyncDeviceLedger.kt", "SyncDeviceSignatures.kt", "SyncEncryptedOutbox.kt", "SyncGroupBlobStore.kt",
     "SyncGroupCustody.kt", "SyncGroupInbox.kt", "SyncGroupKeyDelivery.kt", "SyncGroupObjectCodec.kt",
@@ -120,6 +135,9 @@ def classify(paths: list[str]) -> tuple[bool, bool]:
             continue
         if path.startswith(LAN) and path[len(LAN):] in FILE_LAN:
             continue
+        if (path.startswith(LAN) and path[len(LAN):] in CLOUD_FILE_OWNERS
+                or path.startswith(STORE) and path[len(STORE):] in GROUP_CONTROL_STORE):
+            continue
         if path.startswith(LAN) and path[len(LAN):] in CLOUD_LAN or path.startswith(STORE) and path[len(STORE):] in CLOUD_STORE:
             continue
         if path.startswith(LEGACY_PROOF):
@@ -152,6 +170,9 @@ def classify_cloud(paths: list[str]) -> bool:
             continue
         if path.startswith(LAN) and path[len(LAN):] in FILE_LAN:
             continue
+        if (path.startswith(LAN) and path[len(LAN):] in CLOUD_FILE_OWNERS
+                or path.startswith(STORE) and path[len(STORE):] in GROUP_CONTROL_STORE):
+            return True
         if path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in CLOUD_PROOF_NAMES:
             return True
         if path.startswith(LAN) and path[len(LAN):] in CLOUD_LAN or path.startswith(STORE) and path[len(STORE):] in CLOUD_STORE:
@@ -173,7 +194,8 @@ def classify_file(paths: list[str]) -> bool:
             continue
         if path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in FILE_PROOF_NAMES:
             return True
-        if path.startswith(LAN) and path[len(LAN):] in FILE_LAN | FILE_SHARED_LAN:
+        if (path.startswith(LAN) and path[len(LAN):] in FILE_LAN | FILE_SHARED_LAN | CLOUD_FILE_OWNERS
+                or path.startswith(STORE) and path[len(STORE):] in GROUP_CONTROL_STORE):
             return True
         if (path.startswith(LEGACY_PROOF)
                 or path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in CLOUD_PROOF_NAMES | GROUP_PROOF_NAMES
@@ -200,6 +222,19 @@ PROOF_JOBS = {
     "file": ProofJob("file-large-resources", "Fully written encrypted file recovery and native activation proof"),
 }
 WORKFLOW_PATH = ".github/workflows/lan-sync-ci.yml"
+SCOPE_SCRIPT = "tools/lan-sync/select-proof-scope.py"
+SCOPE_TEST = "tools/lan-sync/tests/test_proof_scope.py"
+FOCUS_REQUEST = ".github/lan-sync-ci-focus.json"
+CI_CONTROL_FILES = {WORKFLOW_PATH, SCOPE_SCRIPT, SCOPE_TEST, FOCUS_REQUEST}
+ANDROID_BUILD_PATH = "app/app/build.gradle.kts"
+CONTRACT_CHECKED_FILES = CI_CONTROL_FILES | {ANDROID_BUILD_PATH}
+ANDROID_FOCUS_BASELINE = "78d399e037ae5b4f6a88e722261caba8d96ba146"
+ANDROID_FOCUS_MODE = "file-recovery-owner"
+ANDROID_FOCUS_FILES = CI_CONTROL_FILES | {
+    LAN + "LanSyncGroupFileRecoveryOwner.kt",
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/FileRecoveryOwnerTest.kt",
+}
+MAX_SOURCE_BYTES = 1024 * 1024
 PAGE_SIZE = 100
 MAX_RUN_PAGES = 3
 MAX_JOB_PAGES = 2
@@ -224,6 +259,94 @@ class ProofScope(NamedTuple):
     required: dict[str, bool]
     baselines: dict[str, EvidenceBaseline]
     diagnostic: str | None = None
+    verified_controls: tuple[str, ...] = ()
+    changed_contracts: tuple[str, ...] = ()
+
+
+class AndroidScope(NamedTuple):
+    mode: str
+    diagnostic: str
+
+
+def workflow_proof_contract(source: str, kind: str) -> str:
+    """Narrow parser for this workflow; unknown shared runtime structure fails closed."""
+    if "\t" in source or re.search(r"(?:^|[\s:\[,])[&*][A-Za-z_][\w-]*(?=[\s\],#]|$)", source):
+        raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+    lines = source.splitlines()
+    starts = [index for index, line in enumerate(lines) if line == "jobs:"]
+    if len(starts) != 1:
+        raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+    start = starts[0]
+    if any(line and not line.startswith((" ", "#")) and not re.match(r"^[A-Za-z][\w-]*:", line)
+           for line in lines[:start]):
+        raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+    jobs: dict[str, list[str]] = {}
+    active = None
+    for line in lines[start + 1:]:
+        match = re.fullmatch(r"  ([A-Za-z][\w-]*):", line)
+        if match:
+            active = match.group(1)
+            if active in jobs:
+                raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+            jobs[active] = []
+        elif line.strip() and not line.lstrip().startswith("#") and (active is None or not line.startswith("    ")):
+            raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+        elif active is not None:
+            jobs[active].append(line)
+    known = {proof.name for proof in PROOF_JOBS.values()} | {"android", "desktop", "proof_scope"}
+    expected = PROOF_JOBS[kind]
+    if set(jobs) - known or expected.name not in jobs:
+        raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+    body = []
+    needs_owner = if_owner = None
+    for line in jobs[expected.name]:
+        needs_match = re.fullmatch(r"    needs: (android|proof_scope)", line)
+        if_match = re.fullmatch(r"    if: needs\.(android|proof_scope)\.outputs\." + kind + r"_large == 'true'", line)
+        if needs_match:
+            if needs_owner is not None:
+                raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+            needs_owner = needs_match.group(1)
+        elif if_match:
+            if if_owner is not None:
+                raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+            if_owner = if_match.group(1)
+        else:
+            body.append(line)
+    if needs_owner is None or needs_owner != if_owner:
+        raise EvidenceUnavailable("PROOF_WORKFLOW_STRUCTURE_UNAVAILABLE")
+    # Missing unrelated known kinds is allowed: older successful legacy/group runs
+    # predate file-large-resources. Only this kind's own complete execution body is reused.
+    contract = "\n".join(lines[:start] + ["jobs:", expected.name + ":"] + body).rstrip() + "\n"
+    return hashlib.sha256(contract.encode("utf-8")).hexdigest()
+
+
+def android_build_contract(source: str) -> str:
+    # The app project is configured by Gradle even for sharedCore:test. Only the exact
+    # isolated native-preview numeric allowlist may differ without changing its contract.
+    source = source.replace("\r\n", "\n")
+    pattern = (r'(?m)^([ \t]*)require\(lanSyncPreviewSeries == "next" && raw in setOf\('
+               r'"[0-9]+"(?:, "[0-9]+")*\)\) \{ "LAN_PREVIEW_SERIES_OR_CODE_INVALID" \}$')
+    if len(re.findall(pattern, source)) != 1:
+        raise EvidenceUnavailable("PROOF_ANDROID_CONFIG_STRUCTURE_UNAVAILABLE")
+    normalized = re.sub(pattern, r'\1require(NATIVE_PREVIEW_CODE_ALLOWLIST)', source)
+    return hashlib.sha256(normalized.replace("\r\n", "\n").encode("utf-8")).hexdigest()
+
+
+def select_android_scope(git, head: str, request: object) -> AndroidScope:
+    try:
+        if (not isinstance(request, dict) or set(request) != {"schema", "mode", "baseline"}
+                or type(request["schema"]) is not int or request["schema"] != 1
+                or request["mode"] != ANDROID_FOCUS_MODE or request["baseline"] != ANDROID_FOCUS_BASELINE):
+            return AndroidScope("full", "ANDROID_FOCUS_REQUEST_INVALID")
+        git.verify_head(head)
+        if not git.is_ancestor(ANDROID_FOCUS_BASELINE, head):
+            return AndroidScope("full", "ANDROID_FOCUS_BASELINE_UNAVAILABLE")
+        paths = git.paths(ANDROID_FOCUS_BASELINE, head)
+        if any(path not in ANDROID_FOCUS_FILES and not (path.startswith(".agents/skills/") and path.endswith(".md")) for path in paths):
+            return AndroidScope("full", "ANDROID_FOCUS_OUTSIDE_ALLOWED_CHANGE_SCOPE")
+        return AndroidScope(ANDROID_FOCUS_MODE, "ANDROID_FOCUS_ONLY_PRIOR_FULL_SUITE_REMAINS_FAILED")
+    except Exception:
+        return AndroidScope("full", "ANDROID_FOCUS_SCOPE_UNAVAILABLE")
 
 
 def _positive_int(value: object) -> bool:
@@ -386,6 +509,17 @@ class GitEvidence:
             raise EvidenceUnavailable("PROOF_CHANGED_PATHS_UNAVAILABLE")
         return [os.fsdecode(path) for path in raw.split(b"\0") if path]
 
+    def read_file(self, source: str, path: str) -> str:
+        if not _sha(source) or path not in {WORKFLOW_PATH, FOCUS_REQUEST, ANDROID_BUILD_PATH}:
+            raise EvidenceUnavailable("PROOF_SOURCE_UNAVAILABLE")
+        result = self._run(["show", source + ":" + path])
+        if result.returncode != 0 or len(result.stdout) > MAX_SOURCE_BYTES:
+            raise EvidenceUnavailable("PROOF_SOURCE_UNAVAILABLE")
+        try:
+            return result.stdout.decode("utf-8")
+        except UnicodeError:
+            raise EvidenceUnavailable("PROOF_SOURCE_UNAVAILABLE") from None
+
 
 def select_scope(api, git, repository: str, branch: str, head: str, current_run: int) -> ProofScope:
     required = dict.fromkeys(PROOF_JOBS, True)
@@ -396,10 +530,36 @@ def select_scope(api, git, repository: str, branch: str, head: str, current_run:
         git.verify_head(head)
         baselines, complete = find_baselines(api, repository, branch, head, current_run, git.is_ancestor)
         changes: dict[str, list[str]] = {}
+        workflows: dict[str, str] = {}
+        android_builds: dict[str, str] = {}
+        verified_controls = []
+        changed_contracts = []
         for kind, baseline in baselines.items():
             if baseline.source_sha not in changes:
                 changes[baseline.source_sha] = git.paths(baseline.source_sha, head)
             paths = changes[baseline.source_sha]
+            if any(path in CONTRACT_CHECKED_FILES for path in paths):
+                # CI controls are never blanket-ignored. Compare this proof's complete
+                # execution contract at the actual successful ancestor and current HEAD.
+                for source in (baseline.source_sha, head):
+                    if source not in workflows:
+                        workflows[source] = git.read_file(source, WORKFLOW_PATH)
+                before = workflow_proof_contract(workflows[baseline.source_sha], kind)
+                after = workflow_proof_contract(workflows[head], kind)
+                if before != after:
+                    required[kind] = True
+                    changed_contracts.append(kind)
+                    continue
+                if ANDROID_BUILD_PATH in paths:
+                    for source in (baseline.source_sha, head):
+                        if source not in android_builds:
+                            android_builds[source] = git.read_file(source, ANDROID_BUILD_PATH)
+                    if android_build_contract(android_builds[baseline.source_sha]) != android_build_contract(android_builds[head]):
+                        required[kind] = True
+                        changed_contracts.append(kind)
+                        continue
+                verified_controls.append(kind)
+                paths = [path for path in paths if path not in CONTRACT_CHECKED_FILES]
             if kind == "cloud":
                 required[kind] = classify_cloud(paths)
             elif kind == "file":
@@ -407,7 +567,8 @@ def select_scope(api, git, repository: str, branch: str, head: str, current_run:
             else:
                 required[kind] = classify(paths)[0 if kind == "legacy" else 1]
         # A bounded search may reuse independently verified evidence; every unresolved kind stays full.
-        return ProofScope(required, baselines, None if complete else "PROOF_HISTORY_WINDOW_EXHAUSTED")
+        return ProofScope(required, baselines, None if complete else "PROOF_HISTORY_WINDOW_EXHAUSTED",
+                          tuple(verified_controls), tuple(changed_contracts))
     except EvidenceUnavailable as failure:
         return ProofScope(dict.fromkeys(PROOF_JOBS, True), {}, str(failure))
     except Exception:
@@ -415,25 +576,48 @@ def select_scope(api, git, repository: str, branch: str, head: str, current_run:
 
 
 def main() -> None:
+    git = GitEvidence()
+    head = os.environ.get("GITHUB_SHA", "")
     try:
         api = GitHubEvidenceApi(os.environ.get("GITHUB_API_URL", "https://api.github.com"), os.environ.get("GITHUB_TOKEN", ""))
-        result = select_scope(api, GitEvidence(), os.environ.get("GITHUB_REPOSITORY", ""),
-                              os.environ.get("GITHUB_REF_NAME", ""), os.environ.get("GITHUB_SHA", ""),
+        result = select_scope(api, git, os.environ.get("GITHUB_REPOSITORY", ""),
+                              os.environ.get("GITHUB_REF_NAME", ""), head,
                               int(os.environ.get("GITHUB_RUN_ID", "0")))
     except Exception:
         result = ProofScope(dict.fromkeys(PROOF_JOBS, True), {}, "PROOF_EVIDENCE_UNAVAILABLE")
     if result.diagnostic:
         print(result.diagnostic)
+    try:
+        request = git.read_file(head, FOCUS_REQUEST)
+        android = select_android_scope(git, head, json.loads(request)) if len(request) <= 8192 else AndroidScope("full", "ANDROID_FOCUS_REQUEST_INVALID")
+    except Exception:
+        android = AndroidScope("full", "ANDROID_FOCUS_REQUEST_UNAVAILABLE")
+    print(android.diagnostic)
+    print("ANDROID_SHARED_TEST_SCOPE=" + android.mode)
+    scope_notice = ("FOCUS: FileRecoveryOwnerTest only, plus the existing Android compilation and AndroidLanSyncCloudWorkTest command. "
+                    "This is not a full-suite result. Baseline78 full suite remains 682 cases / 681 passed / 1 failed; "
+                    "the retained prior 44-case shared focus result is 43 passed / 1 failed. Original failure evidence is retained.")
+    if android.mode == "full":
+        scope_notice = "FULL shared protocol suite and the existing Android compilation/unit gate command are required."
+    print(scope_notice)
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+            summary.write(scope_notice + "\n\nAndroid scope baseline: `" + ANDROID_FOCUS_BASELINE + "`.\n")
     for kind in PROOF_JOBS:
         baseline = result.baselines.get(kind)
         if baseline:
             print(f"{kind.upper()}_PROOF_BASELINE run={baseline.run_id} attempt={baseline.attempt} job={baseline.job_id} source={baseline.source_sha}")
         else:
             print(f"{kind.upper()}_SUCCESSFUL_ANCESTRAL_PROOF_UNAVAILABLE")
+        if kind in result.verified_controls:
+            print(f"{kind.upper()}_CI_CONTROL_EXECUTION_CONTRACT_VERIFIED")
+        if kind in result.changed_contracts:
+            print(f"{kind.upper()}_PROOF_EXECUTION_CONTRACT_CHANGED")
         print(f"{kind.upper()}_RESOURCE_PROOF_" + ("REQUIRED" if result.required[kind] else "REUSE_VERIFIED_BASELINE"))
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
         for kind in PROOF_JOBS:
             output.write(kind + "_large=" + str(result.required[kind]).lower() + "\n")
+        output.write("android_mode=" + android.mode + "\n")
 
 
 if __name__ == "__main__":

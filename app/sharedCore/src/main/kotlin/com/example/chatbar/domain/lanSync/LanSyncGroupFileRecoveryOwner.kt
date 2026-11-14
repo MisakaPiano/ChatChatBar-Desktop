@@ -358,10 +358,12 @@ class LanSyncGroupFileRecoveryOwner internal constructor(private val root: () ->
     }
     private suspend fun finishNative(value: Session, access: LanSyncGroupRuntimeAccess, backend: CiphertextStore): Result.Ready {
         checkSession(value)
-        access.reader.routes("filerecovery", listOf(LanSyncGroupReplicaReader.Route("FILE_RECOVERY:${value.id.value}", backend)))
+        val routeId = "FILE_RECOVERY:${value.id.value}"
+        access.reader.routes("filerecovery", listOf(LanSyncGroupReplicaReader.Route(routeId, backend)))
         try {
+            val discovery = access.reader.discoveryFrom(backend, routeId)
             var cursor: CommitCursor? = null
-            do { checkSession(value); cursor = access.node.discover(backend, cursor).nextCursor } while (cursor != null)
+            do { checkSession(value); cursor = access.node.discover(discovery, cursor).nextCursor } while (cursor != null)
             val inspected = access.node.inspect()
             inspected.plan?.let { checkSession(value); access.node.apply(it) }
             checkSession(value); val after = access.node.inspect()

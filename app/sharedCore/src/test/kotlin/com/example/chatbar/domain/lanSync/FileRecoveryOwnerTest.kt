@@ -286,7 +286,7 @@ class FileRecoveryOwnerTest {
         try {
             cursor = null
             do {
-                val page = access.node.discover(dailyOnly, cursor)
+                val page = access.node.discover(access.reader.discoveryFrom(dailyOnly, "ACTUAL_FUTURE_ROOT"), cursor)
                 assertTrue(page.observations.none { it.stage == SyncInboxStage.INVALID_OBJECT })
                 cursor = page.nextCursor
             } while (cursor != null)
@@ -352,7 +352,7 @@ class FileRecoveryOwnerTest {
         access.reader.routes("completefuturefile", listOf(LanSyncGroupReplicaReader.Route("COMPLETE_FUTURE_FILE", future)))
         try {
             cursor = null
-            do { cursor = access.node.discover(future, cursor).nextCursor } while (cursor != null)
+            do { cursor = access.node.discover(access.reader.discoveryFrom(future, "COMPLETE_FUTURE_FILE"), cursor).nextCursor } while (cursor != null)
         } finally { access.reader.removeRoutes("completefuturefile") }
         hidden.forEach { assertNotNull(access.reader.cachedOnly().metadata(it)) }
         val cipher = f.custody(access).key(later.epoch)
@@ -420,6 +420,168 @@ class FileRecoveryOwnerTest {
         Files.newInputStream(completeFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, requireNotNull(completeDescriptor)) }
         Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
         f.originalUnchanged()
+    }
+
+    @Test fun readyFileRecoveryRetainsNewRootCapsulesForColdLocalExportAfterEveryTemporarySourceIsGone() = fixture { f ->
+        val first = f.owner(); val initial = review(f, first)
+        first.confirm(initial.binding); completed(first); first.closeAndDrain()
+        val receiver = requireNotNull(f.lastAccess.get())
+        val r2 = receiver.ledger().current()
+        val receiverData = files(f.dailyData)
+        val receiverRecipient = files(f.dailyRoot.resolve("joining/recipient"))
+        val receiverOrigins = listOf("author", "native").associateWith {
+            Files.readAllBytes(f.dailyRoot.resolve("joining/node/$it/origin.protected"))
+        }
+        val receiverIdentity = Files.readAllBytes(f.root.resolve("new-device.protected"))
+        val managementOrigin = Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected"))
+        assertEquals(1L, f.rootState().completedSequence)
+        assertEquals(0L, f.author(receiver).state().committedSequence)
+
+        // Admit an actual third daily recipient without rotating or revoking the original author.
+        val manager = LanSyncGroupManagementRecovery(f.recoveryRoot.resolve("management"),
+            knownCheckpoint = { receiver.ledger().current().reference() })
+        val inputFile = f.root.resolve("actual-R3-source.cbgroup")
+        val r3: SyncDeviceLedgerRecord
+        val rootCapsules = linkedSetOf<CiphertextObjectMetadata>()
+        val allCapsules = linkedSetOf<CiphertextObjectMetadata>()
+        val originalRoot = f.offlineOriginal
+        val originalData = files(originalRoot.resolve("data"))
+        val originalAuthor = files(originalRoot.resolve("profile/node/author"))
+        val originalRootJournal = files(originalRoot.resolve("profile/root-actions"))
+        val producer = LanSyncGroupEnrollment(originalRoot.resolve("profile"),
+            LanSyncWorkspace(originalRoot.resolve("data"), originalRoot.resolve("workspace"), { Path.of(it) }),
+            object : LanSyncPlatform {
+                override suspend fun exclusive(work: suspend () -> Unit) = work()
+                override suspend fun reload(sessionIds: Set<String>) { error("SYNTHETIC_READ_ONLY_PRODUCER_MUST_NOT_RELOAD") }
+            }, f.original.identity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+        try {
+            manager.unlock(f.original.code)
+            val before = manager.recoveryBootstrap()
+            val thirdIdentity = LanSyncTlsIdentity.create()
+            val third = LanSyncGroupJoining(Files.createDirectory(f.root.resolve("third-daily")),
+                LanSyncWorkspace(Files.createDirectory(f.root.resolve("third-data")),
+                    Files.createDirectory(f.root.resolve("third-workspace")), { Path.of(it) }),
+                object : LanSyncPlatform {
+                    override suspend fun exclusive(work: suspend () -> Unit) = work()
+                    override suspend fun reload(sessionIds: Set<String>) { error("SYNTHETIC_UNACTIVATED_THIRD_MUST_NOT_RELOAD") }
+                }, thirdIdentity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+            third.prepareRecovery(before.anchor) { assertEquals(r2.reference(), it.trust.checkpoint) }
+            val admission = third.prepareRecoveryDevice(manager, "synthetic third daily")
+            val thirdMember = requireNotNull(third.recoveryMember())
+            r3 = manager.addRecoveryDevice(admission.acknowledge(admission.request.approvalBinding)).ledger
+            assertEquals(r2.sequence + 1, r3.sequence); assertEquals(r2.reference(), r3.parent)
+            assertEquals(r2.epoch, r3.epoch); assertEquals(r2.keyCommitment, r3.keyCommitment)
+            assertEquals(r2.members + (thirdMember.first to thirdMember.second), r3.members)
+            assertTrue(r3.members.getValue(f.original.identity.fingerprint).active)
+            assertEquals(2L, f.rootState().completedSequence)
+            assertContentEquals(managementOrigin, Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected")))
+            val controls = manager.recoveryBootstrap()
+            var cursor: CommitCursor? = null
+            do {
+                val page = controls.source.listCommits(cursor)
+                page.entries.filter { it.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES }.forEach { metadata ->
+                    val bytes = ByteArrayOutputStream()
+                    assertEquals(metadata, controls.source.readTo(metadata.key, bytes, metadata.descriptor))
+                    if (SyncKeyDeliveryCodec.hasPrefix(bytes.toByteArray())) {
+                        val capsule = SyncKeyDeliveryCodec.decode(bytes.toByteArray())
+                        capsule.verifyOwner(receiver.trust, metadata.key)
+                        if (capsule.context.authorizingLedger == r3.reference()) {
+                            allCapsules += metadata
+                            if (capsule.context.recipient == receiver.vault.owner) rootCapsules += metadata
+                        }
+                    }
+                }
+                cursor = page.nextCursor
+            } while (cursor != null)
+            assertTrue(rootCapsules.isNotEmpty()); assertTrue(allCapsules.size > rootCapsules.size)
+            rootCapsules.forEach { assertNull(receiver.reader.cachedOnly().metadata(it.key)) }
+            assertEquals(r2, receiver.ledger().current())
+
+            // Reopen the real moved original profile with its original daily identity. This is
+            // a read-only relay of retained facts, not another cloned/new author enrollment.
+            val source = requireNotNull(producer.runtimeAccess())
+            assertEquals(f.original.identity.fingerprint, source.device)
+            source.reader.routes("newrootproducer", listOf(LanSyncGroupReplicaReader.Route("NEW_ROOT_PRODUCER", controls.source)))
+            try {
+                cursor = null
+                do { cursor = source.node.discover(source.reader.discoveryFrom(controls.source, "NEW_ROOT_PRODUCER"), cursor).nextCursor } while (cursor != null)
+                assertEquals(r3.reference(), source.node.reconcileForPrefetch().ledgerCheckpoint)
+                assertEquals(r3, source.ledger().current())
+            } finally { source.reader.removeRoutes("newrootproducer") }
+            allCapsules.forEach { assertEquals(it, source.reader.cachedOnly().metadata(it.key)) }
+            source.prepareEncryptedFile(Files.createDirectory(f.root.resolve("original-R3-export")), {}) { prepared ->
+                prepared.use { value ->
+                    Files.newOutputStream(inputFile).use { value.writeTo(it) }
+                    Files.newInputStream(inputFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, value.descriptor) }
+                }
+            }
+            assertEquals(listOf(f.source.entry.request.operation), source.node.sourceOperations())
+            unchanged(originalData, originalRoot.resolve("data"))
+            unchanged(originalAuthor, originalRoot.resolve("profile/node/author"))
+            unchanged(originalRootJournal, originalRoot.resolve("profile/root-actions"))
+        } finally { producer.close(); manager.close() }
+        val producerAway = f.root.resolve("original-producer-closed")
+        Files.move(originalRoot, producerAway)
+        val originalExportAway = f.root.resolve("original-R3-export-closed")
+        Files.move(f.root.resolve("original-R3-export"), originalExportAway)
+        assertFalse(Files.exists(originalRoot)); assertFalse(Files.exists(f.root.resolve("original-R3-export")))
+        assertEquals(r2, receiver.ledger().current())
+        rootCapsules.forEach { assertNull(receiver.reader.cachedOnly().metadata(it.key), "R3 was never prefilled into the receiver") }
+        unchanged(receiverData, f.dailyData)
+
+        val restore = f.owner()
+        val readyReview = review(f, restore) { Files.newInputStream(inputFile) }
+        assertEquals(receiver.device, readyReview.device)
+        assertEquals(r2, receiver.ledger().current())
+        rootCapsules.forEach { assertNull(receiver.reader.cachedOnly().metadata(it.key)) }
+        restore.confirm(readyReview.binding); assertFalse(completed(restore).pending)
+        val imported = requireNotNull(f.lastAccess.get())
+        assertEquals(r3, imported.ledger().current())
+        allCapsules.forEach { assertEquals(it, imported.reader.cachedOnly().metadata(it.key)) }
+        assertEquals(2L, f.rootState().completedSequence)
+        assertEquals(0L, f.author(imported).state().committedSequence); assertTrue(imported.node.sourceOperations().isEmpty())
+        restore.closeAndDrain()
+        val rootState = f.rootState()
+        val management = files(f.recoveryRoot)
+        val managerAway = f.root.resolve("recovery-management-and-temporary-inputs-closed")
+        Files.move(f.recoveryRoot, managerAway)
+        Files.move(inputFile, f.root.resolve("R3-input-closed.cbgroup"))
+        assertFalse(Files.exists(f.recoveryRoot)); assertFalse(Files.exists(inputFile))
+
+        val cold = requireNotNull(f.joining().runtimeAccess())
+        assertEquals(r3, cold.ledger().current())
+        allCapsules.forEach { assertEquals(it, cold.reader.cachedOnly().metadata(it.key)) }
+        val roundTrip = f.root.resolve("cold-reexport-R3.cbgroup")
+        cold.prepareEncryptedFile(Files.createDirectory(f.root.resolve("cold-R3-export")), {}) { prepared ->
+            prepared.use { value ->
+                Files.newOutputStream(roundTrip).use { value.writeTo(it) }
+                Files.newInputStream(roundTrip).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, value.descriptor) }
+            }
+        }
+        Files.newInputStream(roundTrip).use { input ->
+            LanSyncGroupEncryptedFilePackage.stage(input, Files.createDirectory(f.root.resolve("cold-R3-inspection"))).use { staged ->
+                val custody = f.custody(cold)
+                val inventory = staged.verifyInventory(custody.key(r3.epoch), cold.trust, r3.reference())
+                assertEquals(r3.reference(), inventory.plan.checkpoint)
+                assertEquals(setOf(f.source.entry.version.reference()), inventory.plan.versions)
+                val caps = inventory.plan.objects.filter { it.role == LanSyncGroupTargetObjectRole.CAPSULE }
+                assertEquals(allCapsules, caps.map { CiphertextObjectMetadata(it.key, it.descriptor) }.toSet())
+                val slots = custody.ledger().history().map { it.epoch }.toSet().flatMap { epoch ->
+                    r3.members.filterValues { it.active }.keys.map { recipient -> "${epoch.value}:$recipient" }
+                }.toSet()
+                assertEquals(slots, caps.map { it.slot }.toSet())
+            }
+        }
+        assertEquals(2L, rootState.completedSequence); assertNull(rootState.pendingOperation)
+        unchanged(management, managerAway)
+        assertEquals(0L, f.author(cold).state().committedSequence); assertTrue(cold.node.sourceOperations().isEmpty())
+        unchanged(receiverData, f.dailyData); unchanged(receiverRecipient, f.dailyRoot.resolve("joining/recipient"))
+        receiverOrigins.forEach { (kind, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.dailyRoot.resolve("joining/node/$kind/origin.protected"))) }
+        assertContentEquals(receiverIdentity, Files.readAllBytes(f.root.resolve("new-device.protected")))
+        unchanged(originalData, producerAway.resolve("data"))
+        unchanged(originalAuthor, producerAway.resolve("profile/node/author"))
+        unchanged(originalRootJournal, producerAway.resolve("profile/root-actions"))
+        assertEquals(2, f.readyCalls.get())
     }
 
     @Test fun aFailureAfterTheActualRootApprovalColdResumesTheSameKeysAndRootOperationWithoutResigning() = fixture { f ->

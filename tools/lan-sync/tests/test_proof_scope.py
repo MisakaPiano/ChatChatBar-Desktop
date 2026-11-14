@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import json
 from pathlib import Path
 import re
 import sys
@@ -35,6 +36,21 @@ def job_evidence(run, kind, **changes):
                  "steps": [{"name": expected.step, "status": "completed", "conclusion": "success"}]}, **changes)
 
 
+def workflow_evidence(needs="android", kinds=None, scope_job=False):
+    lines = ["name: synthetic", "on: push", "permissions:", "  contents: read", "jobs:"]
+    if scope_job:
+        lines += ["  proof_scope:", "    runs-on: ubuntu-latest", "    steps:", "      - run: SYNTHETIC_SCOPE_GUARDS"]
+    for kind in scope.PROOF_JOBS if kinds is None else kinds:
+        expected = scope.PROOF_JOBS[kind]
+        lines += ["  " + expected.name + ":", "    needs: " + needs,
+                  "    if: needs." + needs + ".outputs." + kind + "_large == 'true'",
+                  "    runs-on: ubuntu-latest", "    env:", "      PROOF_KIND: " + kind,
+                  "    steps:", "      - uses: actions/setup-java@v4", "        with:", "          java-version: '17'",
+                  "      - name: " + expected.step, "        run: PROOF_COMMAND_" + kind]
+    lines += ["  android:", "    runs-on: ubuntu-latest", "    steps:", "      - run: SYNTHETIC_ANDROID_CHECK"]
+    return "\n".join(lines) + "\n"
+
+
 class SyntheticApi:
     def __init__(self, runs=(), jobs=None):
         self.runs = list(runs)
@@ -63,10 +79,12 @@ class SyntheticApi:
 
 
 class SyntheticGit:
-    def __init__(self, changes=None, ancestors=(FIRST, SECOND, THIRD, FOURTH)):
+    def __init__(self, changes=None, ancestors=(FIRST, SECOND, THIRD, FOURTH), files=None):
         self.changes = changes or {}
         self.ancestors = set(ancestors)
         self.compared = []
+        self.files = files or {}
+        self.read = []
 
     def verify_head(self, head):
         if head != HEAD:
@@ -82,10 +100,127 @@ class SyntheticGit:
             raise value
         return value
 
+    def read_file(self, source, path):
+        self.read.append((source, path))
+        value = self.files.get((source, path))
+        if value is None:
+            raise scope.EvidenceUnavailable("PROOF_SOURCE_UNAVAILABLE")
+        return value
+
 
 class ProofScopeTest(unittest.TestCase):
     def select(self, api, git=None):
         return scope.select_scope(api, git or SyntheticGit(), REPOSITORY, BRANCH, HEAD, 999)
+
+    def control_scope(self, paths, before=None, after=None, kinds=None, files=None):
+        proven = run_evidence(102, FIRST)
+        jobs = [job_evidence(proven, kind) for kind in (scope.PROOF_JOBS if kinds is None else kinds)]
+        sources = {(FIRST, scope.WORKFLOW_PATH): workflow_evidence() if before is None else before,
+                   (HEAD, scope.WORKFLOW_PATH): workflow_evidence() if after is None else after}
+        sources.update(files or {})
+        git = SyntheticGit({FIRST: paths}, files=sources)
+        return self.select(SyntheticApi([proven], {(102, 1): jobs}), git), git
+
+    def test_orchestration_decoupling_and_new_known_file_job_keep_older_three_successful_execution_contracts(self):
+        previous = workflow_evidence(kinds=("legacy", "group", "cloud"))
+        current = workflow_evidence(needs="proof_scope", scope_job=True)
+        result, git = self.control_scope(list(scope.CI_CONTROL_FILES), previous, current,
+                                         kinds=("legacy", "group", "cloud"))
+        self.assertEqual({"legacy": False, "group": False, "cloud": False, "file": True}, result.required)
+        self.assertEqual({"legacy", "group", "cloud"}, set(result.verified_controls))
+        self.assertNotIn("file", result.baselines)
+        self.assertEqual(2, len(git.read))
+
+    def test_ci_controls_are_reused_only_after_each_exact_job_contract_is_verified(self):
+        before = workflow_evidence()
+        after = workflow_evidence(needs="proof_scope", scope_job=True).replace("PROOF_COMMAND_cloud", "CHANGED_CLOUD_COMMAND")
+        result, _ = self.control_scope(list(scope.CI_CONTROL_FILES), before, after)
+        self.assertEqual({"legacy": False, "group": False, "cloud": True, "file": False}, result.required)
+        self.assertEqual(("cloud",), result.changed_contracts)
+        self.assertEqual({"legacy", "group", "file"}, set(result.verified_controls))
+
+    def test_proof_environment_java_runner_and_global_runtime_changes_cannot_reuse_execution_evidence(self):
+        source = workflow_evidence(kinds=("legacy",))
+        before = scope.workflow_proof_contract(source, "legacy")
+        for old, new in (("PROOF_KIND: legacy", "PROOF_KIND: changed"), ("java-version: '17'", "java-version: '21'"),
+                         ("runs-on: ubuntu-latest", "runs-on: windows-latest"), ("PROOF_COMMAND_legacy", "DIFFERENT_COMMAND")):
+            with self.subTest(old=old):
+                self.assertNotEqual(before, scope.workflow_proof_contract(source.replace(old, new), "legacy"))
+        changed = workflow_evidence().replace("permissions:\n  contents: read", "permissions:\n  contents: read\nenv:\n  SHARED_RUNTIME: changed")
+        result, _ = self.control_scope([scope.WORKFLOW_PATH], after=changed)
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), result.required)
+        self.assertEqual(set(scope.PROOF_JOBS), set(result.changed_contracts))
+
+    def test_unknown_workflow_structure_missing_source_and_unexpected_orchestration_fail_closed(self):
+        normal = workflow_evidence()
+        for changed in (normal + "env:\n  NEW_GLOBAL: changed\n",
+                        normal + "  unknown-job:\n    runs-on: ubuntu-latest\n",
+                        normal.replace("    needs: android", "    needs: [android, unknown]"),
+                        normal.replace("    needs: android", "    needs: proof_scope"),
+                        normal.replace("  contents: read", "  contents: read\n  inherited: *runtime")):
+            with self.subTest(changed=changed):
+                result, _ = self.control_scope([scope.WORKFLOW_PATH], after=changed)
+                self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), result.required)
+                self.assertFalse(result.baselines)
+        proven = run_evidence(103, FIRST)
+        git = SyntheticGit({FIRST: [scope.SCOPE_SCRIPT]})
+        result = self.select(SyntheticApi([proven], {(103, 1): [job_evidence(proven, kind) for kind in scope.PROOF_JOBS]}), git)
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), result.required)
+        self.assertEqual("PROOF_SOURCE_UNAVAILABLE", result.diagnostic)
+
+    def test_verified_ci_controls_do_not_mask_source_or_unknown_tool_changes(self):
+        result, _ = self.control_scope([scope.SCOPE_SCRIPT, scope.LAN + "LanSyncGroupSourceWriter.kt"])
+        self.assertEqual({"legacy": False, "group": True, "cloud": True, "file": True}, result.required)
+        result, _ = self.control_scope([scope.WORKFLOW_PATH, "tools/lan-sync/new-runtime-hook.py"])
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), result.required)
+
+    def test_only_the_exact_native_preview_code_allowlist_can_reuse_the_android_gradle_contract(self):
+        before = 'plugins { id("synthetic.android") }\nrequire(lanSyncPreviewSeries == "next" && raw in setOf("81", "82")) { "LAN_PREVIEW_SERIES_OR_CODE_INVALID" }\n'
+        after = before.replace('"81", "82"', '"81", "82", "83", "84", "85"')
+        files = {(FIRST, scope.ANDROID_BUILD_PATH): before, (HEAD, scope.ANDROID_BUILD_PATH): after}
+        result, _ = self.control_scope([scope.ANDROID_BUILD_PATH], files=files)
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, False), result.required)
+        files[(HEAD, scope.ANDROID_BUILD_PATH)] = after.replace("synthetic.android", "changed.android")
+        result, _ = self.control_scope([scope.ANDROID_BUILD_PATH], files=files)
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), result.required)
+
+    def test_fixed_file_owner_focus_accepts_only_the_authorized_ancestral_change_scope(self):
+        request = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
+        paths = list(scope.ANDROID_FOCUS_FILES) + [".agents/skills/chatbar-lan-sync/SKILL.md"]
+        git = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: paths}, ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+        result = scope.select_android_scope(git, HEAD, request)
+        self.assertEqual("file-recovery-owner", result.mode)
+        self.assertEqual("ANDROID_FOCUS_ONLY_PRIOR_FULL_SUITE_REMAINS_FAILED", result.diagnostic)
+        self.assertEqual([(scope.ANDROID_FOCUS_BASELINE, HEAD)], git.compared)
+        actual = json.loads((Path(__file__).resolve().parents[3] / scope.FOCUS_REQUEST).read_text(encoding="utf-8"))
+        self.assertEqual(request, actual)
+        self.assertEqual("78d399e037ae5b4f6a88e722261caba8d96ba146", scope.ANDROID_FOCUS_BASELINE)
+
+    def test_focus_unknown_source_build_or_test_changes_and_nonancestry_require_the_full_suite(self):
+        request = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
+        for path in (scope.LAN + "LanSyncGroupNode.kt", "app/sharedCore/build.gradle.kts", scope.ANDROID_BUILD_PATH,
+                     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/OtherTest.kt",
+                     ".agents/skills/new-hook.py"):
+            with self.subTest(path=path):
+                git = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: [path]}, ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+                result = scope.select_android_scope(git, HEAD, request)
+                self.assertEqual("full", result.mode)
+                self.assertEqual("ANDROID_FOCUS_OUTSIDE_ALLOWED_CHANGE_SCOPE", result.diagnostic)
+        self.assertEqual("ANDROID_FOCUS_BASELINE_UNAVAILABLE", scope.select_android_scope(SyntheticGit(), HEAD, request).diagnostic)
+
+    def test_focus_filter_or_baseline_injection_and_unavailable_diff_are_never_a_focused_success(self):
+        valid = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
+        for request in (dict(valid, tests="OtherTest; injected-command"), dict(valid, mode="arbitrary-filter"),
+                        dict(valid, baseline=FIRST), dict(valid, schema=True), None):
+            with self.subTest(request=request):
+                git = SyntheticGit()
+                self.assertEqual("full", scope.select_android_scope(git, HEAD, request).mode)
+                self.assertFalse(git.compared)
+        git = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: RuntimeError("synthetic private failure")},
+                           ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+        result = scope.select_android_scope(git, HEAD, valid)
+        self.assertEqual("full", result.mode)
+        self.assertEqual("ANDROID_FOCUS_SCOPE_UNAVAILABLE", result.diagnostic)
 
     def test_pure_group_layout_state_and_clipboard_do_not_repeat_large_byte_proofs(self):
         self.assertEqual((False, False), scope.classify(list(scope.PURE_FILES)))
@@ -171,6 +306,14 @@ class ProofScopeTest(unittest.TestCase):
             path = scope.LAN + name
             self.assertTrue(scope.classify_cloud([path]), name)
             self.assertTrue(scope.classify_file([path]), name)
+
+    def test_exact_new_group_owners_do_not_repeat_the_old_direct_group_or_legacy_proofs(self):
+        paths = [scope.LAN + name for name in scope.CLOUD_FILE_OWNERS]
+        paths += [scope.STORE + name for name in scope.GROUP_CONTROL_STORE]
+        for path in paths:
+            self.assertEqual((False, False), scope.classify([path]), path)
+            self.assertTrue(scope.classify_cloud([path]), path)
+            self.assertTrue(scope.classify_file([path]), path)
 
     def test_cloud_provider_http_and_scheduling_do_not_repeat_the_file_proof(self):
         paths = [scope.LAN + name for name in scope.CLOUD_LAN - scope.FILE_SHARED_LAN]
@@ -326,13 +469,40 @@ class ProofScopeTest(unittest.TestCase):
         self.assertIsNotNone(match)
         job = match.group(1)
         for required in (
-            "needs: android", "if: needs.android.outputs.file_large == 'true'", "timeout-minutes: 60",
+            "needs: proof_scope", "if: needs.proof_scope.outputs.file_large == 'true'", "timeout-minutes: 60",
             "CCB_GROUP_FILE_LARGE_PROOF: 'true'", "- name: " + expected.step,
             "--tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest'",
             "name: sync-group-file-large-resource-evidence",
         ):
             self.assertIn(required, job)
         self.assertIn("file_large: ${{ steps.proof_scope.outputs.file_large }}", workflow)
+
+    def test_large_jobs_depend_only_on_the_fast_scope_job_and_android_focus_keeps_fixed_compile_and_unit_commands(self):
+        workflow = (Path(__file__).resolve().parents[3] / scope.WORKFLOW_PATH).read_text(encoding="utf-8")
+        def job(name):
+            match = re.search(r"^  " + re.escape(name) + r":\n(.*?)(?=^  [A-Za-z][A-Za-z0-9_-]*:|\Z)",
+                              workflow, re.MULTILINE | re.DOTALL)
+            self.assertIsNotNone(match)
+            return match.group(1)
+        for kind, expected in scope.PROOF_JOBS.items():
+            body = job(expected.name)
+            self.assertIn("    needs: proof_scope\n", body)
+            self.assertIn("if: needs.proof_scope.outputs." + kind + "_large == 'true'", body)
+            self.assertNotIn("needs: android", body)
+        fast = job("proof_scope")
+        self.assertIn("actions: read", fast)
+        self.assertIn("fetch-depth: 0", fast)
+        self.assertIn("python -m unittest discover -s tools/lan-sync/tests -p test_proof_scope.py", fast)
+        self.assertIn("android_mode: ${{ steps.proof_scope.outputs.android_mode }}", fast)
+        android = job("android")
+        self.assertIn("name: Android (${{ needs.proof_scope.outputs.android_mode }})", android)
+        self.assertIn("FOCUS FileRecoveryOwnerTest only", android)
+        self.assertIn("prior full suite remains failed", android)
+        self.assertIn("--tests 'com.example.chatbar.domain.lanSync.FileRecoveryOwnerTest'", android)
+        for command in (":app:compileLanPreviewKotlin", ":app:assembleLanPreview", ":app:compileLanPreviewAndroidTestKotlin",
+                        ":app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true"):
+            self.assertEqual(2, android.count(command), command)
+        self.assertNotRegex(android, r"--tests\s+['\"]?\$[({]")
 
     def test_api_failures_are_full_proof_and_do_not_echo_exception_secrets_or_urls(self):
         api = SyntheticApi()
