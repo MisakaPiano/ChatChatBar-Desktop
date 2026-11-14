@@ -117,6 +117,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private var port: Int? = null
     private val nearbyAdmission = Mutex()
     private var nearbyReady = false
+    private var nearbyRestartRequested = false
     private var lastSourceScan = 0L
     private var metadataStamp: String? = null
     private var nearbyStamp: String? = null
@@ -682,15 +683,44 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private fun nearbyFailure(stage: String, failure: Exception) {
         if (failure is CancellationException) throw failure
+        var restart = false
         synchronized(lifecycle) {
             if (closed || paused) return
+            if (stage == "GROUP_DISCOVERY_LISTENER" || stage == "NEARBY_LISTENER") {
+                nearbyReady = false
+                nearbyRestartRequested = true
+                restart = true
+            }
             mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus(
                 "局域网连接暂时不可用，将在前台或网络变化后重试；本机与网盘工作可继续", it.nearby.lastSuccessAt)) }
         }
+        // The callback can run on the listener itself. Its independent worker owns teardown/join.
+        if (restart) nearbyWake.trySend(Unit)
         // No exception message, address, certificate or user data enters this diagnostic.
         System.err.println("SYNC_GROUP_NEARBY_${if (stage == "START") "START_FAILED" else "IO_FAILED"}")
     }
     private suspend fun ensureNearbyStarted(): Boolean = nearbyAdmission.withLock {
+        val obsolete = synchronized(lifecycle) {
+            if (closed || paused || access == null) return@withLock false
+            if (nearbyRestartRequested) discovery to transport else null
+        }
+        if (obsolete != null) {
+            try {
+                withContext(NonCancellable) {
+                    try { obsolete.first?.close() } finally { obsolete.second?.closeAndDrain() }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { nearbyFailure("RESTART", error); return@withLock false }
+            synchronized(lifecycle) {
+                if (discovery === obsolete.first) discovery = null
+                if (transport === obsolete.second) transport = null
+                port = null; nearbyReady = false; nearbyRestartRequested = false
+                invitation?.close(); invitation = null; peer = null
+                access?.reader?.removeRoutes("nearby")
+                mutableState.update { it.copy(invitation = null, peerConfirmation = null) }
+            }
+            currentCoroutineContext().ensureActive()
+        }
         var failure: Exception? = null
         var failedTransport: LanSyncGroupAppTransport? = null
         var failedDiscovery: LanSyncGroupDiscovery? = null
@@ -931,7 +961,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             cloudRuntime?.drain()
             admission.withLock { }
             discovery?.close(); transport?.closeAndDrain()
-            discovery = null; transport = null; port = null; nearbyReady = false
+            discovery = null; transport = null; port = null; nearbyReady = false; nearbyRestartRequested = false
             loop = null; nearbyWorker = null; localWorker = null; cloudWorker = null
             access?.reader?.routes(emptyList())
             mutableState.update { it.copy(paused = true, busy = false, status = "设备组同步已暂停，原件与待传队列已保留") }

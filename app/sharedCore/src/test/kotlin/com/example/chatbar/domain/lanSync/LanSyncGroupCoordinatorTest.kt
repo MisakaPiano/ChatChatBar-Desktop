@@ -464,6 +464,60 @@ class LanSyncGroupCoordinatorTest {
         }
     }
 
+    @Test fun aRunningListenerFailureRebuildsOnHintsAndPausePreventsAnotherListener() {
+        val failAcceptance = AtomicBoolean(false)
+        val failures = AtomicInteger(); val starts = AtomicInteger(); val lastPort = AtomicInteger()
+        val forbidden = AtomicBoolean(false)
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) {
+                check(!forbidden.get()) { "SYNTHETIC_LISTENER_AFTER_PAUSE" }
+                lastPort.set(port); starts.incrementAndGet()
+            }
+            override fun accepts(address: InetAddress): Boolean {
+                if (failAcceptance.compareAndSet(true, false)) {
+                    failures.incrementAndGet()
+                    throw java.net.SocketException("synthetic running listener failure")
+                }
+                return noNetwork.accepts(address)
+            }
+        }
+        fixture(network) { f ->
+            f.writeCard("synthetic source kept through listener restart")
+            val original = Files.readAllBytes(f.card)
+            val coordinator = readyCoordinator(f)
+            try {
+                await { starts.get() > 0 }
+                val access = requireNotNull(f.founder().runtimeAccess())
+                var sources = access.node.sourceOperations()
+                withTimeout(20_000) {
+                    while (sources.isEmpty()) { delay(10); sources = access.node.sourceOperations() }
+                }
+                val sequence = f.author(access.trust).state().committedSequence
+                for (attempt in 1..2) {
+                    val before = starts.get()
+                    failAcceptance.set(true)
+                    Socket("127.0.0.1", lastPort.get()).use { }
+                    await { failures.get() == attempt }
+                    if (attempt == 1) coordinator.onNetworkAvailable() else coordinator.onForeground()
+                    await { starts.get() > before }
+                    // This traverses the new real listener and the ordinary certificate-pinned protocol.
+                    liveListenerPort(f, coordinator, access)
+                    assertEquals(sources, access.node.sourceOperations())
+                    assertEquals(sequence, f.author(access.trust).state().committedSequence)
+                    assertContentEquals(original, Files.readAllBytes(f.card))
+                    assertNull(coordinator.state.value.error)
+                }
+                coordinator.pauseAndDrain()
+                forbidden.set(true)
+                val stopped = starts.get()
+                repeat(3) { coordinator.onNetworkAvailable(); coordinator.onForeground(); coordinator.retry() }
+                delay(350)
+                assertEquals(stopped, starts.get())
+                assertTrue(coordinator.state.value.paused)
+            } finally { coordinator.closeAndDrain() }
+        }
+    }
+
     /** Obtain the real app listener through an ordinary management invitation, then use its pinned TLS protocol. */
     private suspend fun liveListenerPort(f: Fixture, coordinator: LanSyncGroupCoordinator,
         access: LanSyncGroupRuntimeAccess): Int {
