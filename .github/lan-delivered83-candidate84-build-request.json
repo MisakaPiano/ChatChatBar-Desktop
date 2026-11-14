@@ -1,0 +1,38 @@
+{
+  "kind": "CCB_LAN_DELIVERED83_CANDIDATE84_BUILD_V1",
+  "format": 1,
+  "sourceSha": "fc61ba2cb273735689809f26e0ccb624389ab400",
+  "series": "next",
+  "versions": [
+    83,
+    84
+  ],
+  "package": "com.example.chatbar.lansyncnext",
+  "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+  "deliveredBase": {
+    "sourceSha": "90ead92410ca4c5e240f75d120ed6a145fb6f1c8",
+    "versionCode": 83,
+    "runId": 43547894406,
+    "artifactId": 14095022954,
+    "artifactName": "ccb-lan-delivered82-candidate83-inputs",
+    "outerBytes": 216618510,
+    "outerSha256": "d3a4cd8ae1387e013337d3008d8ba9f74d8808ed747e9bf92a065ba48eaa80ba",
+    "controlSha": "00b934506b09c25adffa3876c9da7636cc9e2532",
+    "member": "candidate83-input.apk",
+    "rawBytes": 108388391,
+    "rawSha256": "696f6fc17d65d0d86e4884cc5a2a0260ec8b47d1a7ec8af78d62af88c847f1d6",
+    "deliveredBytes": 108385763,
+    "deliveredSha256": "ee602f895d31cb5f965821a6107c6584e057c5f0192faf8225a5e84e96e4af7b"
+  },
+  "fixtures": {
+    "seed83": {
+      "path": "candidate84_seed83.kt",
+      "sha256": "aedb752a123028df49f2c6c0ce15b7309d403c7c15ee7d56af3c12787f47d5da"
+    },
+    "verify84": {
+      "path": "candidate84_verify84.kt",
+      "sha256": "3cf40ab9d4e9692cca19e830d1379010192093575c9fa259e4c6e84f06675380"
+    }
+  },
+  "allowedStateMigrations": []
+}

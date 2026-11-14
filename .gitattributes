@@ -25,3 +25,4 @@ app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/legacy/** text
 tools/lan-next-control/fixtures/LanSyncGroupAppUiControlTest.kt text eol=lf
 tools/lan-next-control/fixtures/DesktopGroupAppUiControlTest.kt text eol=lf
 tools/lan-next-control/fixtures/LanSyncGroupBackgroundUiControlTest.kt text eol=lf
+tools/lan-next-control/candidate84_*.kt text eol=lf
