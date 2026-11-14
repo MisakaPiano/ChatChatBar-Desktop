@@ -80,7 +80,8 @@ class LanSyncGroupWeakCloudReadRouteTest {
             override fun write(value: Int): Unit = throw expected
             override fun write(bytes: ByteArray, offset: Int, length: Int): Unit = throw expected
         }
-        assertSame(expected, assertFailsWith<IOException> { route.readTo(request.key, sink, request.descriptor) })
+        assertEquals(CiphertextStoreFailure.IO,
+            assertFailsWith<CiphertextStoreException> { route.readTo(request.key, sink, request.descriptor) }.failure)
         assertEquals(1, gets.get())
     }
 
