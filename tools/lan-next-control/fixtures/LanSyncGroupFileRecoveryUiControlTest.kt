@@ -213,7 +213,9 @@ class LanSyncGroupFileRecoveryUiControlTest {
             val recovery = checkNotNull(coordinator.fileRecovery)
             observedState = {
                 val value = recovery.state.value
-                "visible=${value.visible},busy=${value.busy},review=${value.review != null}," +
+                val panel = coordinator.state.value
+                "panelStage=${panel.stage.name},panelBusy=${panel.busy},canResume=${panel.canResumeExternalRecovery}," +
+                    "visible=${value.visible},busy=${value.busy},review=${value.review != null}," +
                     "complete=${value.complete},error=${value.error != null}," +
                     "lifecycle=${runCatching { launched.state.name }.getOrDefault("UNAVAILABLE")}," +
                     "sameOwner=${app.lanSyncOwner === owner},sameCoordinator=${owner.groupCoordinator === coordinator}," +
@@ -229,6 +231,14 @@ class LanSyncGroupFileRecoveryUiControlTest {
             launched.recreate()
             phase = "review-recreate-await-resumed-and-hidden"
             await { launched.state == Lifecycle.State.RESUMED && !recovery.state.value.visible }
+            phase = "review-recreate-await-current-panel-ready"
+            // Recreation starts a real asynchronous open/load; rendered enabled semantics may be stale.
+            await(120_000) {
+                val panel = coordinator.state.value
+                !panel.busy && (panel.stage == LanSyncGroupPanelStage.EMPTY || panel.stage == LanSyncGroupPanelStage.JOINING) &&
+                    !recovery.state.value.visible
+            }
+            compose.waitForIdle()
             // Read-only bounded trace. StateFlow can conflate transitions: a false-only trace is not proof of no open.
             reopenObserver = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch(
                 start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {

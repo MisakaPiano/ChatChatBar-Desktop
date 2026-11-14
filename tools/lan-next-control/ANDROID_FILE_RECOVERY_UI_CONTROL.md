@@ -70,3 +70,11 @@ actual button semantics action is a diagnostic comparison only: it always ends
 with DiagnosticFailure/NATIVE_NOT_CONTINUED, even if that action opens the modal.
 It cannot convert the original touch failure into native success. StateFlow can
 conflate transitions; a false-only trace does not prove the owner never opened.
+
+The fourth original run43644783277 records current panelBusy=true both before
+and after touch, while the later diagnostic action opens the same owner only
+after JOINING/panelBusy=false. The next control explicitly awaits real current
+panel load completion and an allowed hidden-input stage, then settles Compose
+before the original physical click. It does not replace that click with the
+comparison action. All downstream assertions and unconditional failure after a
+diagnostic fallback remain. The first safe snapshot now includes panel state.
