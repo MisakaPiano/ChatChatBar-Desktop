@@ -54,6 +54,7 @@ fun NovelAiImageRegenerationDialog(
 ) {
     var fullscreenTarget by remember { mutableStateOf<Int?>(null) }
     var activeTarget by remember { mutableStateOf<Int?>(null) }
+    var editPromptDetails by remember { mutableStateOf(false) }
     val editorValues = remember { mutableStateMapOf<Int, TextFieldValue>() }
     fun editorValue(target: Int, text: String): TextFieldValue =
         editorValues[target]?.takeIf { it.text == text } ?: TextFieldValue(text)
@@ -97,6 +98,7 @@ fun NovelAiImageRegenerationDialog(
                         else -> "重新生成"
                     },
                     { draft?.let(onRegenerate) },
+                    autoSizeText = true,
                     enabled = draft?.canRegenerate == true &&
                         (batchSizeInput == null || parseNovelAiBatchSize(batchSizeInput) != null) &&
                         !loading && !submitting &&
@@ -132,7 +134,12 @@ fun NovelAiImageRegenerationDialog(
                 errorMessage?.let {
                     CbText(it, color = ChatBarTheme.colors.destructive)
                 }
-                draft?.let { current ->
+                if (batchSettings != null) {
+                    CbText("沿用原图提示词和尺寸", style = ChatBarTheme.typography.caption)
+                    CbButton(if (editPromptDetails) "收起提示词与画面参数" else "编辑提示词与画面参数",
+                        { editPromptDetails = !editPromptDetails }, variant = ButtonVariant.Ghost)
+                }
+                draft?.takeIf { batchSettings == null || editPromptDetails }?.let { current ->
                     CbText(
                         buildString {
                             append("编辑本次使用的 NovelAI 提示词。每次使用新 seed。")

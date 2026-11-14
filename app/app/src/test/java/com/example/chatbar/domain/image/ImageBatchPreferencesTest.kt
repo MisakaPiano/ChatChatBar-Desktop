@@ -52,4 +52,30 @@ class ImageBatchPreferencesTest {
         assertNotNull(ImageBatchConfiguration(numberOfBatches = 0).validationError())
         assertNull(ImageBatchConfiguration(requestCount = 4, numberOfBatches = 25).validationError())
     }
+
+    @Test fun `saved spending permission cannot widen current run approved estimate`() = runTest {
+        val config = ImageBatchPreferences(true, 1, 3, allowAnlasSpending = true).configuration().copy(budget = 6)
+        var attempt = 0
+        var saved = 0
+        try {
+            ImageBatchRunner(sleep = {}).run(config.freeze(ImageBatchOrigin.CHAT_MANUAL), ImageBatchControl(),
+                quote = { ImageBatchQuote(if (attempt < 2) 2 else 3, 1000) }) {
+                attempt++; saved += it; it
+            }
+            fail("An increased estimate must stop before exceeding this run's approval")
+        } catch (_: ImageBatchStopped) { }
+        assertEquals(2, saved)
+        assertEquals(2, attempt)
+    }
+
+    @Test fun `disabled paid switch wins over stale legacy budget`() {
+        val config = ImageBatchPreferences(true, 4, 3).configuration().copy(budget = 99999)
+        assertEquals(0L, config.freeze(ImageBatchOrigin.CHAT_MANUAL).maxEstimatedAnlas)
+    }
+    @Test fun `one image per batch can preserve hundred image legacy capacity`() {
+        assertNull(ImageBatchPreferences(true, 1, 100).validationError())
+        assertEquals(100, ImageBatchPreferences(true, 1, 100).configuration().freeze(ImageBatchOrigin.STUDIO).batches.size)
+        assertNotNull(ImageBatchPreferences(true, 4, 26).validationError())
+    }
+
 }

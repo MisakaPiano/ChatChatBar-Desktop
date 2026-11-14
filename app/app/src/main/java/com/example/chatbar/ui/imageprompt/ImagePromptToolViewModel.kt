@@ -227,7 +227,6 @@ data class ImagePromptToolUiState(
     val autoCompletedCount: Int = 0,
     val rateLimitStatus: String? = null,
     val batchProgress: ImageBatchProgress? = null,
-    val batchBudget: Long = 0,
     val batchConfirmation: String? = null,
     val completionNotice: String? = null,
     val draftLoaded: Boolean = false,
@@ -1398,7 +1397,6 @@ class ImagePromptToolViewModel(
     private var pendingBatchPlan: ImageBatchRunPlan? = null
     private var batchControl: ImageBatchControl? = null
 
-    fun setBatchBudget(value: Long) { if (!_uiState.value.isBusy) _uiState.update { it.copy(batchBudget = value) } }
     fun pauseBatchRun() { batchControl?.pause() }
     fun resumeBatchRun() { batchControl?.resume() }
     fun dismissBatchConfirmation() {
@@ -1414,31 +1412,31 @@ class ImagePromptToolViewModel(
     private fun batchConfiguration(draft: NovelAiStudioDraft): ImageBatchConfiguration {
         val count = draft.activeSettings.count
         val times = draft.numberOfBatches ?: if (draft.continuousModeEnabled)
-            ((draft.continuousTargetCount + count - 1) / count).coerceIn(1, 25) else 1
+            ((draft.continuousTargetCount + count - 1) / count).coerceIn(1, maximumImageBatchRuns(count)) else 1
         return ImageBatchConfiguration(count, times > 1, count * times, draft.batchPacing,
             if (draft.allowAnlasSpending) 100000 else 0, times, draft.allowAnlasSpending)
     }
-    fun estimatedBatchAnlas(): Long? {
-        val state = _uiState.value
-        val usage = state.account.effectiveUsage ?: return null
-        val draft = state.draft
+    fun estimatedBatchAnlas(): Long? = estimatedBatchCosts(_uiState.value.draft)?.sum()
+    private fun estimatedBatchCosts(draft: NovelAiStudioDraft): List<Long>? {
+        val usage = _uiState.value.account.effectiveUsage ?: return null
         val config = batchConfiguration(draft)
         if (config.validationError() != null) return null
         return config.freeze(ImageBatchOrigin.STUDIO).batches.mapIndexed { index, count ->
             NovelAiImageCostEstimator.estimate(draft.activeSettings.copy(count = count), usage,
                 draft.imageGuidance, if (index == 0) countVibeCacheMisses(draft) else 0).anlas.toLong()
-        }.sum()
+        }
     }
     fun generateImage() {
         if (_uiState.value.isBusy || imageJob?.isActive == true) return
         val draft = repository.draft.value ?: _uiState.value.draft
         val config = batchConfiguration(draft)
         config.validationError()?.let { message -> _uiState.update { it.copy(error = message) }; return }
-        val total = estimatedBatchAnlas()
+        val costs = estimatedBatchCosts(draft)
+        val total = costs?.sum()
         estimatedPaymentError(total, draft.allowAnlasSpending)?.let { message ->
             _uiState.update { it.copy(error = message) }; return
         }
-        val plan = config.freeze(ImageBatchOrigin.STUDIO).copy(maxEstimatedAnlas = requireNotNull(total))
+        val plan = config.freeze(ImageBatchOrigin.STUDIO).copy(maxEstimatedAnlas = requireNotNull(total), confirmedBatchAnlas = requireNotNull(costs))
         if (total == 0L) startImageRun(draft, plan)
         else {
             pendingImageDraft = draft; pendingBatchPlan = plan

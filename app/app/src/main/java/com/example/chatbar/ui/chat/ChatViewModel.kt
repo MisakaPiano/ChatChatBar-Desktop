@@ -1229,12 +1229,13 @@ class ChatViewModel(
                 val error = estimatedPaymentError(cost, preferences.allowAnlasSpending)
                 if (error != null) { _automaticImageEvents.tryEmit(error); return@launch }
                 if (cost!! > 0) {
-                    if (automatic) {
-                        _automaticImageEvents.tryEmit("自动生图预计收费，已暂停；请手动生图并确认本轮费用")
-                    } else {
-                        _imagePaymentConfirmation.value = ImagePaymentConfirmation(messageId, config, cost,
-                            preferences, regeneration, contentHint, promptPreference, persistPreference)
+                    if (automatic && _imagePaymentConfirmation.value != null) {
+                        _automaticImageEvents.tryEmit("已有生图费用等待确认，本次自动生图已跳过")
+                        return@launch
                     }
+                    _imagePaymentConfirmation.value = ImagePaymentConfirmation(messageId, config, cost,
+                        preferences, regeneration, contentHint, promptPreference, persistPreference)
+                    if (automatic) _automaticImageEvents.tryEmit("自动生图预计收费，已暂停等待本轮确认")
                     return@launch
                 }
                 generateManualNovelAiImages(messageId, config.copy(budget = 0), contentHint,
@@ -1268,7 +1269,11 @@ class ChatViewModel(
         regeneration: NovelAiImageRegenerationDraft? = null
     ) {
         if (imageGenerations.value.any { it.manualBatch && !it.isTerminal }) return
-        val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
+        val frozenPlan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
+        val plan = if (configuration.numberOfBatches != null && frozenPlan.batches.distinct().size == 1 &&
+            frozenPlan.maxEstimatedAnlas % frozenPlan.batches.size == 0L)
+            frozenPlan.copy(confirmedBatchAnlas = List(frozenPlan.batches.size) { frozenPlan.maxEstimatedAnlas / frozenPlan.batches.size })
+        else frozenPlan
         val taskId = UUID.randomUUID().toString()
         val control = ImageBatchControl()
         manualBatchControls[taskId] = control
@@ -1311,7 +1316,7 @@ class ChatViewModel(
                         val size = NovelAiImageSizePolicy.resolve(settings.novelAiImageAspectRatio, preset)
                         NovelAiImageCostEstimator.estimate(frozenSettings.copy(count = count, customWidth = size.width, customHeight = size.height), initialUsage).anlas.toLong()
                     } }
-                    if (initialCost > plan.maxEstimatedAnlas) throw ImageBatchStopped("整项任务当前预估 $initialCost Anlas 超过本次预算，未调用生图设计或图片请求")
+                    if (initialCost > plan.maxEstimatedAnlas) throw ImageBatchStopped("整项任务当前预估 $initialCost Anlas 超过本轮已确认的费用，未调用生图设计或图片请求")
                     val prompt = regeneration?.toPromptPlan() ?: novelAiPromptDesigner.design(messages, anchorMessageId, card, requireNotNull(model),
                         playerName = player, sessionId = sessionId, imageContentHint = imageContentHint,
                         finalPromptRequirement = preference, targetImageModel = target,
@@ -1386,19 +1391,10 @@ class ChatViewModel(
         job.start()
     }
 
-    fun generateNovelAiImage(
-        anchorMessageId: String,
-        imageContentHint: String = "",
-        imagePromptPreference: String? = null,
-        persistPreference: Boolean = false
-    ) {
-        startNovelAiImageGeneration(
-            taskId = UUID.randomUUID().toString(),
-            anchorMessageId = anchorMessageId,
-            imageContentHint = imageContentHint,
-            imagePromptPreference = imagePromptPreference,
-            persistPreference = persistPreference
-        )
+    fun generateNovelAiImage(anchorMessageId: String, imageContentHint: String = "",
+        imagePromptPreference: String? = null, persistPreference: Boolean = false) {
+        requestSessionNovelAiImages(anchorMessageId, contentHint = imageContentHint,
+            promptPreference = imagePromptPreference, persistPreference = persistPreference)
     }
 
     fun retryNovelAiImageGeneration(taskId: String) {
@@ -2194,6 +2190,10 @@ class ChatViewModel(
                     count = batchSize,
                     model = targetImageModel
                 ).let { card?.defaultImageGenerationSettings?.applyTo(it) ?: it }
+                val legacyUsage = withContext(Dispatchers.IO) { novelAiAccountService.fetch(requireNotNull(token)) }
+                val legacyCost = NovelAiImageCostEstimator.estimate(generationSettings.copy(
+                    customWidth = imageSize.width, customHeight = imageSize.height), legacyUsage).anlas.toLong()
+                if (legacyCost > 0) error("预计收费，请使用生图入口重新确认本轮费用")
                 val requestBody = novelAiImageService.buildRequestBody(prompt, imageSize, generationSettings)
                 com.example.chatbar.utils.DebugLogManager.recordCompleted(
                     sessionId = sessionId,

@@ -113,6 +113,7 @@ fun ChatSettingsDialog(
     onClearHistory: () -> Unit,
     onJumpToSource: (String) -> Unit = {},
     modifier: Modifier = Modifier,
+    initialImageSettings: Boolean = false,
     onRebindCharacter: () -> Unit = {}
 ) {
     val session by viewModel.session.collectAsState()
@@ -273,7 +274,7 @@ fun ChatSettingsDialog(
         fullscreenOnChange = null
     }
 
-    val browser = remember { SettingsBrowserState() }
+    val browser = remember { SettingsBrowserState().apply { if (initialImageSettings) open("images", "image-batch") } }
     var saving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
     var pendingLeave by remember { mutableStateOf<(() -> Unit)?>(null) }

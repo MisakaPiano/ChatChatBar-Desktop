@@ -293,6 +293,7 @@ fun ChatScreen(
     var inputTouched by remember(sessionId) { mutableStateOf(false) }
     val selectedImages = remember { mutableStateListOf<String>() }
     var settingsOpen by remember { mutableStateOf(false) }
+    var initialImageSettings by remember { mutableStateOf(false) }
     var debugOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(sessionId) { mutableStateOf(false) }
     var peopleSaving by remember(sessionId) { mutableStateOf(false) }
@@ -1573,7 +1574,7 @@ fun ChatScreen(
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CbText(batchPreview)
-                CbButton("会话生图设置", { imagePromptTargetId = null; settingsOpen = true }, variant = ButtonVariant.Outline)
+                CbButton("会话生图设置", { imagePromptTargetId = null; initialImageSettings = true; settingsOpen = true }, variant = ButtonVariant.Outline)
                 CbField("图片内容提示") {
                     CbInput(
                         value = imageContentHintDraft,
@@ -1598,13 +1599,14 @@ fun ChatScreen(
 
     if (settingsOpen) ChatSettingsDialog(
         viewModel = viewModel,
+        initialImageSettings = initialImageSettings,
         onRebindCharacter = {
             settingsOpen = false
             relinkSelectedId = null
             relinkError = null
             relinkOpen = true
         },
-        onDismiss = { settingsOpen = false },
+        onDismiss = { settingsOpen = false; initialImageSettings = false },
         onClearHistory = { clearConfirm = true },
         onJumpToSource = { sourceTurnId ->
             settingsOpen = false
@@ -1765,7 +1767,7 @@ fun ChatScreen(
             batchSettings = session?.imageBatchPreferences ?: com.example.chatbar.domain.image.ImageBatchPreferences(),
             useSavedBatch = regenerationUseSavedBatch,
             onUseSavedBatchChange = { regenerationUseSavedBatch = it },
-            onOpenBatchSettings = { imageActionTarget = null; settingsOpen = true },
+            onOpenBatchSettings = { imageActionTarget = null; initialImageSettings = true; settingsOpen = true },
             estimatedAnlas = regenerationEstimatedAnlas,
             quoteLoading = regenerationQuoteLoading,
             onRegenerate = { draft ->

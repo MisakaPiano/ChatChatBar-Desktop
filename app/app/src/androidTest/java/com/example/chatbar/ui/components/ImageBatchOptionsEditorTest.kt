@@ -50,6 +50,41 @@ class ImageBatchOptionsEditorTest {
         assertFalse(actual.allowAnlasSpending)
         screenshot("batch-bounded-input.png")
     }
+    @Test fun decimalDelayPublishesMillisecondsAndClampsBounds() {
+        var actual = ImageBatchPreferences(true, 1, 2).configuration()
+        rule.setContent {
+            var config by remember { mutableStateOf(actual) }
+            ChatBarTheme { CbDialog(onDismissRequest = {}, title = "会话生图设置", confirm = { CbButton("保存", {}) }) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    ImageBatchOptionsEditor(config, { config = it; actual = it })
+                }
+            } }
+        }
+        input("固定等待秒数").performScrollTo().performTextReplacement("1.5")
+        rule.waitForIdle()
+        assertEquals(1500L, actual.pacing.effectiveFixedMillis)
+        input("固定等待秒数").performTextReplacement("99999.99")
+        rule.waitForIdle()
+        assertEquals(3_600_000L, actual.pacing.effectiveFixedMillis)
+        screenshot("batch-decimal-delay.png")
+    }
+    @Test fun hiddenEmptyWaitFieldDoesNotBlockNoWaitMode() {
+        var valid = true
+        rule.setContent {
+            var config by remember { mutableStateOf(ImageBatchPreferences(true, 1, 2).configuration()) }
+            ChatBarTheme { CbDialog(onDismissRequest = {}, title = "会话生图设置", confirm = { CbButton("保存", {}) }) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    ImageBatchOptionsEditor(config, { config = it }, onValidChange = { valid = it })
+                }
+            } }
+        }
+        input("固定等待秒数").performScrollTo().performTextReplacement("")
+        rule.waitForIdle()
+        assertFalse(valid)
+        rule.onNodeWithText("不等待").performScrollTo().performClick()
+        rule.waitForIdle()
+        assertTrue(valid)
+    }
     private fun input(description: String) = rule.onNode(
         hasSetTextAction() and hasAnyAncestor(hasContentDescription(description)), useUnmergedTree = true)
     private fun screenshot(name: String) {

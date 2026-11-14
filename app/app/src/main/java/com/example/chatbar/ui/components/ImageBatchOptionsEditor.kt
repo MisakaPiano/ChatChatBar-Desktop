@@ -1,6 +1,10 @@
 package com.example.chatbar.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import java.math.BigDecimal
+import java.math.RoundingMode
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -19,14 +23,20 @@ fun ImageBatchOptionsEditor(
     showCount: Boolean = true
 ) {
     val batches = value.numberOfBatches ?: if (value.continuous)
-        ((value.target + value.requestCount - 1) / value.requestCount).coerceIn(1, 25) else 1
+        ((value.target + value.requestCount - 1) / value.requestCount).coerceIn(1, maximumImageBatchRuns(value.requestCount)) else 1
     var details by remember { mutableStateOf(false) }
     var fieldsValid by remember { mutableStateOf(mapOf<String, Boolean>()) }
-    val valid = fieldsValid.values.all { it } && value.validationError() == null
+    val activeFields = setOf("count", "batches") + when (value.pacing.mode) {
+        ImageBatchInterval.NONE -> emptySet()
+        ImageBatchInterval.FIXED -> setOf("fixed")
+        ImageBatchInterval.RANGE -> setOf("min", "max")
+    }
+    val valid = fieldsValid.filterKeys { it in activeFields }.values.all { it } && value.validationError() == null
     LaunchedEffect(valid) { onValidChange(valid) }
     fun publish(count: Int = value.requestCount, times: Int = batches) {
-        onChange(value.copy(requestCount = count, numberOfBatches = times,
-            continuous = times > 1, target = count * times))
+        val safeTimes = times.coerceIn(1, maximumImageBatchRuns(count))
+        onChange(value.copy(requestCount = count, numberOfBatches = safeTimes,
+            continuous = safeTimes > 1, target = count * safeTimes))
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -37,7 +47,7 @@ fun ImageBatchOptionsEditor(
             }
             Column(Modifier.weight(1f)) {
                 CbText("生成批数")
-                BoundedBatchNumber(batches, 1, 25, "生成批数",
+                BoundedBatchNumber(batches, 1, maximumImageBatchRuns(value.requestCount), "生成批数",
                     { publish(times = it) }, { fieldsValid = fieldsValid + ("batches" to it) })
             }
         }
@@ -53,21 +63,23 @@ fun ImageBatchOptionsEditor(
                 }
             }
             if (value.pacing.mode == ImageBatchInterval.FIXED) CbField("等待秒数") {
-                BoundedBatchNumber(value.pacing.fixedSeconds, 0, 3600, "固定等待秒数",
-                    { onChange(value.copy(numberOfBatches = batches, pacing = value.pacing.copy(fixedSeconds = it))) },
+                BoundedBatchDelay(value.pacing.effectiveFixedMillis, 0, 3_600_000, "固定等待秒数",
+                    { onChange(value.copy(numberOfBatches = batches, pacing = value.pacing.copy(fixedSeconds = (it / 1000).toInt(), fixedMillis = it))) },
                     { fieldsValid = fieldsValid + ("fixed" to it) })
             }
             if (value.pacing.mode == ImageBatchInterval.RANGE) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     CbText("最少秒数")
-                    BoundedBatchNumber(value.pacing.minSeconds, 0, 3600, "随机最小秒数",
-                        { onChange(value.copy(numberOfBatches = batches, pacing = value.pacing.copy(minSeconds = it, maxSeconds = maxOf(it, value.pacing.maxSeconds)))) },
+                    BoundedBatchDelay(value.pacing.effectiveMinMillis, 0, 3_600_000, "随机最小秒数",
+                        { onChange(value.copy(numberOfBatches = batches, pacing = value.pacing.copy(minSeconds = (it / 1000).toInt(), minMillis = it,
+                            maxSeconds = (maxOf(it, value.pacing.effectiveMaxMillis) / 1000).toInt(),
+                            maxMillis = maxOf(it, value.pacing.effectiveMaxMillis)))) },
                         { fieldsValid = fieldsValid + ("min" to it) })
                 }
                 Column(Modifier.weight(1f)) {
                     CbText("最多秒数")
-                    BoundedBatchNumber(value.pacing.maxSeconds, value.pacing.minSeconds, 3600, "随机最大秒数",
-                        { onChange(value.copy(numberOfBatches = batches, pacing = value.pacing.copy(maxSeconds = it))) },
+                    BoundedBatchDelay(value.pacing.effectiveMaxMillis, value.pacing.effectiveMinMillis, 3_600_000, "随机最大秒数",
+                        { onChange(value.copy(numberOfBatches = batches, pacing = value.pacing.copy(maxSeconds = (it / 1000).toInt(), maxMillis = it))) },
                         { fieldsValid = fieldsValid + ("max" to it) })
                 }
             }
@@ -102,4 +114,32 @@ private fun BoundedBatchNumber(value: Int, minimum: Int, maximum: Int, label: St
         text.toIntOrNull()?.let(onChange)
     }, modifier = Modifier.semantics { contentDescription = label },
         onFocusChanged = { focused -> if (!focused && text.isBlank()) { text = value.toString(); onValid(true) } })
+}
+
+@Composable
+private fun BoundedBatchDelay(value: Long, minimum: Long, maximum: Long, label: String,
+    onChange: (Long) -> Unit, onValid: (Boolean) -> Unit) {
+    fun millis(text: String): Long? = runCatching {
+        text.toBigDecimalOrNull()?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
+    }.getOrNull()
+    var text by remember { mutableStateOf(imageBatchSecondsText(value)) }
+    LaunchedEffect(value) { if (millis(text) != value) text = imageBatchSecondsText(value) }
+    CbInput(text, { incoming ->
+        val decimal = incoming.toBigDecimalOrNull()
+        if (incoming.isBlank() || decimal == null) {
+            text = incoming
+            onValid(false)
+        } else {
+            val bounded = decimal.multiply(BigDecimal(1000)).max(BigDecimal(minimum)).min(BigDecimal(maximum))
+                .setScale(0, RoundingMode.HALF_UP).longValueExact()
+            text = if (millis(incoming) == bounded && incoming.substringAfter('.', "").length <= 3) incoming
+                else imageBatchSecondsText(bounded)
+            onChange(bounded)
+            onValid(true)
+        }
+    }, modifier = Modifier.semantics { contentDescription = label },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        onFocusChanged = { focused -> if (!focused && millis(text) == null) {
+            text = imageBatchSecondsText(value); onValid(true)
+        } })
 }

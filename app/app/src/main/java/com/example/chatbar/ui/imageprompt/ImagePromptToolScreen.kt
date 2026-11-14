@@ -667,7 +667,6 @@ fun ImagePromptToolScreen(
                         viewModel.updateDraft { it.copy(continuousModeEnabled = config.continuous,
                             continuousTargetCount = config.target, batchPacing = config.pacing,
                             numberOfBatches = config.numberOfBatches, allowAnlasSpending = config.allowAnlasSpending) }
-                        viewModel.setBatchBudget(config.budget)
                     },
                     onValidChange = { batchOptionsValid = it }, showCount = false)
 
