@@ -1,0 +1,37 @@
+{
+  "kind": "CCB_LAN_DELIVERED82_CANDIDATE83_BUILD_V1",
+  "format": 1,
+  "sourceSha": "90ead92410ca4c5e240f75d120ed6a145fb6f1c8",
+  "series": "next",
+  "versions": [
+    82,
+    83
+  ],
+  "package": "com.example.chatbar.lansyncnext",
+  "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+  "deliveredBase": {
+    "sourceSha": "10b14a8c89d2fc4b2ed2188546af4339b0e42b57",
+    "versionCode": 82,
+    "runId": 43349245949,
+    "artifactId": 14004090088,
+    "artifactName": "ccb-lan-next-signing-inputs",
+    "controlSha": "8946caa73a1c6346a1a4f81bb0135795241c7738",
+    "outerBytes": 212918205,
+    "outerSha256": "0238df5c5c77121aa1a0e29ad687f41ccc303cea90844b0413692dc8047cadce",
+    "member": "upgrade-input.apk",
+    "rawSha256": "7d65f385078626788215f3230ade235269a4993eb5159bc8e10536c0568ec844",
+    "deliveredSha256": "7d6b489ffd3529c5dfef7be4673eae8efdf96f38dfbeffb92a760ba70c47343f",
+    "deliveredBytes": 106321320
+  },
+  "fixtures": {
+    "seed82": {
+      "path": "fixtures/seed82.kt",
+      "sha256": "761317271f21704d6669bfbc941c38f382fb6853bcbc30510b13afef8a7d0d7d"
+    },
+    "verify83": {
+      "path": "fixtures/verify83.kt",
+      "sha256": "a233b0e75b2fe6d4e6377ddf17f8d288714dd19f965a049ec1be32954ae85818"
+    }
+  },
+  "allowedStateMigrations": []
+}

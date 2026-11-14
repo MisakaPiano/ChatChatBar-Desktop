@@ -1,0 +1,24 @@
+{
+  "kind": "CCB_LAN3_LAN4_DESKTOP_BUILD_V1",
+  "format": 1,
+  "sourceSha": "90ead92410ca4c5e240f75d120ed6a145fb6f1c8",
+  "version": "0.1.0-lan.4",
+  "installerVersion": "0.1.40004",
+  "buildNumber": "40004",
+  "deliveredBase": {
+    "series": "lan3",
+    "version": "0.1.0-lan.3",
+    "sourceSha": "10b14a8c89d2fc4b2ed2188546af4339b0e42b57",
+    "controlSha": "8946caa73a1c6346a1a4f81bb0135795241c7738",
+    "runId": 43349245943,
+    "artifactId": 14002799032,
+    "outerBytes": 205733879,
+    "outerSha256": "f0dfffbf754785f909e078ec418fabc48054d60056598a691e0b43247b719d2d",
+    "filename": "CCB-0.1.0-lan.3-independent-windows-x64.zip",
+    "innerBytes": 205622880,
+    "innerSha256": "6314a42a25c44d7604f5d211e912460f71bd14a5bd3d4c93011abd90dbba7611",
+    "artifactName": "ccb-lan-next-independent-desktop",
+    "installerVersion": "0.1.40003",
+    "buildNumber": "40003"
+  }
+}

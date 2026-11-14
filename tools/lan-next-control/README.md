@@ -85,3 +85,65 @@ python -B tools/lan-next-control/test_control.py
 The local checks validate substitution refusals, provenance, actual test status
 versus skips, and UID/install-time/data-directory comparisons. Kotlin compilation
 and the two actual device methods remain unproven until the explicit cloud runs.
+
+## Ordinary Desktop lan.3 to lan.4
+
+`desktop_control.py`, `prove_desktop_lan3_lan4.py` and the additive
+`lan-next-sync-desktop-{build,upgrade}.yml` workflows cover Desktop separately.
+They use the ordinary `desktop` packaging identity (`ChatChatBarDesktop`), version
+`0.1.0-lan.4`, installer `0.1.40004`, build `40004`. Isolation comes from the
+independent ZIP/UserData and synthetic cloud fixture; `synthetic` packaging is
+not used. The frozen old Desktop workflows, requests and native proof helper
+remain unchanged.
+
+Only the explicit build request path on `codex/lan-next-sync-control-*` triggers
+the ordinary image build, app-image audit, independent ZIP and actual native
+launch/ordinary close. The new artifact is `ccb-lan3-lan4-independent-desktop`.
+Its manifest binds the full40-digit application source, control commit, all
+auxiliary report bytes, image identity and successful native result. A failed or
+missing native result cannot become a candidate upgrade input.
+
+```text
+python -B tools/lan-next-control/desktop_control.py build-request --source-sha ACTUAL_FROZEN_SOURCE_SHA --output .github/lan-next-sync-desktop-build-request.json
+```
+
+After that build really succeeds, download its original report/package artifact
+and preserve its actual API artifact and run JSON. Generate the upgrade request
+from those inputs; do not prefill future run IDs, hashes or package metadata:
+
+```text
+python -B tools/lan-next-control/desktop_control.py upgrade-request --candidate-dir ACTUAL_LAN4_ARTIFACT_CONTENTS --artifact-metadata ACTUAL_ARTIFACT_API_JSON --run-metadata ACTUAL_RUN_API_JSON --output .github/lan-next-sync-desktop-upgrade-request.json
+```
+
+The generator hard-pins the delivered lan.3 row from the frozen old request:
+run43349245943/artifact14002799032, source10b, control8946, and its exact outer and
+inner bytes/hashes. The cloud upgrade downloads both original outer ZIPs by ID,
+checks successful run/control/name/bytes/API digest, streams and hashes the actual
+downloads, checks CRC/path/link constraints and then the exact inner package.
+The lan.4 request is rederived from the authenticated artifact manifest before
+any native process starts. No old or new package is rebuilt in this workflow.
+
+The thin runner imports the frozen native helper without its old `main`. All
+five phases and reports are explicitly lan.3 fresh/populated/warm-control,
+Program-only swap, lan.4 upgraded/cold-reopen. It retains the real window and same
+root byte-lock checks, normal close/drain, original Program directory, per-phase
+entity hash snapshots, unchanged synthetic media/absolute references and outside
+profile inventory. Seed runs once under lan.3; verification never seeds.
+
+The only byte-change rule is the established same-path, actually observed lan.3
+warm-control `capturedAt` update: typed integer strictly increases and every other
+field/session/position stays identical. Both actual source revisions of all three
+timestamp-owner files are SHA-bound. If any differs, the exception is disabled
+and all preexisting entity bytes must match. `allowedStateMigrations` is empty;
+ordinary files, protected state, deletion or other business-field changes have
+no general waiver. A necessary new migration needs its own typed proof rather
+than relaxing hashes. This small seed does not establish peer identity, full
+ordinary-profile, large-data, UI/pixel or human acceptance.
+
+```text
+python -B tools/lan-next-control/test_desktop_control.py
+```
+
+These local metadata/ZIP/retention checks start no JVM, SDK or native app.
+Actual package build and five-launch upgrade remain separate cloud executions;
+having Android82-to83 controls ready does not establish Desktop delivery.
