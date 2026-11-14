@@ -1,10 +1,19 @@
 package com.example.chatbar.domain.syncStore
 
 import com.example.chatbar.domain.lanSync.LanSyncTlsIdentity
+import com.example.chatbar.domain.lanSync.lanSyncJson
+import com.google.crypto.tink.Aead
+import com.google.crypto.tink.BinaryKeysetReader
+import com.google.crypto.tink.CleartextKeysetHandle
+import com.google.crypto.tink.RegistryConfiguration
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlin.test.*
+import kotlinx.serialization.json.*
 
 /** Real Tink AEAD/private key recovery; synthetic daily protection, no saved recovery secrets. */
 class SyncManagementVaultTest {
@@ -125,6 +134,36 @@ class SyncManagementVaultTest {
                 assertContentEquals(before, reopened.seal(bound).bytes())
                 assertFalse(callerOwned.all { it == 0.toByte() })
             }
+        }
+    }
+    @Test fun malformedRecoveryCodeAndAuthenticatedPrivateJsonNeverEscapeIntoExceptionCauses() {
+        SyncManagementSession.create().use { session ->
+            val blob = session.seal(trust(session)); val code = session.recoveryCode()
+            val decoded = Base64.getUrlDecoder().decode(code.removePrefix("CCB-MGMT1.")).toString(Charsets.UTF_8)
+            val fields = lanSyncJson.parseToJsonElement(decoded).jsonObject
+            val keyset = fields.getValue("keyset").jsonPrimitive.content
+            val marker = "SYNTHETIC_PRIVATE_MATERIAL_DO_NOT_REPORT"
+            fun sanitized(failure: Throwable) {
+                val messages = generateSequence(failure) { it.cause }.joinToString("\n") { it.message.orEmpty() }
+                assertFalse(messages.contains(marker)); assertFalse(messages.contains(keyset.takeLast(20)))
+                assertNull(failure.cause)
+            }
+            val badJson = decoded.dropLast(1) + ",\"unexpected\":\"$marker\"}"
+            val malformedCode = "CCB-MGMT1." + Base64.getUrlEncoder().withoutPadding().encodeToString(badJson.toByteArray())
+            sanitized(assertFails { SyncManagementSession.locate(malformedCode) })
+            sanitized(assertFails { SyncManagementSession.open(malformedCode, blob.bytes()) })
+            val handle = CleartextKeysetHandle.read(BinaryKeysetReader.withBytes(Base64.getUrlDecoder().decode(keyset)))
+            val aead = handle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+            val plain = "{\"format\":1,\"identity\":\"$marker\",\"recipient\":\"$marker\",\"unexpected\":\"$marker\"}".toByteArray()
+            val encrypted = aead.encrypt(plain, blob.context.bytes()); plain.fill(0)
+            val magic = "CCB-SYNC-MANAGEMENT-VAULT/1\n".toByteArray(Charsets.US_ASCII)
+            val header = DataInputStream(blob.bytes().inputStream()).use { input ->
+                input.skipBytes(magic.size); ByteArray(input.readInt()).also(input::readFully)
+            }
+            val malformedVault = ByteArrayOutputStream().also { bytes -> DataOutputStream(bytes).use {
+                it.write(magic); it.writeInt(header.size); it.write(header); it.writeInt(encrypted.size); it.write(encrypted)
+            } }.toByteArray()
+            sanitized(assertFails { SyncManagementSession.open(code, malformedVault) })
         }
     }
 }

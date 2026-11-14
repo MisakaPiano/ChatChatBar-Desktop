@@ -137,10 +137,11 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
                 val aead = primitive(handle); val (context, encrypted) = decode(retainedVault)
                 require(context == code.context) { "SYNC_MANAGEMENT_VAULT_CONTEXT" }
                 val plain = try { aead.decrypt(encrypted, context.bytes()) } catch (failure: Exception) {
-                    throw IllegalArgumentException("SYNC_MANAGEMENT_VAULT_AUTHENTICATION", failure)
+                    throw IllegalArgumentException("SYNC_MANAGEMENT_VAULT_AUTHENTICATION")
                 }
                 try {
-                    val material = lanSyncJson.decodeFromString(Material.serializer(), boundedJson(plain, MAX_PLAIN))
+                    val material = try { lanSyncJson.decodeFromString(Material.serializer(), boundedJson(plain, MAX_PLAIN)) }
+                        catch (_: Exception) { throw IllegalArgumentException("SYNC_MANAGEMENT_VAULT_FORMAT") }
                     require(material.format == 1 && material.identity.length in 1..32 * 1024 && material.recipient.length in 1..128 * 1024) { "SYNC_MANAGEMENT_VAULT_FORMAT" }
                     val identityBytes = Base64.getDecoder().decode(material.identity); val recipientBytes = Base64.getDecoder().decode(material.recipient)
                     try {
@@ -157,6 +158,12 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
                         }
                     } finally { identityBytes.fill(0); recipientBytes.fill(0) }
                 } finally { plain.fill(0) }
+            } catch (failure: Exception) {
+                // Serialization/crypto parsers may echo private JSON/keyset fields in their causes.
+                val publicCodes = setOf("SYNC_MANAGEMENT_CODE_FORMAT", "SYNC_MANAGEMENT_CODE_PARAMETERS", "SYNC_MANAGEMENT_CONTEXT",
+                    "SYNC_MANAGEMENT_VAULT_BUDGET", "SYNC_MANAGEMENT_VAULT_FORMAT", "SYNC_MANAGEMENT_VAULT_CONTEXT",
+                    "SYNC_MANAGEMENT_VAULT_AUTHENTICATION", "SYNC_MANAGEMENT_VAULT_IDENTITY", "SYNC_MANAGEMENT_SESSION_LIFETIME")
+                throw IllegalArgumentException(failure.message?.takeIf { it in publicCodes } ?: "SYNC_MANAGEMENT_VAULT_FORMAT")
             } finally { codeBytes.fill(0); secret?.fill(0) }
         }
         /** Untrusted lookup hint only; opening the complete vault still authenticates all pins. */
@@ -164,13 +171,17 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
             val bytes = decodeCode(recoveryCode)
             return try { readCode(bytes).context } finally { bytes.fill(0) }
         }
-        private fun readCode(bytes: ByteArray) = lanSyncJson.decodeFromString(Code.serializer(), boundedJson(bytes, 8192)).also {
-            require(it.format == 1 && it.keyset.length in 1..8192) { "SYNC_MANAGEMENT_CODE_FORMAT" }
+        private fun readCode(bytes: ByteArray): Code = try {
+            lanSyncJson.decodeFromString(Code.serializer(), boundedJson(bytes, 8192)).also {
+                require(it.format == 1 && it.keyset.length in 1..8192) { "SYNC_MANAGEMENT_CODE_FORMAT" }
+            }
+        } catch (_: Exception) {
+            throw IllegalArgumentException("SYNC_MANAGEMENT_CODE_FORMAT")
         }
         private fun decodeCode(recoveryCode: String): ByteArray {
             require(recoveryCode.length in PREFIX.length + 1..16 * 1024 && recoveryCode.startsWith(PREFIX)) { "SYNC_MANAGEMENT_CODE_FORMAT" }
             return try { Base64.getUrlDecoder().decode(recoveryCode.removePrefix(PREFIX)) }
-                catch (failure: IllegalArgumentException) { throw IllegalArgumentException("SYNC_MANAGEMENT_CODE_FORMAT", failure) }
+                catch (_: IllegalArgumentException) { throw IllegalArgumentException("SYNC_MANAGEMENT_CODE_FORMAT") }
         }
         private fun boundedJson(bytes: ByteArray, maximum: Int): String {
             require(bytes.size in 1..maximum) { "SYNC_MANAGEMENT_VAULT_BUDGET" }
