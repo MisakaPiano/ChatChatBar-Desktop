@@ -22,6 +22,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 enum class LanSyncGroupEnrollmentStage { PREPARED, READY }
 data class LanSyncGroupProfile(val stage: LanSyncGroupEnrollmentStage, val trust: SyncGroupTrust, val device: String,
@@ -34,6 +36,15 @@ class LanSyncGroupEnrollmentDraft internal constructor(internal val operation: S
 }
 fun interface LanSyncGroupRecoverySavedAdmission { fun requireSaved(profile: LanSyncGroupProfile) }
 fun interface LanSyncGroupDraftAbandonAdmission { fun requireApproved(profile: LanSyncGroupProfile?) }
+class LanSyncGroupMemberPreview internal constructor(val device: String, val name: String,
+    val request: SyncRootLedgerRequest, internal val peer: LanSyncGroupInvitedPeer, internal val invitation: LanSyncGroupInvitation) {
+    fun acknowledge(binding: String): LanSyncGroupMemberApproval {
+        require(binding == request.approvalBinding) { "SYNC_GROUP_MEMBER_CONFIRMATION_REQUIRED" }
+        return LanSyncGroupMemberApproval(this)
+    }
+}
+class LanSyncGroupMemberApproval internal constructor(internal val preview: LanSyncGroupMemberPreview)
+data class LanSyncGroupAdministrationReceipt(val ledger: SyncDeviceLedgerRecord, val localDelivery: LanSyncGroupPublishReceipt)
 
 /** One local app profile: explicit founder enrollment, then ordinary reopen without admin authority. */
 class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanSyncWorkspace,
@@ -76,6 +87,93 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
             { emptySet() }, validateResource, observe = observe)
     }
     suspend fun profile(): LanSyncGroupProfile? = guarded { requireNoAbandon(); read()?.let(::profile) }
+
+    /** Produces an invitation-only transport owner; it neither unlocks admin authority nor joins a member. */
+    suspend fun invitation(): LanSyncGroupInvitation = guarded {
+        requireNoAbandon(); val record = readyRecord(); val custody = custody(record)
+        LanSyncGroupInvitation(identity, record.trust, custody::ledger)
+    }
+    suspend fun prepareMember(peer: LanSyncGroupInvitedPeer, invitation: LanSyncGroupInvitation,
+        operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupMemberPreview = guarded {
+        requireNoAbandon(); val record = readyRecord(); val ledger = custody(record).ledger(); val current = ledger.current()
+        invitation.requireCurrent(peer)
+        require(peer.trust.group == record.trust.group && peer.trust.genesis == record.trust.genesis &&
+            peer.trust.ownerCertificate == record.trust.ownerCertificate && peer.trust.checkpoint == current.reference() &&
+            peer.member.active && peer.device !in current.members && current.members.values.none { it.recipientKey == peer.member.recipientKey }) {
+            "SYNC_GROUP_MEMBER_PROOF_CHANGED"
+        }
+        val binding = lanSyncHash(buildJsonObject {
+            put("action", "ADD_MEMBER"); put("group", record.trust.group.value); put("operation", operation.value)
+            put("parent", current.id.value); put("parentHash", current.bodyHash()); put("proof", peer.binding)
+            put("device", peer.device); put("name", peer.name); put("certificate", peer.member.certificate); put("recipient", peer.member.recipientKey)
+        })
+        val request = SyncRootLedgerRequest(operation, current.reference(), Collections.unmodifiableMap(current.members + (peer.device to peer.member)),
+            Collections.unmodifiableSet(current.coveredTypes.toSet()), Collections.unmodifiableSet(current.acceptedHeads.toSet()), false, binding)
+        LanSyncGroupMemberPreview(peer.device, peer.name, request, peer, invitation)
+    }
+    /** Exact UI acknowledgment plus current real peer proof gate the new root intent. */
+    suspend fun addMember(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupMemberApproval): LanSyncGroupAdministrationReceipt = guarded {
+        requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
+        val preview = approval.preview; val journal = rootJournal(record, session)
+        val commit = journal.commit(preview.request, custody::ledger, SyncRootLedgerAdmission { request ->
+            require(request == preview.request) { "SYNC_GROUP_MEMBER_REVIEW_CHANGED" }
+            preview.invitation.requireCurrent(preview.peer)
+            val current = custody.ledger().current()
+            require(preview.peer.trust.group == record.trust.group && preview.peer.trust.genesis == record.trust.genesis &&
+                preview.peer.trust.ownerCertificate == record.trust.ownerCertificate && preview.peer.trust.checkpoint == current.reference() &&
+                request.members == current.members + (preview.device to preview.peer.member) &&
+                request.coveredTypes == current.coveredTypes && request.acceptedHeads == current.acceptedHeads && !request.rotateKey) {
+                "SYNC_GROUP_MEMBER_REVIEW_CHANGED"
+            }
+        }, session::signRootPayload)
+        journal.applyToCustody(commit, custody)
+        val receipt = finishRootDelivery(record, session, custody)
+        releaseSession(session); observe("GROUP_MEMBER_LOCALLY_ADMITTED")
+        LanSyncGroupAdministrationReceipt(custody.ledger().current(), receipt)
+    }
+    /** Resume only an already approved/signed root action, then complete its exact local key delivery. */
+    suspend fun resumeAdministration(draft: LanSyncGroupEnrollmentDraft): LanSyncGroupAdministrationReceipt = guarded {
+        requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
+        val journal = rootJournal(record, session)
+        var previous: SyncRootLedgerRequest? = null
+        while (true) {
+            val request = journal.nextRecoveryRequest(custody) ?: break
+            require(request != previous) { "SYNC_GROUP_ROOT_RECOVERY_NO_PROGRESS" }; previous = request
+            val commit = journal.commit(request, custody::ledger, SyncRootLedgerAdmission { error("SYNC_GROUP_ROOT_UNAPPROVED_RECOVERY") }, session::signRootPayload)
+            journal.applyToCustody(commit, custody)
+        }
+        val receipt = finishRootDelivery(record, session, custody)
+        releaseSession(session); observe("GROUP_ADMINISTRATION_RECOVERED")
+        LanSyncGroupAdministrationReceipt(custody.ledger().current(), receipt)
+    }
+    private fun readyRecord(): Record = requireNotNull(read()) { "SYNC_GROUP_PROFILE_MISSING" }.also {
+        require(it.stage == LanSyncGroupEnrollmentStage.READY) { "SYNC_GROUP_PROFILE_ENROLLMENT_INCOMPLETE" }
+    }
+    private fun management(record: Record, draft: LanSyncGroupEnrollmentDraft): SyncManagementSession {
+        require(record.request.operation == draft.operation && record.trust == draft.profile.trust && draft.session.trust == record.trust) {
+            "SYNC_GROUP_PROFILE_MANAGEMENT_CHANGED"
+        }
+        unlock(record, draft.session.recoveryCode()).close()
+        return draft.session
+    }
+    private fun rootJournal(record: Record, session: SyncManagementSession) = SyncRootLedgerJournal(directory("root-actions", false),
+        record.trust, session.ownerCertificate, session::protectJournal, session::unprotectJournal, observe)
+    private fun finishRootDelivery(record: Record, session: SyncManagementSession, custody: SyncGroupCustody): LanSyncGroupPublishReceipt {
+        val queues = directory("root-queues", true)
+        val owner = LanSyncGroupRootPublication(directory("root-delivery", true), session.ownerCertificate, session::signRootPayload,
+            custody::ledger, custody::key, { epoch ->
+                val path = queues.resolve(epoch.value)
+                if (!Files.exists(path, NOFOLLOW_LINKS)) Files.createDirectory(path)
+                SyncEncryptedOutbox(path, custody.key(epoch))
+            }, observe)
+        val local = FileCiphertextStore(directory("local-replica", false))
+        Files.newInputStream(root.resolve("management-vault.bin"), NOFOLLOW_LINKS).use {
+            local.put(CiphertextPutRequest(record.vault.key, record.vaultOperation, record.vaultDescriptor), it)
+        }
+        require(local.metadata(record.vault.key)?.descriptor == record.vaultDescriptor) { "SYNC_GROUP_PROFILE_VAULT_DELIVERY_INCOMPLETE" }
+        owner.upload(local, record.localReplica)
+        return requireNotNull(owner.receipt(record.localReplica)) { "SYNC_GROUP_PROFILE_LOCAL_DELIVERY_INCOMPLETE" }
+    }
 
     /** No data version is signed or app data modified by preparing the first group. */
     suspend fun prepare(request: SyncRootGroupCreateRequest, admission: SyncRootGroupCreateAdmission): LanSyncGroupEnrollmentDraft = guarded {
@@ -151,21 +249,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         } else rootJournal.initializeNewEnrollment(ledger)
         directory("node", true); directory("local-replica", true)
         val node = node(record); node.initializeNewEnrollment()
-        val queues = directory("root-queues", true)
-        val rootOwner = LanSyncGroupRootPublication(directory("root-delivery", true), session.ownerCertificate, session::signRootPayload,
-            custody::ledger, custody::key, { epoch ->
-                val path = queues.resolve(epoch.value)
-                if (!Files.exists(path, NOFOLLOW_LINKS)) Files.createDirectory(path)
-                SyncEncryptedOutbox(path, custody.key(epoch))
-            }, observe)
-        val local = FileCiphertextStore(directory("local-replica", false))
-        val vaultKey = record.vault.key
-        Files.newInputStream(root.resolve("management-vault.bin"), NOFOLLOW_LINKS).use {
-            local.put(CiphertextPutRequest(vaultKey, record.vaultOperation, record.vaultDescriptor), it)
-        }
-        require(local.metadata(vaultKey)?.descriptor == record.vaultDescriptor) { "SYNC_GROUP_PROFILE_VAULT_DELIVERY_INCOMPLETE" }
-        rootOwner.upload(local, record.localReplica)
-        requireNotNull(rootOwner.receipt(record.localReplica)) { "SYNC_GROUP_PROFILE_LOCAL_DELIVERY_INCOMPLETE" }
+        finishRootDelivery(record, session, custody)
         val ready = record.copy(stage = LanSyncGroupEnrollmentStage.READY)
         val opened = openOwned(ready)
         write(ready); releaseSession(session); observe("GROUP_PROFILE_READY")
