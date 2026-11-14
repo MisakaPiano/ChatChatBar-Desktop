@@ -143,6 +143,30 @@ internal fun lanSyncTargetLens(stages: Collection<LanSyncGroupTargetStage>, live
     override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = error("SYNC_GROUP_TARGET_EXACT_READ_REQUIRED")
 }
 
+/** Retained reads are admitted only for exact objects with authenticated historical target receipts. */
+internal fun lanSyncTargetObservedLens(stages: Collection<LanSyncGroupTargetStage>, historical: Set<CiphertextObjectMetadata>,
+    retained: CiphertextStore, live: () -> Unit): CiphertextStore {
+    val fresh = lanSyncTargetLens(stages, live)
+    val admitted = historical.associateBy { it.key }
+    return object : CiphertextStore by fresh {
+        override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? {
+            fresh.metadata(key)?.let { return it }
+            val expected = admitted[key] ?: return null
+            live(); val actual = retained.metadata(key)
+            require(actual == expected) { "SYNC_GROUP_TARGET_HISTORICAL_OBJECT_CHANGED" }; live()
+            return actual
+        }
+        override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+            if (stages.any { it.metadata.key == key && (expected == null || it.metadata.descriptor == expected) })
+                return fresh.readTo(key, destination, expected)
+            val known = admitted[key]?.takeIf { expected == null || it.descriptor == expected } ?: return null
+            live(); val actual = retained.readTo(key, destination, known.descriptor)
+            require(actual == known) { "SYNC_GROUP_TARGET_HISTORICAL_OBJECT_CHANGED" }; live()
+            return actual
+        }
+    }
+}
+
 internal fun lanSyncTargetPrefix(stage: LanSyncGroupTargetStage): ByteArray = Files.newInputStream(stage.file.path, NOFOLLOW_LINKS).use { input ->
     val bytes = ByteArray(32); var size = 0
     while (size < bytes.size) { val count = input.read(bytes, size, bytes.size - size); if (count < 0) break; size += count }

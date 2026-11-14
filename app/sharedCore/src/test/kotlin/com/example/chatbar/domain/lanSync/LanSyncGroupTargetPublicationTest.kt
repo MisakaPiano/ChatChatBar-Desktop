@@ -1,8 +1,12 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.WeakFixture
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavCandidate
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavObservationOrigin
 import java.io.ByteArrayOutputStream
 import java.io.FilterInputStream
@@ -12,6 +16,7 @@ import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okio.Buffer
@@ -84,6 +89,139 @@ class LanSyncGroupTargetPublicationTest {
                 while (true) { val count = input.read(bytes); if (count < 0) break; digest.update(bytes, 0, count) }
             }
             root.relativize(file).toString() to digest.digest().joinToString("") { "%02x".format(it) }
+        }
+    }
+    private suspend fun publish(f: Fixture, unit: String): LanSyncGroupSourceCommit {
+        val commit = f.access.node.commit(f.access.node.inspect().review(setOf(unit)))
+        f.access.node.upload(commit.entry.request.operation, f.access.replica, f.access.localTarget); f.scan()
+        return commit
+    }
+    private suspend fun message(f: Fixture, id: String, order: Long, images: List<String> = emptyList()): LanSyncGroupSourceCommit {
+        val session = f.admin.data.resolve("entities/chat_sessions/session.json")
+        Files.createDirectories(session.parent)
+        if (!Files.exists(session)) LanSyncJsonFiles.write(session, ChatSession.serializer(), ChatSession("session", "card", "synthetic incremental conversation", createdAt = 1, updatedAt = 1))
+        val path = f.admin.data.resolve("entities/chat_messages/session_$id.json"); Files.createDirectories(path.parent)
+        LanSyncJsonFiles.write(path, ChatMessage.serializer(), ChatMessage(id, "session", MessageRole.USER, "synthetic message $id",
+            images = images, createdAt = order, updatedAt = order, orderKey = order * 1_000_000))
+        return publish(f, "conversation/session")
+    }
+    private fun weakPath(provider: WeakFixture, value: LanSyncGroupWeakTargetObservation) = provider.path(
+        WeakWebDavCandidate(value.route, value.key, value.descriptor, value.operation, value.attempt))
+
+    @Test fun addingANewMessageUsesZeroPutAndGetBytesForOldCiphertextAndKeepsItsOriginalObservedTime() = fixture { f ->
+        val image = f.admin.data.resolve("images/retained-attachment.png"); Files.createDirectories(image.parent)
+        val originalImage = LanSyncPreviewSample.image(); Files.write(image, originalImage)
+        LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), CharacterCard("card", "synthetic relay original",
+            avatar = image.toString(), createdAt = 1, updatedAt = 2))
+        publish(f, "character_cards/card"); val firstMessage = message(f, "first", 3, listOf(image.toString()))
+        WeakFixture(f.directory("incremental-provider")).use { provider ->
+            val route = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)
+            val directory = f.directory("incremental-publication")
+            val first = f.access.targetPublication(directory, route); val before = first.prepare()
+            val original = first.upload(provider.store("writer"))
+            val imageHash = lanSyncHash(originalImage)
+            val attachment = firstMessage.metadata.envelope.blobs.getValue(imageHash)
+            val originalImageBinding = firstMessage.publication.blobs.getValue(imageHash)
+            assertTrue(before.objects.any { it.key == attachment.key })
+            val index = directory.resolve("weak-object-observations/objects/${attachment.key.id.value}.obj")
+            val indexBytes = Files.readAllBytes(index)
+            Files.delete(index) // Durable typed receipt survives an unfinished derived-index publication.
+            val oldKeys = before.objects.map { it.key }.toSet()
+            val oldPrefixes = oldKeys.map { "/${if (it.kind == CiphertextObjectKind.BLOB) "objects" else "commits"}/${it.id.value}/" }
+            val oldPutBytes = AtomicLong(); val oldGetBytes = AtomicLong()
+            provider.dav.overrideRequest = { request ->
+                val path = request.requestUrl!!.encodedPath
+                if (oldPrefixes.any(path::contains)) {
+                    if (request.method == "PUT") oldPutBytes.addAndGet(request.bodySize)
+                    if (request.method == "GET") oldGetBytes.addAndGet(provider.dav.files[path]?.size?.toLong() ?: 0)
+                }
+                null
+            }
+            val secondMessage = message(f, "second", 4)
+            assertNotEquals(firstMessage.entry.request.operation, secondMessage.entry.request.operation)
+            assertEquals(firstMessage.entry.version.authorSequence + 1, secondMessage.entry.version.authorSequence)
+            assertEquals(originalImageBinding, secondMessage.publication.blobs.getValue(imageHash), "The same image keeps its source op/key/descriptor across author operations")
+            assertEquals(attachment, secondMessage.metadata.envelope.blobs.getValue(imageHash))
+            val queues = fileHashes(f.admin.profile.resolve("node/queues")); val author = f.author().state()
+            val next = f.access.targetPublication(directory, route); val after = next.prepare()
+            assertTrue(after.versions.size > before.versions.size)
+            before.objects.forEach { old -> assertEquals(old.operation, after.objects.single { it.key == old.key }.operation) }
+            val receipt = next.upload(provider.store("writer"))
+            assertEquals(0L, oldPutBytes.get()); assertEquals(0L, oldGetBytes.get())
+            assertContentEquals(indexBytes, Files.readAllBytes(index))
+            assertEquals(original.objects, receipt.objects.filter { it.objectRequest.key in oldKeys },
+                "Old append/readback times and locators remain historical, not re-observed")
+            assertEquals(queues, fileHashes(f.admin.profile.resolve("node/queues"))); assertEquals(author, f.author().state())
+            assertContentEquals(originalImage, Files.readAllBytes(image))
+            val unavailable = object : CiphertextStore by f.access.reader {
+                override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? = error("SYNTHETIC_SOURCE_UNAVAILABLE")
+                override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = error("SYNTHETIC_SOURCE_UNAVAILABLE")
+            }
+            val cold = f.owner(directory, route, unavailable); val requests = provider.server.requestCount
+            Files.delete(index)
+            assertTrue(cold.recoverObjectObservations())
+            assertContentEquals(indexBytes, Files.readAllBytes(index))
+            assertEquals(after, cold.prepare()); assertEquals(receipt, cold.upload(provider.store("writer")))
+            assertEquals(requests, provider.server.requestCount)
+            WeakFixture(f.directory("incremental-second-provider")).use { other ->
+                val secondRoute = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, other.route)
+                val independent = f.access.targetPublication(f.directory("incremental-second-publication"), secondRoute)
+                val independentPlan = independent.prepare()
+                assertNotEquals(after.objects.single { it.key == attachment.key }.operation,
+                    independentPlan.objects.single { it.key == attachment.key }.operation)
+                assertNull(independent.weakReceipt())
+                val separate = independent.upload(other.store("writer"))
+                assertEquals(independentPlan.objects.size, other.dav.puts.size)
+                assertTrue(separate.objects.all { it.readbackObservation.route == other.route })
+            }
+        }
+    }
+
+    @Test fun strictHistoricalObjectsAlsoKeepStableOperationsWithoutASecondPutOrReadback() = fixture { f ->
+        val route = target(); val directory = f.directory("strict-incremental-publication")
+        val backend = FileCiphertextStore(f.directory("strict-incremental-provider"))
+        val first = f.access.targetPublication(directory, route); val plan = first.prepare(); val original = first.upload(backend)
+        message(f, "new", 2)
+        val next = f.access.targetPublication(directory, route); val changed = next.prepare()
+        val old = plan.objects.map { it.key }.toSet(); val puts = mutableListOf<CiphertextObjectKey>(); val gets = mutableListOf<CiphertextObjectKey>()
+        val counted = object : CiphertextStore by backend {
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult { puts += request.key; return backend.put(request, source) }
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                gets += key; return backend.readTo(key, destination, expected)
+            }
+        }
+        val receipt = next.upload(counted)
+        assertTrue(puts.isNotEmpty()); assertTrue(gets.isNotEmpty())
+        assertTrue(puts.none(old::contains)); assertTrue(gets.none(old::contains))
+        assertEquals(original.objects, receipt.objects.filter { it.objectRequest.key in old })
+        assertEquals(plan.objects.map { it.operation }, changed.objects.filter { it.key in old }.map { it.operation })
+    }
+
+    @Test fun damagedPerObjectObservationAndChangedPlanOperationsOrDescriptorsAreRetainedAndRefusedBeforeHttp() = fixture { f ->
+        WeakFixture(f.directory("cache-damage-provider")).use { provider ->
+            val route = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route); val directory = f.directory("cache-damage-publication")
+            val first = f.access.targetPublication(directory, route); first.prepare(); first.upload(provider.store("writer"))
+            message(f, "new", 2)
+            val owner = f.access.targetPublication(directory, route); val plan = owner.prepare()
+            val path = Files.newDirectoryStream(directory, "plan-*.json").use { paths -> paths.single { file ->
+                LanSyncJsonFiles.read(file, LanSyncGroupTargetPlan.serializer())?.versions == plan.versions
+            } }
+            val original = Files.readAllBytes(path); val requests = provider.server.requestCount
+            for (item in listOf(plan.objects.first().copy(operation = SyncStoreId.random()),
+                plan.objects.first().copy(descriptor = plan.objects.first().descriptor.copy(sha256 = CiphertextSha256.parse("f".repeat(64)))))) {
+                LanSyncJsonFiles.write(path, LanSyncGroupTargetPlan.serializer(), plan.copy(objects = listOf(item) + plan.objects.drop(1)))
+                val evidence = Files.readAllBytes(path)
+                assertFailsWith<IllegalArgumentException> { owner.prepare() }
+                assertContentEquals(evidence, Files.readAllBytes(path))
+                Files.write(path, original)
+            }
+            val file = Files.walk(directory.resolve("weak-object-observations")).use { stream ->
+                stream.filter { it.fileName.toString().endsWith(".obj") }.findFirst().orElseThrow()
+            }
+            val corrupt = Files.readAllBytes(file).also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }; Files.write(file, corrupt)
+            assertFailsWith<CiphertextStoreException> { owner.upload(provider.store("writer")) }
+            assertEquals(requests, provider.server.requestCount); assertNull(owner.weakReceipt())
+            assertContentEquals(corrupt, Files.readAllBytes(file))
         }
     }
 

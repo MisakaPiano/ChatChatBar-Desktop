@@ -3,6 +3,7 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.*
+import java.io.ByteArrayOutputStream
 import java.net.Proxy
 import java.nio.file.Files
 import java.nio.file.Path
@@ -244,6 +245,38 @@ class LanSyncGroupCloudRuntimeTest {
                 assertFalse(Files.exists(f.access.work.resolve("cloud-runtime")))
                 f.assertOriginal()
             } finally { release.countDown() }
+        }
+    }
+
+    @Test fun actualRuntimeDiscoversTheLogicalAssemblyNamespaceAlongsideWholeObjectCompatibility() = fixture { f ->
+        WeakFixture(f.directory("assembly-provider")).use { provider ->
+            val id = f.add(provider)
+            val target = f.access.targetPublication(f.directory("assembly-seed-plan"),
+                SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false)
+            val plan = target.prepare()
+            WebDavHttpTransport(provider.server.url("/sync/").newBuilder().host("127.0.0.1").build(), f.client,
+                policy = WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).use { transport ->
+                val parts = WeakWebDavChunkAssembly(transport, f.directory("assembly-seed-parts"), id,
+                    chunkBytes = 512, budget = WebDavIoBudget(minimumFreeBytes = 0))
+                for (item in plan.objects) {
+                    val output = ByteArrayOutputStream()
+                    assertNotNull(f.access.reader.readTo(item.key, output, item.descriptor))
+                    parts.append(CiphertextPutRequest(item.key, item.operation, item.descriptor), output.toByteArray().inputStream())
+                }
+            }
+            assertTrue(provider.dav.files.keys.none { it.contains("/weak-attempts-v1/") })
+            val inspected = AtomicInteger()
+            provider.dav.overrideRequest = { request ->
+                if (request.method == "GET" && request.requestUrl!!.encodedPath.contains("/weak-assemblies-v1/commits/"))
+                    inspected.incrementAndGet()
+                null
+            }
+            val runtime = f.runtime()
+            assertTrue(runtime.cycle())
+            assertTrue(inspected.get() > 0, "The actual runtime must inspect the provider's logical assembly claims")
+            assertTrue(f.latest().getValue(id).selectionObserved)
+            assertTrue(f.wakes.get() > 0)
+            f.assertOriginal()
         }
     }
 }

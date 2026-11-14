@@ -17,6 +17,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
 
 @Serializable enum class LanSyncGroupTargetObjectRole { VAULT, RESOURCE, CAPSULE, NOTICE, LEDGER, VERSION }
 @Serializable data class LanSyncGroupTargetObject(val role: LanSyncGroupTargetObjectRole, val slot: String,
@@ -26,7 +27,9 @@ import kotlinx.serialization.Serializable
     val versions: Set<SyncVersionRef>, val objects: List<LanSyncGroupTargetObject>)
 /** Exact backend response retained only after a complete descriptor-pinned readback of that object. */
 @Serializable data class LanSyncGroupTargetObjectReceipt(val objectRequest: LanSyncGroupTargetObject,
-    val returnedKey: CiphertextObjectKey, val returnedDescriptor: CiphertextDescriptor, val disposition: String)
+    val returnedKey: CiphertextObjectKey, val returnedDescriptor: CiphertextDescriptor, val disposition: String,
+    /** Null preserves an older historical receipt whose exact readback time was not recorded. */
+    val observedAtMillis: Long? = null)
 /** Historical completion of this exact selection and route. It is neither freshness nor native activation. */
 @Serializable data class LanSyncGroupTargetReceipt(val planHash: String, val target: SyncDeliveryTarget,
     val checkpoint: SyncVersionRef, val objects: List<LanSyncGroupTargetObjectReceipt>)
@@ -44,7 +47,8 @@ import kotlinx.serialization.Serializable
  * Daily, non-signing relay of a complete frozen admitted selection. Raw quarantine never becomes a
  * strict target's canonical object. All resource/transport I/O runs outside Node/native admission.
  * The caller must keep target.id bound to one actual route/account; provider configuration owns that
- * endpoint binding. This first version accepts strict stores and current-epoch version containers.
+ * endpoint binding. Strict stores and weak unique attempts retain separate historical receipt types;
+ * neither receipt is freshness. Every selection still authenticates its complete local dependency set.
  */
 class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     private val target: SyncDeliveryTarget, private val proof: LanSyncGroupTargetExport) {
@@ -53,6 +57,11 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         val versions: Set<SyncVersionRef>)
     @Serializable private data class Binding(val group: SyncStoreId, val genesis: SyncVersionRef, val device: String,
         val target: SyncDeliveryTarget)
+    @Serializable private data class ItemBinding(val owner: Binding, val key: CiphertextObjectKey,
+        val descriptor: CiphertextDescriptor, val operation: SyncStoreId)
+    @Serializable private data class ItemObservation(val binding: ItemBinding, val selectionId: String,
+        val planHash: String, val receiptHash: String, val strict: LanSyncGroupTargetObjectReceipt? = null,
+        val weak: LanSyncGroupWeakTargetObjectReceipt? = null)
     private val lock = locks.computeIfAbsent(root) { ReentrantLock() }
     private fun directory(name: String) = root.resolve(name).also {
         PrivateSyncFile.checked(root, true)
@@ -61,6 +70,10 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     }
     private val work = directory("preparations")
     private val retained = FileCiphertextStore(directory("retained"))
+    private val itemBindings = FileCiphertextStore(directory("item-bindings"))
+    private val strictObservations = FileCiphertextStore(directory("strict-object-observations"))
+    private val weakObservations = FileCiphertextStore(directory("weak-object-observations"))
+    private val ownerBinding = Binding(proof.trust.group, proof.trust.genesis, proof.device, target)
     private val selection = Selection(proof.trust.group, proof.current.reference(), target, proof.vault,
         proof.vaultDescriptor, proof.versions.mapTo(linkedSetOf()) { it.reference() })
     private val id = lanSyncHash(lanSyncJson.encodeToJsonElement(Selection.serializer(), selection))
@@ -71,7 +84,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         require(target != SyncDeliveryTarget.LEGACY) { "SYNC_GROUP_TARGET_EXPLICIT_ROUTE_REQUIRED" }
         guarded {
             val path = root.resolve("target.json")
-            val expected = Binding(proof.trust.group, proof.trust.genesis, proof.device, target)
+            val expected = ownerBinding
             val prior = LanSyncJsonFiles.read(path, Binding.serializer())
             if (prior == null) LanSyncJsonFiles.write(path, Binding.serializer(), expected)
             else require(prior == expected) { "SYNC_GROUP_TARGET_ROUTE_CHANGED" }
@@ -81,13 +94,14 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     suspend fun prepare(): LanSyncGroupTargetPlan = runInterruptible(Dispatchers.IO) { guarded {
         proof.requireLive()
         val prior = readPlan()
-        if (prior != null) { validate(prior, retained); return@guarded prior }
+        if (prior != null) { validate(prior, retained); ensureBindings(prior); return@guarded prior }
         val stages = mutableListOf<LanSyncGroupTargetStage>()
         try {
             val items = mutableListOf<LanSyncGroupTargetObject>()
             fun add(role: LanSyncGroupTargetObjectRole, slot: String, stage: LanSyncGroupTargetStage) {
                 stages += stage
-                items += LanSyncGroupTargetObject(role, slot, stage.metadata.key, stage.metadata.descriptor, SyncStoreId.random())
+                items += LanSyncGroupTargetObject(role, slot, stage.metadata.key, stage.metadata.descriptor,
+                    itemBinding(stage.metadata.key, stage.metadata.descriptor).operation)
             }
             add(LanSyncGroupTargetObjectRole.VAULT, "vault", stage(CiphertextObjectMetadata(proof.vault.key, proof.vaultDescriptor)))
             var rootFound = false
@@ -175,24 +189,40 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         require(!backend.capabilities.untrustedCandidateVariants) { "SYNC_GROUP_TARGET_STRICT_STORE_REQUIRED" }
         val plan = requireNotNull(readPlan()) { "SYNC_GROUP_TARGET_PLAN_MISSING" }
         validate(plan, retained)
-        readReceipt(plan)?.let { return@guarded it }
+        ensureBindings(plan)
+        readReceipt(plan)?.let { cacheSelection(plan, strict = it); return@guarded it }
+        val origins = mutableMapOf<String, HistoricalSelection>()
+        val cachedItems = plan.objects.associateWith { readObservation(it, weak = false, origins = origins) }
         val observations = mutableListOf<LanSyncGroupTargetObjectReceipt>()
-        for (item in plan.objects) {
-            proof.requireLive()
-            val request = CiphertextPutRequest(item.key, item.operation, item.descriptor)
-            // A new route receives this original request even when some other backend saw it already.
-            val staged = stage(CiphertextObjectMetadata(item.key, item.descriptor), retained)
-            try {
-                val result = Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use { backend.put(request, liveInput(it)) }
-                require(result.metadata == staged.metadata) { "SYNC_GROUP_TARGET_BACKEND_RECEIPT_CHANGED" }
-                lanSyncTargetStage(work, backend, staged.metadata, proof::requireLive).use { }
-                observations += LanSyncGroupTargetObjectReceipt(item, result.metadata.key, result.metadata.descriptor, result.disposition.name)
-            } finally { staged.close() }
-            proof.requireLive()
-        }
-        val receipt = LanSyncGroupTargetReceipt(planHash(), target, plan.checkpoint, observations.toList())
-        proof.requireLive(); LanSyncJsonFiles.write(receiptPath, LanSyncGroupTargetReceipt.serializer(), receipt)
-        receipt
+        val readbacks = mutableListOf<LanSyncGroupTargetStage>()
+        val historical = linkedSetOf<CiphertextObjectMetadata>()
+        try {
+            for (item in plan.objects) {
+                proof.requireLive()
+                val metadata = CiphertextObjectMetadata(item.key, item.descriptor)
+                val cached = cachedItems[item]?.strict
+                if (cached != null) {
+                    historical += metadata
+                    observations += cached.copy(objectRequest = item)
+                    continue
+                }
+                val request = CiphertextPutRequest(item.key, item.operation, item.descriptor)
+                val staged = stage(metadata, retained)
+                try {
+                    val result = Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use { backend.put(request, liveInput(it)) }
+                    require(result.metadata == staged.metadata) { "SYNC_GROUP_TARGET_BACKEND_RECEIPT_CHANGED" }
+                    readbacks += lanSyncTargetStage(work, backend, staged.metadata, proof::requireLive)
+                    observations += LanSyncGroupTargetObjectReceipt(item, result.metadata.key, result.metadata.descriptor,
+                        result.disposition.name, System.currentTimeMillis())
+                } finally { staged.close() }
+                proof.requireLive()
+            }
+            validate(plan, lanSyncTargetObservedLens(readbacks, historical, retained, proof::requireLive))
+            val receipt = LanSyncGroupTargetReceipt(planHash(), target, plan.checkpoint, observations.toList())
+            proof.requireLive(); LanSyncJsonFiles.write(receiptPath, LanSyncGroupTargetReceipt.serializer(), receipt)
+            cacheSelection(plan, strict = receipt)
+            receipt
+        } finally { readbacks.asReversed().forEach { it.close() } }
     } }
     /** Unique-attempt delivery does not touch any strict/Outbox uploaded receipt. */
     suspend fun upload(backend: WeakWebDavAttemptStore): LanSyncGroupWeakTargetReceipt = runInterruptible(Dispatchers.IO) { guarded {
@@ -200,13 +230,23 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         require(target.kind == SyncDeliveryKind.CLOUD_STORE && backend.routeId == target.id) { "SYNC_GROUP_TARGET_ROUTE_CHANGED" }
         val plan = requireNotNull(readPlan()) { "SYNC_GROUP_TARGET_PLAN_MISSING" }
         validate(plan, retained)
-        readWeakReceipt(plan)?.let { return@guarded it }
+        ensureBindings(plan)
+        readWeakReceipt(plan)?.let { cacheSelection(plan, weak = it); return@guarded it }
+        val origins = mutableMapOf<String, HistoricalSelection>()
+        val cachedItems = plan.objects.associateWith { readObservation(it, weak = true, origins = origins) }
         val observations = mutableListOf<LanSyncGroupWeakTargetObjectReceipt>()
         val readbacks = mutableListOf<LanSyncGroupTargetStage>()
+        val historical = linkedSetOf<CiphertextObjectMetadata>()
         try {
             for (item in plan.objects) {
                 proof.requireLive()
                 val metadata = CiphertextObjectMetadata(item.key, item.descriptor)
+                val cached = cachedItems[item]?.weak
+                if (cached != null) {
+                    historical += metadata
+                    observations += cached.copy(objectRequest = item)
+                    continue
+                }
                 val staged = stage(metadata, retained)
                 val appended = try {
                     Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use { input ->
@@ -229,9 +269,10 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
                 proof.requireLive()
             }
             // Authenticate the actual readback bytes again; a provider observation alone is never authority.
-            validate(plan, lanSyncTargetLens(readbacks, proof::requireLive))
+            validate(plan, lanSyncTargetObservedLens(readbacks, historical, retained, proof::requireLive))
             val receipt = LanSyncGroupWeakTargetReceipt(planHash(), target, plan.checkpoint, observations.toList())
             proof.requireLive(); LanSyncJsonFiles.write(weakReceiptPath, LanSyncGroupWeakTargetReceipt.serializer(), receipt)
+            cacheSelection(plan, weak = receipt)
             receipt
         } finally { readbacks.asReversed().forEach { it.close() } }
     } }
@@ -242,6 +283,18 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             return@guarded null
         }
         readWeakReceipt(plan)
+    }
+    /** Rebuilds missing derived indexes from typed history; no ciphertext or network I/O. */
+    fun recoverObjectObservations(): Boolean = guarded {
+        proof.requireLive()
+        val plan = readPlan() ?: return@guarded false
+        val strict = readReceipt(plan); val weak = readWeakReceipt(plan)
+        if (strict == null && weak == null) return@guarded false
+        ensureBindings(plan)
+        strict?.let { cacheSelection(plan, strict = it) }
+        weak?.let { cacheSelection(plan, weak = it) }
+        proof.requireLive()
+        true
     }
     private fun stage(metadata: CiphertextObjectMetadata, source: CiphertextStore = proof.source) =
         lanSyncTargetStage(work, source, metadata, proof::requireLive)
@@ -302,6 +355,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             plan.epoch == proof.current.epoch && plan.commitment == proof.current.keyCommitment && plan.versions == selection.versions &&
             plan.objects.map { it.key }.toSet().size == plan.objects.size && plan.objects.map { it.operation }.toSet().size == plan.objects.size &&
             plan.objects == plan.objects.sortedWith(compareBy({ it.role.ordinal }, { it.key.id.value }))) { "SYNC_GROUP_TARGET_PLAN_CHANGED" }
+        for (item in plan.objects) readItem(itemBindings, item.key, ItemBinding.serializer())?.let { requireItemBinding(it, item) }
     }
     private fun readPlan(): LanSyncGroupTargetPlan? {
         if (!Files.exists(planPath, NOFOLLOW_LINKS)) return null
@@ -309,14 +363,15 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         return requireNotNull(LanSyncJsonFiles.read(planPath, LanSyncGroupTargetPlan.serializer())).also(::validateHeader)
     }
     private fun planHash() = LanSyncResourceStore.hashFile(planPath, Files.size(planPath))
-    private fun readReceipt(plan: LanSyncGroupTargetPlan): LanSyncGroupTargetReceipt? {
-        if (!Files.exists(receiptPath, NOFOLLOW_LINKS)) return null
-        LanSyncMetadataBudget().validate(receiptPath)
-        return requireNotNull(LanSyncJsonFiles.read(receiptPath, LanSyncGroupTargetReceipt.serializer())).also { receipt ->
-            require(receipt.planHash == planHash() && receipt.target == target && receipt.checkpoint == plan.checkpoint &&
+    private fun readReceipt(plan: LanSyncGroupTargetPlan, path: Path = receiptPath, hash: String = planHash()): LanSyncGroupTargetReceipt? {
+        if (!Files.exists(path, NOFOLLOW_LINKS)) return null
+        LanSyncMetadataBudget().validate(path)
+        return requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupTargetReceipt.serializer())).also { receipt ->
+            require(receipt.planHash == hash && receipt.target == target && receipt.checkpoint == plan.checkpoint &&
                 receipt.objects.map { it.objectRequest } == plan.objects && receipt.objects.all {
                     it.returnedKey == it.objectRequest.key && it.returnedDescriptor == it.objectRequest.descriptor &&
-                        it.disposition in CiphertextPutDisposition.entries.map { value -> value.name }
+                        it.disposition in CiphertextPutDisposition.entries.map { value -> value.name } &&
+                        (it.observedAtMillis == null || it.observedAtMillis >= 0)
                 }) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
         }
     }
@@ -329,24 +384,142 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         return LanSyncGroupWeakTargetObservation(candidate.route, candidate.key, candidate.descriptor,
             candidate.operationId, candidate.attempt, value.origin.name, value.observedAtMillis)
     }
-    private fun readWeakReceipt(plan: LanSyncGroupTargetPlan): LanSyncGroupWeakTargetReceipt? {
-        if (!Files.exists(weakReceiptPath, NOFOLLOW_LINKS)) return null
-        LanSyncMetadataBudget().validate(weakReceiptPath)
-        return requireNotNull(LanSyncJsonFiles.read(weakReceiptPath, LanSyncGroupWeakTargetReceipt.serializer())).also { receipt ->
-            require(receipt.planHash == planHash() && receipt.target == target && receipt.checkpoint == plan.checkpoint &&
+    private fun readWeakReceipt(plan: LanSyncGroupTargetPlan, path: Path = weakReceiptPath, hash: String = planHash()): LanSyncGroupWeakTargetReceipt? {
+        if (!Files.exists(path, NOFOLLOW_LINKS)) return null
+        LanSyncMetadataBudget().validate(path)
+        return requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupWeakTargetReceipt.serializer())).also { receipt ->
+            require(receipt.planHash == hash && receipt.target == target && receipt.checkpoint == plan.checkpoint &&
                 receipt.objects.map { it.objectRequest } == plan.objects && receipt.objects.all { item ->
                     val one = item.appendObservation; val two = item.readbackObservation
                     fun matches(value: LanSyncGroupWeakTargetObservation) = value.route == target.id && value.key == item.objectRequest.key &&
                         value.descriptor == item.objectRequest.descriptor && value.operation == item.objectRequest.operation &&
-                        value.origin in WeakWebDavObservationOrigin.entries.map { it.name }
+                        value.origin in WeakWebDavObservationOrigin.entries.map { it.name } && value.observedAtMillis >= 0
                     matches(one) && matches(two) && one.attempt == two.attempt &&
                         two.origin == WeakWebDavObservationOrigin.EXISTING_ATTEMPT_READBACK.name
                 }) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
         }
     }
+    private fun itemBinding(key: CiphertextObjectKey, descriptor: CiphertextDescriptor, operation: SyncStoreId? = null): ItemBinding {
+        val prior = readItem(itemBindings, key, ItemBinding.serializer())
+        if (prior != null) {
+            require(prior.owner == ownerBinding && prior.key == key && prior.descriptor == descriptor) { "SYNC_GROUP_TARGET_ITEM_BINDING_CHANGED" }
+            require(operation == null || prior.operation == operation) { "SYNC_GROUP_TARGET_OPERATION_CHANGED" }
+            return prior
+        }
+        val binding = ItemBinding(ownerBinding, key, descriptor, operation ?: SyncStoreId.random())
+        writeItem(itemBindings, key, "ITEM-BINDING", ItemBinding.serializer(), binding)
+        return binding
+    }
+    private fun requireItemBinding(binding: ItemBinding, item: LanSyncGroupTargetObject) {
+        require(binding.owner == ownerBinding && binding.key == item.key && binding.descriptor == item.descriptor &&
+            binding.operation == item.operation) { "SYNC_GROUP_TARGET_ITEM_BINDING_CHANGED" }
+    }
+    private fun ensureBindings(plan: LanSyncGroupTargetPlan) {
+        for (item in plan.objects) { proof.requireLive(); requireItemBinding(itemBinding(item.key, item.descriptor, item.operation), item) }
+    }
+    private class HistoricalSelection(val plan: LanSyncGroupTargetPlan, val planHash: String, val receiptHash: String,
+        val strict: LanSyncGroupTargetReceipt?, val weak: LanSyncGroupWeakTargetReceipt?)
+    private fun readObservation(item: LanSyncGroupTargetObject, weak: Boolean,
+        origins: MutableMap<String, HistoricalSelection>): ItemObservation? {
+        proof.requireLive()
+        val cache = readItem(if (weak) weakObservations else strictObservations, item.key, ItemObservation.serializer())
+            ?: recoverObservation(item, weak, origins) ?: return null
+        requireItemBinding(cache.binding, item)
+        require((cache.weak != null) == weak && (cache.strict != null) != weak &&
+            cache.selectionId.matches(Regex("[a-f0-9]{64}")) && cache.planHash.matches(Regex("[a-f0-9]{64}")) &&
+            cache.receiptHash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_TARGET_OBJECT_OBSERVATION_CHANGED" }
+        val origin = origins.getOrPut(cache.selectionId) { historicalSelection(cache.selectionId, weak) }
+        require(origin.planHash == cache.planHash && origin.receiptHash == cache.receiptHash) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val original = origin.plan.objects.singleOrNull { it.key == item.key && it.descriptor == item.descriptor && it.operation == item.operation }
+        val exact = if (weak) origin.weak?.objects?.singleOrNull { it.objectRequest == original } == cache.weak
+            else origin.strict?.objects?.singleOrNull { it.objectRequest == original } == cache.strict
+        require(original != null && exact) { "SYNC_GROUP_TARGET_OBJECT_OBSERVATION_CHANGED" }
+        proof.requireLive()
+        return cache
+    }
+    private fun historicalSelection(selectionId: String, weak: Boolean): HistoricalSelection {
+        require(selectionId.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val path = root.resolve("plan-$selectionId.json")
+        require(Files.exists(path, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
+        LanSyncMetadataBudget().validate(path)
+        val plan = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupTargetPlan.serializer())) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
+        require(plan.group == ownerBinding.group && plan.target == target && plan.objects.map { it.key }.toSet().size == plan.objects.size &&
+            plan.objects.map { it.operation }.toSet().size == plan.objects.size) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val receipt = root.resolve("${if (weak) "weak-receipt" else "receipt"}-$selectionId.json")
+        require(Files.exists(receipt, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
+        val planHash = LanSyncResourceStore.hashFile(path, Files.size(path))
+        LanSyncMetadataBudget().validate(receipt)
+        val receiptHash = LanSyncResourceStore.hashFile(receipt, Files.size(receipt))
+        return HistoricalSelection(plan, planHash, receiptHash,
+            if (weak) null else requireNotNull(readReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" },
+            if (weak) requireNotNull(readWeakReceipt(plan, receipt, planHash)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" } else null)
+    }
+    private fun recoverObservation(item: LanSyncGroupTargetObject, weak: Boolean,
+        origins: MutableMap<String, HistoricalSelection>): ItemObservation? {
+        val prefix = if (weak) "weak-receipt-" else "receipt-"
+        var conflict: CiphertextStoreException? = null
+        Files.newDirectoryStream(root, "$prefix*.json").use { files -> for (file in files) {
+            proof.requireLive()
+            val originId = file.fileName.toString().removePrefix(prefix).removeSuffix(".json")
+            val origin = origins.getOrPut(originId) { historicalSelection(originId, weak) }
+            val original = origin.plan.objects.singleOrNull { it.key == item.key && it.descriptor == item.descriptor && it.operation == item.operation } ?: continue
+            val strict = origin.strict?.objects?.single { it.objectRequest == original }
+            val observed = origin.weak?.objects?.single { it.objectRequest == original }
+            val cache = ItemObservation(itemBinding(item.key, item.descriptor, item.operation), originId,
+                origin.planHash, origin.receiptHash, strict, observed)
+            try {
+                writeItem(if (weak) weakObservations else strictObservations, item.key, "OBJECT-OBSERVATION", ItemObservation.serializer(), cache)
+                proof.requireLive(); return cache
+            } catch (failure: CiphertextStoreException) {
+                // A forced derived-index intent may precede its object. Only the exact original
+                // authenticated receipt can complete that intent; never overwrite or remint it.
+                if (failure.failure != CiphertextStoreFailure.OPERATION_CONFLICT) throw failure
+                conflict = failure
+            }
+        } }
+        conflict?.let { throw it }
+        return null
+    }
+    /** Only called after complete actual-readback authentication and durable typed selection receipt. */
+    private fun cacheSelection(plan: LanSyncGroupTargetPlan, strict: LanSyncGroupTargetReceipt? = null,
+        weak: LanSyncGroupWeakTargetReceipt? = null) {
+        require((strict == null) != (weak == null)) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
+        val isWeak = weak != null
+        val receipt = if (isWeak) weakReceiptPath else receiptPath
+        val hash = LanSyncResourceStore.hashFile(receipt, Files.size(receipt))
+        val frozenPlanHash = planHash()
+        val origins = mutableMapOf<String, HistoricalSelection>()
+        for ((index, item) in plan.objects.withIndex()) {
+            proof.requireLive()
+            if (readObservation(item, isWeak, origins) != null) continue
+            val binding = itemBinding(item.key, item.descriptor, item.operation)
+            val cache = ItemObservation(binding, id, frozenPlanHash, hash, strict?.objects?.get(index), weak?.objects?.get(index))
+            writeItem(if (isWeak) weakObservations else strictObservations, item.key, "OBJECT-OBSERVATION", ItemObservation.serializer(), cache)
+        }
+        proof.requireLive()
+    }
+    private fun <T> readItem(store: FileCiphertextStore, key: CiphertextObjectKey, serializer: KSerializer<T>): T? {
+        val metadata = store.metadata(key) ?: return null
+        require(metadata.descriptor.length <= 64L * 1024) { "SYNC_GROUP_TARGET_ITEM_RECORD_CHANGED" }
+        store.reserveOperation(CiphertextPutRequest(key,
+            itemRecordOperation(if (store === itemBindings) "ITEM-BINDING" else "OBJECT-OBSERVATION", key), metadata.descriptor))
+        val bytes = java.io.ByteArrayOutputStream(metadata.descriptor.length.toInt())
+        require(store.readTo(key, bytes, metadata.descriptor) == metadata) { "SYNC_GROUP_TARGET_ITEM_RECORD_CHANGED" }
+        return lanSyncJson.decodeFromString(serializer, bytes.toByteArray().decodeToString(throwOnInvalidSequence = true))
+    }
+    private fun <T> writeItem(store: FileCiphertextStore, key: CiphertextObjectKey, domain: String, serializer: KSerializer<T>, value: T) {
+        val bytes = lanSyncJson.encodeToString(serializer, value).toByteArray(Charsets.UTF_8)
+        require(bytes.size <= 64 * 1024) { "SYNC_GROUP_TARGET_ITEM_RECORD_CHANGED" }
+        val operation = itemRecordOperation(domain, key)
+        store.put(CiphertextPutRequest(key, operation, CiphertextDescriptor(bytes.size.toLong(), CiphertextSha256.parse(lanSyncHash(bytes)))), bytes.inputStream())
+    }
+    private fun itemRecordOperation(domain: String, key: CiphertextObjectKey) = SyncStoreId.parse(lanSyncHash(
+        "CCB-GROUP-TARGET-$domain/1\n${target.kind}\n${target.id.value}\n${key.kind}\n${key.id.value}".toByteArray(Charsets.US_ASCII)).take(32))
     private fun liveInput(input: java.io.InputStream) = object : FilterInputStream(input) {
-        override fun read(): Int { proof.requireLive(); return `in`.read() }
-        override fun read(bytes: ByteArray, offset: Int, length: Int): Int { proof.requireLive(); return `in`.read(bytes, offset, length) }
+        override fun read(): Int { proof.requireLive(); val value = `in`.read(); proof.requireLive(); return value }
+        override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
+            proof.requireLive(); val count = `in`.read(bytes, offset, length); proof.requireLive(); return count
+        }
     }
     private fun <T> guarded(work: () -> T): T {
         check(!lock.isHeldByCurrentThread) { "SYNC_GROUP_TARGET_REENTRY" }; lock.lockInterruptibly()

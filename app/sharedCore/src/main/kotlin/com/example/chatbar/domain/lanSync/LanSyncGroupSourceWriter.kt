@@ -34,9 +34,11 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         val changes: Map<String, SyncUnitChange>, val review: String, val checkpoint: String, val checkpointHash: String?,
         val rawSource: String, val sourceHashes: Map<String, String>, val projection: String,
         val applied: Map<String, LanSyncGroupAppliedUnit?>, val epoch: SyncStoreId, val commitment: String, val blobs: Map<String, Blob>,
-        val restorations: Map<String, Set<String>> = emptyMap(), val resolution: Resolution? = null)
+        val restorations: Map<String, Set<String>> = emptyMap(), val resolution: Resolution? = null,
+        val blobReuseOwner: SyncStoreId? = null)
     @Serializable private data class Delivery(val source: String, val version: SyncVersionRef, val epoch: SyncStoreId, val commitment: String,
-        val metadataOperation: SyncStoreId, val metadataKey: CiphertextObjectKey, val blobs: Map<String, Blob>)
+        val metadataOperation: SyncStoreId, val metadataKey: CiphertextObjectKey, val blobs: Map<String, Blob>,
+        val blobReuseOwner: SyncStoreId? = null)
     private val lock: ReentrantLock
     private val work: Path; private val publications: Path
     init {
@@ -73,6 +75,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             require(resolution == null || resolution.authorHead == authorHead) { "SYNC_GROUP_RESOLUTION_AUTHOR_CHANGED" }
             require(authorHead == null || history.contains(authorHead)) { "SYNC_GROUP_SOURCE_LOCAL_HISTORY_MISSING" }
             val key = currentKey(); val queue = outbox(key.epoch)
+            val reuse by lazy { blobReuse(key) }
             val prepared = mutableListOf<LanSyncPreparedGroupUnit>()
             try {
                 val unitProofs = selected.filter { it in capture.snapshot.units() }.associateWith { unit ->
@@ -96,10 +99,12 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
                     Source(1, operation, identity.fingerprint, key.group, native.checkpoint, native.heads, parents, authorHead, capture.snapshot.coveredTypes,
                         changes, authorization.binding, checkpoint?.transaction ?: revision, checkpoint?.snapshotHash,
                         rawBinding(capture.sourceFiles), capture.snapshot.hashes(), projection.digest(), selected.associateWith { native.appliedBefore[it] },
-                        key.epoch, key.keyCommitment(), paths.mapValues { (_, value) -> Blob(SyncStoreId.random(),
-                            CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), value.first) },
+                        key.epoch, key.keyCommitment(), paths.mapValues { (_, value) ->
+                            val slot = reuse.first.select(key, value.first, queue, reuse.second)
+                            Blob(slot.operation, slot.key, slot.plaintext)
+                        },
                         restorationRevisions().filterKeys(selected::contains).mapValues { it.value.toSortedSet() },
-                        resolution?.let { Resolution(it.revision, it.binding) }).also {
+                        resolution?.let { Resolution(it.revision, it.binding) }, reuse.first.owner).also {
                         require(it.restorations.values.all { revisions -> revisions.isNotEmpty() &&
                             revisions.all { id -> id.matches(Regex("[a-f0-9-]{36}")) } }) { "SYNC_GROUP_SOURCE_RESTORATIONS" }
                         LanSyncJsonFiles.write(sourcePath(operation), Source.serializer(), it); observe("SOURCE_PREPARATION_RETAINED")
@@ -112,7 +117,12 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
                 source.blobs.forEach { (hash, slot) ->
                     val (plain, path) = paths.getValue(hash)
                     workspace.resourceStore.retain(path, plain.sha256, plain.length)
-                    SyncGroupBlobStore(source.group, work).enqueue(queue, slot.operation, slot.key, key, path, plain)
+                    if (source.blobReuseOwner == null)
+                        SyncGroupBlobStore(source.group, work).enqueue(queue, slot.operation, slot.key, key, path, plain)
+                    else {
+                        require(reuse.first.owner == source.blobReuseOwner) { "SYNC_GROUP_BLOB_REUSE_OWNER_CHANGED" }
+                        reuse.first.complete(reuse.first.requireSlot(key, plain, slot.operation, slot.key), key, queue, path)
+                    }
                 }
                 // Do not acquire native-control again from the journal's locked admission callback.
                 require(nativeState().units.filterKeys(selected::contains) == native.appliedBefore.filterKeys(selected::contains)) { "SYNC_GROUP_SOURCE_CONTROL_CHANGED" }
@@ -206,22 +216,36 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         require(entry.request == request(source) && entry.version.author == identity.fingerprint) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
         verifyCustody(source)
         val key = currentKey(); val queue = outbox(key.epoch); val path = deliveryPath(source.operation, key.epoch)
+        val reuse by lazy { blobReuse(key) }
         val sourceHash = hash(source)
         val delivery = LanSyncJsonFiles.read(path, Delivery.serializer()) ?: Delivery(sourceHash, entry.version.reference(), key.epoch, key.keyCommitment(),
             SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), source.blobs.mapValues { (_, slot) ->
-                if (source.epoch == key.epoch) slot else Blob(SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), slot.plaintext)
-            }).also { LanSyncJsonFiles.write(path, Delivery.serializer(), it); observe("SOURCE_DELIVERY_SLOTS_RETAINED") }
+                if (source.epoch == key.epoch) slot else {
+                    val selected = reuse.first.select(key, slot.plaintext, queue, reuse.second)
+                    Blob(selected.operation, selected.key, selected.plaintext)
+                }
+            }, if (source.epoch == key.epoch) source.blobReuseOwner else reuse.first.owner)
+            .also { LanSyncJsonFiles.write(path, Delivery.serializer(), it); observe("SOURCE_DELIVERY_SLOTS_RETAINED") }
         require(delivery.source == sourceHash && delivery.version == entry.version.reference() && delivery.epoch == key.epoch &&
             delivery.commitment == key.keyCommitment() && delivery.blobs.mapValues { it.value.plaintext } == source.blobs.mapValues { it.value.plaintext }) { "SYNC_GROUP_SOURCE_DELIVERY_CHANGED" }
+        // Reopening an exact delivery needs its pinned owner, not a scan of unrelated source history.
+        val retainedReuse by lazy { LanSyncGroupBlobReuse(root, key.group, identity.fingerprint, setOfNotNull(delivery.blobReuseOwner)) }
         val bindings = delivery.blobs.mapValues { (hash, slot) ->
-            val ready = queue.entry(slot.operation)
+            val owned = delivery.blobReuseOwner?.let {
+                retainedReuse.requireSlot(key, slot.plaintext, slot.operation, slot.key)
+            }
+            val ready = if (owned == null) queue.entry(slot.operation) else retainedReuse.entry(owned, queue,
+                source.epoch == key.epoch || Files.exists(publications.resolve("publication-${delivery.metadataOperation.value}.json"), NOFOLLOW_LINKS))
             if (ready != null) {
                 require(ready.context == SyncEncryptionContext(source.group, key.epoch, slot.key) && ready.plaintext == slot.plaintext) { "SYNC_GROUP_SOURCE_BLOB_CHANGED" }
                 SyncEnvelopeBlobBinding(ready.plaintext, ready.request.key, ready.context.epoch, ready.request.descriptor)
             } else outbox(source.epoch).readPlaintext(source.blobs.getValue(hash).operation, work).use { original ->
                 require(original.plaintext.identity == slot.plaintext && original.entry.context == SyncEncryptionContext(source.group, source.epoch,
                     source.blobs.getValue(hash).key) && original.keyCommitment == source.commitment) { "SYNC_GROUP_SOURCE_BLOB_CHANGED" }
-                SyncGroupBlobStore(source.group, work).enqueue(queue, slot.operation, slot.key, key, original.plaintext.path, slot.plaintext)
+                if (owned == null) SyncGroupBlobStore(source.group, work).enqueue(queue, slot.operation, slot.key, key, original.plaintext.path, slot.plaintext)
+                else retainedReuse.complete(owned, key, queue, original.plaintext.path).let {
+                    SyncEnvelopeBlobBinding(it.plaintext, it.request.key, it.context.epoch, it.request.descriptor)
+                }
             }
         }
         val metadata = SyncGroupObjectCodec(work).enqueue(queue, delivery.metadataOperation, delivery.metadataKey, key,
@@ -280,13 +304,50 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         return key
     }
     private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publications, authority(), outbox(epoch), identity.fingerprint, currentLedger = authority)
+    /** Retained source/delivery pins distinguish a new reservation from a deleted already-owned cache. */
+    private fun blobReuse(key: SyncStreamingCipher): Pair<LanSyncGroupBlobReuse, List<LanSyncGroupBlobSeed>> {
+        val sources = sourceOperations().map { requireNotNull(readSource(it)) }
+        val owners = sources.mapNotNullTo(linkedSetOf()) { it.blobReuseOwner }
+        val seeds = mutableListOf<LanSyncGroupBlobSeed>()
+        val pending = journal.state().pendingApproved?.request
+        sources.forEach { source ->
+            val signed = journal.entry(source.operation)
+            require(signed == null || signed.request == request(source)) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
+            if (source.epoch == key.epoch && source.commitment == key.keyCommitment()) source.blobs.values.forEach { slot ->
+                seeds += LanSyncGroupBlobSeed(source.blobReuseOwner, slot.plaintext, slot.operation, slot.key,
+                    signed != null || pending?.operation == source.operation)
+            }
+        }
+        val byHash = sources.associateBy(::hash)
+        Files.newDirectoryStream(root, "delivery-*.json").use { files -> files.forEach { path ->
+            LanSyncMetadataBudget().validate(path)
+            val delivery = requireNotNull(LanSyncJsonFiles.read(path, Delivery.serializer()))
+            val source = requireNotNull(byHash[delivery.source]) { "SYNC_GROUP_SOURCE_DELIVERY_CHANGED" }
+            val signed = requireNotNull(journal.entry(source.operation)) { "SYNC_GROUP_SOURCE_NOT_SIGNED" }
+            require(path == deliveryPath(source.operation, delivery.epoch) && delivery.version == signed.version.reference() &&
+                delivery.metadataKey.kind == CiphertextObjectKind.COMMIT && delivery.commitment.matches(Regex("[a-f0-9]{64}")) &&
+                delivery.blobs.mapValues { it.value.plaintext } == source.blobs.mapValues { it.value.plaintext } &&
+                delivery.blobs.values.all { it.key.kind == CiphertextObjectKind.BLOB } &&
+                (delivery.epoch != source.epoch || (delivery.commitment == source.commitment && delivery.blobs == source.blobs &&
+                    delivery.blobReuseOwner == source.blobReuseOwner))) { "SYNC_GROUP_SOURCE_DELIVERY_CHANGED" }
+            delivery.blobReuseOwner?.let(owners::add)
+            if (delivery.epoch == key.epoch && delivery.commitment == key.keyCommitment()) {
+                val required = source.epoch == key.epoch || Files.exists(
+                    publications.resolve("publication-${delivery.metadataOperation.value}.json"), NOFOLLOW_LINKS)
+                delivery.blobs.values.forEach { slot -> seeds += LanSyncGroupBlobSeed(delivery.blobReuseOwner,
+                    slot.plaintext, slot.operation, slot.key, required) }
+            }
+        } }
+        return LanSyncGroupBlobReuse(root, key.group, identity.fingerprint, owners) to seeds
+    }
     private fun sourcePath(operation: SyncStoreId) = root.resolve("source-${operation.value}.json")
     private fun deliveryPath(operation: SyncStoreId, epoch: SyncStoreId) = root.resolve("delivery-${operation.value}-${epoch.value}.json")
     private fun hash(source: Source): String {
         val json = lanSyncJson.encodeToJsonElement(Source.serializer(), source).jsonObject
         // Preserve existing approved request/delivery hashes when the optional extension is absent.
         val withRestorations = if (source.restorations.isEmpty()) JsonObject(json - "restorations") else json
-        return lanSyncHash(if (source.resolution == null) JsonObject(withRestorations - "resolution") else withRestorations)
+        val withResolution = if (source.resolution == null) JsonObject(withRestorations - "resolution") else withRestorations
+        return lanSyncHash(if (source.blobReuseOwner == null) JsonObject(withResolution - "blobReuseOwner") else withResolution)
     }
     private fun rawBinding(files: Map<String, String>) = lanSyncHashSequence(files.toSortedMap().asSequence().map { (path, hash) -> buildJsonObject { put("path", path); put("hash", hash) } })
     private fun <T> guarded(work: () -> T): T {

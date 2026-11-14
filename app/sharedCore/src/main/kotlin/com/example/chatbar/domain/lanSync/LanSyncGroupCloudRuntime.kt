@@ -135,16 +135,24 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                 val attempts = runInterruptible(Dispatchers.IO) {
                                     WeakWebDavAttemptStore(transport, directory(root.resolve("provider")), id)
                                 }
+                                val parts = runInterruptible(Dispatchers.IO) {
+                                    WeakWebDavChunkAssembly(transport, directory(root.resolve("parts-provider")), id)
+                                }
+                                val chunkRead = LanSyncGroupChunkCloudReadRoute(parts, active)
                                 if (!outgoingOnly) {
                                     update(captured, catalog, id, "正在读取此网盘的加密候选")
                                     val read = LanSyncGroupWeakCloudReadRoute(attempts, active)
-                                    access.reader.routes(OWNER, listOf(LanSyncGroupReplicaReader.Route("cloud:${id.value}", read)))
-                                    var cursor: CommitCursor? = null
-                                    val seen = hashSetOf<String>()
-                                    do {
-                                        active(); cursor?.let { require(seen.add(it.token)) { "SYNC_GROUP_CLOUD_LISTING_CHANGED" } }
-                                        cursor = access.node.discover(access.reader.discoveryFrom(read, routeId = "cloud:${id.value}"), cursor).nextCursor
-                                    } while (cursor != null)
+                                    val routes = listOf(LanSyncGroupReplicaReader.Route("cloud:${id.value}", read),
+                                        LanSyncGroupReplicaReader.Route("cloud:${id.value}:parts", chunkRead))
+                                    access.reader.routes(OWNER, routes)
+                                    for (route in routes) {
+                                        var cursor: CommitCursor? = null
+                                        val seen = hashSetOf<String>()
+                                        do {
+                                            active(); cursor?.let { require(seen.add(it.token)) { "SYNC_GROUP_CLOUD_LISTING_CHANGED" } }
+                                            cursor = access.node.discover(access.reader.discoveryFrom(route.store, routeId = route.id), cursor).nextCursor
+                                        } while (cursor != null)
+                                    }
                                     active()
                                     val frozen = access.node.reconcileForPrefetch()
                                     access.node.prefetch(frozen)
@@ -156,14 +164,18 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                     SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id),
                                     recoverNative = recoverNative && !outgoingOnly, prepare = false)
                                 val prior = runInterruptible(Dispatchers.IO) { owner.weakReceipt() }
-                                val receipt = if (prior != null) prior else {
+                                val receipt = if (prior != null) {
+                                    runInterruptible(Dispatchers.IO) { check(owner.recoverObjectObservations()) { "SYNC_GROUP_TARGET_RECEIPT_MISSING" } }
+                                    prior
+                                } else {
                                     update(captured, catalog, id, "正在保全并投递本次选定版本")
                                     owner.prepare(); active()
                                     owner.upload(attempts)
                                 }
                                 active()
                                 val observed = receipt.objects.maxOfOrNull { it.readbackObservation.observedAtMillis }
-                                update(captured, catalog, id, "本次选定版本已读回核验；全组仍待后续检查", observed)
+                                val warning = if (chunkRead.latestFailure.value != null) "；有未通过检查的分片清单，其候选证据已保留" else ""
+                                update(captured, catalog, id, "本次选定版本已读回核验；全组仍待后续检查$warning", observed)
                             } finally {
                                 access.reader.removeRoutes(OWNER)
                                 synchronized(lock) { transports.remove(transport) }
