@@ -60,3 +60,13 @@ failure snapshot, splits lifecycle and reopened-input wait phases, and records
 only lifecycle enum and instance-equality Booleans. Original timeouts, UI actions,
 secret clearing, native and cold assertions are unchanged. This diagnostic-only
 change does not establish a product defect or a later-source fix.
+
+The third native run43642656515 preserves the first safe timeout: the Activity
+is resumed, all three owner instances match, the displayed/enabled touch
+returns, but recovery input does not become visible. Phase two is absent. The
+next diagnostic keeps that original touch and wait, adding only bounded safe
+state/focus/visible-transition observations. If the original wait fails, one
+actual button semantics action is a diagnostic comparison only: it always ends
+with DiagnosticFailure/NATIVE_NOT_CONTINUED, even if that action opens the modal.
+It cannot convert the original touch failure into native success. StateFlow can
+conflate transitions; a false-only trace does not prove the owner never opened.

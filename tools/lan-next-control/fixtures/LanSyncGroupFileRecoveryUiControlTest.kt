@@ -34,6 +34,8 @@ import java.util.Properties
 import java.util.UUID
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -51,6 +53,26 @@ class LanSyncGroupFileRecoveryUiControlTest {
     private var phase = "rule"
     private var observedState: (() -> String)? = null
     private var inputNodeCount = -1
+    private var reopenBefore = "not-sampled"
+    private var reopenAfter = "not-sampled"
+    private val reopenVisibility = mutableListOf<Boolean>()
+    private fun visibilityTrace() = synchronized(reopenVisibility) { reopenVisibility.joinToString(",") }
+    private fun reopenSnapshot(coordinator: LanSyncGroupCoordinator,
+        recovery: LanSyncGroupFileRecoveryOwner, launched: ActivityScenario<LanSyncActivity>): String {
+        var focus = false; var attached = false
+        launched.onActivity { focus = it.hasWindowFocus(); attached = it.window.decorView.isAttachedToWindow }
+        val panel = coordinator.state.value
+        // The dialog title has the same text after a successful open; diagnostics must not assume one text node.
+        val nodes = compose.onAllNodesWithText("从加密文件恢复设备组", useUnmergedTree = true).fetchSemanticsNodes()
+        val click = nodes.any { it.config.contains(androidx.compose.ui.semantics.SemanticsActions.OnClick) }
+        val ancestorClick = nodes.any { node -> generateSequence(node.parent) { it.parent }.any {
+            it.config.contains(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        } }
+        return "stage=${panel.stage.name},panelBusy=${panel.busy},canResume=${panel.canResumeExternalRecovery}," +
+            "cloudBusy=${coordinator.cloudRecovery?.state?.value?.busy == true},privacy=${panel.privacyRevision}," +
+            "visible=${recovery.state.value.visible},windowFocus=$focus,decorAttached=$attached," +
+            "nodeClick=$click,ancestorClick=$ancestorClick"
+    }
     @get:Rule val guardedCompose: TestRule = TestRule { base, description ->
         object : Statement() {
             override fun evaluate() {
@@ -60,11 +82,13 @@ class LanSyncGroupFileRecoveryUiControlTest {
         }
     }
     private class SafeFailure(message: String) : AssertionError(message)
+    private class DiagnosticFailure(message: String) : AssertionError(message)
     private fun sanitized(failure: Throwable): AssertionError {
         // Keep the first safe snapshot: the outer Rule runs after method-finally closes the Activity.
-        if (failure is SafeFailure) return failure
+        if (failure is SafeFailure || failure is DiagnosticFailure) return failure
         return SafeFailure("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
-            (observedState?.invoke()?.let { " OBSERVED[$it,nodes=$inputNodeCount]" } ?: "")).also {
+            (observedState?.invoke()?.let { " OBSERVED[$it,nodes=$inputNodeCount]" } ?: "") +
+            " REOPEN_BEFORE[$reopenBefore] REOPEN_AFTER[$reopenAfter] VISIBLE_TRACE[${visibilityTrace()}]").also {
             // Keep original locations; do not retain a cause/message that may contain the code or UI tree.
             it.stackTrace = failure.stackTrace
         }
@@ -88,6 +112,7 @@ class LanSyncGroupFileRecoveryUiControlTest {
         var enrollment: LanSyncGroupEnrollment? = null
         var scenario: ActivityScenario<LanSyncActivity>? = null
         var failed: Throwable? = null
+        var reopenObserver: kotlinx.coroutines.Job? = null
         try {
             phase = "durable-source-chat-card-document"
             val data = Files.createDirectory(source.resolve("data"))
@@ -204,9 +229,39 @@ class LanSyncGroupFileRecoveryUiControlTest {
             launched.recreate()
             phase = "review-recreate-await-resumed-and-hidden"
             await { launched.state == Lifecycle.State.RESUMED && !recovery.state.value.visible }
+            // Read-only bounded trace. StateFlow can conflate transitions: a false-only trace is not proof of no open.
+            reopenObserver = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch(
+                start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+                recovery.state.collect { value -> synchronized(reopenVisibility) {
+                    if (reopenVisibility.size < 8 && reopenVisibility.lastOrNull() != value.visible)
+                        reopenVisibility += value.visible
+                } }
+            }
+            reopenBefore = reopenSnapshot(coordinator, recovery, launched)
             click("从加密文件恢复设备组")
+            reopenAfter = reopenSnapshot(coordinator, recovery, launched)
             phase = "review-reopen-await-visible-input"
-            await { recovery.state.value.visible && recovery.state.value.review == null && !recovery.state.value.complete }
+            try {
+                await { recovery.state.value.visible && recovery.state.value.review == null && !recovery.state.value.complete }
+            } catch (failure: Throwable) {
+                val first = sanitized(failure)
+                var actionReturned: Boolean? = null
+                var actionType = "none"
+                var afterAction = "not-sampled"
+                // Diagnostic UI action only. This never rescues the touch failure or enters native recovery.
+                try {
+                    compose.onNode(hasText("从加密文件恢复设备组") and hasClickAction())
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick) {
+                            actionReturned = it()
+                        }
+                    afterAction = reopenSnapshot(coordinator, recovery, launched)
+                } catch (diagnostic: Throwable) { actionType = diagnostic.javaClass.simpleName }
+                throw DiagnosticFailure(first.message + " DIAGNOSTIC_ONLY_UI_ACTION[returned=$actionReturned," +
+                    "type=$actionType,after=$afterAction,visibleTrace=${visibilityTrace()}] NATIVE_NOT_CONTINUED").also {
+                    it.stackTrace = first.stackTrace
+                }
+            }
+            reopenObserver?.cancel(); reopenObserver = null
             compose.waitUntil(30_000) {
                 inputNodeCount = compose.onAllNodesWithText("读取并核对设备组").fetchSemanticsNodes().size
                 inputNodeCount == 1
@@ -273,6 +328,7 @@ class LanSyncGroupFileRecoveryUiControlTest {
             check(!owner.groupCoordinator.state.value.managementUnlocked)
         } catch (failure: Throwable) { failed = failure; throw sanitized(failure) }
         finally {
+            reopenObserver?.cancel()
             try { scenario?.close(); producer?.closeAndDrain(); enrollment?.close() }
             catch (cleanup: Throwable) { if (failed == null) throw sanitized(cleanup) }
             // Only this synthetic producer key. The actual receiver default key must survive phase two.
