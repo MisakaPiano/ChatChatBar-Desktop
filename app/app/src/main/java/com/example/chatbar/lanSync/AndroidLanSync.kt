@@ -81,17 +81,17 @@ class AndroidLanSync(private val app: ChatBarApp) {
     private var hookObserver: Job? = null
     private var applicationHooks: AndroidLanSyncLifecycle? = null
     private var hooksClosed = false
-    private fun ensureApplicationHooks() = synchronized(hookLock) {
+    private fun ensureApplicationHooks(): Unit = synchronized(hookLock) {
         if (!hooksClosed && applicationHooks == null && hasGroupEvidence())
             applicationHooks = AndroidLanSyncLifecycle(app, ::onForeground, ::lockGroupManagement, ::onNetworkAvailable)
     }
-    fun onForeground() = synchronized(hookLock) {
+    fun onForeground(): Unit = synchronized(hookLock) {
         if (!hooksClosed && app.lanSyncStartupReady && hasGroupEvidence()) groupCoordinatorOwner.value.onForeground()
     }
-    fun onNetworkAvailable() = synchronized(hookLock) {
+    fun onNetworkAvailable(): Unit = synchronized(hookLock) {
         if (!hooksClosed && app.lanSyncStartupReady && hasGroupEvidence()) groupCoordinatorOwner.value.onNetworkAvailable()
     }
-    private val groupCoordinatorOwner = lazy {
+    private val groupCoordinatorOwner: Lazy<LanSyncGroupCoordinator> = lazy {
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
@@ -101,7 +101,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
                 }
             }
     }
-    val groupCoordinator get() = groupCoordinatorOwner.value
+    val groupCoordinator: LanSyncGroupCoordinator get() = groupCoordinatorOwner.value
     fun startGroupIfConfigured() {
         if (hasGroupEvidence()) { ensureApplicationHooks(); groupCoordinator.startIfConfigured() }
     }
