@@ -145,6 +145,15 @@ class RealWebDavControlTest(unittest.TestCase):
                     b'<!DOCTYPE testsuite><testsuite/>'):
             with self.assertRaises(ValueError): exact_xml(bad)
 
+    def test_junit_case_must_be_direct_and_not_hidden_inside_properties(self):
+        hidden = ('<properties><testcase classname="' + CLASS + '" name="' + METHOD +
+                  '" time="0.1"/></properties>')
+        nested_only = ('<testsuite name="' + CLASS +
+            '" tests="1" failures="0" errors="0" skipped="0">' + hidden + '</testsuite>').encode('utf-8')
+        for bad in (nested_only, xml(casesuffix=hidden)):
+            with self.assertRaisesRegex(ValueError, 'JUNIT_EXACT_CASE'):
+                exact_xml(bad)
+
     def test_failed_original_xml_is_retained_byte_for_byte_before_interpretation(self):
         source, output = self.synthetic_roots(); output.mkdir()
         path = source / XML; path.parent.mkdir(parents=True)

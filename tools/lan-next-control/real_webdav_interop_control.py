@@ -65,8 +65,9 @@ def exact_xml(body):
     require(all(root.get(key) == expected for key, expected in
                 (('tests', '1'), ('failures', '0'), ('errors', '0'), ('skipped', '0'))), 'JUNIT_COUNTS')
     require(all(child.tag in ('testcase', 'properties', 'system-out', 'system-err') for child in root), 'JUNIT_CHILD')
-    cases = list(root.iter('testcase'))
-    require(len(cases) == 1 and cases[0].get('classname') == CLASS and cases[0].get('name') == METHOD,
+    cases = root.findall('testcase')
+    require(len(cases) == 1 and len(list(root.iter('testcase'))) == 1 and
+            cases[0].get('classname') == CLASS and cases[0].get('name') == METHOD,
             'JUNIT_EXACT_CASE')
     require(not any(item.tag in ('failure', 'error', 'skipped') for item in root.iter()), 'JUNIT_FAILURE_OR_SKIP')
     require(all(child.tag in ('system-out', 'system-err') for child in cases[0]), 'JUNIT_CASE_CHILD')
