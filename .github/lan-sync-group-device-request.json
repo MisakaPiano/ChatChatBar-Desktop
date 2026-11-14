@@ -1,5 +1,5 @@
 {
-  "sourceSha": "a7e74d0208a0af4cd8619be845ff53c064ad1d7b",
-  "purpose": "Recheck real API26 Keystore source and receipt reopen after correcting the primary native free-space query",
+  "sourceSha": "298b9d4c127ecfda244401daee0c79ba903c8224",
+  "purpose": "Verify real API26 Keystore root creation and approved epoch rotation across separate processes while preserving HPKE, source/author/native receipt recovery and later local edits",
   "artifacts": "Reports only; no app roots, keys, credentials or APK"
 }
