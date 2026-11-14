@@ -2354,14 +2354,41 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
-    fun restoreMessageFormatOriginal(messageId: String) {
+    private val _messageActionError = MutableStateFlow<String?>(null)
+    val messageActionError = _messageActionError.asStateFlow()
+    fun clearMessageActionError() { _messageActionError.value = null }
+
+    fun restoreMessageFormatOriginal(messageId: String) = toggleFormatRepair(messageId, redo = false)
+    fun redoMessageFormatRepair(messageId: String) = toggleFormatRepair(messageId, redo = true)
+
+    private fun toggleFormatRepair(messageId: String, redo: Boolean) {
         if (_isResponding.value) return
         viewModelScope.launch {
-            val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
-            val restored = MessageFormatRepairPolicy.restoreOriginal(message) ?: return@launch
-            chatRepository.updateMessage(restored)
-            replaceMessagesFromRepository()
-            refreshMemoryAfterMessageEdit(restored)
+            try {
+                val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
+                val changed = (if (redo) MessageFormatRepairPolicy.redoRepair(message)
+                    else MessageFormatRepairPolicy.restoreOriginal(message)) ?: return@launch
+                check(chatRepository.updateMessageIfUnchanged(message, changed)) { "消息已变化，请重新操作" }
+                replaceMessagesFromRepository()
+                refreshMemoryAfterMessageEdit(changed)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _messageActionError.value = error.message ?: "保存失败" }
+        }
+    }
+
+    fun deleteMessageAlternative(messageId: String, versionId: String) {
+        if (_isResponding.value) return
+        viewModelScope.launch {
+            try {
+                val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
+                // Last-version deletion is only offered through the explicit whole-message confirmation.
+                val changed = MessageAlternativeVersionPolicy.remove(message, versionId)
+                    ?: error("仅剩一个版本，请使用删除整条消息")
+                check(chatRepository.updateMessageIfUnchanged(message, changed)) { "消息已变化，请重新操作" }
+                replaceMessagesFromRepository()
+                refreshMemoryAfterMessageEdit(changed)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _messageActionError.value = error.message ?: "删除备选失败" }
         }
     }
 
@@ -2448,7 +2475,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         MessageFormatRepairPolicy.isUnchangedResult(repairedPrefix) ||
                             repairedPrefix == originalContent -> {
                             val unchanged = message.copy(
-                                formatRepairNotice = MessageFormatRepairPolicy.recoverableNotice(message),
+                                formatRepairNotice = MessageFormatRepairPolicy.applicableNotice(message),
                                 updatedAt = System.currentTimeMillis()
                             )
                             if (unchanged != message) persistFormatRepairMessage(unchanged)
@@ -3713,6 +3740,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 return@launch
             }
 
+            if (MessageAlternativeVersionPolicy.activeVersionId(updatedMessage) != MessageAlternativeVersionPolicy.activeVersionId(oldMessage)) {
+                if (chatRepository.updateMessageIfUnchanged(oldMessage, updatedMessage)) {
+                    replaceMessagesFromRepository()
+                    refreshMemoryAfterMessageEdit(updatedMessage)
+                } else _messageActionError.value = "消息已变化，请重新操作"
+                return@launch
+            }
             applyMessageEdit(
                 oldMessage = oldMessage,
                 content = updatedMessage.content,
