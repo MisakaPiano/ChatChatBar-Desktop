@@ -1,0 +1,104 @@
+{
+  "format": 1,
+  "kind": "CCB_DESKTOP_LAN6_OFFLINE_WORKFLOW_EDIT_PLAN",
+  "referenceControlSha": "15ef4824d3350a83c6ee1e1c6feb918f0ef9e423",
+  "candidateSourceSha": null,
+  "requestCreated": false,
+  "notes": "Pure text plan; source selection, integration and any real request are pending. Do not overwrite the lan5 workflow paths.",
+  "workflows": [
+    {
+      "template": ".github/workflows/lan-next-sync-desktop-lan5-build.yml",
+      "output": ".github/workflows/lan-next-sync-desktop-lan6-build.yml",
+      "templateLfSha256": "d9e0d1d6cb03aa1edd107203bc5315619dfbcdd964c04e3221baea9670ecf895",
+      "replacements": [
+        [
+          "Explicit lan5 ordinary",
+          "Explicit lan6 ordinary",
+          1
+        ],
+        [
+          ".github/lan-next-sync-desktop-lan5-build-request.json",
+          ".github/lan-next-sync-desktop-lan6-build-request.json",
+          5
+        ],
+        [
+          "desktop_lan5_control.py",
+          "desktop_lan6_control.py",
+          2
+        ],
+        [
+          "explicit lan5 identity",
+          "explicit lan6 identity",
+          1
+        ],
+        [
+          "ccblan5-",
+          "ccblan6-",
+          1
+        ],
+        [
+          "LAN5_",
+          "LAN6_",
+          6
+        ],
+        [
+          "windows-runtime-independent-lan5",
+          "windows-runtime-independent-lan6",
+          1
+        ],
+        [
+          "lan5-outside-control/",
+          "lan6-outside-control/",
+          1
+        ],
+        [
+          "ccb-lan4-lan5-independent-desktop",
+          "ccb-lan5-lan6-independent-desktop",
+          1
+        ]
+      ]
+    },
+    {
+      "template": ".github/workflows/lan-next-sync-desktop-lan5-upgrade.yml",
+      "output": ".github/workflows/lan-next-sync-desktop-lan6-upgrade.yml",
+      "templateLfSha256": "4d275e44d853972b297ca163b097a9a36f51de941b4fda31ec3e5ea5085f31a0",
+      "replacements": [
+        [
+          "lan4 to lan5",
+          "lan5 to lan6",
+          1
+        ],
+        [
+          ".github/lan-next-sync-desktop-lan5-upgrade-request.json",
+          ".github/lan-next-sync-desktop-lan6-upgrade-request.json",
+          3
+        ],
+        [
+          "desktop_lan5_control.py",
+          "desktop_lan6_control.py",
+          1
+        ],
+        [
+          "prove_desktop_lan4_lan5.py",
+          "prove_desktop_lan5_lan6.py",
+          1
+        ],
+        [
+          "desktop-lan4-lan5-upgrade-evidence",
+          "desktop-lan5-lan6-upgrade-evidence",
+          3
+        ],
+        [
+          "LAN4_LAN5_",
+          "LAN5_LAN6_",
+          2
+        ],
+        [
+          "lan4-lan5-desktop-profile-upgrade-evidence",
+          "lan5-lan6-desktop-profile-upgrade-evidence",
+          1
+        ]
+      ]
+    }
+  ]
+}
