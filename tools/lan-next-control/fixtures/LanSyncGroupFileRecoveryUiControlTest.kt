@@ -57,6 +57,8 @@ class LanSyncGroupFileRecoveryUiControlTest {
     private var reopenAfter = "not-sampled"
     private var checkboxGeometryBefore = "not-sampled"
     private var checkboxGeometryAfter = "not-sampled"
+    private var checkboxGeometryAfterBodySwipe = "not-sampled"
+    private var bodyPhysicalSwipesCompleted = 0
     private val reopenVisibility = mutableListOf<Boolean>()
     private fun visibilityTrace() = synchronized(reopenVisibility) { reopenVisibility.joinToString(",") }
     private fun reopenSnapshot(coordinator: LanSyncGroupCoordinator,
@@ -94,6 +96,7 @@ class LanSyncGroupFileRecoveryUiControlTest {
         // Activity insets are labelled explicitly; they do not prove the separate Dialog window's IME state.
         "activityIme=$activityIme,rootPos=${node.positionInRoot.x},${node.positionInRoot.y}," +
             "windowPos=${node.positionInWindow.x},${node.positionInWindow.y},size=${node.size.width},${node.size.height}," +
+            "layoutPlaced=${node.layoutInfo.isPlaced},layoutAttached=${node.layoutInfo.isAttached}," +
             "clippedRoot=${rect(node.boundsInRoot)},clippedWindow=${rect(node.boundsInWindow)},ancestors[$ancestors]"
     } catch (failure: Throwable) { "UNAVAILABLE:${failure.javaClass.simpleName}" }
 
@@ -113,7 +116,9 @@ class LanSyncGroupFileRecoveryUiControlTest {
         return SafeFailure("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
             (observedState?.invoke()?.let { " OBSERVED[$it,nodes=$inputNodeCount]" } ?: "") +
             " REOPEN_BEFORE[$reopenBefore] REOPEN_AFTER[$reopenAfter] VISIBLE_TRACE[${visibilityTrace()}]" +
-            " CHECKBOX_GEOMETRY_BEFORE[$checkboxGeometryBefore] CHECKBOX_GEOMETRY_AFTER[$checkboxGeometryAfter]").also {
+            " CHECKBOX_GEOMETRY_BEFORE[$checkboxGeometryBefore] CHECKBOX_GEOMETRY_AFTER[$checkboxGeometryAfter]" +
+            " BODY_PHYSICAL_SWIPES_COMPLETED[$bodyPhysicalSwipesCompleted]" +
+            " CHECKBOX_GEOMETRY_AFTER_BODY_SWIPE[$checkboxGeometryAfterBodySwipe]").also {
             // Keep original locations; do not retain a cause/message that may contain the code or UI tree.
             it.stackTrace = failure.stackTrace
         }
@@ -318,6 +323,17 @@ class LanSyncGroupFileRecoveryUiControlTest {
             admissionCheckbox.performScrollTo()
             compose.waitForIdle()
             checkboxGeometryAfter = checkboxGeometry(launched)
+            phase = "second-review-body-one-physical-swipe-up"
+            // One additional real body gesture; it cannot replace the explicit checkbox admission.
+            val bodyScroller = compose.onNode(hasScrollAction() and hasAnyAncestor(isDialog()))
+            bodyScroller.assertIsDisplayed()
+            bodyScroller.performTouchInput {
+                check(visibleSize.width > 0 && visibleSize.height > 0)
+                swipeUp(startY = visibleSize.height * 0.45f, endY = visibleSize.height * 0.15f, durationMillis = 450)
+            }
+            bodyPhysicalSwipesCompleted++
+            compose.waitForIdle()
+            checkboxGeometryAfterBodySwipe = checkboxGeometry(launched)
             phase = "second-review-checkbox-assert-off"
             admissionCheckbox.assertIsDisplayed().assertIsEnabled().assertIsOff()
             phase = "second-review-checkbox-physical-click"

@@ -16,15 +16,14 @@ import sys
 SOURCE = "f83a73a388b7c189f81a852fb2cfeabfd6994dd0"
 ENGINE_SHA = "c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b"
 PARSER_SHA = "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158"
-FIXTURE_SHA = "bb59839900c9a4dab90a9f77b70d5209e79c2595e0a36bbb91b3c02576cda865"
+FIXTURE_SHA = "26929c96675347fc1edfd2c4af79c31ce93ca24b6a12cf93636189547cd56955"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupFileRecoveryUiControlTest"
 FIRST = "realFilePickerResultRestoresLatestConversationWithSourceAlreadyOffline"
 SECOND = "coldProcessReopensOriginalIdentityWithoutCodeSourceOrPackage"
 TARGET = "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupFileRecoveryUiControlTest.kt"
 ARGUMENT = "lanSyncFileRecoveryUiFixture"
-SCOPE = ("API35 real Activity file-selection result, AndroidKeystore, authenticated file/ledger/native "
-         "restore and a separate force-stopped cold process; not DocumentsUI, physical devices, cloud or GB")
+SCOPE = 'API35 real Activity file-selection result with original semantic scroll plus one bounded physical recovery-body swipe before mandatory Displayed/Enabled/Off, one physical admission click and On; AndroidKeystore, authenticated file/ledger/native restore and a separate force-stopped cold process; not DocumentsUI, physical devices, cloud or GB'
 
 
 def require(value, code):

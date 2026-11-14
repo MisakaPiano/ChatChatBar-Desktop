@@ -95,3 +95,11 @@ most six ancestor bounds/vertical ranges before and after that same scroll.
 Activity-window IME is explicitly labelled, not treated as Dialog IME proof.
 No extra scroll, wait, click, focus/IME change or consent bypass is introduced.
 The full displayed/enabled/Off/physicalClick/On/native/cold suffix is retained.
+
+The seventh original confirms a27px semantic scroll with132px range remaining,
+yet the48px checkbox stays fully clipped. The next control explicitly adds one
+ordinary physical upward swipe in the displayed recovery-body scroller upper
+region,450ms, then retains displayed/enabled/Off -> one physical consent click
+-> On and every native/cold assertion. It is a declared additional user gesture,
+not an Owner/state/checkbox semantics shortcut. Numeric post-swipe diagnostics
+remain. SCOPE is updated; engine/parser/source/API/version/two-phase rules stay.
