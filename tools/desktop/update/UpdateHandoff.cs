@@ -46,6 +46,9 @@ static class DesktopUpdateHandoff {
         Require(Regex.IsMatch(id, @"^[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$"), "UPDATE_COMPLETION_ID");
         Require(Int32.TryParse(args[3], out pid), "UPDATE_COMPLETION_PID");
         using (var installer = Process.GetProcessById(pid)) {
+            // Retain a real process handle before ack, rather than a lazy PID-only wrapper.
+            // It remains queryable for ExitCode even after the PID leaves the process table.
+            Require(installer.Handle != IntPtr.Zero, "UPDATE_COMPLETION_PROCESS_HANDLE");
             Require(String.Equals(Safe(installer.MainModule.FileName), Safe(args[4]), StringComparison.OrdinalIgnoreCase), "UPDATE_COMPLETION_PROCESS");
             var ackPath = Safe(args[5]);
             Require(Path.GetFileName(ackPath) == "completion.ready" && ackPath.StartsWith(Safe(Path.GetTempPath()).TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase), "UPDATE_COMPLETION_ACK");
@@ -140,7 +143,7 @@ static class DesktopUpdateHandoff {
 #if HANDOFF_TEST
             Console.Error.WriteLine(code);
             var marker = Environment.GetEnvironmentVariable("CCB_UPDATE_TEST_MARKER");
-            if (marker != null) File.WriteAllText(marker + ".error", code + "\n" + failure.GetType().FullName);
+            if (marker != null) File.WriteAllText(marker + ".error", code + "\n" + failure.GetType().FullName + "\n" + failure.StackTrace);
 #endif
 #if !HANDOFF_TEST
             if (args.Length > 0 && args[0] == "--complete") return 2;
