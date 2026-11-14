@@ -170,6 +170,23 @@ class ImageBatchRunPlanTest {
         assertTrue(control.isPaused)
         job.cancelAndJoin()
     }
+    @Test fun `delayed pause progress cannot restore an approved payment ticket`() {
+        val control = ImageBatchControl()
+        val payment = control.requestPayment(1, 20, listOf(10, 10))
+        val pending = ImageBatchProgress(paymentTicket = payment.ticket, confirmationEstimatedTotal = 20)
+        assertEquals(pending, control.currentProgress(pending))
+        control.pause()
+        assertTrue(control.approvePayment(payment.ticket))
+        assertNull(control.currentProgress(pending).paymentTicket)
+        assertNull(control.currentProgress(pending).confirmationEstimatedTotal)
+        assertTrue(control.isPaused)
+        control.resume()
+        assertFalse(control.isPaused)
+        assertTrue(control.paymentApproved(1, 10, 20))
+        val next = control.requestPayment(2, 21, listOf(11))
+        assertNull(control.currentProgress(pending).paymentTicket)
+        assertEquals(next.ticket, control.currentProgress(pending.copy(paymentTicket = next.ticket)).paymentTicket)
+    }
     @Test fun `missing owner stops before next request preserving committed progress`() = runTest {
         var calls = 0; var valid = true; val states = mutableListOf<ImageBatchProgress>()
         val result = runCatching { ImageBatchRunner(sleep = {}).run(plan(), ImageBatchControl(), free,

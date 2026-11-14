@@ -150,6 +150,13 @@ class ImageBatchControl {
         state.value = state.value.copy(pending = null, approved = pending)
         true
     }
+    /** A delayed paused callback cannot resurrect a ticket already approved by the UI. */
+    fun currentProgress(progress: ImageBatchProgress): ImageBatchProgress = synchronized(lock) {
+        if (progress.paymentTicket == null || progress.paymentTicket == state.value.pending?.ticket) progress
+        else progress.copy(paymentTicket = null, confirmationEstimatedTotal = null,
+            detail = if (state.value.paused) "费用已确认；任务仍暂停，可点击继续批次"
+                else "本轮费用已确认，发出请求前仍会重新核费")
+    }
     fun paymentApproved(batch: Int, currentCost: Long, estimatedTotal: Long): Boolean = state.value.approved?.let {
         val expected = it.batchQuotes.getOrNull(batch - it.batch)
         expected != null && currentCost <= expected && estimatedTotal <= it.anlas
@@ -176,7 +183,7 @@ class ImageBatchRunner(
     ): Int {
         var state = ImageBatchProgress(target = plan.targetTotalImages, batches = plan.batches.size)
         var rateLimits = 0
-        fun emit(next: ImageBatchProgress) { state = next; onProgress(next) }
+        fun emit(next: ImageBatchProgress) { state = control.currentProgress(next); onProgress(state) }
         suspend fun ready() = control.awaitReady { emit(state.copy(stage = ImageBatchStage.PAUSED, detail = state.detail.ifBlank { "已暂停；继续不会跳过剩余等待" })) }
         suspend fun waitMillis(millis: Long, detail: String) {
             var left = millis

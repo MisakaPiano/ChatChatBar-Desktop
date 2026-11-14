@@ -201,7 +201,7 @@ internal class DesktopChatImageRegeneration(
                 estimate = { count, usage -> NovelAiImageCostEstimator.estimate(launch.copy(count = count), usage) },
                 validateOwner = { require(eligible()) { "图片来源或角色卡绑定已变化，批次停止" } },
                 onProgress = { update ->
-                    progress.update { (it + (original.id to update)).entries.toList().takeLast(128).associate { entry -> entry.toPair() } }
+                    progress.update { (it + (original.id to runControl.currentProgress(update))).entries.toList().takeLast(128).associate { entry -> entry.toPair() } }
                     report.generationStatus(update.label())
                 }) { count, _ ->
                 require(eligible())
@@ -291,7 +291,7 @@ internal class DesktopChatImageRegeneration(
                 account = { accountForBatch?.invoke() ?: accountService.fetchCancellable(requireNotNull(frozen.read())) },
                 estimate = { count, usage -> NovelAiImageCostEstimator.estimate(requestSettings.copy(count = count), usage) },
                 validateOwner = { require(eligible()) },
-                onProgress = { update -> progress.update { it + (original.id to update) }; report(update.label()) },
+                onProgress = { update -> progress.update { it + (original.id to runControl.currentProgress(update)) }; report(update.label()) },
                 runner = ImageBatchRunner(admission = tasks.imageBatchAdmission)) { count, _ ->
                 runtime.generate(studio.withActiveSettings(requestSettings.copy(count = count)), promptPlan = plan,
                     safeBatchRequest = true,

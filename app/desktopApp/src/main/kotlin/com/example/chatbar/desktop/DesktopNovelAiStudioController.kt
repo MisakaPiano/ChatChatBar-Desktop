@@ -705,7 +705,7 @@ internal class DesktopNovelAiStudioController(
                             launch.imageGuidance, 0) },
                         validateOwner = { currentCoroutineContext().ensureActive() },
                         onProgress = { progress ->
-                            mutableState.update { it.copy(batchProgress = progress, status = progress.label()) }
+                            mutableState.update { it.copy(batchProgress = control.currentProgress(progress), status = control.currentProgress(progress).label()) }
                             report(progress.label())
                         }) { count, cost ->
                         // Guidance encoding may be chargeable: only prepare after the first quote and budget admission.

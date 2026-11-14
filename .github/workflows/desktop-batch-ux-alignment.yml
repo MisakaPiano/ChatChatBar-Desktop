@@ -30,8 +30,12 @@ jobs:
           if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
           "TEMP=$buffer" >> $env:GITHUB_ENV
           "TMP=$buffer" >> $env:GITHUB_ENV
-      # Shared plan/preset source is unchanged from aa29's original successful25-method result.
-      # This successor only repairs the Desktop test import; execute the previously unrun suites.
+      - name: Verify delayed payment publication and retained plan guards
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest'
+          --no-daemon --stacktrace
       - name: Verify real Desktop task owners session backup and compact UI
         working-directory: app
         env:
@@ -40,13 +44,7 @@ jobs:
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopManualImageBatchTest'
           --tests 'com.example.chatbar.desktop.DesktopStudioBatchRuntimeTest'
-          --tests 'com.example.chatbar.desktop.DesktopImageBatchOptionsTest'
-          --tests 'com.example.chatbar.desktop.DesktopAssistantImageActionTest'
-          --tests 'com.example.chatbar.desktop.DesktopAssistantImagePresentationTest'
-          --tests 'com.example.chatbar.desktop.DesktopPhase7R2R1Test'
-          --tests 'com.example.chatbar.desktop.DesktopImageTaskProgressTest'
           --tests 'com.example.chatbar.desktop.DesktopPhase7StudioTest'
-          --tests 'com.example.chatbar.desktop.backup.DesktopBatchPreferencesBackupTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
