@@ -86,9 +86,12 @@ def junit_result(raw: bytes) -> dict:
     require(root.get("tests") == "1" and root.get("failures") == "0" and root.get("errors") == "0" and
             root.get("skipped") == "0", "JUNIT_NOT_ONE_EXECUTED_PASS")
     cases = root.findall("testcase")
-    require(len(cases) == 1 and cases[0].get("classname") == CLASS and cases[0].get("name") == METHOD,
+    require(len(cases) == 1 and len(list(root.iter("testcase"))) == 1 and
+            cases[0].get("classname") == CLASS and cases[0].get("name") == METHOD,
             "JUNIT_METHOD")
-    require(not any(cases[0].find(tag) is not None for tag in ("failure", "error", "skipped")), "JUNIT_CASE_FAILED")
+    require(not any(item.tag in ("failure", "error", "skipped") for item in root.iter()), "JUNIT_CASE_FAILED")
+    require(all(item.tag in ("testsuite", "testcase", "properties", "property", "system-out", "system-err")
+                for item in root.iter()), "JUNIT_UNEXPECTED_ELEMENT")
     seconds = float(cases[0].get("time", "nan"))
     require(math.isfinite(seconds) and seconds >= 0, "JUNIT_TIME")
     return {"class": CLASS, "method": METHOD, "executed": 1, "passed": 1,
@@ -128,21 +131,25 @@ def run(request_path: Path, source: Path, evidence: Path) -> None:
     source = source.resolve(strict=True)
     evidence = evidence.resolve(strict=True)
     xml = source / ("app/desktopApp/build/test-results/test/TEST-" + CLASS + ".xml")
-    require(not xml.exists(), "PREEXISTING_NATIVE_XML_REFUSED")
+    require(not xml.exists() and not xml.is_symlink(), "PREEXISTING_NATIVE_XML_REFUSED")
     child_environment = isolated_environment(dict(os.environ))
     argv = native_command(source)
+    raw = None
     with (evidence / "gradle-original.log").open("xb") as output:
         try:
-            completed = subprocess.run(argv, cwd=source / "app", env=child_environment,
-                                       stdout=output, stderr=subprocess.STDOUT, timeout=1800)
+            try:
+                completed = subprocess.run(argv, cwd=source / "app", env=child_environment,
+                                           stdout=output, stderr=subprocess.STDOUT, timeout=1800)
+            finally:
+                # Preserve the original report even if Gradle exit/drain times out.
+                # Collection is not interpretation and cannot turn a failed runner green.
+                if xml.is_file() and not xml.is_symlink():
+                    raw = xml.read_bytes()
+                    with (evidence / "original-test.xml").open("xb") as retained:
+                        retained.write(raw)
         except subprocess.TimeoutExpired:
             raise ControlError("WINDOWS_GROUP_SCENE_TIMEOUT") from None
-    if xml.is_file() and not xml.is_symlink():
-        raw = xml.read_bytes()
-        with (evidence / "original-test.xml").open("xb") as output:
-            output.write(raw)
-    else:
-        require(False, "WINDOWS_GROUP_SCENE_XML_MISSING")
+    require(raw is not None, "WINDOWS_GROUP_SCENE_XML_MISSING")
     actual = junit_result(raw)
     require(completed.returncode == 0, "WINDOWS_GROUP_SCENE_GRADLE_FAILED")
     overlay_status(source, request)

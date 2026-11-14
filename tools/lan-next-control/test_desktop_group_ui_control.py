@@ -1,6 +1,8 @@
 import unittest
+import json
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 from unittest.mock import patch
 
@@ -69,6 +71,61 @@ class DesktopGroupUiControlGuardsTest(unittest.TestCase):
                       b'<!ENTITY x "y">' + raw, raw * 6000]:
             with self.subTest(bytes=len(value)), self.assertRaises(ControlError):
                 control.junit_result(value)
+
+    def test_hidden_cases_root_failures_and_non_junit_elements_refuse(self):
+        raw = self.xml()
+        hidden = ('<properties><testcase classname="' + control.CLASS + '" name="' +
+                  control.METHOD + '" time="1"/></properties>').encode("utf-8")
+        for extra in [hidden, b"<failure/>", b"<properties><error/></properties>",
+                      b"<system-out><skipped/></system-out>", b'<x:failure xmlns:x="urn:test"/>']:
+            with self.subTest(extra=extra), self.assertRaises(ControlError):
+                control.junit_result(raw.replace(b"</testsuite>", extra + b"</testsuite>"))
+
+    def run_with_fake_native(self, raw, *, timeout=False, returncode=0):
+        base = Path(__file__).resolve().parent
+        temporary = tempfile.TemporaryDirectory(prefix="desktop-ui-guard-", dir=base)
+        scratch = Path(temporary.name).resolve(strict=True)
+        self.assertTrue(scratch.is_relative_to(base) and scratch != base)
+        self.addCleanup(temporary.cleanup)
+        source, evidence = scratch / "source", scratch / "evidence"
+        source.mkdir(); (source / "app").mkdir(); evidence.mkdir()
+        request = {"sourceSha": "a" * 40, "fixtureSha256": "b" * 64}
+        (evidence / "prepared.json").write_text(json.dumps(dict(request, controlSha="c" * 40)), encoding="utf-8")
+        xml = source / ("app/desktopApp/build/test-results/test/TEST-" + control.CLASS + ".xml")
+        def native(argv, **kwargs):
+            if raw is not None:
+                xml.parent.mkdir(parents=True); xml.write_bytes(raw)
+            if timeout:
+                raise subprocess.TimeoutExpired(["synthetic-not-executed"], 1800)
+            return subprocess.CompletedProcess(argv, returncode)
+        with patch.object(control, "cloud_windows"), patch.object(control, "read_request", return_value=request), \
+             patch.object(control, "git", return_value="c" * 40), patch.object(control, "overlay_status"), \
+             patch.object(control, "isolated_environment", return_value={}), \
+             patch.object(control, "native_command", return_value=["synthetic-not-executed"]), \
+             patch.object(control.subprocess, "run", side_effect=native):
+            with self.assertRaises(ControlError):
+                control.run(scratch / "request.json", source, evidence)
+        self.assertFalse((evidence / "verified.json").exists())
+        return evidence
+
+    def test_timeout_retains_failed_original_xml_without_creating_a_pass(self):
+        raw = self.xml(failures="1", children="<failure message='synthetic-failure'/>")
+        evidence = self.run_with_fake_native(raw, timeout=True)
+        self.assertEqual(raw, (evidence / "original-test.xml").read_bytes())
+
+    def test_timeout_retains_already_passed_xml_but_runner_still_fails(self):
+        raw = self.xml()
+        evidence = self.run_with_fake_native(raw, timeout=True)
+        self.assertEqual(raw, (evidence / "original-test.xml").read_bytes())
+
+    def test_timeout_without_xml_stays_missing_without_a_fabricated_report(self):
+        evidence = self.run_with_fake_native(None, timeout=True)
+        self.assertFalse((evidence / "original-test.xml").exists())
+
+    def test_nonzero_runner_with_one_pass_xml_cannot_be_verified(self):
+        raw = self.xml()
+        evidence = self.run_with_fake_native(raw, returncode=9)
+        self.assertEqual(raw, (evidence / "original-test.xml").read_bytes())
 
     def test_runtime_native_environment_is_cloud_windows_only(self):
         control.cloud_windows({"GITHUB_ACTIONS": "true", "RUNNER_OS": "Windows"})
