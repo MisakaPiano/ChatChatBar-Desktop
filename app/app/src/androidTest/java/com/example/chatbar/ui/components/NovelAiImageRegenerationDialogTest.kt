@@ -59,9 +59,13 @@ class NovelAiImageRegenerationDialogTest {
 
         composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performScrollTo().performClick()
 
-        assertTrue(
-            composeTestRule.onAllNodesWithText("图片操作").fetchSemanticsNodes().isEmpty()
-        )
+        try {
+            composeTestRule.waitUntil(3000) {
+                composeTestRule.onAllNodesWithText("图片操作").fetchSemanticsNodes().isEmpty()
+            }
+        } finally {
+            SafeBatchReviewFiles.captureScreen(composeTestRule.activity, "regeneration-legacy-fullscreen-handoff.png")
+        }
         composeTestRule.onNodeWithText("编辑基础 Prompt").assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece, 1girl")
             .performTextReplacement("discarded prompt")
@@ -103,6 +107,14 @@ class NovelAiImageRegenerationDialogTest {
 
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         composeTestRule.onNodeWithText("添加角色").performScrollTo().performClick()
+        try {
+            composeTestRule.waitUntil(3000) {
+                composeTestRule.onAllNodesWithText("角色提示词 2").fetchSemanticsNodes().size == 1
+            }
+        } finally {
+            SafeBatchReviewFiles.captureScreen(composeTestRule.activity, "regeneration-legacy-added-role.png")
+        }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("角色提示词 2").assertExists()
 
         composeTestRule.onNodeWithContentDescription("删除角色提示词 2")

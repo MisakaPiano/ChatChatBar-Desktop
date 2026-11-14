@@ -69,8 +69,7 @@ jobs:
           script: |
             adb shell wm size 1080x1920
             adb shell wm density 480
-            ./app/gradlew -p app :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.imageprompt.SafeBatchStudioRuntimeTest,com.example.chatbar.ui.components.ImageBatchOptionsEditorTest,com.example.chatbar.ui.components.SessionImageRegenerationCostTest,com.example.chatbar.ui.components.NovelAiImageRegenerationDialogTest --no-daemon --stacktrace
-            adb pull /sdcard/Download/ccb-safe-batch-review/. batch-ux-evidence/device-ui
+            bash tools/ci/run-n2-device-review.sh
       - name: Original reports
         if: always()
         shell: python
