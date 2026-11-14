@@ -15,6 +15,26 @@ class DesktopManualImageBatchTest {
     private fun plan(total: Int = 3, allowAnlas: Boolean = false) = ImageBatchRunPlan(1, total,
         ImageBatchPacing(ImageBatchInterval.NONE), allowAnlas, ImageBatchOrigin.STUDIO)
 
+    @Test fun `explicit managed retry preserves its lane owner instead of nesting the same mutex`() = runTest {
+        val root = Files.createTempDirectory("desktop-batch-retry-lane-")
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,
+            root.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { """{"entries":[]}""".toByteArray() })
+        val tasks = DesktopTaskRuntime(app.createRealChatRuntime(), dispatcher = StandardTestDispatcher(testScheduler))
+        try {
+            var attempts = 0
+            val first = tasks.launchNovelAi("synthetic managed single", "session", "source", retryable = true,
+                queueIfBusy = true, batchManagedWork = true) { _ -> tasks.withNovelAiWork {
+                if (++attempts == 1) error("Synthetic pre-commit failure")
+            } }
+            runCurrent()
+            assertEquals(DesktopTaskStatus.FAILED, tasks.tasks.value.single { it.taskId == first }.status)
+            val retry = assertNotNull(tasks.retryImageTask(first))
+            runCurrent()
+            assertEquals(2, attempts)
+            assertEquals(DesktopTaskStatus.COMPLETED, tasks.tasks.value.single { it.taskId == retry }.status)
+        } finally { tasks.closeAndDrain(); app.close(); root.toFile().deleteRecursively() }
+    }
+
     @Test fun `preview cache is read only short lived credential scoped and explicitly refreshable`() = runTest {
         var time = 1L
         var queries = 0

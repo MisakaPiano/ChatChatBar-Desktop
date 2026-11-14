@@ -19,3 +19,12 @@ data class ImageBatchPreferences(
     )
     fun validationError(): String? = configuration(useSavedBatch = true).validationError()
 }
+
+/** Old total-target drafts are projected into a bounded exact-batch review, never auto-submitted. */
+fun NovelAiStudioDraft.batchConfiguration(): ImageBatchConfiguration {
+    val count = activeSettings.count.coerceIn(1, 4)
+    val batches = if (continuousModeEnabled && batchCount == 1)
+        ((continuousTargetCount.coerceAtLeast(1).toLong() + count - 1) / count).coerceIn(1, (100 / count).toLong()).toInt()
+        else batchCount
+    return ImageBatchConfiguration(activeSettings.count, batches, batchPacing, allowBatchAnlasSpending)
+}

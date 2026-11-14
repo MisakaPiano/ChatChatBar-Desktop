@@ -43,6 +43,8 @@ class DesktopBatchPreferencesBackupTest {
             assertFalse(DesktopBackupPolicy.hasDesktopParticipation(oldShape))
             assertFalse(DesktopBackupPolicy.hasDesktopParticipation(JsonObject(oldShape +
                 ("imageBatchPreferences" to backupJson.encodeToJsonElement(ImageBatchPreferences.serializer(), ImageBatchPreferences())))))
+            assertTrue(DesktopBackupPolicy.hasDesktopParticipation(backupJson.encodeToJsonElement(NovelAiStudioDraft.serializer(),
+                NovelAiStudioDraft(batchCount = 3)).jsonObject))
             val source = root.resolve("entities/chat_sessions/session-a.json")
             val before = Files.readAllBytes(source)
             val selection = AppBackupSelection(characterIds = setOf(card.id), sessions = mapOf(baseline.id to BackupSessionChoice(false, false, false)))

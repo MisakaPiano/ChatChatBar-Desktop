@@ -265,12 +265,12 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("生成批数")
-        StudioNumericInput("生成批数", draft.batchCount.toString(), Modifier.width(80.dp)) { raw ->
-            raw.toIntOrNull()?.takeIf { it in 1..25 }?.let { value -> edit { it.copy(batchCount = value, continuousModeEnabled = false) } }
+        StudioNumericInput("生成批数", draft.batchConfiguration().numberOfBatches.toString(), Modifier.width(80.dp)) { raw ->
+            raw.toIntOrNull()?.takeIf { it in 1..100 / s.count.coerceIn(1, 4) }?.let { value -> edit { it.copy(batchCount = value, continuousModeEnabled = false) } }
         }
-        StatusText("每批 ${s.count} 张 · 合计 ${s.count * draft.batchCount} 张")
+        StatusText("每批 ${s.count} 张 · 合计 ${s.count * draft.batchConfiguration().numberOfBatches} 张")
     }
-    if (draft.continuousModeEnabled) StatusText("旧连续目标仅保留在预设中；请按每批张数与批数重新确认计划。", DesktopBootstrapColors.warning)
+    if (draft.continuousModeEnabled) StatusText("旧连续目标 ${draft.continuousTargetCount} 张仍保留在预设中；请核对新的每批张数与批数后再开始。", DesktopBootstrapColors.warning)
     DesktopImageBatchPacing(draft.batchPacing) { value -> edit { it.copy(batchPacing = value) } }
     StudioSwitch("允许消耗 Anlas", draft.allowBatchAnlasSpending) { edit { it.copy(allowBatchAnlasSpending = !it.allowBatchAnlasSpending) } }
     s.requestValidationError(draft.characters.size)?.let { StatusText(it, DesktopBootstrapColors.warning) }

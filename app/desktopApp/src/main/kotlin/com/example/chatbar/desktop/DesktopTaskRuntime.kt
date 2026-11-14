@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -110,6 +111,7 @@ internal class DesktopTaskRuntime(
     // In-memory closures retain immutable launch inputs and their original validity checks.
     // Never serialized, included in diagnostics, or used for automatic retry.
     private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?, val queueIfBusy: Boolean,
+        val batchManagedWork: Boolean,
         val work: suspend ((String) -> Unit) -> Unit)
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private val userStoppedImages = mutableSetOf<String>()
@@ -359,7 +361,7 @@ internal class DesktopTaskRuntime(
         if (!queueIfBusy && !batchManagedWork && mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
-        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, queueIfBusy, work)
+        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, queueIfBusy, batchManagedWork, work)
         val usageParent = DesktopUsageContext(if (sessionId == null) DesktopUsageSource.OTHER else DesktopUsageSource.CHAT,
             taskId = id, sessionId = sessionId, subjectId = targetMessageId)
         val job = scope.launch(DesktopUsageParent(usageParent), start = CoroutineStart.LAZY) {
@@ -372,7 +374,12 @@ internal class DesktopTaskRuntime(
                     generationStatus = { text -> reportImageProgress(id) { imageProgress.generation(id, text) } },
                     ))
                 }
-                if (batchManagedWork) performWork() else withNovelAiWork { performWork() }
+                if (batchManagedWork) {
+                    // A queued source keeps its original start boundary behind existing image work,
+                    // then releases the lane before preparation/pacing/payment waits.
+                    if (queueIfBusy) novelAiWorkMutex.withLock { currentCoroutineContext().ensureActive() }
+                    performWork()
+                } else withNovelAiWork { performWork() }
                 synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "完成") }
             } catch (_: CancellationException) {
                 synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "已停止；已保存的结果保留") }
@@ -595,7 +602,7 @@ internal class DesktopTaskRuntime(
         val entry = mutableTasks.value.firstOrNull { it.taskId == taskId && it.canRetry } ?: return@synchronized null
         val checkpoint = imageRetryCheckpoints[entry.taskId] ?: return@synchronized null
         val replacement = launchNovelAi(checkpoint.label, checkpoint.sessionId, checkpoint.targetMessageId,
-            retryable = true, queueIfBusy = checkpoint.queueIfBusy, work = checkpoint.work)
+            retryable = true, queueIfBusy = checkpoint.queueIfBusy, batchManagedWork = checkpoint.batchManagedWork, work = checkpoint.work)
         dismissImageTask(taskId)
         replacement
     }

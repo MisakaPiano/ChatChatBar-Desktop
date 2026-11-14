@@ -65,7 +65,7 @@ data class ImageBatchConfiguration(
 ) {
     fun validationError(): String? = when {
         requestCount !in 1..4 -> "单次请求张数须在 1–4 之间"
-        numberOfBatches !in 1..25 -> "生成批数须在 1–25 之间"
+        numberOfBatches !in 1..100 || requestCount.toLong() * numberOfBatches > 100 -> "本轮图片总数须在 1–100 张之间"
         else -> pacing.validationError()
     }
     fun freeze(origin: ImageBatchOrigin): ImageBatchRunPlan {
@@ -81,7 +81,7 @@ data class ImageBatchRunPlan(
     val origin: ImageBatchOrigin
 ) {
     init {
-        require(requestCount in 1..4 && numberOfBatches in 1..25)
+        require(requestCount in 1..4 && numberOfBatches in 1..100 && requestCount.toLong() * numberOfBatches <= 100)
         require(pacing.validationError() == null)
     }
     val targetTotalImages: Int get() = requestCount * numberOfBatches

@@ -105,8 +105,9 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         batches[message.id]?.let { progress ->
             StatusText(progress.label())
             if (running && owner.batchRunning(message.id)) StudioActions {
-                if (progress.paymentTicket != null) BootstrapButton("确认本轮约 ${progress.confirmationEstimatedTotal} Anlas") {
-                    owner.confirmBatchPayment(message.id, progress.paymentTicket)
+                val paymentTicket = progress.paymentTicket
+                if (paymentTicket != null) BootstrapButton("确认本轮约 ${progress.confirmationEstimatedTotal} Anlas") {
+                    owner.confirmBatchPayment(message.id, paymentTicket)
                 }
                 else if (progress.stage == ImageBatchStage.PAUSED || owner.batchPaused(message.id))
                     BootstrapButton("继续批次") { owner.resumeBatch(message.id) }

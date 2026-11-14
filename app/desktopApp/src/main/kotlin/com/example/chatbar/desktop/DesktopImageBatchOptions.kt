@@ -54,7 +54,7 @@ internal fun DesktopImageBatchOptions(config: ImageBatchConfiguration, origin: I
     val plan = remember(config) { if (error == null) config.freeze(origin) else null }
     StudioChips("每次请求图片数", (1..4).toList(), config.requestCount, { it.toString() }) { change(config.copy(requestCount = it)) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("生成批数（1–25）")
+        StatusText("生成批数（1–${100 / config.requestCount.coerceIn(1, 4)}）")
         StudioNumericInput("生成批数", config.numberOfBatches.toString(), Modifier.width(90.dp)) {
             change(config.copy(numberOfBatches = it.toIntOrNull() ?: 0))
         }
@@ -90,8 +90,7 @@ internal fun DesktopSessionImageBatchSettings(preferences: ImageBatchPreferences
 @Composable
 internal fun DesktopStudioBatchConfirmation(draft: NovelAiStudioDraft, account: NovelAiAccountUsage?, busy: Boolean,
     status: String, onClose: () -> Unit, onStart: (ImageBatchRunPlan) -> Unit) {
-    var config by remember(draft) { mutableStateOf(ImageBatchConfiguration(draft.activeSettings.count,
-        draft.batchCount, draft.batchPacing, draft.allowBatchAnlasSpending)) }
+    var config by remember(draft) { mutableStateOf(draft.batchConfiguration()) }
     DesktopImageToolWindow("确认生图批次", onClose, width = 650.dp, height = 720.dp) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {

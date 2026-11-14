@@ -31,10 +31,24 @@ class ImageBatchRunPlanTest {
     }
     @Test fun `invalid ranges counts and overflow are rejected`() {
         for (config in listOf(ImageBatchConfiguration(requestCount = 0), ImageBatchConfiguration(requestCount = 5),
-            ImageBatchConfiguration(numberOfBatches = 0), ImageBatchConfiguration(numberOfBatches = 26),
+            ImageBatchConfiguration(numberOfBatches = 0), ImageBatchConfiguration(numberOfBatches = 101),
+            ImageBatchConfiguration(requestCount = 4, numberOfBatches = 26),
             ImageBatchConfiguration(numberOfBatches = Int.MAX_VALUE), ImageBatchConfiguration(pacing = ImageBatchPacing(minSeconds = 46)),
             ImageBatchConfiguration(pacing = ImageBatchPacing(fixedSeconds = Int.MAX_VALUE)),
             ImageBatchConfiguration(pacing = ImageBatchPacing(minSeconds = -1)))) assertNotNull(config.validationError())
+    }
+    @Test fun `existing hundred-image capacity stays available at each exact batch size and legacy plans need review`() {
+        for ((count, batches) in listOf(1 to 100, 2 to 50, 3 to 33, 4 to 25)) {
+            val config = ImageBatchConfiguration(count, batches)
+            assertNull(config.validationError())
+            assertEquals(count * batches, config.freeze(ImageBatchOrigin.STUDIO).targetTotalImages)
+            assertNotNull(config.copy(numberOfBatches = batches + 1).validationError())
+        }
+        val old = NovelAiStudioDraft(continuousModeEnabled = true, continuousTargetCount = 10,
+            v45Settings = NovelAiGenerationSettings(count = 4))
+        assertEquals(listOf(4, 4, 4), old.batchConfiguration().freeze(ImageBatchOrigin.STUDIO).batches)
+        assertTrue(old.continuousModeEnabled, "Import projection must not silently start or acknowledge a task")
+        assertEquals(10, old.continuousTargetCount)
     }
     @Test fun `random is independently sampled inside inclusive bounds`() {
         val random = Random(25); val values = List(40) { ImageBatchPacing(ImageBatchInterval.RANGE, minSeconds = 15, maxSeconds = 45).sampleSeconds(random) }

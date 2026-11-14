@@ -39,12 +39,13 @@ data class NovelAiGenerationPreset(
     fun validate() {
         require(format == FORMAT && version == 1) { "生图预设格式或版本不支持" }
         require(batchPacing.validationError() == null)
-        require(batchCount in 1..25)
+        require(batchCount in 1..100)
         require(continuousTargetCount > 0) { "连续生成目标图片数必须大于零" }
         require(v45Settings.model == NovelAiImageModel.V4_5_FULL && v5Settings.model == NovelAiImageModel.V5_FULL)
         require(v45Settings.validationError(0) == null && v5Settings.validationError(0) == null)
         val active = if (selectedModel == NovelAiImageModel.V4_5_FULL) v45Settings else v5Settings
         require(active.validationError(characters.count { it.enabled }) == null)
+        require(active.count.toLong() * batchCount <= 100)
         require(characters.all { it.center == null || it.center.x.isFinite() && it.center.y.isFinite() &&
             it.center.x in 0f..1f && it.center.y in 0f..1f })
         require(imageGuidance.vibes.size <= NovelAiImageGuidanceDraft.MAX_VIBES)

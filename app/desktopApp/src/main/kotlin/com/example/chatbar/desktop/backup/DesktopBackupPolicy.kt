@@ -63,6 +63,11 @@ internal object DesktopBackupPolicy {
         (value["imageBatchPreferences"] as? JsonObject)?.let {
             backupJson.decodeFromJsonElement(ImageBatchPreferences.serializer(), it) != ImageBatchPreferences()
         } == true ||
+        (value["batchCount"] as? JsonPrimitive)?.intOrNull?.let { it != 1 } == true ||
+        (value["allowBatchAnlasSpending"] as? JsonPrimitive)?.booleanOrNull == true ||
+        (value["batchPacing"] as? JsonObject)?.let {
+            backupJson.decodeFromJsonElement(ImageBatchPacing.serializer(), it) != ImageBatchPacing()
+        } == true ||
         value["desktopPlayerRole"] is JsonObject ||
         (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||

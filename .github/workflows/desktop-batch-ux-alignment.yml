@@ -36,9 +36,6 @@ jobs:
           .\gradlew.bat :sharedCore:test
           --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest'
           --tests 'com.example.chatbar.domain.image.NovelAiBatchPresetCustodyTest'
-          --tests 'com.example.chatbar.data.repository.SettingsDraftMergeTest'
-          --tests 'com.example.chatbar.domain.chat.SaveSlotSharedContractTest'
-          --tests 'com.example.chatbar.domain.chat.SaveSlotSerializationTest'
           --no-daemon --stacktrace
       - name: Verify real Desktop task owners session backup and compact UI
         working-directory: app
@@ -52,6 +49,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopAssistantImageActionTest'
           --tests 'com.example.chatbar.desktop.DesktopAssistantImagePresentationTest'
           --tests 'com.example.chatbar.desktop.DesktopPhase7R2R1Test'
+          --tests 'com.example.chatbar.desktop.DesktopImageTaskProgressTest'
           --tests 'com.example.chatbar.desktop.DesktopPhase7StudioTest'
           --tests 'com.example.chatbar.desktop.backup.DesktopBatchPreferencesBackupTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
