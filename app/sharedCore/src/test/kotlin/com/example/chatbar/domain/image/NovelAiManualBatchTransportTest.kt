@@ -42,8 +42,8 @@ class NovelAiManualBatchTransportTest {
     }
 
     @Test fun `server retry after seconds and date are not shortened`() {
-        assertEquals(120000L, NovelAiImageService.safeRetryAfterMillis("120"))
-        assertEquals(60000L, NovelAiImageService.safeRetryAfterMillis("Thu, 01 Jan 1970 00:01:00 GMT", 0))
-        assertEquals(10000L, NovelAiImageService.safeRetryAfterMillis("invalid"))
+        assertEquals(120000L, ImageBatchRetryAfterPolicy.delayMillis("120"))
+        assertEquals(60000L, ImageBatchRetryAfterPolicy.delayMillis("Thu, 01 Jan 1970 00:01:00 GMT", 0))
+        assertEquals(10000L, ImageBatchRetryAfterPolicy.delayMillis("invalid"))
     }
 }

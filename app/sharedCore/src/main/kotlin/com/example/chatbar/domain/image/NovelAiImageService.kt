@@ -117,7 +117,7 @@ class NovelAiImageService(
                             if (!this@callbackFlow.isActive) return
                             if (!response.isSuccessful) {
                                 if (safeBatchRequest && response.code == 429) {
-                                    val cooldown = safeRetryAfterMillis(response.header("Retry-After"))
+                                    val cooldown = ImageBatchRetryAfterPolicy.delayMillis(response.header("Retry-After"))
                                     call.cancel()
                                     trySend(NovelAiImageEvent.Error("HTTP 429 请求频率限制；任务暂停，等待手动继续 [request: $correlationId]", 429, cooldown))
                                     close()
@@ -151,7 +151,7 @@ class NovelAiImageService(
                                 }
                                 trySend(NovelAiImageEvent.Error("NovelAI 生图失败 ($reason, HTTP ${response.code})${if (body.isNotEmpty()) ": $body" else ""}",
                                     httpCode = response.code,
-                                    retryAfterMillis = if (response.code == 429) safeRetryAfterMillis(response.header("Retry-After")) else null))
+                                    retryAfterMillis = if (response.code == 429) ImageBatchRetryAfterPolicy.delayMillis(response.header("Retry-After")) else null))
                                 close()
                                 return
                             }
@@ -466,14 +466,6 @@ class NovelAiImageService(
         fun randomSeed(): Int = kotlin.random.Random.nextInt(0, Int.MAX_VALUE)
         fun correlationId(): String = (1..6).map { ALPHANUMERIC.random() }.joinToString("")
         const val ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-        /** New bounded manual runs never shorten a server cooldown, including HTTP dates. */
-        fun safeRetryAfterMillis(header: String?, nowMillis: Long = System.currentTimeMillis()): Long {
-            val seconds = header?.trim()?.toLongOrNull()
-            if (seconds != null) return seconds.coerceIn(0, Long.MAX_VALUE / 1000) * 1000
-            val date = runCatching { java.time.ZonedDateTime.parse(header, java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toEpochMilli() }.getOrNull()
-            return date?.let { (it - nowMillis).coerceAtLeast(0) } ?: 10000L
-        }
 
         fun retryDelayMillis(failedAttempt: Int, retryAfterHeader: String?): Long {
             val retryAfterSeconds = retryAfterHeader

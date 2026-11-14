@@ -146,9 +146,9 @@ class ImageBatchRunner(
                         if (control.isPaused) return@withLock
                         validateOwner()
                         val cost = quote(count)
-                        validateOwner() // Quoting may suspend across a changed session or removed anchor.
                         if (cost == null) throw ImageBatchStopped("账户状态或计费预计未知，任务停止；请检查后重新确认，未发起本批请求")
                         if (control.isPaused) return@withLock
+                        validateOwner()
                         currentCoroutineContext().ensureActive()
                         if (cost.anlas < 0 || cost.anlas > plan.maxEstimatedAnlas - state.estimatedSpent)
                             throw ImageBatchStopped("本批预计超出剩余 Anlas 预算，任务停止；不会自动转为付费。调整后须重新确认")
