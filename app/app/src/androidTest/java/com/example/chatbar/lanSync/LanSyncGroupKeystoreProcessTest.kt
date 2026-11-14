@@ -99,7 +99,7 @@ class LanSyncGroupKeystoreProcessTest {
         private val custody = SyncGroupCustody(directory("group"), group, recipient, protection::protect, protection::unprotect)
         private val rootJournal = SyncRootLedgerJournal(directory("root-actions"), created.trust, adminCertificate, admin::protectJournal, admin::unprotectJournal)
         init {
-            check(SyncDeviceSignatures.decode(adminCertificate).fingerprint != identity.fingerprint)
+            check(lanSyncHash(Base64.getDecoder().decode(adminCertificate)) != identity.fingerprint)
             if (seed) {
                 Files.write(root.resolve("management-vault.bin"), admin.seal(created.trust).bytes())
                 save("synthetic-management-code.txt", admin.recoveryCode())

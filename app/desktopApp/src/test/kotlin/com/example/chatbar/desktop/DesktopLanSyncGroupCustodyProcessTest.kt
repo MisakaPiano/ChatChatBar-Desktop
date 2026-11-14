@@ -48,7 +48,7 @@ object DesktopLanSyncGroupCustodyChild {
         val admin = if (writing) SyncManagementSession.create() else SyncManagementSession.open(
             Files.readString(root.resolve("synthetic-management-code.txt")), Files.readAllBytes(root.resolve("management-vault.bin")))
         val adminCertificate = admin.ownerCertificate
-        check(SyncDeviceSignatures.decode(adminCertificate).fingerprint != identity.fingerprint)
+        check(lanSyncHash(Base64.getDecoder().decode(adminCertificate)) != identity.fingerprint)
         val creation = SyncRootGroupCreation.managed(creationRoot, adminCertificate, admin.recipientPublicKey,
             certificate, recipient, admin::protectJournal, admin::unprotectJournal)
         val creationOperation = if (writing) SyncStoreId.random().also {
