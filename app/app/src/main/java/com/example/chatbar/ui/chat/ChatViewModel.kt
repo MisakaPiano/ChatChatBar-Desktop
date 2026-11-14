@@ -373,6 +373,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     private val novelAiCredentials = ChatBarApp.instance.novelAiCredentialStore
     private val novelAiPromptDesigner = ChatBarApp.instance.novelAiPromptDesigner
     private val novelAiImageService = ChatBarApp.instance.novelAiImageService
+    private val novelAiAccountService = ChatBarApp.instance.novelAiAccountService
     private val novelAiImageStorage = ChatBarApp.instance.novelAiImageStorage
     private val voiceMessageRepository = ChatBarApp.instance.voiceMessageRepository
     private val fishAudioCredentials = ChatBarApp.instance.fishAudioCredentialStore
@@ -1158,7 +1159,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val settings = settingsRepository.getAppSettings()
         val target = live.resolvedNovelAiImageModel(card.defaultNovelAiImageModel, settings.novelAiImageModel)
         val token = novelAiCredentials.load() ?: return "未配置 NovelAI Token，计费状态未知"
-        val usage = try { withContext(Dispatchers.IO) { NovelAiAccountService().fetch(token) } }
+        val usage = try { withContext(Dispatchers.IO) { novelAiAccountService.fetch(token) } }
             catch (error: Throwable) { if (error is CancellationException) throw error; null }
         val generation = NovelAiGenerationSettings.legacy(0, configuration.requestCount, target)
             .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
@@ -1232,7 +1233,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         check(liveSettings.novelAiImageModel == settings.novelAiImageModel &&
                             liveSettings.novelAiImageAspectRatio == settings.novelAiImageAspectRatio) { "生图配置已改变，任务停止" }
                     }
-                    val initialUsage = try { withContext(Dispatchers.IO) { NovelAiAccountService().fetch(token) } }
+                    val initialUsage = try { withContext(Dispatchers.IO) { novelAiAccountService.fetch(token) } }
                         catch (error: Throwable) { if (error is CancellationException) throw error; null }
                     if (initialUsage == null) throw ImageBatchStopped("账户计费状态未知，未调用生图设计或图片请求；请检查后重新确认")
                     val initialCost = plan.batches.sumOf { count -> NovelAiImageSizePreset.entries.maxOf { preset ->
@@ -1253,7 +1254,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     var approvedCost: NovelAiGenerationCost? = null
                     ImageBatchRunner().run(plan, control,
                         quote = { count ->
-                            val usage = try { withContext(Dispatchers.IO) { NovelAiAccountService().fetch(token) } }
+                            val usage = try { withContext(Dispatchers.IO) { novelAiAccountService.fetch(token) } }
                                 catch (error: Throwable) { if (error is CancellationException) throw error; null }
                             usage?.let {
                                 val effective = ledger.reconcile(it)

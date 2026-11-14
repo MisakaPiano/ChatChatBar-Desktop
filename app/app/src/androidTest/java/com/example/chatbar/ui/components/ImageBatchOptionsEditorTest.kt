@@ -58,5 +58,6 @@ class ImageBatchOptionsEditorTest {
         val path = File(rule.activity.getExternalFilesDir(null), "safe-batch-review/$name")
         path.parentFile!!.mkdirs()
         path.outputStream().use { rule.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
+        SafeBatchReviewFiles.retain(rule.activity, path)
     }
 }

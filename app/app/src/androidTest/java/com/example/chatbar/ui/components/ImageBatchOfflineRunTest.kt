@@ -21,7 +21,9 @@ class ImageBatchOfflineRunTest {
         rule.onNodeWithText("磁盘保留：会话 [4, 4, 2]", substring = true).assertExists()
         val image = rule.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap()
         val dir = File(rule.activity.getExternalFilesDir(null), "safe-batch-review").also { it.mkdirs() }
-        File(dir, "offline-actual-http-and-persistence.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val shot = File(dir, "offline-actual-http-and-persistence.png")
+        shot.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        SafeBatchReviewFiles.retain(rule.activity, shot)
         rule.activityRule.scenario.recreate()
         rule.waitUntil(5000) { rule.onAllNodesWithText("磁盘保留：会话 [4, 4, 2]", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("实际模拟请求 n_samples：[]").assertExists()
