@@ -9,12 +9,13 @@ object MomentImageVersions {
     fun retained(post: MomentPost): List<MomentImageVersion> {
         val current = post.imagePath?.takeIf { it.isNotBlank() } ?: return post.imageVersions
         if (post.imageVersions.any { it.imagePath == current }) return post.imageVersions
-        return post.imageVersions + MomentImageVersion("legacy:${post.id}", current, post.imagePrompt, post.generatedImageMetadata)
+        return post.imageVersions + MomentImageVersion("legacy:${post.id}", current, post.imagePrompt, post.generatedImageMetadata, post.imageBrief, 0)
     }
 
-    fun append(post: MomentPost, path: String, prompt: String, metadata: com.example.chatbar.data.local.entity.GeneratedImageMetadata?): MomentPost {
+    fun append(post: MomentPost, path: String, prompt: String, metadata: com.example.chatbar.data.local.entity.GeneratedImageMetadata?,
+        imageBrief: String = post.imageBrief, now: Long = System.currentTimeMillis()): MomentPost {
         require(path.isNotBlank())
-        val version = MomentImageVersion(UUID.randomUUID().toString(), path, prompt, metadata)
+        val version = MomentImageVersion(UUID.randomUUID().toString(), path, prompt, metadata, imageBrief, now)
         return select(post.copy(imageVersions = retained(post) + version), version.id)
     }
 
@@ -22,6 +23,6 @@ object MomentImageVersions {
         val versions = retained(post)
         val selected = versions.firstOrNull { it.id == versionId } ?: error("朋友圈图片版本不存在")
         return post.copy(imagePath = selected.imagePath, imagePrompt = selected.imagePrompt,
-            generatedImageMetadata = selected.generatedImageMetadata, imageVersions = versions)
+            generatedImageMetadata = selected.generatedImageMetadata, imageBrief = selected.imageBrief, imageVersions = versions)
     }
 }

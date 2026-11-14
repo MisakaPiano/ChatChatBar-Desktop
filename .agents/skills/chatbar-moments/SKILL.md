@@ -112,3 +112,5 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 - Add/update JVM tests around `PromptTemplates`, `MomentPolicy`, scheduler limits, repository likes/delete, and debug input assembly when touched.
 
 - Scheduled/debug/on-demand/regenerated images apply optional card defaultImageGenerationSettings after resolving the session/card/global model, preserving size and seed policy. Offline repetition/checkpoint regression: MomentGenerationRegressionTest.
+
+- Portable imageVersions now retain the shared six-field DTO: id/imagePath/imagePrompt/generatedImageMetadata/imageBrief/createdAt. Legacy desktopImageVersions is a read alias; absent per-image timestamps remain zero. Switching versions also switches imageBrief. New appends capture the brief and generation time; raw legacy selected images are lifted with unknown per-image time, never with the current import time.

@@ -1,18 +1,28 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.JsonNames
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class MomentImageVersion(
     val id: String,
     val imagePath: String,
     val imagePrompt: String = "",
-    val generatedImageMetadata: GeneratedImageMetadata? = null
+    val generatedImageMetadata: GeneratedImageMetadata? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val imageBrief: String = "",
+    /** Zero means no per-image timestamp was recorded by the source. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val createdAt: Long = 0
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class MomentPost(
     val id: String,
     val characterCardId: String,
@@ -36,6 +46,7 @@ data class MomentPost(
     val generatedAt: Long,
     val createdAt: Long = generatedAt,
     val updatedAt: Long = generatedAt,
+    @JsonNames("desktopImageVersions")
     val imageVersions: List<MomentImageVersion> = emptyList()
 ) {
     val displayLikeCount: Int
