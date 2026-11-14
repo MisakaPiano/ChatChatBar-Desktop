@@ -1,5 +1,5 @@
 {
-  "sourceSha": "225c4e2a7cc3742dabe06d11b14f417da7b619ef",
-  "purpose": "Verify independent random-code AEAD management identity/root journal across two API26 processes, lock admin before daily Keystore author/source recovery, retain atomic epoch/checkpoint/keys and later local edits",
-  "artifacts": "Reports only; no app roots, synthetic recovery codes, keys, credentials or APK"
+  "sourceSha": "a308dfaabb7283e99f024140ac782864652ab08f",
+  "purpose": "API26 actual file-backed sync validation, Workspace capture/apply/reopen and bounded preview of fully written 33/101MiB valid 16x12 PNGs with exact original hashes and typed post-result metadata; retain existing protected group native process checks.",
+  "artifacts": "Reports only; no image payloads, app roots, recovery codes, keys, credentials or APK"
 }
