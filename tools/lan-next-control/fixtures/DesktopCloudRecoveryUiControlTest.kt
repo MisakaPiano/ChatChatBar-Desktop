@@ -148,7 +148,8 @@ class DesktopCloudRecoveryUiControlTest {
                     phase = "$mode-empty-app-await-read-button"
                     awaitScene(rs) { enabled(rs, "读取并核对设备组") }; click(rs, "读取并核对设备组")
                     phase = "$mode-empty-app-read-and-await-review"
-                    awaitScene(rs) { recovery.state.value.review != null && !recovery.state.value.busy }
+                    awaitScene(rs) { recovery.state.value.review != null && !recovery.state.value.busy &&
+                        hasToggle(rs, "恢复后保存此连接并继续自动同步") }
                     val first = checkNotNull(recovery.state.value.review)
                     check(first.group == originalTrust.group.value && !recovery.state.value.complete)
                     check(!enabled(rs, "登记此设备并恢复资料"))
@@ -162,7 +163,8 @@ class DesktopCloudRecoveryUiControlTest {
                     check(recoveryFields(rs).all { it.config.getOrNull(SemanticsProperties.EditableText)?.text.orEmpty().isEmpty() })
                     setRecoveryInputs(rs, remote.toString(), username, checkNotNull(password), checkNotNull(code))
                     awaitScene(rs) { enabled(rs, "读取并核对设备组") }; click(rs, "读取并核对设备组")
-                    awaitScene(rs) { recovery.state.value.review != null && !recovery.state.value.busy }
+                    awaitScene(rs) { recovery.state.value.review != null && !recovery.state.value.busy &&
+                        hasToggle(rs, "恢复后保存此连接并继续自动同步") }
                     check(checkNotNull(recovery.state.value.review).device == first.device)
                     phase = "$mode-confirm-real-checkbox-choice"
                     check(toggle(rs, "恢复后保存此连接并继续自动同步") == ToggleableState.On)
@@ -242,6 +244,10 @@ class DesktopCloudRecoveryUiControlTest {
         repeat(3) { scene.render(System.nanoTime()).close(); delay(25L) }
         scene.render(System.nanoTime()).close()
     }
+    private fun hasToggle(scene: ImageComposeScene, label: String): Boolean = nodes(scene).any {
+        it.config.getOrNull(SemanticsProperties.Role) == Role.Checkbox && matches(it, label) &&
+            it.config.getOrNull(SemanticsProperties.ToggleableState) != null
+    }
     private fun toggle(scene: ImageComposeScene, label: String): ToggleableState = checkNotNull(nodes(scene).first {
         it.config.getOrNull(SemanticsProperties.Role) == Role.Checkbox && matches(it, label)
     }.config.getOrNull(SemanticsProperties.ToggleableState))
@@ -288,13 +294,14 @@ class DesktopCloudRecoveryUiControlTest {
             it.config.contains(SemanticsActions.OnClick) && matches(it, label) &&
                 !it.config.contains(SemanticsProperties.Disabled)
         }
-    private fun click(scene: ImageComposeScene, label: String) {
+    private suspend fun click(scene: ImageComposeScene, label: String) {
         val node = button(scene, label)
         check(!node.config.contains(SemanticsProperties.Disabled))
         val bounds = node.boundsInRoot
         check(bounds.width > 0 && bounds.height > 0 && bounds.left >= 0 && bounds.top >= 0 &&
             bounds.right <= 1000 && bounds.bottom <= 1600)
         check(checkNotNull(node.config[SemanticsActions.OnClick].action).invoke())
+        settleScene(scene)
     }
     private fun editable(scene: ImageComposeScene) = nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }
     private fun setOnlyText(scene: ImageComposeScene, value: String) {

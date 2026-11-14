@@ -63,3 +63,10 @@ observes after render/yield cycles, acquires each input node afresh, and checks
 that every input remains present after the UI settles. It logs no input values,
 lengths or digests. The original timeout and all actual recovery/data/identity
 assertions remain unchanged; no direct prepare/confirm callback is substituted.
+
+The next original run43632727615 reached the second real review after PREPARED
+close/reopen, then failed an immediate Off assertion after the save-choice click.
+The action now yields and renders the actual UI before a new semantic read;
+review waits also require the real Checkbox row. The original Off assertion,
+user choices, native data checks and all prior failures remain intact. This is
+a control timing correction, not evidence that native recovery has completed.
