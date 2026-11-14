@@ -5,7 +5,7 @@ description: Maintain ChatBar external ACTION_SEND/ACTION_VIEW/text import routi
 
 # ChatBar Shared Import
 
-External sharing is one global ingestion pipeline. Management-page import buttons remain independent, explicitly typed entry points.
+External sharing is one global ingestion pipeline. Management-page import buttons remain explicitly typed entry points, except the role picker delegates detected full backups to this existing global pipeline before allocating character bytes.
 
 ## Entry Points
 

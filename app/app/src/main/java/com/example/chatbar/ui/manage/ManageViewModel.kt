@@ -260,10 +260,27 @@ class ManageViewModel : ViewModel() {
     suspend fun decodeCharacterImport(rawJson: String) =
         com.example.chatbar.domain.card.CharacterCardImportRequest(characterTransfers.decode(rawJson))
 
+    internal suspend fun characterImportFileKind(uri: android.net.Uri, context: Context) =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val name = runCatching {
+                context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                    if (it.moveToFirst()) it.getString(0) else null
+                }
+            }.getOrNull() ?: uri.lastPathSegment
+            context.contentResolver.openInputStream(uri)?.use {
+                com.example.chatbar.domain.card.CharacterImportFileProbe.inspect(it, name)
+            } ?: error("无法读取文件")
+        }
+
     suspend fun decodeCharacterImport(uri: android.net.Uri, context: android.content.Context): com.example.chatbar.domain.card.CharacterCardImportRequest {
-        val bytes = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull()
+        when (characterImportFileKind(uri, context)) {
+            com.example.chatbar.domain.card.CharacterImportFileKind.BACKUP -> error("这是完整备份，请使用设置中的数据迁移导入。")
+            com.example.chatbar.domain.card.CharacterImportFileKind.SAVE_SLOT -> error("这是会话存档，请在对应会话的设置 → 存档中导入。")
+            com.example.chatbar.domain.card.CharacterImportFileKind.OTHER_ARCHIVE -> error("这是压缩包，请先解压并选择其中的角色卡。会话存档请从会话设置导入。")
+            com.example.chatbar.domain.card.CharacterImportFileKind.CHARACTER -> Unit
+        }
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("无法读取文件")
         if (bytes != null) {
             characterTransfers.decodePng(bytes)?.let {
                 return com.example.chatbar.domain.card.CharacterCardImportRequest(it)
