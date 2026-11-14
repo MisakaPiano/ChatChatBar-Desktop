@@ -1,0 +1,2 @@
+# Public checksums cover exact bytes, including BOM and line endings.
+payload/** -text
