@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      CHATBAR_VERSION_NAME: 1.4.12-android-next-c2
+      CHATBAR_VERSION_NAME: 1.4.12-next-review-r1
       VERSION_REVIEW_FIXTURE_DIR: ${{ github.workspace }}/android-next-review/fixtures
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
