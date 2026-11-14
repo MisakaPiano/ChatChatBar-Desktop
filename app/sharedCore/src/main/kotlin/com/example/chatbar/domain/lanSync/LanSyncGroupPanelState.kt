@@ -11,6 +11,7 @@ data class LanSyncGroupRevocationConfirmation(val binding: String, val name: Str
 data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGroupPanelStage.EMPTY,
     val busy: Boolean = false, val status: String = "尚未设置设备组", val error: String? = null,
     val setupBinding: String? = null, val recoveryCode: String? = null, val managementUnlocked: Boolean = false,
+    val localManagementAvailable: Boolean = false,
     val invitation: LanSyncGroupInviteOffer? = null, val peerConfirmation: LanSyncGroupPeerConfirmation? = null,
     val revocation: LanSyncGroupRevocationConfirmation? = null, val devices: List<LanSyncGroupDeviceRow> = emptyList(),
     val local: LanSyncGroupRouteStatus = LanSyncGroupRouteStatus("尚未开始"),
@@ -27,6 +28,7 @@ interface LanSyncGroupPanelActions {
     fun abandonUnusedSetup()
     fun unlockManagement(code: String)
     fun lockManagement()
+    fun resumeManagementOperation()
     fun beginJoin(code: String)
     fun retryJoin()
     fun refreshJoinPreparation()

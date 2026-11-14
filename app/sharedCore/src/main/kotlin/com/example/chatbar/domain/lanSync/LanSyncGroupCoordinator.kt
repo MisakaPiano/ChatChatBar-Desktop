@@ -66,7 +66,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             admission.withLock {
                 if (closed) return@withLock
                 mutableState.update { it.copy(busy = true, error = null) }
-                try { work() } catch (failure: Exception) { failure(label, failure) }
+                try { work() } catch (error: Exception) { failure(label, error) }
                 finally { mutableState.update { it.copy(busy = false) } }
             }
         }
@@ -85,7 +85,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val own = founder().profile()
         if (own != null) {
             if (own.stage == LanSyncGroupEnrollmentStage.READY) attach(requireNotNull(founder().runtimeAccess()))
-            else mutableState.update { it.copy(stage = LanSyncGroupPanelStage.PREPARED_LOCKED, status = "设置尚未完成，请用已保存的恢复码继续") }
+            else mutableState.update { it.copy(stage = LanSyncGroupPanelStage.PREPARED_LOCKED, localManagementAvailable = true, status = "设置尚未完成，请用已保存的恢复码继续") }
         } else {
             val joined = member().profile()
             if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()))
@@ -107,7 +107,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             draft = prepared
             expirePrivacy(generation)
             mutableState.update { it.copy(stage = LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE, status = "请妥善保存恢复码后完成创建",
-                recoveryCode = prepared.recoveryCode(), setupBinding = operation.value, managementUnlocked = true) }
+                recoveryCode = prepared.recoveryCode(), setupBinding = operation.value, managementUnlocked = true, localManagementAvailable = true) }
         }
     } }
     override fun recoverySaved(binding: String) = action("完成创建") {
@@ -121,6 +121,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         founder().abandonUnactivated(LanSyncGroupDraftAbandonAdmission { })
         lockManagement()
         mutableState.value = LanSyncGroupPanelState(privacyRevision = state.value.privacyRevision)
+    }
+    override fun resumeManagementOperation() = action("接续已确认的管理操作") {
+        founder().resumeAdministration(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" })
+        lockManagement(); refreshDevices(); cycle(force = true)
     }
     override fun unlockManagement(code: String) { val generation = synchronized(lifecycle) { privacyGeneration }; action("解锁管理") {
         val opened = founder().resume(code)
@@ -227,7 +231,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             hints.start(requireNotNull(port))
         }
         }
-        mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, status = "设备组已就绪，应用正在检查同步") }
+        mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, localManagementAvailable = requireNotNull(access).localManagementAvailable,
+            status = "设备组已就绪，应用正在检查同步") }
         refreshDevices(); cycle(force = true); startLoop()
     }
     private fun refreshDevices() {

@@ -34,6 +34,7 @@ class LanSyncActivity : ComponentActivity() {
 private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     val coordinator = remember(owner) { owner.groupCoordinator }
     val state by coordinator.state.collectAsState()
+    val view by coordinator.view.collectAsState()
     var legacySelected by remember(owner) { mutableStateOf(false) }
     LaunchedEffect(coordinator) { coordinator.open() }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
@@ -64,7 +65,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
                     onDispose { lifecycle.removeObserver(observer); runtime.stop() }
                 }
                 LanSyncScreen(runtime, close)
-            } else LanSyncGroupPanel(state, coordinator) {
+            } else LanSyncGroupPanel(state, coordinator, view) {
                 scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
                     .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
             }

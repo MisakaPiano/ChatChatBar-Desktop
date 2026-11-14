@@ -11,7 +11,8 @@ import javax.net.ssl.SSLContext
 class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, val localTarget: SyncDeliveryTarget,
     val replica: CiphertextStore, val work: Path, private val identity: LanSyncTlsIdentity,
     private val custody: SyncGroupCustody, node: (CiphertextStore) -> LanSyncGroupNode,
-    val vault: SyncManagementVaultContext, val vaultDescriptor: CiphertextDescriptor) {
+    val vault: SyncManagementVaultContext, val vaultDescriptor: CiphertextDescriptor,
+    val localManagementAvailable: Boolean = false) {
     val device get() = identity.fingerprint
     val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
     val reader = LanSyncGroupReplicaReader(replica, work.resolve("replica-reads")) { route, failure -> routeFailure(route, failure) }

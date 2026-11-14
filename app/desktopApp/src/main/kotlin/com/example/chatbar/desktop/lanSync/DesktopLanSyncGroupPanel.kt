@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,7 +18,8 @@ import java.util.Date
 
 /** App-owned runtime survives page disposal; only transient management authority is locked here. */
 @Composable
-internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions) {
+internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions,
+    view: LanSyncGroupNodeView? = null) {
     DisposableEffect(actions) { onDispose { actions.lockManagement() } }
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
@@ -49,7 +51,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             BootstrapButton(if (saved) "✓ 已妥善保存恢复码" else "我已妥善保存恢复码", secondary = true, enabled = !state.busy) { saved = !saved }
             state.setupBinding?.let { binding -> BootstrapButton("完成创建", enabled = !state.busy && saved) { actions.recoverySaved(binding) } }
         }
-        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && !state.managementUnlocked) {
+        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
             key(state.privacyRevision) { LabeledField("恢复码 · 临时解锁管理", recoveryInput, secret = true, enabled = !state.busy, onChange = { recoveryInput = it }) }
             BootstrapButton("解锁管理", secondary = true, enabled = !state.busy && recoveryInput.isNotBlank()) {
                 val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured)
@@ -62,6 +64,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !state.busy) { actions.refreshJoinPreparation() }
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
+            if (!state.localManagementAvailable) StatusText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近送达"); groupRoute("网盘", state.cloud, "最近上传")
             ActionRow {
                 BootstrapButton("立即检查", secondary = true, enabled = !state.busy) { actions.retry() }
@@ -69,12 +72,17 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 BootstrapButton("邀请设备", enabled = !state.busy && state.managementUnlocked) { actions.createInvitation() }
                 if (state.managementUnlocked) BootstrapButton("锁定管理", secondary = true) { actions.lockManagement() }
             }
+            if (state.managementUnlocked) {
+                StatusText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
+                BootstrapButton("接续已确认的管理操作", secondary = true, enabled = !state.busy) { actions.resumeManagementOperation() }
+            }
             state.devices.forEach { device ->
                 StatusText(device.name + if (device.thisDevice) " · 本机" else if (device.managementIdentity) " · 恢复管理身份" else "")
                 StatusText(device.status)
                 if (device.canRevoke) BootstrapButton("撤销此设备", secondary = true, enabled = !state.busy && state.managementUnlocked) { actions.prepareRevocation(device.id) }
             }
         }
+        DesktopGroupFrozenReviewBrowser(view)
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
             val image = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
@@ -100,6 +108,118 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             }
         }
     }
+}
+
+/** A selected inspection stays frozen while the application continues synchronizing. */
+@Composable
+private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
+    var selected by remember { mutableStateOf<Pair<LanSyncGroupNodeView, String>?>(null) }
+    val units = remember(view) {
+        val plan = view?.plan
+        plan?.units?.values?.filter { it.stage != LanSyncGroupNativeStage.UNCHANGED ||
+            it.unit in view?.reservedUnits.orEmpty() || it.unit in view?.incomingReview?.reductions.orEmpty() }
+            ?.map { it.unit }?.sorted().orEmpty()
+    }
+    var unitPage by remember(units) { mutableStateOf(0) }
+    if (units.isNotEmpty() || selected != null) {
+        DesktopDataSectionHeading("冻结内容详情")
+        StatusText("可浏览本次检查取得的完整字段。本页只供核对，待确认的内容会保留当前状态。")
+        units.drop(unitPage * 10).take(10).forEach { unit ->
+            val row = view?.plan?.units?.get(unit)
+            DesktopGroupReviewButton("查看 $unit · ${row?.stage?.let(::desktopGroupFrozenStage).orEmpty()}",
+                { view?.let { selected = it to unit } })
+        }
+        if (units.size > 10) ActionRow {
+            DesktopGroupReviewButton("上一页内容组", { unitPage-- }, enabled = unitPage > 0)
+            StatusText("${unitPage + 1}/${(units.size + 9) / 10}")
+            DesktopGroupReviewButton("下一页内容组", { unitPage++ }, enabled = (unitPage + 1) * 10 < units.size)
+        }
+    }
+    val frozen = selected ?: return
+    val plan = frozen.first.plan ?: return
+    val unit = frozen.second
+    val row = plan.units[unit] ?: return
+    StatusText("已冻结：$unit")
+    StatusText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。此处可查看附件引用，暂不提供图片预览。")
+    DesktopGroupReviewButton("关闭冻结详情", { selected = null })
+    val current = remember(plan, unit) { plan.before.units()[unit].orEmpty() }
+    key(frozen.first, unit) {
+        DesktopGroupFrozenRecords("本次检查时的本机内容", unit, current)
+        row.frontiers.sortedBy { it.version.id.value }.forEach { frontier ->
+            key(frontier.version) {
+                StatusText("已签名版本：${frontier.version.id.value}")
+                val incoming = row.incoming[frontier.version]
+                when {
+                    frontier.change.content == null -> StatusText("此版本为删除标记，没有正文记录。")
+                    incoming != null -> DesktopGroupFrozenRecords("已取得并验证的传入版本", unit, incoming.decoded.payload.records)
+                    else -> StatusText("此版本的正文或附件尚未完整取得，暂不能显示完整内容。")
+                }
+            }
+        }
+        frozen.first.incomingReview?.reductions?.get(unit)?.let { reduction ->
+            DesktopGroupFrozenRecords("待确认的传入目标", unit, reduction.proposed)
+        }
+    }
+}
+
+@Composable
+private fun DesktopGroupFrozenRecords(label: String, unit: String, records: List<LanSyncRecord>) {
+    var expanded by remember(records, label) { mutableStateOf(false) }
+    DesktopGroupReviewButton((if (expanded) "收起" else "展开") + "$label · ${records.size} 条记录",
+        { expanded = !expanded })
+    if (!expanded) return
+    val detail = remember(records, unit) { LanSyncDetailedReview.detail(unit, records, emptyList()) }
+    val keys = detail.recordKeys
+    if (keys.isEmpty()) { StatusText("此内容没有记录。"); return }
+    var recordPage by remember(detail) { mutableStateOf(0) }
+    var selectedKey by remember(detail) { mutableStateOf<String?>(null) }
+    keys.drop(recordPage * 10).take(10).forEach { recordKey ->
+        DesktopGroupReviewButton(recordKey, { selectedKey = recordKey })
+    }
+    if (keys.size > 10) ActionRow {
+        DesktopGroupReviewButton("上一页记录", { recordPage-- }, enabled = recordPage > 0)
+        StatusText("${recordPage + 1}/${(keys.size + 9) / 10}")
+        DesktopGroupReviewButton("下一页记录", { recordPage++ }, enabled = (recordPage + 1) * 10 < keys.size)
+    }
+    val recordKey = selectedKey ?: return
+    val fields = detail.fields(recordKey)
+    var fieldIndex by remember(detail, recordKey) { mutableStateOf(0) }
+    var bodyPage by remember(detail, recordKey, fieldIndex) { mutableStateOf(0) }
+    StatusText("所选记录：$recordKey")
+    if (fields.isEmpty()) { StatusText("此记录没有字段。"); return }
+    val field = fields[fieldIndex]
+    StatusText("字段 ${fieldIndex + 1}/${fields.size} · $field")
+    ActionRow {
+        DesktopGroupReviewButton("上一字段", { fieldIndex-- }, enabled = fieldIndex > 0)
+        DesktopGroupReviewButton("下一字段", { fieldIndex++ }, enabled = fieldIndex + 1 < fields.size)
+    }
+    val body = detail.fieldPage(recordKey, field, true, bodyPage)
+    SelectionContainer { StatusText(body.first) }
+    if (body.second > 1) ActionRow {
+        DesktopGroupReviewButton("上一页字段正文", { bodyPage-- }, enabled = bodyPage > 0)
+        StatusText("${bodyPage + 1}/${body.second}")
+        DesktopGroupReviewButton("下一页字段正文", { bodyPage++ }, enabled = bodyPage + 1 < body.second)
+    }
+}
+
+private fun desktopGroupFrozenStage(stage: LanSyncGroupNativeStage): String = when (stage) {
+    LanSyncGroupNativeStage.UNCHANGED -> "无变化"
+    LanSyncGroupNativeStage.READY_CONTENT -> "传入内容已就绪"
+    LanSyncGroupNativeStage.READY_DELETION -> "传入删除"
+    LanSyncGroupNativeStage.READY_OBSERVATION -> "内容一致"
+    LanSyncGroupNativeStage.LOCAL_PROPOSAL -> "本机修改"
+    LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW -> "本机删除或覆盖待核对"
+    LanSyncGroupNativeStage.CONFLICT -> "多版本待选择"
+    LanSyncGroupNativeStage.AUTHOR_FORK -> "同一设备版本分叉"
+    LanSyncGroupNativeStage.WAITING_DEPENDENCY -> "等待正文或附件"
+    LanSyncGroupNativeStage.RECORD_REVIEW -> "记录归属待核对"
+    LanSyncGroupNativeStage.DEPENDENCY_HELD -> "关联内容暂缓"
+    LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"
+}
+
+@Composable
+private fun DesktopGroupReviewButton(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+    BootstrapButton(label, enabled = enabled, secondary = true, onClick = onClick)
 }
 
 @Composable private fun groupRoute(name: String, status: LanSyncGroupRouteStatus, observation: String) {

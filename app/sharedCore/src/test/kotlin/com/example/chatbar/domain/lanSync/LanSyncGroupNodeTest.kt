@@ -24,6 +24,27 @@ class LanSyncGroupNodeTest {
         val trust = SyncGroupTrust(cipher.group, genesis.reference(), members.getValue(identities[0].fingerprint).certificate)
         val ledger = SyncDeviceLedger(trust).also { it.offer(genesis) }
         val backend = FileCiphertextStore(root.resolve("ciphertext-transport"))
+        fun rotate(revoked: Int): SyncStreamingCipher {
+            val next = SyncStreamingCipher.create(cipher.group)
+            val current = ledger.current()
+            val unsigned = current.copy(id = SyncStoreId.random(), parent = current.reference(), sequence = current.sequence + 1,
+                epoch = next.epoch, keyCommitment = next.keyCommitment(),
+                members = current.members + (identities[revoked].fingerprint to current.members.getValue(identities[revoked].fingerprint).copy(active = false)),
+                signature = "unsigned")
+            val signed = unsigned.copy(signature = Base64.getEncoder().encodeToString(identities[0].signSyncGroupPayload(unsigned.signingBytes())))
+            assertEquals(SyncVersionState.ADMITTED, ledger.offer(signed))
+            return next
+        }
+        fun publishRotation(next: SyncStreamingCipher, target: SyncDeliveryTarget): LanSyncGroupPublishPlan {
+            val keys = mapOf(cipher.epoch to cipher, next.epoch to next)
+            val queues = Files.createDirectory(root.resolve("rotation-queues"))
+            val publisher = LanSyncGroupRootPublication(Files.createDirectory(root.resolve("rotation-publication")), identities[0], { ledger },
+                { keys.getValue(it) }, { epoch -> SyncEncryptedOutbox(Files.createDirectories(queues.resolve(epoch.value)), keys.getValue(epoch)) })
+            val plan = publisher.prepare()
+            publisher.upload(backend, target)
+            assertNotNull(publisher.receipt(target))
+            return plan
+        }
         inner class End(val index: Int) {
             val base = Files.createDirectory(root.resolve("node-$index")); val data = Files.createDirectory(base.resolve("data"))
             val runtime = Files.createDirectory(base.resolve("runtime")); val custodyRoot = Files.createDirectory(base.resolve("custody"))
@@ -73,6 +94,137 @@ class LanSyncGroupNodeTest {
     private fun withGroup(work: suspend (Group) -> Unit) = runBlocking {
         val root = Files.createTempDirectory("synthetic-native-group-nodes-").toRealPath()
         try { work(Group(root)) } finally { check(root.toFile().deleteRecursively()) }
+    }
+
+    private fun retainedFiles(root: Path): Map<String, ByteArray> = Files.walk(root).use { paths ->
+        paths.filter { Files.isRegularFile(it) }.toList().associate { root.relativize(it).toString() to Files.readAllBytes(it) }
+    }
+    private fun assertRetainedFiles(before: Map<String, ByteArray>, root: Path) {
+        val after = retainedFiles(root)
+        assertEquals(before.keys, after.keys)
+        before.forEach { (name, bytes) -> assertContentEquals(bytes, after.getValue(name), name) }
+    }
+
+    @Test fun twoOfflineOperationsWaitForRotatedKeyThenColdDrainInAuthorOrderWithoutReauthoring() = withGroup { g ->
+        val receiver = g.End(0); val receiving = receiver.enroll()
+        val daily = g.End(1); var node = daily.enroll()
+        g.End(2).enroll()
+        daily.card("a", "DL1 first offline original")
+        val first = node.commit(node.inspect().review(setOf("character_cards/a")), operation = SyncStoreId.parse("f".repeat(32)))
+        daily.card("b", "DL1 second offline original")
+        val second = node.commit(node.inspect().review(setOf("character_cards/b")), operation = SyncStoreId.parse("0".repeat(31) + "1"))
+        val commits = listOf(first, second)
+        val operations = commits.map { it.entry.request.operation }
+        val originalEntries = commits.map { it.entry }
+        val origin = Files.readAllBytes(daily.runtime.resolve("author/origin.protected"))
+        val originals = commits.map { requireNotNull(daily.workspace.recovery.read(it.entry.request.sourceCheckpoint)) }
+        originals.forEach(daily.workspace.recovery::verify)
+        assertEquals(listOf(1L, 2L), commits.map { it.entry.version.authorSequence })
+        assertEquals(listOf(g.cipher.epoch, g.cipher.epoch), commits.map { it.publication.epoch })
+        commits.forEach { assertNull(g.backend.metadata(it.publication.metadata.key)) }
+        val peerTarget = SyncDeliveryTarget(SyncDeliveryKind.NEARBY_DEVICE, SyncStoreId.random())
+        operations.forEach { assertNull(node.receipt(it, peerTarget)) }
+
+        val next = g.rotate(2)
+        // Actual signed ledger can arrive before its recipient capsule. No source is reset/re-authored.
+        daily.custody().update(listOf(g.ledger.current()))
+        node = daily.open()
+        assertEquals(LanSyncGroupNodeStage.WAITING_FOR_KEY, node.inspect().stage)
+        assertEquals(operations, node.sourceOperations())
+        assertEquals(2L, daily.author().state().committedSequence)
+        val control = g.publishRotation(next, peerTarget)
+        assertTrue(control.keyDeliveries.containsKey("${next.epoch.value}:${g.identities[1].fingerprint}"))
+        assertFalse(control.keyDeliveries.keys.any { it.endsWith(":${g.identities[2].fingerprint}") })
+        assertEquals(setOf(g.identities[2].fingerprint), control.revocationNotices.keys)
+
+        val resumed = daily.scan(node)
+        assertEquals(LanSyncGroupNodeStage.READY, resumed.stage)
+        assertEquals(operations, node.sourceOperations(), "Both cold operations must survive random filename order")
+        assertEquals(next.epoch, daily.custody().key(next.epoch).epoch)
+        assertContentEquals(origin, Files.readAllBytes(daily.runtime.resolve("author/origin.protected")))
+        assertEquals(originalEntries, operations.map { daily.author().entry(it) })
+        assertEquals(2L, daily.author().state().committedSequence)
+        for (operation in node.sourceOperations()) {
+            assertNull(node.receipt(operation, peerTarget))
+            val receipt = node.upload(operation, g.backend, peerTarget)
+            assertEquals(peerTarget, receipt.target)
+            assertEquals(receipt, node.receipt(operation, peerTarget))
+        }
+        val incoming = receiver.scan(receiving)
+        assertEquals(LanSyncGroupNodeStage.READY, incoming.stage)
+        val byReference = incoming.reconciliation.authenticatedVersions.filter { it.envelope.version != null }
+            .groupBy { requireNotNull(it.envelope.version).reference() }
+        originalEntries.forEach { entry ->
+            val wrapped = requireNotNull(byReference[entry.version.reference()])
+            assertTrue(wrapped.isNotEmpty())
+            wrapped.forEach { authenticated ->
+                assertEquals(next.epoch, authenticated.context.epoch)
+                assertEquals(entry.version, authenticated.envelope.version)
+                assertEquals(g.genesis.reference(), requireNotNull(authenticated.envelope.version).deviceLedger)
+            }
+        }
+        receiving.apply(requireNotNull(incoming.plan))
+        assertEquals("DL1 first offline original", receiver.name("a"))
+        assertEquals("DL1 second offline original", receiver.name("b"))
+        assertEquals(0L, receiver.author().state().committedSequence)
+        val receipted = operations.map { node.receipt(it, peerTarget) }
+        node = daily.open(); daily.scan(node)
+        assertEquals(operations, node.sourceOperations())
+        assertEquals(receipted, operations.map { node.upload(it, g.backend, peerTarget) })
+        assertEquals(originalEntries, operations.map { daily.author().entry(it) })
+        assertEquals(2L, daily.author().state().committedSequence)
+        assertContentEquals(origin, Files.readAllBytes(daily.runtime.resolve("author/origin.protected")))
+        originals.forEach(daily.workspace.recovery::verify)
+    }
+
+    @Test fun revokedOfflineDailyNodeReceivesItsNoticeAndRefusesBothRetainedOperationsWithoutLosingOriginals() = withGroup { g ->
+        g.End(0).enroll()
+        val daily = g.End(1); var node = daily.enroll()
+        g.End(2).enroll()
+        daily.card("a", "revoked DL1 first offline original")
+        val first = node.commit(node.inspect().review(setOf("character_cards/a")), operation = SyncStoreId.parse("f".repeat(32)))
+        daily.card("b", "revoked DL1 second offline original")
+        val second = node.commit(node.inspect().review(setOf("character_cards/b")), operation = SyncStoreId.parse("0".repeat(31) + "1"))
+        val operations = listOf(first, second).map { it.entry.request.operation }
+        val originals = listOf(first, second).map { requireNotNull(daily.workspace.recovery.read(it.entry.request.sourceCheckpoint)) }
+        val authorFiles = retainedFiles(daily.runtime.resolve("author"))
+        val sourceFiles = retainedFiles(daily.runtime.resolve("source"))
+        val queueFiles = retainedFiles(daily.runtime.resolve("queues"))
+        val liveFiles = retainedFiles(daily.data)
+        val sourceEntries = daily.workspace.recovery.list()
+        val target = SyncDeliveryTarget(SyncDeliveryKind.NEARBY_DEVICE, SyncStoreId.random())
+        val next = g.rotate(1)
+        val control = g.publishRotation(next, target)
+        assertFalse(control.keyDeliveries.keys.any { it.endsWith(":${g.identities[1].fingerprint}") })
+        assertEquals(setOf(g.identities[1].fingerprint), control.revocationNotices.keys)
+        node = daily.open()
+        val revoked = daily.scan(node)
+        assertEquals(LanSyncGroupNodeStage.DEVICE_REVOKED, revoked.stage)
+        assertTrue(revoked.reconciliation.observations.any { it.stage == SyncInboxStage.DEVICE_REVOKED })
+        assertEquals(operations, node.sourceOperations())
+        assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { daily.custody().key(next.epoch) }.message)
+        val published = g.backend.listCommits().entries
+        var puts = 0
+        val remote = object : CiphertextStore by g.backend {
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
+                puts++; return g.backend.put(request, source)
+            }
+        }
+        for (operation in operations) {
+            assertEquals("SYNC_GROUP_SOURCE_AUTHORITY_CHANGED", assertFailsWith<IllegalArgumentException> { node.upload(operation, remote, target) }.message)
+            assertNull(node.receipt(operation, target))
+        }
+        assertEquals(0, puts)
+        assertEquals(published, g.backend.listCommits().entries)
+        assertRetainedFiles(authorFiles, daily.runtime.resolve("author"))
+        assertRetainedFiles(sourceFiles, daily.runtime.resolve("source"))
+        assertRetainedFiles(queueFiles, daily.runtime.resolve("queues"))
+        assertRetainedFiles(liveFiles, daily.data)
+        assertEquals(sourceEntries, daily.workspace.recovery.list())
+        originals.forEach(daily.workspace.recovery::verify)
+        assertEquals(2L, daily.author().state().committedSequence)
+        assertEquals(listOf(first.entry, second.entry), operations.map { daily.author().entry(it) })
+        assertEquals(LanSyncGroupNodeStage.DEVICE_REVOKED, daily.open().inspect().stage)
     }
 
     @Test fun threeIndependentNodesRetainOfflineBranchesPartialDeletionAndRestartedSourceOrder() = withGroup { g ->
