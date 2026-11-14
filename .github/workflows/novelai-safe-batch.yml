@@ -40,7 +40,7 @@ jobs:
           CHATBAR_SUPABASE_ANON_KEY: 'synthetic-no-real-key'
         run: |
           chmod +x gradlew
-          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.*" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepository*Test" :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.ImageBatchRunPlanTest" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepositoryBatchImagesTest" :app:assembleDebug --no-daemon --stacktrace
       - name: Enable KVM for synthetic component checks
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -57,9 +57,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.ImageBatchOptionsEditorTest,com.example.chatbar.ui.components.ImageBatchOfflineRunTest --no-daemon --stacktrace
-            adb pull /sdcard/Android/data/com.example.chatbar.safebatch.n1/files/safe-batch-review safe-batch-evidence/device-ui
+          script: python3 tools/run_safe_batch_device_review.py
       - name: Collect original reports and APK
         if: always()
         shell: python

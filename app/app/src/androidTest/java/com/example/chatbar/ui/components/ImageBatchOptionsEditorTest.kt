@@ -28,11 +28,11 @@ class ImageBatchOptionsEditorTest {
                 }
             } }
         }
-        rule.onNodeWithContentDescription("批量生图数量").assertExists()
-        rule.onNodeWithContentDescription("本次估算Anlas预算").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("预计 10 张", substring = true).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("4 + 4 + 2", substring = true).assertIsDisplayed()
-        rule.onNodeWithText("一次请求多张通常", substring = true).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription("批量生图数量", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("本次估算Anlas预算", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("预计 10 张", substring = true, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("4 + 4 + 2", substring = true, useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithText("一次请求多张通常", substring = true, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
         screenshot("batch-cost-risk.png")
     }
     @Test fun reversedRangeCannotBeAppliedAndCorrectedRangeBecomesValid() {
@@ -46,12 +46,14 @@ class ImageBatchOptionsEditorTest {
                 }
             } }
         }
-        rule.onNodeWithContentDescription("随机最小秒数").performScrollTo().performTextReplacement("46")
+        input("随机最小秒数").performScrollTo().performTextReplacement("46")
         rule.waitForIdle(); assertFalse(valid); assertEquals(15, actual.pacing.minSeconds)
-        rule.onNodeWithContentDescription("随机最大秒数").performScrollTo().performTextReplacement("60")
+        input("随机最大秒数").performScrollTo().performTextReplacement("60")
         rule.waitForIdle(); assertTrue(valid); assertEquals(46, actual.pacing.minSeconds); assertEquals(60, actual.pacing.maxSeconds)
         screenshot("batch-random-range.png")
     }
+    private fun input(description: String) = rule.onNode(
+        hasSetTextAction() and hasAnyAncestor(hasContentDescription(description)), useUnmergedTree = true)
     private fun screenshot(name: String) {
         val path = File(rule.activity.getExternalFilesDir(null), "safe-batch-review/$name")
         path.parentFile!!.mkdirs()

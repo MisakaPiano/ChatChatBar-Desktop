@@ -436,6 +436,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     val relinkCharacterCards = characterRepository.characters
 
     suspend fun relinkCharacterCard(characterCardId: String) {
+        stopManualImageRuns()
         check(!_isResponding.value && !_saveSlotOperation.value.busy) { "请等待当前回复或存档操作结束后再更换角色卡" }
         check(characterRepository.getById(characterCardId) != null) { "所选角色卡已不存在" }
         check(chatRepository.getSession(sessionId)?.characterCardId != characterCardId) { "请选择另一张角色卡" }
@@ -1162,15 +1163,16 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val generation = NovelAiGenerationSettings.legacy(0, configuration.requestCount, target)
             .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
         val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
-        val total = plan.batches.sumOf { count ->
+        val costs = plan.batches.map { count ->
             NovelAiImageSizePreset.entries.maxOf { preset ->
                 val size = NovelAiImageSizePolicy.resolve(settings.novelAiImageAspectRatio, preset)
                 NovelAiImageCostEstimator.estimate(generation.copy(count = count, customWidth = size.width, customHeight = size.height), usage).anlas.toLong()
             }
         }
+        val total = costs.sum()
         return "会话角色卡：${card.name} · 生图模型：${target.displayName}\n" +
             (if (usage == null) "账户状态未知；任务将在请求前停止。" else "当前 Anlas ${usage.anlas} · V5 额度约 ${usage.v5AllowancePercent ?: "未知"}%（另计）") +
-            "\n按可能画幅预估整项任务 $total Anlas；AI 设计后按实际画幅重新核对，估算可能变化。"
+            "\n按可能画幅估算各批 ${costs.joinToString(" + ")} Anlas；整项 $total Anlas。AI 设计后按实际画幅重新核对，估算可能变化。"
     }
 
     private val manualBatchControls = ConcurrentHashMap<String, ImageBatchControl>()
@@ -1190,7 +1192,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         anchorMessageId: String,
         configuration: ImageBatchConfiguration,
         imageContentHint: String = "",
-        imagePromptPreference: String? = null
+        imagePromptPreference: String? = null,
+        persistPreference: Boolean = false
     ) {
         if (imageGenerations.value.any { it.manualBatch && !it.isTerminal }) return
         val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
@@ -1198,6 +1201,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val control = ImageBatchControl()
         manualBatchControls[taskId] = control
         val preference = imagePromptPreference ?: _session.value?.imagePromptPreference.orEmpty()
+        if (persistPreference) persistImagePromptPreference(preference)
         putImageGeneration(ImageGenerationState(taskId, anchorMessageId, ImageGenerationPhase.DESIGNING,
             finalPromptRequirement = preference, batchSize = configuration.requestCount, manualBatch = true))
         // ViewModel ownership: leaving the screen cancels this manual run; no restart auto-resume.
@@ -3898,6 +3902,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         deleteRemovedImages: Boolean,
         deleteMemoryWhenTextBlank: Boolean = false
     ) {
+        stopManualImageRunsForAnchor(oldMessage.id)
         val updatedMessage = MessageAlternativeVersionPolicy.editCurrentContent(
             message = oldMessage,
             content = content

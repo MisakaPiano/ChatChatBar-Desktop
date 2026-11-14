@@ -1420,11 +1420,12 @@ class ImagePromptToolViewModel : ViewModel() {
             val plan = config.freeze(ImageBatchOrigin.STUDIO)
             pendingImageDraft = draft; pendingBatchPlan = plan
             val usage = _uiState.value.account.effectiveUsage
-            val total = plan.batches.mapIndexed { index, count -> NovelAiImageCostEstimator.estimate(
+            val costs = plan.batches.mapIndexed { index, count -> NovelAiImageCostEstimator.estimate(
                 draft.activeSettings.copy(count = count), usage, draft.imageGuidance,
-                if (index == 0) countVibeCacheMisses(draft) else 0).anlas.toLong() }.sum()
+                if (index == 0) countVibeCacheMisses(draft) else 0).anlas.toLong() }
+            val total = costs.sum()
             _uiState.update { it.copy(batchConfirmation = plan.summary() +
-                "\n整项任务当前估算 $total Anlas（账户未知时按收费估算；每批重新核对）\n" + ImageBatchRiskText.NOTICE) }
+                "\n各批当前估算 ${costs.joinToString(" + ")} Anlas；整项 $total Anlas（账户未知时按收费估算；每批重新核对）\n" + ImageBatchRiskText.NOTICE) }
         } else startImageRun(draft, null)
     }
 

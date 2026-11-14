@@ -342,6 +342,7 @@ fun ChatScreen(
     var statusBlockExpansionOverrides by remember(sessionId) {
         mutableStateOf<Map<String, Boolean>>(emptyMap())
     }
+    var persistImagePreference by remember(sessionId) { mutableStateOf(false) }
     var imagePromptTargetId by remember(sessionId) { mutableStateOf<String?>(null) }
     var batchConfiguration by remember(sessionId) { mutableStateOf(ImageBatchConfiguration()) }
     var batchValid by remember(sessionId) { mutableStateOf(true) }
@@ -1279,6 +1280,7 @@ fun ChatScreen(
                             message.role == MessageRole.ASSISTANT &&
                             message.displayContent.isNotBlank()
                         ) ({
+                            persistImagePreference = false
                             batchConfiguration = ImageBatchConfiguration()
                             imagePromptTargetId = message.id
                             imageContentHintDraft = ""
@@ -1292,6 +1294,7 @@ fun ChatScreen(
                             message.role == MessageRole.ASSISTANT &&
                             message.displayContent.isNotBlank()
                         ) ({
+                            persistImagePreference = true
                             batchConfiguration = ImageBatchConfiguration()
                             imagePromptTargetId = message.id
                             imageContentHintDraft = ""
@@ -1561,7 +1564,8 @@ fun ChatScreen(
                         imagePromptTargetId = null
                         viewModel.generateManualNovelAiImages(
                             anchorMessageId = targetId, configuration = batchConfiguration,
-                            imageContentHint = contentHint, imagePromptPreference = preference
+                            imageContentHint = contentHint, imagePromptPreference = preference,
+                            persistPreference = persistImagePreference
                         )
                     }, enabled = batchValid && batchConsent && !batchPreview.startsWith("正在查询")
                 )
@@ -1588,7 +1592,7 @@ fun ChatScreen(
                         minLines = 3
                     )
                 }
-                CbField("生图偏好") {
+                CbField(if (persistImagePreference) "生图偏好（确认后保存到会话）" else "本次生图偏好") {
                     CbInput(
                         value = imagePromptPreferenceDraft,
                         onValueChange = { imagePromptPreferenceDraft = it },
