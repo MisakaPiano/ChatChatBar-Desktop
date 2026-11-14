@@ -1,0 +1,69 @@
+name: Persistent public signing and exact delivered84 to85 upgrade
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-delivered84-candidate85-sign-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sign-and-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate fixed84 to85 public signing request
+        run: python3 -B tools/lan-next-control/candidate85_control.py validate-sign --request .github/lan-delivered84-candidate85-sign-request.json
+      - name: Authenticate actual raw artifact API ZIP and manifest before signing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/lan-next-control/candidate85_control.py fetch-raw --request .github/lan-delivered84-candidate85-sign-request.json --archive "$RUNNER_TEMP/candidate85-original-raw.zip" --destination original --evidence original-evidence
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;36.0.0
+      - name: Assemble public blocks and require SDK v2 certificate identity zipalign and tamper rejection
+        run: python3 -B tools/lan-next-control/candidate85_control.py verify --raw-dir original --request .github/lan-delivered84-candidate85-sign-request.json --output candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0" --control-sha "$GITHUB_SHA"
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Actual seed84 reinstall85 preserved-data verification and live Activity smoke
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          CCB_LAN_SYNTHETIC_UPGRADE_CLOUD: 'true'
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            python3 -B tools/lan-next-control/candidate85_control.py upgrade --signed-dir candidate
+            python3 -B tools/lan-next-control/candidate85_control.py ui --signed-dir candidate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ccb-lan-delivered84-candidate85-evidence
+          path: |
+            original-evidence/*.json
+            candidate/*.json
+            candidate/*.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered84-candidate85-verified-apks
+          path: |
+            candidate/base84.apk
+            candidate/seed84.apk
+            candidate/candidate85.apk
+            candidate/verify85.apk
+          if-no-files-found: error
