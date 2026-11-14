@@ -189,7 +189,7 @@ class SyncGroupCloudLargeNativeProofTest {
             val completeChunks = dav.completedPaths.filter { "/weak-chunks-v1/" in it }.associateWith { dav.puts.getValue(it).get() }
             assertTrue(completeChunks.isNotEmpty())
             val putBeforeResume = dav.putBytes.get(); val getBeforeResume = dav.getBytes.get()
-            assertNull(access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).chunkReceipt())
+            assertNull(access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).cloudReceipt())
             firstRuntime.close(); firstRuntime.drain(); firstEnrollment.close()
 
             // Independent custody and encrypted queues remain. No original attachment or warm cache can supply resume.
@@ -206,8 +206,11 @@ class SyncGroupCloudLargeNativeProofTest {
             assertTrue(resumedRuntime.cycle(recoverNative = false, outgoingOnly = true))
             val observed = requireNotNull(reports.getValue(route).lastObservedAt)
             assertTrue(reports.getValue(route).selectionObserved)
-            val receipt = requireNotNull(access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).chunkReceipt())
-            assertEquals(receipt.objects.maxOf { it.readbackObservation.observedAtMillis }, observed)
+            val receipt = requireNotNull(access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).cloudReceipt())
+            assertEquals(receipt.objects.maxOf { it.evidence.readback.observedAtMillis }, observed)
+            assertTrue(receipt.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
+            assertTrue(receipt.objects.any { it.evidence is LanSyncGroupCloudTargetEvidence.Existing })
+            assertTrue(receipt.objects.any { it.evidence is LanSyncGroupCloudTargetEvidence.Appended })
             assertTrue(receipt.objects.any { it.objectRequest.descriptor.length > length })
             completeChunks.forEach { (path, count) -> assertEquals(count, dav.puts.getValue(path).get(), "completed chunk must not be PUT again") }
             assertEquals(1L, dav.puts.getValue(interrupted).get())
@@ -221,7 +224,7 @@ class SyncGroupCloudLargeNativeProofTest {
             val repeatedPutBytes = dav.putBytes.get() - beforeRepeatPut; val repeatedGetBytes = dav.getBytes.get() - beforeRepeatGet
             assertEquals(0L, repeatedPutBytes); assertEquals(0L, repeatedGetBytes)
             assertEquals(beforeRepeatRequests, dav.requests.get()); assertEquals(observed, reports.getValue(route).lastObservedAt)
-            assertEquals(receipt, access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).chunkReceipt())
+            assertEquals(receipt, access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).cloudReceipt())
             resumedRuntime.close(); resumedRuntime.drain()
 
             // Receiver has no source FileStore route or preinstalled epoch keys. All reads use actual HTTP assemblies.
@@ -311,7 +314,11 @@ class SyncGroupCloudLargeNativeProofTest {
                 put("resumeServerReceivedPutBodyBytes", resumedPutBytes); put("resumeServerWrittenGetBodyBytes", resumedGetBytes)
                 put("partialAttemptRetainedUnchanged", true); put("coldRuntimeAndEnrollmentReopened", true)
                 put("originalResourcesAndWarmCacheRemovedBeforeResume", true); put("independentSourceCustodyVerified", true)
-                put("chunkTypedReceiptVerified", true)
+                put("cloudTypedReceiptVerified", true)
+                put("chunkTypedReceiptVerified", receipt.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
+                put("cloudTargetExistingObjects", receipt.objects.count { it.evidence is LanSyncGroupCloudTargetEvidence.Existing })
+                put("cloudTargetAppendedObjects", receipt.objects.count { it.evidence is LanSyncGroupCloudTargetEvidence.Appended })
+                put("cloudTargetRejectedCandidates", receipt.rejectedCandidates)
                 put("repeatedCompletedSendPutBytes", repeatedPutBytes); put("repeatedCompletedSendGetBytes", repeatedGetBytes)
                 put("receiverOnlyChunkCloudRoute", true); put("actualHpkeEnrollment", true); put("inboxAndDependenciesVerified", true)
                 put("nativeAppliedUnitReceipts", nativeReceipt.advancedUnits.size); put("wholeResourceHashesVerified", true)

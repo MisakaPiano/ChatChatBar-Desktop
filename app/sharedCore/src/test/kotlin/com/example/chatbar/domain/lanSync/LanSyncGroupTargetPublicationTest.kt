@@ -117,6 +117,163 @@ class LanSyncGroupTargetPublicationTest {
     private fun weakPath(provider: WeakFixture, value: LanSyncGroupWeakTargetObservation) = provider.path(
         WeakWebDavCandidate(value.route, value.key, value.descriptor, value.operation, value.attempt))
 
+    @Test fun cloudProbeReusesForeignWholeAndChunkObjectsWithoutPuttingThemAndKeepsRouteBoundHistoricalEvidenceAcrossColdSelections() = fixture { f ->
+        val image = f.admin.data.resolve("images/foreign-cloud.png"); Files.createDirectories(image.parent)
+        val originalImage = LanSyncPreviewSample.image(); Files.write(image, originalImage)
+        LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), CharacterCard("card", "synthetic relay original",
+            avatar = image.toString(), createdAt = 1, updatedAt = 2))
+        publish(f, "character_cards/card")
+        WeakFixture(f.directory("foreign-cloud-provider")).use { provider -> PartsBackend(provider).use { writerParts ->
+            val publisher = f.access.targetPublication(f.directory("foreign-publisher-plan"), SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route))
+            val publishedPlan = publisher.prepare()
+            val foreignOperations = mutableMapOf<CiphertextObjectKey, SyncStoreId>()
+            val wholeCandidates = mutableMapOf<CiphertextObjectKey, WeakWebDavCandidate>()
+            val assemblies = mutableMapOf<CiphertextObjectKey, WeakWebDavCandidate>()
+            val writer = provider.store("foreign-whole-writer")
+            for ((index, item) in publishedPlan.objects.withIndex()) {
+                val operation = SyncStoreId.random(); foreignOperations[item.key] = operation
+                val request = CiphertextPutRequest(item.key, operation, item.descriptor)
+                val raw = bytes(f.access.reader, item)
+                if (index % 2 == 0) wholeCandidates[item.key] = writer.appendAttempt(request, raw.inputStream()).candidate
+                else assemblies[item.key] = writerParts.open().append(request, raw.inputStream()).assembly
+            }
+            assertTrue(wholeCandidates.isNotEmpty()); assertTrue(assemblies.isNotEmpty())
+            val originals = provider.dav.files.mapValues { it.value.copyOf() }; val puts = provider.dav.puts.toList()
+            val relayRoute = SyncStoreId.random(); val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, relayRoute)
+            val directory = f.directory("foreign-relay-target")
+            PartsBackend(provider, relayRoute, "foreign-relay-parts").use { relayParts ->
+                val attempts = provider.store("foreign-relay-whole", relayRoute)
+                val owner = f.owner(directory, target); val plan = owner.prepare()
+                val receipt = owner.uploadCloud(attempts, relayParts.open())
+                assertEquals(plan.objects, receipt.objects.map { it.objectRequest }); assertEquals(0, receipt.rejectedCandidates)
+                receipt.objects.forEach { row ->
+                    val evidence = assertIs<LanSyncGroupCloudTargetEvidence.Existing>(row.evidence)
+                    val originalOperation = foreignOperations.getValue(row.objectRequest.key)
+                    assertNotEquals(originalOperation, row.objectRequest.operation)
+                    when (val readback = evidence.readback) {
+                        is LanSyncGroupCloudTargetObservation.Whole -> {
+                            val candidate = wholeCandidates.getValue(row.objectRequest.key)
+                            assertEquals(relayRoute, readback.observation.route); assertEquals(candidate.operationId, readback.observation.operation)
+                            assertEquals(candidate.attempt, readback.observation.attempt)
+                            assertEquals(WeakWebDavObservationOrigin.EXISTING_ATTEMPT_READBACK.name, readback.observation.origin)
+                        }
+                        is LanSyncGroupCloudTargetObservation.Chunks -> {
+                            val candidate = assemblies.getValue(row.objectRequest.key)
+                            assertEquals(originalOperation, readback.observation.logicalOperation)
+                            assertEquals(relayRoute, readback.observation.manifest.route)
+                            assertEquals(candidate.operationId, readback.observation.manifest.manifestOperation)
+                            assertEquals(candidate.attempt, readback.observation.manifest.attempt)
+                            assertEquals(candidate.descriptor, readback.observation.manifest.manifestDescriptor)
+                        }
+                    }
+                }
+                assertEquals(puts, provider.dav.puts.toList(), "Foreign ciphertext needs no new physical BLOB or COMMIT PUT")
+                originals.forEach { (path, raw) -> assertContentEquals(raw, provider.dav.files.getValue(path)) }
+                assertNull(owner.receipt()); assertNull(owner.weakReceipt()); assertNull(owner.chunkReceipt())
+                val requests = provider.server.requestCount
+                val cold = f.owner(directory, target); assertEquals(plan, cold.prepare())
+                assertEquals(receipt, cold.uploadCloud(attempts, relayParts.open())); assertEquals(requests, provider.server.requestCount)
+                val index = Files.walk(directory.resolve("cloud-object-observations")).use { files -> files.filter {
+                    it.fileName.toString().endsWith(".obj")
+                }.findFirst().orElseThrow() }
+                val indexBytes = Files.readAllBytes(index); Files.delete(index)
+                assertTrue(cold.recoverObjectObservations()); assertContentEquals(indexBytes, Files.readAllBytes(index))
+                assertEquals(receipt, cold.cloudReceipt()); assertEquals(requests, provider.server.requestCount)
+                val corrupt = indexBytes.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }
+                Files.write(index, corrupt)
+                assertFailsWith<CiphertextStoreException> { cold.uploadCloud(attempts, relayParts.open()) }
+                assertContentEquals(corrupt, Files.readAllBytes(index)); assertEquals(requests, provider.server.requestCount)
+                Files.write(index, indexBytes)
+
+                // A different local route/account binding must obtain its own complete provider reads.
+                val otherRoute = SyncStoreId.random()
+                PartsBackend(provider, otherRoute, "another-relay-parts").use { otherParts ->
+                    val other = f.owner(f.directory("another-relay-target"), SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, otherRoute))
+                    other.prepare()
+                    val separate = other.uploadCloud(provider.store("another-relay-whole", otherRoute), otherParts.open())
+                    assertEquals(otherRoute, separate.target.id); assertTrue(provider.server.requestCount > requests)
+                    assertEquals(puts, provider.dav.puts.toList())
+                    assertTrue(separate.objects.all { it.evidence is LanSyncGroupCloudTargetEvidence.Existing })
+                }
+                val oldGets = AtomicLong(); val oldPuts = AtomicLong()
+                provider.dav.overrideRequest = { request ->
+                    if (request.requestUrl!!.encodedPath in originals) {
+                        if (request.method == "GET") oldGets.addAndGet(originals.getValue(request.requestUrl!!.encodedPath).size.toLong())
+                        if (request.method == "PUT") oldPuts.addAndGet(request.bodySize)
+                    }
+                    null
+                }
+                message(f, "after-foreign-cache", 3)
+                val next = f.owner(directory, target); next.prepare()
+                val changed = next.uploadCloud(attempts, relayParts.open())
+                val oldKeys = plan.objects.map { it.key }.toSet()
+                assertEquals(receipt.objects, changed.objects.filter { it.objectRequest.key in oldKeys })
+                assertEquals(0L, oldGets.get()); assertEquals(0L, oldPuts.get())
+                assertTrue(changed.objects.any { it.evidence is LanSyncGroupCloudTargetEvidence.Appended })
+                assertContentEquals(originalImage, Files.readAllBytes(image))
+            }
+        } }
+    }
+
+    @Test fun cloudProbeRetainsBadWholeCandidatesAndPartialNewAttemptsWithoutCompletingAnUnauthenticatedSelection() = fixture { f ->
+        WeakFixture(f.directory("bad-existing-cloud-provider")).use { provider -> PartsBackend(provider).use { parts ->
+            val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)
+            val owner = f.owner(f.directory("bad-existing-cloud-target"), target); val plan = owner.prepare()
+            val item = plan.objects.first(); val raw = bytes(f.access.reader, item)
+            val good = provider.store("bad-existing-writer").appendAttempt(CiphertextPutRequest(item.key, SyncStoreId.random(), item.descriptor), raw.inputStream())
+            val badPath = provider.path(good.candidate)
+            val partial = provider.dav.files.getValue(badPath).let { it.copyOf(it.size - 1) }; provider.dav.files[badPath] = partial
+            val alternate = parts.open().append(CiphertextPutRequest(item.key, SyncStoreId.random(), item.descriptor), raw.inputStream())
+            val receipt = owner.uploadCloud(provider.store("bad-existing-reader"), parts.open())
+            assertTrue(receipt.rejectedCandidates > 0)
+            val existing = assertIs<LanSyncGroupCloudTargetEvidence.Existing>(receipt.objects.first().evidence)
+            assertEquals(alternate.assembly.attempt, assertIs<LanSyncGroupCloudTargetObservation.Chunks>(existing.readback).observation.manifest.attempt)
+            assertContentEquals(partial, provider.dav.files.getValue(badPath)); assertEquals(1, provider.dav.puts.count { it == badPath })
+        } }
+        WeakFixture(f.directory("partial-new-cloud-provider")).use { provider -> PartsBackend(provider).use { parts ->
+            val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)
+            val directory = f.directory("partial-new-cloud-target")
+            val owner = f.owner(directory, target); owner.prepare(); provider.dav.partialNextPut = true
+            assertFailsWith<CiphertextStoreException> { owner.uploadCloud(provider.store("partial-new-reader"), parts.open()) }
+            assertNull(owner.cloudReceipt())
+            Files.walk(directory.resolve("cloud-object-observations")).use { files -> assertFalse(files.anyMatch { it.fileName.toString().endsWith(".obj") }) }
+            val partial = provider.dav.files.mapValues { it.value.copyOf() }; assertEquals(1, partial.size)
+            val cold = f.owner(directory, target); cold.prepare()
+            val receipt = cold.uploadCloud(provider.store("partial-new-reader"), parts.open())
+            assertEquals(receipt, cold.cloudReceipt())
+            partial.forEach { (path, raw) -> assertContentEquals(raw, provider.dav.files.getValue(path)); assertEquals(1, provider.dav.puts.count { it == path }) }
+        } }
+        f.assertUnchanged()
+    }
+
+    @Test fun cloudProbeDoesNotTurnAuthenticationPermissionOrTransientReadFailuresIntoMissingObjectsAndKeepsLegacyTypedReceiptsExact() = fixture { f ->
+        for ((status, failure) in listOf(401 to CiphertextStoreFailure.AUTHENTICATION, 403 to CiphertextStoreFailure.PERMISSION,
+            429 to CiphertextStoreFailure.TRANSIENT, 503 to CiphertextStoreFailure.TRANSIENT)) {
+            WeakFixture(f.directory("cloud-probe-error-$status")).use { provider -> PartsBackend(provider).use { parts ->
+                val owner = f.owner(f.directory("cloud-probe-error-target-$status"), SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route))
+                val item = owner.prepare().objects.first(); val raw = bytes(f.access.reader, item)
+                provider.store("error-seed").appendAttempt(CiphertextPutRequest(item.key, SyncStoreId.random(), item.descriptor), raw.inputStream())
+                val puts = provider.dav.puts.toList()
+                provider.dav.overrideRequest = { request -> if (request.method == "GET") MockResponse().setResponseCode(status) else null }
+                assertEquals(failure, assertFailsWith<CiphertextStoreException> { owner.uploadCloud(provider.store("error-reader"), parts.open()) }.failure)
+                assertNull(owner.cloudReceipt()); assertEquals(puts, provider.dav.puts.toList())
+            } }
+        }
+        WeakFixture(f.directory("legacy-to-cloud-provider")).use { provider -> PartsBackend(provider).use { parts ->
+            val directory = f.directory("legacy-to-cloud-target")
+            val owner = f.owner(directory, SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)); owner.prepare()
+            val old = owner.upload(provider.store("legacy-writer"))
+            val originalFiles = fileHashes(directory); val requests = provider.server.requestCount
+            val cloud = owner.uploadCloud(provider.store("legacy-cloud-reader"), parts.open())
+            assertEquals(requests, provider.server.requestCount)
+            assertEquals(old.objects.map { it.readbackObservation.observedAtMillis }, cloud.objects.map { it.evidence.readback.observedAtMillis })
+            assertTrue(cloud.objects.all { it.evidence is LanSyncGroupCloudTargetEvidence.Appended })
+            assertEquals(old, owner.weakReceipt()); assertNull(owner.chunkReceipt()); assertNull(owner.receipt())
+            val after = fileHashes(directory); originalFiles.forEach { (path, hash) -> assertEquals(hash, after.getValue(path), path) }
+        } }
+        f.assertUnchanged()
+    }
+
     @Test fun chunkTargetColdResumeHasSeparateAuthenticatedReceiptsAndPreservesOldObservationsAcrossSelections() = fixture { f ->
         WeakFixture(f.directory("chunk-target-provider")).use { provider -> PartsBackend(provider).use { parts ->
             val route = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)
@@ -236,13 +393,14 @@ class LanSyncGroupTargetPublicationTest {
         assertContentEquals(png, Files.readAllBytes(image))
     }
 
-    private class PartsBackend(private val provider: WeakFixture) : AutoCloseable {
+    private class PartsBackend(private val provider: WeakFixture, private val route: SyncStoreId = provider.route,
+        private val name: String = "parts-client") : AutoCloseable {
         private val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(5, TimeUnit.SECONDS).build()
         fun open(): WeakWebDavChunkAssembly {
-            val root = provider.root.resolve("parts-client"); if (!Files.exists(root)) Files.createDirectory(root)
+            val root = provider.root.resolve(name); if (!Files.exists(root)) Files.createDirectory(root)
             val transport = WebDavHttpTransport(provider.server.url("/sync/").newBuilder().host("127.0.0.1").build(), client,
                 { "Bearer synthetic-only" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
-            return WeakWebDavChunkAssembly(transport, root, provider.route, 64L * 1024,
+            return WeakWebDavChunkAssembly(transport, root, route, 64L * 1024,
                 WebDavIoBudget(minimumFreeBytes = 0))
         }
         override fun close() { client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll() }

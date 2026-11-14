@@ -22,6 +22,7 @@ import kotlin.test.*
 
 /** Enabled route custody and actual enrolled/HTTP owners; no real credentials or provider endpoints. */
 class LanSyncGroupCloudRuntimeTest {
+    private companion object { const val HTTP_TEST_TIMEOUT_MILLIS = 60_000L }
     private fun assertSafeCatalogFailure(failure: Throwable) {
         // Coroutine stack recovery may copy a safe exception and retain that safe original as cause.
         generateSequence(failure) { it.cause }.forEach {
@@ -34,7 +35,7 @@ class LanSyncGroupCloudRuntimeTest {
         val admin = LanSyncGroupAdministrationTest.Fixture(root)
         val reloads = AtomicInteger(); val wakes = AtomicInteger(); val permitted = AtomicBoolean(true)
         val reports = mutableListOf<Map<SyncStoreId, LanSyncGroupCloudRouteProgress>>()
-        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(60, TimeUnit.SECONDS).build()
+        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(HTTP_TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).build()
         val owners = mutableListOf<LanSyncGroupEnrollment>(); val runtimes = mutableListOf<LanSyncGroupCloudRuntime>()
         val clock = AtomicLong()
         lateinit var access: LanSyncGroupRuntimeAccess
@@ -206,8 +207,8 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(provider.dav.files.isNotEmpty()); assertEquals(1, f.wakes.get())
             val owner = f.access.targetPublication(f.access.work.resolve("cloud-runtime/${id.value}/target"),
                 SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false)
-            val receipt = requireNotNull(owner.chunkReceipt())
-            assertEquals(receipt.objects.maxOf { it.readbackObservation.observedAtMillis }, progress.lastObservedAt)
+            val receipt = requireNotNull(owner.cloudReceipt())
+            assertEquals(receipt.objects.maxOf { it.evidence.readback.observedAtMillis }, progress.lastObservedAt)
             val requests = provider.server.requestCount
             repeat(requests) {
                 val request = requireNotNull(provider.server.takeRequest(1, TimeUnit.SECONDS))
@@ -219,6 +220,46 @@ class LanSyncGroupCloudRuntimeTest {
             assertEquals(1, f.wakes.get())
             assertFalse(f.latest().toString().contains("synthetic password"))
             f.assertOriginal()
+        }
+    }
+
+    @Test fun actualRuntimeReusesAForeignAssemblyReportsRejectedCandidatesAndColdReopensItsCloudReceiptWithoutHttp() = fixture { f ->
+        WeakFixture(f.directory("foreign-runtime-provider")).use { provider ->
+            val seed = f.access.targetPublication(f.directory("foreign-runtime-seed-plan"),
+                SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, provider.route)).prepare().objects.first()
+            val raw = ByteArrayOutputStream().use { output ->
+                assertEquals(CiphertextObjectMetadata(seed.key, seed.descriptor), f.access.reader.readTo(seed.key, output, seed.descriptor))
+                output.toByteArray()
+            }
+            val bad = provider.store("foreign-runtime-bad").appendAttempt(CiphertextPutRequest(seed.key, SyncStoreId.random(), seed.descriptor), raw.inputStream())
+            val badPath = provider.path(bad.candidate)
+            val partial = provider.dav.files.getValue(badPath).let { it.copyOf(it.size - 1) }; provider.dav.files[badPath] = partial
+            val transport = WebDavHttpTransport(provider.server.url("/sync/").newBuilder().host("127.0.0.1").build(), f.client,
+                { "Bearer synthetic-only" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+            try {
+                val parts = WeakWebDavChunkAssembly(transport, f.directory("foreign-runtime-seed-parts"), provider.route,
+                    budget = WebDavIoBudget(minimumFreeBytes = 0))
+                val foreign = CiphertextPutRequest(seed.key, SyncStoreId.random(), seed.descriptor)
+                val published = parts.append(foreign, raw.inputStream())
+                val id = f.add(provider); assertNotEquals(provider.route, id)
+                val runtime = f.runtime(); assertTrue(runtime.cycle())
+                val directory = f.access.work.resolve("cloud-runtime/${id.value}/target")
+                val owner = f.access.targetPublication(directory, SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false)
+                val receipt = requireNotNull(owner.cloudReceipt())
+                assertTrue(receipt.rejectedCandidates > 0)
+                val row = receipt.objects.single { it.objectRequest.key == seed.key }
+                val evidence = assertIs<LanSyncGroupCloudTargetEvidence.Existing>(row.evidence)
+                val read = assertIs<LanSyncGroupCloudTargetObservation.Chunks>(evidence.readback).observation
+                assertEquals(foreign.operationId, read.logicalOperation); assertNotEquals(row.objectRequest.operation, read.logicalOperation)
+                assertEquals(published.assembly.attempt, read.manifest.attempt); assertEquals(id, read.manifest.route)
+                assertTrue(f.latest().getValue(id).text.contains(receipt.rejectedCandidates.toString()))
+                assertContentEquals(partial, provider.dav.files.getValue(badPath)); assertEquals(1, provider.dav.puts.count { it == badPath })
+                val observed = f.latest().getValue(id).lastObservedAt; val requests = provider.server.requestCount
+                runtime.close(); runtime.drain()
+                assertTrue(f.runtime().cycle(recoverNative = false, outgoingOnly = true))
+                assertEquals(requests, provider.server.requestCount); assertEquals(observed, f.latest().getValue(id).lastObservedAt)
+                assertEquals(receipt, owner.cloudReceipt()); f.assertOriginal()
+            } finally { transport.close() }
         }
     }
 
@@ -259,7 +300,7 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(changed); assertFalse(f.catalog.rows().single().enabled)
             assertFalse(id in f.latest(), "Disabled routes must leave the current-enabled aggregate")
             val directory = f.access.work.resolve("cloud-runtime/${id.value}/target")
-            Files.newDirectoryStream(directory, "chunk-receipt-*.json").use { assertFalse(it.iterator().hasNext()) }
+            Files.newDirectoryStream(directory, "cloud-receipt-*.json").use { assertFalse(it.iterator().hasNext()) }
             val retained = provider.dav.files.mapValues { it.value.copyOf() }
             assertTrue(retained.isNotEmpty())
             val before = provider.server.requestCount
@@ -419,7 +460,7 @@ class LanSyncGroupCloudRuntimeTest {
                 val observed = requireNotNull(f.latest().getValue(id).lastObservedAt)
                 val target = f.access.work.resolve("cloud-runtime/${id.value}/target")
                 val original = requireNotNull(f.access.targetPublication(target,
-                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).chunkReceipt())
+                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).cloudReceipt())
                 val wakes = f.wakes.get()
                 val throttled = AtomicInteger(); val requestsAtResponse = AtomicInteger()
                 provider.dav.overrideRequest = { request ->
@@ -440,7 +481,7 @@ class LanSyncGroupCloudRuntimeTest {
                 assertFalse(f.latest().getValue(id).selectionObserved)
                 assertEquals(observed, f.latest().getValue(id).lastObservedAt)
                 assertEquals(original, f.access.targetPublication(target,
-                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).chunkReceipt())
+                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).cloudReceipt())
                 repeat(2) {
                     assertFalse(runtime.prepareScheduledBatch(forceIdle = true))
                     assertFalse(runtime.cycle()); assertFalse(runtime.cycle(forceIdle = false))
@@ -455,7 +496,7 @@ class LanSyncGroupCloudRuntimeTest {
                 assertTrue(f.latest().getValue(id).selectionObserved)
                 assertEquals(observed, f.latest().getValue(id).lastObservedAt)
                 assertEquals(original, f.access.targetPublication(target,
-                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).chunkReceipt())
+                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id), prepare = false).cloudReceipt())
                 f.assertOriginal()
             }
         }
@@ -549,7 +590,13 @@ class LanSyncGroupCloudRuntimeTest {
         WeakFixture(f.directory("dirty-in-flight-provider")).use { provider ->
             val id = f.add(provider); val runtime = f.runtime(); val entered = CountDownLatch(1); val release = CountDownLatch(1)
             val gated = AtomicBoolean(false)
+            val started = System.nanoTime(); val gets = AtomicInteger(); val puts = AtomicInteger(); val listings = AtomicInteger(); val oldCompleted = AtomicInteger()
+            fun timing(stage: Int) {
+                println("CCB_CLOUD_DIRTY_TIMING stage=$stage elapsedMillis=${(System.nanoTime() - started) / 1_000_000} " +
+                    "requests=${provider.server.requestCount} gets=${gets.get()} puts=${puts.get()} listings=${listings.get()} oldCompleted=${oldCompleted.get()}")
+            }
             provider.dav.overrideRequest = { request ->
+                when (request.method) { "GET" -> gets.incrementAndGet(); "PUT" -> puts.incrementAndGet(); "PROPFIND" -> listings.incrementAndGet() }
                 if (request.method == "PUT" && gated.compareAndSet(false, true)) {
                     entered.countDown(); check(release.await(30, TimeUnit.SECONDS))
                 }
@@ -557,27 +604,34 @@ class LanSyncGroupCloudRuntimeTest {
             }
             try {
                 coroutineScope {
+                    timing(0)
                     val old = async(Dispatchers.IO) { runtime.cycle(recoverNative = false, outgoingOnly = true) }
                     try {
                         withContext(Dispatchers.IO) { assertTrue(entered.await(5, TimeUnit.SECONDS)) }
+                        timing(1)
                         LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), CharacterCard("card", "synthetic new dirty source", createdAt = 1, updatedAt = 2))
                         val edited = Files.readAllBytes(f.card)
                         val next = f.access.node.commit(f.access.node.inspect().review(setOf("character_cards/card")))
                         f.access.node.upload(next.entry.request.operation, f.access.replica, f.access.localTarget)
-                        runtime.markDirty(); release.countDown()
-                        assertFalse(withTimeout(10_000) { old.await() })
+                        runtime.markDirty(); timing(2); release.countDown()
+                        // Completion includes every object's HTTP readback and full selection auth,
+                        // not just release of the first PUT. Use the actual fixture transport budget.
+                        try { assertFalse(withTimeout(HTTP_TEST_TIMEOUT_MILLIS) { old.await().also { oldCompleted.set(1) } }) }
+                        finally { timing(3) }
                         val historical = requireNotNull(f.latest().getValue(id).lastObservedAt)
                         assertFalse(f.latest().getValue(id).selectionObserved)
                         val target = f.access.work.resolve("cloud-runtime/${id.value}/target")
-                        Files.newDirectoryStream(target, "chunk-receipt-*.json").use { assertTrue(it.iterator().hasNext()) }
+                        Files.newDirectoryStream(target, "cloud-receipt-*.json").use { assertTrue(it.iterator().hasNext()) }
                         assertFalse(runtime.prepareScheduledBatch()); assertTrue(runtime.prepareScheduledBatch(forceIdle = true))
                         assertTrue(runtime.cycle(recoverNative = false, outgoingOnly = true))
+                        timing(4)
                         assertTrue(f.latest().getValue(id).selectionObserved)
                         val receipt = requireNotNull(f.access.targetPublication(target, SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id),
-                            recoverNative = false, prepare = false).chunkReceipt())
-                        assertEquals(receipt.objects.maxOf { it.readbackObservation.observedAtMillis }, f.latest().getValue(id).lastObservedAt)
+                            recoverNative = false, prepare = false).cloudReceipt())
+                        assertEquals(receipt.objects.maxOf { it.evidence.readback.observedAtMillis }, f.latest().getValue(id).lastObservedAt)
                         val latest = f.latest().getValue(id).lastObservedAt; val requests = provider.server.requestCount
                         assertTrue(runtime.cycle(recoverNative = false, outgoingOnly = true))
+                        timing(5)
                         assertEquals(requests, provider.server.requestCount); assertEquals(latest, f.latest().getValue(id).lastObservedAt)
                         assertNotNull(historical)
                         assertEquals(2L, f.author().state().committedSequence)
@@ -593,7 +647,7 @@ class LanSyncGroupCloudRuntimeTest {
                         assertTrue(found); assertEquals(0, f.reloads.get())
                     } finally { release.countDown() }
                 }
-            } finally { release.countDown() }
+            } finally { release.countDown(); timing(9) }
         }
     }
 }

@@ -7,6 +7,7 @@ import com.example.chatbar.domain.syncStore.webdav.WeakWebDavObservation
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavObservationOrigin
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavChunkAssembly
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavAssemblyObservation
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavCursor
 import java.io.FilterInputStream
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -77,6 +78,8 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         val weak: LanSyncGroupWeakTargetObjectReceipt? = null)
     @Serializable private data class ChunkItemObservation(val binding: ItemBinding, val selectionId: String,
         val planHash: String, val receiptHash: String, val observation: LanSyncGroupChunkTargetObjectReceipt)
+    @Serializable private data class CloudItemObservation(val binding: ItemBinding, val selectionId: String,
+        val planHash: String, val receiptHash: String, val observation: LanSyncGroupCloudTargetObjectReceipt)
     private val lock = locks.computeIfAbsent(root) { ReentrantLock() }
     private fun directory(name: String) = root.resolve(name).also {
         PrivateSyncFile.checked(root, true)
@@ -89,6 +92,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     private val strictObservations = FileCiphertextStore(directory("strict-object-observations"))
     private val weakObservations = FileCiphertextStore(directory("weak-object-observations"))
     private val chunkObservations = FileCiphertextStore(directory("chunk-object-observations"))
+    private val cloudObservations = FileCiphertextStore(directory("cloud-object-observations"))
     private val ownerBinding = Binding(proof.trust.group, proof.trust.genesis, proof.device, target)
     private val selection = Selection(proof.trust.group, proof.current.reference(), target, proof.vault,
         proof.vaultDescriptor, proof.versions.mapTo(linkedSetOf()) { it.reference() })
@@ -97,6 +101,7 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
     private val receiptPath = root.resolve("receipt-$id.json")
     private val weakReceiptPath = root.resolve("weak-receipt-$id.json")
     private val chunkReceiptPath = root.resolve("chunk-receipt-$id.json")
+    private val cloudReceiptPath = root.resolve("cloud-receipt-$id.json")
     init {
         require(target != SyncDeliveryTarget.LEGACY) { "SYNC_GROUP_TARGET_EXPLICIT_ROUTE_REQUIRED" }
         guarded {
@@ -356,16 +361,144 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
         }
         readChunkReceipt(plan)
     }
+    /** Probe only the current route; existing objects keep their actual foreign publication identity. */
+    suspend fun uploadCloud(attempts: WeakWebDavAttemptStore, parts: WeakWebDavChunkAssembly): LanSyncGroupCloudTargetReceipt =
+        runInterruptible(Dispatchers.IO) { guarded {
+            proof.requireLive()
+            require(target.kind == SyncDeliveryKind.CLOUD_STORE && attempts.routeId == target.id && parts.routeId == target.id) {
+                "SYNC_GROUP_TARGET_ROUTE_CHANGED"
+            }
+            val plan = requireNotNull(readPlan()) { "SYNC_GROUP_TARGET_PLAN_MISSING" }
+            validate(plan, retained); ensureBindings(plan)
+            readCloudReceipt(plan)?.let { cacheCloudSelection(plan, it); return@guarded it }
+            val origins = mutableMapOf<String, CloudHistoricalSelection>()
+            val chunkOrigins = mutableMapOf<String, HistoricalSelection>(); val wholeOrigins = mutableMapOf<String, HistoricalSelection>()
+            // Verify every existing derived index before any provider I/O, including older modes.
+            val cached = plan.objects.associateWith { item ->
+                val cloud = readCloudObservation(item, origins)?.observation
+                val chunk = readChunkObservation(item, chunkOrigins)?.observation
+                val whole = readObservation(item, weak = true, origins = wholeOrigins)?.weak
+                cloud ?: chunk?.let { LanSyncGroupCloudTargetObjectReceipt(item, LanSyncGroupCloudTargetEvidence.Appended(
+                    LanSyncGroupCloudTargetObservation.Chunks(it.appendObservation), LanSyncGroupCloudTargetObservation.Chunks(it.readbackObservation))) }
+                    ?: whole?.let { LanSyncGroupCloudTargetObjectReceipt(item, LanSyncGroupCloudTargetEvidence.Appended(
+                        LanSyncGroupCloudTargetObservation.Whole(it.appendObservation), LanSyncGroupCloudTargetObservation.Whole(it.readbackObservation))) }
+            }
+            val readbacks = mutableListOf<LanSyncGroupTargetStage>()
+            val historical = linkedSetOf<CiphertextObjectMetadata>()
+            val rows = mutableListOf<LanSyncGroupCloudTargetObjectReceipt>()
+            var rejected = 0
+            fun reject() { if (rejected < Int.MAX_VALUE) rejected++ }
+            try {
+                for (item in plan.objects) {
+                    proof.requireLive()
+                    val metadata = CiphertextObjectMetadata(item.key, item.descriptor)
+                    cached[item]?.let { row -> historical += metadata; rows += row.copy(objectRequest = item) } ?: run {
+                        val existing = probeCloudObject(item, attempts, parts, ::reject)
+                        if (existing != null) {
+                            readbacks += existing.first
+                            rows += LanSyncGroupCloudTargetObjectReceipt(item, LanSyncGroupCloudTargetEvidence.Existing(existing.second))
+                        } else {
+                            val staged = stage(metadata, retained)
+                            val appended = try { Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use {
+                                parts.append(CiphertextPutRequest(item.key, item.operation, item.descriptor), liveInput(it), proof::requireLive)
+                            } } finally { staged.close() }
+                            requireAssembly(item, appended)
+                            var observed: WeakWebDavAssemblyObservation? = null
+                            readbacks += lanSyncTargetReceiveStage(work, metadata, proof::requireLive) { output ->
+                                val actual = parts.readAssembly(appended.assembly, metadata, output, proof::requireLive)
+                                    ?: throw CiphertextStoreException(CiphertextStoreFailure.TRANSIENT)
+                                requireAssembly(item, actual)
+                                require(actual.assembly == appended.assembly && actual.chunkCount == appended.chunkCount) { "SYNC_GROUP_TARGET_ASSEMBLY_CHANGED" }
+                                observed = actual; metadata
+                            }
+                            rows += LanSyncGroupCloudTargetObjectReceipt(item, LanSyncGroupCloudTargetEvidence.Appended(
+                                LanSyncGroupCloudTargetObservation.Chunks(chunkObservation(appended)),
+                                LanSyncGroupCloudTargetObservation.Chunks(chunkObservation(requireNotNull(observed)))))
+                        }
+                    }
+                }
+                validate(plan, lanSyncTargetObservedLens(readbacks, historical, retained, proof::requireLive))
+                rows.forEach(::requireCloudRow)
+                val receipt = LanSyncGroupCloudTargetReceipt(planHash(), target, plan.checkpoint, rows.toList(), rejected)
+                proof.requireLive(); LanSyncJsonFiles.write(cloudReceiptPath, LanSyncGroupCloudTargetReceipt.serializer(), receipt)
+                cacheCloudSelection(plan, receipt)
+                receipt
+            } finally { readbacks.asReversed().forEach { it.close() } }
+        } }
+
+    private class MissingCloudCandidate : RuntimeException(null, null, false, false)
+    private fun probeCloudObject(item: LanSyncGroupTargetObject, attempts: WeakWebDavAttemptStore,
+        parts: WeakWebDavChunkAssembly, reject: () -> Unit): Pair<LanSyncGroupTargetStage, LanSyncGroupCloudTargetObservation>? {
+        val metadata = CiphertextObjectMetadata(item.key, item.descriptor)
+        var cursor: WeakWebDavCursor? = null; val seen = hashSetOf<String>()
+        do {
+            proof.requireLive(); cursor?.let { require(seen.add(it.token)) { "SYNC_GROUP_TARGET_LISTING_CHANGED" } }
+            val page = attempts.listCandidates(item.key, cursor, checkActive = proof::requireLive)
+            for (candidate in page.entries) {
+                if (candidate.descriptor != item.descriptor) { reject(); continue }
+                var observed: WeakWebDavObservation? = null
+                val file = try { lanSyncTargetReceiveStage(work, metadata, proof::requireLive) { output ->
+                    val actual = attempts.readCandidate(candidate, output, proof::requireLive) ?: throw MissingCloudCandidate()
+                    require(actual.candidate == candidate) { "SYNC_GROUP_TARGET_ATTEMPT_CHANGED" }
+                    observed = actual; metadata
+                } } catch (_: MissingCloudCandidate) { reject(); continue }
+                catch (failure: CiphertextStoreException) {
+                    if (failure.failure != CiphertextStoreFailure.INTEGRITY) throw failure
+                    reject(); continue
+                }
+                return file to LanSyncGroupCloudTargetObservation.Whole(observation(requireNotNull(observed)))
+            }
+            cursor = page.nextCursor
+        } while (cursor != null)
+        seen.clear()
+        do {
+            proof.requireLive(); cursor?.let { require(seen.add(it.token)) { "SYNC_GROUP_TARGET_LISTING_CHANGED" } }
+            val page = parts.listAssemblies(item.key, cursor, checkActive = proof::requireLive)
+            for (candidate in page.entries) {
+                val header = try { parts.inspectAssembly(candidate, proof::requireLive) }
+                catch (failure: CiphertextStoreException) {
+                    if (failure.failure != CiphertextStoreFailure.INTEGRITY) throw failure
+                    reject(); continue
+                }
+                if (header == null) { reject(); continue }
+                if (header.originalRequest.key != item.key || header.originalRequest.descriptor != item.descriptor) { reject(); continue }
+                var observed: WeakWebDavAssemblyObservation? = null
+                val file = try { lanSyncTargetReceiveStage(work, metadata, proof::requireLive) { output ->
+                    val actual = parts.readAssembly(candidate, metadata, output, proof::requireLive) ?: throw MissingCloudCandidate()
+                    require(actual.assembly == candidate && actual.request == header.originalRequest && actual.chunkCount == header.chunkCount) {
+                        "SYNC_GROUP_TARGET_ASSEMBLY_CHANGED"
+                    }
+                    observed = actual; metadata
+                } } catch (_: MissingCloudCandidate) { reject(); continue }
+                catch (failure: CiphertextStoreException) {
+                    if (failure.failure != CiphertextStoreFailure.INTEGRITY) throw failure
+                    reject(); continue
+                }
+                return file to LanSyncGroupCloudTargetObservation.Chunks(chunkObservation(requireNotNull(observed)))
+            }
+            cursor = page.nextCursor
+        } while (cursor != null)
+        proof.requireLive()
+        return null
+    }
+    fun cloudReceipt(): LanSyncGroupCloudTargetReceipt? = guarded {
+        proof.requireLive()
+        val plan = readPlan() ?: run {
+            require(!Files.exists(cloudReceiptPath, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_PLAN_MISSING" }; return@guarded null
+        }
+        readCloudReceipt(plan)
+    }
     /** Rebuilds missing derived indexes from typed history; no ciphertext or network I/O. */
     fun recoverObjectObservations(): Boolean = guarded {
         proof.requireLive()
         val plan = readPlan() ?: return@guarded false
-        val strict = readReceipt(plan); val weak = readWeakReceipt(plan); val chunk = readChunkReceipt(plan)
-        if (strict == null && weak == null && chunk == null) return@guarded false
+        val strict = readReceipt(plan); val weak = readWeakReceipt(plan); val chunk = readChunkReceipt(plan); val cloud = readCloudReceipt(plan)
+        if (strict == null && weak == null && chunk == null && cloud == null) return@guarded false
         ensureBindings(plan)
         strict?.let { cacheSelection(plan, strict = it) }
         weak?.let { cacheSelection(plan, weak = it) }
         chunk?.let { cacheChunkSelection(plan, it) }
+        cloud?.let { cacheCloudSelection(plan, it) }
         proof.requireLive()
         true
     }
@@ -646,6 +779,111 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             val cache = ChunkItemObservation(itemBinding(item.key, item.descriptor, item.operation), id,
                 frozenPlanHash, hash, receipt.objects[index])
             writeItem(chunkObservations, item.key, "OBJECT-OBSERVATION", ChunkItemObservation.serializer(), cache)
+        }
+        proof.requireLive()
+    }
+    private fun requireCloudRow(row: LanSyncGroupCloudTargetObjectReceipt) {
+        val item = row.objectRequest
+        fun matches(value: LanSyncGroupCloudTargetObservation, owned: Boolean): Boolean = when (value) {
+            is LanSyncGroupCloudTargetObservation.Whole -> value.observation.let {
+                it.route == target.id && it.key == item.key && it.descriptor == item.descriptor &&
+                    (!owned || it.operation == item.operation) && it.observedAtMillis >= 0 &&
+                    it.origin in WeakWebDavObservationOrigin.entries.map { origin -> origin.name }
+            }
+            is LanSyncGroupCloudTargetObservation.Chunks -> value.observation.let {
+                it.logicalKey == item.key && it.logicalDescriptor == item.descriptor && (!owned || it.logicalOperation == item.operation) &&
+                    it.manifest.route == target.id && it.manifest.manifestKey == item.key && it.manifest.manifestDescriptor.length > 0 &&
+                    it.chunkCount >= 0 && (it.chunkCount == 0L) == (item.descriptor.length == 0L) && it.observedAtMillis >= 0
+            }
+        }
+        fun readback(value: LanSyncGroupCloudTargetObservation) = value !is LanSyncGroupCloudTargetObservation.Whole ||
+            value.observation.origin == WeakWebDavObservationOrigin.EXISTING_ATTEMPT_READBACK.name
+        val valid = when (val evidence = row.evidence) {
+            is LanSyncGroupCloudTargetEvidence.Existing -> matches(evidence.readback, false) && readback(evidence.readback)
+            is LanSyncGroupCloudTargetEvidence.Appended -> {
+                val one = evidence.append; val two = evidence.readback
+                val same = when {
+                    one is LanSyncGroupCloudTargetObservation.Whole && two is LanSyncGroupCloudTargetObservation.Whole ->
+                        one.observation.let { a -> two.observation.let { b -> a.route == b.route && a.key == b.key &&
+                            a.descriptor == b.descriptor && a.operation == b.operation && a.attempt == b.attempt } }
+                    one is LanSyncGroupCloudTargetObservation.Chunks && two is LanSyncGroupCloudTargetObservation.Chunks ->
+                        one.observation.let { a -> two.observation.let { b -> a.logicalKey == b.logicalKey && a.logicalDescriptor == b.logicalDescriptor &&
+                            a.logicalOperation == b.logicalOperation && a.manifest == b.manifest && a.chunkCount == b.chunkCount } }
+                    else -> false
+                }
+                matches(one, true) && matches(two, true) && readback(two) && same
+            }
+        }
+        require(valid) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
+    }
+    private fun readCloudReceipt(plan: LanSyncGroupTargetPlan, path: Path = cloudReceiptPath,
+        hash: String = planHash()): LanSyncGroupCloudTargetReceipt? {
+        if (!Files.exists(path, NOFOLLOW_LINKS)) return null
+        LanSyncMetadataBudget().validate(path)
+        return requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupCloudTargetReceipt.serializer())).also {
+            require(it.planHash == hash && it.target == target && it.checkpoint == plan.checkpoint &&
+                it.objects.map { row -> row.objectRequest } == plan.objects && it.rejectedCandidates >= 0) { "SYNC_GROUP_TARGET_RECEIPT_CHANGED" }
+            it.objects.forEach(::requireCloudRow)
+        }
+    }
+    private class CloudHistoricalSelection(val plan: LanSyncGroupTargetPlan, val planHash: String,
+        val receiptHash: String, val receipt: LanSyncGroupCloudTargetReceipt)
+    private fun cloudHistoricalSelection(selectionId: String): CloudHistoricalSelection {
+        require(selectionId.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val path = root.resolve("plan-$selectionId.json"); val receipt = root.resolve("cloud-receipt-$selectionId.json")
+        require(Files.exists(path, NOFOLLOW_LINKS) && Files.exists(receipt, NOFOLLOW_LINKS)) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_MISSING" }
+        LanSyncMetadataBudget().validate(path); LanSyncMetadataBudget().validate(receipt)
+        val plan = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupTargetPlan.serializer()))
+        require(plan.group == ownerBinding.group && plan.target == target && plan.objects.map { it.key }.toSet().size == plan.objects.size &&
+            plan.objects.map { it.operation }.toSet().size == plan.objects.size) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val hash = LanSyncResourceStore.hashFile(path, Files.size(path))
+        return CloudHistoricalSelection(plan, hash, LanSyncResourceStore.hashFile(receipt, Files.size(receipt)),
+            requireNotNull(readCloudReceipt(plan, receipt, hash)))
+    }
+    private fun readCloudObservation(item: LanSyncGroupTargetObject,
+        origins: MutableMap<String, CloudHistoricalSelection>): CloudItemObservation? {
+        proof.requireLive()
+        val cache = readItem(cloudObservations, item.key, CloudItemObservation.serializer())
+            ?: recoverCloudObservation(item, origins) ?: return null
+        requireItemBinding(cache.binding, item)
+        require(cache.selectionId.matches(Regex("[a-f0-9]{64}")) && cache.planHash.matches(Regex("[a-f0-9]{64}")) &&
+            cache.receiptHash.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_TARGET_OBJECT_OBSERVATION_CHANGED" }
+        val origin = origins.getOrPut(cache.selectionId) { cloudHistoricalSelection(cache.selectionId) }
+        require(origin.planHash == cache.planHash && origin.receiptHash == cache.receiptHash) { "SYNC_GROUP_TARGET_OBJECT_ORIGIN_CHANGED" }
+        val original = origin.plan.objects.singleOrNull { it.key == item.key && it.descriptor == item.descriptor && it.operation == item.operation }
+        require(original != null && origin.receipt.objects.singleOrNull { it.objectRequest == original } == cache.observation) {
+            "SYNC_GROUP_TARGET_OBJECT_OBSERVATION_CHANGED"
+        }
+        proof.requireLive(); return cache
+    }
+    private fun recoverCloudObservation(item: LanSyncGroupTargetObject,
+        origins: MutableMap<String, CloudHistoricalSelection>): CloudItemObservation? {
+        var conflict: CiphertextStoreException? = null
+        Files.newDirectoryStream(root, "cloud-receipt-*.json").use { files -> for (file in files) {
+            proof.requireLive()
+            val originId = file.fileName.toString().removePrefix("cloud-receipt-").removeSuffix(".json")
+            val origin = origins.getOrPut(originId) { cloudHistoricalSelection(originId) }
+            val original = origin.plan.objects.singleOrNull { it.key == item.key && it.descriptor == item.descriptor && it.operation == item.operation } ?: continue
+            val row = origin.receipt.objects.single { it.objectRequest == original }
+            val cache = CloudItemObservation(itemBinding(item.key, item.descriptor, item.operation), originId, origin.planHash, origin.receiptHash, row)
+            try {
+                writeItem(cloudObservations, item.key, "OBJECT-OBSERVATION", CloudItemObservation.serializer(), cache)
+                proof.requireLive(); return cache
+            } catch (failure: CiphertextStoreException) {
+                if (failure.failure != CiphertextStoreFailure.OPERATION_CONFLICT) throw failure
+                conflict = failure
+            }
+        } }
+        conflict?.let { throw it }; return null
+    }
+    private fun cacheCloudSelection(plan: LanSyncGroupTargetPlan, receipt: LanSyncGroupCloudTargetReceipt) {
+        val hash = LanSyncResourceStore.hashFile(cloudReceiptPath, Files.size(cloudReceiptPath))
+        val frozenPlanHash = planHash(); val origins = mutableMapOf<String, CloudHistoricalSelection>()
+        for ((index, item) in plan.objects.withIndex()) {
+            proof.requireLive()
+            if (readCloudObservation(item, origins) != null) continue
+            val cache = CloudItemObservation(itemBinding(item.key, item.descriptor, item.operation), id, frozenPlanHash, hash, receipt.objects[index])
+            writeItem(cloudObservations, item.key, "OBJECT-OBSERVATION", CloudItemObservation.serializer(), cache)
         }
         proof.requireLive()
     }
