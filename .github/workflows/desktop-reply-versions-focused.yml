@@ -1,7 +1,7 @@
 name: Desktop reply versions focused verification
 on:
   push:
-    branches: [codex/desktop-reply-versions-20261115, codex/desktop-format-redo-20261115]
+    branches: [codex/desktop-reply-versions-20261115, codex/desktop-format-redo-20261115, codex/desktop-reply-moment-focused-20261115]
   workflow_dispatch:
 permissions:
   contents: read
@@ -52,6 +52,13 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopFormatRepairInteractionTest'
           --tests 'com.example.chatbar.desktop.DesktopFormatRepairPresentationTest'
           --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageUsageTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageCompletionSelectionTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsPanelTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMomentVersionBackupTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeOmittedImageRetentionTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergePreviewTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()

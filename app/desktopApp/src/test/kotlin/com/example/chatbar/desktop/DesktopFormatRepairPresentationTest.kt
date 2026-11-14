@@ -83,7 +83,8 @@ class DesktopFormatRepairPresentationTest {
                     scene.until { scene.nodes().any { it.label("恢复修复结果") } }
                     val requestCount = f.requests.size
                     scene.tap("恢复修复结果")
-                    scene.until { f.saved().formatRepairNotice?.restored == false }
+                    scene.until { f.repair.states.value.values.any { it.status == DesktopRepairStatus.APPLIED } }
+                    assertFalse(f.saved().formatRepairNotice!!.restored)
                     assertEquals(requestCount, f.requests.size)
                 } finally { scene.close() }
             } finally { f.close() }
