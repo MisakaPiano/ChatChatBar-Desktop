@@ -61,6 +61,8 @@ class DesktopCloudRecoveryUiControlTest {
     @Test fun realRecoveryPopupPreservesPreparationAndBothConnectionChoicesAcrossColdAppRoots() {
         var phase = "native-guard"
         var failed: String? = null
+        var failedType = "cleanup"
+        var failedStack: Array<StackTraceElement>? = null
         var runner: Path? = null
         val owned = mutableListOf<Path>()
         val apps = mutableListOf<DesktopAppContainer>()
@@ -128,14 +130,20 @@ class DesktopCloudRecoveryUiControlTest {
                         } finally { transport.close(); client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
                     }
                     founder.close(); apps.remove(founder) // Old device is offline before receiver recovery starts.
-                    phase = "$mode-empty-app-recovery-form"
+                    phase = "$mode-empty-app-initialize"
                     val (receiver, resolved) = makeApp("receiver"); receiver.initializePersistentState()
                     val rc = receiver.lanSyncGroupCoordinator; val recovery = checkNotNull(rc.cloudRecovery); val rs = show(receiver)
+                    phase = "$mode-empty-app-await-recovery-entry"
                     awaitScene(rs) { enabled(rs, "从网盘恢复设备组") }; check(!receiver.hasLanSyncGroupEvidence())
+                    phase = "$mode-empty-app-open-recovery-popup"
                     click(rs, "从网盘恢复设备组")
+                    phase = "$mode-empty-app-await-four-fields"
                     awaitScene(rs) { recoveryFields(rs).size == 4 }
+                    phase = "$mode-empty-app-fill-four-fields"
                     setRecoveryInputs(rs, remote.toString(), username, checkNotNull(password), checkNotNull(code))
+                    phase = "$mode-empty-app-await-read-button"
                     awaitScene(rs) { enabled(rs, "读取并核对设备组") }; click(rs, "读取并核对设备组")
+                    phase = "$mode-empty-app-read-and-await-review"
                     awaitScene(rs) { recovery.state.value.review != null && !recovery.state.value.busy }
                     val first = checkNotNull(recovery.state.value.review)
                     check(first.group == originalTrust.group.value && !recovery.state.value.complete)
@@ -183,7 +191,11 @@ class DesktopCloudRecoveryUiControlTest {
                     cold.close(); apps.remove(cold); code = null
                 }
             }
-        } catch (_: Throwable) { failed = phase }
+        } catch (failure: Throwable) {
+            failed = phase
+            failedType = failure.javaClass.simpleName
+            failedStack = failure.stackTrace
+        }
         finally {
             password = null
             runBlocking(edt) { withContext(NonCancellable) {
@@ -192,7 +204,11 @@ class DesktopCloudRecoveryUiControlTest {
             } }
             owned.asReversed().forEach { try { deleteOwned(it, checkNotNull(runner)) } catch (_: Throwable) { if (failed == null) failed = "owned-root-cleanup" } }
         }
-        failed?.let { throw AssertionError("DESKTOP_RECOVERY_UI_PHASE_FAILED:$it") }
+        failed?.let {
+            val sanitized = AssertionError("DESKTOP_RECOVERY_UI_PHASE_FAILED:$it:$failedType")
+            failedStack?.let { originalFrames -> sanitized.stackTrace = originalFrames }
+            throw sanitized
+        }
     }
 
     private fun recoveryFields(scene: ImageComposeScene): List<SemanticsNode> {

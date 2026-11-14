@@ -41,3 +41,9 @@ recovery in domain/file scope; evidence from the two tests is kept distinct.
 Only Python/FS/mock guards may run locally. Native execution, JDK/server setup
 and binary download belong exclusively to the cloud workflow. Preserve failures
 and original XML even when native exit times out; timeout never counts as PASS.
+
+The first original native run43629206988 failed after source upload during the
+receiver form phase. Its raw XML/build log are retained. The next fixture changes
+only controlled phase granularity and sanitized exception type/original stack
+frames. It does not preserve the original exception message/cause or relax any
+recovery, identity, data, connection or cold-open assertion.
