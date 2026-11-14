@@ -68,8 +68,9 @@ class SafeBatchChatRuntimeTest {
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         check(app.packageName == "com.example.chatbar.safebatch.n1")
         rule.setContent { ChatBarTheme { CbText("Synthetic Chat runtime checks") } }
-        val oldImage = app.novelAiImageService; val oldAccount = app.novelAiAccountService; val oldDesigner = app.novelAiPromptDesigner
         val oldToken = app.novelAiCredentialStore.load()
+        val oldSettings = runBlocking { app.settingsRepository.getAppSettings() }
+        runBlocking { app.settingsRepository.saveAppSettings(oldSettings.copy(allowCleartextModelApi = true)) }
         val server = MockWebServer()
         val designed = """{"baseCaption":"synthetic chat batch scene","sizePreset":"PORTRAIT","characters":[]}"""
         val event = buildJsonObject { put("choices", buildJsonArray { add(buildJsonObject {
@@ -112,19 +113,20 @@ class SafeBatchChatRuntimeTest {
                     NovelAiTagSearchDecisionResult(decision = NovelAiTagSearchDecision(sceneDescription = "Synthetic planned scene", queries = emptyList()))
             }
             val search = object : NovelAiTagSearchClient { override suspend fun search(query: String): NovelAiTagSearchOutcome = error("No external tag request allowed") }
-            app.novelAiImageService = NovelAiImageService(client); app.novelAiAccountService = NovelAiAccountService(client)
-            app.novelAiPromptDesigner = NovelAiPromptDesigner(StreamingChatService(allowCleartextHttp = { true }), NovelAiTagResearchService(planner, search))
+            val designer = NovelAiPromptDesigner(StreamingChatService(allowCleartextHttp = { true }), NovelAiTagResearchService(planner, search))
             app.novelAiCredentialStore.save("synthetic-chat-runtime-${UUID.randomUUID()}")
             var vm: ChatViewModel? = null
             rule.runOnIdle { vm = ViewModelProvider(store, object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T = ChatViewModel(session.id) as T
+                @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T = ChatViewModel(session.id,
+                    novelAiPromptDesigner = designer, novelAiImageService = NovelAiImageService(client),
+                    novelAiAccountService = NovelAiAccountService(client)) as T
             })[ChatViewModel::class.java] }
             rule.waitUntil(15000) { vm!!.session.value?.id == session.id }
             block(Fixture(requireNotNull(vm), session, anchor, later, imageCounts, server, quoted, release))
         } finally {
             release.countDown(); rule.runOnIdle { store.clear() }
-            app.novelAiImageService = oldImage; app.novelAiAccountService = oldAccount; app.novelAiPromptDesigner = oldDesigner
             if (oldToken == null) app.novelAiCredentialStore.clear() else app.novelAiCredentialStore.save(oldToken)
+            runBlocking { app.settingsRepository.saveAppSettings(oldSettings) }
             client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll(); server.shutdown()
         }
     }

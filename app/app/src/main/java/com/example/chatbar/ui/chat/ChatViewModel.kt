@@ -350,7 +350,12 @@ val ImageGenerationState.isCancellable: Boolean
 /**
  * 聊天会话 ViewModel
  */
-class ChatViewModel(private val sessionId: String) : ViewModel() {
+class ChatViewModel(
+    private val sessionId: String,
+    private val novelAiPromptDesigner: NovelAiPromptDesigner = ChatBarApp.instance.novelAiPromptDesigner,
+    private val novelAiImageService: NovelAiImageService = ChatBarApp.instance.novelAiImageService,
+    private val novelAiAccountService: NovelAiAccountService = ChatBarApp.instance.novelAiAccountService
+) : ViewModel() {
 
     private val chatRepository = ChatBarApp.instance.chatRepository
     private val characterRepository = ChatBarApp.instance.characterRepository
@@ -371,9 +376,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     private val imageUnderstandingService = ChatBarApp.instance.imageUnderstandingService
     private val modelResolver = ChatBarApp.instance.effectiveModelResolver
     private val novelAiCredentials = ChatBarApp.instance.novelAiCredentialStore
-    private val novelAiPromptDesigner = ChatBarApp.instance.novelAiPromptDesigner
-    private val novelAiImageService = ChatBarApp.instance.novelAiImageService
-    private val novelAiAccountService = ChatBarApp.instance.novelAiAccountService
     private val novelAiImageStorage = ChatBarApp.instance.novelAiImageStorage
     private val voiceMessageRepository = ChatBarApp.instance.voiceMessageRepository
     private val fishAudioCredentials = ChatBarApp.instance.fishAudioCredentialStore

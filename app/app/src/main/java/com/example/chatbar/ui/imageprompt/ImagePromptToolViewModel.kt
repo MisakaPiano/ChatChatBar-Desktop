@@ -299,7 +299,10 @@ data class ImagePromptToolUiState(
         )
 }
 
-class ImagePromptToolViewModel : ViewModel() {
+class ImagePromptToolViewModel(
+    private val imageService: NovelAiImageService = ChatBarApp.instance.novelAiImageService,
+    private val accountService: NovelAiAccountService = ChatBarApp.instance.novelAiAccountService
+) : ViewModel() {
     private val app = ChatBarApp.instance
     private val repository = app.novelAiStudioRepository
     private val settingsRepository = app.settingsRepository
@@ -307,8 +310,6 @@ class ImagePromptToolViewModel : ViewModel() {
     private val modelResolver = app.effectiveModelResolver
     private val promptDesigner = app.novelAiPromptDesigner
     private val credentials = app.novelAiCredentialStore
-    private val imageService = app.novelAiImageService
-    private val accountService = app.novelAiAccountService
     private val imageStorage = app.novelAiImageStorage
     private val danbooruTagCatalog = app.novelAiDanbooruTagCatalog
     private val promptTranslationService = app.novelAiPromptTranslationService

@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModel
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.data.repository.NovelAiStudioRepository
 import com.example.chatbar.domain.image.*
@@ -85,7 +86,6 @@ class SafeBatchStudioRuntimeTest {
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic Studio runtime checks") } }
         check(app.packageName == "com.example.chatbar.safebatch.n1") { "Refusing a non-isolated app" }
-        val oldImage = app.novelAiImageService; val oldAccount = app.novelAiAccountService
         val oldToken = app.novelAiCredentialStore.load()
         val requests = Collections.synchronizedList(mutableListOf<RequestRecord>())
         val client = OkHttpClient.Builder().addInterceptor { chain ->
@@ -108,15 +108,16 @@ class SafeBatchStudioRuntimeTest {
         }.build()
         val store = ViewModelStore()
         try {
-            app.novelAiImageService = NovelAiImageService(client); app.novelAiAccountService = NovelAiAccountService(client)
             app.novelAiCredentialStore.save("synthetic-studio-runtime-${UUID.randomUUID()}")
             var vm: ImagePromptToolViewModel? = null
-            rule.runOnIdle { vm = ViewModelProvider(store, ViewModelProvider.NewInstanceFactory())[ImagePromptToolViewModel::class.java] }
+            rule.runOnIdle { vm = ViewModelProvider(store, object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    ImagePromptToolViewModel(NovelAiImageService(client), NovelAiAccountService(client)) as T
+            })[ImagePromptToolViewModel::class.java] }
             val before = reopenedHistory().map { it.id }.toSet()
             block(requireNotNull(vm), requests, before)
         } finally {
             rule.runOnIdle { store.clear() }
-            app.novelAiImageService = oldImage; app.novelAiAccountService = oldAccount
             if (oldToken == null) app.novelAiCredentialStore.clear() else app.novelAiCredentialStore.save(oldToken)
             client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll()
         }
