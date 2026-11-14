@@ -246,13 +246,14 @@ class DesktopAppContainer internal constructor(
             diagnostics = taskRuntime.diagnostics)
     }
 
+    private val novelAiAccountService by lazy { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()) }
     private val novelAiStudioOwner = lazy {
         DesktopNovelAiStudioController(jsonFileStorage, characterResourceStore, filePicker,
             dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, novelAiGenerationRuntime,
             DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore, dataOperationCoordinator,
                 diagnostics = taskRuntime.diagnostics), taskRuntime,
             novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
-            account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
+            account = { novelAiAccountService.fetchCancellable(
                 requireNotNull(desktopSecretStore.credentialForCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
             credentialConfigured = { !desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
             postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore, diagnostics = taskRuntime.diagnostics),
@@ -711,7 +712,9 @@ class DesktopAppContainer internal constructor(
             imagePicker = filePicker,
             backgroundLibrary = characterBackgrounds,
             imageRegeneration = DesktopChatImageRegeneration(chatRepository, characterRepository, settingsRepository,
-                characterResourceStore, dataOperationCoordinator, desktopSecretStore, taskRuntime, novelAiInfrastructure, effectiveModelResolver),
+                characterResourceStore, dataOperationCoordinator, desktopSecretStore, taskRuntime, novelAiInfrastructure, effectiveModelResolver,
+                accountForBatch = { novelAiAccountService.fetchCancellable(requireNotNull(desktopSecretStore.credentialForCall(
+                    com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) }),
         )
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner

@@ -71,7 +71,7 @@ data class ImageBatchRunPlan(
         var left = targetTotalImages
         while (left > 0) { val size = minOf(requestCount, left); add(size); left -= size }
     }
-    fun summary() = "预计 $targetTotalImages 张 · ${batches.size} 批请求（${batches.joinToString(" + ")}）\n批间${pacing.label()} · 本次估算预算 $maxEstimatedAnlas Anlas"
+    fun summary() = "预计 $targetTotalImages 张 · ${batches.size} 批请求（${batches.joinToString(" + ")}）\n批间${pacing.label()} · 本次估算预算 $maxEstimatedAnlas Anlas\n最多 ${batches.size + 2} 次图片 HTTP 尝试（最多两次由您确认的 429 重试；断线不自动重发）"
 }
 
 data class ImageBatchQuote(val anlas: Long, val availableAnlas: Long, val usesV5Allowance: Boolean = false)
@@ -91,7 +91,12 @@ data class ImageBatchProgress(
     val usesV5Allowance: Boolean = false,
     val detail: String = ""
 ) {
-    fun label() = "已保存 $saved/$target 张 · 第 $batch/$batches 批 · 已预留估算 $estimatedSpent Anlas" +
+    fun label() = (when (stage) {
+        ImageBatchStage.RUNNING -> "执行中"
+        ImageBatchStage.WAITING -> "等待下一批"
+        ImageBatchStage.PAUSED -> "已暂停"
+        ImageBatchStage.COMPLETE -> "已完成"
+    }) + " · 已保存 $saved/$target 张 · 第 $batch/$batches 批 · 已预留估算 $estimatedSpent Anlas" +
         (nextEstimatedAnlas?.let { " · 本批估算 $it Anlas" } ?: "") +
         (if (usesV5Allowance) " · 另消耗 V5 使用额度" else "") +
         (if (remainingSeconds > 0) " · 等待 $remainingSeconds 秒" else "") +
@@ -152,7 +157,7 @@ class ImageBatchRunner(
                         currentCoroutineContext().ensureActive()
                         if (cost.anlas < 0 || cost.anlas > plan.maxEstimatedAnlas - state.estimatedSpent)
                             throw ImageBatchStopped("本批预计超出剩余 Anlas 预算，任务停止；不会自动转为付费。调整后须重新确认")
-                        if (cost.availableAnlas < cost.anlas) throw ImageBatchStopped("账户 Anlas 余额不足，未发起本批请求")
+                        if (cost.availableAnlas < cost.anlas) throw ImageBatchStopped("当前可用估算余额不足（含未核销请求预留），未发起本批请求")
                         emit(state.copy(stage = ImageBatchStage.RUNNING, batch = index + 1, nextEstimatedAnlas = cost.anlas,
                             usesV5Allowance = cost.usesV5Allowance, detail = "余额和费用均为当前估算；V5 额度另计"))
                         emit(state.copy(estimatedSpent = state.estimatedSpent + cost.anlas))

@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   focused:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -16,13 +16,16 @@ jobs:
         with:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
-      - name: Compile shared and test batch plan and full preset custody
+      - name: Test Desktop batch orchestration ownership persistence and narrow UI
         working-directory: app
-        run: bash gradlew :sharedCore:test --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest' --tests 'com.example.chatbar.domain.image.NovelAiBatchPresetCustodyTest' --tests 'com.example.chatbar.domain.image.NovelAiManualBatchTransportTest' :desktopApp:compileKotlin --no-daemon --stacktrace
+        env:
+          CCB_IMAGE_BATCH_REVIEW_DIR: ${{ runner.temp }}/ccb-image-batch-review
+        run: .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopManualImageBatchTest' --tests 'com.example.chatbar.desktop.DesktopStudioBatchRuntimeTest' --tests 'com.example.chatbar.desktop.DesktopImageBatchOptionsTest' --tests 'com.example.chatbar.desktop.DesktopTaskRuntimeTest' --tests 'com.example.chatbar.desktop.DesktopPhase7R2R1Test' --tests 'com.example.chatbar.desktop.DesktopStudioGenerateGateTest' --tests 'com.example.chatbar.desktop.DesktopStudioPresetControllerTest' --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: desktop-novelai-batch-focused-reports
+          name: desktop-novelai-batch-ui-runtime-reports
           path: |
-            app/sharedCore/build/test-results/test/
-            app/sharedCore/build/reports/tests/test/
+            app/desktopApp/build/test-results/test/
+            app/desktopApp/build/reports/tests/test/
+            ${{ runner.temp }}/ccb-image-batch-review/

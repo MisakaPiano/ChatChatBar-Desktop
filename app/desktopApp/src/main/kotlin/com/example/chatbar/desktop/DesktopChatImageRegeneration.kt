@@ -14,10 +14,13 @@ import com.example.chatbar.desktop.security.DesktopCredentialCall
 import java.util.Base64
 import java.util.UUID
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 internal data class DesktopChatImageRequirements(val imageContentHint: String = "", val imagePromptPreference: String,
-    val persistPreference: Boolean = true)
+    val persistPreference: Boolean = true, val batchPlan: ImageBatchRunPlan? = null)
 
 internal enum class DesktopChatImagePreflight(val reason: String) {
     READY(""), SOURCE("来源回复已变化或不可用"), SESSION("会话不存在"), CHARACTER("角色卡不存在"),
@@ -34,8 +37,23 @@ internal class DesktopChatImageRegeneration(
     private val tasks: DesktopTaskRuntime, val infrastructure: DesktopNovelAiInfrastructure,
     private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
     private val imageClient: okhttp3.OkHttpClient? = null,
+    private val accountForBatch: (suspend () -> NovelAiAccountUsage)? = null,
 ) {
     val taskStates get() = tasks.tasks
+    private val controls = java.util.concurrent.ConcurrentHashMap<String, ImageBatchControl>()
+    private val progress = MutableStateFlow<Map<String, ImageBatchProgress>>(emptyMap())
+    val batchProgress = progress.asStateFlow()
+    private val accountService by lazy { NovelAiAccountService(imageClient ?: secureNovelAiClient()) }
+    fun pauseBatch(messageId: String) {
+        controls[messageId]?.pause()
+        progress.update { values -> values[messageId]?.let { values + (messageId to it.copy(detail = "已请求暂停；当前批次完成后生效")) } ?: values }
+    }
+    fun resumeBatch(messageId: String) {
+        controls[messageId]?.resume()
+        progress.update { values -> values[messageId]?.let { values + (messageId to it.copy(detail = "已请求继续；仍遵守剩余等待")) } ?: values }
+    }
+    fun batchPaused(messageId: String): Boolean = controls[messageId]?.isPaused == true
+    fun batchRunning(messageId: String): Boolean = controls.containsKey(messageId)
     private suspend fun credential(): DesktopCredentialCall {
         val key = DesktopCredentialKey.NovelAiToken
         currentCoroutineContext()[DesktopCredentialCall]?.takeIf { it.owner === secrets && it.credentialKey == key }?.let { return it }
@@ -76,10 +94,14 @@ internal class DesktopChatImageRegeneration(
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
     suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
         requirePreflight(original)
-        suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
-            chats.readSessionDurable(original.sessionId) is EntityReadResult.Valid
-        require(eligible())
         val openingSession = requireNotNull(chats.getSession(original.sessionId))
+        val batchPlan = requirements?.batchPlan
+        if (batchPlan != null) require(batchPlan.origin == ImageBatchOrigin.CHAT_MANUAL)
+        var afterMessageId = original.id
+        suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
+            (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value?.characterCardId == openingSession.characterCardId &&
+            (afterMessageId == original.id || (chats.readMessageDurable(afterMessageId, original.sessionId) as? EntityReadResult.Valid)?.value?.generatedFromMessageId == original.id)
+        require(eligible())
         val session = openingSession
         val originalCard = requireNotNull(characters.getById(session.characterCardId))
         val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
@@ -95,7 +117,16 @@ internal class DesktopChatImageRegeneration(
         // A retry retains its request snapshot without writing over a later session preference.
         if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
             openingSession.copy(imagePromptPreference = preference))
-        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = true, queueIfBusy = true) { report -> withContext(frozen) {
+        val control = batchPlan?.let { ImageBatchControl() }
+        if (control != null) {
+            check(controls.putIfAbsent(original.id, control) == null)
+            progress.update { it + (original.id to ImageBatchProgress(target = requireNotNull(batchPlan).targetTotalImages,
+                batches = batchPlan.batches.size, detail = "正在准备本次图片；尚未发出生图请求")) }
+        }
+        try {
+        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = batchPlan == null, queueIfBusy = true,
+            batchManagedWork = batchPlan != null, onFinished = { if (control != null) controls.remove(original.id, control) }) { report -> withContext(frozen) {
+            try {
             require(eligible())
             val plan = infrastructure.promptDesigner().design(messages,
                 original.id, card, model, playerName = playerName,
@@ -112,10 +143,38 @@ internal class DesktopChatImageRegeneration(
             val draft = NovelAiStudioDraft(stylePrompt = edit.stylePrompt, basePrompt = edit.baseCaption, negativePrompt = edit.negativePrompt,
                 characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) }).withActiveSettings(launch)
             report.generationStatus("正在生成图片")
-            DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
-                persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible)
-            }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") })
+            val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
+                persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible,
+                    afterMessageId = afterMessageId, onCommitted = { afterMessageId = it })
+            }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics)
+            if (batchPlan == null) ImageBatchRunner.ordinaryStudioRequest {
+                runtime.generate(draft, promptPlan = plan, maxRateLimitRetries = 10,
+                    onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") })
+            } else runDesktopManualImageBatch(batchPlan, requireNotNull(control), requireNotNull(frozen.read()),
+                runner = ImageBatchRunner(admission = tasks.imageBatchAdmission),
+                account = { accountForBatch?.invoke() ?: accountService.fetchCancellable(requireNotNull(frozen.read())) },
+                estimate = { count, usage -> NovelAiImageCostEstimator.estimate(launch.copy(count = count), usage) },
+                validateOwner = { require(eligible()) { "图片来源或角色卡绑定已变化，批次停止" } },
+                onProgress = { update ->
+                    progress.update { (it + (original.id to update)).entries.toList().takeLast(128).associate { entry -> entry.toPair() } }
+                    report.generationStatus(update.label())
+                }) { count, _ ->
+                require(eligible())
+                runtime.generate(draft.withActiveSettings(launch.copy(count = count)), promptPlan = plan, safeBatchRequest = true,
+                    onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") }).images.size
+            }
+            } catch (stopped: ImageBatchStopped) {
+                progress.update { values -> values[original.id]?.let { values + (original.id to it.copy(detail = requireNotNull(stopped.message))) } ?: values }
+                report.generationStatus(requireNotNull(stopped.message)); throw stopped
+            } catch (cancelled: CancellationException) {
+                progress.update { values -> values[original.id]?.let { values + (original.id to it.copy(detail = "已停止；已保存图片保留，请核对已提交请求的计费")) } ?: values }
+                throw cancelled
+            } finally { if (control != null) controls.remove(original.id, control) }
         } }
+        } catch (failure: Throwable) {
+            if (control != null) controls.remove(original.id, control)
+            throw failure
+        }
     }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
     suspend fun initialSettings(message: ChatMessage, draft: NovelAiImageRegenerationDraft): NovelAiGenerationSettings {
@@ -153,7 +212,8 @@ internal class DesktopChatImageRegeneration(
 internal suspend fun persistDesktopChatImages(chats: ChatRepository, resources: DesktopCharacterResourceStore,
     coordinator: DesktopDataOperationCoordinator, original: ChatMessage, plan: NovelAiPromptPlan,
     size: NovelAiImageSize, bytes: List<ByteArray>, recipe: NovelAiGenerationRecipe,
-    eligible: suspend () -> Boolean): NovelAiGenerationHistoryEntry = coordinator.withExclusiveMaintenance {
+    eligible: suspend () -> Boolean, afterMessageId: String = original.id,
+    onCommitted: (String) -> Unit = {}): NovelAiGenerationHistoryEntry = coordinator.withExclusiveMaintenance {
     withContext(NonCancellable + Dispatchers.IO) {
         require(eligible()) { "生图来源已更改，未发布结果" }
         val id = UUID.randomUUID().toString()
@@ -163,7 +223,8 @@ internal suspend fun persistDesktopChatImages(chats: ChatRepository, resources: 
                 PackagedImage("image.png", Base64.getEncoder().encodeToString(value)), System.currentTimeMillis(), "p7chat${id}_$index") }
             chats.addMessageAfter(ChatMessage.create(original.sessionId, MessageRole.ASSISTANT, "",
                 images = paths.toList(), generatedImageMetadata = paths.map { plan.toGeneratedImageMetadata(it, size) },
-                generatedFromMessageId = original.id).copy(id = id), original.id)
+                generatedFromMessageId = original.id).copy(id = id), afterMessageId)
+            onCommitted(id)
             NovelAiGenerationHistoryEntry(images = novelAiHistoryImages(paths, recipe.settings.seed), recipe = recipe)
         } catch (failure: Throwable) {
             if (chats.readMessageDurable(id, original.sessionId) == EntityReadResult.Missing) paths.forEach(resources::deleteOwned)

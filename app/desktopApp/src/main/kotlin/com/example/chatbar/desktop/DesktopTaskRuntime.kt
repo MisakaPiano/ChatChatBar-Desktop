@@ -82,6 +82,8 @@ internal class DesktopTaskRuntime(
     init { require(completedHistoryLimit > 0) }
     private val lock = Any()
     private val novelAiWorkMutex = Mutex()
+    /** Batch owners use the same lane for quote+request+commit, releasing it during pacing or pause. */
+    internal val imageBatchAdmission: Mutex get() = novelAiWorkMutex
     private val supervisor = SupervisorJob()
     private val scope = CoroutineScope(supervisor + dispatcher)
     val imageProgress = DesktopImageTaskProgress(scope)
@@ -340,6 +342,8 @@ internal class DesktopTaskRuntime(
         targetMessageId: String? = null,
         retryable: Boolean = false,
         queueIfBusy: Boolean = false,
+        batchManagedWork: Boolean = false,
+        onFinished: () -> Unit = {},
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
@@ -352,7 +356,7 @@ internal class DesktopTaskRuntime(
                 it.kind == DesktopTaskKind.NOVELAI && it.sessionId == sessionId && it.targetMessageId == targetMessageId && it.status == DesktopTaskStatus.RUNNING
             }))
             throw DesktopTaskAdmissionException("该来源图片任务或修改仍在进行")
-        if (!queueIfBusy && mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
+        if (!queueIfBusy && !batchManagedWork && mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
         if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, queueIfBusy, work)
@@ -360,7 +364,7 @@ internal class DesktopTaskRuntime(
             taskId = id, sessionId = sessionId, subjectId = targetMessageId)
         val job = scope.launch(DesktopUsageParent(usageParent), start = CoroutineStart.LAZY) {
             try {
-                withNovelAiWork {
+                suspend fun performWork() {
                     update(id) { it.copy(startedAt = clock(), message = label) }
                     work(DesktopImageTaskReporter(
                     status = { message -> update(id) { if (it.status == DesktopTaskStatus.RUNNING) it.copy(message = message.take(PREVIEW_LIMIT)) else it } },
@@ -368,6 +372,7 @@ internal class DesktopTaskRuntime(
                     generationStatus = { text -> reportImageProgress(id) { imageProgress.generation(id, text) } },
                     ))
                 }
+                if (batchManagedWork) performWork() else withNovelAiWork { performWork() }
                 synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "完成") }
             } catch (_: CancellationException) {
                 synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "已停止；已保存的结果保留") }
@@ -386,6 +391,7 @@ internal class DesktopTaskRuntime(
                 if (mutableTasks.value.any { it.taskId == id && it.status == DesktopTaskStatus.RUNNING })
                     finish(id, DesktopTaskStatus.CANCELLED, "已停止")
             }
+            onFinished()
         }
         job.start()
         id

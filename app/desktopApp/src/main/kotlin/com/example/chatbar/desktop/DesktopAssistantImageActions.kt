@@ -1,6 +1,8 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -8,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -33,9 +36,21 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     var requirementsOpen by remember(message.id) { mutableStateOf(false) }
     var imageHint by remember(message.id) { mutableStateOf("") }
     var preference by remember(message.id) { mutableStateOf("") }
-    val generate: (DesktopChatImageRequirements?) -> Unit = { requirements -> scope.launch {
+    var requestedSource by remember(message.id) { mutableStateOf<ChatMessage?>(null) }
+    var persistPreference by remember(message.id) { mutableStateOf(false) }
+    var batchConfig by remember(message.id) { mutableStateOf(ImageBatchConfiguration()) }
+    var confirmed by remember(message.id, batchConfig) { mutableStateOf(false) }
+    val confirmedPlan = if (confirmed && batchConfig.validationError() == null) batchConfig.freeze(ImageBatchOrigin.CHAT_MANUAL) else null
+    LaunchedEffect(message) {
+        if (requirementsOpen && requestedSource != message) {
+            requirementsOpen = false; imageStatus = "来源回复已更改，请重新打开生图计划"
+        }
+    }
+    val generate: (DesktopChatImageRequirements?) -> Unit = { requirements ->
+        val source = requestedSource ?: message
+        scope.launch {
         try {
-            requireNotNull(controller.imageRegeneration).generateFromAssistant(message, requirements)
+            requireNotNull(controller.imageRegeneration).generateFromAssistant(source, requirements)
             imageStatus = "已提交图片任务；忙时排队，可在过程区停止"; requirementsOpen = false
             controller.refreshAfterTerminalTask(message.sessionId)
         } catch (cancelled: CancellationException) { throw cancelled }
@@ -44,13 +59,29 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     } }
     actionBar {
         if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
-            DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) { generate(null) }
+            DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) {
+                requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
+                persistPreference = false; batchConfig = ImageBatchConfiguration(); requirementsOpen = true
+            }
             DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = interactionEnabled) {
-                imageHint = ""; preference = state.selectedSession.imagePromptPreference; requirementsOpen = true
+                requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
+                persistPreference = true; batchConfig = ImageBatchConfiguration(); requirementsOpen = true
             }
         }
     }
     if (imageStatus.isNotBlank()) StatusText(imageStatus)
+    controller.imageRegeneration?.let { owner ->
+        val batches by owner.batchProgress.collectAsState()
+        batches[message.id]?.let { progress ->
+            StatusText(progress.label())
+            if (running && owner.batchRunning(message.id)) StudioActions {
+                if (progress.stage == ImageBatchStage.PAUSED || owner.batchPaused(message.id))
+                    BootstrapButton("继续批次") { owner.resumeBatch(message.id) }
+                else BootstrapButton("暂停批次", secondary = true) { owner.pauseBatch(message.id) }
+                StatusText("暂停在当前批次完成后生效；停止请使用下方任务按钮。")
+            }
+        }
+    }
     val processStates by controller.taskRuntime.imageProgress.states.collectAsState()
     // Runtime history is newest-first. One source process area; dismiss reveals older history.
     desktopImageTasksForMessage(tasks, message).firstOrNull()?.let { task ->
@@ -64,23 +95,30 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
             } },
             onDismiss = { controller.taskRuntime.dismissImageTask(task.taskId) })
     }
-    if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求", icon = desktopImageWindowIcon()) {
+    if (requirementsOpen) DesktopImageToolWindow("生图要求与批次计划", { requirementsOpen = false }, width = 650.dp, height = 740.dp) {
         DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running || !interactionEnabled,
-            imageStatus, { requirementsOpen = false }) { if (interactionEnabled) generate(DesktopChatImageRequirements(imageHint, preference)) }
+            imageStatus, { requirementsOpen = false }, canGenerate = confirmedPlan != null,
+            options = { DesktopImageBatchOptions(batchConfig, ImageBatchOrigin.CHAT_MANUAL, { batchConfig = it }, confirmed, { confirmed = it }); Unit }) {
+            if (interactionEnabled) confirmedPlan?.let { generate(DesktopChatImageRequirements(imageHint, preference, persistPreference, it)) }
+        }
     }
 }
 
 @Composable
 internal fun DesktopChatImageRequirementsForm(imageHint: String, preference: String, onHint: (String) -> Unit,
-    onPreference: (String) -> Unit, running: Boolean, status: String, onCancel: () -> Unit, onGenerate: () -> Unit) {
+    onPreference: (String) -> Unit, running: Boolean, status: String, onCancel: () -> Unit,
+    canGenerate: Boolean = true, options: (@Composable () -> Unit)? = null, onGenerate: () -> Unit) {
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         StudioField("图片内容提示", imageHint, onChange = onHint)
         StudioField("生图偏好", preference, onChange = onPreference)
         StatusText("取消不会保存；直接生成使用会话已保存的偏好。")
+        options?.invoke()
         if (status.isNotBlank()) StatusText(status)
+        }
         StudioActions {
             BootstrapButton("取消", onClick = onCancel)
-            BootstrapButton("生成", enabled = !running, onClick = onGenerate)
+            BootstrapButton("生成", enabled = !running && canGenerate, onClick = onGenerate)
         }
     }
 }

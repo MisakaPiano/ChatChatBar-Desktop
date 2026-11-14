@@ -66,8 +66,13 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     val currentDesignId by controller.designRepository.currentConversationId.collectAsState()
     var translation by remember { mutableStateOf(false) }
     val tasks by controller.taskEntries.collectAsState()
-    val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }
+    val ownedTasks = setOfNotNull(state.generationTaskId, state.postProcessTaskId, state.taskId)
+    val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING && it.taskId in ownedTasks }
     val scope = rememberCoroutineScope()
+    state.pendingBatchDraft?.let { captured ->
+        DesktopStudioBatchConfirmation(captured, state.account, busy, state.status,
+            controller::dismissBatchConfirmation) { plan -> scope.launch { controller.confirmBatch(plan) } }
+    }
     val accountProblemShowing = openedAccountService == null && !accountProblemDismissed &&
         (accountRead == DesktopStudioAccountRead.Unavailable || state.accountUi.error == STUDIO_ACCOUNT_READ_FAILURE)
     if (accountProblemShowing) {
@@ -328,6 +333,15 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
             StudioDisclosure("生成设置", d.activeSettings.sizeTier.displayName, initiallyOpen = true) { section("参数") }
         },
         footer = {
+            Column(Modifier.fillMaxWidth()) {
+            if (controller.manualBatchRunning) state.batchProgress?.let { progress ->
+                StatusText(progress.label())
+                StudioActions {
+                    if (progress.stage == ImageBatchStage.PAUSED || controller.batchPaused) BootstrapButton("继续批次", onClick = controller::resumeBatch)
+                    else BootstrapButton("暂停批次", secondary = true, onClick = controller::pauseBatch)
+                    StatusText("暂停在当前请求完成后生效；停止可能仍有已提交请求计费。")
+                }
+            }
             DesktopStudioFooter(
                 usage = usage,
                 undoEnabled = !busy && editHistory.undo,
@@ -337,6 +351,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 onUndo = { scope.launch { controller.undo() } },
                 onRedo = { scope.launch { controller.redo() } },
                 onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
+            }
         },
         preview = { rail ->
             if (rail) Column(Modifier.fillMaxSize()) {

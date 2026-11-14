@@ -42,6 +42,8 @@ internal data class DesktopNovelAiStudioState(
     val presetPreview: DesktopGenerationPresetPreview? = null,
     val presetOutcome: DesktopPresetApplyOutcome = DesktopPresetApplyOutcome.NONE,
     val fullPromptPreview: NovelAiFullPromptContent? = null,
+    val pendingBatchDraft: NovelAiStudioDraft? = null,
+    val batchProgress: ImageBatchProgress? = null,
 ) {
     val account: NovelAiAccountUsage? get() = accountUi.takeIf { it.error == null }?.effectiveUsage
 }
@@ -98,6 +100,22 @@ internal class DesktopNovelAiStudioController(
     val history = repository.history
     private val mutex = Mutex()
     private val accountMutex = Mutex()
+    @Volatile private var batchControl: ImageBatchControl? = null
+    @Volatile private var pendingBatchIdentity: String? = null
+    val manualBatchRunning: Boolean get() = batchControl != null
+    fun pauseBatch() {
+        batchControl?.pause()
+        mutableState.update { it.copy(batchProgress = it.batchProgress?.copy(detail = "已请求暂停；当前批次完成后生效")) }
+    }
+    fun resumeBatch() {
+        batchControl?.resume()
+        mutableState.update { it.copy(batchProgress = it.batchProgress?.copy(detail = "已请求继续；仍遵守剩余等待")) }
+    }
+    val batchPaused: Boolean get() = batchControl?.isPaused == true
+    fun dismissBatchConfirmation() {
+        pendingBatchIdentity = null
+        mutableState.update { it.copy(pendingBatchDraft = null) }
+    }
     private data class PresetSelection(val prepared: DesktopPreparedGenerationPreset, val expected: NovelAiStudioDraft,
         var applied: Boolean = false)
     val generationPresetAvailable get() = presetArchive != null
@@ -635,14 +653,94 @@ internal class DesktopNovelAiStudioController(
         } }
     }
 
-    suspend fun generate() = action {
+    suspend fun generate() {
+        var single = false
+        action {
+            val launch = resolveDefaultModel()
+            if (launch.continuousModeEnabled || launch.activeSettings.count > 1) {
+                pendingBatchIdentity = studioCredentialRead(credentialIdentity)
+                mutableState.update { it.copy(pendingBatchDraft = launch) }
+            } else single = true
+        }
+        if (single) generateSingle()
+    }
+
+    suspend fun confirmBatch(plan: ImageBatchRunPlan) = action {
+        require(plan.origin == ImageBatchOrigin.STUDIO)
+        check(batchControl == null)
+        val expected = requireNotNull(state.value.pendingBatchDraft)
+        val launch = resolveDefaultModel()
+        require(launch == expected) { "草稿已更改，请重新确认生成计划" }
+        val (identity, frozen) = studioCredentialRead { credentialIdentity() to freezeCredential() }
+        require(identity == pendingBatchIdentity) { "账户已更改，请重新确认生成计划" }
+        val token = requireNotNull(frozen[com.example.chatbar.desktop.security.DesktopCredentialCall]?.read()).also { require(it.isNotBlank()) }
+        require(launch.basePrompt.isNotBlank())
+        launch.activeSettings.copy(count = plan.requestCount).requestValidationError(launch.activeCharacters.size)?.let { error(it) }
+        launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
+        val control = ImageBatchControl()
+        batchControl = control
+        mutableState.update { it.copy(batchProgress = ImageBatchProgress(target = plan.targetTotalImages,
+            batches = plan.batches.size, detail = "等待本次生图请求许可")) }
+        try {
+            val id = tasks.launchNovelAi("NovelAI Studio · 手动批次", batchManagedWork = true,
+                onFinished = { if (batchControl === control) batchControl = null }) { report -> withContext(frozen) {
+                var prepared: DesktopPreparedGuidance? = null
+                try {
+                    val encodingMisses = guidance.vibeCacheMisses(launch)
+                    var completed = 0
+                    runDesktopManualImageBatch(plan, control, token,
+                        account = { account() }, runner = ImageBatchRunner(admission = tasks.imageBatchAdmission),
+                        estimate = { count, usage -> NovelAiImageCostEstimator.estimate(launch.activeSettings.copy(count = count), usage,
+                            launch.imageGuidance, if (prepared == null) encodingMisses else 0) },
+                        validateOwner = { currentCoroutineContext().ensureActive() },
+                        onProgress = { progress ->
+                            mutableState.update { it.copy(batchProgress = progress, status = progress.label()) }
+                            report(progress.label())
+                        }) { count, cost ->
+                        // Guidance encoding may be chargeable: only prepare after the first quote and budget admission.
+                        val ready = prepared ?: guidance.prepare(launch).also { prepared = it }
+                        val batch = launch.copy(imageGuidance = ready.retainedGuidance)
+                            .withActiveSettings(launch.activeSettings.copy(count = count))
+                        val result = runtime.generate(batch, guidance = ready.guidance, requestSize = ready.requestSize,
+                            composeResult = ready.compose, safeBatchRequest = true,
+                            onIntermediate = { bytes, step, _ ->
+                                mutableState.update { it.copy(preview = bytes) }
+                                report("已保存 $completed/${plan.targetTotalImages} · Step $step")
+                            })
+                        completed += result.images.size
+                        mutableState.update { it.copy(results = it.results + result.images.map { image -> image.path }, preview = null) }
+                        if (identity == studioCredentialRead(credentialIdentity)) accountAfterSuccess(cost, result.images.size)
+                        result.images.size
+                    }
+                } catch (cancelled: CancellationException) {
+                    status("已停止；历史中的已提交批次保留"); throw cancelled
+                } catch (stopped: ImageBatchStopped) {
+                    status(requireNotNull(stopped.message)); throw stopped
+                } catch (_: Exception) {
+                    status("批次生成或账户检查失败；已保存图片保留，未自动重发不确定请求")
+                    throw IllegalStateException("Manual image batch failed")
+                } finally {
+                    if (batchControl === control) batchControl = null
+                    mutableState.update { it.copy(preview = null) }
+                }
+            } }
+            dismissBatchConfirmation()
+            mutableState.update { it.copy(taskId = id, generationTaskId = id) }
+        } catch (failure: Throwable) {
+            if (batchControl === control) batchControl = null
+            throw failure
+        }
+    }
+
+    private suspend fun generateSingle() = action {
         val (taskIdentity, frozen) = studioCredentialRead { credentialIdentity() to freezeCredential() }
         var taskAccount = state.value.account.takeIf { accountIdentity == taskIdentity }
         val launch = resolveDefaultModel()
+        require(!launch.continuousModeEnabled && launch.activeSettings.count == 1)
         require(launch.basePrompt.isNotBlank()) { "请填写基础 Prompt" }
         launch.activeSettings.requestValidationError(launch.activeCharacters.size)?.let { error(it) }
         launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
-        val id = tasks.launchNovelAi("NovelAI Studio") { report -> withContext(frozen) {
+        val id = tasks.launchNovelAi("NovelAI Studio", batchManagedWork = true) { report -> withContext(frozen) { tasks.withNovelAiWork {
             try {
                 val encodingMisses = guidance.vibeCacheMisses(launch)
                 val prepared = guidance.prepare(launch)
@@ -654,13 +752,13 @@ internal class DesktopNovelAiStudioController(
                     val batch = launch.copy(imageGuidance = prepared.retainedGuidance).withActiveSettings(launch.activeSettings.copy(count = count))
                     val estimatedCost = NovelAiImageCostEstimator.estimate(batch.activeSettings, taskAccount,
                         batch.imageGuidance, if (completed == 0) encodingMisses else 0)
-                    val result = runtime.generate(batch, guidance = prepared.guidance, requestSize = prepared.requestSize,
+                    val result = ImageBatchRunner.ordinaryStudioRequest { runtime.generate(batch, guidance = prepared.guidance, requestSize = prepared.requestSize,
                         composeResult = prepared.compose, retryRateLimitsUntilCancelled = launch.continuousModeEnabled,
                         onRetry = { attempt, delay -> status("429 · 第 $attempt 次等待 ${delay}ms"); report("等待限流恢复") },
                         onIntermediate = { bytes, step, progress ->
                             mutableState.update { it.copy(preview = bytes, status = "$completed/$total · Step $step · ${(progress * 100).toInt()}%") }
                             report("$completed/$total · Step $step")
-                        })
+                        }) }
                     completed += result.images.size
                     withContext(NonCancellable) { mutableState.update { it.copy(results = it.results + result.images.map { image -> image.path }, preview = null, status = "已保存 $completed/$total") } }
                     if (taskIdentity == studioCredentialRead(credentialIdentity)) {
@@ -677,7 +775,7 @@ internal class DesktopNovelAiStudioController(
                 throw IllegalStateException("Studio generation failed")
             }
             finally { mutableState.update { it.copy(preview = null) } }
-        } }
+        } } }
         mutableState.update { it.copy(taskId = id, generationTaskId = id) }
     }
 
@@ -921,7 +1019,11 @@ internal class DesktopNovelAiStudioController(
         if (enabled) com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
         else com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.DISABLED) }
 
-    fun stop() { tasks.tasks.value.firstOrNull { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }?.taskId?.let(tasks::requestUserStop) }
+    fun stop() {
+        val owned = setOfNotNull(state.value.generationTaskId, state.value.postProcessTaskId, state.value.taskId)
+        tasks.tasks.value.firstOrNull { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING && it.taskId in owned }
+            ?.taskId?.let(tasks::requestUserStop)
+    }
     private fun status(text: String) = mutableState.update { it.copy(status = text) }
     private suspend fun cleanupAfterCommit(candidates: List<String>) {
         if (candidates.isEmpty()) return
