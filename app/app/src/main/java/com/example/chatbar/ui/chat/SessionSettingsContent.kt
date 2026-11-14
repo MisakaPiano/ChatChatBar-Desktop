@@ -51,7 +51,8 @@ internal fun SessionSettingsContent(
     playerRole: com.example.chatbar.data.local.entity.SessionPlayerRole? = null,
     onPlayerRole: (com.example.chatbar.data.local.entity.SessionPlayerRole?) -> Unit = {},
     playerAvatar: String? = null, inheritedPlayerAvatar: String? = null,
-    onSavePlayerAvatar: suspend (String?) -> Unit = {}
+    onSavePlayerAvatar: suspend (String?) -> Unit = {},
+    onOpenImageGallery: () -> Unit = {}
 ) {
     var showWorldBooks by remember { mutableStateOf(false) }
     val modelOptions = models.map { SessionOption(it.id, it.displayName) }
@@ -122,6 +123,9 @@ internal fun SessionSettingsContent(
         SettingsEntry("persona", "player", "玩家设定", "玩家设定覆盖") {
             SettingsTextSummary(if (playerSetting.isBlank()) "玩家设定 · 跟随全局" else "玩家设定 · 本会话已指定",
                 playerSetting.ifBlank { inheritedPlayerSetting }) { openFullscreen("玩家设定", playerSetting, onPlayerSetting) }
+        },
+        SettingsEntry("chat-images", "reply", "会话图片", "图库 相册 全部图片") {
+            SettingsLink("会话图片", "查看全部已保存消息中的图片", onOpenImageGallery)
         },
         SettingsEntry("background", "player", "聊天背景", "背景覆盖 恢复默认") {
             SettingsDetails("聊天背景", if (background.isBlank()) "跟随角色卡／默认背景" else "本会话已指定", browser.target == "background") {

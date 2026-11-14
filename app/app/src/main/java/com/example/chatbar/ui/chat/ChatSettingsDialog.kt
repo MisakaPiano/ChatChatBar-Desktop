@@ -113,7 +113,8 @@ fun ChatSettingsDialog(
     onClearHistory: () -> Unit,
     onJumpToSource: (String) -> Unit = {},
     modifier: Modifier = Modifier,
-    onRebindCharacter: () -> Unit = {}
+    onRebindCharacter: () -> Unit = {},
+    onOpenImageGallery: () -> Unit = {}
 ) {
     val session by viewModel.session.collectAsState()
     val models by viewModel.availableModels.collectAsState()
@@ -432,6 +433,7 @@ fun ChatSettingsDialog(
                             },
                             autoPauseAbsentPeople = session?.autoPauseAbsentPeople ?: false,
                             onRebindCharacter = { requestLeave(onRebindCharacter) },
+                            onOpenImageGallery = { requestLeave(onOpenImageGallery) },
                              playerRole = playerRole, onPlayerRole = { playerRole = it },
                              playerAvatar = session?.desktopPlayerAvatar, inheritedPlayerAvatar = globalPlayerSetting.desktopAvatar,
                              onSavePlayerAvatar = { path -> viewModel.savePlayerAvatar(path) }

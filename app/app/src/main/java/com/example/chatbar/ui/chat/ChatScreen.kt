@@ -324,6 +324,21 @@ fun ChatScreen(
         mutableStateOf<Set<String>>(emptySet())
     }
     var expandedImageIndex by remember(sessionId) { mutableStateOf<Int?>(null) }
+    var expandedImageSnapshot by remember(sessionId) { mutableStateOf<List<ImagePreviewItem>?>(null) }
+    var imageGalleryOpen by remember(sessionId) { mutableStateOf(false) }
+    var imageGalleryRevision by remember(sessionId) { mutableIntStateOf(0) }
+    var imageGalleryLoading by remember(sessionId) { mutableStateOf(false) }
+    var imageGallerySnapshot by remember(sessionId) { mutableStateOf<com.example.chatbar.domain.chat.ChatImageGallerySnapshot?>(null) }
+    var imageGalleryError by remember(sessionId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(imageGalleryOpen, imageGalleryRevision) {
+        if (imageGalleryOpen) {
+            imageGalleryLoading = true; imageGalleryError = null
+            try { imageGallerySnapshot = viewModel.loadChatImageGallery() }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (failure: Exception) { imageGalleryError = "读取会话图片失败：${failure.message}" }
+            finally { imageGalleryLoading = false }
+        }
+    }
     var imageActionTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var imageRegenerationDraft by remember(sessionId) { mutableStateOf<NovelAiImageRegenerationDraft?>(null) }
     var imageRegenerationLoading by remember(sessionId) { mutableStateOf(false) }
@@ -1257,6 +1272,7 @@ fun ChatScreen(
                         onLongPress = { if (!isResponding && !screenshotSelectionMode) actionMessageId = message.id },
                         onSegmentLongPress = if (!isResponding && !screenshotSelectionMode) ({ segment -> actionSegment = segment }) else null,
                         onImageClick = if (screenshotSelectionMode) null else ({ path ->
+                            expandedImageSnapshot = previewImages.toList()
                             expandedImageIndex = previewImages.indexOfFirst {
                                 it.messageId == message.id && it.path == path
                             }.takeIf { it >= 0 }
@@ -1600,6 +1616,7 @@ fun ChatScreen(
             relinkOpen = true
         },
         onDismiss = { settingsOpen = false },
+        onOpenImageGallery = { settingsOpen = false; imageGalleryOpen = true },
         onClearHistory = { clearConfirm = true },
         onJumpToSource = { sourceTurnId ->
             settingsOpen = false
@@ -1691,6 +1708,28 @@ fun ChatScreen(
             }
         }
     }
+    fun locateGalleryMessage(messageId: String) {
+        expandedImageIndex = null; expandedImageSnapshot = null; imageGalleryOpen = false
+        scope.launch {
+            try {
+                viewModel.loadMessageWindow(messageId)
+                val index = viewModel.messages.value.indexOfFirst { it.id == messageId }
+                if (index >= 0) {
+                    withFrameNanos { }
+                    snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > index }
+                    listState.animateScrollToItem(index)
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (failure: Exception) { Toast.makeText(context, failure.message, Toast.LENGTH_SHORT).show() }
+        }
+    }
+    if (imageGalleryOpen) ChatImageGalleryDialog(imageGallerySnapshot, imageGalleryLoading, imageGalleryError,
+        onRefresh = { imageGalleryRevision++ },
+        onView = { selected ->
+            val items = imageGallerySnapshot?.images.orEmpty().filter { it.readable }
+            expandedImageSnapshot = items.map { ImagePreviewItem(it.messageId,it.path) }
+            expandedImageIndex = items.indexOfFirst { it.key == selected.key }.takeIf { it >= 0 }
+        }, onLocate = ::locateGalleryMessage, onDismiss = { imageGalleryOpen = false })
     expandedImageIndex?.let { initialIndex ->
         CompositionLocalProvider(
             LocalChatImageRenderRuntime provides ChatImageRenderRuntime(
@@ -1699,15 +1738,10 @@ fun ChatScreen(
             )
         ) {
         ImagePreviewDialog(
-            items = previewImages,
+            items = expandedImageSnapshot ?: previewImages,
             initialIndex = initialIndex,
-            onDismiss = { expandedImageIndex = null },
-            onLocateMessage = { messageId ->
-                expandedImageIndex = null
-                messages.indexOfFirst { it.id == messageId }.takeIf { it >= 0 }?.let { index ->
-                    scope.launch { listState.animateScrollToItem(index) }
-                }
-            },
+            onDismiss = { expandedImageIndex = null; expandedImageSnapshot = null },
+            onLocateMessage = ::locateGalleryMessage,
             onSetCardAvatar = if (!isArchived && characterCard != null) ({ path ->
                 viewModel.replaceCharacterCardAvatarFromImage(path) { _, message ->
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

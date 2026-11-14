@@ -4844,6 +4844,18 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
+    suspend fun loadChatImageGallery(): com.example.chatbar.domain.chat.ChatImageGallerySnapshot = withContext(Dispatchers.IO) {
+        val collector = com.example.chatbar.domain.chat.ChatImageGalleryCollector { path -> File(path).let { it.isFile && it.length() > 0 } }
+        chatRepository.forEachMessage(sessionId) { collector.accept(it) }
+        collector.snapshot()
+    }
+
+    suspend fun loadMessageWindow(messageId: String) {
+        require(chatRepository.getMessage(messageId, sessionId) != null) { "来源消息已不存在，请刷新图库" }
+        messageWindowAnchorId.set(messageId)
+        replaceMessagesFromRepository(messageId)
+    }
+
     suspend fun loadPeopleStatusSnapshot(): Map<String, com.example.chatbar.domain.chat.ChatPersonStatus> =
         withContext(Dispatchers.IO) {
             val card = _characterCard.value ?: return@withContext emptyMap()
