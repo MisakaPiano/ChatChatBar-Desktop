@@ -10,6 +10,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
+      - name: Enable long paths for the cloud checkouts
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
         with:
           path: group-desktop-control
