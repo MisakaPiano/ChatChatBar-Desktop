@@ -120,7 +120,8 @@ fun CbButton(
     supportingText: String? = null,
     autoSizeText: Boolean = false,
     icon: ImageVector? = null,
-    contentColor: Color? = null
+    contentColor: Color? = null,
+    trailingIcon: ImageVector? = null
 ) {
     var pressVersion by remember { mutableStateOf(0) }
     val scale by animateFloatAsState(
@@ -190,6 +191,15 @@ fun CbButton(
         ) {
             if (icon != null) {
                 CbIcon(icon, text, Modifier.size(20.dp), fg)
+            } else if (trailingIcon != null) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        if (autoSizeText) CbAutoSizeText(text, color = fg, style = ChatBarTheme.typography.label)
+                        else CbText(text, color = fg, style = ChatBarTheme.typography.label)
+                    }
+                    CbIcon(trailingIcon, null, Modifier.size(18.dp), fg)
+                }
             } else if (autoSizeText) {
                 CbAutoSizeText(text, color = fg, style = ChatBarTheme.typography.label)
             } else {
@@ -443,9 +453,19 @@ fun CbDialog(
                         if (titleActions == null) {
                             CbText(title, style = ChatBarTheme.typography.heading)
                         } else {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                CbText(title, modifier = Modifier.weight(1f), style = ChatBarTheme.typography.heading)
-                                titleActions()
+                            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                if (maxWidth < 280.dp) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
+                                        CbText(title, style = ChatBarTheme.typography.heading)
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End,
+                                            verticalAlignment = Alignment.CenterVertically, content = titleActions)
+                                    }
+                                } else {
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        CbText(title, modifier = Modifier.weight(1f), style = ChatBarTheme.typography.heading)
+                                        titleActions()
+                                    }
+                                }
                             }
                         }
                         Spacer(Modifier.height(ChatBarSpacing.md))

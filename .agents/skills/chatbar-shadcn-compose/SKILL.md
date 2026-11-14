@@ -101,3 +101,5 @@ Full migration completes only when Material 3 dependency is removed and CI-equiv
 - CbTopBar keeps titles on one ellipsized line inside its fixed-height row. ChatPeopleControlsTest includes navigation plus all three chat actions at320dp and inspects actual text layout, avoiding clipped wrapped titles when adding the people counter.
 
 - `CbDialog.titleActions` is an optional trailing header slot. With no slot, existing header layout is unchanged. Reply deletion uses it only for navigation to a separate whole-message confirmation; the action menu itself exposes one delete action.
+
+- `CbButton.trailingIcon` is a decorative UI-kit ImageVector beside the label, one click target. Reply deletion uses the standard chevron, an unfilled themed outline, a full label, and compact-header stacking when needed. The last candidate can be deleted after its existing confirmation; repository expected-snapshot deletion rejects stale versions before attachment cleanup.

@@ -2381,9 +2381,11 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         viewModelScope.launch {
             try {
                 val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
-                // Last-version deletion is only offered through the explicit whole-message confirmation.
                 val changed = MessageAlternativeVersionPolicy.remove(message, versionId)
-                    ?: error("仅剩一个版本，请使用删除整条消息")
+                if (changed == null) {
+                    deleteMessage(messageId, message)
+                    return@launch
+                }
                 check(chatRepository.updateMessageIfUnchanged(message, changed)) { "消息已变化，请重新操作" }
                 replaceMessagesFromRepository()
                 refreshMemoryAfterMessageEdit(changed)
@@ -3592,10 +3594,21 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         )
     }
 
-    fun deleteMessage(messageId: String) {
+    fun deleteMessage(messageId: String) = deleteMessage(messageId, null)
+
+    private fun deleteMessage(messageId: String, expected: ChatMessage?) {
         viewModelScope.launch {
             fishAudioCoordinator.cancelAndJoinForMessage(sessionId, messageId)
-            val deletedMessage = chatRepository.getMessage(messageId, sessionId)
+            val deletedMessage = expected ?: chatRepository.getMessage(messageId, sessionId)
+            if (expected != null) {
+                try {
+                    check(chatRepository.deleteMessageIfUnchanged(expected)) { "消息已变化，请重新操作" }
+                } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    _messageActionError.value = error.message ?: "删除备选失败"
+                    return@launch
+                }
+            }
             selectNeighborWindowAnchor(messageId)
 
             deletedMessage
@@ -3609,7 +3622,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
             }
             _messages.value = _messages.value.filter { it.id != messageId }
-            chatRepository.deleteMessage(messageId, sessionId)
+            if (expected == null) chatRepository.deleteMessage(messageId, sessionId)
             refreshMessages()
             enqueueLongTermMemoryAfterMessageDeletion()
 

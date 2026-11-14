@@ -26,8 +26,8 @@ class ReplyDeletionConfirmationTest {
                 { message.value = requireNotNull(MessageAlternativeVersionPolicy.remove(message.value, "second-id")) },
                 { wholeDeletes++ })
         } }
-        rule.onNodeWithText("删除当前备选").assertIsDisplayed()
-        rule.onNodeWithText("删除整条消息").assertDoesNotExist()
+        rule.onNodeWithText("删除备选").assertIsDisplayed()
+        rule.onNodeWithText("删除整条回复").assertDoesNotExist()
         capture("delete-candidate-confirm.png")
         rule.onNodeWithText("删除此备选").performClick()
         rule.runOnIdle {
@@ -43,26 +43,28 @@ class ReplyDeletionConfirmationTest {
         rule.setContent { ChatBarTheme {
             ReplyDeletionConfirmation("message", "version", true, {}, { candidateDeletes++ }, { wholeDeletes++ })
         } }
-        rule.onNodeWithText("删除整条…").performClick()
-        rule.onNodeWithText("删除整条消息").assertIsDisplayed()
+        rule.onNodeWithText("删除全部备选").performClick()
+        rule.onNodeWithText("删除整条回复").assertIsDisplayed()
         rule.runOnIdle { assertEquals(0, wholeDeletes); assertEquals(0, candidateDeletes) }
         capture("delete-whole-second-confirm.png")
         rule.onNodeWithText("取消").performClick()
-        rule.onNodeWithText("删除当前备选").assertIsDisplayed()
-        rule.onNodeWithText("删除整条…").performClick()
-        rule.onNodeWithText("删除整条", substring = false).performClick()
+        rule.onNodeWithText("删除备选").assertIsDisplayed()
+        rule.onNodeWithText("删除全部备选").performClick()
+        rule.onNodeWithText("全部删除", substring = false).performClick()
         rule.runOnIdle { assertEquals(1, wholeDeletes); assertEquals(0, candidateDeletes) }
     }
 
-    @Test fun lastCandidateDoesNotDeleteWholeMessageThroughCandidateButton() {
-        var deletes = 0
+    @Test fun lastCandidateCanBeDeletedWithExistingConfirmation() {
+        var candidateDeletes = 0
+        var wholeDeletes = 0
         rule.setContent { ChatBarTheme {
-            ReplyDeletionConfirmation("message", "only-version", false, {}, { deletes++ }, { deletes++ })
+            ReplyDeletionConfirmation("message", "only-version", false, {}, { candidateDeletes++ }, { wholeDeletes++ })
         } }
-        rule.onNodeWithText("删除此备选").assertIsNotEnabled()
-        rule.onNodeWithText("删除整条…").assertIsEnabled().performClick()
-        rule.onNodeWithText("删除整条消息").assertIsDisplayed()
-        rule.runOnIdle { assertEquals(0, deletes) }
+        rule.onNodeWithText("删除此备选").assertIsEnabled()
+        rule.onNodeWithText("删除全部备选").assertIsDisplayed()
+        capture("delete-last-candidate-confirm.png")
+        rule.onNodeWithText("删除此备选").performClick()
+        rule.runOnIdle { assertEquals(1, candidateDeletes); assertEquals(0, wholeDeletes) }
     }
 
     private fun capture(name: String) {

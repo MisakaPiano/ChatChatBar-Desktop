@@ -23,6 +23,34 @@ class ChatRepositoryTest {
     @get:Rule
     val temp = TemporaryFolder()
 
+    @Test fun `last candidate deletion preserves final user message and persists no assistant`() = runTest {
+        val chats = repository("last-candidate")
+        val session = ChatSession.create("card", "synthetic")
+        chats.createSession(session)
+        chats.addMessage(ChatMessage("user", session.id, MessageRole.USER, "synthetic question", createdAt = 1, updatedAt = 1))
+        chats.addMessage(ChatMessage("reply", session.id, MessageRole.ASSISTANT, "only reply", createdAt = 2, updatedAt = 2))
+        val snapshot = requireNotNull(chats.getMessage("reply", session.id))
+        assertTrue(chats.deleteMessageIfUnchanged(snapshot))
+        assertNull(chats.getMessage("reply", session.id))
+        assertEquals("user", chats.getRecentMessages(session.id, 1).single().id)
+        assertEquals(MessageRole.USER, chats.getSession(session.id)?.lastMessageRole)
+        assertFalse(chats.deleteMessageIfUnchanged(snapshot))
+    }
+
+    @Test fun `last candidate deletion rejects snapshot after new alternative arrives`() = runTest {
+        val chats = repository("last-candidate-stale")
+        val session = ChatSession.create("card", "synthetic")
+        chats.createSession(session)
+        chats.addMessage(ChatMessage("reply", session.id, MessageRole.ASSISTANT, "only reply", createdAt = 1, updatedAt = 1))
+        val snapshot = requireNotNull(chats.getMessage("reply", session.id))
+        val changed = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.append(snapshot, "new reply", "new-version")
+        chats.updateMessage(changed)
+        assertFalse(chats.deleteMessageIfUnchanged(snapshot))
+        val retained = requireNotNull(chats.getMessage("reply", session.id))
+        assertEquals(2, com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.versions(retained).size)
+        assertEquals("new reply", retained.content)
+    }
+
     @Test
     fun `stale asynchronous session update and settings draft preserve mode while restore replaces it`() = runTest {
         val chats = repository("narrative-mode")

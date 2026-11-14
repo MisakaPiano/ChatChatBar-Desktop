@@ -1787,7 +1787,7 @@ fun ChatScreen(
     deleteAlternativeTarget?.let { (messageId, versionId) ->
         val target = messages.find { it.id == messageId }
         ReplyDeletionConfirmation(messageId, versionId,
-            canDeleteAlternative = target?.alternatives?.size?.let { it > 1 } == true,
+            hasOtherAlternatives = target?.alternatives?.size?.let { it > 1 } == true,
             onDismiss = { deleteAlternativeTarget = null },
             onDeleteAlternative = {
                 viewModel.deleteMessageAlternative(messageId, versionId)
