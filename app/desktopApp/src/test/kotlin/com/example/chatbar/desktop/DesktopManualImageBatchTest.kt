@@ -15,6 +15,20 @@ class DesktopManualImageBatchTest {
     private fun plan(total: Int = 3, budget: Long = 0) = ImageBatchRunPlan(1, total,
         ImageBatchPacing(ImageBatchInterval.NONE), budget, ImageBatchOrigin.STUDIO)
 
+    @Test fun `preview cache is read only short lived credential scoped and explicitly refreshable`() = runTest {
+        var time = 1L
+        var queries = 0
+        val preview = DesktopImageBatchAccountPreview { time }
+        suspend fun read(key: String = "synthetic-one", refresh: Boolean = false) = preview.read(key, refresh) { queries++; usage }
+        assertEquals(usage, read()); read(); assertEquals(1, queries)
+        time += 30001; read(); assertEquals(2, queries)
+        read(refresh = true); assertEquals(3, queries)
+        read("synthetic-two"); assertEquals(4, queries)
+        assertNull(preview.read("synthetic-failure") { queries++; error("synthetic") })
+        assertNull(preview.read("synthetic-failure") { error("Must cache failure briefly") })
+        assertEquals(5, queries)
+    }
+
     @Test fun `unknown account never invokes generation or reserves a successful result`() = runTest {
         var requests = 0
         val states = mutableListOf<ImageBatchProgress>()

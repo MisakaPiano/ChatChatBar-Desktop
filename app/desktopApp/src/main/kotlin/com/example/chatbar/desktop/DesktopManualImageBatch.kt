@@ -4,6 +4,24 @@ import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/** Read-only dialog preview cache; never used for admission of an image request. */
+internal class DesktopImageBatchAccountPreview(private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
+    private val mutex = Mutex()
+    private var digest: List<Byte>? = null
+    private var at: Long? = null
+    private var usage: NovelAiAccountUsage? = null
+    suspend fun read(credential: String, refresh: Boolean = false, fetch: suspend () -> NovelAiAccountUsage): NovelAiAccountUsage? = mutex.withLock {
+        val key = java.security.MessageDigest.getInstance("SHA-256").digest(credential.toByteArray()).toList()
+        val elapsed = at?.let { now() - it }
+        if (!refresh && digest == key && elapsed != null && elapsed in 0..30000) return@withLock usage
+        val result = try { fetch() } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { null }
+        digest = key; usage = result; at = now()
+        result
+    }
+}
 
 /** Per-confirmation runtime only. Neither consent nor an active run is restored from stored drafts. */
 internal suspend fun runDesktopManualImageBatch(

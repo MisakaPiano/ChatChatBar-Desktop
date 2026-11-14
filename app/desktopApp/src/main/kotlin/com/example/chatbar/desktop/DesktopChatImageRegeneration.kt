@@ -44,6 +44,30 @@ internal class DesktopChatImageRegeneration(
     private val progress = MutableStateFlow<Map<String, ImageBatchProgress>>(emptyMap())
     val batchProgress = progress.asStateFlow()
     private val accountService by lazy { NovelAiAccountService(imageClient ?: secureNovelAiClient()) }
+    private val previewAccounts = DesktopImageBatchAccountPreview()
+    suspend fun previewManualImageRun(original: ChatMessage, configuration: ImageBatchConfiguration, refresh: Boolean = false): String {
+        configuration.validationError()?.let { return it }
+        val session = chats.getSession(original.sessionId) ?: return "会话已删除"
+        val card = characters.getById(session.characterCardId) ?: return "角色卡不存在"
+        val app = settings.getAppSettings()
+        val target = NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
+        val frozen = credential()
+        val token = frozen.read()?.takeIf { it.isNotBlank() } ?: return "未配置 NovelAI Token，计费状态未知"
+        val usage = withContext(frozen) { previewAccounts.read(token, refresh) {
+            accountForBatch?.invoke() ?: accountService.fetchCancellable(token)
+        } }
+        val generation = NovelAiGenerationSettings(model = target, guidance = 8f)
+            .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
+        val costs = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL).batches.map { count ->
+            NovelAiImageSizePreset.entries.maxOf { preset ->
+                val size = NovelAiImageSizePolicy.resolve(app.novelAiImageAspectRatio, preset)
+                NovelAiImageCostEstimator.estimate(generation.copy(count = count, customWidth = size.width, customHeight = size.height), usage).anlas.toLong()
+            }
+        }
+        return "生图模型：${target.displayName}\n" +
+            (if (usage == null) "账户状态未知；图片请求前必须成功查询。" else "当前 Anlas ${usage.anlas} · V5 额度约 ${usage.v5AllowancePercent ?: "未知"}%（另计）") +
+            "\n按可能画幅估算各批 ${costs.joinToString(" + ")} Anlas；整项 ${costs.sum()} Anlas。设计后按实际画幅重新核对，估算可能变化。"
+    }
     fun pauseBatch(messageId: String) {
         controls[messageId]?.pause()
         progress.update { values -> values[messageId]?.let { values + (messageId to it.copy(detail = "已请求暂停；当前批次完成后生效")) } ?: values }

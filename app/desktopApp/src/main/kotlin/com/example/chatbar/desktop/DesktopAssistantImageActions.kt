@@ -40,6 +40,21 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     var persistPreference by remember(message.id) { mutableStateOf(false) }
     var batchConfig by remember(message.id) { mutableStateOf(ImageBatchConfiguration()) }
     var confirmed by remember(message.id, batchConfig) { mutableStateOf(false) }
+    var previewRefresh by remember(message.id) { mutableStateOf(0) }
+    var handledPreviewRefresh by remember(message.id) { mutableStateOf(0) }
+    var preview by remember(message.id) { mutableStateOf("") }
+    var previewBusy by remember(message.id) { mutableStateOf(false) }
+    LaunchedEffect(requirementsOpen, batchConfig, previewRefresh) {
+        if (requirementsOpen && batchConfig.validationError() == null) {
+            previewBusy = true
+            val force = previewRefresh != handledPreviewRefresh
+            handledPreviewRefresh = previewRefresh
+            try { preview = controller.imageRegeneration?.previewManualImageRun(message, batchConfig, force).orEmpty() }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { preview = "费用预览不可用；开始后仍逐批重新核对，未知时停止图片请求。" }
+            finally { previewBusy = false }
+        }
+    }
     val confirmedPlan = if (confirmed && batchConfig.validationError() == null) batchConfig.freeze(ImageBatchOrigin.CHAT_MANUAL) else null
     LaunchedEffect(message) {
         if (requirementsOpen && requestedSource != message) {
@@ -98,7 +113,11 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     if (requirementsOpen) DesktopImageToolWindow("生图要求与批次计划", { requirementsOpen = false }, width = 650.dp, height = 740.dp) {
         DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running || !interactionEnabled,
             imageStatus, { requirementsOpen = false }, canGenerate = confirmedPlan != null,
-            options = { DesktopImageBatchOptions(batchConfig, ImageBatchOrigin.CHAT_MANUAL, { batchConfig = it }, confirmed, { confirmed = it }); Unit }) {
+            options = {
+                DesktopImageBatchOptions(batchConfig, ImageBatchOrigin.CHAT_MANUAL, { batchConfig = it }, confirmed, { confirmed = it })
+                StatusText(if (previewBusy) "正在查询费用预览……" else preview)
+                BootstrapButton("刷新费用预览", enabled = !previewBusy, secondary = true) { previewRefresh++ }
+            }) {
             val latest = if (batchConfig.validationError() == null) batchConfig.freeze(ImageBatchOrigin.CHAT_MANUAL) else null
             if (interactionEnabled && confirmed && latest == confirmedPlan)
                 confirmedPlan?.let { generate(DesktopChatImageRequirements(imageHint, preference, persistPreference, it)) }
