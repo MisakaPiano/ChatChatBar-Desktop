@@ -19,6 +19,7 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
     var warning by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf<String?>(null) }
+    var crop by remember(card?.id) { mutableStateOf<ByteArray?>(null) }
     var preview by remember(card?.id) { mutableStateOf<Pair<List<String>, Int>?>(null) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(card?.id, revision) {
@@ -30,6 +31,13 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
         busy = true
         try { work() } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { warning = "操作未完成；资源保留，请检查文件或背景库" }
+        finally { busy = false }
+    } }
+    crop?.let { original -> DesktopImageWorkspace(original, "背景 · 裁剪后另存", { crop = null }) { edited ->
+        busy = true
+        try { library!!.import(card!!.id, edited); crop = null }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { warning = "背景裁剪保存未完成；原图和图库保留，请重试。" }
         finally { busy = false }
     } }
     preview?.let { (paths, index) ->
@@ -71,6 +79,8 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
                 DesktopOwnedImage(path, controller.characterResources::readBytes, Modifier.fillMaxWidth().height(150.dp)
                     .desktopViewerEntry(onClick = { preview = entries.images.toList() to entries.images.indexOf(path) }))
                 StudioActions {
+                    BootstrapButton("用于本会话", enabled = !busy) { action { controller.selectSessionBackground(path) } }
+                    BootstrapButton("裁剪另存背景", enabled = !busy) { action { crop = controller.characterResources.readBytes(path) } }
                     BootstrapButton(if (path == entries.preferred) "✓ Desktop 首选" else "设为首选", enabled = !busy) { action { library!!.prefer(card!!.id, path) } }
                     BootstrapButton(if (path == cardDefault) "✓ 角色卡默认" else "设为角色卡默认", enabled = !busy) { action { library!!.setDefault(card!!.id, path) } }
                     BootstrapButton("从图库移除", enabled = !busy) { delete = path }

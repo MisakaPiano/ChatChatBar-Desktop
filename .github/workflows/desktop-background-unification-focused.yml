@@ -26,7 +26,7 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopPortableBackgroundGalleryTest'
-          --tests 'com.example.chatbar.desktop.DesktopBackgroundVoiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopCharacterEditorControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopCharacterImageTest'
           --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4

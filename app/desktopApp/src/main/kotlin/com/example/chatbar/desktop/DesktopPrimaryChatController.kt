@@ -811,6 +811,22 @@ internal class DesktopPrimaryChatController(
         mutableState.update { it.copy(pendingImages = pending, error = null) }
     }
 
+    suspend fun selectSessionBackground(reference: String) = guarded {
+        val session = state.value.selectedSession ?: return@guarded
+        val card = state.value.selectedCharacter?.takeIf { it.id == session.characterCardId } ?: return@guarded
+        val gallery = requireNotNull(backgroundLibrary).catalog(card.id)
+        require(reference in gallery.images || reference == card.chatBackground)
+        requireNotNull(imageStore).selectBackgroundReference(session.id, reference)
+        val saved = requireNotNull(chats.getSession(session.id))
+        stateLock.withLock {
+            if (state.value.selectedSession?.id == session.id) {
+                settingsBaseline = settingsBaseline?.copy(chatBackground = saved.chatBackground)
+                mutableState.update { it.copy(selectedSession = saved,
+                    sessionSettingsDraft = it.sessionSettingsDraft?.copy(chatBackground = saved.chatBackground)) }
+            }
+        }
+    }
+
     suspend fun chooseSessionBackground(clear: Boolean = false) = guarded {
         val session = state.value.selectedSession ?: return@guarded
         val bytes = if (clear) null else {
