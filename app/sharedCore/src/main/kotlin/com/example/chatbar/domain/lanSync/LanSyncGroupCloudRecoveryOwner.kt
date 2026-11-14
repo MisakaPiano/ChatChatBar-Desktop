@@ -69,13 +69,14 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         @Volatile var daily: LanSyncGroupJoining? = null
         @Volatile var root: Path? = null
         @Volatile var dataPhase = false
+        @Volatile var readyAccess: LanSyncGroupRuntimeAccess? = null
         var approval: LanSyncGroupRecoveryDevicePreview? = null
         var review: LanSyncGroupCloudRecoveryReview? = null
         var expiry: Job? = null
     }
     private sealed interface Result {
         data class Review(val value: LanSyncGroupCloudRecoveryReview, val resumed: Boolean) : Result
-        data class Ready(val access: LanSyncGroupRuntimeAccess, val pending: Boolean = false, val connectionEligible: Boolean = false,
+        data class Ready(val access: LanSyncGroupRuntimeAccess, val pending: Boolean, val connectionEligible: Boolean,
             val connectionNotice: String? = null, val connectionEnabled: Boolean? = null) : Result
         data class Waiting(val code: String?) : Result
     }
@@ -265,7 +266,19 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         require(profile == null || known != null) { "SYNC_GROUP_CLOUD_RECOVERY_OTHER_JOIN_EXISTS" }
         if (profile?.stage == LanSyncGroupJoinStage.READY) {
             require(requireNotNull(known).vault == SyncManagementSession.locate(value.input.code())) { "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED" }
-            return Result.Ready(requireNotNull(daily.runtimeAccess()))
+            val access = requireNotNull(daily.runtimeAccess())
+            val current = access.ledger().current()
+            require(current.members[access.device]?.active == true && access.trust.group == known.trust.group &&
+                access.trust.genesis == known.trust.genesis && access.trust.ownerCertificate == known.trust.ownerCertificate) {
+                "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED"
+            }
+            value.readyAccess = access
+            val review = LanSyncGroupCloudRecoveryReview(lanSyncHash(
+                "CLOUD-RECOVERY-READY-RESUME\n${value.id.value}\n${current.reference()}\n${access.device}".toByteArray(Charsets.UTF_8)),
+                access.trust.group.value, SyncDeviceSignatures.decode(access.trust.ownerCertificate).fingerprint,
+                "${current.id.value}:${current.bodyHash()}", current.members.size, access.device, deviceName)
+            value.review = review
+            return Result.Review(review, resumed = true)
         }
         val base = runInterruptible(Dispatchers.IO) { checkSession(value); root().also { lanSyncSafe(it, true) } }
         value.root = base
@@ -341,6 +354,11 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
     private suspend fun confirmOwned(value: Session, binding: String): Result {
         checkSession(value)
         require(value.review?.binding == binding) { "SYNC_GROUP_CLOUD_RECOVERY_REVIEW_CHANGED" }
+        value.readyAccess?.let { access ->
+            require(access.ledger().current().members[access.device]?.active == true) { "SYNC_GROUP_CLOUD_RECOVERY_DAILY_KEYS_CHANGED" }
+            beginDataPhase(value, null)
+            return finishNative(value, access, access.node)
+        }
         val daily = requireNotNull(value.daily); val manager = requireNotNull(value.manager)
         val member = requireNotNull(daily.recoveryMember())
         val known = manager.ledger().current().members[member.first]
@@ -361,22 +379,25 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
             if (joined.profile.stage != LanSyncGroupJoinStage.READY || node == null)
                 Result.Waiting("SYNC_GROUP_CLOUD_RECOVERY_REVIEW_OR_DATA_REQUIRED")
             else {
-                val inspected = node.inspect()
-                inspected.plan?.let { checkSession(value); node.apply(it) }
-                checkSession(value)
-                val after = node.inspect()
-                val pending = after.plan == null || after.plan.units.values.any {
-                    it.stage !in setOf(LanSyncGroupNativeStage.UNCHANGED, LanSyncGroupNativeStage.READY_OBSERVATION)
-                }
-                Result.Ready(requireNotNull(daily.runtimeAccess()), pending, connectionEligible =
-                    after.stage == LanSyncGroupNodeStage.READY && after.plan != null && after.nativeState.pendingTransaction == null)
+                finishNative(value, requireNotNull(daily.runtimeAccess()), node)
             }
         }
     }
-    private fun beginDataPhase(value: Session, manager: LanSyncGroupManagementRecovery) {
+    private suspend fun finishNative(value: Session, access: LanSyncGroupRuntimeAccess, node: LanSyncGroupNode): Result.Ready {
+        val inspected = node.inspect()
+        inspected.plan?.let { checkSession(value); node.apply(it) }
         checkSession(value)
-        manager.lock()
-        check(!manager.isUnlocked) { "SYNC_GROUP_CLOUD_RECOVERY_MANAGEMENT_STILL_UNLOCKED" }
+        val after = node.inspect()
+        val pending = after.plan == null || after.plan.units.values.any {
+            it.stage !in setOf(LanSyncGroupNativeStage.UNCHANGED, LanSyncGroupNativeStage.READY_OBSERVATION)
+        }
+        return Result.Ready(access, pending, connectionEligible =
+            after.stage == LanSyncGroupNodeStage.READY && after.plan != null && after.nativeState.pendingTransaction == null)
+    }
+    private fun beginDataPhase(value: Session, manager: LanSyncGroupManagementRecovery?) {
+        checkSession(value)
+        manager?.lock()
+        check(manager?.isUnlocked != true) { "SYNC_GROUP_CLOUD_RECOVERY_MANAGEMENT_STILL_UNLOCKED" }
         synchronized(lifecycle) {
             checkSession(value)
             value.dataPhase = true
@@ -388,7 +409,7 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
             mutableState.value = mutableState.value.copy(review = null,
                 status = "管理授权已锁定，正在下载并核验资料；可随时取消并保留恢复进度")
         }
-        manager.close()
+        manager?.close()
         observe("CLOUD_RECOVERY_MANAGEMENT_LOCKED")
         observe("CLOUD_RECOVERY_DATA_PHASE")
     }
@@ -402,14 +423,17 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         checkSession(value, false)
         if (!ready.connectionEligible) return ready.copy(connectionEnabled = false,
             connectionNotice = "设备组已恢复，本机资料仍需检查；此连接尚未保存或启用。")
+        var writeAttempted = false
         return try {
             runInterruptible(Dispatchers.IO) {
                 checkSession(value, false)
                 val catalog = ready.access.cloudRoutes()
                 value.input.credentials.withPassword { password ->
                     checkSession(value, false)
+                    writeAttempted = true
                     val id = catalog.add(LanSyncGroupCloudDraft(value.input.name, value.input.credentials.endpoint,
                         value.input.credentials.username, password, enabled = true))
+                    observe("CLOUD_RECOVERY_CONNECTION_SAVED")
                     checkSession(value, false)
                     check(catalog.rows().singleOrNull { it.id == id }?.let {
                         it.enabled && it.name == value.input.name && it.endpoint == value.input.credentials.endpoint &&
@@ -424,7 +448,9 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         catch (_: Exception) {
             currentCoroutineContext().ensureActive()
             checkSession(value, false)
-            ready.copy(connectionEnabled = false,
+            if (writeAttempted) ready.copy(connectionEnabled = null,
+                connectionNotice = "设备组已恢复；连接保存结果尚未核实，可能已启用，请在网盘连接中检查。")
+            else ready.copy(connectionEnabled = false,
                 connectionNotice = "设备组已恢复，但此连接未能保存或启用；请稍后在网盘连接中重新设置。")
         }
     }
