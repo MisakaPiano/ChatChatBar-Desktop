@@ -170,9 +170,11 @@ class StorageCommitRevisionTest {
                     assertEquals(before, storage.committedRevision.value)
                 }
             }
-            assertSame(installationFailure, failure)
-            assertEquals(1, failure.suppressed.size)
-            assertSame(rollbackFailure, failure.suppressed.single())
+            // Coroutine stack recovery may copy the outer IOException, preserving the original as its cause.
+            val originalFailure = generateSequence<Throwable>(failure) { it.cause }.firstOrNull { it === installationFailure }
+            assertSame(installationFailure, originalFailure)
+            assertEquals(1, requireNotNull(originalFailure).suppressed.size)
+            assertSame(rollbackFailure, originalFailure.suppressed.single())
             assertEquals(2, installationCalls)
             assertEquals(1, rollbackCalls)
             assertFalse(Files.exists(requireNotNull(installedTarget)))
