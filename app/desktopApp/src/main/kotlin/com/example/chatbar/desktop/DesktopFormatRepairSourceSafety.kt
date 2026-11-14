@@ -32,8 +32,8 @@ internal class DesktopFormatRepairSourceSafety(
         write: suspend () -> ConditionalMessageUpdateResult): ConditionalMessageUpdateResult? {
         var receipt: ConditionalMessageUpdateResult? = null
         try {
-            audio.withMaintenance(false, { gate.isRestartRequired }) {
-                voices().mutateMessage(session.id, message.id) {
+            audio.withIdleSourceMutation({ gate.isRestartRequired }) {
+                voices().mutateRepairSource(session.id, message.id) {
                     admitted {
                         if (inspect(session, message) == DesktopRepairSafety.VERIFIED_SAFE) {
                             write().also { receipt = it }

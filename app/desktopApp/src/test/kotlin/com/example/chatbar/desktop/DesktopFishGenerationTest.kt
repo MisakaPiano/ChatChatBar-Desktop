@@ -137,7 +137,9 @@ class DesktopFishGenerationTest {
             } finally { center.closeAndDrain() }
         }
     }
-    private class Fixture : AutoCloseable {
+    private class Fixture(
+        operationGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
+    ) : AutoCloseable {
         val root = Files.createTempDirectory("s4-generation-")
         val storage = JsonFileStorage(root)
         val chats = ChatRepository(storage); val characters = CharacterRepository(storage)
@@ -168,7 +170,7 @@ class DesktopFishGenerationTest {
             override val catalog = PresetModelCatalog(); override val modelCatalogVersion: Int? = null
         })
         val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, voices,
-            credentials, transport, tags, resolver, store, playback)
+            credentials, transport, tags, resolver, store, playback, operationGate)
         lateinit var session: ChatSession
         lateinit var message: ChatMessage
         suspend fun seed(content: String = "<n=\"Alice\"/>[hello]()") {
@@ -304,6 +306,41 @@ class DesktopFishGenerationTest {
             withTimeout(5000) { while (f.coordinator.batches.value.none { it.id == next && it.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION }) delay(10) }
             f.server.enqueue(f.audio()); f.coordinator.resolveTextConfirmation(next, true); f.done(next)
             assertTrue(f.voices.listForSession(f.session.id).single().taggedText.startsWith("changed"))
+        }
+    }
+
+    @Test fun `cancelling confirmed text before its resumed body starts retires autoplay and later audio is not blocked`() = runBlocking {
+        val entered = CompletableDeferred<Unit>()
+        val calls = AtomicInteger()
+        val gate = object : com.example.chatbar.data.operation.AppDataOperationGate {
+            override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                if (calls.incrementAndGet() == 2) { entered.complete(Unit); awaitCancellation() }
+                return operation()
+            }
+        }
+        Fixture(gate).use { f ->
+            f.seed()
+            f.models.saveModel(ModelConfig("model", "synthetic", "https://example.invalid", "synthetic", "mock", createdAt = 1))
+            f.chats.updateSession(f.session.copy(audiobookModeEnabled = false, modelId = "model"))
+            f.rewrite = true
+            f.coordinator.setForegroundSession(f.session.id)
+            val pending = f.coordinator.generateWhole(f.session.id, f.message.id)
+            withTimeout(5_000) { while (f.coordinator.batches.value.none {
+                it.id == pending && it.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION }) delay(10) }
+            f.coordinator.resolveTextConfirmation(pending, true)
+            withTimeout(5_000) { entered.await() }
+            f.coordinator.cancelAndJoinForMessage(f.session.id, f.message.id)
+            assertEquals(0, f.server.requestCount)
+            assertTrue(f.voices.listForSession(f.session.id).isEmpty())
+            f.chats.updateSession(f.session.copy(audiobookModeEnabled = true))
+            val later = f.chats.addMessage(f.message.copy(id = "later", createdAt = 3, updatedAt = 3))
+            f.server.enqueue(f.audio())
+            f.done(f.coordinator.generateWhole(f.session.id, later.id))
+            withTimeout(5_000) { f.playback.state.first { it.playing } }
+            assertEquals(1, f.output.plays); assertEquals(1, f.server.requestCount)
+            val saved = f.voices.listForSession(f.session.id).single()
+            assertEquals(later.id, saved.messageId)
+            assertTrue(Files.exists(java.nio.file.Path.of(saved.audioPath)))
         }
     }
 

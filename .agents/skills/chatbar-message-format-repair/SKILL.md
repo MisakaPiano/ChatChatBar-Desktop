@@ -28,6 +28,8 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 
 ## Desktop Ownership
 
+- Unrelated completed-message image/TTS work is source-scoped in TaskRuntime and the chat menu. Chat images defer only final shared-index publication; formal audio defers actual native playback through the same repair admission lock. Reverse-start publication/playback reservations refuse repair before its request. SourceSafety uses the same voice mutation mutex through `mutateRepairSource`, retaining unrelated queued recordings; its idle audio reservation preserves those tokens while ordinary maintenance retains global invalidation. See `DesktopRepairMediaConcurrencyTest` for actual SourceSafety/controller/CAS, formal loopback Fish and fake-native output coverage; its image generation body is synthetic over the real task/persistence owners, not a live provider claim.
+
 - Desktop speaker-format rule names use the effective structured-person view plus known people already identified in the target reply by `CharacterResidencyPolicy`. This lets a closed person actually reappear without repair treating its avatar/status identity as unknown. It adds names only, never disabled profiles or enablement; card-level gates remain authoritative. Mere prose mentions do not qualify. The full owning historical message still goes to repair; participation does not strip text from that target.
 
 - `DesktopMessageFormatRepairController` owns first-terminal arbitration, in-memory preview, D-039 recovery-point protection and Repository conditional commits; `DesktopTaskRuntime` owns application-lifetime jobs and stable session/message/task identities. Lifecycle cancellation is separate from explicit user Stop.

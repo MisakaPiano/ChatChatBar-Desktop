@@ -21,6 +21,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -101,6 +102,10 @@ internal class DesktopTaskRuntime(
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private val repairControls = mutableMapOf<String, DesktopRepairControl>()
     private val repairSessions = mutableSetOf<String>()
+    /** Only the chat image owner promises the reporter's pre-publication repair barrier. */
+    private val repairGuardedImages = mutableSetOf<String>()
+    private val publishingImageSources = mutableSetOf<String>()
+    private var formalPlaybackOwners = 0
     private val uncertainRepairs = mutableMapOf<String, DesktopRepairTaskIdentity>()
     private val messageMutations = mutableSetOf<String>()
     private val mutableRepairIdentities = MutableStateFlow<Map<String, DesktopRepairTaskIdentity>>(emptyMap())
@@ -111,8 +116,11 @@ internal class DesktopTaskRuntime(
     // In-memory closures retain immutable launch inputs and their original validity checks.
     // Never serialized, included in diagnostics, or used for automatic retry.
     private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?, val queueIfBusy: Boolean,
-        val batchManagedWork: Boolean,
-        val work: suspend ((String) -> Unit) -> Unit)
+        val batchManagedWork: Boolean, val deferSourceCommitForRepair: Boolean,
+        val work: suspend ((String) -> Unit) -> Unit) {
+        // A failed/uncertain shared-index publication must retain the original conservative proof.
+        var safeForOtherSources: Boolean = deferSourceCommitForRepair
+    }
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private val userStoppedImages = mutableSetOf<String>()
     private var accepting = true
@@ -193,9 +201,12 @@ internal class DesktopTaskRuntime(
     fun launchFormatRepair(sessionId: String, messageId: String,
         work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String = synchronized(lock) {
         if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
-        if (sessionId in activeSessions || sessionId in messageMutations || mutableTasks.value.any {
+        if (formalPlaybackOwners > 0 || publishingImageSources.isNotEmpty() ||
+            sessionId in activeSessions || sessionId in messageMutations || mutableTasks.value.any {
                 it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
-                    (it.sessionId == null || it.sessionId == sessionId)
+                    (it.sessionId == null || it.sessionId == sessionId) &&
+                    !(it.taskId in repairGuardedImages && it.taskId !in publishingImageSources && it.sessionId == sessionId &&
+                        it.targetMessageId != null && it.targetMessageId != messageId)
             }) throw DesktopTaskAdmissionException("Session has a conflicting task")
         require(messageId.isNotBlank())
         val id = UUID.randomUUID().toString()
@@ -296,7 +307,7 @@ internal class DesktopTaskRuntime(
     }
 
     fun hasActiveImageSourceMutation(sessionId: String, messageId: String): Boolean = synchronized(lock) {
-        !accepting || maintenance || sessionId in messageMutations || runningRepair(sessionId) != null ||
+        !accepting || maintenance || sessionId in messageMutations || repairConflictsWithSource(sessionId, messageId) ||
             uncertainRepairs.values.any { it.sessionId == sessionId && it.messageId == messageId } ||
             desktopImageSourceBusy(mutableTasks.value, sessionId, messageId)
     }
@@ -314,12 +325,64 @@ internal class DesktopTaskRuntime(
             (messageId == null || it.messageId == messageId) && mutableRepairTasks.value[it.taskId] == DesktopRepairStatus.RUNNING }
     }
 
+    /** Must be called under lock. An unclassified repair retains the session-wide refusal. */
+    private fun repairConflictsWithSource(sessionId: String, messageId: String): Boolean {
+        if (sessionId !in repairSessions) return false
+        val owners = mutableRepairIdentities.value.values.filter { it.sessionId == sessionId &&
+            mutableRepairTasks.value[it.taskId] == DesktopRepairStatus.RUNNING }
+        return owners.isEmpty() || owners.any { it.messageId == messageId }
+    }
+
+    /** No data/voice lease is acquired here. Independent generation may precede this final barrier. */
+    suspend fun awaitFormatRepairMediaTurn(sessionId: String, messageId: String, imageTaskId: String? = null) {
+        mutableRepairTasks.first {
+            synchronized(lock) {
+                if (!accepting || maintenance) throw CancellationException("Media admission closed")
+                if (repairConflictsWithSource(sessionId, messageId))
+                    throw DesktopTaskAdmissionException("当前来源正在修复，请稍后操作")
+                if (repairSessions.isNotEmpty()) false else {
+                    if (imageTaskId != null) {
+                        check(imageTaskId in repairGuardedImages)
+                        publishingImageSources += imageTaskId
+                        imageRetryCheckpoints[imageTaskId]?.safeForOtherSources = false
+                    }
+                    true
+                }
+            }
+        }
+    }
+
+    /** Shares repair's admission lock until actual native playback has drained. Waiting owns no
+     * data lease or player mutex. The reverse start order refuses repair before its model request. */
+    suspend fun withRepairCompatiblePlayback(work: suspend () -> Unit) {
+        var reserved = false
+        try {
+            mutableRepairTasks.first {
+                synchronized(lock) {
+                    if (!accepting || maintenance) throw CancellationException("Playback admission closed")
+                    if (repairSessions.isNotEmpty()) false else {
+                        formalPlaybackOwners++
+                        reserved = true
+                        true
+                    }
+                }
+            }
+            currentCoroutineContext().ensureActive()
+            work()
+        } finally { if (reserved) synchronized(lock) { formalPlaybackOwners-- } }
+    }
+
     /** Repair already owns session admission. Retained source-bearing retries also invalidate proof. */
     fun hasRepairDerivedAdmission(sessionId: String, messageId: String): Boolean = synchronized(lock) {
-        accepting && !maintenance && runningRepair(sessionId, messageId) != null &&
-            imageRetryCheckpoints.values.none { it.sessionId == null || it.sessionId == sessionId } &&
+        accepting && !maintenance && formalPlaybackOwners == 0 && publishingImageSources.isEmpty() &&
+            runningRepair(sessionId, messageId) != null &&
+            imageRetryCheckpoints.values.none { it.sessionId == null || (it.sessionId == sessionId &&
+                !(it.targetMessageId != null && it.targetMessageId != messageId &&
+                    it.deferSourceCommitForRepair && it.safeForOtherSources)) } &&
             mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
-                (it.sessionId == null || it.sessionId == sessionId) }
+                (it.sessionId == null || it.sessionId == sessionId) &&
+                !(it.taskId in repairGuardedImages && it.taskId !in publishingImageSources && it.sessionId == sessionId &&
+                    it.targetMessageId != null && it.targetMessageId != messageId) }
     }
 
     /** Admission lease only; storage still owns its mutex/atomic writes and remains cancellable. */
@@ -346,13 +409,17 @@ internal class DesktopTaskRuntime(
         queueIfBusy: Boolean = false,
         batchManagedWork: Boolean = false,
         onFinished: () -> Unit = {},
+        deferSourceCommitForRepair: Boolean = false,
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
-        if (sessionId in repairSessions || sessionId in messageMutations ||
-            (sessionId == null && (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())))
+        if (sessionId in messageMutations ||
+            (sessionId == null && (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())) ||
+            (sessionId != null && sessionId in repairSessions && (!deferSourceCommitForRepair || targetMessageId == null ||
+                repairConflictsWithSource(sessionId, targetMessageId))))
             throw DesktopTaskAdmissionException("Format repair owns the image source session")
         require(!queueIfBusy || (sessionId != null && targetMessageId != null))
+        require(!deferSourceCommitForRepair || (queueIfBusy && sessionId != null && targetMessageId != null))
         if (sessionId != null && targetMessageId != null &&
             ((queueIfBusy && hasActiveImageSourceMutation(sessionId, targetMessageId)) || mutableTasks.value.any {
                 it.kind == DesktopTaskKind.NOVELAI && it.sessionId == sessionId && it.targetMessageId == targetMessageId && it.status == DesktopTaskStatus.RUNNING
@@ -361,7 +428,9 @@ internal class DesktopTaskRuntime(
         if (!queueIfBusy && !batchManagedWork && mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
-        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, queueIfBusy, batchManagedWork, work)
+        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId,
+            queueIfBusy, batchManagedWork, deferSourceCommitForRepair, work)
+        if (deferSourceCommitForRepair) repairGuardedImages += id
         val usageParent = DesktopUsageContext(if (sessionId == null) DesktopUsageSource.OTHER else DesktopUsageSource.CHAT,
             taskId = id, sessionId = sessionId, subjectId = targetMessageId)
         val job = scope.launch(DesktopUsageParent(usageParent), start = CoroutineStart.LAZY) {
@@ -372,6 +441,16 @@ internal class DesktopTaskRuntime(
                     status = { message -> update(id) { if (it.status == DesktopTaskStatus.RUNNING) it.copy(message = message.take(PREVIEW_LIMIT)) else it } },
                     designSnapshot = { text, credential -> reportImageProgress(id) { imageProgress.design(id, text, credential) } },
                     generationStatus = { text -> reportImageProgress(id) { imageProgress.generation(id, text) } },
+                    beforeSourceCommit = {
+                        if (deferSourceCommitForRepair) {
+                            update(id) { if (it.status == DesktopTaskStatus.RUNNING) it.copy(message = "核对来源并等待格式修复完成") else it }
+                            awaitFormatRepairMediaTurn(requireNotNull(sessionId), requireNotNull(targetMessageId), id)
+                        }
+                    },
+                    afterSourceCommit = { confirmed -> synchronized(lock) {
+                        if (confirmed) imageRetryCheckpoints[id]?.safeForOtherSources = true
+                        publishingImageSources.remove(id)
+                    } },
                     ))
                 }
                 if (batchManagedWork) {
@@ -394,6 +473,8 @@ internal class DesktopTaskRuntime(
             clock(), message = "等待图像任务 · $label", targetMessageId = targetMessageId)) + mutableTasks.value)
         job.invokeOnCompletion {
             synchronized(lock) {
+                repairGuardedImages.remove(id)
+                publishingImageSources.remove(id)
                 activeJobs.remove(id)
                 if (mutableTasks.value.any { it.taskId == id && it.status == DesktopTaskStatus.RUNNING })
                     finish(id, DesktopTaskStatus.CANCELLED, "已停止")
@@ -602,7 +683,9 @@ internal class DesktopTaskRuntime(
         val entry = mutableTasks.value.firstOrNull { it.taskId == taskId && it.canRetry } ?: return@synchronized null
         val checkpoint = imageRetryCheckpoints[entry.taskId] ?: return@synchronized null
         val replacement = launchNovelAi(checkpoint.label, checkpoint.sessionId, checkpoint.targetMessageId,
-            retryable = true, queueIfBusy = checkpoint.queueIfBusy, batchManagedWork = checkpoint.batchManagedWork, work = checkpoint.work)
+            retryable = true, queueIfBusy = checkpoint.queueIfBusy, batchManagedWork = checkpoint.batchManagedWork,
+            deferSourceCommitForRepair = checkpoint.deferSourceCommitForRepair, work = checkpoint.work)
+        imageRetryCheckpoints[replacement]?.safeForOtherSources = checkpoint.safeForOtherSources
         dismissImageTask(taskId)
         replacement
     }

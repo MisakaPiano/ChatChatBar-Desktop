@@ -998,13 +998,13 @@ internal fun PrimaryMessageBubble(
                 entry("编辑", DesktopAppIcons.Edit, segments != null && mutable) { segments?.let(onEditSegment) },
                 entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { segments?.let(onDeleteSegment) },
                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, if (presented.segmented) selectedSegment?.blockId else com.example.chatbar.domain.chat.roleplayLegacyTextBlockId(message.id)) },
-                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate(segments.index)) { requestVoice(segments?.index) }),
+                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !repairing && canGenerate(segments.index)) { requestVoice(segments?.index) }),
             "整条" to listOf(
                 entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in imageOnlyMessageActions) { onAction(DesktopMessageAction.COPY) },
                 entry("编辑", DesktopAppIcons.Edit, mutable) { onAction(DesktopMessageAction.EDIT) },
                 entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { onAction(DesktopMessageAction.DELETE) },
                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) },
-                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate()) { requestVoice() })
+                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !repairing && canGenerate()) { requestVoice() })
         )
         DesktopChatContextPopup(anchor, rows) { menuAnchor = null }
     }
@@ -1120,7 +1120,7 @@ internal fun PrimaryMessageBubble(
         // Actions keep their existing ownership independently of bubble presentation.
         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
-            interactionEnabled = !sessionRepairBusy) { imageControls ->
+            interactionEnabled = !repairing) { imageControls ->
             if (navigation != null || actions.isNotEmpty()) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
                     DesktopChatMessageToolbar(if(imageOnly) imageOnlyMessageActions else actions, onAction, imageActions = imageControls,
                         alternativeNavigation = navigation,
@@ -1128,7 +1128,7 @@ internal fun PrimaryMessageBubble(
                         userMessage = message.role == MessageRole.USER,
                         onMore = { menuSegment = null; menuAnchor = toolbarBounds },
                         showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
-                        voiceEnabled = !sessionRepairBusy && (voicePlacements.isNotEmpty() || canGenerate()), onVoice = {
+                        voiceEnabled = if (voicePlacements.isNotEmpty()) !sessionRepairBusy else !repairing && canGenerate(), onVoice = {
                             if (voicePlacements.isEmpty()) requestVoice() else {
                                 val intent = controller.voices?.playbackIntent()
                                 scope.launch { if (intent != null) controller.voices?.play(voicePlacements.first().voice, message, intent) }

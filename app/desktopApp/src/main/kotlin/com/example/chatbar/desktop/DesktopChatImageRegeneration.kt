@@ -167,7 +167,8 @@ internal class DesktopChatImageRegeneration(
         try {
         return tasks.launchNovelAi("聊天图片", original.sessionId, original.id,
             retryable = !automatic && batchPlan.targetTotalImages == 1, queueIfBusy = true,
-            batchManagedWork = true, onFinished = { controls.remove(original.id, control) }) { report ->
+            batchManagedWork = true, deferSourceCommitForRepair = true,
+            onFinished = { controls.remove(original.id, control) }) { report ->
             val runControl = controls[original.id]?.takeIf { it === control } ?: ImageBatchControl().also {
                 check(controls.putIfAbsent(original.id, it) == null)
             }
@@ -192,8 +193,10 @@ internal class DesktopChatImageRegeneration(
                 characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) }).withActiveSettings(launch)
             report.generationStatus("正在生成图片")
             val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
-                persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible,
-                    expectedCharacterCardId = openingSession.characterCardId)
+                report.withSourceCommit {
+                    persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible,
+                        expectedCharacterCardId = openingSession.characterCardId)
+                }
             }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics)
             runDesktopManualImageBatch(batchPlan, runControl, requireNotNull(frozen.read()),
                 runner = ImageBatchRunner(admission = tasks.imageBatchAdmission),
@@ -276,7 +279,8 @@ internal class DesktopChatImageRegeneration(
         val control = ImageBatchControl()
         check(controls.putIfAbsent(original.id, control) == null)
         try { return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id, retryable = batchPlan.targetTotalImages == 1,
-            queueIfBusy = true, batchManagedWork = true, onFinished = { controls.remove(original.id, control) }) { report ->
+            queueIfBusy = true, batchManagedWork = true, deferSourceCommitForRepair = true,
+            onFinished = { controls.remove(original.id, control) }) { report ->
             val runControl = controls[original.id]?.takeIf { it === control } ?: ImageBatchControl().also {
                 check(controls.putIfAbsent(original.id, it) == null)
             }
@@ -284,8 +288,10 @@ internal class DesktopChatImageRegeneration(
             require(eligible())
             report.generationStatus("正在生成图片")
             val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
-                persistDesktopChatImages(chats, resources, coordinator, original, plan, requestSettings.imageSize(), bytes, recipe,
-                    ::eligible, session.characterCardId)
+                report.withSourceCommit {
+                    persistDesktopChatImages(chats, resources, coordinator, original, plan, requestSettings.imageSize(), bytes, recipe,
+                        ::eligible, session.characterCardId)
+                }
             }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics)
             runDesktopManualImageBatch(batchPlan, runControl, requireNotNull(frozen.read()),
                 account = { accountForBatch?.invoke() ?: accountService.fetchCancellable(requireNotNull(frozen.read())) },

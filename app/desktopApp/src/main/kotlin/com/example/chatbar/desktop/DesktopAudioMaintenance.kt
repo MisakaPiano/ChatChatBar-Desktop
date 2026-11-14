@@ -28,9 +28,21 @@ internal class DesktopAudioMaintenance(
         interruptPlayback: Boolean,
         restartRequired: () -> Boolean,
         operation: suspend () -> T,
+    ): T = reserved(interruptPlayback, restartRequired, false, operation)
+
+    /** Source-only repair withdraws its target's queue through the voice owner. Other queued
+     * sources keep their native generation token; actual start still waits on repair admission. */
+    suspend fun <T> withIdleSourceMutation(restartRequired: () -> Boolean, operation: suspend () -> T): T =
+        reserved(false, restartRequired, true, operation)
+
+    private suspend fun <T> reserved(
+        interruptPlayback: Boolean,
+        restartRequired: () -> Boolean,
+        preserveQueuedPlayback: Boolean,
+        operation: suspend () -> T,
     ): T {
         val audio = focus()
-        val token = audio.reserveMaintenance(interruptPlayback)
+        val token = audio.reserveMaintenance(interruptPlayback, preserveQueuedPlayback)
         var drained = !interruptPlayback // Idle reservation proves no owner and no uncertain release.
         try {
             if (interruptPlayback) {

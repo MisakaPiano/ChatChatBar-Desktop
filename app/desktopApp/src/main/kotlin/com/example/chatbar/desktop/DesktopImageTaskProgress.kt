@@ -112,10 +112,23 @@ internal class DesktopImageTaskReporter(
     private val status: (String) -> Unit,
     private val designSnapshot: (String, String) -> Unit,
     private val generationStatus: (String) -> Unit,
+    private val beforeSourceCommit: suspend () -> Unit = {},
+    private val afterSourceCommit: (Boolean) -> Unit = {},
 ) : (String) -> Unit {
     override fun invoke(message: String) = status(message)
     fun design(snapshot: String, credential: String) { designSnapshot(snapshot, credential); status("正在设计 Prompt") }
     fun generation(message: String) { generationStatus(message); status(message) }
+    suspend fun <T> withSourceCommit(work: suspend () -> T): T {
+        var confirmed = false
+        try { beforeSourceCommit(); return work().also { confirmed = true } }
+        finally { afterSourceCommit(confirmed) }
+    }
+}
+
+/** The production chat-image persistence path requires its original task reporter. */
+internal suspend fun <T> ((String) -> Unit).withSourceCommit(work: suspend () -> T): T {
+    check(this is DesktopImageTaskReporter) { "图像任务来源所有者不可用" }
+    return withSourceCommit(work)
 }
 
 internal fun ((String) -> Unit).designSnapshot(snapshot: String, credential: String = "") {

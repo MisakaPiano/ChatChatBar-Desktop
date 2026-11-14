@@ -31,6 +31,7 @@ internal class DesktopChatVoiceRuntime(
     textGateway: FishVoiceTextGateway? = null,
     private val uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
     private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
+    withPlaybackOperation: suspend (suspend () -> Unit) -> Unit = { it() },
 ) {
     private val textTransport = lazy { OpenAiStreamingTransport(
         experimentalApiModeEnabled = { settings.currentAppSettings.experimentalApiModeEnabled },
@@ -40,7 +41,8 @@ internal class DesktopChatVoiceRuntime(
     private val mutation = Mutex()
     private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio, diagnostics = diagnostics)
     val playback = DesktopVoicePlayback(audio, output, gate,
-        continuousForSession = uiPreferences?.let { preferences -> { session -> preferences.value.continuousPlaybackFor(session) } })
+        continuousForSession = uiPreferences?.let { preferences -> { session -> preferences.value.continuousPlaybackFor(session) } },
+        withPlaybackOperation = withPlaybackOperation)
     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
         transport, FishAudioTagService(textGateway ?: DesktopFishAuxiliaryGateway(diagnostics) { messages, config, log ->
             textTransport.value.streamFishVoice(messages, config, log)
@@ -112,6 +114,15 @@ internal class DesktopChatVoiceRuntime(
     /** Only callbacks confined to normal data access; resource cleanup keeps mutateMessage. */
     suspend fun <T> mutateNormalMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
         gate.withNormalOperation { mutateMessage(sessionId, messageId, block) }
+
+    /** Caller owns idle audio maintenance. Unrelated saved audio waiting for repair stays queued. */
+    suspend fun <T> mutateRepairSource(sessionId: String, messageId: String, block: suspend () -> T): T =
+        mutation.withLock {
+            check(!closed)
+            coordinator.cancelAndJoinForMessage(sessionId, messageId)
+            playback.stopForMessage(sessionId, messageId)
+            block()
+        }
 
     /** P11 reserves the existing mutation owner while draining generation and native playback. */
     suspend fun <T> withSessionMaintenance(sessionId: String, block: suspend () -> T): T = mutation.withLock {
