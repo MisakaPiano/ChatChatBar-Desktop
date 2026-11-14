@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.desktop.DesktopDataOperationCoordinator
+import com.example.chatbar.desktop.DesktopFullBackupGraphValidation
 import com.example.chatbar.domain.chat.SaveSlotSessionPolicy
 import com.example.chatbar.domain.image.*
 import java.nio.file.Files

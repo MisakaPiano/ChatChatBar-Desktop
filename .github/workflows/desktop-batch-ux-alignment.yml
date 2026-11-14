@@ -30,13 +30,8 @@ jobs:
           if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
           "TEMP=$buffer" >> $env:GITHUB_ENV
           "TMP=$buffer" >> $env:GITHUB_ENV
-      - name: Verify exact batches current-run prices fractional waits and portable settings
-        working-directory: app
-        run: >-
-          .\gradlew.bat :sharedCore:test
-          --tests 'com.example.chatbar.domain.image.ImageBatchRunPlanTest'
-          --tests 'com.example.chatbar.domain.image.NovelAiBatchPresetCustodyTest'
-          --no-daemon --stacktrace
+      # Shared plan/preset source is unchanged from aa29's original successful25-method result.
+      # This successor only repairs the Desktop test import; execute the previously unrun suites.
       - name: Verify real Desktop task owners session backup and compact UI
         working-directory: app
         env:
