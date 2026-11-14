@@ -11,8 +11,6 @@ import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.lanSync.*
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
 import java.awt.image.BufferedImage
 import java.text.DateFormat
 import java.util.Date
@@ -24,11 +22,14 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
     var saved by remember(state.setupBinding, state.privacyRevision) { mutableStateOf(false) }
-    fun copy(value: String) { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(value), null) }
+    val owner = LocalDesktopFishParentWindow.current
+    var copyFailed by remember(state.privacyRevision) { mutableStateOf(false) }
+    fun copy(value: String) { copyFailed = !DesktopLanSyncSensitiveClipboard.copy(value, owner) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DesktopDataSectionHeading("设备组同步")
         StatusText(state.status)
         state.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        if (copyFailed) StatusText("未能复制，请保持此窗口打开后重试。", DesktopBootstrapColors.warning)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             StatusText(LanSyncScope.description)
             BootstrapButton("创建新设备组", enabled = !state.busy) { actions.createGroup() }
