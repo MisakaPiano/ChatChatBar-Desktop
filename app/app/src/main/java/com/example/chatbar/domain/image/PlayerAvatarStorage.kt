@@ -14,10 +14,19 @@ import kotlin.math.roundToInt
 
 /** A confirmed avatar is an owned derivative; external source images are never changed. */
 object PlayerAvatarStorage {
-    suspend fun crop(context: Context, uri: Uri, rect: ImageCropFractionRect): String = withContext(Dispatchers.IO) {
+    suspend fun crop(context: Context, uri: Uri, rect: ImageCropFractionRect): String =
+        OwnedImageCropStorage.crop(context, uri, rect, 512, 512, "player-avatars")
+}
+
+/** Crops create new derivatives, never replace a source asset. */
+internal object OwnedImageCropStorage {
+    suspend fun crop(context: Context, uri: Uri, rect: ImageCropFractionRect, width: Int, height: Int,
+        directory: String): String = withContext(Dispatchers.IO) {
+        require(width in 1..2048 && height in 1..2048)
+        require(directory in setOf("player-avatars", "background-crops"))
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         context.contentResolver.openInputStream(uri).use { input -> requireNotNull(input); BitmapFactory.decodeStream(input, null, bounds) }
-        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "头像图片无法读取" }
+        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "图片无法读取" }
         val decode = BitmapFactory.Options().apply {
             while (bounds.outWidth / inSampleSize.coerceAtLeast(1) > 2048 || bounds.outHeight / inSampleSize.coerceAtLeast(1) > 2048)
                 inSampleSize = inSampleSize.coerceAtLeast(1) * 2
@@ -32,7 +41,7 @@ object PlayerAvatarStorage {
             }
         } else context.contentResolver.openInputStream(uri).use { input ->
             requireNotNull(input); BitmapFactory.decodeStream(input, null, decode)
-        } ?: error("头像图片无法读取")
+        } ?: error("图片无法读取")
         try {
             val left = (rect.left * source.width).roundToInt().coerceIn(0, source.width - 1)
             val top = (rect.top * source.height).roundToInt().coerceIn(0, source.height - 1)
@@ -40,9 +49,9 @@ object PlayerAvatarStorage {
             val bottom = (rect.bottom * source.height).roundToInt().coerceIn(top + 1, source.height)
             val cropped = Bitmap.createBitmap(source, left, top, right-left, bottom-top)
             try {
-                val scaled = Bitmap.createScaledBitmap(cropped, 512, 512, true)
+                val scaled = Bitmap.createScaledBitmap(cropped, width, height, true)
                 try {
-                    val folder = File(context.filesDir, "images/player-avatars").apply { check(isDirectory || mkdirs()) }
+                    val folder = File(context.filesDir, "images/$directory").apply { check(isDirectory || mkdirs()) }
                     val output = File(folder, "${UUID.randomUUID()}.png")
                     try {
                         output.outputStream().use { check(scaled.compress(Bitmap.CompressFormat.PNG, 100, it)) }

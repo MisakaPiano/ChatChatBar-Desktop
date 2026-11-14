@@ -42,6 +42,7 @@ internal fun SessionSettingsContent(
     cardDefaultBackground: String? = null,
     onSetCardDefaultBackground: ((String?) -> Unit)? = null,
     backgroundLibraryStatus: String? = null,
+    onAddCroppedBackground: (suspend (String) -> Unit)? = null,
     peopleCard: CharacterCard? = null,
     participation: List<SessionCharacterParticipation> = emptyList(),
     onPersonEnabled: (String, Boolean) -> Unit = { _, _ -> },
@@ -127,7 +128,8 @@ internal fun SessionSettingsContent(
                 if (background.isNotBlank()) AsyncImage(File(background), "聊天背景预览", Modifier.fillMaxWidth().height(120.dp), contentScale = ContentScale.Crop)
                 if (backgroundImages.isNotEmpty()) {
                     com.example.chatbar.ui.components.ChatBackgroundGallery(backgroundImages, background, onSelectBackground,
-                        onRemoveBackground, cardDefault = cardDefaultBackground, onSetCardDefault = onSetCardDefaultBackground)
+                        onRemoveBackground, cardDefault = cardDefaultBackground, onSetCardDefault = onSetCardDefaultBackground,
+                        onAddCropped = onAddCroppedBackground)
                 }
                 CbText("与角色卡共用图库；图库管理立即保存。会话选图在保存会话设置后生效。", style = ChatBarTheme.typography.caption)
                 backgroundLibraryStatus?.let { CbText(it, style = ChatBarTheme.typography.caption) }

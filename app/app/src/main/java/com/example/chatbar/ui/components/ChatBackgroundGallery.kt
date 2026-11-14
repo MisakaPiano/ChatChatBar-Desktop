@@ -15,7 +15,8 @@ import java.io.File
 internal fun ChatBackgroundGallery(
     images: List<String>, selected: String?, onSelect: (String) -> Unit,
     onRemove: ((String) -> Unit)? = null, enabled: Boolean = true,
-    cardDefault: String? = null, onSetCardDefault: ((String) -> Unit)? = null
+    cardDefault: String? = null, onSetCardDefault: ((String) -> Unit)? = null,
+    onAddCropped: (suspend (String) -> Unit)? = null
 ) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(images.filter(String::isNotBlank).distinct(), key = { _, path -> path }) { index, path ->
@@ -28,6 +29,9 @@ internal fun ChatBackgroundGallery(
                         variant = if (path == selected) ButtonVariant.Default else ButtonVariant.Outline,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (onAddCropped != null) BackgroundCropButton(path, enabled, onAddCropped)
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    CbButton("保存原图到相册", { saveImageToGallery(context, path) }, enabled = enabled, variant = ButtonVariant.Ghost)
                     if (onSetCardDefault != null) CbButton(
                         if (path == cardDefault) "Android 默认" else "设为 Android 默认",
                         { onSetCardDefault(path) }, enabled = enabled && path != cardDefault,

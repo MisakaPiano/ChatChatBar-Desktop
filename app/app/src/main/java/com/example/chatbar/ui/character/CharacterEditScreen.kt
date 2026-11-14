@@ -587,7 +587,8 @@ fun CharacterEditScreen(
                 com.example.chatbar.ui.components.ChatBackgroundGallery(
                     viewModel.chatBackgroundImages.distinct(),
                     viewModel.chatBackground, viewModel::setDefaultChatBackground,
-                    viewModel::removeChatBackground, enabled = !isSaving
+                    viewModel::removeChatBackground, enabled = !isSaving,
+                    onAddCropped = { viewModel.addChatBackgroundPath(it) }
                 )
                 CbButton("添加背景图片", { backgroundsPicker.launch("image/*") }, enabled = !isSaving, variant = ButtonVariant.Outline)
             }

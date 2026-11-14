@@ -415,6 +415,10 @@ fun ChatSettingsDialog(
                                     .onFailure { backgroundLibraryStatus = "默认背景保存失败：${it.message}" }
                             } },
                             backgroundLibraryStatus = backgroundLibraryStatus,
+                            onAddCroppedBackground = { path ->
+                                viewModel.addChatBackgroundToCard(path)
+                                backgroundLibraryStatus = "裁剪副本已加入图库，原图与当前选择保留。"
+                            },
                             peopleCard = characterCard,
                             participation = participation,
                             onPersonEnabled = { personId, checked ->

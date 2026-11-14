@@ -2862,6 +2862,11 @@ class CharacterEditViewModel(
         scheduleDraftSave()
     }
 
+    fun addChatBackgroundPath(path: String) {
+        chatBackgroundImages = (chatBackgroundImages + path).distinct()
+        scheduleDraftSave()
+    }
+
     fun removeChatBackground(path: String) {
         chatBackgroundImages = chatBackgroundImages.filterNot { it == path }
         // Unlinking a gallery entry does not erase an independently selected default.
