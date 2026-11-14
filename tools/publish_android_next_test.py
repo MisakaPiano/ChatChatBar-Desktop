@@ -106,14 +106,23 @@ for file in out.iterdir():
         assert item["size"] == file.stat().st_size and item.get("digest") == "sha256:" + hashlib.sha256(file.read_bytes()).hexdigest(), "Refusing to replace a different release asset"
     else:
         command(["gh", "release", "upload", plan["tag"], str(file), "--repo", repo])
-release = api(f"repos/{repo}/releases/{release_id}")
+# Re-read after mutations using a distinct valid query, then verify immutable asset digests.
+for page_size in (100, 99, 98):
+    release = api(f"repos/{repo}/releases/{release_id}?per_page={page_size}")
+    if {a["name"] for a in release["assets"]} == {p.name for p in out.iterdir()}:
+        break
+    time.sleep(2)
 assert {a["name"] for a in release["assets"]} == {p.name for p in out.iterdir()}
 for item in release["assets"]:
     file = out / item["name"]
     assert item["state"] == "uploaded" and item["size"] == file.stat().st_size
     assert item.get("digest") == "sha256:" + hashlib.sha256(file.read_bytes()).hexdigest()
 command(["gh", "release", "edit", plan["tag"], "--repo", repo, "--draft=false", "--prerelease", "--latest=false", "--notes-file", str(notes)])
-release = api(f"repos/{repo}/releases/{release_id}")
+for page_size in (97, 96, 95):
+    release = api(f"repos/{repo}/releases/{release_id}?per_page={page_size}")
+    if not release["draft"]:
+        break
+    time.sleep(2)
 assert not release["draft"] and release["prerelease"]
 assert_tag_if_present(required=True)
 print(release["html_url"])
