@@ -17,7 +17,7 @@ import kotlin.test.*
 
 /** Actual managed founder, TLS/HPKE peer, root journal and local capsule delivery. Synthetic protectors. */
 class LanSyncGroupAdministrationTest {
-    private class Fixture(val root: Path) : AutoCloseable {
+    internal class Fixture(val root: Path) : AutoCloseable {
         val profile = Files.createDirectory(root.resolve("profile")); val data = Files.createDirectory(root.resolve("data"))
         val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("workspace")), { Path.of(it) })
         val identity = LanSyncTlsIdentity.create(); var hook: (String) -> Unit = {}; var gated = false

@@ -89,9 +89,18 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     suspend fun profile(): LanSyncGroupProfile? = guarded { requireNoAbandon(); read()?.let(::profile) }
 
     /** Produces an invitation-only transport owner; it neither unlocks admin authority nor joins a member. */
-    suspend fun invitation(): LanSyncGroupInvitation = guarded {
+    suspend fun invitation(storePort: Int? = null): LanSyncGroupInvitation = guarded {
         requireNoAbandon(); val record = readyRecord(); val custody = custody(record)
-        LanSyncGroupInvitation(identity, record.trust, custody::ledger)
+        val bootstrap = storePort?.let { port ->
+            val node = node(record)
+            var cursor: CommitCursor? = null
+            do { cursor = node.discover(FileCiphertextStore(directory("local-replica", false)), cursor).nextCursor } while (cursor != null)
+            val view = node.inspect(); val plan = requireNotNull(view.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
+            require(plan.before.hashes().all { (unit, hash) -> view.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }
+            LanSyncGroupJoinBootstrap(port, record.vault, record.vaultDescriptor, requireNotNull(view.reconciliation.history).heads())
+        }
+        LanSyncGroupInvitation(identity, record.trust, custody::ledger,
+            bootstrap = bootstrap)
     }
     suspend fun prepareMember(peer: LanSyncGroupInvitedPeer, invitation: LanSyncGroupInvitation,
         operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupMemberPreview = guarded {
@@ -178,6 +187,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     /** No data version is signed or app data modified by preparing the first group. */
     suspend fun prepare(request: SyncRootGroupCreateRequest, admission: SyncRootGroupCreateAdmission): LanSyncGroupEnrollmentDraft = guarded {
         requireNoAbandon()
+        require(!Files.exists(root.resolve("joining"), NOFOLLOW_LINKS)) { "SYNC_GROUP_JOINING_PROFILE_EXISTS" }
         require(read() == null) { "SYNC_GROUP_PROFILE_ALREADY_PREPARED" }
         require(!Files.exists(root.resolve("creation"), NOFOLLOW_LINKS) && !Files.exists(root.resolve("management-vault.bin"), NOFOLLOW_LINKS)) {
             "SYNC_GROUP_UNFINISHED_CREATION_REQUIRES_RECOVERY"
@@ -273,6 +283,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     private fun read(): Record? {
         val path = root.resolve("profile.protected")
         if (!Files.exists(path, NOFOLLOW_LINKS)) return null
+        require(!Files.exists(root.resolve("joining/profile.protected"), NOFOLLOW_LINKS)) { "SYNC_GROUP_MULTIPLE_PROFILES" }
         val plain = unprotect(lanSyncRead(path, 256 * 1024))
         try {
             require(plain.size in 1..128 * 1024) { "SYNC_GROUP_PROFILE_BUDGET" }
@@ -389,7 +400,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         }
     }
     companion object {
-        private val locks = ConcurrentHashMap<Path, Mutex>()
+        internal val locks = ConcurrentHashMap<Path, Mutex>()
         private val draftNames = setOf("creation", "recipient", "management-vault.bin", "profile.protected")
     }
 }

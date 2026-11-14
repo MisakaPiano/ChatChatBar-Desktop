@@ -4,6 +4,7 @@ import com.example.chatbar.domain.syncStore.*
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.Collections
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
 import kotlinx.serialization.KSerializer
@@ -13,14 +14,24 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /** A short-lived out-of-band capability. It grants only a key-possession exchange, never data access. */
+@Serializable data class LanSyncGroupJoinBootstrap(val storePort: Int, val vault: SyncManagementVaultContext,
+    val vaultDescriptor: CiphertextDescriptor, val dataHeads: Set<SyncVersionRef> = emptySet()) {
+    fun validate(trust: SyncGroupTrust, invitationPort: Int) {
+        require(storePort in 1024..65535 && storePort != invitationPort && vault.group == trust.group &&
+            vault.genesis == trust.genesis && vault.owner == SyncDeviceSignatures.decode(trust.ownerCertificate).fingerprint &&
+            vaultDescriptor.length in 1..272L * 1024 && dataHeads.map { it.id }.toSet().size == dataHeads.size &&
+            dataHeads.all { it.bodyHash.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_GROUP_INVITE_BOOTSTRAP" }
+    }
+}
 @Serializable data class LanSyncGroupInviteOffer(val trust: SyncGroupTrust, val host: String, val port: Int,
-    val inviter: String, val token: String, val expiresAt: Long) {
+    val inviter: String, val token: String, val expiresAt: Long, val bootstrap: LanSyncGroupJoinBootstrap? = null) {
     fun validate(now: Long = System.currentTimeMillis()) {
         LanSyncTls.parseAddress(host)
         require(port in 1024..65535 && inviter.matches(HEX) && token.matches(HEX) && expiresAt > now && expiresAt - now <= LIFETIME_MILLIS) {
             "SYNC_GROUP_INVITE_OFFER"
         }
         require(SyncDeviceSignatures.decode(trust.ownerCertificate).encoded == trust.ownerCertificate) { "SYNC_GROUP_INVITE_TRUST" }
+        bootstrap?.validate(trust, port)
     }
     fun code(): String = PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(
         lanSyncJson.encodeToString(LanSyncGroupInviteOffer.serializer(), this).toByteArray(Charsets.UTF_8))
@@ -74,7 +85,7 @@ private object InviteWire {
 /** Dedicated invitation-only TLS role. App owns bounded listener/socket lifetime; ordinary PeerStore stays closed. */
 class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private val trust: SyncGroupTrust,
     private val authority: () -> SyncDeviceLedger, private val wallTime: () -> Long = System::currentTimeMillis,
-    private val monotonic: () -> Long = System::nanoTime) : AutoCloseable {
+    private val monotonic: () -> Long = System::nanoTime, private val bootstrap: LanSyncGroupJoinBootstrap? = null) : AutoCloseable {
     private class Issued(val offer: LanSyncGroupInviteOffer, val started: Long) {
         var claimed = false; var accepted: LanSyncGroupInvitedPeer? = null
     }
@@ -84,8 +95,9 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
     fun issue(host: String, port: Int): LanSyncGroupInviteOffer = synchronized(lock) {
         check(!closed) { "SYNC_GROUP_INVITE_CLOSED" }
         val ledger = ledger()
+        val frozenBootstrap = bootstrap?.let { it.copy(dataHeads = Collections.unmodifiableSet(it.dataHeads.toSet())) }
         val offer = LanSyncGroupInviteOffer(trust.copy(checkpoint = ledger.current().reference()), host, port, identity.fingerprint,
-            ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }, wallTime() + LanSyncGroupInviteOffer.LIFETIME_MILLIS)
+            ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }, wallTime() + LanSyncGroupInviteOffer.LIFETIME_MILLIS, frozenBootstrap)
         offer.validate(wallTime()); issued = Issued(offer, monotonic()); offer
     }
     /** Never reuse this context for ordinary group-store or legacy sync commands. */

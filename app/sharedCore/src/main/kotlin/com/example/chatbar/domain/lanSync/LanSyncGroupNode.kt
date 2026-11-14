@@ -69,8 +69,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
 
     /** Explicit new enrollment/retry only. Existing nonempty author/native histories cannot be reset. */
-    suspend fun initializeNewEnrollment() = serialized {
+    suspend fun initializeNewEnrollment(expectedEnrollmentSource: Map<String, String>? = null) = serialized {
         exclusive {
+            expectedEnrollmentSource?.let { expected ->
+                workspace.capture(identity.fingerprint, projection).use {
+                    require(it.sourceFiles == expected) { "SYNC_GROUP_ENROLLMENT_LOCAL_CHANGED" }
+                }
+            }
             if (Files.exists(authorRoot.resolve("origin.protected"), NOFOLLOW_LINKS)) {
                 val state = author.state()
                 require(state.committedSequence == 0L && state.pendingApproved == null) { "SYNC_GROUP_NODE_ALREADY_USED" }

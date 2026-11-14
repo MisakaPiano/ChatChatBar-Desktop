@@ -33,17 +33,26 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
     }
     val runtime by lazy { LanSyncRuntime(stateStore, workspace, platform, "CCB 电脑") }
-    private val groupEnrollmentOwner = lazy {
+    private fun groupProfileRoot(): Path {
         val profile = localRoot.resolve("group-profile")
         if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
             require(Files.isRegularFile(localRoot.resolve("identity.protected"), LinkOption.NOFOLLOW_LINKS)) { "SYNC_GROUP_DAILY_IDENTITY_MISSING" }
         }
-        val daily = stateStore.identity()
+        stateStore.identity()
         if (!Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(profile)
-        LanSyncGroupEnrollment(profile, workspace, platform, daily, protector::protect,
+        return profile
+    }
+    private val groupEnrollmentOwner = lazy {
+        val profile = groupProfileRoot()
+        LanSyncGroupEnrollment(profile, workspace, platform, stateStore.identity(), protector::protect,
+            protector::unprotect, ::validateDesktopLanSyncResource)
+    }
+    private val groupJoiningOwner = lazy {
+        LanSyncGroupJoining(groupProfileRoot(), workspace, platform, stateStore.identity(), protector::protect,
             protector::unprotect, ::validateDesktopLanSyncResource)
     }
     val groupEnrollment get() = groupEnrollmentOwner.value
+    val groupJoining get() = groupJoiningOwner.value
     fun lockGroupManagement() { if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement() }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() {

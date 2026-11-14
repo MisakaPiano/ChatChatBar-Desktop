@@ -80,6 +80,7 @@ class DesktopAppContainer internal constructor(
         }, asset = characterResourceStore::readBytes) }
     internal val lanSync get() = lanSyncOwner.value.runtime
     internal val lanSyncGroupEnrollment get() = lanSyncOwner.value.groupEnrollment
+    internal val lanSyncGroupJoining get() = lanSyncOwner.value.groupJoining
     internal fun lockLanSyncGroupManagement() { if (lanSyncOwner.isInitialized()) lanSyncOwner.value.lockGroupManagement() }
     internal val imageToolPreferences by lazy { DesktopImageToolPreferences(jsonFileStorage, dataOperationCoordinator) }
     internal val documentRagReader by lazy {
