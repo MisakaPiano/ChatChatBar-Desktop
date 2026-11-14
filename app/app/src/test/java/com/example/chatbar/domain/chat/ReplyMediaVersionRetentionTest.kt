@@ -46,7 +46,7 @@ class ReplyMediaVersionRetentionTest {
     }
 
     @Test fun `undo and redo survive persistence and cannot apply to edited or other version`() {
-        val original = MessageAlternativeVersionPolicy.append(message(), "before", "version")
+        val original = MessageAlternativeVersionPolicy.append(message().copy(content = "before"), "before", "version")
         val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "after",
             MessageFormatRepairPolicy.completedRepairNotice("before", "after"))
         val undone = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(repaired))
