@@ -139,6 +139,8 @@ static class DesktopUpdateHandoff {
             var code = failure is IOException ? failure.Message : "UPDATE_HANDOFF_FAILED";
 #if HANDOFF_TEST
             Console.Error.WriteLine(code);
+            var marker = Environment.GetEnvironmentVariable("CCB_UPDATE_TEST_MARKER");
+            if (marker != null) File.WriteAllText(marker + ".error", code + "\n" + failure.GetType().FullName);
 #endif
 #if !HANDOFF_TEST
             if (args.Length > 0 && args[0] == "--complete") return 2;

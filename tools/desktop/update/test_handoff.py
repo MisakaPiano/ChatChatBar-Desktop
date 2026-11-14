@@ -99,7 +99,9 @@ class HandoffTest(unittest.TestCase):
                     self.assertIsNone(old.poll())
                     self.assertFalse((cache / 'confirmations').exists())
                     Path(str(marker) + '.release').write_text('release synthetic installer')
-                    self.assertEqual(0 if defect is None else 2, helper.wait(timeout=20))
+                    outcome = helper.wait(timeout=20)
+                    detail = Path(str(marker) + '.error')
+                    self.assertEqual(0 if defect is None else 2, outcome, detail.read_text() if detail.exists() else 'no helper failure receipt')
                     records = list((cache / 'confirmations').glob('*.json'))
                     self.assertEqual(1 if defect is None else 0, len(records))
                     if records:
