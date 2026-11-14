@@ -72,6 +72,6 @@ internal object DesktopLanSyncStartup {
 
 internal fun validateDesktopLanSyncResource(kind: String, path: Path, record: LanSyncRecord) {
     if (kind == "images") {
-        DesktopLanSyncRaster.decode(path, record, 256).flush()
+        DesktopLanSyncRaster.decode(path, record, 256, renderOrientation = false).flush()
     }
 }

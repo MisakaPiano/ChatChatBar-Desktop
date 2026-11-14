@@ -12,6 +12,30 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopLanSyncLargeImageTest {
+    @Test fun `orientation metadata working limit holds only the preview while the original still transfers`() {
+        val root = Files.createTempDirectory("lan-exif-original-").toRealPath()
+        try {
+            val data = Files.createDirectory(root.resolve("source")); val image = data.resolve("large-exif.png")
+            LanSyncLargePngFixture.write(image, 0, largeExif = true)
+            val hash = LanSyncLargePngFixture.hash(image)
+            val body = Json.encodeToJsonElement(CharacterCard.serializer(), CharacterCard("card", "synthetic", avatar = image.toString(), createdAt = 1, updatedAt = 1)).jsonObject
+            val entity = data.resolve("entities/character_cards/card.json"); Files.createDirectories(entity.parent); Files.writeString(entity, body.toString())
+            val source = LanSyncWorkspace(data, root.resolve("source-state"), data::resolve, validateResource = ::validateDesktopLanSyncResource)
+            val targetData = Files.createDirectory(root.resolve("target"))
+            val target = LanSyncWorkspace(targetData, root.resolve("target-state"), targetData::resolve,
+                validateResource = ::validateDesktopLanSyncResource, imagePreviewRaster = DesktopLanSyncRaster::preview)
+            source.capture("source").use { capture ->
+                target.apply(LanSyncPlan(UUID.randomUUID().toString(), capture.snapshot, emptyMap()), emptyMap(), "target", capture.blobs)
+            }
+            target.capture("target").use { capture ->
+                val record = capture.snapshot.records.single(); val ref = LanSyncReviewImages.references(record).single()
+                val preview = target.previewImage(record, ref.reference)
+                assertFailsWith<IllegalArgumentException> { target.readImagePreview(preview) }
+                assertEquals(hash, LanSyncLargePngFixture.hash(capture.blobs.getValue(hash)))
+            }
+            assertEquals(hash, LanSyncLargePngFixture.hash(image))
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
     @Test fun `fully written large PNG originals pass actual sync capture apply reopen and bounded frozen preview`() {
         val root = Files.createTempDirectory("lan-large-images-").toRealPath()
         try {

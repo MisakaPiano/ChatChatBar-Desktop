@@ -10,7 +10,7 @@ import javax.imageio.stream.FileImageInputStream
 
 /** File-backed sync decoding; no encoded-file byte array or unbounded Skia fallback. */
 internal object DesktopLanSyncRaster {
-    fun decode(path: Path, record: LanSyncRecord, longestSide: Int): BufferedImage {
+    fun decode(path: Path, record: LanSyncRecord, longestSide: Int, renderOrientation: Boolean = true): BufferedImage {
         require(longestSide in 1..2048)
         LanSyncRasterPolicy.checkPng(path, LanSyncPostProcess.record(record) != null)
         FileImageInputStream(path.toFile()).use { input ->
@@ -23,7 +23,7 @@ internal object DesktopLanSyncRaster {
                 require(format in setOf("png", "jpeg", "jpg", "gif", "webp")) { "SYNC_IMAGE_INVALID" }
                 val width = reader.getWidth(0); val height = reader.getHeight(0)
                 require(width > 0 && height > 0 && width.toLong() * height <= LanSyncRasterPolicy.maximumPixels(record)) { "SYNC_IMAGE_INVALID" }
-                val orientation = if (format == "gif") 1 else ImageMetadataStripper.readOrientation(path.toFile())
+                val orientation = if (!renderOrientation || format == "gif") 1 else ImageMetadataStripper.readOrientation(path.toFile())
                 val sample = ((maxOf(width, height).toLong() + longestSide - 1) / longestSide).toInt().coerceAtLeast(1)
                 val params = reader.defaultReadParam.apply { setSourceSubsampling(sample, sample, 0, 0) }
                 return DesktopImageEditing.orient(requireNotNull(reader.read(0, params)) { "SYNC_IMAGE_INVALID" }, orientation)
