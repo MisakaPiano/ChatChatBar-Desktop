@@ -357,7 +357,7 @@ internal class BackupMergeEngine(
         current.filter { it.type in types }.forEach { record ->
             val key = identity.space(record.type) to record.id
             val omittedImages = when (record.type) {
-                "moment_posts" -> !scope.momentsImages && record.values["imagePath"].orEmpty().any { it.isNotBlank() }
+                "moment_posts" -> !scope.momentsImages && (record.values["imagePath"].orEmpty() + record.values["imageVersions.imagePath"].orEmpty()).any { it.isNotBlank() }
                 "novelai_generation_history" -> !scope.studioHistoryImages && record.values["images.path"].orEmpty()
                     .any { it.isNotBlank() && !it.startsWith("chatbar-save-slot-omitted-image:") }
                 else -> false
@@ -391,7 +391,7 @@ internal class BackupMergeEngine(
                 if (images) return null
                 setOf("images", "generatedImageMetadata")
             }
-            "moment_posts" -> if (scope.momentsImages) return null else setOf("imagePath", "generatedImageMetadata")
+            "moment_posts" -> if (scope.momentsImages) return null else setOf("imagePath", "generatedImageMetadata", "imageVersions")
             "novelai_generation_history" -> {
                 if (scope.studioHistoryImages || old.values["images.path"].orEmpty()
                     .none { it.isNotBlank() && !it.startsWith("chatbar-save-slot-omitted-image:") }) return null

@@ -2354,14 +2354,43 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
-    fun restoreMessageFormatOriginal(messageId: String) {
+    private val _messageActionError = MutableStateFlow<String?>(null)
+    val messageActionError = _messageActionError.asStateFlow()
+    fun clearMessageActionError() { _messageActionError.value = null }
+
+    fun restoreMessageFormatOriginal(messageId: String) = toggleFormatRepair(messageId, redo = false)
+    fun redoMessageFormatRepair(messageId: String) = toggleFormatRepair(messageId, redo = true)
+
+    private fun toggleFormatRepair(messageId: String, redo: Boolean) {
         if (_isResponding.value) return
         viewModelScope.launch {
-            val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
-            val restored = MessageFormatRepairPolicy.restoreOriginal(message) ?: return@launch
-            chatRepository.updateMessage(restored)
-            replaceMessagesFromRepository()
-            refreshMemoryAfterMessageEdit(restored)
+            try {
+                val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
+                val changed = (if (redo) MessageFormatRepairPolicy.redoRepair(message)
+                    else MessageFormatRepairPolicy.restoreOriginal(message)) ?: return@launch
+                check(chatRepository.updateMessageIfUnchanged(message, changed)) { "消息已变化，请重新操作" }
+                replaceMessagesFromRepository()
+                refreshMemoryAfterMessageEdit(changed)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _messageActionError.value = error.message ?: "保存失败" }
+        }
+    }
+
+    fun deleteMessageAlternative(messageId: String, versionId: String) {
+        if (_isResponding.value) return
+        viewModelScope.launch {
+            try {
+                val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
+                val changed = MessageAlternativeVersionPolicy.remove(message, versionId)
+                if (changed == null) {
+                    deleteMessage(messageId, message)
+                    return@launch
+                }
+                check(chatRepository.updateMessageIfUnchanged(message, changed)) { "消息已变化，请重新操作" }
+                replaceMessagesFromRepository()
+                refreshMemoryAfterMessageEdit(changed)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _messageActionError.value = error.message ?: "删除备选失败" }
         }
     }
 
@@ -2448,7 +2477,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         MessageFormatRepairPolicy.isUnchangedResult(repairedPrefix) ||
                             repairedPrefix == originalContent -> {
                             val unchanged = message.copy(
-                                formatRepairNotice = MessageFormatRepairPolicy.recoverableNotice(message),
+                                formatRepairNotice = MessageFormatRepairPolicy.applicableNotice(message),
                                 updatedAt = System.currentTimeMillis()
                             )
                             if (unchanged != message) persistFormatRepairMessage(unchanged)
@@ -3564,10 +3593,21 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         )
     }
 
-    fun deleteMessage(messageId: String) {
+    fun deleteMessage(messageId: String) = deleteMessage(messageId, null)
+
+    private fun deleteMessage(messageId: String, expected: ChatMessage?) {
         viewModelScope.launch {
             fishAudioCoordinator.cancelAndJoinForMessage(sessionId, messageId)
-            val deletedMessage = chatRepository.getMessage(messageId, sessionId)
+            val deletedMessage = expected ?: chatRepository.getMessage(messageId, sessionId)
+            if (expected != null) {
+                try {
+                    check(chatRepository.deleteMessageIfUnchanged(expected)) { "消息已变化，请重新操作" }
+                } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    _messageActionError.value = error.message ?: "删除备选失败"
+                    return@launch
+                }
+            }
             selectNeighborWindowAnchor(messageId)
 
             deletedMessage
@@ -3581,7 +3621,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
             }
             _messages.value = _messages.value.filter { it.id != messageId }
-            chatRepository.deleteMessage(messageId, sessionId)
+            if (expected == null) chatRepository.deleteMessage(messageId, sessionId)
             refreshMessages()
             enqueueLongTermMemoryAfterMessageDeletion()
 
@@ -3712,6 +3752,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 return@launch
             }
 
+            if (MessageAlternativeVersionPolicy.activeVersionId(updatedMessage) != MessageAlternativeVersionPolicy.activeVersionId(oldMessage)) {
+                if (chatRepository.updateMessageIfUnchanged(oldMessage, updatedMessage)) {
+                    replaceMessagesFromRepository()
+                    refreshMemoryAfterMessageEdit(updatedMessage)
+                } else _messageActionError.value = "消息已变化，请重新操作"
+                return@launch
+            }
             applyMessageEdit(
                 oldMessage = oldMessage,
                 content = updatedMessage.content,

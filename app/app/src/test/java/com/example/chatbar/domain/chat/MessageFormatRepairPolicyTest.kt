@@ -57,7 +57,7 @@ class MessageFormatRepairPolicyTest {
         val restored = MessageFormatRepairPolicy.restoreOriginal(updated, updatedAt = 10)
 
         assertEquals(original, restored?.displayContent)
-        assertNull(restored?.formatRepairNotice)
+        assertEquals(true, restored?.formatRepairNotice?.restored)
     }
 
     @Test
@@ -108,12 +108,12 @@ class MessageFormatRepairPolicyTest {
 
         assertEquals(listOf("a", "fixed-b", "c"), updated.alternatives)
         assertEquals("fixed-b", updated.content)
-        assertEquals(notice, MessageFormatRepairPolicy.applicableNotice(updated))
+        assertEquals(notice.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(updated)), MessageFormatRepairPolicy.applicableNotice(updated))
 
         val restored = MessageFormatRepairPolicy.restoreOriginal(updated, updatedAt = 10)
         assertEquals(listOf("a", "b", "c"), restored?.alternatives)
         assertEquals("b", restored?.content)
-        assertNull(restored?.formatRepairNotice)
+        assertEquals(true, restored?.formatRepairNotice?.restored)
     }
 
     @Test

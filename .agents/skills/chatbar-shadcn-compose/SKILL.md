@@ -105,3 +105,7 @@ Full migration completes only when Material 3 dependency is removed and CI-equiv
 - PlayerAvatarSetting reuses CharacterImageCropDialog with Avatar target: cancel does not publish, confirm saves an owned 512px derivative immediately without committing name/persona drafts. Global player and session player entries expose the picker; session role controls are explicit ID choices with separate name/avatar switches and unlink. User bubbles and long screenshots render the effective player avatar/name.
 
 - mergeSettingsDraft compares the union of baseline/edited serialized keys: EncodeDefault.NEVER fields reset to null/default are intentionally removed, while untouched absent fields preserve newer external state. Player unlink relies on this, as do omitted empty collections/default booleans. User avatar has a dedicated 玩家头像 accessibility label and long player names ellipsize before its fixed avatar.
+
+- `CbDialog.titleActions` is an optional trailing header slot. With no slot, existing header layout is unchanged. Reply deletion uses it only for navigation to a separate whole-message confirmation; the action menu itself exposes one delete action.
+
+- `CbButton.trailingIcon` is a decorative UI-kit ImageVector beside the label, one click target. Reply deletion uses the standard chevron, an unfilled themed outline, a full label, and compact-header stacking when needed. The last candidate can be deleted after its existing confirmation; repository expected-snapshot deletion rejects stale versions before attachment cleanup.

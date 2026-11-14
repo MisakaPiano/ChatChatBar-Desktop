@@ -596,6 +596,17 @@ class ChatRepository(private val storage: JsonFileStorage) {
     }
 
     suspend fun updateMessage(message: ChatMessage) = messageAppendMutex.withDataAccess {
+        updateMessageLocked(message)
+    }
+
+    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+        require(expected.id == replacement.id && expected.sessionId == replacement.sessionId)
+        if (getMessage(expected.id, expected.sessionId) != expected) return@withDataAccess false
+        updateMessageLocked(replacement)
+        true
+    }
+
+    private suspend fun updateMessageLocked(message: ChatMessage) {
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),
@@ -705,6 +716,17 @@ class ChatRepository(private val storage: JsonFileStorage) {
     }
 
     suspend fun deleteMessage(messageId: String, sessionId: String) = messageAppendMutex.withDataAccess {
+        deleteMessageLocked(messageId, sessionId)
+    }
+
+    /** Last-candidate deletion cannot erase a newly edited or appended version. */
+    suspend fun deleteMessageIfUnchanged(expected: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+        if (getMessage(expected.id, expected.sessionId) != expected) return@withDataAccess false
+        deleteMessageLocked(expected.id, expected.sessionId)
+        true
+    }
+
+    private suspend fun deleteMessageLocked(messageId: String, sessionId: String) {
         val removed = getMessage(messageId, sessionId)
         val index = loadMessageIndex(sessionId)
         storage.deleteEntityUncached(MESSAGE_TYPE, messageStorageId(sessionId, messageId))

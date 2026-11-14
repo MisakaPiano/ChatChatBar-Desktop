@@ -318,6 +318,8 @@ fun ChatScreen(
     var deleteImageTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var deleteSegmentTarget by remember { mutableStateOf<ChatBubbleSegmentAction?>(null) }
     var deleteMessageTargetId by remember { mutableStateOf<String?>(null) }
+    var deleteAlternativeTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val messageActionError by viewModel.messageActionError.collectAsState()
     var editingMessage by remember { mutableStateOf<ChatMessage?>(null) }
     var editingText by remember { mutableStateOf(TextFieldValue("")) }
     val editingImages = remember { mutableStateListOf<String>() }
@@ -1297,7 +1299,8 @@ fun ChatScreen(
                     MessageFormatRepairNoticeRow(
                         message = message,
                         checking = repairState != null,
-                        onRestore = { viewModel.restoreMessageFormatOriginal(message.id) }
+                        onRestore = { viewModel.restoreMessageFormatOriginal(message.id) },
+                        onRedo = { viewModel.redoMessageFormatRepair(message.id) }
                     )
                     imageGenerationsByAnchor[message.id].orEmpty().forEach { generation ->
                         key(generation.taskId) {
@@ -1781,26 +1784,28 @@ fun ChatScreen(
             CbText("只删除这个片段，不会删除同条消息的其他片段或图片。", color = ChatBarTheme.colors.mutedForeground)
         }
     }
-    deleteMessageTargetId?.let { messageId ->
-        CbDialog(
-            onDismissRequest = { deleteMessageTargetId = null },
-            title = "删除整条消息",
-            dismiss = {
-                CbButton("取消", { deleteMessageTargetId = null }, variant = ButtonVariant.Ghost)
+    messageActionError?.let { error ->
+        CbDialog(onDismissRequest = viewModel::clearMessageActionError, title = "操作未完成",
+            confirm = { CbButton("知道了", viewModel::clearMessageActionError) }) { CbText(error) }
+    }
+    deleteAlternativeTarget?.let { (messageId, versionId) ->
+        val target = messages.find { it.id == messageId }
+        ReplyDeletionConfirmation(messageId, versionId,
+            hasOtherAlternatives = target?.alternatives?.size?.let { it > 1 } == true,
+            onDismiss = { deleteAlternativeTarget = null },
+            onDeleteAlternative = {
+                viewModel.deleteMessageAlternative(messageId, versionId)
+                deleteAlternativeTarget = null
             },
-            confirm = {
-                CbButton(
-                    "删除",
-                    {
-                        viewModel.deleteMessage(messageId)
-                        deleteMessageTargetId = null
-                    },
-                    variant = ButtonVariant.Destructive
-                )
-            }
-        ) {
-            CbText("确定删除整条消息？其中所有片段和图片都会删除，此操作不可撤销。", color = ChatBarTheme.colors.mutedForeground)
-        }
+            onDeleteWholeMessage = {
+                viewModel.deleteMessage(messageId)
+                deleteAlternativeTarget = null
+            })
+    }
+    deleteMessageTargetId?.let { messageId ->
+        WholeMessageDeletionConfirmation(
+            onDismiss = { deleteMessageTargetId = null },
+            onDelete = { viewModel.deleteMessage(messageId); deleteMessageTargetId = null })
     }
     actionSegment?.let { segment ->
         val target = messages.find { it.id == segment.messageId }
@@ -1847,8 +1852,12 @@ fun ChatScreen(
                     target?.let(::enterMessageScreenshotSelection)
                     actionSegment = null
                 }),
-            SegmentMenuAction("删除", "删除整条消息", AppIcons.Delete, enabled = target != null, destructive = true, onClick = {
-                deleteMessageTargetId = target?.id
+            SegmentMenuAction("删除", "删除消息或当前备选", AppIcons.Delete, enabled = target != null, destructive = true, onClick = {
+                target?.let {
+                    if (it.role == MessageRole.ASSISTANT)
+                        deleteAlternativeTarget = it.id to MessageAlternativeVersionPolicy.activeVersionId(it)
+                    else deleteMessageTargetId = it.id
+                }
                 actionSegment = null
             })
         )
@@ -1860,7 +1869,7 @@ fun ChatScreen(
             })
         }
         if (target?.role == MessageRole.ASSISTANT) {
-            replyActions += SegmentMenuAction("修复格式", "AI 修复整条消息格式", AppIcons.Tools, onClick = {
+            replyActions += SegmentMenuAction(if (MessageFormatRepairPolicy.applicableNotice(target!!) != null) "重新修复" else "修复格式", "重新请求 AI 修复整条消息格式", AppIcons.Tools, onClick = {
                 actionSegment = null
                 viewModel.repairMessageFormat(target.id)
             })
@@ -1954,14 +1963,19 @@ fun ChatScreen(
                         }
                     }
                     Spacer(Modifier.size(8.dp))
-                    CbButton("AI 修复格式", {
+                    CbButton(if (MessageFormatRepairPolicy.applicableNotice(target) != null) "重新修复格式（AI）" else "AI 修复格式", {
                         actionMessageId = null
                         viewModel.repairMessageFormat(target.id)
                     }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
                 }
                 Spacer(Modifier.size(8.dp))
                 target?.let {
-                    CbButton("删除", { viewModel.deleteMessage(it.id); actionMessageId = null }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
+                    CbButton("删除", {
+                        if (it.role == MessageRole.ASSISTANT)
+                            deleteAlternativeTarget = it.id to MessageAlternativeVersionPolicy.activeVersionId(it)
+                        else deleteMessageTargetId = it.id
+                        actionMessageId = null
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
                 }
                 if (canRegenerate) {
                     Spacer(Modifier.size(8.dp))
@@ -2294,10 +2308,11 @@ internal fun MemoryLimitDecisionDialog(
 }
 
 @Composable
-private fun MessageFormatRepairNoticeRow(
+internal fun MessageFormatRepairNoticeRow(
     message: ChatMessage,
     checking: Boolean,
-    onRestore: () -> Unit
+    onRestore: () -> Unit,
+    onRedo: () -> Unit
 ) {
     val notice = MessageFormatRepairPolicy.applicableNotice(message)
     if (!checking && notice == null) return
@@ -2310,6 +2325,7 @@ private fun MessageFormatRepairNoticeRow(
         CbText(
             text = when {
                 checking -> "正在检查格式…"
+                notice?.restored == true -> "已撤销格式修复，可重做"
                 notice?.kind == MessageFormatRepairNoticeKind.ERROR ->
                     "格式修复失败：${notice.errorMessage ?: "未知错误"}"
                 notice?.kind == MessageFormatRepairNoticeKind.STOPPED -> "格式修复已停止"
@@ -2324,7 +2340,7 @@ private fun MessageFormatRepairNoticeRow(
             style = ChatBarTheme.typography.caption
         )
         if (!checking && notice?.originalContent != null) {
-            CbButton("恢复原文", onRestore, variant = ButtonVariant.Ghost)
+            CbButton(if (notice.restored) "重做修复" else "撤销修复", if (notice.restored) onRedo else onRestore, variant = ButtonVariant.Ghost)
         }
     }
 }
