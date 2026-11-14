@@ -62,6 +62,8 @@ class SeriesProfile:
     artifact_name: str
     tamper_field: str
     api: int = 26
+    ui_scope: str = 'Actual legacy LanSyncActivity launch/recreate and synthetic repository/image decode after upgrade; not group UI, FGS, remote/cloud, OS death or human acceptance.'
+    ui_argument: str | None = None
 
     def __post_init__(self):
         names = (self.base_role, self.seed_role, self.candidate_role, self.verify_role)
@@ -481,7 +483,7 @@ class SeriesEngine:
                 proof['entries'] == verification['entries'], 'UI_SAME_VERIFIED_INPUTS')
         result = {'kind': p.kinds['ui'], 'passed': False, 'sourceSha': proof['buildRequest']['sourceSha'],
             'controlSha': control, 'class': p.ui_class, 'method': p.ui_method,
-            'scope': 'Actual legacy LanSyncActivity launch/recreate and synthetic repository/image decode after upgrade; not group UI, FGS, remote/cloud, OS death or human acceptance.',
+            'scope': p.ui_scope,
             'installUninstallOrClearPerformed': False, 'humanAcceptance': False}
         phase = 'ui-before'
         try:
@@ -494,7 +496,7 @@ class SeriesEngine:
                 stdout, stderr, code = device.command(['shell', 'run-as', p.package, 'ls', path], 'ui-sample-absence-' + str(index), (0, 1))
                 self.t.candidate84_upgrade.require_sample_absent(stdout, stderr, code, path)
             phase = 'actual-live-activity'
-            actual = device.instrument(p.ui_class, p.ui_method, 'ui-smoke-instrumentation')
+            actual = device.instrument(p.ui_class, p.ui_method, 'ui-smoke-instrumentation', p.ui_argument)
             after = device.state('ui-after-package')
             require(before == after and device.proof('ui-after-proof') == text, 'UI_INSTALL_OR_PROOF_CHANGED')
             result.update(passed=True, execution=actual, priorUpgradeTestsPassed=2, priorUpgradeSkipped=0,

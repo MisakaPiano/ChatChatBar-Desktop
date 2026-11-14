@@ -1,0 +1,93 @@
+{
+  "controlBaseSha": "b538f48b085193a3c7f938dd4a05c25088697061",
+  "transform": "Apply exact replacements once to hash-bound original workflow; no SDK/device/install/signing step changes",
+  "workflows": [
+    {
+      "originalPath": ".github/workflows/lan-delivered84-candidate85-build.yml",
+      "originalBytes": 3746,
+      "originalSha256": "0a85599e876229c1ae8463c13447a3b0ea1edd14ba37c09ce690482e1defc8f3",
+      "originalNormalizedLfSha256": "0a85599e876229c1ae8463c13447a3b0ea1edd14ba37c09ce690482e1defc8f3",
+      "newPath": ".github/workflows/lan-delivered84-candidate85-group-build.yml",
+      "replacements": [
+        {
+          "old": "candidate85_control.py",
+          "new": "candidate85_group_control.py",
+          "count": 4
+        },
+        {
+          "old": "lan-delivered84-candidate85-build-request.json",
+          "new": "lan-delivered84-candidate85-group-build-request.json",
+          "count": 4
+        },
+        {
+          "old": "ccb-lan-delivered84-candidate85-",
+          "new": "ccb-lan-delivered84-candidate85-group-",
+          "count": 3
+        },
+        {
+          "old": "ccb-candidate85-seed84-source",
+          "new": "ccb-candidate85-group-seed84-source",
+          "count": 1
+        },
+        {
+          "old": "ccb-candidate85-source",
+          "new": "ccb-candidate85-group-source",
+          "count": 1
+        },
+        {
+          "old": "candidate85-original84.zip",
+          "new": "candidate85-group-original84.zip",
+          "count": 1
+        },
+        {
+          "old": "name: Exact delivered84 to candidate85 four input build",
+          "new": "name: Exact delivered84 to candidate85 group four input build",
+          "count": 1
+        }
+      ],
+      "newBytes": 3836,
+      "newSha256": "ba46599b313ab1972af6648a5ac220e919645a3b41391049f3d79db6d33f7ba1"
+    },
+    {
+      "originalPath": ".github/workflows/lan-delivered84-candidate85-sign-upgrade.yml",
+      "originalBytes": 3170,
+      "originalSha256": "be604dc3441a0926e19f2c2cdd3a29ac1be79530911d645260cc67959af56eab",
+      "originalNormalizedLfSha256": "be604dc3441a0926e19f2c2cdd3a29ac1be79530911d645260cc67959af56eab",
+      "newPath": ".github/workflows/lan-delivered84-candidate85-group-sign-upgrade.yml",
+      "replacements": [
+        {
+          "old": "candidate85_control.py",
+          "new": "candidate85_group_control.py",
+          "count": 5
+        },
+        {
+          "old": "lan-delivered84-candidate85-sign-request.json",
+          "new": "lan-delivered84-candidate85-group-sign-request.json",
+          "count": 4
+        },
+        {
+          "old": "ccb-lan-delivered84-candidate85-",
+          "new": "ccb-lan-delivered84-candidate85-group-",
+          "count": 2
+        },
+        {
+          "old": "candidate85-original-raw.zip",
+          "new": "candidate85-group-original-raw.zip",
+          "count": 1
+        },
+        {
+          "old": "name: Persistent public signing and exact delivered84 to85 upgrade",
+          "new": "name: Public signing and actual founder group delivered84 to85 upgrade",
+          "count": 1
+        },
+        {
+          "old": "Actual seed84 reinstall85 preserved-data verification and live Activity smoke",
+          "new": "Actual group seed84 preserve-data85 verifier and repeated group-page verifier",
+          "count": 1
+        }
+      ],
+      "newBytes": 3246,
+      "newSha256": "84665ff0ad95b97c5a34ab30042ad3e1d7a20d40b0dba80df264de02ae181542"
+    }
+  ]
+}
