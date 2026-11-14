@@ -1,11 +1,41 @@
 package com.example.chatbar.domain.lanSync
 
 import java.net.InetSocketAddress
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.SocketTimeoutException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.*
 import kotlinx.coroutines.*
 import kotlin.test.*
 
 class LanSyncTlsTest {
+    @Test fun connectTimeoutAppliesBeforeTheFirstTlsHandshakeAndClosesTheOwnedTcpSocket() {
+        val identity = LanSyncTlsIdentity.create(); val release = CountDownLatch(1)
+        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress()).also { it.soTimeout = 10_000 }
+        val executor = Executors.newSingleThreadExecutor(); val dialed = AtomicReference<Socket>()
+        val peer = executor.submit { listener.accept().use { socket ->
+            socket.soTimeout = 10_000
+            check(socket.getInputStream().read() >= 0)
+            // A TCP peer that receives ClientHello but never starts TLS must hit the first-handshake timeout.
+            release.await(3, TimeUnit.SECONDS)
+        } }
+        try {
+            val failure = assertFails { LanSyncTls.connect(identity, "10.0.0.1", listener.localPort, "a".repeat(64), 250) { _, _ ->
+                Socket(InetAddress.getLoopbackAddress(), listener.localPort).also(dialed::set)
+            } }
+            assertTrue(generateSequence(failure) { it.cause }.any { it is SocketTimeoutException })
+            assertTrue(requireNotNull(dialed.get()).isClosed)
+        } finally {
+            release.countDown(); listener.close()
+            try { peer.get(5, TimeUnit.SECONDS) }
+            finally { executor.shutdownNow(); check(executor.awaitTermination(5, TimeUnit.SECONDS)) }
+        }
+    }
     @Test fun actualMutualTlsStreamsAndRejectsAnUnpinnedIdentity(): Unit = runBlocking {
         val serverId = LanSyncTlsIdentity.create(); val clientId = LanSyncTlsIdentity.create()
         val server = serverId.context { it == clientId.fingerprint }.serverSocketFactory.createServerSocket() as SSLServerSocket

@@ -151,13 +151,14 @@ object LanSyncGroupInviteClient {
     /** Production connect always uses the numeric LAN address and exact externally delivered TLS pin. */
     fun exchange(offer: LanSyncGroupInviteOffer, identity: LanSyncTlsIdentity, recipient: SyncDeviceEncryptionKey,
         name: String): LanSyncGroupInviteReceipt = exchange(offer, identity, recipient, name,
-            { LanSyncTls.connect(identity, offer.host, offer.port, offer.inviter) })
+            { LanSyncTls.connect(identity, offer.host, offer.port, offer.inviter, handshakeTimeoutMillis = 15_000) })
+    /** The dial returns an authenticated socket from the same LanSyncTls.connect path as production. */
     internal fun exchange(offer: LanSyncGroupInviteOffer, identity: LanSyncTlsIdentity, recipient: SyncDeviceEncryptionKey,
         name: String, connect: () -> SSLSocket, now: Long = System.currentTimeMillis()): LanSyncGroupInviteReceipt {
         offer.validate(now)
         require(recipient.device == identity.fingerprint && name.isNotBlank() && name.length <= 160) { "SYNC_GROUP_INVITE_CLIENT" }
         return connect().use { socket ->
-            LanSyncTls.configure(socket); socket.soTimeout = 15_000; socket.startHandshake()
+            socket.soTimeout = 15_000
             require(LanSyncTls.peerFingerprint(socket) == offer.inviter && socket.session.localCertificates?.single()?.encoded?.let { lanSyncHash(it) } == identity.fingerprint) {
                 "SYNC_GROUP_INVITE_TLS_PIN"
             }

@@ -80,15 +80,22 @@ object LanSyncTls {
         require(socket.enabledCipherSuites.isNotEmpty()) { "SYNC_TLS_UNAVAILABLE" }
         socket.soTimeout = 120_000
     }
-    fun connect(identity: LanSyncTlsIdentity, host: String, port: Int, fingerprint: String): SSLSocket {
-        val address = parseAddress(host)
-        require(port in 1024..65535 && fingerprint.matches(Regex("[0-9a-f]{64}"))) { "SYNC_ADDRESS" }
+    fun connect(identity: LanSyncTlsIdentity, host: String, port: Int, fingerprint: String,
+        handshakeTimeoutMillis: Int = 120_000): SSLSocket = connect(identity, host, port, fingerprint, handshakeTimeoutMillis) { address, targetPort ->
         val plain = Socket()
+        try { plain.connect(InetSocketAddress(address, targetPort), 5_000); plain }
+        catch (failure: Throwable) { plain.close(); throw failure }
+    }
+    /** Same authentication path; only the numeric-address TCP dial can be replaced in isolated tests. */
+    internal fun connect(identity: LanSyncTlsIdentity, host: String, port: Int, fingerprint: String,
+        handshakeTimeoutMillis: Int, dial: (InetAddress, Int) -> Socket): SSLSocket {
+        val address = parseAddress(host)
+        require(port in 1024..65535 && fingerprint.matches(Regex("[0-9a-f]{64}")) && handshakeTimeoutMillis in 1..120_000) { "SYNC_ADDRESS" }
+        val plain = dial(address, port)
         try {
-            plain.connect(InetSocketAddress(address, port), 5_000)
             val socket = identity.context { MessageDigest.isEqual(it.toByteArray(), fingerprint.toByteArray()) }
                 .socketFactory.createSocket(plain, host, port, true) as SSLSocket
-            configure(socket); socket.startHandshake()
+            configure(socket); socket.soTimeout = handshakeTimeoutMillis; socket.startHandshake()
             require(peerFingerprint(socket) == fingerprint) { "SYNC_DEVICE_CHANGED" }
             return socket
         } catch (failure: Throwable) { plain.close(); throw failure }

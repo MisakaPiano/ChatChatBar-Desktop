@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
 import java.net.InetAddress
+import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -23,8 +24,9 @@ class LanSyncGroupInvitationTest {
             .also { it.needClientAuth = true }
         val executor = Executors.newSingleThreadExecutor()
         fun offer() = owner.issue("10.0.0.1", listener.localPort)
-        fun connect(identity: LanSyncTlsIdentity = joiner) = identity.context { it == f.owner.fingerprint }.socketFactory
-            .createSocket(InetAddress.getLoopbackAddress(), listener.localPort) as SSLSocket
+        fun connect(identity: LanSyncTlsIdentity = joiner) = LanSyncTls.connect(identity, "10.0.0.1", listener.localPort, f.owner.fingerprint, 15_000) { _, _ ->
+            Socket(InetAddress.getLoopbackAddress(), listener.localPort)
+        }
         fun attempt(offer: LanSyncGroupInviteOffer, identity: LanSyncTlsIdentity = joiner,
             key: SyncDeviceEncryptionKey = recipient): Pair<Result<LanSyncGroupInvitedPeer>, Result<LanSyncGroupInviteReceipt>> {
             val server = executor.submit<LanSyncGroupInvitedPeer> { owner.serve(listener.accept() as SSLSocket) }
@@ -35,7 +37,6 @@ class LanSyncGroupInvitationTest {
             extra: Pair<String, JsonElement>? = null): Result<LanSyncGroupInvitedPeer> {
             val server = executor.submit<LanSyncGroupInvitedPeer> { owner.serve(listener.accept() as SSLSocket) }
             runCatching { connect().use { socket ->
-                LanSyncTls.configure(socket); socket.startHandshake()
                 LanSyncWire(socket).use { wire ->
                     val body = buildJsonObject {
                         put("protocol", "CCB_GROUP_JOIN_PROOF_1"); put("binding", offer.binding()); put("token", offer.token)
