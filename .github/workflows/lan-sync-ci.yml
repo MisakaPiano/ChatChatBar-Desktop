@@ -75,6 +75,7 @@ jobs:
           CCB_SYNC_DIFF_BASE: ${{ github.event.before }}
         run: |
           python -m unittest discover -s tools/lan-sync/tests -p test_proof_scope.py
+          python -m unittest discover -s tools/lan-next-control -p test_instrumentation_report.py
           python tools/lan-sync/select-proof-scope.py
       - uses: actions/setup-java@v4
         with:

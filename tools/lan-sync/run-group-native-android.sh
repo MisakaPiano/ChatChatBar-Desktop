@@ -17,7 +17,11 @@ runner="$(python3 -c 'import subprocess,re,os; s=subprocess.check_output(["adb",
 if [[ "${CCB_GROUP_PLATFORM_PROOF_MODE:-group-custody}" == 'large-images' ]]; then
   git -C "$source_root" rev-parse HEAD > "$evidence/source-sha.txt"
   adb -s "$serial" shell am instrument -w -r -e lanSyncLargeImageFixture true -e class 'com.example.chatbar.lanSync.LanSyncLargeImageTest#fullyWrittenLargePngOriginalsSurviveNativeValidationTransferReopenAndPreview' "$runner" > "$evidence/large-image.txt"
-  python3 -c 'import pathlib,re,sys; s=pathlib.Path(sys.argv[1]).read_text(); assert "OK (1 test)" in s and "FAILURES!!!" not in s and "INSTRUMENTATION_CODE: -1" in s; assert re.findall(r"INSTRUMENTATION_STATUS_CODE: (-?[0-9]+)",s)==["1","0"]; assert s.count("INSTRUMENTATION_STATUS: class=com.example.chatbar.lanSync.LanSyncLargeImageTest")==2 and s.count("INSTRUMENTATION_STATUS: test=fullyWrittenLargePngOriginalsSurviveNativeValidationTransferReopenAndPreview")==2 and s.count("INSTRUMENTATION_STATUS: numtests=1")==2' "$evidence/large-image.txt"
+  python3 "$source_root/tools/lan-next-control/instrumentation_report.py" --report "$evidence/large-image.txt" \
+    --class-name com.example.chatbar.lanSync.LanSyncLargeImageTest \
+    --method fullyWrittenLargePngOriginalsSurviveNativeValidationTransferReopenAndPreview \
+    --source-sha-file "$evidence/source-sha.txt" --expected-source-sha "$(git -C "$source_root" rev-parse HEAD)" \
+    --output "$evidence/large-image-verified.json"
   python3 -c 'import pathlib,json,sys; p=pathlib.Path(sys.argv[1]); (p/"summary.json").write_text(json.dumps(dict(sourceSha=(p/"source-sha.txt").read_text().strip(),api=26,proofMode="large-images",nativeTests=1,encodedPngMebibytes=[33,101],decodedPixels=[16,12],fullOriginalHashes=True,workspaceCaptureApplyReopen=True,typedEnhanceMetadataRetained=True,boundedFrozenPreview=True,artifacts="reports only; no image payloads, app roots, keys or APK"),indent=2))' "$evidence"
   exit 0
 fi
