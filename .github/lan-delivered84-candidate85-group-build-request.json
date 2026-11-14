@@ -1,0 +1,67 @@
+{
+  "kind": "CCB_LAN_DELIVERED84_CANDIDATE85_GROUP_BUILD_V1",
+  "format": 1,
+  "sourceSha": "db25f8c61fdf237449286b13812a622c9a9d2120",
+  "series": "next",
+  "versions": [
+    84,
+    85
+  ],
+  "package": "com.example.chatbar.lansyncnext",
+  "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+  "deliveredBase": {
+    "sourceSha": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
+    "versionCode": 84,
+    "runId": 43602954622,
+    "artifactId": 14117481315,
+    "artifactName": "ccb-lan-delivered83-candidate84-inputs",
+    "outerBytes": 219240639,
+    "outerSha256": "58b420da0c51e6147f29dd374773f451da9eebf23d671447b989cb8b0188c495",
+    "controlSha": "fc20ab621cae06e8cb7b6bb0f177751253e51238",
+    "member": "candidate84-input.apk",
+    "rawBytes": 108961919,
+    "rawSha256": "4db30d4ce465cf78f0b8d73c46d29e163163fd160659593db3fffa23b8ef50e7",
+    "deliveredBytes": 108959291,
+    "deliveredSha256": "94a26127971cd88375b23fdb4981d5e2238fb2253640c62c62a3e70787603572"
+  },
+  "fixtures": {
+    "seed84": {
+      "path": "candidate85_group_seed84.kt",
+      "sha256": "aa852fb36d125a630533bbabcab15f4d8fd5eeffaaa9dd02fb47e7657265f5af"
+    },
+    "verify85": {
+      "path": "candidate85_group_verify85.kt",
+      "sha256": "cea706fce45ea24a7ec23411266ed996dbb454fbfc58be8cb00bd39ff483fccd"
+    }
+  },
+  "allowedStateMigrations": [],
+  "trustedGroupControl": {
+    "format": 1,
+    "files": {
+      "candidate85_group_control.py": {
+        "bytes": 3673,
+        "sha256": "025436ff47e60e31907e11fe66502ca14a78427be6bf41152d35eca3536b4ef8"
+      },
+      "candidate85_group_profile.py": {
+        "bytes": 1995,
+        "sha256": "78b07dcb19952cf6258824eefefec27dda838dc90aeb22ebced328aaa1f2c17e"
+      },
+      "upgrade_series_engine.py": {
+        "bytes": 32375,
+        "sha256": "1ecf6b556d04e40e45b0a424230736e8b6b884278e06b989a28666e6f8baa729"
+      },
+      "candidate85_profile.py": {
+        "bytes": 3107,
+        "sha256": "4f91870d33cb74a24ac2cd6f4299a3c164c845ab9726b0fad4c6e3c0252fe10b"
+      },
+      "instrumentation_report.py": {
+        "bytes": 6482,
+        "sha256": "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158"
+      }
+    },
+    "expectedSuccessfulInvocations": 3,
+    "uniqueMethods": 2,
+    "seedExecutions": 1,
+    "verifierExecutions": 2
+  }
+}

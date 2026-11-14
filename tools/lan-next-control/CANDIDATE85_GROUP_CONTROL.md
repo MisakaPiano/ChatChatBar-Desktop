@@ -41,3 +41,11 @@ with the new group suite can expose their old shared import-name/path side
 effects; those are not a native result. The installed new12, old85/15,
 old84/14 and legacy14 checks have been verified independently without changing
 their assertions. No candidate request, signature or native upgrade was created.
+
+The first isolated engineering build request now selects fixed db25 after the
+scoped eight owner cases and full1.344GB encrypted-file proof. It exercises real
+production APK and new retained-group companion compilation while cloud-large
+and Android native recovery remain under verification. It is not a maturity,
+signing, upgrade, paired-delivery or user-acceptance claim. The corresponding
+LAN6 ordinary build runs in its separate cloud workflow; local daily roots are
+not used. A later production fix may require a new build before final delivery.
