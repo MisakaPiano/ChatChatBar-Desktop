@@ -211,10 +211,13 @@ object CrashReportManager {
         val expected = expectedStore.read()
         if (expected != null && expected.recordedAt < cutoff) expectedStore.clear()
         val result = SystemExitInfoReader.read(appContext, lastHandled, cutoff, expected) ?: return
-        if (result.expectedExitObserved) expectedStore.clear()
+        fun acknowledgeExitHistory() {
+            val saved = prefs.edit().putLong(PREF_LAST_EXIT_TIMESTAMP, result.latestSeenTimestamp).commit()
+            if (saved && result.expectedExitObserved) expectedStore.clear()
+        }
         val exit = result.abnormalExit
         if (exit == null) {
-            prefs.edit().putLong(PREF_LAST_EXIT_TIMESTAMP, result.latestSeenTimestamp).commit()
+            acknowledgeExitHistory()
             return
         }
 
@@ -235,7 +238,7 @@ object CrashReportManager {
             )
             writeAtomic(pendingReportFile(), CrashDiagnosticReportFormatter.format(report))
         }
-        prefs.edit().putLong(PREF_LAST_EXIT_TIMESTAMP, result.latestSeenTimestamp).commit()
+        acknowledgeExitHistory()
     }
 
     private fun mergeSystemExit(existing: String, exit: DiagnosticSystemExitInfo): String {
