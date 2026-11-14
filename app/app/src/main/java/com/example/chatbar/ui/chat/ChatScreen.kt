@@ -332,7 +332,7 @@ fun ChatScreen(
     var imageGalleryError by remember(sessionId) { mutableStateOf<String?>(null) }
     LaunchedEffect(imageGalleryOpen, imageGalleryRevision) {
         if (imageGalleryOpen) {
-            imageGalleryLoading = true; imageGalleryError = null
+            imageGalleryLoading = true; imageGalleryError = null; imageGallerySnapshot = null
             try { imageGallerySnapshot = viewModel.loadChatImageGallery() }
             catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (failure: Exception) { imageGalleryError = "读取会话图片失败：${failure.message}" }
@@ -1714,11 +1714,10 @@ fun ChatScreen(
             try {
                 viewModel.loadMessageWindow(messageId)
                 val index = viewModel.messages.value.indexOfFirst { it.id == messageId }
-                if (index >= 0) {
-                    withFrameNanos { }
-                    snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > index }
-                    listState.animateScrollToItem(index)
-                }
+                check(index >= 0) { "来源消息正在更新或不可见，请稍后重试" }
+                withFrameNanos { }
+                snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > index }
+                listState.animateScrollToItem(index)
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (failure: Exception) { Toast.makeText(context, failure.message, Toast.LENGTH_SHORT).show() }
         }

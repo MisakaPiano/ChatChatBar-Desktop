@@ -4845,7 +4845,15 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     suspend fun loadChatImageGallery(): com.example.chatbar.domain.chat.ChatImageGallerySnapshot = withContext(Dispatchers.IO) {
-        val collector = com.example.chatbar.domain.chat.ChatImageGalleryCollector { path -> File(path).let { it.isFile && it.length() > 0 } }
+        val collector = com.example.chatbar.domain.chat.ChatImageGalleryCollector { path ->
+            val file = File(path)
+            if (!file.isFile || file.length() == 0L) false
+            else {
+                val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeFile(path, bounds)
+                bounds.outWidth > 0 && bounds.outHeight > 0
+            }
+        }
         chatRepository.forEachMessage(sessionId) { collector.accept(it) }
         collector.snapshot()
     }
