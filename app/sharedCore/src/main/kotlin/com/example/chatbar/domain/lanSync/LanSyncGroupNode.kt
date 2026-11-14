@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 enum class LanSyncGroupNodeStage { READY, WAITING_FOR_KEY, DEVICE_REVOKED, TRUST_BLOCKED }
+enum class LanSyncGroupEnrollmentProgress { NONE, IDENTITY_ONLY, HISTORY }
 class LanSyncGroupNodeView internal constructor(val stage: LanSyncGroupNodeStage, val reconciliation: SyncInboxReconciliation,
     val nativeState: LanSyncGroupNativeState, val plan: LanSyncGroupNativePlan?, val unsignedPreparations: Set<SyncStoreId>,
     private val dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>, private val evidence: LanSyncGroupRecordEvidence?,
@@ -67,6 +68,25 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     init { require(identity.fingerprint == recipient.device && trust.group == custody.trust().group) { "SYNC_GROUP_NODE_IDENTITY" } }
     private fun currentView() = requireNotNull(current) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
+
+    /** Explicit pending-profile review only; preserves every retained origin and incarnation. */
+    internal suspend fun enrollmentProgress(): LanSyncGroupEnrollmentProgress = serialized { exclusive {
+        val authorExists = Files.exists(authorRoot.resolve("origin.protected"), NOFOLLOW_LINKS)
+        val nativeExists = Files.exists(nativeRoot.resolve("origin.protected"), NOFOLLOW_LINKS)
+        val resolutionExists = Files.exists(root.resolve("resolutions/state.protected"), NOFOLLOW_LINKS)
+        if (!authorExists) require(Files.newDirectoryStream(authorRoot).use { files -> files.all { it.fileName.toString() == "author.lock" } } &&
+            !nativeExists && !resolutionExists) { "SYNC_GROUP_ENROLLMENT_EXISTING_EVIDENCE" }
+        if (!nativeExists) require(Files.newDirectoryStream(nativeRoot).use { files -> files.all { it.fileName.toString() == "native.lock" } } &&
+            !resolutionExists) { "SYNC_GROUP_ENROLLMENT_EXISTING_EVIDENCE" }
+        val authorState = if (authorExists) author.state() else null
+        if (authorState?.let { it.committedSequence != 0L || it.pendingApproved != null } == true) return@exclusive LanSyncGroupEnrollmentProgress.HISTORY
+        val state = if (nativeExists) {
+            if (Files.exists(nativeRoot.resolve("head.protected"), NOFOLLOW_LINKS)) native.state() else native.resumeNewEnrollment()
+        } else null
+        if (state?.let { it.completedSequence != 0L || it.pendingTransaction != null || it.units.isNotEmpty() } == true ||
+            resolutionExists && resolutions.state().isNotEmpty() || writer.operations().isNotEmpty()) LanSyncGroupEnrollmentProgress.HISTORY
+        else if (authorExists || nativeExists || resolutionExists) LanSyncGroupEnrollmentProgress.IDENTITY_ONLY else LanSyncGroupEnrollmentProgress.NONE
+    } }
 
     /** Explicit new enrollment/retry only. Existing nonempty author/native histories cannot be reset. */
     suspend fun initializeNewEnrollment(expectedEnrollmentSource: Map<String, String>? = null) = serialized {
