@@ -98,7 +98,7 @@ class SafeBatchStudioRuntimeTest {
         val app = ChatBarApp.instance
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic Studio runtime checks") } }
-        check(app.packageName == "com.example.chatbar.safebatch.n2") { "Refusing a non-isolated app" }
+        check(app.packageName in setOf("com.example.chatbar.safebatch.n2", "com.example.chatbar.nextreview.r1")) { "Refusing a non-isolated app" }
         val oldToken = app.novelAiCredentialStore.load()
         val requests = Collections.synchronizedList(mutableListOf<RequestRecord>())
         val client = OkHttpClient.Builder().addInterceptor { chain ->
