@@ -46,3 +46,13 @@ tools/lan-next-control/candidate85_group*.py text eol=lf
 tools/lan-next-control/test_candidate85_group_control.py text eol=lf
 tools/lan-next-control/candidate85_group_workflow_transform_bindings.json text eol=lf
 .github/workflows/lan-delivered84-candidate85-group-*.yml text eol=lf
+
+# Fixed LAN6 metadata preparer hashes exact helper bytes on Windows runners.
+tools/lan-next-control/contract.py text eol=lf
+tools/lan-next-control/desktop_control.py text eol=lf
+tools/lan-next-control/prove_desktop_lan3_lan4.py text eol=lf
+tools/lan-next-control/desktop_lan5_control.py text eol=lf
+tools/lan-next-control/desktop_lan6_control.py text eol=lf
+tools/lan-next-control/desktop_lan6_original_metadata_control.py text eol=lf
+tools/lan-next-control/test_desktop_lan6_original_metadata_control.py text eol=lf
+.github/workflows/lan-next-desktop-lan6-original-metadata.yml text eol=lf

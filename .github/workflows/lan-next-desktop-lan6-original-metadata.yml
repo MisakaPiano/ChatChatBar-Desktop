@@ -1,0 +1,45 @@
+# DRAFT ONLY: isolated metadata preparation; no request or CI dispatched here.
+name: Fixed LAN6 original metadata and upgrade request preparation
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-next-desktop-lan6-original-metadata-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  authenticate-fixed-original:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - name: Validate exact fixed preparation request
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B tools/lan-next-control/desktop_lan6_original_metadata_control.py check-request --request .github/lan-next-desktop-lan6-original-metadata-request.json
+          if ($LASTEXITCODE -ne 0) { throw 'LAN6_FIXED_METADATA_REQUEST' }
+      - name: Authenticate one original bundle and derive existing contract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $evidence = Join-Path $env:GITHUB_WORKSPACE 'desktop-lan6-original-metadata-evidence'
+          python -B tools/lan-next-control/desktop_lan6_original_metadata_control.py prepare --request .github/lan-next-desktop-lan6-original-metadata-request.json --evidence $evidence
+          if ($LASTEXITCODE -ne 0) { throw 'LAN6_ORIGINAL_METADATA_PREPARATION' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan6-fixed-original-metadata-and-derived-contract
+          if-no-files-found: warn
+          path: |
+            desktop-lan6-original-metadata-evidence/desktop-package-manifest.original.json
+            desktop-lan6-original-metadata-evidence/source-request.original.json
+            desktop-lan6-original-metadata-evidence/independent-receipt.original.json
+            desktop-lan6-original-metadata-evidence/upgrade-request.derived.json
+            desktop-lan6-original-metadata-evidence/validation.json
