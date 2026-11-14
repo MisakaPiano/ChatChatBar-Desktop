@@ -37,6 +37,7 @@ class LanSyncGroupCloudRecoveryOwnerTest {
             start(InetAddress.getByName("127.0.0.1"), 0)
         } }
         val endpoint: String = (httpsServer ?: shared.server).url("/sync/").newBuilder().host("127.0.0.1").build().toString()
+        val recoveryRequests get() = (httpsServer ?: shared.server).requestCount
         val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(30, TimeUnit.SECONDS).apply {
             httpsIdentity?.let { identity ->
                 val trust = object : X509TrustManager {
@@ -60,6 +61,10 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         var onReady: suspend (LanSyncGroupRuntimeAccess) -> Unit = {}
         val ready = CompletableDeferred<LanSyncGroupRuntimeAccess>()
         val owners = mutableListOf<LanSyncGroupCloudRecoveryOwner>()
+        private val fileOwners = mutableListOf<LanSyncGroupFileRecoveryOwner>()
+        private val coordinators = mutableListOf<LanSyncGroupCoordinator>()
+        private val placeholders = mutableListOf<LanSyncGroupEnrollment>()
+        val coordinatorFactories = AtomicInteger(); val nearbyCalls = AtomicInteger()
         val original = LanSyncGroupAdministrationTest.Fixture(directory("original"))
         val recoveryRoot = shared.root.resolve("recovery-owner")
         val dailyRoot = shared.root.resolve("recovered-daily")
@@ -94,13 +99,39 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         }
         fun owner(networkAllowed: () -> Boolean = { true },
             cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
-            clockMillis: () -> Long = { System.nanoTime() / 1_000_000L }, observe: (String) -> Unit = {}): LanSyncGroupCloudRecoveryOwner =
+            clockMillis: () -> Long = { System.nanoTime() / 1_000_000L }, observe: (String) -> Unit = {},
+            afterReady: suspend (LanSyncGroupRuntimeAccess) -> Unit = {}): LanSyncGroupCloudRecoveryOwner =
             LanSyncGroupCloudRecoveryOwner(root = {
                 roots.incrementAndGet(); Files.createDirectories(recoveryRoot)
             }, joining = ::joining, deviceName = "synthetic restored daily device",
                 beforeSetup = { beforeSetupCalls.incrementAndGet() }, networkAllowed = networkAllowed, cloudWork = cloudWork,
-                onReady = { value -> onReady(value); readyCalls.incrementAndGet(); ready.complete(value) }, client = client,
+                onReady = { value -> onReady(value); afterReady(value); readyCalls.incrementAndGet(); ready.complete(value) }, client = client,
                 endpointPolicy = WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, clockMillis = clockMillis, observe = observe).also(owners::add)
+        fun fileOwner() = LanSyncGroupFileRecoveryOwner(root = {
+            roots.incrementAndGet(); Files.createDirectories(recoveryRoot)
+        }, joining = ::joining, deviceName = "synthetic restored daily device",
+            onReady = { value -> onReady(value); readyCalls.incrementAndGet(); ready.complete(value) }).also(fileOwners::add)
+        fun retainedJoining() = joining()
+        fun coordinator(): LanSyncGroupCoordinator {
+            val network = object : LanSyncNetwork {
+                private fun forbidden(): Nothing { nearbyCalls.incrementAndGet(); error("SYNTHETIC_PAUSED_RECOVERY_NEARBY_FORBIDDEN") }
+                override fun addresses(): List<String> = forbidden()
+                override fun accepts(address: InetAddress): Boolean = forbidden()
+                override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): javax.net.ssl.SSLSocket = forbidden()
+                override fun listening(fingerprint: String, port: Int) { forbidden() }
+                override fun discover(fingerprint: String): Pair<String, Int>? = forbidden()
+                override val discoveryEnabled: Boolean get() = forbidden()
+            }
+            return LanSyncGroupCoordinator(
+                hasExistingEvidence = { Files.exists(dailyRoot.resolve("joining/profile.protected")) },
+                enrollment = {
+                    LanSyncGroupEnrollment(dailyRoot, workspace, platform, dailyIdentity,
+                        { it.reversedArray() }, { unprotectDaily(it) }, { _, _, _ -> }).also(placeholders::add)
+                }, joining = ::joining, network = network, deviceName = "synthetic restored daily device",
+                initiallyPaused = true, cloudRecoveryFactory = { callback ->
+                    coordinatorFactories.incrementAndGet(); owner(afterReady = callback)
+                }).also(coordinators::add)
+        }
         fun draft(secret: ByteArray) = LanSyncGroupCloudDraft("synthetic recovery", endpoint, username, secret, enabled = false)
         suspend fun seed() { original.seed() }
         suspend fun publishCloud() {
@@ -126,7 +157,8 @@ class LanSyncGroupCloudRecoveryOwnerTest {
             if (Files.exists(dailyData)) Files.newDirectoryStream(dailyData).use { assertFalse(it.iterator().hasNext()) }
         }
         suspend fun close() {
-            owners.forEach { it.closeAndDrain() }
+            coordinators.forEach { it.closeAndDrain() }; placeholders.forEach { it.close() }
+            owners.forEach { it.closeAndDrain() }; fileOwners.forEach { it.closeAndDrain() }
             transport.close(); original.close(); httpsServer?.close()
             client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll()
         }
@@ -407,6 +439,156 @@ class LanSyncGroupCloudRecoveryOwnerTest {
             { it.reversedArray() }, { it.reversedArray() })
         assertEquals(0L, author.state().committedSequence)
         assertEquals(review.device, access.device)
+    }
+
+    @Test fun coordinatorReadyLoadKeepsTheInterruptedExternalRecoveryEntryAndExplicitConfirmationFinishesIt() = fixture(https = true) { f ->
+        f.publishCloud()
+        val atReady = CompletableDeferred<List<LanSyncGroupCloudRoute>>()
+        f.onReady = { access -> atReady.complete(access.cloudRoutes().rows()) }
+        val interrupted = AtomicBoolean()
+        f.joiningObserve = { point -> if (point == "GROUP_JOIN_READY" && interrupted.compareAndSet(false, true))
+            throw IOException("SYNTHETIC_COORDINATOR_READY_BEFORE_NATIVE_AND_CONNECTION") }
+        val coordinator = f.coordinator()
+        assertEquals(0, f.coordinatorFactories.get()); assertEquals(0, f.roots.get()); assertEquals(0, f.joiners.get())
+        coordinator.openCloudRecovery()
+        val owner = requireNotNull(coordinator.cloudRecovery)
+        assertEquals(1, f.coordinatorFactories.get()); assertEquals(0, f.roots.get()); assertEquals(0, f.joiners.get())
+        suspend fun prepareThroughEntry(): LanSyncGroupCloudRecoveryReview {
+            val secret = f.password.toByteArray(Charsets.UTF_8)
+            try { assertTrue(coordinator.prepareCloudRecovery(f.draft(secret), f.original.code)) }
+            finally { secret.fill(0) }
+            val state = withTimeout(30_000) { owner.state.first { !it.busy && (it.review != null || it.error != null) } }
+            assertNull(state.error); assertFalse(state.complete)
+            return requireNotNull(state.review)
+        }
+        val initial = prepareThroughEntry()
+        f.assertNoDailyActivation()
+        owner.confirm(initial.binding, saveConnection = true)
+        withTimeout(30_000) { owner.drain() }
+        assertTrue(interrupted.get()); assertFalse(owner.state.value.complete); assertNotNull(owner.state.value.error)
+        assertEquals(0, f.readyCalls.get())
+        val storage = JsonFileStorage(f.dailyData)
+        assertTrue(storage.loadAll("character_cards", CharacterCard.serializer()).isEmpty())
+        val approved = managementState(f)
+        assertEquals(1L, approved.completedSequence); assertNull(approved.pendingOperation)
+        val managementOrigin = Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected"))
+        val dailyOrigins = listOf("author", "native").associateWith {
+            Files.readAllBytes(f.dailyRoot.resolve("joining/node/$it/origin.protected"))
+        }
+        owner.lock(); owner.drain()
+        val requestsBeforeLoad = f.recoveryRequests; val rootsBeforeLoad = f.roots.get()
+        coordinator.open()
+        val loaded = withTimeout(20_000) { coordinator.state.first { it.stage == LanSyncGroupPanelStage.READY && !it.busy } }
+        assertNull(loaded.error); assertTrue(loaded.paused); assertTrue(loaded.canResumeExternalRecovery)
+        assertTrue(storage.loadAll("character_cards", CharacterCard.serializer()).isEmpty(), "Read-only READY load must not apply the pending original")
+        assertEquals(0, f.nearbyCalls.get()); assertEquals(approved, managementState(f))
+        assertEquals(requestsBeforeLoad, f.recoveryRequests)
+        dailyOrigins.forEach { (kind, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.dailyRoot.resolve("joining/node/$kind/origin.protected"))) }
+
+        f.joiningObserve = {}
+        coordinator.openCloudRecovery()
+        assertSame(owner, coordinator.cloudRecovery)
+        val resumed = prepareThroughEntry()
+        assertEquals(initial.device, resumed.device); assertNotEquals(initial.binding, resumed.binding)
+        assertEquals(approved, managementState(f)); assertEquals(0, f.readyCalls.get())
+        assertEquals(rootsBeforeLoad, f.roots.get()); assertEquals(requestsBeforeLoad, f.recoveryRequests)
+        owner.confirm(resumed.binding, saveConnection = true)
+        val access = withTimeout(30_000) { f.ready.await() }
+        withTimeout(10_000) { owner.drain() }
+        assertTrue(owner.state.value.complete); assertNull(owner.state.value.error); assertEquals(true, owner.state.value.connectionEnabled)
+        assertTrue(coordinator.state.value.paused); assertTrue(coordinator.state.value.canResumeExternalRecovery)
+        assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
+        val restored = storage.loadAll("character_cards", CharacterCard.serializer()).single()
+        assertEquals("synthetic owner recovery body", restored.name); assertEquals("retained original body", restored.basicSetting)
+        val row = access.cloudRoutes().rows().single()
+        assertTrue(row.enabled); assertEquals(f.endpoint, row.endpoint); assertEquals(f.username, row.username)
+        assertEquals(listOf(row), withTimeout(5_000) { atReady.await() }, "The enabled row must already exist at the actual ready callback")
+        access.cloudRoutes().credentials(row.id).use { credentials ->
+            credentials.withPassword { assertContentEquals(f.password.toByteArray(Charsets.UTF_8), it) }
+        }
+        val protected = Files.readAllBytes(access.work.resolve("cloud-connections/cloud-routes.protected")).toString(Charsets.UTF_8)
+        assertFalse(protected.contains(f.password)); assertFalse(protected.contains(f.original.code))
+        assertEquals(approved, managementState(f))
+        assertContentEquals(managementOrigin, Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected")))
+        dailyOrigins.forEach { (kind, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.dailyRoot.resolve("joining/node/$kind/origin.protected"))) }
+        val author = SyncAuthorJournal(f.dailyRoot.resolve("joining/node/author"), access.trust, access.certificate,
+            { it.reversedArray() }, { it.reversedArray() })
+        assertEquals(0L, author.state().committedSequence); assertTrue(access.node.sourceOperations().isEmpty())
+        assertEquals(1, f.readyCalls.get()); assertEquals(1, f.coordinatorFactories.get()); assertEquals(0, f.nearbyCalls.get())
+        assertContentEquals(f.originalBytes, Files.readAllBytes(f.original.data.resolve("entities/character_cards/card.json")))
+    }
+
+    @Test fun aCloudPreparedRecoveryContinuesFromAnActualFileUsingTheSameManagementOriginAndDailyKeysWithoutHttp() = fixture(https = true) { f ->
+        f.publishCloud()
+        val originalAccess = requireNotNull(f.original.service.runtimeAccess())
+        val packageFile = f.shared.root.resolve("same-original-group.cbgroup")
+        originalAccess.prepareEncryptedFile(f.directory("same-group-file-export"), {}).use { prepared ->
+            Files.newOutputStream(packageFile).use { prepared.writeTo(it) }
+            Files.newInputStream(packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, prepared.descriptor) }
+        }
+        val packageBytes = Files.readAllBytes(packageFile)
+        val cloud = f.owner()
+        val cloudReview = prepareReview(f, cloud)
+        assertTrue(f.recoveryRequests > 0, "The first review must have used the actual synthetic HTTPS provider")
+        val before = managementState(f)
+        assertEquals(0L, before.completedSequence); assertNull(before.pendingOperation)
+        val managementOrigin = Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected"))
+        val daily = f.retainedJoining()
+        assertEquals(LanSyncGroupJoinStage.PREPARED, requireNotNull(daily.profile()).stage)
+        val member = requireNotNull(daily.recoveryMember())
+        assertEquals(cloudReview.device, member.first)
+        fun recipientFiles(): Map<String, ByteArray> = Files.walk(f.dailyRoot.resolve("joining/recipient")).use { paths ->
+            paths.filter { Files.isRegularFile(it) }.toList().associate { path ->
+                f.dailyRoot.resolve("joining/recipient").relativize(path).toString() to Files.readAllBytes(path)
+            }
+        }
+        val recipient = recipientFiles()
+        assertTrue(recipient.isNotEmpty()); f.assertNoDailyActivation()
+        cloud.lock(); withTimeout(5_000) { cloud.drain() }
+        assertFalse(cloud.state.value.visible); assertFalse(cloud.state.value.busy); assertEquals(0, f.readyCalls.get())
+        val providerRequests = f.recoveryRequests; val seedRequests = f.shared.server.requestCount
+        val providerPuts = f.shared.dav.puts.toList()
+
+        val file = f.fileOwner()
+        file.open(); file.prepare({ Files.newInputStream(packageFile) }, f.original.code)
+        val reviewed = withTimeout(30_000) { file.state.first { !it.busy && (it.review != null || it.error != null) } }
+        assertNull(reviewed.error); assertFalse(reviewed.complete)
+        val fileReview = requireNotNull(reviewed.review)
+        assertEquals(cloudReview.group, fileReview.group); assertEquals(cloudReview.rootFingerprint, fileReview.rootFingerprint)
+        assertEquals(member.first, fileReview.device); assertEquals(member, daily.recoveryMember())
+        assertEquals(before, managementState(f))
+        assertContentEquals(managementOrigin, Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected")))
+        f.assertNoDailyActivation()
+        assertEquals(providerRequests, f.recoveryRequests); assertEquals(seedRequests, f.shared.server.requestCount)
+        file.confirm(fileReview.binding)
+        val access = withTimeout(30_000) { f.ready.await() }
+        withTimeout(10_000) { file.drain() }
+        assertTrue(file.state.value.complete); assertNull(file.state.value.error); assertFalse(file.state.value.pending)
+        val after = managementState(f)
+        assertEquals(1L, after.completedSequence); assertNull(after.pendingOperation)
+        assertContentEquals(managementOrigin, Files.readAllBytes(f.recoveryRoot.resolve("management/root-actions/origin.protected")))
+        assertEquals(member.first, access.device); assertEquals(member.second.certificate, access.certificate)
+        assertEquals(member.second, access.ledger().current().members.getValue(access.device))
+        assertEquals(f.originalLedger.sequence + 1, access.ledger().current().sequence)
+        assertEquals(f.originalLedger.members.size + 1, access.ledger().current().members.size)
+        assertEquals(LanSyncGroupJoinStage.READY, requireNotNull(daily.profile()).stage)
+        val retainedRecipient = recipientFiles()
+        assertEquals(recipient.keys, retainedRecipient.keys)
+        recipient.forEach { (path, bytes) -> assertContentEquals(bytes, retainedRecipient.getValue(path), path) }
+        val author = SyncAuthorJournal(f.dailyRoot.resolve("joining/node/author"), access.trust, access.certificate,
+            { it.reversedArray() }, { it.reversedArray() })
+        assertEquals(0L, author.state().committedSequence); assertTrue(access.node.sourceOperations().isEmpty())
+        val restored = JsonFileStorage(f.dailyData).loadAll("character_cards", CharacterCard.serializer()).single()
+        assertEquals("synthetic owner recovery body", restored.name); assertEquals("retained original body", restored.basicSetting)
+        assertEquals(f.source.entry.version.changes.getValue("character_cards/card").valueHash,
+            access.node.inspect().nativeState.units.getValue("character_cards/card").valueHash)
+        assertEquals(1, f.readyCalls.get())
+        assertEquals(providerRequests, f.recoveryRequests); assertEquals(seedRequests, f.shared.server.requestCount)
+        assertEquals(providerPuts, f.shared.dav.puts.toList())
+        assertFalse(Files.exists(access.work.resolve("cloud-connections")), "The unconfirmed cloud connection must not be saved by file recovery")
+        assertContentEquals(packageBytes, Files.readAllBytes(packageFile))
+        assertContentEquals(f.originalBytes, Files.readAllBytes(f.original.data.resolve("entities/character_cards/card.json")))
+        assertEquals(f.originalLedger, f.original.custody().ledger().current())
     }
 
     @Test fun anEnabledConnectionWithAFailedPostWriteReadbackIsReportedUnknownAndRemainsUserAuthorized() = fixture(https = true) { f ->

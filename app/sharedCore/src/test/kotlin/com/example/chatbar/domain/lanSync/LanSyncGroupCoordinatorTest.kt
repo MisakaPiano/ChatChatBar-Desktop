@@ -5,6 +5,10 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.WebDavEndpointPolicy
 import com.example.chatbar.domain.syncStore.webdav.WeakFixture
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.BindException
 import java.net.InetAddress
 import java.net.Proxy
@@ -30,6 +34,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
 import kotlin.test.*
 
@@ -127,6 +132,70 @@ class LanSyncGroupCoordinatorTest {
         } finally { probe.close() }
     }
 
+    @Test fun busyRecoveryPreparationRejectsTheOtherEntryWithoutOpeningItsStreamOrReplacingProgress() = runBlocking {
+        val cloudEntered = CompletableDeferred<Unit>(); val cloudRelease = CompletableDeferred<Unit>()
+        val fileEntered = CompletableDeferred<Unit>(); val fileRelease = CompletableDeferred<Unit>()
+        val roots = AtomicInteger(); val joins = AtomicInteger(); val inputs = AtomicInteger(); val ready = AtomicInteger()
+        val code = SyncManagementSession.create().use { session ->
+            session.seal(SyncGroupTrust(SyncStoreId.random(),
+                SyncVersionRef(SyncStoreId.random(), "a".repeat(64)), session.ownerCertificate))
+            session.recoveryCode()
+        }
+        val coordinator = LanSyncGroupCoordinator(hasExistingEvidence = { false },
+            enrollment = { error("SYNTHETIC_BUSY_RECOVERY_MUST_NOT_OPEN_FOUNDER") },
+            joining = { joins.incrementAndGet(); error("SYNTHETIC_BUSY_RECOVERY_MUST_NOT_OPEN_JOINING") },
+            network = noNetwork, deviceName = "synthetic busy recovery", initiallyPaused = true,
+            cloudRecoveryFactory = { callback ->
+                LanSyncGroupCloudRecoveryOwner(
+                    root = { roots.incrementAndGet(); error("SYNTHETIC_GATE_MUST_PRECEDE_CLOUD_ROOT") },
+                    joining = { joins.incrementAndGet(); error("SYNTHETIC_GATE_MUST_PRECEDE_JOINING") },
+                    deviceName = "synthetic busy cloud", cloudWork = { work ->
+                        cloudEntered.complete(Unit); cloudRelease.await(); work()
+                    }, onReady = { ready.incrementAndGet(); callback(it) })
+            }, fileRecoveryFactory = { callback ->
+                LanSyncGroupFileRecoveryOwner(
+                    root = { roots.incrementAndGet(); error("SYNTHETIC_GATE_MUST_PRECEDE_FILE_ROOT") },
+                    joining = { joins.incrementAndGet(); error("SYNTHETIC_GATE_MUST_PRECEDE_JOINING") },
+                    deviceName = "synthetic busy file", dataWork = { work ->
+                        fileEntered.complete(Unit); fileRelease.await(); work()
+                    }, onReady = { ready.incrementAndGet(); callback(it) })
+            })
+        fun input(): InputStream { inputs.incrementAndGet(); return ByteArrayInputStream(byteArrayOf()) }
+        val password = "synthetic held password".toByteArray(Charsets.UTF_8)
+        val draft = LanSyncGroupCloudDraft("synthetic held recovery", "https://synthetic.invalid/group/", "synthetic user", password)
+        try {
+            coordinator.openCloudRecovery()
+            assertTrue(coordinator.prepareCloudRecovery(draft, code))
+            withTimeout(5_000) { cloudEntered.await() }
+            val cloud = requireNotNull(coordinator.cloudRecovery)
+            val heldCloud = cloud.state.value
+            assertTrue(heldCloud.busy); assertTrue(heldCloud.visible)
+            assertFalse(coordinator.prepareFileRecovery(::input, code))
+            coordinator.openFileRecovery()
+            assertEquals(heldCloud, cloud.state.value)
+            val file = requireNotNull(coordinator.fileRecovery)
+            assertFalse(file.state.value.visible); assertFalse(file.state.value.busy)
+            assertEquals(0, inputs.get()); assertEquals(0, roots.get()); assertEquals(0, joins.get()); assertEquals(0, ready.get())
+            coordinator.lockManagement(); withTimeout(5_000) { cloud.drain() }
+
+            coordinator.openFileRecovery()
+            assertTrue(coordinator.prepareFileRecovery(::input, code))
+            withTimeout(5_000) { fileEntered.await() }
+            val heldFile = file.state.value
+            assertTrue(heldFile.busy); assertTrue(heldFile.visible)
+            assertFalse(coordinator.prepareCloudRecovery(draft, code))
+            coordinator.openCloudRecovery()
+            assertEquals(heldFile, file.state.value)
+            assertFalse(cloud.state.value.visible); assertFalse(cloud.state.value.busy)
+            assertEquals(0, inputs.get()); assertEquals(0, roots.get()); assertEquals(0, joins.get()); assertEquals(0, ready.get())
+            coordinator.lockManagement(); withTimeout(5_000) { file.drain() }
+            assertEquals(0, inputs.get()); assertEquals(0, roots.get()); assertEquals(0, joins.get()); assertEquals(0, ready.get())
+        } finally {
+            password.fill(0); coordinator.lockManagement()
+            cloudRelease.complete(Unit); fileRelease.complete(Unit); coordinator.closeAndDrain()
+        }
+    }
+
     private class Fixture(val root: Path, val network: LanSyncNetwork) {
         val profile = Files.createDirectory(root.resolve("profile"))
         val data = Files.createDirectory(root.resolve("data"))
@@ -148,6 +217,13 @@ class LanSyncGroupCoordinatorTest {
             ::founder, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC", { setupCalls++; beforeSetup() }, sourceChanges, initiallyPaused).also(coordinators::add)
         fun author(trust: SyncGroupTrust) = SyncAuthorJournal(profile.resolve("node/author"), trust,
             Base64.getEncoder().encodeToString(identity.certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
+        fun custody(trust: SyncGroupTrust): SyncGroupCustody {
+            val record = lanSyncJson.parseToJsonElement(Files.readAllBytes(profile.resolve("profile.protected"))
+                .reversedArray().toString(Charsets.UTF_8)).jsonObject
+            val recipient = SyncDeviceKeyCustody(profile.resolve("recipient"), identity.fingerprint,
+                { it.reversedArray() }, { it.reversedArray() }).open(record.getValue("recipient").jsonPrimitive.content)
+            return SyncGroupCustody(profile.resolve("custody"), trust.group, recipient, { it.reversedArray() }, { it.reversedArray() })
+        }
         fun writeCard(name: String) {
             Files.createDirectories(card.parent)
             LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("card", name, createdAt = 1, updatedAt = 1))
@@ -158,6 +234,53 @@ class LanSyncGroupCoordinatorTest {
         val root = Files.createTempDirectory("synthetic-group-coordinator-").toRealPath()
         val f = Fixture(root, network)
         try { work(f) } finally { f.close(); check(root.toFile().deleteRecursively()) }
+    }
+
+    // Positive EMPTY admission is covered by busyRecoveryPreparationRejectsTheOtherEntryWithoutOpeningItsStreamOrReplacingProgress.
+    // CloudRecoveryOwnerTest also covers the real PREPARED joining handoff to file recovery and recovered READY entry continuation.
+    @Test fun anActualFounderReadyProfileRejectsBothExternalRecoveryEntriesBeforeAnyRecoveryFactoryOrInputIsTouched() = fixture { f ->
+        val cloudFactories = AtomicInteger(); val fileFactories = AtomicInteger(); val joiningFactories = AtomicInteger(); val inputs = AtomicInteger()
+        val coordinator = LanSyncGroupCoordinator(
+            hasExistingEvidence = { Files.exists(f.profile.resolve("profile.protected")) || Files.exists(f.profile.resolve("creation")) },
+            enrollment = f::founder,
+            joining = { joiningFactories.incrementAndGet(); error("SYNTHETIC_FOUNDER_READY_MUST_NOT_CREATE_JOINING") },
+            network = noNetwork, deviceName = "synthetic founder PC", initiallyPaused = true,
+            cloudRecoveryFactory = { cloudFactories.incrementAndGet(); error("SYNTHETIC_FOUNDER_READY_MUST_NOT_CREATE_CLOUD_RECOVERY") },
+            fileRecoveryFactory = { fileFactories.incrementAndGet(); error("SYNTHETIC_FOUNDER_READY_MUST_NOT_CREATE_FILE_RECOVERY") })
+        val password = "synthetic unused recovery password".toByteArray(Charsets.UTF_8)
+        try {
+            coordinator.createGroup()
+            await { coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE && !coordinator.state.value.busy }
+            // Use the actual valid code, so rejection cannot be an invalid-input shortcut.
+            val code = requireNotNull(coordinator.state.value.recoveryCode)
+            coordinator.recoverySaved(requireNotNull(coordinator.state.value.setupBinding))
+            await { coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy }
+            assertEquals(LanSyncGroupEnrollmentStage.READY, requireNotNull(f.founder().profile()).stage)
+            assertTrue(coordinator.state.value.localManagementAvailable)
+            assertFalse(coordinator.state.value.canResumeExternalRecovery)
+            assertTrue(coordinator.state.value.paused)
+            val originalState = coordinator.state.value
+            val originalFiles = retainedFiles(f.root)
+            val originalDirectories = Files.walk(f.root).use { paths ->
+                paths.filter { Files.isDirectory(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.map { f.root.relativize(it).toString() }.toList().toSet()
+            }
+            val draft = LanSyncGroupCloudDraft("synthetic unused recovery", "https://synthetic.invalid/group/", "synthetic user", password)
+            repeat(2) {
+                coordinator.openCloudRecovery()
+                coordinator.openFileRecovery()
+                assertFalse(coordinator.prepareCloudRecovery(draft, code))
+                assertFalse(coordinator.prepareFileRecovery({ inputs.incrementAndGet(); error("SYNTHETIC_FOUNDER_READY_MUST_NOT_OPEN_INPUT") }, code))
+            }
+            assertEquals(0, cloudFactories.get()); assertEquals(0, fileFactories.get())
+            assertEquals(0, joiningFactories.get()); assertEquals(0, inputs.get())
+            assertEquals(originalState, coordinator.state.value)
+            assertEquals(originalFiles, retainedFiles(f.root))
+            val remainingDirectories = Files.walk(f.root).use { paths ->
+                paths.filter { Files.isDirectory(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.map { f.root.relativize(it).toString() }.toList().toSet()
+            }
+            assertEquals(originalDirectories, remainingDirectories)
+            assertFalse(Files.exists(f.root.resolve("cloud-recovery"))); assertFalse(Files.exists(f.root.resolve("file-recovery")))
+        } finally { password.fill(0); coordinator.closeAndDrain() }
     }
 
     @Test fun managementLockDuringQueuedCreationNeverRevealsLateRecoveryCodeOrActivatesDraft() = fixture { f ->
@@ -1071,6 +1194,100 @@ class LanSyncGroupCoordinatorTest {
             assertEquals(finalOperations, access.node.sourceOperations())
             assertEquals(reloadsBefore, f.reloads.get())
             assertEquals(networkBefore, networkCalls.get())
+        }
+    }
+
+    @Test fun explicitPausedExportSealsOnlyTheNewLocalFactAndWritesARealVerifiedPackageWithoutNetworkOrReload() {
+        val network = ObservedNetwork(noNetwork)
+        fixture(network) { f ->
+            f.writeCard("synthetic original before paused export")
+            val original = Files.readAllBytes(f.card)
+            val storage = JsonFileStorage(f.data)
+            val coordinator = readyCoordinator(f, storage.committedRevisionFor(LanSyncScope.schemas.keys))
+            val access = requireNotNull(f.founder().runtimeAccess())
+            val author = f.author(access.trust)
+            val firstOperation = access.node.sourceOperations().single()
+            val first = requireNotNull(author.entry(firstOperation))
+            assertEquals(1L, author.state().committedSequence)
+            coordinator.pauseAndDrain()
+            assertTrue(coordinator.state.value.paused)
+            val authorOrigin = Files.readAllBytes(f.profile.resolve("node/author/origin.protected"))
+            val nativeOrigin = Files.readAllBytes(f.profile.resolve("node/native/origin.protected"))
+            val custody = retainedFiles(f.profile.resolve("custody"))
+            val oldReplica = retainedFiles(f.profile.resolve("local-replica"))
+            val reloads = f.reloads.get()
+            network.calls.set(0); network.forbidden.set(true)
+            val remoteCalls = AtomicInteger()
+            val forbidden = object : CiphertextStore by access.replica {
+                private fun touch(): Nothing { remoteCalls.incrementAndGet(); error("SYNTHETIC_PAUSED_EXPORT_REMOTE_FORBIDDEN") }
+                override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult = touch()
+                override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = touch()
+                override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? = touch()
+                override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = touch()
+            }
+            access.reader.routes("paused-export-forbidden", listOf(LanSyncGroupReplicaReader.Route("paused-export-forbidden", forbidden)))
+            try {
+                storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic new edit for explicit paused export",
+                    basicSetting = "retain this exact local edit", createdAt = 1, updatedAt = 2), CharacterCard.serializer())
+                val edited = Files.readAllBytes(f.card)
+                coordinator.onForeground(); coordinator.onNetworkAvailable(); coordinator.startIfConfigured()
+                assertEquals(listOf(firstOperation), access.node.sourceOperations())
+                coordinator.openFileExport()
+                val exporter = requireNotNull(coordinator.fileExport)
+                exporter.prepare()
+                withTimeout(30_000) { exporter.drain() }
+                assertNull(exporter.state.value.error); assertFalse(exporter.state.value.busy)
+                val binding = requireNotNull(exporter.state.value.preparedBinding)
+                assertTrue(coordinator.state.value.paused)
+                val operations = access.node.sourceOperations()
+                assertEquals(2, operations.size); assertEquals(firstOperation, operations.first())
+                assertEquals(2L, author.state().committedSequence)
+                val fresh = requireNotNull(author.entry(operations.last()))
+                assertEquals(2L, fresh.version.authorSequence); assertEquals(first.version.reference(), fresh.version.previousByAuthor)
+                assertNotNull(access.node.receipt(operations.last(), access.localTarget))
+                assertEquals(reloads, f.reloads.get()); assertEquals(0, network.calls.get()); assertEquals(0, remoteCalls.get())
+
+                exporter.hide()
+                assertFalse(exporter.state.value.visible); assertEquals(binding, exporter.state.value.preparedBinding)
+                val output = f.root.resolve("actual-paused-export.cbgroup")
+                exporter.write(binding, writer = { body -> Files.newOutputStream(output).use { stream -> body(stream) } },
+                    readback = { Files.newInputStream(output) })
+                withTimeout(30_000) { exporter.drain() }
+                assertNull(exporter.state.value.error); assertTrue(exporter.state.value.writeCompleted); assertTrue(exporter.state.value.readbackVerified)
+                assertFalse(exporter.state.value.visible); assertEquals(Files.size(output), exporter.state.value.bytes)
+                val inspection = Files.createDirectory(f.root.resolve("inspect-export"))
+                Files.newInputStream(output).use { input ->
+                    LanSyncGroupEncryptedFilePackage.stage(input, inspection).use { staged ->
+                        val actualCustody = f.custody(access.trust)
+                        val ledger = actualCustody.ledger().current()
+                        val inventory = staged.verifyInventory(actualCustody.key(ledger.epoch), access.trust, ledger.reference())
+                        assertEquals(setOf(first.version.reference(), fresh.version.reference()), inventory.plan.versions)
+                        assertEquals(SyncDeliveryKind.LOCAL_REPLICA, inventory.plan.target.kind)
+                    }
+                }
+                assertTrue(coordinator.state.value.paused); assertNull(coordinator.state.value.error)
+                assertEquals(operations, access.node.sourceOperations()); assertEquals(2L, author.state().committedSequence)
+                assertEquals(reloads, f.reloads.get()); assertEquals(0, network.calls.get()); assertEquals(0, remoteCalls.get())
+                assertContentEquals(edited, Files.readAllBytes(f.card))
+                assertContentEquals(authorOrigin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+                assertContentEquals(nativeOrigin, Files.readAllBytes(f.profile.resolve("node/native/origin.protected")))
+                assertEquals(custody, retainedFiles(f.profile.resolve("custody")))
+                val afterReplica = retainedFiles(f.profile.resolve("local-replica"))
+                oldReplica.forEach { (path, hash) -> assertEquals(hash, afterReplica[path], path) }
+                assertSourceOriginal(f, first, original); assertSourceOriginal(f, fresh, edited)
+                Files.newDirectoryStream(access.work.resolve("file-export")).use { paths ->
+                    assertTrue(paths.none { path -> listOf("receipt-", "weak-receipt-", "chunk-receipt-", "cloud-receipt-")
+                        .any { path.fileName.toString().startsWith(it) } })
+                }
+                val second = ByteArrayOutputStream()
+                exporter.write(binding, writer = { it(second) })
+                withTimeout(30_000) { exporter.drain() }
+                assertTrue(exporter.state.value.writeCompleted); assertFalse(exporter.state.value.readbackVerified)
+                assertContentEquals(Files.readAllBytes(output), second.toByteArray())
+                assertEquals(operations, access.node.sourceOperations()); assertEquals(2L, author.state().committedSequence)
+                assertTrue(coordinator.state.value.paused); assertEquals(reloads, f.reloads.get())
+                assertEquals(0, network.calls.get()); assertEquals(0, remoteCalls.get())
+            } finally { access.reader.removeRoutes("paused-export-forbidden") }
         }
     }
 

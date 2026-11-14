@@ -621,6 +621,48 @@ class LanSyncGroupTargetPublicationTest {
         f.assertUnchanged()
     }
 
+    @Test fun theNativeFileExportFacadeUsesOnlyRetainedCiphertextAndCreatesNoExternalDeliveryReceipt() = fixture { f ->
+        var remoteCalls = 0
+        val forbidden = object : CiphertextStore by f.access.replica {
+            override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? { remoteCalls++; error("SYNTHETIC_OFFLINE_EXPORT_NETWORK") }
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                remoteCalls++; error("SYNTHETIC_OFFLINE_EXPORT_NETWORK")
+            }
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage { remoteCalls++; error("SYNTHETIC_OFFLINE_EXPORT_NETWORK") }
+        }
+        f.access.reader.routes("synthetic-export-refusal", listOf(LanSyncGroupReplicaReader.Route("synthetic-export-refusal", forbidden)))
+        val directory = f.directory("actual-file-export")
+        f.access.prepareEncryptedFile(directory) {}.use { prepared ->
+            val bytes = ByteArrayOutputStream().also { prepared.writeTo(it) }.toByteArray()
+            LanSyncGroupEncryptedFilePackage.verifyReadback(bytes.inputStream(), prepared.descriptor)
+            LanSyncGroupEncryptedFilePackage.stage(bytes.inputStream(), f.directory("actual-file-import")).use { staged ->
+                val custody = f.admin.custody(); val current = custody.ledger().current()
+                val verified = staged.verifyInventory(custody.key(current.epoch), f.access.trust, current.reference())
+                assertEquals(setOf(f.first.entry.version.reference()), verified.plan.versions)
+                assertEquals(SyncDeliveryKind.LOCAL_REPLICA, verified.plan.target.kind)
+                assertTrue(verified.plan.objects.any { it.role == LanSyncGroupTargetObjectRole.VAULT })
+                assertTrue(verified.plan.objects.any { it.role == LanSyncGroupTargetObjectRole.RESOURCE })
+                assertTrue(verified.plan.objects.none { it.slot.contains("card.json") })
+            }
+            Files.newDirectoryStream(directory).use { paths -> assertTrue(paths.none { it.fileName.toString().startsWith("receipt-") }) }
+        }
+        assertEquals(0, remoteCalls)
+        f.access.reader.removeRoutes("synthetic-export-refusal")
+        f.assertUnchanged()
+    }
+
+    @Test fun anAuthenticatedPreparedSourceExpiresAfterItsBorrowWithoutCreatingATargetReceipt() = fixture { f ->
+        val owner = f.owner(f.directory("borrowed-export"), target())
+        val plan = owner.prepare(); var late: CiphertextStore? = null
+        owner.withPreparedSource { frozen, source ->
+            assertEquals(plan, frozen); late = source
+            assertEquals(CiphertextObjectMetadata(plan.objects.first().key, plan.objects.first().descriptor), source.metadata(plan.objects.first().key))
+        }
+        assertFailsWith<IllegalStateException> { requireNotNull(late).metadata(plan.objects.first().key) }
+        assertNull(owner.receipt()); assertNull(owner.cloudReceipt())
+        f.assertUnchanged()
+    }
+
     @Test fun aTerminalSourceReadFailureCannotBecomeAnIncompleteCandidateOrAPartialPreparationHold() = fixture { f ->
         val content = requireNotNull(f.first.entry.version.changes.getValue("character_cards/card").content)
         val key = f.first.metadata.envelope.blobs.getValue(content.sha256).key

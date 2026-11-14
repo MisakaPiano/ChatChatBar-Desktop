@@ -67,6 +67,8 @@ internal fun LanSyncGroupCloudSettings(state: LanSyncGroupCloudSettingsState, ac
                     else {
                         CbText(progress.text)
                         progress.lastObservedAt?.let { CbText("最近核对：${DateFormat.getDateTimeInstance().format(Date(it))}") }
+                        progress.partial?.let { CbText(it.text) }
+                        progress.lastPartialObservedAt?.let { CbText("最近部分核对：${DateFormat.getDateTimeInstance().format(Date(it))}") }
                         progress.pendingOperations?.let { CbText("待处理：$it 项") }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

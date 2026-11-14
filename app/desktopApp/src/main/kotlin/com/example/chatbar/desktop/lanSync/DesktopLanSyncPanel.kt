@@ -17,7 +17,7 @@ import java.awt.image.BufferedImage
 /** Navigation owns only page visibility; the application owns the group task lifetime. */
 @Composable
 internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
-    legacy: (() -> LanSyncRuntime)?, hasGroupEvidence: () -> Boolean) {
+    legacy: (() -> LanSyncRuntime)?, hasGroupEvidence: () -> Boolean, filePicker: DesktopFilePicker? = null) {
     val state by coordinator.state.collectAsState()
     val view by coordinator.view.collectAsState()
     val actionReview by coordinator.actionsReview.collectAsState()
@@ -40,18 +40,19 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             if (legacyAllowed && legacy != null) Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 BootstrapButton("打开旧版双端同步", secondary = true, enabled = !state.busy) { legacySelected = true }
             }
-            if (cloudRecoveryOwner != null && state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING)) {
+            if (cloudRecoveryOwner != null && (state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING) || state.canResumeExternalRecovery)) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
-                    BootstrapButton("从网盘恢复设备组", secondary = true, enabled = !state.busy) { cloudRecoveryOwner.open() }
+                    BootstrapButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", secondary = true, enabled = !state.busy) { coordinator.openCloudRecovery() }
                 }
             }
+            DesktopLanSyncFileActions(coordinator, state, filePicker)
             Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState) }
         }
     }
     DesktopLanSyncCloudSettings(cloudSettings, coordinator)
     cloudRecoveryOwner?.let { recovery ->
         val recoveryState by recovery.state.collectAsState()
-        DesktopLanSyncCloudRecovery(recoveryState, state.privacyRevision, recovery::prepare, recovery::confirm,
+        DesktopLanSyncCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
     }
 }

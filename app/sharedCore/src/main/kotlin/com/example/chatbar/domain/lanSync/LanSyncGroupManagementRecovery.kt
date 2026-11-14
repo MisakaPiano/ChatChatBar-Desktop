@@ -291,6 +291,41 @@ class LanSyncGroupManagementRecovery(private val root: Path,
 
     /** Read-only ciphertext capability: no private key, path, network route or new root signature. */
     suspend fun recoveryBootstrap(): LanSyncGroupRecoveryBootstrap = guarded { recoveryBootstrapOwned() }
+
+    /** The archive header is not authority; borrow only an admitted original-prefix epoch key. */
+    internal suspend fun verifyFileInventory(staged: LanSyncGroupEncryptedFilePackage.Staged): LanSyncGroupEncryptedFilePackage.VerifiedInventory {
+        data class Permit(val active: Active, val record: Record, val custody: SyncGroupCustody,
+            val current: SyncVersionRef, val cipher: SyncStreamingCipher)
+        val permit = guarded {
+            val value = requireActive(); val record = ready(value)
+            value.session.withRecipient { recipient ->
+                val custody = custody(value, record, recipient, false); val ledger = custody.ledger()
+                requireKnownPrefix(ledger)
+                require(ledger.contains(staged.header.checkpoint)) { "SYNC_GROUP_FILE_CHECKPOINT_NOT_ADMITTED" }
+                val archived = requireNotNull(ledger.record(staged.header.checkpoint)) { "SYNC_GROUP_FILE_CHECKPOINT_NOT_ADMITTED" }
+                require(archived.epoch == staged.header.epoch && archived.keyCommitment == staged.header.commitment) { "SYNC_GROUP_FILE_CONTEXT" }
+                requireCurrent(value)
+                Permit(value, record, custody, ledger.current().reference(), custody.key(archived.epoch))
+            }
+        }
+        // Complete raw-object hashing and AEAD metadata I/O do not hold management/native admission.
+        val result = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+            staged.verifyInventory(permit.cipher, permit.record.trust, staged.header.checkpoint)
+        }
+        return guarded {
+            val value = permit.active; val record = permit.record
+            requireCurrent(value); requireKnownPrefix(permit.custody.ledger())
+            require(permit.custody.ledger().current().reference() == permit.current) { "SYNC_GROUP_MANAGEMENT_CHECKPOINT_CHANGED" }
+            val vault = result.plan.objects.single { it.role == LanSyncGroupTargetObjectRole.VAULT }
+            require(vault.key == record.vault.key && vault.descriptor == record.vaultDescriptor) { "SYNC_GROUP_FILE_VAULT_CHANGED" }
+            value.session.withRecipient { recipient ->
+                val inspection = inbox(value, record, recipient, local(record, false), false).reconcile()
+                require(!inspection.trustBlocked && inspection.ledgerCheckpoint == permit.current &&
+                    result.plan.versions.all { requireNotNull(inspection.history).contains(it) }) { "SYNC_GROUP_FILE_VERSION_NOT_ADMITTED" }
+            }
+            requireCurrent(value); result
+        }
+    }
     private fun recoveryBootstrapOwned(): LanSyncGroupRecoveryBootstrap {
         val value = requireActive(); val record = ready(value)
         return value.session.withRecipient { recipient ->

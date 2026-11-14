@@ -151,27 +151,92 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         vault: SyncManagementVaultContext, vaultDescriptor: CiphertextDescriptor,
         recoverNative: Boolean = true, prepare: Boolean = true): LanSyncGroupTargetPublication {
         val export = serialized {
-            // Export never applies/recovers native plans. Shutdown callers additionally require a
-            // settled source-only boundary after their final writer/source sealing has completed.
-            if (!recoverNative) exclusive { requireSourceOnlyReady() }
-            // A cold Node has no warm localVersions. Import only retained local metadata before
-            // freezing, so a newly published local source cannot disappear from the selection.
-            kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
-                val local = inbox(localDependencies())
-                var cursor: CommitCursor? = null
-                do { cursor = local.discover(cursor).nextCursor } while (cursor != null)
-            }
-            val versions = localVersions.values.toList()
-            val reconciled = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { inbox().reconcile(versions) }
-            val ledger = custody.ledger()
-            val frozen = reconciled.copy(history = reconciled.history?.snapshot(),
-                authenticatedVersions = reconciled.authenticatedVersions.toList(), observations = reconciled.observations.toList())
+            val (ledger, frozen) = freezeTargetAdmission(recoverNative)
             LanSyncGroupTargetExport(trust, identity.fingerprint, ledger, frozen, vault, vaultDescriptor,
                 dependencyStore, custody::ledger, custody::key, custody, workspace.resourceStore, validateResource)
         }
         val publication = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { LanSyncGroupTargetPublication(directory, target, export) }
         if (prepare) publication.prepare()
         return publication
+    }
+
+    /** Partial admission keeps the complete wanted scope even when full export is held. */
+    internal suspend fun partialTargetPublication(directory: Path, target: SyncDeliveryTarget,
+        vault: SyncManagementVaultContext, vaultDescriptor: CiphertextDescriptor,
+        recoverNative: Boolean = true): LanSyncGroupPartialTargetPublication {
+        val work = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+            lanSyncSafe(directory, true)
+            directory.resolve("preparations").also {
+                if (!java.nio.file.Files.exists(it, java.nio.file.LinkOption.NOFOLLOW_LINKS)) java.nio.file.Files.createDirectory(it)
+                lanSyncSafe(it, true)
+            }
+        }
+        val export = serialized {
+            val (ledger, frozen) = freezeTargetAdmission(recoverNative)
+            LanSyncGroupPartialTargetExport(trust, identity.fingerprint, ledger, frozen, vault, vaultDescriptor,
+                dependencyStore, custody::ledger, custody::key, custody, workspace.resourceStore, validateResource, work)
+        }
+        return kotlinx.coroutines.runInterruptible(Dispatchers.IO) { LanSyncGroupPartialTargetPublication(directory, target, export) }
+    }
+
+    /** Local-only full ciphertext export. Long preparation stays outside Node/native admission. */
+    internal suspend fun prepareEncryptedFile(directory: Path, vault: SyncManagementVaultContext,
+        vaultDescriptor: CiphertextDescriptor, checkActive: () -> Unit): LanSyncGroupEncryptedFilePackage.Prepared {
+        val owned = java.util.concurrent.atomic.AtomicReference<LanSyncGroupEncryptedFilePackage.Prepared?>()
+        try {
+            prepareEncryptedFile(directory, vault, vaultDescriptor, checkActive) { prepared ->
+                check(owned.compareAndSet(null, prepared)) { "SYNC_GROUP_FILE_PREPARATION_REPLAY" }
+            }
+            return requireNotNull(owned.getAndSet(null))
+        } finally { owned.getAndSet(null)?.close() }
+    }
+    internal suspend fun prepareEncryptedFile(directory: Path, vault: SyncManagementVaultContext,
+        vaultDescriptor: CiphertextDescriptor, checkActive: () -> Unit,
+        receive: (LanSyncGroupEncryptedFilePackage.Prepared) -> Unit) {
+        val frozen = serialized {
+            checkActive()
+            val (ledger, view) = freezeTargetAdmission(recoverNative = true)
+            val proof = LanSyncGroupTargetExport(trust, identity.fingerprint, ledger, view, vault, vaultDescriptor,
+                localDependencies(), custody::ledger, custody::key, custody, workspace.resourceStore, validateResource, checkActive)
+            proof to custody.key(ledger.current().epoch)
+        }
+        val target = SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.parse(lanSyncHash(
+            "CCB-GROUP-FILE-EXPORT-STAGE/1\n${trust.group.value}\n${trust.genesis}\n${identity.fingerprint}".toByteArray(Charsets.UTF_8)).take(32)))
+        val publication = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+            lanSyncSafe(directory, true); checkActive()
+            LanSyncGroupTargetPublication(directory, target, frozen.first)
+        }
+        publication.prepare()
+        kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+            publication.withPreparedSource { plan, source ->
+                val prepared = LanSyncGroupEncryptedFilePackage.prepare(plan, source, trust, frozen.second,
+                    directory.resolve("preparations"), checkActive = { checkActive(); frozen.first.requireLive() })
+                try { receive(prepared) } catch (failure: Throwable) {
+                    try { prepared.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+                    throw failure
+                }
+            }
+        }
+    }
+
+    /** Called only under Node serialization; reads retained metadata and never a live route. */
+    private suspend fun freezeTargetAdmission(recoverNative: Boolean): Pair<SyncDeviceLedger, SyncInboxReconciliation> {
+        // Export never applies/recovers native plans. Shutdown callers additionally require a
+        // settled source-only boundary after their final writer/source sealing has completed.
+        if (!recoverNative) exclusive { requireSourceOnlyReady() }
+        // A cold Node has no warm localVersions. Import only retained local metadata before
+        // freezing, so a newly published local source cannot disappear from the selection.
+        kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+            val local = inbox(localDependencies())
+            var cursor: CommitCursor? = null
+            do { cursor = local.discover(cursor).nextCursor } while (cursor != null)
+        }
+        val versions = localVersions.values.toList()
+        val reconciled = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { inbox().reconcile(versions) }
+        val ledger = custody.ledger()
+        val frozen = reconciled.copy(history = reconciled.history?.snapshot(),
+            authenticatedVersions = reconciled.authenticatedVersions.toList(), observations = reconciled.observations.toList())
+        return ledger to frozen
     }
 
     /** Resource I/O deliberately stays outside the source/native operation mutex. */

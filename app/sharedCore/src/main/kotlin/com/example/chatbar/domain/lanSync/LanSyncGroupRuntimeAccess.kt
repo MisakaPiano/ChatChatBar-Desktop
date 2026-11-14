@@ -44,6 +44,14 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     suspend fun targetPublication(directory: Path, target: SyncDeliveryTarget,
         recoverNative: Boolean = true, prepare: Boolean = true): LanSyncGroupTargetPublication =
         node.targetPublication(directory, target, vault, vaultDescriptor, recoverNative, prepare)
+    internal suspend fun partialTargetPublication(directory: Path, target: SyncDeliveryTarget,
+        recoverNative: Boolean = true): LanSyncGroupPartialTargetPublication =
+        node.partialTargetPublication(directory, target, vault, vaultDescriptor, recoverNative)
+    internal suspend fun prepareEncryptedFile(directory: Path, checkActive: () -> Unit): LanSyncGroupEncryptedFilePackage.Prepared =
+        node.prepareEncryptedFile(directory, vault, vaultDescriptor, checkActive)
+    internal suspend fun prepareEncryptedFile(directory: Path, checkActive: () -> Unit,
+        receive: (LanSyncGroupEncryptedFilePackage.Prepared) -> Unit) =
+        node.prepareEncryptedFile(directory, vault, vaultDescriptor, checkActive, receive)
     suspend fun invitation(storePort: Int): LanSyncGroupInvitation {
         val inspected = node.inspect(); val plan = requireNotNull(inspected.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
         require(plan.before.hashes().all { (unit, hash) -> inspected.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }

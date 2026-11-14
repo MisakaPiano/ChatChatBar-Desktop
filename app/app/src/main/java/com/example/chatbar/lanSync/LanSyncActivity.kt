@@ -70,12 +70,13 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
             else if (legacyAllowed) CbButton("旧版双端同步", { legacySelected = true }, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
         if (!legacySelected && cloudRecoveryOwner != null &&
-            state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING)) {
+            (state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING) || state.canResumeExternalRecovery)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
-                CbButton("从网盘恢复设备组", cloudRecoveryOwner::open, enabled = !state.busy, variant = ButtonVariant.Secondary)
+                CbButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", coordinator::openCloudRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)
             }
         }
-        if (!legacyAllowed) LanSyncBackgroundControls(owner, backgroundState)
+        if (!legacySelected) LanSyncGroupFileActions(coordinator, state)
+        if (!legacyAllowed || backgroundState.phase == AndroidLanSyncBackgroundPhase.PAUSED) LanSyncBackgroundControls(owner, backgroundState)
         Box(Modifier.weight(1f)) {
             if (legacySelected && legacyAllowed) {
                 val runtime = remember(owner) { owner.runtime }
@@ -102,7 +103,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     LanSyncGroupCloudSettings(cloudSettings, coordinator)
     cloudRecoveryOwner?.let { recovery ->
         val recoveryState by recovery.state.collectAsState()
-        LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, recovery::prepare, recovery::confirm,
+        LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
     }
 }
@@ -117,7 +118,7 @@ private fun LanSyncBackgroundControls(owner: AndroidLanSync, state: AndroidLanSy
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         CbText(when (state.phase) {
             AndroidLanSyncBackgroundPhase.NOT_CONFIGURED -> "设备组后台运行尚未启用"
-            AndroidLanSyncBackgroundPhase.RECOVERY_PENDING -> "网盘恢复尚未完成，请从恢复入口继续；同网后台服务尚未启用"
+            AndroidLanSyncBackgroundPhase.RECOVERY_PENDING -> "设备组恢复尚未完成，请从网盘或加密文件入口继续；同网后台服务尚未启用"
             AndroidLanSyncBackgroundPhase.WAITING_FOR_FOREGROUND -> "等待应用可见且初始化完成后启用后台运行"
             AndroidLanSyncBackgroundPhase.STARTING -> "正在启用设备组后台运行；尚未取得前台服务保护"
             AndroidLanSyncBackgroundPhase.RUNNING -> "设备组后台服务已运行；离开此页后仍可处理同网同步"

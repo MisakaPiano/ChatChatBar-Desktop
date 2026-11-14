@@ -280,6 +280,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     lanSyncGroup = appContainer.lanSyncGroupCoordinator,
                                     legacyLanSync = { appContainer.lanSync },
                                     hasLanSyncGroupEvidence = appContainer::hasLanSyncGroupEvidence,
+                                    lanSyncFilePicker = pickers.files,
                                     externalImportController = externalImports,
                                     taskCenter = appContainer.taskCenter,
                                     taskTray = tray,

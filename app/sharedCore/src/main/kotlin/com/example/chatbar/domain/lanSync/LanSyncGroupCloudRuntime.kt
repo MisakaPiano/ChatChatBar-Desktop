@@ -109,7 +109,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
     fun markDirty() {
         synchronized(lock) {
             dirtyRevision++
-            progress.replaceAll { _, value -> value.copy(selectionObserved = false) }
+            progress.replaceAll { _, value -> value.copy(selectionObserved = false, partial = null) }
         }
         publishCurrent()
     }
@@ -207,6 +207,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                         if (providerBackoff.get() || (serverWait.get()?.remaining(clockMillis()) ?: 0) > 0)
                             throw IOException("SYNC_GROUP_CLOUD_RETRY_LATER")
                     }
+                    val partialProgress = AtomicReference<LanSyncGroupPartialTargetProgress?>()
                     var borrowedCredentials: LanSyncGroupCloudCredentials? = null
                     try {
                         active()
@@ -222,10 +223,10 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                     403 -> LanSyncGroupCloudSchedule.FailureCategory.PERMISSION
                                     else -> LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT
                                 })
-                                // Candidate readers may retain/skip a transient provider claim. A
-                                // rate limit or unavailable service instead ends this route's batch,
-                                // even without Retry-After or after its supplied delay has elapsed.
-                                if (status == 429 || status == 503) providerBackoff.set(true)
+                                // Authentication/permission denial and rate/service limits end this
+                                // route's batch even when an inner candidate reader retains a claim.
+                                // Retry-After cannot authorize another request in the current batch.
+                                if (status == 401 || status == 403 || status == 429 || status == 503) providerBackoff.set(true)
                                 if (retryAfter != null) {
                                     val now = clockMillis()
                                     serverWait.updateAndGet { old -> if ((old?.remaining(now) ?: 0) >= retryAfter) old else RelativeWait(now, retryAfter) }
@@ -272,27 +273,61 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                 }
                                 active()
                                 update(captured, catalog, id, "正在检查本次选定版本的投递记录")
-                                val owner = access.targetPublication(directory(root.resolve("target")),
-                                    SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id),
-                                    recoverNative = recoverNative && !outgoingOnly, prepare = false)
-                                val prior = runInterruptible(Dispatchers.IO) { owner.cloudReceipt() }
-                                val receipt = if (prior != null) {
-                                    runInterruptible(Dispatchers.IO) { check(owner.recoverObjectObservations()) { "SYNC_GROUP_TARGET_RECEIPT_MISSING" } }
-                                    prior
-                                } else {
-                                    update(captured, catalog, id, "正在保全并投递本次选定版本")
-                                    owner.prepare(); active()
-                                    owner.uploadCloud(attempts, parts)
+                                val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id)
+                                val owner = try {
+                                    access.targetPublication(directory(root.resolve("target")), target,
+                                        recoverNative = recoverNative && !outgoingOnly, prepare = false)
+                                } catch (failure: IllegalArgumentException) {
+                                    if (failure.message != "SYNC_GROUP_TARGET_ADMISSION_REQUIRED") throw failure
+                                    null
+                                }
+                                val prior = if (owner == null) null else runInterruptible(Dispatchers.IO) { owner.cloudReceipt() }
+                                var partial = owner == null
+                                if (prior == null && owner != null) {
+                                    update(captured, catalog, id, "正在保全本次选定版本")
+                                    try { owner.prepare() }
+                                    catch (failure: IllegalArgumentException) {
+                                        if (failure.message !in PARTIAL_PREPARATION_HOLDS) throw failure
+                                        partial = true
+                                    }
                                 }
                                 active()
-                                val observed = receipt.objects.maxOfOrNull { it.evidence.readback.observedAtMillis }
-                                val warning = buildString {
-                                    if (chunkRead.latestFailure.value?.localCache == true) append("；本机保全的分片待检查，原始资料已保留")
-                                    else if (chunkRead.latestFailure.value != null) append("；有未通过检查的分片清单，其候选证据已保留")
-                                    if (receipt.rejectedCandidates > 0) append("；投递记录含${receipt.rejectedCandidates}个未采用的不匹配、缺失或损坏候选，原始密文保留")
+                                if (partial) {
+                                    // The wanted scope stays whole. A held full preparation is visible and
+                                    // cannot replace its complete receipt with a smaller successful plan.
+                                    System.err.println("SYNC_GROUP_CLOUD_COMPLETE_SELECTION_HELD_PARTIAL_WORK")
+                                    complete = false
+                                    val available = access.partialTargetPublication(directory(root.resolve("target")), target,
+                                        recoverNative = recoverNative && !outgoingOnly)
+                                    available.prepare(); active()
+                                    fun project(value: LanSyncGroupPartialTargetProgress) {
+                                        partialProgress.set(value)
+                                        publishPartial(captured, catalog, revision, capturedDirty, id, value)
+                                    }
+                                    project(runInterruptible(Dispatchers.IO) { available.progress() })
+                                    available.uploadCloud(attempts, parts, ::project)
+                                    active()
+                                    schedule.defer(id)
+                                    update(captured, catalog, id, "独立资料已分项核验，完整选定范围仍待补齐", capturedDirty = capturedDirty, partial = partialProgress.get())
+                                } else {
+                                    val full = requireNotNull(owner)
+                                    val receipt = if (prior != null) {
+                                        runInterruptible(Dispatchers.IO) { check(full.recoverObjectObservations()) { "SYNC_GROUP_TARGET_RECEIPT_MISSING" } }
+                                        prior
+                                    } else {
+                                        update(captured, catalog, id, "正在投递本次选定版本")
+                                        full.uploadCloud(attempts, parts)
+                                    }
+                                    active()
+                                    val observed = receipt.objects.maxOfOrNull { it.evidence.readback.observedAtMillis }
+                                    val warning = buildString {
+                                        if (chunkRead.latestFailure.value?.localCache == true) append("；本机保全的分片待检查，原始资料已保留")
+                                        else if (chunkRead.latestFailure.value != null) append("；有未通过检查的分片清单，其候选证据已保留")
+                                        if (receipt.rejectedCandidates > 0) append("；投递记录含${receipt.rejectedCandidates}个未采用的不匹配、缺失或损坏候选，原始密文保留")
+                                    }
+                                    schedule.success(id, changed = prior == null)
+                                    update(captured, catalog, id, "本次选定版本已读回核验；全组仍待后续检查$warning", observed, capturedDirty)
                                 }
-                                schedule.success(id, changed = prior == null)
-                                update(captured, catalog, id, "本次选定版本已读回核验；全组仍待后续检查$warning", observed, capturedDirty)
                             } finally {
                                 access.reader.removeRoutes(OWNER)
                                 synchronized(lock) { transports.remove(transport) }
@@ -306,8 +341,10 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                         complete = false
                         var category: LanSyncGroupCloudSchedule.FailureCategory? = null
                         if (globallyActive(captured) && catalog.revision.value == revision && !Thread.currentThread().isInterrupted) {
-                            if (failure is IOException) {
-                                val actual = failureCategory(failure)
+                            val transferFailure = if (failure is LanSyncGroupTargetSourceIoFailure) failure.original as? IOException
+                                else failure as? IOException
+                            if (transferFailure != null) {
+                                val actual = failureCategory(transferFailure)
                                 category = if (actual == LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT) responseFailure.get() ?: actual else actual
                                 schedule.failed(id, category, serverWait.get()?.remaining(clockMillis()))
                             } else schedule.defer(id) // Local incomplete work is neither success nor an invented network error.
@@ -317,9 +354,9 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                             catalog.revision.value != revision -> "本机网盘设置已变更，待传资料已保留"
                             category == LanSyncGroupCloudSchedule.FailureCategory.AUTHENTICATION -> "账号验证未通过，请修改此网盘配置；待传资料已保留"
                             category == LanSyncGroupCloudSchedule.FailureCategory.PERMISSION -> "此网盘未允许本次访问，请检查此网盘配置；待传资料已保留"
-                            else -> failureText(failure)
+                            else -> failureText((failure as? LanSyncGroupTargetSourceIoFailure)?.original ?: failure)
                         }
-                        update(captured, catalog, id, text)
+                        update(captured, catalog, id, text, capturedDirty = capturedDirty, partial = partialProgress.get())
                     } finally { borrowedCredentials?.close() }
                 }
             } finally { access.reader.removeRoutes(OWNER) }
@@ -344,7 +381,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
         catch (failure: Throwable) { transport.close(); throw failure }
     }
     private suspend fun update(captured: Long, catalog: LanSyncGroupCloudRoutes, id: SyncStoreId, text: String, observed: Long? = null,
-        capturedDirty: Long? = null) {
+        capturedDirty: Long? = null, partial: LanSyncGroupPartialTargetProgress? = null) {
         val revision = catalog.revision.value
         val enabled = try { runInterruptible(Dispatchers.IO) { catalog.rows().filter { it.enabled }.mapTo(linkedSetOf()) { it.id } } }
             catch (cancelled: CancellationException) { throw cancelled }
@@ -355,11 +392,29 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
             snapshotRevision = if (catalog.revision.value == revision) revision else -1
             progress.keys.retainAll(enabled)
             val previous = progress[id]
-            if (id in enabled) progress[id] = LanSyncGroupCloudRouteProgress(text, observed ?: previous?.lastObservedAt,
-                pendingOperations = null, selectionObserved = observed != null && capturedDirty == dirtyRevision)
+            val currentPartial = partial?.takeIf { capturedDirty == dirtyRevision }
+            val currentText = if (partial != null && currentPartial == null)
+                "本机资料已变化，较早范围的分项核验已保留，仍待同步" else text
+            if (id in enabled) progress[id] = LanSyncGroupCloudRouteProgress(currentText, observed ?: previous?.lastObservedAt,
+                pendingOperations = null, selectionObserved = partial == null && observed != null && capturedDirty == dirtyRevision,
+                partial = currentPartial?.projection(), lastPartialObservedAt = currentPartial?.lastObservedAt ?: previous?.lastPartialObservedAt)
         }
         publishCurrent(captured)
     }
+    private fun LanSyncGroupPartialTargetProgress.projection() = LanSyncGroupCloudPartialProgress(
+        completeUnitPackages, pendingUnitPackages, pendingControlSlots, observedObjects, availableObjects)
+
+    /** A partial historical time never becomes this selection's complete-observation time. */
+    private fun publishPartial(captured: Long, catalog: LanSyncGroupCloudRoutes, revision: Long,
+        capturedDirty: Long, id: SyncStoreId, value: LanSyncGroupPartialTargetProgress) = synchronized(lock) {
+        if (closed || generation != captured || dirtyRevision != capturedDirty || snapshotCatalog !== catalog || snapshotRevision != revision ||
+            catalog.revision.value != revision || id !in progress) return@synchronized
+        val previous = progress.getValue(id)
+        progress[id] = previous.copy(text = "正在分项投递独立资料，完整范围仍待补齐", selectionObserved = false,
+            partial = value.projection(), lastPartialObservedAt = value.lastObservedAt ?: previous.lastPartialObservedAt)
+        publishCurrent(captured)
+    }
+
     /** The callback only projects payload-free state; serialize it with dirty/pause mutations. */
     private fun publishCurrent(captured: Long? = null) = synchronized(lock) {
         if (!closed && (captured == null || captured == generation) && snapshotCatalog?.revision?.value == snapshotRevision)
@@ -371,6 +426,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
         else -> LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT
     }
     private fun failureText(failure: Exception): String = when (failure) {
+        is WeakWebDavIncomingCacheException -> "本机保全的网盘分片待检查，原始资料与分片已保留"
         is CiphertextStoreException -> when (failure.failure) {
             CiphertextStoreFailure.AUTHENTICATION -> "账号验证未通过，请修改此网盘配置；待传资料已保留"
             CiphertextStoreFailure.PERMISSION -> "此网盘未允许本次访问，请检查此网盘配置；待传资料已保留"
@@ -425,6 +481,8 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
     }
     companion object {
         private const val OWNER = "cloud"
+        private val PARTIAL_PREPARATION_HOLDS = setOf("SYNC_GROUP_TARGET_ROOT_INCOMPLETE",
+            "SYNC_GROUP_TARGET_VERSION_INCOMPLETE", "SYNC_GROUP_TARGET_DESCRIPTOR_CONFLICT")
         private const val CONFIGURATION_UNAVAILABLE_TEXT = "网盘连接设置暂时无法读取，原文件已保留；请打开连接设置检查"
     }
 }

@@ -116,9 +116,9 @@ class AndroidLanSync(private val app: ChatBarApp) {
     private val cloudWorkOwner: Lazy<AndroidLanSyncCloudWork> = lazy {
         AndroidLanSyncCloudWork(app,
             canStart = { synchronized(hookLock) {
-                !hooksClosed && !userPaused && app.lanSyncStartupReady && applicationHooks?.isForeground == true
+                !hooksClosed && app.lanSyncStartupReady && applicationHooks?.isForeground == true
             } },
-            canContinue = { !hooksClosed && !userPaused && app.lanSyncStartupReady },
+            canContinue = { !hooksClosed && app.lanSyncStartupReady },
             cancelCloud = { if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.cancelCloudWork() })
     }
 
@@ -165,14 +165,20 @@ class AndroidLanSync(private val app: ChatBarApp) {
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
             sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true,
-            cloudWorkAllowed = { cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
+            cloudWorkAllowed = { !userPaused && cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
             cloudWork = ::runCloudWork,
             cloudRecoveryFactory = { ready -> LanSyncGroupCloudRecoveryOwner(
                 root = { root.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
                 joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
                 beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
-                networkAllowed = { cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
-                cloudWork = ::runCloudWork, onReady = ready) }).also { coordinator ->
+                networkAllowed = { !userPaused && cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
+                cloudWork = ::runCloudWork, onReady = ready) },
+            fileRecoveryFactory = { ready -> LanSyncGroupFileRecoveryOwner(
+                // External recovery routes share the same original management journal.
+                root = { root.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
+                joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
+                beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
+                dataWork = ::runFileWork, onReady = ready) }, fileWork = ::runFileWork).also { coordinator ->
                 hookObserver = app.applicationScope.launch {
                     coordinator.state.collect {
                         if (hasGroupEvidence()) ensureApplicationHooks()
@@ -182,7 +188,12 @@ class AndroidLanSync(private val app: ChatBarApp) {
             }
     }
     /** The production batch path; the native opt-in proof exercises this same foreground gate. */
-    internal suspend fun runCloudWork(work: suspend () -> Boolean): Boolean = cloudWorkOwner.value.run(work)
+    internal suspend fun runCloudWork(work: suspend () -> Boolean): Boolean {
+        if (userPaused) return false
+        return cloudWorkOwner.value.run { if (userPaused) false else work() }
+    }
+    /** Explicit local file work uses the same finite service, with no permission for network routes. */
+    internal suspend fun runFileWork(work: suspend () -> Boolean): Boolean = cloudWorkOwner.value.run(work)
     val groupCoordinator: LanSyncGroupCoordinator get() = groupCoordinatorOwner.value
     fun openGroupPage() {
         groupCoordinator.open()

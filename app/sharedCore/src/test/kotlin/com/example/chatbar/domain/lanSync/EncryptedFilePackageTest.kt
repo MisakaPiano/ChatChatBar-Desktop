@@ -32,7 +32,7 @@ class EncryptedFilePackageTest {
         private fun value(index: Long) = ((index * 17 + index / 251) % 251).toInt()
     }
 
-    private class Fixture(val root: Path, resourceLength: Long = 1027) {
+    internal class Fixture(val root: Path, resourceLength: Long = 1027) {
         val work = Files.createDirectory(root.resolve("work"))
         val input = Files.createDirectory(root.resolve("input"))
         val store = FileCiphertextStore(root.resolve("source"))

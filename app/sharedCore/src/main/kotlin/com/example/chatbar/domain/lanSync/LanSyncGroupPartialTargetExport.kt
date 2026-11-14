@@ -100,6 +100,31 @@ internal class LanSyncGroupPartialTargetExport(val trust: SyncGroupTrust, val de
 
     fun prepareAvailable(): LanSyncGroupPartialTargetPreparation = prepare(source, null, null)
 
+    /** Owned exact retained bytes remain available during a cold retry; all original checks still run. */
+    internal fun prepareAvailable(retainedObjects: List<LanSyncGroupPartialObject>, retained: CiphertextStore): LanSyncGroupPartialTargetPreparation {
+        val known = retainedObjects.map { it.location.metadata() }.toSet()
+        val overlay = object : CiphertextStore by source {
+            private val commits by lazy { (inventory(source) + known.filter { it.key.kind == CiphertextObjectKind.COMMIT }).distinct().sortedWith(metadataOrder) }
+            override fun readTo(key: CiphertextObjectKey, destination: java.io.OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                val matches = known.filter { it.key == key && (expected == null || it.descriptor == expected) }
+                require(matches.size <= 1) { "SYNC_GROUP_PARTIAL_EXACT_DESCRIPTOR_REQUIRED" }
+                return if (matches.isNotEmpty()) retained.readTo(key, destination, matches.single().descriptor) else source.readTo(key, destination, expected)
+            }
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                requireLive(); require(pageSize in 1..1000)
+                val index = cursor?.token?.removePrefix("partial-retained:")?.toIntOrNull() ?: if (cursor == null) 0 else error("SYNC_GROUP_PARTIAL_CURSOR_CHANGED")
+                require(index in 0..commits.size) { "SYNC_GROUP_PARTIAL_CURSOR_CHANGED" }
+                val end = minOf(commits.size.toLong(), index.toLong() + pageSize).toInt()
+                return CommitPage(commits.subList(index, end), if (end < commits.size) CommitCursor("partial-retained:$end") else null)
+            }
+        }
+        return prepare(overlay, null, null)
+    }
+
+    /** Rebuilds only what the exact observed ciphertext lens can prove, with the original wanted scope. */
+    internal fun observeAvailable(exactObjects: List<LanSyncGroupPartialObject>, observed: CiphertextStore): LanSyncGroupPartialTargetPreparation =
+        prepare(observed, exactObjects, null)
+
     /** Reauthenticates the exact observed subset. No listing or warm-cache-only claim is accepted. */
     fun validateAvailable(selection: LanSyncGroupPartialTargetSelection, observed: CiphertextStore) {
         require(selection.scope == scope) { "SYNC_GROUP_PARTIAL_SCOPE_CHANGED" }
@@ -344,7 +369,7 @@ internal class LanSyncGroupPartialTargetExport(val trust: SyncGroupTrust, val de
         } catch (failure: Throwable) { try { pool.close() } catch (close: Throwable) { failure.addSuppressed(close) }; throw failure }
     }
 
-    private fun requireLive() {
+    internal fun requireLive() {
         if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_GROUP_TARGET_INTERRUPTED")
         val live = authority()
         require(live.trustAnchor.group == trust.group && live.trustAnchor.genesis == trust.genesis &&

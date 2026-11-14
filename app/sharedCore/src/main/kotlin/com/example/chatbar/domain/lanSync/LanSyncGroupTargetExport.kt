@@ -18,7 +18,8 @@ internal class LanSyncGroupTargetExport(val trust: SyncGroupTrust, val device: S
     val source: CiphertextStore, val authority: () -> SyncDeviceLedger,
     val cipher: (SyncStoreId) -> SyncStreamingCipher,
     private val custody: SyncGroupCustody, val cache: LanSyncResourceStore,
-    val validateResource: (String, Path, LanSyncRecord) -> Unit) {
+    val validateResource: (String, Path, LanSyncRecord) -> Unit,
+    private val checkActive: () -> Unit = {}) {
     val current = ledger.current()
     val versions = requireNotNull(view.history).admittedVersions().sortedBy { it.id.value }
     init {
@@ -29,6 +30,7 @@ internal class LanSyncGroupTargetExport(val trust: SyncGroupTrust, val device: S
         requireLive()
     }
     fun requireLive() {
+        checkActive()
         if (Thread.currentThread().isInterrupted) throw java.io.InterruptedIOException("SYNC_GROUP_TARGET_INTERRUPTED")
         val live = authority()
         require(live.trustAnchor.group == trust.group && live.trustAnchor.genesis == trust.genesis &&

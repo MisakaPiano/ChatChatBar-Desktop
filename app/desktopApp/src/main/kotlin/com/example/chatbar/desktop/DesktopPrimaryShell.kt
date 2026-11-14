@@ -63,6 +63,7 @@ internal fun DesktopPrimaryShell(
     lanSyncGroup: com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator? = null,
     legacyLanSync: (() -> com.example.chatbar.domain.lanSync.LanSyncRuntime)? = null,
     hasLanSyncGroupEvidence: () -> Boolean = { false },
+    lanSyncFilePicker: DesktopFilePicker? = null,
 ) {
     val guideNotice = guideReminder?.state?.collectAsState()?.value
     LaunchedEffect(guideReminder) { guideReminder?.load() }
@@ -244,6 +245,7 @@ internal fun DesktopPrimaryShell(
                         onTaskDetailConsumed = { taskDataDetail = null },
                         lanSync = lanSync, lanSyncGroup = lanSyncGroup, legacyLanSync = legacyLanSync,
                         hasLanSyncGroupEvidence = hasLanSyncGroupEvidence,
+                        lanSyncFilePicker = lanSyncFilePicker,
                         diagnostics = { DesktopGlobalDiagnostics(primaryChatController.taskRuntime.diagnostics, promptInspectorController) })
                 }
                 primaryChatController.voices?.let { runtime ->

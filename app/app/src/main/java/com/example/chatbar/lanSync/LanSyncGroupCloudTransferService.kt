@@ -65,7 +65,7 @@ class LanSyncGroupCloudTransferService : Service() {
 
     private fun notification(generation: Long): Notification {
         getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "设备组网盘传输", NotificationManager.IMPORTANCE_LOW))
+            NotificationChannel(CHANNEL_ID, "设备组资料传输", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0, Intent(this, LanSyncActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val stop = PendingIntent.getService(this, 0, Intent(this, LanSyncGroupCloudTransferService::class.java)
@@ -73,8 +73,8 @@ class LanSyncGroupCloudTransferService : Service() {
             .putExtra(EXTRA_GENERATION, generation), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("设备组网盘传输")
-            .setContentText("正在处理待传资料；完成情况请查看网盘连接。")
+            .setContentTitle("设备组资料传输")
+            .setContentText("正在处理加密同步资料；完成情况请查看设备组同步页。")
             .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .addAction(0, "停止设备组同步", stop).build()

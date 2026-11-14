@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.*
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -35,6 +37,7 @@ class LanSyncGroupCloudRuntimeTest {
         val admin = LanSyncGroupAdministrationTest.Fixture(root)
         val reloads = AtomicInteger(); val wakes = AtomicInteger(); val permitted = AtomicBoolean(true)
         val reports = mutableListOf<Map<SyncStoreId, LanSyncGroupCloudRouteProgress>>()
+        var onReport: (Map<SyncStoreId, LanSyncGroupCloudRouteProgress>) -> Unit = {}
         val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(HTTP_TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).build()
         val owners = mutableListOf<LanSyncGroupEnrollment>(); val runtimes = mutableListOf<LanSyncGroupCloudRuntime>()
         val clock = AtomicLong()
@@ -72,7 +75,7 @@ class LanSyncGroupCloudRuntimeTest {
         }
         fun runtime(schedule: LanSyncGroupCloudSchedule = LanSyncGroupCloudSchedule(clock::get, { 0 })) =
             LanSyncGroupCloudRuntime(access, permitted::get, { wakes.incrementAndGet() },
-                { synchronized(reports) { reports += it } }, catalog, client, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP,
+                { synchronized(reports) { reports += it }; onReport(it) }, catalog, client, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP,
                 schedule, clock::get).also(runtimes::add)
         fun latest() = synchronized(reports) { reports.lastOrNull().orEmpty() }
         suspend fun assertOriginal() {
@@ -107,6 +110,86 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(count > 0)
             repeat(count) { assertNull(requireNotNull(provider.server.takeRequest(1, TimeUnit.SECONDS)).getHeader("Authorization")) }
             f.assertOriginal()
+        }
+    }
+
+    @Test fun aMissingHistoricalBodyStillDeliversAnIndependentPackageWithoutCompletingTheWantedScope() = fixture { f ->
+        val secondPath = f.admin.data.resolve("entities/character_cards/second.json")
+        LanSyncJsonFiles.write(secondPath, CharacterCard.serializer(), CharacterCard("second", "synthetic independent second", createdAt = 1, updatedAt = 1))
+        val secondBytes = Files.readAllBytes(secondPath)
+        val second = f.access.node.commit(f.access.node.inspect().review(setOf("character_cards/second")))
+        f.access.node.upload(second.entry.request.operation, f.access.replica, f.access.localTarget)
+        val firstBody = requireNotNull(f.source.entry.version.changes.getValue("character_cards/card").content)
+        val hidden = f.source.metadata.envelope.blobs.getValue(firstBody.sha256).key
+        val unavailable = AtomicBoolean(true)
+        val originalAccess = f.access
+        val limited = object : CiphertextStore by originalAccess.replica {
+            override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? =
+                if (unavailable.get() && key == hidden) null else originalAccess.replica.metadata(key)
+            override fun readTo(key: CiphertextObjectKey, destination: java.io.OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? =
+                if (unavailable.get() && key == hidden) null else originalAccess.replica.readTo(key, destination, expected)
+        }
+        val profile = lanSyncJson.parseToJsonElement(Files.readAllBytes(f.admin.profile.resolve("profile.protected"))
+            .reversedArray().toString(Charsets.UTF_8)).jsonObject
+        val recipient = SyncDeviceKeyCustody(f.admin.profile.resolve("recipient"), f.admin.identity.fingerprint,
+            { it.reversedArray() }, { it.reversedArray() }).open(profile.getValue("recipient").jsonPrimitive.content)
+        val custody = f.admin.custody()
+        val platform = object : LanSyncPlatform {
+            override suspend fun exclusive(work: suspend () -> Unit) = work()
+            override suspend fun reload(sessionIds: Set<String>) { f.reloads.incrementAndGet() }
+        }
+        f.access = LanSyncGroupRuntimeAccess(originalAccess.trust, originalAccess.localTarget, limited,
+            f.directory("partial-runtime"), f.admin.identity, custody, { store ->
+                LanSyncGroupNode(f.admin.profile.resolve("node"), f.admin.workspace, platform, f.admin.identity,
+                    originalAccess.trust, custody, recipient, store, { it.reversedArray() }, { it.reversedArray() },
+                    { emptySet() }, { _, _, _ -> })
+            }, originalAccess.vault, originalAccess.vaultDescriptor, { it.reversedArray() }, { it.reversedArray() })
+        WeakFixture(f.directory("partial-provider")).use { provider ->
+            val id = f.add(provider)
+            val schedule = LanSyncGroupCloudSchedule(f.clock::get, { 0 })
+            val runtime = f.runtime(schedule)
+            assertFalse(runtime.cycle())
+            val partial = f.latest().getValue(id)
+            assertFalse(partial.selectionObserved); assertNull(partial.lastObservedAt)
+            assertNotNull(partial.lastPartialObservedAt)
+            val counts = requireNotNull(partial.partial)
+            assertTrue(counts.completeUnitPackages > 0); assertTrue(counts.pendingUnitPackages > 0)
+            assertEquals(0, counts.pendingControlSlots); assertNull(schedule.state(id)?.failure)
+            val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id)
+            val route = f.access.work.resolve("cloud-runtime/${id.value}")
+            val owner = f.access.partialTargetPublication(route.resolve("target"), target)
+            val receipt = requireNotNull(owner.receipt())
+            assertEquals(setOf(f.source.entry.version.reference(), second.entry.version.reference()), receipt.scope.wantedVersionRefs)
+            assertEquals(setOf(LanSyncGroupPartialUnitRef(second.entry.version.reference(), "character_cards/second")),
+                receipt.observedSelection.completeUnitPackages.map { it.ref }.toSet())
+            assertFalse(receipt.observedSelection.originalScopeComplete)
+            assertNull(f.access.targetPublication(route.resolve("target"), target, prepare = false).cloudReceipt())
+            val oldPuts = provider.dav.puts.toList()
+            assertTrue(oldPuts.isNotEmpty())
+            val changedDuringPartial = AtomicBoolean()
+            f.onReport = { report ->
+                if ((report[id]?.partial?.observedObjects ?: 0) > 0 && changedDuringPartial.compareAndSet(false, true)) runtime.markDirty()
+            }
+            f.clock.addAndGet(60_000)
+            assertFalse(runtime.cycle())
+            assertTrue(changedDuringPartial.get())
+            assertFalse(f.latest().getValue(id).selectionObserved)
+            assertNull(f.latest().getValue(id).partial, "A later source revision fences old-scope counters, including final callbacks")
+            assertEquals(partial.lastPartialObservedAt, f.latest().getValue(id).lastPartialObservedAt)
+            f.onReport = {}
+            unavailable.set(false); f.clock.addAndGet(60_000); runtime.markDirty()
+            assertTrue(runtime.cycle())
+            val complete = f.latest().getValue(id)
+            assertTrue(complete.selectionObserved); assertNotNull(complete.lastObservedAt); assertNull(complete.partial)
+            val full = requireNotNull(f.access.targetPublication(route.resolve("target"), target, prepare = false).cloudReceipt())
+            assertTrue(full.objects.any { it.evidence is LanSyncGroupCloudTargetEvidence.Existing })
+            for (path in oldPuts) assertEquals(1, provider.dav.puts.count { it == path })
+            assertEquals(2L, f.author().state().committedSequence)
+            assertEquals(f.source.entry, f.author().entry(f.source.entry.request.operation))
+            assertEquals(second.entry, f.author().entry(second.entry.request.operation))
+            assertContentEquals(f.origin, Files.readAllBytes(f.admin.profile.resolve("node/author/origin.protected")))
+            assertContentEquals(f.raw, Files.readAllBytes(f.card)); assertContentEquals(secondBytes, Files.readAllBytes(secondPath))
+            assertEquals(0, f.reloads.get())
         }
     }
 
@@ -451,7 +534,7 @@ class LanSyncGroupCloudRuntimeTest {
     }
 
     @Test fun aRateLimitedAssemblyGetCannotReuseHistoricalCompletionOrBypassItsFailureFloor() {
-        for ((status, retryAfter) in listOf(429 to null, 503 to null, 503 to "0", 429 to "120")) fixture { f ->
+        for ((status, retryAfter) in listOf(401 to null, 403 to null, 429 to null, 503 to null, 503 to "0", 429 to "120")) fixture { f ->
             WeakFixture(f.directory("assembly-backoff-provider")).use { provider ->
                 val id = f.add(provider)
                 val schedule = LanSyncGroupCloudSchedule(f.clock::get, { 0 })
@@ -475,9 +558,15 @@ class LanSyncGroupCloudRuntimeTest {
                 assertEquals(wakes, f.wakes.get())
                 val requests = provider.server.requestCount
                 assertEquals(requestsAtResponse.get(), requests, "No further provider HTTP is allowed after this route is throttled")
-                val floor = if (retryAfter == "120") 120_000L else 15_000L
+                val floor = if (status == 401 || status == 403) 1_800_000L else if (retryAfter == "120") 120_000L else 15_000L
                 assertEquals(floor, runtime.nextDelayMillis())
-                assertEquals(LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT, schedule.state(id)?.failure)
+                val expectedFailure = when (status) {
+                    401 -> LanSyncGroupCloudSchedule.FailureCategory.AUTHENTICATION
+                    403 -> LanSyncGroupCloudSchedule.FailureCategory.PERMISSION
+                    else -> LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT
+                }
+                assertEquals(expectedFailure, schedule.state(id)?.failure)
+                assertEquals(status == 401 || status == 403, schedule.state(id)?.needsConfiguration)
                 assertFalse(f.latest().getValue(id).selectionObserved)
                 assertEquals(observed, f.latest().getValue(id).lastObservedAt)
                 assertEquals(original, f.access.targetPublication(target,

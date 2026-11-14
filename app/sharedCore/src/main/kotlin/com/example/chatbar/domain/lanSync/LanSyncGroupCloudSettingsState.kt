@@ -2,8 +2,15 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.SyncStoreId
 
+data class LanSyncGroupCloudPartialProgress(val completeUnitPackages: Int, val pendingUnitPackages: Int,
+    val pendingControlSlots: Int, val observedObjects: Int, val availableObjects: Int) {
+    val text: String get() = "已核验 $completeUnitPackages 项资料版本，$pendingUnitPackages 项待补齐" +
+        if (pendingControlSlots > 0) "；设备组恢复资料尚未齐全" else ""
+}
+
 data class LanSyncGroupCloudRouteProgress(val text: String, val lastObservedAt: Long? = null,
-    val pendingOperations: Int? = null, val selectionObserved: Boolean = false) {
+    val pendingOperations: Int? = null, val selectionObserved: Boolean = false,
+    val partial: LanSyncGroupCloudPartialProgress? = null, val lastPartialObservedAt: Long? = null) {
     override fun toString() = "LanSyncGroupCloudRouteProgress(REDACTED)"
 }
 

@@ -203,6 +203,39 @@ class LanSyncGroupTargetPublication internal constructor(private val root: Path,
             plan
         } finally { pool.close() }
     } }
+    /** Borrow the exact authenticated private preparation; exporting it creates no target receipt. */
+    internal fun <T> withPreparedSource(consume: (LanSyncGroupTargetPlan, CiphertextStore) -> T): T = guarded {
+        proof.requireLive()
+        val plan = requireNotNull(readPlan()) { "SYNC_GROUP_TARGET_PLAN_MISSING" }
+        validate(plan, retained)
+        val objects = plan.objects.associate { it.key to CiphertextObjectMetadata(it.key, it.descriptor) }
+        val open = java.util.concurrent.atomic.AtomicBoolean(true)
+        fun active() { check(open.get()) { "SYNC_GROUP_TARGET_BORROW_CLOSED" }; proof.requireLive() }
+        val source = object : CiphertextStore {
+            override val capabilities = retained.capabilities
+            override fun put(request: CiphertextPutRequest, source: java.io.InputStream): CiphertextPutResult =
+                throw CiphertextStoreException(CiphertextStoreFailure.UNSUPPORTED)
+            override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? {
+                active(); val expected = objects[key] ?: return null
+                require(retained.metadata(key) == expected) { "SYNC_GROUP_TARGET_HISTORICAL_OBJECT_CHANGED" }
+                active(); return expected
+            }
+            override fun readTo(key: CiphertextObjectKey, destination: java.io.OutputStream,
+                expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                active(); val selected = objects[key]?.takeIf { expected == null || it.descriptor == expected } ?: return null
+                val sink = object : java.io.OutputStream() {
+                    override fun write(value: Int) { active(); destination.write(value); active() }
+                    override fun write(bytes: ByteArray, offset: Int, length: Int) { active(); destination.write(bytes, offset, length); active() }
+                }
+                val actual = retained.readTo(key, sink, selected.descriptor)
+                require(actual == selected) { "SYNC_GROUP_TARGET_HISTORICAL_OBJECT_CHANGED" }
+                active(); return actual
+            }
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = error("SYNC_GROUP_TARGET_EXACT_READ_REQUIRED")
+        }
+        try { consume(plan, source) } finally { open.set(false) }
+    }
+
     /** Fixed-route historical receipt. Does not inspect remote freshness. */
     fun receipt(): LanSyncGroupTargetReceipt? = guarded {
         proof.requireLive()

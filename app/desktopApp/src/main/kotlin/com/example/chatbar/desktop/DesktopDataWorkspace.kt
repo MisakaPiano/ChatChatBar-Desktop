@@ -22,7 +22,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     lanSync: com.example.chatbar.domain.lanSync.LanSyncRuntime? = null,
     lanSyncGroup: com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator? = null,
     legacyLanSync: (() -> com.example.chatbar.domain.lanSync.LanSyncRuntime)? = null,
-    hasLanSyncGroupEvidence: () -> Boolean = { false }) {
+    hasLanSyncGroupEvidence: () -> Boolean = { false }, lanSyncFilePicker: DesktopFilePicker? = null) {
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val rootState by root.state.collectAsState()
@@ -123,7 +123,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
                 DesktopDataRootPanel(root, onExit)
             } }
             if (page == DataPage.LAN) {
-                if (lanSyncGroup != null) DesktopLanSyncEntry(lanSyncGroup, legacyLanSync, hasLanSyncGroupEvidence)
+                if (lanSyncGroup != null) DesktopLanSyncEntry(lanSyncGroup, legacyLanSync, hasLanSyncGroupEvidence, lanSyncFilePicker)
                 else lanSync?.let { DesktopLanSyncPanel(it) }
             }
             DesktopRetainedPane(page == DataPage.AUTO) { DataWorkspaceScroll { DesktopAutomaticBackupSettingsPanel(automatic) } }

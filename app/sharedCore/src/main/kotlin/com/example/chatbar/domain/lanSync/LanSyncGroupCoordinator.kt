@@ -22,7 +22,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false,
     private val cloudWorkAllowed: () -> Boolean = { true },
     private val cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
-    private val cloudRecoveryFactory: ((suspend (LanSyncGroupRuntimeAccess) -> Unit) -> LanSyncGroupCloudRecoveryOwner)? = null) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
+    private val cloudRecoveryFactory: ((suspend (LanSyncGroupRuntimeAccess) -> Unit) -> LanSyncGroupCloudRecoveryOwner)? = null,
+    private val fileRecoveryFactory: ((suspend (LanSyncGroupRuntimeAccess) -> Unit) -> LanSyncGroupFileRecoveryOwner)? = null,
+    private val fileWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
     /** Actual synthetic transport construction only; production always uses the public constructor. */
     internal constructor(hasExistingEvidence: () -> Boolean, enrollment: () -> LanSyncGroupEnrollment,
         joining: () -> LanSyncGroupJoining, network: LanSyncNetwork, deviceName: String,
@@ -41,11 +43,86 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val cloudRecoveryOwner = lazy {
         cloudRecoveryFactory?.invoke { restored -> admission.withLock {
             check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
+            mutableState.update { it.copy(canResumeExternalRecovery = true) }
             attach(restored)
         } }
     }
     val cloudRecovery: LanSyncGroupCloudRecoveryOwner? get() = synchronized(lifecycle) {
         if (closed) null else cloudRecoveryOwner.value
+    }
+    private val fileRecoveryOwner = lazy {
+        fileRecoveryFactory?.invoke { restored -> admission.withLock {
+            check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
+            mutableState.update { it.copy(canResumeExternalRecovery = true) }
+            attach(restored)
+        } }
+    }
+    val fileRecovery: LanSyncGroupFileRecoveryOwner? get() = synchronized(lifecycle) {
+        if (closed) null else fileRecoveryOwner.value
+    }
+    private val fileExportOwner = lazy {
+        LanSyncGroupEncryptedFileExportOwner(LanSyncGroupFilePackagePreparer { checkActive, receive ->
+            val current = admission.withLock {
+                checkActive(); check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
+                requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+                // Explicit export seals only safe local proposals. It never applies incoming data.
+                check(cycle(force = true, shutdown = true)) { "SYNC_GROUP_FILE_EXPORT_LOCAL_NOT_READY" }
+                requestCloudCheck(dirty = true)
+                requireNotNull(access)
+            }
+            checkActive()
+            val directory = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+                current.work.resolve("file-export").also {
+                    if (!java.nio.file.Files.exists(it, java.nio.file.LinkOption.NOFOLLOW_LINKS)) java.nio.file.Files.createDirectory(it)
+                    lanSyncSafe(it, true)
+                }
+            }
+            current.prepareEncryptedFile(directory, checkActive, receive)
+        }, fileWork)
+    }
+    val fileExport: LanSyncGroupEncryptedFileExportOwner? get() = synchronized(lifecycle) {
+        if (closed) null else fileExportOwner.value
+    }
+    private fun externalRecoveryAllowed(): Boolean {
+        val current = mutableState.value
+        return current.stage == LanSyncGroupPanelStage.EMPTY || current.stage == LanSyncGroupPanelStage.JOINING ||
+            current.stage == LanSyncGroupPanelStage.READY && current.canResumeExternalRecovery
+    }
+    fun openCloudRecovery(): Unit = synchronized(lifecycle) {
+        if (closed || !externalRecoveryAllowed()) return@synchronized
+        if (fileRecoveryOwner.isInitialized() && fileRecoveryOwner.value?.state?.value?.busy == true) {
+            mutableState.update { it.copy(status = "加密文件恢复仍在进行，请先继续或停止当前恢复") }; return@synchronized
+        }
+        if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.lock()
+        cloudRecoveryOwner.value?.open()
+        Unit
+    }
+    fun openFileRecovery(): Unit = synchronized(lifecycle) {
+        if (closed || !externalRecoveryAllowed()) return@synchronized
+        if (cloudRecoveryOwner.isInitialized() && cloudRecoveryOwner.value?.state?.value?.busy == true) {
+            mutableState.update { it.copy(status = "网盘恢复仍在进行，请先继续或停止当前恢复") }; return@synchronized
+        }
+        if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.lock()
+        fileRecoveryOwner.value?.open()
+        Unit
+    }
+    fun openFileExport() = synchronized(lifecycle) { if (!closed) fileExportOwner.value.open() }
+    /** Preparation admission also guards delayed picker callbacks, not only modal opening. */
+    fun prepareCloudRecovery(draft: LanSyncGroupCloudDraft, code: String): Boolean = synchronized(lifecycle) {
+        if (closed || !externalRecoveryAllowed() || cloudRecoveryOwner.value == null) return@synchronized false
+        if (cloudRecoveryOwner.value?.state?.value?.busy == true ||
+            fileRecoveryOwner.isInitialized() && fileRecoveryOwner.value?.state?.value?.busy == true) return@synchronized false
+        if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.lock()
+        requireNotNull(cloudRecoveryOwner.value).prepare(draft, code)
+        true
+    }
+    fun prepareFileRecovery(file: () -> java.io.InputStream, code: String): Boolean = synchronized(lifecycle) {
+        if (closed || !externalRecoveryAllowed() || fileRecoveryOwner.value == null) return@synchronized false
+        if (fileRecoveryOwner.value?.state?.value?.busy == true ||
+            cloudRecoveryOwner.isInitialized() && cloudRecoveryOwner.value?.state?.value?.busy == true) return@synchronized false
+        if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.lock()
+        requireNotNull(fileRecoveryOwner.value).prepare(file, code)
+        true
     }
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
     private val mutableState = MutableStateFlow(LanSyncGroupPanelState(paused = initiallyPaused))
@@ -157,6 +234,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     fun cancelCloudWork() {
         cloudRuntime?.pause()
         if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.lock()
+        if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.lock()
+        if (fileExportOwner.isInitialized() && fileExportOwner.value.state.value.busy) fileExportOwner.value.lock()
     }
     private fun requestCloudCheck(dirty: Boolean = false) {
         if (closed) return
@@ -226,11 +305,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
         } else {
             val joined = member().profile()
+            val recovery = joined != null && member().recoveryAnchor() != null
+            mutableState.update { it.copy(canResumeExternalRecovery = recovery) }
             if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()))
             else if (joined != null) {
-                val recovery = member().recoveryAnchor() != null
                 mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = recovery,
-                    status = if (recovery) "网盘恢复进度已保留，请从网盘恢复入口接续" else "加入进度已保留，等待设备批准或重试") }
+                    status = if (recovery) "恢复进度已保留，可从网盘或加密文件入口接续" else "加入进度已保留，等待设备批准或重试") }
                 if (!recovery) startLoop()
             } else error("SYNC_GROUP_EXISTING_EVIDENCE_REQUIRES_RECOVERY")
         }
@@ -319,6 +399,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     override fun lockManagement() {
         if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.hide()
+        if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.hide()
+        if (fileExportOwner.isInitialized()) fileExportOwner.value.hide()
         synchronized(lifecycle) {
             closeCloudSettings()
             privacyGeneration++
@@ -350,7 +432,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (profile.stage == LanSyncGroupJoinStage.READY) { attach(requireNotNull(owner.runtimeAccess())); return }
         if (owner.recoveryAnchor() != null) {
             mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = true,
-                status = "网盘恢复进度已保留，请从网盘恢复入口接续") }
+                status = "恢复进度已保留，可从网盘或加密文件入口接续") }
             return
         }
         if (profile.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED)) {
@@ -954,6 +1036,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
             lockManagement(); closeRecovery()
             if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.let { it.lock(); it.drain() }
+            if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.let { it.lock(); it.drain() }
+            if (fileExportOwner.isInitialized()) fileExportOwner.value.let { it.lock(); it.drain() }
             cancelCloudWork()
             drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()
@@ -977,6 +1061,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
             lockManagement(); closeRecovery()
             if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.closeAndDrain()
+            if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.closeAndDrain()
+            if (fileExportOwner.isInitialized()) fileExportOwner.value.closeAndDrain()
             cancelCloudWork()
             drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()

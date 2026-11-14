@@ -114,6 +114,12 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                 root = { localRoot.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
                 joining = { groupJoining }, deviceName = "CCB 电脑",
                 beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
+                onReady = ready) },
+            fileRecoveryFactory = { ready -> LanSyncGroupFileRecoveryOwner(
+                // Share the original management origin across file and cloud recovery.
+                root = { localRoot.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
+                joining = { groupJoining }, deviceName = "CCB 电脑",
+                beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
                 onReady = ready) }).also { coordinator ->
                 networkMonitorObserver = networkMonitorScope.launch {
                     coordinator.state.collect {
