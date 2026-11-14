@@ -52,6 +52,7 @@ class SyncGroupFileLargeNativeProofTest {
         org.junit.Assume.assumeTrue("requires explicit synthetic encrypted-file large proof runner",
             System.getenv("CCB_GROUP_FILE_LARGE_PROOF") == "true")
         val root = Files.createTempDirectory("synthetic-group-file-large-").toRealPath()
+        val progress = LargeProofProgress("FILE")
         val started = System.nanoTime()
         val peakHeap = AtomicLong()
         val initialFree = Files.getFileStore(root).usableSpace
@@ -61,15 +62,18 @@ class SyncGroupFileLargeNativeProofTest {
         val enrollments = mutableListOf<LanSyncGroupEnrollment>()
         val recoveries = mutableListOf<LanSyncGroupFileRecoveryOwner>()
         try {
+            progress.stage("PREFLIGHT")
             require(initialFree >= 14L * 1024 * 1024 * 1024) { "SYNTHETIC_GROUP_FILE_PROOF_NEEDS_14_GIB_FREE_DISK" }
             sampler = launch(Dispatchers.IO) {
                 while (isActive) {
                     val vm = Runtime.getRuntime()
                     peakHeap.accumulateAndGet(vm.totalMemory() - vm.freeMemory(), ::maxOf)
                     minimumFree.accumulateAndGet(Files.getFileStore(root).usableSpace, ::minOf)
+                    progress.sample()
                     delay(100)
                 }
             }
+            progress.stage("FIXTURE_GENERATION")
             fun directory(name: String) = Files.createDirectory(root.resolve(name))
             val treePreflight = directory("tree-preflight")
             Files.createFile(treePreflight.resolve("empty-bookkeeping.lock"))
@@ -113,6 +117,7 @@ class SyncGroupFileLargeNativeProofTest {
             assertTrue(resourceBytes > 1024L * 1024 * 1024)
             assertTrue(expectedResources.values.none { it > 1024L * 1024 * 1024 })
 
+            progress.stage("SOURCE_CAPTURE_AND_LOCAL_SEAL")
             val initial = sourceAccess.node.inspectLocal()
             val expectedRecords = requireNotNull(initial.plan).expected
             val review = initial.review(expectedRecords.keys)
@@ -143,8 +148,10 @@ class SyncGroupFileLargeNativeProofTest {
             val exportRoot = directory("derived-file-export")
             val portable = root.resolve("actual-portable.cbgroup")
             var exported: CiphertextDescriptor? = null
+            progress.stage("PREPARE_EXPORT")
             sourceAccess.prepareEncryptedFile(exportRoot, {}) { prepared ->
                 prepared.use {
+                    progress.stage("EXTERNAL_WRITE_AND_READBACK")
                     Files.newOutputStream(portable).use { output -> it.writeTo(output) }
                     Files.newInputStream(portable).use { input -> LanSyncGroupEncryptedFilePackage.verifyReadback(input, it.descriptor) }
                     exported = it.descriptor
@@ -163,6 +170,7 @@ class SyncGroupFileLargeNativeProofTest {
             }
             // The prepared file has closed, and both source owners are now closed before any
             // filesystem-tree snapshot. No retry worker may mutate these proof-owned roots.
+            progress.stage("SOURCE_CLOSE_AND_TREE_HASHES")
             enrollment.close(); admin.close()
             val rebuildableBytes = tree(exportRoot).values.fold(0L) { sum, item -> Math.addExact(sum, item.length) }
             val sourceBefore = tree(admin.root)
@@ -246,6 +254,7 @@ class SyncGroupFileLargeNativeProofTest {
             val interrupted = AtomicBoolean()
             val first = owner { point -> if (point == "FILE_RECOVERY_DATA_PHASE" && interrupted.compareAndSet(false, true))
                 throw IOException("SYNTHETIC_FILE_LARGE_APPROVAL_HANDOFF_INTERRUPTED") }
+            progress.stage("FIRST_PRIVATE_STAGE_AND_REVIEW")
             val firstReview = review(first)
             assertEquals(trust.group.value, firstReview.group)
             assertEquals(0L, managementState().completedSequence)
@@ -253,6 +262,7 @@ class SyncGroupFileLargeNativeProofTest {
             val managementOrigin = Files.readAllBytes(originPath)
             val beforeMember = requireNotNull(joining().recoveryMember())
             val recipientBefore = tree(dailyRoot.resolve("joining/recipient"))
+            progress.stage("FIRST_CONFIRM_INJECTED_INTERRUPTION")
             first.confirm(firstReview.binding)
             val failed = withTimeout(20 * 60_000L) { first.state.first { !it.busy && it.error != null } }
             assertTrue(interrupted.get()); assertFalse(failed.complete)
@@ -267,6 +277,7 @@ class SyncGroupFileLargeNativeProofTest {
             val signedRoot = tree(recoveryRoot.resolve("management/root-actions")).filterKeys { it.contains("signed") || it.contains("origin") }
             assertTrue(signedRoot.keys.any { it.contains("signed") })
 
+            progress.stage("COLD_OWNER_STAGE_AND_REVIEW")
             val second = owner()
             val resumed = review(second)
             assertEquals(firstReview.device, resumed.device)
@@ -274,6 +285,7 @@ class SyncGroupFileLargeNativeProofTest {
             assertEquals(recipientBefore, tree(dailyRoot.resolve("joining/recipient")))
             assertEquals(approved, managementState())
             assertContentEquals(managementOrigin, Files.readAllBytes(originPath))
+            progress.stage("RECOVER_AND_NATIVE_APPLY")
             second.confirm(resumed.binding)
             val access = withTimeout(20 * 60_000L) { ready.await() }
             withTimeout(20 * 60_000L) { second.drain() }
@@ -293,6 +305,7 @@ class SyncGroupFileLargeNativeProofTest {
             assertEquals(0L, author.state().committedSequence); assertTrue(access.node.sourceOperations().isEmpty())
             val nativeSequence = access.node.inspectLocal().nativeState.completedSequence
             assertTrue(nativeSequence > 0)
+            progress.stage("NATIVE_RESOURCE_HASHES")
             workspace().capture(access.device).use { capture ->
                 assertEquals(expectedRecords, capture.snapshot.hashes()); assertEquals(expectedResources, capture.snapshot.resources)
                 assertEquals(expectedResources.keys, capture.blobs.keys)
@@ -304,6 +317,7 @@ class SyncGroupFileLargeNativeProofTest {
             assertEquals(packageHash, LanSyncResourceStore.hashFile(restoredArchive, Files.size(restoredArchive)))
             val restoredSession = JsonFileStorage(dailyData).loadAll("chat_sessions", ChatSession.serializer()).single()
             assertNull(restoredSession.modelId, "An empty receiver follows its local default; the source's private model choice is excluded")
+            progress.stage("COLD_RUNTIME_RESOURCE_HASHES")
             second.closeAndDrain()
             val cold = requireNotNull(joining().runtimeAccess())
             assertEquals(access.device, cold.device); assertEquals(access.certificate, cold.certificate)
@@ -315,6 +329,7 @@ class SyncGroupFileLargeNativeProofTest {
             assertEquals(approved, managementState())
             assertEquals(0L, author.state().committedSequence)
             assertNull(JsonFileStorage(dailyData).loadAll("chat_sessions", ChatSession.serializer()).single().modelId)
+            progress.stage("SOURCE_CUSTODY_AND_EXTERNAL_FILE_HASHES")
             assertEquals(sourceBefore, tree(offline))
             assertEquals("synthetic-private-model", LanSyncJsonFiles.read(offline.resolve("data/$sourceSessionRelative"), ChatSession.serializer())?.modelId)
             originalCustody.verify(sourceCheckpoint)
@@ -327,6 +342,7 @@ class SyncGroupFileLargeNativeProofTest {
             assertEquals(Math.multiplyExact(2L, descriptor.length), inputBytes.get())
 
             sampler?.cancelAndJoin(); sampler = null
+            progress.stage("FINAL_REPORT")
             println("CCB_GROUP_FILE_LARGE_PROOF " + buildJsonObject {
                 put("fullyWrittenResourceBytes", resourceBytes); put("ordinaryDocumentCount", documents.size)
                 put("ordinaryDocumentBytesEach", documentLength); put("v8StoredArchiveBytes", archiveLength)
@@ -352,6 +368,7 @@ class SyncGroupFileLargeNativeProofTest {
             })
         } finally {
             withContext(NonCancellable) {
+                progress.stage("CLEANUP")
                 try { sampler?.cancelAndJoin() } finally {
                     var failure: Throwable? = null
                     fun failed(next: Throwable) { if (failure == null) failure = next else if (failure !== next) failure?.addSuppressed(next) }

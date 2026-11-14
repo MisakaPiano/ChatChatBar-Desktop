@@ -231,6 +231,29 @@ class ProofScopeTest(unittest.TestCase):
         common, _ = self.control_scope(paths + [scope.LAN + "LanSyncWorkspace.kt"])
         self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), common.required)
 
+    def test_exact_progress_helper_and_cloud_fixture_keep_focus_but_require_their_independent_byte_jobs(self):
+        prefix = "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/"
+        helper = prefix + "LargeProofProgress.kt"
+        cloud = prefix + "SyncGroupCloudLargeNativeProofTest.kt"
+        file = prefix + "SyncGroupFileLargeNativeProofTest.kt"
+        request = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
+        paths = [helper, cloud, file, scope.LAN + "LanSyncGroupFileRecoveryOwner.kt"]
+        git = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: paths}, ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+        self.assertEqual("file-recovery-owner", scope.select_android_scope(git, HEAD, request).mode)
+        for changed, expected in (([helper], {"legacy": False, "group": False, "cloud": True, "file": True}),
+                                  ([cloud], {"legacy": False, "group": False, "cloud": True, "file": False}),
+                                  (paths, {"legacy": False, "group": False, "cloud": True, "file": True})):
+            with self.subTest(changed=changed):
+                proof, _ = self.control_scope(changed)
+                self.assertEqual(expected, proof.required)
+        for neighbor in (prefix + "LargeProofProgressExtra.kt", prefix + "SyncGroupCloudLargeNativeProofTestExtra.kt"):
+            with self.subTest(neighbor=neighbor):
+                outside = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: paths + [neighbor]}, ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+                self.assertEqual("full", scope.select_android_scope(outside, HEAD, request).mode)
+                self.assertEqual((False, True), scope.classify([neighbor]))
+                self.assertTrue(scope.classify_cloud([neighbor]))
+                self.assertTrue(scope.classify_file([neighbor]))
+
     def test_focus_filter_or_baseline_injection_and_unavailable_diff_are_never_a_focused_success(self):
         valid = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
         for request in (dict(valid, tests="OtherTest; injected-command"), dict(valid, mode="arbitrary-filter"),
@@ -526,6 +549,40 @@ class ProofScopeTest(unittest.TestCase):
                         ":app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true"):
             self.assertEqual(2, android.count(command), command)
         self.assertNotRegex(android, r"--tests\s+['\"]?\$[({]")
+
+    def test_cloud_and_file_live_logging_is_exactly_scoped_and_preserves_failure_and_timeout_contracts(self):
+        workflow = (Path(__file__).resolve().parents[3] / scope.WORKFLOW_PATH).read_text(encoding="utf-8")
+        def job(name):
+            match = re.search(r"^  " + re.escape(name) + r":\n(.*?)(?=^  [A-Za-z][A-Za-z0-9_-]*:|\Z)",
+                              workflow, re.MULTILINE | re.DOTALL)
+            self.assertIsNotNone(match)
+            return match.group(1)
+        expected_init = ("          gradle.projectsEvaluated {\n"
+                         "            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {\n"
+                         "              testLogging.showStandardStreams = true\n"
+                         "            }\n"
+                         "          }\n")
+        for kind, minutes, case in (("cloud", 120, "SyncGroupCloudLargeNativeProofTest"),
+                                    ("file", 60, "SyncGroupFileLargeNativeProofTest")):
+            with self.subTest(kind=kind):
+                body = job(scope.PROOF_JOBS[kind].name)
+                self.assertIn("    timeout-minutes: " + str(minutes) + "\n", body)
+                self.assertIn("CCB_GROUP_" + kind.upper() + "_LARGE_PROOF: 'true'", body)
+                self.assertIn('proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"', body)
+                init = re.search(r'cat > "\$proof_logging_init" <<\x27GROOVY\x27\n(.*?)^          GROOVY$',
+                                 body, re.MULTILINE | re.DOTALL)
+                self.assertIsNotNone(init)
+                self.assertEqual(expected_init, init.group(1))
+                command = ('./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests '
+                           "'com.example.chatbar.domain.syncStoreProof." + case + "' --no-daemon --stacktrace")
+                self.assertIn(command, body)
+                self.assertEqual(1, body.count("./gradlew :sharedCore:test"))
+                self.assertNotRegex(body, r"ignoreFailures|continue-on-error|--dry-run|--test-dry-run|\|\|\s*true")
+        for kind in ("legacy", "group"):
+            body = job(scope.PROOF_JOBS[kind].name)
+            self.assertIn("    timeout-minutes: 45\n", body)
+            self.assertNotIn("proof_logging_init", body)
+            self.assertNotIn("--init-script", body)
 
     def test_api_failures_are_full_proof_and_do_not_echo_exception_secrets_or_urls(self):
         api = SyntheticApi()

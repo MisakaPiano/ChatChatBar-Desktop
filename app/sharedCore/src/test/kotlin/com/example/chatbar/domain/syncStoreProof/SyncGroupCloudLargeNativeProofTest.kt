@@ -93,11 +93,18 @@ class SyncGroupCloudLargeNativeProofTest {
         val enrollments = mutableListOf<LanSyncGroupEnrollment>()
         val runtimes = mutableListOf<LanSyncGroupCloudRuntime>()
         var provider: CloudFileDav? = null; var receiveTransport: WebDavHttpTransport? = null
+        val progress = LargeProofProgress("CLOUD") {
+            provider?.let { dav -> mapOf("requests" to dav.requests.get(), "authorizedRequests" to dav.authorizedRequests.get(),
+                "putBytes" to dav.putBytes.get(), "storedPutBytes" to dav.storedPutBytes.get(), "getBytes" to dav.getBytes.get(),
+                "completedPhysicalObjects" to dav.completedPaths.size.toLong()) } ?: emptyMap()
+        }
         val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(120, TimeUnit.SECONDS).build()
         try {
+            progress.stage("FIXTURE_SETUP")
             require(minimumFree.get() >= 14L * 1024 * 1024 * 1024) { "SYNTHETIC_CLOUD_GROUP_PROOF_NEEDS_14_GIB_FREE_DISK" }
             sampler = launch(Dispatchers.IO) { while (isActive) {
+                progress.sample()
                 val vm = Runtime.getRuntime()
                 peakHeap.accumulateAndGet(vm.totalMemory() - vm.freeMemory(), ::maxOf)
                 minimumFree.accumulateAndGet(Files.getFileStore(root).usableSpace, ::minOf)
@@ -131,6 +138,7 @@ class SyncGroupCloudLargeNativeProofTest {
             var access = requireNotNull(firstEnrollment.runtimeAccess())
             var cursor: CommitCursor? = null
             do { cursor = access.node.discover(access.replica, cursor).nextCursor } while (cursor != null)
+            progress.stage("SOURCE_RESOURCE_GENERATION")
             val length = 268_500_992L; val expected = linkedMapOf<String, Long>()
             val documents = (0..3).map { index ->
                 val path = admin.data.resolve("documents/full-$index.bin")
@@ -146,6 +154,7 @@ class SyncGroupCloudLargeNativeProofTest {
             write(admin.data, "save_slots", slot.id, SaveSlot.serializer(), slot)
             val total = expected.values.fold(0L, Math::addExact)
             assertEquals(5, expected.size); assertTrue(total > 1024L * 1024 * 1024)
+            progress.stage("SOURCE_PREPARATION")
             val initial = access.node.inspectLocal()
             val expectedHashes = requireNotNull(initial.plan).expected
             val review = initial.review(expectedHashes.keys)
@@ -169,6 +178,7 @@ class SyncGroupCloudLargeNativeProofTest {
                 { it.reversedArray() }, { it.reversedArray() })
             assertEquals(1L, author().state().committedSequence)
 
+            progress.stage("OUTGOING_SETUP")
             val username = "synthetic user"; val password = "synthetic password"
             val dav = CloudFileDav(directory("provider"), Credentials.basic(username, password, Charsets.UTF_8)).also { provider = it }
             val catalogRoot = directory("catalog")
@@ -184,6 +194,7 @@ class SyncGroupCloudLargeNativeProofTest {
                 { reports = it }, catalog(), client, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).also(runtimes::add)
             val firstRuntime = runtime()
             val interruptThreshold = 64L * 1024 * 1024 + 123
+            progress.stage("OUTGOING_INTERRUPTED_CYCLE")
             dav.interruptNextPutAfter(interruptThreshold)
             assertFalse(firstRuntime.cycle(recoverNative = false, outgoingOnly = true))
             assertFalse(reports.getValue(route).selectionObserved)
@@ -196,6 +207,7 @@ class SyncGroupCloudLargeNativeProofTest {
             assertTrue(completeChunks.isNotEmpty())
             val putBeforeResume = dav.putBytes.get(); val getBeforeResume = dav.getBytes.get()
             assertNull(access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).cloudReceipt())
+            progress.stage("COLD_SOURCE_REOPEN")
             firstRuntime.close(); firstRuntime.drain(); firstEnrollment.close()
 
             // Independent custody and encrypted queues remain. No original attachment or warm cache can supply resume.
@@ -207,9 +219,12 @@ class SyncGroupCloudLargeNativeProofTest {
             access = requireNotNull(enrollment().runtimeAccess())
             assertFalse(Files.exists(state.resolve("resources")))
             assertTrue(requireNotNull(access.node.reconcileForPrefetch().history).contains(version.reference()))
+            progress.stage("COLD_LOCAL_UPLOAD")
             assertEquals(local, access.node.upload(source.entry.request.operation, access.replica, access.localTarget, recoverNative = false))
             val resumedRuntime = runtime()
+            progress.stage("RESUMED_OUTGOING_CYCLE")
             assertTrue(resumedRuntime.cycle(recoverNative = false, outgoingOnly = true))
+            progress.stage("OUTGOING_READBACK_VERIFICATION")
             val observed = requireNotNull(reports.getValue(route).lastObservedAt)
             assertTrue(reports.getValue(route).selectionObserved)
             val receipt = requireNotNull(access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).cloudReceipt())
@@ -226,14 +241,17 @@ class SyncGroupCloudLargeNativeProofTest {
             assertTrue(dav.puts.values.all { it.get() == 1L }, "a physical attempt nonce is never overwritten")
             val resumedPutBytes = dav.putBytes.get() - putBeforeResume; val resumedGetBytes = dav.getBytes.get() - getBeforeResume
             val beforeRepeatPut = dav.putBytes.get(); val beforeRepeatGet = dav.getBytes.get(); val beforeRepeatRequests = dav.requests.get()
+            progress.stage("IDEMPOTENT_OUTGOING_CYCLE")
             assertTrue(resumedRuntime.cycle(recoverNative = false, outgoingOnly = true))
             val repeatedPutBytes = dav.putBytes.get() - beforeRepeatPut; val repeatedGetBytes = dav.getBytes.get() - beforeRepeatGet
             assertEquals(0L, repeatedPutBytes); assertEquals(0L, repeatedGetBytes)
             assertEquals(beforeRepeatRequests, dav.requests.get()); assertEquals(observed, reports.getValue(route).lastObservedAt)
             assertEquals(receipt, access.targetPublication(targetRoot, target, recoverNative = false, prepare = false).cloudReceipt())
+            progress.stage("OUTGOING_CLOSE")
             resumedRuntime.close(); resumedRuntime.drain()
 
             // Receiver has no source FileStore route or preinstalled epoch keys. All reads use actual HTTP assemblies.
+            progress.stage("INCOMING_SETUP")
             fun receiverTransport() = WebDavHttpTransport(dav.endpoint.toHttpUrl(), client,
                 { Credentials.basic(username, password, Charsets.UTF_8) }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).also { receiveTransport = it }
             val incomingRoot = directory("receiver-incoming-cache")
@@ -247,6 +265,7 @@ class SyncGroupCloudLargeNativeProofTest {
             val incomingBefore = dav.getBytes.get()
             val getCallsBefore = dav.getCalls.mapValues { it.value.get() }
             val getBytesBefore = dav.gets.mapValues { it.value.get() }
+            progress.stage("INCOMING_INTERRUPTION")
             dav.interruptNextGetAfter(incomingBefore + interruptThreshold)
             var partialCallerBytes = 0L
             assertFailsWith<IOException> {
@@ -270,6 +289,7 @@ class SyncGroupCloudLargeNativeProofTest {
             val parts = WeakWebDavChunkAssembly(transport, directory("receiver-parts-cold"), receiverRoute)
             val incoming = WeakWebDavIncomingChunkCache(incomingRoot, incomingScope)
             val assembledHash = MessageDigest.getInstance("SHA-256"); var assembledBytes = 0L
+            progress.stage("COLD_INCOMING_ASSEMBLY")
             val incomingResumed = requireNotNull(parts.readIncomingExact(large.key, large.descriptor, object : OutputStream() {
                 override fun write(value: Int) { assembledHash.update(value.toByte()); assembledBytes++ }
                 override fun write(bytes: ByteArray, offset: Int, count: Int) { assembledHash.update(bytes, offset, count); assembledBytes += count }
@@ -283,6 +303,7 @@ class SyncGroupCloudLargeNativeProofTest {
             fun receiverCustody() = SyncGroupCustody(receiverRoot, peer.trust.group, admin.joiningKey,
                 { it.reversedArray() }, { it.reversedArray() })
             val inbox = SyncGroupInbox(directory("receiver-inbox"), receive, receiverCustody(), admin.joiningKey)
+            progress.stage("RECEIVER_BOOTSTRAP")
             cursor = null
             do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
             val bootstrap = inbox.prepareEnrollment(peer.trust)
@@ -300,6 +321,7 @@ class SyncGroupCloudLargeNativeProofTest {
             val dependencies = LanSyncGroupDependencies(peer.trust.group, receive, receiverCustody(), directory("receiver-dependencies"),
                 receiverWorkspace.resourceStore, { kind, _, _ -> require(kind in setOf("documents", "packages")) })
             val evidence = LanSyncGroupRecordEvidence(requireNotNull(reconciled.history), requireNotNull(reconciled.ledgerCheckpoint))
+            progress.stage("RECEIVER_DEPENDENCIES")
             val inspected = version.changes.keys.associate { unit ->
                 val membership = dependencies.membership(reconciled, receivedVersion, unit)
                 assertEquals(LanSyncGroupDependencyStage.RECORD_MEMBERSHIP_AVAILABLE, membership.stage, membership.code)
@@ -308,6 +330,7 @@ class SyncGroupCloudLargeNativeProofTest {
                 assertEquals(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE, available.stage, available.code)
                 LanSyncGroupMembershipRequest(version.reference(), unit) to available
             }
+            progress.stage("NATIVE_PREPARATION")
             val nativePlan = receiverWorkspace.capture(admin.joiningIdentity.fingerprint).use { before ->
                 assertTrue(before.snapshot.records.isEmpty())
                 LanSyncGroupNativePlanner.prepare(before, reconciled, emptyMap(), inspected, evidence)
@@ -321,12 +344,14 @@ class SyncGroupCloudLargeNativeProofTest {
             fun native() = LanSyncGroupNativeApplyOwner(receiverControl, receiverWorkspace(), peer.trust,
                 Base64.getEncoder().encodeToString(admin.joiningIdentity.certificate.encoded), LanSyncProjection(),
                 { receiverCustody().ledger() }, { inbox.reconcile() }, { it.reversedArray() }, { it.reversedArray() }, authorJournal = receiverAuthor())
+            progress.stage("NATIVE_APPLY")
             native().initializeNewEnrollment()
             val nativeReceipt = requireNotNull(native().apply(nativePlan))
             assertEquals(LanSyncGroupNativeApplyStatus.APPLIED, nativeReceipt.status)
             assertEquals(version.changes.keys, nativeReceipt.advancedUnits)
             assertEquals(nativeReceipt, native().apply(nativePlan)); assertEquals(1L, native().state().completedSequence)
             assertEquals(0L, receiverAuthor().state().committedSequence)
+            progress.stage("FULL_HASH_VERIFICATION")
             receiverWorkspace().capture(admin.joiningIdentity.fingerprint).use { capture ->
                 assertEquals(expectedHashes, capture.snapshot.hashes()); assertEquals(expected, capture.snapshot.resources)
                 capture.blobs.forEach { (hash, path) -> assertEquals(hash, LanSyncResourceStore.hashFile(path, expected.getValue(hash))) }
@@ -347,6 +372,7 @@ class SyncGroupCloudLargeNativeProofTest {
             }
             assertTrue(dav.putBytes.get() > total); assertTrue(dav.getBytes.get() > total)
             assertEquals(dav.requests.get(), dav.authorizedRequests.get())
+            progress.stage("EVIDENCE_REPORT")
             sampler?.cancelAndJoin(); sampler = null
             println("CCB_GROUP_CLOUD_LARGE_PROOF " + buildJsonObject {
                 put("fullyWrittenResourceBytes", total); put("ordinaryDocumentCount", documents.size)
@@ -381,6 +407,7 @@ class SyncGroupCloudLargeNativeProofTest {
                 put("sampledPeakHeapBytes", peakHeap.get()); put("minimumSampledFreeDiskBytes", minimumFree.get())
             })
         } finally {
+            progress.stage("CLEANUP")
             withContext(NonCancellable) {
                 try { sampler?.cancelAndJoin() } finally {
                     try {

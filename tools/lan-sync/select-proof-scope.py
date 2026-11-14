@@ -118,6 +118,7 @@ LARGE_PROOF_HELPERS = {
     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRuntimeTest.kt": (True, False, False, False),
     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLoopbackTransport.kt": (False, True, False, False),
     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAdministrationTest.kt": (False, False, True, True),
+    GROUP_PROOF + "LargeProofProgress.kt": (False, False, True, True),
 }
 
 
@@ -234,6 +235,8 @@ ANDROID_FOCUS_FILES = CI_CONTROL_FILES | {
     LAN + "LanSyncGroupFileRecoveryOwner.kt",
     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/FileRecoveryOwnerTest.kt",
     GROUP_PROOF + "SyncGroupFileLargeNativeProofTest.kt",
+    GROUP_PROOF + "SyncGroupCloudLargeNativeProofTest.kt",
+    GROUP_PROOF + "LargeProofProgress.kt",
 }
 MAX_SOURCE_BYTES = 1024 * 1024
 PAGE_SIZE = 100

@@ -47,8 +47,16 @@ jobs:
       - name: Fully written encrypted file recovery and native activation proof
         working-directory: app
         run: |
+          proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"
+          cat > "$proof_logging_init" <<'GROOVY'
+          gradle.projectsEvaluated {
+            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {
+              testLogging.showStandardStreams = true
+            }
+          }
+          GROOVY
           chmod +x gradlew
-          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest' --no-daemon --stacktrace
+          ./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest' --no-daemon --stacktrace
       - name: Locate failed synthetic encrypted file case
         if: always()
         working-directory: app
@@ -75,7 +83,7 @@ jobs:
     needs: proof_scope
     if: needs.proof_scope.outputs.cloud_large == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       CCB_GROUP_CLOUD_LARGE_PROOF: 'true'
     steps:
@@ -88,8 +96,16 @@ jobs:
       - name: Fully written cloud chunk resume and native activation proof
         working-directory: app
         run: |
+          proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"
+          cat > "$proof_logging_init" <<'GROOVY'
+          gradle.projectsEvaluated {
+            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {
+              testLogging.showStandardStreams = true
+            }
+          }
+          GROOVY
           chmod +x gradlew
-          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupCloudLargeNativeProofTest' --no-daemon --stacktrace
+          ./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupCloudLargeNativeProofTest' --no-daemon --stacktrace
       - name: Locate failed synthetic cloud case
         if: always()
         working-directory: app
