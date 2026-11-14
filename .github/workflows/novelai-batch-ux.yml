@@ -2,6 +2,9 @@ name: NovelAI batch UX n2
 on:
   push:
     branches: ['feature/novelai-batch-ux-*']
+concurrency:
+  group: novelai-n2-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
