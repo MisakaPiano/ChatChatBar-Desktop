@@ -223,6 +223,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun closeForBackup() {
+        CrashReportManager.recordExpectedBackupExit(this)
         finishAndRemoveTask()
         android.os.Process.killProcess(android.os.Process.myPid())
     }

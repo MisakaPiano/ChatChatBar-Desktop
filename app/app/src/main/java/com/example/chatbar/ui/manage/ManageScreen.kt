@@ -318,6 +318,10 @@ fun ManageScreen(
     val importCharacter = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             runCatching {
+                if (viewModel.characterImportFileKind(uri, context) == com.example.chatbar.domain.card.CharacterImportFileKind.BACKUP) {
+                    ChatBarApp.instance.sharedImportCoordinator.enqueue(com.example.chatbar.domain.card.SharedImportSource.FileUri(uri))
+                    return@runCatching
+                }
                 val data = viewModel.decodeCharacterImport(uri, context)
                 val conflict = viewModel.findCharacterImportConflict(data)
                 if (conflict == null) {
