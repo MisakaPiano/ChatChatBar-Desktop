@@ -63,6 +63,7 @@ class DesktopCloudRecoveryUiControlTest {
         var failed: String? = null
         var failedType = "cleanup"
         var failedStack: Array<StackTraceElement>? = null
+        var observedRecovery: (() -> String)? = null
         var runner: Path? = null
         val owned = mutableListOf<Path>()
         val apps = mutableListOf<DesktopAppContainer>()
@@ -80,6 +81,7 @@ class DesktopCloudRecoveryUiControlTest {
             runBlocking(edt) {
                 for (save in listOf(false, true)) {
                     val mode = if (save) "save" else "restore"
+                    observedRecovery = null
                     fun makeApp(label: String): Pair<DesktopAppContainer, DesktopDataRootResolution.Resolved> {
                         val parent = Files.createTempDirectory(roots.runner, "ccb-recovery-ui-$mode-$label-").toRealPath()
                         check(parent.startsWith(roots.runner) && parent != roots.runner); owned.add(parent)
@@ -137,6 +139,11 @@ class DesktopCloudRecoveryUiControlTest {
                     phase = "$mode-empty-app-initialize"
                     val (receiver, resolved) = makeApp("receiver"); receiver.initializePersistentState()
                     val rc = receiver.lanSyncGroupCoordinator; val recovery = checkNotNull(rc.cloudRecovery); val rs = show(receiver)
+                    observedRecovery = {
+                        val value = recovery.state.value
+                        "stage=${rc.state.value.stage.name},busy=${value.busy},complete=${value.complete}," +
+                            "error=${value.error != null},review=${value.review != null},connection=${value.connectionEnabled}"
+                    }
                     phase = "$mode-empty-app-await-recovery-entry"
                     awaitScene(rs) { enabled(rs, "从网盘恢复设备组") }; check(!receiver.hasLanSyncGroupEvidence())
                     phase = "$mode-empty-app-open-recovery-popup"
@@ -169,8 +176,13 @@ class DesktopCloudRecoveryUiControlTest {
                     phase = "$mode-confirm-real-checkbox-choice"
                     check(toggle(rs, "恢复后保存此连接并继续自动同步") == ToggleableState.On)
                     if (!save) { click(rs, "恢复后保存此连接并继续自动同步"); check(toggle(rs, "恢复后保存此连接并继续自动同步") == ToggleableState.Off) }
+                    phase = "$mode-confirm-identity-checkbox"
+                    check(toggle(rs, "我已核对以上身份，并同意登记此设备") == ToggleableState.Off)
                     click(rs, "我已核对以上身份，并同意登记此设备")
+                    check(toggle(rs, "我已核对以上身份，并同意登记此设备") == ToggleableState.On)
+                    phase = "$mode-await-confirm-button"
                     awaitScene(rs) { enabled(rs, "登记此设备并恢复资料") }; click(rs, "登记此设备并恢复资料")
+                    phase = "$mode-await-native-recovery-completion"
                     awaitScene(rs) { recovery.state.value.complete && !recovery.state.value.busy && rc.state.value.stage == LanSyncGroupPanelStage.READY }
                     check(recovery.state.value.error == null)
                     check(receiver.characterRepository.getById(card.id) == card)
@@ -198,7 +210,7 @@ class DesktopCloudRecoveryUiControlTest {
                 }
             }
         } catch (failure: Throwable) {
-            failed = phase
+            failed = phase + (observedRecovery?.invoke()?.let { ":observed[$it]" } ?: "")
             failedType = failure.javaClass.simpleName
             failedStack = failure.stackTrace
         }
@@ -295,6 +307,8 @@ class DesktopCloudRecoveryUiControlTest {
                 !it.config.contains(SemanticsProperties.Disabled)
         }
     private suspend fun click(scene: ImageComposeScene, label: String) {
+        // Initial review effects may still reset remembered confirmation after its first frame.
+        settleScene(scene)
         val node = button(scene, label)
         check(!node.config.contains(SemanticsProperties.Disabled))
         val bounds = node.boundsInRoot

@@ -70,3 +70,11 @@ The action now yields and renders the actual UI before a new semantic read;
 review waits also require the real Checkbox row. The original Off assertion,
 user choices, native data checks and all prior failures remain intact. This is
 a control timing correction, not evidence that native recovery has completed.
+
+Run43634608139 finished the restore-only subcase, including native card and a
+new cold container, then timed out in the separate save=true subcase while
+waiting for the registration button. The failed original method stays failed;
+save=true registration/connection/native checks were not reached. Clicks now
+settle before as well as after the real action, and identity Off/On is asserted.
+Controlled phases include only observed enums and Booleans, never input, status
+or error-message contents. Registration and completion conditions remain strict.
