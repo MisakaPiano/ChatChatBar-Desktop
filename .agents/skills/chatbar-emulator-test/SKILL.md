@@ -95,3 +95,5 @@ Use the SDK platform-tools adb path when adb is not on PATH.
 - Emulator not listed: start chatbar_avd through emu.cmd, then verify boot state.
 - Keyboard unavailable: ensure hw.keyboard = yes in the AVD config and cold boot.
 - Emulator exits with terminal: launch detached through emu.cmd or cmd /c start.
+
+- FullChatScreenDeletionTest uses StandardTestDispatcher as the Compose effectContext for resumptions after actual storage IO. Passing Dispatchers.Main alone is not a TestDispatcher and does not select the test scheduler. This full-screen check is isolated in full-screen-harness.yml; ViewModel/storage and confirmation-widget tests remain separate evidence.

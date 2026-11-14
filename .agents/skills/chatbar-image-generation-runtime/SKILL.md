@@ -189,3 +189,5 @@ Use chatbar-character-card-ai for card cover/avatar candidate policy and chatbar
 - Tests: NovelAiAdvancedSettingsTest, NovelAiStudioLargeLoadTest, NovelAiInlinePayloadStoreTest. Large-load stress uses system property chatbar.largeMemoryRegression=true with Test.maxHeapSize=256m; synthetic 160 MiB draft plus 160 MiB history, no preset assets.
 
 - Image-tool reverse state keeps a nullable editable `reverseSceneDescription`; recognition and confirmed design are separate jobs, so user review holds no active task. Empty confirmation is disabled; editing invalidates a candidate, source replacement/removal clears scene and target, and retries can reuse edited text. `ReverseSceneConfirmationTest` checks explicit nonblank confirmation.
+
+- Chat image overview is distinct from Studio history, background libraries and Moments: ChatImageGalleryCollector streams current persisted message attachments, preserves repeated-path attachment identities and omitted indexes, and the shared viewer receives a fixed ChatImagePreviewRequest per explicit open. Source location loads a bounded message window before scrolling; refresh cannot replace an open viewer snapshot.
