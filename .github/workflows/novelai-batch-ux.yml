@@ -39,7 +39,7 @@ jobs:
         working-directory: app
         run: |
           chmod +x gradlew
-          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests '*ImageBatch*Test' --tests '*NovelAiImageRegenerationTest' --tests '*NovelAiStudioModelsTest' --tests '*ChatRepositoryBatchImagesTest' :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
       - name: Verify APK identity and signature
         shell: python
         run: |
