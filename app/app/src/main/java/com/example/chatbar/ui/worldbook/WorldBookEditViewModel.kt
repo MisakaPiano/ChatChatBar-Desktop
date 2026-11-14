@@ -933,6 +933,8 @@ class WorldBookEditViewModel(
         hasUnsavedDraftChanges = false
     }
 
+    fun promptFieldEstimates() = com.example.chatbar.domain.budget.EditorPromptFieldEstimates.worldBook(currentPayload())
+
     private fun currentPayload(): WorldBook {
         val now = System.currentTimeMillis()
         return _worldBook.value?.copy(

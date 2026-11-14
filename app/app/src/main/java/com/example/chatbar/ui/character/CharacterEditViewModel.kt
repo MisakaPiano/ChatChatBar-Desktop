@@ -2575,6 +2575,8 @@ class CharacterEditViewModel(
 
     private fun CharacterInfo.hasEditorContent(): Boolean = !CharacterPlaceholderPolicy.isEmpty(this)
 
+    fun promptFieldEstimates() = com.example.chatbar.domain.budget.EditorPromptFieldEstimates.character(buildCurrentCard(false))
+
     private fun buildCurrentCard(markDirty: Boolean): CharacterCard {
         val now = System.currentTimeMillis()
         val base = _characterCard.value

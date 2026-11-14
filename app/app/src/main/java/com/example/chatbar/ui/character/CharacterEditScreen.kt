@@ -491,6 +491,7 @@ fun CharacterEditScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SectionTitle("角色卡信息")
+            com.example.chatbar.ui.components.PromptFieldEstimatePanel(snapshot = viewModel::promptFieldEstimates)
             viewModel.draftSavedAt?.let { savedAt ->
                 CbText(
                     "草稿已保存 ${formatDraftSavedAt(savedAt)}",

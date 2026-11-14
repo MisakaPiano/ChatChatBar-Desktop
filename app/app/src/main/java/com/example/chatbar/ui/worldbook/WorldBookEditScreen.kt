@@ -161,6 +161,7 @@ fun WorldBookEditScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             CbText("基础信息", color = ChatBarTheme.colors.primary, style = ChatBarTheme.typography.heading)
+            com.example.chatbar.ui.components.PromptFieldEstimatePanel(worldBook = true, snapshot = viewModel::promptFieldEstimates)
             viewModel.draftSavedAt?.let { savedAt ->
                 CbText(
                     "草稿已保存 ${formatDraftSavedAt(savedAt)}",
