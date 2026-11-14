@@ -305,7 +305,7 @@ internal class SyntheticDav : Dispatcher() {
         overrideRequest?.invoke(request)?.let { return it }
         val path = request.requestUrl!!.encodedPath
         return when (request.method) {
-            "MKCOL" -> if (path in collections || path in files) response(405) else { collections.add(path); response(201) }
+            "MKCOL" -> if (path in collections || files.containsKey(path)) response(405) else { collections.add(path); response(201) }
             "HEAD" -> {
                 heads++
                 val bytes = files[path] ?: return response(404)
