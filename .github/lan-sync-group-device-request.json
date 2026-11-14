@@ -1,5 +1,6 @@
 {
-  "sourceSha": "a308dfaabb7283e99f024140ac782864652ab08f",
-  "purpose": "API26 actual file-backed sync validation, Workspace capture/apply/reopen and bounded preview of fully written 33/101MiB valid 16x12 PNGs with exact original hashes and typed post-result metadata; retain existing protected group native process checks.",
-  "artifacts": "Reports only; no image payloads, app roots, recovery codes, keys, credentials or APK"
+  "sourceSha": "abcca9ab820b375c12b60118f140897d54321708",
+  "purpose": "Re-run only the previously unexecuted actual API26 large-image method after replacing unavailable Files.writeString; no repeat of old group-vault/process or 1.34GB proofs.",
+  "artifacts": "Reports only; no image payloads, app roots, recovery codes, keys, credentials or APK",
+  "proofMode": "large-images"
 }
