@@ -30,7 +30,7 @@ data class LanSyncGroupChunkReadFailure(val key: CiphertextObjectKey, val failur
  * header per manifest are retained here. Inbox/AEAD/ledger owners still authenticate logical bytes.
  */
 class LanSyncGroupChunkCloudReadRoute(private val assemblies: WeakWebDavChunkAssembly,
-    private val checkActive: () -> Unit = {}, private val incomingCache: WeakWebDavIncomingChunkCache? = null) : CiphertextStore {
+    private val incomingCache: WeakWebDavIncomingChunkCache? = null, private val checkActive: () -> Unit = {}) : CiphertextStore {
     override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED,
         untrustedCandidateVariants = true)
     private val mutableFailure = MutableStateFlow<LanSyncGroupChunkReadFailure?>(null)

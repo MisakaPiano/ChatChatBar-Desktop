@@ -30,7 +30,8 @@ class LanSyncGroupCloudRecoverySource(private val root: Path, private val whole:
     incomingCache: WeakWebDavIncomingChunkCache? = null) : AutoCloseable {
     private val token = Any()
     @Volatile private var closed = false
-    private val cloudPorts: List<CiphertextStore> = listOf(LanSyncGroupWeakCloudReadRoute(whole, ::active), LanSyncGroupChunkCloudReadRoute(parts, ::active, incomingCache))
+    private val cloudPorts: List<CiphertextStore> = listOf(LanSyncGroupWeakCloudReadRoute(whole, ::active),
+        LanSyncGroupChunkCloudReadRoute(parts, incomingCache = incomingCache, checkActive = ::active))
     private class Listing(val ports: List<CiphertextStore>, val prefix: String = "cloud-recovery1:${SyncStoreId.random().value}:")
     @Volatile private var listing = Listing(cloudPorts)
     private val reader: LanSyncGroupReplicaReader

@@ -250,7 +250,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                     WeakWebDavIncomingChunkCache(directory(root.resolve("incoming-cache")),
                                         lanSyncGroupIncomingScope(access.trust, credentials.endpoint, credentials.username))
                                 }
-                                val chunkRead = LanSyncGroupChunkCloudReadRoute(parts, active, incoming)
+                                val chunkRead = LanSyncGroupChunkCloudReadRoute(parts, incomingCache = incoming, checkActive = active)
                                 if (!outgoingOnly) {
                                     update(captured, catalog, id, "正在读取此网盘的加密候选")
                                     val read = LanSyncGroupWeakCloudReadRoute(attempts, active)
