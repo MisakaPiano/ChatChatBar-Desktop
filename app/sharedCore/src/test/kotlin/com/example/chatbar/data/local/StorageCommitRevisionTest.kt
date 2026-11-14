@@ -127,6 +127,70 @@ class StorageCommitRevisionTest {
         assertEquals(listOf("old"), storage.observeAll("items", serializer).first())
     }
 
+    @Test fun failedInstallationAndFailedRollbackPreserveErrorsAndBackupButInvalidatePossiblyChangedSourceOnce() = withRoot { root ->
+        val storage = JsonFileStorage(root)
+        storage.saveEntity("items", "a", "retained original", serializer)
+        storage.saveEntityUncached("derived", "index", "unrelated index", serializer)
+        val directory = root.resolve("entities/items")
+        val original = Files.readAllBytes(directory.resolve("a.json"))
+        val relevant = storage.committedRevisionFor(setOf("items"))
+        val unrelated = storage.committedRevisionFor(setOf("derived"))
+        val before = storage.committedRevision.value
+        val unrelatedBefore = unrelated.first()
+        assertEquals(2L, before)
+        assertEquals(1L, relevant.first())
+        val installationFailure = IOException("synthetic second final installation failure")
+        val rollbackFailure = IOException("synthetic original restoration failure")
+        var installationCalls = 0
+        var rollbackCalls = 0
+        var installedTarget: Path? = null
+        storage.replacementFileMove = { source, target, replaceExisting ->
+            when {
+                source.parent.fileName.toString().startsWith(".replace-") -> {
+                    installationCalls++
+                    if (installationCalls == 2) throw installationFailure
+                }
+                source.parent.fileName.toString().startsWith(".backup-") -> {
+                    rollbackCalls++
+                    throw rollbackFailure
+                }
+            }
+            if (replaceExisting) Files.move(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            else Files.move(source, target)
+            if (source.parent.fileName.toString().startsWith(".replace-")) {
+                installedTarget = target
+                assertTrue(Files.isRegularFile(target), "At least one replacement must really reach the final directory")
+                assertEquals(before, storage.committedRevision.value, "A partial install is still inside its rollback boundary")
+            }
+        }
+        try {
+            val failure = assertFailsWith<IOException> {
+                storage.replaceByIdPrefixStreamingUncached("items", "a", serializer) { emit ->
+                    emit("a", "replacement a"); emit("b", "replacement b")
+                    assertEquals(before, storage.committedRevision.value)
+                }
+            }
+            assertSame(installationFailure, failure)
+            assertEquals(1, failure.suppressed.size)
+            assertSame(rollbackFailure, failure.suppressed.single())
+            assertEquals(2, installationCalls)
+            assertEquals(1, rollbackCalls)
+            assertFalse(Files.exists(requireNotNull(installedTarget)))
+            assertFalse(Files.exists(directory.resolve("a.json")), "The original final path really remains changed after failed rollback")
+            val backup = Files.newDirectoryStream(directory).use { entries ->
+                entries.single { it.fileName.toString().startsWith(".backup-") }
+            }
+            assertContentEquals(original, Files.readAllBytes(backup.resolve("a.json")))
+            assertTrue(Files.newDirectoryStream(directory).use { entries ->
+                entries.none { it.fileName.toString().startsWith(".replace-") }
+            })
+            assertEquals(before + 1, storage.committedRevision.value)
+            assertEquals(before + 1, relevant.first())
+            assertEquals(unrelatedBefore, unrelated.first())
+            assertEquals(before + 1, storage.committedRevision.value, "Reading the invalidation token cannot create another signal")
+        } finally { storage.replacementFileMove = null }
+    }
+
     @Test fun successfulDeletesInvalidateAndMissingDeletesOrCacheOnlyClearsDoNot() = withRoot { root ->
         val storage = JsonFileStorage(root)
         storage.saveAll("items", linkedMapOf("a" to "a", "b" to "b", "p1" to "p", "p2" to "p",

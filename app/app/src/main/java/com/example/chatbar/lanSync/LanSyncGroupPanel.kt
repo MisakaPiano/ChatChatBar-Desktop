@@ -34,6 +34,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
     recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
     imageState: LanSyncGroupImageState = LanSyncGroupImageState(), scanInvitation: () -> Unit) {
+    val interactionBlocked = state.busy || (state.paused && state.stage == LanSyncGroupPanelStage.READY)
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(actions, lifecycle) {
@@ -71,74 +72,74 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             CbText(lanSyncGroupDescription)
-            CbButton("创建新设备组", actions::createGroup, enabled = !state.busy)
+            CbButton("创建新设备组", actions::createGroup, enabled = !interactionBlocked)
         }
         if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
-            CbButton(if (joining) "扫描更新邀请" else "扫描设备组邀请", scanInvitation, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            CbButton(if (joining) "扫描更新邀请" else "扫描设备组邀请", scanInvitation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请") {
-                key(state.privacyRevision) { CbInput(joinCode, { joinCode = it }, secure = true, enabled = !state.busy) }
+                key(state.privacyRevision) { CbInput(joinCode, { joinCode = it }, secure = true, enabled = !interactionBlocked) }
             }
             CbButton(if (joining) "更新邀请并继续" else "检查并加入", { val captured = joinCode; joinCode = ""; actions.beginJoin(captured) },
-                enabled = !state.busy && joinCode.isNotBlank(), variant = ButtonVariant.Secondary)
+                enabled = !interactionBlocked && joinCode.isNotBlank(), variant = ButtonVariant.Secondary)
         }
         state.recoveryCode?.let { code ->
             CbText("请保存恢复码。丢失设备后，还需要另一台已加入设备或对应的加密管理资料；仅有恢复码无法恢复。")
             Box(Modifier.fillMaxWidth().heightIn(max = 130.dp).verticalScroll(rememberScrollState())) { CbText(code) }
-            CbButton("复制恢复码", { copy(code) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            CbButton("复制恢复码", { copy(code) }, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CbCheckbox(saved, { saved = it }, enabled = !state.busy, contentDescription = "已妥善保存恢复码")
+                CbCheckbox(saved, { saved = it }, enabled = !interactionBlocked, contentDescription = "已妥善保存恢复码")
                 CbText("我已妥善保存恢复码")
             }
-            state.setupBinding?.let { binding -> CbButton("完成创建", { actions.recoverySaved(binding) }, enabled = !state.busy && saved) }
+            state.setupBinding?.let { binding -> CbButton("完成创建", { actions.recoverySaved(binding) }, enabled = !interactionBlocked && saved) }
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
             CbField("恢复码 · 临时解锁管理") {
-                key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !state.busy) }
+                key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !interactionBlocked) }
             }
             CbButton("解锁管理", { val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured) },
-                enabled = !state.busy && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
+                enabled = !interactionBlocked && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.READY && !state.localManagementAvailable &&
             state.managementRecoveryAvailable && !state.managementUnlocked) {
             CbText("使用这台已加入设备保留的加密管理资料和恢复码，恢复原设备组的管理权。")
             CbField("恢复码 · 恢复设备组管理") {
-                key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !state.busy) }
+                key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !interactionBlocked) }
             }
             CbButton("用恢复码恢复组管理", {
                 val captured = recoveryInput; recoveryInput = ""; actions.recoverManagement(captured)
-            }, enabled = !state.busy && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
+            }, enabled = !interactionBlocked && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
-            CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         if (state.stage == LanSyncGroupPanelStage.JOINING) {
-            CbButton("继续加入", actions::retryJoin, enabled = !state.busy)
-            CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
+            CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
                 CbText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             GroupRoute("本机", state.local, "最近保存"); GroupRoute("附近设备", state.nearby, "最近送达"); GroupRoute("网盘", state.cloud, "最近上传")
-            CbButton("立即检查", actions::retry, enabled = !state.busy, variant = ButtonVariant.Secondary)
-            CbButton("网盘设置", actions::openCloudSettings, enabled = !state.busy, variant = ButtonVariant.Secondary)
-            CbButton("邀请设备", actions::createInvitation, enabled = !state.busy && state.managementUnlocked && state.managementCanInvite)
+            CbButton("立即检查", actions::retry, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
+            CbButton("网盘设置", actions::openCloudSettings, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
+            CbButton("邀请设备", actions::createInvitation, enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite)
             if (state.managementUnlocked) {
                 CbButton("锁定管理", actions::lockManagement, variant = ButtonVariant.Secondary)
                 CbText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
-                CbButton("接续已确认的管理操作", actions::resumeManagementOperation, enabled = !state.busy, variant = ButtonVariant.Secondary)
+                CbButton("接续已确认的管理操作", actions::resumeManagementOperation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             }
             state.devices.forEach { device ->
                 CbText(device.name + if (device.thisDevice) " · 本机" else if (device.managementIdentity) " · 恢复管理身份" else "")
                 CbText(device.status)
                 if (device.canRevoke) CbButton("撤销此设备", { actions.prepareRevocation(device.id) },
-                    enabled = !state.busy && state.managementUnlocked, variant = ButtonVariant.Destructive)
+                    enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Destructive)
             }
         }
-        GroupFrozenReviewBrowser(view, state.busy, actions)
-        LanSyncGroupResolutionHistory(view, state.busy, actions)
+        GroupFrozenReviewBrowser(view, interactionBlocked, actions)
+        LanSyncGroupResolutionHistory(view, interactionBlocked, actions)
         actionReview?.let { review -> GroupActionReview(review, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
-            GroupRecoveryBrowser(recoveryEntries, recoveryView, state.busy, actions)
+            GroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
             val bitmap = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
@@ -153,13 +154,13 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         state.peerConfirmation?.let { peer ->
             CbText("允许 ${peer.name} 加入设备组？"); CbText("设备身份：${peer.fingerprint}")
-            CbButton("确认加入此设备", { actions.acceptPeer(peer.binding) }, enabled = !state.busy && state.managementUnlocked)
+            CbButton("确认加入此设备", { actions.acceptPeer(peer.binding) }, enabled = !interactionBlocked && state.managementUnlocked)
         }
         state.revocation?.let { review ->
             CbText("撤销 ${review.name}？")
             CbText("该设备将无法取得新的同步密钥，已保存的副本仍会保留。网盘账号授权需要单独撤销。")
-            CbButton("确认撤销", { actions.confirmRevocation(review.binding) }, enabled = !state.busy && state.managementUnlocked, variant = ButtonVariant.Destructive)
-            CbButton("取消", actions::cancelRevocation, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            CbButton("确认撤销", { actions.confirmRevocation(review.binding) }, enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Destructive)
+            CbButton("取消", actions::cancelRevocation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         }
         Spacer(Modifier.height(12.dp))
     }

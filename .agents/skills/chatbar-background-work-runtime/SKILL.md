@@ -27,6 +27,7 @@ Use chatbar-model-request-runtime for HTTP/SSE behavior, chatbar-image-generatio
 - `AiBackgroundWorkManager` owns active-work counting, foreground lease generations, readiness, protection-loss propagation, network monitoring, and final service release.
 - `StreamingForegroundService` owns immediate foreground promotion, locks, stop-action handling, and destruction signals.
 - `StreamingNotificationManager` owns notification construction and channels; it does not own work lifetime.
+- Device-group background protection is separate: `lanSync/LanSyncGroupForegroundService.kt` is a non-exported `connectedDevice` service with its own channel, notification and generation-bound stop action. `AndroidLanSync` owns service readiness/failure and persisted user pause; only true foreground promotion resumes the initially paused group coordinator. Stop drains the recoverable group pause before removing its notification. It never acquires an AI foreground lease or uses the AI stop signal. `AndroidLanSyncLifecycle` tracks Activity visibility from application startup and registers network hints only after group evidence exists; background hints never start a service or clear user pause.
 - Feature callers own result persistence, UI state, and feature-specific cancellation semantics.
 - `AiBackgroundWorkManager.notifyCompletion` posts completion notifications on the shared IPC thread and reports publication failures to the caller. Studio automatic generation uses this entry after its target images are committed.
 

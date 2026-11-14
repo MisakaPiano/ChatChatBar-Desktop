@@ -57,6 +57,15 @@ class JsonFileStorage(
     }
 
     private val studioPayloads by lazy { NovelAiInlinePayloadStore(appDataRoot.toFile()) }
+    /** Narrow replacement fault seam; ordinary storage always uses the original native moves. */
+    internal var replacementFileMove: ((source: Path, target: Path, replaceExisting: Boolean) -> Unit)? = null
+
+    private fun moveReplacementFile(source: Path, target: Path, replaceExisting: Boolean = false) {
+        val move = replacementFileMove
+        if (move != null) move(source, target, replaceExisting)
+        else if (replaceExisting) Files.move(source, target, StandardCopyOption.REPLACE_EXISTING)
+        else Files.move(source, target)
+    }
 
     /** Desktop history keeps the same content-addressed references as the current Studio draft. */
     fun retainStudioPayload(value: String): String = studioPayloads.retain(value)
@@ -821,24 +830,27 @@ class JsonFileStorage(
             val installed = mutableListOf<File>()
             try {
                 currentFiles.forEach { file ->
-                    Files.move(file.toPath(), File(backup, file.name).toPath())
+                    moveReplacementFile(file.toPath(), File(backup, file.name).toPath())
                 }
                 staging.listFiles { file -> file.isFile && file.extension == "json" }
                     .orEmpty()
                     .forEach { file ->
                         val target = File(directory, file.name)
-                        Files.move(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                        moveReplacementFile(file.toPath(), target.toPath(), replaceExisting = true)
                         installed += target
                     }
             } catch (error: Throwable) {
                 installed.forEach(File::delete)
                 try {
                     backup.listFiles().orEmpty().forEach { file ->
-                        Files.move(file.toPath(), File(directory, file.name).toPath(), StandardCopyOption.REPLACE_EXISTING)
+                        moveReplacementFile(file.toPath(), File(directory, file.name).toPath(), replaceExisting = true)
                     }
                 } catch (restoreError: Throwable) {
                     preserveBackup = true
                     error.addSuppressed(restoreError)
+                    // Rollback failed, so final paths may differ even though this call still fails.
+                    // Invalidate readers once without turning that failure into a commit receipt.
+                    commitRevision.committed(entityType)
                 }
                 throw error
             }

@@ -141,10 +141,14 @@ internal class DesktopLanSyncFinalFlushTimeoutException : DesktopLanSyncFinalFlu
     "本机同步封存仍在使用资料；等待已结束，任务和资料目录锁继续保留。CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_PENDING",
 )
 
-/** Enters the existing visible SHUTDOWN_FAILED recovery path; never reports an ordinary exit. */
+/** The flush has joined; safe shutdown may continue while local sync work remains pending. */
 internal class DesktopLanSyncFinalFlushIncompleteException : DesktopLanSyncFinalFlushException(
-    "最终本机同步封存未完成；原件、待传队列和资料目录锁继续保留。CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE",
-)
+    "本机资料已保存；设备组同步尚未完成，原件和待传队列已保留。CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE",
+) {
+    var teardownCompleted: Boolean = false
+        private set
+    internal fun markTeardownCompleted() { teardownCompleted = true }
+}
 
 /** Writers and audio have already drained. Pause backup once and keep it paused until normal close. */
 internal class DesktopLanSyncShutdownMaintenance(private val backup: DesktopAutomaticBackupRuntime,

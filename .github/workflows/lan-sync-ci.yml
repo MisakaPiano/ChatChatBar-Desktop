@@ -90,6 +90,21 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.*' --tests 'com.example.chatbar.domain.syncStore.*' --tests 'com.example.chatbar.data.local.StorageCommitRevisionTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
+      - name: Locate failed synthetic shared cases
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in sorted(Path('sharedCore/build/test-results/test').glob('TEST-*.xml')):
+              for case in ET.parse(path).getroot().findall('testcase'):
+                  for failure in list(case.findall('failure')) + list(case.findall('error')):
+                      print('SHARED_CASE_FAILED', case.get('classname'), case.get('name'))
+                      lines = (failure.text or '').splitlines()
+                      for line in lines[:2] + [line for line in lines if 'com.example.chatbar.' in line][:16]:
+                          print(line[:1200])
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:

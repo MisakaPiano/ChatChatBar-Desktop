@@ -1,14 +1,26 @@
 package com.example.chatbar.lanSync
 
+import android.Manifest
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.KeyStore
@@ -16,6 +28,15 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+
+enum class AndroidLanSyncBackgroundPhase { NOT_CONFIGURED, WAITING_FOR_FOREGROUND, STARTING, RUNNING, STOPPING, PAUSED, FAILED }
+
+data class AndroidLanSyncBackgroundState(
+    val phase: AndroidLanSyncBackgroundPhase = AndroidLanSyncBackgroundPhase.NOT_CONFIGURED,
+    val notificationsVisible: Boolean = true,
+    val foregroundProtected: Boolean = false,
+    val error: String? = null
+)
 
 class AndroidLanSync(private val app: ChatBarApp) {
     val gate = LanSyncOperationGate()
@@ -80,20 +101,53 @@ class AndroidLanSync(private val app: ChatBarApp) {
     private val hookLock = Any()
     private var hookObserver: Job? = null
     private var applicationHooks: AndroidLanSyncLifecycle? = null
-    private var hooksClosed = false
-    private fun ensureApplicationHooks(): Unit = synchronized(hookLock) {
-        if (!hooksClosed && applicationHooks == null && hasGroupEvidence())
+    @Volatile private var hooksClosed = false
+    private val backgroundAdmission = Mutex()
+    private val backgroundPreferences = app.getSharedPreferences("lan-sync-background", Context.MODE_PRIVATE)
+    @Volatile private var userPaused = backgroundPreferences.getBoolean("user-paused", false)
+    @Volatile private var serviceGeneration = 0L
+    @Volatile private var serviceAliveGeneration = -1L
+    @Volatile private var serviceStartPending = false
+    @Volatile private var protectionLost = false
+    private var stopPromotedService: (() -> Unit)? = null
+    private val mutableBackgroundState = MutableStateFlow(AndroidLanSyncBackgroundState())
+    val backgroundState = mutableBackgroundState.asStateFlow()
+
+    /** Install before the first Activity: late setup must still know that an Activity is resumed. */
+    fun observeApplicationLifecycle(): Unit = synchronized(hookLock) {
+        if (!hooksClosed && applicationHooks == null)
             applicationHooks = AndroidLanSyncLifecycle(app, ::onForeground, ::lockGroupManagement, ::onNetworkAvailable)
     }
+    private fun ensureApplicationHooks() {
+        observeApplicationLifecycle()
+        if (hasGroupEvidence()) applicationHooks?.observeNetwork()
+    }
+    private fun notificationsVisible(): Boolean {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return false
+        if (!NotificationManagerCompat.from(app).areNotificationsEnabled()) return false
+        return app.getSystemService(NotificationManager::class.java)
+            ?.getNotificationChannel(LanSyncGroupForegroundService.CHANNEL_ID)?.importance != NotificationManager.IMPORTANCE_NONE
+    }
+    private fun backgroundStatus(phase: AndroidLanSyncBackgroundPhase, error: String? = null) {
+        mutableBackgroundState.value = AndroidLanSyncBackgroundState(phase,
+            runCatching { notificationsVisible() }.getOrDefault(false),
+            serviceAliveGeneration >= 0 && serviceAliveGeneration == serviceGeneration, error)
+    }
     fun onForeground() {
+        ensureApplicationHooks()
+        app.applicationScope.launch { startBackgroundIfAllowed(retryFailure = true) }
         val current = synchronized(hookLock) {
-            if (!hooksClosed && app.lanSyncStartupReady && hasGroupEvidence() && groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value else null
+            if (!hooksClosed && !userPaused && serviceAliveGeneration == serviceGeneration &&
+                backgroundState.value.phase == AndroidLanSyncBackgroundPhase.RUNNING &&
+                app.lanSyncStartupReady && groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value else null
         }
         current?.onForeground()
     }
     fun onNetworkAvailable() {
         val current = synchronized(hookLock) {
-            if (!hooksClosed && app.lanSyncStartupReady && hasGroupEvidence() && groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value else null
+            if (!hooksClosed && !userPaused && serviceAliveGeneration == serviceGeneration &&
+                backgroundState.value.phase == AndroidLanSyncBackgroundPhase.RUNNING &&
+                app.lanSyncStartupReady && groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value else null
         }
         current?.onNetworkAvailable()
     }
@@ -101,15 +155,171 @@ class AndroidLanSync(private val app: ChatBarApp) {
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
-            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys)).also { coordinator ->
+            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true).also { coordinator ->
                 hookObserver = app.applicationScope.launch {
-                    coordinator.state.collect { if (hasGroupEvidence()) ensureApplicationHooks() }
+                    coordinator.state.collect {
+                        if (hasGroupEvidence()) ensureApplicationHooks()
+                        startBackgroundIfAllowed()
+                    }
                 }
             }
     }
     val groupCoordinator: LanSyncGroupCoordinator get() = groupCoordinatorOwner.value
+    fun openGroupPage() {
+        groupCoordinator.open()
+        ensureApplicationHooks()
+        app.applicationScope.launch { startBackgroundIfAllowed() }
+    }
     fun startGroupIfConfigured() {
-        if (hasGroupEvidence()) { ensureApplicationHooks(); groupCoordinator.startIfConfigured() }
+        if (hasGroupEvidence()) {
+            ensureApplicationHooks()
+            groupCoordinator.startIfConfigured()
+            app.applicationScope.launch { startBackgroundIfAllowed() }
+        }
+    }
+    private suspend fun startBackgroundIfAllowed(retryFailure: Boolean = false) = backgroundAdmission.withLock {
+        if (hooksClosed || protectionLost) return@withLock
+        if (!hasGroupEvidence()) {
+            if (backgroundState.value.phase != AndroidLanSyncBackgroundPhase.NOT_CONFIGURED) {
+                if (!pauseCoordinatorSafely()) return@withLock
+                val stop = stopPromotedService
+                stopPromotedService = null
+                backgroundStatus(if (serviceStartPending) AndroidLanSyncBackgroundPhase.STOPPING else AndroidLanSyncBackgroundPhase.NOT_CONFIGURED)
+                stop?.invoke()
+            }
+            return@withLock
+        }
+        val phase = backgroundState.value.phase
+        if (userPaused) {
+            if (phase !in setOf(AndroidLanSyncBackgroundPhase.STOPPING, AndroidLanSyncBackgroundPhase.FAILED))
+                backgroundStatus(AndroidLanSyncBackgroundPhase.PAUSED)
+            return@withLock
+        }
+        if (phase in setOf(AndroidLanSyncBackgroundPhase.STARTING, AndroidLanSyncBackgroundPhase.RUNNING, AndroidLanSyncBackgroundPhase.STOPPING)) {
+            if (retryFailure) backgroundStatus(phase, backgroundState.value.error)
+            return@withLock
+        }
+        if (phase == AndroidLanSyncBackgroundPhase.FAILED && !retryFailure) return@withLock
+        if (!app.lanSyncStartupReady || applicationHooks?.isForeground != true) {
+            backgroundStatus(AndroidLanSyncBackgroundPhase.WAITING_FOR_FOREGROUND)
+            return@withLock
+        }
+        val generation = ++serviceGeneration
+        serviceStartPending = true
+        backgroundStatus(AndroidLanSyncBackgroundPhase.STARTING)
+        try {
+            ContextCompat.startForegroundService(app, Intent(app, LanSyncGroupForegroundService::class.java)
+                .setAction(LanSyncGroupForegroundService.ACTION_START)
+                .putExtra(LanSyncGroupForegroundService.EXTRA_GENERATION, generation))
+        } catch (_: Exception) {
+            serviceStartPending = false
+            if (!pauseCoordinatorSafely()) return@withLock
+            backgroundStatus(AndroidLanSyncBackgroundPhase.FAILED, "SYNC_GROUP_BACKGROUND_START_FAILED")
+        }
+    }
+    /** User stop is sticky; ordinary Activity/network events never clear it. */
+    fun pauseBackground() {
+        userPaused = true
+        backgroundStatus(AndroidLanSyncBackgroundPhase.STOPPING)
+        app.applicationScope.launch { backgroundAdmission.withLock { pauseBackgroundLocked() } }
+    }
+    private suspend fun pauseBackgroundLocked() {
+        val saved = runCatching { backgroundPreferences.edit().putBoolean("user-paused", true).commit() }.getOrDefault(false)
+        if (!pauseCoordinatorSafely()) return
+        protectionLost = false
+        val stop = stopPromotedService
+        if (stop != null) {
+            stopPromotedService = null
+            backgroundStatus(if (saved) AndroidLanSyncBackgroundPhase.PAUSED else AndroidLanSyncBackgroundPhase.FAILED,
+                if (saved) null else "SYNC_GROUP_BACKGROUND_PREFERENCE_NOT_SAVED")
+            stop()
+        } else if (!serviceStartPending) {
+            backgroundStatus(if (saved) AndroidLanSyncBackgroundPhase.PAUSED else AndroidLanSyncBackgroundPhase.FAILED,
+                if (saved) null else "SYNC_GROUP_BACKGROUND_PREFERENCE_NOT_SAVED")
+        } else {
+            // Keep the stop pending until an already requested service really promotes.
+            backgroundStatus(AndroidLanSyncBackgroundPhase.STOPPING,
+                if (saved) null else "SYNC_GROUP_BACKGROUND_PREFERENCE_NOT_SAVED")
+        }
+    }
+    private suspend fun pauseCoordinatorSafely(): Boolean = try {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.pauseAndDrain()
+        true
+    } catch (_: Exception) {
+        backgroundStatus(AndroidLanSyncBackgroundPhase.FAILED, "SYNC_GROUP_BACKGROUND_PAUSE_FAILED")
+        false
+    }
+    fun resumeBackground() {
+        app.applicationScope.launch {
+            backgroundAdmission.withLock {
+                if (hooksClosed) return@withLock
+                if (protectionLost) {
+                    if (!pauseCoordinatorSafely()) return@withLock
+                    protectionLost = false
+                }
+                if (serviceStartPending || serviceAliveGeneration >= 0) return@withLock
+                if (backgroundState.value.phase in setOf(AndroidLanSyncBackgroundPhase.STARTING,
+                        AndroidLanSyncBackgroundPhase.RUNNING, AndroidLanSyncBackgroundPhase.STOPPING)) return@withLock
+                if (!runCatching { backgroundPreferences.edit().putBoolean("user-paused", false).commit() }.getOrDefault(false)) {
+                    backgroundStatus(AndroidLanSyncBackgroundPhase.FAILED, "SYNC_GROUP_BACKGROUND_PREFERENCE_NOT_SAVED")
+                    return@withLock
+                }
+                userPaused = false
+                backgroundStatus(AndroidLanSyncBackgroundPhase.WAITING_FOR_FOREGROUND)
+            }
+            startBackgroundIfAllowed(retryFailure = true)
+        }
+    }
+    internal fun servicePromoted(generation: Long, stopAfterDrain: () -> Unit) {
+        if (generation == serviceGeneration) { serviceStartPending = false; serviceAliveGeneration = generation }
+        app.applicationScope.launch { backgroundAdmission.withLock {
+            if (generation != serviceGeneration || hooksClosed) { stopAfterDrain(); return@withLock }
+            stopPromotedService = stopAfterDrain
+            if (userPaused) {
+                pauseBackgroundLocked()
+            } else if (!app.lanSyncStartupReady || !hasGroupEvidence()) {
+                if (!pauseCoordinatorSafely()) return@withLock
+                stopPromotedService = null
+                backgroundStatus(if (hasGroupEvidence()) AndroidLanSyncBackgroundPhase.WAITING_FOR_FOREGROUND else AndroidLanSyncBackgroundPhase.NOT_CONFIGURED)
+                stopAfterDrain()
+            } else if (!protectionLost && serviceAliveGeneration == generation) {
+                if (backgroundState.value.phase != AndroidLanSyncBackgroundPhase.RUNNING) groupCoordinator.resumeIfConfigured()
+                backgroundStatus(AndroidLanSyncBackgroundPhase.RUNNING)
+            }
+        } }
+    }
+    internal fun stopFromNotification(generation: Long) {
+        if (generation == serviceGeneration) pauseBackground()
+    }
+    internal fun servicePromotionFailed(generation: Long) {
+        if (generation != serviceGeneration) return
+        protectionLost = true
+        serviceStartPending = false
+        serviceAliveGeneration = -1L
+        backgroundStatus(AndroidLanSyncBackgroundPhase.FAILED, "SYNC_GROUP_BACKGROUND_PROMOTION_FAILED")
+        app.applicationScope.launch { backgroundAdmission.withLock {
+            if (generation == serviceGeneration) {
+                stopPromotedService = null
+                if (pauseCoordinatorSafely()) protectionLost = false
+            }
+        } }
+    }
+    internal fun serviceDestroyed(generation: Long, expectedStop: Boolean) {
+        if (generation != serviceGeneration) return
+        serviceStartPending = false
+        serviceAliveGeneration = -1L
+        if (expectedStop || backgroundState.value.phase == AndroidLanSyncBackgroundPhase.PAUSED) {
+            backgroundStatus(backgroundState.value.phase, backgroundState.value.error)
+            return
+        }
+        if (backgroundState.value.error == "SYNC_GROUP_BACKGROUND_PROMOTION_FAILED") return
+        protectionLost = true
+        backgroundStatus(AndroidLanSyncBackgroundPhase.FAILED, "SYNC_GROUP_BACKGROUND_SERVICE_LOST")
+        app.applicationScope.launch { backgroundAdmission.withLock {
+            if (generation != serviceGeneration) return@withLock
+            stopPromotedService = null
+            if (pauseCoordinatorSafely()) protectionLost = false
+        } }
     }
     fun stopLegacy() { if (runtimeOwner.isInitialized()) runtimeOwner.value.stop() }
     private fun groupProfileRoot(): Path {
@@ -139,9 +349,13 @@ class AndroidLanSync(private val app: ChatBarApp) {
         val hooks = synchronized(hookLock) { hooksClosed = true; applicationHooks.also { applicationHooks = null } }
         hooks?.close()
         hookObserver?.cancelAndJoin()
-        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
-        if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()
-        if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
+        backgroundAdmission.withLock {
+            if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
+            if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()
+            if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
+            stopPromotedService?.invoke()
+            stopPromotedService = null
+        }
     }
     fun recoverBeforeRepositories() = workspace.recover()
 

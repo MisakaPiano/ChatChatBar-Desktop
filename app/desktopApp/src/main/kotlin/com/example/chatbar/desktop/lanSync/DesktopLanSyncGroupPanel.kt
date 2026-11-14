@@ -22,6 +22,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
     view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
     recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
     imageState: LanSyncGroupImageState = LanSyncGroupImageState()) {
+    val interactionBlocked = state.busy || (state.paused && state.stage == LanSyncGroupPanelStage.READY)
     DisposableEffect(actions) { onDispose { actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() } }
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
@@ -37,26 +38,26 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         if (copyFailed) StatusText("未能复制，请保持此窗口打开后重试。", DesktopBootstrapColors.warning)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             StatusText(lanSyncGroupDescription)
-            BootstrapButton("创建新设备组", enabled = !state.busy) { actions.createGroup() }
+            BootstrapButton("创建新设备组", enabled = !interactionBlocked) { actions.createGroup() }
         }
         if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
             key(state.privacyRevision) { LabeledField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请",
-                joinCode, secret = true, enabled = !state.busy, onChange = { joinCode = it }) }
-            BootstrapButton(if (joining) "更新邀请并继续" else "检查并加入", secondary = true, enabled = !state.busy && joinCode.isNotBlank()) {
+                joinCode, secret = true, enabled = !interactionBlocked, onChange = { joinCode = it }) }
+            BootstrapButton(if (joining) "更新邀请并继续" else "检查并加入", secondary = true, enabled = !interactionBlocked && joinCode.isNotBlank()) {
                 val captured = joinCode; joinCode = ""; actions.beginJoin(captured)
             }
         }
         state.recoveryCode?.let { code ->
             StatusText("请保存恢复码。丢失设备后，还需要另一台已加入设备或对应的加密管理资料；仅有恢复码无法恢复。")
             Box(Modifier.fillMaxWidth().heightIn(max = 130.dp).verticalScroll(rememberScrollState())) { StatusText(code) }
-            BootstrapButton("复制恢复码", secondary = true, enabled = !state.busy) { copy(code) }
-            BootstrapButton(if (saved) "✓ 已妥善保存恢复码" else "我已妥善保存恢复码", secondary = true, enabled = !state.busy) { saved = !saved }
-            state.setupBinding?.let { binding -> BootstrapButton("完成创建", enabled = !state.busy && saved) { actions.recoverySaved(binding) } }
+            BootstrapButton("复制恢复码", secondary = true, enabled = !interactionBlocked) { copy(code) }
+            BootstrapButton(if (saved) "✓ 已妥善保存恢复码" else "我已妥善保存恢复码", secondary = true, enabled = !interactionBlocked) { saved = !saved }
+            state.setupBinding?.let { binding -> BootstrapButton("完成创建", enabled = !interactionBlocked && saved) { actions.recoverySaved(binding) } }
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
-            key(state.privacyRevision) { LabeledField("恢复码 · 临时解锁管理", recoveryInput, secret = true, enabled = !state.busy, onChange = { recoveryInput = it }) }
-            BootstrapButton("解锁管理", secondary = true, enabled = !state.busy && recoveryInput.isNotBlank()) {
+            key(state.privacyRevision) { LabeledField("恢复码 · 临时解锁管理", recoveryInput, secret = true, enabled = !interactionBlocked, onChange = { recoveryInput = it }) }
+            BootstrapButton("解锁管理", secondary = true, enabled = !interactionBlocked && recoveryInput.isNotBlank()) {
                 val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured)
             }
         }
@@ -64,42 +65,42 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             state.managementRecoveryAvailable && !state.managementUnlocked) {
             StatusText("使用这台已加入设备保留的加密管理资料和恢复码，恢复原设备组的管理权。")
             key(state.privacyRevision) { LabeledField("恢复码 · 恢复设备组管理", recoveryInput, secret = true,
-                enabled = !state.busy, onChange = { recoveryInput = it }) }
-            BootstrapButton("用恢复码恢复组管理", secondary = true, enabled = !state.busy && recoveryInput.isNotBlank()) {
+                enabled = !interactionBlocked, onChange = { recoveryInput = it }) }
+            BootstrapButton("用恢复码恢复组管理", secondary = true, enabled = !interactionBlocked && recoveryInput.isNotBlank()) {
                 val captured = recoveryInput; recoveryInput = ""; actions.recoverManagement(captured)
             }
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
-            BootstrapButton("放弃未完成的设置", secondary = true, enabled = !state.busy) { actions.abandonUnusedSetup() }
+            BootstrapButton("放弃未完成的设置", secondary = true, enabled = !interactionBlocked) { actions.abandonUnusedSetup() }
         if (state.stage == LanSyncGroupPanelStage.JOINING) {
-            BootstrapButton("继续加入", enabled = !state.busy) { actions.retryJoin() }
-            BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !state.busy) { actions.refreshJoinPreparation() }
+            BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
+            BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
                 StatusText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近送达"); groupRoute("网盘", state.cloud, "最近上传")
             ActionRow {
-                BootstrapButton("立即检查", secondary = true, enabled = !state.busy) { actions.retry() }
-                BootstrapButton("网盘设置", secondary = true, enabled = !state.busy) { actions.openCloudSettings() }
-                BootstrapButton("邀请设备", enabled = !state.busy && state.managementUnlocked && state.managementCanInvite) { actions.createInvitation() }
+                BootstrapButton("立即检查", secondary = true, enabled = !interactionBlocked) { actions.retry() }
+                BootstrapButton("网盘设置", secondary = true, enabled = !interactionBlocked) { actions.openCloudSettings() }
+                BootstrapButton("邀请设备", enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite) { actions.createInvitation() }
                 if (state.managementUnlocked) BootstrapButton("锁定管理", secondary = true) { actions.lockManagement() }
             }
             if (state.managementUnlocked) {
                 StatusText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
-                BootstrapButton("接续已确认的管理操作", secondary = true, enabled = !state.busy) { actions.resumeManagementOperation() }
+                BootstrapButton("接续已确认的管理操作", secondary = true, enabled = !interactionBlocked) { actions.resumeManagementOperation() }
             }
             state.devices.forEach { device ->
                 StatusText(device.name + if (device.thisDevice) " · 本机" else if (device.managementIdentity) " · 恢复管理身份" else "")
                 StatusText(device.status)
-                if (device.canRevoke) BootstrapButton("撤销此设备", secondary = true, enabled = !state.busy && state.managementUnlocked) { actions.prepareRevocation(device.id) }
+                if (device.canRevoke) BootstrapButton("撤销此设备", secondary = true, enabled = !interactionBlocked && state.managementUnlocked) { actions.prepareRevocation(device.id) }
             }
         }
-        DesktopGroupFrozenReviewBrowser(view, state.busy, actions)
-        DesktopLanSyncGroupResolutionHistory(view, state.busy, actions)
+        DesktopGroupFrozenReviewBrowser(view, interactionBlocked, actions)
+        DesktopLanSyncGroupResolutionHistory(view, interactionBlocked, actions)
         actionReview?.let { review -> DesktopGroupActionReview(review, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
-            DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, state.busy, actions)
+            DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
             val image = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
@@ -114,14 +115,14 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         state.peerConfirmation?.let { peer ->
             StatusText("允许 ${peer.name} 加入设备组？")
             StatusText("设备身份：${peer.fingerprint}")
-            BootstrapButton("确认加入此设备", enabled = !state.busy && state.managementUnlocked) { actions.acceptPeer(peer.binding) }
+            BootstrapButton("确认加入此设备", enabled = !interactionBlocked && state.managementUnlocked) { actions.acceptPeer(peer.binding) }
         }
         state.revocation?.let { review ->
             StatusText("撤销 ${review.name}？")
             StatusText("该设备将无法取得新的同步密钥，已保存的副本仍会保留。网盘账号授权需要单独撤销。")
             ActionRow {
-                BootstrapButton("确认撤销", enabled = !state.busy && state.managementUnlocked) { actions.confirmRevocation(review.binding) }
-                BootstrapButton("取消", secondary = true, enabled = !state.busy) { actions.cancelRevocation() }
+                BootstrapButton("确认撤销", enabled = !interactionBlocked && state.managementUnlocked) { actions.confirmRevocation(review.binding) }
+                BootstrapButton("取消", secondary = true, enabled = !interactionBlocked) { actions.cancelRevocation() }
             }
         }
     }

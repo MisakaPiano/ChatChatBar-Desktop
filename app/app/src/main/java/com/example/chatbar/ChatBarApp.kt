@@ -230,6 +230,7 @@ class ChatBarApp : Application() {
         super.onCreate()
         instance = this
         CrashReportManager.initialize(this)
+        lanSyncOwner.observeApplicationLifecycle()
 
         // 1. 初始化文件存储
         try { lanSyncOwner.recoverBeforeRepositories() }

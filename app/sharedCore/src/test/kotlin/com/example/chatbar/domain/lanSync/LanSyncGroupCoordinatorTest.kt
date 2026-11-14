@@ -57,6 +57,7 @@ class LanSyncGroupCoordinatorTest {
         private val owners = mutableListOf<LanSyncGroupEnrollment>()
         private val coordinators = mutableListOf<LanSyncGroupCoordinator>()
         var setupCalls = 0
+        var recoveryCode: String? = null
         val reloads = AtomicInteger()
         val platform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) = work()
@@ -64,8 +65,8 @@ class LanSyncGroupCoordinatorTest {
         }
         fun founder() = LanSyncGroupEnrollment(profile, workspace, platform, identity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(owners::add)
-        fun coordinator(sourceChanges: Flow<Long>? = null, beforeSetup: suspend () -> Unit = {}) = LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
-            ::founder, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC", { setupCalls++; beforeSetup() }, sourceChanges).also(coordinators::add)
+        fun coordinator(sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false, beforeSetup: suspend () -> Unit = {}) = LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
+            ::founder, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC", { setupCalls++; beforeSetup() }, sourceChanges, initiallyPaused).also(coordinators::add)
         fun author(trust: SyncGroupTrust) = SyncAuthorJournal(profile.resolve("node/author"), trust,
             Base64.getEncoder().encodeToString(identity.certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
         fun writeCard(name: String) {
@@ -181,10 +182,44 @@ class LanSyncGroupCoordinatorTest {
         val coordinator = f.coordinator(sourceChanges)
         coordinator.createGroup()
         await { coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE && !coordinator.state.value.busy }
+        f.recoveryCode = requireNotNull(coordinator.state.value.recoveryCode)
         coordinator.recoverySaved(requireNotNull(coordinator.state.value.setupBinding))
         await { coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy && coordinator.view.value != null }
         assertNull(coordinator.state.value.error)
         return coordinator
+    }
+
+    private class ObservedNetwork(private val delegate: LanSyncNetwork) : LanSyncNetwork {
+        val calls = AtomicInteger()
+        val forbidden = AtomicBoolean(false)
+        private fun touch() {
+            calls.incrementAndGet()
+            check(!forbidden.get()) { "SYNTHETIC_PAUSED_NETWORK_FORBIDDEN" }
+        }
+        override fun addresses(): List<String> { touch(); return delegate.addresses() }
+        override fun accepts(address: InetAddress): Boolean { touch(); return delegate.accepts(address) }
+        override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
+            touch(); return delegate.connect(identity, peer)
+        }
+        override fun listening(fingerprint: String, port: Int) { touch() }
+        override fun discover(fingerprint: String): Pair<String, Int>? { touch(); return null }
+        override val discoveryEnabled: Boolean get() { touch(); return false }
+    }
+
+    /** Obtain the real app listener through an ordinary management invitation, then use its pinned TLS protocol. */
+    private suspend fun liveListenerPort(f: Fixture, coordinator: LanSyncGroupCoordinator,
+        access: LanSyncGroupRuntimeAccess): Int {
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { coordinator.state.value.managementUnlocked && !coordinator.state.value.busy }
+        coordinator.createInvitation()
+        await { coordinator.state.value.invitation != null && !coordinator.state.value.busy }
+        assertNull(coordinator.state.value.error)
+        val port = requireNotNull(coordinator.state.value.invitation?.bootstrap).storePort
+        val remote = access.remote(LanSyncPeer(f.identity.fingerprint, "synthetic self", "10.0.0.1", port), f.network)
+        assertEquals(requireNotNull(access.replica.metadata(access.vault.key)), remote.metadata(access.vault.key))
+        coordinator.closeInvitation()
+        coordinator.lockManagement()
+        return port
     }
 
     private fun retainedFiles(root: Path): Map<String, String> = Files.walk(root).use { paths ->
@@ -279,6 +314,7 @@ class LanSyncGroupCoordinatorTest {
         val unit = "character_cards/card"
         f.writeCard("synthetic original before stale deletion")
         val original = Files.readAllBytes(f.card)
+        val originalCard = requireNotNull(LanSyncJsonFiles.read(f.card, CharacterCard.serializer()))
         val coordinator = readyCoordinator(f)
         val access = requireNotNull(f.founder().runtimeAccess())
         val author = f.author(access.trust)
@@ -295,8 +331,11 @@ class LanSyncGroupCoordinatorTest {
         assertTrue(action.canConfirm)
         val objects = retainedFiles(f.profile.resolve("local-replica"))
         val recovery = f.workspace.recovery.list()
-        f.writeCard("synthetic later user edit must survive stale confirmation")
+        // Restore the already signed business value with a new local audit byte sequence. An
+        // ordinary background scan may observe it, but has no new business proposal to publish.
+        LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), originalCard.copy(updatedAt = originalCard.updatedAt + 1))
         val edited = Files.readAllBytes(f.card)
+        assertFalse(original.contentEquals(edited))
         coordinator.confirmActionReview(action.binding)
         await { !coordinator.state.value.busy && coordinator.state.value.error != null }
         assertTrue(requireNotNull(coordinator.state.value.error).endsWith("SYNC_GROUP_SOURCE_CHANGED"))
@@ -331,9 +370,25 @@ class LanSyncGroupCoordinatorTest {
         val author = f.author(access.trust)
         val initialOperation = access.node.sourceOperations().single()
         val initial = requireNotNull(author.entry(initialOperation))
-        val initialNative = requireNotNull(coordinator.view.value).nativeState
-        f.writeCard("synthetic unpublished user edit before recovery")
+        f.writeCard("synthetic published user edit before recovery")
         val edited = Files.readAllBytes(f.card)
+        coordinator.retry()
+        await {
+            val plan = coordinator.view.value?.plan
+            !coordinator.state.value.busy &&
+                plan?.before?.records?.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "synthetic published user edit before recovery" &&
+                plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED
+        }
+        assertNull(coordinator.state.value.error)
+        val publishedOperations = access.node.sourceOperations()
+        assertEquals(2, publishedOperations.size)
+        assertEquals(initialOperation, publishedOperations.first())
+        assertEquals(2L, author.state().committedSequence)
+        val editedEntry = requireNotNull(author.entry(publishedOperations.last()))
+        assertEquals(initial.version.reference(), editedEntry.version.previousByAuthor)
+        assertNotNull(access.node.receipt(publishedOperations.last(), access.localTarget))
+        assertSourceOriginal(f, editedEntry, edited)
+        val publishedNative = requireNotNull(coordinator.view.value).nativeState
         val objects = retainedFiles(f.profile.resolve("local-replica"))
         coordinator.refreshRecovery()
         await { coordinator.recoveryEntries.value.any { it.transaction == initial.request.sourceCheckpoint } && !coordinator.state.value.busy }
@@ -355,12 +410,12 @@ class LanSyncGroupCoordinatorTest {
         assertNull(cancelled.source)
         assertNull(cancelled.incoming)
         assertEquals(setOf(unit), firstPreview.restoredUnits)
-        assertEquals(listOf("synthetic unpublished user edit before recovery"), firstPreview.currentRecords.map { it.body.getValue("name").jsonPrimitive.content })
+        assertEquals(listOf("synthetic published user edit before recovery"), firstPreview.currentRecords.map { it.body.getValue("name").jsonPrimitive.content })
         assertEquals(listOf("synthetic signed recovery original"), firstPreview.restoredRecords.map { it.body.getValue("name").jsonPrimitive.content })
         assertContentEquals(edited, Files.readAllBytes(f.card))
-        assertEquals(listOf(initialOperation), access.node.sourceOperations())
-        assertEquals(1L, author.state().committedSequence)
-        assertEquals(initialNative, access.node.inspect().nativeState)
+        assertEquals(publishedOperations, access.node.sourceOperations())
+        assertEquals(2L, author.state().committedSequence)
+        assertEquals(publishedNative, access.node.inspect().nativeState)
         assertEquals(objects, retainedFiles(f.profile.resolve("local-replica")))
         assertTrue(f.workspace.completedRecoveries(f.identity.fingerprint).isEmpty())
         coordinator.cancelActionReview()
@@ -368,7 +423,10 @@ class LanSyncGroupCoordinatorTest {
         await { !coordinator.state.value.busy && coordinator.state.value.error?.endsWith("SYNC_GROUP_REVIEW_DISMISSED") == true }
         assertContentEquals(edited, Files.readAllBytes(f.card))
         assertTrue(f.workspace.completedRecoveries(f.identity.fingerprint).isEmpty())
-        assertEquals(1L, author.state().committedSequence)
+        assertEquals(publishedOperations, access.node.sourceOperations())
+        assertEquals(2L, author.state().committedSequence)
+        assertEquals(publishedNative, access.node.inspect().nativeState)
+        assertEquals(objects, retainedFiles(f.profile.resolve("local-replica")))
         coordinator.prepareRestore(unit)
         await { coordinator.actionsReview.value?.recovery != null && !coordinator.state.value.busy }
         val confirmed = requireNotNull(coordinator.actionsReview.value)
@@ -388,12 +446,12 @@ class LanSyncGroupCoordinatorTest {
         assertRecoveryOriginal(f, preview.id, edited)
         assertSourceOriginal(f, initial, original)
         val operations = access.node.sourceOperations()
-        assertEquals(2, operations.size)
-        assertEquals(initialOperation, operations.first())
-        assertEquals(2L, author.state().committedSequence)
+        assertEquals(3, operations.size)
+        assertEquals(publishedOperations, operations.take(2))
+        assertEquals(3L, author.state().committedSequence)
         val restored = requireNotNull(author.entry(operations.last()))
-        assertEquals(2L, restored.version.authorSequence)
-        assertEquals(initial.version.reference(), restored.version.previousByAuthor)
+        assertEquals(3L, restored.version.authorSequence)
+        assertEquals(editedEntry.version.reference(), restored.version.previousByAuthor)
         assertNotEquals(initial.version.reference(), restored.version.reference())
         assertEquals(initial.version.changes.getValue(unit).valueHash, restored.version.changes.getValue(unit).valueHash,
             "Restoring an already signed value must remain a fresh logical revision")
@@ -410,7 +468,146 @@ class LanSyncGroupCoordinatorTest {
         assertEquals(allRecovery, f.workspace.recovery.list())
         assertEquals(operations, access.node.sourceOperations())
         assertSourceOriginal(f, initial, original)
+        assertSourceOriginal(f, editedEntry, edited)
         assertRecoveryOriginal(f, preview.id, edited)
+    }
+
+    @Test fun initiallyPausedReadyOwnerOpensReadOnlyUntilExplicitResumeThenPublishesActualStorageChanges() {
+        val network = ObservedNetwork(noNetwork)
+        fixture(network) { f ->
+            val unit = "character_cards/card"
+            f.writeCard("synthetic original before paused reopen")
+            val original = Files.readAllBytes(f.card)
+            val initial = readyCoordinator(f)
+            val access = requireNotNull(f.founder().runtimeAccess())
+            val author = f.author(access.trust)
+            val firstOperation = access.node.sourceOperations().single()
+            val first = requireNotNull(author.entry(firstOperation))
+            val origin = Files.readAllBytes(f.profile.resolve("node/author/origin.protected"))
+            initial.closeAndDrain()
+            val retained = listOf("node", "custody", "local-replica", "app-runtime/replica-reads")
+                .associateWith { retainedFiles(f.profile.resolve(it)) }
+            val storage = JsonFileStorage(f.data)
+            network.calls.set(0)
+            network.forbidden.set(true)
+            val coordinator = f.coordinator(storage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true)
+            coordinator.open()
+            await { coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy }
+            assertTrue(coordinator.state.value.paused)
+            assertTrue(coordinator.state.value.devices.any { it.thisDevice })
+            assertFalse(coordinator.state.value.managementUnlocked)
+            assertNull(coordinator.state.value.error)
+            assertNull(coordinator.view.value, "Paused open must not run a native inspection or publication cycle")
+            coordinator.onForeground()
+            coordinator.onNetworkAvailable()
+            coordinator.startIfConfigured()
+            delay(350)
+            assertTrue(coordinator.state.value.paused)
+            assertEquals(0, network.calls.get())
+            assertEquals(1L, author.state().committedSequence)
+            assertEquals(listOf(firstOperation), access.node.sourceOperations())
+            for ((name, files) in retained) assertEquals(files, retainedFiles(f.profile.resolve(name)), name)
+            assertContentEquals(original, Files.readAllBytes(f.card))
+            assertContentEquals(origin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+
+            network.forbidden.set(false)
+            coordinator.resumeIfConfigured()
+            await { !coordinator.state.value.paused && !coordinator.state.value.busy && coordinator.view.value != null }
+            liveListenerPort(f, coordinator, access)
+            assertTrue(network.calls.get() > 0)
+            storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic committed edit after explicit resume", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            val edited = Files.readAllBytes(f.card)
+            await {
+                val plan = coordinator.view.value?.plan
+                plan?.before?.records?.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "synthetic committed edit after explicit resume" &&
+                    plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED && !coordinator.state.value.busy
+            }
+            assertNull(coordinator.state.value.error)
+            val operations = access.node.sourceOperations()
+            assertEquals(2, operations.size)
+            assertEquals(firstOperation, operations.first())
+            assertEquals(2L, author.state().committedSequence)
+            val resumed = requireNotNull(author.entry(operations.last()))
+            assertEquals(first.version.reference(), resumed.version.previousByAuthor)
+            assertNotNull(access.node.receipt(operations.last(), access.localTarget))
+            assertContentEquals(origin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+            assertContentEquals(edited, Files.readAllBytes(f.card))
+            assertSourceOriginal(f, first, original)
+            assertSourceOriginal(f, resumed, edited)
+            assertEquals(1, f.setupCalls)
+        }
+    }
+
+    @Test fun recoverablePauseClosesListenerKeepsLateStorageCommitUnsignedAndResumesSameAuthorExactlyOnce() {
+        val network = ObservedNetwork(noNetwork)
+        fixture(network) { f ->
+            val unit = "character_cards/card"
+            f.writeCard("synthetic original before recoverable pause")
+            val original = Files.readAllBytes(f.card)
+            val storage = JsonFileStorage(f.data)
+            val coordinator = readyCoordinator(f, storage.committedRevisionFor(LanSyncScope.schemas.keys))
+            val access = requireNotNull(f.founder().runtimeAccess())
+            val author = f.author(access.trust)
+            val firstOperation = access.node.sourceOperations().single()
+            val first = requireNotNull(author.entry(firstOperation))
+            val origin = Files.readAllBytes(f.profile.resolve("node/author/origin.protected"))
+            val oldPort = liveListenerPort(f, coordinator, access)
+            coordinator.pauseAndDrain()
+            assertTrue(coordinator.state.value.paused)
+            assertFalse(coordinator.state.value.busy)
+            assertFalse(coordinator.state.value.managementUnlocked)
+            assertNull(coordinator.state.value.invitation)
+            assertFails { Socket("127.0.0.1", oldPort).close() }
+            val retained = listOf("node", "custody", "local-replica", "app-runtime/replica-reads")
+                .associateWith { retainedFiles(f.profile.resolve(it)) }
+            network.calls.set(0)
+            network.forbidden.set(true)
+            storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic late committed edit while paused", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            val edited = Files.readAllBytes(f.card)
+            coordinator.onForeground()
+            coordinator.onNetworkAvailable()
+            coordinator.startIfConfigured()
+            coordinator.retry()
+            delay(350)
+            assertTrue(coordinator.state.value.paused)
+            assertNull(coordinator.state.value.error)
+            assertEquals(0, network.calls.get())
+            assertEquals(1L, author.state().committedSequence)
+            assertEquals(listOf(firstOperation), access.node.sourceOperations())
+            for ((name, files) in retained) assertEquals(files, retainedFiles(f.profile.resolve(name)), name)
+            assertContentEquals(origin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+            assertContentEquals(edited, Files.readAllBytes(f.card))
+
+            network.forbidden.set(false)
+            coordinator.resumeIfConfigured()
+            await {
+                val plan = coordinator.view.value?.plan
+                !coordinator.state.value.paused && !coordinator.state.value.busy &&
+                    plan?.before?.records?.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "synthetic late committed edit while paused" &&
+                    plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED
+            }
+            assertNull(coordinator.state.value.error)
+            val operations = access.node.sourceOperations()
+            assertEquals(2, operations.size)
+            assertEquals(firstOperation, operations.first())
+            assertEquals(2L, author.state().committedSequence)
+            val resumed = requireNotNull(author.entry(operations.last()))
+            assertEquals(2L, resumed.version.authorSequence)
+            assertEquals(first.version.reference(), resumed.version.previousByAuthor)
+            assertNotNull(access.node.receipt(operations.last(), access.localTarget))
+            liveListenerPort(f, coordinator, access)
+            val previousView = coordinator.view.value
+            coordinator.retry()
+            await { coordinator.view.value !== previousView && !coordinator.state.value.busy }
+            assertNull(coordinator.state.value.error)
+            assertEquals(operations, access.node.sourceOperations())
+            assertEquals(2L, author.state().committedSequence)
+            assertContentEquals(origin, Files.readAllBytes(f.profile.resolve("node/author/origin.protected")))
+            assertContentEquals(edited, Files.readAllBytes(f.card))
+            assertSourceOriginal(f, first, original)
+            assertSourceOriginal(f, resumed, edited)
+            assertEquals(1, f.setupCalls)
+        }
     }
 
     @Test fun committedStorageRevisionAutomaticallyPublishesAndLateShutdownSaveSealsWithoutNetworkOrReload() {

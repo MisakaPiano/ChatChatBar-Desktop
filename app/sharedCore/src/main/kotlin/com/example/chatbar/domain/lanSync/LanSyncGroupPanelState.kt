@@ -9,7 +9,7 @@ data class LanSyncGroupRevocationConfirmation(val binding: String, val name: Str
 
 /** Screen projection only. Secret strings are transient, never saveable UI/backup state or diagnostic text. */
 data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGroupPanelStage.EMPTY,
-    val busy: Boolean = false, val status: String = "尚未设置设备组", val error: String? = null,
+    val busy: Boolean = false, val paused: Boolean = false, val status: String = "尚未设置设备组", val error: String? = null,
     val setupBinding: String? = null, val recoveryCode: String? = null, val managementUnlocked: Boolean = false,
     val localManagementAvailable: Boolean = false,
     val managementRecoveryAvailable: Boolean = false, val managementCanInvite: Boolean = false,

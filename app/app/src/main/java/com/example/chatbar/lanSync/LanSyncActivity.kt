@@ -1,9 +1,15 @@
 package com.example.chatbar.lanSync
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,10 +17,12 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.ui.kit.*
@@ -39,8 +47,9 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     val recoveryEntries by coordinator.recoveryEntries.collectAsState()
     val recoveryView by coordinator.recoveryView.collectAsState()
     val imageState by coordinator.images.collectAsState()
+    val backgroundState by owner.backgroundState.collectAsState()
     var legacySelected by remember(owner) { mutableStateOf(false) }
-    LaunchedEffect(coordinator) { coordinator.open() }
+    LaunchedEffect(owner) { owner.openGroupPage() }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let(coordinator::beginJoin)
     }
@@ -52,6 +61,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
             if (legacySelected) CbButton("设备组同步", { legacySelected = false }, variant = ButtonVariant.Secondary)
             else if (legacyAllowed) CbButton("旧版双端同步", { legacySelected = true }, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
+        if (!legacyAllowed) LanSyncBackgroundControls(owner, backgroundState)
         Box(Modifier.weight(1f)) {
             if (legacySelected && legacyAllowed) {
                 val runtime = remember(owner) { owner.runtime }
@@ -73,6 +83,43 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
                 scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
                     .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
             }
+        }
+    }
+}
+
+@Composable
+private fun LanSyncBackgroundControls(owner: AndroidLanSync, state: AndroidLanSyncBackgroundState) {
+    val context = LocalContext.current
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        owner.onForeground()
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        CbText(when (state.phase) {
+            AndroidLanSyncBackgroundPhase.NOT_CONFIGURED -> "设备组后台运行尚未启用"
+            AndroidLanSyncBackgroundPhase.WAITING_FOR_FOREGROUND -> "等待应用可见且初始化完成后启用后台运行"
+            AndroidLanSyncBackgroundPhase.STARTING -> "正在启用设备组后台运行；尚未取得前台服务保护"
+            AndroidLanSyncBackgroundPhase.RUNNING -> "设备组后台服务已运行；离开此页后仍可处理同网同步"
+            AndroidLanSyncBackgroundPhase.STOPPING -> "正在停止设备组同步；完成前保留后台通知"
+            AndroidLanSyncBackgroundPhase.PAUSED -> "设备组同步已暂停；返回应用不会自动恢复"
+            AndroidLanSyncBackgroundPhase.FAILED -> "设备组后台运行未就绪；可在此恢复"
+        })
+        if (state.phase == AndroidLanSyncBackgroundPhase.RUNNING)
+            CbText("实际传输与待确认项目见下方状态；系统休眠、强停或终止进程后可能需要回到应用恢复。", color = ChatBarTheme.colors.mutedForeground)
+        state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+        if (state.foregroundProtected || state.phase == AndroidLanSyncBackgroundPhase.STARTING)
+            CbButton("停止设备组同步", owner::pauseBackground,
+                enabled = state.phase != AndroidLanSyncBackgroundPhase.STOPPING, variant = ButtonVariant.Secondary)
+        else if (state.phase != AndroidLanSyncBackgroundPhase.STOPPING)
+            CbButton("恢复设备组后台运行", owner::resumeBackground, variant = ButtonVariant.Secondary)
+        if (!state.notificationsVisible) {
+            CbText("通知权限或通知频道已关闭，通知栏可能不显示运行状态和停止按钮；仍可在此停止同步。", color = ChatBarTheme.colors.warning)
+            CbButton("允许设备组通知", {
+                if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                else context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+            }, variant = ButtonVariant.Secondary)
         }
     }
 }

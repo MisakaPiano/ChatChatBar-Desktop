@@ -87,15 +87,17 @@ class LanSyncGroupCoordinatorResolutionTest {
 
             write(card, "local left"); leftRaw = Files.readAllBytes(card)
             coordinator.retry()
-            await { !coordinator.state.value.busy && coordinator.view.value?.plan?.before?.records?.any { name(it) == "local left" } == true }
-            if (author().state().committedSequence == 1L) {
-                coordinator.prepareSourceReview(requireNotNull(coordinator.view.value), unit)
-                await { !coordinator.state.value.busy && coordinator.actionsReview.value != null }
-                coordinator.confirmActionReview(requireNotNull(coordinator.actionsReview.value).binding)
-                await { !coordinator.state.value.busy && coordinator.actionsReview.value == null }
+            await {
+                val plan = coordinator.view.value?.plan
+                !coordinator.state.value.busy && plan?.before?.records?.any { name(it) == "local left" } == true &&
+                    plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED
             }
+            assertNull(coordinator.state.value.error)
             assertEquals(2L, author().state().committedSequence)
-            left = requireNotNull(author().entry(access.node.sourceOperations().last()))
+            val leftOperation = access.node.sourceOperations().last()
+            left = requireNotNull(author().entry(leftOperation))
+            assertEquals(2L, left.version.authorSequence)
+            assertNotNull(access.node.receipt(leftOperation, access.localTarget))
             write(remoteData.resolve("entities/character_cards/card.json"), "remote right")
             val review = remote.inspect().review(setOf(unit))
             right = remote.commit(review, review.requiredBindings)

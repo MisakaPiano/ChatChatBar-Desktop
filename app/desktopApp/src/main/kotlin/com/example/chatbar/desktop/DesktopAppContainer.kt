@@ -955,20 +955,27 @@ internal suspend fun closeDesktopDataRuntimes(
         // Ordinary draft failure is reported only after the worker has joined.
         primaryFailure = error
     }
+    var completedLocalFlushFailure: DesktopLanSyncFinalFlushIncompleteException? = null
     if (primaryFailure == null) {
         try { finalLocalFlush() }
-        catch (pending: DesktopLanSyncFinalFlushException) {
+        catch (pending: DesktopLanSyncFinalFlushTimeoutException) {
             // The independent retained task may still hold the native gate. Keep every owner live.
             throw pending
+        } catch (incomplete: DesktopLanSyncFinalFlushIncompleteException) {
+            // The real flush task has ended. Pending sync never keeps ordinary saved data open.
+            completedLocalFlushFailure = incomplete
+            primaryFailure = incomplete
         } catch (error: Throwable) { primaryFailure = error }
     }
+    var teardownFailed = false
     try {
         DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_BEGIN)
         runtimeClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_END)
-    } catch (pending: DesktopLanSyncFinalFlushException) {
+    } catch (pending: DesktopLanSyncFinalFlushTimeoutException) {
         throw pending
     } catch (error: Throwable) {
+        teardownFailed = true
         if (primaryFailure == null) primaryFailure = error else primaryFailure.addSuppressed(error)
     }
     try {
@@ -976,6 +983,7 @@ internal suspend fun closeDesktopDataRuntimes(
         coordinatorClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.COORDINATOR_CLOSE_END)
     } catch (error: Throwable) {
+        teardownFailed = true
         if (primaryFailure == null) {
             primaryFailure = error
         } else {
@@ -987,11 +995,13 @@ internal suspend fun closeDesktopDataRuntimes(
         migrationServiceClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.MIGRATION_CLOSE_END)
     } catch (error: Throwable) {
+        teardownFailed = true
         if (primaryFailure == null) {
             primaryFailure = error
         } else {
             primaryFailure.addSuppressed(error)
         }
     }
+    if (!teardownFailed) completedLocalFlushFailure?.markTeardownCompleted()
     primaryFailure?.let { throw it }
 }
