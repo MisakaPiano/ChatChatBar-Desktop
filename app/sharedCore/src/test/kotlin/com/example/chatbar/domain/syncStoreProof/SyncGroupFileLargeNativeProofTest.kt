@@ -9,6 +9,8 @@ import java.io.FilterInputStream
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -22,8 +24,27 @@ class SyncGroupFileLargeNativeProofTest {
     private data class Fingerprint(val length: Long, val sha256: String)
     private fun tree(root: Path): Map<String, Fingerprint> = Files.walk(root).use { paths ->
         paths.filter { Files.isRegularFile(it, NOFOLLOW_LINKS) }.toList().associate { path ->
-            val length = Files.size(path)
-            root.relativize(path).toString() to Fingerprint(length, LanSyncResourceStore.hashFile(path, length))
+            // A tree includes empty bookkeeping/lock files, unlike a positive-length resource.
+            // Hash every file; changing files must fail rather than disappear from the snapshot.
+            val before = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+            require(before.isRegularFile && !before.isSymbolicLink) { "SYNTHETIC_GROUP_FILE_TREE_CHANGED" }
+            val length = before.size()
+            val digest = MessageDigest.getInstance("SHA-256")
+            var count = 0L
+            Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val read = input.read(buffer); if (read < 0) break
+                    require(count <= length - read) { "SYNTHETIC_GROUP_FILE_TREE_CHANGED" }
+                    digest.update(buffer, 0, read); count += read
+                }
+            }
+            val after = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+            require(count == length && after.isRegularFile && !after.isSymbolicLink && after.size() == length &&
+                after.fileKey() == before.fileKey() && after.lastModifiedTime() == before.lastModifiedTime()) {
+                "SYNTHETIC_GROUP_FILE_TREE_CHANGED"
+            }
+            root.relativize(path).toString() to Fingerprint(length, digest.digest().joinToString("") { "%02x".format(it) })
         }
     }
 
@@ -50,6 +71,10 @@ class SyncGroupFileLargeNativeProofTest {
                 }
             }
             fun directory(name: String) = Files.createDirectory(root.resolve(name))
+            val treePreflight = directory("tree-preflight")
+            Files.createFile(treePreflight.resolve("empty-bookkeeping.lock"))
+            assertEquals(mapOf("empty-bookkeeping.lock" to Fingerprint(0,
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")), tree(treePreflight))
             val admin = LanSyncGroupAdministrationTest.Fixture(directory("original")).also { administration = it }
             admin.seed()
             val sourceState = directory("source-workspace")
@@ -136,8 +161,10 @@ class SyncGroupFileLargeNativeProofTest {
                 assertTrue(files.filter { Files.isRegularFile(it, NOFOLLOW_LINKS) }.noneMatch { path -> listOf("receipt-", "weak-receipt-", "chunk-receipt-", "cloud-receipt-")
                     .any { path.fileName.toString().startsWith(it) } })
             }
-            val rebuildableBytes = tree(exportRoot).values.fold(0L) { sum, item -> Math.addExact(sum, item.length) }
+            // The prepared file has closed, and both source owners are now closed before any
+            // filesystem-tree snapshot. No retry worker may mutate these proof-owned roots.
             enrollment.close(); admin.close()
+            val rebuildableBytes = tree(exportRoot).values.fold(0L) { sum, item -> Math.addExact(sum, item.length) }
             val sourceBefore = tree(admin.root)
             val offline = root.resolve("original-offline")
             Files.move(admin.root, offline)

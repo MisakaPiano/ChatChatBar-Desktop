@@ -4,6 +4,7 @@ import com.example.chatbar.domain.syncStore.*
 import java.io.FilterInputStream
 import java.io.InputStream
 import java.io.InterruptedIOException
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
@@ -362,8 +363,32 @@ class LanSyncGroupFileRecoveryOwner internal constructor(private val root: () ->
         access.reader.routes("filerecovery", listOf(LanSyncGroupReplicaReader.Route(routeId, backend)))
         try {
             val discovery = access.reader.discoveryFrom(backend, routeId)
+            val discard = object : OutputStream() {
+                override fun write(byte: Int) = checkSession(value)
+                override fun write(bytes: ByteArray, offset: Int, length: Int) = checkSession(value)
+            }
             var cursor: CommitCursor? = null
-            do { checkSession(value); cursor = access.node.discover(discovery, cursor).nextCursor } while (cursor != null)
+            do {
+                checkSession(value)
+                val page = access.node.discover(discovery, cursor)
+                // Older READY profiles may have the exact Inbox candidate without the shared
+                // Reader copy. Inbox then skips source reads; retain that missing copy explicitly.
+                runInterruptible(Dispatchers.IO) {
+                    page.observations.forEach { observation ->
+                        checkSession(value)
+                        if (observation.stage == SyncInboxStage.MIRRORED && observation.key.kind == CiphertextObjectKind.COMMIT) {
+                            val descriptor = requireNotNull(observation.descriptor) { "SYNC_GROUP_FILE_RECOVERY_CANDIDATE_MISSING" }
+                            if (access.reader.metadataExact(observation.key, descriptor) == null) {
+                                require(discovery.readTo(observation.key, discard, descriptor) ==
+                                    CiphertextObjectMetadata(observation.key, descriptor)) { "SYNC_GROUP_FILE_RECOVERY_CANDIDATE_CHANGED" }
+                            }
+                        }
+                        checkSession(value)
+                    }
+                }
+                cursor = page.nextCursor
+            } while (cursor != null)
+            checkSession(value)
             val inspected = access.node.inspect()
             inspected.plan?.let { checkSession(value); access.node.apply(it) }
             checkSession(value); val after = access.node.inspect()

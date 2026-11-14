@@ -422,11 +422,18 @@ class FileRecoveryOwnerTest {
         f.originalUnchanged()
     }
 
-    @Test fun readyFileRecoveryRetainsNewRootCapsulesForColdLocalExportAfterEveryTemporarySourceIsGone() = fixture { f ->
+    @Test fun readyFileRecoveryRetainsNewRootCapsulesForColdLocalExportAfterEveryTemporarySourceIsGone() =
+        readyFileRecoveryRetainsRootCapsulesForColdExport(innerAlreadyRetained = false)
+
+    @Test fun readyFileRecoveryBackfillsRootCapsulesAlreadyInInnerInboxForColdLocalExport() =
+        readyFileRecoveryRetainsRootCapsulesForColdExport(innerAlreadyRetained = true)
+
+    private fun readyFileRecoveryRetainsRootCapsulesForColdExport(innerAlreadyRetained: Boolean) = fixture { f ->
         val first = f.owner(); val initial = review(f, first)
         first.confirm(initial.binding); completed(first); first.closeAndDrain()
         val receiver = requireNotNull(f.lastAccess.get())
         val r2 = receiver.ledger().current()
+        val nativeSequence = receiver.node.inspectLocal().nativeState.completedSequence
         val receiverData = files(f.dailyData)
         val receiverRecipient = files(f.dailyRoot.resolve("joining/recipient"))
         val receiverOrigins = listOf("author", "native").associateWith {
@@ -529,15 +536,44 @@ class FileRecoveryOwnerTest {
         rootCapsules.forEach { assertNull(receiver.reader.cachedOnly().metadata(it.key), "R3 was never prefilled into the receiver") }
         unchanged(receiverData, f.dailyData)
 
+        if (innerAlreadyRetained) {
+            // Reproduce the old READY window through the real raw discovery entry: Inbox has
+            // the same complete R3 candidates, but no Reader wrapper has retained its root capsules.
+            Files.newInputStream(inputFile).use { input ->
+                LanSyncGroupEncryptedFilePackage.stage(input, Files.createDirectory(f.root.resolve("legacy-inner-R3-stage"))).use { staged ->
+                    var cursor: CommitCursor? = null
+                    do { cursor = receiver.node.discover(staged.quarantine, cursor).nextCursor } while (cursor != null)
+                }
+            }
+            val innerRoot = f.dailyRoot.resolve("joining/node/inbox/ciphertext-candidates")
+            assertTrue(Files.isDirectory(innerRoot))
+            val inner = SyncCiphertextCandidates(innerRoot)
+            assertTrue(inner.entries().containsAll(allCapsules))
+            allCapsules.forEach { metadata ->
+                val bytes = ByteArrayOutputStream()
+                assertEquals(metadata, inner.exact(metadata).readTo(metadata.key, bytes, metadata.descriptor))
+                assertEquals(metadata.descriptor.length, bytes.size().toLong())
+                assertEquals(metadata.descriptor.sha256.hex, hash(bytes.toByteArray()))
+            }
+            assertEquals(r3.reference(), receiver.node.reconcileForPrefetch().ledgerCheckpoint)
+            assertEquals(r3, receiver.ledger().current())
+            rootCapsules.forEach { assertNull(receiver.reader.cachedOnly().metadata(it.key), "Inner R3 exists while the outer Reader cache is absent") }
+            assertEquals(nativeSequence, receiver.node.inspectLocal().nativeState.completedSequence)
+            assertEquals(0L, f.author(receiver).state().committedSequence)
+            assertEquals(2L, f.rootState().completedSequence)
+            unchanged(receiverData, f.dailyData)
+        }
+
         val restore = f.owner()
         val readyReview = review(f, restore) { Files.newInputStream(inputFile) }
         assertEquals(receiver.device, readyReview.device)
-        assertEquals(r2, receiver.ledger().current())
+        assertEquals(if (innerAlreadyRetained) r3 else r2, receiver.ledger().current())
         rootCapsules.forEach { assertNull(receiver.reader.cachedOnly().metadata(it.key)) }
         restore.confirm(readyReview.binding); assertFalse(completed(restore).pending)
         val imported = requireNotNull(f.lastAccess.get())
         assertEquals(r3, imported.ledger().current())
         allCapsules.forEach { assertEquals(it, imported.reader.cachedOnly().metadata(it.key)) }
+        assertEquals(nativeSequence, imported.node.inspectLocal().nativeState.completedSequence)
         assertEquals(2L, f.rootState().completedSequence)
         assertEquals(0L, f.author(imported).state().committedSequence); assertTrue(imported.node.sourceOperations().isEmpty())
         restore.closeAndDrain()
@@ -550,6 +586,7 @@ class FileRecoveryOwnerTest {
 
         val cold = requireNotNull(f.joining().runtimeAccess())
         assertEquals(r3, cold.ledger().current())
+        assertEquals(nativeSequence, cold.node.inspectLocal().nativeState.completedSequence)
         allCapsules.forEach { assertEquals(it, cold.reader.cachedOnly().metadata(it.key)) }
         val roundTrip = f.root.resolve("cold-reexport-R3.cbgroup")
         cold.prepareEncryptedFile(Files.createDirectory(f.root.resolve("cold-R3-export")), {}) { prepared ->

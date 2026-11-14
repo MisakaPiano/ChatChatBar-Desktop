@@ -233,6 +233,7 @@ ANDROID_FOCUS_MODE = "file-recovery-owner"
 ANDROID_FOCUS_FILES = CI_CONTROL_FILES | {
     LAN + "LanSyncGroupFileRecoveryOwner.kt",
     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/FileRecoveryOwnerTest.kt",
+    GROUP_PROOF + "SyncGroupFileLargeNativeProofTest.kt",
 }
 MAX_SOURCE_BYTES = 1024 * 1024
 PAGE_SIZE = 100

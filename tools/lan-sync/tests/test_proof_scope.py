@@ -208,6 +208,29 @@ class ProofScopeTest(unittest.TestCase):
                 self.assertEqual("ANDROID_FOCUS_OUTSIDE_ALLOWED_CHANGE_SCOPE", result.diagnostic)
         self.assertEqual("ANDROID_FOCUS_BASELINE_UNAVAILABLE", scope.select_android_scope(SyntheticGit(), HEAD, request).diagnostic)
 
+    def test_exact_file_large_fixture_can_keep_owner_focus_without_skipping_its_independent_byte_proof(self):
+        fixture = "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/SyncGroupFileLargeNativeProofTest.kt"
+        request = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
+        paths = [scope.LAN + "LanSyncGroupFileRecoveryOwner.kt",
+                 "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/FileRecoveryOwnerTest.kt", fixture]
+        git = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: paths}, ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+        focused = scope.select_android_scope(git, HEAD, request)
+        self.assertEqual("file-recovery-owner", focused.mode)
+        self.assertEqual("ANDROID_FOCUS_ONLY_PRIOR_FULL_SUITE_REMAINS_FAILED", focused.diagnostic)
+        proof, _ = self.control_scope(paths)
+        self.assertEqual({"legacy": False, "group": False, "cloud": False, "file": True}, proof.required)
+        neighbor = fixture.replace("SyncGroupFileLargeNativeProofTest.kt", "SyncGroupFileLargeNativeProofTestExtra.kt")
+        for extra in (neighbor, scope.LAN + "LanSyncGroupNativeApplyOwner.kt", scope.LAN + "LanSyncWorkspace.kt"):
+            with self.subTest(extra=extra):
+                outside = SyntheticGit({scope.ANDROID_FOCUS_BASELINE: paths + [extra]}, ancestors=(scope.ANDROID_FOCUS_BASELINE,))
+                refused = scope.select_android_scope(outside, HEAD, request)
+                self.assertEqual("full", refused.mode)
+                self.assertEqual("ANDROID_FOCUS_OUTSIDE_ALLOWED_CHANGE_SCOPE", refused.diagnostic)
+        native, _ = self.control_scope(paths + [scope.LAN + "LanSyncGroupNativeApplyOwner.kt"])
+        self.assertEqual({"legacy": False, "group": True, "cloud": True, "file": True}, native.required)
+        common, _ = self.control_scope(paths + [scope.LAN + "LanSyncWorkspace.kt"])
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), common.required)
+
     def test_focus_filter_or_baseline_injection_and_unavailable_diff_are_never_a_focused_success(self):
         valid = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
         for request in (dict(valid, tests="OtherTest; injected-command"), dict(valid, mode="arbitrary-filter"),
