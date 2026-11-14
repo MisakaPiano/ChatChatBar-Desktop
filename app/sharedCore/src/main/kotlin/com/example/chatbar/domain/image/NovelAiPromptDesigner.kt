@@ -9,6 +9,7 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.ImageUnderstandingResult
 import com.example.chatbar.domain.chat.ImageUnderstandingService
 import com.example.chatbar.domain.chat.StreamEvent
+import com.example.chatbar.domain.chat.RoleplayActionOptionsPolicy
 import com.example.chatbar.domain.prompt.NovelAiTagSearchEvidence
 import com.example.chatbar.domain.prompt.NovelAiCodexEvidence
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
@@ -792,6 +793,8 @@ class NovelAiPromptDesigner(
             val msg = messages.firstOrNull { it.id == anchorMessageId }
                 ?: return emptyList()
             if (msg.role == MessageRole.SYSTEM || msg.displayContent.isBlank()) return emptyList()
+            if (msg.role == MessageRole.ASSISTANT && RoleplayActionOptionsPolicy.withoutExplicitOptions(msg.displayContent).isBlank())
+                return emptyList()
             return listOf(msg)
         }
 
@@ -872,15 +875,13 @@ class NovelAiPromptDesigner(
             }
             val scene = messages.singleOrNull()
                 ?: error("聊天生图必须传入一条锚定消息")
+            val sceneText = PromptTemplates.novelAiImagePromptAssistantScene(
+                message = scene, playerName = playerName, botName = botName, preserveUsername = true)
+            require(sceneText.isNotBlank()) { "回复剔除行动选项后没有可用画面内容" }
             return listOf(
                 ChatApiMessage.text(
                     "assistant",
-                    PromptTemplates.novelAiImagePromptAssistantScene(
-                        message = scene,
-                        playerName = playerName,
-                        botName = botName,
-                        preserveUsername = true
-                    )
+                    sceneText
                 ),
                 ChatApiMessage.text(
                     "user",

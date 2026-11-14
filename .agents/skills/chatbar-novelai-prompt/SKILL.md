@@ -114,3 +114,5 @@ After NAI prompt-flow code changes:
 - Keep a request-shape test covering message roles before and after cleartext chat-template adaptation.
 
 - P7-C `NovelAiDesignTurnRunner` shares first-turn/revision-baseline/research/reply persistence between Android design ViewModel and Desktop Studio. The conversation repository is now shared; platform controllers retain cancellation and sanitized failure publication. Prompt literals remain in the existing shared authority/facade.
+
+Conversation-image source text uses shared RoleplayActionOptionsPolicy only for assistant replies. The exact same derived scene source feeds both tag-research planning and final conversationDesignMessages via NovelAiPromptAuthority. Only complete explicit long-dash action lists are removed; generic numbered prose, malformed/unclosed or quoted code and original USER text remain. Status/clothing and manual requirements remain. An action-only anchor stops before any research/final request. Stored messages, alternatives, exports and existing Prompt literals are unchanged. Chat-history numeric-choice behavior and click-fill buttons remain separate/deferred.

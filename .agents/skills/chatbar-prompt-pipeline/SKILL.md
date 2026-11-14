@@ -129,3 +129,5 @@ Do not move behavior between these owners without tracing every caller and test.
 - Do not infer order from SECTION constants.
 - Do not accept preview-only evidence for a request-delivery bug.
 - Do not change source-turn grouping without checking direct context, RAG, and long-term memory together.
+
+Conversation image planning/final design apply RoleplayActionOptionsPolicy through NovelAiPromptAuthority's scene-source helper before placeholder rendering. This is a derived assistant-only input projection, not a static Prompt wording change or saved-message rewrite. The chat-history assembler's numeric-choice policy is separate. See chatbar-novelai-prompt.
