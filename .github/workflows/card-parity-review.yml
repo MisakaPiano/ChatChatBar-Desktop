@@ -53,7 +53,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ChatPeopleControlsTest,com.example.chatbar.data.repository.CharacterBackgroundLibraryTest,com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest,com.example.chatbar.domain.card.PlayerAvatarTransferTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest --no-daemon --stacktrace
+          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.PromptFieldEstimatePanelTest,com.example.chatbar.ui.chat.ChatPeopleControlsTest,com.example.chatbar.data.repository.CharacterBackgroundLibraryTest,com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest,com.example.chatbar.domain.card.PlayerAvatarTransferTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest --no-daemon --stacktrace
       - name: Verify APK identity and signature
         shell: python
         run: |

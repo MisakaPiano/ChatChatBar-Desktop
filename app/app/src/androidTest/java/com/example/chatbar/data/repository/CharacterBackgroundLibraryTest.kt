@@ -12,6 +12,27 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CharacterBackgroundLibraryTest {
+    @Test fun backgroundCropCreatesSeparateBoundedImageAndKeepsSourceBytes() = runBlocking {
+        val base = ApplicationProvider.getApplicationContext<Context>()
+        val root = File(base.cacheDir, "synthetic-crop-${UUID.randomUUID()}").apply { mkdirs() }
+        val context = object : ContextWrapper(base) { override fun getFilesDir(): File = root }
+        try {
+            val source = File(root, "original.png")
+            val bitmap = android.graphics.Bitmap.createBitmap(32, 32, android.graphics.Bitmap.Config.ARGB_8888)
+            try { source.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
+            finally { bitmap.recycle() }
+            val original = source.readBytes()
+            val result = com.example.chatbar.domain.image.OwnedImageCropStorage.crop(context,
+                android.net.Uri.fromFile(source), com.example.chatbar.domain.image.ImageCropFractionRect(0f,0f,1f,1f),
+                1080,1920,"background-crops")
+            assertNotEquals(source.absolutePath,result)
+            assertArrayEquals(original,source.readBytes())
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds=true }
+            android.graphics.BitmapFactory.decodeFile(result,bounds)
+            assertEquals(1080,bounds.outWidth); assertEquals(1920,bounds.outHeight)
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun concurrentLibraryChangesMergeIntoLatestCardAndSurviveColdRead() = runBlocking {
         val base = ApplicationProvider.getApplicationContext<Context>()
         val root = File(base.cacheDir, "synthetic-gallery-${UUID.randomUUID()}").apply { mkdirs() }
