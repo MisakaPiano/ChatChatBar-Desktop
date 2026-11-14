@@ -160,8 +160,9 @@ class NovelAiImageRegenerationDialogTest {
         composeTestRule.onNodeWithText("方图（1:1，1024×1024）").assertIsDisplayed()
     }
 
-    /** ScrollTo can report success for a nested child whose clipped touch bounds are still empty. */
+    /** Use bounded physical drags and unclipped geometry so a fling cannot overshoot forever. */
     private fun scrollUntilVisible(target: SemanticsNodeInteraction) {
+        val scroll = composeTestRule.onNode(hasScrollAction() and hasAnyDescendant(hasText("添加角色")))
         repeat(24) {
             composeTestRule.waitForIdle()
             val bounds = target.fetchSemanticsNode().boundsInRoot
@@ -169,9 +170,16 @@ class NovelAiImageRegenerationDialogTest {
                 target.assertIsDisplayed()
                 return
             }
-            composeTestRule.onNode(hasScrollAction() and hasAnyDescendant(hasText("添加角色")))
-                .performTouchInput { swipeUp() }
+            val item = target.getUnclippedBoundsInRoot()
+            val viewport = scroll.getUnclippedBoundsInRoot()
+            val upwards = item.top >= viewport.bottom
+            scroll.performTouchInput {
+                val start = center.copy(y = height * if (upwards) 0.7f else 0.3f)
+                val end = center.copy(y = height * if (upwards) 0.3f else 0.7f)
+                swipe(start, end, durationMillis = 800)
+            }
         }
+        recordGeometry("failed-scroll-target", target)
         target.assertIsDisplayed()
     }
 
