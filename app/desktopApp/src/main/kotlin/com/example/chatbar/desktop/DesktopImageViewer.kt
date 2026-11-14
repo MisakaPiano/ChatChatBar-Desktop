@@ -164,10 +164,10 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 }
 
 @Composable
-internal fun DesktopSessionImageViewer(snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int,
+internal fun DesktopSessionImageViewer(request: DesktopSessionImageOpenRequest,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
     onSource: (DesktopSessionImageOccurrence) -> Unit, onClose: () -> Unit) {
-    DesktopSessionImageOpening(snapshot, initialIndex) { opening ->
+    DesktopSessionImageOpening(request) { opening ->
         DesktopImageViewerBody(opening.selection, resources, picker, {},
             { index -> opening.snapshot.occurrences.getOrNull(index)?.let(onSource) }, onClose)
     }

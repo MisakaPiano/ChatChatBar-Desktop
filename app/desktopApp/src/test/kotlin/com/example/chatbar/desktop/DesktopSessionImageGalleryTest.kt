@@ -3,6 +3,9 @@ package com.example.chatbar.desktop
 
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
@@ -163,34 +166,45 @@ class DesktopSessionImageGalleryTest {
         } finally { scene.close() }
     }
 
-    @Test fun `explicit new thumbnail replaces selection and source snapshot together`() = runBlocking(edt) {
+    @Test fun `real thumbnail reopening restores clicked page while refresh keeps the existing viewer snapshot`() = runBlocking(edt) {
         val first = DesktopSessionImageGallerySnapshot("s", "Old snapshot", listOf(
             DesktopSessionImageOccurrence("old-a", 0, "same", MessageRole.ASSISTANT, 0, 1),
             DesktopSessionImageOccurrence("old-b", 1, "same", MessageRole.ASSISTANT, 0, 1)), 2, 0)
         val newer = first.copy(title = "Refreshed", occurrences = first.occurrences.reversed())
-        var captured by mutableStateOf(first)
-        var initial by mutableIntStateOf(1)
+        var overview by mutableStateOf(first)
+        var request by mutableStateOf<DesktopSessionImageOpenRequest?>(null)
         var opening: DesktopSessionImageOpeningState? = null
         var source: DesktopSessionImageOccurrence? = null
-        val scene = ImageComposeScene(400, 120, coroutineContext = edt) {
-            DesktopSessionImageOpening(captured, initial) { current ->
-                SideEffect { opening = current }
-                DesktopViewerSourceAction(current.selection) { source = current.snapshot.occurrences[it] }
+        val scene = ImageComposeScene(900, 700, coroutineContext = edt) {
+            Box(Modifier.fillMaxSize()) {
+                DesktopSessionImageGalleryContent(overview, false, null, read = { error("Synthetic missing image") },
+                    onRefresh = {}, onPreview = { request = DesktopSessionImageOpenRequest(overview, it) }, onSource = {})
+                request?.let { captured -> DesktopSessionImageOpening(captured) { current ->
+                    SideEffect { opening = current }
+                    Row(Modifier.align(Alignment.BottomEnd)) {
+                        DesktopViewerPageButtons(current.selection)
+                        DesktopViewerSourceAction(current.selection) { source = current.snapshot.occurrences[it] }
+                    }
+                } }
             }
         }
-        fun action(): () -> Boolean = scene.nodes().first { it.label("回到来源消息") && it.config.contains(SemanticsActions.OnClick) }
+        fun action(label: String): () -> Boolean = scene.nodes().first { it.label(label) && it.config.contains(SemanticsActions.OnClick) }
             .config[SemanticsActions.OnClick].action!!
         try {
-            scene.frames(); val oldOpening = assertNotNull(opening)
-            action()(); assertEquals("old-b", source?.messageId)
-            oldOpening.selection.previous(); action()(); assertEquals("old-a", source?.messageId)
-            captured = newer; initial = 1; scene.frames()
-            assertNotSame(oldOpening, opening)
-            assertEquals(1, opening?.selection?.index)
-            action()(); assertEquals("old-a", source?.messageId)
-            captured = first; initial = 0; scene.frames()
-            assertEquals(0, opening?.selection?.index)
-            action()(); assertEquals("old-a", source?.messageId)
+            scene.frames(); action("查看会话图片 2")(); scene.frames()
+            val oldOpening = assertNotNull(opening)
+            action("回到来源消息")(); assertEquals("old-b", source?.messageId)
+            action("上一张")(); action("回到来源消息")(); assertEquals("old-a", source?.messageId)
+            action("查看会话图片 2")(); scene.frames()
+            val reopened = assertNotNull(opening)
+            assertNotSame(oldOpening, reopened); assertEquals(1, reopened.selection.index)
+            action("回到来源消息")(); assertEquals("old-b", source?.messageId)
+            overview = newer; scene.frames()
+            assertSame(reopened, opening)
+            action("回到来源消息")(); assertEquals("old-b", source?.messageId)
+            action("查看会话图片 2")(); scene.frames()
+            assertNotSame(reopened, opening); assertEquals(1, opening?.selection?.index)
+            action("回到来源消息")(); assertEquals("old-a", source?.messageId)
         } finally { scene.close() }
     }
 }
