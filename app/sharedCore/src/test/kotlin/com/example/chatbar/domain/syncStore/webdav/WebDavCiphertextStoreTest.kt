@@ -262,8 +262,10 @@ class WebDavCiphertextStoreTest {
             423 to CiphertextStoreFailure.TRANSIENT, 429 to CiphertextStoreFailure.TRANSIENT, 507 to CiphertextStoreFailure.QUOTA,
             503 to CiphertextStoreFailure.TRANSIENT)) {
             f.dav.overrideRequest = { MockResponse().setResponseCode(code).setBody("private-body-and-URL") }
-            val failure = assertFailsWith<CiphertextStoreException> { f.store().metadata(key) }
+            val output = ByteArrayOutputStream()
+            val failure = assertFailsWith<CiphertextStoreException> { f.store().readTo(key, output, null) }
             assertEquals(expected, failure.failure); assertFalse(failure.toString().contains("private-body"))
+            assertEquals(0, output.size(), "An HTTP error body must never reach the caller output")
         }
         val before = f.server.requestCount
         val transport = WebDavHttpTransport(f.url("/sync/"), f.client, { "Bearer private\r\nheader" }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
