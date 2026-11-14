@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -94,9 +95,13 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
             try { withContext(Dispatchers.IO) {
             val captured = synchronized(lock) { if (closed) return@withContext false else generation }
             if (!networkAllowed()) { access.reader.removeRoutes(OWNER); return@withContext false }
-            val catalog = try { catalogProvider() } catch (_: Exception) { return@withContext false }
+            val catalog = try { runInterruptible(Dispatchers.IO) { catalogProvider() } }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { return@withContext false }
             val cycleRevision = catalog.revision.value
-            val ids = try { catalog.rows().filter { it.enabled }.map { it.id } } catch (_: Exception) { return@withContext false }
+            val ids = try { runInterruptible(Dispatchers.IO) { catalog.rows().filter { it.enabled }.map { it.id } } }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { return@withContext false }
             resetProgress(captured, catalog, cycleRevision, ids.toSet())
             if (ids.isEmpty()) { access.reader.removeRoutes(OWNER); return@withContext true }
             var complete = true
@@ -104,14 +109,20 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                 for (id in ids) {
                     if (!globallyActive(captured)) { complete = false; break }
                     val revision = catalog.revision.value
-                    val row = try { catalog.rows().singleOrNull { it.id == id && it.enabled } } catch (_: Exception) { null }
+                    val row = try { runInterruptible(Dispatchers.IO) { catalog.rows().singleOrNull { it.id == id && it.enabled } } }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { null }
                     if (row == null) { complete = false; continue }
                     val active = { checkActive(captured, catalog, revision) }
+                    var borrowedCredentials: LanSyncGroupCloudCredentials? = null
                     try {
                         active()
-                        catalog.credentials(id).use { credentials ->
+                        val credentials = runInterruptible(Dispatchers.IO) {
+                            catalog.credentials(id).also { borrowedCredentials = it }
+                        }
+                        credentials.use {
                             active()
-                            val root = routeDirectory(id)
+                            val root = runInterruptible(Dispatchers.IO) { routeDirectory(id) }
                             val client = clientProvider().newBuilder().addInterceptor(ActiveIo(active)).build()
                             val transport = WebDavHttpTransport(credentials.endpoint.toHttpUrl(), client, {
                                 active()
@@ -121,7 +132,9 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                             }, endpointPolicy)
                             own(transport, captured, active)
                             try {
-                                val attempts = WeakWebDavAttemptStore(transport, directory(root.resolve("provider")), id)
+                                val attempts = runInterruptible(Dispatchers.IO) {
+                                    WeakWebDavAttemptStore(transport, directory(root.resolve("provider")), id)
+                                }
                                 if (!outgoingOnly) {
                                     update(captured, catalog, id, "正在读取此网盘的加密候选")
                                     val read = LanSyncGroupWeakCloudReadRoute(attempts, active)
@@ -142,7 +155,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                 val owner = access.targetPublication(directory(root.resolve("target")),
                                     SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, id),
                                     recoverNative = recoverNative && !outgoingOnly, prepare = false)
-                                val prior = owner.weakReceipt()
+                                val prior = runInterruptible(Dispatchers.IO) { owner.weakReceipt() }
                                 val receipt = if (prior != null) prior else {
                                     update(captured, catalog, id, "正在保全并投递本次选定版本")
                                     owner.prepare(); active()
@@ -166,7 +179,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                             else -> failureText(failure)
                         }
                         update(captured, catalog, id, text)
-                    }
+                    } finally { borrowedCredentials?.close() }
                 }
             } finally { access.reader.removeRoutes(OWNER) }
                 complete && globallyActive(captured) && catalog.revision.value == cycleRevision

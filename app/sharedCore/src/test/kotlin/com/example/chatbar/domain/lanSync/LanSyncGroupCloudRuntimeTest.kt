@@ -212,4 +212,38 @@ class LanSyncGroupCloudRuntimeTest {
             f.assertOriginal()
         }
     }
+
+    @Test fun cancellingBeforeHttpInterruptsAProtectedCatalogReaderAndRetainsItsOriginalFile() = fixture { f ->
+        WeakFixture(f.directory("catalog-cancel-provider")).use { provider ->
+            f.add(provider)
+            val file = f.root.resolve("catalog/cloud-routes.protected")
+            val retained = Files.readAllBytes(file)
+            val entered = CountDownLatch(1); val release = CountDownLatch(1)
+            val interrupted = AtomicBoolean(false)
+            var borrowed: ByteArray? = null
+            val gated = LanSyncGroupCloudRoutes(f.root.resolve("catalog"), f.access.trust, f.access.device,
+                { it.reversedArray() }, { bytes ->
+                    borrowed = bytes; entered.countDown()
+                    try { check(release.await(30, TimeUnit.SECONDS)); bytes.reversedArray() }
+                    catch (failure: InterruptedException) { interrupted.set(true); throw failure }
+                }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+            val runtime = LanSyncGroupCloudRuntime(f.access, f.permitted::get, { f.wakes.incrementAndGet() },
+                { synchronized(f.reports) { f.reports += it } }, gated, f.client,
+                WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).also(f.runtimes::add)
+            try {
+                coroutineScope {
+                    val job = launch(Dispatchers.IO) { runtime.cycle() }
+                    withContext(Dispatchers.IO) { assertTrue(entered.await(5, TimeUnit.SECONDS)) }
+                    withTimeout(5_000) { job.cancelAndJoin(); runtime.drain() }
+                    assertTrue(job.isCancelled)
+                }
+                assertTrue(interrupted.get(), "Cancellation must interrupt the local custody read before HTTP exists")
+                assertTrue(requireNotNull(borrowed).all { it == 0.toByte() })
+                assertContentEquals(retained, Files.readAllBytes(file))
+                assertEquals(0, provider.server.requestCount)
+                assertFalse(Files.exists(f.access.work.resolve("cloud-runtime")))
+                f.assertOriginal()
+            } finally { release.countDown() }
+        }
+    }
 }

@@ -132,7 +132,8 @@ class LanSyncGroupCoordinatorCloudSettingsTest {
         f.coordinator.refreshCloudSettings()
         await { !f.coordinator.cloudSettings.value.busy && f.coordinator.cloudSettings.value.rows.singleOrNull()?.enabled == true }
         f.coordinator.setCloudRouteEnabled(SyncStoreId.random(), true)
-        await { !f.coordinator.cloudSettings.value.busy && f.coordinator.cloudSettings.value.error?.endsWith("SYNC_GROUP_CLOUD_ROUTES_NOT_FOUND") == true }
+        await { !f.coordinator.cloudSettings.value.busy && !f.coordinator.cloudSettings.value.error.isNullOrBlank() }
+        assertEquals(listOf(row.copy(enabled = true)), catalog.rows(), "A missing route cannot rewrite another saved route")
         assertEquals(dailyError, f.coordinator.state.value.error)
         f.coordinator.setCloudRouteEnabled(row.id, false)
         await { !f.coordinator.cloudSettings.value.busy && f.coordinator.cloudSettings.value.error == null &&

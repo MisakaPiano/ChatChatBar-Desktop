@@ -165,7 +165,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
             sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true,
             cloudWorkAllowed = { cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
-            cloudWork = { work -> cloudWorkOwner.value.run(work) }).also { coordinator ->
+            cloudWork = ::runCloudWork).also { coordinator ->
                 hookObserver = app.applicationScope.launch {
                     coordinator.state.collect {
                         if (hasGroupEvidence()) ensureApplicationHooks()
@@ -174,6 +174,8 @@ class AndroidLanSync(private val app: ChatBarApp) {
                 }
             }
     }
+    /** The production batch path; the native opt-in proof exercises this same foreground gate. */
+    internal suspend fun runCloudWork(work: suspend () -> Boolean): Boolean = cloudWorkOwner.value.run(work)
     val groupCoordinator: LanSyncGroupCoordinator get() = groupCoordinatorOwner.value
     fun openGroupPage() {
         groupCoordinator.open()

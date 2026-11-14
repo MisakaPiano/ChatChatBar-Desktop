@@ -154,18 +154,17 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             // Export never applies/recovers native plans. Shutdown callers additionally require a
             // settled source-only boundary after their final writer/source sealing has completed.
             if (!recoverNative) exclusive { requireSourceOnlyReady() }
-            val reconciled = inbox().reconcile(localVersions.values.toList())
+            val versions = localVersions.values.toList()
+            val reconciled = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { inbox().reconcile(versions) }
             val ledger = custody.ledger()
             val frozen = reconciled.copy(history = reconciled.history?.snapshot(),
                 authenticatedVersions = reconciled.authenticatedVersions.toList(), observations = reconciled.observations.toList())
             LanSyncGroupTargetExport(trust, identity.fingerprint, ledger, frozen, vault, vaultDescriptor,
                 dependencyStore, custody::ledger, custody::key, custody, workspace.resourceStore, validateResource)
         }
-        return withContext(Dispatchers.IO) {
-            val publication = LanSyncGroupTargetPublication(directory, target, export)
-            if (prepare) publication.prepare()
-            publication
-        }
+        val publication = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { LanSyncGroupTargetPublication(directory, target, export) }
+        if (prepare) publication.prepare()
+        return publication
     }
 
     /** Resource I/O deliberately stays outside the source/native operation mutex. */

@@ -430,8 +430,18 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     }
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
-                    val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]{1,100}")) } ?: "SYNC_GROUP_CLOUD_SETTINGS_FAILED"
-                    update { it.copy(error = "$label：$code") }
+                    val reason = when (failure.message) {
+                        "SYNC_GROUP_NODE_NOT_READY", "SYNC_GROUP_CLOUD_DELIVERY_NOT_AVAILABLE" -> "请先完成设备组的创建或加入。"
+                        "SYNC_GROUP_CLOUD_ROUTES_ENDPOINT" -> "请填写以 HTTPS 开头、以斜杠结尾的网盘目录地址，账号和密码请填在各自的输入框。"
+                        "SYNC_GROUP_CLOUD_ROUTES_NOT_FOUND" -> "这条连接已不存在，请刷新后再操作。"
+                        "SYNC_GROUP_CLOUD_ROUTES_DISABLED" -> "这条连接已停止，请先明确启用。"
+                        "SYNC_GROUP_CLOUD_ROUTES_PROTECTION_FAILED" -> "系统未能解锁本机连接设置，已有文件已保留。"
+                        "SYNC_GROUP_CLOUD_ROUTES_BINDING" -> "这份连接设置不属于当前设备组或设备，已有文件已保留。"
+                        "SYNC_GROUP_CLOUD_ROUTES_BUDGET" -> "连接数量或输入内容过长，请缩短输入或移除不再使用的本机连接。"
+                        "SYNC_GROUP_CLOUD_ROUTES_INVALID" -> "连接设置格式未通过检查，请核对输入；已有文件已保留。"
+                        else -> "本次操作未完成，请稍后重试；已有设置和待传队列已保留。"
+                    }
+                    update { it.copy(error = "$label：$reason") }
                 } finally { update { it.copy(busy = false) } }
             }
         }
