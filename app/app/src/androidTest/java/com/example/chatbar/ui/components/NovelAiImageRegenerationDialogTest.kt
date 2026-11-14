@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -57,7 +58,9 @@ class NovelAiImageRegenerationDialogTest {
             }
         }
 
-        composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performScrollTo().performClick()
+        composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performScrollTo()
+        recordGeometry("fullscreen-before-click", composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1])
+        composeTestRule.onAllNodesWithContentDescription("全屏编辑")[1].performClick()
 
         try {
             composeTestRule.waitUntil(3000) {
@@ -106,7 +109,9 @@ class NovelAiImageRegenerationDialogTest {
         composeTestRule.onNodeWithText("bad anatomy").assertIsDisplayed()
 
         androidx.test.espresso.Espresso.closeSoftKeyboard()
-        composeTestRule.onNodeWithText("添加角色").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("添加角色").performScrollTo()
+        recordGeometry("add-role-before-click", composeTestRule.onNodeWithText("添加角色"))
+        composeTestRule.onNodeWithText("添加角色").performClick()
         try {
             composeTestRule.waitUntil(3000) {
                 composeTestRule.onAllNodesWithText("角色提示词 2").fetchSemanticsNodes().size == 1
@@ -152,6 +157,18 @@ class NovelAiImageRegenerationDialogTest {
             .onNodeWithText("当前生成尺寸 1024×1024；不修改时保留原图尺寸。")
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("方图（1:1，1024×1024）").assertIsDisplayed()
+    }
+
+    private fun recordGeometry(name: String, target: SemanticsNodeInteraction) {
+        composeTestRule.waitForIdle()
+        val text = "target=" + target.fetchSemanticsNode().boundsInRoot + "\n" +
+            composeTestRule.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes().indices.joinToString("\n") {
+                composeTestRule.onAllNodes(isRoot(), useUnmergedTree = true)[it].printToString()
+            }
+        val file = java.io.File(composeTestRule.activity.getExternalFilesDir(null), "$name.txt")
+        file.writeText(text)
+        SafeBatchReviewFiles.retain(composeTestRule.activity, file)
+        SafeBatchReviewFiles.captureScreen(composeTestRule.activity, "$name.png")
     }
 
     private fun regenerationDraft() = NovelAiImageRegenerationDraft(
