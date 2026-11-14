@@ -81,20 +81,24 @@ class DesktopSessionImageGalleryTest {
             val card = CharacterCard.create("Synthetic gallery")
             app.characterRepository.save(card)
             app.chatRepository.createSession(ChatSession("s", card.id, "Synthetic gallery", createdAt = 1, updatedAt = 1))
-            repeat(180) { index ->
+            val messageCount = (ChatRepository.MAX_WINDOW_TURNS + 30) * 2
+            val lastId = "m${messageCount - 1}"
+            repeat(messageCount) { index ->
                 val m = ChatMessage("m$index", "s", if (index % 2 == 0) MessageRole.USER else MessageRole.ASSISTANT,
-                    "Synthetic turn $index", images = if (index == 1 || index == 179) listOf("same.png") else emptyList(),
+                    "Synthetic turn $index", images = if (index == 1 || index == messageCount - 1) listOf("same.png") else emptyList(),
                     createdAt = index.toLong() + 1, updatedAt = index.toLong() + 1, orderKey = index.toLong() + 1)
                 app.jsonFileStorage.saveEntity("chat_messages", "s_${m.id}", m, ChatMessage.serializer())
             }
             val controller = app.primaryChatController
             controller.refresh(); controller.selectSession("s")
+            assertTrue(controller.revealMessage("s", lastId))
             assertTrue(controller.state.value.messages.none { it.id == "m1" }, "Old source must actually be outside the bounded window")
             controller.editComposer("Unsent gallery draft")
             controller.persistComposer()
+            controller.flushComposerForSnapshot()
             val before = bytes(app.appDataRoot)
             val snapshot = controller.sessionImageGallery("s")
-            assertEquals(listOf("m1", "m179"), snapshot.occurrences.map { it.messageId })
+            assertEquals(listOf("m1", lastId), snapshot.occurrences.map { it.messageId })
             assertEquals(before, bytes(app.appDataRoot))
             assertTrue(controller.revealMessage("s", "m1"))
             assertTrue(controller.state.value.messages.any { it.id == "m1" })
