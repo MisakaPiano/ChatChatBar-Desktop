@@ -11,7 +11,7 @@ val lanSyncPreviewSeries = providers.gradleProperty("lanSyncPreviewSeries").orNu
 val lanSyncPreviewCodeRaw = providers.gradleProperty("lanSyncPreviewCode").orNull
 require((lanSyncPreviewSeries == null) == (lanSyncPreviewCodeRaw == null)) { "LAN_PREVIEW_SERIES_AND_CODE_REQUIRED" }
 val lanSyncPreviewCode = lanSyncPreviewCodeRaw?.let { raw ->
-    require(lanSyncPreviewSeries == "next" && raw in setOf("81", "82")) { "LAN_PREVIEW_SERIES_OR_CODE_INVALID" }
+    require(lanSyncPreviewSeries == "next" && raw in setOf("81", "82", "83")) { "LAN_PREVIEW_SERIES_OR_CODE_INVALID" }
     raw.toInt()
 }
 
