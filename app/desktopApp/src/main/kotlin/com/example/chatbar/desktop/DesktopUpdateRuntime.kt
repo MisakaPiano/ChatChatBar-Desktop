@@ -130,7 +130,8 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
                 check(Path.of(result.getValue("cache").jsonPrimitive.content).toAbsolutePath().normalize() == cache)
                 val available = result["availableBytes"]?.jsonPrimitive?.longOrNull?.takeIf { it >= 0 }
                 mutable.value = previous.copy(busy = false, error = null, notice =
-                    "更新缓存：$cache\n已清理 $removed 份旧安装包，共 $bytes 字节；保留 $retained 份当前或近期包。" +
+                    (if (result["installationConfirmed"]?.jsonPrimitive?.booleanOrNull == false) "尚无本版本的安装完成确认；未把下载或待安装包当作已用包。\n" else "") +
+                    "更新缓存：$cache\n已清理 $removed 份旧安装包，共 $bytes 字节；保留 $retained 份待安装或尚未确认完成的包。" +
                         "保留 $missing 份已无安装包的校验记录；另有 $unavailable 项正使用或无法确认，保留原件与记录。\n" +
                         (available?.let { "该磁盘当前可用 $it 字节，可重新点击下载。" } ?: "已完成清理，但无法读取磁盘余量，请核对后重试下载。"))
             } catch (cancelled: CancellationException) {

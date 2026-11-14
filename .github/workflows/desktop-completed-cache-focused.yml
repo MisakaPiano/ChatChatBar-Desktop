@@ -1,0 +1,54 @@
+name: Desktop completed update cache focused verification
+on:
+  push:
+    branches: [codex/desktop-completed-update-cache-20261115]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  updater:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build hash-pinned updater runtime and native completion helper
+        run: |
+          python tools/desktop/update/prepare_runtime.py --destination "$env:RUNNER_TEMP/completed-runtime" --artifact-cache "$env:RUNNER_TEMP/completed-artifacts" --download
+      - name: Run actual signed-download cache and native installer-exit checks
+        env:
+          CCB_COMPLETED_CACHE_REPORT: ${{ runner.temp }}/completed-report/original-unittest-events.json
+        run: |
+          & "$env:RUNNER_TEMP/completed-runtime/python.exe" -B tools/desktop/update/run_completed_cache_tests.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: completed-update-cache-original-results
+          path: ${{ runner.temp }}/completed-report/
+  background:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify production background removal and valid editor draft save
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopPortableBackgroundGalleryTest'
+          --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: background-removal-original-results
+          path: app/desktopApp/build/test-results/test/

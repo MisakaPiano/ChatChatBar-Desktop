@@ -145,14 +145,14 @@ internal class DesktopCharacterBackgrounds(
                     card.copy(chatBackgroundImages = card.chatBackgroundImages - path)
                 }
                 // Retained legacy assets/records remain recovery evidence; only the portable gallery selection changes.
-                if (previous.preferred == path) save(id, load(id).copy(preferred = null))
+                // Desktop preferred, card default and session selections retain their independent references.
             } else {
                 require(path in previous.images)
                 save(id, previous.copy(images = previous.images - path, preferred = previous.preferred.takeUnless { it == path }))
             }
             revision.value++
         } }
-        cleanup(listOf(path))
+        // Explicit image garbage collection is separate from removing a gallery reference.
     }
     companion object { const val KEY = "desktop_character_backgrounds" }
 }

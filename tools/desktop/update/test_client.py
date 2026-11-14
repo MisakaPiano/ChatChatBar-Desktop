@@ -90,7 +90,22 @@ class ClientTest(unittest.TestCase):
             repo.payload = b'MZ synthetic installer never executed ' + str(build).encode()
             repo.build(metadata_version=revision)
             ready[build] = client.execute(repo.installed, cache, download=True, fetcher=repo)
-        current = client.Installed(120, '0.1.0-preview.120', 'a' * 40, 'preview', 1, repo.bootstrap)
+        current = client.Installed(120, '0.1.0-preview.120', 'b' * 40, 'preview', 1, repo.bootstrap)
+        root = cache.parent / 'program'
+        package = root / 'versions' / '0.1.0-preview.120-bbbbbbbbbbbb'
+        package.mkdir(parents=True)
+        (root / 'install-owner.txt').write_text(client.PRODUCT)
+        (root / 'current.txt').write_text(package.name)
+        manifest = b'{"synthetic":true}'
+        (package / 'install-manifest.json').write_bytes(manifest)
+        (root / 'receipts').mkdir()
+        digest = hashlib.sha256(manifest).hexdigest()
+        (root / 'receipts' / (package.name + '.sha256')).write_text(digest)
+        confirmations = cache / 'confirmations'; confirmations.mkdir()
+        record = dict(format=1, product=client.PRODUCT, build=current.version, displayVersion=current.display_version,
+                      sourceSha=current.source_sha, root=str(root), current=package.name, manifestSha256=digest)
+        (confirmations / ('a' * 32 + '.json')).write_text(json.dumps(record))
+        self.confirmed_package = package
         return repo, current, ready
 
     def test_explicit_cleanup_rechecks_real_signed_downloads_and_preserves_selected_current_recent_and_all_small_evidence(self):
@@ -99,17 +114,17 @@ class ClientTest(unittest.TestCase):
             repo, installed, ready = self.cache_history(cache)
             records = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file() and p.name != 'desktop-installer.exe'}
             request_count = len(repo.requests)
-            cleaned = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+            cleaned = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
             self.assertEqual(2, cleaned['removedCount'])
             self.assertEqual(len(repo.payload) * 2, cleaned['removedBytes'])
             self.assertEqual(4, cleaned['retainedCount'])
             self.assertEqual(0, cleaned['unavailableCount'])
             for build, value in ready.items():
-                self.assertEqual(build not in (119, 122), Path(value['installer']).exists())
+                self.assertEqual(build not in (119, 120), Path(value['installer']).exists())
             self.assertEqual(records, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file() and p.name != 'desktop-installer.exe'})
             self.assertEqual(request_count, len(repo.requests))
             self.assertGreaterEqual(cleaned['availableBytes'], 0)
-            again = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+            again = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
             self.assertEqual(0, again['removedCount']); self.assertEqual(2, again['missingCount'])
             self.assertEqual(0, again['unavailableCount'])
 
@@ -132,7 +147,7 @@ class ClientTest(unittest.TestCase):
                     record.write_text(record.read_text().rstrip().removesuffix('}') + ',"version":119}')
                 record_before = (file.parent / 'VERIFIED.json').read_bytes()
                 try:
-                    result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
+                    result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
                 finally:
                     if held is not None:
                         held.close()
@@ -152,13 +167,13 @@ class ClientTest(unittest.TestCase):
             stable.parent.mkdir(exist_ok=True)
             stable.write_text(json.dumps({'signed': {'targets': {'desktop-installer.exe': {'hashes': {'sha256': ready[119]['sha256']}}}}}))
             original = stable.read_bytes()
-            result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121')
-            self.assertEqual(1, result['removedCount']); self.assertTrue(Path(ready[119]['installer']).is_file())
+            result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
+            self.assertEqual(2, result['removedCount']); self.assertFalse(Path(ready[119]['installer']).exists())
             self.assertEqual(original, stable.read_bytes())
             stable.write_bytes(b'{invalid role}')
             before = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()}
             with self.assertRaisesRegex(client.UpdateRejected, '^UPDATE_CACHE_METADATA_UNREADABLE$'):
-                client.cleanup_downloads(installed, cache)
+                client.cleanup_downloads(installed, cache, package=self.confirmed_package)
             self.assertEqual(before, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()})
 
     def test_cleanup_respects_the_original_client_lock_and_refuses_foreign_ownership_without_deletion(self):
@@ -168,12 +183,29 @@ class ClientTest(unittest.TestCase):
             original = {Path(v['installer']): Path(v['installer']).read_bytes() for v in ready.values()}
             with client.exclusive(cache):
                 with self.assertRaisesRegex(client.UpdateRejected, '^UPDATE_BUSY$'):
-                    client.cleanup_downloads(installed, cache)
+                    client.cleanup_downloads(installed, cache, package=self.confirmed_package)
             self.assertTrue(all(path.read_bytes() == value for path, value in original.items()))
             (cache / 'owner.txt').write_text('foreign owner')
             with self.assertRaisesRegex(client.UpdateRejected, '^FOREIGN_UPDATE_CACHE$'):
-                client.cleanup_downloads(installed, cache)
+                client.cleanup_downloads(installed, cache, package=self.confirmed_package)
             self.assertTrue(all(path.read_bytes() == value for path, value in original.items()))
+
+    def test_unconfirmed_changed_or_missing_completion_never_deletes_pending_payloads(self):
+        for defect in ('missing', 'current', 'manifest', 'record', 'duplicate'):
+            with self.subTest(defect=defect), tempfile.TemporaryDirectory(prefix='ccb-unconfirmed-cache-') as tmp:
+                cache = Path(tmp) / 'updates'
+                _, installed, ready = self.cache_history(cache)
+                record = cache / 'confirmations' / ('a' * 32 + '.json')
+                if defect == 'missing': record.unlink()
+                elif defect == 'current': (self.confirmed_package.parent.parent / 'current.txt').write_text('other')
+                elif defect == 'manifest': (self.confirmed_package / 'install-manifest.json').write_bytes(b'changed')
+                elif defect == 'record': record.write_text('{}')
+                else: record.write_text(record.read_text()[:-1] + ',"build":120}')
+                before = {Path(v['installer']): Path(v['installer']).read_bytes() for v in ready.values()}
+                result = client.cleanup_downloads(installed, cache, package=self.confirmed_package)
+                self.assertEqual(0, result['removedCount'])
+                self.assertEqual(6, result['retainedCount'])
+                self.assertTrue(all(p.read_bytes() == raw for p, raw in before.items()))
 
     def test_space_refusal_reports_the_actual_cache_and_counts_without_downloading_or_lowering_the_limit(self):
         repo = Repository()

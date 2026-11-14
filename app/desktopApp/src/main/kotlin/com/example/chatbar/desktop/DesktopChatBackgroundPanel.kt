@@ -63,7 +63,7 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
             }
             DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value -> scope.launch { controller.setBackgroundOpacity(value) } }
             StatusText("角色卡背景图库 · ${card?.name ?: "未关联角色"}")
-            StatusText("图库及默认背景随完整角色卡导出；会话覆盖与 Desktop 首选独立。旧 Desktop 库可移入角色卡，原库与图片保留。")
+            StatusText("图库及默认背景随完整角色卡导出；会话覆盖与 Desktop 首选独立。移除只改变图库列表，已选默认、首选、会话覆盖及图片仍保留；可分别清除选择。旧 Desktop 库与图片保留。")
             StudioActions {
                 BootstrapButton("添加背景", enabled = !busy && card != null && library != null) { action {
                     controller.imagePicker.pickOpenFile(DesktopFileType("背景", listOf("png", "jpg", "jpeg", "webp")))?.let { path ->

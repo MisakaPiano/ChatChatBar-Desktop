@@ -134,7 +134,49 @@ def _delete_verified_cached_installer(path, expected_bytes, expected_sha, remove
     return 'REMOVED' if not path.exists() else 'DELETE_UNCONFIRMED'
 
 
-def cleanup_downloads(installed, cache, protected_version=None):
+def confirmed_installation(installed, cache, package):
+    """Only an exact activated package and successful-installer receipt admit completed payloads."""
+    if package is None:
+        return False
+    package = safe(package)
+    if package.parent.name != 'versions':
+        return False
+    root = package.parent.parent
+    home = safe(cache / 'confirmations')
+    if not home.is_dir():
+        return False
+    records = list(home.iterdir())
+    if len(records) > 1000:
+        return False
+    try:
+        manifest = safe(package / 'install-manifest.json')
+        if not manifest.is_file() or manifest.stat().st_size > 2 * 1024 * 1024:
+            return False
+        expected = dict(format=1, product=PRODUCT, build=installed.version, displayVersion=installed.display_version,
+                        sourceSha=installed.source_sha, root=str(root), current=package.name,
+                        manifestSha256=hashlib.sha256(manifest.read_bytes()).hexdigest())
+        if (safe(root / 'install-owner.txt').read_text(encoding='utf-8') != PRODUCT or
+                safe(root / 'current.txt').read_text(encoding='utf-8').strip() != package.name or
+                safe(root / 'receipts' / (package.name + '.sha256')).read_text(encoding='utf-8') != expected['manifestSha256']):
+            return False
+        for record in records:
+            if not re.fullmatch(r'[a-f0-9]{32}\.json', record.name):
+                continue
+            try:
+                safe(record)
+                if not record.is_file() or record.stat().st_nlink != 1:
+                    continue
+                value = _cache_receipt_object(_cache_receipt_bytes(record))
+                if isinstance(value, dict) and type(value.get('format')) is int and type(value.get('build')) is int and value == expected:
+                    return True
+            except (OSError, ValueError, TypeError, KeyError, UnicodeError):
+                continue
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError):
+        pass
+    return False
+
+
+def cleanup_downloads(installed, cache, protected_version=None, package=None):
     """Explicit cache maintenance. Receipt hints never authorize installation or reset TUF state."""
     cache = safe(cache)
     if cache.exists() and any(cache.iterdir()):
@@ -149,6 +191,8 @@ def cleanup_downloads(installed, cache, protected_version=None):
     result = dict(status='CACHE_CLEANED', cache=str(cache), removedBytes=0, removedCount=0,
                   retainedCount=0, missingCount=0, unavailableCount=0, issues=[])
     with exclusive(cache):
+        confirmed = confirmed_installation(installed, cache, package)
+        result["installationConfirmed"] = confirmed
         # Cached roles only add protection; they never authorize deletion or installation.
         # This also retains the current target of the other signed channel/profile.
         protected_hashes = set()
@@ -210,13 +254,15 @@ def cleanup_downloads(installed, cache, protected_version=None):
                     if verified != 'VERIFIED':
                         issue(stage.name, verified); continue
                     candidates.append(dict(stage=stage, file=file, bytes=size, sha256=digest, build=build,
-                                           display=display, receipt=receipt, receipt_sha=hashlib.sha256(receipt_raw).hexdigest()))
+                                           display=display, source=hint['sourceSha'], receipt=receipt, receipt_sha=hashlib.sha256(receipt_raw).hexdigest()))
                 except Exception:
                     issue(stage.name, 'SOURCE_UNVERIFIED')
-            recent = {item['stage'] for item in sorted(candidates, key=lambda x: (x['build'], x['stage'].name), reverse=True)[:2]}
             for item in candidates:
-                if (item['stage'] in recent or item['sha256'] in protected_hashes or item['build'] == installed.version or
-                        item['display'] in (installed.display_version, protected_version)):
+                # Without an exact successful-install record no payload is considered completed.
+                # Future/pending selected updates remain protected even after a confirmed older install.
+                if (not confirmed or item['build'] > installed.version or
+                        (item['build'] == installed.version and item['source'] != installed.source_sha) or
+                        (protected_version is not None and protected_version != installed.display_version and item['display'] == protected_version)):
                     result['retainedCount'] += 1; continue
                 try:
                     if (safe(item['receipt']).stat().st_size > 32768 or
@@ -519,7 +565,7 @@ def main():
         if args.clean_cache:
             if args.download or args.verify_file:
                 raise UpdateRejected('UPDATE_ARGUMENTS_REFUSED')
-            print(json.dumps(cleanup_downloads(Installed.load(package), cache, args.expected_version), ensure_ascii=True), flush=True)
+            print(json.dumps(cleanup_downloads(Installed.load(package), cache, args.expected_version, package), ensure_ascii=True), flush=True)
         else:
             execute(Installed.load(package), cache, args.download, args.verify_file,
                     report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True),
