@@ -38,25 +38,25 @@ class SafeBatchChatRuntimeTest {
     private data class Fixture(val vm: ChatViewModel, val session: ChatSession, val anchor: ChatMessage,
         val later: ChatMessage, val imageCounts: List<Int>, val server: MockWebServer,
         val quoted: CountDownLatch, val releaseQuote: CountDownLatch, val accountCalls: AtomicInteger)
-    @Test fun manualChatGeneratesFourFourTwoWithOneDesignAndDurableOrderedMetadata() = withFixture(false) { f ->
+    @Test fun manualChatGeneratesThreeFullBatchesWithOneDesignAndDurableOrderedMetadata() = withFixture(false) { f ->
         runBlocking {
-            f.vm.previewManualImageRun(ImageBatchConfiguration(4, true, 10, budget = 10000))
-            f.vm.previewManualImageRun(ImageBatchConfiguration(1, true, 10, budget = 10000))
+            f.vm.previewManualImageRun(ImageBatchPreferences(true, 4, 3, allowAnlasSpending = true).configuration().copy(budget = 10000))
+            f.vm.previewManualImageRun(ImageBatchPreferences(true, 1, 3, allowAnlasSpending = true).configuration().copy(budget = 10000))
         }
         assertEquals("Editing request counts reuses the short-lived read-only quote", 1, f.accountCalls.get())
-        rule.runOnIdle { f.vm.generateManualNovelAiImages(f.anchor.id, ImageBatchConfiguration(4, true, 10, ImageBatchPacing(fixedSeconds = 1), 10000)) }
+        rule.runOnIdle { f.vm.generateManualNovelAiImages(f.anchor.id, ImageBatchPreferences(true, 4, 3, ImageBatchPacing(fixedSeconds = 1), true).configuration().copy(budget = 10000)) }
         rule.waitUntil(25000) { f.vm.imageGenerations.value.none { !it.isTerminal } }
         assertTrue(f.vm.imageGenerations.value.toString(), f.vm.imageGenerations.value.isEmpty())
-        assertEquals(listOf(4, 4, 2), f.imageCounts); assertEquals(1, f.server.requestCount)
+        assertEquals(listOf(4, 4, 4), f.imageCounts); assertEquals(1, f.server.requestCount)
         assertEquals("One cached preview, one launch query and a fresh query for each batch", 5, f.accountCalls.get())
         val rows = runBlocking { ChatRepository(JsonFileStorage(ChatBarApp.instance)).getMessages(f.session.id) }
         val batches = rows.filter { it.generatedFromMessageId == f.anchor.id }
-        assertEquals(listOf(4, 4, 2), batches.map { it.images.size })
+        assertEquals(listOf(4, 4, 4), batches.map { it.images.size })
         assertEquals(listOf(f.anchor.id) + batches.map { it.id } + f.later.id, rows.map { it.id })
-        assertEquals(10, batches.sumOf { it.generatedImageMetadata.size })
+        assertEquals(12, batches.sumOf { it.generatedImageMetadata.size })
         assertTrue(batches.flatMap { it.images }.all { File(it).isFile })
         assertFalse(runBlocking { ChatBarApp.instance.chatRepository.getSession(f.session.id) }!!.automaticImageGenerationEnabled)
-        proof("chat-production-four-four-two", f, batches.size)
+        proof("chat-production-three-full-batches", f, batches.size)
     }
     @Test fun deletingAnchorDuringAccountQuotePreventsFirstImageRequest() = withFixture(true) { f ->
         rule.runOnIdle { f.vm.generateManualNovelAiImages(f.anchor.id, ImageBatchConfiguration(1, true, 2, ImageBatchPacing(fixedSeconds = 1), 0)) }
@@ -72,7 +72,7 @@ class SafeBatchChatRuntimeTest {
     private fun withFixture(blockSecondQuote: Boolean, block: (Fixture) -> Unit) {
         val app = ChatBarApp.instance
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
-        check(app.packageName == "com.example.chatbar.safebatch.n1")
+        check(app.packageName in setOf("com.example.chatbar.safebatch.n2", "com.example.chatbar.nextreview.r1"))
         rule.setContent { ChatBarTheme { CbText("Synthetic Chat runtime checks") } }
         val oldToken = app.novelAiCredentialStore.load()
         val oldSettings = runBlocking { app.settingsRepository.getAppSettings() }
