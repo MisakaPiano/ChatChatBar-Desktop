@@ -1,10 +1,16 @@
-"""Choose only affected large-byte proofs. Unknown source/config paths stay conservative."""
+"""Compare each byte proof with its own successful, ancestral Actions evidence."""
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import re
 import subprocess
+import time
+from typing import Callable, NamedTuple
+from urllib.error import HTTPError
+from urllib.parse import urlencode, urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 LAN = "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/"
 STORE = "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/"
@@ -117,27 +123,246 @@ def classify_cloud(paths: list[str]) -> bool:
     return False
 
 
+class ProofJob(NamedTuple):
+    name: str
+    step: str
+
+
+PROOF_JOBS = {
+    "legacy": ProofJob("large-resources", "Fully written large Runtime and v8 proof"),
+    "group": ProofJob("group-large-resources", "Fully written encrypted group and native v8 proof"),
+    "cloud": ProofJob("cloud-large-resources", "Fully written cloud chunk resume and native activation proof"),
+}
+WORKFLOW_PATH = ".github/workflows/lan-sync-ci.yml"
+PAGE_SIZE = 100
+MAX_RUN_PAGES = 3
+MAX_JOB_PAGES = 2
+MAX_CANDIDATE_RUNS = 60
+MAX_API_REQUESTS = 80
+MAX_API_BYTES = 4 * 1024 * 1024
+MAX_DIFF_BYTES = 4 * 1024 * 1024
+
+
+class EvidenceUnavailable(Exception):
+    """Only fixed codes cross the CLI boundary; HTTP exceptions may contain credentials/URLs."""
+
+
+class EvidenceBaseline(NamedTuple):
+    run_id: int
+    source_sha: str
+    job_id: int
+    attempt: int
+
+
+class ProofScope(NamedTuple):
+    required: dict[str, bool]
+    baselines: dict[str, EvidenceBaseline]
+    diagnostic: str | None = None
+
+
+def _positive_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _sha(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch("[0-9a-f]{40}", value) is not None and value != "0" * 40
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, request, file, code, message, headers, new_url):
+        # Never forward the bearer token to a redirected origin.
+        return None
+
+
+class GitHubEvidenceApi:
+    def __init__(self, base: str, token: str):
+        url = urlsplit(base)
+        if (url.scheme != "https" or not url.hostname or url.username is not None or url.password is not None
+                or url.query or url.fragment or not token):
+            raise EvidenceUnavailable("PROOF_API_CONFIGURATION_UNAVAILABLE")
+        self.base = base.rstrip("/")
+        self.token = token
+        self.opener = build_opener(_NoRedirect())
+        self.requests = 0
+        self.deadline = time.monotonic() + 90
+
+    def get(self, path: str, query: dict[str, object]) -> dict:
+        remaining = self.deadline - time.monotonic()
+        if self.requests >= MAX_API_REQUESTS or remaining <= 0:
+            raise EvidenceUnavailable("PROOF_API_BUDGET_EXHAUSTED")
+        self.requests += 1
+        request = Request(self.base + path + "?" + urlencode(query), headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": "Bearer " + self.token,
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "ccb-lan-sync-proof-scope",
+        })
+        try:
+            with self.opener.open(request, timeout=min(10, remaining)) as response:
+                if response.status != 200:
+                    raise EvidenceUnavailable("PROOF_API_UNAVAILABLE")
+                raw = response.read(MAX_API_BYTES + 1)
+            if len(raw) > MAX_API_BYTES:
+                raise EvidenceUnavailable("PROOF_API_RESPONSE_TRUNCATED")
+            result = json.loads(raw)
+            if not isinstance(result, dict):
+                raise EvidenceUnavailable("PROOF_API_RESPONSE_INVALID")
+            return result
+        except EvidenceUnavailable:
+            raise
+        except HTTPError as failure:
+            try:
+                failure.close()
+            finally:
+                raise EvidenceUnavailable("PROOF_API_UNAVAILABLE") from None
+        except Exception:
+            raise EvidenceUnavailable("PROOF_API_UNAVAILABLE") from None
+
+
+def _pages(api, path: str, query: dict[str, object], field: str, maximum: int) -> tuple[list[dict], bool]:
+    rows: list[dict] = []
+    total = None
+    ids: set[int] = set()
+    for page in range(1, maximum + 1):
+        result = api.get(path, dict(query, per_page=PAGE_SIZE, page=page))
+        count = result.get("total_count")
+        values = result.get(field)
+        if (not isinstance(count, int) or isinstance(count, bool) or count < 0 or not isinstance(values, list)
+                or len(values) > PAGE_SIZE or total is not None and total != count):
+            raise EvidenceUnavailable("PROOF_API_RESPONSE_INVALID")
+        total = count
+        for value in values:
+            if not isinstance(value, dict) or not _positive_int(value.get("id")) or value["id"] in ids:
+                raise EvidenceUnavailable("PROOF_API_RESPONSE_INVALID")
+            ids.add(value["id"])
+            rows.append(value)
+        if len(rows) > total or len(values) < PAGE_SIZE and len(rows) != total:
+            raise EvidenceUnavailable("PROOF_API_RESPONSE_TRUNCATED")
+        if len(rows) == total:
+            return rows, True
+    return rows, False
+
+
+def find_baselines(api, repository: str, branch: str, head: str, current_run: int,
+                   is_ancestor: Callable[[str, str], bool]) -> tuple[dict[str, EvidenceBaseline], bool]:
+    # The list is completed, not success: one large job may have succeeded in an otherwise failed run.
+    runs, complete = _pages(api, f"/repos/{repository}/actions/workflows/lan-sync-ci.yml/runs",
+                            {"branch": branch, "event": "push", "status": "completed", "exclude_pull_requests": "true"},
+                            "workflow_runs", MAX_RUN_PAGES)
+    baselines: dict[str, EvidenceBaseline] = {}
+    examined = 0
+    for run in runs:
+        if run["id"] == current_run:
+            continue
+        source = run.get("head_sha")
+        origin = run.get("head_repository")
+        if (run.get("status") != "completed" or run.get("event") != "push" or run.get("head_branch") != branch
+                or not isinstance(origin, dict) or origin.get("full_name", "").lower() != repository.lower()
+                or run.get("path") not in (WORKFLOW_PATH, WORKFLOW_PATH + "@refs/heads/" + branch)
+                or not _sha(source) or not _positive_int(run.get("run_attempt"))):
+            continue
+        if not is_ancestor(source, head):
+            continue
+        if examined >= MAX_CANDIDATE_RUNS:
+            return baselines, False
+        examined += 1
+        attempt = run["run_attempt"]
+        jobs, jobs_complete = _pages(api, f"/repos/{repository}/actions/runs/{run['id']}/attempts/{attempt}/jobs",
+                                     {}, "jobs", MAX_JOB_PAGES)
+        if not jobs_complete:
+            raise EvidenceUnavailable("PROOF_JOB_LIST_TRUNCATED")
+        for kind, expected in PROOF_JOBS.items():
+            if kind in baselines:
+                continue
+            matches = [job for job in jobs if job.get("name") == expected.name]
+            if len(matches) != 1:
+                continue
+            job = matches[0]
+            steps = job.get("steps")
+            if (job.get("run_id") != run["id"] or job.get("head_sha") != source or job.get("head_branch") != branch
+                    or job.get("status") != "completed" or job.get("conclusion") != "success" or not isinstance(steps, list)):
+                continue
+            proof_steps = [step for step in steps if isinstance(step, dict) and step.get("name") == expected.step]
+            if (len(proof_steps) == 1 and proof_steps[0].get("status") == "completed"
+                    and proof_steps[0].get("conclusion") == "success"):
+                baselines[kind] = EvidenceBaseline(run["id"], source, job["id"], attempt)
+        if len(baselines) == len(PROOF_JOBS):
+            return baselines, True
+    return baselines, complete
+
+
+class GitEvidence:
+    @staticmethod
+    def _run(arguments: list[str]):
+        try:
+            return subprocess.run(["git", *arguments], capture_output=True, timeout=30, check=False)
+        except Exception:
+            raise EvidenceUnavailable("PROOF_GIT_UNAVAILABLE") from None
+
+    def verify_head(self, head: str) -> None:
+        result = self._run(["rev-parse", "HEAD"])
+        if result.returncode != 0 or result.stdout.decode("ascii", errors="replace").strip() != head:
+            raise EvidenceUnavailable("PROOF_CHECKOUT_HEAD_MISMATCH")
+
+    def is_ancestor(self, source: str, head: str) -> bool:
+        if self._run(["cat-file", "-e", source + "^{commit}"]).returncode != 0:
+            return False  # Missing/force-pushed history is never evidence.
+        result = self._run(["merge-base", "--is-ancestor", source, head])
+        if result.returncode not in (0, 1):
+            raise EvidenceUnavailable("PROOF_ANCESTRY_UNAVAILABLE")
+        return result.returncode == 0
+
+    def paths(self, source: str, head: str) -> list[str]:
+        # Full local history avoids the REST compare API's file cap. A rename includes both paths.
+        result = self._run(["diff", "--no-renames", "--name-only", "-z", source, head, "--"])
+        raw = result.stdout
+        if result.returncode != 0 or len(raw) > MAX_DIFF_BYTES or raw and not raw.endswith(b"\0"):
+            raise EvidenceUnavailable("PROOF_CHANGED_PATHS_UNAVAILABLE")
+        return [os.fsdecode(path) for path in raw.split(b"\0") if path]
+
+
+def select_scope(api, git, repository: str, branch: str, head: str, current_run: int) -> ProofScope:
+    required = dict.fromkeys(PROOF_JOBS, True)
+    try:
+        if (not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
+                or not branch.startswith("codex/lan-sync-") or not _sha(head) or not _positive_int(current_run)):
+            raise EvidenceUnavailable("PROOF_CONTEXT_UNAVAILABLE")
+        git.verify_head(head)
+        baselines, complete = find_baselines(api, repository, branch, head, current_run, git.is_ancestor)
+        changes: dict[str, list[str]] = {}
+        for kind, baseline in baselines.items():
+            if baseline.source_sha not in changes:
+                changes[baseline.source_sha] = git.paths(baseline.source_sha, head)
+            paths = changes[baseline.source_sha]
+            required[kind] = classify_cloud(paths) if kind == "cloud" else classify(paths)[0 if kind == "legacy" else 1]
+        # A bounded search may reuse independently verified evidence; every unresolved kind stays full.
+        return ProofScope(required, baselines, None if complete else "PROOF_HISTORY_WINDOW_EXHAUSTED")
+    except EvidenceUnavailable as failure:
+        return ProofScope(dict.fromkeys(PROOF_JOBS, True), {}, str(failure))
+    except Exception:
+        return ProofScope(dict.fromkeys(PROOF_JOBS, True), {}, "PROOF_EVIDENCE_UNAVAILABLE")
+
+
 def main() -> None:
-    base = os.environ.get("CCB_SYNC_DIFF_BASE", "")
-    head = os.environ.get("GITHUB_SHA", "")
-    available = bool(re.fullmatch("[0-9a-f]{40}", base)) and base != "0" * 40
-    available = available and bool(re.fullmatch("[0-9a-f]{40}", head))
-    available = available and subprocess.run(["git", "cat-file", "-e", base + "^{commit}"], capture_output=True).returncode == 0
-    legacy = group = cloud = True
-    if available:
-        raw = subprocess.check_output(["git", "diff", "--name-only", "-z", base, head])
-        paths = [os.fsdecode(path) for path in raw.split(b"\0") if path]
-        legacy, group = classify(paths)
-        cloud = classify_cloud(paths)
-    else:
-        print("DIFF_BASE_UNAVAILABLE_FULL_TRANSPORT_PROOF_REQUIRED")
-    print("LEGACY_TRANSPORT_PROOF_REQUIRED" if legacy else "UNCHANGED_LEGACY_BYTE_PATH_REUSE_EXISTING_PROOF")
-    print("GROUP_RESOURCE_PROOF_REQUIRED" if group else "UNCHANGED_GROUP_BYTE_PATH_REUSE_EXISTING_PROOF")
-    print("CLOUD_RESOURCE_PROOF_REQUIRED" if cloud else "UNCHANGED_CLOUD_BYTE_PATH_REUSE_EXISTING_PROOF")
+    try:
+        api = GitHubEvidenceApi(os.environ.get("GITHUB_API_URL", "https://api.github.com"), os.environ.get("GITHUB_TOKEN", ""))
+        result = select_scope(api, GitEvidence(), os.environ.get("GITHUB_REPOSITORY", ""),
+                              os.environ.get("GITHUB_REF_NAME", ""), os.environ.get("GITHUB_SHA", ""),
+                              int(os.environ.get("GITHUB_RUN_ID", "0")))
+    except Exception:
+        result = ProofScope(dict.fromkeys(PROOF_JOBS, True), {}, "PROOF_EVIDENCE_UNAVAILABLE")
+    if result.diagnostic:
+        print(result.diagnostic)
+    for kind in PROOF_JOBS:
+        baseline = result.baselines.get(kind)
+        if baseline:
+            print(f"{kind.upper()}_PROOF_BASELINE run={baseline.run_id} attempt={baseline.attempt} job={baseline.job_id} source={baseline.source_sha}")
+        else:
+            print(f"{kind.upper()}_SUCCESSFUL_ANCESTRAL_PROOF_UNAVAILABLE")
+        print(f"{kind.upper()}_RESOURCE_PROOF_" + ("REQUIRED" if result.required[kind] else "REUSE_VERIFIED_BASELINE"))
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-        output.write("legacy_large=" + str(legacy).lower() + "\n")
-        output.write("group_large=" + str(group).lower() + "\n")
-        output.write("cloud_large=" + str(cloud).lower() + "\n")
+        for kind in PROOF_JOBS:
+            output.write(kind + "_large=" + str(result.required[kind]).lower() + "\n")
 
 
 if __name__ == "__main__":

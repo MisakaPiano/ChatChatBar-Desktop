@@ -103,6 +103,9 @@ jobs:
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
     outputs:
       legacy_large: ${{ steps.proof_scope.outputs.legacy_large }}
       group_large: ${{ steps.proof_scope.outputs.group_large }}
@@ -110,11 +113,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
-      - name: Select changed transport proof scope
+          fetch-depth: 0
+      - name: Select large proof scope from successful ancestral evidence
         id: proof_scope
         env:
-          CCB_SYNC_DIFF_BASE: ${{ github.event.before }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python -m unittest discover -s tools/lan-sync/tests -p test_proof_scope.py
           python -m unittest discover -s tools/lan-next-control -p test_instrumentation_report.py
