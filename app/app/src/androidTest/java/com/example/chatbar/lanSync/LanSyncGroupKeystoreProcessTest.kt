@@ -108,7 +108,7 @@ class LanSyncGroupKeystoreProcessTest {
                 check(identity.fingerprint == text("actor.txt") && group.value == text("group-id.txt"))
                 val ledger = custody.ledger()
                 check(ledger.current().epoch != created.genesis.epoch && custody.key(created.genesis.epoch).keyCommitment() == created.genesis.keyCommitment)
-                check(rootJournal.state().completedSequence == 1L && rootJournal.nextRecoveryRequest(ledger) == null)
+                check(rootJournal.state().completedSequence == 1L && rootJournal.nextRecoveryRequest(custody) == null)
                 val entry = requireNotNull(rootJournal.entry(SyncStoreId.parse(text("root-operation.txt"))))
                 check(entry.record.reference() == ledger.current().reference())
                 check(rootJournal.commit(entry.request, custody::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_ROOT_MUST_NOT_REAPPROVE") },

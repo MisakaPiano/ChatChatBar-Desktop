@@ -77,6 +77,64 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         build(read()).also { it.current() }
     }
 
+    /** Explicit creator enrollment: signed ancestry, generated keys and checkpoint publish in one protected state. */
+    fun enrollWithKeys(trust: SyncGroupTrust, records: Collection<SyncDeviceLedgerRecord>, keys: Collection<SyncAdmittedGroupKey>): SyncDeviceLedger = guarded {
+        require(trust.group == group) { "SYNC_GROUP_IDENTITY" }
+        val state = if (Files.exists(file, NOFOLLOW_LINKS)) read().also {
+            require(sameAnchor(it.trust, trust)) { "SYNC_GROUP_CUSTODY_TRUST_CHANGED" }
+        } else SyncGroupCustodyState(1, recipient.device, recipient.publicKey.encoded, trust, emptyList(), emptyMap())
+        updateWithKeysOwned(state, records, keys, trust.checkpoint)
+    }
+
+    /** Root recovery never exposes a newer epoch checkpoint without its verified local key. */
+    fun updateWithKeys(records: Collection<SyncDeviceLedgerRecord>, keys: Collection<SyncAdmittedGroupKey>): SyncDeviceLedger = guarded {
+        updateWithKeysOwned(read(), records, keys)
+    }
+    private fun updateWithKeysOwned(state: SyncGroupCustodyState, records: Collection<SyncDeviceLedgerRecord>,
+        admittedKeys: Collection<SyncAdmittedGroupKey>, requiredCheckpoint: SyncVersionRef? = null): SyncDeviceLedger {
+        val ledger = build(state); val rows = state.ledgers.associateByTo(linkedMapOf()) { it.id }
+        records.map(::freeze).forEach { row ->
+            ledger.offer(row)
+            rows[row.id]?.let { require(it.reference() == row.reference()) { "SYNC_GROUP_LEDGER_ID_COLLISION" } }
+            rows.putIfAbsent(row.id, row)
+        }
+        val retained = state.copy(ledgers = rows.values.sortedWith(compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value }))
+        val current = try { ledger.current() } catch (failure: IllegalArgumentException) {
+            // Preserve independently valid signed fork evidence without advancing the checkpoint or keys.
+            if (failure.message == "SYNC_GROUP_LEDGER_FORK_OR_MISSING" && state.ledgers.isNotEmpty() && retained != state) {
+                write(retained); observe("GROUP_LEDGER_EVIDENCE_RETAINED")
+            }
+            throw failure
+        }
+        require(requiredCheckpoint == null || ledger.contains(requiredCheckpoint)) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
+        require(current.members[recipient.device]?.let { it.active && it.recipientKey == recipient.publicKey.encoded } == true) { "SYNC_GROUP_CUSTODY_RECIPIENT" }
+        val keys = state.keys.toMutableMap()
+        admittedKeys.forEach { admitted ->
+            val cipher = admitted.cipher
+            require(admitted.recipient == recipient.device && cipher.group == group && ledger.contains(admitted.authorizingLedger) &&
+                ledger.hasKey(cipher.epoch, cipher.keyCommitment(), admitted.authorizingLedger)) { "SYNC_GROUP_CUSTODY_KEY" }
+            val previous = keys[cipher.epoch.value]
+            if (previous != null) {
+                require(openEnvelope(cipher.epoch, previous).keyCommitment() == cipher.keyCommitment()) { "SYNC_GROUP_CUSTODY_KEY_CHANGED" }
+            } else {
+                val protected = cipher.protectedKeyset(protect)
+                require(SyncStreamingCipher.open(group, cipher.epoch, protected, unprotect).keyCommitment() == cipher.keyCommitment()) { "SYNC_GROUP_CUSTODY_KEY_CHANGED" }
+                keys[cipher.epoch.value] = Base64.getEncoder().encodeToString(protected)
+            }
+        }
+        val currentKey = requireNotNull(keys[current.epoch.value]) { "SYNC_GROUP_CUSTODY_KEY_MISSING" }
+        require(openEnvelope(current.epoch, currentKey).keyCommitment() == current.keyCommitment) { "SYNC_GROUP_CUSTODY_KEY_CHANGED" }
+        val complete = retained.copy(trust = state.trust.copy(checkpoint = current.reference()), keys = keys.toMap())
+        if (complete != state) {
+            // All protection/round-trip checks finish before this single atomic replacement.
+            write(complete)
+            if (retained.ledgers != state.ledgers) observe("GROUP_LEDGER_EVIDENCE_RETAINED")
+            if (complete.trust.checkpoint != state.trust.checkpoint) observe("GROUP_CHECKPOINT_RETAINED")
+            if (complete.keys != state.keys) observe("GROUP_KEY_RETAINED")
+        }
+        return build(read()).also { it.current() }
+    }
+
     fun rememberKey(admitted: SyncAdmittedGroupKey) = guarded {
         val initial = read(); val ledger = build(initial); val state = advance(initial, ledger)
         val current = ledger.current(); val cipher = admitted.cipher
@@ -99,10 +157,13 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
 
     private fun openKey(state: SyncGroupCustodyState, epoch: SyncStoreId): SyncStreamingCipher {
         val encoded = requireNotNull(state.keys[epoch.value]) { "SYNC_GROUP_CUSTODY_KEY_MISSING" }
-        require(encoded.length in 1..128 * 1024) { "SYNC_GROUP_CUSTODY_BUDGET" }
-        val cipher = SyncStreamingCipher.open(group, epoch, Base64.getDecoder().decode(encoded), unprotect)
+        val cipher = openEnvelope(epoch, encoded)
         require(build(state).hasKey(epoch, cipher.keyCommitment(), state.trust.checkpoint)) { "SYNC_GROUP_CUSTODY_KEY_CHANGED" }
         return cipher
+    }
+    private fun openEnvelope(epoch: SyncStoreId, encoded: String): SyncStreamingCipher {
+        require(encoded.length in 1..128 * 1024) { "SYNC_GROUP_CUSTODY_BUDGET" }
+        return SyncStreamingCipher.open(group, epoch, Base64.getDecoder().decode(encoded), unprotect)
     }
     private fun build(state: SyncGroupCustodyState) = SyncDeviceLedger(state.trust).also { ledger -> state.ledgers.forEach { ledger.offer(it) } }
     private fun advance(state: SyncGroupCustodyState, ledger: SyncDeviceLedger): SyncGroupCustodyState {

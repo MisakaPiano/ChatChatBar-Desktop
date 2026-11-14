@@ -65,4 +65,19 @@ class SyncRootGroupCreationTest {
         val correct = f.service().resume(f.request.operation, f.identity::signSyncGroupPayload)
         assertEquals(f.identity.fingerprint, SyncDeviceSignatures.decode(correct.trust.ownerCertificate).fingerprint)
     }
+    @Test fun creatorKeyOrStateProtectionFailureCannotPublishAKeylessEnrollment() {
+        for (failAt in 1..2) withFixture { f ->
+            val created = f.service().create(f.request, SyncRootGroupCreateAdmission {}, f.identity::signSyncGroupPayload)
+            val directory = Files.createDirectory(f.root.resolve("custody")); var calls = 0
+            val interrupted = SyncGroupCustody(directory, created.trust.group, f.recipient, { bytes ->
+                calls++; if (calls == failAt) throw IOException("SYNTHETIC_CREATOR_PROTECTION_FAILED"); bytes.reversedArray()
+            }, { it.reversedArray() })
+            assertFailsWith<IOException> { created.enrollCreator(interrupted) }
+            assertFalse(Files.exists(directory.resolve("group.protected")))
+            val reopened = SyncGroupCustody(directory, created.trust.group, f.recipient, { it.reversedArray() }, { it.reversedArray() })
+            f.service().resume(f.request.operation) { error("SYNTHETIC_NO_RESIGN") }.enrollCreator(reopened)
+            assertEquals(created.genesis.reference(), reopened.ledger().current().reference())
+            assertEquals(created.genesis.keyCommitment, reopened.key(created.genesis.epoch).keyCommitment())
+        }
+    }
 }

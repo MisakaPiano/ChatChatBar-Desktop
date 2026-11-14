@@ -27,10 +27,8 @@ class SyncRootCreatedGroup internal constructor(val trust: SyncGroupTrust, val g
     internal val cipher: SyncStreamingCipher) {
     /** Only the locally approved creator can supply this generated key; joining uses signed HPKE delivery. */
     fun enrollCreator(custody: SyncGroupCustody): SyncDeviceLedger {
-        val ledger = custody.enroll(trust, listOf(genesis))
         val actor = SyncDeviceSignatures.decode(trust.ownerCertificate).fingerprint
-        custody.rememberKey(SyncAdmittedGroupKey(cipher, actor, genesis.reference()))
-        return ledger
+        return custody.enrollWithKeys(trust, listOf(genesis), listOf(SyncAdmittedGroupKey(cipher, actor, genesis.reference())))
     }
 }
 

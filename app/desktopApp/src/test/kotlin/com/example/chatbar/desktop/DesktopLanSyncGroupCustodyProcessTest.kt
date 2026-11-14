@@ -90,7 +90,7 @@ object DesktopLanSyncGroupCustodyChild {
             check(ledger.trustAnchor.checkpoint == latest.reference())
             val key = custody.key(latest.epoch); check(key.keyCommitment() == latest.keyCommitment)
             check(latest.epoch != created.genesis.epoch && custody.key(created.genesis.epoch).keyCommitment() == created.genesis.keyCommitment)
-            check(rootJournal.state().completedSequence == 1L && rootJournal.nextRecoveryRequest(ledger) == null)
+            check(rootJournal.state().completedSequence == 1L && rootJournal.nextRecoveryRequest(custody) == null)
             val rootEntry = requireNotNull(rootJournal.entry(SyncStoreId.parse(Files.readString(root.resolve("root-operation.txt")))))
             check(rootEntry.record.reference() == latest.reference())
             check(rootJournal.commit(rootEntry.request, custody::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_ROOT_MUST_NOT_REAPPROVE") },

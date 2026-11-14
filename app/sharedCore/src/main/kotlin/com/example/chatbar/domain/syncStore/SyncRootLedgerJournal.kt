@@ -69,15 +69,25 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
         }
     }
     /** Next exact owned fact/approved intent, derived only from the retained signed lineage. */
-    fun nextRecoveryRequest(authority: SyncDeviceLedger): SyncRootLedgerRequest? = guarded {
-        val loaded = load(); requireOwner(authority)
+    fun nextRecoveryRequest(custody: SyncGroupCustody): SyncRootLedgerRequest? = guarded {
+        val loaded = load(); val authority = custody.ledger(); requireOwner(authority)
         val current = authority.current()
         require(loaded.ledger.contains(current.reference())) { "SYNC_ROOT_FOREIGN_LEDGER_PROGRESS" }
         val missing = loaded.ledger.current().sequence - current.sequence
-        if (missing == 0L) return@guarded loaded.pending?.request
-        val next = loaded.sequence - missing + 1
-        require(next in 1..loaded.sequence) { "SYNC_ROOT_ORIGIN_PREFIX_NOT_APPLIED" }
-        requireNotNull(read(signedPath(next), "SIGNED", SyncRootLedgerEntry.serializer())) { "SYNC_ROOT_SIGNED_MISSING" }.request
+        if (missing > 0L) {
+            val next = loaded.sequence - missing + 1
+            require(next in 1..loaded.sequence) { "SYNC_ROOT_ORIGIN_PREFIX_NOT_APPLIED" }
+            return@guarded requireNotNull(read(signedPath(next), "SIGNED", SyncRootLedgerEntry.serializer())) { "SYNC_ROOT_SIGNED_MISSING" }.request
+        }
+        val owned = signedKeys(loaded.sequence).associateBy { it.record.epoch }
+        loaded.ledger.history().distinctBy { it.epoch }.forEach { row ->
+            val actual = try { custody.key(row.epoch) } catch (failure: IllegalArgumentException) {
+                if (failure.message != "SYNC_GROUP_CUSTODY_KEY_MISSING") throw failure
+                return@guarded requireNotNull(owned[row.epoch]) { "SYNC_ROOT_ORIGIN_KEY_RECOVERY_REQUIRED" }.request
+            }
+            require(actual.group == row.group && actual.epoch == row.epoch && actual.keyCommitment() == row.keyCommitment) { "SYNC_ROOT_RECOVERY_KEY_CHANGED" }
+        }
+        loaded.pending?.request
     }
 
     fun commit(request: SyncRootLedgerRequest, authority: () -> SyncDeviceLedger, admission: SyncRootLedgerAdmission,
@@ -121,9 +131,19 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
         require(retained == commit.entry && loaded.ledger.contains(retained.record.reference()) &&
             commit.records == loaded.ledger.history(retained.record.reference())) { "SYNC_ROOT_OPERATION_CHANGED" }
         requireOwner(custody.ledger())
-        val updated = custody.update(commit.records)
-        key(retained)?.let { custody.rememberKey(SyncAdmittedGroupKey(it, actor.fingerprint, retained.record.reference())) }
-        updated
+        val keys = signedKeys(loaded.sequence).map { entry ->
+            SyncAdmittedGroupKey(requireNotNull(key(entry)), actor.fingerprint, entry.record.reference())
+        }
+        // Apply all already-approved owned facts/keys together, including repair of an older split-write window.
+        custody.updateWithKeys(loaded.ledger.history(), keys)
+    }
+    private fun signedKeys(sequence: Long): List<SyncRootLedgerEntry> {
+        val result = mutableListOf<SyncRootLedgerEntry>(); var index = 0L
+        while (index < sequence) { index++
+            val entry = requireNotNull(read(signedPath(index), "SIGNED", SyncRootLedgerEntry.serializer())) { "SYNC_ROOT_SIGNED_MISSING" }
+            if (entry.request.rotateKey) result += entry
+        }
+        return result
     }
     private fun signAndRetain(sequence: Long, intent: SyncRootLedgerEntry, ledger: SyncDeviceLedger,
         authority: () -> SyncDeviceLedger, sign: (ByteArray) -> ByteArray): SyncRootLedgerCommit {

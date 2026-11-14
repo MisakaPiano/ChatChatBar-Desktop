@@ -12,7 +12,8 @@ class SyncRootLedgerJournalTest {
         val f = LanSyncGroupPublicationQueueTest.Fixture(root)
         val journalRoot = Files.createDirectory(root.resolve("root-journal")); val custodyRoot = Files.createDirectory(root.resolve("root-custody"))
         val recipient = f.recipients.getValue(f.owner.fingerprint)
-        fun custody() = SyncGroupCustody(custodyRoot, f.cipher.group, recipient, { it.reversedArray() }, { it.reversedArray() })
+        fun custody(protect: (ByteArray) -> ByteArray = { it.reversedArray() }, observe: (String) -> Unit = {}) =
+            SyncGroupCustody(custodyRoot, f.cipher.group, recipient, protect, { it.reversedArray() }, observe = observe)
         fun journal(observe: (String) -> Unit = {}) = SyncRootLedgerJournal(journalRoot, f.ledger.trustAnchor,
             f.members.getValue(f.owner.fingerprint).certificate, { it.reversedArray() }, { it.reversedArray() }, observe)
         init {
@@ -38,13 +39,13 @@ class SyncRootLedgerJournalTest {
     @Test fun anApprovedRevocationRetainsItsExactNewKeyAndUpdatesCustodyWithoutGivingItToTheRemovedPeer() = withFixture { f ->
         val request = f.request(); val commit = f.commit(request)
         assertEquals(f.f.genesis.reference(), f.custody().ledger().current().reference())
-        assertEquals(request, f.journal().nextRecoveryRequest(f.custody().ledger()))
+        assertEquals(request, f.journal().nextRecoveryRequest(f.custody()))
         val updated = f.journal().applyToCustody(commit, f.custody())
         assertEquals(commit.entry.record.reference(), updated.current().reference()); assertFalse(updated.current().members.getValue(f.f.sender.fingerprint).active)
         assertNotEquals(f.f.cipher.epoch, updated.current().epoch)
         assertEquals(updated.current().keyCommitment, f.custody().key(updated.current().epoch).keyCommitment())
         assertEquals(f.f.cipher.keyCommitment(), f.custody().key(f.f.cipher.epoch).keyCommitment())
-        assertNull(f.journal().nextRecoveryRequest(f.custody().ledger()))
+        assertNull(f.journal().nextRecoveryRequest(f.custody()))
         assertEquals(commit.entry, f.journal().commit(request, { f.custody().ledger() },
             SyncRootLedgerAdmission { error("SYNTHETIC_ALREADY_APPROVED") }, { error("SYNTHETIC_NO_SECOND_SIGNATURE") }).entry)
         assertEquals(1L, f.journal().state().completedSequence)
@@ -72,7 +73,7 @@ class SyncRootLedgerJournalTest {
         assertFailsWith<IOException> { f.journal { if (it == "APPROVED_ROOT_INTENT_RETAINED") throw IOException("SYNTHETIC_ROOT_INTENT_REPLY_LOST") }
             .commit(request, { f.custody().ledger() }, SyncRootLedgerAdmission {}, { error("SYNTHETIC_SIGNER_NOT_REACHED") }) }
         assertEquals(request.operation, f.journal().state().pendingOperation)
-        assertEquals(request, f.journal().nextRecoveryRequest(f.custody().ledger()))
+        assertEquals(request, f.journal().nextRecoveryRequest(f.custody()))
         assertEquals("SYNC_ROOT_PENDING_APPROVED_ACTION", assertFailsWith<IllegalArgumentException> { f.commit(f.request()) }.message)
         var signed = 0
         val resumed = f.journal().commit(request, { f.custody().ledger() }, SyncRootLedgerAdmission { error("SYNTHETIC_NO_REAPPROVAL") },
@@ -99,5 +100,50 @@ class SyncRootLedgerJournalTest {
         Files.delete(f.journalRoot.resolve("intent-0000000000000000001.protected"))
         assertEquals("SYNC_ROOT_HISTORY_MISSING", assertFailsWith<IllegalArgumentException> { f.journal().state() }.message)
         assertEquals(retained.entry.record.reference(), f.custody().ledger().current().reference())
+    }
+
+    @Test fun checkpointNotificationLossReopensBothTheNewCheckpointAndItsKeyTogether() = withFixture { f ->
+        val request = f.request(); val commit = f.commit(request)
+        val interrupted = f.custody(observe = { if (it == "GROUP_CHECKPOINT_RETAINED") throw IOException("SYNTHETIC_CHECKPOINT_REPLY_LOST") })
+        assertFailsWith<IOException> { f.journal().applyToCustody(commit, interrupted) }
+        val reopened = f.custody()
+        assertEquals(commit.entry.record.reference(), reopened.ledger().current().reference())
+        assertEquals(commit.entry.record.keyCommitment, reopened.key(commit.entry.record.epoch).keyCommitment())
+        assertEquals(f.f.cipher.keyCommitment(), reopened.key(f.f.cipher.epoch).keyCommitment())
+        assertNull(f.journal().nextRecoveryRequest(reopened))
+    }
+
+    @Test fun keyOrWholeStateProtectionFailureLeavesThePreviousCheckpointAndAutomaticallyReplaysTheOwnedAction() {
+        for (failAt in 1..2) withFixture { f ->
+            val request = f.request(); val commit = f.commit(request); var calls = 0
+            val interrupted = f.custody(protect = { bytes ->
+                calls++; if (calls == failAt) throw IOException("SYNTHETIC_ATOMIC_KEY_PROTECTION_FAILED"); bytes.reversedArray()
+            })
+            assertFailsWith<IOException> { f.journal().applyToCustody(commit, interrupted) }
+            val reopened = f.custody()
+            assertEquals(f.f.genesis.reference(), reopened.ledger().current().reference())
+            assertEquals(f.f.cipher.keyCommitment(), reopened.key(f.f.cipher.epoch).keyCommitment())
+            assertEquals(request, f.journal().nextRecoveryRequest(reopened))
+            val retained = f.journal().commit(request, reopened::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_NO_REAPPROVAL") },
+                { error("SYNTHETIC_NO_RESIGN") })
+            f.journal().applyToCustody(retained, reopened)
+            assertEquals(commit.entry.record.keyCommitment, reopened.key(commit.entry.record.epoch).keyCommitment())
+            assertNull(f.journal().nextRecoveryRequest(reopened))
+        }
+    }
+
+    @Test fun anOlderSplitWriteWindowAcrossSeveralRotationsRepairsAllOwnedKeysWithoutAnotherSignature() = withFixture { f ->
+        val first = f.commit(f.request()); f.custody().update(first.records) // Reproduce the previous non-atomic implementation.
+        val second = f.commit(f.request()); f.custody().update(second.records)
+        assertEquals(second.entry.record.reference(), f.custody().ledger().current().reference())
+        assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { f.custody().key(second.entry.record.epoch) }.message)
+        val recovery = requireNotNull(f.journal().nextRecoveryRequest(f.custody()))
+        val retained = f.journal().commit(recovery, { f.custody().ledger() }, SyncRootLedgerAdmission { error("SYNTHETIC_NO_REAPPROVAL") },
+            { error("SYNTHETIC_NO_RESIGN") })
+        f.journal().applyToCustody(retained, f.custody())
+        assertEquals(first.entry.record.keyCommitment, f.custody().key(first.entry.record.epoch).keyCommitment())
+        assertEquals(second.entry.record.keyCommitment, f.custody().key(second.entry.record.epoch).keyCommitment())
+        assertEquals(f.f.cipher.keyCommitment(), f.custody().key(f.f.cipher.epoch).keyCommitment())
+        assertNull(f.journal().nextRecoveryRequest(f.custody())); assertEquals(2L, f.journal().state().completedSequence)
     }
 }
