@@ -31,7 +31,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             LanSyncBlobs.publish(source, target, Files.size(source), hash, root)
             target.toString()
         }, validateResource = ::validateAndroidLanSyncResource)
-    val runtime by lazy { LanSyncRuntime(store, workspace, object : LanSyncPlatform {
+    private val platform = object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) {
             require(app.lanSyncStartupReady) { "SYNC_INITIALIZING" }
             app.momentScheduler.withLanSyncMaintenance {
@@ -49,7 +49,18 @@ class AndroidLanSync(private val app: ChatBarApp) {
             app.novelAiStudioRepository.initialize()
             app.novelAiStudioRepository.reloadAfterLanSync()
         }
-    }, android.os.Build.MODEL.take(80)) }
+    }
+    val runtime by lazy { LanSyncRuntime(store, workspace, platform, android.os.Build.MODEL.take(80)) }
+    val groupEnrollment by lazy {
+        val profile = root.resolve("group-profile")
+        if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
+            require(Files.isRegularFile(root.resolve("identity.protected"), LinkOption.NOFOLLOW_LINKS)) { "SYNC_GROUP_DAILY_IDENTITY_MISSING" }
+        }
+        val daily = store.identity()
+        if (!Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(profile)
+        LanSyncGroupEnrollment(profile, workspace, platform, daily, protection::protect,
+            protection::unprotect, ::validateAndroidLanSyncResource)
+    }
     fun recoverBeforeRepositories() = workspace.recover()
 
 }

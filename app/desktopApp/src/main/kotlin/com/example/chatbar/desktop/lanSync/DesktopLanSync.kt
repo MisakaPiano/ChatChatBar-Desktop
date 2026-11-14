@@ -27,10 +27,21 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                 }
             }
         }, validateResource = ::validateDesktopLanSyncResource, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) })
-    val runtime by lazy { LanSyncRuntime(stateStore, workspace, object : LanSyncPlatform {
+    private val platform = object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
-    }, "CCB 电脑") }
+    }
+    val runtime by lazy { LanSyncRuntime(stateStore, workspace, platform, "CCB 电脑") }
+    val groupEnrollment by lazy {
+        val profile = localRoot.resolve("group-profile")
+        if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
+            require(Files.isRegularFile(localRoot.resolve("identity.protected"), LinkOption.NOFOLLOW_LINKS)) { "SYNC_GROUP_DAILY_IDENTITY_MISSING" }
+        }
+        val daily = stateStore.identity()
+        if (!Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(profile)
+        LanSyncGroupEnrollment(profile, workspace, platform, daily, protector::protect,
+            protector::unprotect, ::validateDesktopLanSyncResource)
+    }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() = runtime.closeAndDrain()
 }

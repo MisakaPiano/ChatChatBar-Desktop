@@ -79,6 +79,7 @@ class DesktopAppContainer internal constructor(
             if (path.isAbsolute) path else characterResourceStore.resolveOwnedReference(reference)
         }, asset = characterResourceStore::readBytes) }
     internal val lanSync get() = lanSyncOwner.value.runtime
+    internal val lanSyncGroupEnrollment get() = lanSyncOwner.value.groupEnrollment
     internal val imageToolPreferences by lazy { DesktopImageToolPreferences(jsonFileStorage, dataOperationCoordinator) }
     internal val documentRagReader by lazy {
         DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator, maintenance = audioMaintenance)
