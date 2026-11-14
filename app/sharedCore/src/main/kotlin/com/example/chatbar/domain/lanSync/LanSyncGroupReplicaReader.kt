@@ -24,9 +24,21 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
     private val listingId = SyncStoreId.random().value
     @Serializable private data class Incoming(val key: CiphertextObjectKey, val descriptor: CiphertextDescriptor)
     fun routes(value: List<Route>) { require(value.map { it.id }.toSet().size == value.size); routes = value.toList() }
+    /** Local inspection never waits on a route, including when a referenced ciphertext is absent. */
+    fun cachedOnly(): CiphertextStore = object : CiphertextStore {
+        override val capabilities get() = this@LanSyncGroupReplicaReader.capabilities
+        override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult =
+            throw CiphertextStoreException(CiphertextStoreFailure.UNSUPPORTED)
+        override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = metadataExact(key, null)
+        override fun listCommits(cursor: CommitCursor?, pageSize: Int) = this@LanSyncGroupReplicaReader.listCommits(cursor, pageSize)
+        override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+            val metadata = metadataExact(key, expected) ?: return null
+            return if (key.kind == CiphertextObjectKind.COMMIT) commits.exact(metadata).readTo(key, destination, metadata.descriptor)
+            else local.readTo(key, destination, metadata.descriptor)
+        }
+    }
     override val capabilities get() = local.capabilities.copy(untrustedCandidateVariants = true)
     override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
-        if (request.key.kind != CiphertextObjectKind.COMMIT) return local.put(request, source)
         val metadata = CiphertextObjectMetadata(request.key, request.descriptor)
         java.nio.channels.FileChannel.open(work.resolve("incoming.lock"), java.nio.file.StandardOpenOption.CREATE,
             WRITE, NOFOLLOW_LINKS).use { channel -> synchronized(incomingLocks.computeIfAbsent(work) { Any() }) { channel.lock().use {
@@ -35,7 +47,16 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
             if (Files.exists(binding, NOFOLLOW_LINKS)) {
                 lanSyncSafe(binding)
                 if (LanSyncJsonFiles.read(binding, Incoming.serializer()) != expected) throw CiphertextStoreException(CiphertextStoreFailure.OPERATION_CONFLICT)
-            } else lanSyncAtomicWrite(binding, lanSyncJson.encodeToString(Incoming.serializer(), expected).toByteArray())
+            }
+            // Bind against the original local store too: historical BLOB operations and raw
+            // COMMIT candidates share one operation namespace, including after an upgrade/reopen.
+            val bindings = local as? CiphertextOperationBindings
+            if (bindings == null && request.key.kind == CiphertextObjectKind.COMMIT)
+                throw CiphertextStoreException(CiphertextStoreFailure.UNSUPPORTED)
+            bindings?.reserveOperation(request)
+            if (!Files.exists(binding, NOFOLLOW_LINKS))
+                lanSyncAtomicWrite(binding, lanSyncJson.encodeToString(Incoming.serializer(), expected).toByteArray())
+            if (request.key.kind != CiphertextObjectKind.COMMIT) return local.put(request, source)
             val present = commits.exact(metadata).metadata(request.key) != null
             val borrowed = object : CiphertextStore by local {
                 override fun metadata(key: CiphertextObjectKey) = if (key == request.key) metadata else null

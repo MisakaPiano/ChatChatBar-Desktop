@@ -380,6 +380,29 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         } }
     }
 
+    /** Shutdown source-only inventory. It never completes WAL or changes user/restore files. */
+    fun requireSettledForSourceOnly() {
+        Files.newDirectoryStream(stateRoot, "transaction-*").use { paths -> paths.forEach { transaction ->
+            lanSyncSafe(transaction, true)
+            val id = transaction.fileName.toString().removePrefix("transaction-")
+            require(id.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+            val authorized = transaction.resolve("authorized"); val applied = transaction.resolve("applied")
+            val hasAuthorization = Files.exists(authorized, LinkOption.NOFOLLOW_LINKS)
+            val hasApplied = Files.exists(applied, LinkOption.NOFOLLOW_LINKS)
+            require(hasAuthorization == hasApplied) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+            if (hasAuthorization) {
+                require(lanSyncUtf8(lanSyncRead(authorized, 128)).matches(Regex("[a-f0-9]{64}")) &&
+                    lanSyncUtf8(lanSyncRead(applied, 128)) == id) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+            }
+        } }
+        Files.newDirectoryStream(stateRoot, "restore-intent-*.json").use { paths -> paths.forEach { path ->
+            metadataBudget.validate(path)
+            val revision = requireNotNull(LanSyncJsonFiles.read(path, LanSyncRestoreRevision.serializer())) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+            require(revision.revision.matches(Regex("[a-f0-9-]{36}")) && path.fileName.toString() == "restore-intent-${revision.revision}.json" &&
+                revision.applied == applied(revision.revision)) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+        } }
+    }
+
     fun applied(transaction: String): Boolean = Files.exists(stateRoot.resolve("transaction-$transaction/applied"), LinkOption.NOFOLLOW_LINKS)
     internal fun authorized(transaction: String): Boolean {
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }

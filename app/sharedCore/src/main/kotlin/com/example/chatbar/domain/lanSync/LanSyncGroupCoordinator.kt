@@ -3,6 +3,9 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.domain.syncStore.*
 import java.util.UUID
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -13,7 +16,8 @@ import kotlinx.coroutines.sync.withLock
 class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val enrollment: () -> LanSyncGroupEnrollment, private val joining: () -> LanSyncGroupJoining,
     private val network: LanSyncNetwork = LanSyncNetwork.Local, private val deviceName: String,
-    private val beforeSetup: suspend () -> Unit = {}) : LanSyncGroupPanelActions {
+    private val beforeSetup: suspend () -> Unit = {},
+    private val sourceChanges: Flow<Long>? = null) : LanSyncGroupPanelActions {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val admission = Mutex()
     private val mutableState = MutableStateFlow(LanSyncGroupPanelState())
@@ -32,24 +36,33 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val lifecycle = Any()
     private var privacyGeneration = 0L
     private var privacyExpiry: Job? = null
-    private val pendingSockets = mutableSetOf<javax.net.ssl.SSLSocket>()
+    private val pendingSockets = mutableSetOf<java.net.Socket>()
     private val joiningNetwork = object : LanSyncNetwork by network {
+        override fun connectInvitationOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (java.net.Socket) -> Unit): javax.net.ssl.SSLSocket =
+            network.connectInvitationOwned(identity, peer) { socket ->
+                synchronized(lifecycle) {
+                    if (closed) { socket.close(); error("SYNC_GROUP_COORDINATOR_CLOSED") }
+                    pendingSockets += socket
+                }
+                own(socket)
+            }
         override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): javax.net.ssl.SSLSocket {
             synchronized(lifecycle) {
                 check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
                 pendingSockets.removeAll { it.isClosed }
                 require(pendingSockets.size < 4) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
             }
-            val socket = network.connect(identity, peer)
-            synchronized(lifecycle) {
-                if (closed) { socket.close(); error("SYNC_GROUP_COORDINATOR_CLOSED") }
-                pendingSockets += socket
+            return network.connectOwned(identity, peer) { socket ->
+                synchronized(lifecycle) {
+                    if (closed) { socket.close(); error("SYNC_GROUP_COORDINATOR_CLOSED") }
+                    pendingSockets += socket
+                }
             }
-            return socket
         }
     }
     private var founder: LanSyncGroupEnrollment? = null
     private var member: LanSyncGroupJoining? = null
+    private var recoveredManagement: LanSyncGroupManagementRecovery? = null
     @Volatile private var draft: LanSyncGroupEnrollmentDraft? = null
     @Volatile private var transport: LanSyncGroupAppTransport? = null
     @Volatile private var discovery: LanSyncGroupDiscovery? = null
@@ -61,6 +74,37 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private var port: Int? = null
     private var lastSourceScan = 0L
     private var metadataStamp: String? = null
+    private var nearbyStamp: String? = null
+    private val localWake = Channel<Unit>(Channel.CONFLATED)
+    private val nearbyWake = Channel<Unit>(Channel.CONFLATED)
+    private val localRequests = java.util.concurrent.atomic.AtomicLong()
+    private val foregroundWake = java.util.concurrent.atomic.AtomicLong()
+    @Volatile private var latestSourceRevision = 0L
+    private var handledSourceRevision = -1L
+    private var handledLocalRequest = -1L
+    private var localWorker: Job? = null
+    private var nearbyWorker: Job? = null
+    private var sourceObserver: Job? = null
+    private var quiesced = false
+    private val shutdownAdmission = Mutex()
+    init {
+        sourceObserver = sourceChanges?.let { changes -> scope.launch {
+            changes.collect { revision -> latestSourceRevision = revision; requestLocalCheck() }
+        } }
+    }
+    private fun requestLocalCheck() {
+        if (!closed) { localRequests.incrementAndGet(); localWake.trySend(Unit) }
+    }
+    fun onForeground() {
+        if (closed || !hasExistingEvidence()) return
+        val now = System.nanoTime(); val before = foregroundWake.get()
+        if (before != 0L && now - before < 3_000_000_000L) return
+        if (!foregroundWake.compareAndSet(before, now)) return
+        if (access == null) open()
+        requestLocalCheck(); nearbyWake.trySend(Unit)
+    }
+    fun onNetworkAvailable() { onForeground(); if (!closed && hasExistingEvidence()) nearbyWake.trySend(Unit) }
+
     private fun founder() = founder ?: enrollment().also { founder = it }
     private fun member() = member ?: joining().also { member = it }
     private fun failure(stage: String, failure: Exception) {
@@ -131,29 +175,68 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         mutableState.value = LanSyncGroupPanelState(privacyRevision = state.value.privacyRevision)
     }
     override fun resumeManagementOperation() = action("接续已确认的管理操作") {
-        founder().resumeAdministration(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" })
+        if (access?.localManagementAvailable == false) {
+            requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.resumeAdministration()
+            publishRecoveredManagement()
+        } else founder().resumeAdministration(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" })
         lockManagement(); refreshDevices(); cycle(force = true)
     }
-    override fun unlockManagement(code: String) { val generation = synchronized(lifecycle) { privacyGeneration }; action("解锁管理") {
+    override fun unlockManagement(code: String) {
+        if (access?.localManagementAvailable == false) { recoverManagement(code); return }
+        val generation = synchronized(lifecycle) { privacyGeneration }; action("解锁管理") {
         val opened = founder().resume(code)
         synchronized(lifecycle) {
             if (closed || generation != privacyGeneration) { opened.close(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
             draft?.close(); draft = opened
             expirePrivacy(generation)
             val prepared = opened.profile.stage == LanSyncGroupEnrollmentStage.PREPARED
-            mutableState.update { it.copy(managementUnlocked = true, recoveryCode = if (prepared) opened.recoveryCode() else null,
+            mutableState.update { it.copy(managementUnlocked = true, managementCanInvite = !prepared, recoveryCode = if (prepared) opened.recoveryCode() else null,
                 setupBinding = if (prepared) opened.operation.value else null,
                 stage = if (prepared) LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE else it.stage) }
             refreshDevices()
         }
     } }
+    private suspend fun publishRecoveredManagement() {
+        val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+        requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.publish(current.replica, current.localTarget)
+    }
+    override fun recoverManagement(code: String) {
+        val generation = synchronized(lifecycle) { privacyGeneration }
+        action("恢复组管理") {
+            val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+            require(!current.localManagementAvailable) { "SYNC_GROUP_FOUNDER_MANAGEMENT_AVAILABLE" }
+            val owner = synchronized(lifecycle) {
+                require(!closed && generation == privacyGeneration) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+                recoveredManagement ?: current.managementRecovery().also { recoveredManagement = it }
+            }
+            if (current.hasManagementRecoveryProfile()) {
+                owner.resumeImport(code, current.reader)
+                owner.refresh(current.reader)
+            } else owner.recover(code, current.encryptedManagementBackup().bytes(), current.reader,
+                LanSyncManagementRecoveryAdmission { anchor ->
+                    require(anchor.group == current.trust.group && anchor.genesis == current.trust.genesis &&
+                        anchor.ownerCertificate == current.trust.ownerCertificate) { "SYNC_GROUP_MANAGEMENT_TRUST_CHANGED" }
+                }, current.trust.copy(checkpoint = current.ledger().current().reference()))
+            publishRecoveredManagement()
+            cycle(force = true)
+            synchronized(lifecycle) {
+                if (closed || generation != privacyGeneration) { owner.lock(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
+                require(owner.isUnlocked) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+                expirePrivacy(generation)
+                mutableState.update { it.copy(managementUnlocked = true, managementCanInvite = true,
+                    status = "已用本机加密管理资料恢复原设备组管理权") }
+                refreshDevices()
+            }
+        }
+    }
     override fun lockManagement() = synchronized(lifecycle) {
         privacyGeneration++
         privacyExpiry?.cancel(); privacyExpiry = null
         draft?.close(); draft = null
         founder?.lockManagement()
+        recoveredManagement?.lock()
         transport?.closeInvitation(); invitation?.close(); invitation = null; peer = null; revocation = null
-        mutableState.update { it.copy(recoveryCode = null, setupBinding = null, managementUnlocked = false,
+        mutableState.update { it.copy(recoveryCode = null, setupBinding = null, managementUnlocked = false, managementCanInvite = false,
             invitation = null, peerConfirmation = null, revocation = null, privacyRevision = it.privacyRevision + 1,
             devices = it.devices.map { row -> row.copy(canRevoke = false) },
             stage = if (it.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE) LanSyncGroupPanelStage.PREPARED_LOCKED else it.stage) }
@@ -181,16 +264,19 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         else mutableState.update { it.copy(status = "等待邀请设备批准，加入进度已保留") }
     }
     override fun createInvitation() { val generation = synchronized(lifecycle) { privacyGeneration }; action("生成邀请") {
-        requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+        val recovered = access?.localManagementAvailable == false
+        if (recovered) require(recoveredManagement?.isUnlocked == true) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+        else requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
         cycle(force = true)
-        val owner = founder().invitation(requireNotNull(port))
+        val owner = if (recovered) requireNotNull(access).invitation(requireNotNull(port)) else founder().invitation(requireNotNull(port))
         val live = requireNotNull(transport)
         synchronized(lifecycle) {
-        if (closed || generation != privacyGeneration || draft == null) { owner.close(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
+        if (closed || generation != privacyGeneration || (if (recovered) recoveredManagement?.isUnlocked != true else draft == null)) { owner.close(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
         val offer = live.invitation(owner) { invited -> action("核对加入设备") {
-            val preview = founder().prepareMember(invited, owner)
+            val preview = if (recovered) requireNotNull(recoveredManagement).prepareMember(invited, owner) else founder().prepareMember(invited, owner)
             synchronized(lifecycle) {
-                require(!closed && generation == privacyGeneration && invitation === owner && draft != null) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+                require(!closed && generation == privacyGeneration && invitation === owner &&
+                    (if (recovered) recoveredManagement?.isUnlocked == true else draft != null)) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
                 peer = preview
                 mutableState.update { it.copy(peerConfirmation = LanSyncGroupPeerConfirmation(preview.request.approvalBinding, preview.name, preview.device)) }
             }
@@ -205,17 +291,25 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     override fun acceptPeer(binding: String) = action("批准加入") {
         val preview = requireNotNull(peer) { "SYNC_GROUP_MEMBER_CONFIRMATION_REQUIRED" }
-        founder().addMember(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }, preview.acknowledge(binding))
+        if (access?.localManagementAvailable == false) {
+            requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.addMember(preview.acknowledge(binding))
+            publishRecoveredManagement()
+        } else founder().addMember(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }, preview.acknowledge(binding))
         lockManagement(); refreshDevices(); cycle(force = true)
     }
     override fun prepareRevocation(device: String) = action("准备撤销设备") {
-        requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
-        val preview = founder().prepareRevocation(device); revocation = preview
+        val preview = if (access?.localManagementAvailable == false) {
+            requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.prepareRevocation(device)
+        } else { requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }; founder().prepareRevocation(device) }
+        revocation = preview
         mutableState.update { it.copy(revocation = LanSyncGroupRevocationConfirmation(preview.request.approvalBinding, device.take(12))) }
     }
     override fun confirmRevocation(binding: String) = action("撤销设备") {
         val preview = requireNotNull(revocation) { "SYNC_GROUP_REVOCATION_CONFIRMATION_REQUIRED" }
-        founder().revokeDevice(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }, preview.acknowledge(binding))
+        if (access?.localManagementAvailable == false) {
+            requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.revokeDevice(preview.acknowledge(binding))
+            publishRecoveredManagement()
+        } else founder().revokeDevice(requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }, preview.acknowledge(binding))
         lockManagement(); refreshDevices(); cycle(force = true)
     }
     override fun cancelRevocation() { revocation = null; mutableState.update { it.copy(revocation = null) } }
@@ -311,6 +405,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         }
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, localManagementAvailable = requireNotNull(access).localManagementAvailable,
+            managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             status = "设备组已就绪，应用正在检查同步") }
         refreshDevices(); cycle(force = true); startLoop()
     }
@@ -326,27 +421,50 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private fun startLoop() {
         if (loop?.isActive == true || closed) return
-        loop = scope.launch {
-            while (isActive) {
-                delay(10_000)
+        localWorker = scope.launch {
+            for (ignored in localWake) {
+                delay(250)
+                if (closed || access == null) continue
                 admission.withLock {
-                    if (closed) return@withLock
-                    try { if (access == null) attemptJoin() else cycle() }
-                    catch (error: Exception) { failure("后台同步", error) }
+                    if (closed || access == null) return@withLock
+                    try { cycle(force = true) } catch (error: Exception) { failure("本机同步准备", error) }
                 }
             }
         }
+        nearbyWorker = scope.launch {
+            for (ignored in nearbyWake) {
+                if (closed || access == null) continue
+                try { pullNearby() } catch (error: Exception) { failure("近端同步", error) }
+            }
+        }
+        loop = scope.launch {
+            while (isActive) {
+                delay(10_000)
+                if (closed) break
+                if (access == null) {
+                    if (admission.tryLock()) try { attemptJoin() }
+                    catch (error: Exception) { failure("继续加入", error) }
+                    finally { admission.unlock() }
+                } else {
+                    if (latestSourceRevision != handledSourceRevision || localRequests.get() != handledLocalRequest ||
+                        System.nanoTime() - lastSourceScan >= 60_000_000_000L) requestLocalCheck()
+                    nearbyWake.trySend(Unit)
+                }
+            }
+        }
+        localWake.trySend(Unit); nearbyWake.trySend(Unit)
     }
     private suspend fun discover(node: LanSyncGroupNode, store: CiphertextStore) {
         var cursor: CommitCursor? = null
         do { cursor = node.discover(store, cursor).nextCursor } while (cursor != null)
     }
     /** Pull observations are never labelled as peer/cloud outgoing delivery receipts. */
-    private suspend fun cycle(force: Boolean = false) {
+    private suspend fun pullNearby() {
         val current = access ?: return
         val routes = mutableListOf<LanSyncGroupReplicaReader.Route>()
+        val managementIdentity = SyncDeviceSignatures.decode(current.trust.ownerCertificate).fingerprint
         for ((id, member) in current.ledger().current().members) {
-            if (!member.active || id == current.device) continue
+            if (!member.active || id == current.device || id == managementIdentity) continue
             try {
                 discovery?.find(id)?.let { peer -> routes += LanSyncGroupReplicaReader.Route(id, requireNotNull(transport).remote(peer)) }
             } catch (error: Exception) { failure("发现设备", error) }
@@ -356,28 +474,49 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             discover(current.node, current.reader.discoveryFrom(route.store))
             mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("已读取近端加密索引；不代表对端发布完成")) }
         } catch (error: Exception) { failure("近端索引", error) }
+        if (closed) return
+        val stamp = candidateStamp(current.reader)
+        val currentView = mutableView.value
+        if (stamp == nearbyStamp && currentView?.needsDependencyFetch != true) return
+        val frozen = current.node.reconcileForPrefetch()
+        // Immutable dependency I/O never holds the local source/native decision mutex.
+        current.node.prefetch(frozen, currentView?.nativeState?.units.orEmpty())
+        nearbyStamp = stamp
+        requestLocalCheck()
+    }
+    private fun candidateStamp(store: CiphertextStore): String {
         var cursor: CommitCursor? = null
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         do {
-            val page = current.reader.listCommits(cursor)
+            val page = store.listCommits(cursor)
             page.entries.forEach { digest.update(it.key.toString().toByteArray()); digest.update(it.descriptor.toString().toByteArray()) }
             cursor = page.nextCursor
         } while (cursor != null)
-        val stamp = digest.digest().joinToString("") { "%02x".format(it) }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+    /** Local-only inspection/publication. A completed check is not a peer/cloud completion receipt. */
+    private suspend fun cycle(force: Boolean = false, shutdown: Boolean = false): Boolean {
+        val current = access ?: return true
+        val request = localRequests.get(); val revision = latestSourceRevision
+        val stamp = candidateStamp(current.reader)
         val now = System.nanoTime()
-        if (!force && stamp == metadataStamp && now - lastSourceScan < 60_000_000_000L) return
-        discover(current.node, current.replica)
-        var inspected = current.node.inspect()
+        if (!force && stamp == metadataStamp && revision == handledSourceRevision && request == handledLocalRequest &&
+            now - lastSourceScan < 60_000_000_000L) return true
+        var localCursor: CommitCursor? = null
+        do { localCursor = current.node.discoverLocal(localCursor).nextCursor } while (localCursor != null)
+        var inspected = current.node.inspectLocal(recoverNative = !shutdown)
         mutableView.value = inspected
         if (inspected.stage != LanSyncGroupNodeStage.READY) {
             mutableState.update { it.copy(status = when (inspected.stage) {
                 LanSyncGroupNodeStage.DEVICE_REVOKED -> "此设备已撤销，保留原件和待传队列"
                 LanSyncGroupNodeStage.WAITING_FOR_KEY -> "正在等待新密钥，待传队列已保留"
                 else -> "设备组信任证据待检查，资料已保留"
-            }) }; return
+            }) }; return false
         }
-        inspected.plan?.let { current.node.apply(it) }
-        inspected = current.node.inspect()
+        if (!shutdown) {
+            inspected.plan?.let { current.node.apply(it) }
+            inspected = current.node.inspectLocal()
+        }
         val plan = requireNotNull(inspected.plan)
         val safe = linkedSetOf<String>()
         for (unit in plan.units.keys) {
@@ -387,27 +526,51 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val review = inspected.review(component)
             if (review.requiredBindings.isEmpty() && review.units.values.all { it.missingBodies.isEmpty() && it.records.missing.isEmpty() && it.dependencies.isEmpty() }) safe += component
         }
-        if (safe.isNotEmpty()) current.node.commit(inspected.review(safe))
+        if (safe.isNotEmpty()) current.node.commit(inspected.review(safe), recoverNative = !shutdown)
         // Cold operations may span old epochs. upload resumes/rekeys EACH existing operation itself.
         for (operation in current.node.sourceOperations()) {
             val before = current.node.receipt(operation, current.localTarget)
-            current.node.upload(operation, current.replica, current.localTarget)
+            current.node.upload(operation, current.replica, current.localTarget, recoverNative = !shutdown)
             if (before == null) mutableState.update { it.copy(local = LanSyncGroupRouteStatus("已保全并发布到本机加密副本", System.currentTimeMillis())) }
         }
-        mutableView.value = current.node.inspect()
-        metadataStamp = stamp; lastSourceScan = now; refreshDevices()
+        mutableView.value = current.node.inspectLocal(recoverNative = !shutdown)
+        val invalid = mutableView.value?.reconciliation?.observations.orEmpty().count {
+            it.stage in setOf(SyncInboxStage.INVALID_OBJECT, SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED)
+        }
+        if (invalid > 0) mutableState.update { it.copy(error = "已隔离 $invalid 个未通过验证的密文候选，原始证据已保留；正确副本可继续同步。") }
+        metadataStamp = stamp; lastSourceScan = now
+        handledSourceRevision = revision; handledLocalRequest = request
+        refreshDevices()
         val held = mutableView.value?.plan?.units?.values?.count { it.stage !in setOf(LanSyncGroupNativeStage.UNCHANGED, LanSyncGroupNativeStage.READY_OBSERVATION) } ?: 0
         mutableState.update { it.copy(status = if (held > 0) "同步检查完成，$held 项需要审阅或补齐依赖" else "同步检查完成", local =
             if (it.local.lastSuccessAt == null) LanSyncGroupRouteStatus("本机加密副本已检查；历史回执时间未知") else it.local) }
+        return true
+    }
+    /** Stops network/admission and drains existing decisions; retains daily owners for final sealing. */
+    suspend fun quiesceAndDrain() = withContext(NonCancellable) {
+        shutdownAdmission.withLock {
+            if (quiesced) return@withLock
+            synchronized(lifecycle) {
+                closed = true
+                pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
+            }
+            lockManagement(); closeRecovery()
+            discovery?.close(); transport?.closeAndDrain()
+            sourceObserver?.cancelAndJoin(); loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin()
+            admission.withLock { }
+            scope.coroutineContext[Job]?.cancelAndJoin()
+            discovery?.close(); transport?.closeAndDrain()
+            quiesced = true
+        }
+    }
+    /** Called only after producer/draft drain through the platform's shutdown-only native gate. */
+    suspend fun flushLocalAfterWriters(): Boolean {
+        require(quiesced) { "SYNC_GROUP_SHUTDOWN_NOT_QUIESCED" }
+        return try { admission.withLock { cycle(force = true, shutdown = true) } }
+        catch (error: Exception) { failure("最终本机封存", error); false }
     }
     suspend fun closeAndDrain() = withContext(NonCancellable) {
-        synchronized(lifecycle) { closed = true; pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear() }
-        discovery?.close(); transport?.closeAndDrain()
-        scope.coroutineContext[Job]?.cancelAndJoin()
-        // A final pass also owns resources assigned by an action already entering shutdown.
-        discovery?.close(); transport?.closeAndDrain()
-        lockManagement()
-        closeRecovery()
-        founder?.close()
+        quiesceAndDrain()
+        founder?.close(); recoveredManagement?.close()
     }
 }

@@ -5,15 +5,94 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketTimeoutException
+import java.net.SocketException
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.net.ssl.*
 import kotlinx.coroutines.*
 import kotlin.test.*
 
 class LanSyncTlsTest {
+    @Test fun applicationOwnedSocketsCloseAStalledFirstHandshakeWithoutWaitingForItsLongReadTimeout() {
+        val identity = LanSyncTlsIdentity.create()
+        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress()).also { it.soTimeout = 10_000 }
+        val hello = CountDownLatch(1); val release = CountDownLatch(1)
+        val owned = CopyOnWriteArrayList<Socket>()
+        val executor = Executors.newFixedThreadPool(2)
+        val peer = executor.submit {
+            listener.accept().use { socket ->
+                socket.soTimeout = 10_000
+                check(socket.getInputStream().read() >= 0)
+                hello.countDown()
+                release.await(10, TimeUnit.SECONDS)
+            }
+        }
+        val connecting = executor.submit<Exception> {
+            try {
+                LanSyncTls.connectOwnedWithDial(identity, "10.0.0.1", listener.localPort, "a".repeat(64), 120_000,
+                    { owned += it }) { plain, _, port ->
+                    assertTrue(plain in owned, "The application owns the TCP socket before connect starts")
+                    assertFalse(plain.isConnected)
+                    plain.connect(InetSocketAddress(InetAddress.getLoopbackAddress(), port), 5_000)
+                }.close()
+                error("SYNTHETIC_STALLED_PEER_MUST_NOT_COMPLETE_TLS")
+            } catch (failure: Exception) { failure }
+        }
+        try {
+            assertTrue(hello.await(5, TimeUnit.SECONDS))
+            assertEquals(2, owned.size)
+            assertTrue(owned.any { it is SSLSocket })
+            val closingAt = System.nanoTime()
+            owned.forEach(Socket::close)
+            val failure = connecting.get(5, TimeUnit.SECONDS)
+            assertTrue(System.nanoTime() - closingAt < 5_000_000_000L)
+            assertTrue(generateSequence(failure as Throwable?) { it.cause }.any { it is SocketException || it is SSLException })
+            assertFalse(generateSequence(failure as Throwable?) { it.cause }.any { it is SocketTimeoutException })
+            assertTrue(owned.all { it.isClosed })
+        } finally {
+            owned.forEach { runCatching { it.close() } }
+            release.countDown(); listener.close()
+            try { peer.get(5, TimeUnit.SECONDS) }
+            finally { executor.shutdownNow(); check(executor.awaitTermination(5, TimeUnit.SECONDS)) }
+        }
+    }
+
+    @Test fun refusingSslOwnershipBeforeHandshakeClosesBothTheTlsAndUnderlyingTcpSockets() {
+        val identity = LanSyncTlsIdentity.create()
+        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress()).also { it.soTimeout = 5_000 }
+        val owned = CopyOnWriteArrayList<Socket>()
+        val refusal = IOException("synthetic application ownership refusal")
+        val executor = Executors.newSingleThreadExecutor()
+        val peer = executor.submit {
+            listener.accept().use { socket ->
+                socket.soTimeout = 5_000
+                var count = 0
+                try { while (socket.getInputStream().read() != -1) check(++count <= 1024) }
+                catch (_: SocketException) { /* A reset also proves that the owned connection closed. */ }
+            }
+        }
+        try {
+            assertSame(refusal, assertFailsWith<IOException> {
+                LanSyncTls.connectOwnedWithDial(identity, "10.0.0.1", listener.localPort, "a".repeat(64), 120_000,
+                    { socket -> owned += socket; if (socket is SSLSocket) throw refusal }) { plain, _, port ->
+                    assertTrue(plain in owned)
+                    plain.connect(InetSocketAddress(InetAddress.getLoopbackAddress(), port), 5_000)
+                }
+            })
+            assertEquals(2, owned.size)
+            assertTrue(owned.all { it.isClosed })
+            peer.get(5, TimeUnit.SECONDS)
+        } finally {
+            owned.forEach { runCatching { it.close() } }
+            listener.close(); executor.shutdownNow()
+            check(executor.awaitTermination(5, TimeUnit.SECONDS))
+        }
+    }
+
     @Test fun connectTimeoutAppliesBeforeTheFirstTlsHandshakeAndClosesTheOwnedTcpSocket() {
         val identity = LanSyncTlsIdentity.create(); val release = CountDownLatch(1)
         val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress()).also { it.soTimeout = 10_000 }

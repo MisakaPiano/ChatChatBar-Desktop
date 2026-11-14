@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import java.io.Closeable
 import java.net.InetAddress
+import java.net.Socket
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,8 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     private val lifetime = SupervisorJob()
     private val scope = CoroutineScope(lifetime + Dispatchers.IO)
     private val ordinary = mutableSetOf<SSLSocket>()
-    private val clients = mutableSetOf<SSLSocket>()
+    private val clients = mutableSetOf<Socket>()
+    private val activeClients = mutableSetOf<SSLSocket>()
     private var connecting = 0
     private var listener: SSLServerSocket? = null
     private var activeInvitation: Invitation? = null
@@ -150,21 +152,40 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
             override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
                 synchronized(lock) {
                     clients.removeAll { it.isClosed }
+                    activeClients.removeAll { it.isClosed }
                     check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
-                    require(clients.size + connecting < 4) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
+                    require(activeClients.size + connecting < 4) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
                     connecting++
                 }
+                val owned = mutableSetOf<Socket>()
+                val own: (Socket) -> Unit = { socket ->
+                    try { synchronized(lock) {
+                        check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
+                        clients.removeAll { it.isClosed }
+                        require(!socket.isClosed && (socket in owned || owned.size < 2) &&
+                            (socket in clients || clients.size < 8)) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
+                        owned += socket; clients += socket
+                    } } catch (failure: Throwable) { socket.closeQuietly(); throw failure }
+                }
                 var created: SSLSocket? = null
+                var returned = false
                 try {
-                    val socket = network.connect(identity, peer)
+                    val socket = network.connectOwned(identity, peer, own)
                     created = socket
+                    own(socket)
                     synchronized(lock) {
                         check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
-                        clients += socket
+                        activeClients += socket
                     }
+                    returned = true
                     return socket
-                } catch (failure: Throwable) { created?.closeQuietly(); throw failure }
-                finally { synchronized(lock) { connecting-- } }
+                } catch (failure: Throwable) {
+                    synchronized(lock) { owned.toList() }.forEach { it.closeQuietly() }
+                    created?.closeQuietly(); throw failure
+                } finally { synchronized(lock) {
+                    connecting--
+                    if (!returned) { clients.removeAll(owned); activeClients.removeAll { it in owned } }
+                } }
             }
         }
         return access.remote(peer, tracked)
@@ -180,10 +201,10 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
             clients.toList().forEach { it.closeQuietly() }
         }
         lifetime.cancelAndJoin()
-        // LanSyncNetwork.connect authenticates before returning. A connect already in progress uses
-        // its production TCP/handshake timeout; a late result is closed before it can be handed out.
+        // Production Local registers plain/TLS sockets before blocking I/O, so closing them aborts
+        // an in-flight dial/handshake. Legacy custom adapters may notify only after bounded connect.
         while (synchronized(lock) { connecting != 0 }) delay(10)
-        synchronized(lock) { ordinary.clear(); clients.clear() }
+        synchronized(lock) { ordinary.clear(); clients.clear(); activeClients.clear() }
     }
 
     private fun Closeable.closeQuietly() { try { close() } catch (_: Exception) { } }

@@ -20,6 +20,9 @@ class LanSyncGroupNodeView internal constructor(val stage: LanSyncGroupNodeStage
     private val dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>, private val evidence: LanSyncGroupRecordEvidence?,
     val resolutions: List<LanSyncGroupResolutionLocalState> = emptyList(), val reservedUnits: Set<String> = emptySet(),
     val incomingReview: LanSyncGroupIncomingReview? = null) {
+    val needsDependencyFetch: Boolean get() = dependencies.values.any { it.stage in setOf(
+        LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE, LanSyncGroupDependencyStage.WAITING_FOR_KEY,
+        LanSyncGroupDependencyStage.RECORD_MEMBERSHIP_AVAILABLE, LanSyncGroupDependencyStage.RECONCILE_AGAIN) }
     fun review(selected: Set<String>): LanSyncGroupSourceReview {
         require(selected.intersect(reservedUnits).isEmpty()) { "SYNC_GROUP_RESOLUTION_RESERVED" }
         return sourceReview(selected)
@@ -42,6 +45,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private val freshLocalRevisions: () -> Set<String>, private val validateResource: (String, Path, LanSyncRecord) -> Unit,
     private val projection: LanSyncProjection = LanSyncProjection(), private val observe: (String) -> Unit = {}) {
     private val operation = Mutex()
+    private val discoveryOperation = Mutex()
     private var current: SyncInboxReconciliation? = null
     private var pendingRestorations: Map<String, Set<String>> = emptyMap()
     private var pendingResolutions: Set<String> = emptySet()
@@ -54,6 +58,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         PrivateSyncFile.checked(it, true)
     }
     private val inboxRoot = directory("inbox"); private val work = directory("preparations"); private val queueRoot = directory("queues")
+    private val prefetchWork = directory("prefetch-preparations")
     private val authorRoot = directory("author"); private val nativeRoot = directory("native")
     private val author = SyncAuthorJournal(authorRoot, trust, actorCertificate, protect, unprotect, observe)
     private val native = LanSyncGroupNativeApplyOwner(nativeRoot, workspace, trust, actorCertificate, projection,
@@ -65,7 +70,11 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             if (!Files.exists(path, NOFOLLOW_LINKS)) Files.createDirectory(path)
             SyncEncryptedOutbox(path, custody.key(epoch)) }, ::currentView, native::state, projection, observe,
         restorationRevisions = { pendingRestorations }, resolutionReservations = { pendingResolutions + heldResolutions })
-    init { require(identity.fingerprint == recipient.device && trust.group == custody.trust().group) { "SYNC_GROUP_NODE_IDENTITY" } }
+    init {
+        require(identity.fingerprint == recipient.device && trust.group == custody.trust().group) { "SYNC_GROUP_NODE_IDENTITY" }
+        // The remote worker may start alongside local inspection, after all shared inbox dirs exist.
+        inbox()
+    }
     private fun currentView() = requireNotNull(current) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
 
@@ -111,20 +120,77 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
 
     /** All destinations share this node's immutable mirror. Callers must periodically rescan from null. */
-    suspend fun discover(store: CiphertextStore, cursor: CommitCursor? = null, pageSize: Int = 100): SyncInboxDiscovery = serialized {
-        inbox(store).discover(cursor, pageSize)
+    suspend fun discover(store: CiphertextStore, cursor: CommitCursor? = null, pageSize: Int = 100): SyncInboxDiscovery = withContext(Dispatchers.IO) {
+        discoveryOperation.withLock { inbox(store).discover(cursor, pageSize) }
+    }
+
+    /** Import only already retained objects without sharing the route worker's network lock. */
+    suspend fun discoverLocal(cursor: CommitCursor? = null, pageSize: Int = 100): SyncInboxDiscovery = serialized {
+        inbox(localDependencies()).discover(cursor, pageSize)
     }
 
     suspend fun inspect(): LanSyncGroupNodeView = serialized { inspectOwned() }
 
-    private suspend fun inspectOwned(): LanSyncGroupNodeView {
+    /** Committed local data remains inspectable while the independent route worker is blocked. */
+    suspend fun inspectLocal(recoverNative: Boolean = true): LanSyncGroupNodeView = serialized {
+        inspectOwned(allowNetwork = false, recoverNative = recoverNative)
+    }
+    private fun localDependencies(): CiphertextStore = when (val store = dependencyStore) {
+        is LanSyncGroupReplicaReader -> store.cachedOnly()
+        is FileCiphertextStore -> store
+        else -> error("SYNC_GROUP_LOCAL_DEPENDENCY_STORE_REQUIRED")
+    }
+
+    /** Authenticates only retained local metadata; no capture, native apply or live route reads. */
+    suspend fun reconcileForPrefetch(): SyncInboxReconciliation = serialized {
+        inbox().reconcile(localVersions.values.toList())
+    }
+
+    /** Resource I/O deliberately stays outside the source/native operation mutex. */
+    suspend fun prefetch(view: SyncInboxReconciliation, applied: Map<String, LanSyncGroupAppliedUnit> = emptyMap()) = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+        if (view.trustBlocked || view.history == null || view.ledgerCheckpoint == null) return@runInterruptible
+        val history = view.history.snapshot()
+        val ledger = custody.ledger()
+        if (ledger.current().reference() != view.ledgerCheckpoint || ledger.current().members[identity.fingerprint]?.active != true) return@runInterruptible
+        val required = linkedSetOf<LanSyncGroupMembershipRequest>()
+        history.admittedVersions().flatMap { it.changes.keys }.toSet().forEach { unit ->
+            history.frontier(unit).forEach { required += LanSyncGroupMembershipRequest(it.version, unit) }
+        }
+        applied.forEach { (unit, state) -> state.frontiers.forEach { required += LanSyncGroupMembershipRequest(it, unit) } }
+        val metadata = view.authenticatedVersions.filter { it.envelope.version?.reference()?.let(history::contains) == true }
+            .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, values) ->
+                values.firstOrNull { it.context.epoch == ledger.current().epoch } ?: values.first()
+            }
+        val service = LanSyncGroupDependencies(trust.group, dependencyStore, custody, prefetchWork, workspace.resourceStore, validateResource)
+        metadata.values.forEach { actual ->
+            val version = requireNotNull(actual.envelope.version)
+            require(actual.context.group == trust.group && history.contains(version.reference())) { "SYNC_GROUP_PREFETCH_NOT_ADMITTED" }
+            version.changes.filterValues { it.content != null }.keys.forEach { unit ->
+                service.membership(view, actual, unit)
+                if (LanSyncGroupMembershipRequest(version.reference(), unit) in required) {
+                    val result = service.inspect(view, actual, unit)
+                    observe("GROUP_PREFETCH_${result.stage}")
+                }
+            }
+        }
+    }
+
+    private suspend fun inspectOwned(allowNetwork: Boolean = true, recoverNative: Boolean = true): LanSyncGroupNodeView {
         current = inbox().reconcile(localVersions.values)
         var state = exclusive {
-            val before = native.state(); val recovered = native.recover(); author.state()
-            if (before.pendingTransaction != null) reload()
-            val sessions = resolutions.recover()
-            if (resolutions.needsReload()) { reload(sessions); resolutions.acknowledgeReload() }
-            recovered
+            val before = native.state()
+            if (recoverNative) {
+                val recovered = native.recover(); author.state()
+                if (before.pendingTransaction != null) reload()
+                val sessions = resolutions.recover()
+                if (resolutions.needsReload()) { reload(sessions); resolutions.acknowledgeReload() }
+                recovered
+            } else {
+                workspace.requireSettledForSourceOnly()
+                require(before.pendingTransaction == null && !resolutions.needsReload() &&
+                    resolutions.state().none { it.stage == LanSyncGroupResolutionLocalStage.PREPARED }) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+                author.state(); before
+            }
         }
         fun held(stage: LanSyncGroupNodeStage) = LanSyncGroupNodeView(stage, currentView(), state, null, emptySet(), emptyMap(), null)
         if (currentView().trustBlocked) return held(LanSyncGroupNodeStage.TRUST_BLOCKED)
@@ -134,13 +200,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") return held(LanSyncGroupNodeStage.WAITING_FOR_KEY)
             throw failure
         }
-        val unsigned = recoverSources()
+        val unsigned = recoverSources(recoverNative)
         refreshRestorations()
         refreshResolutions()
         state = exclusive { native.state() }
         val view = currentView(); val history = requireNotNull(view.history) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
         val evidence = LanSyncGroupRecordEvidence(history, requireNotNull(view.ledgerCheckpoint))
-        val service = LanSyncGroupDependencies(trust.group, dependencyStore, custody, work, workspace.resourceStore, validateResource)
+        val service = LanSyncGroupDependencies(trust.group, if (allowNetwork) dependencyStore else localDependencies(), custody, work, workspace.resourceStore, validateResource)
         val metadata = view.authenticatedVersions.filter { it.envelope.version?.reference()?.let(history::contains) == true }
             .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, candidates) ->
                 candidates.firstOrNull { it.context.epoch == latest.epoch } ?: candidates.first()
@@ -175,7 +241,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
 
     /** Dense author order, never random preparation-filename order or a reset counter. */
-    private suspend fun recoverSources(): Set<SyncStoreId> {
+    private suspend fun recoverSources(recoverNative: Boolean = true): Set<SyncStoreId> {
         val entries = exclusive {
             val state = author.state(); val operations = writer.operations()
             val signed = operations.mapNotNull { author.entry(it) }
@@ -189,7 +255,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         for (entry in entries.first) {
             val commit = exclusive { writer.resume(entry.request.operation) }
             remember(commit)
-            exclusive { native.recordSource(commit) }
+            exclusive { native.recordSource(commit, recoverNative) }
         }
         observe("LOCAL_SOURCE_HISTORY_RECOVERED")
         return entries.second
@@ -197,11 +263,15 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
 
     /** Frozen review authorization remains exact; this never confirms a held reduction implicitly. */
     suspend fun commit(review: LanSyncGroupSourceReview, confirmations: Map<String, String> = emptyMap(),
-        operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupSourceCommit = serialized {
+        operation: SyncStoreId = SyncStoreId.random(), recoverNative: Boolean = true): LanSyncGroupSourceCommit = serialized {
+        if (!recoverNative) exclusive { requireSourceOnlyReady() }
         refreshRestorations()
         refreshResolutions()
-        val commit = exclusive { writer.commit(review.authorize(confirmations), operation) }
-        remember(commit); exclusive { native.recordSource(commit) }; commit
+        val commit = exclusive {
+            if (!recoverNative) requireSourceOnlyReady()
+            writer.commit(review.authorize(confirmations), operation)
+        }
+        remember(commit); exclusive { native.recordSource(commit, recoverNative) }; commit
     }
     suspend fun prepareResolution(choices: Map<String, LanSyncGroupResolutionChoice>, operation: String = UUID.randomUUID().toString()): LanSyncGroupResolutionPreview = serialized {
         val view = inspectOwned()
@@ -318,10 +388,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         }
     }
 
-    suspend fun upload(operation: SyncStoreId, store: CiphertextStore, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt = serialized {
+    suspend fun upload(operation: SyncStoreId, store: CiphertextStore, target: SyncDeliveryTarget, recoverNative: Boolean = true): LanSyncGroupPublishReceipt = serialized {
         // Re-key/preparation and source control are gated; slow immutable delivery is outside the gate.
-        val commit = exclusive { writer.resume(operation) }
-        remember(commit); exclusive { native.recordSource(commit) }
+        val commit = exclusive {
+            if (!recoverNative) requireSourceOnlyReady()
+            writer.resume(operation)
+        }
+        remember(commit); exclusive { native.recordSource(commit, recoverNative) }
         writer.uploadPrepared(commit, store, target)
     }
 
@@ -343,6 +416,11 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private fun remember(commit: LanSyncGroupSourceCommit) {
         localVersions[commit.entry.version.id] = commit.metadata
         current = inbox().reconcile(localVersions.values)
+    }
+    private fun requireSourceOnlyReady() {
+        workspace.requireSettledForSourceOnly()
+        require(native.state().pendingTransaction == null && !resolutions.needsReload() &&
+            resolutions.state().none { it.stage == LanSyncGroupResolutionLocalStage.PREPARED }) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
     }
     private suspend fun reload(previousSessions: Set<String> = emptySet()) {
         val sessions = workspace.capture(identity.fingerprint, projection).use { capture ->

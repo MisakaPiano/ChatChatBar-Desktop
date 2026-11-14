@@ -98,6 +98,16 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbButton("解锁管理", { val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured) },
                 enabled = !state.busy && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
         }
+        if (state.stage == LanSyncGroupPanelStage.READY && !state.localManagementAvailable &&
+            state.managementRecoveryAvailable && !state.managementUnlocked) {
+            CbText("使用这台已加入设备保留的加密管理资料和恢复码，恢复原设备组的管理权。")
+            CbField("恢复码 · 恢复设备组管理") {
+                key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !state.busy) }
+            }
+            CbButton("用恢复码恢复组管理", {
+                val captured = recoveryInput; recoveryInput = ""; actions.recoverManagement(captured)
+            }, enabled = !state.busy && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
+        }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
             CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !state.busy, variant = ButtonVariant.Secondary)
         if (state.stage == LanSyncGroupPanelStage.JOINING) {
@@ -105,11 +115,12 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
-            if (!state.localManagementAvailable) CbText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
+            if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
+                CbText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             GroupRoute("本机", state.local, "最近保存"); GroupRoute("附近设备", state.nearby, "最近送达"); GroupRoute("网盘", state.cloud, "最近上传")
             CbButton("立即检查", actions::retry, enabled = !state.busy, variant = ButtonVariant.Secondary)
             CbButton("网盘设置", actions::openCloudSettings, enabled = !state.busy, variant = ButtonVariant.Secondary)
-            CbButton("邀请设备", actions::createInvitation, enabled = !state.busy && state.managementUnlocked)
+            CbButton("邀请设备", actions::createInvitation, enabled = !state.busy && state.managementUnlocked && state.managementCanInvite)
             if (state.managementUnlocked) {
                 CbButton("锁定管理", actions::lockManagement, variant = ButtonVariant.Secondary)
                 CbText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")

@@ -137,7 +137,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
 
     suspend fun prove(name: String): LanSyncGroupInviteReceipt = prove(name, null)
     internal suspend fun proveUsing(name: String, network: LanSyncNetwork) = prove(name) { offer ->
-        network.connect(identity, LanSyncPeer(offer.inviter, "邀请设备", offer.host, offer.port))
+        network.connectInvitationOwned(identity, LanSyncPeer(offer.inviter, "邀请设备", offer.host, offer.port)) { }
     }
     internal suspend fun prove(name: String, connect: ((LanSyncGroupInviteOffer) -> SSLSocket)?): LanSyncGroupInviteReceipt = guarded {
         val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }

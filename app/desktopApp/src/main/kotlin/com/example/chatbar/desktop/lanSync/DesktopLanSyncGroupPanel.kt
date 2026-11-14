@@ -58,6 +58,15 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured)
             }
         }
+        if (state.stage == LanSyncGroupPanelStage.READY && !state.localManagementAvailable &&
+            state.managementRecoveryAvailable && !state.managementUnlocked) {
+            StatusText("使用这台已加入设备保留的加密管理资料和恢复码，恢复原设备组的管理权。")
+            key(state.privacyRevision) { LabeledField("恢复码 · 恢复设备组管理", recoveryInput, secret = true,
+                enabled = !state.busy, onChange = { recoveryInput = it }) }
+            BootstrapButton("用恢复码恢复组管理", secondary = true, enabled = !state.busy && recoveryInput.isNotBlank()) {
+                val captured = recoveryInput; recoveryInput = ""; actions.recoverManagement(captured)
+            }
+        }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
             BootstrapButton("放弃未完成的设置", secondary = true, enabled = !state.busy) { actions.abandonUnusedSetup() }
         if (state.stage == LanSyncGroupPanelStage.JOINING) {
@@ -65,12 +74,13 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !state.busy) { actions.refreshJoinPreparation() }
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
-            if (!state.localManagementAvailable) StatusText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
+            if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
+                StatusText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近送达"); groupRoute("网盘", state.cloud, "最近上传")
             ActionRow {
                 BootstrapButton("立即检查", secondary = true, enabled = !state.busy) { actions.retry() }
                 BootstrapButton("网盘设置", secondary = true, enabled = !state.busy) { actions.openCloudSettings() }
-                BootstrapButton("邀请设备", enabled = !state.busy && state.managementUnlocked) { actions.createInvitation() }
+                BootstrapButton("邀请设备", enabled = !state.busy && state.managementUnlocked && state.managementCanInvite) { actions.createInvitation() }
                 if (state.managementUnlocked) BootstrapButton("锁定管理", secondary = true) { actions.lockManagement() }
             }
             if (state.managementUnlocked) {

@@ -3,7 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.desktop.security.WindowsDpapiSecretProtector
 import com.example.chatbar.desktop.security.WindowsSecretRootResolver
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.UUID
@@ -13,6 +13,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     private val reload: suspend (Set<String>) -> Unit,
     private val resolve: (String) -> Path,
     private val asset: (String) -> ByteArray,
+    private val shutdownExclusive: suspend (suspend () -> Unit) -> Unit = exclusive,
 ) {
     private val localRoot = DesktopLanSyncStartup.localRoot(app.appDataRoot)
     private val protector = WindowsDpapiSecretProtector()
@@ -29,9 +30,19 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
             }
         }, validateResource = ::validateDesktopLanSyncResource, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) },
         imagePreviewRaster = DesktopLanSyncRaster::preview)
+    @Volatile private var shutdownFlush = false
+    private val finalFlushScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val finalFlushLock = Any()
+    private var finalFlush: Deferred<Boolean>? = null
+    @Volatile var finalLocalFlushComplete: Boolean? = null
+        private set
     private val platform = object : LanSyncPlatform {
-        override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
-        override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
+        override suspend fun exclusive(work: suspend () -> Unit) =
+            if (shutdownFlush) shutdownExclusive.invoke(work) else exclusive.invoke(work)
+        override suspend fun reload(sessionIds: Set<String>) {
+            check(!shutdownFlush) { "SYNC_GROUP_SHUTDOWN_RELOAD_REFUSED" }
+            reload.invoke(sessionIds)
+        }
     }
     private val runtimeOwner = lazy { LanSyncRuntime(stateStore, workspace, platform, "CCB 电脑") }
     val runtime: LanSyncRuntime get() {
@@ -58,10 +69,32 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     private val groupCoordinatorOwner = lazy {
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = "CCB 电脑",
-            beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() })
+            beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
+            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys))
     }
     val groupCoordinator get() = groupCoordinatorOwner.value
     fun startGroupIfConfigured() { if (hasGroupEvidence()) groupCoordinator.startIfConfigured() }
+    fun onForeground() { if (hasGroupEvidence()) groupCoordinator.onForeground() }
+    suspend fun quiesceAndDrain() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.quiesceAndDrain()
+        if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
+    }
+    /** The retained actual task owns storage until joined, including after the bounded caller wait. */
+    suspend fun flushLocalAfterWriters(): Boolean = withContext(NonCancellable) {
+        if (!groupCoordinatorOwner.isInitialized()) return@withContext true
+        val task = synchronized(finalFlushLock) {
+            finalFlush ?: finalFlushScope.async(start = CoroutineStart.LAZY) {
+                shutdownFlush = true
+                try { groupCoordinatorOwner.value.flushLocalAfterWriters() }
+                finally { shutdownFlush = false }
+            }.also { finalFlush = it }
+        }
+        task.start()
+        val result = withTimeoutOrNull(30_000) { task.await() }
+            ?: throw DesktopLanSyncFinalFlushTimeoutException()
+        finalLocalFlushComplete = result
+        result
+    }
     private fun groupProfileRoot(): Path {
         val profile = localRoot.resolve("group-profile")
         if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
@@ -88,11 +121,17 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() {
+        val pending = synchronized(finalFlushLock) { finalFlush }
+        if (pending != null && !pending.isCompleted &&
+            withTimeoutOrNull(30_000) { pending.join(); true } != true) throw DesktopLanSyncFinalFlushTimeoutException()
         if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
         if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()
         if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
+        finalFlushScope.cancel()
     }
 }
+
+internal class DesktopLanSyncFinalFlushTimeoutException : IllegalStateException("Local sync sealing is still using storage; root ownership retained")
 
 internal fun desktopLanSyncResourceReference(root: Path, path: Path): String {
     require(path.normalize().startsWith(root)) { "SYNC_EXTERNAL_RESOURCE" }

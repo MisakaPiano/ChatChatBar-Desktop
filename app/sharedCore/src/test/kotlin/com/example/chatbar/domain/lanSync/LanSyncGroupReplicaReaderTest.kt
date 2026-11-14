@@ -203,6 +203,77 @@ class LanSyncGroupReplicaReaderTest {
         assertEquals(listOf("changed-result"), failures.map { it.first })
     }
 
+    @Test fun oneOperationCannotCrossCommitAndBlobKindsBeforeOrAfterColdReopen() = withRoot { root ->
+        for (firstKind in listOf(CiphertextObjectKind.COMMIT, CiphertextObjectKind.BLOB)) {
+            val scene = Files.createDirectory(root.resolve(firstKind.name))
+            val localPath = scene.resolve("local")
+            val work = scene.resolve("reads")
+            val local = FileCiphertextStore(localPath)
+            val reader = LanSyncGroupReplicaReader(local, work) { _, failure -> throw failure }
+            val bytes = byteArrayOf(31, 41, 59, 26)
+            val first = request(bytes, firstKind)
+            val otherKind = if (firstKind == CiphertextObjectKind.COMMIT) CiphertextObjectKind.BLOB else CiphertextObjectKind.COMMIT
+            val conflicting = first.copy(key = CiphertextObjectKey(otherKind, first.key.id))
+            assertEquals(CiphertextPutDisposition.CREATED, reader.put(first, bytes.inputStream()).disposition)
+            assertCrossKindConflictRetainsOriginal(scene, reader, first, conflicting, bytes)
+            val reopened = LanSyncGroupReplicaReader(FileCiphertextStore(localPath), work) { _, failure -> throw failure }
+            assertCrossKindConflictRetainsOriginal(scene, reopened, first, conflicting, bytes)
+            assertEquals(CiphertextPutDisposition.ALREADY_PRESENT, reopened.put(first, bytes.inputStream()).disposition)
+        }
+    }
+
+    @Test fun legacyLocalOperationBindingsRefuseOtherKindsInANewReaderAndAfterColdReopen() = withRoot { root ->
+        for (firstKind in listOf(CiphertextObjectKind.COMMIT, CiphertextObjectKind.BLOB)) {
+            val scene = Files.createDirectory(root.resolve(firstKind.name))
+            val localPath = scene.resolve("local")
+            val work = scene.resolve("reads")
+            val local = FileCiphertextStore(localPath)
+            val bytes = byteArrayOf(53, 58, 97, 93)
+            val first = request(bytes, firstKind)
+            assertEquals(CiphertextPutDisposition.CREATED, local.put(first, bytes.inputStream()).disposition)
+            val otherKind = if (firstKind == CiphertextObjectKind.COMMIT) CiphertextObjectKind.BLOB else CiphertextObjectKind.COMMIT
+            val conflicting = first.copy(key = CiphertextObjectKey(otherKind, first.key.id))
+            val reader = LanSyncGroupReplicaReader(local, work) { _, failure -> throw failure }
+            assertCrossKindConflictRetainsOriginal(scene, reader, first, conflicting, bytes)
+            assertFalse(Files.exists(work.resolve("incoming-${first.operationId.value}.json")))
+            val reopened = LanSyncGroupReplicaReader(FileCiphertextStore(localPath), work) { _, failure -> throw failure }
+            assertCrossKindConflictRetainsOriginal(scene, reopened, first, conflicting, bytes)
+            assertFalse(Files.exists(work.resolve("incoming-${first.operationId.value}.json")))
+            val original = ByteArrayOutputStream()
+            assertEquals(CiphertextObjectMetadata(first.key, first.descriptor), local.readTo(first.key, original, first.descriptor))
+            assertContentEquals(bytes, original.toByteArray())
+        }
+    }
+
+    private fun assertCrossKindConflictRetainsOriginal(scene: Path, reader: LanSyncGroupReplicaReader,
+        original: CiphertextPutRequest, conflicting: CiphertextPutRequest, bytes: ByteArray) {
+        val before = retainedStoreFiles(scene)
+        var reads = 0
+        var closed = false
+        val source = object : java.io.ByteArrayInputStream(bytes) {
+            override fun read(): Int { reads++; return super.read() }
+            override fun read(bytes: ByteArray, offset: Int, length: Int): Int { reads++; return super.read(bytes, offset, length) }
+            override fun close() { closed = true; super.close() }
+        }
+        assertEquals(CiphertextStoreFailure.OPERATION_CONFLICT, assertFailsWith<CiphertextStoreException> {
+            reader.put(conflicting, source)
+        }.failure)
+        assertEquals(0, reads, "Conflicting operation identity must be refused before borrowing any payload bytes")
+        assertFalse(closed)
+        assertEquals(before, retainedStoreFiles(scene), "Refusal must preserve raw candidates, immutable objects and all operation bindings")
+        assertNull(reader.metadataExact(conflicting.key, conflicting.descriptor))
+        val output = ByteArrayOutputStream()
+        assertEquals(CiphertextObjectMetadata(original.key, original.descriptor), reader.readTo(original.key, output, original.descriptor))
+        assertContentEquals(bytes, output.toByteArray())
+    }
+
+    private fun retainedStoreFiles(root: Path): Map<String, String> = Files.walk(root).use { paths ->
+        paths.iterator().asSequence().filter { Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) &&
+            !it.fileName.toString().endsWith(".lock") }.associate { path ->
+            root.relativize(path).toString() to LanSyncResourceStore.hashFile(path, Files.size(path))
+        }
+    }
+
     private class ObservedStore(private val delegate: CiphertextStore) : CiphertextStore by delegate {
         var reads = 0
         override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {

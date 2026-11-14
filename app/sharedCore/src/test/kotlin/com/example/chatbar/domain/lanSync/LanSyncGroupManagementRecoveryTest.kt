@@ -8,8 +8,10 @@ import java.net.InetAddress
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.runBlocking
@@ -76,6 +78,145 @@ class LanSyncGroupManagementRecoveryTest {
     }
     private fun assertNoCode(root: Path, code: String) {
         allFiles(root).forEach { (name, bytes) -> assertFalse(bytes.toString(Charsets.ISO_8859_1).contains(code), name) }
+    }
+    private fun prove(invitation: LanSyncGroupInvitation, identity: LanSyncTlsIdentity, key: SyncDeviceEncryptionKey): LanSyncGroupInvitedPeer {
+        val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket)
+            .also { it.needClientAuth = true }
+        val pool = Executors.newSingleThreadExecutor()
+        try {
+            val offer = invitation.issue("10.0.0.1", listener.localPort)
+            val proof = pool.submit<LanSyncGroupInvitedPeer> { invitation.serve(listener.accept() as SSLSocket) }
+            LanSyncGroupInviteClient.exchange(offer, identity, key, "synthetic new phone after founder loss", {
+                LanSyncTls.connect(identity, offer.host, offer.port, offer.inviter, 15_000) { _, _ -> Socket(InetAddress.getLoopbackAddress(), listener.localPort) }
+            })
+            return proof.get(20, TimeUnit.SECONDS)
+        } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
+    }
+
+    @Test fun managementLockReturnsWhileImportIoIsBlockedAndNoLateAuthorityCanBePersisted() = fixture { f, joined ->
+        val card = joined.data.resolve("entities/character_cards/locked.json"); Files.createDirectories(card.parent)
+        LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("locked", "mid-import lock original", createdAt = 1, updatedAt = 1))
+        val source = joined.node.commit(joined.node.inspect().review(setOf("character_cards/locked")))
+        val originals = requireNotNull(joined.workspace.recovery.read(source.entry.request.sourceCheckpoint))
+        val raw = Files.readAllBytes(card)
+        val origin = Files.readAllBytes(joined.root.resolve("joining/node/author/origin.protected"))
+        val vault = joined.owner.encryptedManagementBackup()
+        val managementRoot = Files.createDirectory(f.root.resolve("locked-mid-io-management"))
+        val management = LanSyncGroupManagementRecovery(managementRoot)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val firstListing = AtomicBoolean(true)
+        val backend = joined.replica()
+        val controlled = object : CiphertextStore by backend {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                if (firstListing.compareAndSet(true, false)) {
+                    entered.countDown()
+                    check(release.await(10, TimeUnit.SECONDS)) { "SYNTHETIC_IMPORT_IO_NOT_RELEASED" }
+                }
+                return backend.listCommits(cursor, pageSize)
+            }
+        }
+        val pool = Executors.newFixedThreadPool(2)
+        try {
+            val recovering = pool.submit<Throwable?> {
+                try {
+                    runBlocking { management.recover(f.code, vault.bytes(), controlled, LanSyncManagementRecoveryAdmission { }, joined.trust) }
+                    null
+                } catch (failure: Throwable) { failure }
+            }
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
+            assertTrue(management.isUnlocked)
+            val prepared = Files.readAllBytes(managementRoot.resolve("profile.protected"))
+            val locking = pool.submit { management.lock() }
+            locking.get(2, TimeUnit.SECONDS)
+            assertFalse(management.isUnlocked)
+            assertEquals(1L, release.count, "The backend must still be blocked when lock returns")
+            assertFalse(recovering.isDone)
+            assertFalse(Files.exists(managementRoot.resolve("custody/group.protected")))
+            assertFalse(Files.exists(managementRoot.resolve("root-actions/origin.protected")))
+            release.countDown()
+            val refused = assertNotNull(recovering.get(20, TimeUnit.SECONDS))
+            assertTrue(refused is IllegalArgumentException || refused is IllegalStateException)
+            assertTrue(refused.message in setOf("SYNC_GROUP_MANAGEMENT_LOCKED", "SYNC_MANAGEMENT_SESSION_LOCKED"))
+            assertContentEquals(prepared, Files.readAllBytes(managementRoot.resolve("profile.protected")))
+            assertFalse(Files.exists(managementRoot.resolve("custody/group.protected")))
+            assertFalse(Files.exists(managementRoot.resolve("root-actions")))
+            assertFalse(Files.exists(managementRoot.resolve("root-delivery")))
+            assertFalse(Files.exists(managementRoot.resolve("local-replica")))
+            assertContentEquals(raw, Files.readAllBytes(card))
+            assertContentEquals(origin, Files.readAllBytes(joined.root.resolve("joining/node/author/origin.protected")))
+            assertEquals(listOf(source.entry.request.operation), joined.node.sourceOperations())
+            joined.workspace.recovery.verify(originals)
+            assertNoCode(managementRoot, f.code)
+        } finally {
+            release.countDown(); management.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS))
+        }
+    }
+
+    @Test fun recoveredManagerAdmitsActualDailyInviterPeerAndDeliversEveryHistoricalKeyWithoutFounderIdentity() = fixture { f, joined ->
+        val vault = joined.owner.encryptedManagementBackup()
+        val managementRoot = Files.createDirectory(f.root.resolve("recovered-member-admission"))
+        val management = LanSyncGroupManagementRecovery(managementRoot)
+        val invitations = mutableListOf<LanSyncGroupInvitation>()
+        try {
+            management.recover(f.code, vault.bytes(), joined.replica(), LanSyncManagementRecoveryAdmission { }, joined.trust)
+            val revocation = management.prepareRevocation(f.identity.fingerprint)
+            management.revokeDevice(revocation.acknowledge(revocation.request.approvalBinding))
+            management.publish(joined.replica(), requireNotNull(joined.owner.profile()).localReplica)
+            f.service.close(); Files.move(f.profile, f.root.resolve("founder-unavailable-for-member-admission"))
+            val originalRootOrigin = Files.readAllBytes(managementRoot.resolve("root-actions/origin.protected"))
+            val dailyOrigin = Files.readAllBytes(joined.root.resolve("joining/node/author/origin.protected"))
+            val newIdentity = LanSyncTlsIdentity.create()
+            val newKey = SyncDeviceEncryptionKey.create(newIdentity.fingerprint)
+            fun invitation(ledger: SyncDeviceLedger) = LanSyncGroupInvitation(f.joiningIdentity, ledger.trustAnchor, { ledger }).also(invitations::add)
+            val before = management.ledger().current()
+            assertFalse(before.members.getValue(f.identity.fingerprint).active)
+            val firstInvitation = invitation(management.ledger())
+            val firstProof = prove(firstInvitation, newIdentity, newKey)
+            val replaced = firstInvitation.issue("10.0.0.1", 44000)
+            assertEquals(f.joiningIdentity.fingerprint, replaced.inviter)
+            // Reissuing invalidates the previous exact possession proof before any root reservation.
+            assertFailsWith<IllegalArgumentException> { management.prepareMember(firstProof, firstInvitation) }
+            val currentInvitation = invitation(management.ledger())
+            val peer = prove(currentInvitation, newIdentity, newKey)
+            val preview = management.prepareMember(peer, currentInvitation)
+            assertEquals(before.reference(), preview.request.expectedParent)
+            assertFailsWith<IllegalArgumentException> { preview.acknowledge("0".repeat(64)) }
+            val approved = preview.acknowledge(preview.request.approvalBinding)
+            management.lock()
+            assertFalse(management.isUnlocked)
+            assertFailsWith<IllegalArgumentException> { management.addMember(approved) }
+            management.unlock(f.code)
+            assertTrue(management.isUnlocked)
+            assertEquals(before, management.ledger().current())
+            val admitted = management.addMember(approved)
+            assertEquals(before.sequence + 1, admitted.ledger.sequence)
+            assertEquals(before.epoch, admitted.ledger.epoch)
+            assertEquals(peer.member, admitted.ledger.members[newIdentity.fingerprint])
+            assertFalse(admitted.ledger.members.getValue(f.identity.fingerprint).active)
+            assertTrue(admitted.ledger.members.getValue(f.joiningIdentity.fingerprint).active)
+            val shared = management.publish(joined.replica(), requireNotNull(joined.owner.profile()).localReplica)
+            assertEquals(admitted.ledger, shared.ledger)
+            val recipient = SyncGroupCustody(Files.createDirectory(f.root.resolve("new-phone-custody")), joined.trust.group,
+                newKey, { it.reversedArray() }, { it.reversedArray() })
+            val inbox = SyncGroupInbox(Files.createDirectory(f.root.resolve("new-phone-inbox")), joined.replica(), recipient, newKey)
+            var cursor: CommitCursor? = null
+            do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
+            val inspection = inbox.prepareEnrollment(peer.trust)
+            assertEquals(SyncGroupBootstrapStage.READY, inspection.stage)
+            val evidence = requireNotNull(inspection.evidence)
+            recipient.enrollWithKeys(evidence.trust, evidence.records, evidence.keys)
+            val history = recipient.ledger().history().distinctBy { it.epoch }
+            assertTrue(history.size >= 3)
+            history.forEach { assertEquals(it.keyCommitment, recipient.key(it.epoch).keyCommitment()) }
+            currentInvitation.close()
+            // Already approved retry observes its exact action even after that invitation is closed.
+            assertEquals(admitted, management.addMember(approved))
+            assertContentEquals(originalRootOrigin, Files.readAllBytes(managementRoot.resolve("root-actions/origin.protected")))
+            assertContentEquals(dailyOrigin, Files.readAllBytes(joined.root.resolve("joining/node/author/origin.protected")))
+            assertTrue(joined.node.sourceOperations().isEmpty())
+            assertNoCode(managementRoot, f.code)
+        } finally { invitations.forEach { it.close() }; management.close() }
     }
 
     @Test fun joinedDeviceRecoversCodeAndVaultWithoutFounderThenRevokesLostFounderPreservingDailyOrigins() = fixture { f, joined ->

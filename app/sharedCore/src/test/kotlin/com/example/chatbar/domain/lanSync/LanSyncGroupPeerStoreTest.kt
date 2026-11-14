@@ -98,4 +98,120 @@ class LanSyncGroupPeerStoreTest {
             { f.current }, f.f.backend, { valid })
         denied { rootRevoked.metadata(request.key) }
     }
+    @Test fun revokedNullDescriptorReadsSelectOnlyItsAuthenticNoticeAmongSameKeyRawCandidates() = withFixture { f ->
+        f.revoke(publish = false)
+        val notice = requireNotNull(f.entry)
+        val authenticBytes = SyncLedgerNoticeCodec.encode(notice.notice)
+        val local = FileCiphertextStore(f.root.resolve("candidate-local"))
+        val reader = LanSyncGroupReplicaReader(local, f.root.resolve("candidate-reads")) { _, failure -> throw failure }
+        val badBytes = byteArrayOf(0x17)
+        val bad = f.request(badBytes, CiphertextObjectKind.COMMIT).copy(key = notice.request.key)
+        reader.put(bad, badBytes.inputStream())
+        reader.put(notice.request, authenticBytes.inputStream())
+        val unrelatedBytes = byteArrayOf(4, 2, 4, 2)
+        val unrelated = f.request(unrelatedBytes, CiphertextObjectKind.COMMIT)
+        reader.put(unrelated, unrelatedBytes.inputStream())
+        val badMetadata = CiphertextObjectMetadata(bad.key, bad.descriptor)
+        val authentic = CiphertextObjectMetadata(notice.request.key, notice.request.descriptor)
+        assertEquals(badMetadata, reader.metadataExact(notice.request.key, null),
+            "The raw default candidate intentionally differs from the peer-authorized notice")
+        val retained = reader.listCommits().entries
+        assertEquals(3, retained.size)
+        val store = LanSyncGroupPeerStore(f.f.ledger.trustAnchor, f.certificate(f.f.owner), f.certificate(f.f.sender),
+            { f.current }, reader, { actor -> notice.takeIf { it.notice.context.recipient == actor } })
+        assertEquals(listOf(authentic), store.listCommits().entries)
+        assertEquals(authentic, store.metadata(notice.request.key))
+        assertEquals(authentic, store.metadataExact(notice.request.key, null))
+        assertEquals(authentic, store.metadataExact(notice.request.key, notice.request.descriptor))
+        val defaultOutput = ByteArrayOutputStream()
+        assertEquals(authentic, store.readTo(notice.request.key, defaultOutput))
+        assertContentEquals(authenticBytes, defaultOutput.toByteArray())
+        val nullOutput = ByteArrayOutputStream()
+        assertEquals(authentic, store.readTo(notice.request.key, nullOutput, null))
+        assertContentEquals(authenticBytes, nullOutput.toByteArray())
+        val opened = SyncLedgerNoticeCodec.decode(nullOutput.toByteArray()).open(f.f.ledger.trustAnchor,
+            f.f.recipients.getValue(f.f.sender.fingerprint), notice.request.key)
+        assertEquals(f.current.current().reference(), opened.records.last().reference())
+        assertEquals("SYNC_GROUP_PEER_NOTICE_CHANGED", assertFailsWith<IllegalArgumentException> {
+            store.metadataExact(notice.request.key, bad.descriptor)
+        }.message)
+        val refusedOutput = ByteArrayOutputStream()
+        assertEquals("SYNC_GROUP_PEER_NOTICE_CHANGED", assertFailsWith<IllegalArgumentException> {
+            store.readTo(notice.request.key, refusedOutput, bad.descriptor)
+        }.message)
+        assertEquals(0, refusedOutput.size())
+        denied { store.metadata(unrelated.key) }
+        denied { store.metadataExact(unrelated.key, null) }
+        val unrelatedOutput = ByteArrayOutputStream()
+        denied { store.readTo(unrelated.key, unrelatedOutput, null) }
+        assertEquals(0, unrelatedOutput.size())
+        denied { store.put(notice.request, authenticBytes.inputStream()) }
+        denied { store.put(f.request(unrelatedBytes), unrelatedBytes.inputStream()) }
+        assertEquals(retained, reader.listCommits().entries)
+        val originalBad = ByteArrayOutputStream()
+        assertEquals(badMetadata, reader.readTo(bad.key, originalBad, bad.descriptor))
+        assertContentEquals(badBytes, originalBad.toByteArray())
+        val originalGood = ByteArrayOutputStream()
+        assertEquals(authentic, reader.readTo(notice.request.key, originalGood, notice.request.descriptor))
+        assertContentEquals(authenticBytes, originalGood.toByteArray())
+    }
+
+    @Test fun sameNoticeKeyVariantReadStartedWhileActiveStopsAtTheFirstPostRevocationWrite() = withFixture { f ->
+        f.revoke(publish = false)
+        val revokedLedger = f.current
+        val notice = requireNotNull(f.entry)
+        f.current = f.f.ledger
+        val local = FileCiphertextStore(f.root.resolve("transition-local"))
+        val reader = LanSyncGroupReplicaReader(local, f.root.resolve("transition-reads")) { _, failure -> throw failure }
+        val authenticBytes = SyncLedgerNoticeCodec.encode(notice.notice)
+        val badBytes = ByteArray(2 * 1024 * 1024) { (it % 239).toByte() }
+        val bad = f.request(badBytes, CiphertextObjectKind.COMMIT).copy(key = notice.request.key)
+        reader.put(notice.request, authenticBytes.inputStream())
+        reader.put(bad, badBytes.inputStream())
+        val store = LanSyncGroupPeerStore(f.f.ledger.trustAnchor, f.certificate(f.f.owner), f.certificate(f.f.sender),
+            { f.current }, reader, { actor -> notice.takeIf { it.notice.context.recipient == actor } })
+        var received = 0L
+        val destination = object : OutputStream() {
+            override fun write(value: Int) = write(byteArrayOf(value.toByte()), 0, 1)
+            override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                received += length
+                f.current = revokedLedger
+            }
+        }
+        denied { store.readTo(bad.key, destination, bad.descriptor) }
+        assertTrue(received in 1 until badBytes.size.toLong(), "No later same-key variant chunk may pass the revocation fence")
+        denied { store.requireReadAllowed(bad.key, bad.descriptor) }
+        store.requireReadAllowed(notice.request.key, notice.request.descriptor)
+        val authentic = ByteArrayOutputStream()
+        assertNotNull(store.readTo(notice.request.key, authentic, null))
+        assertContentEquals(authenticBytes, authentic.toByteArray())
+        val retainedBad = ByteArrayOutputStream()
+        assertNotNull(reader.readTo(bad.key, retainedBad, bad.descriptor))
+        assertContentEquals(badBytes, retainedBad.toByteArray())
+    }
+
+    @Test fun aVariantCachedWhileActiveCannotPassTheRevokedNetworkChunkGuardAtItsOwnNoticeKey() = withFixture { f ->
+        f.revoke(publish = false)
+        val revokedLedger = f.current
+        val notice = requireNotNull(f.entry)
+        f.current = f.f.ledger
+        val reader = LanSyncGroupReplicaReader(FileCiphertextStore(f.root.resolve("cached-transition-local")),
+            f.root.resolve("cached-transition-reads")) { _, failure -> throw failure }
+        val badBytes = byteArrayOf(1, 2, 3, 4, 5)
+        val bad = f.request(badBytes, CiphertextObjectKind.COMMIT).copy(key = notice.request.key)
+        reader.put(bad, badBytes.inputStream())
+        reader.put(notice.request, SyncLedgerNoticeCodec.encode(notice.notice).inputStream())
+        val store = LanSyncGroupPeerStore(f.f.ledger.trustAnchor, f.certificate(f.f.owner), f.certificate(f.f.sender),
+            { f.current }, reader, { actor -> notice.takeIf { it.notice.context.recipient == actor } })
+        val selected = requireNotNull(store.metadataExact(bad.key, bad.descriptor))
+        val cached = ByteArrayOutputStream()
+        assertEquals(selected, store.readTo(bad.key, cached, selected.descriptor))
+        assertContentEquals(badBytes, cached.toByteArray())
+        // This is the server's exact cached GET state immediately before its next wire chunk.
+        f.current = revokedLedger
+        denied { store.requireReadAllowed(selected.key, selected.descriptor) }
+        store.requireReadAllowed(notice.request.key, notice.request.descriptor)
+        assertEquals(CiphertextObjectMetadata(bad.key, bad.descriptor), reader.metadataExact(bad.key, bad.descriptor))
+    }
+
 }

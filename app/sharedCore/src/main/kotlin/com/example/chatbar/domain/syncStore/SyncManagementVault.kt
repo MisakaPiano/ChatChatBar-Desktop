@@ -43,8 +43,11 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
     val ownerCertificate: String get() = synchronized(this) { checkOpen(); Base64.getEncoder().encodeToString(requireNotNull(identity).certificate.encoded) }
     val recipientPublicKey: SyncRecipientPublicKey get() = synchronized(this) { checkOpen(); requireNotNull(recipient).publicKey }
     /** Borrow the root recipient only inside its live code-unlocked session; never export private material. */
-    internal fun <T> withRecipient(work: (SyncDeviceEncryptionKey) -> T): T = synchronized(this) {
-        checkOpen(); work(requireNotNull(recipient))
+    internal fun <T> withRecipient(work: (SyncDeviceEncryptionKey) -> T): T {
+        val borrowed = synchronized(this) { checkOpen(); requireNotNull(recipient) }
+        // Borrowed decryption work may perform I/O. Session lock/close must not wait for that I/O;
+        // the management caller fences every protected mutation and signature by its live session.
+        return work(borrowed)
     }
     val isUnlocked: Boolean get() = synchronized(this) {
         if (identity != null && now() - started >= lifetimeNanos) closeOwned()

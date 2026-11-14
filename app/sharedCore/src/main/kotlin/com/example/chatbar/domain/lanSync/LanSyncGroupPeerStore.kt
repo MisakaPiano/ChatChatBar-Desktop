@@ -44,7 +44,13 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     }
     private fun denied(): Nothing = throw CiphertextStoreException(CiphertextStoreFailure.PERMISSION)
     /** Recheck before each network chunk even when ciphertext is already in a verified local cache. */
-    fun requireReadAllowed(key: CiphertextObjectKey) = authorize(key)
+    fun requireReadAllowed(key: CiphertextObjectKey, expected: CiphertextDescriptor) {
+        val ledger = ledger()
+        if (!active(ledger)) {
+            val notice = notice(ledger)
+            if (key != notice.key || expected != notice.descriptor) denied()
+        }
+    }
     fun requireWriteAllowed(key: CiphertextObjectKey) = authorize(key, true)
 
     override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
@@ -72,12 +78,13 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     fun metadataExact(key: CiphertextObjectKey, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
         authorize(key)
         val ledger = ledger()
-        if (!active(ledger)) {
+        val chosen = if (!active(ledger)) {
             val notice = notice(ledger)
             require(key == notice.key && (expected == null || expected == notice.descriptor)) { "SYNC_GROUP_PEER_NOTICE_CHANGED" }
-        }
-        val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, expected)
-            else backend.metadata(key)?.also { require(expected == null || expected == it.descriptor) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
+            notice.descriptor
+        } else expected
+        val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, chosen)
+            else backend.metadata(key)?.also { require(chosen == null || chosen == it.descriptor) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
         authorize(key)
         val latest = this.ledger()
         if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
@@ -86,18 +93,25 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
         authorize(key)
         val ledger = ledger()
-        if (!active(ledger)) {
+        val chosen = if (!active(ledger)) {
             val notice = notice(ledger)
             require(expected == null || expected == notice.descriptor) { "SYNC_GROUP_PEER_NOTICE_CHANGED" }
             require(metadataExact(key, notice.descriptor) == notice) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
-        }
+            notice.descriptor
+        } else expected
+        // Pin even an active caller's default read, so a later revocation cannot authorize a
+        // different same-key raw candidate merely because the authentic notice uses that key.
+        val selected = chosen ?: metadata(key)?.descriptor ?: return null
+        requireReadAllowed(key, selected)
         val checked = object : OutputStream() {
-            override fun write(value: Int) { authorize(key); destination.write(value) }
-            override fun write(bytes: ByteArray, offset: Int, length: Int) { authorize(key); destination.write(bytes, offset, length) }
-            override fun flush() = destination.flush()
+            override fun write(value: Int) { requireReadAllowed(key, selected); destination.write(value) }
+            override fun write(bytes: ByteArray, offset: Int, length: Int) { requireReadAllowed(key, selected); destination.write(bytes, offset, length) }
+            override fun flush() { requireReadAllowed(key, selected); destination.flush() }
         }
-        val result = backend.readTo(key, checked, expected)
-        authorize(key)
+        val result = backend.readTo(key, checked, selected)
+        requireReadAllowed(key, selected)
+        val latest = this.ledger()
+        if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
         return result
     }
     override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {

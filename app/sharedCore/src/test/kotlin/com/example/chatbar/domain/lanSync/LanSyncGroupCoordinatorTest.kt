@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.syncStore.*
 import java.net.InetAddress
 import java.net.Socket
@@ -8,9 +9,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonPrimitive
@@ -54,14 +57,15 @@ class LanSyncGroupCoordinatorTest {
         private val owners = mutableListOf<LanSyncGroupEnrollment>()
         private val coordinators = mutableListOf<LanSyncGroupCoordinator>()
         var setupCalls = 0
+        val reloads = AtomicInteger()
         val platform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) = work()
-            override suspend fun reload(sessionIds: Set<String>) { }
+            override suspend fun reload(sessionIds: Set<String>) { reloads.incrementAndGet() }
         }
         fun founder() = LanSyncGroupEnrollment(profile, workspace, platform, identity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(owners::add)
-        fun coordinator(beforeSetup: suspend () -> Unit = {}) = LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
-            ::founder, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC", { setupCalls++; beforeSetup() }).also(coordinators::add)
+        fun coordinator(sourceChanges: Flow<Long>? = null, beforeSetup: suspend () -> Unit = {}) = LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
+            ::founder, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC", { setupCalls++; beforeSetup() }, sourceChanges).also(coordinators::add)
         fun author(trust: SyncGroupTrust) = SyncAuthorJournal(profile.resolve("node/author"), trust,
             Base64.getEncoder().encodeToString(identity.certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
         fun writeCard(name: String) {
@@ -70,9 +74,9 @@ class LanSyncGroupCoordinatorTest {
         }
         suspend fun close() { coordinators.forEach { it.closeAndDrain() }; owners.forEach { it.close() } }
     }
-    private fun fixture(work: suspend (Fixture) -> Unit) = runBlocking {
+    private fun fixture(network: LanSyncNetwork = noNetwork, work: suspend (Fixture) -> Unit) = runBlocking {
         val root = Files.createTempDirectory("synthetic-group-coordinator-").toRealPath()
-        val f = Fixture(root, noNetwork)
+        val f = Fixture(root, network)
         try { work(f) } finally { f.close(); check(root.toFile().deleteRecursively()) }
     }
 
@@ -173,8 +177,8 @@ class LanSyncGroupCoordinatorTest {
         assertFailsWith<IllegalArgumentException> { review.authorize() }
         assertFalse(coordinator.state.value.managementUnlocked)
     }
-    private suspend fun readyCoordinator(f: Fixture): LanSyncGroupCoordinator {
-        val coordinator = f.coordinator()
+    private suspend fun readyCoordinator(f: Fixture, sourceChanges: Flow<Long>? = null): LanSyncGroupCoordinator {
+        val coordinator = f.coordinator(sourceChanges)
         coordinator.createGroup()
         await { coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE && !coordinator.state.value.busy }
         coordinator.recoverySaved(requireNotNull(coordinator.state.value.setupBinding))
@@ -185,7 +189,12 @@ class LanSyncGroupCoordinatorTest {
 
     private fun retainedFiles(root: Path): Map<String, String> = Files.walk(root).use { paths ->
         paths.iterator().asSequence().filter { Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.associate { path ->
-            root.relativize(path).toString() to LanSyncResourceStore.hashFile(path, Files.size(path))
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            Files.newInputStream(path, java.nio.file.LinkOption.NOFOLLOW_LINKS).use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) { val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
+            }
+            root.relativize(path).toString() to digest.digest().joinToString("") { "%02x".format(it) }
         }
     }
 
@@ -402,6 +411,75 @@ class LanSyncGroupCoordinatorTest {
         assertEquals(operations, access.node.sourceOperations())
         assertSourceOriginal(f, initial, original)
         assertRecoveryOriginal(f, preview.id, edited)
+    }
+
+    @Test fun committedStorageRevisionAutomaticallyPublishesAndLateShutdownSaveSealsWithoutNetworkOrReload() {
+        val forbidden = AtomicBoolean(false)
+        val networkCalls = AtomicInteger()
+        fun networkTouch() { networkCalls.incrementAndGet(); check(!forbidden.get()) { "SYNTHETIC_SHUTDOWN_NETWORK_FORBIDDEN" } }
+        val network = object : LanSyncNetwork {
+            override fun addresses(): List<String> { networkTouch(); return noNetwork.addresses() }
+            override fun accepts(address: InetAddress): Boolean { networkTouch(); return noNetwork.accepts(address) }
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
+                networkTouch(); return noNetwork.connect(identity, peer)
+            }
+            override fun listening(fingerprint: String, port: Int) { networkTouch() }
+            override fun discover(fingerprint: String): Pair<String, Int>? { networkTouch(); return null }
+            override val discoveryEnabled = false
+        }
+        fixture(network) { f ->
+            val unit = "character_cards/card"
+            f.writeCard("synthetic initial committed original")
+            val original = Files.readAllBytes(f.card)
+            val storage = JsonFileStorage(f.data)
+            val coordinator = readyCoordinator(f, storage.committedRevisionFor(LanSyncScope.schemas.keys))
+            val access = requireNotNull(f.founder().runtimeAccess())
+            val author = f.author(access.trust)
+            val firstOperation = access.node.sourceOperations().single()
+            val first = requireNotNull(author.entry(firstOperation))
+            val started = System.nanoTime()
+            storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic ordinary committed edit", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            val ordinaryRaw = Files.readAllBytes(f.card)
+            withTimeout(10_000) { await {
+                val plan = coordinator.view.value?.plan
+                plan?.before?.records?.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "synthetic ordinary committed edit" &&
+                    plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED
+            } }
+            assertTrue(System.nanoTime() - started < 60_000_000_000L, "An actual storage commit must wake the owner before the safety rescan")
+            assertNull(coordinator.state.value.error)
+            val ordinaryOperations = access.node.sourceOperations()
+            assertEquals(2, ordinaryOperations.size)
+            assertEquals(2L, author.state().committedSequence)
+            assertNotNull(access.node.receipt(ordinaryOperations.last(), access.localTarget))
+            assertContentEquals(ordinaryRaw, Files.readAllBytes(f.card))
+            assertSourceOriginal(f, first, original)
+            coordinator.quiesceAndDrain()
+            val reloadsBefore = f.reloads.get()
+            val networkBefore = networkCalls.get()
+            forbidden.set(true)
+            storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic final writer after quiesce", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            val lateRaw = Files.readAllBytes(f.card)
+            assertEquals(ordinaryOperations, access.node.sourceOperations())
+            assertEquals(2L, author.state().committedSequence)
+            assertTrue(withTimeout(20_000) { coordinator.flushLocalAfterWriters() })
+            assertEquals(reloadsBefore, f.reloads.get())
+            assertEquals(networkBefore, networkCalls.get())
+            assertContentEquals(lateRaw, Files.readAllBytes(f.card))
+            val finalOperations = access.node.sourceOperations()
+            assertEquals(3, finalOperations.size)
+            assertEquals(ordinaryOperations, finalOperations.take(2))
+            assertEquals(3L, author.state().committedSequence)
+            val final = requireNotNull(author.entry(finalOperations.last()))
+            assertEquals(3L, final.version.authorSequence)
+            assertEquals(requireNotNull(author.entry(ordinaryOperations.last())).version.reference(), final.version.previousByAuthor)
+            assertNotNull(access.node.receipt(finalOperations.last(), access.localTarget))
+            assertSourceOriginal(f, final, lateRaw)
+            assertSourceOriginal(f, first, original)
+            assertTrue(coordinator.flushLocalAfterWriters())
+            assertEquals(finalOperations, access.node.sourceOperations())
+            assertEquals(reloadsBefore, f.reloads.get())
+            assertEquals(networkBefore, networkCalls.get())
+        }
     }
 
 }

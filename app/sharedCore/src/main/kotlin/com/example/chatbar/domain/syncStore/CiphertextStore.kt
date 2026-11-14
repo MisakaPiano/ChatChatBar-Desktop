@@ -105,6 +105,11 @@ enum class CiphertextStoreFailure {
 /** Messages intentionally omit object IDs, filesystem paths, credentials and payload text. */
 class CiphertextStoreException(val failure: CiphertextStoreFailure) : IOException("Ciphertext store: $failure")
 
+/** A local overlay can reserve an operation without making any object visible or issuing a receipt. */
+interface CiphertextOperationBindings {
+    fun reserveOperation(request: CiphertextPutRequest)
+}
+
 /**
  * Transport/storage only: accepts already encrypted, versioned envelopes from the encryption owner.
  * It performs no encryption, key exchange, merge, freshness validation or resource/commit scheduling.

@@ -48,9 +48,10 @@ class LanSyncGroupManagementRecovery(private val root: Path, private val observe
         synchronized(lifecycle) { check(!closed && active === value && generation == value.generation) { "SYNC_GROUP_MANAGEMENT_LOCKED" } }
         check(value.session.isUnlocked) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
     }
-    private fun protect(value: Active, bytes: ByteArray): ByteArray { requireCurrent(value); return value.session.protectJournal(bytes) }
-    private fun unprotect(value: Active, bytes: ByteArray): ByteArray { requireCurrent(value); return value.session.unprotectJournal(bytes) }
-    private fun sign(value: Active, bytes: ByteArray): ByteArray { requireCurrent(value); return value.session.signRootPayload(bytes) }
+    val isUnlocked: Boolean get() = synchronized(lifecycle) { !closed && active?.session?.isUnlocked == true }
+    private fun protect(value: Active, bytes: ByteArray): ByteArray = synchronized(lifecycle) { requireCurrent(value); value.session.protectJournal(bytes) }
+    private fun unprotect(value: Active, bytes: ByteArray): ByteArray = synchronized(lifecycle) { requireCurrent(value); value.session.unprotectJournal(bytes) }
+    private fun sign(value: Active, bytes: ByteArray): ByteArray = synchronized(lifecycle) { requireCurrent(value); value.session.signRootPayload(bytes) }
     private fun install(session: SyncManagementSession, expected: Long): Active {
         var previous: Active? = null
         val installed = synchronized(lifecycle) {
@@ -146,6 +147,7 @@ class LanSyncGroupManagementRecovery(private val root: Path, private val observe
         } while (cursor != null)
     }
     private fun validateBootstrap(value: Active, record: Record, inbox: SyncGroupInbox, known: SyncVersionRef? = null): SyncGroupBootstrapEvidence {
+        requireCurrent(value)
         val inspected = inbox.prepareEnrollment(record.trust)
         require(inspected.stage == SyncGroupBootstrapStage.READY) { "SYNC_GROUP_MANAGEMENT_${inspected.stage}" }
         val evidence = requireNotNull(inspected.evidence)
@@ -206,6 +208,59 @@ class LanSyncGroupManagementRecovery(private val root: Path, private val observe
         require(lanSyncUtf8(lanSyncRead(root.resolve("inbox/ciphertext-mirror/store.id"), 32)) == record.inboxIdentity) { "SYNC_GROUP_MANAGEMENT_INBOX_CHANGED" }
     }
     private fun ready(value: Active) = requireNotNull(read(value)) { "SYNC_GROUP_MANAGEMENT_PROFILE_MISSING" }.also { checkedOwners(value, it) }
+
+    /** A fresh verified roster for the caller's real daily invitation transport, never a daily identity. */
+    suspend fun ledger(): SyncDeviceLedger = guarded {
+        val value = requireActive(); val record = ready(value)
+        value.session.withRecipient { recipient -> custody(value, record, recipient, false).ledger() }
+    }
+
+    suspend fun prepareMember(peer: LanSyncGroupInvitedPeer, invitation: LanSyncGroupInvitation,
+        operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupMemberPreview = guarded {
+        val value = requireActive(); val record = ready(value)
+        value.session.withRecipient { recipient ->
+            val current = custody(value, record, recipient, false).ledger().current()
+            invitation.requireCurrent(peer)
+            require(peer.trust.group == record.trust.group && peer.trust.genesis == record.trust.genesis &&
+                peer.trust.ownerCertificate == record.trust.ownerCertificate && peer.trust.checkpoint == current.reference() &&
+                peer.member.active && peer.device !in current.members && current.members.values.none { it.recipientKey == peer.member.recipientKey }) {
+                "SYNC_GROUP_MEMBER_PROOF_CHANGED"
+            }
+            val binding = lanSyncHash(buildJsonObject {
+                put("action", "ADD_MEMBER"); put("group", record.trust.group.value); put("operation", operation.value)
+                put("parent", current.id.value); put("parentHash", current.bodyHash()); put("proof", peer.binding)
+                put("device", peer.device); put("name", peer.name); put("certificate", peer.member.certificate); put("recipient", peer.member.recipientKey)
+            })
+            LanSyncGroupMemberPreview(peer.device, peer.name, SyncRootLedgerRequest(operation, current.reference(),
+                Collections.unmodifiableMap(current.members + (peer.device to peer.member)),
+                Collections.unmodifiableSet(current.coveredTypes.toSet()), Collections.unmodifiableSet(current.acceptedHeads.toSet()), false, binding), peer, invitation)
+        }
+    }
+
+    /** Approve only the real daily inviter's still-current TLS/HPKE proof, with exact frozen acknowledgment. */
+    suspend fun addMember(approval: LanSyncGroupMemberApproval): LanSyncGroupAdministrationReceipt = guarded {
+        val value = requireActive(); val record = ready(value)
+        value.session.withRecipient { recipient ->
+            val custody = custody(value, record, recipient, false); val journal = journal(value, record, false)
+            val preview = approval.preview
+            journal.observeAdmitted(custody.ledger())
+            val commit = journal.commit(preview.request, custody::ledger, SyncRootLedgerAdmission { request ->
+                require(request == preview.request) { "SYNC_GROUP_MEMBER_REVIEW_CHANGED" }
+                preview.invitation.requireCurrent(preview.peer)
+                val current = custody.ledger().current()
+                require(preview.peer.trust.group == record.trust.group && preview.peer.trust.genesis == record.trust.genesis &&
+                    preview.peer.trust.ownerCertificate == record.trust.ownerCertificate && preview.peer.trust.checkpoint == current.reference() &&
+                    preview.peer.member.active && preview.peer.device !in current.members &&
+                    current.members.values.none { it.recipientKey == preview.peer.member.recipientKey } &&
+                    request.members == current.members + (preview.device to preview.peer.member) &&
+                    request.coveredTypes == current.coveredTypes && request.acceptedHeads == current.acceptedHeads && !request.rotateKey) {
+                    "SYNC_GROUP_MEMBER_REVIEW_CHANGED"
+                }
+            }, { sign(value, it) })
+            journal.applyToCustody(commit, custody)
+            LanSyncGroupAdministrationReceipt(custody.ledger().current(), publish(value, record, custody, local(record, false), record.localReplica))
+        }
+    }
 
     suspend fun refresh(backend: CiphertextStore): LanSyncManagementRecoveryProfile = guarded {
         val value = requireActive(); val record = ready(value)

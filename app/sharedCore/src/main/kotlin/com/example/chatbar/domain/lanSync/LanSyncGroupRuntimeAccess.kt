@@ -21,6 +21,22 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
     fun ledger() = custody.ledger()
+    private val managementRoot get() = work.resolve("recovered-management")
+    fun hasManagementRecoveryProfile() = Files.exists(managementRoot.resolve("profile.protected"), java.nio.file.LinkOption.NOFOLLOW_LINKS)
+    fun managementRecovery(): LanSyncGroupManagementRecovery {
+        if (!Files.exists(managementRoot, java.nio.file.LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(managementRoot)
+        lanSyncSafe(managementRoot, true)
+        return LanSyncGroupManagementRecovery(managementRoot)
+    }
+    fun encryptedManagementBackup() = lanSyncReadManagementBackup(reader, vault, vaultDescriptor)
+    suspend fun invitation(storePort: Int): LanSyncGroupInvitation {
+        val inspected = node.inspect(); val plan = requireNotNull(inspected.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
+        require(plan.before.hashes().all { (unit, hash) -> inspected.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }
+        val current = ledger().current()
+        val anchor = trust.copy(checkpoint = current.reference())
+        return LanSyncGroupInvitation(identity, anchor, custody::ledger, bootstrap = LanSyncGroupJoinBootstrap(storePort,
+            vault, vaultDescriptor, requireNotNull(inspected.reconciliation.history).heads()))
+    }
     fun tlsContext(): SSLContext = identity.context { peer ->
         val current = ledger().current()
         current.members[device]?.active == true && current.members.containsKey(peer)

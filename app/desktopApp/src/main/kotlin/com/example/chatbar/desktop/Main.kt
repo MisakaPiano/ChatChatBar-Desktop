@@ -218,10 +218,19 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                             }
                             DisposableEffect(window, appContainer) {
                                 val focus = DesktopLanSyncManagementFocus(window, appContainer::lockLanSyncGroupManagement)
-                                onDispose { focus.close(); appContainer.lockLanSyncGroupManagement() }
+                                val wake = object : java.awt.event.WindowAdapter() {
+                                    override fun windowGainedFocus(event: java.awt.event.WindowEvent) { appContainer.onLanSyncForeground() }
+                                    override fun windowDeiconified(event: java.awt.event.WindowEvent) { appContainer.onLanSyncForeground() }
+                                }
+                                window.addWindowFocusListener(wake); window.addWindowListener(wake)
+                                onDispose {
+                                    window.removeWindowFocusListener(wake); window.removeWindowListener(wake)
+                                    focus.close(); appContainer.lockLanSyncGroupManagement()
+                                }
                             }
                             LaunchedEffect(trayState.windowVisible) {
                                 if (!trayState.windowVisible) appContainer.lockLanSyncGroupManagement()
+                                else appContainer.onLanSyncForeground()
                             }
                             val systemDark = isSystemInDarkTheme()
                             val palette = remember(appearance.themeMode, appearance.themeColor, appearance.colorStyle, systemDark) {
@@ -352,7 +361,7 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
     this is DesktopLifecycleCloseIncomplete || this is DesktopLifecycleCloseUnconfirmed || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
-        this is DesktopReadingPositionDrainTimeoutException ||
+        this is DesktopReadingPositionDrainTimeoutException || this is DesktopLanSyncFinalFlushTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true
 

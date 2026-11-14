@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock
  * portable path API cannot eliminate those races on every platform. Protect the root with OS ACLs.
  * File force is not a portable guarantee that directory entries survive sudden power loss.
  */
-class FileCiphertextStore(root: Path, private val bufferBytes: Int = 64 * 1024) : CiphertextStore {
+class FileCiphertextStore(root: Path, private val bufferBytes: Int = 64 * 1024) : CiphertextStore, CiphertextOperationBindings {
     private val root = checkedRoot(root)
     private val blobs = this.root.resolve("objects")
     private val commits = this.root.resolve("commits")
@@ -106,6 +106,11 @@ class FileCiphertextStore(root: Path, private val bufferBytes: Int = 64 * 1024) 
                 )
             }
         }
+    }
+
+    override fun reserveOperation(request: CiphertextPutRequest) = guarded {
+        if (request.descriptor.length > Long.MAX_VALUE - OBJECT_HEADER_BYTES) fail(CiphertextStoreFailure.UNSUPPORTED)
+        bindOperation(request)
     }
 
     override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = guarded {

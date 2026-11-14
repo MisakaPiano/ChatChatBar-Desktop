@@ -85,8 +85,12 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
     fun recover(): LanSyncGroupNativeState = guarded { recoverOwned(); publicState(load()) }
 
     /** Records an approved historical local source fact; never applies its old full snapshot. */
-    fun recordSource(commit: LanSyncGroupSourceCommit): LanSyncGroupNativeApplyReceipt = guarded {
-        recoverOwned()
+    fun recordSource(commit: LanSyncGroupSourceCommit, recoverNative: Boolean = true): LanSyncGroupNativeApplyReceipt = guarded {
+        if (recoverNative) recoverOwned()
+        else {
+            require(load().pending == null) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+            workspace.requireSettledForSourceOnly()
+        }
         val entry = requireNotNull(authorJournal?.entry(commit.entry.request.operation)) { "SYNC_GROUP_NATIVE_SOURCE_JOURNAL_MISSING" }
         require(entry == commit.entry && commit.expectedApplied.keys == entry.version.changes.keys) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
         val transaction = java.util.UUID.nameUUIDFromBytes("ccb-group-source-receipt/${trust.group.value}/${actor.fingerprint}/${entry.request.operation.value}"

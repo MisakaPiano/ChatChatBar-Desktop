@@ -5,6 +5,10 @@ import android.security.keystore.KeyProperties
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.KeyStore
@@ -73,13 +77,34 @@ class AndroidLanSync(private val app: ChatBarApp) {
             } }
         } catch (_: Exception) { true }
     }
+    private val hookLock = Any()
+    private var hookObserver: Job? = null
+    private var applicationHooks: AndroidLanSyncLifecycle? = null
+    private var hooksClosed = false
+    private fun ensureApplicationHooks() = synchronized(hookLock) {
+        if (!hooksClosed && applicationHooks == null && hasGroupEvidence())
+            applicationHooks = AndroidLanSyncLifecycle(app, ::onForeground, ::lockGroupManagement, ::onNetworkAvailable)
+    }
+    fun onForeground() = synchronized(hookLock) {
+        if (!hooksClosed && app.lanSyncStartupReady && hasGroupEvidence()) groupCoordinatorOwner.value.onForeground()
+    }
+    fun onNetworkAvailable() = synchronized(hookLock) {
+        if (!hooksClosed && app.lanSyncStartupReady && hasGroupEvidence()) groupCoordinatorOwner.value.onNetworkAvailable()
+    }
     private val groupCoordinatorOwner = lazy {
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
-            beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() })
+            beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
+            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys)).also { coordinator ->
+                hookObserver = app.applicationScope.launch {
+                    coordinator.state.collect { if (hasGroupEvidence()) ensureApplicationHooks() }
+                }
+            }
     }
     val groupCoordinator get() = groupCoordinatorOwner.value
-    fun startGroupIfConfigured() { if (hasGroupEvidence()) groupCoordinator.startIfConfigured() }
+    fun startGroupIfConfigured() {
+        if (hasGroupEvidence()) { ensureApplicationHooks(); groupCoordinator.startIfConfigured() }
+    }
     fun stopLegacy() { if (runtimeOwner.isInitialized()) runtimeOwner.value.stop() }
     private fun groupProfileRoot(): Path {
         val profile = root.resolve("group-profile")
@@ -105,6 +130,9 @@ class AndroidLanSync(private val app: ChatBarApp) {
         else if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement()
     }
     suspend fun closeAndDrain() {
+        val hooks = synchronized(hookLock) { hooksClosed = true; applicationHooks.also { applicationHooks = null } }
+        hooks?.close()
+        hookObserver?.cancelAndJoin()
         if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
         if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()
         if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()

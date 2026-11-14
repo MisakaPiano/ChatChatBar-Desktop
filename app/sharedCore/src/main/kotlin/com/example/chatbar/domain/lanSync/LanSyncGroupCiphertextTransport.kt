@@ -33,7 +33,7 @@ import kotlinx.serialization.Serializable
 @Serializable private data class GroupStoreChunk(val offset: Long, val length: Int = 0, val hash: String? = null, val done: Boolean = false)
 
 private object GroupStoreWire {
-    const val PROTOCOL = "CCB_GROUP_STORE_1"
+    const val PROTOCOL = "CCB_GROUP_STORE_2"
     const val CONTROL_BYTES = 512 * 1024
     const val CHUNK_BYTES = 1024 * 1024
     fun <T> send(wire: LanSyncWire, serializer: KSerializer<T>, value: T) {
@@ -156,21 +156,24 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
         if (metadata == null) { GroupStoreWire.reply(wire, GroupStoreReply(done = true)); return }
         require(metadata.descriptor == expected && request.offset in 0..expected.length &&
             (request.offset == expected.length || request.offset % GroupStoreWire.CHUNK_BYTES == 0L)) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" }
+        store.requireReadAllowed(key, expected)
         if (expected.length == 0L) { GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), done = true)); return }
         val path = cached(store, metadata)
         observe("CIPHERTEXT_DOWNLOAD_RESUME", request.offset)
+        store.requireReadAllowed(key, expected)
         GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), offset = request.offset))
         FileChannel.open(path, READ, NOFOLLOW_LINKS).use { channel ->
             var offset = request.offset; channel.position(offset)
             while (offset < expected.length) {
-                store.requireReadAllowed(key)
+                store.requireReadAllowed(key, expected)
                 val bytes = ByteArray(minOf(GroupStoreWire.CHUNK_BYTES.toLong(), expected.length - offset).toInt())
                 val block = ByteBuffer.wrap(bytes); while (block.hasRemaining()) require(channel.read(block) > 0) { "SYNC_GROUP_WIRE_CACHE_CHANGED" }
+                store.requireReadAllowed(key, expected)
                 GroupStoreWire.chunk(wire, offset, bytes); offset += bytes.size
                 observe("CIPHERTEXT_CHUNK_SENT", offset)
             }
         }
-        store.requireReadAllowed(key)
+        store.requireReadAllowed(key, expected)
         GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), offset = expected.length, done = true))
     }
     private fun cached(store: LanSyncGroupPeerStore, metadata: CiphertextObjectMetadata): Path {
