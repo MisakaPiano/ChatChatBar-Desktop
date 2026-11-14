@@ -85,6 +85,8 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
             "SYNC_GROUP_UNFINISHED_CREATION_REQUIRES_RECOVERY"
         }
         require(request.coveredTypes.all { it in LanSyncScope.schemas }) { "SYNC_GROUP_PROFILE_UNSUPPORTED_SCOPE" }
+        // Current native capture is complete-scope; do not create a profile it cannot author safely.
+        require(request.coveredTypes == LanSyncScope.schemas.keys) { "SYNC_GROUP_PROFILE_PARTIAL_SCOPE_UNSUPPORTED" }
         val frozen = request.copy(coveredTypes = Collections.unmodifiableSet(request.coveredTypes.toSortedSet()))
         val generation = sessionGeneration()
         // Rejected UI admission must not create a device key or management material.

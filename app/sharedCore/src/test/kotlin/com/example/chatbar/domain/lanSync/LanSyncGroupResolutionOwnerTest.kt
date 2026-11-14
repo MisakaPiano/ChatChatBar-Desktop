@@ -192,4 +192,39 @@ class LanSyncGroupResolutionOwnerTest {
         assertEquals(commit.entry, s.a.open().resumeResolution(operation)?.entry)
         assertEquals("later after retained retry", s.a.name("a")); assertEquals(3L, s.sequence())
     }
+    @Test fun adoptedImageVariantsKeepTheirVerifiedBytesAcrossClosedCapturesRestartAndSecondNodeApply() = withScene { s ->
+        fun image(end: LanSyncGroupNodeTest.Group.End, warm: Boolean): ByteArray {
+            val bytes = LanSyncPreviewSample.image(warm); val path = end.data.resolve("images/same.png"); Files.createDirectories(path.parent)
+            Files.write(path, bytes)
+            val cardPath = end.data.resolve("entities/character_cards/a.json")
+            val card = requireNotNull(LanSyncJsonFiles.read(cardPath, CharacterCard.serializer()))
+            LanSyncJsonFiles.write(cardPath, CharacterCard.serializer(), card.copy(avatar = path.toString()))
+            return bytes
+        }
+        val left = image(s.a, false); val leftCommit = s.local(s.an, setOf(s.unit)); s.a.send(s.an, leftCommit)
+        val right = image(s.b, true); val rightCommit = s.local(s.bn, setOf(s.unit)); s.b.send(s.bn, rightCommit); s.a.scan(s.an)
+        assertFalse(left.contentEquals(right))
+        val preview = s.preview(LanSyncGroupResolutionSource.Version(rightCommit.entry.version.reference()),
+            mapOf("left-image" to LanSyncGroupResolutionSource.Local))
+        var interrupted = false
+        s.a.hook = { if (it == "RESOLUTION_POST_SOURCE_RETAINED" && !interrupted) { interrupted = true; throw IOException("SYNTHETIC_IMAGE_ADOPTION_REPLY_LOST") } }
+        assertFailsWith<IOException> { s.an.resolve(s.acknowledge(preview)) }; s.a.hook = {}
+        val node = s.a.open(); val commit = requireNotNull(node.resumeResolution(preview.operation))
+        assertEquals(4L, commit.entry.version.authorSequence)
+        val copy = (preview.resolvedUnits - s.unit).single()
+        fun verify(end: LanSyncGroupNodeTest.Group.End) {
+            fun bytes(unit: String): ByteArray {
+                val card = requireNotNull(LanSyncJsonFiles.read(end.data.resolve("entities/$unit.json"), CharacterCard.serializer()))
+                return Files.readAllBytes(Path.of(requireNotNull(card.avatar)))
+            }
+            assertContentEquals(right, bytes(s.unit)); assertContentEquals(left, bytes(copy))
+            end.workspace.capture(s.group.identities[end.index].fingerprint).use {
+                assertEquals(setOf(lanSyncHash(left), lanSyncHash(right)), it.snapshot.resources.keys)
+                LanSyncScope.validateGraph(it.snapshot)
+            }
+        }
+        verify(s.a); s.a.send(node, commit); s.bn.apply(requireNotNull(s.b.scan(s.bn).plan)); verify(s.b)
+        assertContentEquals(left, Files.readAllBytes(s.a.data.resolve("images/same.png")))
+        assertContentEquals(right, Files.readAllBytes(s.b.data.resolve("images/same.png")))
+    }
 }

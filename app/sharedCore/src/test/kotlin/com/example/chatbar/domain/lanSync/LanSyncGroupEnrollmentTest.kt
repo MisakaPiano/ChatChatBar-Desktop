@@ -38,6 +38,16 @@ class LanSyncGroupEnrollmentTest {
         try { work(fixture) } finally { fixture.services.forEach { it.close() }; check(root.toFile().deleteRecursively()) }
     }
 
+    @Test fun unsupportedPartialCaptureScopeRefusesBeforeAdmissionOrAnyKeyAndGroupMaterial() = withFixture { f ->
+        val service = f.service(); var admissions = 0
+        assertEquals("SYNC_GROUP_PROFILE_PARTIAL_SCOPE_UNSUPPORTED", assertFailsWith<IllegalArgumentException> {
+            service.prepare(f.request.copy(coveredTypes = setOf("character_cards")), SyncRootGroupCreateAdmission { admissions++ })
+        }.message)
+        assertEquals(0, admissions); assertNull(service.profile())
+        Files.newDirectoryStream(f.profileRoot).use { entries -> assertEquals(setOf("profile.lock"), entries.map { it.fileName.toString() }.toSet()) }
+        assertNotNull(service.prepare(f.request, SyncRootGroupCreateAdmission {}))
+    }
+
     @Test fun preparedGroupNeedsSavedCodeAndNormalReopenUsesOnlyDailyCustody() = withFixture { f ->
         val service = f.service(); assertNull(service.profile()); assertNull(service.open())
         assertFailsWith<IllegalStateException> { service.prepare(f.request, SyncRootGroupCreateAdmission { error("SYNTHETIC_NOT_APPROVED") }) }
