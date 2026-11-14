@@ -344,6 +344,51 @@ class DesktopFishGenerationTest {
         }
     }
 
+    @Test fun `old confirmation stage cancellation cannot retire its confirmed successor and shutdown drains both stages`() = runBlocking {
+        for (closing in listOf(false, true)) {
+            val previous = CompletableDeferred<Job>()
+            val calls = AtomicInteger()
+            val gate = object : com.example.chatbar.data.operation.AppDataOperationGate {
+                override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                    val owner = currentCoroutineContext()[Job]!!
+                    if (calls.incrementAndGet() == 1) {
+                        operation()
+                        previous.complete(owner)
+                        awaitCancellation()
+                    }
+                    return operation()
+                }
+            }
+            Fixture(gate).use { f ->
+                f.seed()
+                f.models.saveModel(ModelConfig("model", "synthetic", "https://example.invalid", "synthetic", "mock", createdAt = 1))
+                f.chats.updateSession(f.session.copy(audiobookModeEnabled = false, modelId = "model"))
+                f.rewrite = true
+                f.coordinator.setForegroundSession(f.session.id)
+                val id = f.coordinator.generateWhole(f.session.id, f.message.id)
+                val old = withTimeout(5_000) { previous.await() }
+                assertEquals(VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION, f.coordinator.batches.value.single().phase)
+                f.coordinator.resolveTextConfirmation(id, true)
+                assertEquals(0, f.server.requestCount)
+                if (closing) {
+                    withTimeout(5_000) { f.coordinator.closeAndDrain() }
+                    assertTrue(old.isCompleted)
+                    assertEquals(0, f.server.requestCount)
+                    assertTrue(f.voices.listForSession(f.session.id).isEmpty())
+                } else {
+                    f.server.enqueue(f.audio())
+                    old.cancel()
+                    f.done(id)
+                    withTimeout(5_000) { f.playback.state.first { it.playing } }
+                    assertEquals(1, f.server.requestCount); assertEquals(1, f.output.plays)
+                    assertTrue(f.coordinator.batches.value.none { it.id == id })
+                    assertTrue(Files.exists(java.nio.file.Path.of(f.voices.listForSession(f.session.id).single().audioPath)))
+                    assertEquals(1, f.textCalls)
+                }
+            }
+        }
+    }
+
     @Test fun `global five permit batch preserves order and foreground eligibility`() = runBlocking {
         Fixture().use { f ->
             f.seed((1..8).joinToString("\n") { "<n=\"Alice\"/>[part $it]()" })

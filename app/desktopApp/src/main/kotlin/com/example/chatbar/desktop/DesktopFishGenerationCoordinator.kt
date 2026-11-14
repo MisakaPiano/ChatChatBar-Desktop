@@ -126,31 +126,46 @@ internal class DesktopFishGenerationCoordinator(
     private fun registerJob(id: String, job: Job) = synchronized(admission) {
         if (!accepting) { job.cancel(); error("语音协调器正在关闭") }
         jobs[id] = job
+        stageJobs[job] = id
         job.invokeOnCompletion { error ->
-            jobs.remove(id, job)
-            if (error is CancellationException) markCancelled(id)
-            else if (error != null) failBatch(id, error)
+            stageJobs.remove(job)
             // Also covers cancellation before a lazy body's first dispatch. Duplicate retirement
-            // is idempotent; an abandoned confirmation must not block later saved recordings.
-            if (error != null) scope.launch { finishAutoPlay(id, null) }
+            // is scoped to this exact stage; confirmation can already own a replacement Job.
+            if (error != null) scope.launch {
+                try { retireVoiceStage(id, job, error) } finally { jobs.remove(id, job) }
+            } else jobs.remove(id, job)
         }
         job.start()
     }
-    private fun launchVoiceJob(batchId: String, block: suspend () -> Unit): Job {
+    private suspend fun retireVoiceStage(batchId: String, owner: Job, failure: Throwable) {
+        val current = synchronized(admission) {
+            if (jobs[batchId] !== owner) false else {
+                pendingTextConfirmations.remove(batchId)
+                if (failure is CancellationException) markCancelled(batchId) else failBatch(batchId, failure)
+                true
+            }
+        }
+        if (current) finishAutoPlay(batchId, null, owner)
+    }
+    private fun launchVoiceJob(batchId: String, predecessor: Job? = null, block: suspend () -> Unit): Job {
         val credential = runCatching { credentials.captureCall() }
-        return scope.launch(start = CoroutineStart.LAZY) {
-            var entered = false
+        lateinit var owner: Job
+        owner = scope.launch(start = CoroutineStart.LAZY) {
             try {
+                // Only consecutive stages of this same confirmed batch wait for each other.
+                predecessor?.join()
                 operationGate.withNormalOperation { withContext(credential.getOrThrow()) {
-                    entered = true
                     block()
                 } }
             } catch (failure: Throwable) {
-                // The body owns its terminal path after entry; gate/credential refusal does not.
-                if (!entered) finishAutoPlay(batchId, null)
-                throw failure
+                withContext(NonCancellable) {
+                    if (failure is CancellationException) predecessor?.cancelAndJoin()
+                    retireVoiceStage(batchId, owner, failure)
+                }
+                if (failure is CancellationException) throw failure
             }
         }
+        return owner
     }
     private fun strictFishModel(model: String): String {
         require(model in FishAudioTtsModels.supported) { "所选 Fish 模型已失效；不会自动替换" }
@@ -161,7 +176,7 @@ internal class DesktopFishGenerationCoordinator(
         block: suspend () -> T): T = withContext(DesktopUsageParent(DesktopUsageContext(
             DesktopUsageSource.CHAT, taskId = batchId, sessionId = sessionId, cardId = cardId, subjectId = messageId))) { block() }
     suspend fun closeAndDrain() = withContext(NonCancellable) {
-        val pending = synchronized(admission) { accepting = false; jobs.values.toList().onEach { it.cancel() } }
+        val pending = synchronized(admission) { accepting = false; stageJobs.keys.toList().onEach { it.cancel() } }
         pending.joinAll(); pendingTextConfirmations.clear(); clearAutoPlay(); playback.stop()
     }
 
@@ -201,6 +216,7 @@ internal class DesktopFishGenerationCoordinator(
 
     private val ttsSlots = Semaphore(5)
     private val jobs = ConcurrentHashMap<String, Job>()
+    private val stageJobs = ConcurrentHashMap<Job, String>()
     private val pendingTextConfirmations =
         ConcurrentHashMap<String, PendingVoiceTextConfirmation>()
     private val autoPlayMutex = Mutex()
@@ -306,7 +322,6 @@ internal class DesktopFishGenerationCoordinator(
             )
         )
         val job = launchVoiceJob(batchId) {
-            try {
                 val existing = voiceRepository.get(voiceId) ?: error("语音消息不存在")
                 updateBatch(batchId) {
                     it.copy(sessionId = existing.sessionId, messageId = existing.messageId)
@@ -380,14 +395,6 @@ internal class DesktopFishGenerationCoordinator(
                 mutableFeedback.value = DesktopVoiceFeedback(replacement.sessionId, replacement.messageId, replacement.id, batchId, "「${replacement.characterName}」录音替换成功")
                 removeBatch(batchId)
                 finishAutoPlay(batchId, listOf(replacement))
-            } catch (cancelled: CancellationException) {
-                markCancelled(batchId)
-                finishAutoPlay(batchId, null)
-                throw cancelled
-            } catch (error: Throwable) {
-                failBatch(batchId, error)
-                finishAutoPlay(batchId, null)
-            }
         }
         registerJob(batchId, job)
         return batchId
@@ -405,15 +412,15 @@ internal class DesktopFishGenerationCoordinator(
         }
 
     fun resolveTextConfirmation(batchId: String, useAiText: Boolean) {
-        val pending = pendingTextConfirmations.remove(batchId) ?: return
+        synchronized(admission) {
+        val pending = pendingTextConfirmations.remove(batchId) ?: return@synchronized
         updateBatch(batchId) {
             it.copy(
                 phase = VoiceGenerationPhase.QUEUED,
                 textConfirmations = emptyList()
             )
         }
-        val job = launchVoiceJob(batchId) {
-            try {
+        val job = launchVoiceJob(batchId, predecessor = jobs[batchId]) {
                 val confirmedText = if (useAiText) {
                     pending.tagResult.confirmationRequiredById
                 } else {
@@ -436,25 +443,17 @@ internal class DesktopFishGenerationCoordinator(
                     initialErrors = pending.tagResult.errorsById + rejectedErrors,
                     playAllMessageVoices = pending.playAllMessageVoices
                 )
-            } catch (cancelled: CancellationException) {
-                markCancelled(batchId)
-                finishAutoPlay(batchId, null)
-                throw cancelled
-            } catch (error: Throwable) {
-                failBatch(batchId, error)
-                finishAutoPlay(batchId, null)
-            }
         }
         registerJob(batchId, job)
+        }
     }
 
-    fun cancel(batchId: String) {
+    fun cancel(batchId: String) = synchronized(admission) {
         if (pendingTextConfirmations.remove(batchId) != null) {
             markCancelled(batchId)
             scope.launch { finishAutoPlay(batchId, null) }
-            return
         }
-        jobs[batchId]?.cancel()
+        stageJobs.filterValues { it == batchId }.keys.forEach { it.cancel() }
     }
 
     suspend fun cancelAndJoinForMessage(sessionId: String, messageId: String) {
@@ -532,16 +531,7 @@ internal class DesktopFishGenerationCoordinator(
         )
         val screenGeneration = originGeneration
         val job = launchVoiceJob(batchId) {
-            try {
                 block(batchId, screenGeneration)
-            } catch (cancelled: CancellationException) {
-                markCancelled(batchId)
-                finishAutoPlay(batchId, null)
-                throw cancelled
-            } catch (error: Throwable) {
-                failBatch(batchId, error)
-                finishAutoPlay(batchId, null)
-            }
         }
         registerJob(batchId, job)
         return batchId
@@ -1007,10 +997,12 @@ internal class DesktopFishGenerationCoordinator(
 
     private suspend fun finishAutoPlay(
         batchId: String,
-        voices: List<GeneratedVoiceMessage>?
+        voices: List<GeneratedVoiceMessage>?,
+        expectedJob: Job? = null,
     ) {
         suspend fun finish() {
             autoPlayMutex.withLock {
+                if (expectedJob != null && jobs[batchId] !== expectedJob) return@withLock
                 val pending = pendingAutoPlay[batchId] ?: return@withLock
                 if (pending.terminal && pending.voices == voices) return@withLock
                 pendingAutoPlay[batchId] = pending.copy(terminal = true, voices = voices)
@@ -1060,7 +1052,7 @@ internal class DesktopFishGenerationCoordinator(
     ) {
         val targetIds = _batches.value.filter(predicate).map(VoiceGenerationBatchState::id)
         targetIds.forEach(::cancel)
-        targetIds.mapNotNull(jobs::get).joinAll()
+        stageJobs.filterValues { it in targetIds }.keys.toList().joinAll()
     }
 
     private fun updateBatch(

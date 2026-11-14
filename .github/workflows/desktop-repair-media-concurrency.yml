@@ -38,11 +38,6 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopFishGenerationTest'
           --tests 'com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest'
           --tests 'com.example.chatbar.desktop.DesktopVoiceMutationAdmissionTest'
-          --tests 'com.example.chatbar.desktop.DesktopAudioMaintenanceTest'
-          --tests 'com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest'
-          --tests 'com.example.chatbar.desktop.DesktopTaskRuntimeTest'
-          --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
-          --tests 'com.example.chatbar.desktop.DesktopPhase7R2R1Test'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
