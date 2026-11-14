@@ -57,12 +57,14 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.PromptFieldEstimatePanelTest,com.example.chatbar.ui.chat.ChatPeopleControlsTest,com.example.chatbar.data.repository.CharacterBackgroundLibraryTest,com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest,com.example.chatbar.domain.card.PlayerAvatarTransferTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest,com.example.chatbar.ui.chat.SafeBatchChatRuntimeTest,com.example.chatbar.ui.imageprompt.SafeBatchStudioRuntimeTest,com.example.chatbar.ui.components.ImageBatchOptionsEditorTest,com.example.chatbar.ui.components.SessionImageRegenerationCostTest,com.example.chatbar.ui.components.NovelAiImageRegenerationDialogTest,com.example.chatbar.utils.diagnostics.ExpectedBackupExitStoreTest,com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest --no-daemon --stacktrace
+          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.PromptFieldEstimatePanelTest,com.example.chatbar.ui.chat.ChatPeopleControlsTest,com.example.chatbar.data.repository.CharacterBackgroundLibraryTest,com.example.chatbar.domain.card.OriginalCharacterCoverTransferTest,com.example.chatbar.domain.card.PlayerAvatarTransferTest,com.example.chatbar.domain.card.CharacterBackgroundGalleryTransferTest,com.example.chatbar.ui.chat.SafeBatchChatRuntimeTest,com.example.chatbar.ui.imageprompt.SafeBatchStudioRuntimeTest,com.example.chatbar.ui.components.ImageBatchOptionsEditorTest,com.example.chatbar.ui.components.SessionImageRegenerationCostTest,com.example.chatbar.ui.components.NovelAiImageRegenerationDialogTest,com.example.chatbar.utils.diagnostics.ExpectedBackupExitStoreTest,com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest,com.example.chatbar.ui.chat.FullChatScreenDeletionTest --no-daemon --stacktrace
       - name: Verify APK identity and signature
         shell: python
         run: |
-          import pathlib,subprocess,os,hashlib,json
+          import pathlib,subprocess,os,hashlib,json,zipfile
           apk=pathlib.Path('app/app/build/outputs/apk/debug/app-debug.apk');out=pathlib.Path('android-next-review')
+          with zipfile.ZipFile(apk) as archive:
+            assert all(b'SafeBatchOfflineActivity' not in archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
           sdk=pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools';tool=max((p for p in sdk.iterdir() if (p/'apksigner').is_file()),key=lambda p:tuple(int(x) for x in p.name.split('.') if x.isdigit()))
           result=subprocess.check_output([str(tool/'apksigner'),'verify','--verbose','--print-certs',str(apk)],text=True);(out/'apk-signature.txt').write_text(result)
           result=subprocess.check_output([str(tool/'aapt'),'dump','badging',str(apk)],text=True);assert "name='com.example.chatbar.nextreview.r1'" in result;(out/'apk-badging.txt').write_text(result)
