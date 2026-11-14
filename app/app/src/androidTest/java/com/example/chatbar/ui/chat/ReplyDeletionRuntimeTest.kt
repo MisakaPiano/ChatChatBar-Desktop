@@ -21,8 +21,9 @@ import org.junit.Rule
 import org.junit.Test
 
 /** Real screen -> real ViewModel -> real JSON storage; no configured provider. */
+@OptIn(ExperimentalTestApi::class)
 class ReplyDeletionRuntimeTest {
-    @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+    @get:Rule val rule = createAndroidComposeRule<ComponentActivity>(effectContext = Dispatchers.Main)
     private lateinit var app: ChatBarApp
     private lateinit var session: ChatSession
     private lateinit var vm: ChatViewModel
@@ -96,6 +97,9 @@ class ReplyDeletionRuntimeTest {
 
     private suspend fun assertGone(messageId: String) {
         withTimeout(10_000) { vm.messages.first { list -> list.none { it.id == messageId } } }
+        withTimeout(10_000) {
+            while (app.chatRepository.getMessage(messageId, session.id) != null) delay(20)
+        }
         assertNull(vm.messageActionError.value)
         assertNull(app.chatRepository.getMessage(messageId, session.id))
         withContext(Dispatchers.Main) { vm.refreshMessages() }
