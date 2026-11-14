@@ -1,0 +1,61 @@
+name: LAN next API35 cloud dataSync foreground control
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: ['.github/lan-next-cloud-foreground-request.json']
+permissions:
+  contents: read
+jobs:
+  android-cloud-foreground:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: cloud-foreground-control
+          persist-credentials: false
+      - name: Validate exact source and tracked instrumentation request
+        id: request
+        working-directory: cloud-foreground-control
+        run: python3 -B tools/lan-next-control/cloud_foreground_control.py request --request .github/lan-next-cloud-foreground-request.json >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: ${{ steps.request.outputs.sourceSha }}
+          path: cloud-foreground-app-source
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify tracked test and unchanged source without overlay
+        working-directory: cloud-foreground-control
+        run: python3 -B tools/lan-next-control/cloud_foreground_control.py prepare --request .github/lan-next-cloud-foreground-request.json --source ../cloud-foreground-app-source --evidence lan-next-cloud-foreground-evidence
+      - name: Compile fixed application and tracked instrumentation
+        working-directory: cloud-foreground-app-source/app
+        run: |
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=83 --no-daemon --stacktrace
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise exactly one actual API35 dataSync method
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 -B cloud-foreground-control/tools/lan-next-control/cloud_foreground_control.py run --request cloud-foreground-control/.github/lan-next-cloud-foreground-request.json --source cloud-foreground-app-source --evidence cloud-foreground-control/lan-next-cloud-foreground-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-next-cloud-foreground-api35-evidence
+          path: cloud-foreground-control/lan-next-cloud-foreground-evidence/
