@@ -78,3 +78,12 @@ panel load completion and an allowed hidden-input stage, then settles Compose
 before the original physical click. It does not replace that click with the
 comparison action. All downstream assertions and unconditional failure after a
 diagnostic fallback remain. The first safe snapshot now includes panel state.
+
+The fifth original run43646402524 reaches real reopen after current panel load,
+empty input, disabled read and a second picker/read/review with the same recipient.
+Its actual breakpoint is the consent checkbox immediate Off/click/On chain, not
+the earlier reopen phase still printed in that fixture. The next control names
+second-review and consent phases, waits for actual Compose effects and scroll
+to settle, asserts displayed/enabled/Off, performs one physical click, waits for
+idle and still requires On. No polling/retry/semantic fallback/state-setting or
+Owner confirmation bypass is added. All later native/cold assertions are kept.

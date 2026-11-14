@@ -280,12 +280,24 @@ class LanSyncGroupFileRecoveryUiControlTest {
                 .fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.EditableText].text
             check(cleared.isEmpty())
             compose.onNodeWithText("读取并核对设备组").performScrollTo().assertIsNotEnabled()
+            phase = "second-file-read-await-fresh-review"
             selectAndRead(uri, code)
             await(120_000) { !recovery.state.value.busy && recovery.state.value.review != null }
             check(recovery.state.value.error == null)
             check(checkNotNull(recovery.state.value.review).device == reviewed.device)
-            compose.onNodeWithContentDescription("已核对原设备组与新设备身份，并同意登记此设备")
-                .performScrollTo().assertIsOff().performClick().assertIsOn()
+            phase = "second-review-compose-and-scroll-settle"
+            // StateFlow review readiness may precede composition and its clearSecrets LaunchedEffect.
+            compose.waitForIdle()
+            val admissionCheckbox = compose.onNodeWithContentDescription("已核对原设备组与新设备身份，并同意登记此设备")
+            admissionCheckbox.performScrollTo()
+            compose.waitForIdle()
+            phase = "second-review-checkbox-assert-off"
+            admissionCheckbox.assertIsDisplayed().assertIsEnabled().assertIsOff()
+            phase = "second-review-checkbox-physical-click"
+            admissionCheckbox.performClick()
+            phase = "second-review-checkbox-settle-and-assert-on"
+            compose.waitForIdle()
+            admissionCheckbox.assertIsOn()
             phase = "actual-ui-approval-and-keystore-native-import"
             click("登记此设备并恢复资料")
             await(180_000) { !recovery.state.value.busy && (recovery.state.value.complete || recovery.state.value.error != null) }
