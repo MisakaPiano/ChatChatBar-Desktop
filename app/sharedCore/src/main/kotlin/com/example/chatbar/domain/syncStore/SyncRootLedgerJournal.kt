@@ -132,7 +132,7 @@ class SyncRootLedgerJournal(private val root: Path, private val trust: SyncGroup
             commit.records == loaded.ledger.history(retained.record.reference())) { "SYNC_ROOT_OPERATION_CHANGED" }
         requireOwner(custody.ledger())
         val keys = signedKeys(loaded.sequence).map { entry ->
-            SyncAdmittedGroupKey(requireNotNull(key(entry)), actor.fingerprint, entry.record.reference())
+            SyncAdmittedGroupKey(requireNotNull(key(entry)), custody.device, entry.record.reference())
         }
         // Apply all already-approved owned facts/keys together, including repair of an older split-write window.
         custody.updateWithKeys(loaded.ledger.history(), keys)

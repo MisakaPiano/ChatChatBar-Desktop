@@ -29,6 +29,7 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
     private val observe: (String) -> Unit = {}) {
     private val lock: ReentrantLock
     private val file get() = root.resolve("group.protected")
+    val device: String get() = recipient.device
     init {
         PrivateSyncFile.checked(root, true)
         require(maximumStateBytes >= 4096) { "SYNC_GROUP_CUSTODY_BUDGET" }

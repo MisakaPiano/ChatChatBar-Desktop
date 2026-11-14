@@ -24,26 +24,32 @@ import kotlinx.serialization.json.*
 }
 fun interface SyncRootGroupCreateAdmission { fun requireApproved(request: SyncRootGroupCreateRequest) }
 class SyncRootCreatedGroup internal constructor(val trust: SyncGroupTrust, val genesis: SyncDeviceLedgerRecord,
-    internal val cipher: SyncStreamingCipher) {
+    internal val cipher: SyncStreamingCipher, val creator: String) {
     /** Only the locally approved creator can supply this generated key; joining uses signed HPKE delivery. */
     fun enrollCreator(custody: SyncGroupCustody): SyncDeviceLedger {
-        val actor = SyncDeviceSignatures.decode(trust.ownerCertificate).fingerprint
-        return custody.enrollWithKeys(trust, listOf(genesis), listOf(SyncAdmittedGroupKey(cipher, actor, genesis.reference())))
+        require(custody.device == creator) { "SYNC_GROUP_CREATE_DEVICE" }
+        return custody.enrollWithKeys(trust, listOf(genesis), listOf(SyncAdmittedGroupKey(cipher, creator, genesis.reference())))
     }
 }
 
 /** Durable, explicit first-root creation, separate from invitations and existing-group enrollment. */
-class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, private val recipient: SyncDeviceEncryptionKey,
+class SyncRootGroupCreation private constructor(private val root: Path, ownerCertificate: String, creatorCertificate: String,
+    private val adminRecipient: SyncRecipientPublicKey, private val recipient: SyncDeviceEncryptionKey,
     private val protect: (ByteArray) -> ByteArray, private val unprotect: (ByteArray) -> ByteArray,
-    private val observe: (String) -> Unit = {}) {
+    private val observe: (String) -> Unit) {
+    constructor(root: Path, ownerCertificate: String, recipient: SyncDeviceEncryptionKey,
+        protect: (ByteArray) -> ByteArray, unprotect: (ByteArray) -> ByteArray, observe: (String) -> Unit = {}) :
+        this(root, ownerCertificate, ownerCertificate, recipient.publicKey, recipient, protect, unprotect, observe)
     private val owner = SyncDeviceSignatures.decode(ownerCertificate)
+    private val creator = SyncDeviceSignatures.decode(creatorCertificate)
     private val lock: ReentrantLock
     @Serializable private data class Intent(val request: SyncRootGroupCreateRequest, val genesis: SyncDeviceLedgerRecord, val protectedKey: String)
     @Serializable private data class Signed(val operation: SyncStoreId, val genesis: SyncDeviceLedgerRecord)
-    @Serializable private data class Frame(val domain: String, val device: String, val recipientKey: String, val kind: String, val payload: JsonElement)
+    @Serializable private data class Frame(val domain: String, val device: String, val recipientKey: String, val kind: String, val payload: JsonElement,
+        val owner: String? = null, val adminRecipient: String? = null)
     init {
         PrivateSyncFile.checked(root, true)
-        require(owner.encoded == ownerCertificate && owner.fingerprint == recipient.device) { "SYNC_GROUP_CREATE_DEVICE" }
+        require(owner.encoded == ownerCertificate && creator.encoded == creatorCertificate && creator.fingerprint == recipient.device) { "SYNC_GROUP_CREATE_DEVICE" }
         lock = locks.computeIfAbsent(root) { ReentrantLock() }
     }
     fun create(request: SyncRootGroupCreateRequest, admission: SyncRootGroupCreateAdmission,
@@ -56,9 +62,10 @@ class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, pr
             require(!Files.exists(root.resolve("genesis.protected"), NOFOLLOW_LINKS)) { "SYNC_GROUP_CREATE_INTENT_MISSING" }
             admission.requireApproved(frozen)
             val key = SyncStreamingCipher.create()
-            val member = SyncGroupMember(owner.encoded, recipient.publicKey.encoded)
+            val members = linkedMapOf(owner.fingerprint to SyncGroupMember(owner.encoded, adminRecipient.encoded),
+                creator.fingerprint to SyncGroupMember(creator.encoded, recipient.publicKey.encoded))
             Intent(frozen, SyncDeviceLedgerRecord(key.group, SyncStoreId.random(), null, 1, key.epoch, key.keyCommitment(),
-                frozen.coveredTypes, mapOf(owner.fingerprint to member), emptySet(), "unsigned"),
+                frozen.coveredTypes, members, emptySet(), "unsigned"),
                 Base64.getEncoder().encodeToString(key.protectedKeyset(protect))).also {
                 write("intent.protected", "INTENT", Intent.serializer(), it); observe("APPROVED_GROUP_CREATION_RETAINED")
             }
@@ -74,7 +81,8 @@ class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, pr
         val row = intent.genesis
         require(row.parent == null && row.sequence == 1L && row.signature == "unsigned" && row.acceptedHeads.isEmpty() &&
             row.coveredTypes == intent.request.coveredTypes && row.members ==
-                mapOf(owner.fingerprint to SyncGroupMember(owner.encoded, recipient.publicKey.encoded))) { "SYNC_GROUP_CREATE_INTENT_CHANGED" }
+                linkedMapOf(owner.fingerprint to SyncGroupMember(owner.encoded, adminRecipient.encoded),
+                    creator.fingerprint to SyncGroupMember(creator.encoded, recipient.publicKey.encoded))) { "SYNC_GROUP_CREATE_INTENT_CHANGED" }
         require(intent.protectedKey.length in 1..128 * 1024) { "SYNC_GROUP_CREATE_KEY_BUDGET" }
         val key = SyncStreamingCipher.open(row.group, row.epoch, Base64.getDecoder().decode(intent.protectedKey), unprotect)
         require(key.keyCommitment() == row.keyCommitment) { "SYNC_GROUP_CREATE_KEY_CHANGED" }
@@ -87,7 +95,7 @@ class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, pr
         val ledger = SyncDeviceLedger(trust)
         require(ledger.offer(signed.genesis) == SyncVersionState.ADMITTED && ledger.current() == signed.genesis) { "SYNC_GROUP_CREATE_GENESIS" }
         if (previous == null) { write("genesis.protected", "SIGNED", Signed.serializer(), signed); observe("GROUP_GENESIS_RETAINED") }
-        return SyncRootCreatedGroup(trust, signed.genesis, key)
+        return SyncRootCreatedGroup(trust, signed.genesis, key, creator.fingerprint)
     }
     private fun <T> read(name: String, kind: String, serializer: KSerializer<T>): T? {
         val path = root.resolve(name)
@@ -110,7 +118,9 @@ class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, pr
             }
             require(!quoted && depth == 0) { "SYNC_GROUP_CREATE_PRIVATE_CONTEXT" }
             val frame = lanSyncJson.decodeFromString(Frame.serializer(), text)
-            require(frame.domain == DOMAIN && frame.device == owner.fingerprint && frame.recipientKey == recipient.publicKey.hash && frame.kind == kind) {
+            val legacy = frame.owner == null && frame.adminRecipient == null && owner.fingerprint == creator.fingerprint && adminRecipient.encoded == recipient.publicKey.encoded
+            require(frame.domain == DOMAIN && frame.device == creator.fingerprint && frame.recipientKey == recipient.publicKey.hash && frame.kind == kind &&
+                (legacy || frame.owner == owner.fingerprint && frame.adminRecipient == adminRecipient.hash)) {
                 "SYNC_GROUP_CREATE_PRIVATE_CONTEXT"
             }
             return lanSyncJson.decodeFromJsonElement(serializer, frame.payload)
@@ -118,8 +128,8 @@ class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, pr
     }
     private fun <T> write(name: String, kind: String, serializer: KSerializer<T>, value: T) {
         val path = root.resolve(name); require(!Files.exists(path, NOFOLLOW_LINKS)) { "SYNC_GROUP_CREATE_IMMUTABLE" }
-        val plain = lanSyncJson.encodeToString(Frame.serializer(), Frame(DOMAIN, owner.fingerprint, recipient.publicKey.hash, kind,
-            lanSyncJson.encodeToJsonElement(serializer, value))).toByteArray(Charsets.UTF_8)
+        val plain = lanSyncJson.encodeToString(Frame.serializer(), Frame(DOMAIN, creator.fingerprint, recipient.publicKey.hash, kind,
+            lanSyncJson.encodeToJsonElement(serializer, value), owner.fingerprint, adminRecipient.hash)).toByteArray(Charsets.UTF_8)
         require(plain.size in 1..MAX_PLAIN) { "SYNC_GROUP_CREATE_WORKING_BUDGET" }
         val encrypted = try { protect(plain).copyOf() } finally { plain.fill(0) }
         require(encrypted.size in 1..MAX_PROTECTED) { "SYNC_GROUP_CREATE_WORKING_BUDGET" }
@@ -136,6 +146,15 @@ class SyncRootGroupCreation(private val root: Path, ownerCertificate: String, pr
         } finally { lock.unlock() }
     }
     companion object {
+        /** The admin's private signing/recipient keys stay with its separate recovery-code owner. */
+        fun managed(root: Path, ownerCertificate: String, adminRecipient: SyncRecipientPublicKey, creatorCertificate: String,
+            creatorRecipient: SyncDeviceEncryptionKey, protect: (ByteArray) -> ByteArray, unprotect: (ByteArray) -> ByteArray,
+            observe: (String) -> Unit = {}): SyncRootGroupCreation {
+            val owner = SyncDeviceSignatures.decode(ownerCertificate); val creator = SyncDeviceSignatures.decode(creatorCertificate)
+            require(ownerCertificate != creatorCertificate && !java.security.MessageDigest.isEqual(owner.key.encoded, creator.key.encoded) &&
+                adminRecipient.encoded != creatorRecipient.publicKey.encoded) { "SYNC_GROUP_CREATE_SEPARATE_ADMIN_REQUIRED" }
+            return SyncRootGroupCreation(root, ownerCertificate, creatorCertificate, adminRecipient, creatorRecipient, protect, unprotect, observe)
+        }
         private const val DOMAIN = "CCB-SYNC-ROOT-CREATION/1"
         private const val MAX_PLAIN = 1024 * 1024
         private const val MAX_PROTECTED = MAX_PLAIN + 1024 * 1024

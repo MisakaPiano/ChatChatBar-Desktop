@@ -1,10 +1,13 @@
 package com.example.chatbar.domain.syncStore
 
 import com.example.chatbar.domain.lanSync.LanSyncGroupPublicationQueueTest
+import com.example.chatbar.domain.lanSync.lanSyncJson
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.*
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 /** Actual root signatures/streaming keys/custody with synthetic protection; peer proof/UI are not simulated as accepted. */
 class SyncRootLedgerJournalTest {
@@ -145,5 +148,30 @@ class SyncRootLedgerJournalTest {
         assertEquals(second.entry.record.keyCommitment, f.custody().key(second.entry.record.epoch).keyCommitment())
         assertEquals(f.f.cipher.keyCommitment(), f.custody().key(f.f.cipher.epoch).keyCommitment())
         assertNull(f.journal().nextRecoveryRequest(f.custody())); assertEquals(2L, f.journal().state().completedSequence)
+    }
+    @Test fun aSignedForkRetainsEvidenceWithoutAdvancingTheCheckpointOrAdmittingTheNewKey() = withFixture { f ->
+        val owned = f.commit(f.request())
+        val otherKey = SyncStreamingCipher.create(f.f.cipher.group)
+        val other = f.f.sign(f.f.genesis.copy(id = SyncStoreId.random(), parent = f.f.genesis.reference(), sequence = 2,
+            epoch = otherKey.epoch, keyCommitment = otherKey.keyCommitment()))
+        f.custody().update(listOf(other))
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> {
+            f.journal().applyToCustody(owned, f.custody())
+        }.message)
+        val reopened = f.custody()
+        assertEquals(other.reference(), reopened.trust().checkpoint)
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { reopened.ledger() }.message)
+        assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { reopened.key(owned.entry.record.epoch) }.message)
+        assertEquals(f.f.cipher.keyCommitment(), reopened.key(f.f.cipher.epoch).keyCommitment())
+    }
+    @Test fun aMissingOriginEpochKeyReportsItsEnrollmentOwnerInsteadOfPretendingRecoveryIsComplete() = withFixture { f ->
+        val path = f.custodyRoot.resolve("group.protected")
+        val state = lanSyncJson.parseToJsonElement(Files.readAllBytes(path).reversedArray().toString(Charsets.UTF_8)).jsonObject
+        Files.write(path, JsonObject(state + ("keys" to JsonObject(emptyMap()))).toString().toByteArray(Charsets.UTF_8).reversedArray())
+        assertEquals("SYNC_ROOT_ORIGIN_KEY_RECOVERY_REQUIRED", assertFailsWith<IllegalArgumentException> {
+            f.journal().nextRecoveryRequest(f.custody())
+        }.message)
+        assertEquals(0L, f.journal().state().completedSequence)
+        assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { f.custody().key(f.f.cipher.epoch) }.message)
     }
 }

@@ -80,4 +80,47 @@ class SyncRootGroupCreationTest {
             assertEquals(created.genesis.keyCommitment, reopened.key(created.genesis.epoch).keyCommitment())
         }
     }
+    @Test fun anIndependentAdminCanEnrollANewDailyIdentityAndRevokeTheLostDailyDeviceWithoutCloningIt() = withFixture { f ->
+        val admin = LanSyncTlsIdentity.create(); val adminRecipient = SyncDeviceEncryptionKey.create(admin.fingerprint)
+        val adminCertificate = Base64.getEncoder().encodeToString(admin.certificate.encoded)
+        val managedRoot = Files.createDirectory(f.root.resolve("managed"))
+        fun service() = SyncRootGroupCreation.managed(managedRoot, adminCertificate, adminRecipient.publicKey,
+            f.certificate, f.recipient, { it.reversedArray() }, { it.reversedArray() })
+        val created = service().create(f.request, SyncRootGroupCreateAdmission {}, admin::signSyncGroupPayload)
+        assertEquals(f.identity.fingerprint, created.creator); assertEquals(adminCertificate, created.trust.ownerCertificate)
+        assertEquals(setOf(admin.fingerprint, f.identity.fingerprint), created.genesis.members.keys)
+        val oldCustody = SyncGroupCustody(Files.createDirectory(f.root.resolve("old-daily")), created.trust.group, f.recipient,
+            { it.reversedArray() }, { it.reversedArray() })
+        val initial = created.enrollCreator(oldCustody)
+        val rootJournal = SyncRootLedgerJournal(Files.createDirectory(f.root.resolve("management-journal")), created.trust,
+            adminCertificate, { it.reversedArray() }, { it.reversedArray() })
+        rootJournal.initializeNewEnrollment(initial)
+        val replacement = LanSyncTlsIdentity.create(); val replacementRecipient = SyncDeviceEncryptionKey.create(replacement.fingerprint)
+        val replacementCertificate = Base64.getEncoder().encodeToString(replacement.certificate.encoded)
+        val join = SyncRootLedgerRequest(SyncStoreId.random(), initial.current().reference(), initial.current().members +
+            (replacement.fingerprint to SyncGroupMember(replacementCertificate, replacementRecipient.publicKey.encoded)),
+            initial.current().coveredTypes, emptySet(), false, "b".repeat(64))
+        val joined = rootJournal.commit(join, oldCustody::ledger, SyncRootLedgerAdmission {}, admin::signSyncGroupPayload)
+        val joinedLedger = rootJournal.applyToCustody(joined, oldCustody)
+        val newCustody = SyncGroupCustody(Files.createDirectory(f.root.resolve("new-daily")), created.trust.group, replacementRecipient,
+            { it.reversedArray() }, { it.reversedArray() })
+        newCustody.enroll(created.trust, joined.records)
+        val capsule = SyncGroupKeyDelivery.create(joinedLedger, created.cipher, replacement.fingerprint, SyncStoreId.random(), admin::signSyncGroupPayload)
+        newCustody.rememberKey(capsule.openTentative(created.trust, replacementRecipient,
+            CiphertextObjectKey(CiphertextObjectKind.COMMIT, capsule.context.objectId)).admit(newCustody.ledger()))
+        val revoke = SyncRootLedgerRequest(SyncStoreId.random(), joinedLedger.current().reference(), joinedLedger.current().members +
+            (f.identity.fingerprint to joinedLedger.current().members.getValue(f.identity.fingerprint).copy(active = false)),
+            joinedLedger.current().coveredTypes, emptySet(), true, "c".repeat(64))
+        val revoked = rootJournal.commit(revoke, newCustody::ledger, SyncRootLedgerAdmission {}, admin::signSyncGroupPayload)
+        val current = rootJournal.applyToCustody(revoked, newCustody)
+        assertTrue(current.current().members.getValue(admin.fingerprint).active)
+        assertTrue(current.current().members.getValue(replacement.fingerprint).active)
+        assertFalse(current.current().members.getValue(f.identity.fingerprint).active)
+        assertEquals(current.current().keyCommitment, newCustody.key(current.current().epoch).keyCommitment())
+        assertNotEquals(f.identity.fingerprint, replacement.fingerprint)
+        val author = SyncAuthorJournal(Files.createDirectory(f.root.resolve("new-author")), created.trust, replacementCertificate,
+            { it.reversedArray() }, { it.reversedArray() })
+        author.initializeNewEnrollment(); assertEquals(0L, author.state().committedSequence)
+        assertEquals(created.genesis, service().resume(f.request.operation) { error("SYNTHETIC_NO_RESIGN") }.genesis)
+    }
 }
