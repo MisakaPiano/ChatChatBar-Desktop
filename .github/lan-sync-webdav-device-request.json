@@ -1,0 +1,8 @@
+{
+  "kind": "CCB_WEBDAV_API26_SAX_PROBE",
+  "sourceSha": "7bfd4cf3f29d1c4e8b494b696143568a3444e843",
+  "api": 26,
+  "selector": "com.example.chatbar.lanSync.LanSyncWebDavPlatformTest#productionSaxRejectsDtdAndParsesSegmentedDavOnApi26",
+  "purpose": "Actual Android production SAX listing, segmented UTF-8 and fail-closed DTD/entity contract; no account or HTTP transport claim",
+  "artifacts": "Original instrumentation/install/device text, summary and source SHA only; no APK, app data or keys"
+}
