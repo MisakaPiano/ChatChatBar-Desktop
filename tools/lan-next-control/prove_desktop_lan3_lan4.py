@@ -10,6 +10,11 @@ from contract import load, require
 from desktop_control import cloud, source_bindings, timestamp_exception_enabled, validate_upgrade
 
 LEGACY = Path(__file__).resolve().parents[1] / 'lan-preview-signing/prove_desktop_profile_upgrade.py'
+BASE_SERIES = 'lan3'
+CANDIDATE_SERIES = 'lan4'
+RESULT_KIND = 'EXACT_LAN3_LAN4_PROGRAM_ONLY_PROFILE_UPGRADE'
+RESULT_FILE = 'native-lan3-lan4-upgrade-result.json'
+SUCCESS_MARKER = 'LAN3_LAN4_NATIVE_UPGRADE_PASS'
 
 
 def legacy():
@@ -31,7 +36,7 @@ def run(request, output):
     require(source_bindings(Path.cwd(), request['packages'][1]['sourceSha']) == request['timestampSourceBindings'], 'TIMESTAMP_SOURCE_CHANGED')
     old = legacy()
     temporary = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)
-    case = temporary / ('ccb-lan3-lan4-profile-' + uuid.uuid4().hex); case.mkdir(); old.regular(case)
+    case = temporary / ('ccb-' + BASE_SERIES + '-' + CANDIDATE_SERIES + '-profile-' + uuid.uuid4().hex); case.mkdir(); old.regular(case)
     require(case.resolve() == case and case.parent == temporary, 'CASE_SCOPE')
     root = case / 'independent'; replacement = case / 'replacement'
     counts = [old.package(row, target) for row, target in zip(request['packages'], (root, replacement))]
@@ -41,24 +46,24 @@ def run(request, output):
         path = outside / leaf; path.mkdir(parents=True, exist_ok=True); environment[key] = str(path)
     old.write_json(outside / 'Local/ChatChatBarDesktop.bootstrap.json', {'formatVersion': 1, 'mode': 'DEFAULT'})
     outside_before = old.inventory(outside); native = old.Native(root); phases = []
-    result = {'kind': 'EXACT_LAN3_LAN4_PROGRAM_ONLY_PROFILE_UPGRADE', 'passed': False, 'packages': request['packages'],
+    result = {'kind': RESULT_KIND, 'passed': False, 'packages': request['packages'],
               'programFilesVerified': counts, 'phases': phases, 'snapshots': {}, 'seedInvocations': 0,
               'providerCalls': False, 'actualUserRootTouched': False, 'applicationRebuilt': False,
               'pixelsVerified': False, 'peerOrIdentitySeeded': False, 'humanAcceptance': False,
               'processDrainScope': 'EXECUTABLE_PATH_UNDER_OWN_PROGRAM', 'externalExecutableDescendantsVerified': False,
               'timestampExceptionEnabled': timestamp_exception_enabled(request), 'allowedStateMigrations': []}
     try:
-        phases.append(native.launch('lan3-fresh', environment))
+        phases.append(native.launch(BASE_SERIES + '-fresh', environment))
         data = root / 'UserData/Local/ChatChatBarDesktop'; require(data.is_dir(), 'INITIAL_DATA_ROOT')
         image = old.seed(data); result['seedInvocations'] += 1
-        phases.append(native.launch('lan3-populated', environment)); old.verify_seed(data, image)
+        phases.append(native.launch(BASE_SERIES + '-populated', environment)); old.verify_seed(data, image)
         control_before = old.inventory(data / 'entities'); control_bodies = old.json_bodies(data / 'entities', control_before)
-        result['snapshots']['lan3-populated'] = control_before
-        phases.append(native.launch('lan3-warm-control', environment)); old.verify_seed(data, image)
+        result['snapshots'][BASE_SERIES + '-populated'] = control_before
+        phases.append(native.launch(BASE_SERIES + '-warm-control', environment)); old.verify_seed(data, image)
         before = old.inventory(data / 'entities'); bodies = old.json_bodies(data / 'entities', before); image_before = old.sha(image)
-        result['snapshots']['lan3-warm-control'] = before
+        result['snapshots'][BASE_SERIES + '-warm-control'] = before
         result['oldWarmControlChanges'] = old.changes(control_before, before, control_bodies, data / 'entities')
-        backup = root / 'Program-lan3-preserved'
+        backup = root / ('Program-' + BASE_SERIES + '-preserved')
         for path in (root, root / 'Program', replacement / 'Program'):
             old.regular(path); require(path.resolve().is_relative_to(case), 'PROGRAM_SWAP_SCOPE')
         require(not backup.exists() and not native.owned(), 'PROGRAM_SWAP_BUSY')
@@ -70,20 +75,20 @@ def run(request, output):
             result[stage + '-retention'] = retained_entities(old, request, before, current, bodies, data / 'entities', result['oldWarmControlChanges'])
             old.verify_seed(data, image)
 
-        phases.append(native.launch('lan4-upgraded', environment)); retain('lan4-upgraded')
-        phases.append(native.launch('lan4-cold-reopen', environment)); retain('lan4-cold-reopen')
+        phases.append(native.launch(CANDIDATE_SERIES + '-upgraded', environment)); retain(CANDIDATE_SERIES + '-upgraded')
+        phases.append(native.launch(CANDIDATE_SERIES + '-cold-reopen', environment)); retain(CANDIDATE_SERIES + '-cold-reopen')
         require(old.sha(image) == image_before == hashlib.sha256(old.PNG).hexdigest(), 'MEDIA_CHANGED')
         require(old.inventory(outside) == outside_before, 'OUTSIDE_PROFILE_CHANGED')
         require(len(phases) == 5 and result['seedInvocations'] == 1, 'EXACT_NATIVE_PHASES')
         result.update(passed=True, preexistingEntityFilesRetained=len(before), entityHashesBefore=before,
-                      newEntityPaths=sorted(set(result['snapshots']['lan4-cold-reopen']) - set(before)),
+                      newEntityPaths=sorted(set(result['snapshots'][CANDIDATE_SERIES + '-cold-reopen']) - set(before)),
                       absoluteMediaReferenceUnchanged=True, imageSha256=image_before, userDataRootNotMoved=True,
                       oldProgramPreserved=backup.is_dir(), outsideProfileInventoryUnchanged=True, syntheticOnly=True)
     except Exception as failure:
         result['failure'] = {'type': type(failure).__name__, 'message': str(failure)}; raise
     finally:
-        old.write_json(output / 'native-lan3-lan4-upgrade-result.json', result)
-    print('LAN3_LAN4_NATIVE_UPGRADE_PASS: five native launches; one old-version seed')
+        old.write_json(output / RESULT_FILE, result)
+    print(SUCCESS_MARKER + ': five native launches; one old-version seed')
 
 
 if __name__ == '__main__':

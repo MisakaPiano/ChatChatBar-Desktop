@@ -20,6 +20,8 @@ REPOSITORY = 'MisakaPiano/ChatChatBar-Desktop'
 BUILD_KIND = 'CCB_LAN3_LAN4_DESKTOP_BUILD_V1'
 UPGRADE_KIND = 'CCB_EXACT_LAN3_LAN4_DESKTOP_PROFILE_UPGRADE_V1'
 ARTIFACT_NAME = 'ccb-lan3-lan4-independent-desktop'
+MANIFEST_KIND = 'CCB_LAN4_INDEPENDENT_DESKTOP_ORIGINAL_V1'
+SERIES = 'lan4'
 VERSION = '0.1.0-lan.4'
 INSTALLER = '0.1.40004'
 BUILD = '40004'
@@ -100,7 +102,7 @@ def collect(request, source, output, control_sha):
     require(git_bytes(source, 'rev-parse', 'HEAD').decode().strip() == request['sourceSha'], 'DESKTOP_BUILT_SOURCE')
     require(not git_bytes(source, 'status', '--porcelain', '--untracked-files=all').strip(), 'DESKTOP_SOURCE_DIRTY')
     require(load(output / 'source-request.json') == request, 'DESKTOP_SOURCE_REQUEST')
-    manifest = {'kind': 'CCB_LAN4_INDEPENDENT_DESKTOP_ORIGINAL_V1', 'format': 1,
+    manifest = {'kind': MANIFEST_KIND, 'format': 1,
                 'sourceSha': request['sourceSha'], 'controlSha': control_sha, 'buildRequest': request,
                 'timestampSourceBindings': source_bindings(source, request['sourceSha']),
                 'archive': descriptor(output / FILENAME),
@@ -114,7 +116,7 @@ def collect(request, source, output, control_sha):
 
 def validate_bundle(directory):
     manifest = load(directory / 'desktop-package-manifest.json')
-    require(manifest.get('kind') == 'CCB_LAN4_INDEPENDENT_DESKTOP_ORIGINAL_V1' and manifest.get('format') == 1, 'DESKTOP_MANIFEST_KIND')
+    require(manifest.get('kind') == MANIFEST_KIND and manifest.get('format') == 1, 'DESKTOP_MANIFEST_KIND')
     request = validate_build(manifest['buildRequest'])
     require(manifest['sourceSha'] == request['sourceSha'], 'DESKTOP_MANIFEST_SOURCE'); sha(manifest['controlSha'], 40)
     validate_bindings(manifest['timestampSourceBindings'], request['sourceSha'])
@@ -149,7 +151,7 @@ def metadata(row, artifact, run):
 
 def upgrade_request(directory, artifact, run):
     manifest = validate_bundle(directory)
-    row = {'series': 'lan4', 'version': VERSION, 'sourceSha': manifest['sourceSha'], 'controlSha': manifest['controlSha'],
+    row = {'series': SERIES, 'version': VERSION, 'sourceSha': manifest['sourceSha'], 'controlSha': manifest['controlSha'],
            'runId': run['id'], 'artifactId': artifact['id'], 'artifactName': ARTIFACT_NAME,
            'outerBytes': artifact['size_in_bytes'], 'outerSha256': artifact['digest'].removeprefix('sha256:'),
            'filename': FILENAME, 'innerBytes': manifest['archive']['bytes'], 'innerSha256': manifest['archive']['sha256'],
@@ -166,7 +168,7 @@ def validate_upgrade(request):
     require(isinstance(request['packages'], list) and len(request['packages']) == 2 and request['packages'][0] == BASE, 'EXACT_DELIVERED_LAN3_REQUIRED')
     row = request['packages'][1]
     require(set(row) == set(BASE), 'DESKTOP_CANDIDATE_FIELDS')
-    require(row['series'] == 'lan4' and row['version'] == VERSION and row['installerVersion'] == INSTALLER and row['buildNumber'] == BUILD and
+    require(row['series'] == SERIES and row['version'] == VERSION and row['installerVersion'] == INSTALLER and row['buildNumber'] == BUILD and
             row['artifactName'] == ARTIFACT_NAME and row['filename'] == FILENAME, 'LAN4_IDENTITY')
     sha(row['sourceSha'], 40); sha(row['controlSha'], 40); sha(row['outerSha256']); sha(row['innerSha256'])
     require(row['sourceSha'] != BASE['sourceSha'] and row['artifactId'] != BASE['artifactId'] and row['runId'] != BASE['runId'], 'NEW_ORIGINAL_REQUIRED')
@@ -245,7 +247,7 @@ def fetch_originals(request, output):
             while chunk := response.read(1024 * 1024):
                 total += len(chunk); require(total <= row['outerBytes'], 'ORIGINAL_DOWNLOAD_SIZE'); stream.write(chunk)
         originals.append(verify_outer_and_extract(archive, Path('input-' + row['series']), row))
-    require(upgrade_request(Path('input-lan4'), values[1]['artifact'], values[1]['run']) == request, 'CANDIDATE_BUNDLE_NOT_REQUESTED')
+    require(upgrade_request(Path('input-' + SERIES), values[1]['artifact'], values[1]['run']) == request, 'CANDIDATE_BUNDLE_NOT_REQUESTED')
     write_new(output / 'original-input-bytes.json', {'packages': originals, 'oldPackageRebuilt': False, 'candidatePackageRebuilt': False})
 
 

@@ -1,0 +1,39 @@
+name: Explicit exact delivered lan4 to lan5 Desktop profile upgrade
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-next-sync-desktop-lan5-upgrade-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-program-swap:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - name: Download and authenticate both exact original package artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B tools/lan-next-control/desktop_lan5_control.py fetch-originals --request .github/lan-next-sync-desktop-lan5-upgrade-request.json --output desktop-lan4-lan5-upgrade-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'LAN4_LAN5_ORIGINAL_PROVENANCE_OR_BYTES' }
+      - name: Five actual native launches with Program-only replacement
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B tools/lan-next-control/prove_desktop_lan4_lan5.py --request .github/lan-next-sync-desktop-lan5-upgrade-request.json --output desktop-lan4-lan5-upgrade-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'LAN4_LAN5_NATIVE_PROFILE_UPGRADE' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan4-lan5-desktop-profile-upgrade-evidence
+          if-no-files-found: error
+          path: desktop-lan4-lan5-upgrade-evidence/*.json
