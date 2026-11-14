@@ -297,7 +297,8 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
             require(profile.stage == LanSyncGroupJoinStage.PREPARED) { "SYNC_GROUP_CLOUD_RECOVERY_APPROVAL_MISSING" }
             value.approval = daily.prepareRecoveryDevice(management, deviceName)
         }
-        val binding = value.approval?.request?.approvalBinding ?: lanSyncHash("CLOUD-RECOVERY-RESUME\n${value.id.value}\n${ledger.reference()}\n${member.first}")
+        val binding = value.approval?.request?.approvalBinding ?: lanSyncHash(
+            "CLOUD-RECOVERY-RESUME\n${value.id.value}\n${ledger.reference()}\n${member.first}".toByteArray(Charsets.UTF_8))
         val review = LanSyncGroupCloudRecoveryReview(binding, vault.trust.group.value,
             SyncDeviceSignatures.decode(vault.trust.ownerCertificate).fingerprint,
             "${ledger.id.value}:${ledger.bodyHash()}", ledger.members.size, member.first, deviceName)
