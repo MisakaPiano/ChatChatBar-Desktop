@@ -1,0 +1,67 @@
+name: Explicit candidate83 verifier-only r02 build with three exact reused inputs
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-next-sync-control-build-r02-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verifier-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check additive control contracts without SDK execution
+        run: |
+          python3 -B tools/lan-next-control/test_control.py
+          python3 -B tools/lan-next-control/test_fixture_only_control.py
+      - name: Create clean source90 worktree with only new verifier test overlay
+        shell: bash
+        run: |
+          candidate=$(python3 -B -c 'import sys;sys.path.insert(0,"tools/lan-next-control");from contract import load;from fixture_only_control import require_r02;print(require_r02(load(".github/lan-next-sync-control-build-r02-request.json"))["sourceSha"])')
+          next="$RUNNER_TEMP/ccb-candidate83-verifier-r02-source"
+          git worktree add --detach "$next" "$candidate"
+          python3 -B tools/lan-next-control/fixture_only_control.py prepare --request .github/lan-next-sync-control-build-r02-request.json --candidate-dir "$next" --output raw-inputs
+          echo "CCB_LAN_CANDIDATE_SOURCE=$next" >> "$GITHUB_ENV"
+      - name: Authenticate original successful four-input run and exact archive bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 -B tools/lan-next-control/fixture_only_control.py original-provenance --output raw-inputs/reused-original-artifact-provenance.json
+          python3 -B tools/lan-next-control/fixture_only_control.py fetch-original --archive "$RUNNER_TEMP/original-four-inputs.zip" --output original-four
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build only the new verifier companion against frozen production source90
+        working-directory: ${{ env.CCB_LAN_CANDIDATE_SOURCE }}/app
+        run: bash ./gradlew :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=83 --no-daemon --stacktrace
+      - name: Reuse exact base82 seed82 candidate83 and collect only new verify83
+        run: python3 -B tools/lan-next-control/fixture_only_control.py collect --request .github/lan-next-sync-control-build-r02-request.json --candidate-dir "$CCB_LAN_CANDIDATE_SOURCE" --original-dir original-four --output raw-inputs --control-sha "$GITHUB_SHA" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered82-candidate83-r02-manifests
+          path: raw-inputs/*.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered82-candidate83-r02-verifier
+          path: raw-inputs/verify83-tests-input.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ccb-lan-delivered82-candidate83-inputs
+          path: raw-inputs/
+          if-no-files-found: error

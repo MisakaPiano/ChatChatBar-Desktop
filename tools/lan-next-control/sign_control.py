@@ -9,7 +9,7 @@ import subprocess
 import sys
 import zipfile
 from contract import (BASE, CERTIFICATE, HERE, ROLES, SIGN_KIND, artifact_metadata, file_hash, sha,
-                      load, require, validate_build, validate_public_block, validate_sign, write_new)
+                      load, require, validate_build, validate_public_block, validate_reused_inputs, validate_sign, write_new)
 from build_control import inspect_apk
 
 # Only the existing, version-independent public APK assembler is reused.
@@ -40,6 +40,8 @@ def validate_raw(directory, build, control_sha=None):
         require(row['bytes'] == path.stat().st_size and row['sha256'] == file_hash(path), 'RAW_BYTES_HASH')
         if role == 'base82':
             require(row['sha256'] == BASE['rawSha256'], 'RAW_DELIVERED82_CHANGED')
+    if build['format'] == 2:
+        validate_reused_inputs(manifest, by_role)
     return manifest, by_role
 
 

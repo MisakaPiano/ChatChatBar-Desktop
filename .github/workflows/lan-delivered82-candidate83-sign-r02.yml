@@ -1,0 +1,81 @@
+name: Explicit verifier-only r02 signing and actual82 to83 upgrade
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-next-sync-control-sign-r02-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sign-and-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate exact four-input cloud provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 -B tools/lan-next-control/provenance.py --sign-request .github/lan-next-sync-control-sign-r02-request.json --output original-provenance.json
+          python3 -B - <<'PY'
+          import os,sys
+          sys.path.insert(0,'tools/lan-next-control')
+          from contract import load,validate_sign
+          request=validate_sign(load('.github/lan-next-sync-control-sign-r02-request.json'))
+          with open(os.environ['GITHUB_ENV'],'a') as stream:
+              stream.write('CCB_LAN_RAW_RUN='+str(request['originalArtifact']['runId'])+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ccb-lan-delivered82-candidate83-inputs
+          run-id: ${{ env.CCB_LAN_RAW_RUN }}
+          github-token: ${{ github.token }}
+          path: original
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;36.0.0
+      - name: Require r02 reuse ledger and exact three original input bytes
+        run: python3 -B tools/lan-next-control/fixture_only_control.py validate --raw-dir original --sign-request .github/lan-next-sync-control-sign-r02-request.json
+      - name: Assemble only from public blocks and SDK-verify all four inputs
+        run: python3 -B tools/lan-next-control/sign_control.py verify --raw-dir original --request .github/lan-next-sync-control-sign-r02-request.json --output candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0" --control-sha "$GITHUB_SHA"
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Actually seed exact82 then reinstall83 without clearing data
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          CCB_LAN_SYNTHETIC_UPGRADE_CLOUD: 'true'
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 -B tools/lan-next-control/prove_upgrade.py --directory candidate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ccb-lan-delivered82-candidate83-r02-evidence
+          path: |
+            candidate/*.json
+            candidate/*.txt
+            original-provenance.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ccb-lan-delivered82-candidate83-r02-verified-apks
+          path: |
+            candidate/base82.apk
+            candidate/seed82.apk
+            candidate/candidate83.apk
+            candidate/verify83.apk
+          if-no-files-found: error

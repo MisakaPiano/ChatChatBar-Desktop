@@ -6,6 +6,8 @@ description: Maintain additive cloud-only delivered82 to candidate83 APK and del
 - New controls are under `tools/lan-next-control/` and the two
   `lan-delivered82-candidate83-*.yml` workflows. Frozen next-preview81/82 controls
   remain separate. `README.md` documents request creation and proof scope.
+- Retry controls are documented in `tools/lan-next-control/README-r02.md` and
+  `DESKTOP_UPGRADE_R02.md`; preserve original failed requests, fixtures and evidence.
 - `contract.py` pins exact delivered82 raw/member/artifact lineage and signed
   bytes; seed82 compiles against10b and verify83 against the new source. Each
   companion overlay hash is an explicit build input. A newly built82 is not the

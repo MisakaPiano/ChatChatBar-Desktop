@@ -7,6 +7,23 @@ import re
 PACKAGE = 'com.example.chatbar.lansyncnext'
 CERTIFICATE = '801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7'
 BUILD_KIND = 'CCB_LAN_DELIVERED82_CANDIDATE83_BUILD_V1'
+VERIFIER_ONLY_BUILD_KIND = 'CCB_LAN_DELIVERED82_CANDIDATE83_BUILD_V2'
+VERIFIER_ONLY_SOURCE = '90ead92410ca4c5e240f75d120ed6a145fb6f1c8'
+REUSED_ORIGINAL_ARTIFACT = {
+    'id': 14095022954, 'runId': 43547894406,
+    'name': 'ccb-lan-delivered82-candidate83-inputs', 'bytes': 216618510,
+    'outerSha256': 'd3a4cd8ae1387e013337d3008d8ba9f74d8808ed747e9bf92a065ba48eaa80ba',
+    'controlSha': '00b934506b09c25adffa3876c9da7636cc9e2532',
+}
+# Published raw bytes from the authenticated original four-input artifact. The
+# original verifier is authenticated too, although it is the sole replaced role.
+ORIGINAL_INPUT_BYTES = {
+    'base82': (106323948, '7d65f385078626788215f3230ade235269a4993eb5159bc8e10536c0568ec844'),
+    'seed82': (1898458, 'b1dd9426bedf7b5f79ef09b0af7089e840660cc0e2cd8064df59f3383bb3054d'),
+    'candidate83': (108388391, '696f6fc17d65d0d86e4884cc5a2a0260ec8b47d1a7ec8af78d62af88c847f1d6'),
+    'verify83': (1910022, 'fcd8ab667ad1704435f28549811e1d4cb871416e2b53c0e4781dffc6053f26a5'),
+}
+REUSED_ROLES = ('base82', 'seed82', 'candidate83')
 SIGN_KIND = 'CCB_LAN_DELIVERED82_CANDIDATE83_PUBLIC_SIGNING_V1'
 BASE = {
     'sourceSha': '10b14a8c89d2fc4b2ed2188546af4339b0e42b57',
@@ -90,11 +107,44 @@ def build_request(source):
             'deliveredBase': dict(BASE), 'fixtures': fixtures(), 'allowedStateMigrations': []}
 
 
+def verifier_only_request():
+    request = build_request(VERIFIER_ONLY_SOURCE)
+    request.update(kind=VERIFIER_ONLY_BUILD_KIND, format=2,
+                   reusedOriginalArtifact=dict(REUSED_ORIGINAL_ARTIFACT))
+    request['fixtures']['verify83'] = {'path': 'fixtures/verify83-r02.kt',
+        'sha256': fixture_hash(HERE / 'fixtures/verify83-r02.kt')}
+    return request
+
+
 def validate_build(request):
     require(isinstance(request, dict), 'BUILD_REQUEST')
-    expected = build_request(request.get('sourceSha'))
+    expected = verifier_only_request() if request.get('format') == 2 else build_request(request.get('sourceSha'))
     require(request == expected, 'BUILD_CONTRACT_MISMATCH')
     return request
+
+
+def original_input_rows():
+    original = build_request(VERIFIER_ONLY_SOURCE)
+    return {role: {'role': role, 'filename': filename, 'package': package, 'versionCode': version,
+        'sourceSha': BASE['sourceSha'] if role in ('base82', 'seed82') else VERIFIER_ONLY_SOURCE,
+        'testFixture': original['fixtures'].get(role), 'bytes': ORIGINAL_INPUT_BYTES[role][0],
+        'sha256': ORIGINAL_INPUT_BYTES[role][1], 'deliveredBase': dict(BASE) if role == 'base82' else None}
+        for role, (filename, package, version) in ROLES.items()}
+
+
+def expected_reuse_ledger():
+    rows = original_input_rows()
+    return {'artifact': dict(REUSED_ORIGINAL_ARTIFACT),
+            'originalBuildRequest': build_request(VERIFIER_ONLY_SOURCE),
+            'roles': {role: rows[role] for role in REUSED_ROLES}, 'replacedRole': 'verify83'}
+
+
+def validate_reused_inputs(manifest, rows):
+    require(manifest.get('reuse') == expected_reuse_ledger(), 'REUSE_LEDGER')
+    expected = original_input_rows()
+    for role in REUSED_ROLES:
+        require(rows[role] == expected[role], 'REUSED_INPUT_CHANGED_' + role)
+    require(rows['verify83']['sha256'] != ORIGINAL_INPUT_BYTES['verify83'][1], 'VERIFIER_NOT_REPLACED')
 
 
 def artifact_metadata(value):
