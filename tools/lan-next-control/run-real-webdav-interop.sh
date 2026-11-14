@@ -82,51 +82,11 @@ export CCB_REAL_DAV_USER=synthetic-ccb-ci
 export CCB_REAL_DAV_PASS
 CCB_REAL_DAV_PASS=$(python3 -c 'import secrets; print(secrets.token_hex(24))')
 export CCB_REAL_DAV_METHOD_EVIDENCE="$evidence_dir/real-webdav-method-counts.json"
-server_pid=''
-own_server_alive() {
-  # Include a stopped child, but never a completed job whose PID could be reused.
-  { jobs -pr; jobs -ps; } | grep -Fxq -- "$server_pid"
-}
-stop_server() {
-  local original_status=$?
-  trap - EXIT
-  if test -n "$server_pid"; then
-    # The shell job table identifies only our child, never a PID search.
-    if own_server_alive; then kill -- "$server_pid" 2>/dev/null || true; fi
-    for attempt in $(seq 1 50); do
-      if ! own_server_alive; then break; fi
-      sleep 0.1
-    done
-    if own_server_alive; then kill -KILL -- "$server_pid" 2>/dev/null || true; fi
-    wait "$server_pid" 2>/dev/null || true
-  fi
-  exit "$original_status"
-}
-trap stop_server EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-# The server root/config/cache/log are private runner-temporary data, not evidence.
-"$rclone" serve webdav "$case_root/server" --addr 127.0.0.1:18765 \
-  --user "$CCB_REAL_DAV_USER" --pass "$CCB_REAL_DAV_PASS" \
-  --config "$case_root/empty.conf" --cache-dir "$case_root/cache" \
-  --vfs-cache-mode off --log-level INFO --log-file "$case_root/server.log" &
-server_pid=$!
-ready=false
-for attempt in $(seq 1 60); do
-  kill -0 "$server_pid"
-  status=$(curl --silent --output /dev/null --write-out '%{http_code}' --proxy '' \
-    --connect-timeout 1 --max-time 2 --user "$CCB_REAL_DAV_USER:$CCB_REAL_DAV_PASS" \
-    --request PROPFIND --header 'Depth: 0' "$CCB_REAL_DAV_URL" || true)
-  if test "$status" = 207; then ready=true; break; fi
-  sleep 0.25
-done
-test "$ready" = true
+# Recheck the one overlay before starting the direct Python server owner.
 check_source
 test ! -e "$source_dir/$report" && test ! -L "$source_dir/$report"
-cd "$source_dir/app"
-bash ./gradlew :sharedCore:test \
-  --tests 'com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest.realServerMethodsAndColdDifferentLocalRoutePreserveCompleteOpaquePayload' \
-  --no-build-cache --rerun-tasks --no-daemon --stacktrace
+# The owner stays in this outer helper's group; cleanup uses no jobs table/wait.
+control_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+python3 "$control_dir/real_webdav_process_owner.py" --source-dir "$source_dir" --case-root "$case_root"
 check_source
-# The Python control copies the exact original XML and validates 1 test / 0F/E/S.
-# This script deliberately creates no summary PASS and uploads nothing itself.
+# The outer control exclusively copies original XML even when this owner fails.

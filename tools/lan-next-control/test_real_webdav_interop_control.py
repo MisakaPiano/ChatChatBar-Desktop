@@ -11,7 +11,7 @@ from unittest import mock
 import xml.etree.ElementTree as ET
 
 from real_webdav_interop_control import (RealWebDavControl, exact_xml, CLASS, METHOD, SOURCE, TARGET, XML,
-    FIXTURE, SCRIPT, VERSION, ARCHIVE, ARCHIVE_SHA, URL, ARCHIVE_FILE, METHOD_FILE)
+    FIXTURE, SCRIPT, PROCESS_OWNER, FORMAT, VERSION, ARCHIVE, ARCHIVE_SHA, URL, ARCHIVE_FILE, METHOD_FILE)
 
 HERE = Path(__file__).resolve().parent
 CONTROL = Path(os.environ.get('CCB_EXISTING_CONTROL_ROOT', str(HERE.parents[1])))
@@ -71,10 +71,43 @@ class RealWebDavControlTest(unittest.TestCase):
     def test_fixed_request_rejects_wrong_source_tool_url_and_unknown_fields(self):
         good = self.control.expected_request()
         self.assertEqual(self.control.validate_request(good), good)
-        for key, value in (('sourceSha', '0' * 40), ('fixtureSha256', '0' * 64), ('format', True),
+        for key, value in (('sourceSha', '0' * 40), ('fixtureSha256', '0' * 64), ('format', True), ('format', 1),
                            ('endpoint', 'https://example.invalid/'), ('rcloneVersion', 'latest'), ('class', 'other')):
             bad = dict(good); bad[key] = value
             with self.assertRaises(ValueError): self.control.validate_request(bad)
+
+    def test_format2_and_process_owner_are_bound_without_changing_fixture(self):
+        self.assertEqual(FORMAT, 2)
+        self.assertEqual(self.control.expected_request()['format'], 2)
+        self.assertEqual(self.control.expected_request()['fixtureSha256'],
+                         '56075f65de42a46ea3dffe1ebf38f91691316473705e1da068e7f5dbe4af9a69')
+        home = self.temp()
+        for name in ('real_webdav_interop_control.py', SCRIPT, FIXTURE, PROCESS_OWNER):
+            target = home / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((HERE / name).read_bytes())
+        control = RealWebDavControl(CONTROL, home)
+        def synthetic_git(root, *args):
+            if args == ('rev-parse', 'HEAD'): return 'a' * 40
+            if args == ('status', '--porcelain', '--untracked-files=all'): return ''
+            raise AssertionError('unexpected Git boundary')
+        with mock.patch.object(control, 'git', side_effect=synthetic_git), \
+             mock.patch.dict(os.environ, {'GITHUB_SHA': 'a' * 40, 'GITHUB_WORKSPACE': str(CONTROL.resolve())}):
+            before = control.control_binding()
+            self.assertEqual(before['filesSha256'][PROCESS_OWNER], control.common.file_hash(home / PROCESS_OWNER))
+            (home / PROCESS_OWNER).write_bytes(b'synthetic changed module')
+            self.assertNotEqual(before, control.control_binding())
+
+    def test_shell_delegates_server_and_gradle_without_jobs_or_unbounded_wait(self):
+        body = (HERE / SCRIPT).read_text(encoding='utf-8')
+        self.assertNotIn('jobs -', body)
+        self.assertNotIn('trap ', body)
+        self.assertNotIn('wait "$server_pid"', body)
+        self.assertNotIn('serve webdav', body)
+        self.assertNotIn('bash ./gradlew', body)
+        call = body.index('python3 "$control_dir/real_webdav_process_owner.py"')
+        self.assertLess(body.rindex('test ! -e "$source_dir/$report"'), call)
+        self.assertIn('check_source', body[call:])
 
     def test_actual_modified_fixture_hash_rejected_without_touching_frozen_fixture(self):
         home = self.temp(); (home / 'fixtures').mkdir()

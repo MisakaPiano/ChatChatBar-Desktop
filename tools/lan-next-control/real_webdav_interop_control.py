@@ -27,6 +27,8 @@ TARGET = 'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStorePro
 XML = 'app/sharedCore/build/test-results/test/TEST-' + CLASS + '.xml'
 FIXTURE = 'fixtures/RealWebDavInteropSmokeTest.kt'
 SCRIPT = 'run-real-webdav-interop.sh'
+PROCESS_OWNER = 'real_webdav_process_owner.py'
+FORMAT = 2
 REQUEST = '.github/lan-next-real-webdav-interop-request.json'
 VERSION = 'v1.76.0'
 ARCHIVE = 'rclone-v1.76.0-linux-amd64.zip'
@@ -97,11 +99,11 @@ class RealWebDavControl:
     def expected_request(self):
         fixture = self.here / FIXTURE
         require(fixture.is_file() and not fixture.is_symlink(), 'CONTROL_FIXTURE_FILE')
-        return {'format': 1, 'sourceSha': SOURCE, 'fixtureSha256': self.common.fixture_hash(fixture)}
+        return {'format': FORMAT, 'sourceSha': SOURCE, 'fixtureSha256': self.common.fixture_hash(fixture)}
 
     def validate_request(self, value):
         require(isinstance(value, dict) and set(value) == {'format', 'sourceSha', 'fixtureSha256'} and
-                type(value.get('format')) is int and value['format'] == 1, 'REQUEST_FIELDS')
+                type(value.get('format')) is int and value['format'] == FORMAT, 'REQUEST_FIELDS')
         self.common.sha(value['sourceSha'], 40); self.common.sha(value['fixtureSha256'])
         require(value == self.expected_request(), 'FIXED_INTEROP_REQUEST')
         return value
@@ -125,7 +127,7 @@ class RealWebDavControl:
         require(self.git(self.control, 'status', '--porcelain', '--untracked-files=all') == '', 'CONTROL_NOT_CLEAN')
         require(self.canonical(Path(os.environ['GITHUB_WORKSPACE'])) == self.control, 'CONTROL_WORKSPACE')
         files = {}
-        for name in ('real_webdav_interop_control.py', SCRIPT, FIXTURE):
+        for name in ('real_webdav_interop_control.py', SCRIPT, FIXTURE, PROCESS_OWNER):
             path = self.here / name
             require(path.is_file() and not path.is_symlink(), 'CONTROL_INPUT_MISSING')
             files[name] = self.common.file_hash(path)
@@ -262,7 +264,7 @@ class RealWebDavControl:
         require(not (source / XML).exists() and not (source / XML).is_symlink(), 'PREEXISTING_JUNIT_EVIDENCE')
         result = {'kind': 'CCB_REAL_WEBDAV_INTEROP_EXECUTION', 'passed': False, 'sourceSha': request['sourceSha'],
             'control': binding, 'fixtureSha256': request['fixtureSha256'], 'scope': SCOPE,
-            'productionFilesChanged': [], 'realProviderOrAeadOrNativeProof': False}
+            'productionFilesChanged': [], 'realProviderOrAeadOrNativeProof': False, 'requestFormat': FORMAT}
         phase = 'cloud-runner'
         try:
             argv = ['bash', str(self.here / SCRIPT), str(source), str(output), request['sourceSha'], request['fixtureSha256']]
