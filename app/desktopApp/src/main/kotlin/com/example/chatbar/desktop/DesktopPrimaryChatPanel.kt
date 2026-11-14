@@ -1387,7 +1387,7 @@ internal fun DesktopSessionSettingsBody(
     DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value ->
         imageScope.launch { controller.setBackgroundOpacity(value) }
     }
-    StudioAction("Desktop 角色背景库", onClick = onBackgroundLibrary)
+    StudioAction("角色卡背景图库", onClick = onBackgroundLibrary)
     StudioAction("打开 Studio", onClick = onOpenStudio)
     PrimaryHeading("NovelAI 图片设置")
     PrimaryChoiceField("Prompt 设计模型", draft.imageModelId, state.modelChoices,
