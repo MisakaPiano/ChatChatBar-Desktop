@@ -55,6 +55,8 @@ class LanSyncGroupFileRecoveryUiControlTest {
     private var inputNodeCount = -1
     private var reopenBefore = "not-sampled"
     private var reopenAfter = "not-sampled"
+    private var checkboxGeometryBefore = "not-sampled"
+    private var checkboxGeometryAfter = "not-sampled"
     private val reopenVisibility = mutableListOf<Boolean>()
     private fun visibilityTrace() = synchronized(reopenVisibility) { reopenVisibility.joinToString(",") }
     private fun reopenSnapshot(coordinator: LanSyncGroupCoordinator,
@@ -73,6 +75,28 @@ class LanSyncGroupFileRecoveryUiControlTest {
             "visible=${recovery.state.value.visible},windowFocus=$focus,decorAttached=$attached," +
             "nodeClick=$click,ancestorClick=$ancestorClick"
     }
+    // Numeric geometry only; this reads no text, editable values, subtree dump, code or key.
+    private fun checkboxGeometry(launched: ActivityScenario<LanSyncActivity>): String = try {
+        var activityIme = "UNAVAILABLE"
+        launched.onActivity { activity ->
+            activity.window.decorView.rootWindowInsets?.let { insets ->
+                activityIme = if (insets.isVisible(android.view.WindowInsets.Type.ime())) "VISIBLE" else "HIDDEN"
+            }
+        }
+        val node = compose.onNodeWithContentDescription("已核对原设备组与新设备身份，并同意登记此设备").fetchSemanticsNode()
+        fun rect(value: androidx.compose.ui.geometry.Rect) = "${value.left},${value.top},${value.right},${value.bottom}"
+        val axis = androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange
+        val ancestors = generateSequence(node.parent) { it.parent }.take(6).mapIndexed { depth, parent ->
+            val range = if (parent.config.contains(axis)) parent.config[axis] else null
+            val scroll = range?.let { "${it.value()},${it.maxValue()},${it.reverseScrolling}" } ?: "none"
+            "depth=$depth,root=${parent.isRoot},clippedRoot=${rect(parent.boundsInRoot)},vertical=$scroll"
+        }.joinToString(";")
+        // Activity insets are labelled explicitly; they do not prove the separate Dialog window's IME state.
+        "activityIme=$activityIme,rootPos=${node.positionInRoot.x},${node.positionInRoot.y}," +
+            "windowPos=${node.positionInWindow.x},${node.positionInWindow.y},size=${node.size.width},${node.size.height}," +
+            "clippedRoot=${rect(node.boundsInRoot)},clippedWindow=${rect(node.boundsInWindow)},ancestors[$ancestors]"
+    } catch (failure: Throwable) { "UNAVAILABLE:${failure.javaClass.simpleName}" }
+
     @get:Rule val guardedCompose: TestRule = TestRule { base, description ->
         object : Statement() {
             override fun evaluate() {
@@ -88,7 +112,8 @@ class LanSyncGroupFileRecoveryUiControlTest {
         if (failure is SafeFailure || failure is DiagnosticFailure) return failure
         return SafeFailure("SYNTHETIC_FILE_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
             (observedState?.invoke()?.let { " OBSERVED[$it,nodes=$inputNodeCount]" } ?: "") +
-            " REOPEN_BEFORE[$reopenBefore] REOPEN_AFTER[$reopenAfter] VISIBLE_TRACE[${visibilityTrace()}]").also {
+            " REOPEN_BEFORE[$reopenBefore] REOPEN_AFTER[$reopenAfter] VISIBLE_TRACE[${visibilityTrace()}]" +
+            " CHECKBOX_GEOMETRY_BEFORE[$checkboxGeometryBefore] CHECKBOX_GEOMETRY_AFTER[$checkboxGeometryAfter]").also {
             // Keep original locations; do not retain a cause/message that may contain the code or UI tree.
             it.stackTrace = failure.stackTrace
         }
@@ -286,11 +311,13 @@ class LanSyncGroupFileRecoveryUiControlTest {
             check(recovery.state.value.error == null)
             check(checkNotNull(recovery.state.value.review).device == reviewed.device)
             phase = "second-review-compose-and-scroll-settle"
-            // StateFlow review readiness may precede composition and its clearSecrets LaunchedEffect.
+            // Keep the existing readiness checks; observe clipping without changing admission.
             compose.waitForIdle()
             val admissionCheckbox = compose.onNodeWithContentDescription("已核对原设备组与新设备身份，并同意登记此设备")
+            checkboxGeometryBefore = checkboxGeometry(launched)
             admissionCheckbox.performScrollTo()
             compose.waitForIdle()
+            checkboxGeometryAfter = checkboxGeometry(launched)
             phase = "second-review-checkbox-assert-off"
             admissionCheckbox.assertIsDisplayed().assertIsEnabled().assertIsOff()
             phase = "second-review-checkbox-physical-click"

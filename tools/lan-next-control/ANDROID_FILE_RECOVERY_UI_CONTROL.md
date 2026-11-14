@@ -87,3 +87,11 @@ second-review and consent phases, waits for actual Compose effects and scroll
 to settle, asserts displayed/enabled/Off, performs one physical click, waits for
 idle and still requires On. No polling/retry/semantic fallback/state-setting or
 Owner confirmation bypass is added. All later native/cold assertions are kept.
+
+The sixth original run43648377743 fails at displayed-before-Off, after the
+original scroll and idle. Enabled/Off/physical consent/On/native/cold were not
+reached. The next diagnostic reads numeric unclipped/clipped checkbox and at
+most six ancestor bounds/vertical ranges before and after that same scroll.
+Activity-window IME is explicitly labelled, not treated as Dialog IME proof.
+No extra scroll, wait, click, focus/IME change or consent bypass is introduced.
+The full displayed/enabled/Off/physicalClick/On/native/cold suffix is retained.
