@@ -73,7 +73,7 @@ class DesktopImageBatchOptionsTest {
         } finally { scene.close() }
     }
 
-    private suspend fun ImageComposeScene.frames() { repeat(12) { render().close(); delay(20) } }
+    private suspend fun ImageComposeScene.frames() { repeat(12) { render(System.nanoTime()).close(); delay(20) } }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
@@ -83,8 +83,9 @@ class DesktopImageBatchOptionsTest {
             config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true || children.any { it.matches(text) }
     private fun ImageComposeScene.action(text: String) = nodes().first { it.matches(text) && it.config.contains(SemanticsActions.OnClick) }
     private suspend fun ImageComposeScene.scroll(delta: Float) {
-        val node = nodes().first { it.config.contains(SemanticsActions.ScrollBy) &&
+        val node = nodes().filter { it.config.contains(SemanticsActions.ScrollBy) &&
             (it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)?.maxValue?.invoke() ?: 0f) > 0f }
+            .maxBy { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
         val range = node.config[SemanticsProperties.VerticalScrollAxisRange]
         val target = (range.value() + delta).coerceIn(0f, range.maxValue())
         node.config[SemanticsActions.ScrollBy].action!!.invoke(0f, target - range.value())
@@ -94,7 +95,7 @@ class DesktopImageBatchOptionsTest {
     private fun ImageComposeScene.capture(name: String) {
         System.getenv("CCB_IMAGE_BATCH_REVIEW_DIR")?.let { directory ->
             val file = Path.of(directory).resolve(name); Files.createDirectories(file.parent)
-            render().use { it.encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)!!.use { data -> Files.write(file, data.bytes) } }
+            render(System.nanoTime()).use { it.encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)!!.use { data -> Files.write(file, data.bytes) } }
         }
     }
 }
