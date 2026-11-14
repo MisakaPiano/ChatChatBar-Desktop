@@ -115,7 +115,7 @@ class ClientTest(unittest.TestCase):
             records = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file() and p.name != 'desktop-installer.exe'}
             request_count = len(repo.requests)
             cleaned = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
-            self.assertEqual(2, cleaned['removedCount'])
+            self.assertEqual(2, cleaned['removedCount'], cleaned)
             self.assertEqual(len(repo.payload) * 2, cleaned['removedBytes'])
             self.assertEqual(4, cleaned['retainedCount'])
             self.assertEqual(0, cleaned['unavailableCount'])
@@ -151,7 +151,7 @@ class ClientTest(unittest.TestCase):
                 finally:
                     if held is not None:
                         held.close()
-                self.assertEqual(1, result['removedCount'])
+                self.assertEqual(1, result['removedCount'], result)
                 self.assertGreaterEqual(result['unavailableCount'], 1)
                 self.assertEqual(before, file.read_bytes())
                 if refusal == 'hardlink':
@@ -168,7 +168,7 @@ class ClientTest(unittest.TestCase):
             stable.write_text(json.dumps({'signed': {'targets': {'desktop-installer.exe': {'hashes': {'sha256': ready[119]['sha256']}}}}}))
             original = stable.read_bytes()
             result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
-            self.assertEqual(2, result['removedCount']); self.assertFalse(Path(ready[119]['installer']).exists())
+            self.assertEqual(2, result['removedCount'], result); self.assertFalse(Path(ready[119]['installer']).exists())
             self.assertEqual(original, stable.read_bytes())
             stable.write_bytes(b'{invalid role}')
             before = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()}
@@ -204,7 +204,7 @@ class ClientTest(unittest.TestCase):
                 before = {Path(v['installer']): Path(v['installer']).read_bytes() for v in ready.values()}
                 result = client.cleanup_downloads(installed, cache, package=self.confirmed_package)
                 self.assertEqual(0, result['removedCount'])
-                self.assertEqual(6, result['retainedCount'])
+                self.assertEqual(6, result['retainedCount'], result)
                 self.assertTrue(all(p.read_bytes() == raw for p, raw in before.items()))
 
     def test_space_refusal_reports_the_actual_cache_and_counts_without_downloading_or_lowering_the_limit(self):

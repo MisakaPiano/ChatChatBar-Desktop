@@ -137,6 +137,9 @@ static class DesktopUpdateHandoff {
             return 0;
         } catch (Exception failure) {
             var code = failure is IOException ? failure.Message : "UPDATE_HANDOFF_FAILED";
+#if HANDOFF_TEST
+            Console.Error.WriteLine(code);
+#endif
 #if !HANDOFF_TEST
             if (args.Length > 0 && args[0] == "--complete") return 2;
             MessageBox.Show("更新未确认完成：" + code + "\r\n原资料保留。请从桌面入口打开；也可使用已下载的安装包重试。",
