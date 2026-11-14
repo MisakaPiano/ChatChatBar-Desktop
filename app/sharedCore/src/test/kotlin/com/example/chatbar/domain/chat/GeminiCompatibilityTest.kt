@@ -112,7 +112,12 @@ class GeminiCompatibilityTest {
         val standard = OpenAiChatRequestSerializer.serialize(input, model(), false)
         val experimental = OpenAiChatRequestSerializer.serialize(input, model(), false, experimentalApiMode = true)
         assertFalse(standard == experimental)
-        assertTrue(experimental.contains("inline-gemini"))
-        assertEquals(input, listOf(ChatApiMessage.text("system", "root"), ChatApiMessage.text("user", "question"), ChatApiMessage.text("system", "tail")))
+        val request = Json.parseToJsonElement(experimental).jsonObject
+        assertEquals("inline-gemini", request.getValue("model").jsonPrimitive.content)
+        val contextTool = request.getValue("tools").jsonArray.map { it.jsonObject.getValue("function").jsonObject }
+            .single { it.getValue("name").jsonPrimitive.content == "context" }
+        val context = Json.parseToJsonElement(contextTool.getValue("description").jsonPrimitive.content).jsonArray
+        assertEquals(listOf("user", "system"), context.map { it.jsonObject.getValue("role").jsonPrimitive.content })
+        assertEquals(listOf(JsonPrimitive("question"), JsonPrimitive("tail")), context.map { it.jsonObject.getValue("content") })
     }
 }
