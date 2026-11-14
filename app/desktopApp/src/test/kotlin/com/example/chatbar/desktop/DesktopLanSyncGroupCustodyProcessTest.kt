@@ -25,6 +25,7 @@ class DesktopLanSyncGroupCustodyProcessTest {
                 assertEquals(0, process.exitValue(), Files.readString(log).take(1000))
                 assertTrue(Files.readString(log).contains("GROUP_CUSTODY_${mode.uppercase()}_PASS"))
                 assertTrue(Files.readString(log).contains("ROOT_CREATION_LEDGER_${mode.uppercase()}_PASS"))
+                assertTrue(Files.readString(log).contains("MANAGEMENT_VAULT_${mode.uppercase()}_PASS"))
             } finally { if (process.isAlive) process.destroyForcibly().waitFor(5, TimeUnit.SECONDS) }
         }
     }
@@ -43,16 +44,26 @@ object DesktopLanSyncGroupCustodyChild {
         val creationRoot = root.resolve("creation"); val rootJournalPath = root.resolve("root-actions")
         if (writing) { Files.createDirectory(creationRoot); Files.createDirectory(rootJournalPath) }
         val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
-        val creation = SyncRootGroupCreation(creationRoot, certificate, recipient, protector::protect, protector::unprotect)
+        // Synthetic recovery code stays only in this disposable root, never in uploaded reports.
+        val admin = if (writing) SyncManagementSession.create() else SyncManagementSession.open(
+            Files.readString(root.resolve("synthetic-management-code.txt")), Files.readAllBytes(root.resolve("management-vault.bin")))
+        val adminCertificate = admin.ownerCertificate
+        check(SyncDeviceSignatures.decode(adminCertificate).fingerprint != identity.fingerprint)
+        val creation = SyncRootGroupCreation.managed(creationRoot, adminCertificate, admin.recipientPublicKey,
+            certificate, recipient, admin::protectJournal, admin::unprotectJournal)
         val creationOperation = if (writing) SyncStoreId.random().also {
             Files.writeString(root.resolve("creation-operation.txt"), it.value, StandardOpenOption.CREATE_NEW)
         } else SyncStoreId.parse(Files.readString(root.resolve("creation-operation.txt")))
         val created = if (writing) creation.create(SyncRootGroupCreateRequest(creationOperation, setOf("synthetic_records"), "a".repeat(64)),
-            SyncRootGroupCreateAdmission {}, identity::signSyncGroupPayload) else creation.resume(creationOperation) { error("SYNTHETIC_GENESIS_MUST_NOT_RESIGN") }
+            SyncRootGroupCreateAdmission {}, admin::signRootPayload) else creation.resume(creationOperation) { error("SYNTHETIC_GENESIS_MUST_NOT_RESIGN") }
+        if (writing) {
+            Files.write(root.resolve("management-vault.bin"), admin.seal(created.trust).bytes(), StandardOpenOption.CREATE_NEW)
+            Files.writeString(root.resolve("synthetic-management-code.txt"), admin.recoveryCode(), StandardOpenOption.CREATE_NEW)
+        } else check(admin.trust == created.trust)
         val group = created.trust.group
         if (!writing) check(group.value == Files.readString(root.resolve("group-id.txt")))
         val custody = SyncGroupCustody(groupRoot, group, recipient, protector::protect, protector::unprotect)
-        val rootJournal = SyncRootLedgerJournal(rootJournalPath, created.trust, certificate, protector::protect, protector::unprotect)
+        val rootJournal = SyncRootLedgerJournal(rootJournalPath, created.trust, adminCertificate, admin::protectJournal, admin::unprotectJournal)
         val content = "synthetic native protected group content".toByteArray(Charsets.US_ASCII)
         if (writing) {
             val initialLedger = created.enrollCreator(custody)
@@ -60,14 +71,15 @@ object DesktopLanSyncGroupCustodyChild {
             val parent = initialLedger.current()
             val rootRequest = SyncRootLedgerRequest(SyncStoreId.random(), parent.reference(), parent.members, parent.coveredTypes,
                 parent.acceptedHeads, true, "b".repeat(64))
-            val rootCommit = rootJournal.commit(rootRequest, custody::ledger, SyncRootLedgerAdmission {}, identity::signSyncGroupPayload)
+            val rootCommit = rootJournal.commit(rootRequest, custody::ledger, SyncRootLedgerAdmission {}, admin::signRootPayload)
             Files.writeString(root.resolve("root-operation.txt"), rootRequest.operation.value, StandardOpenOption.CREATE_NEW)
             val ledger = rootJournal.applyToCustody(rootCommit, custody)
             val key = custody.key(ledger.current().epoch); val trust = created.trust
             val member = ledger.current().members.getValue(identity.fingerprint)
-            val capsule = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), identity::signSyncGroupPayload)
+            val capsule = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), admin::signRootPayload)
             val opened = capsule.openTentative(trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, capsule.context.objectId)).admit(ledger)
             custody.rememberKey(opened)
+            admin.close(); check(!admin.isUnlocked)
             val authorRoot = Files.createDirectory(root.resolve("author"))
             val journal = SyncAuthorJournal(authorRoot, trust, member.certificate, protector::protect, protector::unprotect)
             journal.initializeNewEnrollment()
@@ -95,6 +107,7 @@ object DesktopLanSyncGroupCustodyChild {
             check(rootEntry.record.reference() == latest.reference())
             check(rootJournal.commit(rootEntry.request, custody::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_ROOT_MUST_NOT_REAPPROVE") },
                 { error("SYNTHETIC_ROOT_MUST_NOT_RESIGN") }).entry == rootEntry)
+            admin.close(); check(!admin.isUnlocked)
             val journal = SyncAuthorJournal(root.resolve("author"), ledger.trustAnchor,
                 Base64.getEncoder().encodeToString(identity.certificate.encoded), protector::protect, protector::unprotect)
             check(journal.state().committedSequence == 1L)
@@ -111,6 +124,7 @@ object DesktopLanSyncGroupCustodyChild {
             }
         }
         println("ROOT_CREATION_LEDGER_${args[1].uppercase()}_PASS")
+        println("MANAGEMENT_VAULT_${args[1].uppercase()}_PASS")
         println("GROUP_CUSTODY_${args[1].uppercase()}_PASS")
     }
 }

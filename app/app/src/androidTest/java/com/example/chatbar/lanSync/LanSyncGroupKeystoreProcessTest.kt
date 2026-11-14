@@ -30,6 +30,7 @@ class LanSyncGroupKeystoreProcessTest {
         pointer.toFile().writeText(root.toString(), Charsets.UTF_8)
         val phase = Phase(root, true)
         report("ROOT_CREATION_AND_LEDGER_SEED_PASS")
+        report("MANAGEMENT_VAULT_SEED_PASS")
         phase.card("synthetic-keystore-original")
         val view = phase.view
         val evidence = LanSyncGroupRecordEvidence(requireNotNull(view.history), requireNotNull(view.ledgerCheckpoint))
@@ -56,6 +57,7 @@ class LanSyncGroupKeystoreProcessTest {
         assertNotEquals(root.resolve("seed-pid.txt").toFile().readText(Charsets.UTF_8).toInt(), android.os.Process.myPid())
         val phase = Phase(root, false)
         report("ROOT_CREATION_AND_LEDGER_REOPEN_PASS")
+        report("MANAGEMENT_VAULT_REOPEN_PASS")
         val commit = phase.writer().resume(SyncStoreId.parse(root.resolve("source-operation.txt").toFile().readText(Charsets.UTF_8)))
         phase.observeOwn(commit); assertNotNull(phase.control().state().pendingTransaction)
         phase.card("synthetic-keystore-later-edit")
@@ -82,29 +84,38 @@ class LanSyncGroupKeystoreProcessTest {
         private val recipientCustody = SyncDeviceKeyCustody(directory("recipient"), identity.fingerprint, protection::protect, protection::unprotect)
         private val recipient = if (seed) recipientCustody.createIfAbsent() else recipientCustody.open(text("recipient-public.txt"))
         private val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
-        private val creation = SyncRootGroupCreation(directory("creation"), certificate, recipient, protection::protect, protection::unprotect)
+        // Artificial code is retained only inside the disposable cloud-emulator fixture, never reports.
+        private val admin = if (seed) SyncManagementSession.create() else SyncManagementSession.open(text("synthetic-management-code.txt"),
+            Files.readAllBytes(root.resolve("management-vault.bin")))
+        private val adminCertificate = admin.ownerCertificate
+        private val creation = SyncRootGroupCreation.managed(directory("creation"), adminCertificate, admin.recipientPublicKey,
+            certificate, recipient, admin::protectJournal, admin::unprotectJournal)
         private val creationOperation = if (seed) SyncStoreId.random().also { save("creation-operation.txt", it.value) }
             else SyncStoreId.parse(text("creation-operation.txt"))
         private val created = if (seed) creation.create(SyncRootGroupCreateRequest(creationOperation, LanSyncScope.schemas.keys, "a".repeat(64)),
-            SyncRootGroupCreateAdmission {}, identity::signSyncGroupPayload)
+            SyncRootGroupCreateAdmission {}, admin::signRootPayload)
             else creation.resume(creationOperation) { error("SYNTHETIC_GENESIS_MUST_NOT_RESIGN") }
         private val group = created.trust.group
         private val custody = SyncGroupCustody(directory("group"), group, recipient, protection::protect, protection::unprotect)
-        private val rootJournal = SyncRootLedgerJournal(directory("root-actions"), created.trust, certificate, protection::protect, protection::unprotect)
+        private val rootJournal = SyncRootLedgerJournal(directory("root-actions"), created.trust, adminCertificate, admin::protectJournal, admin::unprotectJournal)
         init {
+            check(SyncDeviceSignatures.decode(adminCertificate).fingerprint != identity.fingerprint)
             if (seed) {
+                Files.write(root.resolve("management-vault.bin"), admin.seal(created.trust).bytes())
+                save("synthetic-management-code.txt", admin.recoveryCode())
                 val initialLedger = created.enrollCreator(custody)
                 rootJournal.initializeNewEnrollment(initialLedger)
                 val parent = initialLedger.current()
                 val request = SyncRootLedgerRequest(SyncStoreId.random(), parent.reference(), parent.members, parent.coveredTypes,
                     parent.acceptedHeads, true, "b".repeat(64))
                 save("root-operation.txt", request.operation.value)
-                val commit = rootJournal.commit(request, custody::ledger, SyncRootLedgerAdmission {}, identity::signSyncGroupPayload)
+                val commit = rootJournal.commit(request, custody::ledger, SyncRootLedgerAdmission {}, admin::signRootPayload)
                 val ledger = rootJournal.applyToCustody(commit, custody); val key = custody.key(ledger.current().epoch)
-                val delivery = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), identity::signSyncGroupPayload)
+                val delivery = SyncGroupKeyDelivery.create(ledger, key, identity.fingerprint, SyncStoreId.random(), admin::signRootPayload)
                 custody.rememberKey(delivery.openTentative(created.trust, recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, delivery.context.objectId)).admit(ledger))
                 save("actor.txt", identity.fingerprint); save("recipient-public.txt", recipient.publicKey.encoded); save("group-id.txt", group.value)
             } else {
+                check(admin.trust == created.trust)
                 check(identity.fingerprint == text("actor.txt") && group.value == text("group-id.txt"))
                 val ledger = custody.ledger()
                 check(ledger.current().epoch != created.genesis.epoch && custody.key(created.genesis.epoch).keyCommitment() == created.genesis.keyCommitment)
@@ -114,6 +125,7 @@ class LanSyncGroupKeystoreProcessTest {
                 check(rootJournal.commit(entry.request, custody::ledger, SyncRootLedgerAdmission { error("SYNTHETIC_ROOT_MUST_NOT_REAPPROVE") },
                     { error("SYNTHETIC_ROOT_MUST_NOT_RESIGN") }).entry == entry)
             }
+            admin.close(); check(!admin.isUnlocked)
         }
         private val ledger = custody.ledger(); private val trust = ledger.trustAnchor
         private val key = custody.key(ledger.current().epoch)

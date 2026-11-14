@@ -34,6 +34,9 @@ class SyncManagementVaultTest {
                 setOf("synthetic_records"), mapOf(SyncDeviceSignatures.decode(owner).fingerprint to SyncGroupMember(owner, recipient.encoded)), emptySet(), "unsigned")
             val signature = Base64.getEncoder().encodeToString(recovered.signRootPayload(row.signingBytes()))
             assertTrue(SyncDeviceSignatures.decode(owner).verifies(row.signingBytes(), signature))
+            assertEquals("SYNC_MANAGEMENT_SIGNATURE_DOMAIN", assertFailsWith<IllegalArgumentException> {
+                recovered.signRootPayload(("CCB-SYNC-VERSION-SIGNATURE/1\n" + "a".repeat(64)).toByteArray())
+            }.message)
         } finally { recovered.close() }
     }
 

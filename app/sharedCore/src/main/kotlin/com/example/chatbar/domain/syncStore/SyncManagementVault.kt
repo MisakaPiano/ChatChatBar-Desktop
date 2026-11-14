@@ -49,7 +49,12 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
         checkOpen(); val bound = requireNotNull(context) { "SYNC_MANAGEMENT_GROUP_NOT_BOUND" }
         SyncGroupTrust(bound.group, bound.genesis, Base64.getEncoder().encodeToString(requireNotNull(identity).certificate.encoded))
     }
-    fun signRootPayload(payload: ByteArray): ByteArray = synchronized(this) { checkOpen(); requireNotNull(identity).signSyncGroupPayload(payload) }
+    fun signRootPayload(payload: ByteArray): ByteArray = synchronized(this) {
+        checkOpen()
+        require(payload.size <= 128 && String(payload, Charsets.US_ASCII).matches(
+            Regex("CCB-SYNC-(DEVICE-LEDGER|KEY-DELIVERY|LEDGER-NOTICE)-SIGNATURE/1\n[a-f0-9]{64}"))) { "SYNC_MANAGEMENT_SIGNATURE_DOMAIN" }
+        requireNotNull(identity).signSyncGroupPayload(payload)
+    }
 
     /** Bind only a new matching fixed-owner group; no existing owner pin is rewritten. */
     fun seal(trust: SyncGroupTrust): SyncManagementVaultBlob = synchronized(this) {
