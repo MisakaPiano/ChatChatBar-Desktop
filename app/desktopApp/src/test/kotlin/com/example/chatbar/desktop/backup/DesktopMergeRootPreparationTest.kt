@@ -156,7 +156,7 @@ class DesktopMergeRootPreparationTest {
                 assertFalse(card.characters.single().desktopEnabled)
                 assertEquals(phonePersonId, card.characters.single().id)
                 for ((index, name) in listOf("one", "two").withIndex()) assertContentEquals(
-                    Files.readAllBytes(phone.files.getValue("images/$name.png")), Files.readAllBytes(Path.of(card.chatBackgroundImages[index])))
+                    Files.readAllBytes(phone.files.getValue("images/$name.png")), Files.readAllBytes(root.resolve(card.chatBackgroundImages[index])))
                 val slotId = result.plan.identity.value("save_slots", "slot")
                 val slot = backupJson.decodeFromString(SaveSlot.serializer(), Files.readString(root.resolve("entities/save_slots/$slotId.json")))
                 assertEquals(phoneSessionId, slot.sessionId)

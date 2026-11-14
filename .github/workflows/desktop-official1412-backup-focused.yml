@@ -21,6 +21,26 @@ jobs:
         with:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare owned canonical fixture directories
+        shell: pwsh
+        run: |
+          $review = Join-Path $env:RUNNER_TEMP 'ccb-code91-path-review'
+          $canonical = Join-Path $env:RUNNER_TEMP 'ccb-code91-canonical-temp'
+          New-Item -ItemType Directory -Path $review,$canonical | Out-Null
+          "CCB_ARCHIVE_PATH_REVIEW_DIR=$review" >> $env:GITHUB_ENV
+          "CCB_ARCHIVE_CANONICAL_TEMP=$canonical" >> $env:GITHUB_ENV
+      - name: Observe actual native temporary path prerequisite before changing test environment
+        working-directory: app
+        run: .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.backup.DesktopArchiveTempIdentityTest' --no-daemon --stacktrace
+      - name: Retain prerequisite original and use only proven canonical fixture path
+        shell: pwsh
+        run: |
+          $review = $env:CCB_ARCHIVE_PATH_REVIEW_DIR
+          Copy-Item -LiteralPath 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.backup.DesktopArchiveTempIdentityTest.xml' -Destination (Join-Path $review 'prerequisite-original.xml')
+          $proof = Get-Content -LiteralPath (Join-Path $review 'temp-path-native-proof.json') -Raw | ConvertFrom-Json
+          if (-not $proof.canonicalReadPassed) { throw 'CANONICAL_FIXTURE_NATIVE_READ_FAILED' }
+          if (-not $proof.rawReadPassed -and ($proof.sameCanonicalName -or $proof.rawRefusalCode -ne 'UNSAFE_PATH')) { throw 'UNEXPLAINED_ORIGINAL_TEMP_FAILURE' }
+          "JAVA_TOOL_OPTIONS=-Djava.io.tmpdir=$($env:CCB_ARCHIVE_CANONICAL_TEMP)" >> $env:GITHUB_ENV
       - name: Verify version aliases nested slots resource mapping and real isolated merge
         working-directory: app
         run: >-
@@ -48,3 +68,4 @@ jobs:
           path: |
             app/sharedCore/build/test-results/test/
             app/desktopApp/build/test-results/test/
+            ${{ runner.temp }}/ccb-code91-path-review/

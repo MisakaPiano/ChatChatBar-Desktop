@@ -81,7 +81,8 @@ class DesktopOfficial1412BackupTest {
                         assertEquals(2, gallery.size)
                         assertEquals(gallery.last(), card.getValue("chatBackground").jsonPrimitive.content)
                         for ((index, name) in listOf("images/one.png", "images/two.png").withIndex()) {
-                            val relative = target.relativize(java.nio.file.Path.of(gallery[index])).toString().replace('\\', '/')
+                            assertFalse(java.nio.file.Path.of(gallery[index]).isAbsolute)
+                            val relative = gallery[index].replace('\\', '/')
                             assertContentEquals(input.getValue(name), Files.readAllBytes(mapped.files.getValue(relative)))
                         }
                         val mappedSlot = backupJson.decodeFromString(SaveSlot.serializer(), Files.readString(mapped.files.getValue("entities/save_slots/slot.json")))
