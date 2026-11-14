@@ -12,7 +12,7 @@ class ActionOptionPolicyTest {
         ChatMessage("m", "s", role, text, createdAt = 1, updatedAt = 1)
 
     @Test fun explicitChoicesRecognizeSupportedWrappersWithoutOrdinaryLists() {
-        for (wrapped in listOf(options, "---\n$options\n---", "————————\n$options\n————————", "```text\n$options\n```")) {
+        for (wrapped in listOf(options, "---\n$options\n---", "————————\n$options\n————————", "```text\n$options\n```", "---\n[选项]()\n1. 靠近窗边\n2. 留在原地\n---")) {
             assertEquals(listOf("靠近窗边", "留在原地"), ActionOptionPolicy.choices(wrapped))
             assertEquals("", ActionOptionPolicy.strip(wrapped))
         }

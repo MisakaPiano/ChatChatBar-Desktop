@@ -105,4 +105,4 @@ Do not move behavior between these owners without tracing every caller and test.
 - Do not accept preview-only evidence for a request-delivery bug.
 - Do not change source-turn grouping without checking direct context, RAG, and long-term memory together.
 
-- `ActionOptionPolicy` projects explicitly headed numbered action recommendations out of assistant history in both zones and out of the selected image anchor; raw messages remain untouched. USER text is never stripped. New RAG/index and memory model-facing bodies share this projection, without forcing a historical rebuild or changing stored summaries. Option buttons insert full text into the draft rather than sending a numeric command.
+- `ActionOptionPolicy` projects explicitly headed numbered action recommendations out of assistant history in both zones and out of the selected image anchor; raw messages remain untouched. USER text is never stripped. New RAG/index and memory model-facing bodies share this projection, without adding a forced rebuild job or rewriting stored summaries directly. Option buttons insert full text into the draft rather than sending a numeric command.

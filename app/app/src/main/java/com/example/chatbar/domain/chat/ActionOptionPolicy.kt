@@ -5,9 +5,11 @@ object ActionOptionPolicy {
     data class Block(val start: Int, val endExclusive: Int, val choices: List<String>)
     data class Insertion(val text: String, val cursor: Int)
     private val number = Regex("^\\s*(?:\\*\\*)?([1-9][0-9]*)[.、)）]\\s*(?:\\*\\*)?(.+?)\\s*$")
-    private fun heading(text: String): Boolean = text.trim()
-        .trim('#', '*', ' ', '[', ']', '【', '】', ':', '：').lowercase() in
-        setOf("行动选项", "可选行动", "行动选择", "action choices", "action options")
+    private val headingPattern = Regex(
+        "^[\p{P}\p{S}\s]*(行动选项|可选行动|行动选择|选项|action choices|action options)[\p{P}\p{S}\s]*$",
+        RegexOption.IGNORE_CASE
+    )
+    private fun heading(text: String): Boolean = headingPattern.matches(text.trim())
 
     private fun parse(text: String): Block? {
         val lines = Regex("[^\\n]*(?:\\n|$)").findAll(text).filter { it.value.isNotEmpty() }.toList()
