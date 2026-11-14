@@ -15,6 +15,12 @@ object SafeBatchReviewFiles {
         val file = File(File(context.getExternalFilesDir(null), "safe-batch-review").also { it.mkdirs() }, name)
         file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
         retain(context, file)
+        val metrics = context.resources.displayMetrics
+        val info = File(context.getExternalFilesDir(null), "$name.display.json")
+        info.writeText(org.json.JSONObject().put("widthPixels", metrics.widthPixels)
+            .put("heightPixels", metrics.heightPixels).put("densityDpi", metrics.densityDpi)
+            .put("screenshotWidth", bitmap.width).put("screenshotHeight", bitmap.height).toString())
+        retain(context, info)
     }
     fun retain(context: Context, file: File) {
         check(android.os.Build.VERSION.SDK_INT >= 29)
