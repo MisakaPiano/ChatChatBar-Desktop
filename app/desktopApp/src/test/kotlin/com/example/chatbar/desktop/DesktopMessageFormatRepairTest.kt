@@ -436,7 +436,7 @@ class DesktopMessageFormatRepairTest {
                 else {
                     assertEquals(before.copy(formatRepairNotice = saved.formatRepairNotice, updatedAt = saved.updatedAt), saved)
                     assertEquals(MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, before.displayContent,
-                        errorMessage = result.code), saved.formatRepairNotice)
+                        errorMessage = result.code, versionId = "b"), saved.formatRepairNotice)
                 }
             }
             assertEquals(0, f.requests.get())

@@ -1,4 +1,4 @@
-name: Desktop Moment missing time and original backup custody
+name: Desktop repair identity and Moment original backup custody
 on:
   push:
     branches: [codex/desktop-moment-time-custody-20261115]
@@ -30,10 +30,11 @@ jobs:
           if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
           "TEMP=$buffer" >> $env:GITHUB_ENV
           "TMP=$buffer" >> $env:GITHUB_ENV
-      - name: Verify missing-time UI and both source spellings through authenticated restore
+      - name: Verify repair identity regression missing-time UI and authenticated restore
         working-directory: app
         run: >-
           .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopMessageFormatRepairTest'
           --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsPanelTest'
           --tests 'com.example.chatbar.desktop.backup.DesktopMomentVersionBackupTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
