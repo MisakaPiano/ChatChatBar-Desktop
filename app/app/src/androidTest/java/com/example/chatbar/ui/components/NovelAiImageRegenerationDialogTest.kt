@@ -160,10 +160,10 @@ class NovelAiImageRegenerationDialogTest {
         composeTestRule.onNodeWithText("方图（1:1，1024×1024）").assertIsDisplayed()
     }
 
-    /** Use bounded physical drags and unclipped geometry so a fling cannot overshoot forever. */
+    /** Scroll the outer editor explicitly; text fields have their own inner drag/scroll area. */
     private fun scrollUntilVisible(target: SemanticsNodeInteraction) {
         val scroll = composeTestRule.onNode(hasScrollAction() and hasAnyDescendant(hasText("添加角色")))
-        repeat(24) {
+        repeat(12) {
             composeTestRule.waitForIdle()
             val bounds = target.fetchSemanticsNode().boundsInRoot
             if (bounds.width > 0f && bounds.height > 0f) {
@@ -171,13 +171,11 @@ class NovelAiImageRegenerationDialogTest {
                 return
             }
             val item = target.getUnclippedBoundsInRoot()
-            val viewport = scroll.getUnclippedBoundsInRoot()
-            val upwards = item.top >= viewport.bottom
-            scroll.performTouchInput {
-                val start = center.copy(y = height * if (upwards) 0.7f else 0.3f)
-                val end = center.copy(y = height * if (upwards) 0.3f else 0.7f)
-                swipe(start, end, durationMillis = 800)
-            }
+            // Unclipped scroll-node geometry includes content overflow, so use its clipped viewport.
+            val viewport = scroll.fetchSemanticsNode().boundsInRoot
+            val density = composeTestRule.activity.resources.displayMetrics.density
+            val delta = item.top.value * density - (viewport.top + viewport.height * 0.35f)
+            scroll.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, delta) }
         }
         recordGeometry("failed-scroll-target", target)
         target.assertIsDisplayed()
