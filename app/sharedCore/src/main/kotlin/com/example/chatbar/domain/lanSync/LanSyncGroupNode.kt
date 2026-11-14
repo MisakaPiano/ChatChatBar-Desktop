@@ -149,7 +149,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     /** Freeze admission only; potentially long ciphertext/resource preparation stays outside this mutex. */
     internal suspend fun targetPublication(directory: Path, target: SyncDeliveryTarget,
         vault: SyncManagementVaultContext, vaultDescriptor: CiphertextDescriptor,
-        recoverNative: Boolean = true): LanSyncGroupTargetPublication {
+        recoverNative: Boolean = true, prepare: Boolean = true): LanSyncGroupTargetPublication {
         val export = serialized {
             // Export never applies/recovers native plans. Shutdown callers additionally require a
             // settled source-only boundary after their final writer/source sealing has completed.
@@ -163,7 +163,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         }
         return withContext(Dispatchers.IO) {
             val publication = LanSyncGroupTargetPublication(directory, target, export)
-            publication.prepare()
+            if (prepare) publication.prepare()
             publication
         }
     }

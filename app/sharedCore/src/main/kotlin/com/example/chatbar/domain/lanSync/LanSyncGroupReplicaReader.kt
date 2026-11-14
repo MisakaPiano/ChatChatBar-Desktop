@@ -19,11 +19,33 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
     private val failedRoute: (String, Exception) -> Unit) : CiphertextStore {
     class Route(val id: String, val store: CiphertextStore) { override fun toString() = "GroupReadRoute(REDACTED)" }
     @Volatile private var routes: List<Route> = emptyList()
+    private val routeOwners = linkedMapOf<String, List<Route>>()
     init { Files.createDirectories(work); lanSyncSafe(work, true) }
     private val commits = SyncCiphertextCandidates(candidateRoot, local)
     private val listingId = SyncStoreId.random().value
     @Serializable private data class Incoming(val key: CiphertextObjectKey, val descriptor: CiphertextDescriptor)
-    fun routes(value: List<Route>) { require(value.map { it.id }.toSet().size == value.size); routes = value.toList() }
+    /** Compatibility replacement of every route. App workers use the owned overload below. */
+    @Synchronized fun routes(value: List<Route>) {
+        require(value.map { it.id }.toSet().size == value.size)
+        routeOwners.clear()
+        routeOwners["single"] = value.toList()
+        routes = value.toList()
+    }
+    /** Independent workers replace only their own routes, without holding a lock during I/O. */
+    @Synchronized fun routes(owner: String, value: List<Route>) {
+        require(owner.matches(Regex("[a-z]{1,32}")) && value.map { it.id }.toSet().size == value.size)
+        val next = routeOwners.filterKeys { it != owner }.values.flatten() + value
+        require(next.map { it.id }.toSet().size == next.size) { "SYNC_GROUP_REPLICA_ROUTE_DUPLICATED" }
+        routeOwners[owner] = value.toList()
+        routes = orderedRoutes()
+    }
+    @Synchronized fun removeRoutes(owner: String) {
+        routeOwners.remove(owner)
+        routes = orderedRoutes()
+    }
+    private fun orderedRoutes(): List<Route> = routeOwners.entries.sortedBy {
+        when (it.key) { "nearby" -> 0; "cloud" -> 2; else -> 1 }
+    }.flatMap { it.value }
     /** Local inspection never waits on a route, including when a referenced ciphertext is absent. */
     fun cachedOnly(): CiphertextStore = object : CiphertextStore {
         override val capabilities get() = this@LanSyncGroupReplicaReader.capabilities
@@ -158,12 +180,12 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
         return CommitPage(rows, if (remaining.size > rows.size) CommitCursor(prefix + position(rows.last())) else null)
     }
     /** Discovery still names the actual source route; all retained bytes use the same immutable cache. */
-    fun discoveryFrom(route: CiphertextStore): CiphertextStore = object : CiphertextStore by this {
+    fun discoveryFrom(route: CiphertextStore, routeId: String = "DISCOVERY"): CiphertextStore = object : CiphertextStore by this {
         override fun listCommits(cursor: CommitCursor?, pageSize: Int) = route.listCommits(cursor, pageSize)
         override fun metadata(key: CiphertextObjectKey) = route.metadata(key)
         override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? =
             if (key.kind == CiphertextObjectKind.COMMIT) readCommit(key, destination, expected,
-                listOf(Route("DISCOVERY", route)) + routes.filter { it.store !== route })
+                listOf(Route(routeId, route)) + routes.filter { it.store !== route })
             else this@LanSyncGroupReplicaReader.readTo(key, destination, expected)
     }
     companion object { private val incomingLocks = java.util.concurrent.ConcurrentHashMap<Path, Any>() }

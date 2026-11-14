@@ -42,8 +42,8 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     fun encryptedManagementBackup() = lanSyncReadManagementBackup(reader, vault, vaultDescriptor)
     /** Uses only this profile's fixed opaque vault and Node's actual admitted history. No admin unlock. */
     suspend fun targetPublication(directory: Path, target: SyncDeliveryTarget,
-        recoverNative: Boolean = true): LanSyncGroupTargetPublication =
-        node.targetPublication(directory, target, vault, vaultDescriptor, recoverNative)
+        recoverNative: Boolean = true, prepare: Boolean = true): LanSyncGroupTargetPublication =
+        node.targetPublication(directory, target, vault, vaultDescriptor, recoverNative, prepare)
     suspend fun invitation(storePort: Int): LanSyncGroupInvitation {
         val inspected = node.inspect(); val plan = requireNotNull(inspected.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
         require(plan.before.hashes().all { (unit, hash) -> inspected.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }

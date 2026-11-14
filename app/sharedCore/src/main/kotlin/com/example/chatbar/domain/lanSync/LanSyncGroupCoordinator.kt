@@ -19,7 +19,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val enrollment: () -> LanSyncGroupEnrollment, private val joining: () -> LanSyncGroupJoining,
     private val network: LanSyncNetwork = LanSyncNetwork.Local, private val deviceName: String,
     private val beforeSetup: suspend () -> Unit = {},
-    private val sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
+    private val sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false,
+    private val cloudWorkAllowed: () -> Boolean = { true },
+    private val cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val admission = Mutex()
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
@@ -40,6 +42,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val cloudAdmission = Mutex()
     private val cloudGeneration = java.util.concurrent.atomic.AtomicLong()
     private val cloudJobs = mutableSetOf<Job>()
+    @Volatile private var cloudRuntime: LanSyncGroupCloudRuntime? = null
+    private var cloudWorker: Job? = null
+    private val cloudWake = Channel<Unit>(Channel.CONFLATED)
     private val imageGeneration = java.util.concurrent.atomic.AtomicLong()
     private val imageAdmission = Semaphore(1)
     @Volatile private var imageContext: LanSyncGroupFrozenImageContext? = null
@@ -115,9 +120,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (before != 0L && now - before < 3_000_000_000L) return
         if (!foregroundWake.compareAndSet(before, now)) return
         if (access == null) open()
-        requestLocalCheck(); nearbyWake.trySend(Unit)
+        requestLocalCheck(); nearbyWake.trySend(Unit); cloudWake.trySend(Unit)
     }
-    fun onNetworkAvailable() { onForeground(); if (!closed && !paused && hasExistingEvidence()) nearbyWake.trySend(Unit) }
+    fun onNetworkAvailable() {
+        onForeground()
+        if (!closed && !paused && hasExistingEvidence()) { nearbyWake.trySend(Unit); cloudWake.trySend(Unit) }
+    }
+    /** Platform timeout/lost protection cancels only this owner's cloud calls, preserving all queues. */
+    fun cancelCloudWork() { cloudRuntime?.pause() }
 
     private fun founder() = founder ?: enrollment().also { founder = it }
     private fun member() = member ?: joining().also { member = it }
@@ -360,7 +370,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             if (closed) return
             closeCloudSettings()
             mutableCloudSettings.update { it.copy(visible = true,
-                notice = "连接设置仅保存在此设备，网盘送达功能尚未启用。") }
+                notice = "新连接默认停止。启用后将核对加密资料，送达记录按连接分别保留。") }
         }
         refreshCloudSettings()
     }
@@ -380,13 +390,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
     }
     override fun setCloudRouteEnabled(id: SyncStoreId, enabled: Boolean) = cloudAction("更新网盘连接") { catalog ->
-        // A stored configuration is not a writable provider or a completed target publication.
-        require(!enabled) { "SYNC_GROUP_CLOUD_DELIVERY_NOT_AVAILABLE" }
-        catalog.setEnabled(id, false)
-        "此连接已停止；远端文件、本机原件和待传队列均保留。"
+        require(cloudRuntime != null) { "SYNC_GROUP_CLOUD_DELIVERY_NOT_AVAILABLE" }
+        catalog.setEnabled(id, enabled)
+        cancelCloudWork(); cloudWake.trySend(Unit)
+        if (enabled) "此连接已启用，等待核对加密资料；这不代表已经送达。"
+        else "此连接已停止；远端文件、本机原件和待传队列均保留。"
     }
     override fun removeCloudRoute(id: SyncStoreId) = cloudAction("移除本机网盘设置") { catalog ->
         catalog.remove(id)
+        cancelCloudWork(); cloudWake.trySend(Unit)
         "已移除此设备的连接设置；远端文件、本机原件和待传队列均保留。"
     }
     private fun cloudAction(label: String, cleanup: () -> Unit = {}, work: (LanSyncGroupCloudRoutes) -> String?) {
@@ -409,11 +421,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                         val notice = work(catalog)
                         Triple(catalog.rows(), notice, catalog.revision.value)
                     }
-                    update { it.copy(rows = result.first, progress = emptyMap(), canEnable = false,
-                        notice = result.second ?: "连接设置仅保存在此设备，网盘送达功能尚未启用。", revision = result.third) }
+                    update { it.copy(rows = result.first, canEnable = cloudRuntime != null,
+                        notice = result.second ?: "送达记录只对应本设备的这条连接，其他目标仍单独核对。", revision = result.third) }
                     synchronized(lifecycle) {
                         if (current()) mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus(
-                            if (result.first.isEmpty()) "此设备未配置网盘" else "已保存 ${result.first.size} 个本机连接；网盘送达尚未启用")) }
+                            if (result.first.isEmpty()) "此设备未配置网盘" else if (result.first.none { it.enabled }) "本机连接均已停止，待传队列已保留"
+                            else "已有连接启用，送达记录按目标分别核对", it.cloud.lastSuccessAt)) }
                     }
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
@@ -572,8 +585,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         synchronized(lifecycle) {
         check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
         if (access == null) {
-            opened.routeFailure = { _, error -> failure("近端读取", error) }
+            opened.routeFailure = { route, error -> if (!route.startsWith("cloud:")) failure("近端读取", error) }
             access = opened
+            cloudRuntime = LanSyncGroupCloudRuntime(opened, cloudWorkAllowed, ::requestLocalCheck, ::cloudProgress)
             metadataStamp = null
         }
         val current = requireNotNull(access)
@@ -629,6 +643,16 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 try { pullNearby() } catch (error: Exception) { failure("近端同步", error) }
             }
         }
+        cloudWorker = scope.launch {
+            for (ignored in cloudWake) {
+                if (closed || paused || access == null) continue
+                try { runCloudCycle() }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (failure: Exception) {
+                    mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus(cloudFailureText(failure), it.cloud.lastSuccessAt)) }
+                }
+            }
+        }
         loop = scope.launch {
             while (isActive) {
                 delay(10_000)
@@ -641,10 +665,37 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     if (latestSourceRevision != handledSourceRevision || localRequests.get() != handledLocalRequest ||
                         System.nanoTime() - lastSourceScan >= 60_000_000_000L) requestLocalCheck()
                     nearbyWake.trySend(Unit)
+                    cloudWake.trySend(Unit)
                 }
             }
         }
-        localWake.trySend(Unit); nearbyWake.trySend(Unit)
+        localWake.trySend(Unit); nearbyWake.trySend(Unit); cloudWake.trySend(Unit)
+    }
+    private fun cloudProgress(progress: Map<SyncStoreId, LanSyncGroupCloudRouteProgress>) {
+        mutableCloudSettings.update { it.copy(progress = progress) }
+        val completed = progress.values.filter { it.selectionObserved && it.lastObservedAt != null }
+        mutableState.update { state -> state.copy(cloud = LanSyncGroupRouteStatus(
+            if (progress.isEmpty()) "此设备没有启用的网盘连接"
+            else if (completed.size == progress.size) "已核对 ${completed.size} 个目标的所选密文；设备组仍按当前状态检查"
+            else "网盘待核对 ${progress.size - completed.size} 个目标，已完成记录与待传队列均保留",
+            completed.mapNotNull { it.lastObservedAt }.minOrNull() ?: state.cloud.lastSuccessAt)) }
+    }
+    private fun cloudFailureText(failure: Exception) = when (failure.message) {
+        "SYNC_GROUP_CLOUD_BACKGROUND_FOREGROUND_REQUIRED" -> "网盘等待切回应用后继续，待传队列已保留"
+        "SYNC_GROUP_CLOUD_BACKGROUND_TIME_LIMIT" -> "网盘已达到系统后台时限，待传队列已保留，等待恢复"
+        "SYNC_GROUP_CLOUD_BACKGROUND_STOP_PENDING" -> "上一批网盘传输仍在停止，待传队列已保留"
+        "SYNC_GROUP_CLOUD_BACKGROUND_START_FAILED", "SYNC_GROUP_CLOUD_BACKGROUND_PROMOTION_FAILED",
+        "SYNC_GROUP_CLOUD_BACKGROUND_PROMOTION_TIMEOUT" -> "系统尚未允许本批网盘后台传输，请切回应用检查；待传队列已保留"
+        else -> "网盘核对未完成，待传队列已保留"
+    }
+    private suspend fun runCloudCycle(shutdown: Boolean = false): Boolean {
+        val current = access ?: return true
+        val runtime = cloudRuntime ?: return true
+        val enabled = runInterruptible(Dispatchers.IO) { current.cloudRoutes().rows().any { it.enabled } }
+        if (!enabled) return true
+        val completed = cloudWork { runtime.cycle(recoverNative = !shutdown, outgoingOnly = shutdown) }
+        if (!completed) mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus("网盘核对尚未完成，待传队列已保留", it.cloud.lastSuccessAt)) }
+        return completed
     }
     private suspend fun discover(node: LanSyncGroupNode, store: CiphertextStore) {
         var cursor: CommitCursor? = null
@@ -662,7 +713,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 discovery?.find(id)?.let { peer -> routes += LanSyncGroupReplicaReader.Route(id, requireNotNull(transport).remote(peer)) }
             } catch (error: Exception) { failure("发现设备", error) }
         }
-        current.reader.routes(routes)
+        current.reader.routes("nearby", routes)
         for (route in routes) try {
             discover(current.node, current.reader.discoveryFrom(route.store))
             mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("已读取近端加密索引；不代表对端发布完成")) }
@@ -721,10 +772,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         if (safe.isNotEmpty()) current.node.commit(inspected.review(safe), recoverNative = !shutdown)
         // Cold operations may span old epochs. upload resumes/rekeys EACH existing operation itself.
+        var outgoingChanged = safe.isNotEmpty()
         for (operation in current.node.sourceOperations()) {
             val before = current.node.receipt(operation, current.localTarget)
             current.node.upload(operation, current.replica, current.localTarget, recoverNative = !shutdown)
-            if (before == null) mutableState.update { it.copy(local = LanSyncGroupRouteStatus("已保全并发布到本机加密副本", System.currentTimeMillis())) }
+            if (before == null) {
+                outgoingChanged = true
+                mutableState.update { it.copy(local = LanSyncGroupRouteStatus("已保全并发布到本机加密副本", System.currentTimeMillis())) }
+            }
         }
         mutableView.value = current.node.inspectLocal(recoverNative = !shutdown)
         val invalid = mutableView.value?.reconciliation?.observations.orEmpty().count {
@@ -737,6 +792,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val held = mutableView.value?.plan?.units?.values?.count { it.stage !in setOf(LanSyncGroupNativeStage.UNCHANGED, LanSyncGroupNativeStage.READY_OBSERVATION) } ?: 0
         mutableState.update { it.copy(status = if (held > 0) "同步检查完成，$held 项需要审阅或补齐依赖" else "同步检查完成", local =
             if (it.local.lastSuccessAt == null) LanSyncGroupRouteStatus("本机加密副本已检查；历史回执时间未知") else it.local) }
+        if (!shutdown && outgoingChanged) cloudWake.trySend(Unit)
         return true
     }
     /** Recoverable user pause. Source revisions still invalidate in memory; no worker remains active. */
@@ -749,13 +805,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
             }
             lockManagement(); closeRecovery()
+            cancelCloudWork()
             drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()
-            loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin()
+            loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin(); cloudWorker?.cancelAndJoin()
+            cloudRuntime?.drain()
             admission.withLock { }
             discovery?.close(); transport?.closeAndDrain()
             discovery = null; transport = null; port = null
-            loop = null; nearbyWorker = null; localWorker = null
+            loop = null; nearbyWorker = null; localWorker = null; cloudWorker = null
             access?.reader?.routes(emptyList())
             mutableState.update { it.copy(paused = true, busy = false, status = "设备组同步已暂停，原件与待传队列已保留") }
         }
@@ -769,9 +827,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingSockets.forEach { runCatching { it.close() } }; pendingSockets.clear()
             }
             lockManagement(); closeRecovery()
+            cancelCloudWork()
             drainCloudSettings()
             discovery?.close(); transport?.closeAndDrain()
-            sourceObserver?.cancelAndJoin(); loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin()
+            sourceObserver?.cancelAndJoin(); loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin(); cloudWorker?.cancelAndJoin()
+            cloudRuntime?.drain()
             admission.withLock { }
             scope.coroutineContext[Job]?.cancelAndJoin()
             discovery?.close(); transport?.closeAndDrain()
@@ -781,11 +841,24 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     /** Called only after producer/draft drain through the platform's shutdown-only native gate. */
     suspend fun flushLocalAfterWriters(): Boolean {
         require(quiesced) { "SYNC_GROUP_SHUTDOWN_NOT_QUIESCED" }
-        return try { admission.withLock { cycle(force = true, shutdown = true) } }
+        return try {
+            val sealed = admission.withLock { cycle(force = true, shutdown = true) }
+            if (!sealed) false
+            else if (paused) true
+            else {
+                val outgoing = try { withTimeoutOrNull(15_000) { runCloudCycle(shutdown = true) } == true }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { false }
+                finally { cancelCloudWork(); cloudRuntime?.drain() }
+                if (!outgoing) mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus("本机资料已封存，网盘尚有待核对内容；队列将保留供下次继续", it.cloud.lastSuccessAt)) }
+                outgoing
+            }
+        }
         catch (error: Exception) { failure("最终本机封存", error); false }
     }
     suspend fun closeAndDrain() = withContext(NonCancellable) {
         quiesceAndDrain()
+        cloudRuntime?.close()
         founder?.close(); recoveredManagement?.close()
     }
 }

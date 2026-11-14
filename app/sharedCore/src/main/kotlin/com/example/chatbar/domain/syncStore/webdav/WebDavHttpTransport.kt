@@ -9,14 +9,17 @@ import java.io.InputStream
 import java.io.InterruptedIOException
 import java.security.MessageDigest
 import java.util.concurrent.CancellationException
+import java.util.concurrent.ConcurrentHashMap
 import javax.net.ssl.SSLException
 import okhttp3.Authenticator
+import okhttp3.Call
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
+import okio.BufferedSource
 
 enum class WebDavEndpointPolicy { HTTPS_ONLY, SYNTHETIC_LOOPBACK_HTTP }
 
@@ -31,9 +34,12 @@ class WebDavHttpTransport(
     client: OkHttpClient = ProxyAwareClient.builder().build(),
     private val authorization: () -> String? = { null },
     policy: WebDavEndpointPolicy = WebDavEndpointPolicy.HTTPS_ONLY,
-) {
+) : AutoCloseable {
     private val client = client.newBuilder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE).cache(null).build()
+    private val calls = ConcurrentHashMap.newKeySet<Call>()
+    private val callAdmission = Any()
+    @Volatile private var closed = false
 
     internal val endpointBinding: String = MessageDigest.getInstance("SHA-256")
         .digest(base.toString().toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it.toInt() and 255) }
@@ -70,16 +76,52 @@ class WebDavHttpTransport(
             .header("Accept-Encoding", "identity").header("Cache-Control", "no-cache, no-store")
             .apply { if (!auth.isNullOrEmpty()) header("Authorization", auth); headers.forEach { (name, value) -> header(name, value) } }
             .build()
+        val call = synchronized(callAdmission) {
+            if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
+            client.newCall(request).also { calls += it }
+        }
         return try {
-            client.newCall(request).execute()
+            val response = call.execute()
+            synchronized(callAdmission) {
+                if (closed) {
+                    response.close()
+                    throw InterruptedIOException("SYNC_DAV_CLOSED")
+                }
+            }
+            val body = response.body
+            if (body == null) {
+                calls -= call
+                response
+            } else response.newBuilder().body(object : ResponseBody() {
+                override fun contentType() = body.contentType()
+                override fun contentLength() = body.contentLength()
+                override fun source(): BufferedSource = body.source()
+                override fun close() { try { body.close() } finally { calls -= call } }
+            }).build()
         } catch (failure: CiphertextStoreException) {
+            calls -= call
             throw failure
         } catch (_: SSLException) {
+            calls -= call
             fail(CiphertextStoreFailure.PERMISSION)
         } catch (_: IOException) {
+            calls -= call
+            if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
             if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_DAV_INTERRUPTED")
             fail(CiphertextStoreFailure.TRANSIENT)
+        } catch (failure: Throwable) {
+            calls -= call
+            throw failure
         }
+    }
+
+    /** Cancel only calls owned by this route, including response streams awaiting their full GET. */
+    override fun close() {
+        val active = synchronized(callAdmission) {
+            closed = true
+            calls.toList()
+        }
+        active.forEach { it.cancel() }
     }
 
     /** Classify response-stream network failures without turning a private disk sink error into one. */

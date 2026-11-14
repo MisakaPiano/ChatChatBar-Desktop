@@ -39,6 +39,10 @@
             android:foregroundServiceType="connectedDevice"
             android:exported="false" />
         <service
+            android:name=".lanSync.LanSyncGroupCloudTransferService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+        <service
             android:name=".domain.service.StreamingForegroundService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />

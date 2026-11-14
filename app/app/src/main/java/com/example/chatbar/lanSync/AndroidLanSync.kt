@@ -112,6 +112,14 @@ class AndroidLanSync(private val app: ChatBarApp) {
     private var stopPromotedService: (() -> Unit)? = null
     private val mutableBackgroundState = MutableStateFlow(AndroidLanSyncBackgroundState())
     val backgroundState = mutableBackgroundState.asStateFlow()
+    private val cloudWorkOwner: Lazy<AndroidLanSyncCloudWork> = lazy {
+        AndroidLanSyncCloudWork(app,
+            canStart = { synchronized(hookLock) {
+                !hooksClosed && !userPaused && app.lanSyncStartupReady && applicationHooks?.isForeground == true
+            } },
+            canContinue = { !hooksClosed && !userPaused && app.lanSyncStartupReady },
+            cancelCloud = { if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.cancelCloudWork() })
+    }
 
     /** Install before the first Activity: late setup must still know that an Activity is resumed. */
     fun observeApplicationLifecycle(): Unit = synchronized(hookLock) {
@@ -155,7 +163,9 @@ class AndroidLanSync(private val app: ChatBarApp) {
         LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
             enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
             beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
-            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true).also { coordinator ->
+            sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true,
+            cloudWorkAllowed = { cloudWorkOwner.isInitialized() && cloudWorkOwner.value.allowed },
+            cloudWork = { work -> cloudWorkOwner.value.run(work) }).also { coordinator ->
                 hookObserver = app.applicationScope.launch {
                     coordinator.state.collect {
                         if (hasGroupEvidence()) ensureApplicationHooks()
@@ -220,6 +230,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
     /** User stop is sticky; ordinary Activity/network events never clear it. */
     fun pauseBackground() {
         userPaused = true
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.cancel()
         backgroundStatus(AndroidLanSyncBackgroundPhase.STOPPING)
         app.applicationScope.launch { backgroundAdmission.withLock { pauseBackgroundLocked() } }
     }
@@ -243,6 +254,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
         }
     }
     private suspend fun pauseCoordinatorSafely(): Boolean = try {
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.cancel()
         if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.pauseAndDrain()
         true
     } catch (_: Exception) {
@@ -321,6 +333,22 @@ class AndroidLanSync(private val app: ChatBarApp) {
             if (pauseCoordinatorSafely()) protectionLost = false
         } }
     }
+    internal fun cloudServicePromoted(generation: Long, stopAfterDrain: () -> Unit) {
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.promoted(generation, stopAfterDrain)
+        else stopAfterDrain()
+    }
+    internal fun cloudServicePromotionFailed(generation: Long) {
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.promotionFailed(generation)
+    }
+    internal fun cloudServiceTimedOut(generation: Long) {
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.timedOut(generation)
+    }
+    internal fun cloudServiceDestroyed(generation: Long, expectedStop: Boolean) {
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.destroyed(generation, expectedStop)
+    }
+    internal fun stopCloudFromNotification(generation: Long) {
+        if (cloudWorkOwner.isInitialized() && cloudWorkOwner.value.owns(generation)) pauseBackground()
+    }
     fun stopLegacy() { if (runtimeOwner.isInitialized()) runtimeOwner.value.stop() }
     private fun groupProfileRoot(): Path {
         val profile = root.resolve("group-profile")
@@ -349,6 +377,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
         val hooks = synchronized(hookLock) { hooksClosed = true; applicationHooks.also { applicationHooks = null } }
         hooks?.close()
         hookObserver?.cancelAndJoin()
+        if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.closeAndDrain()
         backgroundAdmission.withLock {
             if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
             if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()

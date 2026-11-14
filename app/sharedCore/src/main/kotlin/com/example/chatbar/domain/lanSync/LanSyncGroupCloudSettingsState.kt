@@ -3,7 +3,7 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.domain.syncStore.SyncStoreId
 
 data class LanSyncGroupCloudRouteProgress(val text: String, val lastObservedAt: Long? = null,
-    val pendingOperations: Int? = null) {
+    val pendingOperations: Int? = null, val selectionObserved: Boolean = false) {
     override fun toString() = "LanSyncGroupCloudRouteProgress(REDACTED)"
 }
 

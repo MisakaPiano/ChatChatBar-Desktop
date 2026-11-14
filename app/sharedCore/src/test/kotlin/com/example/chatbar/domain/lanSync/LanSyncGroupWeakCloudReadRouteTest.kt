@@ -98,6 +98,27 @@ class LanSyncGroupWeakCloudReadRouteTest {
         assertEquals(before, f.server.requestCount)
     }
 
+    @Test fun nearbyExactBytesTakePriorityEvenWhenTheCloudWorkerRegisteredFirst() = weakFixture { f ->
+        val bytes = ByteArray(90_007) { (it % 199).toByte() }
+        val selected = request(CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random()), bytes)
+        f.store("cloud-writer").appendAttempt(selected, bytes.inputStream())
+        val cloud = LanSyncGroupWeakCloudReadRoute(f.store("cloud-reader"))
+        val near = FileCiphertextStore(f.root.resolve("nearby"))
+        near.put(selected, bytes.inputStream())
+        val local = FileCiphertextStore(f.root.resolve("local"))
+        val reader = LanSyncGroupReplicaReader(local, f.root.resolve("replica")) { _, failure -> throw failure }
+        reader.routes("cloud", listOf(LanSyncGroupReplicaReader.Route("cloud:${f.route.value}", cloud)))
+        reader.routes("nearby", listOf(LanSyncGroupReplicaReader.Route("nearby-device", near)))
+        val before = f.server.requestCount
+        val output = ByteArrayOutputStream()
+        assertNotNull(reader.readTo(selected.key, output, selected.descriptor))
+        assertContentEquals(bytes, output.toByteArray())
+        assertEquals(before, f.server.requestCount, "Available exact LAN bytes must not spend a cloud GET")
+        reader.removeRoutes("cloud")
+        reader.removeRoutes("nearby")
+        assertEquals(CiphertextObjectMetadata(selected.key, selected.descriptor), local.metadata(selected.key))
+    }
+
     private fun request(key: CiphertextObjectKey, bytes: ByteArray) = CiphertextPutRequest(key, SyncStoreId.random(),
         CiphertextDescriptor(bytes.size.toLong(), CiphertextSha256.parse(MessageDigest.getInstance("SHA-256")
             .digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) })))
