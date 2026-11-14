@@ -6,6 +6,7 @@ on:
 jobs:
   focused:
     runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - name: Enable Windows long path checkout
         run: git config --global core.longpaths true

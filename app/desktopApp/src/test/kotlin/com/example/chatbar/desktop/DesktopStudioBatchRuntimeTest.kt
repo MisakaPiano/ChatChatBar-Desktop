@@ -26,6 +26,52 @@ class DesktopStudioBatchRuntimeTest {
     private fun plan(origin: ImageBatchOrigin) = ImageBatchRunPlan(4, 10,
         ImageBatchPacing(ImageBatchInterval.NONE), 100000, origin)
 
+    @Test fun `actual chat owner designs once then quotes each batch and cold repository retains ten linked images`() = runBlocking {
+        fixture { transport ->
+            val f = DesktopAssistantImageActionTest.Fixture(transport.client)
+            try {
+                f.initialize()
+                var quotes = 0
+                val c = f.c
+                val owner = DesktopChatImageRegeneration(c.chatRepository, c.characterRepository, c.settingsRepository,
+                    c.characterResourceStore, c.dataOperationCoordinator, c.desktopSecretStore, c.taskRuntime,
+                    c.novelAiInfrastructure, f.resolver, transport.client, accountForBatch = { quotes++; usage })
+                val task = owner.generateFromAssistant(f.source, DesktopChatImageRequirements("synthetic hint", "synthetic preference", false,
+                    plan(ImageBatchOrigin.CHAT_MANUAL)))
+                assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(task).status)
+                assertEquals(listOf(4, 4, 2), transport.counts.toList())
+                assertEquals(3, quotes)
+                assertEquals(2, f.design.requests.size, "Only the original plan and final design stages; no redesign per batch")
+                val messages = com.example.chatbar.data.repository.ChatRepository(JsonFileStorage(c.appDataRoot)).getMessages("session")
+                val images = messages.filter { it.generatedFromMessageId == f.source.id }
+                assertEquals(listOf(4, 4, 2), images.map { it.images.size })
+                assertEquals(f.source, messages.single { it.id == f.source.id })
+                assertEquals("saved-preference-fixture", c.chatRepository.getSession("session")!!.imagePromptPreference)
+                assertTrue(images.flatMap { it.images }.all { c.characterResourceStore.readBytes(it).isNotEmpty() })
+            } finally { f.close() }
+        }
+    }
+
+    @Test fun `actual chat source removed during fresh quote prevents every image request`() = runBlocking {
+        fixture { transport ->
+            val f = DesktopAssistantImageActionTest.Fixture(transport.client)
+            try {
+                f.initialize()
+                val c = f.c
+                val owner = DesktopChatImageRegeneration(c.chatRepository, c.characterRepository, c.settingsRepository,
+                    c.characterResourceStore, c.dataOperationCoordinator, c.desktopSecretStore, c.taskRuntime,
+                    c.novelAiInfrastructure, f.resolver, transport.client, accountForBatch = {
+                        c.chatRepository.deleteMessage(f.source.id, f.source.sessionId); usage
+                    })
+                val task = owner.generateFromAssistant(f.source, DesktopChatImageRequirements("", "", false, plan(ImageBatchOrigin.CHAT_MANUAL)))
+                assertEquals(DesktopTaskStatus.FAILED, f.terminal(task).status)
+                assertTrue(transport.counts.isEmpty())
+                assertTrue(c.chatRepository.getMessages("session").none { it.generatedFromMessageId == f.source.id })
+                assertFalse(owner.batchRunning(f.source.id))
+            } finally { f.close() }
+        }
+    }
+
     @Test fun `Studio confirmation drives three production HTTP batches and saved history reopens without restarting`() = runBlocking {
         fixture { f ->
             val c = f.app
