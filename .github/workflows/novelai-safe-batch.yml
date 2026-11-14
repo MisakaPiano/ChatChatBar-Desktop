@@ -42,7 +42,7 @@ jobs:
           CHATBAR_SUPABASE_ANON_KEY: 'synthetic-no-real-key'
         run: |
           chmod +x gradlew
-          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.ImageBatchRunPlanTest" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepositoryBatchImagesTest" :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.ImageBatchRunPlanTest" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepository*Test" :app:assembleDebug --no-daemon --stacktrace
       - name: Verify built APK identity and signature
         shell: python
         run: |

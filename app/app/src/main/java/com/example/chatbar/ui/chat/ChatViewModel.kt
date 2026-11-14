@@ -1307,7 +1307,7 @@ class ChatViewModel(
                                 check(images.size == count) { "最终图片数量不符；不自动重新提交" }
                                 validateOwner()
                                 withContext(NonCancellable) {
-                                    saveNovelAiImageResult(taskId, anchorMessageId, prompt, imageSize, images, keepTask = true)
+                                    saveNovelAiImageResult(taskId, anchorMessageId, prompt, imageSize, images, keepTask = true, expectedAnchorSnapshot = anchor)
                                 }
                                 updateImageGeneration(taskId) { it.copy(phase = ImageGenerationPhase.GENERATING) }
                                 images.size
@@ -2284,7 +2284,8 @@ class ChatViewModel(
         prompt: NovelAiPromptPlan,
         imageSize: NovelAiImageSize,
         images: List<ByteArray>,
-        keepTask: Boolean = false
+        keepTask: Boolean = false,
+        expectedAnchorSnapshot: ChatMessage? = null
     ) {
         require(images.isNotEmpty()) { "没有可保存的 NovelAI 图片" }
         updateImageGeneration(taskId) {
@@ -2317,7 +2318,8 @@ class ChatViewModel(
                     },
                     generatedFromMessageId = anchorMessageId
                 ),
-                anchorMessageId
+                anchorMessageId,
+                expectedAnchor = expectedAnchorSnapshot
             )
         } catch (error: Throwable) {
             withContext(Dispatchers.IO) {

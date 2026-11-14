@@ -226,7 +226,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         deleteMessagesForSession(id)
     }
 
-    suspend fun deleteSessionRecord(id: String) {
+    suspend fun deleteSessionRecord(id: String) = messageAppendMutex.withDataAccess {
         storage.deleteEntity<ChatSession>(SESSION_TYPE, id)
         deleteSessionDraft(id)
         deleteScrollPosition(id)
@@ -516,9 +516,16 @@ class ChatRepository(private val storage: JsonFileStorage) {
 
     suspend fun addMessageAfter(
         message: ChatMessage,
-        anchorMessageId: String
+        anchorMessageId: String,
+        expectedAnchor: ChatMessage? = null
     ): ChatMessage = messageAppendMutex.withDataAccess {
         val anchor = getMessage(anchorMessageId, message.sessionId)
+        if (expectedAnchor != null) {
+            require(expectedAnchor.id == anchorMessageId && expectedAnchor.sessionId == message.sessionId)
+            check(getSession(message.sessionId) != null) { "会话已删除，本批图片未提交" }
+            check(anchor != null && anchor.content == expectedAnchor.content && anchor.images == expectedAnchor.images &&
+                anchor.role == expectedAnchor.role) { "原消息已编辑或删除，本批图片未提交" }
+        }
         val assigned = message.copy(
             sourceTurnId = message.sourceTurnId ?: anchor?.sourceTurnId,
             sourceTurnOrder = message.sourceTurnOrder ?: anchor?.sourceTurnOrder,
