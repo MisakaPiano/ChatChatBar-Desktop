@@ -73,4 +73,16 @@ class LanSyncGroupRootPublicationTest {
         assertEquals("SYNC_GROUP_CUSTODY_KEY_MISSING", assertFailsWith<IllegalArgumentException> { custody.key(next.epoch) }.message)
         assertEquals(f.f.cipher.keyCommitment(), custody.key(f.f.cipher.epoch).keyCommitment())
     }
+    @Test fun aPublicOwnerAndScopedSignerCanRetryPreparedDeliveryAfterTheSignerLocks() = withFixture { f ->
+        var unlocked = true; var signatures = 0
+        val owner = LanSyncGroupRootPublication(f.root, f.f.ledger.ownerCertificate, { bytes ->
+            check(unlocked) { "SYNTHETIC_ADMIN_LOCKED" }; signatures++; f.f.owner.signSyncGroupPayload(bytes)
+        }, { f.f.ledger }, { f.keys.getValue(it) }, f::outbox)
+        val plan = owner.prepare(); assertTrue(signatures > 0); val preparedSignatures = signatures
+        unlocked = false
+        val target = SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random())
+        val receipt = owner.upload(f.f.backend, target)
+        assertEquals(plan.metadata.descriptor, receipt.metadata); assertEquals(preparedSignatures, signatures)
+        assertEquals(plan, owner.prepare()); assertEquals(receipt, owner.receipt(target))
+    }
 }

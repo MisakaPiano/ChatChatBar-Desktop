@@ -12,9 +12,13 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlinx.serialization.Serializable
 
 /** Root's retained ledger/key/notice delivery preparation; never creates a membership decision. */
-class LanSyncGroupRootPublication(private val root: Path, private val identity: LanSyncTlsIdentity,
+class LanSyncGroupRootPublication(private val root: Path, ownerCertificate: String, private val sign: (ByteArray) -> ByteArray,
     private val authority: () -> SyncDeviceLedger, private val cipher: (SyncStoreId) -> SyncStreamingCipher,
     private val outbox: (SyncStoreId) -> SyncEncryptedOutbox, private val observe: (String) -> Unit = {}) {
+    constructor(root: Path, identity: LanSyncTlsIdentity, authority: () -> SyncDeviceLedger, cipher: (SyncStoreId) -> SyncStreamingCipher,
+        outbox: (SyncStoreId) -> SyncEncryptedOutbox, observe: (String) -> Unit = {}) : this(root,
+        java.util.Base64.getEncoder().encodeToString(identity.certificate.encoded), identity::signSyncGroupPayload, authority, cipher, outbox, observe)
+    private val owner = SyncDeviceSignatures.decode(ownerCertificate)
     @Serializable private data class Spec(val group: SyncStoreId, val reference: SyncVersionRef, val epoch: SyncStoreId, val commitment: String,
         val operation: SyncStoreId, val metadataKey: CiphertextObjectKey, val keys: Map<String, SyncStoreId>, val notices: Map<String, SyncStoreId>)
     private val lock: ReentrantLock
@@ -25,16 +29,16 @@ class LanSyncGroupRootPublication(private val root: Path, private val identity: 
     private val work = directory("preparations"); private val keyRoot = directory("keys")
     private val noticeRoot = directory("notices"); private val publicationRoot = directory("publications")
     init { lock = locks.computeIfAbsent(root) { ReentrantLock() } }
-    private fun keys() = SyncKeyDeliveryQueue(keyRoot, trust, identity.fingerprint, ::rootLedger)
-    private fun notices() = SyncLedgerNoticeQueue(noticeRoot, trust, identity.fingerprint, ::rootLedger)
-    private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publicationRoot, rootLedger(), outbox(epoch), identity.fingerprint,
+    private fun keys() = SyncKeyDeliveryQueue(keyRoot, trust, owner.fingerprint, ::rootLedger)
+    private fun notices() = SyncLedgerNoticeQueue(noticeRoot, trust, owner.fingerprint, ::rootLedger)
+    private fun publisher(epoch: SyncStoreId) = LanSyncGroupPublicationQueue(publicationRoot, rootLedger(), outbox(epoch), owner.fingerprint,
         observe, keyQueue = keys(), currentLedger = ::rootLedger, noticeQueue = notices())
     private fun specPath(reference: SyncVersionRef) = root.resolve("ledger-${reference.id.value}.json")
     private fun rootLedger() = authority().also { ledger ->
         require(ledger.trustAnchor.group == trust.group && ledger.trustAnchor.genesis == trust.genesis &&
             ledger.trustAnchor.ownerCertificate == trust.ownerCertificate && ledger.contains(trust.checkpoint) &&
-            ledger.ownerCertificate == java.util.Base64.getEncoder().encodeToString(identity.certificate.encoded) &&
-            ledger.current().members[identity.fingerprint]?.active == true) { "SYNC_GROUP_ROOT_PUBLICATION_AUTHORITY" }
+            ledger.ownerCertificate == owner.encoded &&
+            ledger.current().members[owner.fingerprint]?.active == true) { "SYNC_GROUP_ROOT_PUBLICATION_AUTHORITY" }
     }
     private fun slots(ledger: SyncDeviceLedger) = ledger.history().map { it.epoch }.distinct().flatMap { epoch ->
         ledger.current().members.filterValues { it.active }.keys.map { device -> "${epoch.value}:$device" to (epoch to device) }
@@ -51,8 +55,8 @@ class LanSyncGroupRootPublication(private val root: Path, private val identity: 
         require(spec.group == current.group && spec.reference == current.reference() && spec.epoch == current.epoch &&
             spec.commitment == current.keyCommitment && spec.keys.keys == requiredKeys.keys && spec.notices.keys == requiredNotices.keys) { "SYNC_GROUP_ROOT_PUBLICATION_CHANGED" }
         spec.keys.forEach { (slot, operation) -> val (epoch, recipient) = requiredKeys.getValue(slot)
-            keys().prepare(operation, cipher(epoch), recipient, identity::signSyncGroupPayload) }
-        spec.notices.forEach { (recipient, operation) -> notices().prepare(operation, recipient, identity::signSyncGroupPayload) }
+            keys().prepare(operation, cipher(epoch), recipient, sign) }
+        spec.notices.forEach { (recipient, operation) -> notices().prepare(operation, recipient, sign) }
         val key = cipher(current.epoch)
         require(key.group == current.group && key.epoch == current.epoch && key.keyCommitment() == current.keyCommitment) { "SYNC_GROUP_ROOT_PUBLICATION_KEY" }
         val metadata = SyncGroupObjectCodec(work).enqueue(outbox(current.epoch), spec.operation, spec.metadataKey, key,
