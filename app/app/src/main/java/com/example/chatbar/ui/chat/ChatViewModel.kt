@@ -1162,7 +1162,11 @@ class ChatViewModel(
     fun invalidateManualImagePreview() { manualPreviewAt = 0L }
 
     suspend fun estimateSessionImageRun(configuration: ImageBatchConfiguration,
-        regeneration: NovelAiImageRegenerationDraft? = null): Long? {
+        regeneration: NovelAiImageRegenerationDraft? = null): Long? =
+        estimateSessionImageBatchCosts(configuration, regeneration)?.sum()
+
+    private suspend fun estimateSessionImageBatchCosts(configuration: ImageBatchConfiguration,
+        regeneration: NovelAiImageRegenerationDraft? = null): List<Long>? {
         val live = chatRepository.getSession(sessionId) ?: return null
         val card = characterRepository.getById(live.characterCardId) ?: return null
         val settings = settingsRepository.getAppSettings()
@@ -1185,7 +1189,7 @@ class ChatViewModel(
         val generation = NovelAiGenerationSettings.legacy(0, configuration.requestCount, target)
             .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
         val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
-        return plan.batches.sumOf { count ->
+        return plan.batches.map { count ->
             if (regeneration != null) NovelAiImageCostEstimator.estimate(generation.copy(count = count,
                 customWidth = regeneration.width, customHeight = regeneration.height), usage).anlas.toLong()
             else NovelAiImageSizePreset.entries.maxOf { preset ->
@@ -1201,6 +1205,7 @@ class ChatViewModel(
 
     data class ImagePaymentConfirmation(val messageId: String, val configuration: ImageBatchConfiguration,
         val estimatedAnlas: Long, val preferences: ImageBatchPreferences,
+        val confirmedBatchAnlas: List<Long>,
         val regeneration: NovelAiImageRegenerationDraft? = null,
         val contentHint: String = "", val promptPreference: String? = null, val persistPreference: Boolean = false)
     private val _imagePaymentConfirmation = MutableStateFlow<ImagePaymentConfirmation?>(null)
@@ -1215,7 +1220,7 @@ class ChatViewModel(
         }
         generateManualNovelAiImages(pending.messageId,
             pending.configuration.copy(budget = pending.estimatedAnlas), pending.contentHint,
-            pending.promptPreference, pending.persistPreference, pending.regeneration)
+            pending.promptPreference, pending.persistPreference, pending.regeneration, pending.confirmedBatchAnlas)
     }
 
     fun requestSessionNovelAiImages(messageId: String, automatic: Boolean = false,
@@ -1225,7 +1230,8 @@ class ChatViewModel(
             try {
                 val preferences = _session.value?.imageBatchPreferences ?: return@launch
                 val config = preferences.configuration(useSavedBatch ?: preferences.enabled)
-                val cost = estimateSessionImageRun(config, regeneration)
+                val batchCosts = estimateSessionImageBatchCosts(config, regeneration)
+                val cost = batchCosts?.sum()
                 val error = estimatedPaymentError(cost, preferences.allowAnlasSpending)
                 if (error != null) { _automaticImageEvents.tryEmit(error); return@launch }
                 if (cost!! > 0) {
@@ -1234,12 +1240,12 @@ class ChatViewModel(
                         return@launch
                     }
                     _imagePaymentConfirmation.value = ImagePaymentConfirmation(messageId, config, cost,
-                        preferences, regeneration, contentHint, promptPreference, persistPreference)
+                        preferences, requireNotNull(batchCosts), regeneration, contentHint, promptPreference, persistPreference)
                     if (automatic) _automaticImageEvents.tryEmit("自动生图预计收费，已暂停等待本轮确认")
                     return@launch
                 }
                 generateManualNovelAiImages(messageId, config.copy(budget = 0), contentHint,
-                    promptPreference, persistPreference, regeneration)
+                    promptPreference, persistPreference, regeneration, batchCosts)
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
                 _automaticImageEvents.tryEmit(error.message ?: "费用查询失败，未启动生成")
@@ -1266,14 +1272,12 @@ class ChatViewModel(
         imageContentHint: String = "",
         imagePromptPreference: String? = null,
         persistPreference: Boolean = false,
-        regeneration: NovelAiImageRegenerationDraft? = null
+        regeneration: NovelAiImageRegenerationDraft? = null,
+        confirmedBatchAnlas: List<Long>? = null
     ) {
         if (imageGenerations.value.any { it.manualBatch && !it.isTerminal }) return
-        val frozenPlan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
-        val plan = if (configuration.numberOfBatches != null && frozenPlan.batches.distinct().size == 1 &&
-            frozenPlan.maxEstimatedAnlas % frozenPlan.batches.size == 0L)
-            frozenPlan.copy(confirmedBatchAnlas = List(frozenPlan.batches.size) { frozenPlan.maxEstimatedAnlas / frozenPlan.batches.size })
-        else frozenPlan
+        val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)
+            .copy(confirmedBatchAnlas = confirmedBatchAnlas)
         val taskId = UUID.randomUUID().toString()
         val control = ImageBatchControl()
         manualBatchControls[taskId] = control
