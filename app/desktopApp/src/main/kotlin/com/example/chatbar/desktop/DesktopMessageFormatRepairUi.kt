@@ -18,6 +18,10 @@ internal fun desktopCanRestoreFormat(message: ChatMessage): Boolean = message.ro
     MessageFormatRepairPolicy.recoverableNotice(message)?.kind in
         setOf(MessageFormatRepairNoticeKind.APPLIED, MessageFormatRepairNoticeKind.STOPPED)
 
+internal fun desktopCanRedoFormat(message: ChatMessage): Boolean = message.role == MessageRole.ASSISTANT &&
+    MessageFormatRepairPolicy.applicableNotice(message)?.let { it.restored && it.originalContent != null &&
+        it.kind in setOf(MessageFormatRepairNoticeKind.APPLIED, MessageFormatRepairNoticeKind.STOPPED) } == true
+
 internal fun desktopRepairCommitBlocked(message: ChatMessage, state: DesktopRepairState?): Boolean =
     state?.status == DesktopRepairStatus.COMMIT_UNCERTAIN && state.confirmedMessage != message
 
@@ -57,7 +61,7 @@ internal fun desktopRepairStatusText(state: DesktopRepairState): DesktopUiText =
 @Composable
 internal fun DesktopMessageFormatRepairStatus(message: ChatMessage, runtimeState: DesktopRepairState?,
     running: Boolean, onStop: () -> Unit, onRestore: () -> Unit, mutationEnabled: Boolean = true,
-    onVerify: (() -> Unit)? = null) {
+    onVerify: (() -> Unit)? = null, onRedo: (() -> Unit)? = null) {
     if (message.role != MessageRole.ASSISTANT) return
     val t = LocalDesktopUiStrings.current
     val notice = MessageFormatRepairPolicy.applicableNotice(message)
@@ -65,6 +69,7 @@ internal fun DesktopMessageFormatRepairStatus(message: ChatMessage, runtimeState
         runtimeState?.status == DesktopRepairStatus.COMMIT_UNCERTAIN && !desktopRepairCommitBlocked(message, runtimeState) -> DesktopUiText.FORMAT_RELOADED
         runtimeState != null -> desktopRepairStatusText(runtimeState)
         running -> DesktopUiText.FORMAT_CHECKING
+        notice?.restored == true -> DesktopUiText.FORMAT_RESTORED
         notice?.kind == MessageFormatRepairNoticeKind.ERROR -> DesktopUiText.FORMAT_FAILED
         notice?.kind == MessageFormatRepairNoticeKind.STOPPED -> DesktopUiText.FORMAT_STOPPED
         notice != null -> DesktopUiText.FORMAT_APPLIED
@@ -85,6 +90,8 @@ internal fun DesktopMessageFormatRepairStatus(message: ChatMessage, runtimeState
         }
         else if (desktopCanRestoreFormat(message))
             BootstrapButton(t(DesktopUiText.FORMAT_RESTORE), enabled = mutationEnabled, secondary = true, onClick = onRestore)
+        else if (onRedo != null && desktopCanRedoFormat(message))
+            BootstrapButton(t(DesktopUiText.FORMAT_REDO), enabled = mutationEnabled, secondary = true, onClick = onRedo)
     }
 }
 

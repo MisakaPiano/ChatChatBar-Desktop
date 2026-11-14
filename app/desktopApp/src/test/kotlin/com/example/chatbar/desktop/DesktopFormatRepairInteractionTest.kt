@@ -140,7 +140,8 @@ class DesktopFormatRepairInteractionTest {
         assertEquals("fixed", f.primary.state.value.messages.single().displayContent)
         assertTrue(desktopCanRestoreFormat(f.primary.state.value.messages.single()))
         assertEquals(DesktopRepairStatus.RESTORED, f.await(assertNotNull(f.primary.restoreMessageFormat(f.saved()))).status)
-        assertEquals(f.original.copy(updatedAt = f.saved().updatedAt), f.saved())
+        assertEquals(f.original.copy(formatRepairNotice = f.saved().formatRepairNotice, updatedAt = f.saved().updatedAt), f.saved())
+        assertTrue(desktopCanRedoFormat(f.saved()))
     } }
 
     @Test fun `production default UNKNOWN rejects request and restore without changing durable files`() = runBlocking { fixture { f ->

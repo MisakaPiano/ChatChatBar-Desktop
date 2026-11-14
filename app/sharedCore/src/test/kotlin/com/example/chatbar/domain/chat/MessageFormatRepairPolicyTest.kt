@@ -57,7 +57,8 @@ class MessageFormatRepairPolicyTest {
         val restored = MessageFormatRepairPolicy.restoreOriginal(updated, updatedAt = 10)
 
         assertEquals(original, restored?.displayContent)
-        assertNull(restored?.formatRepairNotice)
+        assertTrue(restored?.formatRepairNotice?.restored == true)
+        assertEquals(repaired, restored?.formatRepairNotice?.targetContent)
     }
 
     @Test
@@ -108,12 +109,13 @@ class MessageFormatRepairPolicyTest {
 
         assertEquals(listOf("a", "fixed-b", "c"), updated.alternatives)
         assertEquals("fixed-b", updated.content)
-        assertEquals(notice, MessageFormatRepairPolicy.applicableNotice(updated))
+        assertEquals(notice.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(updated)), MessageFormatRepairPolicy.applicableNotice(updated))
 
         val restored = MessageFormatRepairPolicy.restoreOriginal(updated, updatedAt = 10)
         assertEquals(listOf("a", "b", "c"), restored?.alternatives)
         assertEquals("b", restored?.content)
-        assertNull(restored?.formatRepairNotice)
+        assertTrue(restored?.formatRepairNotice?.restored == true)
+        assertEquals("fixed-b", MessageFormatRepairPolicy.redoRepair(requireNotNull(restored))?.displayContent)
     }
 
     @Test
@@ -152,8 +154,28 @@ class MessageFormatRepairPolicyTest {
         val notice = MessageFormatRepairPolicy.completedRepairNotice("b", "fixed")
         val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "fixed", notice, 9)
         assertEquals(original.copy(content = "fixed", alternatives = listOf("a", "fixed", "c"),
-            formatRepairNotice = notice, updatedAt = 9), repaired)
-        assertEquals(original.copy(updatedAt = 10), MessageFormatRepairPolicy.restoreOriginal(repaired, 10))
+            formatRepairNotice = notice.copy(versionId = "vb"), updatedAt = 9), repaired)
+        assertEquals(original.copy(formatRepairNotice = notice.copy(versionId = "vb", restored = true), updatedAt = 10),
+            MessageFormatRepairPolicy.restoreOriginal(repaired, 10))
+    }
+
+    @Test fun `local undo redo survives serialization and refuses another identical candidate`() {
+        val original = message().copy(content = "original", alternatives = listOf("original", "original"),
+            alternativeVersionIds = listOf("a", "b"), currentAlternativeVersionId = "a")
+        val applied = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "fixed",
+            MessageFormatRepairPolicy.completedRepairNotice("original", "fixed"), 2)
+        val restored = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(applied, 3))
+        val json = kotlinx.serialization.json.Json
+        val reopened = json.decodeFromString(ChatMessage.serializer(), json.encodeToString(ChatMessage.serializer(), restored))
+        assertNull(MessageFormatRepairPolicy.restoreOriginal(reopened))
+        val other = MessageAlternativeVersionPolicy.select(reopened, 1, 4)
+        assertNull(MessageFormatRepairPolicy.redoRepair(other))
+        val returned = MessageAlternativeVersionPolicy.select(other, 0, 5)
+        val redone = requireNotNull(MessageFormatRepairPolicy.redoRepair(returned, 6))
+        assertEquals(listOf("fixed", "original"), redone.alternatives)
+        assertEquals(listOf("a", "b"), redone.alternativeVersionIds)
+        assertEquals(false, redone.formatRepairNotice?.restored)
+        assertNull(MessageFormatRepairPolicy.redoRepair(reopened.copy(content = "manual edit", alternatives = listOf("manual edit", "original"))))
     }
 
     @Test

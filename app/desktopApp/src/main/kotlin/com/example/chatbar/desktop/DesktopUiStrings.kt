@@ -313,6 +313,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     FORMAT_REPAIR_MODEL("格式修复模型", "Format repair model"),
     FORMAT_CHECK("检查／修复格式", "Check / repair format"),
     FORMAT_RESTORE("恢复原文", "Restore original"),
+    FORMAT_REDO("恢复修复结果", "Restore repaired text"),
     FORMAT_STOP("停止格式修复", "Stop format repair"),
     FORMAT_CHECKING("正在检查格式…", "Checking format…"),
     AUTOMATIC_FORMAT_CHECK("自动检查回复格式", "Automatically check reply format"),

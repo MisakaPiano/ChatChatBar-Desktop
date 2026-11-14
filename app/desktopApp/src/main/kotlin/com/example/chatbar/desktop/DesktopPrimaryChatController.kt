@@ -964,6 +964,18 @@ internal class DesktopPrimaryChatController(
         return confirmed
     }
 
+    suspend fun redoMessageFormat(message: ChatMessage): String? {
+        var task: String? = null
+        guarded {
+            check(desktopCanRedoFormat(message)) { "当前备选没有可用的修复结果" }
+            check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
+                "提交结果未确认，请重新加载并核对消息"
+            }
+            task = requireNotNull(formatRepair).redo(message.sessionId, message.id)
+        }
+        return task
+    }
+
     fun stopMessageFormat(message: ChatMessage,
         taskId: String? = taskRuntime.runningRepair(message.sessionId, message.id)?.taskId): Boolean {
         val active = taskRuntime.runningRepair(message.sessionId, message.id) ?: return false

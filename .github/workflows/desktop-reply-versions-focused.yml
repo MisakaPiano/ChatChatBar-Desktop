@@ -1,7 +1,7 @@
 name: Desktop reply versions focused verification
 on:
   push:
-    branches: [codex/desktop-reply-versions-20261115]
+    branches: [codex/desktop-reply-versions-20261115, codex/desktop-format-redo-20261115]
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,6 +36,8 @@ jobs:
           .\gradlew.bat :sharedCore:test
           --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
           --tests 'com.example.chatbar.domain.chat.RoleplayContentSegmentsTest'
+          --tests 'com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest'
+          --tests 'com.example.chatbar.data.repository.ChatMessageSerializationTest'
           --tests 'com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest'
           --no-daemon --stacktrace
       - name: Verify production controller regeneration continuation deletion and compact action
@@ -45,6 +47,11 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopPrimaryChatControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
           --tests 'com.example.chatbar.desktop.DesktopReplyDeletionTest'
+          --tests 'com.example.chatbar.desktop.DesktopMessageFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairInteractionTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairPresentationTest'
+          --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()

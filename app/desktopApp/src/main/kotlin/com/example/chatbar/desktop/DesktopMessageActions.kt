@@ -7,11 +7,12 @@ import com.example.chatbar.data.local.entity.MessageRole
 internal enum class DesktopMessageAction(val label: DesktopUiText) {
     COPY(DesktopUiText.COPY_MESSAGE),
     EDIT(DesktopUiText.EDIT_WHOLE_MESSAGE),
-    DELETE(DesktopUiText.DELETE_WHOLE_MESSAGE),
+    DELETE(DesktopUiText.DELETE),
     REGENERATE(DesktopUiText.REGENERATE),
     RETRY(DesktopUiText.RETRY_GENERATION),
     REPAIR_FORMAT(DesktopUiText.FORMAT_CHECK),
     RESTORE_FORMAT(DesktopUiText.FORMAT_RESTORE),
+    REDO_FORMAT(DesktopUiText.FORMAT_REDO),
     STOP_FORMAT(DesktopUiText.FORMAT_STOP),
 }
 
@@ -39,6 +40,7 @@ internal fun desktopMessageActions(
         else if (!sessionRepairBusy && running == null && !desktopRepairCommitBlocked(message, repairState)) {
             add(DesktopMessageAction.REPAIR_FORMAT)
             if (desktopCanRestoreFormat(message)) add(DesktopMessageAction.RESTORE_FORMAT)
+            if (desktopCanRedoFormat(message)) add(DesktopMessageAction.REDO_FORMAT)
         }
     }
 }

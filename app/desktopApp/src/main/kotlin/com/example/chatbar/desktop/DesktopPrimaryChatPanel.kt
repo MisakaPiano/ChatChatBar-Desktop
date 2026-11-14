@@ -873,6 +873,7 @@ private fun PrimaryTimeline(
                             scope.launch { controller.regenerate(message.id) }
                         DesktopMessageAction.REPAIR_FORMAT -> scope.launch { controller.checkMessageFormat(message) }
                         DesktopMessageAction.RESTORE_FORMAT -> scope.launch { controller.restoreMessageFormat(message) }
+                        DesktopMessageAction.REDO_FORMAT -> scope.launch { controller.redoMessageFormat(message) }
                         DesktopMessageAction.STOP_FORMAT -> { controller.stopMessageFormat(message, targetRepair); Unit }
                     }
                 }
@@ -1134,7 +1135,8 @@ internal fun PrimaryMessageBubble(
             onStop = { controller.stopMessageFormat(message, targetRepair) },
             onRestore = { scope.launch { controller.restoreMessageFormat(message) } },
             mutationEnabled = !controller.hasActiveTask(message.sessionId),
-            onVerify = { scope.launch { controller.verifyMessageFormatCommit(message) } })
+            onVerify = { scope.launch { controller.verifyMessageFormatCommit(message) } },
+            onRedo = { scope.launch { controller.redoMessageFormat(message) } })
     }
     }
 }

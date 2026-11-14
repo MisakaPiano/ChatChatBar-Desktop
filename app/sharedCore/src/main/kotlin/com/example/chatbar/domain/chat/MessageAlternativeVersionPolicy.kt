@@ -134,7 +134,7 @@ object MessageAlternativeVersionPolicy {
             currentAlternativeVersionId = selected.id,
             narrativeMode = selected.narrativeMode,
             alternativeNarrativeModes = retained.map(MessageVersionSnapshot::narrativeMode),
-            formatRepairNotice = message.formatRepairNotice.takeUnless { activeId == versionId },
+            formatRepairNotice = message.formatRepairNotice.takeUnless { activeId == versionId || it?.versionId == versionId },
             updatedAt = updatedAt
         )
     }

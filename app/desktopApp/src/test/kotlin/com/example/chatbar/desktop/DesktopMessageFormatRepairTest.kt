@@ -134,10 +134,13 @@ class DesktopMessageFormatRepairTest {
         assertEquals(DesktopRepairStatus.APPLIED, f.run().status)
         val fixed = f.reopened()
         assertEquals(f.original.copy(content = "fixed", alternatives = listOf("first", "fixed", "last"),
-            formatRepairNotice = MessageFormatRepairPolicy.completedRepairNotice(f.original.displayContent, "fixed"),
+            formatRepairNotice = MessageFormatRepairPolicy.completedRepairNotice(f.original.displayContent, "fixed").copy(versionId = "b"),
             updatedAt = fixed.updatedAt), fixed)
         assertEquals(DesktopRepairStatus.RESTORED, f.run(restore = true).status)
-        assertEquals(f.original.copy(updatedAt = f.reopened().updatedAt), f.reopened())
+        assertEquals(f.original.copy(formatRepairNotice = fixed.formatRepairNotice!!.copy(restored = true),
+            updatedAt = f.reopened().updatedAt), f.reopened())
+        assertEquals(DesktopRepairStatus.APPLIED, f.await(f.controller.redo("s", "m")).status)
+        assertEquals(fixed.copy(updatedAt = f.reopened().updatedAt), f.reopened())
         assertEquals(1, f.requests.get())
         assertContentEquals(byteArrayOf(1, 2, 3), Files.readAllBytes(f.root.resolve("owned.png")))
     } }
