@@ -22,6 +22,9 @@ jobs:
           git worktree add --detach "$sourceDir" "$sourceSha"
           test "$(git -C "$sourceDir" rev-parse HEAD)" = "$sourceSha"
           echo "CCB_GROUP_PLATFORM_SOURCE=$sourceDir" >> "$GITHUB_ENV"
+          proofMode=$(python3 -c 'import json; print(json.load(open(".github/lan-sync-group-device-request.json")).get("proofMode", "group-custody"))')
+          [[ "$proofMode" == 'group-custody' || "$proofMode" == 'large-images' ]] || exit 1
+          echo "CCB_GROUP_PLATFORM_PROOF_MODE=$proofMode" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,7 +43,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Real Keystore and source receipt across two instrumentation processes
+      - name: Run the exact requested isolated native proof
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 26
