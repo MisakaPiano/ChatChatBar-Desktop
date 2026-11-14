@@ -20,6 +20,7 @@ class SyncManagementVaultTest {
         val original = SyncManagementSession.create()
         val owner = original.ownerCertificate; val recipient = original.recipientPublicKey
         val trust = trust(original); val blob = original.seal(trust); val code = original.recoveryCode()
+        assertEquals(blob.context, SyncManagementSession.locate(code))
         val pendingJournal = original.protectJournal("synthetic approved intent".toByteArray())
         assertContentEquals(blob.bytes(), original.seal(trust).bytes())
         val copy = blob.bytes(); copy.fill(0); assertFalse(blob.bytes().all { it == 0.toByte() })

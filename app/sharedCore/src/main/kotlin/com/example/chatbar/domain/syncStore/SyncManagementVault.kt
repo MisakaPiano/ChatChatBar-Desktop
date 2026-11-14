@@ -51,9 +51,11 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
     }
     fun signRootPayload(payload: ByteArray): ByteArray = synchronized(this) {
         checkOpen()
-        require(payload.size <= 128 && String(payload, Charsets.US_ASCII).matches(
+        require(payload.size <= 128) { "SYNC_MANAGEMENT_SIGNATURE_DOMAIN" }
+        val frozen = payload.copyOf()
+        require(String(frozen, Charsets.US_ASCII).matches(
             Regex("CCB-SYNC-(DEVICE-LEDGER|KEY-DELIVERY|LEDGER-NOTICE)-SIGNATURE/1\n[a-f0-9]{64}"))) { "SYNC_MANAGEMENT_SIGNATURE_DOMAIN" }
-        requireNotNull(identity).signSyncGroupPayload(payload)
+        requireNotNull(identity).signSyncGroupPayload(frozen)
     }
 
     /** Bind only a new matching fixed-owner group; no existing owner pin is rewritten. */
@@ -122,13 +124,10 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
         }
         fun open(recoveryCode: String, vaultBytes: ByteArray, lifetimeSeconds: Long = 300,
             now: () -> Long = System::nanoTime): SyncManagementSession {
-            require(recoveryCode.length in PREFIX.length + 1..16 * 1024 && recoveryCode.startsWith(PREFIX)) { "SYNC_MANAGEMENT_CODE_FORMAT" }
-            val codeBytes = try { Base64.getUrlDecoder().decode(recoveryCode.removePrefix(PREFIX)) }
-                catch (failure: IllegalArgumentException) { throw IllegalArgumentException("SYNC_MANAGEMENT_CODE_FORMAT", failure) }
+            val codeBytes = decodeCode(recoveryCode)
             var secret: ByteArray? = null
             try {
-                val code = lanSyncJson.decodeFromString(Code.serializer(), boundedJson(codeBytes, 8192))
-                require(code.format == 1 && code.keyset.length in 1..8192) { "SYNC_MANAGEMENT_CODE_FORMAT" }
+                val code = readCode(codeBytes)
                 secret = Base64.getUrlDecoder().decode(code.keyset)
                 require(secret.size in 1..4096) { "SYNC_MANAGEMENT_CODE_FORMAT" }
                 AeadConfig.register(); val handle = CleartextKeysetHandle.read(BinaryKeysetReader.withBytes(secret))
@@ -156,6 +155,19 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
                     } finally { identityBytes.fill(0); recipientBytes.fill(0) }
                 } finally { plain.fill(0) }
             } finally { codeBytes.fill(0); secret?.fill(0) }
+        }
+        /** Untrusted lookup hint only; opening the complete vault still authenticates all pins. */
+        fun locate(recoveryCode: String): SyncManagementVaultContext {
+            val bytes = decodeCode(recoveryCode)
+            return try { readCode(bytes).context } finally { bytes.fill(0) }
+        }
+        private fun readCode(bytes: ByteArray) = lanSyncJson.decodeFromString(Code.serializer(), boundedJson(bytes, 8192)).also {
+            require(it.format == 1 && it.keyset.length in 1..8192) { "SYNC_MANAGEMENT_CODE_FORMAT" }
+        }
+        private fun decodeCode(recoveryCode: String): ByteArray {
+            require(recoveryCode.length in PREFIX.length + 1..16 * 1024 && recoveryCode.startsWith(PREFIX)) { "SYNC_MANAGEMENT_CODE_FORMAT" }
+            return try { Base64.getUrlDecoder().decode(recoveryCode.removePrefix(PREFIX)) }
+                catch (failure: IllegalArgumentException) { throw IllegalArgumentException("SYNC_MANAGEMENT_CODE_FORMAT", failure) }
         }
         private fun boundedJson(bytes: ByteArray, maximum: Int): String {
             require(bytes.size in 1..maximum) { "SYNC_MANAGEMENT_VAULT_BUDGET" }
