@@ -2,6 +2,10 @@ name: Full chat-screen harness review
 on:
   push:
     branches: [feature/card-assets-parity-20261115]
+    paths-ignore: ['.agents/**', 'docs/**', 'doc/**']
+concurrency:
+  group: chat-screen-harness-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

@@ -2,6 +2,10 @@ name: Card and media parity successor review
 on:
   push:
     branches: [feature/card-assets-parity-20261115]
+    paths-ignore: ['.agents/**', 'docs/**', 'doc/**']
+concurrency:
+  group: card-parity-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
