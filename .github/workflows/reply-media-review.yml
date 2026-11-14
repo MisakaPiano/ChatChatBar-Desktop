@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 65b71c0713ceb7c0e91b75513f99c03285937c81
+          ref: c6f7dc44111b84a660066186d9205d087d60bb20
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -40,7 +40,7 @@ jobs:
         working-directory: app
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest --tests '*MessageAlternativeVersionPolicyTest*' --tests '*MessageFormatRepairPolicyTest*' --tests '*ReplyMediaVersionRetentionTest*' --tests '*RoleplayContentSegmentsTest*' --tests '*Moment*Test*' --tests '*ChatMessageSerializationTest*' --tests '*BackupExport*Test*' --tests '*BackupMerge*Test*' --tests '*SaveSlot*Test*' :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:testDebugUnitTest --tests '*MessageAlternativeVersionPolicyTest*' --tests '*MessageFormatRepairPolicyTest*' --tests '*ReplyMediaVersionRetentionTest*' --tests '*ActionOptionPolicyTest*' --tests '*ChatHistoryPromptPolicyTest*' --tests '*NovelAiPromptDesignerTest*' --tests '*ChatMemoryIndexPolicyTest*' --tests '*MemorySourceFingerprintTest*' --tests '*RoleplayContentSegmentsTest*' --tests '*Moment*Test*' --tests '*ChatMessageSerializationTest*' --tests '*BackupExport*Test*' --tests '*BackupMerge*Test*' --tests '*SaveSlot*Test*' :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
