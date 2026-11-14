@@ -1,0 +1,47 @@
+name: Publish dedicated Android NovelAI n1 test prerelease
+on:
+  push:
+    branches: [release/android-novelai-safe-batch-n1]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: android-novelai-test-n1-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'MisakaPiano/ChatChatBar-Desktop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 43543169213
+          name: novelai-safe-batch-originals
+          path: original
+      - name: Reuse the verified APK and check every public file
+        run: python3 test-releases/novelai-android-n1/package_release.py --originals original/novelai-safe-batch-originals.zip --out dist
+      - name: Publish isolated prerelease without changing Desktop updates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag=android-novelai-test-n1
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo 'This immutable test release already exists; refusing replacement.'
+            exit 1
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" --draft --prerelease --latest=false --title 'Android · NovelAI 批量生图测试 n1' --notes-file test-releases/novelai-android-n1/RELEASE_NOTES.md
+          gh release upload "$tag" dist/*
+          gh release edit "$tag" --draft=false --prerelease --latest=false
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-novelai-test-n1-published-payload
+          path: dist/
+          if-no-files-found: error

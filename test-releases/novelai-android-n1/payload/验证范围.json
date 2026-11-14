@@ -1,0 +1,36 @@
+{
+  "scope": "Synthetic cloud-only, source-scoped incremental verification; not a single full-project run",
+  "distinctJvmPassed": 366,
+  "distinctAndroidNativePassed": 8,
+  "finalProductionJvm": {
+    "run": 43542231338,
+    "passed": 43,
+    "source": "d6339a9e2c91a98574614020c6ac282f630a6588"
+  },
+  "nativeCompletion": {
+    "reusedSixUnaffectedFromR09": true,
+    "twoChatRuntimeMethodsPassedR10": true
+  },
+  "historicalFailuresPreserved": true,
+  "R09TestFixtureCorrection": "Explicit initial orderKeys fix same-millisecond tie; production sorting unchanged",
+  "verified": [
+    "actual Studio/Chat VMs4+4+2 and durable grouped storage",
+    "fixed/random finite pacing,pause/resume/stop",
+    "fresh quotes,budget zero/unknown stop,full429 cooldown",
+    "source/session commit guard,legacy image neighbors"
+  ],
+  "screenshotsReview": {
+    "batch-cost-risk.png": "Viewed: estimate0,4+4+2,max5 attempts,risk and confirmation legible",
+    "batch-random-range.png": "Viewed: reversed46/45 range with keyboard; XML proves invalid blocked then corrected, not keyboard-free layout proof",
+    "offline-actual-http-and-persistence.png": "Viewed: n_samples4,4,2;completed10/10;persisted4,4,2 visible"
+  },
+  "notVerified": [
+    "real NovelAI account/billing/provider",
+    "human physical-device acceptance",
+    "Android OS background/process survival",
+    "Desktop adapter delivery"
+  ],
+  "realAccountCalls": false,
+  "humanAcceptance": false,
+  "promptTextChanged": false
+}
