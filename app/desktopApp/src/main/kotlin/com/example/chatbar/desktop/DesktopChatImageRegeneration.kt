@@ -64,7 +64,7 @@ internal class DesktopChatImageRegeneration(
                 NovelAiImageCostEstimator.estimate(generation.copy(count = count, customWidth = size.width, customHeight = size.height), usage).anlas.toLong()
             }
         }
-        return "生图模型：${target.displayName}\n" +
+        return "会话角色卡：${card.name} · 生图模型：${target.displayName}\n" +
             (if (usage == null) "账户状态未知；图片请求前必须成功查询。" else "当前 Anlas ${usage.anlas} · V5 额度约 ${usage.v5AllowancePercent ?: "未知"}%（另计）") +
             "\n按可能画幅估算各批 ${costs.joinToString(" + ")} Anlas；整项 ${costs.sum()} Anlas。设计后按实际画幅重新核对，估算可能变化。"
     }

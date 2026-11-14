@@ -46,7 +46,11 @@ internal suspend fun runDesktopManualImageBatch(
         val cost = estimate(count, current)
         admittedCost = cost
         ImageBatchQuote(cost.anlas.toLong(), current.anlas, cost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE)
-    }, validateOwner = validateOwner, onProgress = onProgress) { count ->
+    }, validateOwner = validateOwner, onProgress = { update ->
+        onProgress(update.copy(detail = listOf(update.detail,
+            "本次剩余估算预算 ${(plan.maxEstimatedAnlas - update.estimatedSpent).coerceAtLeast(0)} Anlas")
+            .filter { it.isNotBlank() }.joinToString("\n")))
+    }) { count ->
         validateOwner()
         currentCoroutineContext().ensureActive()
         val cost = requireNotNull(admittedCost)
