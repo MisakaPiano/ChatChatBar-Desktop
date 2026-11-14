@@ -39,6 +39,25 @@ class ChatPeopleControlsTest {
 
     @After fun cleanup() { avatar.delete() }
 
+    @Test fun storyStatusIsCollapsedAndCanExpandWithoutChangingParticipation() {
+        val card = card()
+        val session = ChatSession.create(card.id, "synthetic")
+        val person = card.characters.first()
+        var toggles = 0
+        rule.setContent {
+            ChatBarTheme {
+                ChatPeopleDialog(session, card, true, null, { _, _ -> toggles++ }, {}, {},
+                    statuses = mapOf(person.id to com.example.chatbar.domain.chat.ChatPersonStatus("synthetic current coat", "source", 100)))
+            }
+        }
+        rule.onNodeWithText("synthetic current coat").assertDoesNotExist()
+        rule.onNodeWithText("查看剧情状态").performClick()
+        rule.onNodeWithText("synthetic current coat").assertIsDisplayed()
+        assertEquals(0, toggles)
+        rule.onNodeWithText("收起剧情状态").performClick()
+        rule.onNodeWithText("synthetic current coat").assertDoesNotExist()
+    }
+
     @Test fun countOpensDedicatedListAndUpdatesAfterToggleAtPhoneWidth() {
         val card = card()
         val original = ChatSession.create(card.id, "synthetic")

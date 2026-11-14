@@ -20,6 +20,17 @@ class EditorPromptFieldEstimatesTest {
         assertFalse(report.any { it.id.contains("person:b") || it.id in setOf("notes","greeting","name","image") })
         assertEquals(report, EditorPromptFieldEstimates.character(card.copy(creatorNotes="changed notes",defaultImagePrompt="changed image only")))
     }
+    @Test fun worldBookCountsOnlyEnabledBodyAndLabelsItConditional() {
+        val book=WorldBook(id="book",name="metadata",description="not injected",entries=listOf(
+            WorldBookEntry(id="a",name="entry",keys=listOf("key"),content="active candidate"),
+            WorldBookEntry(id="b",name="disabled",content="disabled",enabled=false)))
+        val report=EditorPromptFieldEstimates.worldBook(book)
+        assertEquals(1,report.size)
+        assertEquals("entry:a:0",report.single().id)
+        assertTrue(report.single().note.isNotBlank())
+        assertEquals(report,EditorPromptFieldEstimates.worldBook(book.copy(description="different metadata",
+            entries=book.entries.map { it.copy(keys=listOf("changed trigger")) })))
+    }
     @Test fun freeformDoesNotDoubleCountStructuredRoster() {
         val card = CharacterCard.create("card",characters=listOf(CharacterInfo(id="a",name="Alice",profile="roster")))
             .copy(editMode=CharacterEditMode.FREEFORM,freeformCharacterText="freeform")
