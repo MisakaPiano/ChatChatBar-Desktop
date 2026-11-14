@@ -1,0 +1,37 @@
+name: Desktop background unification focused verification
+on:
+  push:
+    branches: [codex/desktop-background-unification-20261115]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Enable Windows long paths
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify background assets draft save and independent defaults
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopPortableBackgroundGalleryTest'
+          --tests 'com.example.chatbar.desktop.DesktopBackgroundVoiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopCharacterImageTest'
+          --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-background-unification-original-results
+          path: |
+            app/desktopApp/build/test-results/test/
