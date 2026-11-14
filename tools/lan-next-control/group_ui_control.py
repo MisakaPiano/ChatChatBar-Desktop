@@ -22,6 +22,9 @@ CLASS = "com.example.chatbar.lanSync.LanSyncGroupAppUiControlTest"
 METHOD = "createSaveLeaveAndReopenUsesRealAppOwnedGroup"
 TARGET = "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupAppUiControlTest.kt"
 FIXTURE = Path(__file__).resolve().parent / "fixtures/LanSyncGroupAppUiControlTest.kt"
+API = 26
+INSTRUMENTATION_ARGUMENT = "lanSyncGroupUiFixture"
+PROOF_SCOPE = "real group page, lifecycle stop/recreate, app-owned local publication; not remote delivery or OS process death"
 
 
 class ControlError(ValueError):
@@ -133,7 +136,8 @@ def prepare(request_path: Path, source: Path, evidence: Path) -> None:
         "kind": "CCB_GROUP_UI_CONTROL_OVERLAY", "sourceSha": request["sourceSha"],
         "controlSha": git(control, "rev-parse", "HEAD"), "fixtureSha256": request["fixtureSha256"],
         "overlay": TARGET, "productionDiff": "empty", "nativeExecuted": False,
-        "class": CLASS, "method": METHOD, "package": PACKAGE, "api": 26,
+        "class": CLASS, "method": METHOD, "package": PACKAGE, "api": API,
+        "instrumentationArgument": INSTRUMENTATION_ARGUMENT,
         "previewCode": 83, "proofScope": "fresh synthetic app; actual group page; app process remains alive"
     })
     with (evidence / "source-sha.txt").open("x", encoding="ascii", newline="\n") as output:
@@ -165,6 +169,8 @@ def run(request_path: Path, source: Path, evidence: Path) -> None:
     prepared = json.loads((evidence / "prepared.json").read_text(encoding="utf-8"))
     require(prepared["sourceSha"] == request["sourceSha"] and prepared["fixtureSha256"] == request["fixtureSha256"],
             "PREPARATION_CHANGED")
+    require(prepared["api"] == API and prepared["class"] == CLASS and prepared["method"] == METHOD and
+            prepared["instrumentationArgument"] == INSTRUMENTATION_ARGUMENT, "PREPARATION_PROFILE_CHANGED")
     require((evidence / "source-sha.txt").read_text(encoding="ascii") == request["sourceSha"] + "\n",
             "SOURCE_BINDING_CHANGED")
     require(prepared["controlSha"] == git(Path(__file__).resolve().parents[2], "rev-parse", "HEAD"),
@@ -174,7 +180,7 @@ def run(request_path: Path, source: Path, evidence: Path) -> None:
     adb = ["adb", "-s", serial]
     sdk = command(adb + ["shell", "getprop", "ro.build.version.sdk"]).strip()
     qemu = command(adb + ["shell", "getprop", "ro.kernel.qemu"]).strip()
-    require(sdk == "26" and qemu == "1", "REAL_API26_EMULATOR_REQUIRED")
+    require(sdk == str(API) and qemu == "1", "REAL_API" + str(API) + "_EMULATOR_REQUIRED")
     require(command(adb + ["shell", "pm", "list", "packages", "com.example.chatbar"]).strip() == "",
             "FRESH_CCB_INSTALL_REQUIRED")
     app = one_apk(source, "app/app/build/outputs/apk/lanPreview")
@@ -191,7 +197,7 @@ def run(request_path: Path, source: Path, evidence: Path) -> None:
     command(adb + ["install", str(app)], 180)
     command(adb + ["install", str(tests)], 180)
     runner = instrumentation_runner(command(adb + ["shell", "pm", "list", "instrumentation"]))
-    argv = adb + ["shell", "am", "instrument", "-w", "-r", "-e", "lanSyncGroupUiFixture", "true",
+    argv = adb + ["shell", "am", "instrument", "-w", "-r", "-e", INSTRUMENTATION_ARGUMENT, "true",
                   "-e", "class", CLASS + "#" + METHOD, runner]
     try:
         actual = subprocess.run(argv, capture_output=True, timeout=600)
@@ -211,7 +217,7 @@ def run(request_path: Path, source: Path, evidence: Path) -> None:
     overlay_status(source, request)
     result.update(kind="CCB_GROUP_UI_NATIVE_METHOD_VERIFICATION", sourceSha=request["sourceSha"],
                   fixtureSha256=request["fixtureSha256"], rawReportSha256=hashlib.sha256(raw).hexdigest(),
-                  proofScope="real group page, lifecycle stop/recreate, app-owned local publication; not remote delivery or OS process death")
+                  proofScope=PROOF_SCOPE)
     write_json(evidence / "verified.json", result)
 
 
