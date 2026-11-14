@@ -1155,14 +1155,31 @@ class ChatViewModel(
         }
     }
 
+    private val manualPreviewMutex = Mutex()
+    private var manualPreviewUsage: NovelAiAccountUsage? = null
+    private var manualPreviewCredentialDigest: String? = null
+    @Volatile private var manualPreviewAt = 0L
+    fun invalidateManualImagePreview() { manualPreviewAt = 0L }
+
     suspend fun previewManualImageRun(configuration: ImageBatchConfiguration): String {
         val live = chatRepository.getSession(sessionId) ?: return "会话已删除"
         val card = characterRepository.getById(live.characterCardId) ?: return "角色卡不存在"
         val settings = settingsRepository.getAppSettings()
         val target = live.resolvedNovelAiImageModel(card.defaultNovelAiImageModel, settings.novelAiImageModel)
         val token = novelAiCredentials.load() ?: return "未配置 NovelAI Token，计费状态未知"
-        val usage = try { withContext(Dispatchers.IO) { novelAiAccountService.fetch(token) } }
-            catch (error: Throwable) { if (error is CancellationException) throw error; null }
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
+        val usage = manualPreviewMutex.withLock {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (manualPreviewAt > 0 && now - manualPreviewAt in 0..30000 && manualPreviewCredentialDigest == digest) manualPreviewUsage
+            else {
+                val fetched = try { withContext(Dispatchers.IO) { novelAiAccountService.fetch(token) } }
+                    catch (error: Throwable) { if (error is CancellationException) throw error; null }
+                manualPreviewUsage = fetched; manualPreviewCredentialDigest = digest
+                manualPreviewAt = android.os.SystemClock.elapsedRealtime()
+                fetched
+            }
+        }
+
         val generation = NovelAiGenerationSettings.legacy(0, configuration.requestCount, target)
             .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
         val plan = configuration.freeze(ImageBatchOrigin.CHAT_MANUAL)

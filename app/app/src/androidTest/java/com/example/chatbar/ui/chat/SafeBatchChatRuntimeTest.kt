@@ -37,12 +37,18 @@ class SafeBatchChatRuntimeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     private data class Fixture(val vm: ChatViewModel, val session: ChatSession, val anchor: ChatMessage,
         val later: ChatMessage, val imageCounts: List<Int>, val server: MockWebServer,
-        val quoted: CountDownLatch, val releaseQuote: CountDownLatch)
+        val quoted: CountDownLatch, val releaseQuote: CountDownLatch, val accountCalls: AtomicInteger)
     @Test fun manualChatGeneratesFourFourTwoWithOneDesignAndDurableOrderedMetadata() = withFixture(false) { f ->
+        runBlocking {
+            f.vm.previewManualImageRun(ImageBatchConfiguration(4, true, 10, budget = 10000))
+            f.vm.previewManualImageRun(ImageBatchConfiguration(1, true, 10, budget = 10000))
+        }
+        assertEquals("Editing request counts reuses the short-lived read-only quote", 1, f.accountCalls.get())
         rule.runOnIdle { f.vm.generateManualNovelAiImages(f.anchor.id, ImageBatchConfiguration(4, true, 10, ImageBatchPacing(fixedSeconds = 1), 10000)) }
         rule.waitUntil(25000) { f.vm.imageGenerations.value.none { !it.isTerminal } }
         assertTrue(f.vm.imageGenerations.value.toString(), f.vm.imageGenerations.value.isEmpty())
         assertEquals(listOf(4, 4, 2), f.imageCounts); assertEquals(1, f.server.requestCount)
+        assertEquals("One cached preview, one launch query and a fresh query for each batch", 5, f.accountCalls.get())
         val rows = runBlocking { ChatRepository(JsonFileStorage(ChatBarApp.instance)).getMessages(f.session.id) }
         val batches = rows.filter { it.generatedFromMessageId == f.anchor.id }
         assertEquals(listOf(4, 4, 2), batches.map { it.images.size })
@@ -122,7 +128,7 @@ class SafeBatchChatRuntimeTest {
                     novelAiAccountService = NovelAiAccountService(client)) as T
             })[ChatViewModel::class.java] }
             rule.waitUntil(15000) { vm!!.session.value?.id == session.id }
-            block(Fixture(requireNotNull(vm), session, anchor, later, imageCounts, server, quoted, release))
+            block(Fixture(requireNotNull(vm), session, anchor, later, imageCounts, server, quoted, release, accountCalls))
         } finally {
             release.countDown(); rule.runOnIdle { store.clear() }
             if (oldToken == null) app.novelAiCredentialStore.clear() else app.novelAiCredentialStore.save(oldToken)
@@ -134,7 +140,7 @@ class SafeBatchChatRuntimeTest {
         val directory = File(rule.activity.getExternalFilesDir(null), "safe-batch-review").also { it.mkdirs() }
         val original = File(directory, "$name.json")
         original.writeText(buildJsonObject { put("syntheticOnly", true); put("actualChatViewModel", true)
-            put("httpCounts", JsonArray(f.imageCounts.map { JsonPrimitive(it) })); put("localDesignRequests", f.server.requestCount); put("savedBatches", batches)
+            put("httpCounts", JsonArray(f.imageCounts.map { JsonPrimitive(it) })); put("localDesignRequests", f.server.requestCount); put("savedBatches", batches); put("accountQueries", f.accountCalls.get())
         }.toString())
         SafeBatchReviewFiles.retain(rule.activity, original)
     }

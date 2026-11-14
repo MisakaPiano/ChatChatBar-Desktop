@@ -347,8 +347,9 @@ fun ChatScreen(
     var batchConfiguration by remember(sessionId) { mutableStateOf(ImageBatchConfiguration()) }
     var batchValid by remember(sessionId) { mutableStateOf(true) }
     var batchConsent by remember(sessionId) { mutableStateOf(false) }
+    var batchPreviewRefresh by remember(sessionId) { mutableStateOf(0) }
     var batchPreview by remember(sessionId) { mutableStateOf("计费状态尚未查询") }
-    LaunchedEffect(imagePromptTargetId, batchConfiguration) {
+    LaunchedEffect(imagePromptTargetId, batchConfiguration, batchPreviewRefresh) {
         batchConsent = false
         if (imagePromptTargetId != null && batchConfiguration.validationError() == null) {
             batchPreview = "正在查询当前账户及估算费用…"
@@ -1574,6 +1575,9 @@ fun ChatScreen(
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ImageBatchOptionsEditor(batchConfiguration, { batchConfiguration = it }, { batchValid = it })
                 CbText(batchPreview)
+                CbButton("重新查询账户（只读）", {
+                    viewModel.invalidateManualImagePreview(); batchPreviewRefresh++
+                }, variant = ButtonVariant.Outline)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CbText("已了解付费与连续自动请求风险", Modifier.weight(1f))
                     CbSwitch(batchConsent, { batchConsent = it })
@@ -2777,7 +2781,10 @@ private fun NovelAiGenerationCard(
                     )
                 }
             }
-            state.batchProgress?.let { CbText(it.label(), style = ChatBarTheme.typography.caption) }
+            state.batchProgress?.let { progress ->
+                CbText(if (state.isTerminal) "任务已停止 · 已保存 ${progress.saved}/${progress.target} 张 · 预留估算 ${progress.estimatedSpent} Anlas"
+                    else progress.label(), style = ChatBarTheme.typography.caption)
+            }
             state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption) }
             if (state.manualBatch && state.isCancellable) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

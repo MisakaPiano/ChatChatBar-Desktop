@@ -1,18 +1,15 @@
 package com.example.chatbar.ui.components
 
-import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.ui.kit.*
-import java.io.File
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -55,9 +52,7 @@ class ImageBatchOptionsEditorTest {
     private fun input(description: String) = rule.onNode(
         hasSetTextAction() and hasAnyAncestor(hasContentDescription(description)), useUnmergedTree = true)
     private fun screenshot(name: String) {
-        val path = File(rule.activity.getExternalFilesDir(null), "safe-batch-review/$name")
-        path.parentFile!!.mkdirs()
-        path.outputStream().use { rule.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
-        SafeBatchReviewFiles.retain(rule.activity, path)
+        rule.waitForIdle()
+        SafeBatchReviewFiles.captureScreen(rule.activity, name)
     }
 }

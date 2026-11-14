@@ -1,11 +1,8 @@
 package com.example.chatbar.ui.components
 
-import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.example.chatbar.debug.SafeBatchOfflineActivity
-import java.io.File
 import org.junit.Rule
 import org.junit.Test
 
@@ -19,11 +16,10 @@ class ImageBatchOfflineRunTest {
         }
         rule.onNodeWithText("实际模拟请求 n_samples：[4, 4, 2]").assertExists()
         rule.onNodeWithText("磁盘保留：会话 [4, 4, 2]", substring = true).assertExists()
-        val image = rule.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap()
-        val dir = File(rule.activity.getExternalFilesDir(null), "safe-batch-review").also { it.mkdirs() }
-        val shot = File(dir, "offline-actual-http-and-persistence.png")
-        shot.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        SafeBatchReviewFiles.retain(rule.activity, shot)
+        rule.onNodeWithText("实际模拟请求 n_samples：[4, 4, 2]").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("磁盘保留：会话 [4, 4, 2]", substring = true).performScrollTo().assertIsDisplayed()
+        rule.waitForIdle()
+        SafeBatchReviewFiles.captureScreen(rule.activity, "offline-actual-http-and-persistence.png")
         rule.activityRule.scenario.recreate()
         rule.waitUntil(5000) { rule.onAllNodesWithText("磁盘保留：会话 [4, 4, 2]", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("实际模拟请求 n_samples：[]").assertExists()

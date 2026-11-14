@@ -62,6 +62,9 @@ class SafeBatchStudioRuntimeTest {
     @Test fun studioStopDuringPacingKeepsFirstCommittedBatchAndMakesNoNextRequest() = withRuntime("success") { vm, requests, before ->
         start(vm, 1, 3, 30, 0)
         rule.waitUntil(15000) { vm.uiState.value.batchProgress?.stage == ImageBatchStage.WAITING }
+        rule.runOnIdle { vm.pauseBatchRun() }
+        rule.waitUntil(10000) { vm.uiState.value.batchProgress?.stage == ImageBatchStage.PAUSED }
+        assertTrue(vm.uiState.value.batchProgress!!.label().contains("已暂停"))
         rule.runOnIdle { vm.cancelActiveTask() }
         rule.waitUntil(10000) { !vm.uiState.value.isBusy }
         Thread.sleep(1200); assertEquals(1, requests.size)

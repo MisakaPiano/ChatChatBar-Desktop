@@ -91,7 +91,12 @@ data class ImageBatchProgress(
     val usesV5Allowance: Boolean = false,
     val detail: String = ""
 ) {
-    fun label() = "已保存 $saved/$target 张 · 第 $batch/$batches 批 · 已预留估算 $estimatedSpent Anlas" +
+    fun label() = (when (stage) {
+        ImageBatchStage.RUNNING -> "执行中"
+        ImageBatchStage.WAITING -> "等待下一批"
+        ImageBatchStage.PAUSED -> "已暂停"
+        ImageBatchStage.COMPLETE -> "已完成"
+    }) + " · 已保存 $saved/$target 张 · 第 $batch/$batches 批 · 已预留估算 $estimatedSpent Anlas" +
         (nextEstimatedAnlas?.let { " · 本批估算 $it Anlas" } ?: "") +
         (if (usesV5Allowance) " · 另消耗 V5 使用额度" else "") +
         (if (remainingSeconds > 0) " · 等待 $remainingSeconds 秒" else "") +

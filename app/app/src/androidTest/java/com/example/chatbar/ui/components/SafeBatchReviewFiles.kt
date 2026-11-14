@@ -7,6 +7,15 @@ import java.io.File
 
 /** Synthetic review originals must survive AGP uninstalling the target app after connected tests. */
 object SafeBatchReviewFiles {
+    fun captureScreen(context: Context, name: String) {
+        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        val bitmap = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
+        check(bitmap.width > 100 && bitmap.height > 100)
+        val file = File(File(context.getExternalFilesDir(null), "safe-batch-review").also { it.mkdirs() }, name)
+        file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        retain(context, file)
+    }
     fun retain(context: Context, file: File) {
         check(android.os.Build.VERSION.SDK_INT >= 29)
         val values = ContentValues().apply {
