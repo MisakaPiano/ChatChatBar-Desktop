@@ -176,8 +176,10 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                 StatusText("重新生成保留旧图；选择版本仅更换这条动态当前显示的图片。")
                 versions.forEachIndexed { index, version ->
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        StatusText("${index + 1} · " + DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault())
-                            .format(Instant.ofEpochMilli(version.createdAt)) + if (post.imagePath == version.imagePath) " · 当前" else "")
+                        val recordedTime = if (version.createdAt == 0L) "时间未记录" else
+                            DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault())
+                                .format(Instant.ofEpochMilli(version.createdAt))
+                        StatusText("${index + 1} · $recordedTime" + if (post.imagePath == version.imagePath) " · 当前" else "")
                         BootstrapButton("预览版本 ${index + 1}", secondary = true) {
                             viewing = versions.map { it.imagePath }; viewIndex = index
                         }
