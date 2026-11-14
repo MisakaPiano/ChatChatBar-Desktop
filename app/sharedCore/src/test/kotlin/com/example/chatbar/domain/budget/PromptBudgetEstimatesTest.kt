@@ -7,6 +7,36 @@ import kotlin.test.*
 
 class PromptBudgetEstimatesTest {
     private val target = PromptEstimateTarget("合成模型")
+    @Test fun `dialogue candidate projection excludes author media greetings and disabled people without mutation`() {
+        val enabled = CharacterInfo("on", "Present", profile = "profile", imagePrompt = "image".repeat(100))
+        val disabled = CharacterInfo("on:0:profile", "Absent", profile = "hidden".repeat(100), desktopEnabled = false)
+        val card = CharacterCard("card", "metadata", characters = listOf(enabled, disabled),
+            greeting = "hello", alternateGreetings = listOf("alternate"), creatorNotes = "notes",
+            defaultImagePrompt = "image", basicSetting = "setting", freeformCharacterText = "free", createdAt = 1, updatedAt = 1)
+        val report = EditorPromptBudgetEstimator.characterInjectionCandidates(card, target)
+        assertEquals(PromptEstimateScope.EDITOR_INJECTION_CANDIDATES, report.scope)
+        assertTrue(report.sections.any { it.id == "person:on:0:profile" && it.estimate.tokens > 0 })
+        assertFalse(report.sections.any { it.id.startsWith("person:on:0:profile:1:") || it.id.endsWith(":image") ||
+            it.id in setOf("notes", "greeting", "greeting-0", "image", "negative", "name", "botName") })
+        assertEquals(card, card.copy())
+        val free = EditorPromptBudgetEstimator.characterInjectionCandidates(card.copy(editMode = CharacterEditMode.FREEFORM), target)
+        assertTrue(free.sections.any { it.id == "freeform" && it.estimate.tokens > 0 })
+        assertFalse(free.sections.any { it.id.startsWith("person:") })
+        assertTrue(EditorPromptBudgetEstimator.character(card, target).sections.any { it.id == "notes" })
+    }
+
+    @Test fun `world candidates contain enabled bodies only and cannot assert current activation`() {
+        val book = WorldBook("book", "metadata", description = "description", entries = listOf(
+            WorldBookEntry("on", name = "Candidate", keys = listOf("key"), secondaryKeys = listOf("secondary"), content = "body"),
+            WorldBookEntry("off", content = "disabled".repeat(100), enabled = false)))
+        val report = EditorPromptBudgetEstimator.worldBookInjectionCandidates(book, target)
+        assertEquals(PromptEstimateScope.EDITOR_INJECTION_CANDIDATES, report.scope)
+        assertEquals(listOf("entry:on:0:content"), report.sections.map { it.id })
+        assertEquals(WeightedCharacterTokenEstimator.estimate("body"), report.sections.single().estimate)
+        assertTrue(report.sections.single().note.isNotBlank())
+        assertFalse(book.entries.last().enabled)
+    }
+
     @Test fun `explicit capacity survives model persistence but never changes final wire or invents capacity from output caps`() {
         val model = ModelConfig("model", "Synthetic", "https://example.test/v1", "", "synthetic", maxOutputTokens = 900,
             createdAt = 1)

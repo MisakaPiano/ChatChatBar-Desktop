@@ -40,7 +40,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
             ActionRow {
                 BootstrapButton("导入存档", secondary = true, enabled = !state.busy) { controller.import() }
                 BootstrapButton("复制整个会话", secondary = true, enabled = !state.busy) { controller.duplicate() }
-                BootstrapButton("更换会话资源…", secondary = true, enabled = !state.busy) { controller.loadBindings() }
+                BootstrapButton("更换角色卡／附加世界书…", secondary = true, enabled = !state.busy) { controller.loadBindings() }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BasicTextField(name, { name = it.take(120) }, Modifier.weight(1f)
@@ -93,7 +93,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
                     } }
                     StatusText("保留聊天、消息版本、原格式卡与录音；历史气泡的角色名称和头像可能随新卡显示。重置世界书持续/冷却计时，并先保存保全存档。")
                     ActionRow {
-                        BootstrapButton(if (confirmBinding) "确认更换资源" else "检查并更换…",
+                        BootstrapButton(if (confirmBinding) "确认更换角色卡／世界书" else "检查并更换…",
                             enabled = !state.busy && choices.characters.any { it.id == card }) {
                             if (confirmBinding) controller.rebind(requireNotNull(card), books) else confirmBinding = true
                         }

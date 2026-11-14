@@ -1,0 +1,39 @@
+name: Desktop selected followups focused verification
+on:
+  push:
+    branches: [codex/desktop-selected-followups-20261115]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Enable Windows long paths
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify injection candidate projection and retained editor groups
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.budget.PromptBudgetEstimatesTest'
+          :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopEditorBudgetGroupsTest'
+          --tests 'com.example.chatbar.desktop.DesktopEditorPromptBudgetTest'
+          --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-selected-followups-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/

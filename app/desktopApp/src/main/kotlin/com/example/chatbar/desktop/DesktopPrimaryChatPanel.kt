@@ -1324,6 +1324,7 @@ internal fun DesktopSessionSettingsBody(
         }
     }
     StatusText("头像立即保存；姓名、设定和角色关联使用本页的保存按钮。")
+    StatusText("头像用于界面显示；玩家姓名会用于对话称呼和变量替换，并随请求发送给模型。")
     val roleCard = state.selectedCharacter
     if (roleCard != null) {
         val role = draft.desktopPlayerRole
@@ -1344,6 +1345,7 @@ internal fun DesktopSessionSettingsBody(
             StatusText("关联后，点击自己的头像可查看该角色的状态。不会额外注入状态或改变人物开关。")
         } else StatusText("只有手动关联才共享状态；姓名相同不会自动关联。")
     }
+    StatusText("玩家设定优先使用本会话非空内容，留空则跟随全局。关联角色不会自动复制其人物设定，也不会额外注入状态栏。")
     PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }

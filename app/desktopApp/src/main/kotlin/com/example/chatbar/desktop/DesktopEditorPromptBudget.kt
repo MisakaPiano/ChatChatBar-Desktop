@@ -66,6 +66,7 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
 
 @Composable internal fun DesktopEditorPromptBudget(controller: DesktopEditorBudgetController, entity: Any, toolEntry: Boolean = false) {
     var open by remember(controller, entity::class) { mutableStateOf(false) }
+    var storedFields by remember(controller, entity::class) { mutableStateOf(false) }
     val model by controller.state.collectAsState()
     if (toolEntry) StudioAction("字段 Token 估算", style = StudioActionStyle.TERTIARY) { open = true }
     else BootstrapButton("字段 Token 估算", secondary = true) { open = true }
@@ -76,12 +77,12 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
                     DesktopIconAction("关闭 Token 估算", DesktopAppIcons.Close) { open = false }
                 }
                 LaunchedEffect(controller, entity::class) { controller.refresh() }
-                val report by produceState<PromptBudgetEstimate?>(null, entity, model.target) {
+                val report by produceState<PromptBudgetEstimate?>(null, entity, model.target, storedFields) {
                     value = withContext(Dispatchers.Default) {
                         when (entity) {
-                            is CharacterCard -> EditorPromptBudgetEstimator.character(entity, model.target)
-                            is FormatCard -> EditorPromptBudgetEstimator.format(entity, model.target)
-                            is WorldBook -> EditorPromptBudgetEstimator.worldBook(entity, model.target)
+                            is CharacterCard -> if (storedFields) EditorPromptBudgetEstimator.character(entity, model.target) else EditorPromptBudgetEstimator.characterInjectionCandidates(entity, model.target)
+                            is FormatCard -> if (storedFields) EditorPromptBudgetEstimator.format(entity, model.target) else EditorPromptBudgetEstimator.formatInjectionCandidates(entity, model.target)
+                            is WorldBook -> if (storedFields) EditorPromptBudgetEstimator.worldBook(entity, model.target) else EditorPromptBudgetEstimator.worldBookInjectionCandidates(entity, model.target)
                             else -> null
                         }
                     }
@@ -90,7 +91,10 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
                 StatusText("未加载该模型专用分词器；按字符估算（汉字约 0.8，其他约 0.4），特殊字符误差可能更大。")
                 StatusText(model.target.contextWindowTokens?.let { "模型上下文容量：$it Token（用户配置，未向供应商核实）" }
                     ?: "模型上下文上限未提供；输出上限不等于上下文容量。")
-                StatusText("这里只统计已列编辑字段；未计算变量展开、条目激活、RAG／记忆、历史和请求封装，不是本轮输入总量。")
+                StudioSwitch("查看全部编辑字段", storedFields) { storedFields = !storedFields }
+                StatusText(if (storedFields) "当前统计全部编辑字段，包含不发送的备注和生图词；不是对话输入量。"
+                    else "默认只估算可用于对话的候选文本，排除停用人物／条目、作者备注、开场白和生图词。会话开关、变量展开、模板标题、历史与记忆另计；不是本轮请求总量。")
+                if (!storedFields && entity is WorldBook) StatusText("本轮注入量不确定：没有当前会话的触发、概率与预算结果，以下仅列启用候选正文，不能当作已激活总量。", DesktopBootstrapColors.warning)
                 if (entity is FormatCard) StatusText("随机数工具的本次展开值尚未生成，不计入静态合计。")
                 if (!model.loading) SearchableChoice("估算参考模型", listOf<String?>(null) + model.options.map { it.id } +
                     listOfNotNull(model.selectedId?.takeUnless { id -> model.options.any { it.id == id } }), model.selectedId,
@@ -98,9 +102,9 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
                 BootstrapButton("刷新参考模型", secondary = true, enabled = !model.loading, onClick = controller::refresh)
                 model.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 report?.let { estimate ->
-                    StatusText("已列字段静态合计 ≈ ${estimate.estimatedTextTokens} Token")
+                    StatusText("${if (storedFields) "全部编辑字段静态合计" else "对话候选文本参考合计"} ≈ ${estimate.estimatedTextTokens} Token")
                     estimate.estimatedTextContextPercent?.let { percent ->
-                        StatusText("静态字段参考占容量 ≈ ${java.lang.String.format(java.util.Locale.ROOT, "%.1f", percent)}%；不是本轮请求占用或可用余额。")
+                        StatusText("候选文本参考占容量 ≈ ${java.lang.String.format(java.util.Locale.ROOT, "%.1f", percent)}%；不是本轮请求占用或可用余额。")
                     }
                     val groups = remember(entity, estimate) { desktopEditorBudgetGroups(entity, estimate) }
                     LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -7,7 +7,7 @@ import com.example.chatbar.domain.chat.MainChatLogicalMessageTrace
 import com.example.chatbar.domain.worldbook.WorldBookRequestActivity
 import kotlinx.serialization.json.*
 
-enum class PromptEstimateScope { STORED_EDITOR_FIELDS, FINAL_REQUEST_TEXT }
+enum class PromptEstimateScope { STORED_EDITOR_FIELDS, EDITOR_INJECTION_CANDIDATES, FINAL_REQUEST_TEXT }
 
 /** This profile is descriptive only. It never changes request limits or provider/model settings. */
 data class PromptEstimateTarget(val modelLabel: String, val contextWindowTokens: Long? = null) {
@@ -76,6 +76,31 @@ object WeightedCharacterTokenEstimator {
 
 /** Counts only listed stored text; activation, placeholders, RAG, history and request envelopes are absent. */
 object EditorPromptBudgetEstimator {
+    /** Editor-only projection; no session, activation result or variable expansion is invented. */
+    fun characterInjectionCandidates(card: CharacterCard, target: PromptEstimateTarget): PromptBudgetEstimate {
+        val fixed = setOf("system", "basic", "post-history", "examples", "freeform")
+        val suffixes = listOf("name", "profile", "appearance", "clothing", "abilities", "habits", "background", "relationships", "speaking")
+        val people = if (card.editMode == CharacterEditMode.STRUCTURED)
+            card.characters.flatMapIndexed { index, person ->
+                if (person.desktopEnabled) suffixes.map { "person:${person.id}:$index:$it" } else emptyList()
+            }.toSet() else emptySet()
+        val stored = character(card, target)
+        return stored.copy(scope = PromptEstimateScope.EDITOR_INJECTION_CANDIDATES,
+            sections = stored.sections.filter { section ->
+                section.id in fixed || section.id in people
+            })
+    }
+
+    fun formatInjectionCandidates(card: FormatCard, target: PromptEstimateTarget): PromptBudgetEstimate =
+        format(card, target).copy(scope = PromptEstimateScope.EDITOR_INJECTION_CANDIDATES)
+
+    fun worldBookInjectionCandidates(book: WorldBook, target: PromptEstimateTarget): PromptBudgetEstimate =
+        PromptBudgetEstimate(PromptEstimateScope.EDITOR_INJECTION_CANDIDATES, target,
+            sections = book.entries.mapIndexedNotNull { index, entry ->
+                if (!entry.enabled) null else field("entry:${entry.id}:$index:content", "${entry.name} · 正文", entry.content,
+                    "缺少本轮上下文与激活结果；此正文是否注入及实际展开量不确定")
+            })
+
     private fun field(id: String, label: String, text: String, note: String = "") =
         PromptBudgetSection(id, label, WeightedCharacterTokenEstimator.estimate(text), note)
 
