@@ -323,8 +323,7 @@ fun ChatScreen(
     var dismissedVoiceTextConfirmationIds by remember(sessionId) {
         mutableStateOf<Set<String>>(emptySet())
     }
-    var expandedImageIndex by remember(sessionId) { mutableStateOf<Int?>(null) }
-    var expandedImageSnapshot by remember(sessionId) { mutableStateOf<List<ImagePreviewItem>?>(null) }
+    var imagePreviewRequest by remember(sessionId) { mutableStateOf<ChatImagePreviewRequest?>(null) }
     var imageGalleryOpen by remember(sessionId) { mutableStateOf(false) }
     var imageGalleryRevision by remember(sessionId) { mutableIntStateOf(0) }
     var imageGalleryLoading by remember(sessionId) { mutableStateOf(false) }
@@ -1272,10 +1271,9 @@ fun ChatScreen(
                         onLongPress = { if (!isResponding && !screenshotSelectionMode) actionMessageId = message.id },
                         onSegmentLongPress = if (!isResponding && !screenshotSelectionMode) ({ segment -> actionSegment = segment }) else null,
                         onImageClick = if (screenshotSelectionMode) null else ({ path ->
-                            expandedImageSnapshot = previewImages.toList()
-                            expandedImageIndex = previewImages.indexOfFirst {
-                                it.messageId == message.id && it.path == path
-                            }.takeIf { it >= 0 }
+                            val frozen = previewImages.toList()
+                            val index = frozen.indexOfFirst { it.messageId == message.id && it.path == path }
+                            if (index >= 0) imagePreviewRequest = ChatImagePreviewRequest(frozen, index)
                         }),
                         onImageLongPress = { path ->
                             if (canUseChatImageLongPress(isResponding, screenshotSelectionMode)) {
@@ -1709,7 +1707,7 @@ fun ChatScreen(
         }
     }
     fun locateGalleryMessage(messageId: String) {
-        expandedImageIndex = null; expandedImageSnapshot = null; imageGalleryOpen = false
+        imagePreviewRequest = null; imageGalleryOpen = false
         scope.launch {
             try {
                 viewModel.loadMessageWindow(messageId)
@@ -1726,10 +1724,10 @@ fun ChatScreen(
         onRefresh = { imageGalleryRevision++ },
         onView = { selected ->
             val items = imageGallerySnapshot?.images.orEmpty().filter { it.readable }
-            expandedImageSnapshot = items.map { ImagePreviewItem(it.messageId,it.path) }
-            expandedImageIndex = items.indexOfFirst { it.key == selected.key }.takeIf { it >= 0 }
+            val index = items.indexOfFirst { it.key == selected.key }
+            if (index >= 0) imagePreviewRequest = ChatImagePreviewRequest(items.map { ImagePreviewItem(it.messageId,it.path) }, index)
         }, onLocate = ::locateGalleryMessage, onDismiss = { imageGalleryOpen = false })
-    expandedImageIndex?.let { initialIndex ->
+    imagePreviewRequest?.let { request -> key(request) {
         CompositionLocalProvider(
             LocalChatImageRenderRuntime provides ChatImageRenderRuntime(
                 imageLoader = chatImageLoader,
@@ -1737,9 +1735,9 @@ fun ChatScreen(
             )
         ) {
         ImagePreviewDialog(
-            items = expandedImageSnapshot ?: previewImages,
-            initialIndex = initialIndex,
-            onDismiss = { expandedImageIndex = null; expandedImageSnapshot = null },
+            items = request.items,
+            initialIndex = request.initialIndex,
+            onDismiss = { imagePreviewRequest = null },
             onLocateMessage = ::locateGalleryMessage,
             onSetCardAvatar = if (!isArchived && characterCard != null) ({ path ->
                 viewModel.replaceCharacterCardAvatarFromImage(path) { _, message ->
@@ -1753,6 +1751,7 @@ fun ChatScreen(
             }) else null
         )
         }
+    }
     }
     screenshotPreviewPath?.let { path ->
         ChatLongScreenshotPreviewDialog(
@@ -2899,3 +2898,6 @@ private fun ImageStrip(images: List<String>, onRemove: (String) -> Unit) {
         }
     }
 }
+
+/** Each explicit click is a new open request, even for the same image and snapshot. */
+private class ChatImagePreviewRequest(val items: List<ImagePreviewItem>, val initialIndex: Int)
