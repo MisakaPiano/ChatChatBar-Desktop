@@ -23,12 +23,14 @@ import kotlinx.coroutines.withContext
 internal class DesktopSessionImageOpeningState(val snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int) {
     val selection = DesktopViewerSelection(snapshot.occurrences.map { it.reference }, initialIndex)
 }
+/** Reference identity is the explicit open event, including repeated clicks on the same thumbnail. */
+internal class DesktopSessionImageOpenRequest(val snapshot: DesktopSessionImageGallerySnapshot, val initialIndex: Int)
 
 /** A new explicit thumbnail opening replaces the viewer as one unit, including its source mapping. */
 @Composable
-internal fun DesktopSessionImageOpening(snapshot: DesktopSessionImageGallerySnapshot, initialIndex: Int,
+internal fun DesktopSessionImageOpening(request: DesktopSessionImageOpenRequest,
     content: @Composable (DesktopSessionImageOpeningState) -> Unit) {
-    val opening = remember(snapshot, initialIndex) { DesktopSessionImageOpeningState(snapshot, initialIndex) }
+    val opening = remember(request) { DesktopSessionImageOpeningState(request.snapshot, request.initialIndex) }
     key(opening) { content(opening) }
 }
 
@@ -40,7 +42,7 @@ internal fun DesktopSessionImageGalleryWindow(sessionId: String, controller: Des
     var loading by remember { mutableStateOf(true) }
     var snapshot by remember { mutableStateOf<DesktopSessionImageGallerySnapshot?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var preview by remember { mutableStateOf<Pair<DesktopSessionImageGallerySnapshot, Int>?>(null) }
+    var preview by remember { mutableStateOf<DesktopSessionImageOpenRequest?>(null) }
     var navigating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(sessionId, revision) {
@@ -62,14 +64,14 @@ internal fun DesktopSessionImageGalleryWindow(sessionId: String, controller: Des
             finally { navigating = false }
         }
     }
-    preview?.let { (captured, index) ->
-        DesktopSessionImageViewer(captured, index, controller.characterResources, controller.imagePicker,
+    preview?.let { request ->
+        DesktopSessionImageViewer(request, controller.characterResources, controller.imagePicker,
             onSource = ::source, onClose = { preview = null })
     }
     DesktopImageToolWindow("会话图片", onClose, width = 1000.dp, height = 760.dp) {
         DesktopSessionImageGalleryContent(snapshot, loading, error, navigating,
             read = controller.characterResources::readBytes,
-            onRefresh = { revision++ }, onPreview = { index -> snapshot?.let { preview = it to index } },
+            onRefresh = { revision++ }, onPreview = { index -> snapshot?.let { preview = DesktopSessionImageOpenRequest(it, index) } },
             onSource = ::source)
     }
 }

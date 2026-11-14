@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: desktop-session-gallery-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   focused:
     runs-on: windows-latest
@@ -30,7 +33,7 @@ jobs:
           if ([ReplyFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
           "TEMP=$buffer" >> $env:GITHUB_ENV
           "TMP=$buffer" >> $env:GITHUB_ENV
-      # Original8fd shared29 and unchanged viewer12 passed; this successor fixes only the gallery fixture precondition.
+      # Original strict-reader29 is unchanged. Opening-state ownership also affects the common viewer here.
       - name: Verify full history gallery source navigation and existing viewer controls
         working-directory: app
         env:
@@ -38,6 +41,7 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopSessionImageGalleryTest'
+          --tests 'com.example.chatbar.desktop.DesktopUnifiedViewerTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
