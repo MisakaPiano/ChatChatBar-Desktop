@@ -12,8 +12,9 @@ source_dir=$(realpath -- "$1")
 evidence_dir=$(realpath -m -- "$2")
 source_sha=$3
 fixture_sha=$4
-test "$source_sha" = 6ab083be4ee3de70757b06ea75ba49a77c558385
+test "$source_sha" = 480fbc2e6f6c6c0ac8cf3af937ecccb18bc73507
 [[ "$fixture_sha" =~ ^[0-9a-f]{64}$ ]]
+test "$fixture_sha" = f8203723c9e33f888c6ffdea68b40eb1b80a81d8d06044073e58d02b82214b6a
 test "$source_dir" = "$1"
 test "$evidence_dir" = "$2"
 test "$(git -C "$source_dir" rev-parse --show-toplevel)" = "$source_dir"
@@ -22,8 +23,8 @@ case "$evidence_dir/" in "$source_dir/"*) exit 1 ;; esac
 mkdir -p -- "$evidence_dir"
 test "$(realpath -- "$evidence_dir")" = "$evidence_dir"
 
-driver=app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/RealWebDavInteropSmokeTest.kt
-report=app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest.xml
+driver=app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/RealWebDavRuntimeChatRecoveryTest.kt
+report=app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.lanSync.RealWebDavRuntimeChatRecoveryTest.xml
 check_source() {
   test "$(git -C "$source_dir" rev-parse HEAD)" = "$source_sha"
   test "$(git -C "$source_dir" status --porcelain --untracked-files=all)" = "?? $driver"

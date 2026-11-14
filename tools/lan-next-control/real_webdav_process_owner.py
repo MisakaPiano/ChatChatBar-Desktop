@@ -16,12 +16,12 @@ import time
 import urllib.error
 import urllib.request
 
-SOURCE = '6ab083be4ee3de70757b06ea75ba49a77c558385'
-FIXTURE_SHA = '56075f65de42a46ea3dffe1ebf38f91691316473705e1da068e7f5dbe4af9a69'
-TARGET = 'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/RealWebDavInteropSmokeTest.kt'
-XML = 'app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest.xml'
-SELECTOR = ('com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest.'
-            'realServerMethodsAndColdDifferentLocalRoutePreserveCompleteOpaquePayload')
+SOURCE = '480fbc2e6f6c6c0ac8cf3af937ecccb18bc73507'
+FIXTURE_SHA = 'f8203723c9e33f888c6ffdea68b40eb1b80a81d8d06044073e58d02b82214b6a'
+TARGET = 'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/RealWebDavRuntimeChatRecoveryTest.kt'
+XML = 'app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.lanSync.RealWebDavRuntimeChatRecoveryTest.xml'
+SELECTOR = ('com.example.chatbar.domain.lanSync.RealWebDavRuntimeChatRecoveryTest.'
+            'runtimeUploadThenOfflineOwnerRecoveryPreservesLatestConversationAndColdIdentity')
 URL = 'http://127.0.0.1:18765/'
 USER = 'synthetic-ccb-ci'
 STOP_SECONDS = 5

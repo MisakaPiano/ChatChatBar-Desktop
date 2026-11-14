@@ -1,4 +1,4 @@
-"""Fixed, cloud-only real rclone WebDAV transport interop control.
+"""Fixed, cloud-only real rclone Runtime chat recovery control (format 3).
 
 No import-time native work. The sole fixture is an explicit test-only overlay;
 requests cannot select a host, executable, class, method, tool version or source.
@@ -20,15 +20,16 @@ import time
 import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
-SOURCE = '6ab083be4ee3de70757b06ea75ba49a77c558385'
-CLASS = 'com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest'
-METHOD = 'realServerMethodsAndColdDifferentLocalRoutePreserveCompleteOpaquePayload'
-TARGET = 'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/RealWebDavInteropSmokeTest.kt'
+SOURCE = '480fbc2e6f6c6c0ac8cf3af937ecccb18bc73507'
+CLASS = 'com.example.chatbar.domain.lanSync.RealWebDavRuntimeChatRecoveryTest'
+METHOD = 'runtimeUploadThenOfflineOwnerRecoveryPreservesLatestConversationAndColdIdentity'
+TARGET = 'app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/RealWebDavRuntimeChatRecoveryTest.kt'
 XML = 'app/sharedCore/build/test-results/test/TEST-' + CLASS + '.xml'
-FIXTURE = 'fixtures/RealWebDavInteropSmokeTest.kt'
+FIXTURE = 'fixtures/RealWebDavRuntimeChatRecoveryTest.kt'
+FIXTURE_SHA = 'f8203723c9e33f888c6ffdea68b40eb1b80a81d8d06044073e58d02b82214b6a'
 SCRIPT = 'run-real-webdav-interop.sh'
 PROCESS_OWNER = 'real_webdav_process_owner.py'
-FORMAT = 2
+FORMAT = 3
 REQUEST = '.github/lan-next-real-webdav-interop-request.json'
 VERSION = 'v1.76.0'
 ARCHIVE = 'rclone-v1.76.0-linux-amd64.zip'
@@ -36,9 +37,11 @@ ARCHIVE_SHA = 'b00f00b3266c3764413afe599d3ec316f6f43b3e0ea8a0bc1d186d2133e46df7'
 URL = 'https://github.com/rclone/rclone/releases/download/' + VERSION + '/' + ARCHIVE
 METHOD_FILE = 'real-webdav-method-counts.json'
 ARCHIVE_FILE = 'rclone-archive-manifest.json'
-SCOPE = ('Real official rclone loopback HTTP/Basic/XML/path interoperability of the unchanged CCB '
-         'chunk writer and cold different-local-route reader with196731 opaque bytes/seven chunks; '
-         'not AEAD, ledger/native admission, app recovery, TLS, commercial provider or large-data performance.')
+SCOPE = ('Actual domain/filesystem AEAD/ledger/causal/native-apply journal with Coordinator auto-source, '
+         'ordinary CloudRuntime and real rclone HTTP; explicit Owner restore-only plus exact latest '
+         'session/four messages, canonical native value hash and cold new-owner identity. Synthetic '
+         'protection/platform; not OS/native UI, HTTPS/commercial provider, GB/performance, saved cloud '
+         'connection or post-recovery new authored revision.')
 
 
 def require(value, code):
@@ -99,7 +102,8 @@ class RealWebDavControl:
     def expected_request(self):
         fixture = self.here / FIXTURE
         require(fixture.is_file() and not fixture.is_symlink(), 'CONTROL_FIXTURE_FILE')
-        return {'format': FORMAT, 'sourceSha': SOURCE, 'fixtureSha256': self.common.fixture_hash(fixture)}
+        require(self.common.fixture_hash(fixture) == FIXTURE_SHA, 'CONTROL_FIXTURE_SHA')
+        return {'format': FORMAT, 'sourceSha': SOURCE, 'fixtureSha256': FIXTURE_SHA}
 
     def validate_request(self, value):
         require(isinstance(value, dict) and set(value) == {'format', 'sourceSha', 'fixtureSha256'} and
@@ -176,7 +180,7 @@ class RealWebDavControl:
         require(self.checked_target(source) == target, 'SOURCE_PATH_CHANGED')
         with target.open('xb') as stream: stream.write(self.common.fixture_bytes(self.here / FIXTURE))
         self.source_status(source, request, True)
-        self.common.write_new(output / 'prepared.json', {'kind': 'CCB_REAL_WEBDAV_TEST_ONLY_PREPARED',
+        self.common.write_new(output / 'prepared.json', {'kind': 'CCB_REAL_WEBDAV_RUNTIME_CHAT_RECOVERY_TEST_ONLY_PREPARED',
             'request': request, 'sourceSha': request['sourceSha'], 'target': TARGET, 'productionFilesChanged': [],
             'control': binding, 'scope': SCOPE})
 
@@ -195,16 +199,35 @@ class RealWebDavControl:
         version = version_path.read_text(encoding='utf-8', errors='strict')
         require(version.splitlines()[0] == 'rclone ' + VERSION, 'RCLONE_VERSION')
         counts = load(self.canonical(output / METHOD_FILE))
-        require(set(counts) == {'kind', 'payloadBytes', 'physicalChunks', 'methods', 'paths'} and
-                counts['kind'] == 'CCB_REAL_WEBDAV_METHOD_COUNTS' and
-                type(counts['payloadBytes']) is int and counts['payloadBytes'] == 196731 and
-                type(counts['physicalChunks']) is int and counts['physicalChunks'] == 7, 'METHOD_SCOPE')
-        methods, paths = counts['methods'], counts['paths']
-        require(isinstance(methods, dict) and {'PUT', 'GET', 'PROPFIND', 'MKCOL'} <= set(methods) and
-                all(re.fullmatch('[A-Z]{1,16}', key) and type(count) is int and count > 0 for key, count in methods.items()), 'REAL_METHODS')
+        require(isinstance(counts, dict) and set(counts) == {'kind', 'sourceSha', 'documentBytes', 'documentSha256', 'sessionCount',
+                'messageCount', 'conversationValueHash', 'uploadedObjects', 'sourceAuthorSequence',
+                'recoveredAuthorSequence', 'saveConnection', 'coldHttpRequests', 'senderMethods',
+                'recoveryMethods', 'paths'} and
+                counts['kind'] == 'CCB_REAL_WEBDAV_RUNTIME_CHAT_RECOVERY_COUNTS' and
+                counts['sourceSha'] == SOURCE and
+                type(counts['documentBytes']) is int and counts['documentBytes'] == 131113 and
+                counts['documentSha256'] == '4d54264dec430f62d42fa8430325fd4925474c1a11040045a77cf690f20d4e45' and
+                type(counts['sessionCount']) is int and counts['sessionCount'] == 1 and
+                type(counts['messageCount']) is int and counts['messageCount'] == 4 and
+                isinstance(counts['conversationValueHash'], str) and
+                re.fullmatch('[a-f0-9]{64}', counts['conversationValueHash']) is not None and
+                type(counts['uploadedObjects']) is int and counts['uploadedObjects'] > 0 and
+                type(counts['sourceAuthorSequence']) is int and counts['sourceAuthorSequence'] == 1 and
+                type(counts['recoveredAuthorSequence']) is int and counts['recoveredAuthorSequence'] == 0 and
+                counts['saveConnection'] is False and
+                type(counts['coldHttpRequests']) is int and counts['coldHttpRequests'] == 0, 'METHOD_SCOPE')
+        sender, recovery, paths = counts['senderMethods'], counts['recoveryMethods'], counts['paths']
+        for methods, required in ((sender, {'PUT', 'GET', 'PROPFIND', 'MKCOL'}),
+                                  (recovery, {'GET', 'PROPFIND'})):
+            require(isinstance(methods, dict) and required <= set(methods) and
+                    all(isinstance(key, str) and re.fullmatch('[A-Z]{1,16}', key) and
+                        type(count) is int and count > 0 for key, count in methods.items()), 'REAL_METHODS')
+        require('PUT' not in recovery, 'RESTORE_ONLY_NO_PUT')
         require(isinstance(paths, dict) and paths and len(paths) <= 512 and
                 all(isinstance(key, str) and len(key) <= 1024 and re.fullmatch('/[a-z0-9/._-]*', key) and
                     type(count) is int and count > 0 for key, count in paths.items()), 'HEADER_FREE_PATHS')
+        require(any(path.startswith('/weak-chunks-v1/') for path in paths) and
+                any(path.startswith('/weak-assemblies-v1/') for path in paths), 'REAL_CHUNK_AND_ASSEMBLY_PATHS')
         # The entire report directory is an allowlist, not a broad upload glob
         # over payload/config/private client roots.
         allowed = {'prepared.json', 'runner-stdout.txt', 'runner-stderr.txt', ARCHIVE_FILE, METHOD_FILE,
@@ -262,9 +285,9 @@ class RealWebDavControl:
                 prepared['target'] == TARGET and prepared['productionFilesChanged'] == [], 'PREPARED_BINDING')
         require({p.name for p in output.iterdir()} == {'prepared.json'}, 'REPORTS_ALREADY_EXIST')
         require(not (source / XML).exists() and not (source / XML).is_symlink(), 'PREEXISTING_JUNIT_EVIDENCE')
-        result = {'kind': 'CCB_REAL_WEBDAV_INTEROP_EXECUTION', 'passed': False, 'sourceSha': request['sourceSha'],
+        result = {'kind': 'CCB_REAL_WEBDAV_RUNTIME_CHAT_RECOVERY_EXECUTION', 'passed': False, 'sourceSha': request['sourceSha'],
             'control': binding, 'fixtureSha256': request['fixtureSha256'], 'scope': SCOPE,
-            'productionFilesChanged': [], 'realProviderOrAeadOrNativeProof': False, 'requestFormat': FORMAT}
+            'productionFilesChanged': [], 'domainAeadLedgerNativeJournalProof': False, 'osNativeUiOrCommercialTlsOrLargeProof': False, 'requestFormat': FORMAT}
         phase = 'cloud-runner'
         try:
             argv = ['bash', str(self.here / SCRIPT), str(source), str(output), request['sourceSha'], request['fixtureSha256']]
@@ -278,6 +301,7 @@ class RealWebDavControl:
             require(self.control_binding() == binding, 'CONTROL_CHANGED_DURING_RUN')
             phase = 'strict-original-junit-and-tool-records'
             result.update(self.verify_reports(source, output, request)); result['passed'] = True
+            result['domainAeadLedgerNativeJournalProof'] = True
         except Exception as error:
             result['failure'] = {'phase': phase, 'type': type(error).__name__}
             raise

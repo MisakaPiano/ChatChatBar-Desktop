@@ -1,4 +1,4 @@
-name: Fixed CCB client interoperability with official rclone WebDAV
+name: Fixed CCB Runtime chat recovery with official rclone WebDAV
 on:
   push:
     branches: ['codex/lan-next-sync-control-*']
@@ -18,7 +18,7 @@ jobs:
         shell: bash
         run: |
           source_sha=$(python3 -B tools/lan-next-control/real_webdav_interop_control.py validate --request .github/lan-next-real-webdav-interop-request.json)
-          test "$source_sha" = 6ab083be4ee3de70757b06ea75ba49a77c558385
+          test "$source_sha" = 480fbc2e6f6c6c0ac8cf3af937ecccb18bc73507
           source_dir="$RUNNER_TEMP/ccb-real-webdav-fixed-source"
           evidence_dir="$RUNNER_TEMP/ccb-real-webdav-reports"
           git worktree add --detach "$source_dir" "$source_sha"
@@ -30,7 +30,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Pinned independent server and one actual CCB chunk read/write method
+      - name: Pinned independent server and one actual Runtime chat recovery method
         shell: bash
         run: python3 -B tools/lan-next-control/real_webdav_interop_control.py run --request .github/lan-next-real-webdav-interop-request.json --source-dir "$CCB_REAL_DAV_SOURCE_DIR" --output "$CCB_REAL_DAV_EVIDENCE_DIR"
       - uses: actions/upload-artifact@v4
@@ -45,6 +45,6 @@ jobs:
             ${{ runner.temp }}/ccb-real-webdav-reports/rclone-version.txt
             ${{ runner.temp }}/ccb-real-webdav-reports/rclone-archive-manifest.json
             ${{ runner.temp }}/ccb-real-webdav-reports/real-webdav-method-counts.json
-            ${{ runner.temp }}/ccb-real-webdav-reports/TEST-com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest.xml
+            ${{ runner.temp }}/ccb-real-webdav-reports/TEST-com.example.chatbar.domain.lanSync.RealWebDavRuntimeChatRecoveryTest.xml
           if-no-files-found: error
           retention-days: 14

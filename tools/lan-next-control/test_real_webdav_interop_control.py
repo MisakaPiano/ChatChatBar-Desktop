@@ -71,16 +71,16 @@ class RealWebDavControlTest(unittest.TestCase):
     def test_fixed_request_rejects_wrong_source_tool_url_and_unknown_fields(self):
         good = self.control.expected_request()
         self.assertEqual(self.control.validate_request(good), good)
-        for key, value in (('sourceSha', '0' * 40), ('fixtureSha256', '0' * 64), ('format', True), ('format', 1),
+        for key, value in (('sourceSha', '0' * 40), ('fixtureSha256', '0' * 64), ('format', True), ('format', 1), ('format', 2),
                            ('endpoint', 'https://example.invalid/'), ('rcloneVersion', 'latest'), ('class', 'other')):
             bad = dict(good); bad[key] = value
             with self.assertRaises(ValueError): self.control.validate_request(bad)
 
-    def test_format2_and_process_owner_are_bound_without_changing_fixture(self):
-        self.assertEqual(FORMAT, 2)
-        self.assertEqual(self.control.expected_request()['format'], 2)
+    def test_format3_chat_variant_and_process_owner_are_bound(self):
+        self.assertEqual(FORMAT, 3)
+        self.assertEqual(self.control.expected_request()['format'], 3)
         self.assertEqual(self.control.expected_request()['fixtureSha256'],
-                         '56075f65de42a46ea3dffe1ebf38f91691316473705e1da068e7f5dbe4af9a69')
+                         'f8203723c9e33f888c6ffdea68b40eb1b80a81d8d06044073e58d02b82214b6a')
         home = self.temp()
         for name in ('real_webdav_interop_control.py', SCRIPT, FIXTURE, PROCESS_OWNER):
             target = home / name
@@ -115,7 +115,7 @@ class RealWebDavControlTest(unittest.TestCase):
         clone = RealWebDavControl(CONTROL, home)
         request = clone.expected_request()
         (home / FIXTURE).write_bytes(b'synthetic changed fixture')
-        with self.assertRaisesRegex(ValueError, 'FIXED_INTEROP_REQUEST'): clone.validate_request(request)
+        with self.assertRaisesRegex(ValueError, 'CONTROL_FIXTURE_SHA'): clone.validate_request(request)
 
     def test_local_native_guard_fails_before_process_or_download(self):
         before = os.environ.get('GITHUB_ACTIONS')
@@ -201,8 +201,14 @@ class RealWebDavControlTest(unittest.TestCase):
         (output / 'rclone-version.txt').write_text('rclone v1.76.0\nsynthetic report metadata only\n', encoding='utf-8')
         archive = {'kind': 'CCB_RCLONE_PINNED_ARCHIVE', 'version': VERSION, 'filename': ARCHIVE,
                    'downloadUrl': URL, 'bytes': 1234, 'sha256': ARCHIVE_SHA}
-        counts = {'kind': 'CCB_REAL_WEBDAV_METHOD_COUNTS', 'payloadBytes': 196731, 'physicalChunks': 7,
-                  'methods': {'GET': 1, 'PUT': 1, 'PROPFIND': 1, 'MKCOL': 1}, 'paths': {'/weak-chunks-v1/x/': 1}}
+        counts = {'kind': 'CCB_REAL_WEBDAV_RUNTIME_CHAT_RECOVERY_COUNTS', 'sourceSha': SOURCE,
+                  'documentBytes': 131113, 'documentSha256': '4d54264dec430f62d42fa8430325fd4925474c1a11040045a77cf690f20d4e45',
+                  'sessionCount': 1, 'messageCount': 4, 'conversationValueHash': 'c' * 64,
+                  'uploadedObjects': 9, 'sourceAuthorSequence': 1, 'recoveredAuthorSequence': 0,
+                  'saveConnection': False, 'coldHttpRequests': 0,
+                  'senderMethods': {'GET': 1, 'PUT': 1, 'PROPFIND': 1, 'MKCOL': 1},
+                  'recoveryMethods': {'GET': 1, 'PROPFIND': 1},
+                  'paths': {'/weak-chunks-v1/x/': 1, '/weak-assemblies-v1/y/': 1}}
         (output / ARCHIVE_FILE).write_text(json.dumps(archive), encoding='utf-8')
         (output / METHOD_FILE).write_text(json.dumps(counts), encoding='utf-8')
         return archive, counts
@@ -215,8 +221,8 @@ class RealWebDavControlTest(unittest.TestCase):
             (output / ARCHIVE_FILE).write_text(json.dumps(bad), encoding='utf-8')
             with self.assertRaises(ValueError): self.control.verify_reports(source, output, self.control.expected_request())
         (output / ARCHIVE_FILE).write_text(json.dumps(archive), encoding='utf-8')
-        for key in counts['methods']:
-            bad = deepcopy(counts); del bad['methods'][key]
+        for key in counts['senderMethods']:
+            bad = deepcopy(counts); del bad['senderMethods'][key]
             (output / METHOD_FILE).write_text(json.dumps(bad), encoding='utf-8')
             with self.assertRaises(ValueError): self.control.verify_reports(source, output, self.control.expected_request())
 
@@ -230,6 +236,110 @@ class RealWebDavControlTest(unittest.TestCase):
         (output / METHOD_FILE).write_text(json.dumps(counts), encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'HEADER_FREE_PATHS'):
             self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_format3_rejects_old_opaque_schema_or_extra_business_and_credential_fields(self):
+        source, output = self.synthetic_roots(); _, counts = self.valid_reports(output)
+        old = {'kind': 'CCB_REAL_WEBDAV_METHOD_COUNTS', 'payloadBytes': 196731, 'physicalChunks': 7,
+               'methods': {'GET': 1, 'PUT': 1, 'PROPFIND': 1, 'MKCOL': 1}, 'paths': {'/weak-chunks-v1/x/': 1}}
+        candidates = [old]
+        for key in ('headers', 'password', 'recoveryCode', 'messageText', 'payloadBytes', 'physicalChunks'):
+            value = deepcopy(counts); value[key] = 'synthetic forbidden field'; candidates.append(value)
+        for value in candidates:
+            (output / METHOD_FILE).write_text(json.dumps(value), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'METHOD_SCOPE'):
+                self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_format3_requires_every_new_metadata_field(self):
+        source, output = self.synthetic_roots(); _, counts = self.valid_reports(output)
+        for key in counts:
+            with self.subTest(key=key):
+                bad = deepcopy(counts); del bad[key]
+                (output / METHOD_FILE).write_text(json.dumps(bad), encoding='utf-8')
+                with self.assertRaisesRegex(ValueError, 'METHOD_SCOPE'):
+                    self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_format3_metadata_must_be_an_object(self):
+        source, output = self.synthetic_roots(); self.valid_reports(output)
+        for value in (None, [], 1, 'synthetic invalid root'):
+            (output / METHOD_FILE).write_text(json.dumps(value), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'METHOD_SCOPE'):
+                self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_chat_document_counts_hashes_and_scalar_types_are_strict(self):
+        source, output = self.synthetic_roots(); _, counts = self.valid_reports(output)
+        mutations = [('kind', 'other'), ('sourceSha', 'a' * 40), ('documentBytes', 131112), ('documentBytes', True),
+                     ('documentSha256', '0' * 64), ('sessionCount', 2), ('sessionCount', True),
+                     ('messageCount', 3), ('messageCount', True), ('conversationValueHash', 'C' * 64),
+                     ('conversationValueHash', 'c' * 63), ('conversationValueHash', 1), ('uploadedObjects', 0),
+                     ('uploadedObjects', True), ('sourceAuthorSequence', 2), ('sourceAuthorSequence', True),
+                     ('recoveredAuthorSequence', 1), ('recoveredAuthorSequence', False),
+                     ('saveConnection', True), ('saveConnection', 0), ('coldHttpRequests', 1), ('coldHttpRequests', False)]
+        for key, value in mutations:
+            with self.subTest(key=key, value=value):
+                bad = deepcopy(counts); bad[key] = value
+                (output / METHOD_FILE).write_text(json.dumps(bad), encoding='utf-8')
+                with self.assertRaisesRegex(ValueError, 'METHOD_SCOPE'):
+                    self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_separate_method_maps_and_restore_only_forbid_any_recovery_put(self):
+        source, output = self.synthetic_roots(); _, counts = self.valid_reports(output)
+        bad_values = []
+        for group, required in (('senderMethods', ('PUT', 'GET', 'PROPFIND', 'MKCOL')),
+                                ('recoveryMethods', ('GET', 'PROPFIND'))):
+            for method in required:
+                bad = deepcopy(counts); del bad[group][method]; bad_values.append(bad)
+            bad = deepcopy(counts); bad[group]['GET'] = True; bad_values.append(bad)
+            bad = deepcopy(counts); bad[group] = []; bad_values.append(bad)
+        for count in (0, 1):
+            bad = deepcopy(counts); bad['recoveryMethods']['PUT'] = count; bad_values.append(bad)
+        for bad in bad_values:
+            (output / METHOD_FILE).write_text(json.dumps(bad), encoding='utf-8')
+            with self.assertRaises(ValueError):
+                self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_paths_require_both_physical_namespaces_and_positive_header_free_counts(self):
+        source, output = self.synthetic_roots(); _, counts = self.valid_reports(output)
+        for paths in ({'/weak-chunks-v1/x/': 1}, {'/weak-assemblies-v1/y/': 1},
+                      {'/weak-chunks-v1/x/': True, '/weak-assemblies-v1/y/': 1},
+                      {'/Authorization:synthetic': 1}, {'http://127.0.0.1/': 1}):
+            bad = deepcopy(counts); bad['paths'] = paths
+            (output / METHOD_FILE).write_text(json.dumps(bad), encoding='utf-8')
+            with self.assertRaises(ValueError):
+                self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_old_opaque_junit_cannot_be_promoted_by_new_chat_metadata(self):
+        source, output = self.synthetic_roots(); self.valid_reports(output)
+        old_class = 'com.example.chatbar.domain.syncStoreProof.RealWebDavInteropSmokeTest'
+        (output / Path(XML).name).write_bytes(xml(suite=old_class, classname=old_class,
+            name='realServerMethodsAndColdDifferentLocalRoutePreserveCompleteOpaquePayload'))
+        with self.assertRaises(ValueError):
+            self.control.verify_reports(source, output, self.control.expected_request())
+
+    def test_process_owner_uses_only_fixed_new_identity_and_existing_bounded_cleanup(self):
+        import real_webdav_process_owner as owner
+        self.assertEqual(SOURCE, owner.SOURCE); self.assertEqual(TARGET, owner.TARGET); self.assertEqual(XML, owner.XML)
+        self.assertEqual(CLASS + '.' + METHOD, owner.SELECTOR)
+        self.assertEqual(self.control.expected_request()['fixtureSha256'], owner.FIXTURE_SHA)
+        self.assertEqual(5, owner.STOP_SECONDS)
+
+    def test_diagnostic_variant_has_only_safe_type_and_original_stack_locations(self):
+        body = (HERE / FIXTURE).read_text(encoding='utf-8')
+        self.assertIn('catch (failure: Throwable)', body)
+        self.assertIn('type=${failure.javaClass.simpleName}', body)
+        self.assertIn('safe.stackTrace = failure.stackTrace', body)
+        self.assertNotIn('failure.message', body); self.assertNotIn('failure.cause', body)
+        self.assertNotIn('failure.suppressed', body); self.assertNotIn('safe.initCause', body)
+        self.assertEqual(1, body.count('@Test fun'))
+
+    def test_workflow_fixed_source_and_exact_eight_report_allowlist(self):
+        body = (HERE.parents[1] / '.github/workflows/lan-next-real-webdav-interop.yml').read_text(encoding='utf-8')
+        self.assertIn('test "$source_sha" = ' + SOURCE, body)
+        prefix = '${{ runner.temp }}/ccb-real-webdav-reports/'
+        actual = [line.strip()[len(prefix):] for line in body.splitlines() if line.strip().startswith(prefix)]
+        expected = {'prepared.json', 'execution.json', 'runner-stdout.txt', 'runner-stderr.txt', 'rclone-version.txt',
+                    ARCHIVE_FILE, METHOD_FILE, Path(XML).name}
+        self.assertEqual(8, len(actual)); self.assertEqual(expected, set(actual))
+        self.assertIn('if: always()', body)
 
     def test_roots_must_be_distinct_owned_runner_temporaries(self):
         source, output = self.synthetic_roots()
