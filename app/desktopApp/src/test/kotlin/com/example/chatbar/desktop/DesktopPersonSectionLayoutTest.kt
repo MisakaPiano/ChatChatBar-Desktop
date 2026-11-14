@@ -8,6 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.ImageComposeScene
@@ -32,9 +34,9 @@ class DesktopPersonSectionLayoutTest {
             }.verticalScroll(scroll)) {
                 Spacer(Modifier.height(200.dp))
                 DesktopPersonSectionLayout(top, height,
-                    master = { Box(Modifier.fillMaxSize().onGloballyPositioned { master = it.boundsInRoot() }) },
+                    master = { Box(Modifier.fillMaxSize().onGloballyPositioned { master = Rect(it.positionInRoot(), Size(it.size.width.toFloat(), it.size.height.toFloat())) }) },
                     detail = { Box(Modifier.height(2200.dp).fillMaxWidth()) })
-                Box(Modifier.height(600.dp).fillMaxWidth().onGloballyPositioned { advanced = it.boundsInRoot() })
+                Box(Modifier.height(600.dp).fillMaxWidth().onGloballyPositioned { advanced = Rect(it.positionInRoot(), Size(it.size.width.toFloat(), it.size.height.toFloat())) })
             }
         }
         suspend fun settle() { repeat(8) { scene.render().close(); delay(20) } }
