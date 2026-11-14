@@ -12,7 +12,7 @@ internal object DesktopLanSyncRaster {
     fun decode(path: Path, record: LanSyncRecord, longestSide: Int, renderOrientation: Boolean = true): BufferedImage {
         require(longestSide in 1..2048)
         LanSyncRasterPolicy.checkPng(path, LanSyncPostProcess.record(record) != null)
-        DesktopLanSyncWebPInput.open(path, renderColorMetadata = renderOrientation).use { input ->
+        DesktopLanSyncWebPInput.open(path, renderColorMetadata = renderOrientation, maximumPixels = LanSyncRasterPolicy.maximumPixels(record)).use { input ->
             val readers = ImageIO.getImageReaders(input)
             require(readers.hasNext()) { "SYNC_IMAGE_CODEC_UNAVAILABLE" }
             val reader = readers.next()

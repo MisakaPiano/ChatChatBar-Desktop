@@ -34,7 +34,8 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
 
     companion object {
         private const val METADATA_BYTES = 16L * 1024 * 1024
-        fun open(path: Path, renderColorMetadata: Boolean): ImageInputStream {
+        fun open(path: Path, renderColorMetadata: Boolean, maximumPixels: Long = 32_000_000L): ImageInputStream {
+            require(maximumPixels > 0)
             val input = FileImageInputStream(path.toFile())
             try {
                 val originalSize = input.length()
@@ -68,6 +69,7 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
                         val body = ByteArray(10).also(input::readFully)
                         fun dimension(offset: Int) = 1L + (body[offset].toInt() and 255) + ((body[offset + 1].toInt() and 255) shl 8) + ((body[offset + 2].toInt() and 255) shl 16)
                         canvas = dimension(4) to dimension(7)
+                        require(canvas.first * canvas.second <= maximumPixels) { "SYNC_IMAGE_INVALID" }
                         body[0] = (body[0].toInt() and (if (renderColorMetadata) 0x0c else 0x2c).inv()).toByte()
                         replacement = chunk + body
                     }
@@ -77,6 +79,7 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
                         val frame = ByteArray(16).also(input::readFully)
                         fun value(offset: Int) = (frame[offset].toLong() and 255) + ((frame[offset + 1].toLong() and 255) shl 8) + ((frame[offset + 2].toLong() and 255) shl 16)
                         require(value(0) * 2 + value(6) + 1 <= bounds.first && value(3) * 2 + value(9) + 1 <= bounds.second) { "SYNC_IMAGE_INVALID" }
+                        require((value(6) + 1) * (value(9) + 1) <= maximumPixels) { "SYNC_IMAGE_INVALID" }
                     }
                     if (type !in setOf("EXIF", "XMP ") && (renderColorMetadata || type != "ICCP")) {
                         require(parts.size < 65_536) { "SYNC_IMAGE_METADATA_WORKING_BUDGET" }

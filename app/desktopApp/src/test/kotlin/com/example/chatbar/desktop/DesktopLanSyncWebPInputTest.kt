@@ -51,6 +51,12 @@ class DesktopLanSyncWebPInputTest {
             assertEquals("SYNC_IMAGE_INVALID", assertFailsWith<IllegalArgumentException> { DesktopLanSyncWebPInput.open(image, false).close() }.message)
             assertFailsWith<IllegalArgumentException> { validateDesktopLanSyncResource("images", image, row) }
             write(image, 128, 128)
+            java.io.RandomAccessFile(image.toFile(), "rw").use {
+                // 8,388,608x5 canvas: reject its header before any large raster is created.
+                it.seek(24); it.write(byteArrayOf(0xff.toByte(), 0xff.toByte(), 0x7f, 4, 0, 0))
+            }
+            assertFailsWith<IllegalArgumentException> { DesktopLanSyncWebPInput.open(image, false).close() }
+            write(image, 128, 128)
             java.io.RandomAccessFile(image.toFile(), "rw").use { it.setLength(it.length() - 1) }
             assertFailsWith<IllegalArgumentException> { DesktopLanSyncWebPInput.open(image, true).close() }
         } finally { check(root.toFile().deleteRecursively()) }
