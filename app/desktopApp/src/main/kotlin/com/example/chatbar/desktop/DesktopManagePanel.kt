@@ -1111,6 +1111,7 @@ internal fun LabeledField(
     value: String,
     secret: Boolean = false,
     multiline: Boolean = false,
+    enabled: Boolean = true,
     onChange: (String) -> Unit,
 ) {
     var input by remember { mutableStateOf(TextFieldValue(value)) }
@@ -1122,6 +1123,7 @@ internal fun LabeledField(
         StatusText(label)
         BasicTextField(
             value = input,
+            enabled = enabled,
             onValueChange = { next ->
                 input = next
                 inputFocus?.changed(token, next.composition != null)
