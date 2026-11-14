@@ -6,7 +6,7 @@ object ActionOptionPolicy {
     data class Insertion(val text: String, val cursor: Int)
     private val number = Regex("^\\s*(?:\\*\\*)?([1-9][0-9]*)[.、)）]\\s*(?:\\*\\*)?(.+?)\\s*$")
     private val headingPattern = Regex(
-        "^[\p{P}\p{S}\s]*(行动选项|可选行动|行动选择|选项|action choices|action options)[\p{P}\p{S}\s]*$",
+        """^[\p{P}\p{S}\s]*(行动选项|可选行动|行动选择|选项|action choices|action options)[\p{P}\p{S}\s]*$""",
         RegexOption.IGNORE_CASE
     )
     private fun heading(text: String): Boolean = headingPattern.matches(text.trim())
