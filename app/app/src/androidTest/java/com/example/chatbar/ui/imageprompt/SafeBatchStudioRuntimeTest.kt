@@ -32,23 +32,23 @@ class SafeBatchStudioRuntimeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     private data class RequestRecord(val count: Int, val prompt: String)
 
-    @Test fun studioFreezesLaunchPromptCommitsFourFourTwoAndKeepsLiveEdit() = withRuntime("success") { vm, requests, before ->
-        start(vm, 4, 10, 1, 10000)
+    @Test fun studioFreezesLaunchPromptCommitsThreeFullBatchesAndKeepsLiveEdit() = withRuntime("success") { vm, requests, before ->
+        start(vm, 4, 3, 1, true)
         rule.waitUntil(15000) { vm.uiState.value.autoCompletedCount >= 4 }
         rule.runOnIdle { vm.updateDraft { it.copy(basePrompt = "synthetic live edit for next run") } }
         rule.waitUntil(15000) { !vm.uiState.value.isBusy }
         assertEquals(ImagePromptToolPhase.FINISHED, vm.uiState.value.phase)
-        assertEquals(listOf(4, 4, 2), requests.map { it.count })
+        assertEquals(listOf(4, 4, 4), requests.map { it.count })
         assertTrue(requests.all { it.prompt.contains("synthetic launch freeze") && !it.prompt.contains("live edit") })
         assertEquals("synthetic live edit for next run", vm.uiState.value.draft.basePrompt)
         val saved = reopenedHistory().filter { it.id !in before }
-        assertEquals(10, saved.sumOf { it.images.size }); assertEquals(listOf(2, 4, 4), saved.map { it.images.size }.sorted())
+        assertEquals(12, saved.sumOf { it.images.size }); assertEquals(listOf(4, 4, 4), saved.map { it.images.size }.sorted())
         assertTrue(saved.all { it.recipe.basePrompt == "synthetic launch freeze" })
         assertTrue(saved.flatMap { it.images }.all { File(it.path).isFile })
         proof("studio-freeze-and-save", requests, saved)
     }
     @Test fun studio429PausesUntilUserResumesThenHonorsFullCooldown() = withRuntime("429") { vm, requests, before ->
-        start(vm, 1, 1, 1, 0)
+        start(vm, 1, 1, 1, false)
         rule.waitUntil(15000) { vm.uiState.value.batchProgress?.stage == ImageBatchStage.PAUSED }
         Thread.sleep(500); assertEquals(1, requests.size)
         val resumed = System.nanoTime()
@@ -60,7 +60,7 @@ class SafeBatchStudioRuntimeTest {
         proof("studio-429-explicit-resume", requests, saved)
     }
     @Test fun studioStopDuringPacingKeepsFirstCommittedBatchAndMakesNoNextRequest() = withRuntime("success") { vm, requests, before ->
-        start(vm, 1, 3, 30, 0)
+        start(vm, 1, 3, 30, false)
         rule.waitUntil(15000) { vm.uiState.value.batchProgress?.stage == ImageBatchStage.WAITING }
         rule.runOnIdle { vm.pauseBatchRun() }
         rule.waitUntil(10000) { vm.uiState.value.batchProgress?.stage == ImageBatchStage.PAUSED }
@@ -72,23 +72,33 @@ class SafeBatchStudioRuntimeTest {
         val saved = reopenedHistory().filter { it.id !in before }; assertEquals(1, saved.sumOf { it.images.size })
         proof("studio-stop-keeps-history", requests, saved)
     }
-    private fun start(vm: ImagePromptToolViewModel, count: Int, target: Int, seconds: Int, budget: Long) {
-        rule.waitUntil(20000) { vm.uiState.value.draftLoaded }
+    @Test fun paidBatchIsBlockedWithSpendingDisabledBeforeAnyImageRequest() = withRuntime("success") { vm, requests, before ->
+        start(vm, 4, 3, 0, false)
+        rule.waitUntil(5000) { vm.uiState.value.error != null }
+        assertFalse(vm.uiState.value.isBusy)
+        assertTrue(requests.isEmpty())
+        assertEquals(before, reopenedHistory().map { it.id }.toSet())
+    }
+    private fun start(vm: ImagePromptToolViewModel, count: Int, batches: Int, seconds: Int, allowSpending: Boolean) {
+        rule.waitUntil(20000) { vm.uiState.value.draftLoaded && vm.uiState.value.account.effectiveUsage != null }
         rule.runOnIdle {
             vm.updateDraft { it.copy(basePrompt = "synthetic launch freeze", characters = emptyList(),
                 selectedModel = NovelAiImageModel.V4_5_FULL, followDefaultNovelAiImageModel = false,
-                imageGuidance = NovelAiImageGuidanceDraft(), continuousModeEnabled = true, continuousTargetCount = target,
+                imageGuidance = NovelAiImageGuidanceDraft(), continuousModeEnabled = batches > 1, continuousTargetCount = count * batches,
+                numberOfBatches = batches, allowAnlasSpending = allowSpending,
                 v45Settings = NovelAiGenerationSettings(count = count), batchPacing = ImageBatchPacing(fixedSeconds = seconds)) }
-            vm.setBatchBudget(budget); vm.generateImage()
+            vm.generateImage()
         }
-        rule.waitUntil(5000) { vm.uiState.value.batchConfirmation != null }
-        rule.runOnIdle { vm.confirmBatchRun() }
+        if (allowSpending) {
+            rule.waitUntil(5000) { vm.uiState.value.batchConfirmation != null }
+            rule.runOnIdle { vm.confirmBatchRun() }
+        }
     }
     private fun withRuntime(scenario: String, block: (ImagePromptToolViewModel, List<RequestRecord>, Set<String>) -> Unit) {
         val app = ChatBarApp.instance
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic Studio runtime checks") } }
-        check(app.packageName == "com.example.chatbar.safebatch.n1") { "Refusing a non-isolated app" }
+        check(app.packageName == "com.example.chatbar.safebatch.n2") { "Refusing a non-isolated app" }
         val oldToken = app.novelAiCredentialStore.load()
         val requests = Collections.synchronizedList(mutableListOf<RequestRecord>())
         val client = OkHttpClient.Builder().addInterceptor { chain ->
