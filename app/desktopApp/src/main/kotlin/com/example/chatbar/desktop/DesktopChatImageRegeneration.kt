@@ -97,10 +97,8 @@ internal class DesktopChatImageRegeneration(
         val openingSession = requireNotNull(chats.getSession(original.sessionId))
         val batchPlan = requirements?.batchPlan
         if (batchPlan != null) require(batchPlan.origin == ImageBatchOrigin.CHAT_MANUAL)
-        var afterMessageId = original.id
         suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
-            (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value?.characterCardId == openingSession.characterCardId &&
-            (afterMessageId == original.id || (chats.readMessageDurable(afterMessageId, original.sessionId) as? EntityReadResult.Valid)?.value?.generatedFromMessageId == original.id)
+            (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value?.characterCardId == openingSession.characterCardId
         require(eligible())
         val session = openingSession
         val originalCard = requireNotNull(characters.getById(session.characterCardId))
@@ -145,7 +143,7 @@ internal class DesktopChatImageRegeneration(
             report.generationStatus("正在生成图片")
             val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible,
-                    afterMessageId = afterMessageId, onCommitted = { afterMessageId = it })
+                    expectedCharacterCardId = openingSession.characterCardId)
             }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics)
             if (batchPlan == null) ImageBatchRunner.ordinaryStudioRequest {
                 runtime.generate(draft, promptPlan = plan, maxRateLimitRetries = 10,
@@ -212,8 +210,7 @@ internal class DesktopChatImageRegeneration(
 internal suspend fun persistDesktopChatImages(chats: ChatRepository, resources: DesktopCharacterResourceStore,
     coordinator: DesktopDataOperationCoordinator, original: ChatMessage, plan: NovelAiPromptPlan,
     size: NovelAiImageSize, bytes: List<ByteArray>, recipe: NovelAiGenerationRecipe,
-    eligible: suspend () -> Boolean, afterMessageId: String = original.id,
-    onCommitted: (String) -> Unit = {}): NovelAiGenerationHistoryEntry = coordinator.withExclusiveMaintenance {
+    eligible: suspend () -> Boolean, expectedCharacterCardId: String? = null): NovelAiGenerationHistoryEntry = coordinator.withExclusiveMaintenance {
     withContext(NonCancellable + Dispatchers.IO) {
         require(eligible()) { "生图来源已更改，未发布结果" }
         val id = UUID.randomUUID().toString()
@@ -223,8 +220,8 @@ internal suspend fun persistDesktopChatImages(chats: ChatRepository, resources: 
                 PackagedImage("image.png", Base64.getEncoder().encodeToString(value)), System.currentTimeMillis(), "p7chat${id}_$index") }
             chats.addMessageAfter(ChatMessage.create(original.sessionId, MessageRole.ASSISTANT, "",
                 images = paths.toList(), generatedImageMetadata = paths.map { plan.toGeneratedImageMetadata(it, size) },
-                generatedFromMessageId = original.id).copy(id = id), afterMessageId)
-            onCommitted(id)
+                generatedFromMessageId = original.id).copy(id = id), original.id,
+                expectedAnchor = original, expectedCharacterCardId = expectedCharacterCardId)
             NovelAiGenerationHistoryEntry(images = novelAiHistoryImages(paths, recipe.settings.seed), recipe = recipe)
         } catch (failure: Throwable) {
             if (chats.readMessageDurable(id, original.sessionId) == EntityReadResult.Missing) paths.forEach(resources::deleteOwned)

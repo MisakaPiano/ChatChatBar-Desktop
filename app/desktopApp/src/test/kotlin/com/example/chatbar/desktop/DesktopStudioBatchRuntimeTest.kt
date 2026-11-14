@@ -70,12 +70,11 @@ class DesktopStudioBatchRuntimeTest {
             val original = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "synthetic source"))
             val prompt = NovelAiPromptPlan("synthetic scene", emptyList())
             val size = NovelAiImageSize(512, 512)
-            var after = original.id
             suspend fun eligible() = c.chatRepository.readMessageDurable(original.id, original.sessionId) ==
                 com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid(original)
             val runtime = DesktopNovelAiGenerationRuntime(c.desktopSecretStore, persist = { bytes, recipe ->
                 persistDesktopChatImages(c.chatRepository, c.characterResourceStore, c.dataOperationCoordinator,
-                    original, prompt, size, bytes, recipe, ::eligible, afterMessageId = after, onCommitted = { after = it })
+                    original, prompt, size, bytes, recipe, ::eligible, expectedCharacterCardId = "card")
             }, client = f.client)
             val settings = NovelAiGenerationSettings(count = 4, customWidth = 512, customHeight = 512)
             val draft = NovelAiStudioDraft(basePrompt = "synthetic scene").withActiveSettings(settings)
@@ -94,6 +93,43 @@ class DesktopStudioBatchRuntimeTest {
             assertEquals((1..10).toList(), messages.drop(1).flatMap { it.images }.map {
                 DesktopImageEditing.decode(f.app.characterResourceStore.readBytes(it)).getRGB(0, 0) and 0xff
             })
+        }
+    }
+
+    @Test fun `save rechecks original anchor and session under repository writer after stale eligibility`() = runBlocking {
+        for (change in listOf("source-edit", "source-delete", "session-delete", "card-rebind")) fixture { f ->
+            val c = f.app
+            c.characterRepository.save(CharacterCard.create("synthetic").copy(id = "card"))
+            c.chatRepository.createSession(ChatSession(id = "session", characterCardId = "card", title = "synthetic", createdAt = 1, updatedAt = 1))
+            val original = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "original"))
+            val png = ByteArrayOutputStream().also { ImageIO.write(BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB), "png", it) }.toByteArray()
+            val prompt = NovelAiPromptPlan("synthetic scene", emptyList())
+            val size = NovelAiImageSize(512, 512)
+            val recipe = NovelAiGenerationRecipe()
+            persistDesktopChatImages(c.chatRepository, c.characterResourceStore, c.dataOperationCoordinator,
+                original, prompt, size, listOf(png), recipe, { true }, expectedCharacterCardId = "card")
+            fun media() = Files.walk(f.root).use { stream -> stream.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".png") }.toList().toSet() }
+            val before = media()
+            assertTrue(before.isNotEmpty())
+            val result = runCatching {
+                persistDesktopChatImages(c.chatRepository, c.characterResourceStore, c.dataOperationCoordinator,
+                    original, prompt, size, listOf(png), recipe, {
+                        when (change) {
+                            "source-edit" -> c.chatRepository.updateMessage(original.copy(content = "edited"))
+                            "source-delete" -> c.chatRepository.deleteMessage(original.id, original.sessionId)
+                            "session-delete" -> c.chatRepository.deleteSessionRecord(original.sessionId)
+                            else -> c.chatRepository.getSession(original.sessionId)!!.let {
+                                c.chatRepository.saveSessionSettingsDraft(it, it.copy(characterCardId = "changed-card"))
+                            }
+                        }
+                        true // The outside eligibility result is now deliberately stale.
+                    }, expectedCharacterCardId = "card")
+            }
+            assertTrue(result.isFailure, change)
+            assertEquals(before, media(), "Only newly staged failed-batch media may be removed: $change")
+            assertEquals(1, c.chatRepository.getMessages("session").count { it.generatedFromMessageId == original.id }, change)
+            if (change == "session-delete") assertNull(c.chatRepository.getSession("session"))
+            assertTrue(f.counts.isEmpty(), "Persistence refusal must not start an image request")
         }
     }
 
