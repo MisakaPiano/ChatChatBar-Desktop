@@ -397,6 +397,18 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         journal.entries.forEach { entry ->
             target(entry.path)
             require(listOfNotNull(entry.oldHash, entry.newHash).all { it.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_JOURNAL_DAMAGED" }
+            val parts = entry.path.split('/')
+            val derivedIndex = parts.size == 3 && parts[0] == "entities" &&
+                parts[1] in setOf("chat_message_indexes", "chat_message_order_backups") && parts[2].length > 5 && parts[2].endsWith(".json")
+            if (derivedIndex) {
+                require(entry.oldHash != null && entry.newHash == null && entry.path !in before) { "SYNC_JOURNAL_DAMAGED" }
+                return@forEach
+            }
+            val singleton = parts.size == 2 && parts[0] == "entities" && parts[1].endsWith(".json") &&
+                parts[1].removeSuffix(".json").let { it in LanSyncScope.schemas && LanSyncScope.isSingleton(it) }
+            val entity = parts.size == 3 && parts[0] == "entities" && parts[1] in LanSyncScope.schemas &&
+                !LanSyncScope.isSingleton(parts[1]) && parts[2].length > 5 && parts[2].endsWith(".json")
+            require(singleton || entity) { "SYNC_JOURNAL_DAMAGED" }
             require(before[entry.path] == entry.oldHash) { "SYNC_JOURNAL_SOURCE_CHANGED" }
             if (entry.newHash == null) result.remove(entry.path) else result[entry.path] = entry.newHash
         }
