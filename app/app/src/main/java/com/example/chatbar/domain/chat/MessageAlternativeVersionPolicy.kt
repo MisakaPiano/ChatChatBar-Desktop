@@ -89,7 +89,7 @@ object MessageAlternativeVersionPolicy {
         message: ChatMessage,
         content: String,
         newVersionId: String,
-        maxVersions: Int = 5,
+        maxVersions: Int = Int.MAX_VALUE,
         updatedAt: Long = System.currentTimeMillis(),
         narrativeMode: ChatNarrativeMode? = message.narrativeMode
     ): ChatMessage {
@@ -112,6 +112,30 @@ object MessageAlternativeVersionPolicy {
             currentAlternativeVersionId = newVersionId,
             narrativeMode = narrativeMode,
             alternativeNarrativeModes = retained.map(MessageVersionSnapshot::narrativeMode),
+            updatedAt = updatedAt
+        )
+    }
+
+    /** Removes one stable version; shared message media and surviving version identities are unchanged. */
+    fun remove(message: ChatMessage, versionId: String, updatedAt: Long = System.currentTimeMillis()): ChatMessage? {
+        val all = versions(message)
+        val removedIndex = all.indexOfFirst { it.id == versionId }
+        require(removedIndex >= 0) { "消息版本不存在" }
+        val retained = all.filterNot { it.id == versionId }
+        if (retained.isEmpty()) return null
+        val activeId = activeVersionId(message)
+        val selectedIndex = retained.indexOfFirst { it.id == activeId }.takeIf { it >= 0 }
+            ?: removedIndex.coerceAtMost(retained.lastIndex)
+        val selected = retained[selectedIndex]
+        return message.copy(
+            content = selected.content,
+            alternatives = retained.map { it.content },
+            alternativeVersionIds = retained.map { it.id },
+            currentAlternativeIndex = selectedIndex,
+            currentAlternativeVersionId = selected.id,
+            narrativeMode = selected.narrativeMode,
+            alternativeNarrativeModes = retained.map { it.narrativeMode },
+            formatRepairNotice = message.formatRepairNotice.takeUnless { activeId == versionId || it?.versionId == versionId },
             updatedAt = updatedAt
         )
     }

@@ -1,5 +1,8 @@
 package com.example.chatbar.ui.moments
 
+import com.example.chatbar.domain.moment.MomentImageVersions
+import com.example.chatbar.domain.moment.MomentMediaRetention
+
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -140,12 +143,22 @@ class MomentsViewModel : ViewModel() {
         }
     }
 
+    fun selectImageVersion(postId: String, versionId: String, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            try { repository.selectImageVersion(postId, versionId); onResult(null) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { onResult(error.message ?: "切换图片失败") }
+        }
+    }
+
     fun deletePost(id: String) {
         viewModelScope.launch {
             val deleted = repository.deletePost(id) ?: return@launch
-            val imagePath = deleted.imagePath?.takeIf(String::isNotBlank) ?: return@launch
-            runCatching { imageStorage.deleteIfOwned(imagePath) }
-                .onFailure { error -> Log.w(TAG, "Failed to delete moment image: $imagePath", error) }
+            val paths = MomentImageVersions.retained(deleted).map { it.imagePath }
+            MomentMediaRetention.unreferencedPaths(paths, repository.getAllPosts()).forEach { imagePath ->
+                runCatching { imageStorage.deleteIfOwned(imagePath) }
+                    .onFailure { error -> Log.w(TAG, "Failed to delete moment image: $imagePath", error) }
+            }
         }
     }
 
@@ -222,17 +235,8 @@ class MomentsViewModel : ViewModel() {
                     imageStorage.save("moments_${source.characterCardId}", imageBytes)
                 }
                 try {
-                    val current = repository.getPost(postId) ?: error("原朋友圈不存在")
-                    require(!current.isPlaceholder && current.imagePath == imagePath) {
-                        "原朋友圈图片已发生变化"
-                    }
-                    repository.updatePost(
-                        current.copy(
-                            imagePath = newImagePath,
-                            imagePrompt = draft.baseCaption,
-                            generatedImageMetadata = prompt.toGeneratedImageMetadata(newImagePath, imageSize)
-                        )
-                    )
+                    repository.appendImageVersion(postId, imagePath, newImagePath, draft.baseCaption,
+                        prompt.toGeneratedImageMetadata(newImagePath, imageSize))
                 } catch (error: Throwable) {
                     withContext(Dispatchers.IO) {
                         runCatching { imageStorage.deleteIfOwned(newImagePath) }
@@ -242,12 +246,7 @@ class MomentsViewModel : ViewModel() {
                     }
                     throw error
                 }
-                withContext(Dispatchers.IO) {
-                    runCatching { imageStorage.deleteIfOwned(imagePath) }
-                        .onFailure { error ->
-                            Log.w(TAG, "Failed to delete replaced moment image: $imagePath", error)
-                        }
-                }
+
             }
             val error = outcome.exceptionOrNull()
             if (error is CancellationException) throw error
@@ -356,14 +355,8 @@ class MomentsViewModel : ViewModel() {
                 try {
                     val current = repository.getPost(postId) ?: error("朋友圈不存在")
                     require(!current.isPlaceholder) { "占位朋友圈无法按需生成" }
-                    repository.updatePost(
-                        current.copy(
-                            imagePath = newImagePath,
-                            imagePrompt = plan.baseCaption,
-                            generatedImageMetadata = plan.toGeneratedImageMetadata(newImagePath, imageSize),
-                            imageBrief = imageBrief
-                        )
-                    )
+                    repository.appendImageVersion(postId, null, newImagePath, plan.baseCaption,
+                        plan.toGeneratedImageMetadata(newImagePath, imageSize), imageBrief)
                 } catch (error: Throwable) {
                     withContext(Dispatchers.IO) {
                         runCatching { imageStorage.deleteIfOwned(newImagePath) }

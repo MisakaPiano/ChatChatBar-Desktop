@@ -83,6 +83,37 @@ class MomentRepositoryTest {
         assertTrue(runCatching { repository.updatePostContent("post", "文案", MomentSender(null, " ", null)) }.isFailure)
     }
 
+    @Test fun `retained images and metadata survive cold storage and selected switch preserves latest text and likes`() = runTest {
+        val repository = repository()
+        val original = post()
+        repository.savePost(original)
+        repository.appendImageVersion(original.id, original.imagePath, "second.png", "second prompt", null)
+        repository.toggleLike(original.id)
+        repository.updatePostText(original.id, "edited after generation")
+        val latest = requireNotNull(repository.getPost(original.id))
+        assertEquals(2, latest.imageVersions.size)
+        repository.selectImageVersion(original.id, latest.imageVersions.first().id)
+        val stored = requireNotNull(repository.getPost(original.id))
+        assertEquals(original.imagePath, stored.imagePath)
+        assertEquals(original.imagePrompt, stored.imagePrompt)
+        assertEquals("edited after generation", stored.text)
+        assertEquals(!original.userLiked, stored.userLiked)
+        val decoded = kotlinx.serialization.json.Json.decodeFromString(MomentPost.serializer(),
+            kotlinx.serialization.json.Json.encodeToString(MomentPost.serializer(), stored))
+        assertEquals(stored, decoded)
+    }
+
+    @Test fun `deleted or reselected post rejects late image append without resurrection`() = runTest {
+        val repository = repository()
+        val original = post()
+        repository.savePost(original)
+        repository.appendImageVersion(original.id, original.imagePath, "second.png", "p2", null)
+        assertTrue(runCatching { repository.appendImageVersion(original.id, original.imagePath, "stale.png", "p3", null) }.isFailure)
+        repository.deletePost(original.id)
+        assertTrue(runCatching { repository.appendImageVersion(original.id, "second.png", "late.png", "p4", null) }.isFailure)
+        assertNull(repository.getPost(original.id))
+    }
+
     private fun repository(): MomentRepository =
         MomentRepository(JsonFileStorage(TestContext(temp.newFolder("files"))))
 

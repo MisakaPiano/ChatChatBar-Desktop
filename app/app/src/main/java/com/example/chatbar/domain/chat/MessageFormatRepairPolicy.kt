@@ -43,16 +43,19 @@ object MessageFormatRepairPolicy {
         return message.copy(
             content = replacement,
             alternatives = updatedAlternatives,
-            formatRepairNotice = notice,
+            formatRepairNotice = notice?.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(message)),
             updatedAt = updatedAt
         )
     }
 
     fun applicableNotice(message: ChatMessage): MessageFormatRepairNotice? =
-        message.formatRepairNotice?.takeIf { it.targetContent == message.displayContent }
+        message.formatRepairNotice?.takeIf {
+            (it.versionId == null || it.versionId == MessageAlternativeVersionPolicy.activeVersionId(message)) &&
+                (if (it.restored) it.originalContent else it.targetContent) == message.displayContent
+        }
 
     fun recoverableNotice(message: ChatMessage): MessageFormatRepairNotice? =
-        applicableNotice(message)?.takeIf { it.originalContent != null }
+        applicableNotice(message)?.takeIf { it.originalContent != null && !it.restored }
 
     fun restoreOriginal(message: ChatMessage, updatedAt: Long = System.currentTimeMillis()): ChatMessage? {
         val notice = recoverableNotice(message) ?: return null
@@ -60,9 +63,14 @@ object MessageFormatRepairPolicy {
         return replaceCurrentDisplayContent(
             message = message,
             replacement = original,
-            notice = null,
+            notice = notice.copy(restored = true),
             updatedAt = updatedAt
         )
+    }
+
+    fun redoRepair(message: ChatMessage, updatedAt: Long = System.currentTimeMillis()): ChatMessage? {
+        val notice = applicableNotice(message)?.takeIf { it.restored } ?: return null
+        return replaceCurrentDisplayContent(message, notice.targetContent, notice.copy(restored = false), updatedAt)
     }
 
     private fun isPossibleUnchangedMarkerPrefix(outputPrefix: String): Boolean {
