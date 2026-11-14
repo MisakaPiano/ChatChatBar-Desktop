@@ -29,6 +29,14 @@ internal object DesktopOfficialBackupEntitySchema {
         when (descriptor.kind) {
             StructureKind.CLASS, StructureKind.OBJECT -> {
                 val obj = value as? JsonObject ?: return // The actual serializer diagnoses its expected type.
+                if (typeName in setOf("com.example.chatbar.data.local.entity.ChatSession", "com.example.chatbar.data.local.entity.SaveSlot")) {
+                    require(!("characterParticipation" in obj && "desktopCharacterParticipation" in obj)) {
+                        "OFFICIAL_PARTICIPATION_ALIAS_CONFLICT"
+                    }
+                    require(code >= 91 || "characterParticipation" !in obj) {
+                        "OFFICIAL_PRE1412_PARTICIPATION_UNSUPPORTED"
+                    }
+                }
                 if (code < 89) {
                     if (typeName == "com.example.chatbar.data.local.entity.AppSettings")
                         require("disableNarrativeModes" !in obj) { "OFFICIAL_PRE1410_NARRATIVE_DISABLE_UNSUPPORTED" }
@@ -61,7 +69,10 @@ internal object DesktopOfficialBackupEntitySchema {
                         require("varietyPlus" !in obj && "varietyPlusSigma" !in obj) { "OFFICIAL145_SETTINGS_FIELD_UNSUPPORTED" }
                 }
                 obj.forEach { (key, child) ->
-                    val index = descriptor.getElementIndex(key)
+                    val index = if (key == "characterParticipation" && typeName in setOf(
+                            "com.example.chatbar.data.local.entity.ChatSession", "com.example.chatbar.data.local.entity.SaveSlot")) {
+                        descriptor.getElementIndex("desktopCharacterParticipation")
+                    } else descriptor.getElementIndex(key)
                     if (index >= 0) versioned(descriptor.getElementDescriptor(index), child, code, depth + 1, historicalDesktopV5)
                 }
             }

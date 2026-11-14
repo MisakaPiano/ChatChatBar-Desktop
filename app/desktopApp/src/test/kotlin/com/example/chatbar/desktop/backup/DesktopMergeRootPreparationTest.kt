@@ -37,6 +37,25 @@ class DesktopMergeRootPreparationTest {
         own(pcRoot, base).use {
             DesktopFullBackupMapping(pcRoot).export(pcWork, 86, StrictBackupZipReader.Limits().expanded, forMerge = true).use { pc ->
                 val incoming = records("Phone", "phone-only").toMutableMap()
+                if (sourceCode == 91) {
+                    val participation = backupJson.parseToJsonElement("""[{"cardId":"c","disabledPersonIds":["p"],"automaticallyPausedPersonIds":["p"]}]""")
+                    for ((name, content) in incoming.toMap()) if (name.startsWith("entities/chat_sessions/")) {
+                        val value = backupJson.parseToJsonElement(content.toString(Charsets.UTF_8)).jsonObject
+                        incoming[name] = JsonObject(value + ("characterParticipation" to participation)).toString().toByteArray()
+                    }
+                    val image = java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    for ((index, name) in listOf("one", "two").withIndex()) {
+                        image.setRGB(0, 0, if (index == 0) 0x112233 else 0x445566)
+                        incoming["images/$name.png"] = java.io.ByteArrayOutputStream().also {
+                            check(javax.imageio.ImageIO.write(image, "png", it))
+                        }.toByteArray()
+                    }
+                    val card = CharacterCard("c", "Phone", characters = listOf(CharacterInfo("p", "Person", desktopEnabled = false)),
+                        chatBackground = "chatbar-backup-file:images/two.png", chatBackgroundImages = listOf(
+                            "chatbar-backup-file:images/one.png", "chatbar-backup-file:images/two.png"), createdAt = 1, updatedAt = 1)
+                    incoming["entities/character_cards/c.json"] = bytes(CharacterCard.serializer(), card)
+                    incoming["entities/save_slots/slot.json"] = """{"schemaVersion":7,"id":"slot","sessionId":"s","name":"Phone archive","characterParticipation":$participation,"chatBackground":"chatbar-backup-file:images/two.png","createdAt":1}""".toByteArray()
+                }
                 if (sourceCode == 88) for ((name, bytes) in incoming.toMap()) {
                     if (name.startsWith("entities/chat_sessions/")) {
                         val value = backupJson.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonObject
@@ -112,6 +131,49 @@ class DesktopMergeRootPreparationTest {
             }
         }
         for ((path, value) in original) assertContentEquals(value, Files.readAllBytes(pcRoot.resolve(path)))
+    }
+
+    @Test fun `official91 actual both merge reopens participation nested slot and ordered gallery without changing computer source`() = runBlocking<Unit> {
+        fixture(sourceCode = 91) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged"))
+            val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val result = DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected, base.resolve("work"))
+                authority.complete(pending, result.files); authority.verifyAndResolve()
+                DesktopFullBackupGraphValidation.validate(root)
+                val storage = JsonFileStorage(root)
+                val phoneSessionId = result.plan.identity.value("chat_sessions", "s")
+                val phoneCardId = result.plan.identity.value("character_cards", "c")
+                val phonePersonId = result.plan.identity.value("characters", "p")
+                val session = requireNotNull(ChatRepository(storage).getSession(phoneSessionId))
+                assertEquals(phoneCardId, session.characterCardId)
+                assertEquals(SessionCharacterParticipation(phoneCardId, setOf(phonePersonId), setOf(phonePersonId)), session.desktopCharacterParticipation.single())
+                assertTrue(requireNotNull(ChatRepository(storage).getSession("s")).desktopCharacterParticipation.isEmpty())
+                val card = backupJson.decodeFromString(CharacterCard.serializer(), Files.readString(root.resolve("entities/character_cards/$phoneCardId.json")))
+                assertEquals(2, card.chatBackgroundImages.size)
+                assertEquals(card.chatBackgroundImages.last(), card.chatBackground)
+                assertFalse(card.characters.single().desktopEnabled)
+                assertEquals(phonePersonId, card.characters.single().id)
+                for ((index, name) in listOf("one", "two").withIndex()) assertContentEquals(
+                    Files.readAllBytes(phone.files.getValue("images/$name.png")), Files.readAllBytes(Path.of(card.chatBackgroundImages[index])))
+                val slotId = result.plan.identity.value("save_slots", "slot")
+                val slot = backupJson.decodeFromString(SaveSlot.serializer(), Files.readString(root.resolve("entities/save_slots/$slotId.json")))
+                assertEquals(phoneSessionId, slot.sessionId)
+                assertEquals(session.desktopCharacterParticipation, slot.desktopCharacterParticipation)
+                assertEquals(card.chatBackground, slot.chatBackground)
+                DesktopFullBackupMapping(root).export(Files.createDirectory(base.resolve("export91")), 91, StrictBackupZipReader.Limits().expanded).use { exported ->
+                    val output = base.resolve("merged91.cbbackup")
+                    DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
+                    DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("check91"))).use { returned ->
+                        assertEquals(91, returned.source.manifest.appVersionCode)
+                        val retained = returned.entities.values.single { it["id"] == JsonPrimitive(slotId) && it["schemaVersion"] != null }
+                        assertEquals(slot.desktopCharacterParticipation, backupJson.decodeFromJsonElement(SaveSlot.serializer(), retained).desktopCharacterParticipation)
+                    }
+                }
+                result.close()
+            }
+        }
     }
 
     @Test fun `authenticated historical live voice keeps old ID with original custody and current playback exclusion`() = runBlocking<Unit> {
@@ -262,7 +324,7 @@ class DesktopMergeRootPreparationTest {
                     val output = base.resolve("merged.cbbackup")
                     DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
                     DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("roundtrip"))).use { returned ->
-                        assertEquals(90, returned.source.manifest.appVersionCode)
+                        assertEquals(91, returned.source.manifest.appVersionCode)
                         assertTrue(returned.files.keys.any { it.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Computer content") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Phone content") })

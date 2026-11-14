@@ -26,7 +26,7 @@ data class SourceTurnTombstone(
 
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
-data class SessionCharacterParticipation(val cardId: String, val disabledPersonIds: Set<String>,
+data class SessionCharacterParticipation(val cardId: String, val disabledPersonIds: Set<String> = emptySet(),
     @EncodeDefault(EncodeDefault.Mode.NEVER) val automaticallyPausedPersonIds: Set<String> = emptySet()) {
     init {
         require(cardId.isNotBlank() && disabledPersonIds.all(String::isNotBlank))
@@ -77,7 +77,8 @@ data class ChatSession(
     val audiobookModeEnabled: Boolean? = null,
     /** null 表示语音直接使用气泡原文。 */
     val voiceLanguage: String? = null,
-    /** Desktop-only per-card participation; absent legacy data enables every person. */
+    /** Retain the existing local wire name; official1.4.12 reads it as an alias too. */
+    @kotlinx.serialization.json.JsonNames("characterParticipation")
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
     @EncodeDefault(EncodeDefault.Mode.NEVER)

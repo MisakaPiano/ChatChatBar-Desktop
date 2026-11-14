@@ -64,7 +64,7 @@ internal object DesktopBackupPolicy {
         (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAutoPauseAbsentPeople"] as? JsonPrimitive)?.booleanOrNull == true ||
-        (value["desktopCharacterParticipation"] as? JsonArray)?.any { entry ->
+        ((value["characterParticipation"] ?: value["desktopCharacterParticipation"]) as? JsonArray)?.any { entry ->
             (entry as? JsonObject)?.let { scope ->
                 listOf("disabledPersonIds", "automaticallyPausedPersonIds").any {
                     (scope[it] as? JsonArray)?.isNotEmpty() == true

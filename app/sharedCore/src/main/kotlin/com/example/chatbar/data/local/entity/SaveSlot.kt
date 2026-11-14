@@ -40,7 +40,8 @@ data class SaveSlot(
     val chatBackground: String? = null,
     val audiobookModeEnabled: Boolean? = null,
     val voiceLanguage: String? = null,
-    /** Desktop extension; older official clients do not implement this participation setting. */
+    /** Existing Desktop spelling is retained; official1.4.12 uses the alternate wire name. */
+    @kotlinx.serialization.json.JsonNames("characterParticipation")
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
     @EncodeDefault(EncodeDefault.Mode.NEVER)

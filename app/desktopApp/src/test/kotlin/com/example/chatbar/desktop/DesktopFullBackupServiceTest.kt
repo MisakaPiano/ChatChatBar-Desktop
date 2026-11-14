@@ -183,7 +183,7 @@ class DesktopFullBackupServiceTest {
                 val state = withTimeout(20_000) { controller.state.first { !it.busy } }
                 assertNull(state.error)
                 assertEquals(2, state.summary!!.formatVersion)
-                assertEquals(90, state.summary!!.appVersionCode)
+                assertEquals(91, state.summary!!.appVersionCode)
                 assertEquals(exportReads, reads)
                 assertTrue(password == null || password.all { it == '\u0000' })
                 assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
@@ -421,7 +421,7 @@ class DesktopFullBackupServiceTest {
             val readPassword = if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null
             DesktopFullBackupStaging.prepare(output, readPassword, Files.createDirectory(f.base.resolve("inspection"))).use { inspected ->
                 assertEquals(2, inspected.source.manifest.formatVersion)
-                assertEquals(90, inspected.source.manifest.appVersionCode)
+                assertEquals(91, inspected.source.manifest.appVersionCode)
                 assertEquals(encrypted, inspected.source.encrypted)
                 assertEquals(kotlinx.serialization.json.JsonPrimitive(false), inspected.entities.getValue("entities/character_cards/c.json")
                     .getValue("defaultImageGenerationSettings").let { it as kotlinx.serialization.json.JsonObject }.getValue("varietyPlus"))

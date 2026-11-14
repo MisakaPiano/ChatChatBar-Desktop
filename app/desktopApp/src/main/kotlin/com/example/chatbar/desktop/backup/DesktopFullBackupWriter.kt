@@ -102,7 +102,7 @@ internal object DesktopFullBackupWriter {
                     desktopFishAccounts = capturedPreferences.desktopFishAccounts,
                     brushSize = preferences.brushSize, brushType = preferences.brushType)).toByteArray()
                 val manifest = InspectionManifest(formatVersion = 2, appVersionCode = CURRENT_DESKTOP_BACKUP_CODE,
-                    appVersionName = "CCB Desktop / official 1.4.11 selected data transport", createdAt = System.currentTimeMillis(),
+                    appVersionName = "CCB Desktop / official 1.4.12 selected data transport", createdAt = System.currentTimeMillis(),
                     sourceFilesRoot = "desktop-selected-root", counts = counts, fileCount = proof.size,
                     totalBytes = total, preferencesSha256 = DesktopBackupPolicy.digest(prefs), scope = scope)
                 DesktopBackupScratch.create(destination.parent, "backup-modern-output-").use { scratch ->

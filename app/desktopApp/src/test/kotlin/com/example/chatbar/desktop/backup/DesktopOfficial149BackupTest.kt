@@ -36,7 +36,7 @@ class DesktopOfficial149BackupTest {
                     val output = path.parent.resolve("reexport.cbbackup")
                     DesktopFullBackupWriter.export(staged.files, output, null)
                     val reread = Sink()
-                    assertEquals(90, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
+                    assertEquals(91, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
                     for ((name, value) in sink.entities) {
                         // Staging removes credentials and deliberately materializes the empty
                         // singleton key. All source fields and all other entity values stay intact.
@@ -60,7 +60,7 @@ class DesktopOfficial149BackupTest {
             for (code in 84..87) assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, code) }
             DesktopOfficialBackupEntitySchema.validate(type, value, 89)
             DesktopOfficialBackupEntitySchema.validate(type, value, 90)
-            assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 91) }
+            assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 92) }
             assertFails { DesktopOfficialBackupEntitySchema.validate(type, JsonObject(value + ("futureField" to JsonPrimitive(true))), 88) }
         }
         assertFails { DesktopOfficialBackupEntitySchema.validate("chat_sessions",
@@ -82,7 +82,7 @@ class DesktopOfficial149BackupTest {
                 DesktopFullBackupWriter.export(mapped.files, output, null, mapped.preferences, selection = selection)
                 val sink = Sink()
                 val proof = DesktopFullBackupSource.verify(output, null, sink)
-                assertEquals(90, proof.manifest.appVersionCode)
+                assertEquals(91, proof.manifest.appVersionCode)
                 assertFalse("disableNarrativeModes" in sink.entities.getValue("entities/app_settings.json"))
                 assertEquals(JsonPrimitive(false), sink.entities.getValue("entities/app_settings.json")["experimentalApiModeEnabled"])
                 assertFalse("experimentalApiModeEnabled" in proof.manifest.scope!!.globalOptions)
