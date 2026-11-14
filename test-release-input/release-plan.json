@@ -1,0 +1,25 @@
+{
+  "repository": "MisakaPiano/ChatChatBar-Desktop",
+  "tag": "android-next-test-r1",
+  "source": "9f30c105c5c8dd8dbcbab372d8d37e55e540ebaa",
+  "run": 43651291335,
+  "artifactName": "android-next-review-originals",
+  "applicationId": "com.example.chatbar.nextreview.r1",
+  "title": "Android · 集中验收 r1（批量生图 n2 / 图片与人物）",
+  "body": "本次为独立安卓测试版，可与正式版及旧 c1、n1 共存；不是 Desktop 安装包或正式更新。\n\n包含：每批张数×批数、固定/随机小数等待、默认关闭的 Anlas 消费开关与自动费用预估；封面原图保留、共用背景图库、裁剪副本；玩家头像/角色绑定、人物状态折叠、字段 Token 估算、会话图片总览；备份恢复误报及角色页错入口大文件读取修复。PR7 的备选、朋友圈切图和本地重做也包含在内。\n\n下载 APK 和合成测试资料 ZIP，先解压资料并照“验收清单.txt”操作。旧的完全合成备份可继续使用。界面不含离线模拟控件，内部模拟由自动测试完成。社区等正式在线服务不在本轮测试范围。\n\n集中真人验收待反馈。先查看界面、配置与保存，不点击生成/重新生成，不需要提供真实凭据；未使用真实账号进行付费测试。固定或随机等待只是节奏控制，不保证免收费、免限流或账号安全。\n\n暂未实施：行动选项按钮和聊天纯编号策略、多场景、启用组合/触发启停、服装参考文档选择。显式行动区只在生图研究/设计输入中排除；聚焦标签的变体来源仍在调查。\n\n校验与源码身份见 RELEASE_MANIFEST.json、SHA256SUMS.txt。",
+  "expectedCounts": {
+    "jvm": {
+      "tests": 1518,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "native": {
+      "tests": 48,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "expectedApkSha256": "dcb42b46f9c2b535417e968222bd232215fea4c169d6f271491ebfb018bd817d"
+}

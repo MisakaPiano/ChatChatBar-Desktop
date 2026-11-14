@@ -1,0 +1,14 @@
+{
+  "集中验收完全合成卡.chatbar-character": {
+    "bytes": 2775,
+    "sha256": "72e3e6c73ab273cdc3609a4fb9406527c3efc45a89d21db6355f857eebd851ee"
+  },
+  "完全合成-备选与修复验收.cbbackup": {
+    "bytes": 7035,
+    "sha256": "070fecb0c4ef2ec6023d591f644c391e07ddd98b71315ebe7afddbc2e508503b"
+  },
+  "测试清单.txt": {
+    "bytes": 4723,
+    "sha256": "7eed88418ee43c1f8adac03c3097ff7638ebf80789811f70f3273b6ccb6772eb"
+  }
+}

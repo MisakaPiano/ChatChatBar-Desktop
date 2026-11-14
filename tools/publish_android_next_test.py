@@ -1,0 +1,111 @@
+"""Publish only a reviewed immutable synthetic Android test candidate, never a stable update."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import xml.etree.ElementTree as ET
+import zipfile
+
+inputs = Path("test-release-input")
+plan = json.loads((inputs / "release-plan.json").read_text(encoding="utf-8"))
+repo = os.environ["GITHUB_REPOSITORY"]
+assert repo == plan["repository"] == "MisakaPiano/ChatChatBar-Desktop"
+assert len(plan["source"]) == 40
+
+def command(args):
+    return subprocess.check_output(args, text=True).strip()
+
+def api(path):
+    return json.loads(command(["gh", "api", path]))
+
+run = api(f"repos/{repo}/actions/runs/{plan['run']}")
+assert run["head_sha"] == plan["source"] and run["conclusion"] == "success"
+assert run["head_branch"] == "feature/android-next-review-20261115"
+command(["gh", "run", "download", str(plan["run"]), "--repo", repo,
+         "--name", plan["artifactName"], "--dir", "verified-candidate"])
+root = Path("verified-candidate")
+source = json.loads(next(root.rglob("source.json")).read_text())
+assert source["source"] == plan["source"] and source["syntheticOnly"] and not source["realAccountCalls"]
+identity = json.loads(next(root.rglob("apk-identity.json")).read_text())
+apk = next(root.rglob("app-debug.apk"))
+assert identity["sha256"] == plan["expectedApkSha256"]
+assert identity["applicationId"] == plan["applicationId"] and identity["signatureVerified"]
+assert hashlib.sha256(apk.read_bytes()).hexdigest() == identity["sha256"]
+assert apk.stat().st_size == identity["bytes"]
+with zipfile.ZipFile(apk) as archive:
+    assert archive.testzip() is None
+    assert all(b"SafeBatchOfflineActivity" not in archive.read(n) for n in archive.namelist() if n.endswith(".dex"))
+
+counts = {"jvm": {k: 0 for k in ("tests", "failures", "errors", "skipped")},
+          "native": {k: 0 for k in ("tests", "failures", "errors", "skipped")}}
+for file in root.rglob("TEST-*.xml"):
+    suite = ET.parse(file).getroot()
+    kind = "native" if "androidTest-results" in file.as_posix() else "jvm"
+    for key in counts[kind]:
+        counts[kind][key] += int(suite.get(key, 0))
+assert counts == plan["expectedCounts"]
+assert counts["jvm"]["tests"] > 1400 and counts["native"]["tests"] >= 45
+assert all(value["failures"] == value["errors"] == 0 for value in counts.values())
+assert counts["native"]["skipped"] == 0
+
+out = Path("public-test-assets")
+out.mkdir()
+(out / "CCB-Android-next-review-r1.apk").write_bytes(apk.read_bytes())
+for name in ("CCB-Android-next-review-r1-test-data.zip", "验收清单.txt"):
+    (out / name).write_bytes((inputs / name).read_bytes())
+with zipfile.ZipFile(out / "CCB-Android-next-review-r1-test-data.zip") as archive:
+    assert archive.testzip() is None
+    assert set(archive.namelist()) == {"集中验收完全合成卡.chatbar-character", "完全合成-备选与修复验收.cbbackup", "测试清单.txt"}
+    assert hashlib.sha256(archive.read("完全合成-备选与修复验收.cbbackup")).hexdigest() == "070fecb0c4ef2ec6023d591f644c391e07ddd98b71315ebe7afddbc2e508503b"
+
+manifest = {"source": plan["source"], "validationRun": plan["run"], "counts": counts,
+            "applicationId": plan["applicationId"], "signatureVerified": True,
+            "realAccountOrPaidTests": False, "humanAcceptance": "PENDING", "prerelease": True,
+            "files": {p.name: {"bytes": p.stat().st_size, "sha256": hashlib.sha256(p.read_bytes()).hexdigest()} for p in out.iterdir()}}
+(out / "RELEASE_MANIFEST.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+(out / "SHA256SUMS.txt").write_text("".join(hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n" for p in sorted(out.iterdir())), encoding="utf-8")
+notes = inputs / "release-notes.txt"
+notes.write_text(plan["body"] + f"\n\n验证源码：{plan['source']}\n验证运行：https://github.com/{repo}/actions/runs/{plan['run']}\n", encoding="utf-8")
+
+def find_release():
+    matches = [r for r in api(f"repos/{repo}/releases?per_page=100") if r["tag_name"] == plan["tag"]]
+    assert len(matches) <= 1
+    return matches[0] if matches else None
+
+def assert_tag_if_present(required=False):
+    result = subprocess.run(["gh", "api", f"repos/{repo}/git/ref/tags/{plan['tag']}"], capture_output=True, text=True)
+    if result.returncode:
+        assert not required and "404" in result.stderr, result.stderr
+        return
+    obj = json.loads(result.stdout)["object"]
+    while obj["type"] == "tag":
+        obj = api(f"repos/{repo}/git/tags/{obj['sha']}")["object"]
+    assert obj["type"] == "commit" and obj["sha"] == plan["source"], "Refusing a tag with different source"
+
+release = find_release()
+assert_tag_if_present()
+if release is None:
+    command(["gh", "release", "create", plan["tag"], "--repo", repo, "--target", plan["source"],
+             "--title", plan["title"], "--notes-file", str(notes), "--draft", "--prerelease", "--latest=false"])
+    release = find_release()
+assert release is not None and release["target_commitish"] == plan["source"]
+release_id = release["id"]
+assets = {a["name"]: a for a in release["assets"]}
+for file in out.iterdir():
+    if file.name in assets:
+        item = assets[file.name]
+        assert item["size"] == file.stat().st_size and item.get("digest") == "sha256:" + hashlib.sha256(file.read_bytes()).hexdigest(), "Refusing to replace a different release asset"
+    else:
+        command(["gh", "release", "upload", plan["tag"], str(file), "--repo", repo])
+release = api(f"repos/{repo}/releases/{release_id}")
+assert {a["name"] for a in release["assets"]} == {p.name for p in out.iterdir()}
+for item in release["assets"]:
+    file = out / item["name"]
+    assert item["state"] == "uploaded" and item["size"] == file.stat().st_size
+    assert item.get("digest") == "sha256:" + hashlib.sha256(file.read_bytes()).hexdigest()
+command(["gh", "release", "edit", plan["tag"], "--repo", repo, "--draft=false", "--prerelease", "--latest=false", "--notes-file", str(notes)])
+release = api(f"repos/{repo}/releases/{release_id}")
+assert not release["draft"] and release["prerelease"]
+assert_tag_if_present(required=True)
+print(release["html_url"])

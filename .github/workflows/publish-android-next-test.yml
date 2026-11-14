@@ -1,0 +1,28 @@
+name: Publish verified Android test candidate
+on:
+  push:
+    branches: [validation/android-next-test-publish-20261115]
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: publish-android-next-test-r1
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'MisakaPiano/ChatChatBar-Desktop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify immutable reports and publish isolated prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/publish_android_next_test.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-next-publication-receipt
+          path: public-test-assets/*.json
