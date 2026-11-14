@@ -1,5 +1,5 @@
 {
-  "sourceSha": "298b9d4c127ecfda244401daee0c79ba903c8224",
-  "purpose": "Verify real API26 Keystore root creation and approved epoch rotation across separate processes while preserving HPKE, source/author/native receipt recovery and later local edits",
-  "artifacts": "Reports only; no app roots, keys, credentials or APK"
+  "sourceSha": "0813c316900f062f831b11bef1ca08ddc7190c05",
+  "purpose": "Verify independent random-code AEAD management identity/root journal across two API26 processes, lock admin before daily Keystore author/source recovery, retain atomic epoch/checkpoint/keys and later local edits",
+  "artifacts": "Reports only; no app roots, synthetic recovery codes, keys, credentials or APK"
 }
