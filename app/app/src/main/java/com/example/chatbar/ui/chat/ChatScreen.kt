@@ -286,7 +286,6 @@ fun ChatScreen(
     }
 
     var input by remember(sessionId) { mutableStateOf(TextFieldValue("")) }
-    var appendActionOptions by remember(sessionId) { mutableStateOf(false) }
     var inputTouched by remember(sessionId) { mutableStateOf(false) }
     val selectedImages = remember { mutableStateListOf<String>() }
     var settingsOpen by remember { mutableStateOf(false) }
@@ -1255,14 +1254,6 @@ fun ChatScreen(
                                 }
                             }
                         },
-                        onActionOption = if (!isArchived && !screenshotSelectionMode) ({ option ->
-                            val insertion = com.example.chatbar.domain.chat.ActionOptionPolicy.insert(
-                                input.text, input.selection.end, option, appendActionOptions)
-                            input = TextFieldValue(insertion.text, selection = TextRange(insertion.cursor))
-                            inputTouched = true
-                            appendActionOptions = true
-                            viewModel.updateDraftInput(insertion.text)
-                        }) else null,
                         onPreviousAlternative = if (!screenshotSelectionMode && message.id in alternativeIds) ({ viewModel.switchAssistantAlternative(message.id, -1) }) else null,
                         onNextAlternative = if (!screenshotSelectionMode && message.id in alternativeIds) ({ viewModel.switchAssistantAlternative(message.id, 1) }) else null,
                         onGenerateImage = if (
@@ -1444,7 +1435,6 @@ fun ChatScreen(
                     ChatComposer(
                         input = input,
                         onInput = {
-                            appendActionOptions = false
                             input = it
                             inputTouched = true
                             viewModel.updateDraftInput(it.text)

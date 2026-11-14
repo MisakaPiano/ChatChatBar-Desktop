@@ -858,10 +858,7 @@ class NovelAiPromptDesigner(
             val msg = messages.firstOrNull { it.id == anchorMessageId }
                 ?: return emptyList()
             if (msg.role == MessageRole.SYSTEM || msg.displayContent.isBlank()) return emptyList()
-            val body = if (msg.role == MessageRole.ASSISTANT) com.example.chatbar.domain.chat.ActionOptionPolicy.strip(msg.displayContent)
-                else msg.displayContent
-            if (body.isBlank()) return emptyList()
-            return listOf(if (body == msg.displayContent) msg else msg.copy(content = body, alternatives = emptyList()))
+            return listOf(msg)
         }
 
         internal fun convert(card: CharacterCard, designed: DesignedImagePrompt): NovelAiPromptPlan =

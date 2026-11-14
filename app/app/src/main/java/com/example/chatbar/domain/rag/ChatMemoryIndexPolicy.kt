@@ -107,7 +107,7 @@ object ChatMemoryIndexPolicy {
     }
 
     private fun cleanAssistantContent(content: String): String =
-        com.example.chatbar.domain.chat.ActionOptionPolicy.strip(stripRoleplayStatusSegments(content)).trim()
+        stripRoleplayStatusSegments(content).trim()
 
     private fun hasInformation(rawContent: String): Boolean {
         val compact = rawContent

@@ -1,9 +1,5 @@
 package com.example.chatbar.ui.components
 
-import com.example.chatbar.domain.chat.ActionOptionPolicy
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.staticCompositionLocalOf
-
 import com.example.chatbar.ui.kit.AppIcons
 
 import android.graphics.BitmapFactory
@@ -246,15 +242,13 @@ fun ChatBubble(
     blockFilterIds: Set<String>? = null,
     showMessageMeta: Boolean = true,
     statusBlockExpansionOverrides: Map<String, Boolean> = emptyMap(),
-    onStatusExpandedChange: ((String, Boolean) -> Unit)? = null,
-    onActionOption: ((String) -> Unit)? = null
+    onStatusExpandedChange: ((String, Boolean) -> Unit)? = null
 ) {
     // Keep stored attachment indexes stable, but omit archive-only image placeholders from the UI.
     if (message.images.isNotEmpty() && message.images.all(::isOmittedSaveSlotImage) &&
         message.displayContent.isBlank() && message.reasoningContent.isNullOrBlank() &&
         voicePlacements.isEmpty()
     ) return
-    CompositionLocalProvider(LocalActionOptionClick provides onActionOption) {
 
     if (message.role == MessageRole.ASSISTANT && assistantSegmentedBubblesEnabled) {
         SegmentedAssistantBubble(
@@ -323,7 +317,6 @@ fun ChatBubble(
             blockFilterIds = blockFilterIds,
             showMessageMeta = showMessageMeta
         )
-    }
     }
 }
 
@@ -798,11 +791,7 @@ private fun SegmentBubbleSurface(
                 }
             )
     ) {
-        val actionOptions = ActionOptionPolicy.choices(displayText)
-        val onOption = LocalActionOptionClick.current
-        if (actionOptions.isNotEmpty() && onOption != null && !selectionMode && !exportMode) {
-            ChatActionOptionButtons(actionOptions, onOption, ActionOptionPolicy.surroundingText(displayText))
-        } else if (segmentKind == RoleplaySegmentKind.STATUS) {
+        if (segmentKind == RoleplaySegmentKind.STATUS) {
             RoleplayStatusPanel(
                 text = displayText,
                 expanded = expanded,
@@ -1537,12 +1526,6 @@ private fun RoleplayStatusPanel(
     interactive: Boolean = true,
     onSelectionClick: (() -> Unit)? = null
 ) {
-    val options = ActionOptionPolicy.choices(text)
-    val onOption = LocalActionOptionClick.current
-    if (interactive && onOption != null && options.isNotEmpty()) {
-        ChatActionOptionButtons(options, onOption, ActionOptionPolicy.surroundingText(text))
-        return
-    }
     Column(
         Modifier
             .fillMaxWidth()
@@ -1740,9 +1723,7 @@ internal fun parseRoleplayContent(content: String): List<RoleplayContentSegment>
     val parsed = parseRoleplayTextSegments(content)
     if (parsed.isEmpty()) return emptyList()
     return parsed.map { segment ->
-        if (ActionOptionPolicy.choices(segment.displayText).isNotEmpty()) {
-            RoleplayContentSegment.Status(segment.displayText, true)
-        } else when (segment.kind) {
+        when (segment.kind) {
             RoleplaySegmentKind.STATUS -> RoleplayContentSegment.Status(
                 text = segment.displayText,
                 defaultExpanded = segment.statusDefaultExpanded
@@ -1849,19 +1830,5 @@ internal fun imageAspectRatio(path: String): Float {
         options.outWidth.toFloat() / options.outHeight.toFloat()
     } else {
         1f
-    }
-}
-
-private val LocalActionOptionClick = staticCompositionLocalOf<((String) -> Unit)?> { null }
-
-@Composable
-internal fun ChatActionOptionButtons(options: List<String>, onOption: (String) -> Unit, surroundingText: String = "") {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (surroundingText.isNotBlank()) CbText(surroundingText)
-        CbText("行动选项 · 点击填入，不自动发送", style = ChatBarTheme.typography.caption)
-        options.forEachIndexed { index, option ->
-            com.example.chatbar.ui.kit.CbButton("${index + 1}. $option", { onOption(option) },
-                modifier = Modifier.fillMaxWidth(), variant = com.example.chatbar.ui.kit.ButtonVariant.Outline)
-        }
     }
 }
