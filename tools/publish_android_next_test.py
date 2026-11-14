@@ -53,8 +53,9 @@ assert counts["native"]["skipped"] == 0
 out = Path("public-test-assets")
 out.mkdir()
 (out / "CCB-Android-next-review-r1.apk").write_bytes(apk.read_bytes())
-for name in ("CCB-Android-next-review-r1-test-data.zip", "验收清单.txt"):
+for name in ("CCB-Android-next-review-r1-test-data.zip",):
     (out / name).write_bytes((inputs / name).read_bytes())
+(out / "Acceptance-checklist.txt").write_bytes((inputs / "验收清单.txt").read_bytes())
 with zipfile.ZipFile(out / "CCB-Android-next-review-r1-test-data.zip") as archive:
     assert archive.testzip() is None
     assert set(archive.namelist()) == {"集中验收完全合成卡.chatbar-character", "完全合成-备选与修复验收.cbbackup", "测试清单.txt"}
@@ -99,7 +100,17 @@ if release is None:
         time.sleep(2)
 assert release is not None and release["target_commitish"] == plan["source"]
 release_id = release["id"]
-assets = {a["name"]: a for a in release["assets"]}
+# GitHub normalized the first draft's Chinese filename to default.txt.
+# Repair only these exact generated draft assets, never the APK/data or a public release.
+legacy = {
+    "default.txt": "9bc58ebcddd9085ab4d44aa427827f3cd81ab67daf0da507331f76f12c426a1f",
+    "RELEASE_MANIFEST.json": "ca5383d2de190c1eed5b3ee7483f6f68cad8bc5e67a40baf05cc3cb5eeeda888",
+    "SHA256SUMS.txt": "d8cdd73cbb8da71eed2bf51ce39c291f2e54306a8de3dadfe34c9e79fbedd9d9",
+}
+for item in release["assets"]:
+    if release["draft"] and item["name"] in legacy and item.get("digest") == "sha256:" + legacy[item["name"]]:
+        command(["gh", "api", "--method", "DELETE", f"repos/{repo}/releases/assets/{item['id']}"])
+assets = {a["name"]: a for a in release["assets"] if not (release["draft"] and a["name"] in legacy and a.get("digest") == "sha256:" + legacy[a["name"]])}
 for file in out.iterdir():
     if file.name in assets:
         item = assets[file.name]
