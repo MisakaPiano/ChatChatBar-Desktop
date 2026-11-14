@@ -67,7 +67,11 @@ object LanSyncGroupNativePlanner {
             val ownCommittedValue = unit !in freshLocalRevisions && frontier.singleOrNull()?.let { fact ->
                 versions.getValue(fact.version).author == source.deviceId && fact.change.valueHash == local
             } == true
-            val dirty = !ownCommittedValue && (unit in freshLocalRevisions || if (before == null) local != null else local != before.valueHash)
+            // First enrollment may already contain the exact signed shared value (for example projected presets).
+            // It still traverses record-evidence/dependency/graph gates below; explicit restorations stay fresh.
+            val initialEquivalent = before == null && local != null && unit !in freshLocalRevisions &&
+                frontier.singleOrNull()?.change?.valueHash == local
+            val dirty = !ownCommittedValue && !initialEquivalent && (unit in freshLocalRevisions || if (before == null) local != null else local != before.valueHash)
             if (dirty) {
                 val gate = recordEvidence.checkProposal(unit, localUnits[unit].orEmpty().map { it.key }.toSet()) { former, removal ->
                     applied[former]?.frontiers?.any { history.isAncestorOrSelf(removal, it) } == true

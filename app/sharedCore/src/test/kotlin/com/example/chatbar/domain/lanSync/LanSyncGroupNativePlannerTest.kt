@@ -92,6 +92,18 @@ class LanSyncGroupNativePlannerTest {
         try { work(Fixture(root)) } finally { check(root.toFile().deleteRecursively()) }
     }
 
+    @Test fun initiallyEqualForeignContentStillNeedsActualDependenciesAndAnExplicitFreshRestoreIsNotObservedAway() = withFixture { f ->
+        val unit = "character_cards/a"; f.card("a", "same value"); f.publish(setOf(unit))
+        val path = f.target.resolve("entities/$unit.json"); Files.createDirectories(path.parent)
+        Files.copy(f.source.data.resolve("entities/$unit.json"), path)
+        val missing = f.plan(emptyMap(), blocked = setOf(unit))
+        assertEquals(LanSyncGroupNativeStage.WAITING_DEPENDENCY, missing.units.getValue(unit).stage)
+        assertTrue(missing.advances.isEmpty())
+        val fresh = f.plan(emptyMap(), fresh = setOf(unit))
+        assertEquals(LanSyncGroupNativeStage.CONFLICT, fresh.units.getValue(unit).stage)
+        assertTrue(fresh.advances.isEmpty())
+    }
+
     @Test fun localUnsignedDeletionStaysPendingWhileAnIndependentIncomingUnitApplies() = withFixture { f ->
         val a = "character_cards/a"; val b = "character_cards/b"
         f.card("a", "原角色"); val first = f.publish(setOf(a)); val baseline = f.apply(f.plan(emptyMap()))

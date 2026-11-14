@@ -134,6 +134,19 @@ class LanSyncGroupNodeTest {
         assertEquals("SYNC_AUTHOR_ORIGIN_MISSING", assertFailsWith<IllegalArgumentException> { end.open().inspect() }.message)
         assertFalse(Files.exists(origin)); assertEquals("保留原资料", end.name("a")); assertFalse(end.gated)
     }
+    @Test fun firstEnrollmentCanObserveAnExactlySharedValueWithoutRewritingLocalAuditFieldsOrSigningADuplicate() = withGroup { g ->
+        val source = g.End(0); val target = g.End(1); val sn = source.enroll(); val tn = target.enroll()
+        val unit = "character_cards/a"; source.card("a", "same shared value"); target.card("a", "same shared value")
+        val path = target.data.resolve("entities/$unit.json"); val card = requireNotNull(LanSyncJsonFiles.read(path, CharacterCard.serializer()))
+        LanSyncJsonFiles.write(path, CharacterCard.serializer(), card.copy(updatedAt = 987654321))
+        val raw = Files.readAllBytes(path)
+        val sourceCommit = sn.commit(sn.inspect().review(setOf(unit))); source.send(sn, sourceCommit)
+        val incoming = target.scan(tn)
+        assertEquals(LanSyncGroupNativeStage.READY_OBSERVATION, incoming.plan?.units?.get(unit)?.stage)
+        tn.apply(requireNotNull(incoming.plan))
+        assertContentEquals(raw, Files.readAllBytes(path)); assertEquals(0L, target.author().state().committedSequence)
+        assertEquals(setOf(sourceCommit.entry.version.reference()), tn.inspect().nativeState.units.getValue(unit).frontiers)
+    }
 
     @Test fun restoringAnOwnAlreadySignedValueSurvivesRestartAsExactlyOneFreshLogicalRevision() = withGroup { g ->
         val end = g.End(0); var node = end.enroll(); val unit = "character_cards/a"

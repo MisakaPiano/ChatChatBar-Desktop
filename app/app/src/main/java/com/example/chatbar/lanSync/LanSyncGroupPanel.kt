@@ -39,7 +39,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     val secretVisible = state.recoveryCode != null || state.invitation != null
     DisposableEffect(context, secretVisible) {
         val window = groupActivity(context)?.window
-        val originallySecure = window?.attributes?.flags?.and(WindowManager.LayoutParams.FLAG_SECURE) != 0
+        val originallySecure = ((window?.attributes?.flags ?: 0) and WindowManager.LayoutParams.FLAG_SECURE) != 0
         if (secretVisible) window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         onDispose { if (secretVisible && !originallySecure) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
     }
@@ -47,7 +47,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
     var saved by remember(state.setupBinding, state.privacyRevision) { mutableStateOf(false) }
     fun copy(value: String) { (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("设备组", value)) }
-    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CbText("设备组同步", style = ChatBarTheme.typography.title)
         CbText(state.status)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
@@ -116,7 +116,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbButton("确认撤销", { actions.confirmRevocation(review.binding) }, enabled = !state.busy && state.managementUnlocked, variant = ButtonVariant.Destructive)
             CbButton("取消", actions::cancelRevocation, enabled = !state.busy, variant = ButtonVariant.Secondary)
         }
-        Spacer(Modifier.navigationBarsPadding())
+        Spacer(Modifier.height(12.dp))
     }
 }
 
