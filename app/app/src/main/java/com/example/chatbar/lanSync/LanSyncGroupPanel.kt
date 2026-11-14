@@ -33,13 +33,13 @@ import java.util.Date
 internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions,
     view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
     recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
-    scanInvitation: () -> Unit) {
+    imageState: LanSyncGroupImageState = LanSyncGroupImageState(), scanInvitation: () -> Unit) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(actions, lifecycle) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) actions.lockManagement() }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery() }
+        onDispose { lifecycle.removeObserver(observer); actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() }
     }
     val secretVisible = state.recoveryCode != null || state.invitation != null
     DisposableEffect(context, secretVisible) {
@@ -67,6 +67,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         CbText("设备组同步", style = ChatBarTheme.typography.title)
         CbText(state.status)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+        imageState.error?.let { CbText(it, color = ChatBarTheme.colors.warning) }
         if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             CbText(lanSyncGroupDescription)
@@ -134,6 +135,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             }
         }
         GroupFrozenReviewBrowser(view, state.busy, actions)
+        LanSyncGroupResolutionHistory(view, state.busy, actions)
         actionReview?.let { review -> GroupActionReview(review, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             GroupRecoveryBrowser(recoveryEntries, recoveryView, state.busy, actions)
@@ -161,6 +163,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         Spacer(Modifier.height(12.dp))
     }
+    imageState.preview?.let { preview -> LanSyncFrozenImageDialog(preview, actions::closeImagePreview) }
+
 }
 
 /** A selected inspection stays frozen while the application continues synchronizing. */
@@ -179,8 +183,10 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: Boolean,
         CbText("可浏览本次检查取得的完整字段，待确认的内容会保留当前状态。核对发布或传入目标后，可再确认执行。")
         units.drop(unitPage * 10).take(10).forEach { unit ->
             val row = view?.plan?.units?.get(unit)
-            CbButton("查看 $unit · ${row?.stage?.let(::groupFrozenStage).orEmpty()}",
-                { view?.let { selected = it to unit } }, variant = ButtonVariant.Secondary)
+            val display = view?.let { LanSyncGroupDisplay.unit(it, unit) } ?: LanSyncGroupDisplay.unit(unit, emptyList())
+            CbText(display.identifier)
+            CbButton("查看 ${display.kind} · ${display.title} · ${row?.stage?.let(::groupFrozenStage).orEmpty()}",
+                { view?.let { actions.closeImagePreview(); selected = it to unit } }, variant = ButtonVariant.Secondary)
         }
         if (units.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CbButton("上一页内容组", { unitPage-- }, enabled = unitPage > 0, variant = ButtonVariant.Secondary)
@@ -192,9 +198,11 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: Boolean,
     val plan = frozen.first.plan ?: return
     val unit = frozen.second
     val row = plan.units[unit] ?: return
-    CbText("已冻结：$unit")
-    CbText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。此处可查看附件引用，暂不提供图片预览。")
-    CbButton("关闭冻结详情", { selected = null }, variant = ButtonVariant.Secondary)
+    val display = LanSyncGroupDisplay.unit(frozen.first, unit)
+    CbText("已冻结：${display.kind} · ${display.title}")
+    CbText(display.identifier)
+    CbText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。图片从本次冻结内容对应的本机缓存中读取。")
+    CbButton("关闭冻结详情", { actions.closeImagePreview(); selected = null }, variant = ButtonVariant.Secondary)
     if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
             LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, LanSyncGroupNativeStage.CONFLICT,
             LanSyncGroupNativeStage.RECORD_REVIEW, LanSyncGroupNativeStage.DEPENDENCY_HELD)) {
@@ -205,22 +213,24 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: Boolean,
         CbButton("核对传入删除或覆盖", { actions.prepareIncomingReview(frozen.first, unit) },
             enabled = !busy, variant = ButtonVariant.Secondary)
     }
+    LanSyncGroupResolutionChoices(frozen.first, unit, busy, actions)
+    val imageContext = LanSyncGroupFrozenImageContext.Inspection(frozen.first)
     val current = remember(plan, unit) { plan.before.units()[unit].orEmpty() }
     key(frozen.first, unit) {
-        GroupFrozenRecords("本次检查时的本机内容", unit, current)
+        GroupFrozenRecords("本次检查时的本机内容", unit, current, imageContext, actions)
         row.frontiers.sortedBy { it.version.id.value }.forEach { frontier ->
             key(frontier.version) {
                 CbText("已签名版本：${frontier.version.id.value}")
                 val incoming = row.incoming[frontier.version]
                 when {
                     frontier.change.content == null -> CbText("此版本为删除标记，没有正文记录。")
-                    incoming != null -> GroupFrozenRecords("已取得并验证的传入版本", unit, incoming.decoded.payload.records)
+                    incoming != null -> GroupFrozenRecords("已取得并验证的传入版本", unit, incoming.decoded.payload.records, imageContext, actions)
                     else -> CbText("此版本的正文或附件尚未完整取得，暂不能显示完整内容。")
                 }
             }
         }
         frozen.first.incomingReview?.reductions?.get(unit)?.let { reduction ->
-            GroupFrozenRecords("待确认的传入目标", unit, reduction.proposed)
+            GroupFrozenRecords("待确认的传入目标", unit, reduction.proposed, imageContext, actions)
         }
     }
 }
@@ -244,6 +254,7 @@ private fun GroupRecoveryBrowser(entries: List<LanSyncRecoveryEntry>, view: LanS
         CbButton("下一页保全记录", { entryPage++ }, enabled = (entryPage + 1) * 10 < entries.size, variant = ButtonVariant.Secondary)
     }
     if (view == null) return
+    val imageContext = LanSyncGroupFrozenImageContext.Recovery(view)
     CbText("正在浏览的历史保全")
     GroupRecoveryMetadata(view.entry)
     CbText("此处展示已保全的历史内容。准备恢复会先生成核对目标，确认后才修改本机资料。")
@@ -252,8 +263,10 @@ private fun GroupRecoveryBrowser(entries: List<LanSyncRecoveryEntry>, view: LanS
     var unitPage by remember(view) { mutableStateOf(0) }
     units.drop(unitPage * 10).take(10).forEach { unit ->
         key(view, unit) {
-            CbText("历史内容组：$unit")
-            GroupFrozenRecords("历史保全内容", unit, view.units.getValue(unit))
+            val display = LanSyncGroupDisplay.unit(unit, view.units.getValue(unit))
+            CbText("历史内容组：${display.kind} · ${display.title}")
+            CbText(display.identifier)
+            GroupFrozenRecords("历史保全内容", unit, view.units.getValue(unit), imageContext, actions)
             CbButton("准备恢复此组", { actions.prepareRestore(unit) }, enabled = !busy, variant = ButtonVariant.Secondary)
         }
     }
@@ -273,19 +286,23 @@ private fun GroupRecoveryMetadata(entry: LanSyncRecoveryEntry) {
 /** All confirmations refer to this exact owner-prepared review, never the latest screen state. */
 @Composable
 private fun GroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+    val imageContext = LanSyncGroupFrozenImageContext.Action(review)
     var confirmed by remember(review.binding) { mutableStateOf(false) }
     var unitPage by remember(review.binding) { mutableStateOf(0) }
     val recovery = review.recovery
+    val resolution = review.resolution
     val canConfirm = review.canConfirm && (recovery?.hasChanges != false)
-    CbText(when { review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" },
+    CbText(when { resolution != null -> "核对版本处理目标"; review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" },
         style = ChatBarTheme.typography.title)
     CbText("以下关联内容按同一核对结果处理；请查看各组正文和影响后确认。确认时会再次检查资料是否变化。")
     val source = review.source
-    if (recovery != null) {
+    if (resolution != null) {
+        LanSyncGroupResolutionDetails(review, actions)
+    } else if (recovery != null) {
         CbText("恢复仅作用于所选内容组和必需的缺失依赖；其余本机内容保留。")
         CbText("本次恢复的内容组：${recovery.restoredUnits.sorted().joinToString("、")}")
-        GroupFrozenRecords("恢复前的本机内容", recovery.unit, recovery.currentRecords)
-        GroupFrozenRecords("待恢复的目标内容", recovery.unit, recovery.restoredRecords)
+        GroupFrozenRecords("恢复前的本机内容", recovery.unit, recovery.currentRecords, imageContext, actions)
+        GroupFrozenRecords("待恢复的目标内容", recovery.unit, recovery.restoredRecords, imageContext, actions)
         val impact = remember(review.binding) { LanSyncImpactReview.changes(recovery.currentRecords, recovery.restoredRecords) }
         CbText(groupActionImpactSummary(impact))
         if (!recovery.hasChanges) CbText("当前内容与恢复目标一致，没有需要写入的变化。")
@@ -294,15 +311,19 @@ private fun GroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, a
         CbText("本次核对 ${units.size} 个内容组")
         units.drop(unitPage * 10).take(10).forEach { unit ->
             key(review.binding, unit) {
-                CbText("内容组：$unit")
+                val displayRows = source?.units?.get(unit)?.let { row -> row.current.ifEmpty { row.versions.values.flatten() } }
+                    ?: review.incoming?.reductions?.get(unit)?.let { row -> row.current.ifEmpty { row.proposed } }.orEmpty()
+                val display = LanSyncGroupDisplay.unit(unit, displayRows)
+                CbText("内容组：${display.kind} · ${display.title}")
+                CbText(display.identifier)
                 if (source != null) {
                     val row = source.units.getValue(unit)
-                    GroupFrozenRecords("准备发布的本机目标", unit, row.current)
+                    GroupFrozenRecords("准备发布的本机目标", unit, row.current, imageContext, actions)
                     row.versions.entries.sortedWith(compareBy({ it.key.id.value }, { it.key.bodyHash })).forEach { (version, records) ->
                         key(version) {
                             CbText("已签名的核对版本：${version.id.value}")
                             CbText("版本正文指纹：${version.bodyHash}")
-                            GroupFrozenRecords("此已签名版本的正文", unit, records)
+                            GroupFrozenRecords("此已签名版本的正文", unit, records, imageContext, actions)
                             row.impact[version]?.let { CbText(groupActionImpactSummary(it)) }
                                 ?: CbText("此版本的影响摘要尚未取得。")
                         }
@@ -314,8 +335,8 @@ private fun GroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, a
                 } else {
                     val row = review.incoming?.reductions?.get(unit)
                     if (row == null) CbText("此组的核对数据尚未取得。") else {
-                        GroupFrozenRecords("核对时的本机内容", unit, row.current)
-                        GroupFrozenRecords("待应用的传入目标", unit, row.proposed)
+                        GroupFrozenRecords("核对时的本机内容", unit, row.current, imageContext, actions)
+                        GroupFrozenRecords("待应用的传入目标", unit, row.proposed, imageContext, actions)
                         CbText(groupActionImpactSummary(row.impact))
                     }
                 }
@@ -333,12 +354,12 @@ private fun GroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, a
             contentDescription = "已核对全部内容组和影响，并确认以上目标")
         CbText("我已核对全部内容组和影响，并确认以上目标")
     }
-    CbButton(when { source != null -> "确认发布以上本机目标"; recovery != null -> "确认恢复以上本机目标"; else -> "确认应用以上传入目标" },
+    CbButton(when { resolution != null -> "确认以上版本处理与暂缓"; source != null -> "确认发布以上本机目标"; recovery != null -> "确认恢复以上本机目标"; else -> "确认应用以上传入目标" },
         { actions.confirmActionReview(review.binding) }, enabled = !busy && canConfirm && confirmed)
     CbButton("取消本次核对", actions::cancelActionReview, enabled = !busy, variant = ButtonVariant.Secondary)
 }
 
-private fun groupActionImpactSummary(impact: List<LanSyncRecordImpact>): String {
+internal fun groupActionImpactSummary(impact: List<LanSyncRecordImpact>): String {
     val added = impact.count { it.change == LanSyncRecordChange.ADD }
     val overwritten = impact.count { it.change == LanSyncRecordChange.REPLACE }
     val removed = impact.count { it.change == LanSyncRecordChange.REMOVE }
@@ -351,10 +372,11 @@ private fun groupActionImpactSummary(impact: List<LanSyncRecordImpact>): String 
 }
 
 @Composable
-private fun GroupFrozenRecords(label: String, unit: String, records: List<LanSyncRecord>) {
+internal fun GroupFrozenRecords(label: String, unit: String, records: List<LanSyncRecord>,
+    imageContext: LanSyncGroupFrozenImageContext, actions: LanSyncGroupPanelActions) {
     var expanded by remember(records, label) { mutableStateOf(false) }
     CbButton((if (expanded) "收起" else "展开") + "$label · ${records.size} 条记录",
-        { expanded = !expanded }, variant = ButtonVariant.Secondary)
+        { if (expanded) actions.closeImagePreview(); expanded = !expanded }, variant = ButtonVariant.Secondary)
     if (!expanded) return
     val detail = remember(records, unit) { LanSyncDetailedReview.detail(unit, records, emptyList()) }
     val keys = detail.recordKeys
@@ -362,7 +384,9 @@ private fun GroupFrozenRecords(label: String, unit: String, records: List<LanSyn
     var recordPage by remember(detail) { mutableStateOf(0) }
     var selectedKey by remember(detail) { mutableStateOf<String?>(null) }
     keys.drop(recordPage * 10).take(10).forEach { recordKey ->
-        CbButton(recordKey, { selectedKey = recordKey }, variant = ButtonVariant.Secondary)
+        val display = detail.record(recordKey, true)?.let(LanSyncGroupDisplay::record)
+        CbText(display?.identifier ?: recordKey)
+        CbButton(display?.let { "${it.kind} · ${it.title}" } ?: recordKey, { actions.closeImagePreview(); selectedKey = recordKey }, variant = ButtonVariant.Secondary)
     }
     if (keys.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CbButton("上一页记录", { recordPage-- }, enabled = recordPage > 0, variant = ButtonVariant.Secondary)
@@ -370,6 +394,19 @@ private fun GroupFrozenRecords(label: String, unit: String, records: List<LanSyn
         CbButton("下一页记录", { recordPage++ }, enabled = (recordPage + 1) * 10 < keys.size, variant = ButtonVariant.Secondary)
     }
     val recordKey = selectedKey ?: return
+    val imageRecord = detail.record(recordKey, true)
+    val images = remember(detail, recordKey) { imageRecord?.let(LanSyncReviewImages::references).orEmpty() }
+    var imagePage by remember(detail, recordKey) { mutableStateOf(0) }
+    images.drop(imagePage * 10).take(10).forEachIndexed { index, image ->
+        CbButton("查看冻结图片 ${imagePage * 10 + index + 1} · ${image.field}", {
+            imageRecord?.let { actions.previewImage(imageContext, it, image.reference) }
+        }, variant = ButtonVariant.Secondary)
+    }
+    if (images.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CbButton("上一页图片", { imagePage-- }, enabled = imagePage > 0, variant = ButtonVariant.Secondary)
+        CbText("${imagePage + 1}/${(images.size + 9) / 10}")
+        CbButton("下一页图片", { imagePage++ }, enabled = (imagePage + 1) * 10 < images.size, variant = ButtonVariant.Secondary)
+    }
     val fields = detail.fields(recordKey)
     var fieldIndex by remember(detail, recordKey) { mutableStateOf(0) }
     var bodyPage by remember(detail, recordKey, fieldIndex) { mutableStateOf(0) }

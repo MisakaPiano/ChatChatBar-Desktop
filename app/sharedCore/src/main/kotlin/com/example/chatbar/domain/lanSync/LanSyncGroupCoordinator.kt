@@ -10,7 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 
 /** One application owner. Screens project state and lock secrets; they never own daily work. */
 class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
@@ -30,6 +32,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     val recoveryEntries = mutableRecoveryEntries.asStateFlow()
     private val mutableRecoveryView = MutableStateFlow<LanSyncGroupRecoveryView?>(null)
     val recoveryView = mutableRecoveryView.asStateFlow()
+    private val mutableImages = MutableStateFlow(LanSyncGroupImageState())
+    val images = mutableImages.asStateFlow()
+    private val imageGeneration = java.util.concurrent.atomic.AtomicLong()
+    private val imageAdmission = Semaphore(1)
+    @Volatile private var imageContext: LanSyncGroupFrozenImageContext? = null
     private val recoveryGeneration = java.util.concurrent.atomic.AtomicLong()
     private val reviewGeneration = java.util.concurrent.atomic.AtomicLong()
     @Volatile private var closed = false
@@ -274,6 +281,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (closed || generation != privacyGeneration || (if (recovered) recoveredManagement?.isUnlocked != true else draft == null)) { owner.close(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
         val offer = live.invitation(owner) { invited -> action("核对加入设备") {
             val preview = if (recovered) requireNotNull(recoveredManagement).prepareMember(invited, owner) else founder().prepareMember(invited, owner)
+            requireNotNull(access).rememberPeerName(invited)
             synchronized(lifecycle) {
                 require(!closed && generation == privacyGeneration && invitation === owner &&
                     (if (recovered) recoveredManagement?.isUnlocked == true else draft != null)) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
@@ -302,7 +310,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.prepareRevocation(device)
         } else { requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }; founder().prepareRevocation(device) }
         revocation = preview
-        mutableState.update { it.copy(revocation = LanSyncGroupRevocationConfirmation(preview.request.approvalBinding, device.take(12))) }
+        val name = state.value.devices.firstOrNull { it.id == device }?.name ?: "已加入设备"
+        mutableState.update { it.copy(revocation = LanSyncGroupRevocationConfirmation(preview.request.approvalBinding, name)) }
     }
     override fun confirmRevocation(binding: String) = action("撤销设备") {
         val preview = requireNotNull(revocation) { "SYNC_GROUP_REVOCATION_CONFIRMATION_REQUIRED" }
@@ -320,6 +329,27 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun cancelActionReview() = synchronized(reviewGeneration) {
         reviewGeneration.incrementAndGet()
         mutableActionReview.value = null
+        closeImagePreview()
+    }
+    override fun prepareResolution(view: LanSyncGroupNodeView, choices: Map<String, LanSyncGroupResolutionChoice>) {
+        val generation = synchronized(reviewGeneration) { reviewGeneration.incrementAndGet() }
+        val frozenChoices = choices.mapValues { (_, choice) -> when (choice) {
+            LanSyncGroupResolutionChoice.Later -> choice
+            is LanSyncGroupResolutionChoice.Keep -> choice.copy(copies = choice.copies.toMap())
+        } }.toMap()
+        action("核对冲突处理目标") {
+            require(frozenChoices.isNotEmpty()) { "SYNC_GROUP_RESOLUTION_SELECTION" }
+            val plan = requireNotNull(view.plan) { "SYNC_GROUP_NODE_NOT_READY" }
+            val prepared = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.prepareResolution(frozenChoices)
+            require(prepared.checkpoint == plan.checkpoint && prepared.heads == plan.heads &&
+                prepared.sourceFiles == plan.sourceFiles && prepared.appliedBefore == plan.appliedBefore) { "SYNC_GROUP_RESOLUTION_STALE" }
+            val review = LanSyncGroupActionReview(prepared.binding, resolution = prepared, resolutionBasis = view, canConfirm = true)
+            synchronized(reviewGeneration) { if (reviewGeneration.get() == generation) mutableActionReview.value = review }
+        }
+    }
+    override fun resumeResolution(operation: String) = action("接续已确认的冲突处理") {
+        requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.resumeResolution(operation)
+        cycle(force = true)
     }
     override fun prepareSourceReview(view: LanSyncGroupNodeView, unit: String) {
         val generation = synchronized(reviewGeneration) { reviewGeneration.incrementAndGet() }
@@ -359,6 +389,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         selected.source?.let { node.commit(it, it.requiredBindings) }
         selected.incoming?.let { node.applyIncoming(it.acknowledge(selected.incomingBindings)) }
         selected.recovery?.let { node.applyRecovery(it) }
+        selected.resolution?.let { node.resolve(it.acknowledge(it.binding, it.requiredBindings, it.requiredRestorations)) }
         if (mutableActionReview.value === selected) cancelActionReview()
         cycle(force = true)
     }
@@ -368,6 +399,49 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun closeRecovery() = synchronized(recoveryGeneration) {
         recoveryGeneration.incrementAndGet(); mutableRecoveryView.value = null
         cancelActionReview()
+    }
+    private fun imageContextAvailable(context: LanSyncGroupFrozenImageContext): Boolean = !closed && when (context) {
+        is LanSyncGroupFrozenImageContext.Inspection -> true // Frozen inspection survives subsequent emissions.
+        is LanSyncGroupFrozenImageContext.Action -> mutableActionReview.value === context.review
+        is LanSyncGroupFrozenImageContext.Recovery -> mutableRecoveryView.value === context.view
+    }
+    override fun previewImage(context: LanSyncGroupFrozenImageContext, record: LanSyncRecord, reference: String) {
+        if (closed) return
+        val generation = synchronized(imageGeneration) {
+            imageContext = null; mutableImages.value = LanSyncGroupImageState()
+            imageGeneration.incrementAndGet()
+        }
+        scope.launch {
+            try { imageAdmission.withPermit {
+                require(imageContextAvailable(context) && context.owns(record, reference)) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+                val preview = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.prepareFrozenImage(record, reference)
+                currentCoroutineContext().ensureActive()
+                synchronized(imageGeneration) {
+                    if (generation == imageGeneration.get() && imageContextAvailable(context)) {
+                        imageContext = context; mutableImages.value = LanSyncGroupImageState(preview)
+                    }
+                }
+            } } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                synchronized(imageGeneration) {
+                    if (generation == imageGeneration.get()) mutableImages.value = LanSyncGroupImageState(error =
+                        if (failure.message == "SYNC_IMAGE_PREVIEW_EXPIRED") "此图片已不属于所选冻结内容，请重新打开详情。"
+                        else "冻结图片未能通过读取与格式校验，原资料和当前选择已保留。")
+                }
+            }
+        }
+    }
+    override fun readImagePreview(id: String): ByteArray {
+        val selected = synchronized(imageGeneration) {
+            val preview = requireNotNull(mutableImages.value.preview?.takeIf { it.id == id }) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+            val context = requireNotNull(imageContext) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+            require(imageContextAvailable(context) && context.owns(preview.record, preview.reference)) { "SYNC_IMAGE_PREVIEW_EXPIRED" }
+            preview
+        }
+        return requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.readFrozenImagePreview(selected)
+    }
+    override fun closeImagePreview() = synchronized(imageGeneration) {
+        imageGeneration.incrementAndGet(); imageContext = null; mutableImages.value = LanSyncGroupImageState()
     }
     override fun openRecovery(transaction: String) {
         val generation = synchronized(recoveryGeneration) { recoveryGeneration.incrementAndGet() }
@@ -414,7 +488,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val ledger = current.ledger().current()
         val manager = SyncDeviceSignatures.decode(current.trust.ownerCertificate).fingerprint
         mutableState.update { state -> state.copy(devices = ledger.members.map { (id, member) ->
-            LanSyncGroupDeviceRow(id, if (id == current.device) deviceName else if (id == manager) "组管理身份" else id.take(12),
+            LanSyncGroupDeviceRow(id, if (id == current.device) deviceName else if (id == manager) "组管理身份"
+                else current.peerDisplayName(id) ?: "已加入设备 · ${id.take(8)}",
                 if (member.active) "已加入" else "已撤销", id == current.device, id == manager,
                 state.managementUnlocked && member.active && id != current.device && id != manager)
         }) }

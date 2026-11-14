@@ -71,7 +71,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val projection = readProjection(record)
         LanSyncGroupRuntimeAccess(record.offer.trust, record.localReplica, FileCiphertextStore(path), directory("app-runtime", true),
             identity, custody(record, false), { store -> node(record, projection.projection, store) }, source.vault, source.vaultDescriptor,
-            candidateRoot = directory("commit-candidates", true))
+            peerNameProtect = protect, peerNameUnprotect = unprotect, candidateRoot = directory("commit-candidates", true))
     }
 
     suspend fun prepare(code: String, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {

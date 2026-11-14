@@ -12,6 +12,7 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     val replica: CiphertextStore, val work: Path, private val identity: LanSyncTlsIdentity,
     private val custody: SyncGroupCustody, node: (CiphertextStore) -> LanSyncGroupNode,
     val vault: SyncManagementVaultContext, val vaultDescriptor: CiphertextDescriptor,
+    peerNameProtect: (ByteArray) -> ByteArray, peerNameUnprotect: (ByteArray) -> ByteArray,
     val localManagementAvailable: Boolean = false, candidateRoot: Path? = null) {
     val device get() = identity.fingerprint
     val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
@@ -21,12 +22,15 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
     fun ledger() = custody.ledger()
+    private val peerNames by lazy { LanSyncGroupPeerNames(work, trust, custody::ledger, peerNameProtect, peerNameUnprotect) }
+    fun rememberPeerName(peer: LanSyncGroupInvitedPeer) = peerNames.remember(peer)
+    fun peerDisplayName(device: String): String? = peerNames.displayName(device)
     private val managementRoot get() = work.resolve("recovered-management")
     fun hasManagementRecoveryProfile() = Files.exists(managementRoot.resolve("profile.protected"), java.nio.file.LinkOption.NOFOLLOW_LINKS)
     fun managementRecovery(): LanSyncGroupManagementRecovery {
         if (!Files.exists(managementRoot, java.nio.file.LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(managementRoot)
         lanSyncSafe(managementRoot, true)
-        return LanSyncGroupManagementRecovery(managementRoot)
+        return LanSyncGroupManagementRecovery(managementRoot, knownCheckpoint = { ledger().current().reference() })
     }
     fun encryptedManagementBackup() = lanSyncReadManagementBackup(reader, vault, vaultDescriptor)
     suspend fun invitation(storePort: Int): LanSyncGroupInvitation {

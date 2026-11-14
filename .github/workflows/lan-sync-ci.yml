@@ -89,7 +89,7 @@ jobs:
         working-directory: app
         run: |
           chmod +x gradlew
-          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.*' --tests 'com.example.chatbar.domain.syncStore.*' --tests 'com.example.chatbar.data.local.StorageCommitRevisionTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin -PlanSyncDeviceTests=true --no-daemon --stacktrace
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.*' --tests 'com.example.chatbar.domain.syncStore.*' --tests 'com.example.chatbar.data.local.StorageCommitRevisionTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:

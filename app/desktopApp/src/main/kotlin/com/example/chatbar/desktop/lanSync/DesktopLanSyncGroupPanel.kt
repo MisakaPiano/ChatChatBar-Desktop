@@ -20,8 +20,9 @@ import java.util.Date
 @Composable
 internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions,
     view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
-    recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null) {
-    DisposableEffect(actions) { onDispose { actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery() } }
+    recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
+    imageState: LanSyncGroupImageState = LanSyncGroupImageState()) {
+    DisposableEffect(actions) { onDispose { actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() } }
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
     var saved by remember(state.setupBinding, state.privacyRevision) { mutableStateOf(false) }
@@ -32,6 +33,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         DesktopDataSectionHeading("设备组同步")
         StatusText(state.status)
         state.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        imageState.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (copyFailed) StatusText("未能复制，请保持此窗口打开后重试。", DesktopBootstrapColors.warning)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             StatusText(lanSyncGroupDescription)
@@ -94,6 +96,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             }
         }
         DesktopGroupFrozenReviewBrowser(view, state.busy, actions)
+        DesktopLanSyncGroupResolutionHistory(view, state.busy, actions)
         actionReview?.let { review -> DesktopGroupActionReview(review, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, state.busy, actions)
@@ -122,6 +125,11 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             }
         }
     }
+    imageState.preview?.let { preview ->
+        DesktopTransientImagePreview(preview.id, { actions.readImagePreview(preview.id) },
+            previewNote = "冻结静态预览 · 原始图片完整保留", onClose = actions::closeImagePreview)
+    }
+
 }
 
 /** A selected inspection stays frozen while the application continues synchronizing. */
@@ -140,8 +148,10 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
         StatusText("可浏览本次检查取得的完整字段，待确认的内容会保留当前状态。核对发布或传入目标后，可再确认执行。")
         units.drop(unitPage * 10).take(10).forEach { unit ->
             val row = view?.plan?.units?.get(unit)
-            DesktopGroupReviewButton("查看 $unit · ${row?.stage?.let(::desktopGroupFrozenStage).orEmpty()}",
-                { view?.let { selected = it to unit } })
+            val display = view?.let { LanSyncGroupDisplay.unit(it, unit) } ?: LanSyncGroupDisplay.unit(unit, emptyList())
+            StatusText(display.identifier)
+            DesktopGroupReviewButton("查看 ${display.kind} · ${display.title} · ${row?.stage?.let(::desktopGroupFrozenStage).orEmpty()}",
+                { view?.let { actions.closeImagePreview(); selected = it to unit } })
         }
         if (units.size > 10) ActionRow {
             DesktopGroupReviewButton("上一页内容组", { unitPage-- }, enabled = unitPage > 0)
@@ -153,9 +163,11 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
     val plan = frozen.first.plan ?: return
     val unit = frozen.second
     val row = plan.units[unit] ?: return
-    StatusText("已冻结：$unit")
-    StatusText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。此处可查看附件引用，暂不提供图片预览。")
-    DesktopGroupReviewButton("关闭冻结详情", { selected = null })
+    val display = LanSyncGroupDisplay.unit(frozen.first, unit)
+    StatusText("已冻结：${display.kind} · ${display.title}")
+    StatusText(display.identifier)
+    StatusText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。图片从本次冻结内容对应的本机缓存中读取。")
+    DesktopGroupReviewButton("关闭冻结详情", { actions.closeImagePreview(); selected = null })
     if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
             LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, LanSyncGroupNativeStage.CONFLICT,
             LanSyncGroupNativeStage.RECORD_REVIEW, LanSyncGroupNativeStage.DEPENDENCY_HELD)) {
@@ -164,22 +176,24 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
     if (unit in frozen.first.incomingReview?.reductions.orEmpty()) {
         DesktopGroupReviewButton("核对传入删除或覆盖", { actions.prepareIncomingReview(frozen.first, unit) }, enabled = !busy)
     }
+    DesktopLanSyncGroupResolutionChoices(frozen.first, unit, busy, actions)
+    val imageContext = LanSyncGroupFrozenImageContext.Inspection(frozen.first)
     val current = remember(plan, unit) { plan.before.units()[unit].orEmpty() }
     key(frozen.first, unit) {
-        DesktopGroupFrozenRecords("本次检查时的本机内容", unit, current)
+        DesktopGroupFrozenRecords("本次检查时的本机内容", unit, current, imageContext, actions)
         row.frontiers.sortedBy { it.version.id.value }.forEach { frontier ->
             key(frontier.version) {
                 StatusText("已签名版本：${frontier.version.id.value}")
                 val incoming = row.incoming[frontier.version]
                 when {
                     frontier.change.content == null -> StatusText("此版本为删除标记，没有正文记录。")
-                    incoming != null -> DesktopGroupFrozenRecords("已取得并验证的传入版本", unit, incoming.decoded.payload.records)
+                    incoming != null -> DesktopGroupFrozenRecords("已取得并验证的传入版本", unit, incoming.decoded.payload.records, imageContext, actions)
                     else -> StatusText("此版本的正文或附件尚未完整取得，暂不能显示完整内容。")
                 }
             }
         }
         frozen.first.incomingReview?.reductions?.get(unit)?.let { reduction ->
-            DesktopGroupFrozenRecords("待确认的传入目标", unit, reduction.proposed)
+            DesktopGroupFrozenRecords("待确认的传入目标", unit, reduction.proposed, imageContext, actions)
         }
     }
 }
@@ -203,6 +217,7 @@ private fun DesktopGroupRecoveryBrowser(entries: List<LanSyncRecoveryEntry>, vie
         DesktopGroupReviewButton("下一页保全记录", { entryPage++ }, enabled = (entryPage + 1) * 10 < entries.size)
     }
     if (view == null) return
+    val imageContext = LanSyncGroupFrozenImageContext.Recovery(view)
     StatusText("正在浏览的历史保全")
     DesktopGroupRecoveryMetadata(view.entry)
     StatusText("此处展示已保全的历史内容。准备恢复会先生成核对目标，确认后才修改本机资料。")
@@ -211,8 +226,10 @@ private fun DesktopGroupRecoveryBrowser(entries: List<LanSyncRecoveryEntry>, vie
     var unitPage by remember(view) { mutableStateOf(0) }
     units.drop(unitPage * 10).take(10).forEach { unit ->
         key(view, unit) {
-            StatusText("历史内容组：$unit")
-            DesktopGroupFrozenRecords("历史保全内容", unit, view.units.getValue(unit))
+            val display = LanSyncGroupDisplay.unit(unit, view.units.getValue(unit))
+            StatusText("历史内容组：${display.kind} · ${display.title}")
+            StatusText(display.identifier)
+            DesktopGroupFrozenRecords("历史保全内容", unit, view.units.getValue(unit), imageContext, actions)
             DesktopGroupReviewButton("准备恢复此组", { actions.prepareRestore(unit) }, enabled = !busy)
         }
     }
@@ -232,18 +249,22 @@ private fun DesktopGroupRecoveryMetadata(entry: LanSyncRecoveryEntry) {
 /** All confirmations refer to this exact owner-prepared review, never the latest screen state. */
 @Composable
 private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+    val imageContext = LanSyncGroupFrozenImageContext.Action(review)
     var confirmed by remember(review.binding) { mutableStateOf(false) }
     var unitPage by remember(review.binding) { mutableStateOf(0) }
     val recovery = review.recovery
+    val resolution = review.resolution
     val canConfirm = review.canConfirm && (recovery?.hasChanges != false)
-    DesktopDataSectionHeading(when { review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" })
+    DesktopDataSectionHeading(when { resolution != null -> "核对版本处理目标"; review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" })
     StatusText("以下关联内容按同一核对结果处理；请查看各组正文和影响后确认。确认时会再次检查资料是否变化。")
     val source = review.source
-    if (recovery != null) {
+    if (resolution != null) {
+        DesktopLanSyncGroupResolutionDetails(review, actions)
+    } else if (recovery != null) {
         StatusText("恢复仅作用于所选内容组和必需的缺失依赖；其余本机内容保留。")
         StatusText("本次恢复的内容组：${recovery.restoredUnits.sorted().joinToString("、")}")
-        DesktopGroupFrozenRecords("恢复前的本机内容", recovery.unit, recovery.currentRecords)
-        DesktopGroupFrozenRecords("待恢复的目标内容", recovery.unit, recovery.restoredRecords)
+        DesktopGroupFrozenRecords("恢复前的本机内容", recovery.unit, recovery.currentRecords, imageContext, actions)
+        DesktopGroupFrozenRecords("待恢复的目标内容", recovery.unit, recovery.restoredRecords, imageContext, actions)
         val impact = remember(review.binding) { LanSyncImpactReview.changes(recovery.currentRecords, recovery.restoredRecords) }
         StatusText(desktopGroupActionImpactSummary(impact))
         if (!recovery.hasChanges) StatusText("当前内容与恢复目标一致，没有需要写入的变化。")
@@ -252,15 +273,19 @@ private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, busy: Boo
         StatusText("本次核对 ${units.size} 个内容组")
         units.drop(unitPage * 10).take(10).forEach { unit ->
             key(review.binding, unit) {
-                StatusText("内容组：$unit")
+                val displayRows = source?.units?.get(unit)?.let { row -> row.current.ifEmpty { row.versions.values.flatten() } }
+                    ?: review.incoming?.reductions?.get(unit)?.let { row -> row.current.ifEmpty { row.proposed } }.orEmpty()
+                val display = LanSyncGroupDisplay.unit(unit, displayRows)
+                StatusText("内容组：${display.kind} · ${display.title}")
+                StatusText(display.identifier)
                 if (source != null) {
                     val row = source.units.getValue(unit)
-                    DesktopGroupFrozenRecords("准备发布的本机目标", unit, row.current)
+                    DesktopGroupFrozenRecords("准备发布的本机目标", unit, row.current, imageContext, actions)
                     row.versions.entries.sortedWith(compareBy({ it.key.id.value }, { it.key.bodyHash })).forEach { (version, records) ->
                         key(version) {
                             StatusText("已签名的核对版本：${version.id.value}")
                             StatusText("版本正文指纹：${version.bodyHash}")
-                            DesktopGroupFrozenRecords("此已签名版本的正文", unit, records)
+                            DesktopGroupFrozenRecords("此已签名版本的正文", unit, records, imageContext, actions)
                             row.impact[version]?.let { StatusText(desktopGroupActionImpactSummary(it)) }
                                 ?: StatusText("此版本的影响摘要尚未取得。")
                         }
@@ -272,8 +297,8 @@ private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, busy: Boo
                 } else {
                     val row = review.incoming?.reductions?.get(unit)
                     if (row == null) StatusText("此组的核对数据尚未取得。") else {
-                        DesktopGroupFrozenRecords("核对时的本机内容", unit, row.current)
-                        DesktopGroupFrozenRecords("待应用的传入目标", unit, row.proposed)
+                        DesktopGroupFrozenRecords("核对时的本机内容", unit, row.current, imageContext, actions)
+                        DesktopGroupFrozenRecords("待应用的传入目标", unit, row.proposed, imageContext, actions)
                         StatusText(desktopGroupActionImpactSummary(row.impact))
                     }
                 }
@@ -288,12 +313,12 @@ private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, busy: Boo
     review.heldReason?.let { StatusText(it, DesktopBootstrapColors.warning) }
     DesktopGroupReviewButton((if (confirmed) "✓ " else "") + "我已核对全部内容组和影响，并确认以上目标",
         { confirmed = !confirmed }, enabled = !busy && canConfirm)
-    BootstrapButton(when { source != null -> "确认发布以上本机目标"; recovery != null -> "确认恢复以上本机目标"; else -> "确认应用以上传入目标" },
+    BootstrapButton(when { resolution != null -> "确认以上版本处理与暂缓"; source != null -> "确认发布以上本机目标"; recovery != null -> "确认恢复以上本机目标"; else -> "确认应用以上传入目标" },
         enabled = !busy && canConfirm && confirmed) { actions.confirmActionReview(review.binding) }
     DesktopGroupReviewButton("取消本次核对", actions::cancelActionReview, enabled = !busy)
 }
 
-private fun desktopGroupActionImpactSummary(impact: List<LanSyncRecordImpact>): String {
+internal fun desktopGroupActionImpactSummary(impact: List<LanSyncRecordImpact>): String {
     val added = impact.count { it.change == LanSyncRecordChange.ADD }
     val overwritten = impact.count { it.change == LanSyncRecordChange.REPLACE }
     val removed = impact.count { it.change == LanSyncRecordChange.REMOVE }
@@ -306,10 +331,11 @@ private fun desktopGroupActionImpactSummary(impact: List<LanSyncRecordImpact>): 
 }
 
 @Composable
-private fun DesktopGroupFrozenRecords(label: String, unit: String, records: List<LanSyncRecord>) {
+internal fun DesktopGroupFrozenRecords(label: String, unit: String, records: List<LanSyncRecord>,
+    imageContext: LanSyncGroupFrozenImageContext, actions: LanSyncGroupPanelActions) {
     var expanded by remember(records, label) { mutableStateOf(false) }
     DesktopGroupReviewButton((if (expanded) "收起" else "展开") + "$label · ${records.size} 条记录",
-        { expanded = !expanded })
+        { if (expanded) actions.closeImagePreview(); expanded = !expanded })
     if (!expanded) return
     val detail = remember(records, unit) { LanSyncDetailedReview.detail(unit, records, emptyList()) }
     val keys = detail.recordKeys
@@ -317,7 +343,9 @@ private fun DesktopGroupFrozenRecords(label: String, unit: String, records: List
     var recordPage by remember(detail) { mutableStateOf(0) }
     var selectedKey by remember(detail) { mutableStateOf<String?>(null) }
     keys.drop(recordPage * 10).take(10).forEach { recordKey ->
-        DesktopGroupReviewButton(recordKey, { selectedKey = recordKey })
+        val display = detail.record(recordKey, true)?.let(LanSyncGroupDisplay::record)
+        StatusText(display?.identifier ?: recordKey)
+        DesktopGroupReviewButton(display?.let { "${it.kind} · ${it.title}" } ?: recordKey, { actions.closeImagePreview(); selectedKey = recordKey })
     }
     if (keys.size > 10) ActionRow {
         DesktopGroupReviewButton("上一页记录", { recordPage-- }, enabled = recordPage > 0)
@@ -325,6 +353,19 @@ private fun DesktopGroupFrozenRecords(label: String, unit: String, records: List
         DesktopGroupReviewButton("下一页记录", { recordPage++ }, enabled = (recordPage + 1) * 10 < keys.size)
     }
     val recordKey = selectedKey ?: return
+    val imageRecord = detail.record(recordKey, true)
+    val images = remember(detail, recordKey) { imageRecord?.let(LanSyncReviewImages::references).orEmpty() }
+    var imagePage by remember(detail, recordKey) { mutableStateOf(0) }
+    images.drop(imagePage * 10).take(10).forEachIndexed { index, image ->
+        DesktopGroupReviewButton("查看冻结图片 ${imagePage * 10 + index + 1} · ${image.field}", {
+            imageRecord?.let { actions.previewImage(imageContext, it, image.reference) }
+        })
+    }
+    if (images.size > 10) ActionRow {
+        DesktopGroupReviewButton("上一页图片", { imagePage-- }, enabled = imagePage > 0)
+        StatusText("${imagePage + 1}/${(images.size + 9) / 10}")
+        DesktopGroupReviewButton("下一页图片", { imagePage++ }, enabled = (imagePage + 1) * 10 < images.size)
+    }
     val fields = detail.fields(recordKey)
     var fieldIndex by remember(detail, recordKey) { mutableStateOf(0) }
     var bodyPage by remember(detail, recordKey, fieldIndex) { mutableStateOf(0) }
@@ -361,7 +402,7 @@ private fun desktopGroupFrozenStage(stage: LanSyncGroupNativeStage): String = wh
 }
 
 @Composable
-private fun DesktopGroupReviewButton(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+internal fun DesktopGroupReviewButton(label: String, onClick: () -> Unit, enabled: Boolean = true) {
     BootstrapButton(label, enabled = enabled, secondary = true, onClick = onClick)
 }
 

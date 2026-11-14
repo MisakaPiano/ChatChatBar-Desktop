@@ -107,7 +107,8 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         val local = directory("local-replica", false)
         require(Files.isRegularFile(local.resolve("store.id"), NOFOLLOW_LINKS)) { "SYNC_GROUP_PROFILE_REPLICA_MISSING" }
         LanSyncGroupRuntimeAccess(record.trust, record.localReplica, FileCiphertextStore(local), directory("app-runtime", true),
-            identity, custody(record), { store -> node(record, store) }, record.vault, record.vaultDescriptor, localManagementAvailable = true)
+            identity, custody(record), { store -> node(record, store) }, record.vault, record.vaultDescriptor,
+            peerNameProtect = protect, peerNameUnprotect = unprotect, localManagementAvailable = true)
     }
 
     /** Produces an invitation-only transport owner; it neither unlocks admin authority nor joins a member. */

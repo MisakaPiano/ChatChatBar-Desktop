@@ -78,9 +78,10 @@ class DesktopAppContainer internal constructor(
             val path = java.nio.file.Path.of(reference)
             if (path.isAbsolute) path else characterResourceStore.resolveOwnedReference(reference)
         }, asset = characterResourceStore::readBytes,
-        shutdownExclusive = { work -> withBackupIoMaintenance(work = {
-            dataOperationCoordinator.withExclusiveMaintenance { work() }
-        }) }) }
+        shutdownExclusive = { work -> lanSyncShutdownMaintenance.withExclusive { work() } }) }
+    private val lanSyncShutdownMaintenance by lazy {
+        DesktopLanSyncShutdownMaintenance(automaticBackupRuntime, dataOperationCoordinator)
+    }
     internal val lanSync get() = lanSyncOwner.value.runtime
     internal val lanSyncGroupCoordinator get() = lanSyncOwner.value.groupCoordinator
     internal fun hasLanSyncGroupEvidence(): Boolean = lanSyncOwner.value.hasGroupEvidence()
@@ -910,8 +911,7 @@ class DesktopAppContainer internal constructor(
                 if (taskCenterOwner.isInitialized()) taskCenter.closeAndDrain()
             },
             finalLocalFlush = {
-                if (lanSyncOwner.isInitialized() && !lanSyncOwner.value.flushLocalAfterWriters())
-                    System.err.println("CCB_LAN_SYNC_FINAL_LOCAL_FLUSH INCOMPLETE")
+                if (lanSyncOwner.isInitialized()) lanSyncOwner.value.flushLocalAfterWriters()
             },
             runtimeClose = {
                 if (lanSyncOwner.isInitialized()) lanSyncOwner.value.closeAndDrain()
@@ -957,7 +957,7 @@ internal suspend fun closeDesktopDataRuntimes(
     }
     if (primaryFailure == null) {
         try { finalLocalFlush() }
-        catch (pending: DesktopLanSyncFinalFlushTimeoutException) {
+        catch (pending: DesktopLanSyncFinalFlushException) {
             // The independent retained task may still hold the native gate. Keep every owner live.
             throw pending
         } catch (error: Throwable) { primaryFailure = error }
@@ -966,7 +966,7 @@ internal suspend fun closeDesktopDataRuntimes(
         DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_BEGIN)
         runtimeClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_END)
-    } catch (pending: DesktopLanSyncFinalFlushTimeoutException) {
+    } catch (pending: DesktopLanSyncFinalFlushException) {
         throw pending
     } catch (error: Throwable) {
         if (primaryFailure == null) primaryFailure = error else primaryFailure.addSuppressed(error)

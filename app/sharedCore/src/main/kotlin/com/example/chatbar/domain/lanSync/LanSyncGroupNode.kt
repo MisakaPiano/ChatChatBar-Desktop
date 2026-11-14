@@ -344,6 +344,11 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         workspace.readImagePreview(workspace.previewImage(record, reference))
     }
 
+    internal suspend fun prepareFrozenImage(record: LanSyncRecord, reference: String): LanSyncImagePreview = withContext(Dispatchers.IO) {
+        workspace.previewImage(record, reference)
+    }
+    internal fun readFrozenImagePreview(preview: LanSyncImagePreview): ByteArray = workspace.readImagePreview(preview)
+
     suspend fun prepareRecovery(transaction: String, unit: String): LanSyncRestorePreview = serialized {
         exclusive { workspace.prepareRecovery(transaction, unit, identity.fingerprint, projection) }
     }

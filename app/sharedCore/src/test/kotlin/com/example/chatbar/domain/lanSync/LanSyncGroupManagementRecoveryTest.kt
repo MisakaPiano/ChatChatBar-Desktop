@@ -79,6 +79,11 @@ class LanSyncGroupManagementRecoveryTest {
     private fun assertNoCode(root: Path, code: String) {
         allFiles(root).forEach { (name, bytes) -> assertFalse(bytes.toString(Charsets.ISO_8859_1).contains(code), name) }
     }
+    private fun assertUnchanged(root: Path, before: Map<String, ByteArray>) {
+        val after = allFiles(root)
+        assertEquals(before.keys, after.keys)
+        before.forEach { (name, bytes) -> assertContentEquals(bytes, after.getValue(name), name) }
+    }
     private fun prove(invitation: LanSyncGroupInvitation, identity: LanSyncTlsIdentity, key: SyncDeviceEncryptionKey): LanSyncGroupInvitedPeer {
         val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket)
             .also { it.needClientAuth = true }
@@ -315,6 +320,116 @@ class LanSyncGroupManagementRecoveryTest {
             assertContentEquals(retainedVault, Files.readAllBytes(managementRoot.resolve("management-vault.bin")))
             assertNoCode(managementRoot, f.code)
         } finally { owner.close() }
+    }
+
+    @Test fun readyManagerCannotRefreshOrRevokeFromAnOldCompleteViewAfterDailyCheckpointAdvances() = fixture { f, joined ->
+        val card = joined.data.resolve("entities/character_cards/checkpoint.json")
+        Files.createDirectories(card.parent)
+        LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("checkpoint", "daily original beside management", createdAt = 1, updatedAt = 1))
+        val source = joined.node.commit(joined.node.inspect().review(setOf("character_cards/checkpoint")))
+        val dailyRaw = Files.readAllBytes(card)
+        val dailyNode = allFiles(joined.root.resolve("joining/node"))
+        val dailyCustody = allFiles(joined.root.resolve("joining/custody"))
+        val sourceOriginal = requireNotNull(joined.workspace.recovery.read(source.entry.request.sourceCheckpoint))
+        val vault = joined.owner.encryptedManagementBackup()
+        var known: SyncVersionRef? = joined.trust.checkpoint
+        val managementRoot = Files.createDirectory(f.root.resolve("dynamic-checkpoint-management"))
+        val management = LanSyncGroupManagementRecovery(managementRoot, knownCheckpoint = { known })
+        fun rootState(): SyncRootLedgerState = SyncManagementSession.open(f.code, vault.bytes()).use { session ->
+            SyncRootLedgerJournal(managementRoot.resolve("root-actions"), session.trust, session.ownerCertificate,
+                session::protectJournal, session::unprotectJournal).state()
+        }
+        try {
+            val ready = management.recover(f.code, vault.bytes(), joined.replica(), LanSyncManagementRecoveryAdmission { }, joined.trust)
+            assertEquals(LanSyncManagementRecoveryStage.READY, ready.stage)
+            val before = management.ledger().current()
+            assertEquals(known, before.reference())
+            val stale = management.prepareRevocation(f.identity.fingerprint)
+            val staleApproval = stale.acknowledge(stale.request.approvalBinding)
+            assertEquals(before.reference(), stale.request.expectedParent)
+            val origin = Files.readAllBytes(managementRoot.resolve("root-actions/origin.protected"))
+            val profile = Files.readAllBytes(managementRoot.resolve("profile.protected"))
+            val retainedVault = Files.readAllBytes(managementRoot.resolve("management-vault.bin"))
+            val rootBefore = rootState()
+            assertEquals(0L, rootBefore.completedSequence)
+            assertNull(rootBefore.pendingOperation)
+
+            // A complete real old backend includes all old capsules/ledgers and the encrypted vault.
+            val oldBackend = FileCiphertextStore(f.root.resolve("complete-old-management-backend"))
+            val oldSource = joined.replica()
+            fun copy(metadata: CiphertextObjectMetadata) {
+                val output = ByteArrayOutputStream()
+                assertEquals(metadata, oldSource.readTo(metadata.key, output, metadata.descriptor))
+                oldBackend.put(CiphertextPutRequest(metadata.key, SyncStoreId.random(), metadata.descriptor), output.toByteArray().inputStream())
+            }
+            var cursor: CommitCursor? = null
+            do {
+                val page = oldSource.listCommits(cursor)
+                page.entries.forEach(::copy)
+                cursor = page.nextCursor
+            } while (cursor != null)
+            copy(requireNotNull(oldSource.metadata(vault.key)))
+            val rootBytes = allFiles(managementRoot.resolve("root-actions"))
+
+            // Another manager advances the real signed prefix and rotates its key. Only the daily
+            // checkpoint callback is advanced here; this test does not claim daily key admission.
+            val externalPreview = f.service.prepareRevocation(f.joiningIdentity.fingerprint)
+            val external = f.service.revokeDevice(f.service.resume(f.code), externalPreview.acknowledge(externalPreview.request.approvalBinding))
+            assertEquals(before.reference(), external.ledger.parent)
+            assertNotEquals(before.epoch, external.ledger.epoch)
+            assertFalse(external.ledger.members.getValue(f.joiningIdentity.fingerprint).active)
+            assertTrue(external.ledger.members.getValue(f.identity.fingerprint).active)
+            known = external.ledger.reference()
+
+            assertEquals("SYNC_GROUP_MANAGEMENT_KNOWN_CHECKPOINT_MISSING", assertFailsWith<IllegalArgumentException> {
+                management.refresh(oldBackend)
+            }.message)
+            assertEquals("SYNC_GROUP_MANAGEMENT_KNOWN_CHECKPOINT_MISSING", assertFailsWith<IllegalArgumentException> {
+                management.prepareRevocation(f.identity.fingerprint)
+            }.message)
+            assertEquals("SYNC_GROUP_MANAGEMENT_KNOWN_CHECKPOINT_MISSING", assertFailsWith<IllegalArgumentException> {
+                management.revokeDevice(staleApproval)
+            }.message)
+            assertEquals(rootBefore, rootState())
+            assertUnchanged(managementRoot.resolve("root-actions"), rootBytes)
+            assertContentEquals(origin, Files.readAllBytes(managementRoot.resolve("root-actions/origin.protected")))
+            assertContentEquals(profile, Files.readAllBytes(managementRoot.resolve("profile.protected")))
+            assertContentEquals(retainedVault, Files.readAllBytes(managementRoot.resolve("management-vault.bin")))
+            assertUnchanged(joined.root.resolve("joining/node"), dailyNode)
+            assertUnchanged(joined.root.resolve("joining/custody"), dailyCustody)
+            assertContentEquals(dailyRaw, Files.readAllBytes(card))
+            joined.workspace.recovery.verify(sourceOriginal)
+
+            val fullBackend = FileCiphertextStore(f.profile.resolve("local-replica"))
+            assertEquals(LanSyncManagementRecoveryStage.READY, management.refresh(fullBackend).stage)
+            assertEquals(external.ledger, management.ledger().current())
+            assertEquals(rootBefore, rootState(), "Observing another manager's signed prefix does not allocate an owned root action")
+            assertContentEquals(origin, Files.readAllBytes(managementRoot.resolve("root-actions/origin.protected")))
+            val refreshedRootBytes = allFiles(managementRoot.resolve("root-actions"))
+            assertEquals("SYNC_ROOT_PARENT_CHANGED", assertFailsWith<IllegalArgumentException> {
+                management.revokeDevice(staleApproval)
+            }.message)
+            assertEquals(rootBefore, rootState())
+            assertUnchanged(managementRoot.resolve("root-actions"), refreshedRootBytes)
+
+            val current = management.prepareRevocation(f.identity.fingerprint)
+            assertEquals(external.ledger.reference(), current.request.expectedParent)
+            val accepted = management.revokeDevice(current.acknowledge(current.request.approvalBinding))
+            assertEquals(external.ledger.reference(), accepted.ledger.parent)
+            assertEquals(external.ledger.sequence + 1, accepted.ledger.sequence)
+            assertFalse(accepted.ledger.members.getValue(f.identity.fingerprint).active)
+            assertFalse(accepted.ledger.members.getValue(f.joiningIdentity.fingerprint).active)
+            assertEquals(1L, rootState().completedSequence)
+            assertNull(rootState().pendingOperation)
+            assertContentEquals(origin, Files.readAllBytes(managementRoot.resolve("root-actions/origin.protected")))
+            assertContentEquals(retainedVault, Files.readAllBytes(managementRoot.resolve("management-vault.bin")))
+            assertUnchanged(joined.root.resolve("joining/node"), dailyNode)
+            assertUnchanged(joined.root.resolve("joining/custody"), dailyCustody)
+            assertContentEquals(dailyRaw, Files.readAllBytes(card))
+            assertEquals(listOf(source.entry.request.operation), joined.node.sourceOperations())
+            joined.workspace.recovery.verify(sourceOriginal)
+            assertNoCode(managementRoot, f.code)
+        } finally { management.close() }
     }
 
     @Test fun interruptedRecoveredRootActionResumesOneExactRevisionAndReadyMissingOriginCannotReenroll() = fixture { f, joined ->

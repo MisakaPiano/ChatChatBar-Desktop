@@ -1,6 +1,13 @@
 package com.example.chatbar.desktop
 
 import java.nio.file.Files
+import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.snapshot.AutomaticBackupExecutionResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
@@ -32,39 +39,101 @@ class DesktopLanSyncShutdownFlushTest {
         assertEquals(listOf("tasks", "drafts", "backup", "gate", "migration"), events)
     }
 
-    @Test fun pendingFinalSealingSkipsEveryFollowingCloseAndRetainsActualRootOwnership() {
-        val root = Files.createTempDirectory("synthetic-desktop-lan-final-seal-").toRealPath()
-        val resolved = DesktopDataRootResolution.Resolved(appDataRoot = root,
-            provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
-            bootstrapPath = root.resolveSibling("synthetic-bootstrap.json"))
-        val events = mutableListOf<String>()
-        var held: DesktopDataRootOwnership? = null
-        var released = false
-        val pending = DesktopLanSyncFinalFlushTimeoutException()
+    @Test fun unconfirmedFinalSealingSkipsFollowingCloseRetainsOwnershipAndCannotReportOrdinaryExit() {
+        for (pending in listOf(DesktopLanSyncFinalFlushTimeoutException(), DesktopLanSyncFinalFlushIncompleteException())) {
+            val root = Files.createTempDirectory("synthetic-desktop-lan-final-seal-").toRealPath()
+            val resolved = DesktopDataRootResolution.Resolved(appDataRoot = root,
+                provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+                bootstrapPath = root.resolveSibling("synthetic-bootstrap.json"))
+            val events = mutableListOf<String>()
+            var held: DesktopDataRootOwnership? = null
+            var released = false
+            try {
+                assertSame(pending, assertFailsWith<DesktopLanSyncFinalFlushException> {
+                    runDesktopApplicationWithDataRootOwnership(resolved,
+                        acquireOwnership = { selected -> DesktopDataRootOwnership.acquire(selected).also {
+                            held = (it as? DesktopDataRootOwnershipResult.Acquired)?.ownership
+                        } },
+                        closeOwnership = { released = true; it.close() },
+                        applicationBody = { runBlocking {
+                            closeDesktopDataRuntimes(
+                                taskRuntimeClose = { events += "tasks" },
+                                draftRuntimeClose = { events += "drafts" },
+                                finalLocalFlush = { events += "final-local"; throw pending },
+                                runtimeClose = { events += "must-not-close-backup" },
+                                coordinatorClose = { events += "must-not-close-gate" },
+                                migrationServiceClose = { events += "must-not-close-migration" },
+                            )
+                        } })
+                })
+                assertEquals(listOf("tasks", "drafts", "final-local"), events)
+                assertFalse(released)
+                var ordinaryExit = false
+                var diagnosticShown = false
+                runDesktopProcessLifecycle(application = { throw pending }, terminate = { ordinaryExit = true },
+                    reportFailure = { diagnosticShown = true })
+                assertFalse(ordinaryExit)
+                assertTrue(diagnosticShown, "An incomplete seal must enter the visible fixed shutdown diagnostic path")
+                assertTrue(requireNotNull(pending.message).contains("CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_"))
+                assertNotNull(held)
+                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolved))
+            } finally {
+                held?.close()
+                check(root.toFile().deleteRecursively())
+            }
+        }
+    }
+
+    @Test fun shutdownSealingUsesLiveBackupAndRealExclusiveStorageAfterAudioOwnerHasClosed() = runBlocking {
+        val root = Files.createTempDirectory("synthetic-lan-shutdown-gate-").toRealPath()
+        val gate = DesktopDataOperationCoordinator()
+        val outputClosed = AtomicBoolean()
+        val audioCalls = AtomicInteger()
+        val output = object : DesktopAudioOutput {
+            override suspend fun play(path: Path) { error("SYNTHETIC_NO_AUDIO_PLAYBACK") }
+            override suspend fun isPlaying() = false
+            override suspend fun stopAndDrain() {
+                audioCalls.incrementAndGet()
+                check(!outputClosed.get()) { "SYNTHETIC_CLOSED_AUDIO_OUTPUT" }
+            }
+            override suspend fun closeAndDrain() { outputClosed.set(true) }
+        }
+        val focus = DesktopAudioFocus(output)
+        val ordinaryAudio = DesktopAudioMaintenance({ focus }) { }
+        val backup = DesktopAutomaticBackupRuntime(DesktopSettingsStore(root, gate), gate) { sink ->
+            DesktopAutomaticBackupScheduler({ _, _ -> AutomaticBackupExecutionResult.SkippedNotDue },
+                dispatcher = Dispatchers.Unconfined, eventSink = sink)
+        }
         try {
-            assertSame(pending, assertFailsWith<DesktopLanSyncFinalFlushTimeoutException> {
-                runDesktopApplicationWithDataRootOwnership(resolved,
-                    acquireOwnership = { selected -> DesktopDataRootOwnership.acquire(selected).also {
-                        held = (it as? DesktopDataRootOwnershipResult.Acquired)?.ownership
-                    } },
-                    closeOwnership = { released = true; it.close() },
-                    applicationBody = { runBlocking {
-                        closeDesktopDataRuntimes(
-                            taskRuntimeClose = { events += "tasks" },
-                            draftRuntimeClose = { events += "drafts" },
-                            finalLocalFlush = { events += "final-local"; throw pending },
-                            runtimeClose = { events += "must-not-close-backup" },
-                            coordinatorClose = { events += "must-not-close-gate" },
-                            migrationServiceClose = { events += "must-not-close-migration" },
-                        )
-                    } })
-            })
-            assertEquals(listOf("tasks", "drafts", "final-local"), events)
-            assertFalse(released)
-            assertNotNull(held)
-            assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolved))
+            backup.initialize()
+            focus.closeAndDrain()
+            assertTrue(outputClosed.get())
+            // The former final-seal route really cannot use this already-closed owner.
+            assertFailsWith<DesktopAudioDrainException> {
+                ordinaryAudio.withMaintenance(true, { gate.isRestartRequired }) { error("must not reach storage") }
+            }
+            val closedAudioAttempts = audioCalls.get()
+            assertEquals(1, closedAudioAttempts)
+            val shutdown = DesktopLanSyncShutdownMaintenance(backup, gate)
+            val storage = JsonFileStorage(root, gate)
+            shutdown.withExclusive {
+                assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, gate.state)
+                assertEquals(DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED, backup.state.value.mode)
+                storage.saveEntity("character_cards", "card", CharacterCard("card", "first final source", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            }
+            // Multiple native admissions during one seal share the one paused backup owner.
+            shutdown.withExclusive {
+                assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, gate.state)
+                storage.saveEntity("character_cards", "card", CharacterCard("card", "final sealed source", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            }
+            assertEquals("final sealed source", storage.loadEntity("character_cards", "card", CharacterCard.serializer())?.name)
+            assertEquals(DesktopDataOperationCoordinatorState.OPEN, gate.state)
+            assertEquals(DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED, backup.state.value.mode)
+            assertFalse(backup.state.value.schedulerRunning)
+            assertEquals(closedAudioAttempts, audioCalls.get(), "Final source sealing must not revisit closed audio or its dispatcher")
         } finally {
-            held?.close()
+            backup.close()
+            gate.closeAndDrain()
             check(root.toFile().deleteRecursively())
         }
     }

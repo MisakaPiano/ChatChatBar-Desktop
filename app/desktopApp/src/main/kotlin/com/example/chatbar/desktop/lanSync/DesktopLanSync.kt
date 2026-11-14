@@ -4,6 +4,8 @@ import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.desktop.security.WindowsDpapiSecretProtector
 import com.example.chatbar.desktop.security.WindowsSecretRootResolver
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.UUID
@@ -93,7 +95,8 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
         val result = withTimeoutOrNull(30_000) { task.await() }
             ?: throw DesktopLanSyncFinalFlushTimeoutException()
         finalLocalFlushComplete = result
-        result
+        if (!result) throw DesktopLanSyncFinalFlushIncompleteException()
+        true
     }
     private fun groupProfileRoot(): Path {
         val profile = localRoot.resolve("group-profile")
@@ -131,7 +134,31 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     }
 }
 
-internal class DesktopLanSyncFinalFlushTimeoutException : IllegalStateException("Local sync sealing is still using storage; root ownership retained")
+internal sealed class DesktopLanSyncFinalFlushException(message: String) : IllegalStateException(message)
+
+/** Thirty seconds bounds this wait only. The same real task and storage ownership remain retained. */
+internal class DesktopLanSyncFinalFlushTimeoutException : DesktopLanSyncFinalFlushException(
+    "本机同步封存仍在使用资料；等待已结束，任务和资料目录锁继续保留。CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_PENDING",
+)
+
+/** Enters the existing visible SHUTDOWN_FAILED recovery path; never reports an ordinary exit. */
+internal class DesktopLanSyncFinalFlushIncompleteException : DesktopLanSyncFinalFlushException(
+    "最终本机同步封存未完成；原件、待传队列和资料目录锁继续保留。CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE",
+)
+
+/** Writers and audio have already drained. Pause backup once and keep it paused until normal close. */
+internal class DesktopLanSyncShutdownMaintenance(private val backup: DesktopAutomaticBackupRuntime,
+    private val coordinator: DesktopDataOperationCoordinator) {
+    private val admission = Mutex()
+    private var backupPaused = false
+    suspend fun <T> withExclusive(work: suspend () -> T): T = admission.withLock {
+        if (!backupPaused) {
+            check(backup.pauseForMaintenance() is DesktopMaintenancePauseResult.Paused) { "SYNC_GROUP_SHUTDOWN_BACKUP_PAUSE_FAILED" }
+            backupPaused = true
+        }
+        coordinator.withExclusiveMaintenance { work() }
+    }
+}
 
 internal fun desktopLanSyncResourceReference(root: Path, path: Path): String {
     require(path.normalize().startsWith(root)) { "SYNC_EXTERNAL_RESOURCE" }

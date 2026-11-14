@@ -50,4 +50,9 @@ interface LanSyncGroupPanelActions {
     fun openRecovery(transaction: String)
     fun prepareRestore(unit: String)
     fun closeRecovery()
+    fun prepareResolution(view: LanSyncGroupNodeView, choices: Map<String, LanSyncGroupResolutionChoice>)
+    fun resumeResolution(operation: String)
+    fun previewImage(context: LanSyncGroupFrozenImageContext, record: LanSyncRecord, reference: String)
+    fun closeImagePreview()
+    fun readImagePreview(id: String): ByteArray
 }
