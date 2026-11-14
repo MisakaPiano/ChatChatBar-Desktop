@@ -67,15 +67,18 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             CbText(LanSyncScope.description)
             CbButton("创建新设备组", actions::createGroup, enabled = !state.busy)
-            CbButton("扫描设备组邀请", scanInvitation, enabled = !state.busy, variant = ButtonVariant.Secondary)
-            CbField("加入已有设备组 · 粘贴邀请") {
+        }
+        if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
+            val joining = state.stage == LanSyncGroupPanelStage.JOINING
+            CbButton(if (joining) "扫描更新邀请" else "扫描设备组邀请", scanInvitation, enabled = !state.busy, variant = ButtonVariant.Secondary)
+            CbField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请") {
                 key(state.privacyRevision) { CbInput(joinCode, { joinCode = it }, secure = true, enabled = !state.busy) }
             }
-            CbButton("检查并加入", { val captured = joinCode; joinCode = ""; actions.beginJoin(captured) },
+            CbButton(if (joining) "更新邀请并继续" else "检查并加入", { val captured = joinCode; joinCode = ""; actions.beginJoin(captured) },
                 enabled = !state.busy && joinCode.isNotBlank(), variant = ButtonVariant.Secondary)
         }
         state.recoveryCode?.let { code ->
-            CbText("请保存这份恢复码。它用于管理设备组和丢失设备后的恢复。")
+            CbText("请保存恢复码。丢失设备后，还需要另一台已加入设备或对应的加密管理资料；仅有恢复码无法恢复。")
             Box(Modifier.fillMaxWidth().heightIn(max = 130.dp).verticalScroll(rememberScrollState())) { CbText(code) }
             CbButton("复制恢复码", { copy(code) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -93,7 +96,10 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
             CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !state.busy, variant = ButtonVariant.Secondary)
-        if (state.stage == LanSyncGroupPanelStage.JOINING) CbButton("继续加入", actions::retryJoin, enabled = !state.busy)
+        if (state.stage == LanSyncGroupPanelStage.JOINING) {
+            CbButton("继续加入", actions::retryJoin, enabled = !state.busy)
+            CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !state.busy, variant = ButtonVariant.Secondary)
+        }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             GroupRoute("本机", state.local, "最近保存"); GroupRoute("附近设备", state.nearby, "最近送达"); GroupRoute("网盘", state.cloud, "最近上传")
             CbButton("立即检查", actions::retry, enabled = !state.busy, variant = ButtonVariant.Secondary)

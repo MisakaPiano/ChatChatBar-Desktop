@@ -6,6 +6,7 @@ import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -50,7 +51,36 @@ class AndroidLanSync(private val app: ChatBarApp) {
             app.novelAiStudioRepository.reloadAfterLanSync()
         }
     }
-    val runtime by lazy { LanSyncRuntime(store, workspace, platform, android.os.Build.MODEL.take(80)) }
+    private val runtimeOwner = lazy { LanSyncRuntime(store, workspace, platform, android.os.Build.MODEL.take(80)) }
+    val runtime: LanSyncRuntime get() {
+        require(!hasGroupEvidence()) { "SYNC_GROUP_LEGACY_DISABLED" }
+        return runtimeOwner.value
+    }
+    fun hasGroupEvidence(): Boolean {
+        val profile = root.resolve("group-profile")
+        val attributes = try { Files.readAttributes(profile, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS) }
+        catch (_: NoSuchFileException) { return false }
+        catch (_: Exception) { return true }
+        if (!attributes.isDirectory || attributes.isSymbolicLink) return true
+        return try {
+            Files.newDirectoryStream(profile).use { children -> children.any { child ->
+                val entry = Files.readAttributes(child, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                when (child.fileName.toString()) {
+                    "profile.lock" -> !entry.isRegularFile || entry.isSymbolicLink
+                    "abandoned-drafts" -> !entry.isDirectory || entry.isSymbolicLink
+                    else -> true
+                }
+            } }
+        } catch (_: Exception) { true }
+    }
+    private val groupCoordinatorOwner = lazy {
+        LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
+            enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
+            beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() })
+    }
+    val groupCoordinator get() = groupCoordinatorOwner.value
+    fun startGroupIfConfigured() { if (hasGroupEvidence()) groupCoordinator.startIfConfigured() }
+    fun stopLegacy() { if (runtimeOwner.isInitialized()) runtimeOwner.value.stop() }
     private fun groupProfileRoot(): Path {
         val profile = root.resolve("group-profile")
         if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
@@ -70,7 +100,15 @@ class AndroidLanSync(private val app: ChatBarApp) {
     }
     val groupEnrollment get() = groupEnrollmentOwner.value
     val groupJoining get() = groupJoiningOwner.value
-    fun lockGroupManagement() { if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement() }
+    fun lockGroupManagement() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.lockManagement()
+        else if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement()
+    }
+    suspend fun closeAndDrain() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
+        if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()
+        if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
+    }
     fun recoverBeforeRepositories() = workspace.recover()
 
 }

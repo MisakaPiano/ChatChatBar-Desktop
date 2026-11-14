@@ -5,6 +5,8 @@ description: Maintain immutable ciphertext backends, streaming encryption and au
 
 # Sync object store
 
+- Native application composition is now mapped in the LAN skill under LanSyncGroupCoordinator/RuntimeAccess: near-device ciphertext read-through cache is distinct from target-bound outgoing receipts; group enrollment and actual app lifecycle are not inferred from backend-only tests.
+
 - Shared owner: `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/`. `CiphertextStore` accepts ciphertext only; `FileCiphertextStore` uses opaque random object/operation IDs, streamed length/SHA-256, immutable intent receipts, JVM plus OS admission and forced atomic publication. Listing is keyset discovery with periodic rescans, not a complete history checkpoint; no CAS, multi-object transaction or byte-resume capability is implied.
 - `SyncStreamingCipher` pins Tink1.23.0 AES256_GCM_HKDF_1MB, matching the existing Desktop backup dependency. SharedCore uses compileOnly plus a JVM test dependency; Desktop supplies `tink`, Android supplies `tink-android`. Avoid packaging both platform artifacts into Android. The encryption context authenticates format/domain, opaque group/epoch, object kind and random object ID; it contains no plaintext titles, paths or content hashes.
 - The cipher returns invocation-owned private prepared files only after complete encryption/decryption and file force. Decryption reads through authenticated EOF before returning a plaintext path; tail failure cleans only that preparation. Neither operation closes its borrowed input. Completed file handles own exact filesystem identities and refuse cleanup after replacement.

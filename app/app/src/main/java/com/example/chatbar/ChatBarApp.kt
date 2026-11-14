@@ -527,6 +527,7 @@ class ChatBarApp : Application() {
             try {
                 initializePersistentStateLocked()
                 lanSyncStartupReady = true
+                lanSyncOwner.startGroupIfConfigured()
             } catch (error: JsonFileStorage.SingletonReadException) {
                 // JsonFileStorage publishes a safe UI error; do not log JSON/credentials from its cause.
                 Log.e(TAG, error.message.orEmpty())

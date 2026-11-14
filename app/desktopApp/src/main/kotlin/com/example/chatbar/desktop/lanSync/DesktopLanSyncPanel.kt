@@ -14,6 +14,30 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import java.awt.image.BufferedImage
 
+/** Navigation owns only page visibility; the application owns the group task lifetime. */
+@Composable
+internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
+    legacy: (() -> LanSyncRuntime)?, hasGroupEvidence: () -> Boolean) {
+    val state by coordinator.state.collectAsState()
+    var legacySelected by remember(coordinator) { mutableStateOf(false) }
+    LaunchedEffect(coordinator) { coordinator.open() }
+    DisposableEffect(coordinator) { onDispose { coordinator.lockManagement() } }
+    val legacyAllowed = !hasGroupEvidence() && state.stage == LanSyncGroupPanelStage.EMPTY
+    Column(Modifier.fillMaxSize()) {
+        if (legacySelected && legacyAllowed && legacy != null) {
+            Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                BootstrapButton("返回设备组同步", secondary = true) { legacySelected = false }
+            }
+            Box(Modifier.weight(1f)) { DesktopLanSyncPanel(remember(legacy) { legacy() }) }
+        } else {
+            if (legacyAllowed && legacy != null) Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                BootstrapButton("打开旧版双端同步", secondary = true, enabled = !state.busy) { legacySelected = true }
+            }
+            Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator) }
+        }
+    }
+}
+
 @Composable
 internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
     val state by runtime.state.collectAsState()

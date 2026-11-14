@@ -297,6 +297,19 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
 
     suspend fun receipt(operation: SyncStoreId, target: SyncDeliveryTarget): LanSyncGroupPublishReceipt? = serialized { writer.receipt(operation, target) }
 
+    /** Every retained signed/approved operation in author order; unsigned proposals stay separate. */
+    suspend fun sourceOperations(): List<SyncStoreId> = serialized {
+        exclusive {
+            val state = author.state(); val operations = writer.operations()
+            val signed = operations.mapNotNull { author.entry(it) }
+            require(signed.size.toLong() == state.committedSequence &&
+                (state.pendingApproved == null || state.pendingApproved.request.operation in operations)) { "SYNC_GROUP_NODE_SOURCE_HISTORY_MISSING" }
+            val entries = (signed + listOfNotNull(state.pendingApproved)).sortedBy { it.version.authorSequence }
+            entries.forEachIndexed { index, entry -> require(entry.version.authorSequence == index.toLong() + 1) { "SYNC_GROUP_NODE_SOURCE_HISTORY_MISSING" } }
+            entries.map { it.request.operation }
+        }
+    }
+
     private fun remember(commit: LanSyncGroupSourceCommit) {
         localVersions[commit.entry.version.id] = commit.metadata
         current = inbox().reconcile(localVersions.values)

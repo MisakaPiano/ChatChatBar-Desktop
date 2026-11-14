@@ -45,6 +45,33 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     }
     private fun profile(record: Record) = LanSyncGroupJoiningProfile(record.stage, record.offer.trust, identity.fingerprint, record.localReplica)
     suspend fun profile(): LanSyncGroupJoiningProfile? = guarded { read()?.let(::profile) }
+    suspend fun encryptedManagementBackup(): SyncManagementVaultBlob = guarded {
+        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }; val bootstrap = requireNotNull(record.offer.bootstrap)
+        val path = directory("bootstrap", false).resolve("ciphertext-mirror")
+        require(lanSyncUtf8(lanSyncRead(path.resolve("store.id"), 32)) == record.replicaIdentity) { "SYNC_GROUP_JOIN_REPLICA_CHANGED" }
+        lanSyncReadManagementBackup(FileCiphertextStore(path), bootstrap.vault, bootstrap.vaultDescriptor)
+    }
+    suspend fun pendingRoute(): Pair<SyncGroupTrust, LanSyncPeer>? = guarded {
+        val record = read() ?: return@guarded null
+        val source = requireNotNull(record.offer.bootstrap)
+        record.offer.trust to LanSyncPeer(record.offer.inviter, "邀请设备", record.offer.host, source.storePort)
+    }
+    suspend fun bootstrapStore(network: LanSyncNetwork): CiphertextStore = guarded {
+        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        val source = requireNotNull(record.offer.bootstrap)
+        val peer = LanSyncPeer(record.offer.inviter, "邀请设备", record.offer.host, source.storePort)
+        LanSyncGroupRemoteStore(record.offer.trust.group, directory("route-cache", true),
+            { network.connect(identity, peer) }, authenticatedConnect = true)
+    }
+    suspend fun runtimeAccess(): LanSyncGroupRuntimeAccess? = guarded {
+        val record = read() ?: return@guarded null
+        if (record.stage != LanSyncGroupJoinStage.READY) return@guarded null
+        val source = requireNotNull(record.offer.bootstrap); val path = directory("bootstrap", false).resolve("ciphertext-mirror")
+        require(lanSyncUtf8(lanSyncRead(path.resolve("store.id"), 32)) == record.replicaIdentity) { "SYNC_GROUP_JOIN_REPLICA_CHANGED" }
+        val projection = readProjection(record)
+        LanSyncGroupRuntimeAccess(record.offer.trust, record.localReplica, FileCiphertextStore(path), directory("app-runtime", true),
+            identity, custody(record, false), { store -> node(record, projection.projection, store) }, source.vault, source.vaultDescriptor)
+    }
 
     suspend fun prepare(code: String, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {
         require(!Files.exists(parent.resolve("profile.protected"), NOFOLLOW_LINKS) &&
@@ -108,6 +135,9 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         recipient(record), protect, unprotect)
 
     suspend fun prove(name: String): LanSyncGroupInviteReceipt = prove(name, null)
+    internal suspend fun proveUsing(name: String, network: LanSyncNetwork) = prove(name) { offer ->
+        network.connect(identity, LanSyncPeer(offer.inviter, "邀请设备", offer.host, offer.port))
+    }
     internal suspend fun prove(name: String, connect: ((LanSyncGroupInviteOffer) -> SSLSocket)?): LanSyncGroupInviteReceipt = guarded {
         val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
         require(record.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED)) { "SYNC_GROUP_JOIN_PROOF_ALREADY_SENT" }
@@ -134,7 +164,10 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         if (alreadyAdmitted) require(Files.isRegularFile(root.resolve("custody/group.protected"), NOFOLLOW_LINKS)) { "SYNC_GROUP_JOIN_CUSTODY_MISSING" }
         val custody = custody(record, !alreadyAdmitted)
         if (alreadyAdmitted) custody.ledger()
-        val inbox = SyncGroupInbox(bootstrapRoot, backend, custody, recipient(record))
+        val replica = FileCiphertextStore(replicaPath)
+        val reader = LanSyncGroupReplicaReader(replica, directory("received-ciphertext", true)) { _, failure -> throw failure }
+        reader.routes(listOf(LanSyncGroupReplicaReader.Route("JOIN_SOURCE", backend)))
+        val inbox = SyncGroupInbox(bootstrapRoot, reader.discoveryFrom(backend), custody, recipient(record))
         if (record.replicaIdentity == null) {
             record = record.copy(replicaIdentity = lanSyncUtf8(lanSyncRead(replicaPath.resolve("store.id"), 32)))
             write(record)
@@ -155,7 +188,6 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         if (record.stage.ordinal < LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) {
             record = record.copy(stage = LanSyncGroupJoinStage.KEYS_ADMITTED); write(record); observe("GROUP_JOIN_KEYS_ADMITTED")
         }
-        val replica = FileCiphertextStore(replicaPath)
         val vault = ByteArrayOutputStream()
         val bounded = object : java.io.OutputStream() {
             override fun write(value: Int) { require(vault.size() < 272 * 1024) { "SYNC_GROUP_JOIN_VAULT_BUDGET" }; vault.write(value) }
@@ -173,7 +205,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         if ((bootstrap.dataHeads + record.requiredHeads).any { !history.contains(it) }) return@guarded LanSyncGroupJoiningResult(profile(record), null, "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING")
         if (record.projection != null && record.reprepareRequested) {
             val previous = readProjection(record)
-            val node = node(record, previous.projection, backend)
+            val node = node(record, previous.projection, reader)
             if (record.stage == LanSyncGroupJoinStage.NATIVE_ENROLLED) {
                 node.inspect()
                 record = record.copy(reprepareRequested = false); write(record)
@@ -194,7 +226,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             }
         }
         val projection = if (record.projection != null) readProjection(record) else {
-            val service = LanSyncGroupDependencies(record.offer.trust.group, backend, custody, directory("projection-work", true), workspace.resourceStore, validateResource)
+            val service = LanSyncGroupDependencies(record.offer.trust.group, reader, custody, directory("projection-work", true), workspace.resourceStore, validateResource)
             val presets = mutableListOf<LanSyncRecord>()
             val versions = reconciled.authenticatedVersions.groupBy { requireNotNull(it.envelope.version).reference() }
             val units = history.admittedVersions().flatMap { it.changes.keys }.filter {
@@ -225,11 +257,11 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         }
         if (record.stage.ordinal < LanSyncGroupJoinStage.NATIVE_ENROLLED.ordinal) {
             require(projection.checkpoint == custody.ledger().current().reference() && projection.heads == history.heads()) { "SYNC_GROUP_JOIN_PROJECTION_VIEW_CHANGED" }
-            val node = node(record, projection.projection, backend)
+            val node = node(record, projection.projection, reader)
             node.initializeNewEnrollment(projection.sourceFiles)
             record = record.copy(stage = LanSyncGroupJoinStage.NATIVE_ENROLLED); write(record); observe("GROUP_JOIN_NATIVE_ENROLLED")
         }
-        val node = node(record, projection.projection, backend)
+        val node = node(record, projection.projection, reader)
         cursor = null
         do { cursor = node.discover(replica, cursor).nextCursor } while (cursor != null)
         node.inspect()

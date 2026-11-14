@@ -33,13 +33,17 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             StatusText(LanSyncScope.description)
             BootstrapButton("创建新设备组", enabled = !state.busy) { actions.createGroup() }
-            key(state.privacyRevision) { LabeledField("加入已有设备组 · 粘贴邀请", joinCode, secret = true, enabled = !state.busy, onChange = { joinCode = it }) }
-            BootstrapButton("检查并加入", secondary = true, enabled = !state.busy && joinCode.isNotBlank()) {
+        }
+        if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
+            val joining = state.stage == LanSyncGroupPanelStage.JOINING
+            key(state.privacyRevision) { LabeledField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请",
+                joinCode, secret = true, enabled = !state.busy, onChange = { joinCode = it }) }
+            BootstrapButton(if (joining) "更新邀请并继续" else "检查并加入", secondary = true, enabled = !state.busy && joinCode.isNotBlank()) {
                 val captured = joinCode; joinCode = ""; actions.beginJoin(captured)
             }
         }
         state.recoveryCode?.let { code ->
-            StatusText("请保存这份恢复码。它用于管理设备组和丢失设备后的恢复。")
+            StatusText("请保存恢复码。丢失设备后，还需要另一台已加入设备或对应的加密管理资料；仅有恢复码无法恢复。")
             Box(Modifier.fillMaxWidth().heightIn(max = 130.dp).verticalScroll(rememberScrollState())) { StatusText(code) }
             BootstrapButton("复制恢复码", secondary = true, enabled = !state.busy) { copy(code) }
             BootstrapButton(if (saved) "✓ 已妥善保存恢复码" else "我已妥善保存恢复码", secondary = true, enabled = !state.busy) { saved = !saved }
@@ -53,8 +57,10 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
             BootstrapButton("放弃未完成的设置", secondary = true, enabled = !state.busy) { actions.abandonUnusedSetup() }
-        if (state.stage == LanSyncGroupPanelStage.JOINING)
+        if (state.stage == LanSyncGroupPanelStage.JOINING) {
             BootstrapButton("继续加入", enabled = !state.busy) { actions.retryJoin() }
+            BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !state.busy) { actions.refreshJoinPreparation() }
+        }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近送达"); groupRoute("网盘", state.cloud, "最近上传")
             ActionRow {

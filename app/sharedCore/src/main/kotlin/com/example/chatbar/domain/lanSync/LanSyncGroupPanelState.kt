@@ -29,6 +29,7 @@ interface LanSyncGroupPanelActions {
     fun lockManagement()
     fun beginJoin(code: String)
     fun retryJoin()
+    fun refreshJoinPreparation()
     fun createInvitation()
     fun closeInvitation()
     fun acceptPeer(binding: String)

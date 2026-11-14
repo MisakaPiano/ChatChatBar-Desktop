@@ -79,6 +79,8 @@ class DesktopAppContainer internal constructor(
             if (path.isAbsolute) path else characterResourceStore.resolveOwnedReference(reference)
         }, asset = characterResourceStore::readBytes) }
     internal val lanSync get() = lanSyncOwner.value.runtime
+    internal val lanSyncGroupCoordinator get() = lanSyncOwner.value.groupCoordinator
+    internal fun hasLanSyncGroupEvidence(): Boolean = lanSyncOwner.value.hasGroupEvidence()
     internal val lanSyncGroupEnrollment get() = lanSyncOwner.value.groupEnrollment
     internal val lanSyncGroupJoining get() = lanSyncOwner.value.groupJoining
     internal fun lockLanSyncGroupManagement() { if (lanSyncOwner.isInitialized()) lanSyncOwner.value.lockGroupManagement() }
@@ -470,6 +472,7 @@ class DesktopAppContainer internal constructor(
         presetBootstrap.initialize()
         saveSlotService.resumeSessionDeletionCleanup()
         dataOperationCoordinator.withNormalOperation { speakerTagHistoryService.resumePending() }
+        lanSyncOwner.value.startGroupIfConfigured()
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(

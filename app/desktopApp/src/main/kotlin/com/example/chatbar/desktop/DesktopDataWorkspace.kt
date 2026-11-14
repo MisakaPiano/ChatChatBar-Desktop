@@ -19,7 +19,10 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     openImportRequest: Int = 0, onImportRequestConsumed: () -> Unit = {},
     taskDetail: DesktopWorkDetail? = null, onTaskDetailConsumed: () -> Unit = {},
     diagnostics: (@Composable () -> Unit)? = null,
-    lanSync: com.example.chatbar.domain.lanSync.LanSyncRuntime? = null) {
+    lanSync: com.example.chatbar.domain.lanSync.LanSyncRuntime? = null,
+    lanSyncGroup: com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator? = null,
+    legacyLanSync: (() -> com.example.chatbar.domain.lanSync.LanSyncRuntime)? = null,
+    hasLanSyncGroupEvidence: () -> Boolean = { false }) {
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val rootState by root.state.collectAsState()
@@ -119,7 +122,10 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
                 if (moving) StatusText(t(desktopRecoveryText(recovery.first { it.area == DesktopRecoveryArea.DIRECTORY })))
                 DesktopDataRootPanel(root, onExit)
             } }
-            if (page == DataPage.LAN) lanSync?.let { DesktopLanSyncPanel(it) }
+            if (page == DataPage.LAN) {
+                if (lanSyncGroup != null) DesktopLanSyncEntry(lanSyncGroup, legacyLanSync, hasLanSyncGroupEvidence)
+                else lanSync?.let { DesktopLanSyncPanel(it) }
+            }
             DesktopRetainedPane(page == DataPage.AUTO) { DataWorkspaceScroll { DesktopAutomaticBackupSettingsPanel(automatic) } }
             DesktopRetainedPane(page == DataPage.UPDATE) { DataWorkspaceScroll { DesktopUpdatePanel(onExit = onExit) } }
             DesktopRetainedPane(page == DataPage.DIAGNOSTICS) { diagnostics?.invoke() }

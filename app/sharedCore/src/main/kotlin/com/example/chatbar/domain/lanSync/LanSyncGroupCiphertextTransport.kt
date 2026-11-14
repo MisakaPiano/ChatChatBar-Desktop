@@ -88,11 +88,13 @@ private object GroupStoreWire {
  */
 class LanSyncGroupCiphertextServer(private val privateRoot: Path,
     private val resolve: (SyncStoreId, String, String) -> LanSyncGroupPeerStore,
-    private val observe: (String, Long) -> Unit = { _, _ -> }) {
+    private val observe: (String, Long) -> Unit = { _, _ -> },
+    private val configureAccepted: (SSLSocket) -> Unit = {}) {
     private val cache = LanSyncResourceStore(privateRoot.resolve("ciphertext-cache"))
     fun serve(socket: SSLSocket) {
         socket.use {
-            LanSyncTls.configure(socket); socket.startHandshake()
+            LanSyncTls.configure(socket); configureAccepted(socket); socket.startHandshake()
+            socket.soTimeout = 120_000
             LanSyncWire(socket).use { wire ->
                 try {
                     val request = GroupStoreWire.read(wire, GroupStoreRequest.serializer())
@@ -195,14 +197,15 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
 
 /** Already encrypted objects only. connect must enforce LAN address policy, pinning and client TLS identity. */
 class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privateRoot: Path,
-    private val connect: () -> SSLSocket, private val observe: (String, Long) -> Unit = { _, _ -> }) : CiphertextStore {
+    private val connect: () -> SSLSocket, private val observe: (String, Long) -> Unit = { _, _ -> },
+    private val authenticatedConnect: Boolean = false) : CiphertextStore {
     private val cache = LanSyncResourceStore(privateRoot.resolve("ciphertext-cache"))
     override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED, resumableByteUpload = true)
     private fun request(command: GroupStoreCommand, key: CiphertextObjectKey? = null, operation: SyncStoreId? = null,
         descriptor: CiphertextDescriptor? = null, cursor: String? = null, pageSize: Int = 100, offset: Long = 0) =
         GroupStoreRequest(GroupStoreWire.PROTOCOL, group, command, key, operation, descriptor, cursor, pageSize, offset)
     private fun <T> exchange(request: GroupStoreRequest, work: (LanSyncWire) -> T): T = connect().use { socket ->
-        LanSyncTls.configure(socket); socket.startHandshake()
+        LanSyncTls.configure(socket); if (!authenticatedConnect) socket.startHandshake()
         LanSyncWire(socket).use { wire -> GroupStoreWire.send(wire, GroupStoreRequest.serializer(), request); work(wire) }
     }
     override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = exchange(request(GroupStoreCommand.METADATA, key)) { wire ->

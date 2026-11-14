@@ -88,13 +88,27 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     }
     private fun custody(record: Record, create: Boolean = false) = SyncGroupCustody(directory("custody", create),
         record.trust.group, recipient(record), protect, unprotect)
-    private fun node(record: Record): LanSyncGroupNode {
+    private fun node(record: Record, store: CiphertextStore? = null): LanSyncGroupNode {
         val custody = custody(record)
         return LanSyncGroupNode(directory("node", false), workspace, platform, identity, record.trust, custody,
-            recipient(record), FileCiphertextStore(directory("local-replica", false)), protect, unprotect,
+            recipient(record), store ?: FileCiphertextStore(directory("local-replica", false)), protect, unprotect,
             { emptySet() }, validateResource, observe = observe)
     }
     suspend fun profile(): LanSyncGroupProfile? = guarded { requireNoAbandon(); read()?.let(::profile) }
+    suspend fun encryptedManagementBackup(): SyncManagementVaultBlob = guarded {
+        requireNoAbandon(); val record = requireNotNull(read()) { "SYNC_GROUP_PROFILE_MISSING" }
+        val bytes = lanSyncRead(root.resolve("management-vault.bin"), 272 * 1024)
+        require(descriptor(bytes) == record.vaultDescriptor) { "SYNC_GROUP_PROFILE_VAULT_CHANGED" }
+        SyncManagementVaultBlob(record.vault, bytes)
+    }
+    suspend fun runtimeAccess(): LanSyncGroupRuntimeAccess? = guarded {
+        requireNoAbandon(); val record = read() ?: return@guarded null
+        if (record.stage != LanSyncGroupEnrollmentStage.READY) return@guarded null
+        val local = directory("local-replica", false)
+        require(Files.isRegularFile(local.resolve("store.id"), NOFOLLOW_LINKS)) { "SYNC_GROUP_PROFILE_REPLICA_MISSING" }
+        LanSyncGroupRuntimeAccess(record.trust, record.localReplica, FileCiphertextStore(local), directory("app-runtime", true),
+            identity, custody(record), { store -> node(record, store) }, record.vault, record.vaultDescriptor)
+    }
 
     /** Produces an invitation-only transport owner; it neither unlocks admin authority nor joins a member. */
     suspend fun invitation(storePort: Int? = null): LanSyncGroupInvitation = guarded {

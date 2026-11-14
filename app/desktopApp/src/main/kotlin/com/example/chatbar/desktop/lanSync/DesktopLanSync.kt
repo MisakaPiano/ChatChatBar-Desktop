@@ -5,6 +5,7 @@ import com.example.chatbar.desktop.security.WindowsDpapiSecretProtector
 import com.example.chatbar.desktop.security.WindowsSecretRootResolver
 import kotlinx.coroutines.runBlocking
 import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.UUID
 
 internal class DesktopLanSync(private val app: DesktopAppContainer,
@@ -32,7 +33,35 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
         override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
     }
-    val runtime by lazy { LanSyncRuntime(stateStore, workspace, platform, "CCB 电脑") }
+    private val runtimeOwner = lazy { LanSyncRuntime(stateStore, workspace, platform, "CCB 电脑") }
+    val runtime: LanSyncRuntime get() {
+        require(!hasGroupEvidence()) { "SYNC_GROUP_LEGACY_DISABLED" }
+        return runtimeOwner.value
+    }
+    fun hasGroupEvidence(): Boolean {
+        val profile = localRoot.resolve("group-profile")
+        val attributes = try { Files.readAttributes(profile, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS) }
+        catch (_: NoSuchFileException) { return false }
+        catch (_: Exception) { return true }
+        if (!attributes.isDirectory || attributes.isSymbolicLink) return true
+        return try {
+            Files.newDirectoryStream(profile).use { children -> children.any { child ->
+                val entry = Files.readAttributes(child, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                when (child.fileName.toString()) {
+                    "profile.lock" -> !entry.isRegularFile || entry.isSymbolicLink
+                    "abandoned-drafts" -> !entry.isDirectory || entry.isSymbolicLink
+                    else -> true
+                }
+            } }
+        } catch (_: Exception) { true }
+    }
+    private val groupCoordinatorOwner = lazy {
+        LanSyncGroupCoordinator(hasExistingEvidence = ::hasGroupEvidence,
+            enrollment = { groupEnrollment }, joining = { groupJoining }, deviceName = "CCB 电脑",
+            beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() })
+    }
+    val groupCoordinator get() = groupCoordinatorOwner.value
+    fun startGroupIfConfigured() { if (hasGroupEvidence()) groupCoordinator.startIfConfigured() }
     private fun groupProfileRoot(): Path {
         val profile = localRoot.resolve("group-profile")
         if (Files.exists(profile, LinkOption.NOFOLLOW_LINKS)) {
@@ -53,11 +82,15 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
     }
     val groupEnrollment get() = groupEnrollmentOwner.value
     val groupJoining get() = groupJoiningOwner.value
-    fun lockGroupManagement() { if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement() }
+    fun lockGroupManagement() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.lockManagement()
+        else if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement()
+    }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.closeAndDrain()
         if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.close()
-        runtime.closeAndDrain()
+        if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain()
     }
 }
 

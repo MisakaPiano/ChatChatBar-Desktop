@@ -12,6 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.ui.kit.*
@@ -19,13 +22,54 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
 class LanSyncActivity : ComponentActivity() {
-    private val runtime get() = ChatBarApp.instance.lanSyncOwner.runtime
+    private val owner get() = ChatBarApp.instance.lanSyncOwner
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { ChatBarTheme { LanSyncScreen(runtime) { finish() } } }
+        setContent { ChatBarTheme { LanSyncEntry(owner) { finish() } } }
     }
-    override fun onStart() { super.onStart(); runtime.startPhone() }
-    override fun onStop() { ChatBarApp.instance.lanSyncOwner.lockGroupManagement(); runtime.stop(); super.onStop() }
+    override fun onStop() { owner.lockGroupManagement(); owner.stopLegacy(); super.onStop() }
+}
+
+@Composable
+private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
+    val coordinator = remember(owner) { owner.groupCoordinator }
+    val state by coordinator.state.collectAsState()
+    var legacySelected by remember(owner) { mutableStateOf(false) }
+    LaunchedEffect(coordinator) { coordinator.open() }
+    val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
+        result.contents?.let(coordinator::beginJoin)
+    }
+    val legacyAllowed = !owner.hasGroupEvidence() && state.stage == LanSyncGroupPanelStage.EMPTY
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CbButton("返回", close, variant = ButtonVariant.Secondary)
+            if (legacySelected) CbButton("设备组同步", { legacySelected = false }, variant = ButtonVariant.Secondary)
+            else if (legacyAllowed) CbButton("旧版双端同步", { legacySelected = true }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+        }
+        Box(Modifier.weight(1f)) {
+            if (legacySelected && legacyAllowed) {
+                val runtime = remember(owner) { owner.runtime }
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                DisposableEffect(runtime, lifecycle) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        when (event) {
+                            Lifecycle.Event.ON_START -> runtime.startPhone()
+                            Lifecycle.Event.ON_STOP -> runtime.stop()
+                            else -> Unit
+                        }
+                    }
+                    lifecycle.addObserver(observer)
+                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) runtime.startPhone()
+                    onDispose { lifecycle.removeObserver(observer); runtime.stop() }
+                }
+                LanSyncScreen(runtime, close)
+            } else LanSyncGroupPanel(state, coordinator) {
+                scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
+            }
+        }
+    }
 }
 
 @Composable
