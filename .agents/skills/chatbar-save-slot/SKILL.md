@@ -69,3 +69,5 @@ Whole-app .cbbackup is independent; use chatbar-app-backup. Per-session archive 
 4. Verify default no-image, compressed-image, original-image, and audio-off paths without increasing peak memory with archive size.
 
 - Normal character rebinding reuses ChatViewModel.captureSaveSlot to persist an original-media/audio recovery archive before ChatRepository.rebindSession checks the exact captured latest session. Only characterCardId and timedWorldInfo change; history, memory, recordings and other settings remain. A failed stale-state rebind retains the already committed recovery archive. SaveSlot carries per-card characterParticipation and auto-pause state for restoration; archive summaries stream chatBackground to protect referenced gallery originals without loading message arrays.
+
+- Session/SaveSlot optional `imageBatchPreferences` transfers count, batch count, pacing, enabled flag and default-off Anlas permission; runtime quote approval and running tasks are never serialized.

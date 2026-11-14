@@ -1,0 +1,60 @@
+name: NovelAI batch UX n2
+on:
+  push:
+    branches: ['feature/novelai-batch-ux-*']
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CHATBAR_VERSION_NAME: 1.4.12-safe-batch-n2
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Record source and isolate test application
+        shell: python
+        run: |
+          import pathlib,subprocess,json
+          out=pathlib.Path('batch-ux-evidence');out.mkdir()
+          source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          (out/'source.json').write_text(json.dumps(dict(source=source,syntheticOnly=True,realAccountCalls=False)),encoding='utf-8')
+          p=pathlib.Path('app/app/build.gradle.kts');s=p.read_text();assert 'applicationId = "com.example.chatbar"' in s
+          p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "com.example.chatbar.safebatch.n2"'))
+          p=pathlib.Path('app/app/src/main/res/values/strings.xml');p.write_text(p.read_text().replace('name="app_name">ChatChatBar<','name="app_name">CCB 批量生图测试 n2<'))
+          (out/'identity-only.patch').write_bytes(subprocess.check_output(['git','diff','--','app/app/build.gradle.kts','app/app/src/main/res/values/strings.xml']))
+      - name: Compile, targeted domain checks and package
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests '*ImageBatch*Test' --tests '*NovelAiImageRegenerationTest' --tests '*NovelAiStudioModelsTest' --tests '*ChatRepositoryBatchImagesTest' :app:assembleDebug --no-daemon --stacktrace
+      - name: Original reports
+        if: always()
+        shell: python
+        run: |
+          import pathlib,zipfile,json,hashlib,subprocess
+          root=pathlib.Path('.');out=root/'batch-ux-evidence'
+          apk=root/'app/app/build/outputs/apk/debug/app-debug.apk'
+          if apk.exists():
+            (out/'apk.json').write_text(json.dumps(dict(bytes=apk.stat().st_size,sha256=hashlib.sha256(apk.read_bytes()).hexdigest())),encoding='utf-8')
+          with zipfile.ZipFile('novelai-batch-ux-originals.zip','w',zipfile.ZIP_DEFLATED) as z:
+            for folder in [out,root/'app/app/build/test-results',root/'app/app/build/outputs/apk/debug']:
+              if folder.exists():
+                for p in folder.rglob('*'):
+                  if p.is_file():z.write(p,p.as_posix())
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: novelai-batch-ux-originals
+          path: novelai-batch-ux-originals.zip
+          if-no-files-found: error

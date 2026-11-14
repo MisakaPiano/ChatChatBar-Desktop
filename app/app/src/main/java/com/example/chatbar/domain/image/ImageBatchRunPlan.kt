@@ -43,17 +43,22 @@ data class ImageBatchConfiguration(
     val continuous: Boolean = false,
     val target: Int = 10,
     val pacing: ImageBatchPacing = ImageBatchPacing(),
-    val budget: Long = 0
+    val budget: Long = 0,
+    val numberOfBatches: Int? = null,
+    val allowAnlasSpending: Boolean = false
 ) {
     fun validationError(): String? = when {
+        numberOfBatches != null && numberOfBatches !in 1..25 -> "生成批数须在 1–25 之间"
         requestCount !in 1..4 -> "单次请求张数须在 1–4 之间"
-        continuous && target !in 1..100 -> "连续目标须在 1–100 张之间"
+        numberOfBatches == null && continuous && target !in 1..100 -> "连续目标须在 1–100 张之间"
         budget !in 0..100000 -> "估算 Anlas 预算须在 0–100000 之间"
         else -> pacing.validationError()
     }
     fun freeze(origin: ImageBatchOrigin): ImageBatchRunPlan {
         require(validationError() == null) { validationError().orEmpty() }
-        return ImageBatchRunPlan(requestCount, if (continuous) target else requestCount, pacing, budget, origin)
+        return ImageBatchRunPlan(requestCount,
+            numberOfBatches?.let { requestCount * it } ?: if (continuous) target else requestCount,
+            pacing, if (numberOfBatches != null && !allowAnlasSpending) 0 else budget, origin)
     }
 }
 data class ImageBatchRunPlan(

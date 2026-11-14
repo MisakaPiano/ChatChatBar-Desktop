@@ -22,6 +22,8 @@ internal fun SessionSettingsContent(
     inheritedNovelAiImageModel: NovelAiImageModel, novelAiFromCharacter: Boolean,
     novelAiNaturalLanguageMode: Boolean, onNovelAiNaturalLanguageMode: (Boolean) -> Unit,
     automaticImageGenerationEnabled: Boolean, onAutomaticImageGenerationEnabled: (Boolean) -> Unit,
+    imageBatchPreferences: com.example.chatbar.domain.image.ImageBatchPreferences,
+    onImageBatchPreferences: (com.example.chatbar.domain.image.ImageBatchPreferences) -> Unit,
     formatId: String?, onFormat: (String?) -> Unit, defaultFormatId: String?, formats: List<FormatCard>,
     worldBooks: List<WorldBook>, inheritedWorldBookIds: List<String>, extraWorldBookIds: List<String>, onExtraWorldBookIds: (List<String>) -> Unit,
     length: String, onLength: (String) -> Unit, lengthError: String?,
@@ -116,6 +118,17 @@ internal fun SessionSettingsContent(
                 }
                 CbButton("选择图片", onPickBackground)
                 if (background.isNotBlank()) CbButton("恢复角色默认背景", onClearBackground, variant = ButtonVariant.Ghost)
+            }
+        },
+        SettingsEntry("image-batch", "images", "生图批量设置", "每批张数 生成批数 等待 允许消耗 Anlas") {
+            SettingsDetails("生图批量设置", if (imageBatchPreferences.enabled) "${imageBatchPreferences.imagesPerBatch} 张 × ${imageBatchPreferences.numberOfBatches} 批" else "普通单张", browser.target == "image-batch") {
+                SettingsSwitch(imageBatchPreferences.enabled, { onImageBatchPreferences(imageBatchPreferences.copy(enabled = it)) }, label = "使用批量设置")
+                com.example.chatbar.ui.components.ImageBatchOptionsEditor(imageBatchPreferences.configuration(true), { config ->
+                    onImageBatchPreferences(imageBatchPreferences.copy(imagesPerBatch = config.requestCount,
+                        numberOfBatches = config.numberOfBatches ?: 1, pacing = config.pacing,
+                        allowAnlasSpending = config.allowAnlasSpending))
+                })
+                CbText("保存后用于本会话；自动生图需单独开启。", style = ChatBarTheme.typography.caption)
             }
         },
         SettingsEntry("automatic-image", "images", "自动生图") {

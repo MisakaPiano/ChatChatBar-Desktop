@@ -61,6 +61,7 @@ data class ChatSession(
     val chatBackground: String? = null,
     val imagePromptPreference: String = "",
     val automaticImageGenerationEnabled: Boolean = false,
+    val imageBatchPreferences: com.example.chatbar.domain.image.ImageBatchPreferences = com.example.chatbar.domain.image.ImageBatchPreferences(),
     /** null 表示跟随全局听书模式设置。 */
     val audiobookModeEnabled: Boolean? = null,
     /** null 表示语音直接使用气泡原文。 */

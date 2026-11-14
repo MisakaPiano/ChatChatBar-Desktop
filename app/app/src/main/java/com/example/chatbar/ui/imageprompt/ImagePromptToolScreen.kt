@@ -516,6 +516,7 @@ fun ImagePromptToolScreen(
                                 "停止 · ${state.autoCompletedCount}/${state.autoRunTarget} 张"
                             state.isBusy -> "停止当前任务"
                             !configured -> "未配置 Token"
+                            !state.isBusy -> com.example.chatbar.domain.image.imageGenerationCostLabel("生成", viewModel.estimatedBatchAnlas())
                             generationCost.anlas > 0 -> buildString {
                                 append("生成消耗 ${generationCost.anlas} Anlas")
                                 if (generationCost.encodingAnlas > 0) append("（含编码 ${generationCost.encodingAnlas}）")
@@ -626,7 +627,7 @@ fun ImagePromptToolScreen(
     }
 
     state.batchConfirmation?.let { summary ->
-        CbDialog(onDismissRequest = viewModel::dismissBatchConfirmation, title = "确认本次批量请求与估算预算",
+        CbDialog(onDismissRequest = viewModel::dismissBatchConfirmation, title = "确认本轮预计消费",
             dismiss = { CbButton("取消", viewModel::dismissBatchConfirmation, variant = ButtonVariant.Ghost) },
             confirm = { CbButton("已了解风险，开始", viewModel::confirmBatchRun) }) {
             Column(Modifier.verticalScroll(rememberScrollState())) { CbText(summary) }
@@ -660,10 +661,12 @@ fun ImagePromptToolScreen(
                     }
                 } else ImageBatchOptionsEditor(
                     value = ImageBatchConfiguration(state.draft.activeSettings.count, state.autoModeEnabled,
-                        state.draft.continuousTargetCount, state.draft.batchPacing, state.batchBudget),
+                        state.draft.continuousTargetCount, state.draft.batchPacing, if (state.draft.allowAnlasSpending) 100000 else 0,
+                        state.draft.numberOfBatches, state.draft.allowAnlasSpending),
                     onChange = { config ->
                         viewModel.updateDraft { it.copy(continuousModeEnabled = config.continuous,
-                            continuousTargetCount = config.target, batchPacing = config.pacing) }
+                            continuousTargetCount = config.target, batchPacing = config.pacing,
+                            numberOfBatches = config.numberOfBatches, allowAnlasSpending = config.allowAnlasSpending) }
                         viewModel.setBatchBudget(config.budget)
                     },
                     onValidChange = { batchOptionsValid = it }, showCount = false)

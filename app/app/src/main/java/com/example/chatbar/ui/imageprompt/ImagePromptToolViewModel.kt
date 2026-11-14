@@ -273,8 +273,8 @@ data class ImagePromptToolUiState(
     val vibeCacheMisses: Int = 0,
     val error: String? = null
 ) {
-    val autoModeEnabled: Boolean get() = draft.continuousModeEnabled
-    val autoTargetCount: Int get() = draft.continuousTargetCount.coerceAtLeast(1)
+    val autoModeEnabled: Boolean get() = (draft.numberOfBatches ?: if (draft.continuousModeEnabled) 2 else 1) > 1
+    val autoTargetCount: Int get() = draft.numberOfBatches?.let { it * draft.activeSettings.count } ?: draft.continuousTargetCount.coerceAtLeast(1)
     val isDesigning: Boolean get() = phase == ImagePromptToolPhase.DESIGNING
     val isGeneratingImage: Boolean get() = phase in setOf(
         ImagePromptToolPhase.GENERATING,
@@ -1411,29 +1411,45 @@ class ImagePromptToolViewModel(
         dismissBatchConfirmation()
         startImageRun(draft, plan)
     }
+    private fun batchConfiguration(draft: NovelAiStudioDraft): ImageBatchConfiguration {
+        val count = draft.activeSettings.count
+        val times = draft.numberOfBatches ?: if (draft.continuousModeEnabled)
+            ((draft.continuousTargetCount + count - 1) / count).coerceIn(1, 25) else 1
+        return ImageBatchConfiguration(count, times > 1, count * times, draft.batchPacing,
+            if (draft.allowAnlasSpending) 100000 else 0, times, draft.allowAnlasSpending)
+    }
+    fun estimatedBatchAnlas(): Long? {
+        val state = _uiState.value
+        val usage = state.account.effectiveUsage ?: return null
+        val draft = state.draft
+        val config = batchConfiguration(draft)
+        if (config.validationError() != null) return null
+        return config.freeze(ImageBatchOrigin.STUDIO).batches.mapIndexed { index, count ->
+            NovelAiImageCostEstimator.estimate(draft.activeSettings.copy(count = count), usage,
+                draft.imageGuidance, if (index == 0) countVibeCacheMisses(draft) else 0).anlas.toLong()
+        }.sum()
+    }
     fun generateImage() {
         if (_uiState.value.isBusy || imageJob?.isActive == true) return
         val draft = repository.draft.value ?: _uiState.value.draft
-        if (draft.continuousModeEnabled || draft.activeSettings.count > 1) {
-            val config = ImageBatchConfiguration(draft.activeSettings.count, draft.continuousModeEnabled,
-                draft.continuousTargetCount, draft.batchPacing, _uiState.value.batchBudget)
-            config.validationError()?.let { message -> _uiState.update { it.copy(error = message) }; return }
-            val plan = config.freeze(ImageBatchOrigin.STUDIO)
+        val config = batchConfiguration(draft)
+        config.validationError()?.let { message -> _uiState.update { it.copy(error = message) }; return }
+        val total = estimatedBatchAnlas()
+        estimatedPaymentError(total, draft.allowAnlasSpending)?.let { message ->
+            _uiState.update { it.copy(error = message) }; return
+        }
+        val plan = config.freeze(ImageBatchOrigin.STUDIO).copy(maxEstimatedAnlas = requireNotNull(total))
+        if (total == 0L) startImageRun(draft, plan)
+        else {
             pendingImageDraft = draft; pendingBatchPlan = plan
-            val usage = _uiState.value.account.effectiveUsage
-            val costs = plan.batches.mapIndexed { index, count -> NovelAiImageCostEstimator.estimate(
-                draft.activeSettings.copy(count = count), usage, draft.imageGuidance,
-                if (index == 0) countVibeCacheMisses(draft) else 0).anlas.toLong() }
-            val total = costs.sum()
-            _uiState.update { it.copy(batchConfirmation = plan.summary() +
-                "\n各批当前估算 ${costs.joinToString(" + ")} Anlas；整项 $total Anlas（账户未知时按收费估算；每批重新核对）\n" + ImageBatchRiskText.NOTICE) }
-        } else startImageRun(draft, null)
+            _uiState.update { it.copy(batchConfirmation = "${config.requestCount} 张 × ${config.numberOfBatches} 批 · 预计 $total Anlas\n本次确认仅用于本轮；费用上涨会停止。") }
+        }
     }
 
     private fun startImageRun(draft: NovelAiStudioDraft, safePlan: ImageBatchRunPlan?) {
         if (_uiState.value.isBusy || imageJob?.isActive == true) return
         val configured = draft.activeSettings
-        val automatic = draft.continuousModeEnabled
+        val automatic = (safePlan?.batches?.size ?: 1) > 1
         val target = safePlan?.targetTotalImages ?: configured.count
         configured.validationError(draft.activeCharacters.size)?.let { message ->
             _uiState.update { it.copy(error = message) }

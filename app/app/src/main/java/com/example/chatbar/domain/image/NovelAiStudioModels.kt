@@ -226,6 +226,8 @@ data class NovelAiStudioDraft(
     val aiDesignNaturalLanguageMode: Boolean = false,
     val continuousModeEnabled: Boolean = false,
     val continuousTargetCount: Int = 10,
+    val numberOfBatches: Int? = null,
+    val allowAnlasSpending: Boolean = false,
     val batchPacing: ImageBatchPacing = ImageBatchPacing(),
     val copyPositivePromptIgnoreStyle: Boolean = true,
     /** true 时跟随已导入角色卡与全局配置；selectedModel 缓存当前生效值。 */

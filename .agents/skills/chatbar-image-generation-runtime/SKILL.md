@@ -189,3 +189,10 @@ Use chatbar-character-card-ai for card cover/avatar candidate policy and chatbar
 - Tests: NovelAiAdvancedSettingsTest, NovelAiStudioLargeLoadTest, NovelAiInlinePayloadStoreTest. Large-load stress uses system property chatbar.largeMemoryRegression=true with Test.maxHeapSize=256m; synthetic 160 MiB draft plus 160 MiB history, no preset assets.
 
 - Image-tool reverse state keeps a nullable editable `reverseSceneDescription`; recognition and confirmed design are separate jobs, so user review holds no active task. Empty confirmation is disabled; editing invalidates a candidate, source replacement/removal clears scene and target, and retries can reuse edited text. `ReverseSceneConfirmationTest` checks explicit nonblank confirmation.
+
+## Session batch preferences
+
+- `ImageBatchPreferences` is an optional durable Session/SaveSlot preference; a disabled plan is ordinary one-image behavior. New UI uses images-per-batch × number-of-batches, never a last partial batch. Legacy total fields are decode-only compatibility.
+- Product UI has no handwritten Anlas budget. Default-off `allowAnlasSpending` gates all new session/Studio paths; quotes remain system estimates. Positive manual quotes require short per-run approval; an automatic run with a positive quote pauses for manual confirmation. Internal runtime cost reservation remains bounded to the accepted estimate. Unknown cost stops before request.
+- Session settings owns the saved plan. Ordinary image click requests that plan directly; long-press text keeps optional prompt hints. Image Operations has default-off use-saved-plan and exact-size cost preview; regeneration reuses original prompt metadata and bypasses prompt design.
+- `SafeBatchOfflineActivity` is instrumentation-only and has no launcher entry; the user test APK exposes production UI only. Mock cases remain internal and use synthetic credentials.

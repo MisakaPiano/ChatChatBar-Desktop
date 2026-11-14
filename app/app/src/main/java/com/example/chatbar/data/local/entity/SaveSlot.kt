@@ -24,6 +24,7 @@ data class SaveSlot(
     val novelAiImageModel: NovelAiImageModel? = null,
     val novelAiNaturalLanguageMode: Boolean = false,
     val automaticImageGenerationEnabled: Boolean = false,
+    val imageBatchPreferences: com.example.chatbar.domain.image.ImageBatchPreferences = com.example.chatbar.domain.image.ImageBatchPreferences(),
     val formatCardId: String? = null,
     @Serializable(with = ReplyLengthSerializer::class)
     val replyLength: Int = DEFAULT_REPLY_LENGTH_CHARS,
