@@ -26,7 +26,8 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                     app.voiceAudioStore.persist(session, artifact, it, Files.size(source)).path
                 }
             }
-        }, validateResource = ::validateDesktopLanSyncResource, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) })
+        }, validateResource = ::validateDesktopLanSyncResource, resourceReference = { _, path -> desktopLanSyncResourceReference(app.appDataRoot, path) },
+        imagePreviewRaster = DesktopLanSyncRaster::preview)
     private val platform = object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) = exclusive.invoke(work)
         override suspend fun reload(sessionIds: Set<String>) = reload.invoke(sessionIds)
@@ -71,13 +72,6 @@ internal object DesktopLanSyncStartup {
 
 internal fun validateDesktopLanSyncResource(kind: String, path: Path, record: LanSyncRecord) {
     if (kind == "images") {
-        val result = LanSyncPostProcess.record(record)
-        if (result != null) {
-            require(Files.size(path) <= DesktopPostProcessRaster.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
-            DesktopPostProcessRaster.decode(Files.readAllBytes(path), com.example.chatbar.domain.image.NovelAiPostProcessTab.valueOf(result.operation), longestSide = 256).flush()
-        } else {
-            require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "SYNC_IMAGE_BUDGET" }
-            DesktopImageEditing.decode(Files.readAllBytes(path), longestSide = 256).flush()
-        }
+        DesktopLanSyncRaster.decode(path, record, 256).flush()
     }
 }

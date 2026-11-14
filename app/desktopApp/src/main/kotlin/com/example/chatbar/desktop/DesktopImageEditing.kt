@@ -134,7 +134,7 @@ internal object DesktopImageEditing {
         return 1
     }
 
-    private fun orient(source: BufferedImage, orientation: Int): BufferedImage {
+    internal fun orient(source: BufferedImage, orientation: Int): BufferedImage {
         if (orientation == 1) return source
         val w = source.width; val h = source.height
         val result = BufferedImage(if (orientation >= 5) h else w, if (orientation >= 5) w else h,

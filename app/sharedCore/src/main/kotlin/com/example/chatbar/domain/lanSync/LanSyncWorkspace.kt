@@ -24,6 +24,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     private val recoveryVault: LanSyncRecoveryVault? = null,
     private val budget: LanSyncResourceBudget = LanSyncResourceBudget(),
     private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
+    private val imagePreviewRaster: ((Path, LanSyncRecord) -> ByteArray)? = null,
 ) {
     init { Files.createDirectories(stateRoot); lanSyncSafe(stateRoot, true) }
     val recovery: LanSyncRecoveryVault by lazy {
@@ -35,8 +36,6 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val image = requireNotNull(LanSyncReviewImages.references(record).firstOrNull { it.reference == reference }) { "SYNC_IMAGE_REFERENCE" }
         val file = resourceStore.cached(image.hash)
         val postProcess = LanSyncPostProcess.record(record) != null
-        val maximum = if (postProcess) com.example.chatbar.domain.image.NovelAiPostProcessResultRecord.MAX_IMAGE_BYTES else 32 * 1024 * 1024
-        require(Files.size(file) <= maximum) { "SYNC_IMAGE_BUDGET" }
         LanSyncPostProcess.validateImageHash(record, image.field, image.hash)
         validateResource("images", file, record)
         return LanSyncImagePreview(UUID.randomUUID().toString(), record, reference, image.hash, file, postProcess)
@@ -46,6 +45,9 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val expected = requireNotNull(LanSyncReviewImages.references(preview.record).firstOrNull { it.reference == preview.reference }) { "SYNC_IMAGE_REFERENCE" }
         val path = resourceStore.cached(expected.hash)
         require(path == preview.path && expected.hash == preview.hash) { "SYNC_IMAGE_REFERENCE" }
+        require(LanSyncResourceStore.hashFile(path, Files.size(path)) == expected.hash) { "SYNC_IMAGE_DAMAGED" }
+        validateResource("images", path, preview.record)
+        imagePreviewRaster?.let { return it(path, preview.record) }
         val maximum = if (LanSyncPostProcess.record(preview.record) == null) 32 * 1024 * 1024
             else com.example.chatbar.domain.image.NovelAiPostProcessResultRecord.MAX_IMAGE_BYTES
         val bytes = lanSyncRead(path, maximum)

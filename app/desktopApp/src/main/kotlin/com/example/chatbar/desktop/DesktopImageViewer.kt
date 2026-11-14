@@ -257,9 +257,10 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
 /** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */
 @Composable
 internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray,
-    postProcessOutput: Boolean = false, onClose: () -> Unit) {
+    postProcessOutput: Boolean = false, previewNote: String? = null, onClose: () -> Unit) {
     val zoom = remember(reference) { DesktopImageZoomState() }
     DesktopImageToolWindow("图片预览", onClose, width = 960.dp, height = 800.dp) {
+        previewNote?.let { StatusText(it) }
         DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), zoomState = zoom, postProcessOutput = postProcessOutput)
         DesktopImageViewerToolbar(zoom)
     }

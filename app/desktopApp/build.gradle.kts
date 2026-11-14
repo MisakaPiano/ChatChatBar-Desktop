@@ -276,6 +276,7 @@ dependencies {
     // D-038: selected official v1.4.5 archive codec uses this exact Tink release.
     implementation("com.google.crypto.tink:tink:1.23.0")
     implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.twelvemonkeys.imageio:imageio-webp:3.15.0")
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

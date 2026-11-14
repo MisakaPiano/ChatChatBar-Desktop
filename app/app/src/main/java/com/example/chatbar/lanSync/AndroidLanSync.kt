@@ -30,7 +30,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
             val target = dataRoot.resolve("audio/lan-$hash.mp3")
             LanSyncBlobs.publish(source, target, Files.size(source), hash, root)
             target.toString()
-        }, validateResource = ::validateAndroidLanSyncResource)
+        }, validateResource = ::validateAndroidLanSyncResource, imagePreviewRaster = ::androidLanSyncPreviewRaster)
     private val platform = object : LanSyncPlatform {
         override suspend fun exclusive(work: suspend () -> Unit) {
             require(app.lanSyncStartupReady) { "SYNC_INITIALIZING" }

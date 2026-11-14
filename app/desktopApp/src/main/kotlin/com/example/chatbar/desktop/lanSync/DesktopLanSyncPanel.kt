@@ -126,7 +126,7 @@ internal fun DesktopLanSyncPanel(runtime: LanSyncRuntime) {
     }
     state.imagePreview?.let { preview ->
         DesktopTransientImagePreview(preview.id, { runtime.readImagePreview(preview.id) },
-            postProcessOutput = preview.postProcessOutput, onClose = runtime::closeImagePreview)
+            previewNote = "冻结静态预览 · 原始图片完整保留", onClose = runtime::closeImagePreview)
     }
 }
 
