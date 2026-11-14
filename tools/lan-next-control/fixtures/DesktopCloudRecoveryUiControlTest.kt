@@ -88,7 +88,11 @@ class DesktopCloudRecoveryUiControlTest {
                         val sync = DesktopLanSyncStartup.localRoot(data).toAbsolutePath().normalize()
                         val secrets = WindowsSecretRootResolver.resolve(data).toAbsolutePath().normalize()
                         check(sync.startsWith(roots.local) && secrets.startsWith(roots.local))
-                        check(!Files.exists(sync) && !Files.exists(secrets)); owned.add(sync); owned.add(secrets)
+                        check(!Files.exists(sync)); owned.add(sync)
+                        // Normal roots of one Windows user share the protected credential authority.
+                        // It must either be new or have been created by an earlier app in this test.
+                        check(!Files.exists(secrets) || secrets in owned)
+                        if (secrets !in owned) owned.add(secrets)
                         return newContainer(resolved).also(apps::add) to resolved
                     }
                     fun show(app: DesktopAppContainer): ImageComposeScene = ImageComposeScene(1000, 1600, coroutineContext = edt) {

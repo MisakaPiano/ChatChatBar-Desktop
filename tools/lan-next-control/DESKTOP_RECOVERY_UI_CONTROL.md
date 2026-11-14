@@ -47,3 +47,11 @@ receiver form phase. Its raw XML/build log are retained. The next fixture change
 only controlled phase granularity and sanitized exception type/original stack
 frames. It does not preserve the original exception message/cause or relax any
 recovery, identity, data, connection or cold-open assertion.
+
+The diagnostic original run43630228710 located a fixture precondition error
+before receiver initialization: ordinary data roots of one Windows user share
+the protected credential authority. The fixture now permits that directory only
+when it was already registered as owned by this invocation. Each data/sync root
+must still be new, and guarded startup refuses all preexisting credential and
+LAN roots. The production resolver and protection remain unchanged. Neither
+failed original run proves receiver recovery or saved-connection completion.
