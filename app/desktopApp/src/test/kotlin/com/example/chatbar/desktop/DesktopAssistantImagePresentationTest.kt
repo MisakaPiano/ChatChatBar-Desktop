@@ -122,8 +122,9 @@ class DesktopAssistantImagePresentationTest {
                     assertTrue(action.left > copy.left && action.right < icon.left)
                 }
                 assertTrue(icon.width <= 50 && requirements.width <= 50)
-                scene.click("生成图片"); scene.frames()
-                withTimeout(10000) { while (c.taskRuntime.tasks.value.isEmpty()) delay(10) }
+                // The button now opens explicit per-run confirmation, covered by DesktopImageBatchOptionsTest.
+                // Exercise this bubble's original task projection without creating a native child Window in Scene.
+                f.service.generateFromAssistant(f.source)
                 val task = f.terminal(c.taskRuntime.tasks.value.single().taskId)
                 assertEquals(DesktopTaskStatus.COMPLETED, task.status, task.message)
                 scene.frames()

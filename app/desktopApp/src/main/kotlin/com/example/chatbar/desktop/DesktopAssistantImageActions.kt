@@ -56,7 +56,7 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         }
     }
     val confirmedPlan = if (confirmed && batchConfig.validationError() == null) batchConfig.freeze(ImageBatchOrigin.CHAT_MANUAL) else null
-    LaunchedEffect(message) {
+    LaunchedEffect(message, requirementsOpen) {
         if (requirementsOpen && requestedSource != message) {
             requirementsOpen = false; imageStatus = "来源回复已更改，请重新打开生图计划"
         }
@@ -72,15 +72,24 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         catch (failure: DesktopChatImagePreflightException) { imageStatus = failure.result.reason }
         catch (_: Exception) { imageStatus = "无法启动图片任务，请检查生图配置与任务状态" }
     } }
+    val openRequirements: (Boolean) -> Unit = { savePreference -> scope.launch {
+        try {
+            val readiness = requireNotNull(controller.imageRegeneration).preflight(message)
+            if (readiness != DesktopChatImagePreflight.READY) imageStatus = readiness.reason
+            else {
+                requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
+                persistPreference = savePreference; batchConfig = ImageBatchConfiguration(); confirmed = false; requirementsOpen = true
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { imageStatus = "无法读取生图配置，请检查后重试" }
+    }; Unit }
     actionBar {
         if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
             DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) {
-                requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
-                persistPreference = false; batchConfig = ImageBatchConfiguration(); confirmed = false; requirementsOpen = true
+                openRequirements(false)
             }
             DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = interactionEnabled) {
-                requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
-                persistPreference = true; batchConfig = ImageBatchConfiguration(); confirmed = false; requirementsOpen = true
+                openRequirements(true)
             }
         }
     }
