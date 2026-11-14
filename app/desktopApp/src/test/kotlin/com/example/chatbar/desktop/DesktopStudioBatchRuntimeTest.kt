@@ -52,7 +52,7 @@ class DesktopStudioBatchRuntimeTest {
             assertFalse(controller.manualBatchRunning)
             f.reopen()
             val repository = NovelAiStudioStateRepository(JsonFileStorage(f.root))
-            repository.initializeHistory()
+            repository.initialize()
             val history = repository.history.first()
             assertEquals(3, history.size)
             assertEquals(10, history.sumOf { it.images.size })
@@ -69,7 +69,7 @@ class DesktopStudioBatchRuntimeTest {
             c.chatRepository.createSession(ChatSession(id = "session", characterCardId = "card", title = "synthetic", createdAt = 1, updatedAt = 1))
             val original = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "synthetic source"))
             val prompt = NovelAiPromptPlan("synthetic scene", emptyList())
-            val size = NovelAiImageSize(512, 512)
+            val size = NovelAiImageSize(512, 512, "synthetic")
             suspend fun eligible() = c.chatRepository.readMessageDurable(original.id, original.sessionId) ==
                 com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid(original)
             val runtime = DesktopNovelAiGenerationRuntime(c.desktopSecretStore, persist = { bytes, recipe ->
@@ -104,7 +104,7 @@ class DesktopStudioBatchRuntimeTest {
             val original = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "original"))
             val png = ByteArrayOutputStream().also { ImageIO.write(BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB), "png", it) }.toByteArray()
             val prompt = NovelAiPromptPlan("synthetic scene", emptyList())
-            val size = NovelAiImageSize(512, 512)
+            val size = NovelAiImageSize(512, 512, "synthetic")
             val recipe = NovelAiGenerationRecipe()
             persistDesktopChatImages(c.chatRepository, c.characterResourceStore, c.dataOperationCoordinator,
                 original, prompt, size, listOf(png), recipe, { true }, expectedCharacterCardId = "card")
@@ -170,6 +170,6 @@ class DesktopStudioBatchRuntimeTest {
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("synthetic")
                 .body(output.toByteArray().toResponseBody()).build()
         }.build()
-        fun reopen() { app.close(); app = container() }
+        suspend fun reopen() { app.close(); app = container() }
     }
 }

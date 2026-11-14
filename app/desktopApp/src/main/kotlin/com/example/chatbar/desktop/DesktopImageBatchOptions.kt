@@ -92,7 +92,10 @@ internal fun DesktopStudioBatchConfirmation(draft: NovelAiStudioDraft, account: 
             // Keep confirmation at the bottom of the scrollable content on narrow/short windows.
             StudioActions {
                 BootstrapButton("取消", secondary = true, onClick = onClose)
-                BootstrapButton("确认并开始", enabled = !busy && plan != null) { plan?.let(onStart) }
+                BootstrapButton("确认并开始", enabled = !busy && plan != null) {
+                    val latest = if (config.validationError() == null) config.freeze(ImageBatchOrigin.STUDIO) else null
+                    if (latest == plan) plan?.let(onStart)
+                }
             }
         }
     }

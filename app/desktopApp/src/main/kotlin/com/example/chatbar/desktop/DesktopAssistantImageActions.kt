@@ -61,11 +61,11 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
             DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) {
                 requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
-                persistPreference = false; batchConfig = ImageBatchConfiguration(); requirementsOpen = true
+                persistPreference = false; batchConfig = ImageBatchConfiguration(); confirmed = false; requirementsOpen = true
             }
             DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = interactionEnabled) {
                 requestedSource = message; imageHint = ""; preference = state.selectedSession.imagePromptPreference
-                persistPreference = true; batchConfig = ImageBatchConfiguration(); requirementsOpen = true
+                persistPreference = true; batchConfig = ImageBatchConfiguration(); confirmed = false; requirementsOpen = true
             }
         }
     }
@@ -99,15 +99,23 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running || !interactionEnabled,
             imageStatus, { requirementsOpen = false }, canGenerate = confirmedPlan != null,
             options = { DesktopImageBatchOptions(batchConfig, ImageBatchOrigin.CHAT_MANUAL, { batchConfig = it }, confirmed, { confirmed = it }); Unit }) {
-            if (interactionEnabled) confirmedPlan?.let { generate(DesktopChatImageRequirements(imageHint, preference, persistPreference, it)) }
+            val latest = if (batchConfig.validationError() == null) batchConfig.freeze(ImageBatchOrigin.CHAT_MANUAL) else null
+            if (interactionEnabled && confirmed && latest == confirmedPlan)
+                confirmedPlan?.let { generate(DesktopChatImageRequirements(imageHint, preference, persistPreference, it)) }
         }
     }
 }
 
 @Composable
 internal fun DesktopChatImageRequirementsForm(imageHint: String, preference: String, onHint: (String) -> Unit,
+    onPreference: (String) -> Unit, running: Boolean, status: String, onCancel: () -> Unit, onGenerate: () -> Unit) =
+    DesktopChatImageRequirementsForm(imageHint, preference, onHint, onPreference, running, status, onCancel,
+        canGenerate = true, options = null, onGenerate = onGenerate)
+
+@Composable
+internal fun DesktopChatImageRequirementsForm(imageHint: String, preference: String, onHint: (String) -> Unit,
     onPreference: (String) -> Unit, running: Boolean, status: String, onCancel: () -> Unit,
-    canGenerate: Boolean = true, options: (@Composable () -> Unit)? = null, onGenerate: () -> Unit) {
+    canGenerate: Boolean, options: (@Composable () -> Unit)? = null, onGenerate: () -> Unit) {
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         StudioField("图片内容提示", imageHint, onChange = onHint)
