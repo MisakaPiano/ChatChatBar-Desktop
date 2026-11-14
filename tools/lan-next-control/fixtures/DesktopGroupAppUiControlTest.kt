@@ -17,21 +17,31 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.desktop.*
 import com.example.chatbar.desktop.security.WindowsSecretRootResolver
 import com.example.chatbar.domain.lanSync.LanSyncGroupPanelStage
+import com.example.chatbar.domain.syncStore.CiphertextObjectMetadata
+import com.example.chatbar.domain.syncStore.CiphertextStore
 import com.example.chatbar.domain.syncStore.SyncAuthenticatedGroupObject
 import com.example.chatbar.domain.syncStore.SyncVersionRef
 import com.example.chatbar.domain.syncStore.SyncVersionState
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
+import java.security.MessageDigest
 import java.util.Comparator
+import java.util.HexFormat
 import java.util.UUID
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 
 /** Cloud-only real entry/component + AppContainer proof; never a packaged-Main/window proof. */
 class DesktopGroupAppUiControlTest {
@@ -171,6 +181,7 @@ class DesktopGroupAppUiControlTest {
                     phase = "read-exact-local-publication-receipt"
                     val access = checkNotNull(app.lanSyncGroupEnrollment.runtimeAccess())
                     check(access.device == originalIdentity && access.trust.group == originalGroup)
+                    val localReplica = access.replica
                     val receipts = access.node.sourceOperations().mapNotNull { operation ->
                         access.node.receipt(operation, originalProfile.localReplica)
                     }
@@ -178,11 +189,72 @@ class DesktopGroupAppUiControlTest {
                         it.target == originalProfile.localReplica && it.metadata == actual.metadata.descriptor
                     })
 
-                    phase = "close-scene-and-first-app"
+                    phase = "close-scene-before-final-writer"
                     currentScene.close()
                     scene = null
+
+                    phase = "accept-real-task-runtime-final-writer"
+                    val exitCard = CharacterCard(
+                        id = UUID.randomUUID().toString(),
+                        name = "合成关闭排水后的最终写入",
+                        createdAt = 2L,
+                        updatedAt = 2L,
+                        momentsEnabled = false,
+                    )
+                    val exitUnit = "character_cards/${exitCard.id}"
+                    val exitFile = data.resolve("entities/character_cards/${exitCard.id}.json")
+                    val finalWriterEntered = CompletableDeferred<Unit>()
+                    val finalWriterCompleted = CompletableDeferred<Unit>()
+                    var exitRaw: ByteArray? = null
+                    app.taskRuntime.launchNovelAi("synthetic-group-shutdown-final-writer") {
+                        try {
+                            finalWriterEntered.complete(Unit)
+                            awaitCancellation()
+                        } finally {
+                            withContext(NonCancellable) {
+                                app.characterRepository.save(exitCard)
+                                exitRaw = Files.readAllBytes(exitFile)
+                                finalWriterCompleted.complete(Unit)
+                            }
+                        }
+                    }
+                    withTimeout(10_000L) { finalWriterEntered.await() }
+                    check(!Files.exists(exitFile, NOFOLLOW_LINKS))
+                    check(!finalWriterCompleted.isCompleted)
+
+                    phase = "actual-app-close-drains-and-seals-final-writer"
+                    // Only actual AppContainer.close may cancel/drain the accepted writer and seal it.
                     withTimeout(45_000L) { app.close() }
                     first = null
+
+                    phase = "verify-final-writer-durable-before-any-reopen"
+                    check(finalWriterCompleted.isCompleted)
+                    finalWriterCompleted.await()
+                    val finalWriterRaw = checkNotNull(exitRaw)
+                    check(finalWriterRaw.isNotEmpty())
+                    check(Files.readAllBytes(exitFile).contentEquals(finalWriterRaw))
+
+                    phase = "verify-final-authenticated-native-frontier-before-any-reopen"
+                    // Read the old owner's final view only; never inspect/retry/open another node here.
+                    val finalView = checkNotNull(coordinator.view.value)
+                    val finalActual = checkNotNull(finalView.reconciliation.authenticatedVersions.firstOrNull { candidate ->
+                        val version = candidate.envelope.version
+                        version != null && version.group == originalGroup && version.author == originalIdentity &&
+                            version.changes[exitUnit]?.content != null &&
+                            finalView.reconciliation.history?.state(version.id) == SyncVersionState.ADMITTED &&
+                            finalView.nativeState.units[exitUnit]?.frontiers?.contains(version.reference()) == true
+                    })
+                    val exitReference = checkNotNull(finalActual.envelope.version).reference()
+
+                    phase = "verify-exact-final-ciphertext-durable-before-any-reopen"
+                    // Captured before close: only the public canonical local store is read here.
+                    // Complete expected ciphertext hashes are checked before any new owner can repair it.
+                    withContext(Dispatchers.IO) {
+                        verifyCiphertext(localReplica, finalActual.metadata)
+                        finalActual.envelope.blobs.values.forEach { binding ->
+                            verifyCiphertext(localReplica, CiphertextObjectMetadata(binding.key, binding.descriptor))
+                        }
+                    }
 
                     phase = "reopen-app-without-group-page"
                     val second = newContainer(resolved)
@@ -201,9 +273,13 @@ class DesktopGroupAppUiControlTest {
                     check(Files.readAllBytes(syncRoot.resolve("identity.protected")).contentEquals(protectedIdentity))
                     check(second.characterRepository.getById(card.id) == card)
                     check(Files.readAllBytes(cardFile).contentEquals(originalCard))
+                    check(second.characterRepository.getById(exitCard.id) == exitCard)
+                    check(Files.readAllBytes(exitFile).contentEquals(finalWriterRaw))
                     val secondView = checkNotNull(secondCoordinator.view.value)
                     check(secondView.reconciliation.history?.contains(reference) == true)
                     check(secondView.nativeState.units[unit]?.frontiers?.contains(reference) == true)
+                    check(secondView.reconciliation.history?.contains(exitReference) == true)
+                    check(secondView.nativeState.units[exitUnit]?.frontiers?.contains(exitReference) == true)
 
                     phase = "normal-reopened-app-drain"
                     withTimeout(45_000L) { second.close() }
@@ -232,6 +308,28 @@ class DesktopGroupAppUiControlTest {
             }
         }
         failedPhase?.let { throw AssertionError("DESKTOP_GROUP_UI_CONTROL_FAILED:$it") }
+    }
+
+    private fun verifyCiphertext(store: CiphertextStore, metadata: CiphertextObjectMetadata) {
+        check(store.metadata(metadata.key) == metadata)
+        val digest = MessageDigest.getInstance("SHA-256")
+        var count = 0L
+        val sink = object : OutputStream() {
+            override fun write(value: Int) {
+                check(count < metadata.descriptor.length)
+                digest.update(value.toByte())
+                count++
+            }
+            override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                check(offset >= 0 && length >= 0 && offset <= bytes.size - length)
+                check(count <= metadata.descriptor.length && length.toLong() <= metadata.descriptor.length - count)
+                digest.update(bytes, offset, length)
+                count += length.toLong()
+            }
+        }
+        check(store.readTo(metadata.key, sink, metadata.descriptor) == metadata)
+        check(count == metadata.descriptor.length)
+        check(HexFormat.of().formatHex(digest.digest()) == metadata.descriptor.sha256.hex)
     }
 
     private fun newContainer(resolved: DesktopDataRootResolution.Resolved) = DesktopAppContainer(
