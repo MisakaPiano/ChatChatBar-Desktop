@@ -154,6 +154,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             // Export never applies/recovers native plans. Shutdown callers additionally require a
             // settled source-only boundary after their final writer/source sealing has completed.
             if (!recoverNative) exclusive { requireSourceOnlyReady() }
+            // A cold Node has no warm localVersions. Import only retained local metadata before
+            // freezing, so a newly published local source cannot disappear from the selection.
+            kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+                val local = inbox(localDependencies())
+                var cursor: CommitCursor? = null
+                do { cursor = local.discover(cursor).nextCursor } while (cursor != null)
+            }
             val versions = localVersions.values.toList()
             val reconciled = kotlinx.coroutines.runInterruptible(Dispatchers.IO) { inbox().reconcile(versions) }
             val ledger = custody.ledger()

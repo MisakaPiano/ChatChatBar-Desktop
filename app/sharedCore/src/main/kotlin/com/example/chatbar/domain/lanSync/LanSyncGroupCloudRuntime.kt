@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.lanSync
 
-import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.*
 import java.io.IOException
@@ -51,7 +50,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
     private val clockMillis: () -> Long) : AutoCloseable {
     constructor(access: LanSyncGroupRuntimeAccess, networkAllowed: () -> Boolean, wakeLocal: () -> Unit,
         report: (Map<SyncStoreId, LanSyncGroupCloudRouteProgress>) -> Unit) : this(access, networkAllowed, wakeLocal, report,
-        access::cloudRoutes, { ProxyAwareClient.builder().build() }, WebDavEndpointPolicy.HTTPS_ONLY,
+        access::cloudRoutes, { WebDavCloudClient.create() }, WebDavEndpointPolicy.HTTPS_ONLY,
         LanSyncGroupCloudSchedule(), { System.nanoTime() / 1_000_000L })
 
     /** Synthetic HTTP/client/custody boundary only; production always uses the four-argument owner. */
@@ -217,7 +216,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                         credentials.use {
                             active()
                             val root = runInterruptible(Dispatchers.IO) { routeDirectory(id) }
-                            val client = clientProvider().newBuilder().addInterceptor(ActiveIo(active) { status, retryAfter ->
+                            val client = clientProvider().newBuilder().addNetworkInterceptor(ActiveIo(active) { status, retryAfter ->
                                 responseFailure.set(when (status) {
                                     401 -> LanSyncGroupCloudSchedule.FailureCategory.AUTHENTICATION
                                     403 -> LanSyncGroupCloudSchedule.FailureCategory.PERMISSION
@@ -247,7 +246,11 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                 val parts = runInterruptible(Dispatchers.IO) {
                                     WeakWebDavChunkAssembly(transport, directory(root.resolve("parts-provider")), id)
                                 }
-                                val chunkRead = LanSyncGroupChunkCloudReadRoute(parts, active)
+                                val incoming = if (outgoingOnly) null else runInterruptible(Dispatchers.IO) {
+                                    WeakWebDavIncomingChunkCache(directory(root.resolve("incoming-cache")),
+                                        lanSyncGroupIncomingScope(access.trust, credentials.endpoint, credentials.username))
+                                }
+                                val chunkRead = LanSyncGroupChunkCloudReadRoute(parts, active, incoming)
                                 if (!outgoingOnly) {
                                     update(captured, catalog, id, "正在读取此网盘的加密候选")
                                     val read = LanSyncGroupWeakCloudReadRoute(attempts, active)
@@ -284,7 +287,8 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                                 active()
                                 val observed = receipt.objects.maxOfOrNull { it.evidence.readback.observedAtMillis }
                                 val warning = buildString {
-                                    if (chunkRead.latestFailure.value != null) append("；有未通过检查的分片清单，其候选证据已保留")
+                                    if (chunkRead.latestFailure.value?.localCache == true) append("；本机保全的分片待检查，原始资料已保留")
+                                    else if (chunkRead.latestFailure.value != null) append("；有未通过检查的分片清单，其候选证据已保留")
                                     if (receipt.rejectedCandidates > 0) append("；投递记录含${receipt.rejectedCandidates}个未采用的不匹配、缺失或损坏候选，原始密文保留")
                                 }
                                 schedule.success(id, changed = prior == null)

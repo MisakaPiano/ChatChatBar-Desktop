@@ -4,17 +4,23 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.WebDavEndpointPolicy
+import com.example.chatbar.domain.syncStore.webdav.WeakFixture
+import java.net.BindException
 import java.net.InetAddress
+import java.net.Proxy
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -320,6 +326,142 @@ class LanSyncGroupCoordinatorTest {
         override fun listening(fingerprint: String, port: Int) { touch() }
         override fun discover(fingerprint: String): Pair<String, Int>? { touch(); return null }
         override val discoveryEnabled: Boolean get() { touch(); return false }
+    }
+
+    @Test fun optionalNearbyBindFailureDoesNotBlockLocalOrEnabledCloudAndForegroundRetriesTheListener() = fixture { f ->
+        val blocked = AtomicBoolean(true)
+        val attempts = AtomicInteger(); val ready = AtomicInteger(); val forbidden = AtomicBoolean(false)
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) {
+                attempts.incrementAndGet()
+                check(!forbidden.get()) { "SYNTHETIC_PAUSED_LISTENER_FORBIDDEN" }
+                if (blocked.get()) throw BindException("synthetic optional listener unavailable")
+                ready.incrementAndGet()
+            }
+        }
+        // This test supplies its network to the actual owner, while retaining the fixture's TLS/native owners.
+        val founder = f.founder()
+        val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+        val draft = founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) })
+        f.recoveryCode = draft.recoveryCode()
+        founder.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+        val access = requireNotNull(founder.runtimeAccess())
+        f.writeCard("synthetic automatic source despite nearby bind failure")
+        val original = Files.readAllBytes(f.card)
+        val catalog = LanSyncGroupCloudRoutes(Files.createDirectory(f.root.resolve("catalog")), access.trust, access.device,
+            { it.reversedArray() }, { it.reversedArray() }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(60, TimeUnit.SECONDS).build()
+        try {
+            WeakFixture(Files.createDirectory(f.root.resolve("provider"))).use { provider ->
+                val password = "synthetic nearby independent cloud password".toByteArray()
+                val route = try { catalog.add(LanSyncGroupCloudDraft("synthetic enabled drive",
+                    provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString(),
+                    "synthetic user", password, enabled = true)) } finally { password.fill(0) }
+                val coordinator = LanSyncGroupCoordinator({ Files.exists(f.profile.resolve("profile.protected")) }, f::founder,
+                    { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC",
+                    cloudRuntimeFactory = { current, allowed, wake, report ->
+                        LanSyncGroupCloudRuntime(current, allowed, wake, report, catalog, client,
+                            WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+                    })
+                try {
+                    val initialNearby = coordinator.state.value.nearby
+                    coordinator.open()
+                    withTimeout(60_000) {
+                        while (coordinator.state.value.busy || coordinator.view.value == null || attempts.get() == 0 ||
+                            coordinator.state.value.nearby.text == initialNearby.text ||
+                            coordinator.cloudSettings.value.progress[route]?.selectionObserved != true) delay(10)
+                    }
+                    assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
+                    assertFalse(coordinator.state.value.paused)
+                    assertNotEquals(initialNearby.text, coordinator.state.value.nearby.text)
+                    assertNotNull(coordinator.state.value.local.lastSuccessAt)
+                    assertNull(coordinator.state.value.nearby.lastSuccessAt)
+                    assertNull(coordinator.state.value.error)
+                    assertEquals(0, ready.get())
+                    val source = access.node.sourceOperations().single()
+                    val entry = requireNotNull(f.author(access.trust).entry(source))
+                    assertNotNull(access.node.receipt(source, access.localTarget))
+                    val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, route)
+                    val publication = access.targetPublication(access.work.resolve("cloud-runtime").resolve(route.value).resolve("target"),
+                        target, prepare = false)
+                    val receipt = requireNotNull(publication.cloudReceipt())
+                    assertEquals(target, receipt.target)
+                    assertTrue(receipt.objects.isNotEmpty())
+                    assertEquals(access.ledger().current().reference(), receipt.checkpoint)
+                    assertTrue(provider.dav.puts.isNotEmpty())
+                    assertTrue(provider.server.requestCount > 0)
+                    assertSourceOriginal(f, entry, original)
+
+                    val failed = coordinator.state.value.nearby.text
+                    val failedAttempts = attempts.get()
+                    blocked.set(false)
+                    coordinator.onForeground()
+                    await { ready.get() > 0 && coordinator.state.value.nearby.text != failed }
+                    assertTrue(attempts.get() > failedAttempts)
+                    // Authentication still goes through the ordinary pinned TLS protocol, not the wake hook.
+                    liveListenerPort(f, coordinator, access)
+                    assertEquals(listOf(source), access.node.sourceOperations())
+                    assertEquals(1L, f.author(access.trust).state().committedSequence)
+                    assertContentEquals(original, Files.readAllBytes(f.card))
+
+                    coordinator.pauseAndDrain()
+                    forbidden.set(true)
+                    val calls = attempts.get(); val http = provider.server.requestCount
+                    repeat(3) { coordinator.onForeground(); coordinator.onNetworkAvailable(); coordinator.retry() }
+                    delay(350)
+                    assertEquals(calls, attempts.get())
+                    assertEquals(http, provider.server.requestCount)
+                    assertTrue(coordinator.state.value.paused)
+                    assertNull(coordinator.state.value.error)
+                } finally { coordinator.closeAndDrain() }
+            }
+        } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
+
+    @Test fun pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints() {
+        val entered = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
+        val attempts = AtomicInteger(); val forbidden = AtomicBoolean(false)
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) {
+                attempts.incrementAndGet()
+                check(!forbidden.get()) { "SYNTHETIC_LATE_LISTENER_FORBIDDEN" }
+                entered.complete(Unit)
+                check(release.await(20, TimeUnit.SECONDS)) { "SYNTHETIC_LISTENER_RELEASE_TIMEOUT" }
+                throw BindException("synthetic optional bind failure during pause")
+            }
+        }
+        fixture(network) { f ->
+            try {
+                f.writeCard("synthetic source before optional listener pause")
+                val original = Files.readAllBytes(f.card)
+                val storage = JsonFileStorage(f.data)
+                val coordinator = readyCoordinator(f, storage.committedRevisionFor(LanSyncScope.schemas.keys))
+                withTimeout(5_000) { entered.await() }
+                coroutineScope {
+                    val requested = CompletableDeferred<Unit>()
+                    val stop = async(Dispatchers.IO) { requested.complete(Unit); coordinator.pauseAndDrain() }
+                    requested.await()
+                    release.countDown()
+                    withTimeout(20_000) { stop.await() }
+                }
+                assertTrue(coordinator.state.value.paused)
+                assertFalse(coordinator.state.value.busy)
+                forbidden.set(true)
+                val calls = attempts.get()
+                val access = requireNotNull(f.founder().runtimeAccess())
+                val source = access.node.sourceOperations().single()
+                val entry = requireNotNull(f.author(access.trust).entry(source))
+                val reloads = f.reloads.get()
+                storage.saveEntity("character_cards", "card", CharacterCard("card", "synthetic queued save after pause", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+                repeat(3) { coordinator.onForeground(); coordinator.onNetworkAvailable(); coordinator.retry() }
+                delay(350)
+                assertEquals(calls, attempts.get())
+                assertEquals(listOf(source), access.node.sourceOperations())
+                assertEquals(reloads, f.reloads.get())
+                assertEquals(1L, f.author(access.trust).state().committedSequence)
+                assertSourceOriginal(f, entry, original)
+            } finally { release.countDown() }
+        }
     }
 
     /** Obtain the real app listener through an ordinary management invitation, then use its pinned TLS protocol. */

@@ -31,9 +31,12 @@ internal class CloudFileDav(private val root: Path, private val authorization: S
     val puts = ConcurrentHashMap<String, AtomicLong>()
     val putBodyBytes = ConcurrentHashMap<String, AtomicLong>()
     val gets = ConcurrentHashMap<String, AtomicLong>()
+    val getCalls = ConcurrentHashMap<String, AtomicLong>()
+    val interruptedGetPath = java.util.concurrent.atomic.AtomicReference<String?>(null)
     val completedPaths = ConcurrentHashMap.newKeySet<String>()
     val interruptedExpectedBytes = AtomicLong()
     private val interruptAt = AtomicLong(Long.MAX_VALUE)
+    private val interruptGetAt = AtomicLong(Long.MAX_VALUE)
     val endpoint get() = "http://127.0.0.1:${server.address.port}/sync/"
 
     init {
@@ -55,6 +58,10 @@ internal class CloudFileDav(private val root: Path, private val authorization: S
     fun interruptNextPutAfter(totalWireBytes: Long) {
         require(totalWireBytes > putBytes.get())
         interruptAt.set(totalWireBytes)
+    }
+    fun interruptNextGetAfter(totalWireBytes: Long) {
+        require(totalWireBytes > getBytes.get())
+        interruptGetAt.set(totalWireBytes)
     }
 
     fun bodyPath(relative: String): Path {
@@ -84,6 +91,7 @@ internal class CloudFileDav(private val root: Path, private val authorization: S
             }
             "PUT" -> put(exchange, path)
             "GET" -> {
+                getCalls.computeIfAbsent(uri.path) { AtomicLong() }.incrementAndGet()
                 if (!Files.isRegularFile(path, NOFOLLOW_LINKS)) { empty(exchange, 404); return }
                 val count = Files.size(path)
                 exchange.responseHeaders.set("Content-Type", "application/octet-stream")
@@ -92,9 +100,19 @@ internal class CloudFileDav(private val root: Path, private val authorization: S
                     val buffer = ByteArray(64 * 1024)
                     while (true) {
                         val read = input.read(buffer); if (read < 0) break
-                        output.write(buffer, 0, read)
-                        getBytes.addAndGet(read.toLong())
-                        gets.computeIfAbsent(uri.path) { AtomicLong() }.addAndGet(read.toLong())
+                        val before = getBytes.get(); val cut = interruptGetAt.get()
+                        val allowed = minOf(read.toLong(), (cut - before).coerceAtLeast(0)).toInt()
+                        if (allowed > 0) {
+                            output.write(buffer, 0, allowed)
+                            getBytes.addAndGet(allowed.toLong())
+                            gets.computeIfAbsent(uri.path) { AtomicLong() }.addAndGet(allowed.toLong())
+                        }
+                        if (allowed < read || before + allowed >= cut) {
+                            if (interruptGetAt.compareAndSet(cut, Long.MAX_VALUE)) {
+                                interruptedGetPath.set(uri.path)
+                                return // Declared full Content-Length remains; closing cuts the real response body.
+                            }
+                        }
                     }
                 } }
             }

@@ -58,9 +58,9 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     val legacyAllowed = !owner.hasGroupEvidence() && state.stage == LanSyncGroupPanelStage.EMPTY
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(cloudRecoveryOwner, lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) cloudRecoveryOwner?.lock() }
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) cloudRecoveryOwner?.hide() }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); cloudRecoveryOwner?.lock() }
+        onDispose { lifecycle.removeObserver(observer); cloudRecoveryOwner?.hide() }
     }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -103,7 +103,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     cloudRecoveryOwner?.let { recovery ->
         val recoveryState by recovery.state.collectAsState()
         LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, recovery::prepare, recovery::confirm,
-            { recovery.lock(); coordinator.open() })
+            { recovery.lock(); coordinator.open() }, recovery::hide)
     }
 }
 

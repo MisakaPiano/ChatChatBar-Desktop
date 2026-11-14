@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.syncStore.webdav
 
-import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.syncStore.CiphertextStoreException
 import com.example.chatbar.domain.syncStore.CiphertextStoreFailure
 import java.io.IOException
@@ -10,6 +9,7 @@ import java.io.InterruptedIOException
 import java.security.MessageDigest
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 import okhttp3.Authenticator
 import okhttp3.Call
@@ -20,6 +20,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okio.BufferedSource
+import okio.BufferedSink
 
 enum class WebDavEndpointPolicy { HTTPS_ONLY, SYNTHETIC_LOOPBACK_HTTP }
 
@@ -27,11 +28,12 @@ enum class WebDavEndpointPolicy { HTTPS_ONLY, SYNTHETIC_LOOPBACK_HTTP }
  * No account registration, token persistence, logger or global routing mutation. The injected client
  * must not log credentials/bodies; the default retains the application's existing routing policy.
  * TLS trust and hostname verification remain those of the normal client, never a trust-all override.
- * This transport disables redirects, transparent retries, response caching and authenticator retries.
+ * Redirects, sent-request retries, response caching and authenticator retries are disabled. A failed
+ * direct TCP dial may try another system-DNS address before any HTTP request has started.
  */
 class WebDavHttpTransport(
     private val base: HttpUrl,
-    client: OkHttpClient = ProxyAwareClient.builder().build(),
+    client: OkHttpClient = WebDavCloudClient.create(),
     private val authorization: () -> String? = { null },
     policy: WebDavEndpointPolicy = WebDavEndpointPolicy.HTTPS_ONLY,
 ) : AutoCloseable {
@@ -72,46 +74,76 @@ class WebDavHttpTransport(
         if (auth != null && (auth.length > 16 * 1024 || auth.any { it.code !in 32..126 })) {
             fail(CiphertextStoreFailure.AUTHENTICATION)
         }
-        val request = Request.Builder().url(url(path)).method(method, body)
+        val onceBody = body?.let { original -> object : RequestBody() {
+            override fun contentType() = original.contentType()
+            override fun contentLength() = original.contentLength()
+            override fun isDuplex() = original.isDuplex()
+            override fun isOneShot() = true
+            override fun writeTo(sink: BufferedSink) = original.writeTo(sink)
+        } }
+        val request = Request.Builder().url(url(path)).method(method, onceBody)
             .header("Accept-Encoding", "identity").header("Cache-Control", "no-cache, no-store")
             .apply { if (!auth.isNullOrEmpty()) header("Authorization", auth); headers.forEach { (name, value) -> header(name, value) } }
             .build()
-        val call = synchronized(callAdmission) {
-            if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
-            client.newCall(request).also { calls += it }
-        }
-        return try {
-            val response = call.execute()
-            synchronized(callAdmission) {
-                if (closed) {
-                    response.close()
-                    throw InterruptedIOException("SYNC_DAV_CLOSED")
+        val operation = WebDavConnectOnlyOperation(client.dns, request.url.host)
+        val started = System.nanoTime()
+        val timeoutNanos = TimeUnit.MILLISECONDS.toNanos(client.callTimeoutMillis.toLong())
+        val operationClient = client.newBuilder().dns(operation).apply {
+            networkInterceptors().add(0, operation.wireFence)
+        }.build()
+        while (true) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_DAV_INTERRUPTED")
+            val attempt = WebDavConnectOnlyOperation.Attempt()
+            val attemptClient = operationClient.newBuilder().eventListenerFactory { call ->
+                operation.listener(attempt, client.eventListenerFactory.create(call))
+            }.build()
+            val call = synchronized(callAdmission) {
+                if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
+                attemptClient.newCall(request).also {
+                    if (timeoutNanos > 0) {
+                        val remaining = timeoutNanos - (System.nanoTime() - started)
+                        if (remaining <= 0) throw InterruptedIOException("SYNC_DAV_TIMEOUT")
+                        it.timeout().timeout(remaining, TimeUnit.NANOSECONDS)
+                    }
+                    calls += it
                 }
             }
-            val body = response.body
-            if (body == null) {
+            try {
+                val response = call.execute()
+                synchronized(callAdmission) {
+                    if (closed) {
+                        response.close()
+                        throw InterruptedIOException("SYNC_DAV_CLOSED")
+                    }
+                }
+                val body = response.body
+                return if (body == null) {
+                    calls -= call
+                    response
+                } else response.newBuilder().body(object : ResponseBody() {
+                    override fun contentType() = body.contentType()
+                    override fun contentLength() = body.contentLength()
+                    override fun source(): BufferedSource = body.source()
+                    override fun close() { try { body.close() } finally { calls -= call } }
+                }).build()
+            } catch (failure: CiphertextStoreException) {
                 calls -= call
-                response
-            } else response.newBuilder().body(object : ResponseBody() {
-                override fun contentType() = body.contentType()
-                override fun contentLength() = body.contentLength()
-                override fun source(): BufferedSource = body.source()
-                override fun close() { try { body.close() } finally { calls -= call } }
-            }).build()
-        } catch (failure: CiphertextStoreException) {
-            calls -= call
-            throw failure
-        } catch (_: SSLException) {
-            calls -= call
-            fail(CiphertextStoreFailure.PERMISSION)
-        } catch (_: IOException) {
-            calls -= call
-            if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
-            if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_DAV_INTERRUPTED")
-            fail(CiphertextStoreFailure.TRANSIENT)
-        } catch (failure: Throwable) {
-            calls -= call
-            throw failure
+                throw failure
+            } catch (_: SSLException) {
+                calls -= call
+                if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
+                if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_DAV_INTERRUPTED")
+                fail(CiphertextStoreFailure.PERMISSION)
+            } catch (failure: IOException) {
+                calls -= call
+                if (closed) throw InterruptedIOException("SYNC_DAV_CLOSED")
+                if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_DAV_INTERRUPTED")
+                if (operation.mayTryNext(attempt, call, failure)) continue
+                fail(CiphertextStoreFailure.TRANSIENT)
+            } catch (failure: Throwable) {
+                calls -= call
+                throw failure
+            }
         }
     }
 

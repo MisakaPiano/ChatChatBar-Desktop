@@ -19,7 +19,8 @@ import com.example.chatbar.ui.kit.*
 /** Temporary credentials and code belong only to this visible recovery form. */
 @Composable
 internal fun LanSyncGroupCloudRecovery(state: LanSyncGroupCloudRecoveryState, privacyRevision: Long,
-    onPrepare: (LanSyncGroupCloudDraft, String) -> Unit, onConfirm: (String) -> Unit, onClose: () -> Unit) {
+    onPrepare: (LanSyncGroupCloudDraft, String) -> Unit, onConfirm: (String, Boolean) -> Unit,
+    onClose: () -> Unit, onPrivacyHide: () -> Unit) {
     if (!state.visible) return
     val context = LocalContext.current
     var endpoint by remember { mutableStateOf("") }
@@ -28,7 +29,9 @@ internal fun LanSyncGroupCloudRecovery(state: LanSyncGroupCloudRecoveryState, pr
     var code by remember { mutableStateOf("") }
     var secretRevision by remember { mutableStateOf(0) }
     var confirmed by remember(state.review?.binding) { mutableStateOf(false) }
+    var saveConnection by remember(state.review?.binding) { mutableStateOf(true) }
     val closeOwner by rememberUpdatedState(onClose)
+    val hideOwner by rememberUpdatedState(onPrivacyHide)
     fun clearSecrets() { password = ""; code = ""; secretRevision++; confirmed = false }
     fun close() { clearSecrets(); endpoint = ""; username = ""; closeOwner() }
     LaunchedEffect(state.review?.binding) { clearSecrets() }
@@ -37,7 +40,7 @@ internal fun LanSyncGroupCloudRecovery(state: LanSyncGroupCloudRecoveryState, pr
         val originallySecure = ((window?.attributes?.flags ?: 0) and WindowManager.LayoutParams.FLAG_SECURE) != 0
         window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         onDispose {
-            clearSecrets(); endpoint = ""; username = ""; closeOwner()
+            clearSecrets(); endpoint = ""; username = ""; hideOwner()
             if (!originallySecure) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
     }
@@ -48,6 +51,7 @@ internal fun LanSyncGroupCloudRecovery(state: LanSyncGroupCloudRecoveryState, pr
             CbText("只能核对网盘当前可取得的已签名历史，不能保证取得原设备组的最新状态。准备阶段只读取和核对，不签署新的组管理操作。", color = ChatBarTheme.colors.warning)
             if (state.status.isNotBlank()) CbText(state.status)
             state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+            state.connectionNotice?.let { CbText(it, color = if (state.connectionEnabled == false) ChatBarTheme.colors.warning else ChatBarTheme.colors.mutedForeground) }
             val review = state.review
             if (review != null && !state.complete) {
                 CbText("核对原设备组与此设备", style = ChatBarTheme.typography.heading)
@@ -63,16 +67,22 @@ internal fun LanSyncGroupCloudRecovery(state: LanSyncGroupCloudRecoveryState, pr
                 }
                 CbText("确认后会在原设备组中登记此设备并继续恢复资料。资料中的冲突、删除或缺失依赖仍按实际状态处理，云端送达另行核对。")
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    CbCheckbox(saveConnection, { saveConnection = it }, enabled = !state.busy,
+                        contentDescription = "恢复后保存此连接并继续自动同步")
+                    CbText("恢复后保存此连接并继续自动同步", modifier = Modifier.weight(1f))
+                }
+                CbText("开启后，本机新内容会加密上传到此目录。关闭此选项则仅恢复资料，本次密码随后清除。", color = ChatBarTheme.colors.mutedForeground)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     CbCheckbox(confirmed, { confirmed = it }, enabled = !state.busy,
                         contentDescription = "已核对原设备组和新设备身份，并同意登记此设备")
                     CbText("我已核对以上身份，并同意登记此设备", modifier = Modifier.weight(1f))
                 }
                 CbButton("登记此设备并恢复资料", {
                     confirmed = false
-                    onConfirm(review.binding)
+                    onConfirm(review.binding, saveConnection)
                 }, enabled = confirmed && !state.busy)
             } else if (!state.complete) {
-                CbText("此处输入仅用于本次恢复，密码不会回填；不会自动启用日常网盘传输。", color = ChatBarTheme.colors.mutedForeground)
+                CbText("输入在恢复过程中临时保留；是否在本机保存此连接并继续同步，由确认页的选项决定。", color = ChatBarTheme.colors.mutedForeground)
                 CbField("WebDAV 目录地址（HTTPS）") {
                     CbInput(endpoint, { endpoint = it }, enabled = !state.busy, singleLine = true, placeholder = "https://…/")
                 }

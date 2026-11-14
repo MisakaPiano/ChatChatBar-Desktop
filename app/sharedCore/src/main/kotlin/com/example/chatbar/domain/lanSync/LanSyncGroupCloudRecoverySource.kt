@@ -26,10 +26,11 @@ class LanSyncGroupCloudRecoveryPreview internal constructor(val trust: SyncGroup
  * Credentials/HTTP lifetime stay with the caller. No daily catalog or enrolled identity is needed.
  */
 class LanSyncGroupCloudRecoverySource(private val root: Path, private val whole: WeakWebDavAttemptStore,
-    private val parts: WeakWebDavChunkAssembly, private val checkActive: () -> Unit = {}) : AutoCloseable {
+    private val parts: WeakWebDavChunkAssembly, private val checkActive: () -> Unit = {},
+    incomingCache: WeakWebDavIncomingChunkCache? = null) : AutoCloseable {
     private val token = Any()
     @Volatile private var closed = false
-    private val cloudPorts: List<CiphertextStore> = listOf(LanSyncGroupWeakCloudReadRoute(whole, ::active), LanSyncGroupChunkCloudReadRoute(parts, ::active))
+    private val cloudPorts: List<CiphertextStore> = listOf(LanSyncGroupWeakCloudReadRoute(whole, ::active), LanSyncGroupChunkCloudReadRoute(parts, ::active, incomingCache))
     private class Listing(val ports: List<CiphertextStore>, val prefix: String = "cloud-recovery1:${SyncStoreId.random().value}:")
     @Volatile private var listing = Listing(cloudPorts)
     private val reader: LanSyncGroupReplicaReader

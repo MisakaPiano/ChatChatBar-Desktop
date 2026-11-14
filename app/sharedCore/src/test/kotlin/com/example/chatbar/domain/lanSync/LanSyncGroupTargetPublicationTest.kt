@@ -117,6 +117,27 @@ class LanSyncGroupTargetPublicationTest {
     private fun weakPath(provider: WeakFixture, value: LanSyncGroupWeakTargetObservation) = provider.path(
         WeakWebDavCandidate(value.route, value.key, value.descriptor, value.operation, value.attempt))
 
+    @Test fun coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact() = fixture { f ->
+        LanSyncJsonFiles.write(f.card, CharacterCard.serializer(), CharacterCard("card", "synthetic cold target change", createdAt = 1, updatedAt = 2))
+        val second = f.access.node.commit(f.access.node.inspect().review(setOf("character_cards/card")))
+        f.access.node.upload(second.entry.request.operation, f.access.replica, f.access.localTarget)
+        val cold = requireNotNull(f.admin.service.runtimeAccess())
+        assertFalse(requireNotNull(cold.node.reconcileForPrefetch().history).contains(second.entry.version.reference()))
+        val origin = Files.readAllBytes(f.admin.profile.resolve("node/author/origin.protected"))
+        val raw = Files.readAllBytes(f.card)
+        val publication = cold.targetPublication(f.directory("cold-target-without-inspect"), target(), prepare = false)
+        val plan = publication.prepare()
+        assertEquals(setOf(f.first.entry.version.reference(), second.entry.version.reference()), plan.versions)
+        assertTrue(plan.objects.any { it.role == LanSyncGroupTargetObjectRole.VERSION && it.slot == second.entry.version.id.value })
+        val destination = FileCiphertextStore(f.directory("cold-target-destination"))
+        assertEquals(plan.checkpoint, publication.upload(destination).checkpoint)
+        assertNotNull(destination.metadata(second.metadata.context.key))
+        assertEquals(2L, f.author().state().committedSequence)
+        assertEquals(second.entry, f.author().entry(second.entry.request.operation))
+        assertContentEquals(origin, Files.readAllBytes(f.admin.profile.resolve("node/author/origin.protected")))
+        assertContentEquals(raw, Files.readAllBytes(f.card))
+    }
+
     @Test fun cloudProbeReusesForeignWholeAndChunkObjectsWithoutPuttingThemAndKeepsRouteBoundHistoricalEvidenceAcrossColdSelections() = fixture { f ->
         val image = f.admin.data.resolve("images/foreign-cloud.png"); Files.createDirectories(image.parent)
         val originalImage = LanSyncPreviewSample.image(); Files.write(image, originalImage)

@@ -39,6 +39,7 @@ class WeakWebDavChunkAssembly(transport: WebDavHttpTransport, private val privat
     private val budget: WebDavIoBudget = WebDavIoBudget()) {
     private val chunks: WeakWebDavAttemptStore
     private val assemblies: WeakWebDavAttemptStore
+    private val incomingEndpoint = transport.endpointBinding
     val routeId: SyncStoreId get() = chunks.routeId
     private val requests: FileCiphertextStore
     private val lock: ReentrantLock
@@ -119,6 +120,136 @@ class WeakWebDavChunkAssembly(transport: WebDavHttpTransport, private val privat
         } while (cursor != null)
         rejected?.let { throw it }
         null
+    }
+
+    /** Durable incoming reconstruction, never a fresh provider observation or target receipt. */
+    fun readIncomingExact(key: CiphertextObjectKey, expected: CiphertextDescriptor, destination: OutputStream,
+        cache: WeakWebDavIncomingChunkCache, checkActive: () -> Unit = {}): WeakWebDavIncomingAssemblyResult? = try {
+        guarded {
+            val active = { try { checkActive(); WebDavStoreRecord.interrupted() } catch (failure: Throwable) { throw IncomingGuardFailure(failure) } }
+            active()
+            cache.withEndpoint(incomingEndpoint) {
+                val metadata = CiphertextObjectMetadata(key, expected)
+                val seen = hashSetOf<String>()
+                var rejected: CiphertextStoreException? = null
+                fun candidateId(value: WeakWebDavCandidate) = "${value.key.kind}:${value.key.id.value}:${value.descriptor.length}:${value.descriptor.sha256.hex}:${value.operationId.value}:${value.attempt.value}"
+                fun reconstruct(manifest: WeakWebDavIncomingChunkCache.Manifest, cached: Boolean): IncomingPrepared? = try {
+                    incoming(manifest, metadata, cache, cached, active)
+                } catch (_: IncomingMissingPart) { null }
+                catch (failure: CiphertextStoreException) {
+                    if (failure.failure != CiphertextStoreFailure.INTEGRITY) throw failure
+                    rejected = failure; null
+                }
+                fun deliver(prepared: IncomingPrepared): WeakWebDavIncomingAssemblyResult = prepared.use {
+                    // Neither guard nor caller-sink failures are eligible for candidate fallback.
+                    val sink = object : OutputStream() {
+                        override fun write(value: Int) { try { destination.write(value) } catch (failure: Throwable) { throw IncomingSinkFailure(failure) } }
+                        override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                            try { destination.write(bytes, offset, length) } catch (failure: Throwable) { throw IncomingSinkFailure(failure) }
+                        }
+                    }
+                    transfer(it.file.path, sink, expected, active)
+                    active(); it.result
+                }
+                // Old exact slots have priority, but none is a canonical authenticated manifest.
+                for (manifest in cache.manifests(metadata, routeId, active)) {
+                    seen += candidateId(manifest.candidate)
+                    val prepared = reconstruct(manifest, true) ?: continue
+                    return@withEndpoint deliver(prepared)
+                }
+                var cursor: WeakWebDavCursor? = null
+                val cursors = hashSetOf<String>()
+                do {
+                    active(); cursor?.let { require(cursors.add(it.token)) { "SYNC_WEAK_DAV_INCOMING_LISTING_CHANGED" } }
+                    val page = listAssemblies(key, cursor, checkActive = active)
+                    for (candidate in page.entries) {
+                        if (!seen.add(candidateId(candidate))) continue
+                        val manifest = try {
+                            PrivateSyncFile.create(privateRoot).use { file ->
+                                val observed = FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
+                                    val result = assemblies.readCandidate(candidate, Channels.newOutputStream(channel), active)
+                                    channel.force(true); result
+                                } ?: return@use null
+                                if (observed.candidate != candidate) fail(CiphertextStoreFailure.INTEGRITY)
+                                validateIncomingManifest(file.path, candidate, metadata, active)
+                                cache.retainManifest(metadata, candidate, file.path, active)
+                            }
+                        } catch (failure: CiphertextStoreException) {
+                            // 429/503/auth/permission/unknown I/O are not proof of a missing/bad claim.
+                            if (failure.failure != CiphertextStoreFailure.INTEGRITY) throw failure
+                            rejected = failure; null
+                        } ?: continue
+                        val prepared = reconstruct(manifest, false) ?: continue
+                        return@withEndpoint deliver(prepared)
+                    }
+                    cursor = page.nextCursor
+                } while (cursor != null)
+                rejected?.let { throw it }
+                null
+            }
+        }
+    } catch (failure: IncomingGuardFailure) { throw failure.original }
+    catch (failure: IncomingSinkFailure) { throw failure.original }
+
+    private class IncomingGuardFailure(val original: Throwable) : java.util.concurrent.CancellationException("SYNC_WEAK_DAV_INCOMING_CANCELLED")
+    private class IncomingSinkFailure(val original: Throwable) : RuntimeException()
+    private class IncomingMissingPart : RuntimeException()
+    private class IncomingPrepared(val file: PrivateSyncFile, val result: WeakWebDavIncomingAssemblyResult) : Closeable {
+        override fun close() = file.close()
+    }
+    private fun validateIncomingManifest(path: Path, candidate: WeakWebDavCandidate,
+        expected: CiphertextObjectMetadata, active: () -> Unit): WeakWebDavChunkPreparation =
+        Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
+            val data = DataInputStream(input); val header = decodePlan(data)
+            val length = try { Math.addExact(PLAN_BYTES.toLong(), Math.multiplyExact(header.chunkCount, ENTRY_BYTES)) }
+                catch (_: ArithmeticException) { fail(CiphertextStoreFailure.INTEGRITY) }
+            if (header.request.key != expected.key || header.request.descriptor != expected.descriptor ||
+                candidate.key != expected.key || candidate.descriptor.length != length) fail(CiphertextStoreFailure.INTEGRITY)
+            var remaining = expected.descriptor.length; var index = 0L
+            while (index < header.chunkCount) {
+                active(); val part = readEntry(data, index); val bytes = minOf(remaining, header.chunkBytes)
+                if (part.key.kind != CiphertextObjectKind.BLOB || part.descriptor.length != bytes) fail(CiphertextStoreFailure.INTEGRITY)
+                remaining -= bytes; index++
+            }
+            if (data.read() != -1 || remaining != 0L) fail(CiphertextStoreFailure.INTEGRITY)
+            active(); header
+        }
+    private fun incoming(manifest: WeakWebDavIncomingChunkCache.Manifest, expected: CiphertextObjectMetadata,
+        cache: WeakWebDavIncomingChunkCache, cachedManifest: Boolean, active: () -> Unit): IncomingPrepared {
+        val header = validateIncomingManifest(manifest.path, manifest.candidate, expected, active)
+        space(expected.descriptor.length)
+        val ciphertext = PrivateSyncFile.create(privateRoot)
+        try {
+            var cached = 0L; var fetched = 0L
+            Files.newInputStream(manifest.path, NOFOLLOW_LINKS).use { input ->
+                val data = DataInputStream(input); decodePlan(data)
+                FileChannel.open(ciphertext.path, WRITE, NOFOLLOW_LINKS).use { channel ->
+                    val whole = DigestSink(expected.descriptor.length, active, Channels.newOutputStream(channel))
+                    var index = 0L
+                    while (index < header.chunkCount) {
+                        active(); val part = readEntry(data, index)
+                        val retained = cache.part(manifest, index, part, active)
+                        val path = if (retained != null) { cached++; retained } else {
+                            cache.space(part.descriptor.length)
+                            PrivateSyncFile.create(privateRoot).use { temporary ->
+                                val owned = part.copy(route = chunks.routeId)
+                                val observed = FileChannel.open(temporary.path, WRITE, NOFOLLOW_LINKS).use { output ->
+                                    val result = chunks.readCandidate(owned, Channels.newOutputStream(output), active)
+                                    output.force(true); result
+                                } ?: throw IncomingMissingPart()
+                                if (observed.candidate != owned) fail(CiphertextStoreFailure.INTEGRITY)
+                                cache.retainPart(manifest, index, part, temporary.path, active)
+                            }.also { fetched++ }
+                        }
+                        cache.copy(path, part.descriptor, whole, active); index++
+                    }
+                    if (data.read() != -1 || whole.length != expected.descriptor.length || whole.finish() != expected.descriptor.sha256)
+                        fail(CiphertextStoreFailure.INTEGRITY)
+                    channel.force(true); active()
+                }
+            }
+            return IncomingPrepared(ciphertext, WeakWebDavIncomingAssemblyResult(expected, manifest.candidate, cached, fetched, cachedManifest))
+        } catch (failure: Throwable) { ciphertext.close(); throw failure }
     }
 
     private fun prepareLocked(request: CiphertextPutRequest, source: InputStream,

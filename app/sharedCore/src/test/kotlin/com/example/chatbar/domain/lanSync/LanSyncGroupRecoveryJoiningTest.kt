@@ -2,12 +2,14 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.syncStore.*
+import java.io.InterruptedIOException
 import java.net.InetAddress
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.Executors
+import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
@@ -74,8 +76,13 @@ class LanSyncGroupRecoveryJoiningTest {
     }
     /** The actual reader handles exact reads/cache; this test lens only combines discovery pages. */
     private fun combined(root: Path, controls: CiphertextStore, cloud: CiphertextStore): CiphertextStore {
+        val routeFailures = mutableListOf<Exception>()
         val reader = LanSyncGroupReplicaReader(FileCiphertextStore(root.resolve("read-cache")), root.resolve("read-work"),
-            root.resolve("read-candidates")) { _, failure -> throw failure }
+            root.resolve("read-candidates")) { _, failure ->
+            if (failure is CancellationException || failure is InterruptedException || failure is InterruptedIOException ||
+                Thread.currentThread().isInterrupted) throw failure
+            routeFailures += failure // Ordinary misses may try the next route; the reader still throws its final failure.
+        }
         reader.routes(listOf(LanSyncGroupReplicaReader.Route("RECOVERED_CONTROLS", controls),
             LanSyncGroupReplicaReader.Route("OFFLINE_CLOUD", cloud)))
         val rows = (entries(controls) + entries(cloud)).distinct().sortedWith(
@@ -102,8 +109,21 @@ class LanSyncGroupRecoveryJoiningTest {
             requireNotNull(f.service.profile()).localReplica)
         val cloudRoot = f.root.resolve("offline-cloud")
         val cloud = FileCiphertextStore(cloudRoot)
-        requireNotNull(f.service.runtimeAccess()).targetPublication(Files.createDirectory(f.root.resolve("cloud-relay")),
-            SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, SyncStoreId.random())).upload(cloud)
+        val exporter = requireNotNull(f.service.runtimeAccess())
+        var cursor: CommitCursor? = null
+        do { cursor = exporter.node.discover(exporter.replica, cursor).nextCursor } while (cursor != null)
+        val sourceReference = sourceCommit.entry.version.reference()
+        val exportView = exporter.node.reconcileForPrefetch()
+        assertTrue(requireNotNull(exportView.history).contains(sourceReference))
+        assertEquals(SyncVersionState.ADMITTED, requireNotNull(exportView.history).state(sourceReference.id))
+        val publication = exporter.targetPublication(Files.createDirectory(f.root.resolve("cloud-relay")),
+            SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, SyncStoreId.random()), prepare = false)
+        val frozen = publication.prepare()
+        assertEquals(setOf(sourceReference), frozen.versions)
+        val metadata = frozen.objects.single { it.role == LanSyncGroupTargetObjectRole.VERSION && it.slot == sourceReference.id.value }
+        assertTrue(exportView.authenticatedVersions.any { it.envelope.version?.reference() == sourceReference &&
+            it.metadata == CiphertextObjectMetadata(metadata.key, metadata.descriptor) })
+        publication.upload(cloud)
         val oldLedger = f.custody().ledger()
         val originalData = files(f.data)
         val manager = recovered(f, cloud)

@@ -4,21 +4,33 @@ import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavCandidate
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavChunkAssembly
 import com.example.chatbar.domain.syncStore.webdav.WeakWebDavCursor
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavIncomingChunkCache
+import com.example.chatbar.domain.syncStore.webdav.WeakWebDavIncomingCacheException
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
+/** Local ciphertext custody scope; credentials and the recovery code never enter its metadata. */
+internal fun lanSyncGroupIncomingScope(trust: SyncGroupTrust, endpoint: String, account: String) =
+    lanSyncGroupIncomingScope(trust.group, trust.genesis, endpoint, account)
+internal fun lanSyncGroupIncomingScope(group: SyncStoreId, genesis: SyncVersionRef, endpoint: String, account: String) = lanSyncHash(buildJsonObject {
+    put("format", 1); put("group", group.value); put("genesis", genesis.id.value)
+    put("genesisHash", genesis.bodyHash); put("endpoint", endpoint); put("account", account)
+})
 
 /** A provider claim failed inspection/reassembly; this is not an authenticated logical-object fact. */
 data class LanSyncGroupChunkReadFailure(val key: CiphertextObjectKey, val failure: CiphertextStoreFailure,
-    val assembly: WeakWebDavCandidate? = null)
+    val assembly: WeakWebDavCandidate? = null, val localCache: Boolean = false)
 
 /**
  * Read-only candidate port for physical chunk assemblies. Only one provider page and one bounded
  * header per manifest are retained here. Inbox/AEAD/ledger owners still authenticate logical bytes.
  */
 class LanSyncGroupChunkCloudReadRoute(private val assemblies: WeakWebDavChunkAssembly,
-    private val checkActive: () -> Unit = {}) : CiphertextStore {
+    private val checkActive: () -> Unit = {}, private val incomingCache: WeakWebDavIncomingChunkCache? = null) : CiphertextStore {
     override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED,
         untrustedCandidateVariants = true)
     private val mutableFailure = MutableStateFlow<LanSyncGroupChunkReadFailure?>(null)
@@ -78,13 +90,20 @@ class LanSyncGroupChunkCloudReadRoute(private val assemblies: WeakWebDavChunkAss
                 try { destination.write(bytes, offset, length) } catch (failure: Throwable) { throw SinkFailure(failure) }
             }
         }
-        val observation = try { assemblies.readExact(key, descriptor, sink, ::active) }
-        catch (failure: CiphertextStoreException) { rejected(key, failure.failure); throw failure }
+        val metadata = try {
+            if (incomingCache != null) assemblies.readIncomingExact(key, descriptor, sink, incomingCache, ::active)?.metadata
+            else assemblies.readExact(key, descriptor, sink, ::active)?.let {
+                require(it.request.key == key && it.request.descriptor == descriptor && it.assembly.key == key) { "SYNC_GROUP_CHUNK_READ_CHANGED" }
+                CiphertextObjectMetadata(key, descriptor)
+            }
+        } catch (failure: WeakWebDavIncomingCacheException) {
+            mutableFailure.value = LanSyncGroupChunkReadFailure(key, CiphertextStoreFailure.INTEGRITY, localCache = true)
+            throw failure
+        } catch (failure: CiphertextStoreException) { rejected(key, failure.failure); throw failure }
             ?: return@boundary null
         active()
-        require(observation.request.key == key && observation.request.descriptor == descriptor &&
-            observation.assembly.key == key) { "SYNC_GROUP_CHUNK_READ_CHANGED" }
-        CiphertextObjectMetadata(key, descriptor)
+        require(metadata == CiphertextObjectMetadata(key, descriptor)) { "SYNC_GROUP_CHUNK_READ_CHANGED" }
+        metadata
     }
 
     private fun inspect(candidate: WeakWebDavCandidate, failed: (CiphertextStoreFailure) -> Unit = {}): CiphertextObjectMetadata? {

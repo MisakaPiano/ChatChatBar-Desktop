@@ -97,6 +97,9 @@ internal class LanSyncGroupTargetExport(val trust: SyncGroupTrust, val device: S
         }
         requireLive()
     }
+    /** A separate subset proof; it never changes this owner's complete-selection contract. */
+    fun partial(work: Path) = LanSyncGroupPartialTargetExport(trust, device, ledger, view, vault, vaultDescriptor,
+        source, authority, cipher, custody, cache, validateResource, work)
 }
 
 internal class LanSyncGroupTargetStage(val metadata: CiphertextObjectMetadata, val file: PrivateSyncFile) : AutoCloseable {

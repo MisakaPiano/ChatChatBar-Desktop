@@ -5,6 +5,8 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.*
+import java.io.IOException
+import java.io.OutputStream
 import java.net.Proxy
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
@@ -228,12 +230,51 @@ class SyncGroupCloudLargeNativeProofTest {
             resumedRuntime.close(); resumedRuntime.drain()
 
             // Receiver has no source FileStore route or preinstalled epoch keys. All reads use actual HTTP assemblies.
-            val transport = WebDavHttpTransport(dav.endpoint.toHttpUrl(), client,
+            fun receiverTransport() = WebDavHttpTransport(dav.endpoint.toHttpUrl(), client,
                 { Credentials.basic(username, password, Charsets.UTF_8) }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP).also { receiveTransport = it }
+            val incomingRoot = directory("receiver-incoming-cache")
+            val incomingScope = lanSyncGroupIncomingScope(peer.trust, dav.endpoint, username)
+            val large = receipt.objects.first { it.objectRequest.key.kind == CiphertextObjectKind.BLOB && it.objectRequest.descriptor.length > length }.objectRequest
+            val firstReceiverRoute = SyncStoreId.random()
+            assertNotEquals(route, firstReceiverRoute)
+            val firstTransport = receiverTransport()
+            val firstParts = WeakWebDavChunkAssembly(firstTransport, directory("receiver-parts-first"), firstReceiverRoute)
+            val firstIncoming = WeakWebDavIncomingChunkCache(incomingRoot, incomingScope)
+            val incomingBefore = dav.getBytes.get()
+            val getCallsBefore = dav.getCalls.mapValues { it.value.get() }
+            val getBytesBefore = dav.gets.mapValues { it.value.get() }
+            dav.interruptNextGetAfter(incomingBefore + interruptThreshold)
+            var partialCallerBytes = 0L
+            assertFailsWith<IOException> {
+                firstParts.readIncomingExact(large.key, large.descriptor, object : OutputStream() {
+                    override fun write(value: Int) { partialCallerBytes++ }
+                    override fun write(bytes: ByteArray, offset: Int, count: Int) { partialCallerBytes += count }
+                }, firstIncoming)
+            }
+            assertEquals(0L, partialCallerBytes)
+            val interruptedGet = requireNotNull(dav.interruptedGetPath.get())
+            assertTrue(interruptedGet.contains("/${WeakWebDavNamespace.CHUNKS.collection}/"))
+            val completedIncoming = dav.getCalls.mapValues { it.value.get() }.filter { (path, count) ->
+                path.contains("/${WeakWebDavNamespace.CHUNKS.collection}/") && count > (getCallsBefore[path] ?: 0) &&
+                    path != interruptedGet && (dav.gets[path]?.get() ?: 0) - (getBytesBefore[path] ?: 0) == Files.size(dav.bodyPath(path))
+            }
+            assertTrue(completedIncoming.isNotEmpty())
+            firstTransport.close()
             val receiverRoute = SyncStoreId.random()
-            assertNotEquals(route, receiverRoute)
-            val parts = WeakWebDavChunkAssembly(transport, directory("receiver-parts"), receiverRoute)
-            val receive = LanSyncGroupChunkCloudReadRoute(parts)
+            assertNotEquals(route, receiverRoute); assertNotEquals(firstReceiverRoute, receiverRoute)
+            val transport = receiverTransport()
+            val parts = WeakWebDavChunkAssembly(transport, directory("receiver-parts-cold"), receiverRoute)
+            val incoming = WeakWebDavIncomingChunkCache(incomingRoot, incomingScope)
+            val assembledHash = MessageDigest.getInstance("SHA-256"); var assembledBytes = 0L
+            val incomingResumed = requireNotNull(parts.readIncomingExact(large.key, large.descriptor, object : OutputStream() {
+                override fun write(value: Int) { assembledHash.update(value.toByte()); assembledBytes++ }
+                override fun write(bytes: ByteArray, offset: Int, count: Int) { assembledHash.update(bytes, offset, count); assembledBytes += count }
+            }, incoming))
+            assertEquals(large.descriptor.length, assembledBytes)
+            assertEquals(large.descriptor.sha256.hex, assembledHash.digest().joinToString("") { "%02x".format(it) })
+            assertTrue(incomingResumed.cachedManifest); assertTrue(incomingResumed.cachedChunks > 0); assertTrue(incomingResumed.fetchedChunks > 0)
+            completedIncoming.forEach { (path, count) -> assertEquals(count, dav.getCalls.getValue(path).get(), "verified incoming chunk must not be GET again after cold resume") }
+            val receive = LanSyncGroupChunkCloudReadRoute(parts, incomingCache = incoming)
             val receiverRoot = directory("receiver-custody")
             fun receiverCustody() = SyncGroupCustody(receiverRoot, peer.trust.group, admin.joiningKey,
                 { it.reversedArray() }, { it.reversedArray() })
@@ -297,6 +338,9 @@ class SyncGroupCloudLargeNativeProofTest {
             originalEntities.forEach { (relative, raw) -> assertContentEquals(raw, Files.readAllBytes(admin.data.resolve(relative))) }
             history.verify(custody); assertEquals(expected, history.snapshot(custody).resources)
             assertEquals(0L, reloads.get()); assertNull(receive.latestFailure.value)
+            completedIncoming.forEach { (path, count) ->
+                assertEquals(count, dav.getCalls.getValue(path).get(), "native admission must keep using the verified incoming cache")
+            }
             assertTrue(dav.putBytes.get() > total); assertTrue(dav.getBytes.get() > total)
             assertEquals(dav.requests.get(), dav.authorizedRequests.get())
             sampler?.cancelAndJoin(); sampler = null
@@ -307,6 +351,10 @@ class SyncGroupCloudLargeNativeProofTest {
                 put("singleResourceExceedsOneGiB", expected.values.any { it > 1024L * 1024 * 1024 })
                 put("actualLoopbackHttp", true); put("syntheticBasicAuthenticationVerified", true)
                 put("independentReceiverLocalRoute", receiverRoute != route)
+                put("incomingHttpCutoffBytes", interruptThreshold); put("incomingCallerBytesOnInterruptedAssembly", partialCallerBytes)
+                put("incomingColdCacheReopen", true); put("incomingCachedChunks", incomingResumed.cachedChunks)
+                put("incomingFetchedChunksAfterReopen", incomingResumed.fetchedChunks)
+                put("incomingCompleteChunksNotFetchedAgain", completedIncoming.size)
                 put("httpRequests", dav.requests.get()); put("serverReceivedPutBodyBytes", dav.putBytes.get())
                 put("serverPersistedPutBodyBytes", dav.storedPutBytes.get()); put("serverWrittenGetBodyBytes", dav.getBytes.get())
                 put("interruptionThresholdBytes", interruptThreshold); put("retainedPartialAttemptBytes", partialLength)
@@ -329,14 +377,17 @@ class SyncGroupCloudLargeNativeProofTest {
                 put("sampledPeakHeapBytes", peakHeap.get()); put("minimumSampledFreeDiskBytes", minimumFree.get())
             })
         } finally {
-            sampler?.cancelAndJoin()
-            try {
-                runtimes.forEach { it.close() }; runtimes.forEach { it.drain() }
-                receiveTransport?.close(); enrollments.forEach { it.close() }; administration?.close()
-            } finally {
-                try { provider?.close() } finally {
-                    client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll()
-                    check(root.toFile().deleteRecursively())
+            withContext(NonCancellable) {
+                try { sampler?.cancelAndJoin() } finally {
+                    try {
+                        runtimes.forEach { it.close() }; runtimes.forEach { it.drain() }
+                        receiveTransport?.close(); enrollments.forEach { it.close() }; administration?.close()
+                    } finally {
+                        try { provider?.close() } finally {
+                            client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll()
+                            check(root.toFile().deleteRecursively())
+                        }
+                    }
                 }
             }
         }

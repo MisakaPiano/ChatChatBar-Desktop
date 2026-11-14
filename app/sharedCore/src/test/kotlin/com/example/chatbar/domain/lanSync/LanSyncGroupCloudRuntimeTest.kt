@@ -451,7 +451,7 @@ class LanSyncGroupCloudRuntimeTest {
     }
 
     @Test fun aRateLimitedAssemblyGetCannotReuseHistoricalCompletionOrBypassItsFailureFloor() {
-        for ((status, retryAfter) in listOf(429 to null, 503 to null, 429 to "120")) fixture { f ->
+        for ((status, retryAfter) in listOf(429 to null, 503 to null, 503 to "0", 429 to "120")) fixture { f ->
             WeakFixture(f.directory("assembly-backoff-provider")).use { provider ->
                 val id = f.add(provider)
                 val schedule = LanSyncGroupCloudSchedule(f.clock::get, { 0 })
@@ -475,7 +475,7 @@ class LanSyncGroupCloudRuntimeTest {
                 assertEquals(wakes, f.wakes.get())
                 val requests = provider.server.requestCount
                 assertEquals(requestsAtResponse.get(), requests, "No further provider HTTP is allowed after this route is throttled")
-                val floor = if (retryAfter == null) 15_000L else 120_000L
+                val floor = if (retryAfter == "120") 120_000L else 15_000L
                 assertEquals(floor, runtime.nextDelayMillis())
                 assertEquals(LanSyncGroupCloudSchedule.FailureCategory.TRANSIENT, schedule.state(id)?.failure)
                 assertFalse(f.latest().getValue(id).selectionObserved)

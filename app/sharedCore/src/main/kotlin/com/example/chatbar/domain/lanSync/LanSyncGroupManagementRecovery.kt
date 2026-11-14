@@ -290,9 +290,10 @@ class LanSyncGroupManagementRecovery(private val root: Path,
     }
 
     /** Read-only ciphertext capability: no private key, path, network route or new root signature. */
-    suspend fun recoveryBootstrap(): LanSyncGroupRecoveryBootstrap = guarded {
+    suspend fun recoveryBootstrap(): LanSyncGroupRecoveryBootstrap = guarded { recoveryBootstrapOwned() }
+    private fun recoveryBootstrapOwned(): LanSyncGroupRecoveryBootstrap {
         val value = requireActive(); val record = ready(value)
-        value.session.withRecipient { recipient ->
+        return value.session.withRecipient { recipient ->
             val custody = custody(value, record, recipient, false); val current = custody.ledger().current()
             val store = local(record, false)
             lanSyncReadManagementBackup(store, record.vault, record.vaultDescriptor)
@@ -337,6 +338,106 @@ class LanSyncGroupManagementRecovery(private val root: Path,
                 override fun toString() = "LanSyncGroupRecoveryBootstrapSource(REDACTED)"
             }
             live(); LanSyncGroupRecoveryBootstrap(anchor, source)
+        }
+    }
+
+    /** Freezes only existing authenticated controls. It neither prepares nor signs another root action. */
+    suspend fun retainRecoveryBootstrap(destination: Path, checkActive: () -> Unit = {}): LanSyncGroupRecoveryBootstrap = guarded {
+        val value = requireActive(); val record = ready(value)
+        val bootstrap = recoveryBootstrapOwned()
+        value.session.withRecipient { recipient ->
+            val custody = custody(value, record, recipient, false); val ledger = custody.ledger(); val current = ledger.current()
+            fun live() {
+                requireCurrent(value); checkActive(); requireKnownPrefix(ledger)
+                require(custody.ledger().current().reference() == bootstrap.anchor.trust.checkpoint) { "SYNC_GROUP_MANAGEMENT_CHECKPOINT_CHANGED" }
+            }
+            val expectedSlots = ledger.history().map { it.epoch }.distinct().flatMap { epoch ->
+                current.members.filterValues { it.active }.keys.map { "${epoch.value}:$it" }
+            }.toSet()
+            val expectedNotices = SyncLedgerNotice.revocations(ledger)
+            val slots = linkedSetOf<String>(); val notices = linkedSetOf<String>()
+            val selected = linkedSetOf<CiphertextObjectMetadata>()
+            val vault = CiphertextObjectMetadata(record.vault.key, record.vaultDescriptor)
+            live(); require(bootstrap.source.metadata(vault.key) == vault) { "SYNC_GROUP_MANAGEMENT_VAULT_CHANGED" }
+            selected += vault
+            val work = directory("snapshot-preparations", true)
+            var rootFound = false; var cursor: CommitCursor? = null
+            val cursors = hashSetOf<String>()
+            do {
+                live(); cursor?.let { require(cursors.add(it.token)) { "SYNC_GROUP_MANAGEMENT_LISTING_CHANGED" } }
+                val page = bootstrap.source.listCommits(cursor)
+                for (metadata in page.entries) {
+                    live()
+                    lanSyncTargetStage(work, bootstrap.source, metadata, ::live).use { staged ->
+                        val prefix = lanSyncTargetPrefix(staged)
+                        when {
+                            SyncKeyDeliveryCodec.hasPrefix(prefix) && metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES -> {
+                                val delivery = Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use {
+                                    SyncKeyDeliveryCodec.decode(SyncKeyDeliveryCodec.read(it))
+                                }
+                                delivery.verifyOwner(record.trust, metadata.key)
+                                val context = delivery.context
+                                val slot = "${context.epoch.value}:${context.recipient}"
+                                if (slot in expectedSlots && context.authorizingLedger == current.reference() &&
+                                    ledger.hasKey(context.epoch, context.keyCommitment, current.reference()) &&
+                                    current.members[context.recipient]?.let { it.active &&
+                                        SyncRecipientPublicKey.parse(it.recipientKey).hash == context.recipientKeyHash } == true && slots.add(slot)) selected += metadata
+                            }
+                            SyncLedgerNoticeCodec.hasPrefix(prefix) && metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES -> {
+                                val notice = Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use {
+                                    SyncLedgerNoticeCodec.decode(SyncLedgerNoticeCodec.read(it))
+                                }
+                                notice.verifyOwner(record.trust, metadata.key)
+                                val context = notice.context
+                                if (expectedNotices[context.recipient] == context.revocation &&
+                                    SyncRecipientPublicKey.parse(requireNotNull(ledger.record(context.revocation)).members.getValue(context.recipient).recipientKey).hash ==
+                                        context.recipientKeyHash && notices.add(context.recipient)) selected += metadata
+                            }
+                            !rootFound && SyncCiphertextHeader.hasPrefix(prefix) -> {
+                                val hint = Files.newInputStream(staged.file.path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
+                                if (hint.context.group == record.trust.group && hint.context.epoch == current.epoch && hint.keyCommitment == current.keyCommitment) {
+                                    val actual = SyncGroupObjectCodec(work).read(lanSyncTargetLens(listOf(staged), ::live),
+                                        custody.key(current.epoch), hint.context, metadata.descriptor)
+                                    if (actual.envelope.deviceLedger == current && actual.envelope.ledgerHistory == ledger.history().dropLast(1)) {
+                                        selected += metadata; rootFound = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                cursor = page.nextCursor
+            } while (cursor != null)
+            live()
+            require(rootFound && slots == expectedSlots && notices == expectedNotices.keys) { "SYNC_GROUP_MANAGEMENT_CONTROL_INCOMPLETE" }
+            val objects = selected.associateBy { it.key }
+            require(objects.size == selected.size) { "SYNC_GROUP_MANAGEMENT_CONTROL_CONFLICT" }
+            val commits = selected.filter { it.key.kind == CiphertextObjectKind.COMMIT }.sortedBy { it.key.id.value }
+            val prefix = "retained-controls:${SyncStoreId.random().value}:"
+            val source = object : CiphertextStore {
+                override val capabilities = bootstrap.source.capabilities
+                override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult = error("SYNC_GROUP_MANAGEMENT_BOOTSTRAP_READ_ONLY")
+                override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? { live(); return objects[key] }
+                override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                    live(); val metadata = objects[key] ?: return null
+                    require(expected == null || expected == metadata.descriptor) { "SYNC_GROUP_MANAGEMENT_BOOTSTRAP_CHANGED" }
+                    val actual = bootstrap.source.readTo(key, destination, metadata.descriptor)
+                    live(); require(actual == metadata) { "SYNC_GROUP_MANAGEMENT_BOOTSTRAP_CHANGED" }; return actual
+                }
+                override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                    live(); require(pageSize in 1..1000)
+                    val index = cursor?.token?.let {
+                        require(it.startsWith(prefix)) { "SYNC_GROUP_MANAGEMENT_CURSOR_CHANGED" }
+                        it.removePrefix(prefix).toInt()
+                    } ?: 0
+                    require(index in 0..commits.size) { "SYNC_GROUP_MANAGEMENT_CURSOR_CHANGED" }
+                    val page = commits.drop(index).take(pageSize); val next = index + page.size
+                    return CommitPage(page, if (next < commits.size) CommitCursor(prefix + next) else null)
+                }
+            }
+            val retained = LanSyncGroupRecoveryControlSnapshot.retain(destination,
+                LanSyncGroupRecoveryBootstrap(bootstrap.anchor, source), checkActive)
+            live(); retained
         }
     }
 
