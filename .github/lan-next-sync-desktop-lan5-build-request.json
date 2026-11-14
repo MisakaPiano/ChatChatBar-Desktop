@@ -1,0 +1,24 @@
+{
+  "kind": "CCB_LAN4_LAN5_DESKTOP_BUILD_V1",
+  "format": 1,
+  "sourceSha": "fc61ba2cb273735689809f26e0ccb624389ab400",
+  "version": "0.1.0-lan.5",
+  "installerVersion": "0.1.40005",
+  "buildNumber": "40005",
+  "deliveredBase": {
+    "series": "lan4",
+    "version": "0.1.0-lan.4",
+    "sourceSha": "90ead92410ca4c5e240f75d120ed6a145fb6f1c8",
+    "controlSha": "00b934506b09c25adffa3876c9da7636cc9e2532",
+    "runId": 43547894348,
+    "artifactId": 14094727580,
+    "artifactName": "ccb-lan3-lan4-independent-desktop",
+    "outerBytes": 207361405,
+    "outerSha256": "9dc0cd166df7e68e61c5062720891161e20296d48e34464859ad13e91e471d09",
+    "filename": "CCB-0.1.0-lan.4-independent-windows-x64.zip",
+    "innerBytes": 207247398,
+    "innerSha256": "df1c75eaa138915f3718487af4c09fb9eee14c2d0b525df904f778032ecbf829",
+    "installerVersion": "0.1.40004",
+    "buildNumber": "40004"
+  }
+}
