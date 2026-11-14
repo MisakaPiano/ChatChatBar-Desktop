@@ -107,9 +107,13 @@ class SyncGroupCloudLargeNativeProofTest {
             val admin = LanSyncGroupAdministrationTest.Fixture(directory("founder")).also { administration = it }
             admin.seed()
             val (invitation, peer) = admin.prove()
+            val beforeMember = admin.custody().ledger().current()
             val approved = admin.service.prepareMember(peer, invitation)
+            assertEquals(beforeMember.members + (peer.device to peer.member), approved.request.members)
             val memberReceipt = admin.service.addMember(admin.service.resume(admin.code), approved.acknowledge(approved.request.approvalBinding))
-            assertEquals(2, memberReceipt.ledger.members.size)
+            assertEquals(beforeMember.members + (peer.device to peer.member), memberReceipt.ledger.members)
+            assertEquals(beforeMember.sequence + 1, memberReceipt.ledger.sequence)
+            assertEquals(beforeMember.reference(), memberReceipt.ledger.parent)
             assertTrue(memberReceipt.ledger.members.getValue(peer.device).active)
             invitation.close()
 
