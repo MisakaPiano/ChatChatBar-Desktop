@@ -1,0 +1,43 @@
+name: LAN next Windows group scene and app owner control
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: ['.github/lan-next-desktop-group-ui-request.json']
+permissions:
+  contents: read
+jobs:
+  windows-group-scene:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: group-desktop-control
+          persist-credentials: false
+      - name: Validate exact source and companion request
+        id: request
+        working-directory: group-desktop-control
+        shell: bash
+        run: python -B tools/lan-next-control/desktop_group_ui_control.py request --request .github/lan-next-desktop-group-ui-request.json >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: ${{ steps.request.outputs.sourceSha }}
+          path: group-desktop-app-source
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare one test overlay with production diff empty
+        working-directory: group-desktop-control
+        run: python -B tools/lan-next-control/desktop_group_ui_control.py prepare --request .github/lan-next-desktop-group-ui-request.json --source ../group-desktop-app-source --evidence lan-next-desktop-group-ui-evidence
+      - name: Exercise actual scene and protected app owner lifecycle
+        working-directory: group-desktop-control
+        run: python -B tools/lan-next-control/desktop_group_ui_control.py run --request .github/lan-next-desktop-group-ui-request.json --source ../group-desktop-app-source --evidence lan-next-desktop-group-ui-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-next-desktop-group-ui-evidence
+          path: group-desktop-control/lan-next-desktop-group-ui-evidence/

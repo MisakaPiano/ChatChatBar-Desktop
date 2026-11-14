@@ -23,3 +23,4 @@ app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/legacy/** text
 
 # The cloud UI companion request binds these exact fixture bytes across Windows/Linux.
 tools/lan-next-control/fixtures/LanSyncGroupAppUiControlTest.kt text eol=lf
+tools/lan-next-control/fixtures/DesktopGroupAppUiControlTest.kt text eol=lf
