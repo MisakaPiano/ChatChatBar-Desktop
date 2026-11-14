@@ -66,7 +66,10 @@ class DesktopFormatRepairDerivedSafetyTest {
         assertEquals(f.original.images, saved.images); assertEquals(f.original.reasoningContent, saved.reasoningContent)
         assertEquals(DesktopRepairStatus.RESTORED, run(f, c, true).status)
         assertEquals(f.original.displayContent, f.reopened().displayContent)
-        assertEquals(before, hash(image)); assertNull(f.reopened().formatRepairNotice)
+        assertEquals(before, hash(image)); assertTrue(f.reopened().formatRepairNotice?.restored == true)
+        assertEquals(DesktopRepairStatus.APPLIED, f.await(c.redo("s", "m"), c).status)
+        assertEquals("fixed", f.reopened().displayContent)
+        assertEquals(before, hash(image))
     } }
 
     @Test fun `document completed moment and immutable image or backup are preserved`() = runBlocking { fixture { f ->

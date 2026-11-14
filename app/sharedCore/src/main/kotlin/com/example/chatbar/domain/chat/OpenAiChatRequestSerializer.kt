@@ -3,6 +3,7 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.OutputTokenParameter
 import com.example.chatbar.data.local.entity.ParamValue
+import com.example.chatbar.domain.model.GeminiOpenAiEndpoint
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -33,11 +34,16 @@ object OpenAiChatRequestSerializer {
             maxThinkingTokens,
             reasoningEffortOverride,
         )
-        val requestMessages = if (experimentalApiMode) messages else CleartextHttpChatTemplatePolicy.adaptMessages(
-            messages = messages,
-            allowCleartextHttp = allowCleartextHttp,
-            baseUrl = modelConfig.baseUrl,
-        )
+        val useGeminiCompatibility = GeminiOpenAiEndpoint.resolve(modelConfig.baseUrl) != null
+        val requestMessages = when {
+            experimentalApiMode -> messages
+            useGeminiCompatibility -> GeminiChatTemplatePolicy.adaptMessages(messages)
+            else -> CleartextHttpChatTemplatePolicy.adaptMessages(
+                messages = messages,
+                allowCleartextHttp = allowCleartextHttp,
+                baseUrl = modelConfig.baseUrl,
+            )
+        }
         val messagesArray = buildJsonArray {
             requestMessages.forEach { message ->
                 add(buildJsonObject {
@@ -48,7 +54,7 @@ object OpenAiChatRequestSerializer {
         }
 
         val request = buildJsonObject {
-            put("model", modelConfig.modelName)
+            put("model", if (useGeminiCompatibility) GeminiOpenAiEndpoint.modelId(modelConfig.modelName) else modelConfig.modelName)
             put("messages", messagesArray)
             put("stream", stream)
             promptCacheKey?.takeIf(String::isNotBlank)?.let { put("prompt_cache_key", it) }

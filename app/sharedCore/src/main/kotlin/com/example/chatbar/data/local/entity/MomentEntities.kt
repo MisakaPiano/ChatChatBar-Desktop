@@ -1,6 +1,8 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
@@ -31,8 +33,10 @@ data class MomentPost(
     val generatedAt: Long,
     val createdAt: Long = generatedAt,
     val updatedAt: Long = generatedAt,
-    /** Desktop extension: retained image candidates. The ordinary image fields remain the selected version. */
+    /** Portable retained candidates; the legacy Desktop spelling stays readable. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("imageVersions")
+    @JsonNames("desktopImageVersions")
     val desktopImageVersions: List<MomentImageVersion> = emptyList()
 ) {
     val displayLikeCount: Int
@@ -110,13 +114,17 @@ data class MomentPost(
 }
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class MomentImageVersion(
     val id: String,
     val imagePath: String,
     val imagePrompt: String = "",
     val generatedImageMetadata: GeneratedImageMetadata? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val imageBrief: String = "",
-    val createdAt: Long
+    /** Zero means the source did not record a per-version time, never the current time. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val createdAt: Long = 0
 )
 
 @Serializable

@@ -663,7 +663,7 @@ internal fun DesktopPrimaryChatPanel(
                         scope.launch {
                             val source = segment.source!!
                             if (controller.editMessageSegment(message.id, source.start, source.endExclusive,
-                                    segmentText, message.displayContent)) editingSegment = null
+                                    segmentText, message.displayContent, message)) editingSegment = null
                         }
                     }
                 }
@@ -679,7 +679,7 @@ internal fun DesktopPrimaryChatPanel(
                         scope.launch {
                             val source = segment.source!!
                             if (controller.editMessageSegment(message.id, source.start, source.endExclusive,
-                                    "", message.displayContent)) deletingSegment = null
+                                    "", message.displayContent, message)) deletingSegment = null
                         }
                     }
                 }
@@ -706,13 +706,29 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         deletingMessage?.let { message ->
-            PrimaryModal(t(DesktopUiText.DELETE_MESSAGE_CONFIRM)) {
-                StatusText(t(DesktopUiText.DELETE_MESSAGE_WARNING), colors.warning)
+            val assistant = message.role == MessageRole.ASSISTANT
+            val versions = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.versions(message)
+            var deleteAll by remember(message) { mutableStateOf(false) }
+            PrimaryModal(if (assistant && !deleteAll) "删除当前备选" else t(DesktopUiText.DELETE_MESSAGE_CONFIRM)) {
+                if (assistant && !deleteAll && versions.size > 1) {
+                    DesktopDeleteAllAlternativesAction { deleteAll = true }
+                }
+                StatusText(if (assistant && !deleteAll) {
+                    if (versions.size > 1) "只删除当前显示的备选，保留其他备选和共用图片、录音。此操作无法撤销。"
+                    else "这是最后一个备选，将删除这条 AI 回复；保留前面的用户消息。此操作无法撤销。"
+                } else t(DesktopUiText.DELETE_MESSAGE_WARNING), colors.warning)
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
-                    BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { deletingMessage = null }
+                    BootstrapButton(if (assistant && deleteAll) "返回" else t(DesktopUiText.CANCEL), secondary = true) {
+                        if (assistant && deleteAll) deleteAll = false else deletingMessage = null
+                    }
                     BootstrapButton(t(DesktopUiText.DELETE), variant = DesktopActionVariant.DESTRUCTIVE) {
-                        scope.launch { if (controller.deleteMessage(message.id)) deletingMessage = null }
+                        scope.launch {
+                            val deleted = if (assistant && !deleteAll) controller.deleteAssistantAlternative(message,
+                                com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.activeVersionId(message))
+                            else controller.deleteMessage(message.id, message)
+                            if (deleted) deletingMessage = null
+                        }
                     }
                 }
             }
@@ -857,6 +873,7 @@ private fun PrimaryTimeline(
                             scope.launch { controller.regenerate(message.id) }
                         DesktopMessageAction.REPAIR_FORMAT -> scope.launch { controller.checkMessageFormat(message) }
                         DesktopMessageAction.RESTORE_FORMAT -> scope.launch { controller.restoreMessageFormat(message) }
+                        DesktopMessageAction.REDO_FORMAT -> scope.launch { controller.redoMessageFormat(message) }
                         DesktopMessageAction.STOP_FORMAT -> { controller.stopMessageFormat(message, targetRepair); Unit }
                     }
                 }
@@ -1118,7 +1135,8 @@ internal fun PrimaryMessageBubble(
             onStop = { controller.stopMessageFormat(message, targetRepair) },
             onRestore = { scope.launch { controller.restoreMessageFormat(message) } },
             mutationEnabled = !controller.hasActiveTask(message.sessionId),
-            onVerify = { scope.launch { controller.verifyMessageFormatCommit(message) } })
+            onVerify = { scope.launch { controller.verifyMessageFormatCommit(message) } },
+            onRedo = { scope.launch { controller.redoMessageFormat(message) } })
     }
     }
 }
@@ -1324,6 +1342,7 @@ internal fun DesktopSessionSettingsBody(
         }
     }
     StatusText("头像立即保存；姓名、设定和角色关联使用本页的保存按钮。")
+    StatusText("头像用于界面显示；玩家姓名会用于对话称呼和变量替换，并随请求发送给模型。")
     val roleCard = state.selectedCharacter
     if (roleCard != null) {
         val role = draft.desktopPlayerRole
@@ -1344,6 +1363,7 @@ internal fun DesktopSessionSettingsBody(
             StatusText("关联后，点击自己的头像可查看该角色的状态。不会额外注入状态或改变人物开关。")
         } else StatusText("只有手动关联才共享状态；姓名相同不会自动关联。")
     }
+    StatusText("玩家设定优先使用本会话非空内容，留空则跟随全局。关联角色不会自动复制其人物设定，也不会额外注入状态栏。")
     PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }

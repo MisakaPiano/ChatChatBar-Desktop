@@ -24,7 +24,7 @@ internal suspend fun completeMomentRequest(client: OkHttpClient, allowCleartext:
     val body = OpenAiChatRequestSerializer.serialize(AuxiliaryMessageAssembler.assemble(messages, false),
         model, stream = false, allowCleartextHttp = allowCleartext,
         isolatedTaskParameters = false, disableThinking = false, experimentalApiMode = experimentalApiMode)
-    val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
+    val url = model.chatCompletionsUrl()
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
     val bytes = body.toRequestBody("application/json; charset=utf-8".toMediaType())
     val oneShot = object : RequestBody() {

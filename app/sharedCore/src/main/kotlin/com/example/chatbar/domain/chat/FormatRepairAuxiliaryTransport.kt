@@ -96,7 +96,7 @@ internal fun isolatedAuxiliaryTextStream(
         includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation(), thinkingBudget = thinkingBudget,
         enableThinkingOverride = enableThinkingOverride, maxThinkingTokens = maxThinkingTokens,
         reasoningEffortOverride = reasoningEffortOverride, experimentalApiMode = experimentalApiMode)
-    val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
+    val url = model.chatCompletionsUrl()
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
     val jsonBody = body.toRequestBody("application/json; charset=utf-8".toMediaType())
     // Also prevents OkHttp's HTTP 503/Retry-After: 0 follow-up, independent of connection retries.

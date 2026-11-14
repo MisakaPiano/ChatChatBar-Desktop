@@ -1,0 +1,41 @@
+name: Desktop pinned Gemini upstream adaptation
+on:
+  push:
+    branches: [codex/desktop-gemini-upstream-20261114]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Enable long checkout paths
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify scoped shared and Desktop model transport behavior
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.GeminiCompatibilityTest'
+          --tests 'com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest'
+          --tests 'com.example.chatbar.domain.chat.ModelConnectionProbeTest'
+          --tests 'com.example.chatbar.domain.chat.SelectedAuxiliaryModelParametersTransportTest'
+          --tests 'com.example.chatbar.domain.model.ModelDiscoveryServiceTest'
+          :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopModelSettingsControllerTest'
+          --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-gemini-focused-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/

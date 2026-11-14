@@ -50,10 +50,14 @@ class DesktopEditorPromptBudgetTest {
                 }
                 try {
                     scene.until { has("字段 Token 估算") }; scene.click("字段 Token 估算")
-                    scene.until { !controller.state.value.loading && textContains("静态合计 ≈") && textContains("合成模型一") }
+                    scene.until { !controller.state.value.loading && textContains("对话候选文本参考合计 ≈") && textContains("合成模型一") }
                     assertEquals(12000L, controller.state.value.target.contextWindowTokens)
                     assertTrue(scene.textContains("用户配置"))
-                    assertTrue(scene.textContains("不是本轮输入总量"))
+                    assertTrue(scene.textContains("不是本轮请求总量"))
+                    if (entity is WorldBook) assertTrue(scene.textContains("本轮注入量不确定"))
+                    if (entity is CharacterCard) assertFalse(scene.textContains("合成人物 ·"))
+                    scene.click("查看全部编辑字段")
+                    scene.until { textContains("全部编辑字段静态合计 ≈") }
                     if (entity is CharacterCard) {
                         scene.clickContaining("人物条目 ·")
                         scene.until { textContains("合成人物 ·") }

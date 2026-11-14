@@ -41,5 +41,6 @@ internal fun DesktopPlayerAvatarSetting(controller: DesktopModelSettingsControll
             }
         }
         StatusText("全局默认头像立即保存；会话可以单独覆盖，也可以选择跟随所扮演角色。")
+        StatusText("头像仅用于显示。玩家姓名会参与对话请求；玩家设定与头像、角色关联分别配置，会话非空设定优先于全局。")
     }
 }

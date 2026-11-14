@@ -62,6 +62,7 @@ internal object DesktopFullBackupSource {
                 var incompatiblePre148 = false
                 var incompatiblePre149 = false
                 var incompatiblePre1410 = false
+                var incompatiblePre1412 = false
                 var incompatibleHistoricalDesktopV5 = false
                 val seen = linkedMapOf<String, AppBackupFileRecord>()
                 val entities = linkedMapOf<String, JsonObject>()
@@ -111,7 +112,7 @@ internal object DesktopFullBackupSource {
                                             phase = "ENTITY_SCHEMA"
                                             when (val type = DesktopBackupPolicy.entityType(path)) {
                                                 "moment_posts" -> {
-                                                    if (DesktopMomentBackupExtension.FIELD in value) incompatible84 = true
+                                                    if (DesktopMomentBackupExtension.hasVersions(value)) incompatible84 = true
                                                     DesktopMomentBackupExtension.snapshot(value)
                                                     value["senderAvatar"]?.jsonPrimitive?.contentOrNull
                                                         ?.takeIf { it.startsWith(DesktopBackupPolicy.PREFIX) }?.let {
@@ -121,6 +122,8 @@ internal object DesktopFullBackupSource {
                                                 "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                                                 else -> {
                                                     DesktopOfficialBackupEntitySchema.validate(type, value, CURRENT_DESKTOP_BACKUP_CODE)
+                                                    if (!incompatiblePre1412) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 90) }
+                                                    catch (_: Exception) { incompatiblePre1412 = true }
                                                     if (!incompatiblePre1410) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 88) }
                                                     catch (_: Exception) { incompatiblePre1410 = true }
                                                     if (!incompatiblePre149) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 87) }
@@ -173,6 +176,7 @@ internal object DesktopFullBackupSource {
                 require(m.appVersionCode >= 87 || !incompatiblePre148 || historicalDesktopV5)
                 require(m.appVersionCode >= 88 || !incompatiblePre149)
                 require(m.appVersionCode >= 89 || !incompatiblePre1410)
+                require(m.appVersionCode >= 91 || !incompatiblePre1412)
                 phase = "SELECTION_SCOPE"
                 m.scope?.let { DesktopBackupReadOnlyInspector().scopeReport(it, counts, entities) }
                 active()

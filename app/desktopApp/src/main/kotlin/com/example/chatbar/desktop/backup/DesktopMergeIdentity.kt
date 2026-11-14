@@ -46,7 +46,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
             if (field == "cardId") return "character_cards"
             if (field == "personId") return "characters"
         }
-        if ("desktopCharacterParticipation" in fields) {
+        if (fields.any { it == "desktopCharacterParticipation" || it == "characterParticipation" }) {
             if (field == "cardId") return "character_cards"
             if (field in setOf("disabledPersonIds", "automaticallyPausedPersonIds")) return "characters"
         }
@@ -141,7 +141,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
             "legacyReferenceNodeIds", "pendingRootNodeIds", "addedNodeIds", "removedNodeIds", "snapshotNodeIds", "consumedNodeIds", "resultNodeId",
             "episodeNodeIds", "arcNodeIds", "eraNodeIds", "activeEpisodeNodeIds", "activeArcNodeIds", "activeEraNodeIds", "deleteNodeIds", "currentRevisionId",
             "parentRevisionId", "sourceRevisionId", "targetRevisionId", "deleteRevisionIds", "transactionId", "deleteTransactionIds", "memoryHeadCommitId",
-            "parentCommitId", "sourceId", "desktopCharacterParticipation", "cardId", "disabledPersonIds", "automaticallyPausedPersonIds",
+            "parentCommitId", "sourceId", "desktopCharacterParticipation", "characterParticipation", "cardId", "disabledPersonIds", "automaticallyPausedPersonIds",
             "desktopPlayerRole", "personId")
     }
 }

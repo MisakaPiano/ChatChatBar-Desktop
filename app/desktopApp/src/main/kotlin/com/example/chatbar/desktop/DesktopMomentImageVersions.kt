@@ -19,8 +19,14 @@ internal object DesktopMomentImageVersions {
         val selected = post.imagePath?.takeIf(String::isNotBlank) ?: return versions
         val match = versions.firstOrNull { it.imagePath == selected }
         if (match != null) {
-            require(match.imagePrompt == post.imagePrompt && match.generatedImageMetadata == post.generatedImageMetadata && match.imageBrief == post.imageBrief)
-            return versions
+            require(match.imagePrompt == post.imagePrompt && match.generatedImageMetadata == post.generatedImageMetadata)
+            // Android's four-field candidates have neither per-image brief nor time. The current
+            // post still owns its known selected brief; do not invent metadata for other versions.
+            val missingSelectedBrief = match.createdAt == 0L && match.imageBrief.isEmpty()
+            require(match.imageBrief == post.imageBrief || missingSelectedBrief)
+            return if (missingSelectedBrief && post.imageBrief.isNotEmpty()) versions.map {
+                if (it.id == match.id) it.copy(imageBrief = post.imageBrief) else it
+            } else versions
         }
         // A stable legacy identity avoids changing selection merely by viewing old posts.
         require(versions.size < MAX_CANDIDATES)

@@ -1,6 +1,6 @@
 package com.example.chatbar.desktop.backup
 
-internal const val CURRENT_DESKTOP_BACKUP_CODE = 90
+internal const val CURRENT_DESKTOP_BACKUP_CODE = 91
 
 /** A known historical encoding variant, never authentication or permission to skip validation. */
 internal object DesktopBackupVersionProfile {

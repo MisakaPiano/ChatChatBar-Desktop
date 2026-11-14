@@ -215,10 +215,10 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
         require(listOf(s.sessionsWithImages, s.sessionsWithVoice, s.sessionsWithArchives).all { it in 0..s.sessions })
         require(s.moments || counts.count("moment_posts") + counts.count("moment_tasks") == 0)
         if (!s.momentsImages) entities.filterKeys { DesktopBackupPolicy.entityType(it) == "moment_posts" }.values
-            .filter { DesktopMomentBackupExtension.FIELD in it }.forEach { post ->
+            .filter { DesktopMomentBackupExtension.hasVersions(it) }.forEach { post ->
             require(post["imagePath"] == null || post["imagePath"] == JsonNull)
             require(post["generatedImageMetadata"] == null || post["generatedImageMetadata"] == JsonNull)
-            require((post[DesktopMomentBackupExtension.FIELD] as? JsonArray).orEmpty().isEmpty())
+            require((DesktopMomentBackupExtension.rawVersions(post) as? JsonArray).orEmpty().isEmpty())
         }
         require(s.studioHistory || counts.count("novelai_generation_history") == 0)
         require(s.studioHistory || counts.count("desktop_image_post_process_results") == 0)

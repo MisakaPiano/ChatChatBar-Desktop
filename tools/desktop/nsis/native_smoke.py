@@ -386,6 +386,7 @@ def main():
     parser.add_argument('--ci-fresh-readiness-failure', choices=['NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED', 'READY_IDENTITY_REFUSED'],
                         help='Cloud-only fresh-profile fault probe; no companion, credential or custom-data retention claim')
     parser.add_argument('--probe-busy-installer', type=Path, help='While the owned app is running, this installer must reject before changing the current version')
+    parser.add_argument('--probe-completed-cache', action='store_true', help='Cloud ordinary NSIS tail must confirm its actual exit and reclaim only the locally receipted used copy')
     parser.add_argument('--allow-owned-update-helper-cwd', action='store_true', help='Explicitly classify only the inventoried updater Python; full Job exit still required')
     parser.add_argument('--probe-external-files', action='store_true', help='Deliver synthetic paths to the actual packaged warm receiver without confirming any import')
     parser.add_argument('--cold-external-file', action='store_true', help='Open a synthetic Unicode path through the installed bridge after the previous process has exited')
@@ -431,9 +432,19 @@ def main():
                 (args.root / 'current.txt').is_file(), 'CI_FRESH_FAILURE_REQUIRES_EXISTING_OWNED_INSTALL')
     require(not args.expect_install_failure or (args.installer and
             (not args.fresh_default_profile or args.ci_fresh_readiness_failure)), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
+    completion = None
+    if args.probe_completed_cache:
+        require(args.ci_source and args.fresh_default_profile and args.installer and not args.expect_install_failure,
+                'COMPLETED_CACHE_REQUIRES_CLOUD_ORDINARY_INSTALLER')
+        import completed_cache_probe
+        completion = completed_cache_probe.prepare(case, args.image, args.installer)
+        save(case / (args.label + '-completed-cache-before.json'), completion)
+        exe = Path(completion['used'])
     launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure,
                  args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files, cold_paths,
                  args.ci_fresh_readiness_failure or 'NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED')
+    if completion is not None:
+        save(case / (args.label + '-completed-cache-result.json'), completed_cache_probe.verify(completion, args.root))
 
 
 if __name__ == '__main__':

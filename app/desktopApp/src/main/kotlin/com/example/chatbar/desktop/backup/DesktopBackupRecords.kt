@@ -56,8 +56,8 @@ internal object DesktopBackupRecords {
             put(key, JsonArray(listOf(JsonNull)))
         if ("senderName" in value && "scheduledAt" in value) {
             if (value["generatedImageMetadata"] is JsonObject) put("generatedImageMetadata", JsonObject(emptyMap()))
-            if (DesktopMomentBackupExtension.FIELD in value)
-                put(DesktopMomentBackupExtension.FIELD, if ((value[DesktopMomentBackupExtension.FIELD] as? JsonArray)?.isNotEmpty() == true)
+            if (DesktopMomentBackupExtension.hasVersions(value))
+                put(DesktopMomentBackupExtension.FIELD, if ((DesktopMomentBackupExtension.rawVersions(value) as? JsonArray)?.isNotEmpty() == true)
                     JsonArray(listOf(JsonNull)) else JsonArray(emptyList()))
         }
     })

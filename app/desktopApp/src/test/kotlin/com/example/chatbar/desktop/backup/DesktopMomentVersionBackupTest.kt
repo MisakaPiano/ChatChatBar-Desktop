@@ -10,6 +10,113 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopMomentVersionBackupTest {
+    @Test fun `canonical Android and legacy Desktop candidate fields authenticate map and reopen without invented image times`() = runBlocking {
+        val base = Files.createTempDirectory("portable-moment-backup-")
+        val root = Files.createDirectory(base.resolve("source"))
+        val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate)
+            val card = CharacterCard("card", "Synthetic", greeting = "Hello", createdAt = 1, updatedAt = 1)
+            val session = ChatSession("session", card.id, "Synthetic", createdAt = 1, updatedAt = 1)
+            storage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            storage.saveEntity("chat_sessions", session.id, session, ChatSession.serializer())
+            Files.createDirectory(root.resolve("images"))
+            val originals = (0..1).associate { index ->
+                val path = "images/portable-$index.png"
+                val pixels = BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB).apply { setRGB(0, 0, index + 1) }
+                val bytes = DesktopImageEditing.png(pixels)
+                Files.write(root.resolve(path), bytes)
+                path to bytes
+            }
+            val post = MomentPost("post", card.id, session.id, senderName = "Synthetic", text = "Retained",
+                scheduledAt = 1, generatedAt = 1, imagePath = "images/portable-1.png", imagePrompt = "Prompt 1",
+                imageBrief = "Known selected brief", desktopImageVersions = (0..1).map { index ->
+                    MomentImageVersion("version-$index", "images/portable-$index.png", "Prompt $index")
+                })
+            storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
+            val canonical = backupJson.encodeToJsonElement(MomentPost.serializer(), post).jsonObject
+            for (field in listOf("imageVersions", "desktopImageVersions")) {
+                val record = JsonObject(canonical - "imageVersions" + (field to canonical.getValue("imageVersions")))
+                val sourcePath = root.resolve("entities/moment_posts/post.json")
+                val sourceBytes = record.toString().toByteArray()
+                Files.write(sourcePath, sourceBytes)
+                DesktopFullBackupMapping(root).export(Files.createDirectory(base.resolve("export-$field")),
+                    CURRENT_DESKTOP_BACKUP_CODE, StrictBackupZipReader.Limits().expanded).use { snapshot ->
+                    val archive = base.resolve("$field.cbbackup")
+                    DesktopFullBackupWriter.export(snapshot.files, archive, null)
+                    DesktopFullBackupStaging.prepare(archive, null, Files.createDirectory(base.resolve("inspect-$field"))).use { staged ->
+                        val value = staged.entities.getValue("entities/moment_posts/post.json")
+                        assertTrue("imageVersions" in value); assertFalse("desktopImageVersions" in value)
+                        val versions = DesktopMomentBackupExtension.versions(value)
+                        assertEquals(listOf("version-0", "version-1"), versions.map { it.id })
+                        assertTrue(versions.all { it.createdAt == 0L })
+                        DesktopFullBackupMapping(root).restoreMerged(staged.files,
+                            Files.createDirectory(base.resolve("restore-$field")), BackupPreferences()).use { mapped ->
+                            val live = Files.createDirectory(base.resolve("live-$field"))
+                            for ((relative, source) in mapped.files) {
+                                val target = live.resolve(relative)
+                                Files.createDirectories(target.parent); Files.copy(source, target)
+                            }
+                            DesktopFullBackupGraphValidation.validate(live)
+                            val restoredGate = DesktopDataOperationCoordinator()
+                            try {
+                                val restored = DesktopMomentStore(JsonFileStorage(live, restoredGate), restoredGate)
+                                val loaded = restored.posts().single()
+                                assertEquals("Known selected brief", loaded.imageBrief)
+                                loaded.desktopImageVersions.forEachIndexed { index, version ->
+                                    assertEquals(0L, version.createdAt)
+                                    assertContentEquals(originals.getValue("images/portable-$index.png"), Files.readAllBytes(live.resolve(version.imagePath)))
+                                }
+                                restored.selectImage(loaded, "version-0")
+                                val switched = DesktopMomentStore(JsonFileStorage(live, restoredGate), restoredGate).posts().single()
+                                assertEquals("Prompt 0", switched.imagePrompt)
+                                restored.selectImage(switched, "version-1")
+                                val reopened = DesktopMomentStore(JsonFileStorage(live, restoredGate), restoredGate).posts().single()
+                                assertEquals("Known selected brief", reopened.imageBrief)
+                                assertTrue(reopened.desktopImageVersions.all { it.createdAt == 0L })
+                            } finally { restoredGate.closeAndDrain() }
+                        }
+                    }
+                }
+                assertContentEquals(sourceBytes, Files.readAllBytes(sourcePath))
+            }
+        } finally { gate.closeAndDrain(); check(base.toFile().deleteRecursively()) }
+    }
+
+    @Test fun `portable Android four-field candidates and legacy Desktop metadata normalize without invented times`() {
+        val portable = backupJson.parseToJsonElement("""{
+          "id":"post","characterCardId":"card","sessionId":"session","senderName":"Synthetic",
+          "text":"Retained text","scheduledAt":1,"generatedAt":2,"updatedAt":9,
+          "imagePath":"images/b.png","imagePrompt":"B","imageBrief":"Known selected brief",
+          "imageVersions":[{"id":"a","imagePath":"images/a.png","imagePrompt":"A"},
+                           {"id":"b","imagePath":"images/b.png","imagePrompt":"B"}]
+        }""").jsonObject
+        val normalized = DesktopBackupPolicy.entity("entities/moment_posts/post.json", portable.toString().toByteArray(),
+            false, CURRENT_DESKTOP_BACKUP_CODE, modern = true)
+        val post = backupJson.decodeFromJsonElement(MomentPost.serializer(), normalized)
+        assertEquals(listOf("a", "b"), post.desktopImageVersions.map { it.id })
+        assertTrue(post.desktopImageVersions.all { it.createdAt == 0L })
+        assertEquals("Known selected brief", DesktopMomentImageVersions.retained(post).last().imageBrief)
+        val selected = DesktopMomentImageVersions.select(post, "a")
+        assertEquals("images/a.png", selected.imagePath)
+        assertEquals("Known selected brief", DesktopMomentImageVersions.select(selected, "b").imageBrief)
+        val encoded = backupJson.encodeToJsonElement(MomentPost.serializer(), selected).jsonObject
+        assertTrue("imageVersions" in encoded); assertFalse("desktopImageVersions" in encoded)
+        assertTrue(encoded.getValue("imageVersions").jsonArray.all { "createdAt" !in it.jsonObject })
+        val legacy = JsonObject(portable - "imageVersions" + ("desktopImageVersions" to JsonArray(
+            portable.getValue("imageVersions").jsonArray.mapIndexed { index, item -> JsonObject(item.jsonObject +
+                ("createdAt" to JsonPrimitive(100L + index)) + ("imageBrief" to JsonPrimitive(if (index == 1) "Known selected brief" else "Old brief"))) })))
+        val converted = DesktopBackupPolicy.entity("entities/moment_posts/post.json", legacy.toString().toByteArray(),
+            false, CURRENT_DESKTOP_BACKUP_CODE, modern = true)
+        assertFalse("desktopImageVersions" in converted)
+        val known = backupJson.decodeFromJsonElement(MomentPost.serializer(), converted)
+        assertEquals(listOf(100L, 101L), known.desktopImageVersions.map { it.createdAt })
+        assertEquals("Old brief", DesktopMomentImageVersions.select(known, "a").imageBrief)
+        assertFails { DesktopMomentBackupExtension.snapshot(JsonObject(portable + ("desktopImageVersions" to legacy.getValue("desktopImageVersions")))) }
+        val references = DesktopMomentBackupExtension.references(converted).mapNotNull { it.second }
+        assertTrue("images/a.png" in references && "images/b.png" in references)
+    }
+
     @Test fun `different posts by the same sender coexist instead of replacing all same author posts`() {
         fun record(id: String): JsonObject = DesktopMomentBackupExtension.liveRecord(backupJson.encodeToJsonElement(MomentPost.serializer(),
             MomentPost(id, "card", "session", senderName = "Same sender", text = "Text $id", scheduledAt = 1, generatedAt = 1)).jsonObject)

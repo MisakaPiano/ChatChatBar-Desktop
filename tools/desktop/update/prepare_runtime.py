@@ -56,7 +56,7 @@ def prepare(destination, artifact_cache, download=False):
     for name in ('desktop_update.py', 'github_transport.py', 'version_identity.py'):
         shutil.copyfile(HERE / name, destination / 'lib' / name)
     compiler = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-    subprocess.run([str(compiler), '/nologo', '/target:winexe', '/platform:x64', '/reference:System.Windows.Forms.dll',
+    subprocess.run([str(compiler), '/nologo', '/target:winexe', '/platform:x64', '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
                     '/out:' + str(destination / 'update-handoff.exe'), str(HERE / 'UpdateHandoff.cs')], check=True)
     files = [{'path': p.relative_to(destination).as_posix(), 'bytes': p.stat().st_size,
               'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(destination.rglob('*')) if p.is_file()]

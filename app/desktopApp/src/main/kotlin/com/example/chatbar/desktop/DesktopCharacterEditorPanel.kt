@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -150,6 +151,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val momentsFocus = remember(card.id) { BringIntoViewRequester() }
     val editorScroll = rememberScrollState()
     var editorViewportTop by remember(card.id) { mutableStateOf(0f) }
+    var editorViewportHeight by remember(card.id) { mutableStateOf(0) }
     var imageSettingsTop by remember(card.id) { mutableStateOf(0f) }
     var handledMomentsFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     val personFocus = remember(card.id) { BringIntoViewRequester() }
@@ -240,7 +242,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             StatusText(card.name)
         } else Column(Modifier.weight(1f).fillMaxWidth().testTag("character-editor-scroll")
             .characterEditorInputGuard(readOnly || state.busy)
-            .onGloballyPositioned { editorViewportTop = it.positionInRoot().y }.verticalScroll(editorScroll),
+            .onGloballyPositioned { editorViewportTop = it.positionInRoot().y; editorViewportHeight = it.size.height }.verticalScroll(editorScroll),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             EditorSection(t(DesktopUiText.CHARACTER_CARD_INFORMATION), Modifier.testTag("character-editor-card")) {
                 ImageSlot(t(DesktopUiText.AVATAR_IMAGE), card.avatar,
@@ -273,6 +275,39 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             EditorSection(t(DesktopUiText.CHARACTER_DEFAULT_BACKGROUND), Modifier.testTag("character-editor-background")) {
                 ImageSlot(t(DesktopUiText.CHAT_BACKGROUND_IMAGE), card.chatBackground,
                     { controller.chooseBackground(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearBackground, controller, controller::cropBackground)
+                StatusText("背景资产随角色卡保存；角色卡默认、Desktop 首选和会话覆盖分别生效。移除图库引用不会自动清理旧图片。")
+                BootstrapButton("添加角色卡背景", secondary = true, onClick = controller::addBackgroundAsset)
+                val backgrounds = card.chatBackgroundImages.distinct()
+                val library = controller.backgroundLibrary
+                val backgroundRevision = library?.revision?.collectAsState()?.value
+                var backgroundError by remember(card.id) { mutableStateOf<String?>(null) }
+                val preferred by produceState<String?>(null, card.id, backgroundRevision) {
+                    try { value = library?.preferred(card.id) }
+                    catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                    catch (_: Exception) { backgroundError = "Desktop 首选读取失败；原记录与资源保留，请重试。" }
+                }
+                fun preferBackground(reference: String?) { scope.launch {
+                    try { library?.prefer(card.id, reference); backgroundError = null }
+                    catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                    catch (_: Exception) { backgroundError = "Desktop 首选未确认保存；请核对原记录后重试。" }
+                } }
+                backgroundError?.let { StatusText(it, DesktopBootstrapColors.warning) }
+                if (library != null) BootstrapButton("清除 Desktop 首选", secondary = true,
+                    enabled = !state.dirty && !state.busy && preferred != null) { preferBackground(null) }
+                if (state.dirty && library != null) StatusText("图库改动随本页保存；保存后可设置 Desktop 首选。")
+                backgrounds.forEachIndexed { index, reference -> key(reference) {
+                    ImageSlot("背景 ${index + 1} · 裁剪后另存新背景", reference,
+                        controller::addBackgroundAsset, { controller.removeBackgroundAsset(reference) },
+                        controller, controller::cropBackgroundAsset)
+                    EditorActions {
+                        BootstrapButton(if (reference == card.chatBackground) "✓ 角色卡默认" else "设为角色卡默认", secondary = true) {
+                            if (reference !in card.chatBackgroundImages) controller.edit { it.copy(chatBackgroundImages = it.chatBackgroundImages + reference) }
+                            controller.selectCardBackground(reference)
+                        }
+                        if (library != null) BootstrapButton(if (reference == preferred) "✓ Desktop 首选" else "设为 Desktop 首选",
+                            secondary = true, enabled = !state.dirty && !state.busy) { preferBackground(reference) }
+                    }
+                } }
             }
             Box(Modifier.fillMaxWidth().testTag("character-editor-moments").bringIntoViewRequester(momentsFocus).onGloballyPositioned {
                 if (state.momentsFocusRevision > 0 && handledMomentsFocus != state.momentsFocusRevision) {
@@ -325,7 +360,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
                 CharacterPersonWorkspace(card, selectedEntry, controller, personFocus,
                     state.personFocusId?.let { it to state.personFocusRevision }?.takeUnless { it.second == handledPersonFocus },
-                    personFocusExtent, { handledPersonFocus = it }) { selectedEntry = it }
+                    personFocusExtent, editorViewportTop, editorViewportHeight, { handledPersonFocus = it }) { selectedEntry = it }
             }
             EditorSection(t(DesktopUiText.CHARACTER_ADVANCED_SETTING), Modifier.testTag("character-editor-advanced")) {
                 EditorField(t(DesktopUiText.SYSTEM_PROMPT_FIELD), card.systemPrompt, true) { value -> controller.edit { it.copy(systemPrompt = value) } }
@@ -539,7 +574,7 @@ private fun CharacterTextSection.uiText(): DesktopUiText = when (this) {
 private fun CharacterPersonWorkspace(
     card: CharacterCard, selectedId: String?, controller: DesktopCharacterEditorController,
     personFocus: BringIntoViewRequester, focusRequest: Pair<String, Long>?, focusExtent: Float,
-    onFocusHandled: (Long) -> Unit, onSelect: (String?) -> Unit,
+    viewportTop: Float, viewportHeight: Int, onFocusHandled: (Long) -> Unit, onSelect: (String?) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val workspace = desktopPersonWorkspace(card, selectedId)
@@ -551,7 +586,9 @@ private fun CharacterPersonWorkspace(
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val master: @Composable () -> Unit = {
-            Column(Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+            val scroll = rememberScrollState()
+            Box(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(end = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 workspace.rows.forEach { person ->
                     key(person.id, person.avatarReference) {
@@ -560,6 +597,9 @@ private fun CharacterPersonWorkspace(
                             onDelete = { controller.removeCharacter(person.id); if (selectedId == person.id) onSelect(null) })
                     }
                 }
+            }
+            androidx.compose.foundation.VerticalScrollbar(androidx.compose.foundation.rememberScrollbarAdapter(scroll),
+                Modifier.align(Alignment.CenterEnd).fillMaxHeight())
             }
         }
         val detail: @Composable () -> Unit = {
@@ -588,11 +628,11 @@ private fun CharacterPersonWorkspace(
             }
         }
         if (DesktopPersonLayout.sideBySide(maxWidth.value)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                Box(Modifier.width(320.dp)) { master() }
-                Box(Modifier.weight(1f)) { detail() }
-            }
-        } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { master(); detail() }
+            DesktopPersonSectionLayout(viewportTop, viewportHeight, master = master, detail = detail)
+        } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(Modifier.fillMaxWidth().heightIn(max = 320.dp)) { master() }
+            detail()
+        }
     }
 }
 

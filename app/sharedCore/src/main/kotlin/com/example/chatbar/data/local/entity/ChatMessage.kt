@@ -25,11 +25,16 @@ enum class MessageFormatRepairNoticeKind {
 }
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class MessageFormatRepairNotice(
     val kind: MessageFormatRepairNoticeKind,
     val targetContent: String,
     val originalContent: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val restored: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val versionId: String? = null
 )
 
 const val MESSAGE_ORDER_STEP: Long = 1_000_000L

@@ -223,8 +223,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                                         })
                                     }
                                 }
-                                mutable.update { it.copy(busy = false, restartRequired = service.restartRequired) }
                                 passwordFlowActive = false
+                                mutable.update { it.copy(busy = false, restartRequired = service.restartRequired) }
                                 false
                             }
                         }
@@ -238,12 +238,15 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                 }
             }.also { job -> job.invokeOnCompletion { failure ->
                 password?.fill('\u0000')
-                if (taskId != null) {
+                if (taskId != null) synchronized(lock) {
                     val phase = when {
                         outcome == DesktopWorkPhase.UNCONFIRMED -> outcome
                         service.restartRequired && (failure != null || outcome != DesktopWorkPhase.COMPLETED) -> DesktopWorkPhase.UNCONFIRMED
                         failure is CancellationException -> DesktopWorkPhase.CANCELLED
                         failure != null -> DesktopWorkPhase.FAILED
+                        // A retry may start after finally publishes idle, before this completion callback.
+                        // Do not resurrect the superseded password prompt as an active task row.
+                        outcome == DesktopWorkPhase.WAITING && (activeTaskId != taskId || mutable.value.passwordRequest == null) -> DesktopWorkPhase.CANCELLED
                         else -> outcome
                     }
                     mutableWork.update { rows -> rows.map { if (it.id == taskId) it.copy(phase = phase, canStop = false, stopRequested = false) else it } }

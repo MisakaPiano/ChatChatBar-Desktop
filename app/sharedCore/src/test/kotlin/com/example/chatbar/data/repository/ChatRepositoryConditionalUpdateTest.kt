@@ -16,6 +16,23 @@ import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryConditionalUpdateTest {
+    @Test fun `candidate and whole deletion compare complete durable confirmation snapshot`() = runTest {
+        val f = fixture()
+        val changed = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.append(f.expected,
+            "late candidate", "late-id")
+        val current = f.repo.updateMessageReturningSnapshot(changed)
+        assertFalse(f.repo.updateMessageIfUnchanged(f.expected, f.expected.copy(content = "stale")))
+        assertFalse(f.repo.deleteMessageIfUnchanged(f.expected))
+        assertEquals(current, f.repo.getMessage("m", "s"))
+        val removed = requireNotNull(com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.remove(current, "late-id"))
+        assertTrue(f.repo.updateMessageIfUnchanged(current, removed))
+        val latest = assertNotNull(f.repo.getMessage("m", "s"))
+        assertEquals(removed.alternativeVersionIds, latest.alternativeVersionIds)
+        assertTrue(f.repo.deleteMessageIfUnchanged(latest))
+        assertNull(f.repo.getMessage("m", "s"))
+        assertFalse(f.repo.deleteMessageIfUnchanged(latest))
+    }
+
     private val roots = mutableListOf<Path>()
     private class Gate : AppDataOperationGate {
         // Calls include the outer message admission and nested index admission.

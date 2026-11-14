@@ -175,7 +175,7 @@ class OpenAiStreamingTransport(
     ): Flow<ProviderStreamEvent> = callbackFlow {
         val experimental = experimentalApiMode ?: experimentalApiModeEnabled()
         val supportsCacheInstrumentation = modelConfig.supportsOpenAiPromptCacheInstrumentation()
-        val url = "${modelConfig.baseUrl.trimEnd('/')}/chat/completions"
+        val url = modelConfig.chatCompletionsUrl()
         val requestBody = OpenAiChatRequestSerializer.serialize(
             messages = messages,
             modelConfig = modelConfig,

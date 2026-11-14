@@ -68,6 +68,11 @@ class DesktopMomentImageVersionsPanelTest {
                         GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 100, height = 100),
                         "Prompt $i", "Brief $i"), i + 1L)
                 }
+                // Imported Android candidates can have no per-image timestamp. Retain that
+                // absence through real persistence and show it without inventing an epoch date.
+                post = post.copy(desktopImageVersions = post.desktopImageVersions.mapIndexed { index, version ->
+                    if (index == 0) version.copy(createdAt = 0L) else version
+                })
                 post = DesktopMomentImageVersions.select(post, post.desktopImageVersions.first().id)
                 app.jsonFileStorage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
                 app.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }
@@ -119,6 +124,7 @@ class DesktopMomentImageVersionsPanelTest {
                     scene.shot("moment-feed-versions-$width.png")
                     scene.click("动态更多操作"); scene.click("管理图片版本"); scene.frames()
                     assertTrue(scene.nodes().any { it.label("动态图片版本") })
+                    assertTrue(scene.nodes().any { it.label("1 · 时间未记录") })
                     assertTrue(scene.nodes().any { it.label("预览版本 3") })
                     System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                         val file = Path.of(directory).resolve("moment-image-versions-$width.png"); Files.createDirectories(file.parent)

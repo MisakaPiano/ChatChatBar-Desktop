@@ -130,7 +130,7 @@ data: [DONE]
             container.characterRepository.save(card.copy(worldBookIds = listOf(book.id)))
             val controller = container.primaryChatController
             controller.refresh()
-            repeat(2) { index ->
+            repeat(7) { index ->
                 server.enqueue(success("new-$index"))
                 val result = container.createRealChatRuntime().regenerate(session, target.id)
                 val body = server.takeRequest().body.readUtf8()
@@ -157,7 +157,7 @@ data: [DONE]
                 assertEquals(2, container.chatRepository.getMessages(session).count { it.role == MessageRole.ASSISTANT })
             }
             controller.refreshAfterTerminalTask(session)
-            assertEquals("new-1", controller.state.value.messages.single { it.id == target.id }.displayContent)
+            assertEquals("new-6", controller.state.value.messages.single { it.id == target.id }.displayContent)
             assertEquals(1, controller.state.value.messages.count { it.id == target.id })
         }
     }

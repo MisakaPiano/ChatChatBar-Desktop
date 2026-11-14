@@ -64,7 +64,7 @@ class ModelConnectionProbe(private val allowCleartextHttp: Boolean,
             .retryOnConnectionFailure(false)
             .connectTimeout(30, TimeUnit.SECONDS).readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS).build()
-        val request = Request.Builder().url("${model.baseUrl.trimEnd('/')}/chat/completions")
+        val request = Request.Builder().url(model.chatCompletionsUrl())
             .addModelApiAuthorization(model.apiKey)
             .post(body.toRequestBody("application/json; charset=utf-8".toMediaType())).build()
         val raw = suspendCancellableCoroutine<String> { continuation ->

@@ -276,7 +276,7 @@ internal class DesktopMergePreview private constructor(
                 // Official incoming Moments retain original-byte dormant custody. Explicit Desktop image
                 // records can be selected as live posts; imported tasks never inherit scheduler admission.
                 if (type == "moment_tasks" && !computerSide || type == "moment_posts" && !computerSide &&
-                    DesktopMomentBackupExtension.FIELD !in value) return@forEach
+                    !DesktopMomentBackupExtension.hasVersions(value)) return@forEach
                 if (type == "app_settings") {
                     val selected = scope?.let { selectedSettingFields(it.globalOptions) + buildSet {
                         if (it.sessions > 0) add("lastSeenChatAt")

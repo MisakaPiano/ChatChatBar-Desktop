@@ -38,7 +38,7 @@ class DesktopOfficial1411BackupTest {
                     val output = path.parent.resolve("roundtrip.cbbackup")
                     DesktopFullBackupWriter.export(staged.files, output, null)
                     val reread = Sink()
-                    assertEquals(90, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
+                    assertEquals(91, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
                     assertEquals(JsonPrimitive(disabled), reread.entities.getValue("entities/app_settings.json")["disableNarrativeModes"])
                     for (name in listOf("entities/chat_messages/s_m.json", "entities/save_slots/slot.json"))
                         assertEquals(sink.entities.getValue(name), reread.entities.getValue(name))
@@ -57,7 +57,7 @@ class DesktopOfficial1411BackupTest {
             for (code in 89..90) DesktopOfficialBackupEntitySchema.validate(type, value, code)
             for (code in 84..88) assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, code) }
             assertFails { DesktopOfficialBackupEntitySchema.validate(type, JsonObject(value + ("unknownField" to JsonPrimitive(true))), 90) }
-            assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 91) }
+            assertFails { DesktopOfficialBackupEntitySchema.validate(type, value, 92) }
         }
         for (text in listOf("""{"disableNarrativeModes":"false"}""", """{"disableNarrativeModes":null}"""))
             assertFails { DesktopOfficialBackupEntitySchema.validate("app_settings", backupJson.parseToJsonElement(text).jsonObject, 90) }

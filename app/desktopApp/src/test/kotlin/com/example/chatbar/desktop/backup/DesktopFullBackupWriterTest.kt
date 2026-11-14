@@ -50,7 +50,7 @@ class DesktopFullBackupWriterTest {
             val raw = entries(output, null)
             val manifest = officialWireJson.decodeFromString(OfficialModernManifest.serializer(), raw.getValue("manifest.json").toString(Charsets.UTF_8))
             val prefs = officialWireJson.decodeFromString(OfficialModernPreferences.serializer(), raw.getValue("preferences.json").toString(Charsets.UTF_8))
-            assertEquals(2, manifest.formatVersion); assertEquals(90, manifest.appVersionCode)
+            assertEquals(2, manifest.formatVersion); assertEquals(91, manifest.appVersionCode)
             assertEquals(1, manifest.scope!!.characters); assertEquals(0, manifest.scope!!.sessions)
             assertEquals(emptySet(), prefs.retainedPreferences)
             assertFalse("retainedPreferences" in backupJson.parseToJsonElement(raw.getValue("preferences.json").toString(Charsets.UTF_8)).jsonObject)
@@ -75,7 +75,7 @@ class DesktopFullBackupWriterTest {
             assertTrue(password.all { it == '\u0000' })
             assertTrue(inspect(output, "synthetic-writer-password".toCharArray()).encrypted)
             val decoded = entries(output, "synthetic-writer-password".toCharArray())
-            assertEquals(90, officialWireJson.decodeFromString(OfficialModernManifest.serializer(),
+            assertEquals(91, officialWireJson.decodeFromString(OfficialModernManifest.serializer(),
                 decoded.getValue("manifest.json").toString(Charsets.UTF_8)).appVersionCode)
             assertFails { inspect(output, "incorrect-synthetic-password".toCharArray()) }
             val damaged = Files.readAllBytes(output).also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }

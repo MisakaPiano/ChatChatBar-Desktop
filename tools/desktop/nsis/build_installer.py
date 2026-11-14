@@ -156,6 +156,19 @@ def build(image, output, version, commit, installer_version, profile, compiler, 
         suffix = '' if parent == '.' else '\\' + parent
         script += ['ClearErrors', f'SetOutPath "$INSTDIR\\versions\\$TargetId{suffix}"', 'IfErrors failed',
                    'File ' + quote(image / relative), 'IfErrors failed']
+    completion = []
+    if any(e['path'].replace('\\', '/') == 'app/desktop-updater/update-handoff.exe' for e in report['files']):
+        completion = [
+            "System::Call 'kernel32::GetCurrentProcessId() i.r2'",
+            'ClearErrors',
+            f'Exec \'"$INSTDIR\\versions\\$TargetId\\app\\desktop-updater\\update-handoff.exe" --complete "$INSTDIR" "$TargetId" "$2" "$EXEPATH" "$PLUGINSDIR\\completion.ready" "{version}" "{commit}"\'',
+            'IfErrors completion_deferred', 'StrCpy $4 0', 'completion_wait:',
+            'IfFileExists "$PLUGINSDIR\\completion.ready" completion_started',
+            'Sleep 50', 'IntOp $4 $4 + 1',
+            'IntCmp $4 100 completion_deferred completion_wait completion_deferred',
+            'completion_deferred:', 'DetailPrint "安装包清理尚未确认；原包及校验记录保留。"',
+            'completion_started:',
+        ]
     script += ['ClearErrors', 'SetOutPath "$INSTDIR\\versions\\$TargetId"', 'IfErrors failed', 'File ' + quote(manager), 'IfErrors failed',
                'already_installed:', 'SetOutPath "$INSTDIR"',
                f'ExecWait \'"$PLUGINSDIR\\manager.exe" --activate "$INSTDIR" "$TargetId" --quiet\' $0',
@@ -176,7 +189,7 @@ def build(image, output, version, commit, installer_version, profile, compiler, 
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --cleanup "$INSTDIR" --quiet\' $0',
                'FileOpen $0 "$INSTDIR\\cleanup-status.txt" r', 'FileRead $0 $1', 'FileClose $0',
                'StrCmp $1 "DEFERRED" 0 +2', 'DetailPrint "新版已确认；部分旧程序因占用、改动或未知文件保留。管理记录位于当前用户 LocalAppData 的 ChatChatBarDesktopNSISInstallState。"',
-               'SetErrorLevel 0', 'Goto done', 'failed:', 'Call ShowInstallerFailure',
+               *completion, 'SetErrorLevel 0', 'Goto done', 'failed:', 'Call ShowInstallerFailure',
                'done:', 'SectionEnd', 'Section "Uninstall"',
                'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --uninstall "$INSTDIR" --quiet\' $0',
