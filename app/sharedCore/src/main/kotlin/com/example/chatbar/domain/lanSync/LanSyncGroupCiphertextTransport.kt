@@ -105,7 +105,7 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
                     require(store.group == request.group) { "SYNC_GROUP_WIRE_GROUP" }
                     when (request.command) {
                         GroupStoreCommand.METADATA -> GroupStoreWire.reply(wire, GroupStoreReply(item =
-                            store.metadata(requireNotNull(request.key))?.let(GroupStoreWire::objectOf)))
+                            store.metadataExact(requireNotNull(request.key), request.descriptor)?.let(GroupStoreWire::objectOf)))
                         GroupStoreCommand.LIST -> {
                             require(request.pageSize in 1..100) { "SYNC_GROUP_WIRE_PAGE_SIZE" }
                             val page = store.listCommits(request.cursor?.let(::CommitCursor), request.pageSize)
@@ -152,7 +152,7 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
     }
     private fun download(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore) {
         val key = requireNotNull(request.key); val expected = requireNotNull(request.descriptor)
-        val metadata = store.metadata(key)
+        val metadata = store.metadataExact(key, expected)
         if (metadata == null) { GroupStoreWire.reply(wire, GroupStoreReply(done = true)); return }
         require(metadata.descriptor == expected && request.offset in 0..expected.length &&
             (request.offset == expected.length || request.offset % GroupStoreWire.CHUNK_BYTES == 0L)) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" }
@@ -200,7 +200,8 @@ class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privat
     private val connect: () -> SSLSocket, private val observe: (String, Long) -> Unit = { _, _ -> },
     private val authenticatedConnect: Boolean = false) : CiphertextStore {
     private val cache = LanSyncResourceStore(privateRoot.resolve("ciphertext-cache"))
-    override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED, resumableByteUpload = true)
+    override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED,
+        resumableByteUpload = true, untrustedCandidateVariants = true)
     private fun request(command: GroupStoreCommand, key: CiphertextObjectKey? = null, operation: SyncStoreId? = null,
         descriptor: CiphertextDescriptor? = null, cursor: String? = null, pageSize: Int = 100, offset: Long = 0) =
         GroupStoreRequest(GroupStoreWire.PROTOCOL, group, command, key, operation, descriptor, cursor, pageSize, offset)
@@ -216,7 +217,7 @@ class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privat
         return exchange(request(GroupStoreCommand.LIST, cursor = cursor?.token, pageSize = minOf(pageSize, 100))) { wire ->
             val reply = GroupStoreWire.reply(wire)
             require(reply.entries.size <= minOf(pageSize, 100) && reply.entries.all { it.key.kind == CiphertextObjectKind.COMMIT } &&
-                reply.entries.map { it.key }.toSet().size == reply.entries.size && reply.cursor?.length?.let { it <= 4096 } != false) { "SYNC_GROUP_WIRE_LIST" }
+                reply.entries.toSet().size == reply.entries.size && reply.cursor?.length?.let { it <= 4096 } != false) { "SYNC_GROUP_WIRE_LIST" }
             CommitPage(reply.entries.map { it.metadata() }, reply.cursor?.let(::CommitCursor))
         }
     }
@@ -246,7 +247,10 @@ class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privat
         }
     override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
         // Even an existing cache object cannot bypass the peer's current live access policy.
-        val metadata = metadata(key) ?: return null
+        val metadata = if (expected == null) metadata(key) else exchange(request(GroupStoreCommand.METADATA, key, descriptor = expected)) {
+            GroupStoreWire.reply(it).item?.metadata()?.also { value -> require(value.key == key) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
+        }
+        if (metadata == null) return null
         require(expected == null || metadata.descriptor == expected) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" }
         val descriptor = metadata.descriptor
         if (descriptor.length == 0L) {

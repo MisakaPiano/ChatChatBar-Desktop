@@ -1,5 +1,9 @@
 package com.example.chatbar.domain.lanSync
 
+val lanSyncGroupDescription = "把自己的电脑和手机加入同一个设备组。已设置的设备会在应用运行时检查同网资料，日常同步不需要解锁管理。" +
+    "同步对话及消息版本、卡片、世界书、记忆、RAG、存档、朋友圈、玩家设定和绘图资料。删除与精简先保留待确认，修改前保全原件。" +
+    "账户、密钥、设备设置和聊天输入草稿各端独立保留；模型绑定保留本机选择。工作室撤销历史随当前工作室资料一并选择，电脑后处理结果仍需回电脑查看。"
+
 /** Display only: raw excluded types remain in snapshots/state and never gain deletion authority. */
 fun lanSyncExcludedSummary(types: Set<String>): String? {
     val derivedIndexes = setOf("chat_message_indexes", "chat_message_order_backups")

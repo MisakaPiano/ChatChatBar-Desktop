@@ -18,7 +18,8 @@ enum class SyncInboxStage {
     KEY_ADMITTED, LEDGER_ADMITTED, DEVICE_REVOKED, CAUSAL_ADMITTED, WAITING_FOR_PARENTS, REJECTED, TRUST_BLOCKED, LOCAL_CUSTODY_BLOCKED, INVALID_OBJECT,
     ENROLLMENT_KEY_VERIFIED, ENROLLMENT_LEDGER_VERIFIED
 }
-data class SyncInboxObservation(val key: CiphertextObjectKey, val stage: SyncInboxStage, val code: String? = null)
+data class SyncInboxObservation(val key: CiphertextObjectKey, val stage: SyncInboxStage, val code: String? = null,
+    val descriptor: CiphertextDescriptor? = null)
 data class SyncInboxDiscovery(val nextCursor: CommitCursor?, val observations: List<SyncInboxObservation>)
 data class SyncInboxReconciliation(val observations: List<SyncInboxObservation>, val history: SyncCausalHistory?,
     val authenticatedVersions: List<SyncAuthenticatedGroupObject>, val trustBlocked: Boolean, val ledgerCheckpoint: SyncVersionRef?,
@@ -40,6 +41,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
     private val observe: (SyncInboxObservation) -> Unit = {}) {
     private val work: Path
     private val mirror: FileCiphertextStore
+    private val candidates: SyncCiphertextCandidates
     private val resourceBudget = LanSyncResourceBudget()
     init {
         PrivateSyncFile.checked(root, true)
@@ -47,14 +49,15 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         if (!Files.exists(work, NOFOLLOW_LINKS)) Files.createDirectory(work)
         PrivateSyncFile.checked(work, true)
         mirror = FileCiphertextStore(root.resolve("ciphertext-mirror"))
+        candidates = SyncCiphertextCandidates(root.resolve("ciphertext-candidates"), mirror)
     }
 
     /** A null next cursor is an ended discovery scan, never a complete/fresh group checkpoint. */
     fun discover(cursor: CommitCursor? = null, pageSize: Int = 100): SyncInboxDiscovery {
         val page = backend.listCommits(cursor, pageSize)
         val observations = page.entries.map { metadata ->
-            try { retain(metadata); SyncInboxObservation(metadata.key, SyncInboxStage.MIRRORED) }
-            catch (failure: Exception) { SyncInboxObservation(metadata.key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+            try { candidates.retain(metadata, backend); SyncInboxObservation(metadata.key, SyncInboxStage.MIRRORED, descriptor = metadata.descriptor) }
+            catch (failure: Exception) { SyncInboxObservation(metadata.key, SyncInboxStage.INVALID_OBJECT, code(failure), metadata.descriptor) }
                 .also(observe)
         }
         return SyncInboxDiscovery(page.nextCursor, observations)
@@ -62,9 +65,9 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
 
     /** Explicit joining only: external invitation pins trust. This reads no custody and enrolls/writes no keys. */
     fun prepareEnrollment(trust: SyncGroupTrust): SyncGroupBootstrapInspection {
-        val statuses = linkedMapOf<CiphertextObjectKey, SyncInboxObservation>()
-        fun status(key: CiphertextObjectKey, stage: SyncInboxStage, failure: String? = null) {
-            statuses[key] = SyncInboxObservation(key, stage, failure).also(observe)
+        val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
+        fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, failure: String? = null) {
+            statuses[key] = SyncInboxObservation(key.key, stage, failure, key.descriptor).also(observe)
         }
         fun result(stage: SyncGroupBootstrapStage, failure: String? = null, evidence: SyncGroupBootstrapEvidence? = null) =
             SyncGroupBootstrapInspection(stage, evidence, statuses.values.toList(), failure)
@@ -78,48 +81,47 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 throw failure
             }
         }
-        val objects = mutableListOf<CiphertextObjectMetadata>(); var cursor: CommitCursor? = null
-        do { val page = mirror.listCommits(cursor); objects += page.entries; cursor = page.nextCursor } while (cursor != null)
-        val hints = linkedMapOf<CiphertextObjectKey, SyncCiphertextHint>()
-        val tentative = linkedMapOf<CiphertextObjectKey, SyncTentativeGroupKey>()
+        val objects = candidates.entries()
+        val hints = linkedMapOf<CiphertextObjectMetadata, SyncCiphertextHint>()
+        val tentative = linkedMapOf<CiphertextObjectMetadata, SyncTentativeGroupKey>()
         for (metadata in objects) {
             try {
-                spool(mirror, metadata) { path ->
+                spool(candidates.exact(metadata), metadata) { path ->
                     val prefix = prefix(path)
                     when {
                         SyncCiphertextHeader.hasPrefix(prefix) -> {
                             val hint = Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
                             require(hint.context.group == trust.group && hint.context.key == metadata.key) { "SYNC_INBOX_CONTEXT" }
-                            hints[metadata.key] = hint
+                            hints[metadata] = hint
                         }
                         SyncKeyDeliveryCodec.hasPrefix(prefix) -> {
                             require(metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES) { "SYNC_KEY_DELIVERY_BUDGET" }
                             val delivery = SyncKeyDeliveryCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncKeyDeliveryCodec::read))
                             delivery.verifyOwner(trust, metadata.key)
-                            if (delivery.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
-                            else tentative[metadata.key] = delivery.openTentative(trust, recipient, metadata.key)
+                            if (delivery.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else tentative[metadata] = delivery.openTentative(trust, recipient, metadata.key)
                         }
                         SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
                             require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
                             val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
                             notice.verifyOwner(trust, metadata.key)
-                            if (notice.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
-                            else { offer(notice.open(trust, recipient, metadata.key).records); status(metadata.key, SyncInboxStage.DEVICE_REVOKED) }
+                            if (notice.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else { offer(notice.open(trust, recipient, metadata.key).records); status(metadata, SyncInboxStage.DEVICE_REVOKED) }
                         }
                         else -> error("SYNC_INBOX_FORMAT")
                     }
                 }
-            } catch (failure: Exception) { status(metadata.key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+            } catch (failure: Exception) { status(metadata, SyncInboxStage.INVALID_OBJECT, code(failure)) }
         }
         val codec = SyncGroupObjectCodec(work)
-        val ledgerObjects = linkedMapOf<CiphertextObjectKey, SyncStoreId>()
+        val ledgerObjects = linkedMapOf<CiphertextObjectMetadata, SyncStoreId>()
         for ((key, hint) in hints) {
             try {
                 val candidate = tentative.values.firstOrNull {
                     it.context.epoch == hint.context.epoch && it.context.keyCommitment == hint.keyCommitment
                 }
                 if (candidate == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
-                val actual = codec.read(mirror, candidate.cipher, hint.context)
+                val actual = codec.read(candidates.exact(key), candidate.cipher, hint.context, key.descriptor)
                 val row = actual.envelope.deviceLedger ?: continue
                 require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
                 offer(actual.envelope.ledgerHistory + row)
@@ -160,41 +162,40 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
 
     fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation {
         val trust = localCustody { custody.trust() }
-        val statuses = linkedMapOf<CiphertextObjectKey, SyncInboxObservation>()
-        fun status(key: CiphertextObjectKey, stage: SyncInboxStage, code: String? = null) {
-            statuses[key] = SyncInboxObservation(key, stage, code).also(observe)
+        val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
+        fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, code: String? = null) {
+            statuses[key] = SyncInboxObservation(key.key, stage, code, key.descriptor).also(observe)
         }
-        val objects = mutableListOf<CiphertextObjectMetadata>(); var cursor: CommitCursor? = null
-        do { val page = mirror.listCommits(cursor); objects += page.entries; cursor = page.nextCursor } while (cursor != null)
-        val hints = linkedMapOf<CiphertextObjectKey, SyncCiphertextHint>()
-        val tentative = linkedMapOf<CiphertextObjectKey, SyncTentativeGroupKey>()
+        val objects = candidates.entries()
+        val hints = linkedMapOf<CiphertextObjectMetadata, SyncCiphertextHint>()
+        val tentative = linkedMapOf<CiphertextObjectMetadata, SyncTentativeGroupKey>()
         for (metadata in objects) {
             try {
-                spool(mirror, metadata) { path ->
+                spool(candidates.exact(metadata), metadata) { path ->
                     val prefix = prefix(path)
                     when {
                         SyncCiphertextHeader.hasPrefix(prefix) -> {
                             val hint = Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
                             require(hint.context.group == trust.group && hint.context.key == metadata.key) { "SYNC_INBOX_CONTEXT" }
-                            hints[metadata.key] = hint
+                            hints[metadata] = hint
                         }
                         SyncKeyDeliveryCodec.hasPrefix(prefix) -> {
                             require(metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES) { "SYNC_KEY_DELIVERY_BUDGET" }
                             val delivery = SyncKeyDeliveryCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncKeyDeliveryCodec::read))
                             delivery.verifyOwner(trust, metadata.key)
-                            if (delivery.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
-                            else tentative[metadata.key] = delivery.openTentative(trust, recipient, metadata.key)
+                            if (delivery.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else tentative[metadata] = delivery.openTentative(trust, recipient, metadata.key)
                         }
                         SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
                             require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
                             val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
                             notice.verifyOwner(trust, metadata.key)
-                            if (notice.context.recipient != recipient.device) status(metadata.key, SyncInboxStage.NOT_FOR_DEVICE)
+                            if (notice.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
                             else {
                                 val verified = notice.open(trust, recipient, metadata.key)
                                 val updated = localCustody { custody.update(verified.records) }
                                 require(updated.current().members[recipient.device]?.active == false) { "SYNC_LEDGER_NOTICE_REVOCATION" }
-                                status(metadata.key, SyncInboxStage.DEVICE_REVOKED)
+                                status(metadata, SyncInboxStage.DEVICE_REVOKED)
                             }
                         }
                         else -> error("SYNC_INBOX_FORMAT")
@@ -202,7 +203,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 }
             } catch (failure: Exception) {
                 val code = code(failure)
-                status(metadata.key, when (code) {
+                status(metadata, when (code) {
                     "SYNC_GROUP_LEDGER_FORK_OR_MISSING" -> SyncInboxStage.TRUST_BLOCKED
                     "SYNC_INBOX_LOCAL_CUSTODY" -> SyncInboxStage.LOCAL_CUSTODY_BLOCKED
                     else -> SyncInboxStage.INVALID_OBJECT
@@ -210,7 +211,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             }
         }
         val codec = SyncGroupObjectCodec(work)
-        val decoded = linkedMapOf<CiphertextObjectKey, SyncAuthenticatedGroupObject>()
+        val decoded = linkedMapOf<CiphertextObjectMetadata, SyncAuthenticatedGroupObject>()
         fun knownKey(hint: SyncCiphertextHint, allowTentative: Boolean): SyncStreamingCipher? {
             val key = try { localCustody { custody.key(hint.context.epoch) } } catch (failure: IllegalArgumentException) {
                 if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") null else throw failure
@@ -229,7 +230,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 try {
                     val cipher = knownKey(hint, true)
                     if (cipher == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
-                    val actual = decoded[key] ?: codec.read(mirror, cipher, hint.context).also { decoded[key] = it }
+                    val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor).also { decoded[key] = it }
                     val row = actual.envelope.deviceLedger ?: continue
                     require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
                     val before = try { localCustody { custody.ledger().current().reference() } } catch (failure: IllegalArgumentException) {
@@ -283,7 +284,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             try {
                 val cipher = knownKey(hint, false)
                 if (cipher == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
-                val actual = decoded[key] ?: codec.read(mirror, cipher, hint.context)
+                val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor)
                 if (actual.envelope.version != null) versions += actual
             } catch (failure: Exception) {
                 val code = code(failure)
@@ -297,11 +298,11 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 require(actual.context.group == trust.group && actual.envelope.group == trust.group &&
                     actual.context.key.kind == CiphertextObjectKind.COMMIT && actual.context.key == actual.metadata.key &&
                     actual.envelope.version != null) { "SYNC_INBOX_LOCAL_VERSION_CONTEXT" }
-                val retained = versions.firstOrNull { it.context.key == actual.context.key }
+                val retained = versions.firstOrNull { it.metadata == actual.metadata }
                 require(retained == null || retained.context == actual.context && retained.metadata == actual.metadata &&
                     retained.envelope == actual.envelope && retained.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_IMMUTABLE_CONFLICT" }
                 if (retained == null) versions += actual
-            } catch (failure: Exception) { status(actual.context.key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+            } catch (failure: Exception) { status(actual.metadata, SyncInboxStage.INVALID_OBJECT, code(failure)) }
         }
         val logical = versions.map { requireNotNull(it.envelope.version) }
         val history = SyncCausalHistory(trust.group, ledger.admission(logical, versions))
@@ -309,24 +310,26 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             val version = requireNotNull(actual.envelope.version)
             try { history.offer(version) } catch (failure: Exception) {
                 val code = code(failure)
-                status(actual.context.key, when (code) {
+                status(actual.metadata, when (code) {
                     "SYNC_GROUP_LEDGER_MISSING", "SYNC_GROUP_FENCE_CONTENT_MISSING" -> SyncInboxStage.WAITING_FOR_LEDGER
                     "SYNC_GROUP_CURRENT_EPOCH_REQUIRED" -> SyncInboxStage.WAITING_FOR_CURRENT_EPOCH
                     else -> SyncInboxStage.REJECTED
                 }, code)
             }
         }
-        versions.forEach { actual -> if (statuses[actual.context.key]?.stage !in setOf(SyncInboxStage.REJECTED,
+        versions.forEach { actual -> if (statuses[actual.metadata]?.stage !in setOf(SyncInboxStage.REJECTED,
             SyncInboxStage.INVALID_OBJECT, SyncInboxStage.LOCAL_CUSTODY_BLOCKED,
             SyncInboxStage.WAITING_FOR_LEDGER, SyncInboxStage.WAITING_FOR_CURRENT_EPOCH)) {
             val version = requireNotNull(actual.envelope.version)
-            status(actual.context.key, when (history.state(version.id)) {
+            status(actual.metadata, when (history.state(version.id)) {
                 SyncVersionState.ADMITTED -> SyncInboxStage.CAUSAL_ADMITTED
                 SyncVersionState.WAITING_FOR_PARENTS -> SyncInboxStage.WAITING_FOR_PARENTS
                 else -> SyncInboxStage.REJECTED
             }, history.failure(version.id))
         } }
-        return SyncInboxReconciliation(statuses.values.toList(), history, versions.toList(), false, ledger.current().reference())
+        val usable = versions.filter { statuses[it.metadata]?.stage !in setOf(SyncInboxStage.INVALID_OBJECT,
+            SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED) }
+        return SyncInboxReconciliation(statuses.values.toList(), history, usable, false, ledger.current().reference())
     }
 
     private fun prefix(path: Path): ByteArray = Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
@@ -334,30 +337,22 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         while (read < bytes.size) { val count = input.read(bytes, read, bytes.size - read); if (count < 0) break; read += count }
         bytes.copyOf(read)
     }
-    private fun retain(metadata: CiphertextObjectMetadata) {
-        require(metadata.key.kind == CiphertextObjectKind.COMMIT) { "SYNC_INBOX_CONTEXT" }
-        mirror.metadata(metadata.key)?.let { require(it == metadata) { "SYNC_INBOX_IMMUTABLE_CONFLICT" }; return }
-        spool(backend, metadata) { path ->
-            // Derives only from the opaque physical key, never plaintext. Stable retry after a local intent crash.
-            val operation = SyncStoreId.parse(MessageDigest.getInstance("SHA-256").digest(
-                "CCB-SYNC-INBOX-COPY/1\n${metadata.key.kind}\n${metadata.key.id.value}".toByteArray(Charsets.US_ASCII))
-                .take(16).joinToString("") { "%02x".format(it) })
-            Files.newInputStream(path, NOFOLLOW_LINKS).use { mirror.put(CiphertextPutRequest(metadata.key, operation, metadata.descriptor), it) }
-        }
-    }
     private fun <T> spool(store: CiphertextStore, metadata: CiphertextObjectMetadata, workOn: (Path) -> T): T {
         resourceBudget.requireSpace(work, metadata.descriptor.length)
         PrivateSyncFile.create(work).use { file ->
             FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
                 var count = 0L
+                val digest = MessageDigest.getInstance("SHA-256")
                 val output = object : OutputStream() {
                     override fun write(value: Int) = write(byteArrayOf(value.toByte()), 0, 1)
                     override fun write(bytes: ByteArray, offset: Int, length: Int) {
                         require(length >= 0 && count <= metadata.descriptor.length - length) { "SYNC_INBOX_OBJECT_LENGTH" }
-                        val buffer = ByteBuffer.wrap(bytes, offset, length); while (buffer.hasRemaining()) channel.write(buffer); count += length
+                        val buffer = ByteBuffer.wrap(bytes, offset, length); while (buffer.hasRemaining()) channel.write(buffer)
+                        digest.update(bytes, offset, length); count += length
                     }
                 }
                 require(store.readTo(metadata.key, output, metadata.descriptor) == metadata && count == metadata.descriptor.length) { "SYNC_INBOX_OBJECT_MISSING" }
+                require(digest.digest().joinToString("") { "%02x".format(it) } == metadata.descriptor.sha256.hex) { "SYNC_INBOX_OBJECT_CHANGED" }
                 channel.force(true)
             }
             return workOn(file.path)

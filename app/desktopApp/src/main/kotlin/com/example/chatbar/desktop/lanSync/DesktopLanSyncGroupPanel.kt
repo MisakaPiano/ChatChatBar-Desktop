@@ -19,8 +19,9 @@ import java.util.Date
 /** App-owned runtime survives page disposal; only transient management authority is locked here. */
 @Composable
 internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions,
-    view: LanSyncGroupNodeView? = null) {
-    DisposableEffect(actions) { onDispose { actions.lockManagement() } }
+    view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
+    recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null) {
+    DisposableEffect(actions) { onDispose { actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery() } }
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
     var saved by remember(state.setupBinding, state.privacyRevision) { mutableStateOf(false) }
@@ -33,7 +34,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         state.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (copyFailed) StatusText("未能复制，请保持此窗口打开后重试。", DesktopBootstrapColors.warning)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
-            StatusText(LanSyncScope.description)
+            StatusText(lanSyncGroupDescription)
             BootstrapButton("创建新设备组", enabled = !state.busy) { actions.createGroup() }
         }
         if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
@@ -82,7 +83,10 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 if (device.canRevoke) BootstrapButton("撤销此设备", secondary = true, enabled = !state.busy && state.managementUnlocked) { actions.prepareRevocation(device.id) }
             }
         }
-        DesktopGroupFrozenReviewBrowser(view)
+        DesktopGroupFrozenReviewBrowser(view, state.busy, actions)
+        actionReview?.let { review -> DesktopGroupActionReview(review, state.busy, actions) }
+        if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
+            DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, state.busy, actions)
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
             val image = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
@@ -112,7 +116,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
 
 /** A selected inspection stays frozen while the application continues synchronizing. */
 @Composable
-private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
+private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: Boolean, actions: LanSyncGroupPanelActions) {
     var selected by remember { mutableStateOf<Pair<LanSyncGroupNodeView, String>?>(null) }
     val units = remember(view) {
         val plan = view?.plan
@@ -123,7 +127,7 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
     var unitPage by remember(units) { mutableStateOf(0) }
     if (units.isNotEmpty() || selected != null) {
         DesktopDataSectionHeading("冻结内容详情")
-        StatusText("可浏览本次检查取得的完整字段。本页只供核对，待确认的内容会保留当前状态。")
+        StatusText("可浏览本次检查取得的完整字段，待确认的内容会保留当前状态。核对发布或传入目标后，可再确认执行。")
         units.drop(unitPage * 10).take(10).forEach { unit ->
             val row = view?.plan?.units?.get(unit)
             DesktopGroupReviewButton("查看 $unit · ${row?.stage?.let(::desktopGroupFrozenStage).orEmpty()}",
@@ -142,6 +146,14 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
     StatusText("已冻结：$unit")
     StatusText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。此处可查看附件引用，暂不提供图片预览。")
     DesktopGroupReviewButton("关闭冻结详情", { selected = null })
+    if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
+            LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, LanSyncGroupNativeStage.CONFLICT,
+            LanSyncGroupNativeStage.RECORD_REVIEW, LanSyncGroupNativeStage.DEPENDENCY_HELD)) {
+        DesktopGroupReviewButton("核对本机发布目标", { actions.prepareSourceReview(frozen.first, unit) }, enabled = !busy)
+    }
+    if (unit in frozen.first.incomingReview?.reductions.orEmpty()) {
+        DesktopGroupReviewButton("核对传入删除或覆盖", { actions.prepareIncomingReview(frozen.first, unit) }, enabled = !busy)
+    }
     val current = remember(plan, unit) { plan.before.units()[unit].orEmpty() }
     key(frozen.first, unit) {
         DesktopGroupFrozenRecords("本次检查时的本机内容", unit, current)
@@ -160,6 +172,127 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
             DesktopGroupFrozenRecords("待确认的传入目标", unit, reduction.proposed)
         }
     }
+}
+
+/** Only verified owner snapshots reach this browser; closing it retains every historical entry. */
+@Composable
+private fun DesktopGroupRecoveryBrowser(entries: List<LanSyncRecoveryEntry>, view: LanSyncGroupRecoveryView?,
+    busy: Boolean, actions: LanSyncGroupPanelActions) {
+    DesktopDataSectionHeading("本机保全与恢复")
+    DesktopGroupReviewButton("刷新保全记录", actions::refreshRecovery, enabled = !busy)
+    var entryPage by remember(entries) { mutableStateOf(0) }
+    entries.drop(entryPage * 10).take(10).forEach { entry ->
+        key(entry.transaction) {
+            DesktopGroupRecoveryMetadata(entry)
+            DesktopGroupReviewButton("浏览此保全记录", { actions.openRecovery(entry.transaction) }, enabled = !busy)
+        }
+    }
+    if (entries.size > 10) ActionRow {
+        DesktopGroupReviewButton("上一页保全记录", { entryPage-- }, enabled = entryPage > 0)
+        StatusText("${entryPage + 1}/${(entries.size + 9) / 10}")
+        DesktopGroupReviewButton("下一页保全记录", { entryPage++ }, enabled = (entryPage + 1) * 10 < entries.size)
+    }
+    if (view == null) return
+    StatusText("正在浏览的历史保全")
+    DesktopGroupRecoveryMetadata(view.entry)
+    StatusText("此处展示已保全的历史内容。准备恢复会先生成核对目标，确认后才修改本机资料。")
+    DesktopGroupReviewButton("关闭保全浏览", actions::closeRecovery, enabled = !busy)
+    val units = remember(view) { view.units.keys.sorted() }
+    var unitPage by remember(view) { mutableStateOf(0) }
+    units.drop(unitPage * 10).take(10).forEach { unit ->
+        key(view, unit) {
+            StatusText("历史内容组：$unit")
+            DesktopGroupFrozenRecords("历史保全内容", unit, view.units.getValue(unit))
+            DesktopGroupReviewButton("准备恢复此组", { actions.prepareRestore(unit) }, enabled = !busy)
+        }
+    }
+    if (units.size > 10) ActionRow {
+        DesktopGroupReviewButton("上一页历史内容组", { unitPage-- }, enabled = unitPage > 0)
+        StatusText("${unitPage + 1}/${(units.size + 9) / 10}")
+        DesktopGroupReviewButton("下一页历史内容组", { unitPage++ }, enabled = (unitPage + 1) * 10 < units.size)
+    }
+}
+
+@Composable
+private fun DesktopGroupRecoveryMetadata(entry: LanSyncRecoveryEntry) {
+    StatusText("${DateFormat.getDateTimeInstance().format(Date(entry.createdAt))} · ${entry.affectedUnits} 个内容组 · ${entry.recordCount} 条记录（含 ${entry.messageCount} 条实时消息）")
+    StatusText(if (entry.hasLocalOriginals) "本机原始文件与本机选择已独立保全。" else "此记录保全了对端同步内容，不含对端账户和本机模型选择。")
+}
+
+/** All confirmations refer to this exact owner-prepared review, never the latest screen state. */
+@Composable
+private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+    var confirmed by remember(review.binding) { mutableStateOf(false) }
+    var unitPage by remember(review.binding) { mutableStateOf(0) }
+    val recovery = review.recovery
+    val canConfirm = review.canConfirm && (recovery?.hasChanges != false)
+    DesktopDataSectionHeading(when { review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" })
+    StatusText("以下关联内容按同一核对结果处理；请查看各组正文和影响后确认。确认时会再次检查资料是否变化。")
+    val source = review.source
+    if (recovery != null) {
+        StatusText("恢复仅作用于所选内容组和必需的缺失依赖；其余本机内容保留。")
+        StatusText("本次恢复的内容组：${recovery.restoredUnits.sorted().joinToString("、")}")
+        DesktopGroupFrozenRecords("恢复前的本机内容", recovery.unit, recovery.currentRecords)
+        DesktopGroupFrozenRecords("待恢复的目标内容", recovery.unit, recovery.restoredRecords)
+        val impact = remember(review.binding) { LanSyncImpactReview.changes(recovery.currentRecords, recovery.restoredRecords) }
+        StatusText(desktopGroupActionImpactSummary(impact))
+        if (!recovery.hasChanges) StatusText("当前内容与恢复目标一致，没有需要写入的变化。")
+    } else {
+        val units = remember(review.binding) { source?.units?.keys?.sorted() ?: review.incomingBindings.keys.sorted() }
+        StatusText("本次核对 ${units.size} 个内容组")
+        units.drop(unitPage * 10).take(10).forEach { unit ->
+            key(review.binding, unit) {
+                StatusText("内容组：$unit")
+                if (source != null) {
+                    val row = source.units.getValue(unit)
+                    DesktopGroupFrozenRecords("准备发布的本机目标", unit, row.current)
+                    row.versions.entries.sortedWith(compareBy({ it.key.id.value }, { it.key.bodyHash })).forEach { (version, records) ->
+                        key(version) {
+                            StatusText("已签名的核对版本：${version.id.value}")
+                            StatusText("版本正文指纹：${version.bodyHash}")
+                            DesktopGroupFrozenRecords("此已签名版本的正文", unit, records)
+                            row.impact[version]?.let { StatusText(desktopGroupActionImpactSummary(it)) }
+                                ?: StatusText("此版本的影响摘要尚未取得。")
+                        }
+                    }
+                    if (row.versions.isEmpty()) StatusText("本次尚无可显示的已签名核对正文。")
+                    if (row.missingBodies.isNotEmpty()) StatusText("仍缺少 ${row.missingBodies.size} 份已签名版本的完整正文。")
+                    if (row.records.missing.isNotEmpty()) StatusText("仍缺少 ${row.records.missing.size} 份记录归属依据。")
+                    if (row.dependencies.isNotEmpty()) StatusText("尚需一并核对的关联组：${row.dependencies.sorted().joinToString("、")}")
+                } else {
+                    val row = review.incoming?.reductions?.get(unit)
+                    if (row == null) StatusText("此组的核对数据尚未取得。") else {
+                        DesktopGroupFrozenRecords("核对时的本机内容", unit, row.current)
+                        DesktopGroupFrozenRecords("待应用的传入目标", unit, row.proposed)
+                        StatusText(desktopGroupActionImpactSummary(row.impact))
+                    }
+                }
+            }
+        }
+        if (units.size > 10) ActionRow {
+            DesktopGroupReviewButton("上一页核对组", { unitPage-- }, enabled = unitPage > 0)
+            StatusText("${unitPage + 1}/${(units.size + 9) / 10}")
+            DesktopGroupReviewButton("下一页核对组", { unitPage++ }, enabled = (unitPage + 1) * 10 < units.size)
+        }
+    }
+    review.heldReason?.let { StatusText(it, DesktopBootstrapColors.warning) }
+    DesktopGroupReviewButton((if (confirmed) "✓ " else "") + "我已核对全部内容组和影响，并确认以上目标",
+        { confirmed = !confirmed }, enabled = !busy && canConfirm)
+    BootstrapButton(when { source != null -> "确认发布以上本机目标"; recovery != null -> "确认恢复以上本机目标"; else -> "确认应用以上传入目标" },
+        enabled = !busy && canConfirm && confirmed) { actions.confirmActionReview(review.binding) }
+    DesktopGroupReviewButton("取消本次核对", actions::cancelActionReview, enabled = !busy)
+}
+
+private fun desktopGroupActionImpactSummary(impact: List<LanSyncRecordImpact>): String {
+    val added = impact.count { it.change == LanSyncRecordChange.ADD }
+    val overwritten = impact.count { it.change == LanSyncRecordChange.REPLACE }
+    val removed = impact.count { it.change == LanSyncRecordChange.REMOVE }
+    val messages = impact.count { it.change == LanSyncRecordChange.REMOVE && it.message }
+    val versions = impact.sumOf { it.removedVersionIds.size.toLong() }
+    val attachments = impact.sumOf { it.removedAttachmentReferences.toLong() }
+    val archivedMessages = impact.sumOf { it.removedEmbeddedMessageIds.size.toLong() }
+    return "相对以上原内容，目标新增 $added 条记录、覆盖 $overwritten 条记录、移除 $removed 条记录（含 $messages 条实时消息）；" +
+        "移除 $versions 个消息版本、$attachments 条附件引用和 $archivedMessages 条存档内消息。"
 }
 
 @Composable

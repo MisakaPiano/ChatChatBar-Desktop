@@ -20,6 +20,9 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
     legacy: (() -> LanSyncRuntime)?, hasGroupEvidence: () -> Boolean) {
     val state by coordinator.state.collectAsState()
     val view by coordinator.view.collectAsState()
+    val actionReview by coordinator.actionsReview.collectAsState()
+    val recoveryEntries by coordinator.recoveryEntries.collectAsState()
+    val recoveryView by coordinator.recoveryView.collectAsState()
     var legacySelected by remember(coordinator) { mutableStateOf(false) }
     LaunchedEffect(coordinator) { coordinator.open() }
     DisposableEffect(coordinator) { onDispose { coordinator.lockManagement() } }
@@ -34,7 +37,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             if (legacyAllowed && legacy != null) Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 BootstrapButton("打开旧版双端同步", secondary = true, enabled = !state.busy) { legacySelected = true }
             }
-            Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view) }
+            Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView) }
         }
     }
 }

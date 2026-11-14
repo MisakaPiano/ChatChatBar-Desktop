@@ -115,8 +115,154 @@ class SyncGroupInboxTest {
             }
         }
         val discovery = g.inbox(changed).discover(pageSize = 100)
-        assertEquals("SYNC_INBOX_IMMUTABLE_CONFLICT", discovery.observations.single { it.key == valid.request.key }.code)
+        assertEquals(SyncInboxStage.INVALID_OBJECT, discovery.observations.single { it.key == valid.request.key }.stage)
+        assertEquals(SyncKeyDeliveryCodec.descriptor(byteArrayOf(9)), discovery.observations.single { it.key == valid.request.key }.descriptor)
         assertEquals(SyncVersionState.ADMITTED, g.inbox().reconcile().history?.state(version.id))
+    }
+
+    @Test fun badFirstSameIdCiphertextCannotPoisonAReopenedReaderOrInboxAgainstAGoodPeer() = withGroup { g ->
+        g.publishLedger(); val version = g.version("synthetic/candidate-version"); val published = g.publish(version)
+        val metadata = CiphertextObjectMetadata(published.request.key, published.request.descriptor)
+        val badBytes = corruptTail(raw(g.backend, metadata))
+        val bad = copiedPeer(g, "bad-version-peer", mapOf(metadata.key to badBytes))
+        val badMetadata = requireNotNull(bad.metadata(metadata.key))
+        val firstReader = candidateReader(g, "version-reader", bad)
+        val first = g.scan(g.inbox(firstReader.discoveryFrom(bad)))
+        assertNull(first.history?.state(version.id))
+        assertObservation(first, badMetadata, SyncInboxStage.INVALID_OBJECT)
+        assertEquals(SyncCiphertextHeader.peek(badBytes.inputStream()), SyncCiphertextHeader.peek(raw(g.backend, metadata).inputStream()))
+
+        val reopened = candidateReader(g, "version-reader", g.backend)
+        val recovered = g.scan(g.inbox(reopened.discoveryFrom(g.backend)))
+        assertEquals(SyncVersionState.ADMITTED, recovered.history?.state(version.id))
+        assertObservation(recovered, metadata, SyncInboxStage.CAUSAL_ADMITTED)
+        assertObservation(recovered, badMetadata, SyncInboxStage.INVALID_OBJECT)
+        assertEquals(metadata, recovered.authenticatedVersions.single { it.envelope.version?.id == version.id }.metadata)
+        assertContentEquals(badBytes, raw(reopened, badMetadata))
+        assertContentEquals(raw(g.backend, metadata), raw(reopened, metadata))
+        assertContentEquals(badBytes, raw(bad, badMetadata))
+        assertEquals(setOf(badMetadata, metadata), all(reopened).filter { it.key == metadata.key }.toSet())
+        assertNull(FileCiphertextStore(g.root.resolve("version-reader-local")).metadata(metadata.key))
+    }
+
+    @Test fun aLaterBadSameIdCandidateNeverDisplacesAnAlreadyAuthenticatedVersion() = withGroup { g ->
+        g.publishLedger(); val version = g.version("synthetic/already-admitted"); val published = g.publish(version)
+        val metadata = CiphertextObjectMetadata(published.request.key, published.request.descriptor)
+        val original = raw(g.backend, metadata)
+        val firstReader = candidateReader(g, "good-first-reader", g.backend)
+        assertEquals(SyncVersionState.ADMITTED, g.scan(g.inbox(firstReader.discoveryFrom(g.backend))).history?.state(version.id))
+        val badBytes = corruptTail(original)
+        val bad = copiedPeer(g, "later-bad-peer", mapOf(metadata.key to badBytes))
+        val reopened = candidateReader(g, "good-first-reader", bad)
+        val result = g.scan(g.inbox(reopened.discoveryFrom(bad)))
+        assertFalse(result.trustBlocked)
+        assertEquals(SyncVersionState.ADMITTED, result.history?.state(version.id))
+        assertEquals(setOf(version.reference()), result.history?.heads())
+        assertObservation(result, metadata, SyncInboxStage.CAUSAL_ADMITTED)
+        assertObservation(result, requireNotNull(bad.metadata(metadata.key)), SyncInboxStage.INVALID_OBJECT)
+        assertEquals(metadata, result.authenticatedVersions.single { it.envelope.version?.id == version.id }.metadata)
+        assertContentEquals(original, raw(reopened, metadata))
+        assertContentEquals(badBytes, raw(reopened, requireNotNull(bad.metadata(metadata.key))))
+    }
+
+    @Test fun sameIdCandidatesWaitForActualRootKeysThenOnlyTheAuthenticCiphertextIsAdmitted() = withGroup { g ->
+        val version = g.version("synthetic/key-delayed"); val published = g.publish(version)
+        val metadata = CiphertextObjectMetadata(published.request.key, published.request.descriptor)
+        val badBytes = corruptTail(raw(g.backend, metadata))
+        val bad = copiedPeer(g, "no-key-bad-peer", mapOf(metadata.key to badBytes))
+        var reader = candidateReader(g, "waiting-reader", bad)
+        val badWaiting = g.scan(g.inbox(reader.discoveryFrom(bad)))
+        assertObservation(badWaiting, requireNotNull(bad.metadata(metadata.key)), SyncInboxStage.WAITING_FOR_KEY)
+        reader = candidateReader(g, "waiting-reader", g.backend)
+        val bothWaiting = g.scan(g.inbox(reader.discoveryFrom(g.backend)))
+        assertObservation(bothWaiting, metadata, SyncInboxStage.WAITING_FOR_KEY)
+        assertObservation(bothWaiting, requireNotNull(bad.metadata(metadata.key)), SyncInboxStage.WAITING_FOR_KEY)
+        assertNull(bothWaiting.history?.state(version.id))
+
+        g.publishLedger()
+        reader = candidateReader(g, "waiting-reader", g.backend)
+        val admitted = g.scan(g.inbox(reader.discoveryFrom(g.backend)))
+        assertEquals(SyncVersionState.ADMITTED, admitted.history?.state(version.id))
+        assertObservation(admitted, metadata, SyncInboxStage.CAUSAL_ADMITTED)
+        assertObservation(admitted, requireNotNull(bad.metadata(metadata.key)), SyncInboxStage.INVALID_OBJECT)
+        assertEquals(g.initialKey.keyCommitment(), g.custody().key(g.initialKey.epoch).keyCommitment())
+        assertContentEquals(badBytes, raw(reader, requireNotNull(bad.metadata(metadata.key))))
+    }
+
+    @Test fun sameIdLedgerAndRecipientCapsuleCandidatesRecoverFromBadFirstControlBytes() {
+        for (kind in listOf("ledger", "capsule")) withGroup { g ->
+            val publication = g.publishLedger(); val version = g.version("synthetic/control-candidate"); g.publish(version)
+            val control = if (kind == "ledger") CiphertextObjectMetadata(publication.metadata.key, publication.metadata.descriptor)
+                else publication.keyDeliveries.getValue("${g.initialKey.epoch.value}:${g.peer.fingerprint}").let {
+                    CiphertextObjectMetadata(it.key, it.descriptor)
+                }
+            val badBytes = corruptTail(raw(g.backend, control))
+            val bad = copiedPeer(g, "bad-$kind-peer", mapOf(control.key to badBytes))
+            var reader = candidateReader(g, "control-reader", bad)
+            val invalid = g.scan(g.inbox(reader.discoveryFrom(bad)))
+            assertObservation(invalid, requireNotNull(bad.metadata(control.key)), SyncInboxStage.INVALID_OBJECT)
+            if (kind == "capsule") assertNull(invalid.history?.state(version.id))
+
+            reader = candidateReader(g, "control-reader", g.backend)
+            val recovered = g.scan(g.inbox(reader.discoveryFrom(g.backend)))
+            assertFalse(recovered.trustBlocked)
+            assertEquals(SyncVersionState.ADMITTED, recovered.history?.state(version.id))
+            assertObservation(recovered, control, if (kind == "ledger") SyncInboxStage.LEDGER_ADMITTED else SyncInboxStage.KEY_ADMITTED)
+            assertObservation(recovered, requireNotNull(bad.metadata(control.key)), SyncInboxStage.INVALID_OBJECT)
+            assertContentEquals(badBytes, raw(reader, requireNotNull(bad.metadata(control.key))))
+        }
+    }
+
+    @Test fun badFirstSameIdRevocationNoticeDoesNotSuppressTheAuthenticNoticeOnReopen() = withGroup { g ->
+        g.publishLedger(); g.scan()
+        val nextKey = SyncStreamingCipher.create(g.initialKey.group); g.keys[nextKey.epoch] = nextKey
+        val revoked = g.sign(g.genesis.copy(id = SyncStoreId.random(), parent = g.genesis.reference(), sequence = 2,
+            epoch = nextKey.epoch, keyCommitment = nextKey.keyCommitment(), members = g.members +
+                (g.peer.fingerprint to g.members.getValue(g.peer.fingerprint).copy(active = false))))
+        g.ledger.offer(revoked)
+        val publication = g.publishLedger()
+        val control = publication.revocationNotices.getValue(g.peer.fingerprint).let { CiphertextObjectMetadata(it.key, it.descriptor) }
+        val badBytes = corruptTail(raw(g.backend, control))
+        val bad = copiedPeer(g, "bad-notice-peer", mapOf(control.key to badBytes))
+        var reader = candidateReader(g, "notice-reader", bad)
+        val invalid = g.scan(g.inbox(reader.discoveryFrom(bad)))
+        assertObservation(invalid, requireNotNull(bad.metadata(control.key)), SyncInboxStage.INVALID_OBJECT)
+        assertTrue(g.custody().ledger().current().members.getValue(g.peer.fingerprint).active)
+
+        reader = candidateReader(g, "notice-reader", g.backend)
+        val recovered = g.scan(g.inbox(reader.discoveryFrom(g.backend)))
+        assertObservation(recovered, control, SyncInboxStage.DEVICE_REVOKED)
+        assertObservation(recovered, requireNotNull(bad.metadata(control.key)), SyncInboxStage.INVALID_OBJECT)
+        assertEquals(revoked.reference(), recovered.ledgerCheckpoint)
+        assertFalse(g.custody().ledger().current().members.getValue(g.peer.fingerprint).active)
+        assertFailsWith<IllegalArgumentException> { g.custody().key(nextKey.epoch) }
+        assertContentEquals(badBytes, raw(reader, requireNotNull(bad.metadata(control.key))))
+    }
+
+    private fun candidateReader(g: Group, name: String, source: CiphertextStore): LanSyncGroupReplicaReader =
+        LanSyncGroupReplicaReader(FileCiphertextStore(g.root.resolve("$name-local")), g.root.resolve("$name-work")) { _, failure -> throw failure }
+            .also { it.routes(listOf(LanSyncGroupReplicaReader.Route("actual-file-peer", source))) }
+    private fun all(store: CiphertextStore): List<CiphertextObjectMetadata> {
+        val entries = mutableListOf<CiphertextObjectMetadata>(); var cursor: CommitCursor? = null
+        do { val page = store.listCommits(cursor, 1); entries += page.entries; cursor = page.nextCursor } while (cursor != null)
+        return entries
+    }
+    private fun raw(store: CiphertextStore, metadata: CiphertextObjectMetadata): ByteArray = ByteArrayOutputStream().also {
+        assertEquals(metadata, store.readTo(metadata.key, it, metadata.descriptor))
+    }.toByteArray()
+    private fun corruptTail(bytes: ByteArray) = bytes.copyOf().also {
+        assertTrue(it.isNotEmpty()); it[it.lastIndex] = (it.last().toInt() xor 1).toByte()
+    }
+    private fun copiedPeer(g: Group, name: String, replacement: Map<CiphertextObjectKey, ByteArray>): FileCiphertextStore {
+        val store = FileCiphertextStore(g.root.resolve(name))
+        all(g.backend).forEach { metadata ->
+            val bytes = replacement[metadata.key] ?: raw(g.backend, metadata)
+            store.put(CiphertextPutRequest(metadata.key, SyncStoreId.random(), SyncKeyDeliveryCodec.descriptor(bytes)), bytes.inputStream())
+        }
+        return store
+    }
+    private fun assertObservation(view: SyncInboxReconciliation, metadata: CiphertextObjectMetadata, stage: SyncInboxStage) {
+        assertEquals(stage, view.observations.single { it.key == metadata.key && it.descriptor == metadata.descriptor }.stage)
     }
 
     @Test fun newEpochContentWaitsUntilOwnerSignedCapsulesAndCompleteLedgerPermitProtectedKeyAdmission() = withGroup { g ->

@@ -40,4 +40,12 @@ interface LanSyncGroupPanelActions {
     fun cancelRevocation()
     fun retry()
     fun openCloudSettings()
+    fun prepareSourceReview(view: LanSyncGroupNodeView, unit: String)
+    fun prepareIncomingReview(view: LanSyncGroupNodeView, unit: String)
+    fun confirmActionReview(binding: String)
+    fun cancelActionReview()
+    fun refreshRecovery()
+    fun openRecovery(transaction: String)
+    fun prepareRestore(unit: String)
+    fun closeRecovery()
 }

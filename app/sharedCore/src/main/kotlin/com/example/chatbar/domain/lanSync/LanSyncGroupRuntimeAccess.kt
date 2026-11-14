@@ -12,10 +12,11 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     val replica: CiphertextStore, val work: Path, private val identity: LanSyncTlsIdentity,
     private val custody: SyncGroupCustody, node: (CiphertextStore) -> LanSyncGroupNode,
     val vault: SyncManagementVaultContext, val vaultDescriptor: CiphertextDescriptor,
-    val localManagementAvailable: Boolean = false) {
+    val localManagementAvailable: Boolean = false, candidateRoot: Path? = null) {
     val device get() = identity.fingerprint
     val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
-    val reader = LanSyncGroupReplicaReader(replica, work.resolve("replica-reads")) { route, failure -> routeFailure(route, failure) }
+    val reader = LanSyncGroupReplicaReader(replica, work.resolve("replica-reads"),
+        candidateRoot ?: work.resolve("replica-reads/commit-candidates")) { route, failure -> routeFailure(route, failure) }
     val node = node(reader)
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
@@ -26,16 +27,17 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     }
     fun peerStore(group: SyncStoreId, localCertificate: String, peerCertificate: String): LanSyncGroupPeerStore {
         require(group == trust.group && localCertificate == certificate) { "SYNC_GROUP_RUNTIME_TLS_IDENTITY" }
-        return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, replica, ::notice)
+        return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader, ::notice)
     }
     @Synchronized private fun notice(device: String): SyncLedgerNoticeEntry? {
         val checkpoint = ledger().current().reference()
         notices[device]?.takeIf { it.first == checkpoint }?.let { return it.second }
         var cursor: CommitCursor? = null
         do {
-            val page = replica.listCommits(cursor)
+            val page = reader.listCommits(cursor)
             for (metadata in page.entries) {
                 if (metadata.descriptor.length > SyncLedgerNoticeCodec.MAX_BYTES) continue
+                try {
                 val output = ByteArrayOutputStream()
                 val prefix = ByteArrayOutputStream()
                 val sink = object : java.io.OutputStream() {
@@ -58,13 +60,15 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
                         }
                     }
                 }
-                replica.readTo(metadata.key, sink, metadata.descriptor)
+                reader.readTo(metadata.key, sink, metadata.descriptor)
                 if (!SyncLedgerNoticeCodec.hasPrefix(output.toByteArray())) continue
                 val value = SyncLedgerNoticeCodec.decode(output.toByteArray())
                 if (value.context.recipient != device) continue
                 value.verifyOwner(trust, metadata.key)
+                require(value.context.revocation == SyncLedgerNotice.revocations(ledger())[device]) { "SYNC_GROUP_PEER_NOTICE_CHANGED" }
                 val entry = SyncLedgerNoticeEntry(value, CiphertextPutRequest(metadata.key, value.context.objectId, metadata.descriptor))
                 notices[device] = checkpoint to entry; return entry
+                } catch (failure: Exception) { routeFailure("REVOCATION_NOTICE", failure) }
             }
             cursor = page.nextCursor
         } while (cursor != null)

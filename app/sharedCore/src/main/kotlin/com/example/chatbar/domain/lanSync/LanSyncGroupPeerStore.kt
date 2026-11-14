@@ -60,9 +60,27 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         return result
     }
     override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? {
-        authorize(key); val result = backend.metadata(key); authorize(key)
+        authorize(key)
+        val before = ledger()
+        val expected = if (!active(before)) notice(before).descriptor else null
+        val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, expected) else backend.metadata(key)
+        authorize(key)
+        val latest = ledger()
+        if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
+        return result
+    }
+    fun metadataExact(key: CiphertextObjectKey, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+        authorize(key)
         val ledger = ledger()
-        if (!active(ledger)) require(result == notice(ledger)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
+        if (!active(ledger)) {
+            val notice = notice(ledger)
+            require(key == notice.key && (expected == null || expected == notice.descriptor)) { "SYNC_GROUP_PEER_NOTICE_CHANGED" }
+        }
+        val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, expected)
+            else backend.metadata(key)?.also { require(expected == null || expected == it.descriptor) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
+        authorize(key)
+        val latest = this.ledger()
+        if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
         return result
     }
     override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
@@ -71,7 +89,7 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         if (!active(ledger)) {
             val notice = notice(ledger)
             require(expected == null || expected == notice.descriptor) { "SYNC_GROUP_PEER_NOTICE_CHANGED" }
-            require(backend.metadata(key) == notice) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
+            require(metadataExact(key, notice.descriptor) == notice) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
         }
         val checked = object : OutputStream() {
             override fun write(value: Int) { authorize(key); destination.write(value) }
@@ -93,7 +111,7 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         // An active-peer backend cursor has no authority over the newly restricted view.
         if (cursor != null) throw CiphertextStoreException(CiphertextStoreFailure.INVALID_CURSOR)
         val notice = notice(ledger)
-        require(backend.metadata(notice.key) == notice) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
+        require(metadataExact(notice.key, notice.descriptor) == notice) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
         return CommitPage(listOf(notice), null)
     }
 }

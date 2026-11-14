@@ -244,6 +244,36 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         remember(commit); exclusive { native.recordSource(commit) }; refreshResolutions(); return commit
     }
 
+    /** Metadata listing only; opening an entry independently verifies every retained byte. */
+    suspend fun recoveryEntries(): List<LanSyncRecoveryEntry> = serialized {
+        exclusive {
+            Collections.unmodifiableList(workspace.recovery.list().filter {
+                (it.custodyDevice ?: it.sourceDevice) == identity.fingerprint
+            })
+        }
+    }
+
+    /** Browse the sealed historical source without capturing or reading today's user data. */
+    suspend fun browseRecovery(transaction: String): LanSyncGroupRecoveryView = serialized {
+        exclusive {
+            val vault = workspace.recovery
+            val entry = requireNotNull(vault.read(transaction)) { "SYNC_RECOVERY_MISSING" }
+            require((entry.custodyDevice ?: entry.sourceDevice) == identity.fingerprint) { "SYNC_RECOVERY_DEVICE" }
+            vault.verify(entry)
+            val snapshot = vault.snapshot(entry)
+            val retained = snapshot.units()
+            val units = vault.affected(entry).sorted().associateWith { unit ->
+                Collections.unmodifiableList(requireNotNull(retained[unit]) { "SYNC_RECOVERY_UNIT" }.toList())
+            }
+            LanSyncGroupRecoveryView(entry, Collections.unmodifiableMap(units))
+        }
+    }
+
+    /** Caller first admits the exact selected frozen record/reference; this reads immutable cache only. */
+    internal suspend fun readFrozenImage(record: LanSyncRecord, reference: String): ByteArray = withContext(Dispatchers.IO) {
+        workspace.readImagePreview(workspace.previewImage(record, reference))
+    }
+
     suspend fun prepareRecovery(transaction: String, unit: String): LanSyncRestorePreview = serialized {
         exclusive { workspace.prepareRecovery(transaction, unit, identity.fingerprint, projection) }
     }

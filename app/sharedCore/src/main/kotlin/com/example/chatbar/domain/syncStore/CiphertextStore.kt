@@ -79,6 +79,8 @@ data class CiphertextStoreCapabilities(
     val multiObjectTransaction: Boolean = false,
     /** File data is forced before publication; this does not promise power-loss directory durability. */
     val fileDataForcedBeforePublication: Boolean = false,
+    /** Raw quarantine overlay only: a claimed key may have several descriptor-pinned candidates. */
+    val untrustedCandidateVariants: Boolean = false,
 )
 
 /** Provider-bound opaque continuation, not a history checkpoint or proof of completeness. */
@@ -116,8 +118,11 @@ interface CiphertextStore {
 
     /**
      * Does not close source. Exact Long length and ciphertext checksum are checked before visibility.
-     * Same key/content is idempotent; a different descriptor or reused operation for another request
-     * refuses. The source must be replayable from byte zero after failure; byte resumption is optional.
+     * Physical immutable stores refuse a different descriptor under the same key, and all stores
+     * refuse a reused operation for another request. An explicitly advertised untrusted-candidate
+     * overlay retains each (claimed key, descriptor) separately instead: no existing bytes are
+     * replaced and no candidate becomes authenticated/canonical by being retained or listed.
+     * The source must be replayable from byte zero after failure; byte resumption is optional.
      */
     fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult
 

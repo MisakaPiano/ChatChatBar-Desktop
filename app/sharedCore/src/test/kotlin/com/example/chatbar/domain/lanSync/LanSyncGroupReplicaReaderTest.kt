@@ -27,18 +27,58 @@ class LanSyncGroupReplicaReaderTest {
         assertEquals(metadata, reader.readTo(request.key, output, request.descriptor))
         assertContentEquals(bytes, output.toByteArray())
         assertEquals(1, remote.reads)
-        assertEquals(metadata, local.metadata(request.key))
-        assertEquals(listOf(metadata), local.listCommits().entries)
+        assertEquals(metadata, reader.metadata(request.key))
+        assertEquals(listOf(metadata), reader.listCommits().entries)
+        assertNull(local.metadata(request.key), "Untrusted COMMIT candidates do not acquire the primary immutable slot")
+        assertTrue(local.listCommits().entries.isEmpty())
         assertTrue(failures.isEmpty())
 
         reader.routes(emptyList())
-        val reopened = LanSyncGroupReplicaReader(FileCiphertextStore(localPath), root.resolve("reopened-reads")) { _, _ ->
+        val reopened = LanSyncGroupReplicaReader(FileCiphertextStore(localPath), root.resolve("reads")) { _, _ ->
             fail("A retained local object must not depend on its former remote route")
         }
         val afterReopen = ByteArrayOutputStream()
         assertEquals(metadata, reopened.readTo(request.key, afterReopen, request.descriptor))
         assertContentEquals(bytes, afterReopen.toByteArray())
         assertEquals(1, remote.reads)
+    }
+
+    @Test fun sameKeyCommitPutsKeepIndependentDescriptorsAndStableOperationBindingsAcrossReopen() = withRoot { root ->
+        val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
+        val firstBytes = byteArrayOf(1, 3, 5, 7)
+        val secondBytes = byteArrayOf(2, 4, 6, 8)
+        val first = request(firstBytes, CiphertextObjectKind.COMMIT).copy(key = key)
+        val second = request(secondBytes, CiphertextObjectKind.COMMIT).copy(key = key)
+        val localPath = root.resolve("local")
+        val local = FileCiphertextStore(localPath)
+        val work = root.resolve("reads")
+        val reader = LanSyncGroupReplicaReader(local, work) { _, failure -> throw failure }
+        assertEquals(CiphertextPutDisposition.CREATED, reader.put(first, firstBytes.inputStream()).disposition)
+        assertEquals(CiphertextPutDisposition.CREATED, reader.put(second, secondBytes.inputStream()).disposition)
+        assertEquals(CiphertextPutDisposition.ALREADY_PRESENT, reader.put(first, firstBytes.inputStream()).disposition)
+        val conflict = assertFailsWith<CiphertextStoreException> {
+            reader.put(second.copy(operationId = first.operationId), secondBytes.inputStream())
+        }
+        assertEquals(CiphertextStoreFailure.OPERATION_CONFLICT, conflict.failure)
+        assertNull(local.metadata(key))
+
+        val reopened = LanSyncGroupReplicaReader(FileCiphertextStore(localPath), work) { _, failure -> throw failure }
+        assertEquals(CiphertextPutDisposition.ALREADY_PRESENT, reopened.put(first, firstBytes.inputStream()).disposition)
+        assertEquals(CiphertextStoreFailure.OPERATION_CONFLICT, assertFailsWith<CiphertextStoreException> {
+            reopened.put(second.copy(operationId = first.operationId), secondBytes.inputStream())
+        }.failure)
+        val page = reopened.listCommits(null, 1)
+        assertEquals(1, page.entries.size)
+        val next = reopened.listCommits(requireNotNull(page.nextCursor), 1)
+        assertNull(next.nextCursor)
+        assertEquals(setOf(CiphertextObjectMetadata(key, first.descriptor), CiphertextObjectMetadata(key, second.descriptor)),
+            (page.entries + next.entries).toSet())
+        for ((expected, bytes) in listOf(first.descriptor to firstBytes, second.descriptor to secondBytes)) {
+            assertEquals(CiphertextObjectMetadata(key, expected), reopened.metadataExact(key, expected))
+            val sink = ByteArrayOutputStream()
+            assertEquals(CiphertextObjectMetadata(key, expected), reopened.readTo(key, sink, expected))
+            assertContentEquals(bytes, sink.toByteArray())
+        }
     }
 
     @Test fun callerSinkFailureEscapesOnceWithoutTryingAnotherRouteOrDuplicatingOutput() = withRoot { root ->
@@ -105,13 +145,14 @@ class LanSyncGroupReplicaReaderTest {
             reader.routes(listOf(LanSyncGroupReplicaReader.Route("damaged-transport", remote)))
             val caller = ByteArrayOutputStream()
 
-            assertEquals("SYNC_GROUP_REPLICA_OBJECT_CHANGED", assertFailsWith<IllegalArgumentException> {
+            assertEquals("SYNC_CANDIDATE_SOURCE_CHANGED", assertFailsWith<IllegalArgumentException> {
                 reader.readTo(request.key, caller, request.descriptor)
             }.message)
             assertEquals(1, reads)
             assertEquals(0, caller.size())
             assertNull(local.metadata(request.key))
             assertTrue(local.listCommits().entries.isEmpty())
+            assertTrue(reader.listCommits().entries.isEmpty())
             assertEquals(listOf("damaged-transport"), failures.map { it.first })
             assertEquals(request.descriptor, source.metadata(request.key)?.descriptor)
         }
@@ -174,7 +215,7 @@ class LanSyncGroupReplicaReaderTest {
         CiphertextObjectKey(kind, SyncStoreId.random()), SyncStoreId.random(),
         CiphertextDescriptor(bytes.size.toLong(), CiphertextSha256.parse(lanSyncHash(bytes))))
     private fun withRoot(work: (Path) -> Unit) {
-        val root = Files.createTempDirectory("ccb-group-replica-reader-")
+        val root = Files.createTempDirectory("ccb-group-replica-reader-").toRealPath()
         try { work(root) } finally { root.toFile().deleteRecursively() }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
+import java.io.ByteArrayOutputStream
 import java.net.InetAddress
 import java.net.Socket
 import java.net.SocketTimeoutException
@@ -86,6 +87,58 @@ class LanSyncGroupAppTransportTest {
                 assertFails { Socket("127.0.0.1", offer.port).close() }
             }
         }
+    }
+
+    /** Opaque transport evidence only: neither candidate is claimed to be an authenticated AEAD envelope. */
+    @Test fun sameCommitIdExactDescriptorSurvivesActualTlsPutListGetAndColdTransportReopenWithoutReplacingPrimary() = fixture { f ->
+        val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
+        val first = ByteArray(143 * 1024) { ((it * 31 + 7) % 253).toByte() }
+        val second = first.copyOf().also { it[it.size / 2] = (it[it.size / 2].toInt() xor 1).toByte() }
+        fun descriptor(bytes: ByteArray) = CiphertextDescriptor(bytes.size.toLong(), CiphertextSha256.parse(lanSyncHash(bytes)))
+        val firstDescriptor = descriptor(first)
+        val secondDescriptor = descriptor(second)
+        assertEquals(firstDescriptor.length, secondDescriptor.length)
+        assertNotEquals(firstDescriptor.sha256, secondDescriptor.sha256)
+        val firstMetadata = CiphertextObjectMetadata(key, firstDescriptor)
+        val secondMetadata = CiphertextObjectMetadata(key, secondDescriptor)
+        f.access.replica.put(CiphertextPutRequest(key, SyncStoreId.random(), firstDescriptor), first.inputStream())
+        var port = f.transport.start()
+        var remote = f.transport.remote(LanSyncPeer(f.identity.fingerprint, "registered synthetic sender", "10.0.0.1", port))
+        assertEquals(firstMetadata, remote.put(CiphertextPutRequest(key, SyncStoreId.random(), firstDescriptor), first.inputStream()).metadata)
+        val secondRequest = CiphertextPutRequest(key, SyncStoreId.random(), secondDescriptor)
+        assertEquals(secondMetadata, remote.put(secondRequest, second.inputStream()).metadata)
+        assertEquals(firstMetadata, remote.metadata(key), "An unselected lookup still names the retained primary")
+        fun assertCandidates(store: CiphertextStore) {
+            val candidates = store.listCommits(null, 100).entries.filter { it.key == key }
+            assertEquals(setOf(firstMetadata, secondMetadata), candidates.toSet())
+            assertEquals(2, candidates.size)
+            val secondOutput = ByteArrayOutputStream()
+            assertEquals(secondMetadata, store.readTo(key, secondOutput, secondDescriptor))
+            assertContentEquals(second, secondOutput.toByteArray())
+            val firstOutput = ByteArrayOutputStream()
+            assertEquals(firstMetadata, store.readTo(key, firstOutput, firstDescriptor))
+            assertContentEquals(first, firstOutput.toByteArray())
+        }
+        assertCandidates(remote)
+        assertEquals(firstMetadata, f.access.replica.metadata(key))
+        val primary = ByteArrayOutputStream()
+        f.access.replica.readTo(key, primary, firstDescriptor)
+        assertContentEquals(first, primary.toByteArray())
+        f.transport.closeAndDrain()
+        val work = f.access.work
+        f.access = requireNotNull(f.enrollment.runtimeAccess())
+        assertEquals(work, f.access.work)
+        f.transport = LanSyncGroupAppTransport(f.access, f.network) { route, _ -> f.errors += route }
+        port = f.transport.start()
+        remote = f.transport.remote(LanSyncPeer(f.identity.fingerprint, "registered synthetic sender", "10.0.0.1", port))
+        assertCandidates(remote)
+        assertEquals(CiphertextPutDisposition.ALREADY_PRESENT, remote.put(secondRequest, second.inputStream()).disposition)
+        assertEquals(CiphertextStoreFailure.OPERATION_CONFLICT, assertFailsWith<CiphertextStoreException> {
+            remote.put(secondRequest.copy(descriptor = firstDescriptor), first.inputStream())
+        }.failure)
+        assertCandidates(remote)
+        assertEquals(firstMetadata, f.access.replica.metadata(key))
+        assertTrue(f.errors.isEmpty())
     }
 
     private fun assertPeerClosed(socket: Socket) {

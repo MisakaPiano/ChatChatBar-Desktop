@@ -20,6 +20,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     val state = mutableState.asStateFlow()
     private val mutableView = MutableStateFlow<LanSyncGroupNodeView?>(null)
     val view = mutableView.asStateFlow()
+    private val mutableActionReview = MutableStateFlow<LanSyncGroupActionReview?>(null)
+    val actionsReview = mutableActionReview.asStateFlow()
+    private val mutableRecoveryEntries = MutableStateFlow<List<LanSyncRecoveryEntry>>(emptyList())
+    val recoveryEntries = mutableRecoveryEntries.asStateFlow()
+    private val mutableRecoveryView = MutableStateFlow<LanSyncGroupRecoveryView?>(null)
+    val recoveryView = mutableRecoveryView.asStateFlow()
+    private val recoveryGeneration = java.util.concurrent.atomic.AtomicLong()
+    private val reviewGeneration = java.util.concurrent.atomic.AtomicLong()
     @Volatile private var closed = false
     private val lifecycle = Any()
     private var privacyGeneration = 0L
@@ -215,6 +223,77 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun openCloudSettings() {
         mutableState.update { it.copy(error = "此候选的网盘配置入口尚在接线；本地与同网同步可独立使用。") }
     }
+    override fun cancelActionReview() = synchronized(reviewGeneration) {
+        reviewGeneration.incrementAndGet()
+        mutableActionReview.value = null
+    }
+    override fun prepareSourceReview(view: LanSyncGroupNodeView, unit: String) {
+        val generation = synchronized(reviewGeneration) { reviewGeneration.incrementAndGet() }
+        action("核对本机发布目标") {
+            val plan = requireNotNull(view.plan) { "SYNC_GROUP_NODE_NOT_READY" }
+            val selected = plan.components.getValue(unit).filterTo(linkedSetOf()) {
+                plan.units.getValue(it).stage != LanSyncGroupNativeStage.UNCHANGED
+            }
+            val review = view.review(selected)
+            val missing = review.units.values.any { it.missingBodies.isNotEmpty() || it.records.missing.isNotEmpty() }
+            val dependencies = review.units.values.any { it.dependencies.isNotEmpty() }
+            val prepared = LanSyncGroupActionReview(review.binding, source = review, canConfirm = !missing && !dependencies,
+                heldReason = if (missing) "缺少已签名正文或记录归属证据，请先补齐后重新核对。" else if (dependencies) "需要一并核对关联内容。" else null)
+            synchronized(reviewGeneration) { if (reviewGeneration.get() == generation) mutableActionReview.value = prepared }
+        }
+    }
+    override fun prepareIncomingReview(view: LanSyncGroupNodeView, unit: String) {
+        val generation = synchronized(reviewGeneration) { reviewGeneration.incrementAndGet() }
+        action("核对传入删除或覆盖") {
+            val plan = requireNotNull(view.plan) { "SYNC_GROUP_NODE_NOT_READY" }
+            val review = requireNotNull(view.incomingReview) { "SYNC_GROUP_INCOMING_REVIEW_MISSING" }
+            val selected = plan.components.getValue(unit).intersect(review.reductions.keys)
+            require(unit in selected) { "SYNC_GROUP_INCOMING_CONFIRMATION_REQUIRED" }
+            val bindings = java.util.Collections.unmodifiableMap(selected.sorted().associateWith { review.reductions.getValue(it).binding })
+            review.acknowledge(bindings) // Complete linked reductions only, without native mutation.
+            val binding = lanSyncHash(kotlinx.serialization.json.buildJsonObject {
+                put("incoming", kotlinx.serialization.json.JsonObject(bindings.mapValues { kotlinx.serialization.json.JsonPrimitive(it.value) }))
+            })
+            val prepared = LanSyncGroupActionReview(binding, incoming = review, incomingBindings = bindings, canConfirm = true)
+            synchronized(reviewGeneration) { if (reviewGeneration.get() == generation) mutableActionReview.value = prepared }
+        }
+    }
+    override fun confirmActionReview(binding: String) = action("按已核对目标继续") {
+        val selected = requireNotNull(mutableActionReview.value) { "SYNC_GROUP_REVIEW_DISMISSED" }
+        require(selected.binding == binding && selected.canConfirm) { "SYNC_GROUP_REVIEW_CHANGED" }
+        val node = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node
+        selected.source?.let { node.commit(it, it.requiredBindings) }
+        selected.incoming?.let { node.applyIncoming(it.acknowledge(selected.incomingBindings)) }
+        selected.recovery?.let { node.applyRecovery(it) }
+        if (mutableActionReview.value === selected) cancelActionReview()
+        cycle(force = true)
+    }
+    override fun refreshRecovery() = action("读取本机保全记录") {
+        mutableRecoveryEntries.value = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.recoveryEntries()
+    }
+    override fun closeRecovery() = synchronized(recoveryGeneration) {
+        recoveryGeneration.incrementAndGet(); mutableRecoveryView.value = null
+        cancelActionReview()
+    }
+    override fun openRecovery(transaction: String) {
+        val generation = synchronized(recoveryGeneration) { recoveryGeneration.incrementAndGet() }
+        action("浏览本机保全") {
+            val prepared = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.browseRecovery(transaction)
+            synchronized(recoveryGeneration) { if (generation == recoveryGeneration.get()) mutableRecoveryView.value = prepared }
+        }
+    }
+    override fun prepareRestore(unit: String) {
+        val generation = synchronized(reviewGeneration) { reviewGeneration.incrementAndGet() }
+        val selected = mutableRecoveryView.value
+        action("核对恢复目标") {
+            requireNotNull(selected) { "SYNC_RECOVERY_PREVIEW_EXPIRED" }
+            require(unit in selected.units && mutableRecoveryView.value === selected) { "SYNC_RECOVERY_PREVIEW_EXPIRED" }
+            val preview = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.prepareRecovery(selected.entry.transaction, unit)
+            val prepared = LanSyncGroupActionReview(preview.binding, recovery = preview, canConfirm = preview.hasChanges,
+                heldReason = if (preview.hasChanges) null else "本机内容与保全目标一致，无需恢复。")
+            synchronized(reviewGeneration) { if (generation == reviewGeneration.get()) mutableActionReview.value = prepared }
+        }
+    }
     private suspend fun attach(opened: LanSyncGroupRuntimeAccess) {
         synchronized(lifecycle) {
         check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
@@ -280,7 +359,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         var cursor: CommitCursor? = null
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         do {
-            val page = current.replica.listCommits(cursor)
+            val page = current.reader.listCommits(cursor)
             page.entries.forEach { digest.update(it.key.toString().toByteArray()); digest.update(it.descriptor.toString().toByteArray()) }
             cursor = page.nextCursor
         } while (cursor != null)
@@ -328,6 +407,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         // A final pass also owns resources assigned by an action already entering shutdown.
         discovery?.close(); transport?.closeAndDrain()
         lockManagement()
+        closeRecovery()
         founder?.close()
     }
 }

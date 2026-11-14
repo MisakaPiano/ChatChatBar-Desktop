@@ -31,13 +31,15 @@ import java.util.Date
 /** Pure screen over real owner actions. Leaving it locks management without stopping app sync. */
 @Composable
 internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions,
-    view: LanSyncGroupNodeView? = null, scanInvitation: () -> Unit) {
+    view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
+    recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
+    scanInvitation: () -> Unit) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(actions, lifecycle) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) actions.lockManagement() }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); actions.lockManagement() }
+        onDispose { lifecycle.removeObserver(observer); actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery() }
     }
     val secretVisible = state.recoveryCode != null || state.invitation != null
     DisposableEffect(context, secretVisible) {
@@ -67,7 +69,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
         if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
-            CbText(LanSyncScope.description)
+            CbText(lanSyncGroupDescription)
             CbButton("创建新设备组", actions::createGroup, enabled = !state.busy)
         }
         if (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING) {
@@ -120,7 +122,10 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
                     enabled = !state.busy && state.managementUnlocked, variant = ButtonVariant.Destructive)
             }
         }
-        GroupFrozenReviewBrowser(view)
+        GroupFrozenReviewBrowser(view, state.busy, actions)
+        actionReview?.let { review -> GroupActionReview(review, state.busy, actions) }
+        if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
+            GroupRecoveryBrowser(recoveryEntries, recoveryView, state.busy, actions)
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
             val bitmap = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
@@ -149,7 +154,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
 
 /** A selected inspection stays frozen while the application continues synchronizing. */
 @Composable
-private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
+private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: Boolean, actions: LanSyncGroupPanelActions) {
     var selected by remember { mutableStateOf<Pair<LanSyncGroupNodeView, String>?>(null) }
     val units = remember(view) {
         val plan = view?.plan
@@ -160,7 +165,7 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
     var unitPage by remember(units) { mutableStateOf(0) }
     if (units.isNotEmpty() || selected != null) {
         CbText("冻结内容详情", style = ChatBarTheme.typography.title)
-        CbText("可浏览本次检查取得的完整字段。本页只供核对，待确认的内容会保留当前状态。")
+        CbText("可浏览本次检查取得的完整字段，待确认的内容会保留当前状态。核对发布或传入目标后，可再确认执行。")
         units.drop(unitPage * 10).take(10).forEach { unit ->
             val row = view?.plan?.units?.get(unit)
             CbButton("查看 $unit · ${row?.stage?.let(::groupFrozenStage).orEmpty()}",
@@ -179,6 +184,16 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
     CbText("已冻结：$unit")
     CbText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。此处可查看附件引用，暂不提供图片预览。")
     CbButton("关闭冻结详情", { selected = null }, variant = ButtonVariant.Secondary)
+    if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
+            LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, LanSyncGroupNativeStage.CONFLICT,
+            LanSyncGroupNativeStage.RECORD_REVIEW, LanSyncGroupNativeStage.DEPENDENCY_HELD)) {
+        CbButton("核对本机发布目标", { actions.prepareSourceReview(frozen.first, unit) },
+            enabled = !busy, variant = ButtonVariant.Secondary)
+    }
+    if (unit in frozen.first.incomingReview?.reductions.orEmpty()) {
+        CbButton("核对传入删除或覆盖", { actions.prepareIncomingReview(frozen.first, unit) },
+            enabled = !busy, variant = ButtonVariant.Secondary)
+    }
     val current = remember(plan, unit) { plan.before.units()[unit].orEmpty() }
     key(frozen.first, unit) {
         GroupFrozenRecords("本次检查时的本机内容", unit, current)
@@ -197,6 +212,131 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?) {
             GroupFrozenRecords("待确认的传入目标", unit, reduction.proposed)
         }
     }
+}
+
+/** Only verified owner snapshots reach this browser; closing it retains every historical entry. */
+@Composable
+private fun GroupRecoveryBrowser(entries: List<LanSyncRecoveryEntry>, view: LanSyncGroupRecoveryView?,
+    busy: Boolean, actions: LanSyncGroupPanelActions) {
+    CbText("本机保全与恢复", style = ChatBarTheme.typography.title)
+    CbButton("刷新保全记录", actions::refreshRecovery, enabled = !busy, variant = ButtonVariant.Secondary)
+    var entryPage by remember(entries) { mutableStateOf(0) }
+    entries.drop(entryPage * 10).take(10).forEach { entry ->
+        key(entry.transaction) {
+            GroupRecoveryMetadata(entry)
+            CbButton("浏览此保全记录", { actions.openRecovery(entry.transaction) }, enabled = !busy, variant = ButtonVariant.Secondary)
+        }
+    }
+    if (entries.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CbButton("上一页保全记录", { entryPage-- }, enabled = entryPage > 0, variant = ButtonVariant.Secondary)
+        CbText("${entryPage + 1}/${(entries.size + 9) / 10}")
+        CbButton("下一页保全记录", { entryPage++ }, enabled = (entryPage + 1) * 10 < entries.size, variant = ButtonVariant.Secondary)
+    }
+    if (view == null) return
+    CbText("正在浏览的历史保全")
+    GroupRecoveryMetadata(view.entry)
+    CbText("此处展示已保全的历史内容。准备恢复会先生成核对目标，确认后才修改本机资料。")
+    CbButton("关闭保全浏览", actions::closeRecovery, enabled = !busy, variant = ButtonVariant.Secondary)
+    val units = remember(view) { view.units.keys.sorted() }
+    var unitPage by remember(view) { mutableStateOf(0) }
+    units.drop(unitPage * 10).take(10).forEach { unit ->
+        key(view, unit) {
+            CbText("历史内容组：$unit")
+            GroupFrozenRecords("历史保全内容", unit, view.units.getValue(unit))
+            CbButton("准备恢复此组", { actions.prepareRestore(unit) }, enabled = !busy, variant = ButtonVariant.Secondary)
+        }
+    }
+    if (units.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CbButton("上一页历史内容组", { unitPage-- }, enabled = unitPage > 0, variant = ButtonVariant.Secondary)
+        CbText("${unitPage + 1}/${(units.size + 9) / 10}")
+        CbButton("下一页历史内容组", { unitPage++ }, enabled = (unitPage + 1) * 10 < units.size, variant = ButtonVariant.Secondary)
+    }
+}
+
+@Composable
+private fun GroupRecoveryMetadata(entry: LanSyncRecoveryEntry) {
+    CbText("${DateFormat.getDateTimeInstance().format(Date(entry.createdAt))} · ${entry.affectedUnits} 个内容组 · ${entry.recordCount} 条记录（含 ${entry.messageCount} 条实时消息）")
+    CbText(if (entry.hasLocalOriginals) "本机原始文件与本机选择已独立保全。" else "此记录保全了对端同步内容，不含对端账户和本机模型选择。")
+}
+
+/** All confirmations refer to this exact owner-prepared review, never the latest screen state. */
+@Composable
+private fun GroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+    var confirmed by remember(review.binding) { mutableStateOf(false) }
+    var unitPage by remember(review.binding) { mutableStateOf(0) }
+    val recovery = review.recovery
+    val canConfirm = review.canConfirm && (recovery?.hasChanges != false)
+    CbText(when { review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" },
+        style = ChatBarTheme.typography.title)
+    CbText("以下关联内容按同一核对结果处理；请查看各组正文和影响后确认。确认时会再次检查资料是否变化。")
+    val source = review.source
+    if (recovery != null) {
+        CbText("恢复仅作用于所选内容组和必需的缺失依赖；其余本机内容保留。")
+        CbText("本次恢复的内容组：${recovery.restoredUnits.sorted().joinToString("、")}")
+        GroupFrozenRecords("恢复前的本机内容", recovery.unit, recovery.currentRecords)
+        GroupFrozenRecords("待恢复的目标内容", recovery.unit, recovery.restoredRecords)
+        val impact = remember(review.binding) { LanSyncImpactReview.changes(recovery.currentRecords, recovery.restoredRecords) }
+        CbText(groupActionImpactSummary(impact))
+        if (!recovery.hasChanges) CbText("当前内容与恢复目标一致，没有需要写入的变化。")
+    } else {
+        val units = remember(review.binding) { source?.units?.keys?.sorted() ?: review.incomingBindings.keys.sorted() }
+        CbText("本次核对 ${units.size} 个内容组")
+        units.drop(unitPage * 10).take(10).forEach { unit ->
+            key(review.binding, unit) {
+                CbText("内容组：$unit")
+                if (source != null) {
+                    val row = source.units.getValue(unit)
+                    GroupFrozenRecords("准备发布的本机目标", unit, row.current)
+                    row.versions.entries.sortedWith(compareBy({ it.key.id.value }, { it.key.bodyHash })).forEach { (version, records) ->
+                        key(version) {
+                            CbText("已签名的核对版本：${version.id.value}")
+                            CbText("版本正文指纹：${version.bodyHash}")
+                            GroupFrozenRecords("此已签名版本的正文", unit, records)
+                            row.impact[version]?.let { CbText(groupActionImpactSummary(it)) }
+                                ?: CbText("此版本的影响摘要尚未取得。")
+                        }
+                    }
+                    if (row.versions.isEmpty()) CbText("本次尚无可显示的已签名核对正文。")
+                    if (row.missingBodies.isNotEmpty()) CbText("仍缺少 ${row.missingBodies.size} 份已签名版本的完整正文。")
+                    if (row.records.missing.isNotEmpty()) CbText("仍缺少 ${row.records.missing.size} 份记录归属依据。")
+                    if (row.dependencies.isNotEmpty()) CbText("尚需一并核对的关联组：${row.dependencies.sorted().joinToString("、")}")
+                } else {
+                    val row = review.incoming?.reductions?.get(unit)
+                    if (row == null) CbText("此组的核对数据尚未取得。") else {
+                        GroupFrozenRecords("核对时的本机内容", unit, row.current)
+                        GroupFrozenRecords("待应用的传入目标", unit, row.proposed)
+                        CbText(groupActionImpactSummary(row.impact))
+                    }
+                }
+            }
+        }
+        if (units.size > 10) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CbButton("上一页核对组", { unitPage-- }, enabled = unitPage > 0, variant = ButtonVariant.Secondary)
+            CbText("${unitPage + 1}/${(units.size + 9) / 10}")
+            CbButton("下一页核对组", { unitPage++ }, enabled = (unitPage + 1) * 10 < units.size, variant = ButtonVariant.Secondary)
+        }
+    }
+    review.heldReason?.let { CbText(it, color = ChatBarTheme.colors.warning) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CbCheckbox(confirmed, { confirmed = it }, enabled = !busy && canConfirm,
+            contentDescription = "已核对全部内容组和影响，并确认以上目标")
+        CbText("我已核对全部内容组和影响，并确认以上目标")
+    }
+    CbButton(when { source != null -> "确认发布以上本机目标"; recovery != null -> "确认恢复以上本机目标"; else -> "确认应用以上传入目标" },
+        { actions.confirmActionReview(review.binding) }, enabled = !busy && canConfirm && confirmed)
+    CbButton("取消本次核对", actions::cancelActionReview, enabled = !busy, variant = ButtonVariant.Secondary)
+}
+
+private fun groupActionImpactSummary(impact: List<LanSyncRecordImpact>): String {
+    val added = impact.count { it.change == LanSyncRecordChange.ADD }
+    val overwritten = impact.count { it.change == LanSyncRecordChange.REPLACE }
+    val removed = impact.count { it.change == LanSyncRecordChange.REMOVE }
+    val messages = impact.count { it.change == LanSyncRecordChange.REMOVE && it.message }
+    val versions = impact.sumOf { it.removedVersionIds.size.toLong() }
+    val attachments = impact.sumOf { it.removedAttachmentReferences.toLong() }
+    val archivedMessages = impact.sumOf { it.removedEmbeddedMessageIds.size.toLong() }
+    return "相对以上原内容，目标新增 $added 条记录、覆盖 $overwritten 条记录、移除 $removed 条记录（含 $messages 条实时消息）；" +
+        "移除 $versions 个消息版本、$attachments 条附件引用和 $archivedMessages 条存档内消息。"
 }
 
 @Composable
