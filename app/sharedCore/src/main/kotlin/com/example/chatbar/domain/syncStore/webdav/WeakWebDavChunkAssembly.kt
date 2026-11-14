@@ -193,9 +193,13 @@ class WeakWebDavChunkAssembly(transport: WebDavHttpTransport, private val privat
                     val expectedLength = minOf(plan.chunkBytes, plan.request.descriptor.length - index * plan.chunkBytes)
                     if (request.descriptor.length != expectedLength) fail(CiphertextStoreFailure.INTEGRITY)
                     verify(part, request.descriptor, checkActive)
-                    val observed = Files.newInputStream(part, NOFOLLOW_LINKS).use { chunks.appendAttempt(request, it, checkActive) }
-                    if (chunks.readCandidate(observed.candidate, whole, checkActive) == null) fail(CiphertextStoreFailure.TRANSIENT)
-                    writeEntry(output, index, observed.candidate); checkActive(); index++
+                    Files.newInputStream(part, NOFOLLOW_LINKS).use { source ->
+                        chunks.appendAttemptReadback(request, source, checkActive).use { readback ->
+                            readback.copyTo(whole)
+                            writeEntry(output, index, readback.observation.candidate)
+                        }
+                    }
+                    checkActive(); index++
                 }
                 if (whole.length != plan.request.descriptor.length || whole.finish() != plan.request.descriptor.sha256) fail(CiphertextStoreFailure.INTEGRITY)
                 channel.force(true); checkActive()

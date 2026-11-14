@@ -118,6 +118,58 @@ class LanSyncGroupCloudRuntimeTest {
         }
     }
 
+    @Test fun aPreviouslyObservedCatalogIsRecheckedBeforeAnotherPlatformLeaseAndRetainsItsHistoricalProgressWhenDamaged() = fixture { f ->
+        WeakFixture(f.directory("cached-damaged-catalog-provider")).use { provider ->
+            val id = f.add(provider); val runtime = f.runtime()
+            assertTrue(runtime.cycle())
+            val prior = f.latest().getValue(id)
+            assertTrue(prior.selectionObserved); assertNotNull(prior.lastObservedAt)
+            val file = f.root.resolve("catalog/cloud-routes.protected")
+            val damaged = byteArrayOf(7, 2, 9, 4, 1)
+            Files.write(file, damaged)
+            val requests = provider.server.requestCount
+            val failure = assertFailsWith<IllegalStateException> { runtime.prepareScheduledBatch(forceIdle = true) }
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message); assertNull(failure.cause)
+            assertEquals(requests, provider.server.requestCount)
+            assertEquals(setOf(id), f.latest().keys)
+            val failed = f.latest().getValue(id)
+            assertFalse(failed.selectionObserved); assertEquals(prior.lastObservedAt, failed.lastObservedAt)
+            assertNotEquals(prior.text, failed.text); assertTrue(failed.text.isNotBlank())
+            assertTrue(requireNotNull(runtime.nextDelayMillis()) > 0)
+            assertContentEquals(damaged, Files.readAllBytes(file)); f.assertOriginal()
+        }
+    }
+
+    @Test fun catalogDamageDuringDiscoveryStopsBeforeOutgoingIoInsteadOfReportingNoEnabledConnections() = fixture { f ->
+        WeakFixture(f.directory("mid-cycle-damaged-catalog-provider")).use { provider ->
+            val id = f.add(provider); val runtime = f.runtime()
+            assertTrue(runtime.cycle())
+            val prior = f.latest().getValue(id)
+            val file = f.root.resolve("catalog/cloud-routes.protected")
+            val damaged = byteArrayOf(9, 8, 7, 6, 5)
+            val corrupted = AtomicBoolean(false)
+            val puts = provider.dav.puts.toList()
+            val requests = provider.server.requestCount
+            provider.dav.overrideRequest = { request ->
+                if (request.method == "PROPFIND" && corrupted.compareAndSet(false, true)) Files.write(file, damaged)
+                null
+            }
+            val failure = assertFailsWith<IllegalStateException> { runtime.cycle() }
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE", failure.message); assertNull(failure.cause)
+            assertTrue(corrupted.get()); assertTrue(provider.server.requestCount > requests)
+            assertEquals(puts, provider.dav.puts.toList())
+            assertEquals(setOf(id), f.latest().keys)
+            val failed = f.latest().getValue(id)
+            assertFalse(failed.selectionObserved); assertEquals(prior.lastObservedAt, failed.lastObservedAt)
+            assertNotEquals(prior.text, failed.text); assertTrue(failed.text.isNotBlank())
+            val stopped = provider.server.requestCount
+            assertEquals("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE",
+                assertFailsWith<IllegalStateException> { runtime.prepareScheduledBatch(forceIdle = true) }.message)
+            assertEquals(stopped, provider.server.requestCount)
+            assertContentEquals(damaged, Files.readAllBytes(file)); f.assertOriginal()
+        }
+    }
+
     @Test fun platformDeniedDoesNotOpenTheCatalogAndDisabledOrEmptyTargetsNeverUseHttp() = fixture { f ->
         f.permitted.set(false)
         val production = LanSyncGroupCloudRuntime(f.access, f.permitted::get, { error("SYNTHETIC_FORBIDDEN_WAKE") }, { })

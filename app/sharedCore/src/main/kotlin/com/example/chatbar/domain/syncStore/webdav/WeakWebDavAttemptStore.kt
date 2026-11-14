@@ -38,6 +38,19 @@ enum class WeakWebDavObservationOrigin { NEW_ATTEMPT_READBACK, EXISTING_ATTEMPT_
 class WeakWebDavObservation internal constructor(val candidate: WeakWebDavCandidate,
     val origin: WeakWebDavObservationOrigin, val observedAtMillis: Long)
 
+/** One already verified GET. Local copies retain that observation; closing releases its private file. */
+internal class WeakWebDavVerifiedRead internal constructor(val observation: WeakWebDavObservation,
+    private val copy: (OutputStream) -> Unit, private val release: () -> Unit) : Closeable {
+    private var closed = false
+    fun copyTo(destination: OutputStream) {
+        check(!closed) { "SYNC_WEAK_DAV_READ_CLOSED" }
+        copy(destination)
+    }
+    override fun close() {
+        if (!closed) { closed = true; release() }
+    }
+}
+
 /**
  * Writable candidate storage for explicitly weak DAV routes. It deliberately is not CiphertextStore.
  * Every attempt has a new physical nonce and at most one PUT; retry first checks old local locators.
@@ -67,46 +80,55 @@ class WeakWebDavAttemptStore(private val transport: WebDavHttpTransport, private
     }
 
     fun appendAttempt(request: CiphertextPutRequest, source: InputStream,
-        checkActive: () -> Unit = {}): WeakWebDavObservation = safeIo {
-        checkActive()
+        checkActive: () -> Unit = {}): WeakWebDavObservation =
+        appendAttemptReadback(request, source, checkActive).use { it.observation }
+
+    /** Holds the same full GET for a caller's local hash pass; it never exposes unverified bytes. */
+    internal fun appendAttemptReadback(request: CiphertextPutRequest, source: InputStream,
+        checkActive: () -> Unit = {}): WeakWebDavVerifiedRead = activeIo(checkActive) { active ->
+        active()
         WebDavStoreRecord.requireLength(request.descriptor.length)
         bindings.reserveOperation(request)
         for (candidate in retainedAttempts(request)) {
-            try {
-                observe(candidate, WeakWebDavObservationOrigin.EXISTING_ATTEMPT_READBACK, checkActive)?.let { return@safeIo it }
-            } catch (failure: CiphertextStoreException) {
+            // Only remote preparation failures may try another physical locator. Admission, local
+            // observation and caller-output failures must not turn into another upload attempt.
+            val file = try { prepared(candidate, active) } catch (failure: CiphertextStoreException) {
                 if (failure.failure !in setOf(CiphertextStoreFailure.INTEGRITY, CiphertextStoreFailure.TRANSIENT)) throw failure
+                null
             }
+            if (file != null) return@activeIo verified(candidate, WeakWebDavObservationOrigin.EXISTING_ATTEMPT_READBACK,
+                file, active, checkActive)
         }
         requireSpace(request.descriptor.length)
-        PrivateSyncFile.create(privateRoot).use { wire ->
+        val candidate = PrivateSyncFile.create(privateRoot).use { wire ->
             FileChannel.open(wire.path, WRITE, NOFOLLOW_LINKS).use { channel ->
                 val output = Channels.newOutputStream(channel)
-                val guardedOutput = checkedOutput(output, checkActive)
+                val guardedOutput = checkedOutput(output, active)
                 guardedOutput.write(WebDavStoreRecord.header(CiphertextObjectMetadata(request.key, request.descriptor)))
-                WebDavStoreRecord.transfer(checkedInput(source, checkActive), guardedOutput, request.descriptor, budget.bufferBytes)
+                WebDavStoreRecord.transfer(checkedInput(source, active), guardedOutput, request.descriptor, budget.bufferBytes)
                 channel.force(true)
-                checkActive()
+                active()
             }
             var candidate: WeakWebDavCandidate
             while (true) {
                 candidate = WeakWebDavCandidate(route, request.key, request.descriptor, request.operationId, SyncStoreId.random())
                 val bytes = encodeAttempt(candidate)
-                checkActive()
+                active()
                 val result = attempts.put(journalRequest(candidate.attempt, "WEAK-ATTEMPT", bytes), bytes.inputStream())
                 // A collision/replayed journal entry is never permission to PUT an old locator again.
                 if (result.disposition == CiphertextPutDisposition.CREATED) break
             }
-            ensureCollections(candidate, checkActive)
+            ensureCollections(candidate, active)
             http("PUT", physicalPath(candidate), fileBody(wire.path,
-                WebDavStoreRecord.requireLength(request.descriptor.length), checkActive), mapOf("If-None-Match" to "*"), checkActive).use {
+                WebDavStoreRecord.requireLength(request.descriptor.length), active), mapOf("If-None-Match" to "*"), active).use {
                 // This is defensive only. No conditional-create or complete-publication guarantee is inferred.
                 if (it.code == 412) fail(CiphertextStoreFailure.OBJECT_CONFLICT)
                 transport.requireStatus(it.code, setOf(200, 201, 204))
             }
-            observe(candidate, WeakWebDavObservationOrigin.NEW_ATTEMPT_READBACK, checkActive)
-                ?: fail(CiphertextStoreFailure.TRANSIENT)
+            candidate
         }
+        val file = prepared(candidate, active) ?: fail(CiphertextStoreFailure.TRANSIENT)
+        verified(candidate, WeakWebDavObservationOrigin.NEW_ATTEMPT_READBACK, file, active, checkActive)
     }
 
     fun listCandidates(key: CiphertextObjectKey, cursor: WeakWebDavCursor? = null,
@@ -155,10 +177,17 @@ class WeakWebDavAttemptStore(private val transport: WebDavHttpTransport, private
         null
     }
 
-    private fun observe(candidate: WeakWebDavCandidate, origin: WeakWebDavObservationOrigin,
-        checkActive: () -> Unit): WeakWebDavObservation? {
-        prepared(candidate, checkActive)?.use { return remember(candidate, origin, checkActive) }
-        return null
+    private fun verified(candidate: WeakWebDavCandidate, origin: WeakWebDavObservationOrigin,
+        file: PrivateSyncFile, active: () -> Unit, copyActive: () -> Unit): WeakWebDavVerifiedRead {
+        try {
+            val observation = remember(candidate, origin, active)
+            return WeakWebDavVerifiedRead(observation,
+                { destination -> activeIo(copyActive) { copyVerified(file.path, candidate.descriptor, destination, it) } },
+                { safeIo { file.close() } })
+        } catch (failure: Throwable) {
+            try { file.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+            throw failure
+        }
     }
     private fun remember(candidate: WeakWebDavCandidate, origin: WeakWebDavObservationOrigin,
         checkActive: () -> Unit): WeakWebDavObservation {
@@ -357,6 +386,11 @@ class WeakWebDavAttemptStore(private val transport: WebDavHttpTransport, private
     catch (_: ClosedByInterruptException) { Thread.currentThread().interrupt(); throw InterruptedIOException("SYNC_DAV_INTERRUPTED") }
     catch (_: AccessDeniedException) { fail(CiphertextStoreFailure.PERMISSION) }
     catch (_: IOException) { fail(CiphertextStoreFailure.IO) }
+    private class ActiveFailure(val original: Throwable) : RuntimeException(null, null, false, false)
+    private fun <T> activeIo(checkActive: () -> Unit, work: (() -> Unit) -> T): T {
+        val active = { try { checkActive() } catch (failure: Throwable) { throw ActiveFailure(failure) } }
+        return try { safeIo { work(active) } } catch (failure: ActiveFailure) { throw failure.original }
+    }
     private companion object {
         const val ATTEMPT_BYTES = 142
         val BINARY = "application/octet-stream".toMediaType()

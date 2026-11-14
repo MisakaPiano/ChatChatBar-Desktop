@@ -3,6 +3,7 @@ package com.example.chatbar.domain.syncStore.webdav
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.io.OutputStream
 import java.net.InetAddress
 import java.net.Proxy
 import java.nio.file.Files
@@ -12,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -22,6 +25,90 @@ import okio.Buffer
 import kotlin.test.*
 
 class WeakWebDavAttemptStoreTest {
+    @Test fun oneVerifiedGetCanFeedLocalCopiesWithoutASecondRequestOrASecondObservationTime() = weakFixture { f ->
+        val bytes = ByteArray(80_019) { (it % 193).toByte() }; val request = davRequest(bytes)
+        val gets = AtomicInteger()
+        f.dav.overrideRequest = { if (it.method == "GET") gets.incrementAndGet(); null }
+        val store = f.store("readback")
+        val readback = store.appendAttemptReadback(request, bytes.inputStream())
+        val observation = readback.observation
+        val observedAt = observation.observedAtMillis
+        assertEquals(WeakWebDavObservationOrigin.NEW_ATTEMPT_READBACK, observation.origin)
+        assertEquals(1, gets.get()); assertEquals(1L, f.preparations("readback"))
+        val path = f.path(observation.candidate)
+        val original = f.dav.files.getValue(path)
+        f.dav.files[path] = original.copyOf(original.size - 1)
+        try {
+            val before = f.server.requestCount
+            repeat(2) {
+                val output = ByteArrayOutputStream(); readback.copyTo(output)
+                assertContentEquals(bytes, output.toByteArray())
+                assertSame(observation, readback.observation)
+                assertEquals(observedAt, readback.observation.observedAtMillis)
+            }
+            assertEquals(before, f.server.requestCount); assertEquals(1, gets.get())
+            assertEquals(1, f.observations("readback"))
+            // A later independent provider read still detects mutation; the local copy claims only
+            // the one earlier complete GET, never freshness of the provider's current object.
+            val escaped = ByteArrayOutputStream()
+            davFailure(CiphertextStoreFailure.INTEGRITY) { store.readCandidate(observation.candidate, escaped) }
+            assertEquals(0, escaped.size()); assertEquals(2, gets.get())
+        } finally { readback.close() }
+        assertEquals(0L, f.preparations("readback"))
+        assertFailsWith<IllegalStateException> { readback.copyTo(ByteArrayOutputStream()) }
+        assertEquals(1, f.dav.puts.size)
+    }
+
+    @Test fun sinkAndLiveGuardFailuresCannotRetryAnotherCandidateOrConsumeAColdSource() = weakFixture { f ->
+        val bytes = ByteArray(40_013) { (it % 173).toByte() }; val request = davRequest(bytes)
+        f.store("writer").appendAttempt(request, bytes.inputStream())
+        val unreadable = object : InputStream() { override fun read(): Int = error("Cold retry must use retained ciphertext") }
+        val source = f.store("writer")
+        val sinkFailure = CiphertextStoreException(CiphertextStoreFailure.INTEGRITY)
+        source.appendAttemptReadback(request, unreadable).use { readback ->
+            val before = f.server.requestCount
+            val output = object : OutputStream() {
+                var writes = 0
+                override fun write(value: Int) { writes++; throw sinkFailure }
+                override fun write(bytes: ByteArray, offset: Int, length: Int) { writes++; throw sinkFailure }
+            }
+            assertSame(sinkFailure, assertFailsWith<CiphertextStoreException> { readback.copyTo(output) })
+            assertEquals(1, output.writes); assertEquals(before, f.server.requestCount)
+        }
+        assertEquals(0L, f.preparations("writer"))
+        val received = AtomicBoolean()
+        val guardFailure = CiphertextStoreException(CiphertextStoreFailure.TRANSIENT)
+        val before = f.server.requestCount
+        f.dav.overrideRequest = { if (it.method == "GET") received.set(true); null }
+        assertSame(guardFailure, assertFailsWith<CiphertextStoreException> {
+            source.appendAttemptReadback(request, unreadable) { if (received.get()) throw guardFailure }.close()
+        })
+        assertEquals(before + 1, f.server.requestCount)
+        assertEquals(0L, f.preparations("writer")); assertEquals(1, f.dav.puts.size)
+        f.dav.overrideRequest = null
+        var blocked = false
+        source.appendAttemptReadback(request, unreadable) { if (blocked) throw guardFailure }.use { readback ->
+            blocked = true
+            val requests = f.server.requestCount; val escaped = ByteArrayOutputStream()
+            assertSame(guardFailure, assertFailsWith<CiphertextStoreException> { readback.copyTo(escaped) })
+            assertEquals(0, escaped.size()); assertEquals(requests, f.server.requestCount)
+        }
+        assertEquals(0L, f.preparations("writer")); assertEquals(1, f.dav.puts.size)
+    }
+
+    @Test fun partialGetCannotReturnAReadbackHandleOrEmitAnyCallerBytes() = weakFixture { f ->
+        val bytes = ByteArray(20_017) { (it % 181).toByte() }; val request = davRequest(bytes)
+        val output = ByteArrayOutputStream(); var returned = false
+        f.dav.partialNextPut = true
+        davFailure(CiphertextStoreFailure.INTEGRITY) {
+            f.store("partial-handle").appendAttemptReadback(request, bytes.inputStream()).use {
+                returned = true; it.copyTo(output)
+            }
+        }
+        assertFalse(returned); assertEquals(0, output.size()); assertEquals(0, f.observations("partial-handle"))
+        assertEquals(0L, f.preparations("partial-handle")); assertEquals(1, f.dav.files.size)
+    }
+
     @Test fun concurrentClientsAppendDistinctAttemptsAndRetainAllConflictingClaims() = weakFixture { f ->
         val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())
         val bytes = ByteArray(200_003) { (it % 197).toByte() }
@@ -201,6 +288,9 @@ internal class WeakFixture(val root: Path) : AutoCloseable {
     }
     fun observations(name: String): Int = Files.walk(root.resolve(name).resolve("weak-observations")).use { stream ->
         stream.filter { it.fileName.toString().endsWith(".obj") }.count().toInt()
+    }
+    fun preparations(name: String): Long = Files.list(root.resolve(name)).use { stream ->
+        stream.filter { it.fileName.toString().endsWith(".preparing") }.count()
     }
     fun path(c: WeakWebDavCandidate) = "/sync/weak-attempts-v1/${if (c.key.kind == CiphertextObjectKind.BLOB) "objects" else "commits"}/${c.key.id.value}/${c.descriptor.sha256.hex}/${c.descriptor.length}-${c.operationId.value}-${c.attempt.value}.bin"
     override fun close() { server.close(); client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll() }

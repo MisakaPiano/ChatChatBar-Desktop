@@ -71,7 +71,6 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
     private var snapshotRevision = -1L
     private var scheduleKnown = false
     private var scheduleRevision = -1L
-    private var scheduledIds: Set<SyncStoreId> = emptySet()
     private var deferred: RelativeWait? = null
     private var dirtyRevision = 0L
 
@@ -119,22 +118,35 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
     private suspend fun scheduledSnapshot(captured: Long): ScheduledSnapshot? { return try {
         val catalog = runInterruptible(Dispatchers.IO) { catalogProvider() }
         val revision = catalog.revision.value
-        val cached = synchronized(lock) { if (scheduleKnown && snapshotCatalog === catalog && scheduleRevision == revision) scheduledIds else null }
-        val ids = cached ?: runInterruptible(Dispatchers.IO) { catalog.rows().filter { it.enabled }.mapTo(linkedSetOf()) { it.id } }
+        val cached = synchronized(lock) { scheduleKnown && snapshotCatalog === catalog && scheduleRevision == revision }
+        // A process-local revision cannot prove that protected bytes still exist or remain readable.
+        val ids = runInterruptible(Dispatchers.IO) { catalog.rows().filter { it.enabled }.mapTo(linkedSetOf()) { it.id } }
         synchronized(lock) {
             if (closed || generation != captured || catalog.revision.value != revision) return null
-            schedule.enabled(ids); scheduledIds = ids.toSet(); scheduleKnown = true; scheduleRevision = revision
+            schedule.enabled(ids); scheduleKnown = true; scheduleRevision = revision
             snapshotCatalog = catalog; snapshotRevision = revision
             progress.keys.retainAll(ids)
             ids.forEach { progress.getOrPut(it) { LanSyncGroupCloudRouteProgress("等待检查本次选定版本") } }
         }
-        if (cached == null) publishCurrent(captured)
+        if (!cached) publishCurrent(captured)
         ScheduledSnapshot(catalog, revision, ids)
     } catch (cancelled: CancellationException) { throw cancelled }
     catch (_: Exception) {
-        deferUntilWake()
-        throw IllegalStateException("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE")
+        configurationUnavailable(captured)
     } }
+
+    private fun configurationUnavailable(captured: Long): Nothing {
+        synchronized(lock) {
+            if (!closed && generation == captured) {
+                scheduleKnown = false; scheduleRevision = -1
+                deferred = RelativeWait(clockMillis(), 60_000)
+                progress.replaceAll { _, value -> value.copy(text = CONFIGURATION_UNAVAILABLE_TEXT, selectionObserved = false) }
+                snapshotCatalog?.let { snapshotRevision = it.revision.value }
+            }
+        }
+        publishCurrent(captured)
+        throw IllegalStateException("SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE")
+    }
 
     /** Stops this batch's HTTP immediately. A later explicitly scheduled cycle may run again. */
     fun pause() {
@@ -181,7 +193,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                     val revision = catalog.revision.value
                     val row = try { runInterruptible(Dispatchers.IO) { catalog.rows().singleOrNull { it.id == id && it.enabled } } }
                         catch (cancelled: CancellationException) { throw cancelled }
-                        catch (_: Exception) { null }
+                        catch (_: Exception) { configurationUnavailable(captured) }
                     if (row == null) {
                         complete = false
                         if (globallyActive(captured) && catalog.revision.value == revision) schedule.defer(id)
@@ -276,6 +288,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (failure: Exception) {
                         currentCoroutineContext().ensureActive()
+                        if (failure.message == "SYNC_GROUP_CLOUD_CONFIGURATION_UNAVAILABLE") throw failure
                         complete = false
                         var category: LanSyncGroupCloudSchedule.FailureCategory? = null
                         if (globallyActive(captured) && catalog.revision.value == revision && !Thread.currentThread().isInterrupted) {
@@ -321,7 +334,7 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
         val revision = catalog.revision.value
         val enabled = try { runInterruptible(Dispatchers.IO) { catalog.rows().filter { it.enabled }.mapTo(linkedSetOf()) { it.id } } }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { emptySet() }
+            catch (_: Exception) { configurationUnavailable(captured) }
         synchronized(lock) {
             if (closed || captured != generation) return
             snapshotCatalog = catalog
@@ -396,5 +409,8 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
             } catch (failure: Throwable) { response.close(); throw failure }
         }
     }
-    companion object { private const val OWNER = "cloud" }
+    companion object {
+        private const val OWNER = "cloud"
+        private const val CONFIGURATION_UNAVAILABLE_TEXT = "网盘连接设置暂时无法读取，原文件已保留；请打开连接设置检查"
+    }
 }

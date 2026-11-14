@@ -15,6 +15,33 @@ import kotlin.test.*
 
 /** Small synthetic HTTP resume/assembly proofs, not a real provider or large-upload acceptance. */
 class WeakWebDavChunkAssemblyTest {
+    @Test fun freshAndColdResumeEachFetchACompletedChunkOnceWhileIndependentReadbackStillFetchesItAgain() = chunkFixture { f ->
+        val bytes = ByteArray(91) { (it % 67).toByte() }; val request = davRequest(bytes)
+        val gets = Collections.synchronizedList(mutableListOf<String>())
+        f.shared.dav.overrideRequest = { incoming ->
+            if (incoming.method == "GET") gets += incoming.requestUrl!!.encodedPath
+            null
+        }
+        val first = f.layer("writer").append(request, bytes.inputStream())
+        val chunks = f.shared.dav.files.keys.filter { "/weak-chunks-v1/" in it }.toSet()
+        assertEquals(6, chunks.size)
+        chunks.forEach { assertEquals(1, gets.count { path -> path == it }, "Each new chunk feeds the whole hash from its first verified GET") }
+        val originalPuts = f.shared.dav.puts.toList()
+        val originalFiles = f.shared.dav.files.mapValues { it.value.copyOf() }
+        gets.clear()
+        val cold = f.layer("writer").resume(request.operationId)
+        assertEquals(first.assembly, cold.assembly)
+        chunks.forEach { assertEquals(1, gets.count { path -> path == it }, "Cold resume must reuse its one verified GET") }
+        assertEquals(originalPuts, f.shared.dav.puts.toList())
+        originalFiles.forEach { (path, body) -> assertContentEquals(body, f.shared.dav.files.getValue(path)) }
+        gets.clear()
+        val output = ByteArrayOutputStream()
+        assertNotNull(f.layer("reader").readAssembly(cold.assembly, CiphertextObjectMetadata(request.key, request.descriptor), output))
+        assertContentEquals(bytes, output.toByteArray())
+        chunks.forEach { assertEquals(1, gets.count { path -> path == it }, "An independent assembly read still verifies every remote chunk") }
+        assertEquals(originalPuts, f.shared.dav.puts.toList())
+    }
+
     @Test fun interruptedUploadColdReopenReusesConfirmedChunksAndPublishesAssemblyLast() = chunkFixture { f ->
         val bytes = ByteArray(103) { (it % 71).toByte() }
         val request = davRequest(bytes, CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()))
