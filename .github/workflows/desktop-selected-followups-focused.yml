@@ -29,6 +29,7 @@ jobs:
           :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopEditorBudgetGroupsTest'
           --tests 'com.example.chatbar.desktop.DesktopEditorPromptBudgetTest'
+          --tests 'com.example.chatbar.desktop.DesktopPersonSectionLayoutTest'
           --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
