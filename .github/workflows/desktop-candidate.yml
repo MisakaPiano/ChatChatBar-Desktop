@@ -234,7 +234,7 @@ jobs:
           Set-Content -LiteralPath $canary -Value 'Synthetic retained upgrade canary' -Encoding utf8 -NoNewline
           $before = (Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash
           $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --probe-completed-cache
           if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_UPGRADE_FAILED' }
           $current = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
           $manifest = Get-Content -LiteralPath (Join-Path $program "versions\$current\install-manifest.json") -Raw | ConvertFrom-Json
