@@ -1628,7 +1628,7 @@ class ImagePromptToolViewModel : ViewModel() {
                             },
                             onProgress = { progress -> _uiState.update { it.copy(batchProgress = progress, rateLimitStatus = progress.label()) } },
                             generateAndSave = { count -> GlobalImageGenerationConcurrencyGate.instance.run { executeBatch(count) } })
-                    } else GlobalImageGenerationConcurrencyGate.instance.run { executeBatch(configured.count) }
+                    } else ImageBatchRunner.ordinaryStudioRequest { GlobalImageGenerationConcurrencyGate.instance.run { executeBatch(configured.count) } }
                     if (automatic) {
                         val notice = "连续生图完成：已成功生成 $completed 张"
                         _uiState.update { it.copy(completionNotice = notice) }
@@ -1647,7 +1647,7 @@ class ImagePromptToolViewModel : ViewModel() {
                 ) { cleanupError ->
                     _uiState.update {
                         it.copy(
-                            phase = if (error is CancellationException) ImagePromptToolPhase.CANCELLED
+                            phase = if (error is CancellationException || error is ImageBatchStopped) ImagePromptToolPhase.CANCELLED
                                 else ImagePromptToolPhase.FAILED,
                             rateLimitStatus = null,
                             error = listOfNotNull(

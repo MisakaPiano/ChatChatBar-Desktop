@@ -3,6 +3,8 @@ package com.example.chatbar.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.ui.kit.*
@@ -41,7 +43,7 @@ fun ImageBatchOptionsEditor(
             CbSwitch(value.continuous, { onChange(value.copy(continuous = it)) })
         }
         if (value.continuous) {
-            CbField("成功保存总张数（1–100）") { CbNumberInput(target, { target = it }, isError = target.toIntOrNull() !in 1..100) }
+            CbField("成功保存总张数（1–100）") { CbNumberInput(target, { target = it }, modifier = Modifier.semantics { contentDescription = "连续目标张数" }, isError = target.toIntOrNull() !in 1..100) }
             CbText("批次间等待；首批立即开始，最后一批后不等待")
             ImageBatchInterval.entries.forEach { mode ->
                 CbButton(when (mode) { ImageBatchInterval.NONE -> "不等待"; ImageBatchInterval.FIXED -> "固定"; ImageBatchInterval.RANGE -> "范围随机" },
@@ -49,16 +51,16 @@ fun ImageBatchOptionsEditor(
                     variant = if (value.pacing.mode == mode) ButtonVariant.Default else ButtonVariant.Outline)
             }
             if (value.pacing.mode == ImageBatchInterval.FIXED) CbField("固定秒数（0–3600）") {
-                CbNumberInput(fixed, { fixed = it }, isError = fixed.toIntOrNull() !in 0..3600)
+                CbNumberInput(fixed, { fixed = it }, modifier = Modifier.semantics { contentDescription = "固定等待秒数" }, isError = fixed.toIntOrNull() !in 0..3600)
             }
             if (value.pacing.mode == ImageBatchInterval.RANGE) {
-                CbField("随机最小秒数（0–3600）") { CbNumberInput(minimum, { minimum = it }, isError = minimum.toIntOrNull() !in 0..3600) }
-                CbField("随机最大秒数（至少等于最小值）") { CbNumberInput(maximum, { maximum = it }, isError = maximum.toIntOrNull() !in 0..3600) }
+                CbField("随机最小秒数（0–3600）") { CbNumberInput(minimum, { minimum = it }, modifier = Modifier.semantics { contentDescription = "随机最小秒数" }, isError = minimum.toIntOrNull() !in 0..3600) }
+                CbField("随机最大秒数（至少等于最小值）") { CbNumberInput(maximum, { maximum = it }, modifier = Modifier.semantics { contentDescription = "随机最大秒数" }, isError = maximum.toIntOrNull() !in 0..3600) }
             }
         }
         if (showCount || value.continuous || value.requestCount > 1) {
             CbField("本次估算 Anlas 预算（默认 0，仅估算免 Anlas）", description = "每次新任务需重新确认；不是服务器保证的扣费上限。") {
-                CbNumberInput(budget, { budget = it }, isError = budget.toLongOrNull()?.let { it !in 0..100000 } != false)
+                CbNumberInput(budget, { budget = it }, modifier = Modifier.semantics { contentDescription = "本次估算Anlas预算" }, isError = budget.toLongOrNull()?.let { it !in 0..100000 } != false)
             }
         }
         if (error != null) CbText(error, color = ChatBarTheme.colors.destructive)

@@ -29,7 +29,7 @@ jobs:
           (out/'source.json').write_text(json.dumps(dict(source=sha,syntheticOnly=True,realAccountCalls=False,applicationId='com.example.chatbar.safebatch.n1')),encoding='utf-8')
           p=root/'app/app/build.gradle.kts';s=p.read_text();assert 'applicationId = "com.example.chatbar"' in s
           p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "com.example.chatbar.safebatch.n1"'))
-          p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();s=s.replace('name="app_name">ChatBar<','name="app_name">CCB 批量生图测试 n1<');p.write_text(s)
+          p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();s=s.replace('name="app_name">ChatChatBar<','name="app_name">CCB 批量生图测试 n1<');p.write_text(s)
           (out/'build-identity-only.patch').write_bytes(subprocess.check_output(['git','diff','--','app/app/build.gradle.kts','app/app/src/main/res/values/strings.xml']))
       - name: Compile app and instrumentation, run affected JVM tests, build isolated APK
         working-directory: app
@@ -38,7 +38,26 @@ jobs:
           CHATBAR_SUPABASE_ANON_KEY: 'synthetic-no-real-key'
         run: |
           chmod +x gradlew
-          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.*" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepositoryTest" :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest --tests "com.example.chatbar.domain.image.*" --tests "com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" --tests "com.example.chatbar.domain.chat.ChatMessageOrderingTest" --tests "com.example.chatbar.data.repository.ChatRepository*Test" :app:assembleDebug --no-daemon --stacktrace
+      - name: Enable KVM for synthetic component checks
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run only batch options UI on isolated cloud emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          CHATBAR_SUPABASE_URL: 'https://synthetic.invalid'
+          CHATBAR_SUPABASE_ANON_KEY: 'synthetic-no-real-key'
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.ImageBatchOptionsEditorTest --no-daemon --stacktrace
+            adb pull /sdcard/Android/data/com.example.chatbar.safebatch.n1/files/safe-batch-review safe-batch-evidence/device-ui
       - name: Collect original reports and APK
         if: always()
         shell: python
@@ -46,7 +65,7 @@ jobs:
           import pathlib,zipfile,hashlib,json
           root=pathlib.Path.cwd();out=root/'safe-batch-evidence'
           entries=[]
-          for folder in [out,root/'app/app/build/test-results',root/'app/app/build/reports/tests',root/'app/app/build/outputs/apk/debug']:
+          for folder in [out,root/'app/app/build/test-results',root/'app/app/build/reports/tests',root/'app/app/build/outputs/androidTest-results',root/'app/app/build/reports/androidTests',root/'app/app/build/outputs/apk/debug']:
             if folder.exists(): entries += [p for p in folder.rglob('*') if p.is_file()]
           with zipfile.ZipFile(root/'novelai-safe-batch-originals.zip','w',zipfile.ZIP_DEFLATED) as z:
             for p in entries:z.write(p,p.relative_to(root).as_posix())

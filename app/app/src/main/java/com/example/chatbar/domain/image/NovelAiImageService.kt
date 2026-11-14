@@ -114,6 +114,13 @@ class NovelAiImageService(
                         response.use {
                             if (!this@callbackFlow.isActive) return
                             if (!response.isSuccessful) {
+                                if (safeBatchRequest && response.code == 429) {
+                                    val cooldown = safeRetryAfterMillis(response.header("Retry-After"))
+                                    call.cancel()
+                                    trySend(NovelAiImageEvent.Error("HTTP 429 请求频率限制；任务暂停，等待手动继续 [request: $correlationId]", 429, cooldown))
+                                    close()
+                                    return
+                                }
                                 if (response.code == 429 && (retryRateLimitsUntilCancelled || attempt <= maxRateLimitRetries)) {
                                     val retryDelay = retryDelayMillis(attempt.coerceAtMost(30), response.header("Retry-After"))
                                         .coerceAtLeast(if (retryRateLimitsUntilCancelled) 1_000L else 0L)

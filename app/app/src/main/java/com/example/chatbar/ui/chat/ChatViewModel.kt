@@ -1293,15 +1293,19 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 }
             } catch (error: Throwable) {
                 updateImageGeneration(taskId) { it.copy(
-                    phase = if (error is CancellationException) ImageGenerationPhase.CANCELLED else ImageGenerationPhase.FAILED,
+                    phase = if (error is CancellationException || error is ImageBatchStopped) ImageGenerationPhase.CANCELLED else ImageGenerationPhase.FAILED,
                     error = if (error is CancellationException) "已停止；已发请求可能仍被处理或计费，已保存图片保留" else error.message) }
                 if (error is CancellationException) throw error
             }
         }
         imageGenerationJobs[taskId] = job
-        job.invokeOnCompletion {
+        job.invokeOnCompletion { cause ->
             imageGenerationJobs.remove(taskId, job)
             manualBatchControls.remove(taskId)
+            if (cause is CancellationException) updateImageGeneration(taskId) { state ->
+                if (state.isTerminal) state else state.copy(phase = ImageGenerationPhase.CANCELLED,
+                    error = "已停止；已发请求可能仍被处理或计费")
+            }
         }
         job.start()
     }

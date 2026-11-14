@@ -2,6 +2,7 @@ package com.example.chatbar.ui.chat
 
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.ui.components.ImageBatchOptionsEditor
+import com.example.chatbar.ui.kit.CbSwitch
 
 import com.example.chatbar.ui.kit.AppIcons
 

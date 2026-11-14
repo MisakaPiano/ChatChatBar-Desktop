@@ -175,7 +175,10 @@ class ImageBatchRunner(
         emit(state.copy(stage = ImageBatchStage.COMPLETE, nextEstimatedAnlas = null, detail = "任务完成；重启不会自动继续请求"))
         return state.saved
     }
-    companion object { private val manualAdmission = Mutex() }
+    companion object {
+        private val manualAdmission = Mutex()
+        suspend fun <T> ordinaryStudioRequest(block: suspend () -> T): T = manualAdmission.withLock { block() }
+    }
 }
 
 object ImageBatchRiskText {
