@@ -81,7 +81,7 @@ class DesktopImageBatchOptionsTest {
             val input = scene.nodes().first { node -> node.config.contains(SemanticsActions.SetText) && node.matches("随机等待最小秒数") }
             input.config[SemanticsActions.SetText].action!!.invoke(androidx.compose.ui.text.AnnotatedString("5")); scene.frames()
             assertNull(config.validationError())
-            assertEquals(0L, calls)
+            assertEquals(0, calls)
         } finally { scene.close() }
     }
 
