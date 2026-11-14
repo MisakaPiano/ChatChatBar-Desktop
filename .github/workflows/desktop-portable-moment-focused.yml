@@ -35,7 +35,7 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsTest'
-          --tests 'com.example.chatbar.desktop.DesktopMomentImageCleanupTest'
+          --tests 'com.example.chatbar.desktop.DesktopMomentImageUsageTest'
           --tests 'com.example.chatbar.desktop.DesktopMomentImageCompletionSelectionTest'
           --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsPanelTest'
           --tests 'com.example.chatbar.desktop.backup.DesktopMomentVersionBackupTest'
