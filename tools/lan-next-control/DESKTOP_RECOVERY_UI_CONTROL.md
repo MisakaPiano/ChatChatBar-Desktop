@@ -55,3 +55,11 @@ when it was already registered as owned by this invocation. Each data/sync root
 must still be new, and guarded startup refuses all preexisting credential and
 LAN roots. The production resolver and protection remain unchanged. Neither
 failed original run proves receiver recovery or saved-connection completion.
+
+Run43631281422 reached the real receiver Popup and its four input actions, then
+timed out waiting for the read button. Initial review-binding and text-field
+effects can replace nodes after their first rendered frame. The control now
+observes after render/yield cycles, acquires each input node afresh, and checks
+that every input remains present after the UI settles. It logs no input values,
+lengths or digests. The original timeout and all actual recovery/data/identity
+assertions remain unchanged; no direct prepare/confirm callback is substituted.

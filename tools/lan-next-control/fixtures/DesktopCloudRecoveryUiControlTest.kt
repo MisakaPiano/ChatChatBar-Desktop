@@ -220,11 +220,27 @@ class DesktopCloudRecoveryUiControlTest {
         return scene.semanticsOwners.map { walk(it.rootSemanticsNode).filter { node -> node.config.contains(SemanticsActions.SetText) } }
             .singleOrNull { it.size == 4 }.orEmpty()
     }
-    private fun setRecoveryInputs(scene: ImageComposeScene, endpoint: String, username: String, password: String, code: String) {
-        val fields = recoveryFields(scene); check(fields.size == 4)
-        fields.zip(listOf(endpoint, username, password, code)).forEach { (field, value) ->
+    private suspend fun setRecoveryInputs(scene: ImageComposeScene, endpoint: String, username: String, password: String, code: String) {
+        // Rendered nodes can precede initial LaunchedEffects and keyed secret-field replacement.
+        // Let the real UI settle, then acquire a current node for each independent interaction.
+        settleScene(scene)
+        val values = listOf(endpoint, username, password, code)
+        values.forEachIndexed { index, value ->
+            val fields = recoveryFields(scene); check(fields.size == 4)
+            val field = fields[index]
             check(checkNotNull(field.config[SemanticsActions.SetText].action).invoke(AnnotatedString(value)))
+            settleScene(scene)
+            val current = recoveryFields(scene); check(current.size == 4)
+            // Secret EditableText may be visually masked; never log its text, length or digest.
+            check(current[index].config.getOrNull(SemanticsProperties.EditableText)?.text?.length == value.length)
         }
+        recoveryFields(scene).zip(values).forEach { (field, value) ->
+            check(field.config.getOrNull(SemanticsProperties.EditableText)?.text?.length == value.length)
+        }
+    }
+    private suspend fun settleScene(scene: ImageComposeScene) {
+        repeat(3) { scene.render(System.nanoTime()).close(); delay(25L) }
+        scene.render(System.nanoTime()).close()
     }
     private fun toggle(scene: ImageComposeScene, label: String): ToggleableState = checkNotNull(nodes(scene).first {
         it.config.getOrNull(SemanticsProperties.Role) == Role.Checkbox && matches(it, label)
@@ -288,8 +304,11 @@ class DesktopCloudRecoveryUiControlTest {
     private suspend fun awaitScene(scene: ImageComposeScene, ready: () -> Boolean) = withTimeout(45_000L) {
         while (true) {
             scene.render(System.nanoTime()).close()
-            if (ready()) break
+            // Observe after queued composition/lifecycle effects, rather than acting on the
+            // first frame before the application has processed its own initialization.
             delay(25L)
+            scene.render(System.nanoTime()).close()
+            if (ready()) break
         }
     }
     private fun deleteOwned(path: Path, runner: Path) {
