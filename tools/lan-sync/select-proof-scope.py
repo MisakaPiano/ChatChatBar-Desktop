@@ -17,22 +17,38 @@ STORE = "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/"
 CLOUD_LAN = {
     "LanSyncGroupCloudRuntime.kt", "LanSyncGroupCloudSchedule.kt", "LanSyncGroupCloudRoutes.kt",
     "LanSyncGroupCloudSettingsState.kt", "LanSyncGroupTargetExport.kt", "LanSyncGroupTargetPublication.kt",
+    "LanSyncGroupPartialTargetExport.kt", "LanSyncGroupPartialTargetPublication.kt",
     "LanSyncGroupChunkCloudReadRoute.kt", "LanSyncGroupWeakCloudReadRoute.kt",
     "LanSyncGroupCloudRecoverySource.kt", "LanSyncGroupCloudRecoveryOwner.kt", "LanSyncGroupCoordinator.kt",
 }
 CLOUD_STORE = {
     "webdav/WeakWebDavAttemptStore.kt", "webdav/WeakWebDavChunkAssembly.kt", "webdav/WeakWebDavXmlListing.kt",
+    "webdav/WeakWebDavIncomingChunkCache.kt", "webdav/WebDavCloudClient.kt", "webdav/WebDavConnectOnlyOperation.kt",
     "webdav/WebDavCiphertextStore.kt", "webdav/WebDavHttpTransport.kt", "webdav/WebDavStoreRecord.kt", "webdav/WebDavXmlListing.kt",
+}
+FILE_LAN = {
+    "LanSyncGroupEncryptedFilePackage.kt", "LanSyncGroupEncryptedFileExportOwner.kt",
+    "LanSyncGroupFileRecoverySource.kt", "LanSyncGroupFileRecoveryOwner.kt",
+}
+# These shared callers/input owners traverse both cloud and file proof paths. Other
+# CLOUD_LAN entries exercise cloud delivery/recovery rather than the encrypted-file path.
+FILE_SHARED_LAN = {
+    "LanSyncGroupCoordinator.kt", "LanSyncGroupRuntimeAccess.kt", "LanSyncGroupRecoveryInput.kt",
+    "RecoveryControlSnapshot.kt", "LanSyncGroupTargetExport.kt", "LanSyncGroupTargetPublication.kt",
 }
 # These app callers are compiled/checked by their native jobs; neither old large shared proof runs them.
 APP_CONTROLS = {
     "app/app/src/main/java/com/example/chatbar/lanSync/" + name for name in (
         "AndroidLanSync.kt", "AndroidLanSyncCloudWork.kt", "AndroidLanSyncLifecycle.kt",
         "LanSyncGroupForegroundService.kt", "LanSyncGroupCloudTransferService.kt", "LanSyncActivity.kt",
-        "LanSyncGroupCloudSettings.kt", "LanSyncGroupCloudRecovery.kt")
+        "LanSyncGroupCloudSettings.kt", "LanSyncGroupCloudRecovery.kt", "LanSyncGroupFileActions.kt")
 } | {
     "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/" + name for name in (
-        "DesktopLanSync.kt", "DesktopLanSyncPanel.kt", "DesktopLanSyncCloudSettings.kt", "DesktopLanSyncCloudRecovery.kt")
+        "DesktopLanSync.kt", "DesktopLanSyncPanel.kt", "DesktopLanSyncCloudSettings.kt", "DesktopLanSyncCloudRecovery.kt",
+        "DesktopLanSyncFileActions.kt")
+} | {
+    "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupFileForegroundTest.kt",
+    "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupCloudForegroundTest.kt",
 }
 COMMON_IO = {
     "LanSyncBlobs.kt", "LanSyncFramedJson.kt", "LanSyncGraphRemapper.kt", "LanSyncIdentity.kt",
@@ -79,12 +95,14 @@ PURE_PREFIXES = (
 LEGACY_PROOF = "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSyncProof/"
 GROUP_PROOF = "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/syncStoreProof/"
 CLOUD_PROOF_NAMES = {"CloudFileDav.kt", "SyncGroupCloudLargeNativeProofTest.kt"}
+FILE_PROOF_NAMES = {"LargeGroupFileSyntheticInputs.kt", "SyncGroupFileLargeNativeProofTest.kt"}
+GROUP_PROOF_NAMES = {"SyncGroupLargeNativeProofTest.kt"}
 # Exact executable fixture dependencies, before the ordinary-test prefix exemption.
-# The legacy, group-TLS and cloud proofs construct different harnesses; none reuses the other two.
+# Tuple order is legacy, group-TLS, cloud, file; the recovery proofs share Administration.Fixture.
 LARGE_PROOF_HELPERS = {
-    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRuntimeTest.kt": (True, False, False),
-    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLoopbackTransport.kt": (False, True, False),
-    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAdministrationTest.kt": (False, False, True),
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRuntimeTest.kt": (True, False, False, False),
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLoopbackTransport.kt": (False, True, False, False),
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAdministrationTest.kt": (False, False, True, True),
 }
 
 
@@ -100,12 +118,14 @@ def classify(paths: list[str]) -> tuple[bool, bool]:
             continue
         if path in PURE_FILES or path.startswith(PURE_PREFIXES) or path.startswith(".agents/skills/") and path.endswith(".md"):
             continue
+        if path.startswith(LAN) and path[len(LAN):] in FILE_LAN:
+            continue
         if path.startswith(LAN) and path[len(LAN):] in CLOUD_LAN or path.startswith(STORE) and path[len(STORE):] in CLOUD_STORE:
             continue
         if path.startswith(LEGACY_PROOF):
             legacy = True
         elif path.startswith(GROUP_PROOF):
-            if path[len(GROUP_PROOF):] not in CLOUD_PROOF_NAMES:
+            if path[len(GROUP_PROOF):] not in CLOUD_PROOF_NAMES | FILE_PROOF_NAMES:
                 group = True
         elif path.startswith(LAN) and path[len(LAN):] in COMMON_IO:
             legacy = group = True
@@ -128,6 +148,10 @@ def classify_cloud(paths: list[str]) -> bool:
             if helper[2]:
                 return True
             continue
+        if path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in FILE_PROOF_NAMES:
+            continue
+        if path.startswith(LAN) and path[len(LAN):] in FILE_LAN:
+            continue
         if path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in CLOUD_PROOF_NAMES:
             return True
         if path.startswith(LAN) and path[len(LAN):] in CLOUD_LAN or path.startswith(STORE) and path[len(STORE):] in CLOUD_STORE:
@@ -135,6 +159,30 @@ def classify_cloud(paths: list[str]) -> bool:
         if path in APP_CONTROLS:
             continue
         # The cloud proof also traverses the shared group crypto/native byte path.
+        if classify([path])[1]:
+            return True
+    return False
+
+
+def classify_file(paths: list[str]) -> bool:
+    for path in paths:
+        helper = LARGE_PROOF_HELPERS.get(path)
+        if helper is not None:
+            if helper[3]:
+                return True
+            continue
+        if path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in FILE_PROOF_NAMES:
+            return True
+        if path.startswith(LAN) and path[len(LAN):] in FILE_LAN | FILE_SHARED_LAN:
+            return True
+        if (path.startswith(LEGACY_PROOF)
+                or path.startswith(GROUP_PROOF) and path[len(GROUP_PROOF):] in CLOUD_PROOF_NAMES | GROUP_PROOF_NAMES
+                or path.startswith(LAN) and path[len(LAN):] in CLOUD_LAN
+                or path.startswith(STORE) and path[len(STORE):] in CLOUD_STORE
+                or path in APP_CONTROLS):
+            continue
+        # File recovery shares group crypto, membership, source export and native apply.
+        # Unknown paths remain conservative through the existing group classifier.
         if classify([path])[1]:
             return True
     return False
@@ -149,6 +197,7 @@ PROOF_JOBS = {
     "legacy": ProofJob("large-resources", "Fully written large Runtime and v8 proof"),
     "group": ProofJob("group-large-resources", "Fully written encrypted group and native v8 proof"),
     "cloud": ProofJob("cloud-large-resources", "Fully written cloud chunk resume and native activation proof"),
+    "file": ProofJob("file-large-resources", "Fully written encrypted file recovery and native activation proof"),
 }
 WORKFLOW_PATH = ".github/workflows/lan-sync-ci.yml"
 PAGE_SIZE = 100
@@ -351,7 +400,12 @@ def select_scope(api, git, repository: str, branch: str, head: str, current_run:
             if baseline.source_sha not in changes:
                 changes[baseline.source_sha] = git.paths(baseline.source_sha, head)
             paths = changes[baseline.source_sha]
-            required[kind] = classify_cloud(paths) if kind == "cloud" else classify(paths)[0 if kind == "legacy" else 1]
+            if kind == "cloud":
+                required[kind] = classify_cloud(paths)
+            elif kind == "file":
+                required[kind] = classify_file(paths)
+            else:
+                required[kind] = classify(paths)[0 if kind == "legacy" else 1]
         # A bounded search may reuse independently verified evidence; every unresolved kind stays full.
         return ProofScope(required, baselines, None if complete else "PROOF_HISTORY_WINDOW_EXHAUSTED")
     except EvidenceUnavailable as failure:

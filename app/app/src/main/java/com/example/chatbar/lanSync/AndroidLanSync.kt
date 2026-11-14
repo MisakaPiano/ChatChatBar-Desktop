@@ -211,6 +211,13 @@ class AndroidLanSync(private val app: ChatBarApp) {
         if (hooksClosed || protectionLost) return@withLock
         if (!hasGroupEvidence()) {
             if (backgroundState.value.phase != AndroidLanSyncBackgroundPhase.NOT_CONFIGURED) {
+                // A completed user pause has no nearby lease to drain. A later empty-profile
+                // sweep must preserve an explicitly admitted local-file dataSync batch.
+                if (userPaused && backgroundState.value.phase == AndroidLanSyncBackgroundPhase.PAUSED &&
+                    !serviceStartPending && serviceAliveGeneration < 0 && stopPromotedService == null) {
+                    backgroundStatus(AndroidLanSyncBackgroundPhase.NOT_CONFIGURED)
+                    return@withLock
+                }
                 if (!pauseCoordinatorSafely()) return@withLock
                 val stop = stopPromotedService
                 stopPromotedService = null
@@ -259,11 +266,11 @@ class AndroidLanSync(private val app: ChatBarApp) {
         }
     }
     /** User stop is sticky; ordinary Activity/network events never clear it. */
-    fun pauseBackground() {
+    fun pauseBackground(): Job {
         userPaused = true
         if (cloudWorkOwner.isInitialized()) cloudWorkOwner.value.cancel()
         backgroundStatus(AndroidLanSyncBackgroundPhase.STOPPING)
-        app.applicationScope.launch { backgroundAdmission.withLock { pauseBackgroundLocked() } }
+        return app.applicationScope.launch { backgroundAdmission.withLock { pauseBackgroundLocked() } }
     }
     private suspend fun pauseBackgroundLocked() {
         val saved = runCatching { backgroundPreferences.edit().putBoolean("user-paused", true).commit() }.getOrDefault(false)

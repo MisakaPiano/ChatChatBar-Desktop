@@ -81,3 +81,5 @@ Useful log tags: `AiBackgroundWork` and `StreamingForeground`.
 - Do not remove foreground protection, network validation, or reference counting to silence a lifecycle crash.
 - Do not duplicate shared service lifecycle logic in feature ViewModels or schedulers.
 - Do not move model request, image persistence, or Moments scheduling policy into this runtime.
+
+- `LanSyncGroupFileForegroundTest` is opt-in (`lanSyncFileForegroundFixture=true`, cold isolated next package, API35+): production pause Job joined before explicit `runFileWork`, actual dataSync ServiceRecord, late empty-profile foreground sweep, HOME continuation, stop and next-background refusal; `runCloudWork` remains refused and the test leaves the pause persisted. Run the cloud foreground proof first when sharing that disposable package. The empty/PAUSED sweep skips a second full drain only when no LAN service is alive/pending; this preserves explicit local-file work without reopening periodic network permission. It does not exercise SAF, actual payload recovery, Doze or real providers.

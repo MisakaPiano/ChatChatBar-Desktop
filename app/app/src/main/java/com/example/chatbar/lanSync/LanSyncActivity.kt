@@ -130,7 +130,7 @@ private fun LanSyncBackgroundControls(owner: AndroidLanSync, state: AndroidLanSy
             CbText("实际传输与待确认项目见下方状态；系统休眠、强停或终止进程后可能需要回到应用恢复。", color = ChatBarTheme.colors.mutedForeground)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
         if (state.foregroundProtected || state.phase == AndroidLanSyncBackgroundPhase.STARTING)
-            CbButton("停止设备组同步", owner::pauseBackground,
+            CbButton("停止设备组同步", { owner.pauseBackground(); Unit },
                 enabled = state.phase != AndroidLanSyncBackgroundPhase.STOPPING, variant = ButtonVariant.Secondary)
         else if (state.phase !in setOf(AndroidLanSyncBackgroundPhase.STOPPING, AndroidLanSyncBackgroundPhase.RECOVERY_PENDING))
             CbButton("恢复设备组后台运行", owner::resumeBackground, variant = ButtonVariant.Secondary)

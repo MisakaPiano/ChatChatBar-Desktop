@@ -18,6 +18,7 @@ HEAD = "d" * 40
 FIRST = "a" * 40
 SECOND = "b" * 40
 THIRD = "c" * 40
+FOURTH = "f" * 40
 
 
 def run_evidence(run_id, source, **changes):
@@ -62,7 +63,7 @@ class SyntheticApi:
 
 
 class SyntheticGit:
-    def __init__(self, changes=None, ancestors=(FIRST, SECOND, THIRD)):
+    def __init__(self, changes=None, ancestors=(FIRST, SECOND, THIRD, FOURTH)):
         self.changes = changes or {}
         self.ancestors = set(ancestors)
         self.compared = []
@@ -117,6 +118,8 @@ class ProofScopeTest(unittest.TestCase):
         for path in (scope.LAN + "LanSyncGroupUnknown.kt", scope.STORE + "FutureCodec.kt", "app/gradle/libs.versions.toml",
                      ".github/workflows/lan-sync-ci.yml", "tools/lan-sync/select-proof-scope.py"):
             self.assertEqual((True, True), scope.classify([path]))
+            self.assertTrue(scope.classify_cloud([path]))
+            self.assertTrue(scope.classify_file([path]))
 
     def test_pure_files_cannot_mask_an_independent_io_change_in_the_same_push(self):
         self.assertEqual((False, True), scope.classify(list(scope.PURE_FILES) + [scope.LAN + "LanSyncGroupNativePlanner.kt"]))
@@ -137,11 +140,49 @@ class ProofScopeTest(unittest.TestCase):
         for path in (scope.LAN + "LanSyncGroupNativePlanner.kt", scope.STORE + "SyncStreamingCipher.kt"):
             self.assertEqual((False, True), scope.classify([path]))
             self.assertTrue(scope.classify_cloud([path]))
+            self.assertTrue(scope.classify_file([path]))
 
     def test_app_controls_require_native_checks_without_claiming_large_shared_coverage(self):
         for path in scope.APP_CONTROLS:
             self.assertEqual((False, False), scope.classify([path]))
             self.assertFalse(scope.classify_cloud([path]))
+            self.assertFalse(scope.classify_file([path]))
+
+    def test_file_proof_and_its_synthetic_inputs_do_not_repeat_the_other_three_proofs(self):
+        for name in scope.FILE_PROOF_NAMES:
+            path = scope.GROUP_PROOF + name
+            self.assertEqual((False, False), scope.classify([path]))
+            self.assertFalse(scope.classify_cloud([path]))
+            self.assert_helper_requires(path, {"legacy": False, "group": False, "cloud": False, "file": True})
+
+    def test_file_codec_source_and_owners_have_their_own_byte_proof(self):
+        for name in scope.FILE_LAN:
+            path = scope.LAN + name
+            self.assertEqual((False, False), scope.classify([path]))
+            self.assertFalse(scope.classify_cloud([path]))
+            self.assertTrue(scope.classify_file([path]))
+
+    def test_shared_recovery_export_and_native_dependencies_keep_the_file_and_cloud_proofs(self):
+        names = scope.FILE_SHARED_LAN | {
+            "LanSyncGroupManagementRecovery.kt", "LanSyncGroupManagementBackup.kt", "LanSyncGroupNode.kt",
+            "LanSyncGroupJoining.kt", "LanSyncGroupSourceWriter.kt", "LanSyncGroupNativeApplyOwner.kt",
+        }
+        for name in names:
+            path = scope.LAN + name
+            self.assertTrue(scope.classify_cloud([path]), name)
+            self.assertTrue(scope.classify_file([path]), name)
+
+    def test_cloud_provider_http_and_scheduling_do_not_repeat_the_file_proof(self):
+        paths = [scope.LAN + name for name in scope.CLOUD_LAN - scope.FILE_SHARED_LAN]
+        paths += [scope.STORE + name for name in scope.CLOUD_STORE]
+        paths += [scope.GROUP_PROOF + name for name in scope.CLOUD_PROOF_NAMES]
+        for path in paths:
+            self.assertTrue(scope.classify_cloud([path]), path)
+            self.assertFalse(scope.classify_file([path]), path)
+
+    def test_existing_group_and_legacy_large_test_bodies_do_not_repeat_the_file_proof(self):
+        for path in [scope.GROUP_PROOF + name for name in scope.GROUP_PROOF_NAMES] + [scope.LEGACY_PROOF + "Proof.kt"]:
+            self.assertFalse(scope.classify_file([path]))
 
     def assert_helper_requires(self, path, required):
         proven = run_evidence(101, FIRST, conclusion="success")
@@ -152,20 +193,20 @@ class ProofScopeTest(unittest.TestCase):
         self.assertEqual(set(scope.PROOF_JOBS), set(result.baselines))
         self.assertEqual([(FIRST, HEAD)], git.compared)
 
-    def test_cloud_administration_fixture_change_requires_only_cloud_with_all_successful_baselines(self):
+    def test_administration_fixture_change_requires_cloud_and_file_with_all_successful_baselines(self):
         self.assert_helper_requires(
             "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAdministrationTest.kt",
-            {"legacy": False, "group": False, "cloud": True})
+            {"legacy": False, "group": False, "cloud": True, "file": True})
 
     def test_legacy_runtime_harness_change_requires_only_legacy_with_all_successful_baselines(self):
         self.assert_helper_requires(
             "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRuntimeTest.kt",
-            {"legacy": True, "group": False, "cloud": False})
+            {"legacy": True, "group": False, "cloud": False, "file": False})
 
     def test_group_loopback_harness_change_requires_only_group_with_all_successful_baselines(self):
         self.assert_helper_requires(
             "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLoopbackTransport.kt",
-            {"legacy": False, "group": True, "cloud": False})
+            {"legacy": False, "group": True, "cloud": False, "file": False})
 
     def test_failed_then_narrow_followup_compares_to_actual_success_instead_of_the_previous_push(self):
         failed = run_evidence(12, SECOND)
@@ -179,7 +220,7 @@ class ProofScopeTest(unittest.TestCase):
         git = SyntheticGit({FIRST: [scope.LAN + "LanSyncGroupNativePlanner.kt", next(iter(scope.PURE_FILES))],
                             SECOND: [next(iter(scope.PURE_FILES))]})
         result = self.select(api, git)
-        self.assertEqual({"legacy": False, "group": True, "cloud": True}, result.required)
+        self.assertEqual({"legacy": False, "group": True, "cloud": True, "file": True}, result.required)
         self.assertEqual(FIRST, result.baselines["group"].source_sha)
         self.assertEqual([(FIRST, HEAD)], git.compared)
         query = api.calls[0][1]
@@ -196,30 +237,56 @@ class ProofScopeTest(unittest.TestCase):
         self.assertTrue(any("/attempts/2/jobs" in path for path, _ in api.calls))
 
     def test_each_large_job_keeps_its_own_successful_source_baseline(self):
+        file = run_evidence(24, FOURTH)
         cloud = run_evidence(23, THIRD)
         group = run_evidence(22, SECOND)
         legacy = run_evidence(21, FIRST)
-        api = SyntheticApi([cloud, group, legacy], {
+        api = SyntheticApi([file, cloud, group, legacy], {
+            (24, 1): [job_evidence(file, "file")],
             (23, 1): [job_evidence(cloud, "cloud")],
             (22, 1): [job_evidence(group, "group")],
             (21, 1): [job_evidence(legacy, "legacy")],
         })
         git = SyntheticGit({FIRST: [scope.LAN + "LanSyncRuntime.kt"],
                             SECOND: [next(iter(scope.PURE_FILES))],
-                            THIRD: [scope.STORE + "SyncStreamingCipher.kt"]})
+                            THIRD: [scope.STORE + "SyncStreamingCipher.kt"],
+                            FOURTH: [scope.LAN + "LanSyncGroupCloudSchedule.kt"]})
         result = self.select(api, git)
-        self.assertEqual({"legacy": True, "group": False, "cloud": True}, result.required)
-        self.assertEqual({"legacy": FIRST, "group": SECOND, "cloud": THIRD},
+        self.assertEqual({"legacy": True, "group": False, "cloud": True, "file": False}, result.required)
+        self.assertEqual({"legacy": FIRST, "group": SECOND, "cloud": THIRD, "file": FOURTH},
                          {kind: baseline.source_sha for kind, baseline in result.baselines.items()})
 
     def test_missing_cloud_history_never_reuses_lan_or_group_evidence_for_cloud(self):
         proven = run_evidence(31, FIRST)
-        result = self.select(SyntheticApi([proven], {(31, 1): [job_evidence(proven, "legacy"), job_evidence(proven, "group")]}))
-        self.assertEqual({"legacy": False, "group": False, "cloud": True}, result.required)
+        jobs = [job_evidence(proven, kind) for kind in ("legacy", "group", "file")]
+        result = self.select(SyntheticApi([proven], {(31, 1): jobs}))
+        self.assertEqual({"legacy": False, "group": False, "cloud": True, "file": False}, result.required)
         self.assertNotIn("cloud", result.baselines)
         empty = self.select(SyntheticApi())
         self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, True), empty.required)
         self.assertFalse(empty.baselines)
+
+    def test_missing_file_history_never_reuses_legacy_group_or_cloud_evidence_for_file(self):
+        proven = run_evidence(32, FIRST)
+        jobs = [job_evidence(proven, kind) for kind in ("legacy", "group", "cloud")]
+        result = self.select(SyntheticApi([proven], {(32, 1): jobs}))
+        self.assertEqual({"legacy": False, "group": False, "cloud": False, "file": True}, result.required)
+        self.assertNotIn("file", result.baselines)
+
+    def test_failed_file_then_narrow_followup_uses_its_last_exact_successful_step(self):
+        failed = run_evidence(34, SECOND)
+        proven = run_evidence(33, FIRST)
+        api = SyntheticApi([failed, proven], {
+            (34, 1): [job_evidence(failed, kind) for kind in ("legacy", "group", "cloud")]
+                     + [job_evidence(failed, "file", conclusion="failure")],
+            (33, 1): [job_evidence(proven, "file")],
+        })
+        git = SyntheticGit({FIRST: [scope.LAN + "LanSyncGroupEncryptedFilePackage.kt"],
+                            SECOND: [next(iter(scope.PURE_FILES))]})
+        result = self.select(api, git)
+        self.assertEqual({"legacy": False, "group": False, "cloud": False, "file": True}, result.required)
+        self.assertEqual(FIRST, result.baselines["file"].source_sha)
+        self.assertCountEqual([(SECOND, HEAD), (FIRST, HEAD)], git.compared)
 
     def test_nonancestor_foreign_branch_repository_and_workflow_sources_cannot_supply_evidence(self):
         proven = run_evidence(41, FIRST)
@@ -234,20 +301,38 @@ class ProofScopeTest(unittest.TestCase):
 
     def test_success_without_a_successful_exact_proof_step_or_exact_job_source_stays_unproven(self):
         proven = run_evidence(51, FIRST)
-        expected = scope.PROOF_JOBS["cloud"]
-        mutations = [
-            {"conclusion": "skipped"}, {"head_sha": SECOND}, {"head_branch": "codex/other"}, {"run_id": 52},
-            {"steps": []},
-            {"steps": [{"name": expected.step, "status": "completed", "conclusion": "skipped"}]},
-            {"steps": [{"name": "different proof", "status": "completed", "conclusion": "success"}]},
-            {"steps": [{"name": expected.step, "status": "completed", "conclusion": "success"}] * 2},
-        ]
-        for mutation in mutations:
-            with self.subTest(mutation=mutation):
-                api = SyntheticApi([proven], {(51, 1): [job_evidence(proven, "cloud", **mutation)]})
-                result = self.select(api)
-                self.assertTrue(result.required["cloud"])
-                self.assertNotIn("cloud", result.baselines)
+        for kind, expected in scope.PROOF_JOBS.items():
+            mutations = [
+                {"conclusion": "skipped"}, {"head_sha": SECOND}, {"head_branch": "codex/other"}, {"run_id": 52},
+                {"steps": []},
+                {"steps": [{"name": expected.step, "status": "completed", "conclusion": "skipped"}]},
+                {"steps": [{"name": "different proof", "status": "completed", "conclusion": "success"}]},
+                {"steps": [{"name": expected.step, "status": "completed", "conclusion": "success"}] * 2},
+            ]
+            for mutation in mutations:
+                with self.subTest(kind=kind, mutation=mutation):
+                    jobs = [job_evidence(proven, other) for other in scope.PROOF_JOBS if other != kind]
+                    jobs.append(job_evidence(proven, kind, **mutation))
+                    result = self.select(SyntheticApi([proven], {(51, 1): jobs}))
+                    self.assertTrue(result.required[kind])
+                    self.assertNotIn(kind, result.baselines)
+                    self.assertEqual(set(scope.PROOF_JOBS) - {kind}, set(result.baselines))
+
+    def test_file_job_contract_has_its_own_exact_step_environment_artifact_and_scope_output(self):
+        workflow = (Path(__file__).resolve().parents[3] / scope.WORKFLOW_PATH).read_text(encoding="utf-8")
+        expected = scope.PROOF_JOBS["file"]
+        match = re.search(r"^  " + re.escape(expected.name) + r":\n(.*?)(?=^  [A-Za-z][A-Za-z0-9_-]*:|\Z)",
+                          workflow, re.MULTILINE | re.DOTALL)
+        self.assertIsNotNone(match)
+        job = match.group(1)
+        for required in (
+            "needs: android", "if: needs.android.outputs.file_large == 'true'", "timeout-minutes: 60",
+            "CCB_GROUP_FILE_LARGE_PROOF: 'true'", "- name: " + expected.step,
+            "--tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest'",
+            "name: sync-group-file-large-resource-evidence",
+        ):
+            self.assertIn(required, job)
+        self.assertIn("file_large: ${{ steps.proof_scope.outputs.file_large }}", workflow)
 
     def test_api_failures_are_full_proof_and_do_not_echo_exception_secrets_or_urls(self):
         api = SyntheticApi()
@@ -282,7 +367,7 @@ class ProofScopeTest(unittest.TestCase):
                                           (74, 1): [job_evidence(old, "cloud")]})
         with patch.object(scope, "MAX_CANDIDATE_RUNS", 1):
             result = self.select(api)
-        self.assertEqual({"legacy": False, "group": False, "cloud": True}, result.required)
+        self.assertEqual({"legacy": False, "group": False, "cloud": True, "file": True}, result.required)
         self.assertEqual("PROOF_HISTORY_WINDOW_EXHAUSTED", result.diagnostic)
         self.assertNotIn("cloud", result.baselines)
 
@@ -296,7 +381,7 @@ class ProofScopeTest(unittest.TestCase):
         })
         with patch.object(scope, "PAGE_SIZE", 2), patch.object(scope, "MAX_RUN_PAGES", 1):
             result = self.select(api)
-        self.assertEqual({"legacy": False, "group": False, "cloud": True}, result.required)
+        self.assertEqual({"legacy": False, "group": False, "cloud": True, "file": True}, result.required)
         self.assertEqual("PROOF_HISTORY_WINDOW_EXHAUSTED", result.diagnostic)
         self.assertFalse(any("/runs/91/" in path for path, _ in api.calls))
 

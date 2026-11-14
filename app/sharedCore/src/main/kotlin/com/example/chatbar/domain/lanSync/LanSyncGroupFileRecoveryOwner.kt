@@ -270,10 +270,14 @@ class LanSyncGroupFileRecoveryOwner internal constructor(private val root: () ->
         var profile = daily.profile(); val known = daily.recoveryAnchor()
         require(profile == null || known != null) { "SYNC_GROUP_FILE_RECOVERY_OTHER_JOIN_EXISTS" }
         known?.let { requireSame(it, vault) }
+        // The portable joining anchor is historical once daily custody has advanced.
+        val readyAccess = if (profile?.stage == LanSyncGroupJoinStage.READY) requireNotNull(daily.runtimeAccess()) else null
         val management = runInterruptible(Dispatchers.IO) {
             val path = base.resolve("management"); if (!Files.exists(path, NOFOLLOW_LINKS)) Files.createDirectory(path)
             lanSyncSafe(path, true)
-            own(value, LanSyncGroupManagementRecovery(path, knownCheckpoint = { known?.trust?.checkpoint }),
+            own(value, LanSyncGroupManagementRecovery(path, knownCheckpoint = {
+                readyAccess?.ledger()?.current()?.reference() ?: known?.trust?.checkpoint
+            }),
                 LanSyncGroupManagementRecovery::close) { value.manager = it }
         }
         try {
@@ -290,8 +294,8 @@ class LanSyncGroupFileRecoveryOwner internal constructor(private val root: () ->
         } finally { value.input.clearCode() }
         checkSession(value)
         val controls = management.recoveryBootstrap(); requireSame(controls.anchor, vault)
-        if (profile?.stage == LanSyncGroupJoinStage.READY) {
-            val access = requireNotNull(daily.runtimeAccess())
+        if (readyAccess != null) {
+            val access = readyAccess
             val current = access.ledger().current()
             require(current.members[access.device]?.active == true && access.trust.group == vault.trust.group &&
                 access.trust.genesis == vault.trust.genesis && access.trust.ownerCertificate == vault.trust.ownerCertificate) {

@@ -3,10 +3,12 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -204,6 +206,137 @@ class FileRecoveryOwnerTest {
         assertFalse(synchronized(events) { "FILE_RECOVERY_INVENTORY_VERIFIED" in events })
         assertEquals(f.originalLedger, f.managerLedger()); assertEquals(0L, f.rootState().completedSequence)
         assertNull(f.rootState().pendingOperation); f.noNative(); assertEquals(0, f.readyCalls.get())
+        Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
+        f.originalUnchanged()
+    }
+
+    @Test fun readyDailyWithANewerAdmittedCheckpointRefusesAnOldFileAndStaleManagerBeforeAnotherRootAction() = fixture { f ->
+        val first = f.owner(); val approval = review(f, first)
+        first.confirm(approval.binding); completed(first); first.closeAndDrain()
+        val access = requireNotNull(f.lastAccess.get())
+        val recovered = access.ledger().current()
+        assertEquals(f.originalLedger.sequence + 1, recovered.sequence)
+        assertEquals(f.originalLedger.reference(), recovered.parent)
+        assertEquals(1, f.readyCalls.get())
+
+        // A separate code-authorized manager receives the actual complete restored selection.
+        val publication = access.targetPublication(Files.createDirectory(f.root.resolve("new-manager-plan")),
+            SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random()), prepare = false)
+        val selection = publication.prepare()
+        assertEquals(recovered.reference(), selection.checkpoint)
+        assertEquals(setOf(f.source.entry.version.reference()), selection.versions)
+        val complete = FileCiphertextStore(f.root.resolve("new-manager-source"))
+        publication.upload(complete)
+        val manager = LanSyncGroupManagementRecovery(Files.createDirectory(f.root.resolve("independent-management")))
+        val future = FileCiphertextStore(f.root.resolve("future-root-controls"))
+        val later = try {
+            val imported = manager.recover(f.original.code, access.encryptedManagementBackup().bytes(), complete,
+                LanSyncManagementRecoveryAdmission { assertEquals(f.trust, it) }, access.trust)
+            assertEquals(LanSyncManagementRecoveryStage.READY, imported.stage)
+            assertEquals(recovered, manager.ledger().current())
+            val preview = manager.prepareRevocation(f.original.identity.fingerprint)
+            assertEquals(recovered.reference(), preview.request.expectedParent)
+            val revoked = requireNotNull(recovered.members[f.original.identity.fingerprint])
+            val next = manager.revokeDevice(preview.acknowledge(preview.request.approvalBinding)).ledger
+            assertEquals(recovered.sequence + 1, next.sequence)
+            assertEquals(recovered.reference(), next.parent)
+            assertEquals(recovered.members + (f.original.identity.fingerprint to revoked.copy(active = false)), next.members)
+            assertEquals(recovered.coveredTypes, next.coveredTypes)
+            assertEquals(recovered.acceptedHeads + f.source.entry.version.reference(), next.acceptedHeads)
+            assertTrue(next.members.getValue(access.device).active)
+            assertNotEquals(recovered.epoch, next.epoch)
+            assertEquals(next, manager.publish(future,
+                SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random())).ledger)
+            next
+        } finally { manager.close() }
+
+        // Deliver the real new daily capsules and signed prefix, but not the root recipient's
+        // capsules. The old manager cannot acquire the new epoch merely from daily possession.
+        val hidden = linkedSetOf<CiphertextObjectKey>()
+        val hiddenEpochs = linkedSetOf<SyncStoreId>()
+        var cursor: CommitCursor? = null
+        do {
+            val page = future.listCommits(cursor)
+            page.entries.filter { it.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES }.forEach { metadata ->
+                val bytes = ByteArrayOutputStream()
+                assertEquals(metadata, future.readTo(metadata.key, bytes, metadata.descriptor))
+                if (SyncKeyDeliveryCodec.hasPrefix(bytes.toByteArray())) {
+                    val capsule = SyncKeyDeliveryCodec.decode(bytes.toByteArray())
+                    capsule.verifyOwner(access.trust, metadata.key)
+                    if (capsule.context.recipient == access.vault.owner && capsule.context.authorizingLedger == later.reference()) {
+                        hidden += metadata.key; hiddenEpochs += capsule.context.epoch
+                    }
+                }
+            }
+            cursor = page.nextCursor
+        } while (cursor != null)
+        assertEquals((access.ledger().history().map { it.epoch } + later.epoch).toSet(), hiddenEpochs)
+        assertTrue(hidden.isNotEmpty())
+        val dailyOnly = object : CiphertextStore by future {
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult =
+                throw CiphertextStoreException(CiphertextStoreFailure.UNSUPPORTED)
+            override fun metadata(key: CiphertextObjectKey) = if (key in hidden) null else future.metadata(key)
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?) =
+                if (key in hidden) null else future.readTo(key, destination, expected)
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int) = future.listCommits(cursor, pageSize).let {
+                CommitPage(it.entries.filterNot { entry -> entry.key in hidden }, it.nextCursor)
+            }
+        }
+        access.reader.routes("futureproof", listOf(LanSyncGroupReplicaReader.Route("ACTUAL_FUTURE_ROOT", dailyOnly)))
+        try {
+            cursor = null
+            do {
+                val page = access.node.discover(dailyOnly, cursor)
+                assertTrue(page.observations.none { it.stage == SyncInboxStage.INVALID_OBJECT })
+                cursor = page.nextCursor
+            } while (cursor != null)
+            val admitted = access.node.reconcileForPrefetch()
+            assertFalse(admitted.trustBlocked)
+            assertEquals(later.reference(), admitted.ledgerCheckpoint)
+            assertTrue(requireNotNull(admitted.history).contains(f.source.entry.version.reference()))
+        } finally { access.reader.removeRoutes("futureproof") }
+        assertEquals(later, access.ledger().current())
+        assertEquals(later.keyCommitment, f.custody(access).key(later.epoch).keyCommitment())
+        hidden.forEach { assertNull(access.reader.cachedOnly().metadata(it)) }
+        val daily = f.joining()
+        assertEquals(LanSyncGroupJoinStage.READY, requireNotNull(daily.profile()).stage)
+        assertEquals(recovered.reference(), requireNotNull(daily.recoveryAnchor()).trust.checkpoint)
+        val staleManager = LanSyncGroupManagementRecovery(f.recoveryRoot.resolve("management"))
+        try {
+            staleManager.unlock(f.original.code)
+            val retained = staleManager.ledger()
+            assertEquals(recovered, retained.current())
+            assertFalse(retained.contains(later.reference()))
+        } finally { staleManager.close() }
+
+        val rootBefore = f.rootState()
+        assertEquals(1L, rootBefore.completedSequence); assertNull(rootBefore.pendingOperation)
+        assertEquals(recovered.reference(), rootBefore.last)
+        val managementBefore = files(f.recoveryRoot.resolve("management"))
+        assertTrue(managementBefore.keys.any { it.contains("signed") })
+        val authorBefore = f.author(access).state()
+        assertEquals(0L, authorBefore.committedSequence)
+        val sourceBefore = access.node.sourceOperations(); assertTrue(sourceBefore.isEmpty())
+        val dailyBefore = files(f.dailyRoot)
+        val nativeBefore = files(f.dailyData)
+        val identityBefore = Files.readAllBytes(f.root.resolve("new-device.protected"))
+        val events = mutableListOf<String>()
+        val retry = f.owner(observe = { synchronized(events) { events += it } })
+        retry.open(); retry.prepare({ Files.newInputStream(f.packageFile) }, f.original.code)
+        val refused = withTimeout(30_000) { retry.state.first { !it.busy && (it.error != null || it.review != null) } }
+        retry.drain()
+        assertTrue(refused.visible); assertNotNull(refused.error)
+        assertNull(refused.review); assertFalse(refused.complete)
+        assertTrue(synchronized(events) { "FILE_RECOVERY_STAGED" in events && "FILE_RECOVERY_MANAGEMENT_STARTED" in events })
+        assertFalse(synchronized(events) { "FILE_RECOVERY_INVENTORY_VERIFIED" in events || "FILE_RECOVERY_DATA_PHASE" in events })
+        assertEquals(1, f.readyCalls.get())
+        assertEquals(rootBefore, f.rootState())
+        unchanged(managementBefore, f.recoveryRoot.resolve("management"))
+        unchanged(dailyBefore, f.dailyRoot); unchanged(nativeBefore, f.dailyData)
+        assertContentEquals(identityBefore, Files.readAllBytes(f.root.resolve("new-device.protected")))
+        assertEquals(authorBefore, f.author(access).state()); assertEquals(sourceBefore, access.node.sourceOperations())
+        assertEquals(later, f.custody(access).ledger().current())
+        assertEquals(later.keyCommitment, f.custody(access).key(later.epoch).keyCommitment())
         Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
         f.originalUnchanged()
     }
