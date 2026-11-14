@@ -1,7 +1,7 @@
-name: Reply and media version scoped review
+name: Reply deletion confirmation UI review
 on:
   push:
-    branches: [validation/reply-media-20261114]
+    branches: [validation/reply-deletion-ui-20261115]
 permissions:
   contents: read
 jobs:
@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      CHATBAR_VERSION_NAME: 1.4.12-versions-v1
+      CHATBAR_VERSION_NAME: 1.4.12-versions-v1.1
       VERSION_REVIEW_FIXTURE_DIR: ${{ github.workspace }}/version-review/fixtures
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: c6f7dc44111b84a660066186d9205d087d60bb20
+          ref: 55e134768430a89668115cb0c2ffcf626e78d490
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -33,14 +33,14 @@ jobs:
           import pathlib,subprocess,json
           root=pathlib.Path.cwd();out=root/'version-review';out.mkdir()
           (out/'source.json').write_text(json.dumps(dict(source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),syntheticOnly=True,realAccountCalls=False)),encoding='utf-8')
-          p=root/'app/app/build.gradle.kts';s=p.read_text();assert 'applicationId = "com.example.chatbar"' in s;p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "com.example.chatbar.versions.v1"'))
-          p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();p.write_text(s.replace('name="app_name">ChatChatBar<','name="app_name">CCB 备选保留测试 v1<'))
+          p=root/'app/app/build.gradle.kts';s=p.read_text();assert 'applicationId = "com.example.chatbar"' in s;p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "com.example.chatbar.versions.v2"'))
+          p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();p.write_text(s.replace('name="app_name">ChatChatBar<','name="app_name">CCB 备选保留测试 v1.1<'))
           (out/'test-identity.patch').write_bytes(subprocess.check_output(['git','diff']))
       - name: Compile and run affected policy repository transfer neighbors
         working-directory: app
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest --tests '*MessageAlternativeVersionPolicyTest*' --tests '*MessageFormatRepairPolicyTest*' --tests '*ReplyMediaVersionRetentionTest*' --tests '*ActionOptionPolicyTest*' --tests '*ChatHistoryPromptPolicyTest*' --tests '*NovelAiPromptDesignerTest*' --tests '*ChatMemoryIndexPolicyTest*' --tests '*MemorySourceFingerprintTest*' --tests '*RoleplayContentSegmentsTest*' --tests '*Moment*Test*' --tests '*ChatMessageSerializationTest*' --tests '*BackupExport*Test*' --tests '*BackupMerge*Test*' --tests '*SaveSlot*Test*' :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:testDebugUnitTest --tests '*MessageAlternativeVersionPolicyTest*' --tests '*RoleplayContentSegmentsTest*' :app:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --stacktrace
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -53,7 +53,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest --no-daemon --stacktrace && cd .. && adb pull /sdcard/Download/ccb-version-review version-review/ui
+          script: adb shell wm size 1080x1920 && adb shell wm density 480 && cd app && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyDeletionConfirmationTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest --no-daemon --stacktrace && cd .. && adb pull /sdcard/Download/ccb-version-review version-review/ui
       - name: Verify APK identity and signature
         shell: python
         run: |
@@ -61,8 +61,8 @@ jobs:
           apk=pathlib.Path('app/app/build/outputs/apk/debug/app-debug.apk');out=pathlib.Path('version-review')
           sdk=pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools';tool=max((p for p in sdk.iterdir() if (p/'apksigner').is_file()),key=lambda p:tuple(int(x) for x in p.name.split('.') if x.isdigit()))
           result=subprocess.check_output([str(tool/'apksigner'),'verify','--verbose','--print-certs',str(apk)],text=True);(out/'apk-signature.txt').write_text(result)
-          result=subprocess.check_output([str(tool/'aapt'),'dump','badging',str(apk)],text=True);assert "name='com.example.chatbar.versions.v1'" in result;(out/'apk-badging.txt').write_text(result)
-          (out/'apk-identity.json').write_text(json.dumps(dict(bytes=apk.stat().st_size,sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),signatureVerified=True,applicationId='com.example.chatbar.versions.v1')))
+          result=subprocess.check_output([str(tool/'aapt'),'dump','badging',str(apk)],text=True);assert "name='com.example.chatbar.versions.v2'" in result;(out/'apk-badging.txt').write_text(result)
+          (out/'apk-identity.json').write_text(json.dumps(dict(bytes=apk.stat().st_size,sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),signatureVerified=True,applicationId='com.example.chatbar.versions.v2')))
       - uses: actions/upload-artifact@v4
         if: always()
         with:
