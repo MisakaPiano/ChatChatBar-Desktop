@@ -1,3 +1,7 @@
+## 2026-11-15：T25范围233登记，与1257集中交付分开
+
+T25仅登记233小回执，active/Ultra/model unchanged/humanBlockerfalse，源已a6bb882d。4649/e39把ownedTLS清理移入lifecycle-owned IO并纳入drain、保同步撤回/取消，a6仅异常链测试；sourceCI43664583949 API成功但原方法数等唯一sourceowner，不编新689。Windows真实default-owned TLS/AppContainer/DPAPI范围1P86.728s仅同JVM冷；a6确切V5→LAN6普通packagedMain五段已原件通过，17实体16同字节+capturedAt旧对照例外/PNG/旧Program/UserData保留，但未seedgroup。真实Windows组DPAPI/run43669436221与Android同801fSDK原地升级/run43669584410仍待原件。手机CloudR05真实TLS/两读review/recreate/同recipient/物理同意/confirm/READY前缀过，实际1FAIL102.306s于旧globalAuthor0预期，完整消息/附件/cold/确切revision后半未过，严格被动R06继续，不伪称整体PASS。先前7ce云域1.344GB与FILE两native范围复用，a6双构包成功不代表交付；V5/84/LAN5仍唯一中间包，无新真人/代装。与Desktop1257/c615+38私有集中已ready且公开REQUESTED_UNANSWERED完全分开，不加其门槛。
+
 ## 2026-11-15：1257集中私有交付最终闭合，公开REQUESTED_UNANSWERED
 
 1257/sourcec615+sign38集中私有交付必要工程和双方五份后验已全部闭合：原八组选定功能+F03/F11及配图/未解释代词标签修复，普通包/独立入口/最终字节/冻结1233旧client、本轮761863320逻辑B精确清理及同十组清单均按实际scope记录。旧F11对照a7原15P5F/40请求留史，新22P/57请求、分源61不冒整套CI或真人。root已仅一次提出具体1257+38公开问题，替代先前未答1256；当前明确REQUESTED_UNANSWERED，沉默不许可，本地不重复问、不公发/切metadata/代装。公开仍1252/sign34/c711，旧1256四远端字节及所有小原件/失败/source保留。当前仅具体公开/人验动作等待，其他原已授权1.0及Android/T25独立队列继续；既有通过、衣着触发/315/编号语义/按钮/T11/T23/SF10等范围不变。
