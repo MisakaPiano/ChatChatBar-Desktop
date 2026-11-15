@@ -36,7 +36,7 @@ HELPERS = {
 }
 LEGACY_SHA = 'a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce'
 FIXTURE = HERE / 'fixtures/DesktopGroupRetainedUpgradeControlTest.kt'
-FIXTURE_SHA = '51e5d1f7d7f8f9abe48e4c64491b6f5b9915d918a92c81864feade12856650b3'
+FIXTURE_SHA = '19e41d9770a0fe169724bc3f48479f0fc843d079443b8f93edfc13d6b9f8b9a4'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupRetainedUpgradeControlTest'
 METHOD = 'seedOrVerifyRealGroupInRetainedIndependentUserData'
 TARGET = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupRetainedUpgradeControlTest.kt'
@@ -108,13 +108,39 @@ def safe_control_code(failure, control_error_type):
     return 'UNCLASSIFIED'
 
 
+def safe_scan_projection(text):
+    parts = text.split(':')
+    if len(parts) != 6:
+        return None
+    region, state, zero, regular, no_symlink, known = parts
+    if region not in {'APP_DATA', 'PROFILE_TEMP', 'PROFILE_ROAMING', 'PROFILE_LOCAL_OTHER', 'PROFILE_OTHER'}:
+        return None
+    if known not in {'true', 'false'}:
+        return None
+    if state == 'OBSERVED':
+        if any(item not in {'true', 'false'} for item in (zero, regular, no_symlink)):
+            return None
+    elif state == 'UNAVAILABLE':
+        if (zero, regular, no_symlink) != ('unknown', 'unknown', 'unknown'):
+            return None
+    else:
+        return None
+    def flag(value):
+        return None if value == 'unknown' else value == 'true'
+    return {'region': region, 'attributesState': state, 'sizeIsZero': flag(zero),
+            'regularFile': flag(regular), 'noSymlink': flag(no_symlink), 'exactKnownInfra': known == 'true'}
+
+
 def safe_fixture_marker(text):
     if type(text) is not str:
         return None
     if text.count('|PRIMARY|') > 1:
         return None
     parts = text.split('|PRIMARY|', 1)
-    text = parts[0]
+    if parts[0].count('|SCANFILE|') > 1:
+        return None
+    scan_parts = parts[0].split('|SCANFILE|', 1)
+    text = scan_parts[0]
     match = SAFE_MARKER.fullmatch(text)
     if match is None or match[1] not in SAFE_COMPONENT_PHASES:
         return None
@@ -123,6 +149,11 @@ def safe_fixture_marker(text):
         if match[3] not in SAFE_SOURCE_FILES or not 0 < int(match[4]) <= 99999:
             return None
         value.update(sourceFile=match[3], sourceLine=int(match[4]))
+    if len(scan_parts) == 2:
+        scan = safe_scan_projection(scan_parts[1])
+        if scan is None or match[1] != 'SCAN_LIVE_USERDATA_NO_PLAINTEXT':
+            return None
+        value['scanFile'] = scan
     if len(parts) == 2:
         primary = safe_fixture_marker(parts[1])
         if primary is None or 'primaryFailure' in primary:

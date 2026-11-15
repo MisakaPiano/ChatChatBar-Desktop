@@ -29,6 +29,7 @@ class DesktopGroupRetainedUpgradeControlTest {
     private val candidateSource = "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f"
     private var phase = "GUARD"
     private var firstFailureMarker: String? = null
+    private var lastScanProjection: String? = null
 
     @Test
     fun seedOrVerifyRealGroupInRetainedIndependentUserData() {
@@ -260,7 +261,8 @@ class DesktopGroupRetainedUpgradeControlTest {
                 frame.fileName?.let { it in safeFiles } == true && frame.lineNumber in 1..99999
         }
         val safeLocation = safeFrame?.let { ":${it.fileName}:${it.lineNumber}" } ?: ""
-        return "GROUP_RETAINED_COMPONENT:" + atPhase + ":" + failure.javaClass.simpleName + safeLocation
+        val scan = if (atPhase == "SCAN_LIVE_USERDATA_NO_PLAINTEXT") lastScanProjection?.let { "|SCANFILE|" + it } ?: "" else ""
+        return "GROUP_RETAINED_COMPONENT:" + atPhase + ":" + failure.javaClass.simpleName + safeLocation + scan
     }
 
     private suspend fun await(predicate: () -> Boolean) = withTimeout(150_000) {
@@ -296,7 +298,26 @@ class DesktopGroupRetainedUpgradeControlTest {
         } }
         return buildJsonObject { entries.forEach { (key, digest) -> put(key, digest) } }
     }
+    private fun scanProjection(path: Path, root: Path, ownership: DesktopDataRootOwnership): String {
+        val normalized = path.toAbsolutePath().normalize()
+        val region = when {
+            normalized.startsWith(ownership.appDataRoot.toAbsolutePath().normalize()) -> "APP_DATA"
+            normalized.startsWith(root.resolve("Temp")) -> "PROFILE_TEMP"
+            normalized.startsWith(root.resolve("Roaming")) -> "PROFILE_ROAMING"
+            normalized.startsWith(root.resolve("Local")) -> "PROFILE_LOCAL_OTHER"
+            else -> "PROFILE_OTHER"
+        }
+        // The only exact known infrastructure classification is this ownership's fixed root lock.
+        val known = normalized == ownership.lockPath.toAbsolutePath().normalize()
+        val attributes = try {
+            Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+        } catch (_: Exception) { null } // Diagnostic failure must not replace or suppress the original read.
+        return if (attributes == null) "$region:UNAVAILABLE:unknown:unknown:unknown:$known"
+        else "$region:OBSERVED:${attributes.size() == 0L}:${attributes.isRegularFile}:${!attributes.isSymbolicLink}:$known"
+    }
+
     private fun containsPlaintext(root: Path, secret: ByteArray, ownership: DesktopDataRootOwnership): Boolean {
+        lastScanProjection = null
         check(secret.isNotEmpty())
         val ownedLock = ownership.lockPath.toAbsolutePath().normalize()
         check(ownedLock == ownership.appDataRoot.toAbsolutePath().normalize().resolve(DesktopDataRootOwnership.LOCK_FILE_NAME))
@@ -310,6 +331,7 @@ class DesktopGroupRetainedUpgradeControlTest {
         var verifiedEmptyOwnedLockCount = 0
         var found = false
         Files.walk(root).use { paths -> paths.forEach { path ->
+            lastScanProjection = null
             check(!Files.isSymbolicLink(path))
             if (path.toAbsolutePath().normalize() == ownedLock) {
                 // Current exact owned infrastructure is proved empty; no content ReadFile is necessary.
@@ -317,6 +339,7 @@ class DesktopGroupRetainedUpgradeControlTest {
                 verifiedEmptyOwnedLockCount++
             } else if (Files.isRegularFile(path, NOFOLLOW_LINKS)) {
                 // Include runtime Temp files without inventing a file-size/business-data ceiling.
+                lastScanProjection = scanProjection(path, root, ownership)
                 Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
                     val buffer = ByteArray(64 * 1024)
                     var tail = ByteArray(0)
@@ -342,8 +365,10 @@ class DesktopGroupRetainedUpgradeControlTest {
                         }
                     } finally { buffer.fill(0); tail.fill(0) }
                 }
+                lastScanProjection = null
             }
         } }
+        lastScanProjection = null
         check(verifiedEmptyOwnedLockCount == 1)
         verifyEmptyOwnedLock(ownedLock)
         return found
