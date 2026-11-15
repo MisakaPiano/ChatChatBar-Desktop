@@ -701,6 +701,9 @@ NOTICE_OK_SOURCE = 'c30db003b4e14f355673f7e724d488a9a598662e'
 NOTICE_OK_MAIN_SHA256 = 'cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a'
 NOTICE_OK_STAGES = frozenset({'lan6-upgraded', 'lan6-cold-reopen'})
 NOTICE_OK_POLICY = 'ONE_EXACT_C30_INFORMATIONAL_IDOK_POST_PER_CANDIDATE_MAIN_AFTER_ORIGINAL_WM_CLOSE'
+NOTICE_BUTTON_PREDICATES = (
+    'GET_DLG_ITEM_PRESENT', 'PARENT_MATCHES', 'CTRL_ID_MATCHES', 'OWNED_PID_MATCHES',
+    'CLASS_MATCHES', 'VISIBLE', 'ENABLED')
 
 
 class OriginalCloseUser32:
@@ -724,6 +727,8 @@ def notice_ok_state(stage):
             'state': 'WAITING_FOR_ORIGINAL_WM_CLOSE' if eligible else 'NOT_ELIGIBLE',
             'noticeObserved': None, 'trustedDialogValidated': None, 'trustedButtonValidated': None,
             'attemptCount': 0, 'postAccepted': None, 'originalExitAndLockGuardPassed': None,
+            'buttonPredicateProjection': dict.fromkeys(NOTICE_BUTTON_PREDICATES),
+            'buttonFirstRejectedPredicate': None, 'buttonPendingObservations': 0, 'buttonWaitReasonsObserved': [],
             'peerCloudOrFullSyncCompletionClaimed': False}
 
 
@@ -731,11 +736,17 @@ def c30_notice_ok_after_original_owned(native, legacy, ids, observation):
     state = observation['normalNoticeOk']
     if not state['eligible'] or NEW != NOTICE_OK_SOURCE or observation['stage'] not in NOTICE_OK_STAGES:
         return
-    if state['attemptCount'] or state['state'] not in {'WAITING_FOR_ORIGINAL_WM_CLOSE', 'NO_NOTICE_CURRENTLY_OBSERVED'}:
+    if state['attemptCount'] or state['state'] not in {
+            'WAITING_FOR_ORIGINAL_WM_CLOSE', 'NO_NOTICE_CURRENTLY_OBSERVED',
+            'WAIT_BUTTON_PRESENT', 'WAIT_BUTTON_VISIBLE', 'WAIT_BUTTON_ENABLED'}:
         return
     if observation.get('originalWmCloseQueued') is not True or not ids:
         return
     try:
+        # A pending pass does not lend its earlier identity checks to a fresh observation.
+        state['trustedDialogValidated'] = state['trustedButtonValidated'] = None
+        state['buttonPredicateProjection'] = dict.fromkeys(NOTICE_BUTTON_PREDICATES)
+        state['buttonFirstRejectedPredicate'] = None
         # HWND-returning APIs must retain all pointer bits on Win64. Only this private user32 instance is configured.
         signatures = {
             'GetClassNameW': ([legacy.W.HWND, legacy.W.LPWSTR, legacy.C.c_int], legacy.C.c_int),
@@ -804,10 +815,31 @@ def c30_notice_ok_after_original_owned(native, legacy, ids, observation):
             return
         state['trustedDialogValidated'] = True
         button = native.user.GetDlgItem(dialog, 1)  # Standard IDOK, not a text/content lookup.
-        if (not button or native.user.GetParent(button) != dialog or native.user.GetDlgCtrlID(button) != 1 or
-                owned_program_pid(button) != pid or not exact_class(button, 'Button') or
-                not native.user.IsWindowVisible(button) or not native.user.IsWindowEnabled(button)):
-            state.update(state='REFUSED_BUTTON_ID_CLASS_OR_STATE', trustedButtonValidated=False)
+        def button_predicate(name, result):
+            # Project only this original evaluation. Short-circuit suffixes and failed API calls stay unknown.
+            matched = bool(result)
+            state['buttonPredicateProjection'][name] = matched
+            if not matched:
+                state['buttonFirstRejectedPredicate'] = name
+            return matched
+        if (not button_predicate('GET_DLG_ITEM_PRESENT', button) or
+                not button_predicate('PARENT_MATCHES', native.user.GetParent(button) == dialog) or
+                not button_predicate('CTRL_ID_MATCHES', native.user.GetDlgCtrlID(button) == 1) or
+                not button_predicate('OWNED_PID_MATCHES', owned_program_pid(button) == pid) or
+                not button_predicate('CLASS_MATCHES', exact_class(button, 'Button')) or
+                not button_predicate('VISIBLE', native.user.IsWindowVisible(button)) or
+                not button_predicate('ENABLED', native.user.IsWindowEnabled(button))):
+            state['trustedButtonValidated'] = False
+            pending = {'GET_DLG_ITEM_PRESENT': 'WAIT_BUTTON_PRESENT',
+                       'VISIBLE': 'WAIT_BUTTON_VISIBLE', 'ENABLED': 'WAIT_BUTTON_ENABLED'}
+            rejected = state['buttonFirstRejectedPredicate']
+            if rejected in pending:
+                # Passive readiness only: the next original owned() call repeats every identity check.
+                state['state'] = pending[rejected]
+                state['buttonPendingObservations'] += 1
+                state['buttonWaitReasonsObserved'] = sorted(set(state['buttonWaitReasonsObserved']) | {pending[rejected]})
+            else:
+                state['state'] = 'REFUSED_BUTTON_ID_CLASS_OR_STATE'
             return
         state['trustedButtonValidated'] = True
         state['attemptCount'] = 1  # Set before posting; neither a rejection nor exception may cause a retry.
