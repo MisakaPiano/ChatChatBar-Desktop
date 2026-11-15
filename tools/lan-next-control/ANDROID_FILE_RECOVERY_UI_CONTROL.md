@@ -103,3 +103,5 @@ region,450ms, then retains displayed/enabled/Off -> one physical consent click
 -> On and every native/cold assertion. It is a declared additional user gesture,
 not an Owner/state/checkbox semantics shortcut. Numeric post-swipe diagnostics
 remain. SCOPE is updated; engine/parser/source/API/version/two-phase rules stay.
+
+R08run43654036631 passed the actual physical body swipe and Displayed/Enabled/Off -> physicalclick -> On -> confirmation, then failed the global!pending assertion although recoverycomplete/errorNull/READY. Globalpending includes unrelated unsent local presets/edits. R09 requires !busy/errorNull/complete and keeps every exact native/business/cold assertion, strengthening both phases to full original reference membership and read-only protected native control/positive-sequence receipt presence. It does not decode file presence asAPPLIED, invoke new Owner/inspect/recover/apply, or clear real pendingwork; actual message/reply/document hashes and separate cold inventory/identity/PID remain mandatory. The unchanged private file runner newpin is explicitly rebound by the cloud profile; its logic is unchanged.

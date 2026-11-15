@@ -16,7 +16,7 @@ import sys
 SOURCE = "f83a73a388b7c189f81a852fb2cfeabfd6994dd0"
 ENGINE_SHA = "c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b"
 PARSER_SHA = "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158"
-FIXTURE_SHA = "26929c96675347fc1edfd2c4af79c31ce93ca24b6a12cf93636189547cd56955"
+FIXTURE_SHA = "a413094565a5f591b0f64c0aec9f4265019be2c49223886851d6535cf86f2446"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupFileRecoveryUiControlTest"
 FIRST = "realFilePickerResultRestoresLatestConversationWithSourceAlreadyOffline"

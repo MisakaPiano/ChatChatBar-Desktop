@@ -246,7 +246,7 @@ class LanSyncGroupFileRecoveryUiControlTest {
                 val panel = coordinator.state.value
                 "panelStage=${panel.stage.name},panelBusy=${panel.busy},canResume=${panel.canResumeExternalRecovery}," +
                     "visible=${value.visible},busy=${value.busy},review=${value.review != null}," +
-                    "complete=${value.complete},error=${value.error != null}," +
+                    "complete=${value.complete},pending=${value.pending},error=${value.error != null}," +
                     "lifecycle=${runCatching { launched.state.name }.getOrDefault("UNAVAILABLE")}," +
                     "sameOwner=${app.lanSyncOwner === owner},sameCoordinator=${owner.groupCoordinator === coordinator}," +
                     "sameRecovery=${coordinator.fileRecovery === recovery}"
@@ -344,7 +344,9 @@ class LanSyncGroupFileRecoveryUiControlTest {
             phase = "actual-ui-approval-and-keystore-native-import"
             click("登记此设备并恢复资料")
             await(180_000) { !recovery.state.value.busy && (recovery.state.value.complete || recovery.state.value.error != null) }
-            check(recovery.state.value.error == null && recovery.state.value.complete && !recovery.state.value.pending)
+            val recovered = recovery.state.value
+            // Pending also includes unrelated local proposals; verify this recovery's exact results below.
+            check(!recovered.busy && recovered.error == null && recovered.complete)
             withTimeout(30_000) { recovery.drain() }
             check(coordinator.state.value.stage == LanSyncGroupPanelStage.READY)
             val access = checkNotNull(owner.groupJoining.runtimeAccess())
@@ -359,12 +361,15 @@ class LanSyncGroupFileRecoveryUiControlTest {
             // A paused app never cycles to create a Coordinator projection. Do not inspect/apply to fill it.
             check(coordinator.view.value == null)
             val observed = access.node.reconcileForPrefetch()
-            check(checkNotNull(observed.history).state(reference.id) == SyncVersionState.ADMITTED)
+            val history = checkNotNull(observed.history)
+            check(history.contains(reference)) // Full original ID and body hash, not only the ID.
+            check(history.state(reference.id) == SyncVersionState.ADMITTED)
             check(access.node.sourceOperations().isEmpty())
             val realProtection = AndroidLanSyncKeyProtection()
             val author = SyncAuthorJournal(native.resolve("group-profile/joining/node/author"), access.trust,
                 access.certificate, realProtection::protect, realProtection::unprotect)
             check(author.state().committedSequence == 0L)
+            assertPersistedNativeControls(native)
             assertRestored(app, sessionHash, messagesHash, sha(documentBytes))
             check(hashes(offline) == sourceInventory && hash(offline.resolve("source.cbgroup")) == packageHash)
             check(!Files.exists(access.work.resolve("cloud-connections"), NOFOLLOW_LINKS))
@@ -437,13 +442,16 @@ class LanSyncGroupFileRecoveryUiControlTest {
             val reference = SyncVersionRef(SyncStoreId.parse(expected("referenceId")), expected("referenceHash"))
             check(coordinator.view.value == null)
             val observed = access.node.reconcileForPrefetch()
-            check(checkNotNull(observed.history).state(reference.id) == SyncVersionState.ADMITTED)
+            val history = checkNotNull(observed.history)
+            check(history.contains(reference)) // Full original ID and body hash, not only the ID.
+            check(history.state(reference.id) == SyncVersionState.ADMITTED)
             check(access.node.sourceOperations().isEmpty())
             val native = nativeRoot(app)
             val protection = AndroidLanSyncKeyProtection()
             val author = SyncAuthorJournal(native.resolve("group-profile/joining/node/author"), access.trust,
                 access.certificate, protection::protect, protection::unprotect)
             check(author.state().committedSequence == 0L)
+            assertPersistedNativeControls(native)
             check(hash(native.resolve("identity.protected")) == expected("identityHash"))
             check(hash(native.resolve("group-profile/joining/node/author/origin.protected")) == expected("authorOriginHash"))
             check(hash(native.resolve("group-profile/joining/node/native/origin.protected")) == expected("nativeOriginHash"))
@@ -495,6 +503,20 @@ class LanSyncGroupFileRecoveryUiControlTest {
         compose.onNode(hasSetTextAction() and hasAnyAncestor(isDialog()), useUnmergedTree = true)
             .performScrollTo().performTextInput(code)
         click("读取并核对设备组")
+    }
+
+    // Read existing protected-file evidence only. Exact business hashes and the cold full-inventory
+    // comparison below prove the recovered result; file presence alone does not decode APPLIED status.
+    private fun assertPersistedNativeControls(native: Path) {
+        val journal = native.resolve("group-profile/joining/node/native")
+        check(Files.isRegularFile(journal.resolve("origin.protected"), NOFOLLOW_LINKS))
+        check(Files.isRegularFile(journal.resolve("head.protected"), NOFOLLOW_LINKS))
+        check(Files.list(journal).use { files -> files.anyMatch { file ->
+            val name = file.fileName.toString()
+            name.matches(Regex("receipt-[0-9]{19}\\.protected")) &&
+                (name.removePrefix("receipt-").removeSuffix(".protected").toLongOrNull() ?: 0L) > 0L &&
+                Files.isRegularFile(file, NOFOLLOW_LINKS)
+        } })
     }
 
     private suspend fun assertRestored(app: ChatBarApp, sessionHash: String, messagesHash: String, documentHash: String) {
