@@ -1,3 +1,7 @@
+## 2026-11-15：T25 d6d906标准正常关闭实际live／旧a551失败保留
+
+T25新控制d6d90622相对a551仅helper/workflow/compactskill三路径，root核两操作文件逐字节等24payload冻结版，原7logs实际71pure仅Python控制非native。改为只对已核唯一owned c30固定单确认信息窗一次正常WM_CLOSE，不依赖内部按钮ID；原Main排队前提/60s/真实退出+rootlockguard/完整5Main5component4readonly+2retention保持，closepost不代P。root实际API核新run43701227516/job132772589131 in_progress，binding成功、原认证与native步骤进行中，结果未知；当前唯一确认live更新为该run，不再沿旧“无liveCI”。a551真实失败/236次IDOK未见/0click保历史，不推新正常途径已P或旧产品根因；若标准途径仍不可靠，遵用户要求转确切隔离人工一步，不盲猜ID/强退/弱锁/期限或反复重试，原件由既有parent唯一取，root/A不二下。e3ae receiver限定1P、35/R11/SDK/完整pair准备各原scope及原人工P保，未新交付/安装/人验，正式1.0 ACTIVE。普通1257c615+38原公开REQUESTED_UNANSWERED/公开1252/Hf749/T04/Prompt/index/暂缓/隐私与拒绝清理边界不变。A仅现有canonical207新实证记录，无产品/测试/下载/安装/发布。
+
 ## 2026-11-15：T25 a551终态IDOK未见零点击／无确认live与可靠替代边界
 
 T25 a551/run43699042661/job132765853003实际终态FAIL，root复用唯一9061B/8dbce99b与result3e7c6267：c30 upgraded PROCESS_OR_LOCK_NOT_RELEASED，原MainWM_CLOSE排队true/可信唯一dialogtrue，GET_DLG_ITEM_PRESENT=false236次，其余6谓词未知未执行；WAIT_BUTTON_PRESENT、点击0/postnull、原guardfalse/owned253/rootlockUNKNOWN。仍旧3Main3组件2只读VERIFY、retention0；不把原因说成未执行的后续身份项、消息已投无效、产品死锁或资料损坏，内部ID1未见/调用绑定具体原因未定。当前无确认liveCI，251 live仅历史。父与原Windowsowner遵用户电脑控制反复不可靠则交人工要求，仅评估有确定源码/标准契约的可靠信息框正常关闭替代，不盲换ID/强退/放宽锁或期限；若无可靠替代准备确切隔离人工一步，其他独立工作继续，不因本记录重试/跑测。receiver e3ae合成JVM HTTPS仓库整链1P和35/R11/SDK/全pair准备/旧人工P按原scope保；正式1.0 ACTIVE，普通1257c615+38原公开未答、公开1252/Hf749/T04/Prompt/index/暂缓/清理拒绝边界不变。A仅现有canonical207简记，无产品/测试/二下/安装/发布，无新人工动作。
