@@ -17,7 +17,7 @@ class RecoveryUiDraftGuards(unittest.TestCase):
         control.profile()
 
     def test_profile_pins_exact_fixed_source_and_fixture_bytes(self):
-        self.assertEqual("480fbc2e6f6c6c0ac8cf3af937ecccb18bc73507", control.SOURCE)
+        self.assertEqual("e39ed8b088b41fe7be2d619370eae260603d8fc6", control.SOURCE)
         self.assertEqual(control.FIXTURE_SHA, hashlib.sha256(control.FIXTURE.read_bytes()).hexdigest())
         self.assertEqual(control.CLASS, control.base.CLASS)
         self.assertEqual(control.METHOD, control.base.METHOD)

@@ -1,5 +1,5 @@
 {
-  "source": "7ce8446b4da875aed0979c2940e5b5537b7f27a3",
+  "source": "e39ed8b088b41fe7be2d619370eae260603d8fc6",
   "control": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
   "originalFrozenControl": "ca9c2455cf172aeecedcf3d4b9a85e1d706b2b8a",
   "runtimeRebaseCompatibility": [
@@ -202,72 +202,72 @@
   },
   "currentSourceInputs": {
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoveryOwner.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoveryOwner.kt",
-      "bytes": 30953,
-      "sha256": "0e13f30ad05201ec897ee371891229bdf563dab973a6c3c7ffbcff7df775ac07"
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoveryOwner.kt",
+      "bytes": 33933,
+      "sha256": "a3351cf60976e34e113a349c622a09afa6608985450d089d9956819b0f0d76a6"
     },
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/webdav/WebDavCloudClient.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/webdav/WebDavCloudClient.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/webdav/WebDavCloudClient.kt",
       "bytes": 413,
       "sha256": "46ad43ca7cefd985291c8b0e829a9f43262689ff12c1906bc1d8c73bf28c2745"
     },
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/ProxyAwareClient.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/ProxyAwareClient.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/ProxyAwareClient.kt",
       "bytes": 7021,
       "sha256": "b6bd1e0d14c8b3c68258e319c89d67ebdec80cc4738ec70f303cff14daf555f6"
     },
     "app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSync.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSync.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSync.kt",
       "bytes": 24156,
       "sha256": "b7a3e8bc914922eb583a9b56ae3af206562e9a9d55acd11ff0984e810c88df7d"
     },
     "app/app/src/main/java/com/example/chatbar/lanSync/LanSyncActivity.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/app/src/main/java/com/example/chatbar/lanSync/LanSyncActivity.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/app/src/main/java/com/example/chatbar/lanSync/LanSyncActivity.kt",
       "bytes": 22803,
       "sha256": "42eac2258b15d3af511d96f979f03287eeb14da5bb44098ea5d9c81b767e7923"
     },
     "app/app/src/main/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecovery.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/app/src/main/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecovery.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/app/src/main/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecovery.kt",
       "bytes": 7401,
       "sha256": "ee464b9821443e98d9a7cd152d89395c24258db298250b7ca09381caf0bb6a04"
     },
     "app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSyncKeyProtection.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSyncKeyProtection.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSyncKeyProtection.kt",
       "bytes": 1586,
       "sha256": "154fc1031c8850cd25db23f51fa2f8f7512ddde8e7558a97c4d3e017f482630a"
     },
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRuntime.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRuntime.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRuntime.kt",
       "bytes": 32808,
       "sha256": "a01584e6953a134e9900a7dcba506b701238529afbeadb0c72a38625cdc24de4"
     },
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRoutes.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRoutes.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRoutes.kt",
       "bytes": 14524,
       "sha256": "db1e82780b1ee9aeb02114d0b2637b61f10bc029d9d0ea34dd26b89c9dd00cf2"
     },
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt",
       "bytes": 69330,
       "sha256": "598b907231249ae146d9efe9b01f7df06bb731cfd853d8d5cb783b2c64681015"
     },
     "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt",
       "bytes": 8425,
       "sha256": "6249019c67f3bc84e0348d258ca6515e1ffdadc756c7f696b923a2dc08a89967"
     },
     "app/gradle/libs.versions.toml": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/gradle/libs.versions.toml",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/gradle/libs.versions.toml",
       "bytes": 6115,
       "sha256": "5d656f28d97107d3d3dbc970776357f5f5360ffc0a16230adb5025a36cb6a3f6"
     },
     "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
       "bytes": 26811,
       "sha256": "90bcdb1bec181fabc14af47f072569f6f560955bfa2971bae7127d92d66dbc0d"
     },
     "app/app/src/main/java/com/example/chatbar/ui/kit/Controls.kt": {
-      "gitObject": "7ce8446b4da875aed0979c2940e5b5537b7f27a3:app/app/src/main/java/com/example/chatbar/ui/kit/Controls.kt",
+      "gitObject": "e39ed8b088b41fe7be2d619370eae260603d8fc6:app/app/src/main/java/com/example/chatbar/ui/kit/Controls.kt",
       "bytes": 15888,
       "sha256": "89179f3178d2e3301a1098baacae813d9be1b57eefe890285e1112c2fe91cf22"
     }
@@ -279,5 +279,16 @@
   "currentPrivateFileProfile": {
     "bytes": 9630,
     "sha256": "76572907ba56e0c3ca586f5e1d8016625f7a76f659fd9afaf877564f1dc59b7d"
+  },
+  "sourceBindingHistory": [
+    {
+      "source": "7ce8446b4da875aed0979c2940e5b5537b7f27a3",
+      "meaning": "R03 compiled but actualonStopcrash, originalreviewfrozen"
+    }
+  ],
+  "currentDesktopHelperPin": {
+    "bytes": 12410,
+    "sha256": "b26c92363c5b43c0cec9a1c62b508f8dd8793039a8900913a6fce24258f29eeb",
+    "reason": "Only SOURCE changed, same TLSreadiness function and private runner"
   }
 }

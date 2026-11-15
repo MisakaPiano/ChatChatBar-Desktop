@@ -87,3 +87,5 @@ suppressed-error and root-ownership checks. A test sink records only the actual
 production notice and checks it outside the wrapper. Unsafe/timeout closes still
 fail. A completion notice never establishes cloud delivery; cold reopen and exact
 catalog/data assertions remain required.
+
+The next exact source ise39ed8b0, including4649owned-client IOcleanup and concurrent-drain withdrawal ordering. The original companion, TLS/StrictMode/physicalUI and strict raw-report assertions stay unchanged. Rebind only fixedSOURCE/request and the affected fullDesktop-helper pin used for privateTLSreadiness. Earlier failures and unaffected large/file proofs retain their own scopes; actual successor native results remain tied to their own run.

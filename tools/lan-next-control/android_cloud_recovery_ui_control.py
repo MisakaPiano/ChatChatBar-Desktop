@@ -21,7 +21,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE = "7ce8446b4da875aed0979c2940e5b5537b7f27a3"
+SOURCE = "e39ed8b088b41fe7be2d619370eae260603d8fc6"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupCloudRecoveryUiControlTest"
 FIRST = "realCloudRecoveryUiRestoresOfflineLatestConversationAndSavesKeystoreConnection"
@@ -38,7 +38,7 @@ SCOPE = ("API35 actual Android Activity/CloudRecovery default HTTPS OkHttp, sour
          "not restore-only, another peer receipt, physical/commercial provider/GB/performance")
 RCLONE_URL = "https://github.com/rclone/rclone/releases/download/v1.76.0/rclone-v1.76.0-linux-amd64.zip"
 RCLONE_SHA = "b00f00b3266c3764413afe599d3ec316f6f43b3e0ea8a0bc1d186d2133e46df7"
-PINS = {'group_ui_control.py': 'c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b', 'android_file_recovery_ui_control.py': '76572907ba56e0c3ca586f5e1d8016625f7a76f659fd9afaf877564f1dc59b7d', 'instrumentation_report.py': 'af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158', 'real_webdav_process_owner.py': 'fb186f2aa53c211a5d6d0b203dfa93fa21e843b36dab8906d9ae6ab702d6e441', 'RecoveryUiTlsMaterial.java': 'fe4398cbf625b212ea25f19ff6244419c9dfcdd5a8705bc2b7cafdbaa00440ab', 'real_webdav_interop_control.py': '96c87f845d014baf5ad3c5c5e388e29771cdcd83829cf29ad0e0ce91ad79b627', 'desktop_recovery_ui_control.py': '43c491f2c437bd86bf6fcb571fec52607e1390a85d7ebae0a666f3ef87384938'}
+PINS = {'group_ui_control.py': 'c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b', 'android_file_recovery_ui_control.py': '76572907ba56e0c3ca586f5e1d8016625f7a76f659fd9afaf877564f1dc59b7d', 'instrumentation_report.py': 'af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158', 'real_webdav_process_owner.py': 'fb186f2aa53c211a5d6d0b203dfa93fa21e843b36dab8906d9ae6ab702d6e441', 'RecoveryUiTlsMaterial.java': 'fe4398cbf625b212ea25f19ff6244419c9dfcdd5a8705bc2b7cafdbaa00440ab', 'real_webdav_interop_control.py': '96c87f845d014baf5ad3c5c5e388e29771cdcd83829cf29ad0e0ce91ad79b627', 'desktop_recovery_ui_control.py': 'b26c92363c5b43c0cec9a1c62b508f8dd8793039a8900913a6fce24258f29eeb'}
 
 
 def require(value, code):

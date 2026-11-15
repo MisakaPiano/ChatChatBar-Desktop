@@ -22,7 +22,7 @@ import zipfile
 
 import real_webdav_process_owner as owner
 
-SOURCE = "480fbc2e6f6c6c0ac8cf3af937ecccb18bc73507"
+SOURCE = "e39ed8b088b41fe7be2d619370eae260603d8fc6"
 CLASS = "com.example.chatbar.desktop.lanSync.DesktopCloudRecoveryUiControlTest"
 METHOD = "realRecoveryPopupPreservesPreparationAndBothConnectionChoicesAcrossColdAppRoots"
 TARGET = "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopCloudRecoveryUiControlTest.kt"
