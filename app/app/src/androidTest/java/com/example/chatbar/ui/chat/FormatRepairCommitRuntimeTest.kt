@@ -70,6 +70,68 @@ class FormatRepairCommitRuntimeTest {
         assertEquals(f.other.content, other.content)
     }
 
+    @Test fun userStopPersistsReturnedPrefixAndRecoverableOriginal() = withFixture(partial = true) { f ->
+        awaitPrefix(f)
+        stop(f)
+        val current = cold(f, f.anchor.id)!!
+        val expected = com.example.chatbar.domain.chat.MessageFormatRepairPolicy.progressiveOverlay(
+            f.anchor.displayContent, "Fixed prefix")
+        assertEquals(expected, current.displayContent)
+        assertEquals(MessageFormatRepairNoticeKind.STOPPED, current.formatRepairNotice!!.kind)
+        assertEquals(f.anchor.displayContent, current.formatRepairNotice!!.originalContent)
+        assertEquals(expected, current.formatRepairNotice!!.targetContent)
+        assertEquals(f.anchor.images, current.images)
+        rule.runOnIdle { f.vm.restoreMessageFormatOriginal(f.anchor.id) }
+        rule.waitUntil(15000) { cold(f, f.anchor.id)?.formatRepairNotice?.restored == true }
+        assertEquals(f.anchor.displayContent, cold(f, f.anchor.id)!!.displayContent)
+        rule.runOnIdle { f.vm.redoMessageFormatRepair(f.anchor.id) }
+        rule.waitUntil(15000) { cold(f, f.anchor.id)?.formatRepairNotice?.restored == false }
+        assertEquals(expected, cold(f, f.anchor.id)!!.displayContent)
+    }
+
+    @Test fun userStopDoesNotRestoreImageDeletedAfterReturnedPrefix() = withFixture(partial = true) { f ->
+        awaitPrefix(f)
+        deleteImage(f, f.anchor)
+        stop(f)
+        val current = cold(f, f.anchor.id)!!
+        assertTrue(current.images.isEmpty())
+        assertEquals(f.anchor.content, current.content)
+        assertNull(current.formatRepairNotice)
+    }
+
+    @Test fun userStopDoesNotRecreateSourceDeletedAfterReturnedPrefix() = withFixture(partial = true) { f ->
+        awaitPrefix(f)
+        runBlocking { f.app.chatRepository.deleteMessage(f.anchor.id, f.session.id) }
+        stop(f)
+        assertNull(cold(f, f.anchor.id))
+        assertNotNull(cold(f, f.other.id))
+    }
+
+    @Test fun userStopRespectsMaintenanceAdmissionAndKeepsOriginalIfSaveIsRejected() = withFixture(partial = true) { f ->
+        awaitPrefix(f)
+        val lease = runBlocking { com.example.chatbar.domain.backup.LocalDataMaintenance.acquire() }
+        try {
+            stop(f)
+        } finally {
+            lease.close()
+        }
+        val current = cold(f, f.anchor.id)!!
+        assertEquals(f.anchor.displayContent, current.displayContent)
+        assertNull(current.formatRepairNotice)
+        assertEquals(f.anchor.images, current.images)
+    }
+
+    private fun awaitPrefix(f: Fixture) {
+        f.release.countDown()
+        rule.waitUntil(15000) { f.vm.messageFormatRepairState.value?.previewContent?.startsWith("Fixed prefix") == true }
+        assertTrue(f.vm.isResponding.value)
+    }
+
+    private fun stop(f: Fixture) {
+        rule.runOnIdle { f.vm.cancelResponseGeneration() }
+        rule.waitUntil(15000) { !f.vm.isResponding.value }
+    }
+
     private fun deleteImage(f: Fixture, message: ChatMessage) {
         rule.runOnIdle { f.vm.deleteImage(message.id, message.images.single()) }
         rule.waitUntil(15000) {
@@ -87,7 +149,7 @@ class FormatRepairCommitRuntimeTest {
         ChatRepository(JsonFileStorage(f.app)).getMessage(id, f.session.id)
     }
 
-    private fun withFixture(fail: Boolean = false, block: (Fixture) -> Unit) {
+    private fun withFixture(fail: Boolean = false, partial: Boolean = false, block: (Fixture) -> Unit) {
         val app = ChatBarApp.instance
         check(app.packageName == "com.example.chatbar.repaircommit.r1")
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
@@ -101,8 +163,8 @@ class FormatRepairCommitRuntimeTest {
         val release = CountDownLatch(1)
         val server = MockWebServer()
         val event = buildJsonObject { put("choices", buildJsonArray { add(buildJsonObject {
-            put("delta", buildJsonObject { put("content", "Synthetic repaired text") })
-            put("finish_reason", "stop")
+            put("delta", buildJsonObject { put("content", if (partial) "Fixed prefix" else "Synthetic repaired text") })
+            if (!partial) put("finish_reason", "stop")
         }) }) }.toString()
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
@@ -111,7 +173,13 @@ class FormatRepairCommitRuntimeTest {
                 seen.countDown()
                 check(release.await(30, TimeUnit.SECONDS))
                 return if (fail) MockResponse().setResponseCode(400).setBody("synthetic repair failure")
-                else MockResponse().setHeader("Content-Type", "text/event-stream")
+                else if (partial) {
+                    // Send a real prefix but keep the HTTP response incomplete until client cancellation.
+                    // No timing-based body delay or long-lived test thread is needed.
+                    val body = "data: $event\n\n"
+                    MockResponse().setHeader("Content-Type", "text/event-stream").setBody(body)
+                        .setHeader("Content-Length", body.toByteArray().size + 1024)
+                } else MockResponse().setHeader("Content-Type", "text/event-stream")
                     .setBody("data: $event\n\ndata: [DONE]\n\n")
             }
         }
@@ -150,6 +218,7 @@ class FormatRepairCommitRuntimeTest {
                 "repairModelMatches=${app.settingsRepository.currentAppSettings.formatRepairModelId == model.id}, " +
                 "notice=${cold(Fixture(app, vm, session, anchor, other, release), anchor.id)?.formatRepairNotice?.kind}", started)
             block(Fixture(app, vm, session, anchor, other, release))
+            assertEquals("Undo/redo and stale completion must not request another repair", 1, server.requestCount)
         } finally {
             release.countDown()
             rule.runOnIdle { store.clear() }

@@ -2437,6 +2437,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         var result = message
         var repairedPrefix = ""
         var sawDone = false
+        var stoppedReplacement: ChatMessage? = null
         formatRepairStopRequested = false
         _messageFormatRepairState.value = MessageFormatRepairState(
             messageId = message.id,
@@ -2507,16 +2508,15 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         original = originalContent,
                         repairedPrefix = repairedPrefix
                     )
-                    result = persistFormatRepairMessage(
-                        message,
-                        MessageFormatRepairPolicy.replaceCurrentDisplayContent(
-                            message = message,
-                            replacement = mixedContent,
-                            notice = MessageFormatRepairNotice(
-                                kind = MessageFormatRepairNoticeKind.STOPPED,
-                                targetContent = mixedContent,
-                                originalContent = originalContent
-                            )
+                    // This child is already cancelled. Its owner commits the stopped result
+                    // after joining it, using the same source check and normal data admission.
+                    stoppedReplacement = MessageFormatRepairPolicy.replaceCurrentDisplayContent(
+                        message = message,
+                        replacement = mixedContent,
+                        notice = MessageFormatRepairNotice(
+                            kind = MessageFormatRepairNoticeKind.STOPPED,
+                            targetContent = mixedContent,
+                            originalContent = originalContent
                         )
                     )
                 } catch (error: Exception) {
@@ -2529,6 +2529,15 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             activeFormatRepairJob = repairJob
             try {
                 repairJob.join()
+                stoppedReplacement?.let { replacement ->
+                    try {
+                        result = persistFormatRepairMessage(message, replacement)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        _messageFormatRepairEvents.tryEmit("停止结果保存未完成：${error.message ?: "请稍后重试"}")
+                    }
+                }
             } finally {
                 if (activeFormatRepairJob == repairJob) activeFormatRepairJob = null
                 formatRepairStopRequested = false

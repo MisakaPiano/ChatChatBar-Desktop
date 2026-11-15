@@ -46,6 +46,7 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Editing, regeneration, candidate switching, or another mutation must clear or hide stale notices according to target-content applicability.
 - Process death during an unfinished stream leaves the pre-repair persisted message intact.
 - All terminal writes in `ChatViewModel.persistFormatRepairMessage` (replacement, unchanged notice, stopped result and failure notice) use `updateMessageIfUnchanged` against the launch message. If media/version content changed or the source disappeared, retain current storage and emit the stale-result notice; never retry with an unconditional write. `FormatRepairCommitRuntimeTest` holds the actual loopback repair response while real image deletion/source removal commits, including failure and unrelated-message cases.
+- User stop cancels only the provider child. That cancelled child computes the stopped overlay; its still-active owner commits it after joining, through the same expected-message gate. Keep provider requests and data-maintenance admission cancellable; rejected stop-save admission surfaces an error without an unconditional retry. Native prefix-stream tests cover durable STOPPED recovery, concurrent image/source deletion and maintenance rejection.
 
 ## Orchestration Invariants
 
