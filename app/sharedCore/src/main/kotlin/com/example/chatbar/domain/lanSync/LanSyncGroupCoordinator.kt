@@ -881,8 +881,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 val forceIdle = requested != handled || needsBusinessAttempt
                 var invoked = false
                 try { runCloudCycle(forceIdle = forceIdle, onInvoked = { invoked = true }) }
-                catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
+                    // A finite batch may cancel its own child while this worker remains active.
+                    // Actual worker cancellation from pause/close must still leave immediately.
+                    currentCoroutineContext().ensureActive()
                     cloudRuntime?.deferUntilWake()
                     mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus(cloudFailureText(failure), it.cloud.lastSuccessAt)) }
                 }

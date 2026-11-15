@@ -1,4 +1,4 @@
-name: Local cloud batch cancellation regression
+name: Automatic cloud work after a cancelled local batch
 on:
   push:
     branches: [codex/cloud-local-cancel-repro-20261115]
@@ -7,7 +7,7 @@ permissions:
 jobs:
   local-batch-cancellation:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,13 +18,21 @@ jobs:
         with:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
-      - name: Execute exact automatic edit after local batch cancellation
+      - name: Execute local batch cancellation and existing selection boundaries
         working-directory: app
         run: >-
           bash ./gradlew :sharedCore:test
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublicationTest.coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.aCancelledCloudBatchDoesNotRetireAutomaticCloudWorkForLaterOrdinaryEdits'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.pauseCancelsARealStalledRequestDrainsAndAllowsAnExplicitLaterCycleWithoutResettingTheDailyOwner'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.cancellingTheCycleJobClosesItsStalledHttpBeforeJoiningTheBlockingIoChild'
           --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
-      - name: Preserve the exact original case and counts
+      - name: Require the exact nine methods with original case counts
         if: always()
         env:
           CHECKED_HEAD: ${{ github.sha }}
@@ -33,25 +41,31 @@ jobs:
           import json, os
           from pathlib import Path
           import xml.etree.ElementTree as ET
-          name = 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest'
-          method = 'aCancelledCloudBatchDoesNotRetireAutomaticCloudWorkForLaterOrdinaryEdits'
-          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, 'problems': []}
-          path = Path('app/sharedCore/build/test-results/test/TEST-' + name + '.xml')
-          if not path.is_file():
-              result['problems'].append('MISSING_CLASS')
-          else:
+          expected = {
+              'LanSyncGroupCoordinatorTest': ['coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync', 'coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake', 'aCancelledCloudBatchDoesNotRetireAutomaticCloudWorkForLaterOrdinaryEdits'],
+              'LanSyncGroupTargetPublicationTest': ['coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'],
+              'LanSyncGroupCloudRuntimeTest': ['dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved', 'anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt', 'aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor', 'pauseCancelsARealStalledRequestDrainsAndAllowsAnExplicitLaterCycleWithoutResettingTheDailyOwner', 'cancellingTheCycleJobClosesItsStalledHttpBeforeJoiningTheBlockingIoChild'],
+          }
+          root = Path('app/sharedCore/build/test-results/test')
+          result = {'head': os.environ['CHECKED_HEAD'], 'cases': [], 'problems': []}
+          for short, methods in expected.items():
+              name = 'com.example.chatbar.domain.lanSync.' + short
+              path = root / ('TEST-' + name + '.xml')
+              if not path.is_file():
+                  result['problems'].append('MISSING_CLASS:' + name)
+                  continue
               suite = ET.parse(path).getroot()
               cases = suite.findall('testcase')
               counts = {'tests': len(cases)}
               counts.update({key: sum(case.find(tag) is not None for case in cases)
                              for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
-              result.update(counts)
               if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
-                  result['problems'].append('COUNT_MISMATCH')
-              if len(cases) != 1 or any(case.get('classname') != name or case.get('name') != method for case in cases):
-                  result['problems'].append('EXACT_METHOD_NOT_EXECUTED')
+                  result['problems'].append('COUNT_MISMATCH:' + name)
+              if len(cases) != len(methods) or any(case.get('classname') != name for case in cases) or sorted(case.get('name') for case in cases) != sorted(methods):
+                  result['problems'].append('EXACT_METHOD_NOT_EXECUTED:' + name)
               if any(counts[key] for key in ['failures', 'errors', 'skipped']):
-                  result['problems'].append('METHOD_NOT_PASS')
+                  result['problems'].append('METHOD_NOT_PASS:' + name)
+              result['cases'].append({'class': name, 'methods': methods, **counts})
           output = Path('app/build/reports/cloud-local-batch-cancellation.json')
           output.parent.mkdir(parents=True, exist_ok=True)
           output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
