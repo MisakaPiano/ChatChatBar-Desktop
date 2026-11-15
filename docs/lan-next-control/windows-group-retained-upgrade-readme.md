@@ -1,4 +1,19 @@
-# Windows 设备组保留升级控制草案
+# Windows 设备组保留升级控制
+
+当前运行记录见同目录 status JSON，原版输入 API 的字节快照保留在 fixed-inputs JSON。当前实际控制提交为 0fb2235d2bdc9ba9e47a1a51e96edae4608fb6ff，云端 run43675592820/job132694909493 正在检查；完整设备组保留升级尚未通过。
+
+V5/e606 和 LAN6/a6 的实际原包及原合同请求均已取得。三个先前真实失败记录保留：各完成一个旧版 fresh Main，SEED 组件未完成，四次 VERIFY、升级与冷重开未到。最后一轮已识别到 ADD_DISABLED_REAL_PROTECTED_ROUTE/IOException；只凭该阶段不能认定保存连接、DPAPI 或资料丢失。
+
+当前三文件变体的 35 项轻量检查已通过，真实云端结果仍待本轮原件。它增加精确子阶段、安全源码位置和主异常/清理异常区分；两类异常始终导致失败。扫描仅对当前 ownership 的精确空锁文件，在入口、命中和退出核对普通文件、无符号链接、大小为零及恰一次命中后，无需发起内容读取。其它空文件、锁文件、Temp 和资料仍全部流式扫描，I/O 错误不忽略，实际 ownership 不提前释放。此空内容判定不等于已经证明旧 run 的实际 I/O 根因。
+
+本机只运行 Python/文件/Git 检查。两个实际包、产品源、原请求、原五次 Main、五次独立组件、四次 VERIFY 的实体/PNG 只读边界及所有保护断言保留。组件不能计为 Main 启动。未做日常安装、公开发布或真人验收。
+
+实际升级请求由已核五份原始 JSON、artifact API 和对应 Git 字段生成，再通过原 validate_upgrade 合同；本机没有下载完整候选大包，也没有假称调用要求本地完整 bundle 的 upgrade_request。云端仍在任何 native 启动前执行原 fetch-originals 的完整 outer/inner/CRC/source-bundle/Program 核验，小 metadata 不代替该链。
+
+## 原始冻结稿说明（历史截点）
+
+以下保留最初冻结时的实现说明。“未派发”“尚未取得 descriptor”“只有 15 项轻验”等为当时状态，已由上述当前记录替代；旧输入摘要和原始失败仍保留。
+
 
 冻结范围是原始 V5/e606 → LAN6/a6 的云端 Windows 控制器和真实 AppContainer 组件。当前只有 15 项纯 FS/mock 检查通过；Kotlin 编译、JVM/native 执行、真实组升级均为 0。没有派发请求、CI、构包或产品写入。
 

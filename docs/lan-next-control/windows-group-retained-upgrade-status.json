@@ -1,41 +1,69 @@
 {
-  "kind": "CCB_WINDOWS_GROUP_RETAINED_UPGRADE_IMPLEMENTATION_DRAFT",
-  "state": "FROZEN_DRAFT_NOT_NATIVE_VALIDATED",
-  "oldSource": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
-  "candidateSourceApiSnapshot": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
-  "candidateBuildControlApiSnapshot": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
-  "controllerBaseline": "1014be57d389d117f3adae6b0bf1812aee0bc32e",
-  "candidateActualNextDescriptor": "NOT_OBSERVED_NOT_FABRICATED",
-  "pureGuards": {
-    "executed": 15,
-    "passed": 15,
-    "nativeCompilations": 0,
-    "nativeExecutions": 0,
-    "verifierRepairNegativeCaseRejected": true
+  "kind": "CCB_REAL_WINDOWS_GROUP_RETAINED_UPGRADE_CURRENT_STATUS",
+  "asOfUtc": "2026-11-15T04:16:45.975909+00:00",
+  "state": "CURRENT_NATIVE_CHECK_RUNNING_NOT_PASSED",
+  "operationalControl": "0fb2235d2bdc9ba9e47a1a51e96edae4608fb6ff",
+  "currentRun": 43675592820,
+  "currentJob": 132694909493,
+  "nativeVerdict": "NOT_OBSERVED",
+  "sourceOld": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
+  "sourceCandidate": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+  "candidateBuildControl": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
+  "originalCandidatePackage": {
+    "series": "lan6",
+    "version": "0.1.0-lan.6",
+    "sourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+    "controlSha": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
+    "runId": 43665876837,
+    "artifactId": 14141999848,
+    "artifactName": "ccb-lan5-lan6-independent-desktop",
+    "outerBytes": 210282912,
+    "outerSha256": "0252e7dee8b1795e4f8f247ec05691538b665bd1158b2029970141135bdebf43",
+    "filename": "CCB-0.1.0-lan.6-independent-windows-x64.zip",
+    "innerBytes": 210167703,
+    "innerSha256": "d52ae9e171cff31a1f819af6ee0c02c5d331c8c3c94ac80be7e4bcdab2468447",
+    "installerVersion": "0.1.40006",
+    "buildNumber": "40006"
   },
-  "requestDispatched": false,
-  "ciDispatched": false,
-  "localRuntimeOrPackageDownloaded": false,
-  "productRootControlIndexCanonicalWritten": false,
-  "packagedMainProofScope": "existing exact five launch engine unchanged plus separate real AppContainer component hooks",
-  "plannedPackagedMainLaunches": 5,
-  "plannedSeparateAppContainerComponents": 5,
-  "originalV5BaselineUnchanged": true,
-  "timestampBindingsOriginalThreeSourceFiles": true,
-  "durablePauseClaimed": false,
-  "rawJUnitOrLogsUploaded": false,
-  "actualCloudDeliveryClaimed": false,
-  "pending": [
-    "Authenticate actual a6 / 1da build artifact descriptor and generate the unchanged original upgrade request; no future IDs or byte hashes invented",
-    "Cloud Kotlin compilation and real default AppContainer/resources/listener execution",
-    "Five actual original packaged Main launches with real old group seed and candidate retained group/DPAPI/native/credential verification"
+  "requestDispatched": true,
+  "ciDispatched": true,
+  "actualCandidateArtifactDescriptorObserved": true,
+  "operationalFiles": {
+    "tools/lan-next-control/desktop_group_retained_upgrade_control.py": {
+      "bytes": 32765,
+      "sha256": "3f76866866cd7a009683529be293fb92590ea8d68bbf74a677e014f75ea76204"
+    },
+    "tools/lan-next-control/fixtures/DesktopGroupRetainedUpgradeControlTest.kt": {
+      "bytes": 24374,
+      "sha256": "51e5d1f7d7f8f9abe48e4c64491b6f5b9915d918a92c81864feade12856650b3"
+    },
+    ".github/workflows/lan-next-desktop-group-retained-upgrade.yml": {
+      "bytes": 3353,
+      "sha256": "7bf09340f4db26f41808119be8f796fadbac1d7df8c1e21ce504e166cf684f01"
+    }
+  },
+  "currentVariantProducerPureGuardsPassed": 35,
+  "localNativeRuns": 0,
+  "previousActualFailures": [
+    {
+      "run": 43669436221,
+      "scope": "OneoldfreshMain completed; componentSEED failed withcoarseControlError; innerJUnit counts unobserved."
+    },
+    {
+      "run": 43671773288,
+      "scope": "OneoldfreshMain completed; exactcomponent case0P1F0E/S; marker notprojected."
+    },
+    {
+      "run": 43673198126,
+      "scope": "OneoldfreshMain completed; exactcomponent case0P1F0E/S; marker ADD_DISABLED_REAL_PROTECTED_ROUTE/IOException. No completeSEED/fourVERIFY."
+    }
   ],
-  "deletedRejectedTargets": false,
-  "newPathLfAttributesRequired": true,
-  "baseFrozenManifestSha256": "42b90e2baefefb5ae228828f3862a9de2b6f656c3f4d43c0dec77cbc390aa947",
-  "verifyComponentEntitiesAndSeedPngReadOnlyBoundary": "FOUR_VERIFY_PRE_POST_LEGACY_INVENTORY_AND_ORIGINAL_SEED_IMAGE_SHA",
-  "privateHashesPublished": false,
-  "candidateApiSourceBlobsUnchangedFrom7ce": 22,
-  "candidateSourceRebindPending": false,
-  "actualCandidateArtifactDescriptorPending": true
+  "currentChange": "Precisefixedsubphases and safe sourcebasename/line; primary+cleanup failures remainfatal. Onlycurrentownedexactdirectchild nonsymlinkregular size0 .ccb-desktop.lock contentread is unnecessary, withentry/hit/exit metadata proofs andexactlyonehit. Allotherfiles streamed; no arbitrarylock/emptyfile skip/IOswallow/lockrelease.",
+  "scope": "FiveoriginalpackagedMain launches andfive separateAppContainer/defaultDPAPI components; fourVERIFY cannotrepair originalMain entities/PNG. NotNSIS/extraMain/remoteDelivery/physical/human.",
+  "originalFullArtifactAuthentication": "Existingcloudfetch-originals validates bothAPI/sourcebundle/outerCRC/innerbytes/565Program each before anylaunch. Metadata-only rootrequest preparation didnotclaim localfullbundle or call localupgrade_request.",
+  "historicalDraftStatus": "b1cb407662d53fb41bb7d349e957672d70632878:docs/lan-next-control/windows-group-retained-upgrade-status.json",
+  "historicalSourceApiInputs": "windows-group-retained-upgrade-fixed-inputs.json",
+  "humanAcceptance": false,
+  "userDelivered": false,
+  "dailyInstallationChanged": false
 }
