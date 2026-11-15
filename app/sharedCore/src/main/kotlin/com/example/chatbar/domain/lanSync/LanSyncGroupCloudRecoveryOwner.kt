@@ -197,6 +197,9 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         value.cleanup?.let { return it }
         val job = scope.launch(start = CoroutineStart.LAZY) {
             withContext(NonCancellable + Dispatchers.IO) {
+                // A concurrent drain may start this LAZY job before the lifecycle caller
+                // reaches releaseAndCancel. Complete withdrawal here as well before joining.
+                release(value)
                 // Retire can be called by a work job itself. Only this separate cleanup joins it.
                 pending.joinAll()
                 cleanupStep { value.manager?.close() }
