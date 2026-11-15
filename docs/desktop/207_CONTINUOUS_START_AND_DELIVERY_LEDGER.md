@@ -1,3 +1,7 @@
+## 2026-11-15：T25 d6正常关闭与退出锁实际P／首失败推进升级组件
+
+T25 d6原件已root复用唯一9222B/9b2f8105/7uniqueCRC、rawresult f1d6011e：lan6-upgraded normalNoticeClose实际attempt1/posttrue/原exit-lockguardtrue，sameOwnedfalse/rootLockfalse，原4Main（旧3+candidateupgraded）已完成；该正常关闭步骤确P，不再写其不可靠或为此要求人工。整轮仍FAIL但已推进COMPONENT_LAN6_UPGRADED/JUNIT_NOT_ONE_EXECUTED_PASS，精确1expectedcase、declared rootcounts1/0P1F0E/S只诊断非P，marker READ_REAL_DAILY_OWNER_NATIVE_AND_ROUTE/IllegalArgumentException/DesktopAppContainer.kt57。57仅维护中work()callback调用帧，fixture该阶段还含certificate/author/native/route-DPAPI/oracle读取，非已证根因，原parent/owner沿确切抛错操作窄定位，不猜凭据/资料损坏或产品死锁。当前仍仅3oldcomponents/2readonly，coldcandidate和2retention未到；新Main关闭P不等完整5/5/4+2通过或远端同步P。原件替换上一API-only未知状态，历史d6live/a551零点击各原scope保。当前无liveCI/无人工阻碍，e3ae/35/R11/SDK/配套准备和旧人工P保持，正式1.0 ACTIVE；普通1257c615+38原公开未答/公开1252/Hf749/T04/Prompt/index/暂缓/隐私/拒绝清理不动。A只现有canonical207简记，无产品/测试/二下/安装/发布，不为已过关闭步骤新增人工。
+
 ## 2026-11-15：T25 d6d906 API失败终态／具体结果待唯一原件
 
 T25 d6d906/run43701227516/job132772589131已由root真实GitHub API确认completed FAILURE，失败step为原认证/native矩阵。此次具体phase/code/正常notice-WM_CLOSE投递/原退出锁/已到阶段均等待原Windowsowner唯一小原件，当前UNKNOWN，不沿a551的IDOK或任何旧原因，不填阶段P/产品死锁；254 live快照保历史，当前无确认liveCI。parent已接续核唯一原件和必要确切隔离人工一步边界，若标准交互仍不可靠不猜更多UI方法；A/root不重跑或二下，其他独立已授权工作继续。35/e3ae/R11/SDK/全配套准备及原人工P各原scope保持，未新交付/日常装/人验；正式1.0 ACTIVE，普通1257c615+38原公开未答/公开1252/Hf749/T04/Prompt/index/暂缓/隐私/拒绝清理边界不变。A仅现有canonical207/I简记终态，无产品/测试/下载/安装/发布，无新人工动作。
