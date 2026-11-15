@@ -1,0 +1,136 @@
+{
+  "source": "db25f8c61fdf237449286b13812a622c9a9d2120",
+  "facts": {
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoveryOwner.kt": [
+      {
+        "line": 40,
+        "text": "constructor(root: () -> Path, joining: () -> LanSyncGroupJoining, deviceName: String,"
+      },
+      {
+        "line": 44,
+        "text": "networkAllowed, cloudWork, onReady, { WebDavCloudClient.create() }, true, WebDavEndpointPolicy.HTTPS_ONLY,"
+      },
+      {
+        "line": 48,
+        "text": "internal constructor(root: () -> Path, joining: () -> LanSyncGroupJoining, deviceName: String,"
+      },
+      {
+        "line": 261,
+        "text": "private suspend fun prepareOwned(value: Session): Result {"
+      },
+      {
+        "line": 422,
+        "text": "private suspend fun saveReadyConnection(value: Session, ready: Result.Ready): Result.Ready {"
+      }
+    ],
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/webdav/WebDavCloudClient.kt": [
+      {
+        "line": 9,
+        "text": "fun builder(): OkHttpClient.Builder = ProxyAwareClient.builder().dns(Dns.SYSTEM)"
+      },
+      {
+        "line": 10,
+        "text": "fun create(): OkHttpClient = builder().build()"
+      }
+    ],
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/ProxyAwareClient.kt": [
+      {
+        "line": 32,
+        "text": "fun builder(proxySettings: () -> ApplicationProxySettings = { applicationProxy }): OkHttpClient.Builder ="
+      },
+      {
+        "line": 47,
+        "text": "return OkHttpClient.Builder()"
+      }
+    ],
+    "app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSync.kt": [
+      {
+        "line": 167,
+        "text": "sourceChanges = app.jsonFileStorage.committedRevisionFor(LanSyncScope.schemas.keys), initiallyPaused = true,"
+      },
+      {
+        "line": 170,
+        "text": "cloudRecoveryFactory = { ready -> LanSyncGroupCloudRecoveryOwner("
+      },
+      {
+        "line": 191,
+        "text": "internal suspend fun runCloudWork(work: suspend () -> Boolean): Boolean {"
+      },
+      {
+        "line": 198,
+        "text": "fun openGroupPage() {"
+      }
+    ],
+    "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt": [
+      {
+        "line": 223,
+        "text": "val lanSyncOwner by lazy { com.example.chatbar.lanSync.AndroidLanSync(this) }"
+      },
+      {
+        "line": 531,
+        "text": "lanSyncOwner.startGroupIfConfigured()"
+      }
+    ],
+    "app/app/src/main/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecovery.kt": [
+      {
+        "line": 32,
+        "text": "var saveConnection by remember(state.review?.binding) { mutableStateOf(true) }"
+      },
+      {
+        "line": 37,
+        "text": "LaunchedEffect(state.review?.binding) { clearSecrets() }"
+      },
+      {
+        "line": 42,
+        "text": "onDispose {"
+      },
+      {
+        "line": 82,
+        "text": "onConfirm(review.binding, saveConnection)"
+      },
+      {
+        "line": 99,
+        "text": "try { onPrepare(draft, capturedCode) } finally { secret.fill(0) }"
+      }
+    ],
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt": [
+      {
+        "line": 43,
+        "text": "private val cloudRecoveryOwner = lazy {"
+      },
+      {
+        "line": 86,
+        "text": "private fun externalRecoveryAllowed(): Boolean {"
+      },
+      {
+        "line": 91,
+        "text": "fun openCloudRecovery(): Unit = synchronized(lifecycle) {"
+      }
+    ],
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt": [
+      {
+        "line": 26,
+        "text": "private val cloudRouteCatalog by lazy {"
+      },
+      {
+        "line": 32,
+        "text": "fun cloudRoutes(): LanSyncGroupCloudRoutes = cloudRouteCatalog"
+      }
+    ],
+    "app/app/src/main/java/com/example/chatbar/ui/kit/Controls.kt": [
+      {
+        "line": 70,
+        "text": "if (onCheckedChange != null) Modifier.toggleable("
+      },
+      {
+        "line": 89,
+        "text": "fun CbCheckbox("
+      },
+      {
+        "line": 120,
+        "text": ".toggleable("
+      }
+    ]
+  },
+  "nativeVerified": false
+}

@@ -1,0 +1,73 @@
+{
+  "kind": "CCB_ANDROID_CLOUD_RECOVERY_UI_INSTALLED_REBASE_STATUS",
+  "source": "db25f8c61fdf237449286b13812a622c9a9d2120",
+  "control": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
+  "state": "MINIMAL_INSTALLED_LAYOUT_REBASE_NOT_NATIVE_COMPILED_OR_EXECUTED",
+  "nativeCompiled": 0,
+  "nativeExecuted": 0,
+  "jvmGradleSdkAdbEmulatorServerExecuted": 0,
+  "binaryDownloads": 0,
+  "requestDispatched": false,
+  "productionChanged": false,
+  "controlCheckoutChanged": false,
+  "canonicalChanged": false,
+  "originalArtifactDownloads": 0,
+  "syntheticOnly": true,
+  "scope": {
+    "defaultSaveUiRecovery": "DRAFT",
+    "keystoreColdProcess": "DRAFT",
+    "latestConversationMessages": 4,
+    "documentBytes": 131113,
+    "ordinaryAndroidNewRevisionUpload": "DRAFT",
+    "restoreOnly": "NOT_COVERED",
+    "otherPeerAutomaticDownloadAndNativeApply": "NOT_COVERED",
+    "cloudGb": "NOT_COVERED",
+    "physicalAndroid": "NOT_COVERED",
+    "commercialWebdav": "NOT_COVERED"
+  },
+  "actualBlockingCondition": "No confirmed production/TLS blocker: native execution prohibited for this contributor. API35 default-OkHttp/test-scoped trust prerequisite must be established by later authorized runner; failure must not be converted to fake-client success.",
+  "missing": [
+    "Native Kotlin/application/instrumentation compile",
+    "API35 single-public-certificate TrustManagerFactory Provider acceptance and exact restoration",
+    "Default production client positive, wrong-host negative, untrusted-cert negative TLS preflight",
+    "Both original native UI/cold methods and normal bounded whole-job completion",
+    "Restore-only independent group",
+    "A second peer ordinary automatic receive and native apply",
+    "Physical devices/commercial provider/human acceptance; other GB proof remains separate"
+  ],
+  "pureHistory": [
+    {
+      "scope": "Original frozen 13-file draft",
+      "location": "I:\\CCB-Desktop-Continuity\\updates\\20261113-lan-sync-coordination\\next-engineering\\android-cloud-recovery-ui-draft",
+      "finalPurePasses": 12,
+      "native": 0
+    },
+    {
+      "scope": "This installed layout",
+      "status": "See external INSTALLED_LAYOUT_VALIDATION.json; native0"
+    }
+  ],
+  "originalFrozenControl": "ca9c2455cf172aeecedcf3d4b9a85e1d706b2b8a",
+  "originalFrozenManifestSha256": "5e088a163499919a25f7b7e1e4fe2c724ff51a0d4366d14b16aa3dc8a7cc4f6a",
+  "fixtureSha256": "74a6a5c762ddc74f84ac07847b43d8c01211fa147c00995ce345545d4cef510d",
+  "rebase": {
+    "onlyRuntimeDependencyChange": "PINS.android_file_recovery_ui_control.py",
+    "oldHelperSha256": "2431d50a5078965648d436909dc8d74997af70108727f99cb82e306eeb1e36c0",
+    "newHelperSha256": "56a66b32533b023a23a4ceb8a9372e88e6c5ccb6d8c54b2fb677ddc90cbe4b85",
+    "helperOnlyContentDifference": "FIXTURE_SHA 274d77c93df9753c2d316587c5e1d294c5d92bac83e2a9927f47f53b198c01a3 -> fab907f27ae92392e0813d0ee27f568bec46963b358d28277fc87c7f14a039f4",
+    "sourceUnchanged": true,
+    "cloudFixtureUnchanged": true,
+    "fileHelperOrDefaultOrRequestModified": false,
+    "pureFallbackControlSha": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
+    "workflowOnlyCommentDifferenceFromOriginalDraft": true
+  },
+  "fileSixOriginalScope": "Root-reported checkbox-assert-off assertDisplayed/viewport/IME failure; original not downloaded or reviewed here; cloud fixture deliberately unchanged.",
+  "rootIntegration": {
+    "controlBase": "d31555d0cae54e5758e1d04e9efb023771b8e67a",
+    "privateFileProfileBytes": 9630,
+    "privateFileProfileSha256": "7a3785e243052e0a8f219c4e098db46ee85a3686a0b29a0929e33728a60e4cc9",
+    "differenceFrom203c": "Only FIXTURE_SHA and SCOPE assignments; normalized other bytes exact",
+    "originalFrozenRebasePreserved": true,
+    "nativeExecuted": false
+  }
+}
