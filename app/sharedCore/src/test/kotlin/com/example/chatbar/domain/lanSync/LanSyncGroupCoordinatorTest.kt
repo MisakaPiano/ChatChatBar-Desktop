@@ -578,6 +578,125 @@ class LanSyncGroupCoordinatorTest {
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
     }
 
+    @Test fun coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync() = fixture { f ->
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) { throw BindException("synthetic optional nearby unavailable") }
+        }
+        val founder = f.founder()
+        val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+        val draft = founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) })
+        founder.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+        val access = requireNotNull(founder.runtimeAccess())
+        val catalogRoot = Files.createDirectory(f.root.resolve("cold-cloud-catalog"))
+        fun catalog() = LanSyncGroupCloudRoutes(catalogRoot, access.trust, access.device,
+            { it.reversedArray() }, { it.reversedArray() }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(60, TimeUnit.SECONDS).build()
+        try {
+            WeakFixture(Files.createDirectory(f.root.resolve("cold-cloud-provider"))).use { provider ->
+                val firstCatalog = catalog()
+                val secret = "synthetic cold cloud credential".toByteArray()
+                val route = try { firstCatalog.add(LanSyncGroupCloudDraft("synthetic retained drive",
+                    provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString(),
+                    "synthetic user", secret, enabled = true)) } finally { secret.fill(0) }
+                val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, route)
+                val directory = access.work.resolve("cloud-runtime/${route.value}/target")
+                data class ObservedTarget(val plan: LanSyncGroupTargetPlan, val receipt: LanSyncGroupCloudTargetReceipt,
+                    val planPath: Path, val receiptPath: Path)
+                fun existingTarget(wanted: Set<SyncVersionRef>): ObservedTarget? {
+                    if (!Files.isDirectory(directory)) return null
+                    return Files.newDirectoryStream(directory, "cloud-receipt-*.json").use { files ->
+                        var result: ObservedTarget? = null
+                        for (path in files) {
+                            val receipt = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupCloudTargetReceipt.serializer()))
+                            val planPath = directory.resolve("plan-" + path.fileName.toString().removePrefix("cloud-receipt-"))
+                            val plan = requireNotNull(LanSyncJsonFiles.read(planPath, LanSyncGroupTargetPlan.serializer(), receipt.planHash))
+                            if (!plan.versions.containsAll(wanted)) continue
+                            assertEquals(target, plan.target); assertEquals(target, receipt.target)
+                            assertEquals(access.trust.group, plan.group); assertEquals(plan.checkpoint, receipt.checkpoint)
+                            assertEquals(plan.objects, receipt.objects.map { it.objectRequest })
+                            for (reference in wanted) assertEquals(1, receipt.objects.count {
+                                it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION && it.objectRequest.slot == reference.id.value })
+                            assertTrue(receipt.objects.isNotEmpty())
+                            assertTrue(receipt.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
+                            result = ObservedTarget(plan, receipt, planPath, path)
+                        }
+                        result
+                    }
+                }
+                suspend fun awaitTarget(coordinator: LanSyncGroupCoordinator, wanted: Set<SyncVersionRef>): ObservedTarget = withTimeout(90_000) {
+                    var result: ObservedTarget? = null
+                    while (result == null) {
+                        val history = coordinator.view.value?.reconciliation?.history
+                        if (history != null && wanted.all(history::contains)) result = existingTarget(wanted)
+                        if (result == null) delay(10)
+                    }
+                    requireNotNull(result)
+                }
+                fun coordinator(storage: JsonFileStorage, saved: LanSyncGroupCloudRoutes) = LanSyncGroupCoordinator(
+                    { Files.exists(f.profile.resolve("profile.protected")) }, f::founder,
+                    { error("SYNTHETIC_COLD_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic cold PC",
+                    cloudRuntimeFactory = { current, allowed, wake, report ->
+                        LanSyncGroupCloudRuntime(current, allowed, wake, report, saved, client, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+                    }, sourceChanges = storage.committedRevisionFor(LanSyncScope.schemas.keys))
+                val initial = CharacterCard("card", "synthetic old cold-cloud body", createdAt = 1, updatedAt = 1)
+                val firstStorage = JsonFileStorage(f.data)
+                firstStorage.saveEntity("character_cards", initial.id, initial, CharacterCard.serializer())
+                val first = coordinator(firstStorage, firstCatalog)
+                var cold: LanSyncGroupCoordinator? = null
+                try {
+                    first.open()
+                    await { first.view.value?.reconciliation?.history?.admittedVersions()?.count { it.author == access.device } == 1 }
+                    val oldVersion = requireNotNull(first.view.value?.reconciliation?.history).admittedVersions().single { it.author == access.device }
+                    val oldReference = oldVersion.reference()
+                    val old = awaitTarget(first, setOf(oldReference))
+                    assertEquals(1L, oldVersion.authorSequence)
+                    assertEquals(initial, firstStorage.loadEntity("character_cards", initial.id, CharacterCard.serializer()))
+                    first.closeAndDrain()
+                    val oldPlanBytes = Files.readAllBytes(old.planPath); val oldReceiptBytes = Files.readAllBytes(old.receiptPath)
+                    val authorRoot = f.profile.resolve("node/author")
+                    val signedPrefix = retainedFiles(authorRoot).filterKeys { it.startsWith("signed-") || it.startsWith("intent-") }
+                    assertEquals(2, signedPrefix.size)
+                    val secondStorage = JsonFileStorage(f.data)
+                    val secondCatalog = catalog()
+                    assertEquals(route, secondCatalog.rows().single { it.enabled }.id)
+                    val reopened = coordinator(secondStorage, secondCatalog).also { cold = it }
+                    reopened.open()
+                    await { !reopened.state.value.busy && reopened.state.value.stage == LanSyncGroupPanelStage.READY &&
+                        reopened.view.value?.reconciliation?.history?.contains(oldReference) == true }
+                    val edited = initial.copy(name = "synthetic ordinary edit after cold Coordinator", updatedAt = 2)
+                    secondStorage.saveEntity("character_cards", edited.id, edited, CharacterCard.serializer())
+                    val editedBytes = Files.readAllBytes(f.card)
+                    withTimeout(60_000) {
+                        while (reopened.view.value?.reconciliation?.history?.admittedVersions()?.none {
+                            it.author == access.device && it.authorSequence == 2L && "character_cards/card" in it.changes } != false) delay(10)
+                    }
+                    val currentVersions = requireNotNull(reopened.view.value?.reconciliation?.history).admittedVersions()
+                        .filter { it.author == access.device }.sortedBy { it.authorSequence }
+                    assertEquals(listOf(1L, 2L), currentVersions.map { it.authorSequence })
+                    val newVersion = currentVersions.last(); val newReference = newVersion.reference()
+                    assertNotEquals(oldReference, newReference); assertEquals(oldReference, newVersion.previousByAuthor)
+                    assertEquals(setOf(oldReference), newVersion.changes.getValue("character_cards/card").previous)
+                    val actual = awaitTarget(reopened, setOf(oldReference, newReference))
+                    old.receipt.objects.forEach { previous -> assertEquals(previous,
+                        actual.receipt.objects.single { it.objectRequest.key == previous.objectRequest.key &&
+                            it.objectRequest.descriptor == previous.objectRequest.descriptor }) }
+                    assertContentEquals(oldPlanBytes, Files.readAllBytes(old.planPath))
+                    assertContentEquals(oldReceiptBytes, Files.readAllBytes(old.receiptPath))
+                    val retained = retainedFiles(authorRoot)
+                    signedPrefix.forEach { (name, hash) -> assertEquals(hash, retained[name]) }
+                    assertEquals(4, retained.keys.count { it.startsWith("signed-") || it.startsWith("intent-") })
+                    val view = requireNotNull(reopened.view.value)
+                    val applied = view.nativeState.units.getValue("character_cards/card")
+                    assertEquals(newVersion.changes.getValue("character_cards/card").valueHash, applied.valueHash)
+                    assertEquals(setOf(newReference), applied.frontiers); assertNull(view.nativeState.pendingTransaction)
+                    assertEquals(edited, secondStorage.loadEntity("character_cards", edited.id, CharacterCard.serializer()))
+                    assertContentEquals(editedBytes, Files.readAllBytes(f.card))
+                    assertTrue(provider.dav.puts.isNotEmpty()); assertTrue(provider.server.requestCount > 0)
+                } finally { first.closeAndDrain(); cold?.closeAndDrain() }
+            }
+        } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
+
     @Test fun pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints() {
         val entered = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
         val attempts = AtomicInteger(); val forbidden = AtomicBoolean(false)
