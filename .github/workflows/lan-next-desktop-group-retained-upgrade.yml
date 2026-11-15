@@ -26,12 +26,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Bind native code diagnostic and test-task-only rerun policy
+      - name: Bind bounded close observations and unchanged native proof
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_group_retained_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne '929dbec2a94d9b86dedc142fd909388d7b4b5d36587b41ef01b1922cbf6e84ac') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
-          Write-Output 'REAL_GROUP_NATIVE_CODE_AND_TEST_TASK_RERUN_BOUND'
+          if ($actual -ne 'c338c374f3e4883a9e8d785e4a7783b95507148e1b38d363fe339d6d42346c58') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
+          Write-Output 'REAL_GROUP_BOUNDED_CLOSE_OBSERVATIONS_BOUND'
       - name: Verify exact originals then run original Main launches and separate group components
         env:
           GH_TOKEN: ${{ github.token }}

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from contextlib import contextmanager
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -534,6 +535,168 @@ def install_empty_proof_overlay(source, request, ui):
     dual_overlay_status(source, request, ui)
 
 
+NATIVE_MAIN_STAGES = ('lan5-fresh', *COMPONENTS[1:])
+CLOSE_WINDOW_CATEGORIES = ('MAIN', 'SAFE_CLOSE_PENDING', 'SAFE_SHUTDOWN_RECOVERY', 'LAN_SYNC_FINAL_FLUSH_NOTICE', 'OTHER')
+CLOSE_WINDOW_TITLES = {
+    'ChatChatBar': 'MAIN',
+    'ChatChatBar \u2014 \u6b63\u5728\u5b89\u5168\u5173\u95ed / Safe shutdown in progress': 'SAFE_CLOSE_PENDING',
+    'ChatChatBar \u2014 \u5b89\u5168\u5173\u95ed / Safe shutdown': 'SAFE_SHUTDOWN_RECOVERY',
+    'ChatChatBar \u2014 \u8bbe\u5907\u7ec4\u540c\u6b65\u5f85\u5904\u7406': 'LAN_SYNC_FINAL_FLUSH_NOTICE',
+}
+SHUTDOWN_STAGES = frozenset({
+    'CLOSE_REQUESTED', 'CLOSE_DEFERRED', 'COMPOSE_RETURNED', 'TASK_DRAIN_BEGIN', 'TASK_DRAIN_END',
+    'DRAFT_DRAIN_BEGIN', 'DRAFT_DRAIN_END', 'BACKUP_CLOSE_BEGIN', 'BACKUP_CLOSE_END',
+    'COORDINATOR_CLOSE_BEGIN', 'COORDINATOR_CLOSE_END', 'MIGRATION_CLOSE_BEGIN', 'MIGRATION_CLOSE_END',
+    'CONTAINER_CLOSED', 'PICKERS_CLOSED', 'OWNERSHIP_RETAINED', 'OWNERSHIP_RELEASED', 'MAIN_RETURNED',
+    'DRAIN_DEFERRED', 'SHUTDOWN_FAILED', 'SAFE_EXIT_HANDOFF',
+})
+SHUTDOWN_WAIT_MARKERS = frozenset({'VISIBILITY_REQUESTED', 'VISIBLE', 'UI_UNAVAILABLE'})
+SHUTDOWN_UTC = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?Z')
+PRIVATE_LAUNCHER_NAME = '\u542f\u52a8\u72ec\u7acb\u8d44\u6599\u7248.cmd'
+
+
+def valid_shutdown_utc(text):
+    if type(text) is not str or SHUTDOWN_UTC.fullmatch(text) is None:
+        return False
+    try:
+        datetime.strptime(text[:19], '%Y-%m-%dT%H:%M:%S')
+        return True
+    except ValueError:
+        return False
+
+
+def empty_shutdown_projection():
+    return {'readStatus': 'UNKNOWN', 'traceReadability': 'UNKNOWN', 'events': [], 'eventCount': None,
+            'eventsTruncated': False, 'waitMarkers': [], 'finalFlushNoticeMarker': None}
+
+
+def project_shutdown_output(raw):
+    # Never return an arbitrary raw line, exception, path, user message or malformed timestamp.
+    value = empty_shutdown_projection()
+    if type(raw) is not bytes or len(raw) > 16 * 1024 * 1024:
+        return value
+    events, waits, notice, total = [], set(), False, 0
+    for line in raw.decode('utf-8', errors='replace').splitlines():
+        parts = line.split(' ')
+        if len(parts) == 3 and parts[0] == 'CCB_SHUTDOWN' and parts[2] in SHUTDOWN_STAGES and valid_shutdown_utc(parts[1]):
+            total += 1
+            if len(events) < 32:
+                events.append({'utc': parts[1], 'stage': parts[2]})
+        elif len(parts) == 2 and parts[0] == 'CCB_SHUTDOWN_WAIT' and parts[1] in SHUTDOWN_WAIT_MARKERS:
+            waits.add(parts[1])
+        elif line == 'CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE':
+            notice = True
+    value.update(readStatus='OBSERVED', traceReadability='OBSERVED' if total or waits or notice else 'UNKNOWN',
+                 events=events, eventCount=total, eventsTruncated=total > len(events),
+                 waitMarkers=sorted(waits), finalFlushNoticeMarker=True if notice else None)
+    return value
+
+
+def read_private_shutdown_output(path, private):
+    try:
+        if path is None or private is None or path.parent != private or private.is_symlink() or path.is_symlink() or not path.is_file():
+            return empty_shutdown_projection()
+        if not 0 <= path.stat().st_size <= 16 * 1024 * 1024:
+            return empty_shutdown_projection()
+        with path.open('rb') as stream:
+            raw = stream.read(16 * 1024 * 1024 + 1)
+        return project_shutdown_output(raw)
+    except Exception:
+        return empty_shutdown_projection()  # Optional observation cannot replace the original native outcome.
+
+
+class PrivateLauncherStreams:
+    """A reference on one private legacy module, never a mutation of Python's subprocess module."""
+    def __init__(self, original, root, private, stage, state):
+        self.original, self.root, self.private, self.stage, self.state = original, root, private, stage, state
+        self.path = None
+
+    def __getattr__(self, name):
+        return getattr(self.original, name)
+
+    def run(self, argv, *positional, **keywords):
+        expected = [os.environ.get('COMSPEC', 'C:/Windows/System32/cmd.exe'), '/d', '/c', str(self.root / PRIVATE_LAUNCHER_NAME)]
+        shape = (type(argv) is list and argv == expected and not positional and
+                 set(keywords) == {'cwd', 'env', 'creationflags', 'stdout', 'stderr', 'timeout'} and
+                 keywords['cwd'] == self.root and type(keywords['env']) is dict and
+                 keywords['creationflags'] == self.original.CREATE_NO_WINDOW and
+                 keywords['stdout'] == keywords['stderr'] == self.original.DEVNULL and type(keywords['timeout']) is int and keywords['timeout'] == 30)
+        if not shape:
+            return self.original.run(argv, *positional, **keywords)
+        output = None
+        try:
+            if not isinstance(self.private, Path) or self.private.is_symlink() or not self.private.is_dir() or self.stage not in NATIVE_MAIN_STAGES:
+                self.state['captureStatus'] = 'UNKNOWN_PRIVATE_SCOPE'
+                return self.original.run(argv, *positional, **keywords)
+            path = self.private / ('main-' + self.stage + '-streams.private.log')
+            if path.is_symlink():
+                self.state['captureStatus'] = 'UNKNOWN_PRIVATE_SCOPE'
+                return self.original.run(argv, *positional, **keywords)
+            output = path.open('xb')
+            self.path = path
+        except Exception:
+            self.state['captureStatus'] = 'UNKNOWN_PRIVATE_OPEN'
+            return self.original.run(argv, *positional, **keywords)
+        changed = dict(keywords)
+        changed['env'] = dict(keywords['env'], CCB_SHUTDOWN_TRACE='1')
+        changed['stdout'], changed['stderr'] = output, self.original.STDOUT
+        self.state['captureStatus'] = 'PRIVATE_REDIRECT_REQUESTED'
+        try:
+            return self.original.run(argv, *positional, **changed)
+        finally:
+            try:
+                output.close()
+            except BaseException:
+                self.state['captureStatus'] = 'UNKNOWN_PRIVATE_CLOSE'
+
+
+def owned_window_projection(native, legacy, ids):
+    value = {'status': 'UNKNOWN', 'visibleCategoryCounts': None, 'knownObservedCategories': []}
+    if ids is None:
+        return value
+    if not ids:
+        return {'status': 'OBSERVED_NO_OWNED_IDS', 'visibleCategoryCounts': {key: 0 for key in CLOSE_WINDOW_CATEGORIES},
+                'knownObservedCategories': []}
+    counts = {key: 0 for key in CLOSE_WINDOW_CATEGORIES}
+    failed = [False]
+    try:
+        @native.callback
+        def visit(hwnd, ignored):
+            try:
+                pid = legacy.W.DWORD()
+                native.user.GetWindowThreadProcessId(hwnd, legacy.C.byref(pid))
+                if pid.value not in ids or not native.user.IsWindowVisible(hwnd):
+                    return True
+                # Recheck image ownership for this cached PID before classifying any caption.
+                handle = native.kernel.OpenProcess(0x1000, False, pid.value)
+                if not handle:
+                    failed[0] = True
+                    return True
+                try:
+                    image, size = legacy.C.create_unicode_buffer(32768), legacy.W.DWORD(32768)
+                    if not native.kernel.QueryFullProcessImageNameW(handle, 0, image, legacy.C.byref(size)):
+                        failed[0] = True
+                        return True
+                    if not image.value.lower().startswith(native.prefix):
+                        return True
+                finally:
+                    native.kernel.CloseHandle(handle)
+                caption = legacy.C.create_unicode_buffer(256)
+                native.user.GetWindowTextW(hwnd, caption, 256)
+                counts[CLOSE_WINDOW_TITLES.get(caption.value, 'OTHER')] += 1
+            except BaseException:
+                failed[0] = True  # Never let a ctypes callback print an arbitrary exception to public stderr.
+            return True
+        if not native.user.EnumWindows(visit, 0):
+            failed[0] = True
+        value.update(status='PARTIAL_UNKNOWN' if failed[0] else 'OBSERVED',
+                     visibleCategoryCounts=None if failed[0] else counts,
+                     knownObservedCategories=sorted(key for key, count in counts.items() if count))
+        return value
+    except BaseException:
+        return value
+
+
 class Companion:
     def __init__(self, modules, sources, private, output):
         self.ui = modules['desktop_group_ui_control']
@@ -625,6 +788,8 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
     old = native.legacy()
     seed, writer, Native = old.seed, old.write_json, old.Native
     original_json_bodies = old.json_bodies
+    original_legacy_subprocess = old.subprocess
+    native_observations = []
     original_retained_entities = native.retained_entities
     equivalence_active = equivalence_request is not None and reading_position_equivalence_enabled(equivalence_request)
     if equivalence_request is not None:
@@ -666,10 +831,61 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
         return image
 
     class GroupNative(Native):
+        def owned(self):
+            observation = getattr(self, '_close_observation', None)
+            if observation is not None:
+                observation['originalOwnedCallCount'] += 1
+            try:
+                result = super().owned()  # Exactly the original call; no additional process enumeration.
+            except BaseException:
+                if observation is not None:
+                    observation['sameOriginalOwned'] = None
+                    self._close_owned_ids = None
+                raise
+            if observation is not None:
+                if type(result) is list and all(type(pid) is int for pid in result):
+                    observation['sameOriginalOwned'] = bool(result)
+                    self._close_owned_ids = tuple(result)  # Private only, never serialized.
+                else:
+                    observation['sameOriginalOwned'] = None
+                    self._close_owned_ids = None
+            return result
+
         def launch(self, stage, environment):
             global _phase
             _phase = 'PACKAGED_MAIN_' + stage.replace('-', '_').upper()
-            result = super().launch(stage, environment)  # Real packaged Main / window / WM_CLOSE / drain / lock.
+            observation = {'stage': stage, 'nativeOutcome': 'UNKNOWN', 'failureCode': 'NOT_CLASSIFIED',
+                'sameOriginalOwned': None, 'originalOwnedCallCount': 0, 'rootLockHeldAtOutcome': None,
+                'rootLockBasis': 'UNKNOWN', 'captureStatus': 'NOT_ATTEMPTED'}
+            self._close_observation, self._close_owned_ids = observation, None
+            prior_subprocess = old.subprocess
+            private = getattr(companion, 'private', None)
+            proxy = PrivateLauncherStreams(prior_subprocess, self.root, private, stage, observation)
+            try:
+                old.subprocess = proxy  # One private module reference only; stdlib subprocess remains untouched.
+                result = super().launch(stage, environment)  # Original Main / WM_CLOSE / 60s / root-lock guard.
+                observation.update(nativeOutcome='RETURNED', rootLockHeldAtOutcome=False,
+                                   rootLockBasis='ORIGINAL_NATIVE_SUCCESS_GUARD')
+            except BaseException as failure:
+                message = failure.args[0] if type(failure) is RuntimeError and len(failure.args) == 1 and type(failure.args[0]) is str else None
+                code = safe_native_failure_code(_phase, {'type': type(failure).__name__, 'message': message})
+                observation.update(nativeOutcome='FAILED', failureCode=code)
+                if code == 'PROCESS_OR_LOCK_NOT_RELEASED':
+                    if observation['sameOriginalOwned'] is True:
+                        observation['rootLockBasis'] = 'UNKNOWN_SHORT_CIRCUIT'
+                    elif observation['sameOriginalOwned'] is False:
+                        observation.update(rootLockHeldAtOutcome=True,
+                                           rootLockBasis='INFERRED_TRUE_FROM_EXACT_SHORT_CIRCUIT_GUARD')
+                raise  # Same original failure remains fatal; observation never supplies a pass fallback.
+            finally:
+                old.subprocess = prior_subprocess
+                self._close_observation = None
+                try:
+                    observation['ownedWindows'] = owned_window_projection(self, old, self._close_owned_ids)
+                    observation['shutdown'] = read_private_shutdown_output(proxy.path, private)
+                    native_observations.append(observation)
+                except BaseException:
+                    pass  # An optional observation failure cannot replace the original native outcome.
             main_stages.append(stage)
             if stage != 'lan5-fresh':
                 # Initialization/close can recover an authorized WAL. It must not repair Main's
@@ -704,7 +920,9 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                     value['failure']['code'] = native_code
                 if getattr(companion, 'failure_diagnostic', None) is not None:
                     value['componentFailureDiagnostic'] = companion.failure_diagnostic
-            value.update(componentTestRerunPolicy=COMPONENT_TEST_RERUN_POLICY,
+            value.update(packagedMainCloseObservations=list(native_observations),
+                         closeObservationScope='same original owned calls; five window categories; closed shutdown-stage projection',
+                         componentTestRerunPolicy=COMPONENT_TEST_RERUN_POLICY,
                          readingPositionSourceEquivalenceRule=READING_POSITION_RULE,
                          readingPositionSourceEquivalenceActive=equivalence_active,
                          readingPositionSourceEquivalenceAttempts=timestamp_attempts,
@@ -734,6 +952,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
     finally:
         old.seed, old.Native, old.write_json = seed, Native, writer
         old.json_bodies = original_json_bodies
+        old.subprocess = original_legacy_subprocess
         for key, value in prior.items():
             setattr(native, key, value)
 
