@@ -26,6 +26,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Bind safe failure projection to this exact group helper
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_group_retained_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne '46bfcafb52541b9114ef25115b84d0f25b16b18014e4c2d6ec25483387f1239a') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
+          Write-Output 'REAL_GROUP_SAFE_DIAGNOSTIC_V1_BOUND'
       - name: Verify exact originals then run original Main launches and separate group components
         env:
           GH_TOKEN: ${{ github.token }}

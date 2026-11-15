@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import uuid
+import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 OLD = 'e606bf2a2723fbc896323a8071cfd52dde99a4c6'
@@ -54,6 +55,186 @@ PUBLIC_KEYS = {
     'closeNoticeCount', 'recoveryInputUsedByVerifier', 'networkDeliveryVerified', 'defaultCredentialReadBack',
 }
 _phase = 'PROFILE'
+
+
+# Bounded diagnostic-only projection. Never return private text, paths, causes or stacks.
+SAFE_COMPONENT_PHASES = frozenset({
+    'GUARD', 'PROTECTED_PRECONSTRUCT', 'OWNERSHIP', 'INITIALIZE', 'CREATE_REAL_GROUP',
+    'SAVE_RECOVERY_DPAPI_BEFORE_ACK', 'WAIT_ORDINARY_INITIAL_PUBLICATION',
+    'ADD_DISABLED_REAL_PROTECTED_ROUTE', 'OPEN_EXISTING_WHILE_PAUSED',
+    'READ_REAL_DAILY_OWNER_NATIVE_AND_ROUTE',
+    'CLOSE_REAL_APP_AND_VERIFY_OBSERVER_DID_NOT_REWRITE', 'SAFE_REPORT',
+})
+SAFE_CONTROL_CODES = frozenset({
+    'CLOUD_WINDOWS_ONLY', 'DESKTOP_FIXTURE_SYMLINK', 'DUPLICATE_REQUEST_KEY',
+    'REQUEST_FIELDS', 'REQUEST_FORMAT', 'SOURCE_SHA_INVALID', 'FIXTURE_SHA_INVALID',
+    'FIXTURE_SHA_MISMATCH', 'PREPARATION_CHANGED', 'SOURCE_HEAD_CHANGED',
+    'DESKTOP_OVERLAY_NOT_EXCLUSIVE', 'DESKTOP_OVERLAY_CHANGED', 'DESKTOP_OVERLAY_SYMLINK',
+    'DESKTOP_OVERLAY_ESCAPES_SOURCE', 'PREEXISTING_NATIVE_XML_REFUSED',
+    'WINDOWS_GROUP_SCENE_TIMEOUT', 'WINDOWS_GROUP_SCENE_XML_MISSING',
+    'WINDOWS_GROUP_SCENE_GRADLE_FAILED', 'JUNIT_FORMAT', 'JUNIT_CLASS',
+    'JUNIT_NOT_ONE_EXECUTED_PASS', 'JUNIT_METHOD', 'JUNIT_CASE_FAILED',
+    'JUNIT_UNEXPECTED_ELEMENT', 'JUNIT_TIME',
+})
+SAFE_PYTHON_FAILURE_TYPES = frozenset({
+    'ControlError', 'AssertionError', 'ValueError', 'TypeError', 'KeyError', 'RuntimeError',
+    'FileNotFoundError', 'FileExistsError', 'PermissionError', 'OSError',
+    'TimeoutError', 'TimeoutExpired', 'CalledProcessError', 'ParseError',
+    'JSONDecodeError', 'UnicodeDecodeError',
+})
+SAFE_MARKER = re.compile(r'GROUP_RETAINED_COMPONENT:([A-Z_]{1,80}):([A-Za-z][A-Za-z0-9_]{0,63})')
+FIXTURE_BASENAME = 'DesktopGroupRetainedUpgradeControlTest.kt'
+
+
+def safe_failure_type(failure):
+    name = type(failure).__name__
+    return name if name in SAFE_PYTHON_FAILURE_TYPES else 'Exception'
+
+
+def safe_control_code(failure, control_error_type):
+    args = failure.args
+    if type(failure) is control_error_type and len(args) == 1 and type(args[0]) is str and args[0] in SAFE_CONTROL_CODES:
+        return args[0]
+    return 'UNCLASSIFIED'
+
+
+def safe_fixture_marker(text):
+    if type(text) is not str:
+        return None
+    match = SAFE_MARKER.fullmatch(text)
+    if match is None or match[1] not in SAFE_COMPONENT_PHASES:
+        return None
+    return {'phase': match[1], 'exceptionType': match[2]}
+
+
+def diagnostic_private_bytes(path, evidence, limit):
+    # Only an existing regular direct child of this invocation's private evidence directory.
+    if path.parent != evidence or evidence.is_symlink() or path.is_symlink() or not path.is_file():
+        return None
+    if not 0 < path.stat().st_size <= limit:
+        return None
+    with path.open('rb') as stream:
+        raw = stream.read(limit + 1)
+    return raw if 0 < len(raw) <= limit else None
+
+
+def junit_failure_diagnostic(evidence):
+    value = {'present': False, 'parsed': False, 'exactSingleExpectedCase': False,
+             'countScope': 'DECLARED_ROOT_COUNTS_ONLY_NOT_VALIDATED_PASS',
+             'tests': None, 'passed': None, 'failed': None, 'errors': None, 'skipped': None,
+             'testCaseCount': None, 'wholeTreeCaseCount': None,
+             'fixtureFailureMarker': None, 'fixtureFailureMarkerPresent': False,
+             'fixtureMarkerInSystemOut': False, 'status': 'MISSING_OR_UNSAFE'}
+    path = evidence / 'original-test.xml'
+    value['present'] = path.exists()
+    raw = diagnostic_private_bytes(path, evidence, 1024 * 1024)
+    if raw is None:
+        return value
+    if b'<!DOCTYPE' in raw or b'<!ENTITY' in raw:
+        value['status'] = 'XML_DECLARATION_REFUSED'
+        return value
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        value['status'] = 'XML_PARSE_FAILED'
+        return value
+    if root.tag != 'testsuite':
+        value['status'] = 'XML_WRONG_ROOT'
+        return value
+    value['parsed'] = True
+    def count(name):
+        text = root.get(name)
+        return int(text) if type(text) is str and re.fullmatch(r'[0-9]{1,4}', text) else None
+    value.update(tests=count('tests'), failed=count('failures'), errors=count('errors'), skipped=count('skipped'))
+    counts = [value[key] for key in ('tests', 'failed', 'errors', 'skipped')]
+    if all(item is not None for item in counts) and sum(counts[1:]) <= counts[0]:
+        value['passed'] = counts[0] - sum(counts[1:])
+    direct = root.findall('testcase')
+    whole = list(root.iter('testcase'))
+    value['testCaseCount'], value['wholeTreeCaseCount'] = len(direct), len(whole)
+    exact = (root.get('name') == CLASS and len(direct) == len(whole) == 1 and
+             direct[0].get('classname') == CLASS and direct[0].get('name') == METHOD)
+    value['exactSingleExpectedCase'] = exact
+    value['status'] = 'COUNTS_ONLY_WRONG_CASE' if not exact else 'EXPECTED_CASE_DIAGNOSTIC_ONLY'
+    if exact:
+        failures = [item for item in whole[0] if item.tag in ('failure', 'error')]
+        markers = [safe_fixture_marker(item.get('message')) for item in failures]
+        markers = [item for item in markers if item is not None]
+        if len(failures) == len(markers) == 1:
+            value['fixtureFailureMarker'] = markers[0]
+            value['fixtureFailureMarkerPresent'] = True
+        for item in root.iter('system-out'):
+            if any(safe_fixture_marker(line) is not None for line in (item.text or '').splitlines()):
+                value['fixtureMarkerInSystemOut'] = True
+    return value
+
+
+def compiler_diagnostic(evidence, source):
+    raw = diagnostic_private_bytes(evidence / 'gradle-original.log', evidence, 16 * 1024 * 1024)
+    value = {'status': 'MISSING_OR_UNSAFE_OR_TOO_LARGE', 'fixtureLocations': []}
+    if raw is None:
+        return value
+    value['status'] = 'NO_RECOGNIZED_FIXTURE_COMPILER_LOCATION'
+    fixture = str(source / TARGET)
+    slash = fixture.replace('\\', '/')
+    locations = sorted({fixture, slash, 'file:///' + slash.lstrip('/')})
+    location_pattern = re.compile(
+        r'^e: (?:' + '|'.join(re.escape(item) for item in locations) +
+        r'):(?:(?P<line>[0-9]{1,6}):(?P<column>[0-9]{1,6})(?::|\s)|'
+        r'\s*\((?P<old_line>[0-9]{1,6}),\s*(?P<old_column>[0-9]{1,6})\):)\s*(?P<message>[^\r\n]*)$')
+    seen = set()
+    for text in raw.decode('utf-8', errors='replace').splitlines():
+        if len(text) > 8192:
+            continue
+        match = location_pattern.fullmatch(text)
+        if match is None:
+            continue
+        line = int(match['line'] or match['old_line'])
+        column = int(match['column'] or match['old_column'])
+        if not 0 < line <= 999999 or not 0 < column <= 999999:
+            continue
+        # The message is inspected locally only. Only this finite classification leaves the runner.
+        message = match['message']
+        if message.startswith('Unresolved reference'):
+            category = 'UNRESOLVED_REFERENCE'
+        elif message.startswith(('Cannot access', 'Cannot access class')):
+            category = 'INACCESSIBLE_DECLARATION'
+        elif message.startswith(('Type mismatch', 'Argument type mismatch', 'Return type mismatch')):
+            category = 'TYPE_MISMATCH'
+        elif message.startswith(('Overload resolution ambiguity', 'None of the following candidates')):
+            category = 'OVERLOAD_RESOLUTION'
+        elif message.startswith(('No value passed for parameter', 'Too many arguments')):
+            category = 'CALL_ARGUMENTS'
+        elif message.startswith(('Syntax error', 'Expecting ', 'Unexpected tokens')):
+            category = 'SYNTAX'
+        else:
+            category = 'OTHER_COMPILER_ERROR'
+        key = (line, column, category)
+        if key not in seen:
+            value['fixtureLocations'].append({'file': FIXTURE_BASENAME, 'line': line,
+                                               'column': column, 'classification': category})
+            seen.add(key)
+        if len(seen) == 16:
+            break
+    if seen:
+        value['status'] = 'RECOGNIZED_FIXTURE_LOCATIONS_ONLY'
+    return value
+
+
+def component_failure_diagnostic(failure, evidence, source, stage, control_error_type):
+    # Calling this observer can never complete a component or change the original exception.
+    phase = 'COMPONENT_' + stage.replace('-', '_').upper() if stage in COMPONENTS else 'COMPONENT_UNKNOWN'
+    value = {'kind': 'CCB_REAL_GROUP_COMPONENT_SAFE_FAILURE_V1', 'phase': phase,
+             'type': safe_failure_type(failure), 'controlCode': safe_control_code(failure, control_error_type),
+             'diagnosticOnly': True, 'nativeContinuationAllowed': False, 'collectorStatus': 'OK'}
+    try:
+        value['junit'] = junit_failure_diagnostic(evidence)
+        value['compiler'] = compiler_diagnostic(evidence, source)
+    except Exception:
+        value['collectorStatus'] = 'UNAVAILABLE'
+        value.pop('junit', None)
+        value.pop('compiler', None)
+    return value
 
 
 def require(condition, code):
@@ -165,6 +346,7 @@ class Companion:
         self.sources, self.private, self.output = sources, private, output
         self.templates, self.requests, self.previous_xml, self.reports = {}, {}, {}, []
         self.original_descriptors = []
+        self.failure_diagnostic = None
 
     def prepare(self):
         for sha, source in self.sources.items():
@@ -177,6 +359,7 @@ class Companion:
 
     def run(self, root, stage):
         global _phase
+        self.failure_diagnostic = None
         _phase = 'COMPONENT_' + stage.replace('-', '_').upper()
         sha = OLD if stage.startswith('lan5-') else NEW
         source = self.sources[sha]
@@ -194,6 +377,15 @@ class Companion:
         try:
             self.ui.isolated_environment = lambda ignored: dict(environment)
             self.ui.run(self.requests[sha], source, evidence)
+        except Exception as failure:
+            self.failure_diagnostic = component_failure_diagnostic(
+                failure, evidence, source, stage, self.ui.ControlError)
+            try:
+                print("GROUP_RETAINED_COMPONENT_DIAGNOSTIC:" + json.dumps(
+                    self.failure_diagnostic, sort_keys=True, separators=(",", ":")), file=sys.stderr)
+            except OSError:
+                pass
+            raise  # Original failure remains fatal; no component completion or fallback.
         finally:
             self.ui.isolated_environment = prior
         self.previous_xml[sha] = evidence / 'original-test.xml'
@@ -272,6 +464,8 @@ def attach_native(modules, companion, legacy_path):
                 refused = True
             if 'failure' in value:
                 value['failure'] = {'phase': _phase, 'type': value['failure'].get('type', 'Exception')}
+                if getattr(companion, 'failure_diagnostic', None) is not None:
+                    value['componentFailureDiagnostic'] = companion.failure_diagnostic
             value.update(peerOrIdentitySeeded=bool(companion.reports and companion.reports[0]['passed']),
                          groupComponentCount=len(companion.reports), groupComponentStages=[r['stage'] for r in companion.reports],
                          packagedMainStagesCompleted=main_stages,
