@@ -14,7 +14,9 @@ internal object LanSyncStudioCurrent {
     val types = setOf(DRAFT, UNDO, CHECKPOINT, HISTORY)
 
     /** Revisions drive local editor acknowledgements; AI account/model IDs are device-owned. */
-    fun normalize(type: String, body: JsonObject): JsonObject {
+    fun normalize(type: String, body: JsonObject): JsonObject = normalize(type, body, preservePacingPresence = true)
+
+    private fun normalize(type: String, body: JsonObject, preservePacingPresence: Boolean): JsonObject {
         fun <T> canonical(serializer: KSerializer<T>) = lanSyncJson.encodeToJsonElement(serializer,
             lanSyncJson.decodeFromJsonElement(serializer, body)).jsonObject
         val full = when (type) {
@@ -24,20 +26,32 @@ internal object LanSyncStudioCurrent {
             HISTORY -> canonical(NovelAiStudioHistoryJournal.serializer())
             else -> body
         }
-        fun draft(value: JsonObject) = JsonObject(value + mapOf(
-            "aiDesignModelId" to JsonNull, "contentRevision" to JsonPrimitive(0L),
-            "promptContentRevision" to JsonPrimitive(0L), "updatedAt" to JsonPrimitive(0L)) +
-            if (value["followDefaultNovelAiImageModel"] == JsonPrimitive(true))
-                mapOf("selectedModel" to JsonPrimitive(NovelAiImageModel.V4_5_FULL.name)) else emptyMap())
-        fun timeline(value: JsonElement): JsonElement {
+        fun draft(value: JsonObject, original: JsonObject?): JsonObject {
+            // Older signed bodies omit this later default; both original representations stay valid.
+            val represented = if (preservePacingPresence && original != null && "batchPacing" !in original)
+                JsonObject(value - "batchPacing") else value
+            return JsonObject(represented + mapOf(
+                "aiDesignModelId" to JsonNull, "contentRevision" to JsonPrimitive(0L),
+                "promptContentRevision" to JsonPrimitive(0L), "updatedAt" to JsonPrimitive(0L)) +
+                if (value["followDefaultNovelAiImageModel"] == JsonPrimitive(true))
+                    mapOf("selectedModel" to JsonPrimitive(NovelAiImageModel.V4_5_FULL.name)) else emptyMap())
+        }
+        fun timeline(value: JsonElement, original: JsonElement?): JsonElement {
             if (value !is JsonObject) return value
             val entries = value["entries"] as? JsonArray ?: return value
-            return JsonObject(value + ("entries" to JsonArray(entries.map { draft(it.jsonObject) })))
+            val originalEntries = (original as? JsonObject)?.get("entries") as? JsonArray
+            return JsonObject(value + ("entries" to JsonArray(entries.mapIndexed { index, entry ->
+                draft(entry.jsonObject, originalEntries?.getOrNull(index) as? JsonObject)
+            })))
         }
         return when (type) {
-            DRAFT -> draft(full)
-            UNDO -> JsonObject(full.mapValues { (key, value) -> if (key == "draft" && value is JsonObject) draft(value) else value })
-            HISTORY -> JsonObject(full.mapValues { (key, value) -> if (key in setOf("committed", "pending")) timeline(value) else value })
+            DRAFT -> draft(full, body)
+            UNDO -> JsonObject(full.mapValues { (key, value) ->
+                if (key == "draft" && value is JsonObject) draft(value, body[key] as? JsonObject) else value
+            })
+            HISTORY -> JsonObject(full.mapValues { (key, value) ->
+                if (key in setOf("committed", "pending")) timeline(value, body[key]) else value
+            })
             else -> full
         }
     }
@@ -87,8 +101,9 @@ internal object LanSyncStudioCurrent {
             // Compare normalized resource aliases as well as every actual draft field.
             val entry = requireNotNull(journal.committed.current())
             val body = lanSyncJson.encodeToJsonElement(NovelAiStudioDraft.serializer(), entry).jsonObject
-            require(current.copy(body = normalize(DRAFT, current.body)).comparisonBody() ==
-                current.copy(body = normalize(DRAFT, body)).comparisonBody()) { "SYNC_STUDIO_HISTORY_MISMATCH" }
+            // Fill defaults only in temporary comparison values, never in the authenticated records.
+            require(current.copy(body = normalize(DRAFT, current.body, preservePacingPresence = false)).comparisonBody() ==
+                current.copy(body = normalize(DRAFT, body, preservePacingPresence = false)).comparisonBody()) { "SYNC_STUDIO_HISTORY_MISMATCH" }
         }
     }
 }
