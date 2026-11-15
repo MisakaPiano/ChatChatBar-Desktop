@@ -26,8 +26,10 @@ jobs:
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublicationTest.coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor'
           --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
-      - name: Require the exact four methods with original case counts
+      - name: Require the exact six methods with original case counts
         if: always()
         env:
           CHECKED_HEAD: ${{ github.sha }}
@@ -39,7 +41,7 @@ jobs:
           expected = {
               'LanSyncGroupCoordinatorTest': ['coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync', 'coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake'],
               'LanSyncGroupTargetPublicationTest': ['coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'],
-              'LanSyncGroupCloudRuntimeTest': ['dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved'],
+              'LanSyncGroupCloudRuntimeTest': ['dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved', 'anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt', 'aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor'],
           }
           root = Path('app/sharedCore/build/test-results/test')
           result = {'head': os.environ['CHECKED_HEAD'], 'cases': [], 'problems': []}

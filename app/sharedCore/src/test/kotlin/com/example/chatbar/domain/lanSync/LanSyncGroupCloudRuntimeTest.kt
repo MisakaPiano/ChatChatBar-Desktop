@@ -600,12 +600,14 @@ class LanSyncGroupCloudRuntimeTest {
             assertTrue(runtime.prepareScheduledBatch()); assertFalse(runtime.cycle(forceIdle = false))
             val requests = provider.server.requestCount; assertTrue(requests > 0)
             assertEquals(120_000L, runtime.nextDelayMillis())
+            assertEquals(120_000L, runtime.nextDelayMillis(forceIdle = true))
             repeat(4) {
                 assertFalse(runtime.prepareScheduledBatch()); assertFalse(runtime.prepareScheduledBatch(forceIdle = true))
                 assertFalse(runtime.cycle()); assertFalse(runtime.cycle(forceIdle = false))
                 assertEquals(requests, provider.server.requestCount)
             }
             f.clock.addAndGet(119_999); assertFalse(runtime.prepareScheduledBatch(forceIdle = true))
+            assertEquals(1L, runtime.nextDelayMillis(forceIdle = true))
             f.clock.incrementAndGet(); provider.dav.overrideRequest = null
             assertTrue(runtime.prepareScheduledBatch()); assertTrue(runtime.cycle(forceIdle = false))
             assertTrue(provider.server.requestCount > requests); assertTrue(f.latest().getValue(id).selectionObserved)
@@ -643,6 +645,7 @@ class LanSyncGroupCloudRuntimeTest {
                 val observed = requireNotNull(f.latest().getValue(good).lastObservedAt)
                 assertTrue(requireNotNull(schedule.state(failing)).needsConfiguration)
                 assertEquals(60_000L, runtime.nextDelayMillis())
+                assertEquals(0L, runtime.nextDelayMillis(forceIdle = true))
                 assertTrue(runtime.prepareScheduledBatch(forceIdle = true))
                 assertFalse(runtime.cycle())
                 assertEquals(badRequests, failed.server.requestCount); assertTrue(healthy.server.requestCount > goodRequests)

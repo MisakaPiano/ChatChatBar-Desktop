@@ -858,13 +858,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         cloudWorker = scope.launch {
             var handled = -1L
+            var needsBusinessAttempt = false
             while (isActive && !closed && !paused) {
                 if (access == null || cloudRuntime == null) {
                     cloudWake.receive()
                     if (closed || paused || access == null || cloudRuntime == null) continue
                 }
                 val pending = cloudRequests.get() != handled
-                val wait = if (pending) 0L else cloudRuntime?.nextDelayMillis()
+                val wait = if (pending) 0L else cloudRuntime?.nextDelayMillis(forceIdle = needsBusinessAttempt)
                 when {
                     wait == null -> cloudWake.receive()
                     wait > 0 -> withTimeoutOrNull(wait) { cloudWake.receive() }
@@ -872,13 +873,25 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 }
                 if (closed || paused || access == null) continue
                 val requested = cloudRequests.get()
-                try { runCloudCycle(forceIdle = requested != handled) }
+                if (requested == handled) {
+                    // A delayed channel hint for an already-consumed request is not a new wake.
+                    val remaining = cloudRuntime?.nextDelayMillis(forceIdle = needsBusinessAttempt)
+                    if (remaining == null || remaining > 0) continue
+                }
+                val forceIdle = requested != handled || needsBusinessAttempt
+                var invoked = false
+                try { runCloudCycle(forceIdle = forceIdle, onInvoked = { invoked = true }) }
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
                     cloudRuntime?.deferUntilWake()
                     mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus(cloudFailureText(failure), it.cloud.lastSuccessAt)) }
                 }
-                finally { handled = requested }
+                finally {
+                    handled = requested
+                    // Consume the wake without losing its unattempted business or spinning the
+                    // platform gate. The timer still honors platform deferral and route errors.
+                    needsBusinessAttempt = forceIdle && !invoked
+                }
             }
         }
         loop = scope.launch {
@@ -916,7 +929,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         "SYNC_GROUP_CLOUD_BACKGROUND_PROMOTION_TIMEOUT" -> "系统尚未允许本批网盘后台传输，请切回应用检查；待传队列已保留"
         else -> "网盘核对未完成，待传队列已保留"
     }
-    private suspend fun runCloudCycle(shutdown: Boolean = false, forceIdle: Boolean = true): Boolean {
+    private suspend fun runCloudCycle(shutdown: Boolean = false, forceIdle: Boolean = true,
+        onInvoked: () -> Unit = {}): Boolean {
         access ?: return true
         val runtime = cloudRuntime ?: return true
         // An idle/disabled batch starts no platform lease. A deferred enabled target remains
@@ -924,7 +938,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (!runtime.prepareScheduledBatch(forceIdle)) return !shutdown || runtime.nextDelayMillis() == null
         var invoked = false
         val completed = try {
-            cloudWork { invoked = true; runtime.cycle(recoverNative = !shutdown, outgoingOnly = shutdown, forceIdle = forceIdle) }
+            cloudWork { invoked = true; onInvoked(); runtime.cycle(recoverNative = !shutdown, outgoingOnly = shutdown, forceIdle = forceIdle) }
         } finally { if (!invoked) runtime.deferUntilWake() }
         if (!completed) mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus("网盘核对尚未完成，待传队列已保留", it.cloud.lastSuccessAt)) }
         return completed

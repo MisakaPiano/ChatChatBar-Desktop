@@ -93,10 +93,10 @@ class LanSyncGroupCloudRuntime private constructor(private val access: LanSyncGr
             }
         }
     }
-    /** Unknown configuration needs a local peek; no enabled routes means no timer is needed. */
-    fun nextDelayMillis(): Long? = synchronized(lock) {
+    /** Unknown configuration needs a local peek; forceIdle retains platform and route-error waits. */
+    fun nextDelayMillis(forceIdle: Boolean = false): Long? = synchronized(lock) {
         if (closed) return@synchronized null
-        val delay = if (!scheduleKnown || snapshotCatalog?.revision?.value != scheduleRevision) 0L else schedule.nextDelayMillis() ?: return@synchronized null
+        val delay = if (!scheduleKnown || snapshotCatalog?.revision?.value != scheduleRevision) 0L else schedule.nextDelayMillis(forceIdle) ?: return@synchronized null
         maxOf(delay, deferred?.remaining(clockMillis()) ?: 0)
     }
     fun deferUntilWake() = synchronized(lock) { deferred = RelativeWait(clockMillis(), 60_000) }
