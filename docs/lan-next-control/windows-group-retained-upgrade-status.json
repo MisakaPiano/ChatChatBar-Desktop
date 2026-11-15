@@ -1,11 +1,11 @@
 {
   "kind": "CCB_REAL_WINDOWS_GROUP_RETAINED_UPGRADE_CURRENT_STATUS",
-  "asOfUtc": "2026-11-15T04:16:45.975909+00:00",
-  "state": "CURRENT_NATIVE_CHECK_RUNNING_NOT_PASSED",
+  "asOfUtc": "2026-11-15T04:34:27.781685+00:00",
+  "state": "FAILED_SCAN_IO_NEXT_RESTRICTED_DIAGNOSTIC_IN_PREPARATION",
   "operationalControl": "0fb2235d2bdc9ba9e47a1a51e96edae4608fb6ff",
   "currentRun": 43675592820,
   "currentJob": 132694909493,
-  "nativeVerdict": "NOT_OBSERVED",
+  "nativeVerdict": "FAILED_BEFORE_COMPLETE_SEED",
   "sourceOld": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
   "sourceCandidate": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
   "candidateBuildControl": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
@@ -65,5 +65,24 @@
   "historicalSourceApiInputs": "windows-group-retained-upgrade-fixed-inputs.json",
   "humanAcceptance": false,
   "userDelivered": false,
-  "dailyInstallationChanged": false
+  "dailyInstallationChanged": false,
+  "currentJobConclusion": "failure",
+  "lastVerifiedNative": {
+    "run": 43675592820,
+    "job": 132694909493,
+    "componentCase": "0PASS1FAIL0ERROR0SKIPPED",
+    "completedMainStages": [
+      "lan5-fresh"
+    ],
+    "completedGroupComponents": 0,
+    "failurePhase": "SCAN_LIVE_USERDATA_NO_PLAINTEXT",
+    "failureType": "IOException",
+    "sourceFile": "DesktopGroupRetainedUpgradeControlTest.kt",
+    "sourceLine": 325,
+    "primaryOrCleanupReplacementMarker": false,
+    "actualScope": "Cloudrouteadd anddefaultcredential save/load returned; scannerentry exactownedemptylock proved. Otherfile input.read failed; allscanner files/exitguard notcomplete. FourVERIFY/upgraded/cold not reached.",
+    "originalReviewSha256": "a64a494cf7d961eb46061c0f28489b3b1892cbf014e2d23730b4dc3a729298b6"
+  },
+  "nextVariantDispatched": false,
+  "nextAction": "Only bounded fixedregion/attributes/knowninfrastructure Boolean diagnostics; do notskipotherfiles/swallowIO/scanonlyafterclose or infer physicalfilename fromsourceLine."
 }
