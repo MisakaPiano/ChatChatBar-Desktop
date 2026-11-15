@@ -21,16 +21,16 @@
     {
       "series": "lan6",
       "version": "0.1.0-lan.6",
-      "sourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
-      "controlSha": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
-      "runId": 43665876837,
-      "artifactId": 14141999848,
+      "sourceSha": "c643ac151893032d327caa7cf028116d3f901775",
+      "controlSha": "e4c7baed78576eb37494acd990aaf8f1950a5901",
+      "runId": 43682317361,
+      "artifactId": 14149745432,
       "artifactName": "ccb-lan5-lan6-independent-desktop",
-      "outerBytes": 210282912,
-      "outerSha256": "0252e7dee8b1795e4f8f247ec05691538b665bd1158b2029970141135bdebf43",
+      "outerBytes": 210709499,
+      "outerSha256": "6655b507f9414915c860d8062c71d2641594cee6021df7a99aeb47bace280772",
       "filename": "CCB-0.1.0-lan.6-independent-windows-x64.zip",
-      "innerBytes": 210167703,
-      "innerSha256": "d52ae9e171cff31a1f819af6ee0c02c5d331c8c3c94ac80be7e4bcdab2468447",
+      "innerBytes": 210594286,
+      "innerSha256": "58f758a46ea6b2926408cb1799c4ecd6c14fc720623f11dd71855bcda1c410fd",
       "installerVersion": "0.1.40006",
       "buildNumber": "40006"
     }
@@ -38,7 +38,7 @@
   "timestampRule": "OBSERVED_OLD_CONTROL_CAPTURED_AT_ONLY_WITH_IDENTICAL_SOURCE",
   "timestampSourceBindings": {
     "baseSourceSha": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
-    "candidateSourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+    "candidateSourceSha": "c643ac151893032d327caa7cf028116d3f901775",
     "files": [
       {
         "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt",
@@ -53,7 +53,7 @@
       {
         "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
         "baseSha256": "42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c",
-        "candidateSha256": "42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c"
+        "candidateSha256": "d015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388"
       }
     ]
   },

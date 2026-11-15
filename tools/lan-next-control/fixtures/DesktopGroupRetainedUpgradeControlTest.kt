@@ -26,7 +26,7 @@ class DesktopGroupRetainedUpgradeControlTest {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
     private val oldSource = "e606bf2a2723fbc896323a8071cfd52dde99a4c6"
-    private val candidateSource = "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f"
+    private val candidateSource = "c643ac151893032d327caa7cf028116d3f901775"
     private var phase = "GUARD"
     private var firstFailureMarker: String? = null
     private var lastScanProjection: String? = null
@@ -131,7 +131,9 @@ class DesktopGroupRetainedUpgradeControlTest {
                                 phase = "LOAD_DEFAULT_ACCOUNT_CREDENTIAL"
                                 check(app.desktopSecretStore.load(DesktopCredentialKey.FishAudioApiKey) == password.toString(Charsets.UTF_8))
                                 phase = "SCAN_LIVE_USERDATA_NO_PLAINTEXT"
-                                check(!containsPlaintext(userData, password, acquired.ownership))
+                                val witnesses = Files.createTempDirectory(privateRoot, "stable-empty-witnesses-").toRealPath()
+                                check(!witnesses.startsWith(userData) && !userData.startsWith(witnesses))
+                                check(!containsPlaintext(userData, password, acquired.ownership, witnesses))
                             } finally { password.fill(0) }
                         } else {
                             phase = "OPEN_EXISTING_WHILE_PAUSED"
@@ -256,7 +258,7 @@ class DesktopGroupRetainedUpgradeControlTest {
     private fun safeFailureMarker(atPhase: String, failure: Throwable): String {
         val safeFiles = setOf("DesktopGroupRetainedUpgradeControlTest.kt", "LanSyncGroupRuntimeAccess.kt",
                 "LanSyncGroupCloudRoutes.kt", "WindowsSecretStore.kt", "DesktopSecretStore.kt",
-                "WindowsDpapiSecretProtector.kt", "DesktopAppContainer.kt", "DesktopLanSync.kt", "DesktopDataRootOwnership.kt")
+                "WindowsDpapiSecretProtector.kt", "DesktopAppContainer.kt", "DesktopLanSync.kt", "DesktopDataRootOwnership.kt", "StableEmptyObjectProof.java")
         val safeFrame = failure.stackTrace.firstOrNull { frame ->
                 frame.fileName?.let { it in safeFiles } == true && frame.lineNumber in 1..99999
         }
@@ -316,7 +318,7 @@ class DesktopGroupRetainedUpgradeControlTest {
         else "$region:OBSERVED:${attributes.size() == 0L}:${attributes.isRegularFile}:${!attributes.isSymbolicLink}:$known"
     }
 
-    private fun containsPlaintext(root: Path, secret: ByteArray, ownership: DesktopDataRootOwnership): Boolean {
+    private fun containsPlaintext(root: Path, secret: ByteArray, ownership: DesktopDataRootOwnership, witnesses: Path): Boolean {
         lastScanProjection = null
         check(secret.isNotEmpty())
         val ownedLock = ownership.lockPath.toAbsolutePath().normalize()
@@ -334,36 +336,41 @@ class DesktopGroupRetainedUpgradeControlTest {
             lastScanProjection = null
             check(!Files.isSymbolicLink(path))
             if (path.toAbsolutePath().normalize() == ownedLock) {
-                // Current exact owned infrastructure is proved empty; no content ReadFile is necessary.
+                // Retain the exact owned-root infrastructure assertions in addition to the shared proof.
                 verifyEmptyOwnedLock(path)
                 verifiedEmptyOwnedLockCount++
-            } else if (Files.isRegularFile(path, NOFOLLOW_LINKS)) {
+            }
+            if (Files.isRegularFile(path, NOFOLLOW_LINKS)) {
                 // Include runtime Temp files without inventing a file-size/business-data ceiling.
                 lastScanProjection = scanProjection(path, root, ownership)
-                Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
-                    val buffer = ByteArray(64 * 1024)
-                    var tail = ByteArray(0)
-                    try {
-                        while (!found) {
-                            val count = input.read(buffer)
-                            if (count < 0) break
-                            if (count == 0) continue
-                            val window = ByteArray(tail.size + count)
-                            tail.copyInto(window)
-                            buffer.copyInto(window, tail.size, 0, count)
-                            tail.fill(0)
-                            try {
-                                var offset = 0
-                                while (!found && offset + secret.size <= window.size) {
-                                    var index = 0
-                                    while (index < secret.size && window[offset + index] == secret[index]) index++
-                                    if (index == secret.size) found = true
-                                    offset++
-                                }
-                                tail = window.copyOfRange(maxOf(0, window.size - secret.size + 1), window.size)
-                            } finally { window.fill(0) }
-                        }
-                    } finally { buffer.fill(0); tail.fill(0) }
+                // Every regular file, including the owned lock, uses the exact JDK-proved algorithm.
+                // Unknown/unsupported/nonempty/changed objects retain the original strict read and fatal I/O.
+                if (StableEmptyObjectProof.confirmEmpty(path, witnesses) != StableEmptyObjectProof.Outcome.EMPTY_CONFIRMED) {
+                    Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
+                        val buffer = ByteArray(64 * 1024)
+                        var tail = ByteArray(0)
+                        try {
+                            while (!found) {
+                                val count = input.read(buffer)
+                                if (count < 0) break
+                                if (count == 0) continue
+                                val window = ByteArray(tail.size + count)
+                                tail.copyInto(window)
+                                buffer.copyInto(window, tail.size, 0, count)
+                                tail.fill(0)
+                                try {
+                                    var offset = 0
+                                    while (!found && offset + secret.size <= window.size) {
+                                        var index = 0
+                                        while (index < secret.size && window[offset + index] == secret[index]) index++
+                                        if (index == secret.size) found = true
+                                        offset++
+                                    }
+                                    tail = window.copyOfRange(maxOf(0, window.size - secret.size + 1), window.size)
+                                } finally { window.fill(0) }
+                            }
+                        } finally { buffer.fill(0); tail.fill(0) }
+                    }
                 }
                 lastScanProjection = null
             }

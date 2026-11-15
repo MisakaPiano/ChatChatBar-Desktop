@@ -26,12 +26,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Bind safe failure projection to this exact group helper
+      - name: Bind shared empty-object proof bridge and safe failure projection
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_group_retained_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne '4be31e040494082b6c33eb3000e53a04a3506ea812bb1c471632f697aa2fc7ab') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
-          Write-Output 'REAL_GROUP_SAFE_DIAGNOSTIC_V1_BOUND'
+          if ($actual -ne '2c225fc136580b8f8366980f89e9fdb5e299f0dee0be87a489010490b8f72c5f') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
+          Write-Output 'REAL_GROUP_SAME_JAVA_EMPTY_OBJECT_BRIDGE_BOUND'
       - name: Verify exact originals then run original Main launches and separate group components
         env:
           GH_TOKEN: ${{ github.token }}

@@ -82,3 +82,4 @@ tools/lan-preview-signing/prove_desktop_profile_upgrade.py text eol=lf
 tools/lan-next-control/fixtures/StableEmptyObjectProof.java text eol=lf
 tools/lan-next-control/prove_windows_stable_empty_object.py text eol=lf
 .github/workflows/lan-next-windows-stable-empty-object-proof.yml text eol=lf
+.github/lan-next-desktop-group-retained-upgrade-request.json text eol=lf

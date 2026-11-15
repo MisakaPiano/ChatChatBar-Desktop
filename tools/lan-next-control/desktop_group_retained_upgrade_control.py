@@ -1,4 +1,4 @@
-"""Isolated cloud-only V5/e606 -> LAN6/7ce Program swap + real group component.
+"""Isolated cloud-only V5/e606 -> LAN6/c643 Program swap + real group component.
 
 All package/provenance/ZIP/data/native-window work remains in the pinned owners.
 The companion is compiled in separate fixed source worktrees, never the originals.
@@ -20,8 +20,8 @@ import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 OLD = 'e606bf2a2723fbc896323a8071cfd52dde99a4c6'
-NEW = 'a6bb882d7cef9aceba3fda3b0d33329f9d687d8f'
-BUILD_CONTROL = '1da064e91a7a94c4ff16da8934b8cec4bbfdb200'
+NEW = 'c643ac151893032d327caa7cf028116d3f901775'
+BUILD_CONTROL = 'e4c7baed78576eb37494acd990aaf8f1950a5901'
 ORDER = ('contract', 'desktop_control', 'prove_desktop_lan3_lan4', 'desktop_lan5_control',
          'desktop_lan6_control', 'instrumentation_report', 'group_ui_control', 'desktop_group_ui_control')
 HELPERS = {
@@ -36,10 +36,13 @@ HELPERS = {
 }
 LEGACY_SHA = 'a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce'
 FIXTURE = HERE / 'fixtures/DesktopGroupRetainedUpgradeControlTest.kt'
-FIXTURE_SHA = '19e41d9770a0fe169724bc3f48479f0fc843d079443b8f93edfc13d6b9f8b9a4'
+FIXTURE_SHA = '6f76501b6bdc0f49284595fb1b364a7254a9a4fff7fd95e72b792ef3caf0a1a0'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupRetainedUpgradeControlTest'
 METHOD = 'seedOrVerifyRealGroupInRetainedIndependentUserData'
 TARGET = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupRetainedUpgradeControlTest.kt'
+EMPTY_PROOF_JAVA = HERE / 'fixtures/StableEmptyObjectProof.java'
+EMPTY_PROOF_SHA = '49c24dfaf49bb08a375bd00726b91d455b1e9dd81333150f9b0887a635bf171e'
+EMPTY_PROOF_TARGET = 'app/desktopApp/src/test/java/com/example/chatbar/desktop/lanSync/StableEmptyObjectProof.java'
 REQUEST = '.github/lan-next-desktop-group-retained-upgrade-request.json'
 EVIDENCE = 'desktop-group-retained-upgrade-evidence'
 RESULT = 'native-lan5-lan6-group-retained-upgrade-result.json'
@@ -54,6 +57,57 @@ PUBLIC_KEYS = {
     'protectedBytesRetained', 'observerProtectedBytesUnchangedOnClose', 'componentPaused', 'durablePauseClaimed',
     'closeNoticeCount', 'recoveryInputUsedByVerifier', 'networkDeliveryVerified', 'defaultCredentialReadBack',
 }
+READING_POSITION_RULE = 'EXACT_E606_C643_SCROLL_CLOSURE_OBSERVED_OLD_CAPTURED_AT_ONLY'
+READING_POSITION_BINDINGS = {'baseSourceSha': 'e606bf2a2723fbc896323a8071cfd52dde99a4c6', 'candidateSourceSha': 'c643ac151893032d327caa7cf028116d3f901775', 'files': [{'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt', 'baseSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0', 'candidateSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0'}, {'path': 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt', 'baseSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3', 'candidateSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3'}, {'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt', 'baseSha256': '42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c', 'candidateSha256': 'd015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388'}]}
+
+
+def reading_position_equivalence_enabled(request):
+    try:
+        return (request['packages'][0]['sourceSha'] == OLD and request['packages'][1]['sourceSha'] == NEW and
+                request['packages'][1]['controlSha'] == BUILD_CONTROL and
+                request['timestampRule'] == 'OBSERVED_OLD_CONTROL_CAPTURED_AT_ONLY_WITH_IDENTICAL_SOURCE' and
+                request['timestampSourceBindings'] == READING_POSITION_BINDINGS and
+                request['allowedStateMigrations'] == [])
+    except (KeyError, IndexError, TypeError):
+        return False
+
+
+def scroll_path(path):
+    return path.startswith('chat_scroll_positions/') and path.endswith('.json')
+
+
+def strict_scroll_json(raw):
+    def members(items):
+        value = {}
+        for key, item in items:
+            require(key not in value, 'SCROLL_DUPLICATE_JSON_KEY')
+            value[key] = item
+        return value
+    def nonfinite(ignored):
+        raise ValueError('SCROLL_NONFINITE_JSON')
+    value = json.loads(raw, object_pairs_hook=members, parse_constant=nonfinite)
+    validate_scroll_types(value)
+    return value
+
+
+def validate_scroll_types(value):
+    require(type(value) is dict and {'sessionId', 'capturedAt'} <= set(value) <=
+            {'sessionId', 'anchorMessageId', 'fallbackMessageIndex', 'scrollOffset', 'capturedAt'}, 'SCROLL_SCHEMA_CHANGED')
+    require(type(value['sessionId']) is str and type(value['capturedAt']) is int and
+            -(2 ** 63) <= value['capturedAt'] < 2 ** 63, 'SCROLL_FIELD_TYPES')
+    if 'anchorMessageId' in value:
+        require(value['anchorMessageId'] is None or type(value['anchorMessageId']) is str, 'SCROLL_FIELD_TYPES')
+    for key in ('fallbackMessageIndex', 'scrollOffset'):
+        if key in value:
+            require(type(value[key]) is int and -(2 ** 31) <= value[key] < 2 ** 31, 'SCROLL_FIELD_TYPES')
+
+
+def strict_scroll_snapshot(directory, path, expected_hash):
+    raw = (directory / path).read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == expected_hash, 'SCROLL_SNAPSHOT_CHANGED')
+    return strict_scroll_json(raw)
+
+
 _phase = 'PROFILE'
 
 
@@ -90,9 +144,10 @@ SAFE_SOURCE_FILES = frozenset({
     'DesktopGroupRetainedUpgradeControlTest.kt', 'LanSyncGroupRuntimeAccess.kt',
     'LanSyncGroupCloudRoutes.kt', 'WindowsSecretStore.kt', 'DesktopSecretStore.kt',
     'WindowsDpapiSecretProtector.kt', 'DesktopAppContainer.kt', 'DesktopLanSync.kt', 'DesktopDataRootOwnership.kt',
+    'StableEmptyObjectProof.java',
 })
 SAFE_MARKER = re.compile(r'GROUP_RETAINED_COMPONENT:([A-Z_]{1,80}):([A-Za-z][A-Za-z0-9_]{0,63})'
-                         r'(?::([A-Za-z][A-Za-z0-9]*\.kt):([0-9]{1,5}))?')
+                         r'(?::([A-Za-z][A-Za-z0-9]*\.(?:kt|java)):([0-9]{1,5}))?')
 FIXTURE_BASENAME = 'DesktopGroupRetainedUpgradeControlTest.kt'
 
 
@@ -362,8 +417,8 @@ def validate_request(base, request):
     base.validate_upgrade(request)
     require(type(request['format']) is int, 'INTEGER_FORMAT_REQUIRED')
     require(request['packages'][0]['sourceSha'] == OLD and request['packages'][1]['sourceSha'] == NEW,
-            'EXACT_E606_TO_A6_REQUIRED')
-    require(request['packages'][1]['controlSha'] == BUILD_CONTROL, 'EXACT_A6_BUILD_CONTROL_REQUIRED')
+            'EXACT_E606_TO_C643_REQUIRED')
+    require(request['packages'][1]['controlSha'] == BUILD_CONTROL, 'EXACT_C643_BUILD_CONTROL_REQUIRED')
     return request
 
 
@@ -406,6 +461,42 @@ def remove_owned_previous_xml(xml, retained):
     xml.unlink()  # One authenticated, retained prior report in our new source worktree only.
 
 
+def empty_proof_target_path(source):
+    source = source.resolve(strict=True)
+    current = source
+    for part in Path(EMPTY_PROOF_TARGET).parts:
+        current = current / part
+        require(not current.is_symlink(), 'DESKTOP_OVERLAY_SYMLINK')
+    require(current.resolve(strict=False).is_relative_to(source), 'DESKTOP_OVERLAY_ESCAPES_SOURCE')
+    return current
+
+
+def dual_overlay_status(source, request, ui):
+    require(ui.git(source, 'rev-parse', 'HEAD') == request['sourceSha'], 'SOURCE_HEAD_CHANGED')
+    status = ui.git(source, 'status', '--porcelain', '--untracked-files=all').splitlines()
+    require(len(status) == 2 and set(status) == {'?? ' + TARGET, '?? ' + EMPTY_PROOF_TARGET},
+            'DESKTOP_OVERLAY_NOT_EXCLUSIVE')
+    require(request['fixtureSha256'] == FIXTURE_SHA and digest(ui.target_path(source)) == FIXTURE_SHA,
+            'DESKTOP_OVERLAY_CHANGED')
+    require(digest(empty_proof_target_path(source)) == EMPTY_PROOF_SHA, 'DESKTOP_OVERLAY_CHANGED')
+
+
+def install_empty_proof_overlay(source, request, ui):
+    # Original prepare must first prove its exclusive single Kotlin overlay unchanged.
+    ui.overlay_status(source, request)
+    require(EMPTY_PROOF_JAVA.is_file() and not EMPTY_PROOF_JAVA.is_symlink() and
+            digest(EMPTY_PROOF_JAVA) == EMPTY_PROOF_SHA, 'DESKTOP_OVERLAY_CHANGED')
+    target = empty_proof_target_path(source)
+    require(not target.exists(), 'DESKTOP_OVERLAY_TARGET_EXISTS')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target = empty_proof_target_path(source)
+    with target.open('xb') as output:
+        output.write(EMPTY_PROOF_JAVA.read_bytes())
+        output.flush()
+        os.fsync(output.fileno())
+    dual_overlay_status(source, request, ui)
+
+
 class Companion:
     def __init__(self, modules, sources, private, output):
         self.ui = modules['desktop_group_ui_control']
@@ -421,6 +512,7 @@ class Companion:
             write_new(request, {'format': 1, 'sourceSha': sha, 'fixtureSha256': FIXTURE_SHA})
             evidence = self.private / ('prepare-' + sha)
             self.ui.prepare(request, source, evidence)
+            install_empty_proof_overlay(source, self.ui.read_request(request), self.ui)
             self.templates[sha] = (evidence / 'prepared.json').read_bytes()
             self.requests[sha] = request
 
@@ -441,8 +533,10 @@ class Companion:
         # The isolated private runner instance retains all native command/XML/overlay guards.
         # Only its per-invocation environment selection uses the launcher's actual retained roots.
         prior = self.ui.isolated_environment
+        prior_overlay_status = self.ui.overlay_status
         try:
             self.ui.isolated_environment = lambda ignored: dict(environment)
+            self.ui.overlay_status = lambda checked_source, checked_request: dual_overlay_status(checked_source, checked_request, self.ui)
             self.ui.run(self.requests[sha], source, evidence)
         except Exception as failure:
             self.failure_diagnostic = component_failure_diagnostic(
@@ -455,6 +549,7 @@ class Companion:
             raise  # Original failure remains fatal; no component completion or fallback.
         finally:
             self.ui.isolated_environment = prior
+            self.ui.overlay_status = prior_overlay_status
         self.previous_xml[sha] = evidence / 'original-test.xml'
         raw = self.previous_xml[sha].read_bytes()
         parsed = self.ui.junit_result(raw)
@@ -473,6 +568,7 @@ class Companion:
         require(digest(destination) == hashlib.sha256(original_report).hexdigest(), 'ORIGINAL_COMPONENT_COPY_CHANGED')
         self.original_descriptors.append({'stage': stage, 'sourceSha': sha, 'fixtureSha256': FIXTURE_SHA,
             'controlSha': json.loads(self.templates[sha])['controlSha'],
+            'emptyObjectProofJavaSha256': EMPTY_PROOF_SHA, 'javaOverlay': EMPTY_PROOF_TARGET,
             'originalComponentJson': {'sha256': hashlib.sha256(original_report).hexdigest(), 'bytes': len(original_report)},
             'originalJUnit': {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw), **parsed},
             'originalJUnitUploaded': False, 'scope': 'real AppContainer/DPAPI component; separate from packaged Main'})
@@ -481,15 +577,45 @@ class Companion:
 
 
 @contextmanager
-def attach_native(modules, companion, legacy_path):
+def attach_native(modules, companion, legacy_path, equivalence_request=None):
     """Small hooks around the original engine: never replace launch/package/data guards."""
     native = modules['prove_desktop_lan3_lan4']
     require(digest(legacy_path) == LEGACY_SHA, 'TRUSTED_NATIVE_ENGINE_CHANGED')
     old = native.legacy()
     seed, writer, Native = old.seed, old.write_json, old.Native
+    original_json_bodies = old.json_bodies
+    original_retained_entities = native.retained_entities
+    equivalence_active = equivalence_request is not None and reading_position_equivalence_enabled(equivalence_request)
+    if equivalence_request is not None:
+        require(equivalence_active, 'EXACT_C643_SCROLL_CLOSURE_REQUIRED')
+    timestamp_attempts = 0
+    timestamp_completed = 0
     main_stages = []
     verify_read_only_stages = []
     seed_image = None
+
+    def strict_json_bodies(directory, inventory):
+        bodies = original_json_bodies(directory, inventory)
+        for path, digest_value in inventory.items():
+            if scroll_path(path):
+                strict = strict_scroll_snapshot(directory, path, digest_value)
+                require(strict == bodies[path], 'SCROLL_SNAPSHOT_CHANGED')
+                bodies[path] = strict  # Same authenticated parsed values, without coercive field types.
+        return bodies
+
+    def equivalent_retained_entities(owner, request, before, after, bodies, directory, old_control):
+        nonlocal timestamp_attempts, timestamp_completed
+        if not reading_position_equivalence_enabled(request):
+            return original_retained_entities(owner, request, before, after, bodies, directory, old_control)
+        timestamp_attempts += 1
+        for path, before_hash in before.items():
+            if scroll_path(path):
+                validate_scroll_types(bodies[path])
+                if path in after and after[path] != before_hash:
+                    strict_scroll_snapshot(directory, path, after[path])
+        result = owner.verify_retained_entities(before, after, bodies, directory, old_control)
+        timestamp_completed += 1
+        return result
 
     def seeded(data):
         nonlocal seed_image
@@ -526,6 +652,7 @@ def attach_native(modules, companion, legacy_path):
             complete = [r['stage'] for r in companion.reports] == list(COMPONENTS)
             complete = complete and main_stages == ['lan5-fresh', *COMPONENTS[1:]]
             complete = complete and verify_read_only_stages == list(COMPONENTS[1:])
+            complete = complete and (not equivalence_active or timestamp_completed == 2)
             if value.get('passed') and not complete:
                 value.update(passed=False, failure={'phase': 'EXACT_GROUP_PHASES', 'type': 'ValueError'})
                 refused = True
@@ -533,7 +660,12 @@ def attach_native(modules, companion, legacy_path):
                 value['failure'] = {'phase': _phase, 'type': value['failure'].get('type', 'Exception')}
                 if getattr(companion, 'failure_diagnostic', None) is not None:
                     value['componentFailureDiagnostic'] = companion.failure_diagnostic
-            value.update(peerOrIdentitySeeded=bool(companion.reports and companion.reports[0]['passed']),
+            value.update(readingPositionSourceEquivalenceRule=READING_POSITION_RULE,
+                         readingPositionSourceEquivalenceActive=equivalence_active,
+                         readingPositionSourceEquivalenceAttempts=timestamp_attempts,
+                         readingPositionSourceEquivalenceCompleted=timestamp_completed,
+                         originalWholeFileTimestampPredicateUnchanged=True,
+                         peerOrIdentitySeeded=bool(companion.reports and companion.reports[0]['passed']),
                          groupComponentCount=len(companion.reports), groupComponentStages=[r['stage'] for r in companion.reports],
                          packagedMainStagesCompleted=main_stages,
                          verifyComponentReadOnlyStages=list(verify_read_only_stages),
@@ -543,9 +675,12 @@ def attach_native(modules, companion, legacy_path):
         writer(path, value)
         require(not refused, 'EXACT_GROUP_PHASES')
 
-    prior = {key: getattr(native, key) for key in ('legacy', 'RESULT_KIND', 'RESULT_FILE', 'SUCCESS_MARKER')}
+    prior = {key: getattr(native, key) for key in ('legacy', 'RESULT_KIND', 'RESULT_FILE', 'SUCCESS_MARKER', 'retained_entities')}
     try:
         old.seed, old.Native, old.write_json = seeded, GroupNative, result_writer
+        if equivalence_active:
+            old.json_bodies = strict_json_bodies
+            native.retained_entities = equivalent_retained_entities
         native.legacy = lambda: old
         native.RESULT_KIND = 'EXACT_LAN5_LAN6_PROGRAM_ONLY_REAL_GROUP_RETAINED_UPGRADE'
         native.RESULT_FILE = RESULT
@@ -553,6 +688,7 @@ def attach_native(modules, companion, legacy_path):
         yield
     finally:
         old.seed, old.Native, old.write_json = seed, Native, writer
+        old.json_bodies = original_json_bodies
         for key, value in prior.items():
             setattr(native, key, value)
 
@@ -565,7 +701,7 @@ def command(*argv):
 
 def make_worktrees(root, private):
     sources = {}
-    for sha, leaf in ((OLD, 'source-old-e606'), (NEW, 'source-new-a6')):
+    for sha, leaf in ((OLD, 'source-old-e606'), (NEW, 'source-new-c643')):
         source = private / leaf
         require(not source.exists(), 'NEW_SOURCE_WORKTREE_REQUIRED')
         command('git', '-C', str(root), 'worktree', 'add', '--detach', str(source), sha)
@@ -596,6 +732,8 @@ def run(request_path, output, modules):
     require(command('git', '-C', str(root), 'status', '--porcelain', '--untracked-files=all') == b'', 'CLEAN_CONTROL_REQUIRED')
     require(command('git', '-C', str(root), 'rev-parse', 'HEAD').decode().strip() == os.environ['GITHUB_SHA'], 'CONTROL_HEAD_REQUIRED')
     require(digest(FIXTURE) == FIXTURE_SHA, 'COMPANION_FIXTURE_CHANGED')
+    require(EMPTY_PROOF_JAVA.is_file() and not EMPTY_PROOF_JAVA.is_symlink() and digest(EMPTY_PROOF_JAVA) == EMPTY_PROOF_SHA,
+            'COMPANION_EMPTY_PROOF_JAVA_CHANGED')
     temporary = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)
     require(not temporary.is_relative_to(root) and not root.is_relative_to(temporary), 'SEPARATE_RUNNER_TEMP_REQUIRED')
     private = temporary / ('ccb-real-group-retained-' + uuid.uuid4().hex)
@@ -612,13 +750,17 @@ def run(request_path, output, modules):
         companion.prepare()
         legacy_path = HERE.parent / 'lan-preview-signing/prove_desktop_profile_upgrade.py'
         _phase = 'ORIGINAL_FIVE_NATIVE_LAUNCHES_WITH_REAL_GROUP'
-        with attach_native(modules, companion, legacy_path):
+        with attach_native(modules, companion, legacy_path, request):
             profile.native.run(request, output)
         require(small_json(output / RESULT)['passed'] is True and len(companion.reports) == 5, 'EXACT_REAL_GROUP_PROOF_REQUIRED')
         write_new(output / TOP[-1], {'kind': 'CCB_REAL_WINDOWS_GROUP_RETAINED_UPGRADE_VERIFIED', 'passed': True,
             'sourceOld': OLD, 'sourceCandidate': NEW, 'candidateBuildControl': BUILD_CONTROL,
             'packagedMainLaunches': 5, 'separateAppContainerComponents': 5, 'originalBaselineRebuilt': False,
             'candidateApplicationRebuilt': False, 'testClasspathBuiltSeparately': True,
+            'emptyObjectProofJavaSha256': EMPTY_PROOF_SHA, 'javaOverlay': EMPTY_PROOF_TARGET,
+            'standaloneEmptyProofMainInvokedByGroup': False,
+            'readingPositionSourceEquivalenceRule': READING_POSITION_RULE,
+            'wholeFileTimestampSourceIdentical': False,
             'userDataRootMoved': False, 'programOnlySwap': True, 'outsideDefaultGuardUnchanged': True,
             'durablePauseClaimed': False, 'cloudOrNearbyDeliveryClaimed': False, 'nsisOrHumanAcceptanceClaimed': False,
             'privateCaseCleanup': 'RETAINED_EPHEMERAL_CLOUD_RUNNER', 'privateOriginalXmlUploaded': False,
