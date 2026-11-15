@@ -65,6 +65,18 @@ jobs:
           Copy-Item -LiteralPath (Join-Path $case 'result.json') -Destination (Join-Path $env:CCB_LAN_OUTPUT 'native-result.json')
           python -B tools/lan-next-control/desktop_lan6_control.py collect --request .github/lan-next-sync-desktop-lan6-build-request.json --source-dir $env:CCB_CI_SOURCE --output $env:CCB_LAN_OUTPUT --control-sha $env:GITHUB_SHA
           if ($LASTEXITCODE -ne 0) { throw 'LAN6_FROZEN_PACKAGE_MANIFEST' }
+      - name: Upload successful original Desktop manifests only
+        uses: actions/upload-artifact@v4
+        if: success() && env.CCB_LAN_OUTPUT != ''
+        with:
+          name: ccb-lan5-lan6-independent-desktop-manifests
+          if-no-files-found: error
+          path: |
+            ${{ env.CCB_LAN_OUTPUT }}/desktop-package-manifest.json
+            ${{ env.CCB_LAN_OUTPUT }}/source-request.json
+            ${{ env.CCB_LAN_OUTPUT }}/CCB-${{ env.CCB_LAN_VERSION }}-independent-windows-x64.json
+            ${{ env.CCB_LAN_OUTPUT }}/native-result.json
+            ${{ env.CCB_LAN_OUTPUT }}/app-image-audit.json
       - uses: actions/upload-artifact@v4
         if: always() && env.CCB_LAN_OUTPUT != ''
         with:

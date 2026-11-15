@@ -22,3 +22,5 @@ workflows, request files and defaults remain unchanged.
 
 Light guards: `python -B -m unittest test_desktop_lan6_control test_desktop_lan5_control`
 from tools/lan-next-control. Actual SDK/native work remains cloud-only.
+
+The ordinary build now uploads a success-only five-JSON original metadata artifact beside the unchanged complete package. Preserve this explicit overlay if the historical render-plan template is regenerated. It contains no Program/UserData/ZIP/log directory. The collect step already validates the complete inner bundle; later native upgrade still authenticates the actual full Actions outer archive, inner bytes and source/bundle contract before any launch. These are the original five build JSONs, not the separate preparer five-output contract.
