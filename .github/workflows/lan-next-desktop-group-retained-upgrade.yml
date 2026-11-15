@@ -26,12 +26,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Bind C30 bounded button readiness and unchanged native guards
+      - name: Bind C30 exact informational window close and unchanged native guards
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_group_retained_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne 'ff469f62b61581d6d114aa4996be88e540dfff8433fb8446040f161b8e06bb54') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
-          Write-Output 'REAL_GROUP_C30_BUTTON_READINESS_AND_ORIGINAL_GUARDS_BOUND'
+          if ($actual -ne '72b2dd5b7b1c05513372a9bfe579c4907d98826d9538e10293776c54f2e24166') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
+          Write-Output 'REAL_GROUP_C30_NOTICE_WINDOW_CLOSE_AND_ORIGINAL_GUARDS_BOUND'
       - name: Verify exact originals then run original Main launches and separate group components
         env:
           GH_TOKEN: ${{ github.token }}

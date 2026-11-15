@@ -697,13 +697,10 @@ def owned_window_projection(native, legacy, ids):
         return value
 
 
-NOTICE_OK_SOURCE = 'c30db003b4e14f355673f7e724d488a9a598662e'
-NOTICE_OK_MAIN_SHA256 = 'cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a'
-NOTICE_OK_STAGES = frozenset({'lan6-upgraded', 'lan6-cold-reopen'})
-NOTICE_OK_POLICY = 'ONE_EXACT_C30_INFORMATIONAL_IDOK_POST_PER_CANDIDATE_MAIN_AFTER_ORIGINAL_WM_CLOSE'
-NOTICE_BUTTON_PREDICATES = (
-    'GET_DLG_ITEM_PRESENT', 'PARENT_MATCHES', 'CTRL_ID_MATCHES', 'OWNED_PID_MATCHES',
-    'CLASS_MATCHES', 'VISIBLE', 'ENABLED')
+NOTICE_CLOSE_SOURCE = 'c30db003b4e14f355673f7e724d488a9a598662e'
+NOTICE_CLOSE_MAIN_SHA256 = 'cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a'
+NOTICE_CLOSE_STAGES = frozenset({'lan6-upgraded', 'lan6-cold-reopen'})
+NOTICE_CLOSE_POLICY = 'ONE_EXACT_C30_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE'
 
 
 class OriginalCloseUser32:
@@ -716,44 +713,36 @@ class OriginalCloseUser32:
 
     def PostMessageW(self, hwnd, message, wparam, lparam):
         result = self.original.PostMessageW(hwnd, message, wparam, lparam)
-        if message == 0x10 and wparam == lparam == 0:
+        if (message == 0x10 and wparam == lparam == 0 and
+                self.observation.get('originalWmCloseQueued') is None):
             self.observation['originalWmCloseQueued'] = bool(result)
         return result
 
 
-def notice_ok_state(stage):
-    eligible = NEW == NOTICE_OK_SOURCE and stage in NOTICE_OK_STAGES
-    return {'policy': NOTICE_OK_POLICY, 'eligible': eligible,
+def notice_close_state(stage):
+    eligible = NEW == NOTICE_CLOSE_SOURCE and stage in NOTICE_CLOSE_STAGES
+    return {'policy': NOTICE_CLOSE_POLICY, 'eligible': eligible,
             'state': 'WAITING_FOR_ORIGINAL_WM_CLOSE' if eligible else 'NOT_ELIGIBLE',
-            'noticeObserved': None, 'trustedDialogValidated': None, 'trustedButtonValidated': None,
+            'plannedInteraction': 'NOTICE_WINDOW_CLOSE', 'interaction': None,
+            'noticeObserved': None, 'trustedDialogValidated': None,
             'attemptCount': 0, 'postAccepted': None, 'originalExitAndLockGuardPassed': None,
-            'buttonPredicateProjection': dict.fromkeys(NOTICE_BUTTON_PREDICATES),
-            'buttonFirstRejectedPredicate': None, 'buttonPendingObservations': 0, 'buttonWaitReasonsObserved': [],
             'peerCloudOrFullSyncCompletionClaimed': False}
 
 
-def c30_notice_ok_after_original_owned(native, legacy, ids, observation):
-    state = observation['normalNoticeOk']
-    if not state['eligible'] or NEW != NOTICE_OK_SOURCE or observation['stage'] not in NOTICE_OK_STAGES:
+def c30_notice_close_after_original_owned(native, legacy, ids, observation):
+    state = observation['normalNoticeClose']
+    if not state['eligible'] or NEW != NOTICE_CLOSE_SOURCE or observation['stage'] not in NOTICE_CLOSE_STAGES:
         return
-    if state['attemptCount'] or state['state'] not in {
-            'WAITING_FOR_ORIGINAL_WM_CLOSE', 'NO_NOTICE_CURRENTLY_OBSERVED',
-            'WAIT_BUTTON_PRESENT', 'WAIT_BUTTON_VISIBLE', 'WAIT_BUTTON_ENABLED'}:
+    if state['attemptCount'] or state['state'] not in {'WAITING_FOR_ORIGINAL_WM_CLOSE', 'NO_NOTICE_CURRENTLY_OBSERVED'}:
         return
     if observation.get('originalWmCloseQueued') is not True or not ids:
         return
     try:
-        # A pending pass does not lend its earlier identity checks to a fresh observation.
-        state['trustedDialogValidated'] = state['trustedButtonValidated'] = None
-        state['buttonPredicateProjection'] = dict.fromkeys(NOTICE_BUTTON_PREDICATES)
-        state['buttonFirstRejectedPredicate'] = None
-        # HWND-returning APIs must retain all pointer bits on Win64. Only this private user32 instance is configured.
+        state['trustedDialogValidated'] = None
+        # Explicit HWND parameters retain pointer bits on Win64; configure only this private user32 instance.
         signatures = {
             'GetClassNameW': ([legacy.W.HWND, legacy.W.LPWSTR, legacy.C.c_int], legacy.C.c_int),
             'IsWindowEnabled': ([legacy.W.HWND], legacy.W.BOOL),
-            'GetDlgItem': ([legacy.W.HWND, legacy.C.c_int], legacy.W.HWND),
-            'GetParent': ([legacy.W.HWND], legacy.W.HWND),
-            'GetDlgCtrlID': ([legacy.W.HWND], legacy.C.c_int),
         }
         for name, (arguments, result) in signatures.items():
             function = getattr(native.user, name)
@@ -814,37 +803,13 @@ def c30_notice_ok_after_original_owned(native, legacy, ids, observation):
             state.update(state='REFUSED_DIALOG_CLASS_OR_STATE', trustedDialogValidated=False)
             return
         state['trustedDialogValidated'] = True
-        button = native.user.GetDlgItem(dialog, 1)  # Standard IDOK, not a text/content lookup.
-        def button_predicate(name, result):
-            # Project only this original evaluation. Short-circuit suffixes and failed API calls stay unknown.
-            matched = bool(result)
-            state['buttonPredicateProjection'][name] = matched
-            if not matched:
-                state['buttonFirstRejectedPredicate'] = name
-            return matched
-        if (not button_predicate('GET_DLG_ITEM_PRESENT', button) or
-                not button_predicate('PARENT_MATCHES', native.user.GetParent(button) == dialog) or
-                not button_predicate('CTRL_ID_MATCHES', native.user.GetDlgCtrlID(button) == 1) or
-                not button_predicate('OWNED_PID_MATCHES', owned_program_pid(button) == pid) or
-                not button_predicate('CLASS_MATCHES', exact_class(button, 'Button')) or
-                not button_predicate('VISIBLE', native.user.IsWindowVisible(button)) or
-                not button_predicate('ENABLED', native.user.IsWindowEnabled(button))):
-            state['trustedButtonValidated'] = False
-            pending = {'GET_DLG_ITEM_PRESENT': 'WAIT_BUTTON_PRESENT',
-                       'VISIBLE': 'WAIT_BUTTON_VISIBLE', 'ENABLED': 'WAIT_BUTTON_ENABLED'}
-            rejected = state['buttonFirstRejectedPredicate']
-            if rejected in pending:
-                # Passive readiness only: the next original owned() call repeats every identity check.
-                state['state'] = pending[rejected]
-                state['buttonPendingObservations'] += 1
-                state['buttonWaitReasonsObserved'] = sorted(set(state['buttonWaitReasonsObserved']) | {pending[rejected]})
-            else:
-                state['state'] = 'REFUSED_BUTTON_ID_CLASS_OR_STATE'
-            return
-        state['trustedButtonValidated'] = True
         state['attemptCount'] = 1  # Set before posting; neither a rejection nor exception may cause a retry.
+        state['interaction'] = 'NOTICE_WINDOW_CLOSE'
         try:
-            state['postAccepted'] = bool(native.user.PostMessageW(button, 0x00F5, 0, 0))  # Asynchronous normal BM_CLICK.
+            # Normal title-bar close of this exact MB_OK informational notice; never a button-ID fallback.
+            # Bypass the original-Main observer, so the notice request cannot overwrite its queued result.
+            sender = native.user.original if isinstance(native.user, OriginalCloseUser32) else native.user
+            state['postAccepted'] = bool(sender.PostMessageW(dialog, 0x10, 0, 0))
             state['state'] = 'POSTED_ONCE' if state['postAccepted'] else 'POST_REJECTED'
         except BaseException:
             state['state'] = 'POST_UNKNOWN'
@@ -1001,7 +966,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                 if type(result) is list and all(type(pid) is int for pid in result):
                     observation['sameOriginalOwned'] = bool(result)
                     self._close_owned_ids = tuple(result)  # Private only, never serialized.
-                    c30_notice_ok_after_original_owned(self, old, self._close_owned_ids, observation)
+                    c30_notice_close_after_original_owned(self, old, self._close_owned_ids, observation)
                 else:
                     observation['sameOriginalOwned'] = None
                     self._close_owned_ids = None
@@ -1013,7 +978,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
             observation = {'stage': stage, 'nativeOutcome': 'UNKNOWN', 'failureCode': 'NOT_CLASSIFIED',
                 'sameOriginalOwned': None, 'originalOwnedCallCount': 0, 'rootLockHeldAtOutcome': None,
                 'rootLockBasis': 'UNKNOWN', 'captureStatus': 'NOT_ATTEMPTED',
-                'originalWmCloseQueued': None, 'normalNoticeOk': notice_ok_state(stage)}
+                'originalWmCloseQueued': None, 'normalNoticeClose': notice_close_state(stage)}
             self._close_observation, self._close_owned_ids = observation, None
             prior_subprocess = old.subprocess
             prior_user = self.user
@@ -1025,16 +990,16 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                 result = super().launch(stage, environment)  # Original Main / WM_CLOSE / 60s / root-lock guard.
                 observation.update(nativeOutcome='RETURNED', rootLockHeldAtOutcome=False,
                                    rootLockBasis='ORIGINAL_NATIVE_SUCCESS_GUARD')
-                observation['normalNoticeOk']['originalExitAndLockGuardPassed'] = True
-                if observation['normalNoticeOk']['postAccepted'] is True:
-                    observation['normalNoticeOk']['state'] = 'POSTED_ONCE_AND_ORIGINAL_GUARD_PASSED'
+                observation['normalNoticeClose']['originalExitAndLockGuardPassed'] = True
+                if observation['normalNoticeClose']['postAccepted'] is True:
+                    observation['normalNoticeClose']['state'] = 'POSTED_ONCE_AND_ORIGINAL_GUARD_PASSED'
             except BaseException as failure:
                 message = failure.args[0] if type(failure) is RuntimeError and len(failure.args) == 1 and type(failure.args[0]) is str else None
                 code = safe_native_failure_code(_phase, {'type': type(failure).__name__, 'message': message})
                 observation.update(nativeOutcome='FAILED', failureCode=code)
-                observation['normalNoticeOk']['originalExitAndLockGuardPassed'] = False
-                if observation['normalNoticeOk']['postAccepted'] is True:
-                    observation['normalNoticeOk']['state'] = 'POSTED_ONCE_ORIGINAL_GUARD_FAILED'
+                observation['normalNoticeClose']['originalExitAndLockGuardPassed'] = False
+                if observation['normalNoticeClose']['postAccepted'] is True:
+                    observation['normalNoticeClose']['state'] = 'POSTED_ONCE_ORIGINAL_GUARD_FAILED'
                 if code == 'PROCESS_OR_LOCK_NOT_RELEASED':
                     if observation['sameOriginalOwned'] is True:
                         observation['rootLockBasis'] = 'UNKNOWN_SHORT_CIRCUIT'
@@ -1086,7 +1051,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                     value['failure']['code'] = native_code
                 if getattr(companion, 'failure_diagnostic', None) is not None:
                     value['componentFailureDiagnostic'] = companion.failure_diagnostic
-            value.update(normalCloseUiAcknowledgementPolicy=NOTICE_OK_POLICY,
+            value.update(normalCloseUiAcknowledgementPolicy=NOTICE_CLOSE_POLICY,
                          informationalNoticeNotFullSyncDelivery=True,
                          packagedMainCloseObservations=list(native_observations),
                          closeObservationScope='same original owned calls; five window categories; closed shutdown-stage projection',
