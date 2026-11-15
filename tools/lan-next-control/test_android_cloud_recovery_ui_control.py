@@ -209,6 +209,37 @@ class DraftPureGuards(unittest.TestCase):
         for name in ("UNOBSERVED", "AUTH", "PERMISSION", "LOCAL_CACHE", "FULL_OBSERVED", "UNKNOWN"):
             self.assertIn(name, route_enums)
         self.assertNotIn("NORMAL", route_enums)
+        upload = text[text.index("    private enum class PassiveUploadPoint"):text.index("    private enum class PassiveCloudRead")]
+        for denied in ("Files.", "prepare(", "recover(", "probe(", "println(", "stackTraceToString", ".key.name", "Thread.currentThread().name",
+                       "failure.message", "failure.cause", "Dispatchers.", "launch(", "withContext("):
+            self.assertNotIn(denied, upload)
+        for expected in ("Thread.getAllStackTraces()", "selected.take(64)", "coerceAtMost(4096)", "frames.take(24)",
+                         "NO_BLOCKING_UPLOAD_STACK", "UNLOCATED_UPLOAD", "readUnavailable = true",
+                         "now - passiveUploadExecutionAt < 1_000_000_000L", "catch (_: Throwable)"):
+            self.assertIn(expected, upload)
+        upload_model = upload[upload.index("private data class PassiveUploadExecution("):upload.index("private class PassiveUploadExecutionSampler")]
+        for denied in ("String", "StackTraceElement", "Thread>"):
+            self.assertNotIn(denied, upload_model)
+        self.assertIn("Set<Thread.State>", upload_model)
+        self.assertIn("Map<PassiveUploadPoint, Int>", upload_model)
+        self.assertEqual(2, text.count("passiveUploadExecutionSampler = PassiveUploadExecutionSampler()"))
+        self.assertIn("passiveCloudDiagnosticAt = now\n        samplePassiveUploadExecution(coordinator)", text)
+        self.assertIn("PASSIVE_UPLOAD_EXECUTION[$passiveUploadExecution]", text)
+        worker = text[text.index("    private data class PassiveCloudWorkerExecution("):text.index("    private enum class PassiveCloudRead")]
+        for denied in (".cancel(", ".start(", ".join(", "getCancellationException", "cancelCause", "failure.message", "failure.cause", "synchronized(", "withLock", ".set(coordinator"):
+            self.assertNotIn(denied, worker)
+        for expected in ('read("cloudWorker")', 'read("scope")', 'read("closed")', 'read("paused")',
+                         "coroutineContext?.get(kotlinx.coroutines.Job)", "worker?.isActive", "worker?.isCompleted", "worker?.isCancelled",
+                         "catch (_: Throwable)", "passiveCloudWorkerRecent.size > 8", "coerceAtMost(4096)"):
+            self.assertIn(expected, worker)
+        worker_model = worker[:worker.index("    private fun samplePassiveCloudWorkerExecution(")]
+        for denied in ("String", "Job", "CoroutineScope", "Thread", "Any?", "Field"):
+            self.assertNotIn(denied, worker_model)
+        self.assertIn("val workerPresent: Boolean? = null", worker_model)
+        self.assertEqual(2, text.count("passiveCloudWorkerRecent.clear()"))
+        self.assertIn("recordPassiveCloudWorkerExecution(coordinator)", upload)
+        self.assertIn("PASSIVE_CLOUD_WORKER_EXECUTION[$passiveCloudWorkerExecution]", text)
+        self.assertIn("PASSIVE_CLOUD_WORKER_RECENT[$passiveCloudWorkerRecent]", text)
     def test_cold_allows_progress_but_locks_original_content_and_immutable_history(self):
         text = (HERE / control.FIXTURE).read_text(encoding="utf8")
         self.assertNotIn("nativeHeadHash", text)

@@ -92,12 +92,23 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             " PASSIVE_BOOLEANS[stableControlHistory=$observedStableSigned,denseAuthorLineage=$observedDenseAuthorLineage,exactCardRevision=$observedExactCardRevision,exactCardReceipt=$observedExactCardReceipt]" +
             " CONTENT_MARKER_COUNTS[card=$observedCardMarkerCount,session=$observedSessionMarkerCount,maxMessageMultiplicity=$observedMessageMarkerMultiplicity]" +
             " PASSIVE_CLOUD_DIAGNOSTIC[$passiveCloudDiagnostic]" +
-            " PASSIVE_ROUTE_DIAGNOSTIC[$passiveRouteDiagnostic]").also {
+            " PASSIVE_ROUTE_DIAGNOSTIC[$passiveRouteDiagnostic]" +
+            " PASSIVE_UPLOAD_EXECUTION[$passiveUploadExecution]" +
+            " PASSIVE_CLOUD_WORKER_EXECUTION[$passiveCloudWorkerExecution]" +
+            " PASSIVE_CLOUD_WORKER_RECENT[$passiveCloudWorkerRecent]" +
+            " PASSIVE_CLOUD_WORKER_COUNTS[samples=$passiveCloudWorkerSamples,capped=$passiveCloudWorkerSamplesCapped]").also {
             it.stackTrace = failure.stackTrace // never original message, cause, UI tree or credential
         }
     }
 
     @Test fun realCloudRecoveryUiRestoresOfflineLatestConversationAndSavesKeystoreConnection() = runBlocking {
+        passiveUploadExecutionSampler = PassiveUploadExecutionSampler()
+        passiveUploadExecution = PassiveUploadExecution()
+        passiveUploadExecutionAt = 0L
+        passiveCloudWorkerExecution = PassiveCloudWorkerExecution()
+        passiveCloudWorkerRecent.clear()
+        passiveCloudWorkerSamples = 0
+        passiveCloudWorkerSamplesCapped = false
         phase = "guards-and-fresh-app"
         val app = guardedApp()
         val owner = app.lanSyncOwner
@@ -330,6 +341,13 @@ class LanSyncGroupCloudRecoveryUiControlTest {
     }
 
     @Test fun coldProcessReopensSavedRouteAndOrdinaryAndroidHooksUploadNewRevision() = runBlocking {
+        passiveUploadExecutionSampler = PassiveUploadExecutionSampler()
+        passiveUploadExecution = PassiveUploadExecution()
+        passiveUploadExecutionAt = 0L
+        passiveCloudWorkerExecution = PassiveCloudWorkerExecution()
+        passiveCloudWorkerRecent.clear()
+        passiveCloudWorkerSamples = 0
+        passiveCloudWorkerSamplesCapped = false
         phase = "cold-guards-no-recovery-input"
         var scenario: ActivityScenario<LanSyncActivity>? = null
         var trust: AutoCloseable? = null
@@ -727,6 +745,164 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         }
     }
 
+    // Controller-only diagnostic fragment for the frozen c643 source. Not compiled or installed.
+    // Use one sampler instance per test method; call once per second on the instrumentation thread.
+    // The selected-result limit is not a hard bound on JVM Thread.getAllStackTraces enumeration cost.
+    private enum class PassiveUploadPoint {
+        NO_BLOCKING_UPLOAD_STACK, LOCK_OR_ENTRY, INITIAL_LOCAL_VALIDATION, HISTORICAL_INDEX,
+        REMOTE_OBJECT_PROBE, LOCAL_STAGE, CHUNK_APPEND, CHUNK_READBACK,
+        FINAL_READBACK_VALIDATION, RECEIPT_AND_INDEX, UNLOCATED_UPLOAD
+    }
+    private enum class PassiveUploadWait { KEYSTORE, CRYPTO, FILE_LOCK, SOCKET_IO, FILE_IO, OTHER }
+    private data class PassiveUploadExecution(
+        val uploadStacks: Int = -1,
+        val custodyReadStacks: Int = -1,
+        val points: Set<PassiveUploadPoint> = emptySet(),
+        val waits: Set<PassiveUploadWait> = emptySet(),
+        val states: Set<Thread.State> = emptySet(),
+        val samplesByPoint: Map<PassiveUploadPoint, Int> = emptyMap(),
+        val capped: Boolean = false,
+        val readUnavailable: Boolean = false
+    )
+    private class PassiveUploadExecutionSampler {
+    private val passiveUploadSamples = linkedMapOf<PassiveUploadPoint, Int>()
+
+    fun sample(): PassiveUploadExecution = try {
+        fun uploadFrame(frame: StackTraceElement): Boolean =
+            frame.className.startsWith("com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublication") &&
+                (frame.className.contains("uploadCloud") || frame.methodName.contains("uploadCloud"))
+        fun point(frames: Array<StackTraceElement>): PassiveUploadPoint {
+            // These are call-site lines in c643 LanSyncGroupTargetPublication.kt, not generated line IDs.
+            // Inlined/unavailable source lines stay UNLOCATED rather than inventing a phase.
+            val lines = frames.filter(::uploadFrame).map { it.lineNumber }.toSet()
+            return when {
+                405 in lines -> PassiveUploadPoint.INITIAL_LOCAL_VALIDATION
+                lines.any { it in 410..418 } -> PassiveUploadPoint.HISTORICAL_INDEX
+                429 in lines -> PassiveUploadPoint.REMOTE_OBJECT_PROBE
+                434 in lines -> PassiveUploadPoint.LOCAL_STAGE
+                lines.any { it in 435..438 } -> PassiveUploadPoint.CHUNK_APPEND
+                lines.any { it in 440..449 } -> PassiveUploadPoint.CHUNK_READBACK
+                453 in lines -> PassiveUploadPoint.FINAL_READBACK_VALIDATION
+                lines.any { it in 454..458 } -> PassiveUploadPoint.RECEIPT_AND_INDEX
+                frames.any { it.className.startsWith("com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublication") &&
+                    it.methodName.contains("probeCloudObject") } -> PassiveUploadPoint.REMOTE_OBJECT_PROBE
+                lines.any { it in 398..404 } -> PassiveUploadPoint.LOCK_OR_ENTRY
+                else -> PassiveUploadPoint.UNLOCATED_UPLOAD
+            }
+        }
+        fun waitKind(frames: Array<StackTraceElement>): PassiveUploadWait {
+            // Only closed categories are emitted. Never emit thread names, frames, paths or messages.
+            for (frame in frames.take(24)) {
+                val owner = frame.className; val method = frame.methodName
+                if (owner.startsWith("android.security.keystore")) return PassiveUploadWait.KEYSTORE
+                if ((owner.contains("FileChannel") || owner.contains("FileDispatcher")) &&
+                    (method == "lock" || method == "lock0")) return PassiveUploadWait.FILE_LOCK
+                if ((owner.contains("SocketInputStream") || owner.contains("SocketOutputStream") ||
+                        owner.contains("ConscryptEngineSocket") || owner.contains("ConscryptFileDescriptorSocket")) &&
+                    (method.contains("read", ignoreCase = true) || method.contains("write", ignoreCase = true)))
+                    return PassiveUploadWait.SOCKET_IO
+                if (owner == "java.io.FileInputStream" || owner == "java.io.FileOutputStream") return PassiveUploadWait.FILE_IO
+                if (owner == "javax.crypto.Cipher" || owner.startsWith("java.security.MessageDigest")) return PassiveUploadWait.CRYPTO
+            }
+            return PassiveUploadWait.OTHER
+        }
+        val selected = Thread.getAllStackTraces().entries.filter { (_, frames) -> frames.any(::uploadFrame) }
+        val bounded = selected.take(64)
+        val points = bounded.mapTo(linkedSetOf()) { point(it.value) }
+        if (bounded.isEmpty()) points += PassiveUploadPoint.NO_BLOCKING_UPLOAD_STACK
+        points.forEach { passiveUploadSamples[it] = ((passiveUploadSamples[it] ?: 0) + 1).coerceAtMost(4096) }
+        PassiveUploadExecution(
+            uploadStacks = bounded.size,
+            custodyReadStacks = bounded.count { entry -> entry.value.any {
+                it.className == "com.example.chatbar.domain.syncStore.SyncGroupCustody" && it.methodName == "read"
+            } },
+            points = points,
+            waits = bounded.mapTo(linkedSetOf()) { waitKind(it.value) },
+            states = bounded.mapTo(linkedSetOf()) { it.key.state },
+            samplesByPoint = passiveUploadSamples.toMap(),
+            capped = selected.size > bounded.size
+        )
+    } catch (_: Exception) {
+        PassiveUploadExecution(samplesByPoint = passiveUploadSamples.toMap(), readUnavailable = true)
+    }
+    }
+
+    private var passiveUploadExecutionSampler: PassiveUploadExecutionSampler? = null
+    private var passiveUploadExecution = PassiveUploadExecution()
+    private var passiveUploadExecutionAt = 0L
+    /** Plain call from the original instrumentation-thread poll, never a worker or UI task. */
+    private fun samplePassiveUploadExecution(coordinator: LanSyncGroupCoordinator) {
+        val now = System.nanoTime()
+        // The existing file sampler's forced final read must not cause a second thread snapshot in one second.
+        if (passiveUploadExecutionAt != 0L && now - passiveUploadExecutionAt < 1_000_000_000L) return
+        passiveUploadExecutionAt = now
+        passiveUploadExecution = try { checkNotNull(passiveUploadExecutionSampler).sample() }
+        catch (_: Throwable) { PassiveUploadExecution(samplesByPoint = passiveUploadExecution.samplesByPoint, readUnavailable = true) }
+        recordPassiveCloudWorkerExecution(coordinator)
+    }
+
+    // Controller-only, uncompiled fragment. Requires the existing Coordinator instance.
+    // Read once alongside each 128 sample on the instrumentation thread. No owner locks or actions.
+    private data class PassiveCloudWorkerExecution(
+        val workerPresent: Boolean? = null,
+        val workerActive: Boolean? = null,
+        val workerCompleted: Boolean? = null,
+        val workerCancelled: Boolean? = null,
+        val parentActive: Boolean? = null,
+        val coordinatorClosed: Boolean? = null,
+        val coordinatorPaused: Boolean? = null,
+        val readUnavailable: Boolean = false
+    )
+
+    private fun samplePassiveCloudWorkerExecution(
+        coordinator: com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator
+    ): PassiveCloudWorkerExecution {
+        var unavailable = false
+        fun read(name: String): Any? = try {
+            com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator::class.java
+                .getDeclaredField(name).apply { isAccessible = true }.get(coordinator)
+        } catch (_: Exception) { unavailable = true; null }
+        val rawWorker = read("cloudWorker")
+        val worker = rawWorker as? kotlinx.coroutines.Job
+        val parentScope = read("scope") as? kotlinx.coroutines.CoroutineScope
+        val parent = parentScope?.coroutineContext?.get(kotlinx.coroutines.Job)
+        val closed = read("closed") as? Boolean
+        val paused = read("paused") as? Boolean
+        if (rawWorker != null && worker == null || parentScope == null || parent == null || closed == null || paused == null)
+            unavailable = true
+        return PassiveCloudWorkerExecution(
+            workerPresent = if (unavailable && worker == null) null else worker != null,
+            workerActive = worker?.isActive,
+            workerCompleted = worker?.isCompleted,
+            workerCancelled = worker?.isCancelled,
+            parentActive = parent?.isActive,
+            coordinatorClosed = closed,
+            coordinatorPaused = paused,
+            readUnavailable = unavailable
+        )
+    }
+
+    // Unknown is never false. These fields are a non-transactional observation: cloudWorker is not
+    // volatile, and reading its reference does not fence the entire lifecycle. Preserve consecutive
+    // observations. A completed child with an active parent and an open, unpaused Coordinator supports
+    // the exited-worker branch; it does not establish the cancellation cause or explain another run.
+    // Never read a cancellation cause/message, call join/start/cancel, or acquire the lifecycle lock.
+
+    private var passiveCloudWorkerExecution = PassiveCloudWorkerExecution()
+    private val passiveCloudWorkerRecent = mutableListOf<PassiveCloudWorkerExecution>()
+    private var passiveCloudWorkerSamples = 0
+    private var passiveCloudWorkerSamplesCapped = false
+    private fun recordPassiveCloudWorkerExecution(coordinator: LanSyncGroupCoordinator) {
+        passiveCloudWorkerExecution = try { samplePassiveCloudWorkerExecution(coordinator) }
+        catch (_: Throwable) { PassiveCloudWorkerExecution(readUnavailable = true) }
+        passiveCloudWorkerSamples = (passiveCloudWorkerSamples + 1).coerceAtMost(4096)
+        passiveCloudWorkerRecent += passiveCloudWorkerExecution // retain unavailable entries; never deduplicate
+        if (passiveCloudWorkerRecent.size > 8) {
+            passiveCloudWorkerRecent.removeAt(0)
+            passiveCloudWorkerSamplesCapped = true
+        }
+    }
+
     private enum class PassiveCloudRead { NOT_SAMPLED, NO_TARGET_DIRECTORY, STABLE_FILES, FILE_SET_CHANGED, READ_UNAVAILABLE }
     private enum class PassiveCloudPart { NONE, ENUMERATION, FULL_PLAN, FULL_RECEIPT, PARTIAL_PLAN, PARTIAL_RECEIPT }
     /** Only counts, Boolean and closed enum types can enter the public failure transcript. */
@@ -769,6 +945,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         val now = System.nanoTime()
         if (!force && passiveCloudDiagnosticAt != 0L && now - passiveCloudDiagnosticAt < 1_000_000_000L) return
         passiveCloudDiagnosticAt = now
+        samplePassiveUploadExecution(coordinator)
         val panel = coordinator.state.value; val settings = coordinator.cloudSettings.value
         val progress = settings.progress[target.id]; val partial = progress?.partial
         val platform = passivePlatformClass(panel.cloud.text)
