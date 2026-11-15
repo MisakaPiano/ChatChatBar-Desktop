@@ -28,6 +28,102 @@ class LanSyncStudioCurrentTest {
                 NovelAiStudioHistoryJournal(NovelAiStudioHistoryTimeline(listOf(snapshot.copy(basePrompt = "旧撤销"), snapshot), 1))).jsonObject))
     }
 
+    private fun withoutLegacyBatchPacing(snapshot: LanSyncSnapshot): LanSyncSnapshot {
+        fun draft(body: JsonObject) = JsonObject(body - "batchPacing")
+        fun timeline(value: JsonElement): JsonElement {
+            if (value !is JsonObject) return value
+            val entries = value["entries"] as? JsonArray ?: return value
+            return JsonObject(value + ("entries" to JsonArray(entries.map { draft(it.jsonObject) })))
+        }
+        return snapshot.copy(records = snapshot.records.map { row ->
+            val body = when (row.type) {
+                LanSyncStudioCurrent.DRAFT -> draft(row.body)
+                LanSyncStudioCurrent.UNDO -> JsonObject(row.body.mapValues { (field, value) ->
+                    if (field == "draft" && value is JsonObject) draft(value) else value
+                })
+                LanSyncStudioCurrent.HISTORY -> JsonObject(row.body.mapValues { (field, value) ->
+                    if (field in setOf("committed", "pending")) timeline(value) else value
+                })
+                else -> row.body
+            }
+            row.copy(body = body)
+        })
+    }
+
+    @Test fun legacyStudioWireWithoutPacingKeepsOriginalBodiesAndHashes() {
+        val current = LanSyncSnapshot(deviceId = "pc", records = records(draft("合成历史正文")))
+        val legacy = withoutLegacyBatchPacing(current)
+        val bodies = legacy.records.associate { it.key to it.body.toString() }
+        val hashes = legacy.hashes()
+        assertFalse(legacy.records.single { it.type == LanSyncStudioCurrent.DRAFT }.body.containsKey("batchPacing"))
+        LanSyncScope.validateGraph(legacy)
+        legacy.records.forEach { assertEquals(it.body, LanSyncStudioCurrent.normalize(it.type, it.body)) }
+        assertEquals(bodies, legacy.records.associate { it.key to it.body.toString() })
+        assertEquals(hashes, legacy.hashes())
+        // A current timeline may already contain the explicit default while its unchanged draft does not.
+        val mixed = legacy.copy(records = legacy.records.map { row ->
+            if (row.type == LanSyncStudioCurrent.HISTORY) current.records.single { it.type == row.type } else row
+        })
+        LanSyncScope.validateGraph(mixed)
+    }
+
+    @Test fun explicitDefaultZeroAndCustomPacingWireKeepAllGenerationControls() {
+        val pacing = listOf(ImageBatchPacing(),
+            ImageBatchPacing(ImageBatchInterval.NONE, 0, 0, 0, 0L, 0L, 0L),
+            ImageBatchPacing(ImageBatchInterval.RANGE, 3, 2, 7, 750L, 250L, 1250L))
+        pacing.forEachIndexed { index, value ->
+            val sample = draft("合成当前正文").copy(batchPacing = value, batchCount = index + 1,
+                allowBatchAnlasSpending = index == 2)
+            val snapshot = LanSyncSnapshot(deviceId = "pc", records = records(sample))
+            val bodies = snapshot.records.associate { it.key to it.body.toString() }
+            val hashes = snapshot.hashes()
+            LanSyncScope.validateGraph(snapshot)
+            snapshot.records.forEach { assertEquals(it.body, LanSyncStudioCurrent.normalize(it.type, it.body)) }
+            val body = snapshot.records.single { it.type == LanSyncStudioCurrent.DRAFT }.body
+            assertTrue(body.containsKey("batchPacing"))
+            val restored = lanSyncJson.decodeFromJsonElement(NovelAiStudioDraft.serializer(), body)
+            assertEquals(value, restored.batchPacing)
+            assertEquals(index + 1, restored.batchCount)
+            assertEquals(index == 2, restored.allowBatchAnlasSpending)
+            assertEquals(bodies, snapshot.records.associate { it.key to it.body.toString() })
+            assertEquals(hashes, snapshot.hashes())
+        }
+    }
+
+    @Test fun legacyPacingOmissionStillRefusesLocalFieldsPendingAndRealHistoryDifferences() {
+        val legacy = withoutLegacyBatchPacing(LanSyncSnapshot(deviceId = "pc", records = records(draft("合成历史正文"))))
+        fun changed(type: String, transform: (JsonObject) -> JsonObject) = legacy.copy(records = legacy.records.map {
+            if (it.type == type) it.copy(body = transform(it.body)) else it
+        })
+        fun rejected(snapshot: LanSyncSnapshot, code: String) {
+            assertEquals(code, assertFailsWith<IllegalArgumentException> { LanSyncScope.validateGraph(snapshot) }.message)
+        }
+        for ((field, value) in listOf("aiDesignModelId" to JsonPrimitive("device-only"),
+            "contentRevision" to JsonPrimitive(1L), "promptContentRevision" to JsonPrimitive(1L), "updatedAt" to JsonPrimitive(1L))) {
+            rejected(changed(LanSyncStudioCurrent.DRAFT) { JsonObject(it + (field to value)) }, "SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE")
+        }
+        rejected(changed(LanSyncStudioCurrent.UNDO) { body -> JsonObject(body + ("draft" to
+            JsonObject(body.getValue("draft").jsonObject + ("aiDesignModelId" to JsonPrimitive("device-only"))))) },
+            "SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE")
+        rejected(changed(LanSyncStudioCurrent.HISTORY) { body ->
+            val committed = body.getValue("committed").jsonObject
+            val entries = committed.getValue("entries").jsonArray.toMutableList()
+            entries[committed.getValue("cursor").jsonPrimitive.int] = JsonObject(entries.last().jsonObject + ("contentRevision" to JsonPrimitive(1L)))
+            JsonObject(body + ("committed" to JsonObject(committed + ("entries" to JsonArray(entries)))))
+        }, "SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE")
+        rejected(changed(LanSyncStudioCurrent.DRAFT) { JsonObject(it + ("basePrompt" to JsonPrimitive("真正不同的合成正文"))) },
+            "SYNC_STUDIO_HISTORY_MISMATCH")
+        rejected(changed(LanSyncStudioCurrent.DRAFT) { JsonObject(it + ("batchPacing" to
+            lanSyncJson.encodeToJsonElement(ImageBatchPacing.serializer(), ImageBatchPacing(fixedMillis = 0L)))) },
+            "SYNC_STUDIO_HISTORY_MISMATCH")
+        rejected(changed(LanSyncStudioCurrent.HISTORY) { JsonObject(it + ("pending" to it.getValue("committed"))) },
+            "SYNC_STUDIO_PENDING_ON_WIRE")
+        assertFails { LanSyncScope.validateGraph(changed(LanSyncStudioCurrent.HISTORY) { body ->
+            JsonObject(body + ("committed" to JsonObject(body.getValue("committed").jsonObject + ("cursor" to JsonPrimitive(-2)))))
+        }) }
+        assertFails { LanSyncScope.validateGraph(changed(LanSyncStudioCurrent.DRAFT) { JsonObject(it + ("unknownStudioField" to JsonPrimitive(true))) }) }
+    }
+
     @Test fun oneExplicitChoiceKeepsAllFourRecordsTogetherAndLocalRevisionsNeverCreateConflicts() {
         val left = LanSyncSnapshot(deviceId = "pc", records = records(draft("电脑选择", "pc-model")))
         val right = left.copy(deviceId = "phone", records = records(draft("手机选择", "phone-model")))

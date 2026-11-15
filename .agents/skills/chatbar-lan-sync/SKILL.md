@@ -5,6 +5,7 @@ description: Maintain app-owned Android/Desktop device groups, LAN/cloud/file ci
 
 # LAN Sync
 
+- `.github/workflows/cloud-studio-wire-compat.yml` runs the synthetic Studio wire graph, immutable legacy/current pacing-body and native publication contracts in `LanSyncStudioCurrentTest`; it neither reads bundled presets nor replaces actual retained-platform upgrade evidence.
 - `.github/workflows/compat-c615-lansync.yml` separately verifies the mature Desktop integration seams with the explicit classes in `tools/lan-sync/compat-c615-test-scope.json`, Android entry compilation and original per-class XML/no-skip receipts. It neither selects nor replaces the independently retained large-byte proofs or native/package acceptance.
 - `.github/workflows/cloud-tail-cold-regression.yml` separately runs cold Coordinator ordinary-edit and platform-deferral paths, retained-metadata target preflight, dirty-during-upload, authentication and Retry-After boundaries as six exact methods. Its JVM HTTP/fake platform result stays separate from Android foreground-service and native cold-route execution.
 - `.github/workflows/cloud-cold-receiver.yml` runs one real paired-profile, protected-route HTTPS reception case through ordinary repository saves and cold Coordinator startup. It warms the actual ChatRepository caches, drives reload only through native platform admission, preserves independent conversations and compares the receiver author baseline; its synthetic trust/JVM cold scope stays distinct from native process and OS-key evidence.
