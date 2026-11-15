@@ -37,6 +37,7 @@ class ModelSettingsMigrationRaceTest {
 
     @Test fun `startup migration retains settings saved while legacy model work is suspended`() = runTest {
         val f = fixture()
+        val newSegmented = !f.settings.currentAppSettings.assistantSegmentedBubblesEnabled
         val read = CompletableDeferred<Unit>()
         val proceed = CompletableDeferred<Unit>()
         val migration = async {
@@ -47,12 +48,12 @@ class ModelSettingsMigrationRaceTest {
             }, { catalog })
         }
         read.await()
-        f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = true,
+        f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = newSegmented,
             formatRepairModelId = "synthetic-new-repair-model", allowCleartextModelApi = true) }
         proceed.complete(Unit)
         migration.await()
         val cold = f.cold()
-        assertTrue("The migration must retain the user's completed settings write", cold.assistantSegmentedBubblesEnabled)
+        assertEquals("The migration must retain the user's completed settings write", newSegmented, cold.assistantSegmentedBubblesEnabled)
         assertTrue(cold.allowCleartextModelApi)
         assertEquals("synthetic-new-repair-model", cold.formatRepairModelId)
         assertNull(cold.defaultEmbeddingId)
@@ -107,5 +108,32 @@ class ModelSettingsMigrationRaceTest {
         val cold = f.cold()
         assertEquals("synthetic-during-cancel", cold.formatRepairModelId)
         assertEquals("synthetic-legacy-embedding", cold.defaultEmbeddingId)
+    }
+
+    @Test fun `preset import retains an explicit model selection and current user settings`() = runTest {
+        val f = fixture()
+        f.settings.updateAppSettings { it.copy(defaultModelId = "synthetic-user-choice",
+            presetDefaultModelKey = "one", assistantSegmentedBubblesEnabled = true) }
+        val imported = listOf(ModelConfig.create("Synthetic preset", "https://synthetic.invalid/v1", "", "synthetic-model")
+            .copy(id = PRESET_MODEL_ID_PREFIX + "one"))
+        applyImportedPresetModelDefaults(f.settings, imported)
+        val cold = f.cold()
+        assertEquals("synthetic-user-choice", cold.defaultModelId)
+        assertTrue(cold.assistantSegmentedBubblesEnabled)
+        assertNull(cold.presetDefaultModelKey)
+        assertNull(cold.defaultEmbeddingId)
+    }
+
+    @Test fun `preset import still resolves legacy default before falling back to first selectable model`() = runTest {
+        val f = fixture()
+        val first = ModelConfig.create("Synthetic first", "https://synthetic.invalid/v1", "", "synthetic-first")
+            .copy(id = PRESET_MODEL_ID_PREFIX + "first")
+        val selected = first.copy(id = PRESET_MODEL_ID_PREFIX + "one")
+        f.settings.updateAppSettings { it.copy(defaultModelId = null, presetDefaultModelKey = "one") }
+        applyImportedPresetModelDefaults(f.settings, listOf(first, selected))
+        assertEquals(selected.id, f.cold().defaultModelId)
+        f.settings.updateAppSettings { it.copy(defaultModelId = null, presetDefaultModelKey = "removed") }
+        applyImportedPresetModelDefaults(f.settings, listOf(first, selected))
+        assertEquals(first.id, f.cold().defaultModelId)
     }
 }

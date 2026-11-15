@@ -1,7 +1,7 @@
 package com.example.chatbar.domain.model
 
 import com.example.chatbar.data.local.JsonFileStorage
-import com.example.chatbar.data.local.entity.AppSettings
+import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.PRESET_MODEL_ID_PREFIX
 import com.example.chatbar.data.local.entity.PresetModelCatalog
 import com.example.chatbar.data.local.entity.normalized
@@ -61,24 +61,13 @@ class ModelConfigurationMigration(
         val version = presets.entries().firstOrNull()?.version ?: presets.catalog.schemaVersion
         val imported = models.ensurePresetChatModels(presets.catalog, version)
         models.ensurePresetEmbeddingModel(presets.catalog)
-        val current = settings.getAppSettings()
-        val defaultFromPreset = current.presetDefaultModelKey?.let { PRESET_MODEL_ID_PREFIX + it }
-        val defaultModelId = current.defaultModelId
-            ?: defaultFromPreset?.takeIf { id -> imported.any { it.id == id } }
-            ?: imported.firstOrNull { it.selectableForChat }?.id
-        val next = current.copy(
-            modelConfigurationMode = current.modelConfigurationMode.normalized(),
-            defaultModelId = defaultModelId,
-            presetDefaultModelKey = null,
-            defaultEmbeddingId = null
-        )
-        if (next != current) settings.saveAppSettings(next)
+        applyImportedPresetModelDefaults(settings, imported)
     }
 
     private suspend fun normalizeOnlyApiMode() {
-        val current = settings.getAppSettings()
-        val next = current.copy(modelConfigurationMode = current.modelConfigurationMode.normalized())
-        if (next != current) settings.saveAppSettings(next)
+        settings.updateAppSettings { current ->
+            current.copy(modelConfigurationMode = current.modelConfigurationMode.normalized())
+        }
     }
 
     private suspend fun importPresetSupportModels() {
@@ -92,17 +81,35 @@ internal suspend fun migrateLegacyModelSettings(
     migrateEmbeddings: suspend (String?) -> Unit,
     catalogProvider: () -> PresetModelCatalog
 ) {
-    val current = settings.getAppSettings()
-    migrateEmbeddings(current.defaultEmbeddingId)
+    val legacyEmbeddingId = settings.getAppSettings().defaultEmbeddingId
+    migrateEmbeddings(legacyEmbeddingId)
     val catalog = catalogProvider()
-    val presetDefault = current.presetDefaultModelKey
-        ?.takeIf { key -> catalog.chatModels.any { it.modelKey == key } }
-        ?: catalog.chatModels.firstOrNull { it.selectableForChat }?.modelKey
-    settings.saveAppSettings(
+    settings.updateAppSettings { current ->
+        val presetDefault = current.presetDefaultModelKey
+            ?.takeIf { key -> catalog.chatModels.any { it.modelKey == key } }
+            ?: catalog.chatModels.firstOrNull { it.selectableForChat }?.modelKey
         current.copy(
             modelConfigurationMode = current.modelConfigurationMode.normalized(),
             presetDefaultModelKey = presetDefault,
             defaultEmbeddingId = null
         )
-    )
+    }
+}
+
+internal suspend fun applyImportedPresetModelDefaults(
+    settings: SettingsRepository,
+    imported: List<ModelConfig>
+) {
+    settings.updateAppSettings { current ->
+        val defaultFromPreset = current.presetDefaultModelKey?.let { PRESET_MODEL_ID_PREFIX + it }
+        val defaultModelId = current.defaultModelId
+            ?: defaultFromPreset?.takeIf { id -> imported.any { it.id == id } }
+            ?: imported.firstOrNull { it.selectableForChat }?.id
+        current.copy(
+            modelConfigurationMode = current.modelConfigurationMode.normalized(),
+            defaultModelId = defaultModelId,
+            presetDefaultModelKey = null,
+            defaultEmbeddingId = null
+        )
+    }
 }
