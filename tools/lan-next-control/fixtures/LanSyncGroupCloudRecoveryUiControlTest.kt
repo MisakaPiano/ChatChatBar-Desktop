@@ -88,9 +88,10 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             " FORM_READ_ATTEMPTS[$formReadAttempts] FORM_BODY_SWIPES_COMPLETED[$formBodySwipesCompleted]" +
             " FORM_READ_GEOMETRY_BEFORE[$formReadGeometryBefore] FORM_READ_GEOMETRY_AFTER[$formReadGeometryAfter]" +
             " CONSENT_BODY_SWIPES_COMPLETED[$consentBodySwipesCompleted] CONSENT_GEOMETRY_BEFORE[$consentGeometryBefore] CONSENT_GEOMETRY_AFTER[$consentGeometryAfter]" +
-            " PASSIVE_AUTHOR_COUNTS[versions=$observedLocalVersions,changes=$observedLocalChanges,importedCard=$observedImportedCardChanges,importedChat=$observedImportedChatChanges,otherNativeMismatch=$observedOtherNativeMismatches,unaccountedSigned=$observedUnaccountedSigned]" +
-            " PASSIVE_BOOLEANS[stableSigned=$observedStableSigned,exactCardRevision=$observedExactCardRevision,exactCardReceipt=$observedExactCardReceipt]" +
-            " CONTENT_MARKER_COUNTS[card=$observedCardMarkerCount,session=$observedSessionMarkerCount,maxMessageMultiplicity=$observedMessageMarkerMultiplicity]").also {
+            " PASSIVE_AUTHOR_COUNTS[versions=$observedLocalVersions,changes=$observedLocalChanges,importedCard=$observedImportedCardChanges,importedChat=$observedImportedChatChanges,otherNativeMismatch=$observedOtherNativeMismatches,unaccountedSigned=$observedUnaccountedSigned,unaccountedIntent=$observedUnaccountedIntent]" +
+            " PASSIVE_BOOLEANS[stableControlHistory=$observedStableSigned,denseAuthorLineage=$observedDenseAuthorLineage,exactCardRevision=$observedExactCardRevision,exactCardReceipt=$observedExactCardReceipt]" +
+            " CONTENT_MARKER_COUNTS[card=$observedCardMarkerCount,session=$observedSessionMarkerCount,maxMessageMultiplicity=$observedMessageMarkerMultiplicity]" +
+            " PASSIVE_CLOUD_DIAGNOSTIC[$passiveCloudDiagnostic]").also {
             it.stackTrace = failure.stackTrace // never original message, cause, UI tree or credential
         }
     }
@@ -293,7 +294,8 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             click("关闭")
             launched.close(); scenario = null
             owner.closeAndDrain() // cleanup, no sticky pause; next process gets a fresh real owner
-            retainSignedHistory(app, baseline.signed)
+            retainAuthorHistory(app, baseline.author)
+            retainNativeHistory(app, baseline.nativeControl)
             val oracle = Properties().apply {
                 setProperty("pid", Process.myPid().toString()); setProperty("device", access.device)
                 setProperty("group", access.trust.group.value); setProperty("genesis", access.trust.genesis.toString())
@@ -303,7 +305,8 @@ class LanSyncGroupCloudRecoveryUiControlTest {
                 setProperty("referenceId", reference.id.value); setProperty("referenceHash", reference.bodyHash)
                 setProperty("sourceCardHash", sourceCardHash); setProperty("sourceChatHash", sourceChatHash)
                 setProperty("historyRefs", saveMap(versionMap(baseline.observed.versions)))
-                setProperty("signedHistory", saveMap(signedHistory(app)))
+                setProperty("authorHistory", saveMap(authorHistory(app)))
+                setProperty("nativeHistory", saveMap(nativeHistory(app)))
                 setProperty("nativeSequence", baseline.observed.view.nativeState.completedSequence.toString())
                 setProperty("identityHash", hash(native.resolve("identity.protected")))
                 setProperty("authorOriginHash", hash(native.resolve("group-profile/joining/node/author/origin.protected")))
@@ -361,9 +364,10 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             phase = "cold-full-content-and-immutable-history-before-edit"
             val reference = SyncVersionRef(SyncStoreId.parse(expected("referenceId")), expected("referenceHash"))
             assertRestored(actual, expected("sessionHash"), expected("messagesHash"), expected("documentHash"))
-            val retainedRefs = readMap(expected("historyRefs")); val retainedSigned = readMap(expected("signedHistory"))
+            val retainedRefs = readMap(expected("historyRefs")); val retainedAuthor = readMap(expected("authorHistory"))
+            val retainedNative = readMap(expected("nativeHistory"))
             val coldBaseline = awaitPassiveBaseline(actual, coordinator, access, reference,
-                expected("sourceCardHash"), expected("sourceChatHash"), retainedRefs, retainedSigned)
+                expected("sourceCardHash"), expected("sourceChatHash"), retainedRefs, retainedAuthor, retainedNative)
             check(coldBaseline.observed.view.nativeState.completedSequence >= expected("nativeSequence").toLong())
             val row = access.cloudRoutes().rows().single()
             check(row.enabled && row.id.value == expected("routeId") && row.endpoint == expected("endpoint") && row.username == USER)
@@ -381,20 +385,38 @@ class LanSyncGroupCloudRecoveryUiControlTest {
                 expected("sourceCardHash"), expected("sourceChatHash"), expectedHash)
             val newVersion = editedView.versions.single { it.author == access.device && CARD_UNIT in it.changes }
             val newReference = newVersion.reference()
+            val editedNativeHistory = nativeHistory(actual)
+            val editedAuthorHistory = authorHistory(actual)
             check(newReference != reference && newVersion.changes.getValue(CARD_UNIT).valueHash == expectedHash)
             val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, row.id)
             phase = "await-existing-exact-new-version-cloud-receipt-no-probe"
-            await(180_000) {
-                val observed = passive(coordinator) ?: return@await false
-                val receipt = existingCloudReceipt(access, target, observed, newReference, reference)
-                if (receipt == null) false else { observedExactCardReceipt = true; true }
+            try {
+                await(180_000) {
+                    val observed = passive(coordinator)
+                    attemptPassiveCloudDiagnostic {
+                        samplePassiveCloudDiagnostic(coordinator, access, target, observed, newReference, reference,
+                            actual.lanSyncStartupReady, launched.state, owner.backgroundState.value.phase)
+                    }
+                    if (observed == null) return@await false
+                    val receipt = existingCloudReceipt(access, target, observed, newReference, reference)
+                    if (receipt == null) false else { observedExactCardReceipt = true; true }
+                }
+            } catch (failure: Throwable) {
+                attemptPassiveCloudDiagnostic {
+                    samplePassiveCloudDiagnostic(coordinator, access, target, passive(coordinator), newReference, reference,
+                        actual.lanSyncStartupReady, launched.state, owner.backgroundState.value.phase, force = true)
+                }
+                throw failure
             }
             check(observedExactCardRevision && observedExactCardReceipt)
             awaitExactCardRevision(actual, coordinator, access, coldBaseline, reference,
                 expected("sourceCardHash"), expected("sourceChatHash"), expectedHash)
             check(actual.characterRepository.getById(CARD) == edited)
             assertRestored(actual, expected("sessionHash"), expected("messagesHash"), expected("documentHash"), EDITED_CARD_NAME)
-            retainSignedHistory(actual, retainedSigned)
+            retainAuthorHistory(actual, retainedAuthor)
+            retainAuthorHistory(actual, editedAuthorHistory)
+            retainNativeHistory(actual, retainedNative)
+            retainNativeHistory(actual, editedNativeHistory)
             check(!Files.exists(source, NOFOLLOW_LINKS) && inventoryHash(hashes(offline)) == expected("offlineInventoryHash"))
             // A target readback receipt proves encrypted cloud upload, not a second peer's delivery.
             phase = "cold-saved-route-and-new-upload-complete"
@@ -454,13 +476,15 @@ class LanSyncGroupCloudRecoveryUiControlTest {
     }
     private data class PassiveView(val view: LanSyncGroupNodeView, val history: SyncCausalHistory,
         val versions: List<SyncCausalVersion>)
-    private data class PassiveBaseline(val observed: PassiveView, val signed: Map<String, String>)
+    private data class PassiveBaseline(val observed: PassiveView, val author: Map<String, String>, val nativeControl: Map<String, String>)
     private var observedLocalVersions = 0
     private var observedLocalChanges = 0
     private var observedImportedCardChanges = 0
     private var observedImportedChatChanges = 0
     private var observedOtherNativeMismatches = 0
     private var observedUnaccountedSigned = 0
+    private var observedUnaccountedIntent = 0
+    private var observedDenseAuthorLineage = false
     private var observedStableSigned = false
     private var observedExactCardRevision = false
     private var observedExactCardReceipt = false
@@ -474,23 +498,29 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         val history = view.reconciliation.history?.snapshot() ?: return null
         return PassiveView(view, history, history.admittedVersions())
     }
-    private fun signedHistory(app: ChatBarApp): Map<String, String> {
-        val directory = nativeRoot(app).resolve("group-profile/joining/node/author")
+    private fun controlHistory(app: ChatBarApp, area: String, prefixes: Set<String>): Map<String, String> {
+        check(area in setOf("author", "native"))
+        val directory = nativeRoot(app).resolve("group-profile/joining/node/$area")
         check(Files.isDirectory(directory, NOFOLLOW_LINKS) && !Files.isSymbolicLink(directory))
-        return Files.newDirectoryStream(directory, "signed-*.protected").use { paths ->
-            val result = sortedMapOf<String, String>()
-            for (path in paths) {
-                val name = path.fileName.toString()
-                check(name.matches(Regex("signed-[0-9]{19}\\.protected")))
-                result[name] = hash(path)
+        val result = sortedMapOf<String, String>()
+        for (prefix in prefixes) {
+            Files.newDirectoryStream(directory, "$prefix-*.protected").use { paths ->
+                for (path in paths) {
+                    val name = path.fileName.toString()
+                    check(name.matches(Regex("$prefix-[0-9]{19}\\.protected")))
+                    check(checkNotNull(name.removePrefix("$prefix-").removeSuffix(".protected").toLongOrNull()) > 0L)
+                    result[name] = hash(path)
+                }
             }
-            result
         }
+        return result
     }
-    private fun retainSignedHistory(app: ChatBarApp, before: Map<String, String>) {
-        val current = signedHistory(app)
+    private fun authorHistory(app: ChatBarApp) = controlHistory(app, "author", setOf("intent", "signed"))
+    private fun nativeHistory(app: ChatBarApp) = controlHistory(app, "native", setOf("intent", "receipt"))
+    private fun retainPrefix(current: Map<String, String>, before: Map<String, String>) =
         check(before.all { (name, digest) -> current[name] == digest })
-    }
+    private fun retainAuthorHistory(app: ChatBarApp, before: Map<String, String>) = retainPrefix(authorHistory(app), before)
+    private fun retainNativeHistory(app: ChatBarApp, before: Map<String, String>) = retainPrefix(nativeHistory(app), before)
     private fun saveMap(values: Map<String, String>): String = values.toSortedMap().entries.joinToString("\n") { it.key + "=" + it.value }
     private fun readMap(value: String): Map<String, String> = if (value.isEmpty()) emptyMap() else value.lines().associate { line ->
         val pair = line.split('=', limit = 2); check(pair.size == 2); pair[0] to pair[1]
@@ -503,7 +533,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
 
     /** Classify actual admitted signed versions, never a global author counter assumption. */
     private fun localVersionsMatchNative(app: ChatBarApp, access: LanSyncGroupRuntimeAccess,
-        observed: PassiveView, signed: Map<String, String>, allowedCard: SyncVersionRef? = null): Boolean {
+        observed: PassiveView, controls: Map<String, String>, allowedCard: SyncVersionRef? = null): Boolean {
         val local = observed.versions.filter { it.author == access.device }
         observedLocalVersions = local.size
         observedLocalChanges = local.sumOf { it.changes.size }
@@ -514,8 +544,19 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         check(local.map { it.authorSequence }.distinct().size == local.size)
         check(observedImportedChatChanges == 0)
         check(if (allowedCard == null) cards.isEmpty() else cards.size == 1 && cards.single().reference() == allowedCard)
-        val names = local.mapTo(linkedSetOf()) { "signed-${it.authorSequence.toString().padStart(19, '0')}.protected" }
-        observedUnaccountedSigned = (signed.keys - names).size + (names - signed.keys).size
+        val signed = controls.keys.filterTo(linkedSetOf()) { it.startsWith("signed-") }
+        val intents = controls.keys.filterTo(linkedSetOf()) { it.startsWith("intent-") }
+        fun names(prefix: String) = local.mapTo(linkedSetOf()) { "$prefix-${it.authorSequence.toString().padStart(19, '0')}.protected" }
+        val expectedSigned = names("signed"); val expectedIntents = names("intent")
+        observedUnaccountedSigned = (signed - expectedSigned).size + (expectedSigned - signed).size
+        observedUnaccountedIntent = (intents - expectedIntents).size + (expectedIntents - intents).size
+        fun dense(names: Set<String>, prefix: String): Boolean = names.map {
+            it.removePrefix("$prefix-").removeSuffix(".protected").toLong()
+        }.sorted().withIndex().all { (index, sequence) -> sequence == index.toLong() + 1L }
+        val ordered = local.sortedBy { it.authorSequence }
+        observedDenseAuthorLineage = dense(signed, "signed") && dense(intents, "intent") &&
+            ordered.withIndex().all { (index, version) -> version.authorSequence == index.toLong() + 1L &&
+                version.previousByAuthor == ordered.getOrNull(index - 1)?.reference() }
         val projected = observed.view.plan?.before?.hashes() ?: return false
         val otherUnits = local.flatMap { it.changes.keys }.toSet() - setOf(CARD_UNIT, CHAT_UNIT)
         observedOtherNativeMismatches = otherUnits.count { unit ->
@@ -526,7 +567,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             change.content == null || native == null || projected[unit] != change.valueHash || native.valueHash != change.valueHash ||
                 latest.reference() !in native.frontiers
         }
-        return observedUnaccountedSigned == 0 && observedOtherNativeMismatches == 0
+        return observedUnaccountedSigned == 0 && observedUnaccountedIntent == 0 && observedDenseAuthorLineage && observedOtherNativeMismatches == 0
     }
     private fun importedMatches(observed: PassiveView, reference: SyncVersionRef,
         cardHash: String, chatHash: String, cardReference: SyncVersionRef = reference): Boolean {
@@ -545,19 +586,25 @@ class LanSyncGroupCloudRecoveryUiControlTest {
     }
     private suspend fun awaitPassiveBaseline(app: ChatBarApp, coordinator: LanSyncGroupCoordinator,
         access: LanSyncGroupRuntimeAccess, reference: SyncVersionRef, cardHash: String, chatHash: String,
-        retainedVersions: Map<String, String> = emptyMap(), retainedSigned: Map<String, String> = emptyMap()): PassiveBaseline {
+        retainedVersions: Map<String, String> = emptyMap(), retainedAuthor: Map<String, String> = emptyMap(),
+        retainedNative: Map<String, String> = emptyMap()): PassiveBaseline {
         var accepted: PassiveBaseline? = null
+        var authorPrefix = retainedAuthor; var nativePrefix = retainedNative
         await(180_000) {
-            val before = signedHistory(app)
+            val before = authorHistory(app); val nativeBefore = nativeHistory(app)
+            retainPrefix(before, authorPrefix); retainPrefix(nativeBefore, nativePrefix)
+            authorPrefix = before; nativePrefix = nativeBefore
             val observed = passive(coordinator) ?: return@await false
             if (!observed.history.contains(reference)) return@await false
             retainVersions(observed, retainedVersions)
-            check(retainedSigned.all { (name, digest) -> before[name] == digest })
-            val actual = localVersionsMatchNative(app, access, observed, before)
-            val after = signedHistory(app)
-            observedStableSigned = before == after
+            val after = authorHistory(app); val nativeAfter = nativeHistory(app)
+            retainPrefix(after, before); retainPrefix(nativeAfter, nativeBefore)
+            authorPrefix = after; nativePrefix = nativeAfter
+            observedStableSigned = before == after && nativeBefore == nativeAfter
+            // Normal append/pending work retries; only a stable, fully projected dense sample can pass.
+            val actual = observedStableSigned && localVersionsMatchNative(app, access, observed, after)
             if (actual && observedStableSigned && importedMatches(observed, reference, cardHash, chatHash)) {
-                accepted = PassiveBaseline(observed, after); true
+                accepted = PassiveBaseline(observed, after, nativeAfter); true
             } else false
         }
         return checkNotNull(accepted)
@@ -581,10 +628,13 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         val priorMaximum = baseline.observed.versions.filter { it.author == access.device }.maxOfOrNull { it.authorSequence } ?: 0L
         val priorCard = baseline.observed.view.nativeState.units.getValue(CARD_UNIT)
         var accepted: PassiveView? = null
+        var authorPrefix = baseline.author; var nativePrefix = baseline.nativeControl
         await(180_000) {
-            val signed = signedHistory(app)
+            val controls = authorHistory(app); val nativeBefore = nativeHistory(app)
+            retainPrefix(controls, authorPrefix); retainPrefix(nativeBefore, nativePrefix)
+            authorPrefix = controls; nativePrefix = nativeBefore
             val observed = passive(coordinator) ?: return@await false
-            retainVersions(observed, prior); retainSignedHistory(app, baseline.signed)
+            retainVersions(observed, prior)
             val candidates = observed.versions.filter { version ->
                 version.author == access.device && version.id.value !in prior && version.authorSequence > priorMaximum &&
                     version.changes[CARD_UNIT]?.valueHash == expectedHash && CHAT_UNIT !in version.changes
@@ -593,8 +643,11 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             val candidate = candidates.singleOrNull() ?: return@await false
             check(candidate.changes.getValue(CARD_UNIT).previous == priorCard.frontiers)
             val reference = candidate.reference()
-            val actual = localVersionsMatchNative(app, access, observed, signed, reference)
-            observedStableSigned = signed == signedHistory(app)
+            val after = authorHistory(app); val nativeAfter = nativeHistory(app)
+            retainPrefix(after, controls); retainPrefix(nativeAfter, nativeBefore)
+            authorPrefix = after; nativePrefix = nativeAfter
+            observedStableSigned = controls == after && nativeBefore == nativeAfter
+            val actual = observedStableSigned && localVersionsMatchNative(app, access, observed, after, reference)
             if (actual && observedStableSigned && importedMatches(observed, source, sourceCardHash, sourceChatHash, reference)) {
                 observedExactCardRevision = true; accepted = observed; true
             } else false
@@ -602,9 +655,171 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         return checkNotNull(accepted)
     }
 
+    private enum class PassivePlatformClass { CONFIGURATION_UNAVAILABLE, FOREGROUND_REQUIRED, SYSTEM_TIME_LIMIT, STOP_PENDING, START_OR_PROMOTION_UNAVAILABLE, OTHER_FAILURE, OTHER_OR_NORMAL }
+    private fun passivePlatformClass(text: String): PassivePlatformClass = when (text) {
+        "\u7f51\u76d8\u8fde\u63a5\u8bbe\u7f6e\u6682\u65f6\u65e0\u6cd5\u8bfb\u53d6\uff0c\u539f\u6587\u4ef6\u5df2\u4fdd\u7559\uff1b\u8bf7\u6253\u5f00\u8fde\u63a5\u8bbe\u7f6e\u68c0\u67e5" -> PassivePlatformClass.CONFIGURATION_UNAVAILABLE
+        "\u7f51\u76d8\u7b49\u5f85\u5207\u56de\u5e94\u7528\u540e\u7ee7\u7eed\uff0c\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559" -> PassivePlatformClass.FOREGROUND_REQUIRED
+        "\u7f51\u76d8\u5df2\u8fbe\u5230\u7cfb\u7edf\u540e\u53f0\u65f6\u9650\uff0c\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559\uff0c\u7b49\u5f85\u6062\u590d" -> PassivePlatformClass.SYSTEM_TIME_LIMIT
+        "\u4e0a\u4e00\u6279\u7f51\u76d8\u4f20\u8f93\u4ecd\u5728\u505c\u6b62\uff0c\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559" -> PassivePlatformClass.STOP_PENDING
+        "\u7cfb\u7edf\u5c1a\u672a\u5141\u8bb8\u672c\u6279\u7f51\u76d8\u540e\u53f0\u4f20\u8f93\uff0c\u8bf7\u5207\u56de\u5e94\u7528\u68c0\u67e5\uff1b\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559" -> PassivePlatformClass.START_OR_PROMOTION_UNAVAILABLE
+        "\u7f51\u76d8\u6838\u5bf9\u672a\u5b8c\u6210\uff0c\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559" -> PassivePlatformClass.OTHER_FAILURE
+        else -> PassivePlatformClass.OTHER_OR_NORMAL
+    }
+
+    private enum class PassiveCloudRead { NOT_SAMPLED, NO_TARGET_DIRECTORY, STABLE_FILES, FILE_SET_CHANGED, READ_UNAVAILABLE }
+    private enum class PassiveCloudPart { NONE, ENUMERATION, FULL_PLAN, FULL_RECEIPT, PARTIAL_PLAN, PARTIAL_RECEIPT }
+    /** Only counts, Boolean and closed enum types can enter the public failure transcript. */
+    private data class PassiveCloudDiagnostic(
+        var read: PassiveCloudRead = PassiveCloudRead.NOT_SAMPLED,
+        var part: PassiveCloudPart = PassiveCloudPart.NONE,
+        var targetDirectoryPresent: Boolean = false,
+        var fullPlans: Int = -1, var fullReceipts: Int = -1, var partialPlans: Int = -1, var partialReceipts: Int = -1,
+        var fullPlansWantNew: Int = -1, var fullPlansWantBoth: Int = -1,
+        var fullReceiptsNewSlot: Int = -1, var duplicateNewSlots: Int = -1,
+        var authenticatedNewWitnesses: Int = -1, var keyDescriptorCandidates: Int = -1, var contextCandidates: Int = -1,
+        var partialPlansWantNew: Int = -1, var partialReceiptsWantNew: Int = -1,
+        var partialReceiptsReportNewMetadata: Int = -1, var partialReceiptsReportNewCardPackage: Int = -1,
+        var partialReceiptsReportOldCardPackage: Int = -1, var partialReceiptsReportOldChatPackage: Int = -1,
+        var partialPendingReasons: Set<LanSyncGroupPartialPendingReason> = emptySet(),
+        var requiredAdmitted: Boolean? = null, var sourceAdmitted: Boolean? = null,
+        var routeProgressPresent: Boolean = false, var routeEnabled: Boolean? = null, var selectionObserved: Boolean? = null,
+        var lastObservedPresent: Boolean = false, var lastPartialObservedPresent: Boolean = false,
+        var partialProgressPresent: Boolean = false, var pendingOperations: Int = -1,
+        var completeUnitPackages: Int = -1, var pendingUnitPackages: Int = -1, var pendingControlSlots: Int = -1,
+        var observedObjects: Int = -1, var availableObjects: Int = -1,
+        var paused: Boolean = false, var panelBusy: Boolean = false, var panelError: Boolean = false,
+        var cloudSettingsBusy: Boolean = false, var cloudSettingsError: Boolean = false,
+        var startupReady: Boolean = false, var activity: Lifecycle.State? = null,
+        var background: AndroidLanSyncBackgroundPhase? = null, var nodeStage: LanSyncGroupNodeStage? = null,
+        var platform: PassivePlatformClass = PassivePlatformClass.OTHER_OR_NORMAL,
+        var platformClassesObserved: Set<PassivePlatformClass> = emptySet())
+    private var passiveCloudDiagnostic = PassiveCloudDiagnostic()
+    private var passiveCloudDiagnosticAt = 0L
+    private val passivePlatformClassesObserved = linkedSetOf<PassivePlatformClass>()
+    private inline fun attemptPassiveCloudDiagnostic(read: () -> Unit) {
+        try { read() }
+        catch (_: Throwable) { passiveCloudDiagnostic = PassiveCloudDiagnostic(read = PassiveCloudRead.READ_UNAVAILABLE) }
+    }
+
+    /** Diagnostic only: reads existing projections/immutable files; never affects the completion predicate. */
+    private fun samplePassiveCloudDiagnostic(coordinator: LanSyncGroupCoordinator, access: LanSyncGroupRuntimeAccess,
+        target: SyncDeliveryTarget, observed: PassiveView?, required: SyncVersionRef, retainedSource: SyncVersionRef,
+        startupReady: Boolean, activity: Lifecycle.State, background: AndroidLanSyncBackgroundPhase, force: Boolean = false) {
+        val now = System.nanoTime()
+        if (!force && passiveCloudDiagnosticAt != 0L && now - passiveCloudDiagnosticAt < 1_000_000_000L) return
+        passiveCloudDiagnosticAt = now
+        val panel = coordinator.state.value; val settings = coordinator.cloudSettings.value
+        val progress = settings.progress[target.id]; val partial = progress?.partial
+        val platform = passivePlatformClass(panel.cloud.text)
+        passivePlatformClassesObserved += platform
+        val diagnostic = PassiveCloudDiagnostic(requiredAdmitted = observed?.history?.contains(required),
+            sourceAdmitted = observed?.history?.contains(retainedSource), routeProgressPresent = progress != null,
+            routeEnabled = settings.rows.singleOrNull { it.id == target.id }?.enabled,
+            selectionObserved = progress?.selectionObserved, lastObservedPresent = progress?.lastObservedAt != null,
+            lastPartialObservedPresent = progress?.lastPartialObservedAt != null, partialProgressPresent = partial != null,
+            pendingOperations = progress?.pendingOperations ?: -1,
+            completeUnitPackages = partial?.completeUnitPackages ?: -1, pendingUnitPackages = partial?.pendingUnitPackages ?: -1,
+            pendingControlSlots = partial?.pendingControlSlots ?: -1, observedObjects = partial?.observedObjects ?: -1,
+            availableObjects = partial?.availableObjects ?: -1, paused = panel.paused, panelBusy = panel.busy,
+            panelError = panel.error != null, cloudSettingsBusy = settings.busy, cloudSettingsError = settings.error != null,
+            startupReady = startupReady, activity = activity, background = background, nodeStage = observed?.view?.stage,
+            platform = platform, platformClassesObserved = passivePlatformClassesObserved.toSet())
+        val reasons = linkedSetOf<LanSyncGroupPartialPendingReason>()
+        try {
+            val directory = access.work.resolve("cloud-runtime/${target.id.value}/target")
+            if (!Files.exists(directory, NOFOLLOW_LINKS)) { diagnostic.read = PassiveCloudRead.NO_TARGET_DIRECTORY; return }
+            check(Files.isDirectory(directory, NOFOLLOW_LINKS) && !Files.isSymbolicLink(directory))
+            diagnostic.targetDirectoryPresent = true; diagnostic.part = PassiveCloudPart.ENUMERATION
+            fun files(pattern: String): List<Path> = Files.newDirectoryStream(directory, pattern).use { entries ->
+                entries.toList().also { values -> check(values.all { Files.isRegularFile(it, NOFOLLOW_LINKS) && !Files.isSymbolicLink(it) }) }
+            }
+            fun <T> read(path: Path, serializer: kotlinx.serialization.KSerializer<T>): T {
+                val raw = metadataBytes(path)
+                val value = Json.decodeFromString(serializer, raw.toString(Charsets.UTF_8))
+                check(hash(path) == sha(raw))
+                return value
+            }
+            val plans = files("plan-*.json"); val receipts = files("cloud-receipt-*.json")
+            val partialPlans = files("partial-plan-*.json"); val partialReceipts = files("partial-cloud-receipt-*.json")
+            val before = (plans + receipts + partialPlans + partialReceipts).toSet()
+            diagnostic.fullPlans = plans.size; diagnostic.fullReceipts = receipts.size
+            diagnostic.partialPlans = partialPlans.size; diagnostic.partialReceipts = partialReceipts.size
+            diagnostic.fullPlansWantNew = 0; diagnostic.fullPlansWantBoth = 0; diagnostic.fullReceiptsNewSlot = 0
+            diagnostic.duplicateNewSlots = 0
+            diagnostic.keyDescriptorCandidates = if (observed == null) -1 else 0
+            diagnostic.contextCandidates = if (observed == null) -1 else 0
+            diagnostic.partialPlansWantNew = 0; diagnostic.partialReceiptsWantNew = 0
+            diagnostic.partialReceiptsReportNewMetadata = 0; diagnostic.partialReceiptsReportNewCardPackage = 0
+            diagnostic.partialReceiptsReportOldCardPackage = 0; diagnostic.partialReceiptsReportOldChatPackage = 0
+            val witnesses = observed?.view?.reconciliation?.authenticatedVersions.orEmpty().filter { it.envelope.version?.reference() == required }
+            diagnostic.authenticatedNewWitnesses = if (observed == null) -1 else witnesses.size
+            diagnostic.part = PassiveCloudPart.FULL_PLAN
+            for (path in plans) {
+                val plan = read(path, LanSyncGroupTargetPlan.serializer())
+                if (plan.target == target && plan.group == access.trust.group && required in plan.versions) {
+                    diagnostic.fullPlansWantNew++
+                    if (retainedSource in plan.versions) diagnostic.fullPlansWantBoth++
+                }
+            }
+            diagnostic.part = PassiveCloudPart.FULL_RECEIPT
+            for (path in receipts) {
+                val receipt = read(path, LanSyncGroupCloudTargetReceipt.serializer())
+                if (receipt.target != target) continue
+                val slots = receipt.objects.filter { it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION && it.objectRequest.slot == required.id.value }
+                if (slots.size > 1) diagnostic.duplicateNewSlots++
+                val slot = slots.singleOrNull() ?: continue
+                diagnostic.fullReceiptsNewSlot++
+                val matching = witnesses.filter { it.metadata.key == slot.objectRequest.key && it.metadata.descriptor == slot.objectRequest.descriptor }
+                if (matching.isNotEmpty()) diagnostic.keyDescriptorCandidates++
+                val planPath = directory.resolve("plan-" + path.fileName.toString().removePrefix("cloud-receipt-"))
+                if (!Files.isRegularFile(planPath, NOFOLLOW_LINKS)) continue
+                val plan = read(planPath, LanSyncGroupTargetPlan.serializer())
+                if (matching.any { it.context.group == plan.group && it.context.epoch == plan.epoch && it.keyCommitment == plan.commitment }) diagnostic.contextCandidates++
+            }
+            diagnostic.part = PassiveCloudPart.PARTIAL_PLAN
+            for (path in partialPlans) {
+                val plan = read(path, LanSyncGroupPartialTargetPlan.serializer())
+                if (plan.target == target && plan.scope.group == access.trust.group && required in plan.scope.wantedVersionRefs) {
+                    diagnostic.partialPlansWantNew++; reasons += plan.selection.pending.map { it.reason }
+                }
+            }
+            diagnostic.part = PassiveCloudPart.PARTIAL_RECEIPT
+            for (path in partialReceipts) {
+                val receipt = read(path, LanSyncGroupPartialCloudReceipt.serializer())
+                if (receipt.target != target || receipt.scope.group != access.trust.group || required !in receipt.scope.wantedVersionRefs) continue
+                diagnostic.partialReceiptsWantNew++
+                val selection = receipt.observedSelection
+                if (required in selection.metadataRefs) diagnostic.partialReceiptsReportNewMetadata++
+                if (selection.completeUnitPackages.any { it.ref.version == required && it.ref.unit == CARD_UNIT }) diagnostic.partialReceiptsReportNewCardPackage++
+                if (selection.completeUnitPackages.any { it.ref.version == retainedSource && it.ref.unit == CARD_UNIT }) diagnostic.partialReceiptsReportOldCardPackage++
+                if (selection.completeUnitPackages.any { it.ref.version == retainedSource && it.ref.unit == CHAT_UNIT }) diagnostic.partialReceiptsReportOldChatPackage++
+                reasons += selection.pending.map { it.reason }
+            }
+            val after = (files("plan-*.json") + files("cloud-receipt-*.json") + files("partial-plan-*.json") + files("partial-cloud-receipt-*.json")).toSet()
+            diagnostic.read = if (before == after) PassiveCloudRead.STABLE_FILES else PassiveCloudRead.FILE_SET_CHANGED
+            diagnostic.part = PassiveCloudPart.NONE
+        } catch (_: Exception) { diagnostic.read = PassiveCloudRead.READ_UNAVAILABLE }
+        finally {
+            // Enumeration counts describe the initial file set. Derived matching counts are unknown
+            // unless every typed file was read and the final file set is unchanged.
+            if (diagnostic.read != PassiveCloudRead.STABLE_FILES) {
+                diagnostic.fullPlansWantNew = -1; diagnostic.fullPlansWantBoth = -1
+                diagnostic.fullReceiptsNewSlot = -1; diagnostic.duplicateNewSlots = -1
+                diagnostic.keyDescriptorCandidates = -1; diagnostic.contextCandidates = -1
+                diagnostic.partialPlansWantNew = -1; diagnostic.partialReceiptsWantNew = -1
+                diagnostic.partialReceiptsReportNewMetadata = -1; diagnostic.partialReceiptsReportNewCardPackage = -1
+                diagnostic.partialReceiptsReportOldCardPackage = -1; diagnostic.partialReceiptsReportOldChatPackage = -1
+                reasons.clear()
+            }
+            diagnostic.partialPendingReasons = reasons.toSet()
+            passiveCloudDiagnostic = diagnostic
+        }
+    }
+
     /** Existing immutable plan/receipt bytes only. No TargetPublication construction or recovery. */
     private fun existingCloudReceipt(access: LanSyncGroupRuntimeAccess, target: SyncDeliveryTarget,
         observed: PassiveView, required: SyncVersionRef, retainedSource: SyncVersionRef = required): LanSyncGroupCloudTargetReceipt? {
+        if (!observed.history.contains(required) || !observed.history.contains(retainedSource)) return null
         val directory = access.work.resolve("cloud-runtime/${target.id.value}/target")
         if (!Files.exists(directory, NOFOLLOW_LINKS)) return null
         check(Files.isDirectory(directory, NOFOLLOW_LINKS) && !Files.isSymbolicLink(directory))

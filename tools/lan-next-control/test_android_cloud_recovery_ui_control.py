@@ -175,10 +175,26 @@ class DraftPureGuards(unittest.TestCase):
             self.assertIn(expected, reader)
         self.assertLess(text.index('phase = "full-original-chat-replies-document-before-author-diagnostics"'),
                         text.index('val baseline = awaitPassiveBaseline('))
+        diagnostic = text[text.index("    private enum class PassiveCloudRead"):text.index("    private fun existingCloudReceipt(")]
+        for denied in ("createDirectory", "createDirectories", "newOutputStream", ".write(", "prepare(", "recover(",
+                       "targetPublication(", "forceIdle(", "cloudWork.allowed", "cloudWork.failure", "nextRetry", "errorCategory"):
+            self.assertNotIn(denied, diagnostic)
+        for expected in ("progress?.pendingOperations ?: -1", "PassiveCloudRead.READ_UNAVAILABLE", "PassiveCloudRead.FILE_SET_CHANGED",
+                         "diagnostic.read != PassiveCloudRead.STABLE_FILES", "diagnostic.fullReceiptsNewSlot = -1",
+                         "diagnostic.partialReceiptsReportNewCardPackage = -1", "reasons.clear()",
+                         "LanSyncGroupPartialTargetPlan.serializer()", "LanSyncGroupPartialCloudReceipt.serializer()",
+                         "platformClassesObserved", "attemptPassiveCloudDiagnostic", "now - passiveCloudDiagnosticAt < 1_000_000_000L"):
+            self.assertIn(expected, diagnostic)
+        self.assertIn("catch (failure: Throwable)", text)
+        self.assertIn("throw failure", text)
+        self.assertIn('phase = "await-existing-exact-new-version-cloud-receipt-no-probe"', text)
+        self.assertIn("PASSIVE_CLOUD_DIAGNOSTIC[$passiveCloudDiagnostic]", text)
+        model = diagnostic[diagnostic.index("    private data class PassiveCloudDiagnostic("):diagnostic.index("    private var passiveCloudDiagnostic")]
+        self.assertNotIn("String", model); self.assertNotIn("Path", model)
     def test_cold_allows_progress_but_locks_original_content_and_immutable_history(self):
         text = (HERE / control.FIXTURE).read_text(encoding="utf8")
         self.assertNotIn("nativeHeadHash", text)
-        for expected in ("nativeOriginHash", "authorOriginHash", "identityHash", "retainSignedHistory", "retainVersions",
+        for expected in ("nativeOriginHash", "authorOriginHash", "identityHash", "retainAuthorHistory", "retainNativeHistory", "retainVersions",
                          "completedSequence >=", "version.authorSequence > priorMaximum", "priorCard.frontiers",
                          "before.copy(records = records).hashes()", "actual.characterRepository.save(edited)"):
             self.assertIn(expected, text)
@@ -186,6 +202,14 @@ class DraftPureGuards(unittest.TestCase):
         self.assertIn("observedImportedChatChanges == 0", text)
         self.assertIn("observedCardMarkerCount == 1 && observedSessionMarkerCount == 1", text)
         self.assertIn("messageMarkerCounts.all { it == 1 }", text)
+        self.assertIn('controlHistory(app, "author", setOf("intent", "signed"))', text)
+        self.assertIn('controlHistory(app, "native", setOf("intent", "receipt"))', text)
+        self.assertIn("observedUnaccountedIntent == 0 && observedDenseAuthorLineage", text)
+        self.assertIn("val editedAuthorHistory = authorHistory(actual)", text)
+        self.assertIn("retainAuthorHistory(actual, editedAuthorHistory)", text)
+        self.assertIn("version.previousByAuthor == ordered.getOrNull(index - 1)?.reference()", text)
+        self.assertIn("val actual = observedStableSigned && localVersionsMatchNative", text)
+        self.assertIn("!observed.history.contains(required) || !observed.history.contains(retainedSource)", text)
     def test_original_ui_tls_and_native_tail_are_byte_preserved(self):
         original = subprocess.run(["git", "-C", CONTROL_ROOT, "show", FIXED_CONTROL + ":tools/lan-next-control/" + control.FIXTURE],
                                   check=True, capture_output=True, timeout=30).stdout.decode("utf8")
