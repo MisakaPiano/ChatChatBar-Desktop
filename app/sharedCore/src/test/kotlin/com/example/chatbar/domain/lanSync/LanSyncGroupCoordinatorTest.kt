@@ -820,6 +820,202 @@ class LanSyncGroupCoordinatorTest {
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
     }
 
+    // Independent local-batch cancellation regression. It does not establish an R09 cause.
+    @Test fun aCancelledCloudBatchDoesNotRetireAutomaticCloudWorkForLaterOrdinaryEdits() = fixture { f ->
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) { throw BindException("synthetic optional nearby unavailable") }
+        }
+        val founder = f.founder()
+        val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+        val draft = founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) })
+        founder.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+        val access = requireNotNull(founder.runtimeAccess())
+        val catalogRoot = Files.createDirectory(f.root.resolve("local-cancel-cloud-catalog"))
+        fun catalog() = LanSyncGroupCloudRoutes(catalogRoot, access.trust, access.device,
+            { it.reversedArray() }, { it.reversedArray() }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+        val cancelNextPut = AtomicBoolean(false)
+        val cancellationInjected = AtomicBoolean(false)
+        val uploadPutEntered = CompletableDeferred<kotlinx.coroutines.Job>()
+        val localBatchExited = CompletableDeferred<Boolean>()
+        val releasePut = CountDownLatch(1)
+        val batchReference = java.util.concurrent.atomic.AtomicReference<kotlinx.coroutines.Job?>()
+        val attempts = AtomicInteger(); val completed = AtomicInteger(); val active = AtomicInteger()
+        val actualUploadStack = AtomicBoolean(false)
+        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(60, TimeUnit.SECONDS)
+            .addNetworkInterceptor { chain ->
+                if (chain.request().method == "PUT" && cancelNextPut.compareAndSet(true, false)) {
+                    // Only a closed boolean is retained; no frame/name/path/body is emitted.
+                    actualUploadStack.set(Thread.currentThread().stackTrace.any {
+                        it.className.startsWith("com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublication") &&
+                            (it.className.contains("uploadCloud") || it.methodName.contains("uploadCloud"))
+                    })
+                    val batch = batchReference.get()
+                    if (batch == null) uploadPutEntered.completeExceptionally(
+                        AssertionError("SYNTHETIC_LOCAL_BATCH_CANCEL_PUT_WITHOUT_OWNED_BATCH"))
+                    else uploadPutEntered.complete(batch)
+                    check(releasePut.await(10, TimeUnit.SECONDS)) { "SYNTHETIC_LOCAL_BATCH_CANCEL_PUT_NOT_RELEASED" }
+                }
+                chain.proceed(chain.request())
+            }.build()
+        try {
+            WeakFixture(Files.createDirectory(f.root.resolve("local-cancel-cloud-provider"))).use { provider ->
+                val firstCatalog = catalog()
+                val password = "synthetic local cancellation credential".toByteArray()
+                val route = try { firstCatalog.add(LanSyncGroupCloudDraft("synthetic retained drive",
+                    provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString(),
+                    "synthetic user", password, enabled = true)) } finally { password.fill(0) }
+                val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, route)
+                val directory = access.work.resolve("cloud-runtime/${route.value}/target")
+                data class ObservedTarget(val plan: LanSyncGroupTargetPlan, val receipt: LanSyncGroupCloudTargetReceipt,
+                    val planPath: Path, val receiptPath: Path)
+                fun existingTarget(wanted: Set<SyncVersionRef>): ObservedTarget? {
+                    if (!Files.isDirectory(directory)) return null
+                    return Files.newDirectoryStream(directory, "cloud-receipt-*.json").use { files ->
+                        var result: ObservedTarget? = null
+                        for (path in files) {
+                            val receipt = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupCloudTargetReceipt.serializer()))
+                            val planPath = directory.resolve("plan-" + path.fileName.toString().removePrefix("cloud-receipt-"))
+                            val plan = requireNotNull(LanSyncJsonFiles.read(planPath, LanSyncGroupTargetPlan.serializer(), receipt.planHash))
+                            if (!plan.versions.containsAll(wanted)) continue
+                            assertEquals(wanted, plan.versions.toSet())
+                            assertEquals(target, plan.target); assertEquals(target, receipt.target)
+                            assertEquals(access.trust.group, plan.group); assertEquals(plan.checkpoint, receipt.checkpoint)
+                            assertEquals(plan.objects, receipt.objects.map { it.objectRequest })
+                            for (reference in wanted) assertEquals(1, receipt.objects.count {
+                                it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION && it.objectRequest.slot == reference.id.value })
+                            assertTrue(receipt.objects.isNotEmpty())
+                            assertTrue(receipt.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
+                            result = ObservedTarget(plan, receipt, planPath, path)
+                        }
+                        result
+                    }
+                }
+                suspend fun awaitTarget(wanted: Set<SyncVersionRef>, marker: String): ObservedTarget = try {
+                    withTimeout(90_000) {
+                        var result: ObservedTarget? = null
+                        while (result == null) { result = existingTarget(wanted); if (result == null) delay(25) }
+                        requireNotNull(result)
+                    }
+                } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                    throw AssertionError("SYNTHETIC_LOCAL_BATCH_CANCEL_$marker attempts=${attempts.get()} completed=${completed.get()} active=${active.get()} injected=${cancellationInjected.get()}", timeout)
+                }
+                fun coordinator(storage: JsonFileStorage, saved: LanSyncGroupCloudRoutes,
+                    cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) = LanSyncGroupCoordinator(
+                    { Files.exists(f.profile.resolve("profile.protected")) }, f::founder,
+                    { error("SYNTHETIC_LOCAL_CANCEL_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic local cancellation PC",
+                    cloudRuntimeFactory = { current, allowed, wake, report ->
+                        LanSyncGroupCloudRuntime(current, allowed, wake, report, saved, client,
+                            WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+                    }, sourceChanges = storage.committedRevisionFor(LanSyncScope.schemas.keys), cloudWork = cloudWork)
+                suspend fun awaitAuthorSequence(coordinator: LanSyncGroupCoordinator, expected: Long) {
+                    try {
+                        withTimeout(60_000) {
+                            while (coordinator.view.value?.reconciliation?.history?.admittedVersions()?.none {
+                                it.author == access.device && it.authorSequence == expected && "character_cards/card" in it.changes } != false) delay(10)
+                        }
+                    } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                        throw AssertionError("SYNTHETIC_LOCAL_BATCH_CANCEL_LOCAL_ADMISSION_$expected", timeout)
+                    }
+                }
+                val initial = CharacterCard("card", "synthetic old local cancellation body", createdAt = 1, updatedAt = 1)
+                val firstStorage = JsonFileStorage(f.data)
+                firstStorage.saveEntity("character_cards", initial.id, initial, CharacterCard.serializer())
+                val first = coordinator(firstStorage, firstCatalog)
+                var cold: LanSyncGroupCoordinator? = null
+                try {
+                    first.open(); awaitAuthorSequence(first, 1)
+                    val oldReference = requireNotNull(first.view.value?.reconciliation?.history).admittedVersions()
+                        .single { it.author == access.device }.reference()
+                    val old = awaitTarget(setOf(oldReference), "SEED_RECEIPT")
+                    first.closeAndDrain()
+                    val oldPlanBytes = Files.readAllBytes(old.planPath); val oldReceiptBytes = Files.readAllBytes(old.receiptPath)
+                    val authorRoot = f.profile.resolve("node/author")
+                    val signedPrefix = retainedFiles(authorRoot).filterKeys { it.startsWith("signed-") || it.startsWith("intent-") }
+                    assertEquals(2, signedPrefix.size)
+                    val secondStorage = JsonFileStorage(f.data)
+                    val reopened = coordinator(secondStorage, catalog()) { block ->
+                        attempts.incrementAndGet()
+                        val outerJob = requireNotNull(kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job])
+                        try {
+                            kotlinx.coroutines.supervisorScope {
+                                // Publishing the lazy child precedes its first possible PUT.
+                                val batch = async(start = CoroutineStart.LAZY) { block() }
+                                check(batchReference.compareAndSet(null, batch)) { "SYNTHETIC_LOCAL_BATCH_CANCEL_OVERLAPPING_BATCH" }
+                                active.incrementAndGet()
+                                try { batch.await().also { if (it) completed.incrementAndGet() } }
+                                finally { active.decrementAndGet(); batchReference.compareAndSet(batch, null) }
+                            }
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            // This proves a local child cancellation before it escapes the wrapper.
+                            if (cancellationInjected.get()) localBatchExited.complete(outerJob.isActive)
+                            throw cancelled
+                        }
+                    }.also { cold = it }
+                    reopened.open()
+                    try {
+                        withTimeout(60_000) {
+                            while (reopened.state.value.busy || reopened.state.value.stage != LanSyncGroupPanelStage.READY ||
+                                completed.get() == 0 || active.get() != 0) delay(10)
+                        }
+                    } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                        throw AssertionError("SYNTHETIC_LOCAL_BATCH_CANCEL_COLD_STARTUP_NOT_QUIET", timeout)
+                    }
+                    assertEquals(oldReference, requireNotNull(reopened.view.value?.reconciliation?.history).admittedVersions()
+                        .single { it.author == access.device }.reference())
+                    cancelNextPut.set(true)
+                    val edited = initial.copy(name = "synthetic ordinary v2 awaiting local cancellation", updatedAt = 2)
+                    secondStorage.saveEntity("character_cards", edited.id, edited, CharacterCard.serializer())
+                    val batch = try { withTimeout(30_000) { uploadPutEntered.await() } }
+                        catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                            throw AssertionError("SYNTHETIC_LOCAL_BATCH_CANCEL_UPLOAD_PUT_NOT_ENTERED", timeout)
+                        }
+                    assertTrue(actualUploadStack.get(), "SYNTHETIC_LOCAL_BATCH_CANCEL_NOT_UPLOAD_PUT")
+                    assertTrue(batch.isActive, "SYNTHETIC_LOCAL_BATCH_CANCEL_BATCH_ALREADY_INACTIVE")
+                    cancellationInjected.set(true)
+                    batch.cancel(kotlinx.coroutines.CancellationException("SYNTHETIC_OWNED_CLOUD_BATCH_LOCAL_CANCEL"))
+                    releasePut.countDown()
+                    val outerWasActive = try { withTimeout(10_000) { localBatchExited.await() } }
+                        catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                            throw AssertionError("SYNTHETIC_LOCAL_BATCH_CANCEL_DID_NOT_EXIT_WRAPPER", timeout)
+                        }
+                    assertTrue(outerWasActive, "SYNTHETIC_LOCAL_BATCH_CANCEL_WAS_PARENT_CANCELLATION")
+                    awaitAuthorSequence(reopened, 2)
+                    val secondReference = requireNotNull(reopened.view.value?.reconciliation?.history).admittedVersions()
+                        .single { it.author == access.device && it.authorSequence == 2L }.reference()
+                    assertNull(existingTarget(setOf(oldReference, secondReference)), "SYNTHETIC_LOCAL_BATCH_CANCEL_ALREADY_COMPLETED_BEFORE_CANCEL")
+                    val finalEdit = edited.copy(name = "synthetic ordinary v3 after local cancellation", updatedAt = 3)
+                    secondStorage.saveEntity("character_cards", finalEdit.id, finalEdit, CharacterCard.serializer())
+                    val finalBytes = Files.readAllBytes(f.card)
+                    awaitAuthorSequence(reopened, 3)
+                    val versions = requireNotNull(reopened.view.value?.reconciliation?.history).admittedVersions()
+                        .filter { it.author == access.device }.sortedBy { it.authorSequence }
+                    assertEquals(listOf(1L, 2L, 3L), versions.map { it.authorSequence })
+                    assertEquals(oldReference, versions[1].previousByAuthor)
+                    assertEquals(secondReference, versions[2].previousByAuthor)
+                    assertEquals(setOf(oldReference), versions[1].changes.getValue("character_cards/card").previous)
+                    assertEquals(setOf(secondReference), versions[2].changes.getValue("character_cards/card").previous)
+                    val finalReference = versions.last().reference()
+                    // No retry, foreground/network hint or additional edit follows this ordinary save.
+                    val actual = awaitTarget(setOf(oldReference, secondReference, finalReference), "POST_CANCEL_RECEIPT")
+                    old.receipt.objects.forEach { previous -> assertEquals(previous,
+                        actual.receipt.objects.single { it.objectRequest.key == previous.objectRequest.key &&
+                            it.objectRequest.descriptor == previous.objectRequest.descriptor }) }
+                    assertContentEquals(oldPlanBytes, Files.readAllBytes(old.planPath))
+                    assertContentEquals(oldReceiptBytes, Files.readAllBytes(old.receiptPath))
+                    val retained = retainedFiles(authorRoot)
+                    signedPrefix.forEach { (name, hash) -> assertEquals(hash, retained[name]) }
+                    assertEquals(6, retained.keys.count { it.startsWith("signed-") || it.startsWith("intent-") })
+                    val view = requireNotNull(reopened.view.value)
+                    val applied = view.nativeState.units.getValue("character_cards/card")
+                    assertEquals(versions.last().changes.getValue("character_cards/card").valueHash, applied.valueHash)
+                    assertEquals(setOf(finalReference), applied.frontiers); assertNull(view.nativeState.pendingTransaction)
+                    assertEquals(finalEdit, secondStorage.loadEntity("character_cards", finalEdit.id, CharacterCard.serializer()))
+                    assertContentEquals(finalBytes, Files.readAllBytes(f.card))
+                    assertTrue(provider.dav.puts.isNotEmpty()); assertTrue(provider.server.requestCount > 0)
+                } finally { releasePut.countDown(); first.closeAndDrain(); cold?.closeAndDrain() }
+            }
+        } finally { releasePut.countDown(); client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
     @Test fun pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints() {
         val entered = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
         val attempts = AtomicInteger(); val forbidden = AtomicBoolean(false)
