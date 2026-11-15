@@ -107,6 +107,18 @@ def safe_fixture_marker(text):
     return {'phase': match[1], 'exceptionType': match[2]}
 
 
+def safe_failure_element_marker(item):
+    # Gradle 9.1 serializes Throwable.toString(), rather than getMessage(), into this attribute.
+    # Accept only the fixture's exact wrapper type and at most one exact type prefix.
+    if item.get('type') != 'java.lang.AssertionError':
+        return None
+    message = item.get('message')
+    prefix = 'java.lang.AssertionError: '
+    if type(message) is str and message.startswith(prefix):
+        message = message[len(prefix):]
+    return safe_fixture_marker(message)
+
+
 def diagnostic_private_bytes(path, evidence, limit):
     # Only an existing regular direct child of this invocation's private evidence directory.
     if path.parent != evidence or evidence.is_symlink() or path.is_symlink() or not path.is_file():
@@ -158,7 +170,7 @@ def junit_failure_diagnostic(evidence):
     value['status'] = 'COUNTS_ONLY_WRONG_CASE' if not exact else 'EXPECTED_CASE_DIAGNOSTIC_ONLY'
     if exact:
         failures = [item for item in whole[0] if item.tag in ('failure', 'error')]
-        markers = [safe_fixture_marker(item.get('message')) for item in failures]
+        markers = [safe_failure_element_marker(item) for item in failures]
         markers = [item for item in markers if item is not None]
         if len(failures) == len(markers) == 1:
             value['fixtureFailureMarker'] = markers[0]
