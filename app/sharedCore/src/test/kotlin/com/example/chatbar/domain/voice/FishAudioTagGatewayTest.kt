@@ -39,7 +39,7 @@ class FishAudioTagGatewayTest {
                 disableThinking = false, isolatedTaskParameters = false)
             assertEquals(body(listOf(ChatApiMessage.text("system", system.trim()), ChatApiMessage.text("user", user))), body(actual))
             val json = Json.parseToJsonElement(body(actual)).jsonObject
-            assertEquals(8, json["messages"]!!.jsonArray.size)
+            assertEquals(7, json["messages"]!!.jsonArray.size)
             assertEquals(12, json.getValue("max_tokens").jsonPrimitive.int)
             assertFalse("max_completion_tokens" in json)
         }

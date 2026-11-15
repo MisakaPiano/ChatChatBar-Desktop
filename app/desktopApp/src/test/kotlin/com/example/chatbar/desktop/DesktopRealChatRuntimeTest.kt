@@ -67,7 +67,9 @@ class DesktopRealChatRuntimeTest {
                 val cold = com.example.chatbar.data.repository.ChatRepository(com.example.chatbar.data.local.JsonFileStorage(root))
                 assertNull(cold.getMessage(first.id, id)?.narrativeMode)
                 assertEquals(2, requests.size)
-                assertTrue(requests.flatten().none { it.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)) })
+                assertFalse(requests[0].any { it.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)) })
+                assertTrue(requests[1].any { it.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)) })
+                assertTrue(requests[1].any { it == MainChatPromptAuthority.narrativeModeTailSystemPrompt(ChatNarrativeMode.ADVANCE, null).trim() })
                 assertFalse(container.settingsRepository.getAppSettings().disableNarrativeModes)
             }
         }
@@ -93,9 +95,9 @@ class DesktopRealChatRuntimeTest {
                 container.createRealChatRuntime().sendText(id, "third")
                 val sent = serializedContents(server.takeRequest().body.readUtf8())
                 val contents = sent.joinToString("\n")
-                assertTrue(previous in sent)
-                assertFalse(contents.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)))
-                assertFalse(contents.contains(MainChatPromptAuthority.narrativeModeTailSystemPrompt(
+                assertTrue(sent.any { previous in it && "<历史回复 " in it })
+                assertTrue(contents.contains(MainChatPromptAuthority.narrativeModeSystemPrompt(ChatNarrativeMode.ADVANCE)))
+                assertTrue(contents.contains(MainChatPromptAuthority.narrativeModeTailSystemPrompt(
                     ChatNarrativeMode.ADVANCE, ChatNarrativeMode.FOCUS)))
                 assertEquals(ChatNarrativeMode.ADVANCE, container.chatRepository.getSession(id)?.narrativeMode)
                 assertTrue(contents.contains("earlier-body"))

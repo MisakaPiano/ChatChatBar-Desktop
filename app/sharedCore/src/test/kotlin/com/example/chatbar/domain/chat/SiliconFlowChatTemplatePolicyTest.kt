@@ -100,16 +100,21 @@ class SiliconFlowChatTemplatePolicyTest {
         }
     }
 
-    @Test fun `existing auxiliary identity tail is retained and non target serialized bytes are unchanged`() {
+    @Test fun `adopted auxiliary assistant tail is quoted for target provider only`() {
         val logical = AuxiliaryMessageAssembler.assemble(listOf(ChatApiMessage.text("system", "synthetic task"),
-            ChatApiMessage.text("user", "synthetic input")), preservesInputRoles = false)
-        assertEquals("user", logical.last().role)
-        val target = OpenAiChatRequestSerializer.serialize(logical, model, stream = true)
-        val otherProvider = OpenAiChatRequestSerializer.serialize(logical,
-            model.copy(baseUrl = "https://provider.example.test/v1"), stream = true)
-        assertEquals(otherProvider, target)
-        assertEquals(JsonArray(logical.map { message(it.role, it.content) }),
-            Json.parseToJsonElement(target).jsonObject.getValue("messages").jsonArray)
+            ChatApiMessage.withImage("user", "synthetic input", "synthetic-image")), preservesInputRoles = false)
+        assertEquals("assistant", logical.last().role)
+        val target = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical, model, true))
+            .jsonObject.getValue("messages").jsonArray.map { it.jsonObject }
+        assertEquals("user", target.last().getValue("role").jsonPrimitive.content)
+        val originalInput = logical[4].content.jsonArray
+        val sentInput = target.last().getValue("content").jsonArray
+        assertEquals(originalInput, JsonArray(sentInput.take(originalInput.size)))
+        val quoted = Json.parseToJsonElement(sentInput.last().jsonObject.getValue("text").jsonPrimitive.content).jsonArray
+        assertEquals(JsonArray(logical.takeLast(2).map { message(it.role, it.content) }), quoted)
+        val other = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical,
+            model.copy(baseUrl = "https://provider.example.test/v1"), true)).jsonObject.getValue("messages")
+        assertEquals(JsonArray(logical.map { message(it.role, it.content) }), other)
     }
 
     @Test fun `experimental wrapping precedes provider adaptation and retains native media tools and context`() {

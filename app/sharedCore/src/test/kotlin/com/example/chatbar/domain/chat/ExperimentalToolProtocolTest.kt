@@ -23,13 +23,13 @@ import org.junit.Test
 
 class ExperimentalToolProtocolTest {
     @Test
-    fun `existing GENERAL identity tail remains in experimental context without rewriting old prompts`() {
+    fun `approved GENERAL assistant tail remains in experimental context without rewriting old prompts`() {
         val logical = AuxiliaryMessageAssembler.assemble(listOf(ChatApiMessage.text("system", "fixture"),
             ChatApiMessage.text("user", "actual")), preservesInputRoles = false)
-        assertEquals("user", logical.last().role)
-        assertEquals(JsonPrimitive(AuxiliaryPromptAuthority.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT), logical.last().content)
+        assertEquals("assistant", logical.last().role)
+        assertEquals(JsonPrimitive(AuxiliaryPromptAuthority.GENERAL_POST_USER_ACK_ASSISTANT_PROMPT), logical.last().content)
         val ordinary = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical, model(), true)).jsonObject
-        assertEquals("user", ordinary.getValue("messages").jsonArray.last().jsonObject.getValue("role").jsonPrimitive.content)
+        assertEquals("assistant", ordinary.getValue("messages").jsonArray.last().jsonObject.getValue("role").jsonPrimitive.content)
         val experimental = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical, model(), true,
             experimentalApiMode = true)).jsonObject
         val restored = Json.parseToJsonElement(tool(experimental, "context").getValue("description").jsonPrimitive.content).jsonArray

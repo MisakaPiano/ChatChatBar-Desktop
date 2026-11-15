@@ -21,7 +21,7 @@ object ChatHistoryPromptPolicy {
     fun previousNarrativeMode(history: List<ChatMessage>, regenerationTarget: ChatMessage? = null): ChatNarrativeMode? {
         val source = regenerationTarget ?: history.lastOrNull {
             it.role == MessageRole.ASSISTANT && it.displayContent.isNotBlank() && it.generatedFromMessageId == null
-        } ?: return ChatNarrativeMode.FOCUS
+        } ?: return null
         return MessageAlternativeVersionPolicy.activeVersion(source).narrativeMode
     }
 

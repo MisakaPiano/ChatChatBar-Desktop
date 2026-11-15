@@ -30,7 +30,7 @@ class DesktopMemorySelectedModelParametersTest {
         assertEquals("/v1/chat/completions", request.path)
         assertEquals("Bearer fixture-key", request.getHeader("Authorization"))
         val body = Json.parseToJsonElement(request.body.readUtf8()).jsonObject
-        assertEquals(8, body.getValue("messages").jsonArray.size)
+        assertEquals(7, body.getValue("messages").jsonArray.size)
         if (model.maxOutputTokens == null) {
             listOf("max_tokens", "max_completion_tokens", "enable_thinking", "reasoning_effort", "thinking_budget").forEach { assertFalse(it in body, it) }
         } else {

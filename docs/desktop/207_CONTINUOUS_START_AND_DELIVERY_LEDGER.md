@@ -1,3 +1,7 @@
+## 2026-11-16：固定官方1412 Prompt四组已采纳／实际实现中
+
+用户“都是官方的更新的话就先跟随吧”已由89a2审阅文档和固定官方41f6来源核准，A–D全部ADOPTED；不是仍待用户选择。A原c615产品同源隔离树已实际修改主/辅助封装、nullable模式规划和生产输入入口，正在补受影响测试，尚未云端验证/打包/签名/公开新候选。独立写作风格增量仍排除，存储正文/Memory/RAG/媒体及provider适配保留；无上轮不补FOCUS。按既有自决测试Preview授权完成必要云端验证后集中交付，不代认人验/日常H安装/正式1.0。旧PASS、1257十组待反馈与V6六步人验/T25工程交付cleanup完成且goal工具blocked的独立范围不变。
+
 ## 2026-11-15：T25第264条 goal实际blocked／仅六步实际人验待反馈
 
 T25状态264仅bookkeeping：262/263/264三个连续真实human-only goalturn同一条件，root已实际update_goal(status=blocked)，返回blocked/updatedAt1794748593，不能继续写active或complete。264原2735B/c98b2e61及前26310007B/a35e19e8、2626050B/a47071db核同；复核source5c90 clean、sourceowner615已完成、V6四文件/真实四links交付和DELIVERED_WAITING_HUMAN实在、人验NOT_RUN，工程/验证/交付/阶段cleanup已COMPLETE、0live、独立requiredwork空、无新用户反馈。实际阻碍仅可用PC/手机六步设备验收，自有HTTPSDAV现成条件可选，不要求注册/付费/交凭据；不是CI/旧目标显示/源码owner/Project批准/Prompt待选/包缺失或清理。仅该T25协调goal blocked停止空转待用户证据，其他独立目标/普通1257/Prompt决定不全局STOP；source工程完成不代认human或正式1.0。真实V6最新交付、旧PASS/精确scopes/原失败/拒绝保留、普通1257c615/sign38公开和H日常不变。复起后按规则重新blocked审计，具体问题由原owner原模型处理；A仅canonical207/I，不改模型/代码/跑测/下载/安装/发布/删除或自调他goal。

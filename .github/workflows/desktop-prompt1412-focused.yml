@@ -1,0 +1,103 @@
+name: Fixed official1412 adopted Prompt runtime verification
+on:
+  push:
+    branches: ['codex/desktop-prompt1412-runtime-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: prompt1412-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  affected:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind synthetic canonical NTFS temporary directory
+        shell: pwsh
+        run: |
+          $root = Join-Path ($env:SystemDrive + '\') ('pm' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($root)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $root -ErrorAction Stop | Out-Null
+          @("TEMP=$root", "TMP=$root") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Compile shared and production Desktop tests
+        working-directory: app
+        run: .\gradlew.bat :sharedCore:compileTestKotlin :desktopApp:compileTestKotlin --no-daemon --stacktrace --console=plain
+      - name: Verify logical envelopes nullable modes and final serialization
+        if: ${{ !cancelled() }}
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+          --tests 'com.example.chatbar.domain.chat.MainChatRequestAssemblerTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModeRequestAssemblyTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModeDisabledPersistenceTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModePersistenceTest'
+          --tests 'com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest'
+          --tests 'com.example.chatbar.domain.chat.ExperimentalToolProtocolTest'
+          --tests 'com.example.chatbar.domain.chat.SiliconFlowChatTemplatePolicyTest'
+          --tests 'com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest'
+          --tests 'com.example.chatbar.domain.chat.FormatCardAutoFillTransportTest'
+          --tests 'com.example.chatbar.domain.chat.WorldBookModelParametersTransportTest'
+          --tests 'com.example.chatbar.domain.chat.SelectedAuxiliaryModelParametersTransportTest'
+          --tests 'com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest'
+          --tests 'com.example.chatbar.domain.prompt.FormatRepairPromptContractTest'
+          --tests 'com.example.chatbar.domain.prompt.AuxiliaryEnvelopeAdoptionTest'
+          --tests 'com.example.chatbar.domain.voice.FishAudioTagGatewayTest'
+      - name: Verify actual runtime regeneration production composer and nearby custody
+        if: ${{ !cancelled() }}
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeModePlannerTest'
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeModeComposerTest'
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeModeConcurrencyTest'
+          --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopFakeChatRuntimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopPromptInspectorTest'
+          --tests 'com.example.chatbar.desktop.DesktopCompactComposerGeometryTest'
+          --tests 'com.example.chatbar.desktop.DesktopFullComposerTest'
+          --tests 'com.example.chatbar.desktop.DesktopImageDescriptionParametersTest'
+          --tests 'com.example.chatbar.desktop.DesktopMemorySelectedModelParametersTest'
+          --tests 'com.example.chatbar.desktop.DesktopPhase7ImagesTest'
+          --tests 'com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest'
+          --tests 'com.example.chatbar.desktop.DesktopFinalProductTest'
+          --tests 'com.example.chatbar.desktop.DesktopActionOptionsRequestTest'
+          --tests 'com.example.chatbar.desktop.DesktopMemoryInjectionTransportTest'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prompt1412-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+            app/desktopApp/build/test-results/test/
+            app/desktopApp/build/reports/tests/test/
+          if-no-files-found: warn
+  facade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile changed Android facade against actual shared authority
+        working-directory: app
+        run: bash gradlew :app:compileDebugKotlin --no-daemon --stacktrace --console=plain

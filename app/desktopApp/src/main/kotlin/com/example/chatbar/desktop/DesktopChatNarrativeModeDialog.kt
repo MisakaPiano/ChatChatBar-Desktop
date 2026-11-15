@@ -1,14 +1,37 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.ChatNarrativeMode
+
+/** Shares the minimum composer's 36dp target without changing its text/voice/send geometry. */
+@Composable
+internal fun DesktopComposerNarrativeControl(state: DesktopPrimaryChatState, onOpen: () -> Unit) {
+    val session = state.selectedSession ?: return
+    if (!state.narrativeModesEnabled) return
+    val colors = DesktopBootstrapColors
+    Box(Modifier.height(36.dp).width(54.dp)
+        .semantics { contentDescription = "回复节奏：${session.narrativeMode.label}" }
+        .clickable(role = Role.Button, onClick = onOpen)
+        .border(1.dp, colors.border, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+        BasicText(session.narrativeMode.shortLabel + "⌄", style = TextStyle(color = colors.foreground, fontSize = 12.sp))
+    }
+}
 
 @Composable
 internal fun DesktopChatNarrativeModeDialog(mode: ChatNarrativeMode,

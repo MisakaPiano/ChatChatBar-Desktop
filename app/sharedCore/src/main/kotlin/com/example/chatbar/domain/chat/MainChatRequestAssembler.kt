@@ -52,7 +52,6 @@ enum class MainChatLogicalMessageSource {
     STRONG_PROMPT_SUFFIX,
     NARRATIVE_MODE_TAIL,
     POST_USER_ACK,
-    FINAL_IDENTITY_REMINDER,
 }
 
 data class MainChatLogicalMessageTrace(
@@ -261,22 +260,13 @@ class MainChatRequestAssembler {
             input.narrativeMode?.let { mode ->
                 addTrace(MainChatLogicalMessageSource.NARRATIVE_MODE_TAIL,
                     ChatApiMessage.text("system", MainChatPromptAuthority.narrativeModeTailSystemPrompt(mode,
-                        input.previousNarrativeMode ?: com.example.chatbar.data.local.entity.ChatNarrativeMode.FOCUS)))
+                        input.previousNarrativeMode)))
             }
             addTrace(
                 MainChatLogicalMessageSource.POST_USER_ACK,
                 ChatApiMessage.text(
                     role = "assistant",
                     content = MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT
-                        .trimIndent()
-                        .trim(),
-                ),
-            )
-            addTrace(
-                MainChatLogicalMessageSource.FINAL_IDENTITY_REMINDER,
-                ChatApiMessage.text(
-                    role = "user",
-                    content = MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT
                         .trimIndent()
                         .trim(),
                 ),

@@ -39,7 +39,7 @@ class DesktopImageDescriptionParametersTest {
                 assertEquals("selected-vision", body.getValue("model").jsonPrimitive.content)
                 assertFalse("response_format" in body)
                 val messages = body.getValue("messages").jsonArray
-                assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"),
+                assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant"),
                     messages.map { it.jsonObject.getValue("role").jsonPrimitive.content })
                 val imageInput = messages[4].jsonObject.getValue("content").jsonArray
                     .filter { it.jsonObject["type"]?.jsonPrimitive?.content == "image_url" }

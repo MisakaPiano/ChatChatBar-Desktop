@@ -125,6 +125,7 @@ internal fun DesktopPrimaryChatPanel(
     var imageGalleryOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var backgroundOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
+    var narrativeModeOpen by remember(state.selectedSession?.id, state.narrativeModesEnabled) { mutableStateOf(false) }
     var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
     var settingsTab by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionSettingsTab.BASIC) }
     var settingsWorkspace by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionWorkspaceTab.PARAMETERS) }
@@ -435,7 +436,7 @@ internal fun DesktopPrimaryChatPanel(
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
                             PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp,
-                                preferences.sendKey, chooseSendKey, voiceUi, send)
+                                preferences.sendKey, chooseSendKey, voiceUi, { narrativeModeOpen = true }, send)
 
                         }
                     }
@@ -456,6 +457,7 @@ internal fun DesktopPrimaryChatPanel(
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 sendKey = preferences.sendKey, onSendKey = chooseSendKey,
+                narrativeControls = { DesktopComposerNarrativeControl(state) { narrativeModeOpen = true } },
                 voiceControls = { DesktopComposerVoiceControl(state, voiceUi,
                     state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true) },
                 onDraft = controller::editComposer, onSend = send,
@@ -467,6 +469,11 @@ internal fun DesktopPrimaryChatPanel(
                     onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } }) },
                 onPickImage = { scope.launch { controller.pickImage() } },
                 ingressModifier = Modifier.desktopImageIngress(canLaunch, controller::imageIngressFailure) { input -> scope.launch { controller.receiveImages(input) } })
+        }
+        if (narrativeModeOpen && state.narrativeModesEnabled) state.selectedSession?.let { session ->
+            DesktopChatNarrativeModeDialog(session.narrativeMode,
+                onSelect = { mode -> scope.launch { controller.setNarrativeMode(session.id, mode) }; narrativeModeOpen = false },
+                onClose = { narrativeModeOpen = false })
         }
         if (composer.continuationPending) DesktopContinuationConfirmation(
             enabled = composer.canClickSend(canLaunch) && !composer.hasAttachments && composer.input.text.isBlank(),
@@ -1239,6 +1246,7 @@ private fun PrimaryComposer(
     sendKey: DesktopSendKey,
     onSendKey: (DesktopSendKey) -> Unit,
     voiceUi: DesktopVoiceUiSelection,
+    onNarrativeMode: () -> Unit,
     onSend: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
@@ -1257,6 +1265,7 @@ private fun PrimaryComposer(
     val compact = maxWidth < 480.dp || height < 88f
     val widthDp = maxWidth.value
     val actions: @Composable () -> Unit = {
+        DesktopComposerNarrativeControl(state, onNarrativeMode)
         DesktopChatAttachmentAction(running == null, targetDp = 36) { scope.launch { controller.pickImage() } }
         DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
             enabled = canLaunch, targetDp = 36) { composer.open(canLaunch) }

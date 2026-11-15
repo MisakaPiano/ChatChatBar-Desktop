@@ -13,13 +13,12 @@ object AuxiliaryMessageAssembler {
         )
         val tail = listOf(
             ChatApiMessage.text("assistant", AuxiliaryPromptAuthority.GENERAL_CONTEXT_APPROVAL_ASSISTANT_PROMPT),
-            ChatApiMessage.text("assistant", AuxiliaryPromptAuthority.GENERAL_POST_USER_ACK_ASSISTANT_PROMPT),
-            ChatApiMessage.text("user", AuxiliaryPromptAuthority.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT)
+            ChatApiMessage.text("assistant", AuxiliaryPromptAuthority.GENERAL_POST_USER_ACK_ASSISTANT_PROMPT)
         )
         // Check the entire envelope, not phrases appearing inside ordinary input.
-        if (messages.size >= 8 && messages.first().role == "system" &&
-            messages.subList(4, messages.size - 3).all { it.role == "user" || it.role == "assistant" } &&
-            messages.subList(1, 4) == prefix && messages.takeLast(3) == tail &&
+        if (messages.size >= 7 && messages.first().role == "system" &&
+            messages.subList(4, messages.size - 2).all { it.role == "user" || it.role == "assistant" } &&
+            messages.subList(1, 4) == prefix && messages.takeLast(2) == tail &&
             systemHasEnvelope(messages.first().content)
         ) return messages
         val system = mergeContents(
@@ -80,7 +79,6 @@ object AuxiliaryMessageAssembler {
         add(AuxiliaryPromptAuthority.GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT)
         add(AuxiliaryPromptAuthority.GENERAL_CONTEXT_APPROVAL_ASSISTANT_PROMPT)
         add(AuxiliaryPromptAuthority.GENERAL_POST_USER_ACK_ASSISTANT_PROMPT)
-        add(AuxiliaryPromptAuthority.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT)
         val inputs = messages.filter { it.role != "system" }
         if (inputs.isEmpty()) add(AuxiliaryPromptAuthority.GENERAL_TASK_EMPTY_INPUT)
         else if (!preservesInputRoles && (inputs.size != 1 || inputs.single().role != "user")) {

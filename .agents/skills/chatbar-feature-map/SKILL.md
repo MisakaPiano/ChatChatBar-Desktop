@@ -120,3 +120,5 @@ All abbreviated source paths are relative to app/app/src/main/java/com/example/c
 - If a request matches a specific project skill, stop expanding this map and read that skill.
 - If three focused searches miss, report uncertainty and widen deliberately.
 - Keep each row short, ownership-focused, and actionable.
+
+Desktop reply rhythm: `DesktopComposerNarrativeControl` appears in both primary and full composers, opens `DesktopChatNarrativeModeDialog`, and persists through `DesktopPrimaryChatController.setNarrativeMode`/the repository mutex. `DesktopManagePanel` Reply settings owns global disable; `DesktopChatRequestPlanner`/`ChatHistoryPromptPolicy` own request-only current/prior/history mode projection.

@@ -33,7 +33,7 @@ class MainChatRequestAssemblerTest {
         val messages = result.messages
         val contents = messages.map { it.content.jsonPrimitive.content }
 
-        assertEquals(23, messages.size)
+        assertEquals(22, messages.size)
         assertTrue(contents[0].startsWith("core"))
         assertEquals(MainChatPromptAuthority.CCB_FIRST_ACK_ASSISTANT_PROMPT.trimIndent().trim(), contents[1])
         assertEquals(MainChatPromptAuthority.CCB_CREATIVE_CONTRACT_USER_PROMPT.trimIndent().trim(), contents[2])
@@ -53,8 +53,7 @@ class MainChatRequestAssemblerTest {
         assertEquals("tail\n\nrequirements", contents[19])
         assertEquals("strong", contents[20])
         assertEquals(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim(), contents[21])
-        assertEquals(MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim(), contents[22])
-        assertEquals("user", messages.last().role)
+        assertEquals("assistant", messages.last().role)
         assertEquals(1, contents.count { it == "current" })
         assertEquals(messages, result.messageTrace.map(MainChatLogicalMessageTrace::message))
         assertEquals(
@@ -81,7 +80,6 @@ class MainChatRequestAssemblerTest {
                 MainChatLogicalMessageSource.POST_HISTORY_END_REQUIREMENTS,
                 MainChatLogicalMessageSource.STRONG_PROMPT_SUFFIX,
                 MainChatLogicalMessageSource.POST_USER_ACK,
-                MainChatLogicalMessageSource.FINAL_IDENTITY_REMINDER,
             ),
             result.messageTrace.map(MainChatLogicalMessageTrace::source),
         )
@@ -151,9 +149,9 @@ class MainChatRequestAssemblerTest {
 
         assertTrue(current < post)
         assertTrue(post < strong)
-        assertTrue(strong < messages.lastIndex - 1)
-        assertEquals("assistant", messages[messages.lastIndex - 1].role)
-        assertEquals("user", messages.last().role)
+        assertTrue(strong < messages.lastIndex)
+        assertEquals("system", messages[messages.lastIndex - 1].role)
+        assertEquals("assistant", messages.last().role)
     }
 
     @Test
@@ -163,37 +161,25 @@ class MainChatRequestAssemblerTest {
 
         assertEquals(MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT.trimIndent().trim(), contents.last())
         assertFalse(contents.contains(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim()))
-        assertFalse(contents.contains(MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim()))
     }
 
     @Test
-    fun finalIdentityReminderSurvivesSerializedHttpsAndOptedInHttpForEveryRequirementPosition() {
-        val reminder = MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim()
+    fun assistantAcknowledgementSurvivesSerializedHttpsAndHttpWithoutInventingIdentityUser() {
         FormatPromptPosition.entries.forEach { position ->
             val request = assembler.assemble(input(position = position, strong = "strong"))
-            listOf("https://example.invalid/v1", "http://localhost/v1").forEach { baseUrl ->
-                val wire = Json.parseToJsonElement(
-                    OpenAiChatRequestSerializer.serialize(
-                        messages = request.messages,
-                        modelConfig = ModelConfig(
-                            id = "fixture-model", displayName = "Fixture", baseUrl = baseUrl,
-                            apiKey = "", modelName = "fixture", createdAt = 0,
-                        ),
-                        stream = true,
-                        allowCleartextHttp = true,
-                    ),
-                ).jsonObject.getValue("messages").jsonArray.map { it.jsonObject }
+            for (url in listOf("https://example.invalid/v1", "http://localhost/v1")) {
+                val wire = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(request.messages,
+                    ModelConfig(id = "fixture", displayName = "Fixture", baseUrl = url, apiKey = "",
+                        modelName = "fixture", createdAt = 0), stream = true, allowCleartextHttp = true))
+                    .jsonObject.getValue("messages").jsonArray.map { it.jsonObject }
                 val bodies = wire.map { it.getValue("content").jsonPrimitive.content }
-                assertEquals("user", wire.last().getValue("role").jsonPrimitive.content)
-                assertEquals(reminder, bodies.last())
-                assertEquals(1, bodies.count { it == reminder })
-                assertEquals("assistant", wire[wire.lastIndex - 1].getValue("role").jsonPrimitive.content)
-                assertEquals(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim(), bodies[bodies.lastIndex - 1])
+                assertEquals("assistant", wire.last().getValue("role").jsonPrimitive.content)
+                assertEquals(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trim(), bodies.last())
                 assertEquals(1, bodies.count { it == "current" })
-                val strongIndex = bodies.indexOf("strong")
-                assertTrue(strongIndex > bodies.indexOf("current"))
-                assertTrue(strongIndex < bodies.lastIndex - 1)
-                assertEquals(if (baseUrl.startsWith("http:")) "assistant" else "system", wire[strongIndex].getValue("role").jsonPrimitive.content)
+                val strong = bodies.indexOf("strong")
+                assertTrue(strong > bodies.indexOf("current") && strong < bodies.lastIndex)
+                assertEquals(if (url.startsWith("http:")) "assistant" else "system",
+                    wire[strong].getValue("role").jsonPrimitive.content)
             }
         }
     }

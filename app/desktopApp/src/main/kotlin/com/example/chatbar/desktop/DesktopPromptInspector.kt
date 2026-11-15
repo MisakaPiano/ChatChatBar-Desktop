@@ -79,6 +79,7 @@ internal data class DesktopPromptInspectorInputs(
     val excludeAssistantStatusFromHistory: Boolean = false,
     val ragInjectionMode: String = "OFF",
     val assistantSegmentedBubblesEnabled: Boolean = false,
+    val narrativeModesEnabled: Boolean = true,
 )
 
 internal sealed interface DesktopPromptInspectorStatus {
@@ -205,6 +206,7 @@ internal class DesktopPromptInspectorController(
                     excludeAssistantStatusFromHistory = inputs.excludeAssistantStatusFromHistory,
                     ragInjectionMode = inputs.ragInjectionMode,
                     assistantSegmentedBubblesEnabled = inputs.assistantSegmentedBubblesEnabled,
+                    narrativeModesEnabled = inputs.narrativeModesEnabled,
                 ),
             )
             mutableState.value = mutableState.value.copy(status = DesktopPromptInspectorStatus.Ready(result))

@@ -16,7 +16,7 @@ class NarrativeModeRequestAssemblyTest {
         currentUserMessage = ChatApiMessage.text("user", "current input"), strongPromptSystemSuffix = "strong requirements",
         botName = "Synthetic", narrativeMode = mode, previousNarrativeMode = ChatNarrativeMode.FOCUS)
 
-    @Test fun `new mode sections preserve existing relative order and final identity tail`() {
+    @Test fun `new mode sections preserve existing relative order and final assistant acknowledgement`() {
         val result = assembler.assemble(input(ChatNarrativeMode.ADVANCE))
         val sources = result.messageTrace.map { it.source }
         fun index(source: MainChatLogicalMessageSource) = sources.indexOf(source).also { assertTrue(it >= 0) }
@@ -24,9 +24,9 @@ class NarrativeModeRequestAssemblyTest {
         assertTrue(index(MainChatLogicalMessageSource.NARRATIVE_MODE) < index(MainChatLogicalMessageSource.CONTEXT_APPROVAL))
         assertTrue(index(MainChatLogicalMessageSource.STRONG_PROMPT_SUFFIX) < index(MainChatLogicalMessageSource.NARRATIVE_MODE_TAIL))
         assertTrue(index(MainChatLogicalMessageSource.NARRATIVE_MODE_TAIL) < index(MainChatLogicalMessageSource.POST_USER_ACK))
-        assertEquals(MainChatLogicalMessageSource.FINAL_IDENTITY_REMINDER, sources.last())
-        assertEquals("user", result.messages.last().role)
-        assertEquals(MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim(),
+        assertEquals(MainChatLogicalMessageSource.POST_USER_ACK, sources.last())
+        assertEquals("assistant", result.messages.last().role)
+        assertEquals(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim(),
             result.messages.last().content.jsonPrimitive.content)
         assertTrue(result.messageTrace.single { it.source == MainChatLogicalMessageSource.NARRATIVE_MODE }.inStableCachePrefix)
         assertFalse(result.messageTrace.single { it.source == MainChatLogicalMessageSource.NARRATIVE_MODE_TAIL }.inStableCachePrefix)
@@ -64,7 +64,7 @@ class NarrativeModeRequestAssemblyTest {
         val history = listOf(real, child, blank)
         assertEquals(ChatNarrativeMode.ADVANCE, ChatHistoryPromptPolicy.previousNarrativeMode(history))
         assertEquals(ChatNarrativeMode.FOCUS, ChatHistoryPromptPolicy.previousNarrativeMode(history, blank))
-        assertEquals(ChatNarrativeMode.FOCUS, ChatHistoryPromptPolicy.previousNarrativeMode(listOf(child, blank)))
+        assertNull(ChatHistoryPromptPolicy.previousNarrativeMode(listOf(child, blank)))
         val selected = real.copy(alternatives = listOf("a", "b"), currentAlternativeIndex = 1,
             alternativeNarrativeModes = listOf(ChatNarrativeMode.ADVANCE, ChatNarrativeMode.FOCUS))
         assertEquals(ChatNarrativeMode.FOCUS, ChatHistoryPromptPolicy.previousNarrativeMode(history, selected))

@@ -58,7 +58,6 @@ class MainChatPromptAuthorityTest {
             MainChatPromptAuthority.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT,
             MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT,
             MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT,
-            MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT,
         )
 
         assertTrue(prompts.all(String::isNotBlank))

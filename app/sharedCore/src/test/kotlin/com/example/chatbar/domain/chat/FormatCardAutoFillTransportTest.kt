@@ -49,7 +49,7 @@ class FormatCardAutoFillTransportTest {
                     assertEquals(913, actual.jsonObject["max_completion_tokens"]!!.jsonPrimitive.int)
                     assertEquals(true, actual.jsonObject["enable_thinking"]!!.jsonPrimitive.boolean)
                     if (params === base.customParams) {
-                        assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"),
+                        assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant"),
                             actual.jsonObject["messages"]!!.jsonArray.map { it.jsonObject["role"]!!.jsonPrimitive.content })
                         assertEquals(messages.last().content, actual.jsonObject["messages"]!!.jsonArray[4].jsonObject["content"])
                     }

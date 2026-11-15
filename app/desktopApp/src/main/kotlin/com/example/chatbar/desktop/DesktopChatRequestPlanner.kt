@@ -211,6 +211,13 @@ internal class DesktopChatRequestPlanner(
             contextMessages = contextMessages,
             latestMessageId = currentUser.id.takeIf { currentUserPersisted },
         )
+        val requestNarrativeMode = session.narrativeMode.takeIf { inputs.narrativeModesEnabled }
+        // Read the original selected version before generation creates a blank candidate.
+        // A null mode on that version remains null; it is not an implicit FOCUS turn.
+        val previousNarrativeMode = if (regenerationTargetId != null) {
+            val target = requireNotNull(chatRepository.getMessage(regenerationTargetId, session.id)) { "回复不存在" }
+            com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.activeVersion(target).narrativeMode
+        } else ChatHistoryPromptPolicy.previousNarrativeMode(contextMessages)
         // Private callers prove UI controls separately from a persisted user's "continue/2".
         // No control is interpreted as choosing an action and no user input is rewritten.
         val actionProjection = ChatHistoryActionProjection.prepare(contextCandidates,
@@ -327,8 +334,8 @@ internal class DesktopChatRequestPlanner(
                 ) else "",
                 playerName = playerName,
                 botName = card.effectiveBotName,
-                // The stored mode is retained, but the proposed Prompt layers/ordering are
-                // still awaiting the explicit 315 adoption decision. Keep default assembly.
+                narrativeMode = requestNarrativeMode,
+                previousNarrativeMode = previousNarrativeMode,
             ),
         )
         return DesktopChatRequestPlan(
@@ -371,7 +378,9 @@ internal class DesktopChatRequestPlanner(
         val rendered = PlaceholderRenderer.render(actionProjection.project(message, source), playerName, card.effectiveBotName)
         val payload = ChatHistoryPromptPolicy.payloadText(rendered, hasSupportedImage = inputs.supportsImages && message.role == MessageRole.USER && message.images.isNotEmpty())
             ?: return null
-        return imageMessage(message.role.name.lowercase(), payload, message.images, inputs.supportsImages)
+        val text = ChatHistoryPromptPolicy.renderedHistoryText(message, payload,
+            narrativeModesEnabled = inputs.narrativeModesEnabled)
+        return imageMessage(message.role.name.lowercase(), text, message.images, inputs.supportsImages)
     }
 
     private fun imageMessage(role: String, text: String, images: List<String>, supported: Boolean): ChatApiMessage {

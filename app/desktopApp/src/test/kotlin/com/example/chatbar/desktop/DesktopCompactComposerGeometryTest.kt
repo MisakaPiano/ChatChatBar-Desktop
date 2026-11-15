@@ -40,7 +40,7 @@ class DesktopCompactComposerGeometryTest {
         return container
     }
 
-    @Test fun `minimum composer centers text and all five controls with equal targets across widths`(): Unit = runBlocking(edt) {
+    @Test fun `minimum composer centers text and all composer controls with equal targets across widths`(): Unit = runBlocking(edt) {
         val root = Files.createTempDirectory("compact-composer-geometry-")
         val container = fixture(root)
         try {
@@ -52,7 +52,7 @@ class DesktopCompactComposerGeometryTest {
                     compactNavigation = navigation) }
                 try {
                     frames(scene)
-                    val labels = listOf("朗读音色设置", "添加图片附件", DesktopUiText.EXPAND_COMPOSER.zhCn, "发送", "发送按键设置")
+                    val labels = listOf("回复节奏：聚焦模式", "朗读音色设置", "添加图片附件", DesktopUiText.EXPAND_COMPOSER.zhCn, "发送", "发送按键设置")
                     val controls = labels.map { label -> nodes(scene).single { label in it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() } }
                     val center = controls.first().boundsInRoot.center.y
                     controls.forEach { node ->

@@ -154,6 +154,9 @@ internal fun DesktopPromptInspectorPanel(
                 }
             }
             StudioActions {
+                StudioSwitch("启用聚焦与推进", state.inputs.narrativeModesEnabled) {
+                    controller.updateInputs { it.copy(narrativeModesEnabled = !it.narrativeModesEnabled) }
+                }
                 BootstrapButton(
                     label = "${t(DesktopUiText.EXCLUDE_ASSISTANT_STATUS)}: ${state.inputs.excludeAssistantStatusFromHistory.onOff()}",
                     secondary = !state.inputs.excludeAssistantStatusFromHistory,

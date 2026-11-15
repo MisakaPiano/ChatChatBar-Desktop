@@ -579,6 +579,10 @@ private fun DesktopSettingsDraftOverlay(
                     controller.editSettings { it.copy(excludeAssistantStatusFromHistory = !it.excludeAssistantStatusFromHistory) }
                 }
                 StatusText(t(DesktopUiText.EXCLUDE_ASSISTANT_STATUS_NOTE))
+                ToggleField("停用聚焦与推进", draft.disableNarrativeModes) {
+                    controller.editSettings { it.copy(disableNarrativeModes = !it.disableNarrativeModes) }
+                }
+                StatusText("停用后隐藏回复节奏选择，不发送模式提示与历史模式标记；保留会话和已有回复的模式记录。")
                 DesktopFormatRepairModelSetting(state) { value ->
                     controller.editSettings { it.copy(formatRepairModelId = value) }
                 }

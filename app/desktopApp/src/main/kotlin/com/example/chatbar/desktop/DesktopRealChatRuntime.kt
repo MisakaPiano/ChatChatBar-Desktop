@@ -223,7 +223,7 @@ class DesktopRealChatRuntime internal constructor(
             val turn = resolveTurn(sessionId)
             if (selected.id != target.id) chatRepository.deleteMessage(selected.id, sessionId)
             val plan = requestPlanner.planRegeneration(sessionId, target.id,
-                turn.inputs.copy(previousNarrativeMode = MessageAlternativeVersionPolicy.activeVersion(target).narrativeMode),
+                turn.inputs,
                 onPreparationStage = observer::onPreparationStage)
             observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id))
             plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id, status = it)) }
@@ -391,6 +391,7 @@ class DesktopRealChatRuntime internal constructor(
             model = model,
             inputs = DesktopFakeChatInputs(
                 capturedNarrativeMode = session.narrativeMode,
+                narrativeModesEnabled = !settings.disableNarrativeModes,
                 globalPlayerName = player.playerName.takeIf(String::isNotBlank),
                 globalPlayerSetting = player.globalPersona.takeIf(String::isNotBlank),
                 effectiveContextWindowSize = settings.defaultContextWindowSize,

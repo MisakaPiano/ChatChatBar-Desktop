@@ -36,7 +36,7 @@ class DesktopPhase7ImagesTest {
             val visionRequest = Json.parseToJsonElement(server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()).jsonObject
             assertEquals("vision", visionRequest.getValue("model").jsonPrimitive.content)
             val envelope = visionRequest.getValue("messages").jsonArray
-            assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"),
+            assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant"),
                 envelope.map { it.jsonObject.getValue("role").jsonPrimitive.content })
             assertEquals(1, Regex("data:image/jpeg;base64,").findAll(envelope.toString()).count())
             val textRequest = server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()

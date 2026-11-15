@@ -58,7 +58,7 @@ class NarrativeModeDisabledPersistenceTest {
         assertEquals("rendered body", ChatHistoryPromptPolicy.renderedHistoryText(message(), "rendered body", narrativeModesEnabled = false))
         assertNull(ChatHistoryPromptPolicy.previousNarrativeMode(listOf(disabled)))
         assertNull(ChatHistoryPromptPolicy.previousNarrativeMode(emptyList(), disabled))
-        assertEquals(ChatNarrativeMode.FOCUS, ChatHistoryPromptPolicy.previousNarrativeMode(emptyList()))
+        assertNull(ChatHistoryPromptPolicy.previousNarrativeMode(emptyList()))
         assertEquals(MainChatPromptAuthority.narrativeModeHistoryReply("rendered body", ChatNarrativeMode.FOCUS),
             ChatHistoryPromptPolicy.renderedHistoryText(message(), "rendered body"))
         assertEquals("user body", ChatHistoryPromptPolicy.renderedHistoryText(message().copy(role = MessageRole.USER), "user body"))

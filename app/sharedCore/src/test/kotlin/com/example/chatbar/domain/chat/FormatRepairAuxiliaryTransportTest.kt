@@ -39,8 +39,16 @@ class FormatRepairAuxiliaryTransportTest {
     private fun failure(events: List<StreamEvent>): StreamEvent.Error {
         assertFalse(events.any { it is StreamEvent.Done }); return events.filterIsInstance<StreamEvent.Error>().single()
     }
-    private fun golden() = Json.parseToJsonElement(checkNotNull(javaClass.getResourceAsStream(
-        "/format-repair/effective-eight-messages.json")).bufferedReader().use { it.readText() })
+    private fun golden(): JsonArray {
+        // Frozen historical feature input stays independent of the current request builder.
+        val old = Json.parseToJsonElement(checkNotNull(javaClass.getResourceAsStream(
+            "/format-repair/effective-eight-messages.json")).bufferedReader().use { it.readText() }).jsonArray
+        val system = listOf(AuxiliaryPromptAuthority.GENERAL_SYSTEM_PROMPT,
+            FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT.trim(),
+            AuxiliaryPromptAuthority.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT).joinToString("\n\n")
+        return JsonArray(old.take(7).mapIndexed { index, item -> if (index == 0)
+            JsonObject(item.jsonObject.toMutableMap().apply { put("content", JsonPrimitive(system)) }) else item })
+    }
 
     private suspend fun temporaryTlsContext(): Pair<SSLContext, X509TrustManager> = withContext(Dispatchers.IO) {
         val executable = if (System.getProperty("os.name").startsWith("Windows")) "keytool.exe" else "keytool"

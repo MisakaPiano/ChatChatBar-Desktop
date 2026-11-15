@@ -50,7 +50,7 @@ class WorldBookModelParametersTransportTest {
                         assertTrue(actual.getValue("enable_thinking").jsonPrimitive.boolean)
                         assertEquals(611, actual.getValue("thinking_budget").jsonPrimitive.int)
                     } else assertFalse("enable_thinking" in actual)
-                    assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"),
+                    assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant"),
                         actual.getValue("messages").jsonArray.map { it.jsonObject.getValue("role").jsonPrimitive.content })
                     assertEquals(messages.last().content, actual.getValue("messages").jsonArray[4].jsonObject.getValue("content"))
                 }
