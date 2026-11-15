@@ -209,7 +209,8 @@ class DesktopActionOptionsRequestTest {
             "————————\n【行动选项】\n1. MALFORMED_LEFT\n3. MALFORMED_RIGHT\n————————"
         f.add(MessageRole.ASSISTANT, content)
         val wire = f.wire(ordinary).first
-        assertTrue(wire.contains(content)); f.unchanged()
+        assertEquals(MainChatPromptAuthority.narrativeModeHistoryReply(content, com.example.chatbar.data.local.entity.ChatNarrativeMode.FOCUS),
+            wire.single { it.contains("MALFORMED_LEFT") }); f.unchanged()
     } }
 
     @Test fun `pinned old source with an omitted middle remains unfiltered on actual wire and read only planner agrees`() = runBlocking { fixture { f ->

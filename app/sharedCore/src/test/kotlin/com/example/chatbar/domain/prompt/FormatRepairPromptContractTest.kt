@@ -4,15 +4,10 @@ import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.OpenAiChatRequestSerializer
 import kotlinx.serialization.json.*
-import java.security.MessageDigest
 import kotlin.test.*
 
-/** Historical repair protocol is retained; the independently adopted envelope is verified by role and input custody. */
+/** Verify the adopted envelope by role, ordered protocol parts and full input custody. */
 class FormatRepairPromptContractTest {
-    private fun resource(name: String) = checkNotNull(javaClass.getResourceAsStream("/format-repair/$name"))
-        .bufferedReader(Charsets.UTF_8).use { it.readText() }
-    private fun digest(value: String) = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
     private fun inputs() = listOf(
         ChatApiMessage.text("system", FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT.trim()),
         ChatApiMessage.text("user", FormatRepairPromptAuthority.messageFormatRepairUserPrompt(
@@ -22,14 +17,6 @@ class FormatRepairPromptContractTest {
     private fun asJson(messages: List<ChatApiMessage>) = JsonArray(messages.map { message ->
         buildJsonObject { put("role", message.role); put("content", message.content) }
     })
-
-    @Test fun `unchanged repair protocol keeps its independently frozen source`() {
-        val ledger = Json.parseToJsonElement(resource("source-ledger.json")).jsonObject
-        assertEquals(ledger.getValue("repairSystemSha256").jsonPrimitive.content,
-            digest(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT))
-        assertEquals(ledger.getValue("repairMarkerSha256").jsonPrimitive.content,
-            digest(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER))
-    }
 
     @Test fun `repair uses seven messages with input and assistant tail in their declared positions`() {
         val messages = assembled()

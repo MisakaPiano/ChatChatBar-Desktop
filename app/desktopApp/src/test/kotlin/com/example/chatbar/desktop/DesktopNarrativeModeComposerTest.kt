@@ -19,6 +19,13 @@ class DesktopNarrativeModeComposerTest {
     private fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
     private fun nodes(scene: ImageComposeScene) = scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
     private suspend fun frames(scene: ImageComposeScene) { repeat(5) { scene.render(System.nanoTime()).close(); yield(); delay(10) } }
+    private fun shot(scene: ImageComposeScene, name: String) {
+        System.getenv("CCB_NARRATIVE_MODE_REVIEW_DIR")?.let { directory ->
+            val folder = java.nio.file.Path.of(directory)
+            Files.createDirectories(folder)
+            scene.render(System.nanoTime()).use { image -> image.encodeToData()?.let { data -> Files.write(folder.resolve(name), data.bytes) } }
+        }
+    }
     private fun control(scene: ImageComposeScene, label: String) = nodes(scene).last {
         label in it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
     private fun clickText(scene: ImageComposeScene, text: String) {
@@ -49,12 +56,14 @@ class DesktopNarrativeModeComposerTest {
                 frames(scene); clickText(scene, "推进模式")
                 withTimeout(6000) { while (controller.state.value.selectedSession?.narrativeMode != ChatNarrativeMode.ADVANCE) { frames(scene) } }
                 assertEquals(ChatNarrativeMode.ADVANCE, c.chatRepository.getSession(id)!!.narrativeMode)
+                shot(scene, "inline-advance.png")
                 assertEquals("draft stays unchanged", controller.state.value.composerDraft)
                 assertTrue(control(scene, DesktopUiText.EXPAND_COMPOSER.zhCn).config[SemanticsActions.OnClick].action!!.invoke())
                 frames(scene)
                 assertTrue(control(scene, "回复节奏：推进模式").config[SemanticsActions.OnClick].action!!.invoke())
                 frames(scene); clickText(scene, "聚焦模式")
                 withTimeout(6000) { while (controller.state.value.selectedSession?.narrativeMode != ChatNarrativeMode.FOCUS) { frames(scene) } }
+                shot(scene, "expanded-focus.png")
                 c.modelSettingsController.loadSettings()
                 c.modelSettingsController.editSettings { it.copy(disableNarrativeModes = true) }
                 assertTrue(c.modelSettingsController.state.value.chatDefaultsDirty)
@@ -64,6 +73,7 @@ class DesktopNarrativeModeComposerTest {
                 assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().any { label -> label.startsWith("回复节奏：") } })
                 assertEquals("draft stays unchanged", controller.state.value.composerDraft)
                 assertEquals(ChatNarrativeMode.FOCUS, c.chatRepository.getSession(id)!!.narrativeMode)
+                shot(scene, "disabled-expanded.png")
                 assertEquals(1, c.chatRepository.getMessages(id).size) // No generated/user message or provider call.
             } finally { scene.close() }
         } finally { c.close(); root.toFile().deleteRecursively() }

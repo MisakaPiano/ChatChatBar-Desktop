@@ -216,7 +216,7 @@ class DesktopFakeChatRuntimeTest {
             val strongIndex = contents.indexOf("strong-fixture")
             assertTrue(strongIndex > contents.indexOfFirst { it.contains("trigger original-user") })
             assertEquals("system", request.messages[strongIndex].role)
-            assertEquals(listOf("assistant", "user"), request.messages.drop(strongIndex + 1).map { it.role })
+            assertEquals(listOf("system", "assistant"), request.messages.drop(strongIndex + 1).map { it.role })
             assertTrue("book::entry" in timed)
             assertEquals(request, driver.requests.single())
         }

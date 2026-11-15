@@ -149,7 +149,7 @@ class DesktopPhase7ImagesTest {
         }
     } }
 
-    @Test fun `export replacement changes visible cover without changing package or entity`() = runBlocking { fixture { c, root ->
+    @Test fun `explicit compatible export replacement changes visible cover without changing package or entity`() = runBlocking { fixture { c, root ->
         val background = c.characterResourceStore.materializeImage(
             com.example.chatbar.domain.card.PackagedImage("original.png", java.util.Base64.getEncoder().encodeToString(png())), 1, "original")
         val card = CharacterCard.create("Cover").copy(chatBackground = background)
@@ -162,7 +162,8 @@ class DesktopPhase7ImagesTest {
         val controller = c.createTypedTransferController(picker)
         controller.beginCoverExport(card.id)
         val draft = assertNotNull(controller.state.value.coverExport)
-        controller.finishCoverExport(draft, CharacterCardPngExportOptions(sizePx = 1024), png(Color.BLUE))
+        controller.finishCoverExport(draft, CharacterCardPngExportOptions(sizePx = 1024), png(Color.BLUE),
+            compatibility = CharacterCardExportCompatibility.OFFICIAL_V9)
         assertNull(controller.state.value.error)
         val output = Files.readAllBytes(destination)
         val raw = String(java.util.Base64.getDecoder().decode(assertNotNull(

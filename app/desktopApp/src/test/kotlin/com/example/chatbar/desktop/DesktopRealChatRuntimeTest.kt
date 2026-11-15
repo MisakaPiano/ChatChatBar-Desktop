@@ -293,7 +293,8 @@ class DesktopRealChatRuntimeTest {
                 assertEquals(3, persisted.count { it.role == MessageRole.ASSISTANT })
                 assertEquals("continued-answer", persisted.last().content)
                 assertEquals(1, serialized.count { it == continuationPrompt })
-                assertTrue(serialized.any { it == "first-answer" })
+                assertEquals(MainChatPromptAuthority.narrativeModeHistoryReply("first-answer", ChatNarrativeMode.FOCUS),
+                    serialized.single { it.contains("first-answer") })
                 assertTrue(serialized.any { it.contains("transient-continue-lore") })
                 assertTrue(requireNotNull(timedAtSecondRequest).isNotEmpty())
                 assertEquals(timedAtSecondRequest, timedAfter)
