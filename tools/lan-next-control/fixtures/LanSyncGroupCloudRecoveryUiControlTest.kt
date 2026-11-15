@@ -87,7 +87,10 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         return SafeFailure("SYNTHETIC_CLOUD_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
             " FORM_READ_ATTEMPTS[$formReadAttempts] FORM_BODY_SWIPES_COMPLETED[$formBodySwipesCompleted]" +
             " FORM_READ_GEOMETRY_BEFORE[$formReadGeometryBefore] FORM_READ_GEOMETRY_AFTER[$formReadGeometryAfter]" +
-            " CONSENT_BODY_SWIPES_COMPLETED[$consentBodySwipesCompleted] CONSENT_GEOMETRY_BEFORE[$consentGeometryBefore] CONSENT_GEOMETRY_AFTER[$consentGeometryAfter]").also {
+            " CONSENT_BODY_SWIPES_COMPLETED[$consentBodySwipesCompleted] CONSENT_GEOMETRY_BEFORE[$consentGeometryBefore] CONSENT_GEOMETRY_AFTER[$consentGeometryAfter]" +
+            " PASSIVE_AUTHOR_COUNTS[versions=$observedLocalVersions,changes=$observedLocalChanges,importedCard=$observedImportedCardChanges,importedChat=$observedImportedChatChanges,otherNativeMismatch=$observedOtherNativeMismatches,unaccountedSigned=$observedUnaccountedSigned]" +
+            " PASSIVE_BOOLEANS[stableSigned=$observedStableSigned,exactCardRevision=$observedExactCardRevision,exactCardReceipt=$observedExactCardReceipt]" +
+            " CONTENT_MARKER_COUNTS[card=$observedCardMarkerCount,session=$observedSessionMarkerCount,maxMessageMultiplicity=$observedMessageMarkerMultiplicity]").also {
             it.stackTrace = failure.stackTrace // never original message, cause, UI tree or credential
         }
     }
@@ -185,21 +188,17 @@ class LanSyncGroupCloudRecoveryUiControlTest {
                 live.cloudSettings.value.progress[sourceRoute]?.selectionObserved == true }
             check(live.state.value.stage == LanSyncGroupPanelStage.READY && live.state.value.error == null)
             live.pauseAndDrain()
-            val sourceOperation = old.node.sourceOperations().single()
-            val sourceAuthor = SyncAuthorJournal(profile.resolve("node/author"), old.trust, old.certificate,
-                protection::protect, protection::unprotect)
-            check(sourceAuthor.state().committedSequence == 1L)
-            val version = checkNotNull(sourceAuthor.entry(sourceOperation)).version
+            val sourceObserved = checkNotNull(passive(live))
+            val version = sourceObserved.versions.single()
+            check(version.author == old.device && version.authorSequence == 1L)
             check(version.changes.keys == setOf(CARD_UNIT, CHAT_UNIT))
             val reference = version.reference()
+            val sourceCardHash = checkNotNull(version.changes.getValue(CARD_UNIT).valueHash)
+            val sourceChatHash = checkNotNull(version.changes.getValue(CHAT_UNIT).valueHash)
             val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, sourceRoute)
-            val publication = old.targetPublication(old.work.resolve("cloud-runtime/${sourceRoute.value}/target"), target, prepare = false)
-            val receipt = checkNotNull(publication.cloudReceipt())
+            val receipt = checkNotNull(existingCloudReceipt(old, target, sourceObserved, reference))
             check(receipt.target == target && receipt.checkpoint == oldLedger.reference())
-            check(receipt.objects.any { it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION &&
-                it.objectRequest.slot == reference.id.value })
             check(receipt.objects.any { it.objectRequest.role == LanSyncGroupTargetObjectRole.RESOURCE })
-            check(receipt.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
             phase = "source-closed-and-moved-offline-before-ui"
             live.closeAndDrain(); producer = null
             service.close(); enrollment = null
@@ -281,9 +280,10 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             check(current.sequence == oldLedger.sequence + 1 && current.members.keys == oldLedger.members.keys + access.device)
             oldLedger.members.forEach { (id, member) -> check(current.members.getValue(id) == member) }
             check(current.members.getValue(access.device).active && current.members.getValue(access.device).certificate == access.certificate)
-            check(checkNotNull(access.node.reconcileForPrefetch().history).state(reference.id) == SyncVersionState.ADMITTED)
-            assertAuthorZero(app, access)
+            phase = "full-original-chat-replies-document-before-author-diagnostics"
             assertRestored(app, sessionHash, messagesHash, sha(documentBytes))
+            phase = "passive-imported-refs-default-local-version-classification"
+            val baseline = awaitPassiveBaseline(app, coordinator, access, reference, sourceCardHash, sourceChatHash)
             val row = access.cloudRoutes().rows().single()
             check(row.enabled && row.endpoint == endpoint && row.username == USER)
             val routeFile = access.work.resolve("cloud-connections/cloud-routes.protected")
@@ -293,6 +293,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             click("关闭")
             launched.close(); scenario = null
             owner.closeAndDrain() // cleanup, no sticky pause; next process gets a fresh real owner
+            retainSignedHistory(app, baseline.signed)
             val oracle = Properties().apply {
                 setProperty("pid", Process.myPid().toString()); setProperty("device", access.device)
                 setProperty("group", access.trust.group.value); setProperty("genesis", access.trust.genesis.toString())
@@ -300,10 +301,13 @@ class LanSyncGroupCloudRecoveryUiControlTest {
                 setProperty("ledgerHash", sha(Json.encodeToString(SyncDeviceLedgerRecord.serializer(), current).toByteArray()))
                 setProperty("sessionHash", sessionHash); setProperty("messagesHash", messagesHash); setProperty("documentHash", sha(documentBytes))
                 setProperty("referenceId", reference.id.value); setProperty("referenceHash", reference.bodyHash)
+                setProperty("sourceCardHash", sourceCardHash); setProperty("sourceChatHash", sourceChatHash)
+                setProperty("historyRefs", saveMap(versionMap(baseline.observed.versions)))
+                setProperty("signedHistory", saveMap(signedHistory(app)))
+                setProperty("nativeSequence", baseline.observed.view.nativeState.completedSequence.toString())
                 setProperty("identityHash", hash(native.resolve("identity.protected")))
                 setProperty("authorOriginHash", hash(native.resolve("group-profile/joining/node/author/origin.protected")))
                 setProperty("nativeOriginHash", hash(native.resolve("group-profile/joining/node/native/origin.protected")))
-                setProperty("nativeHeadHash", hash(native.resolve("group-profile/joining/node/native/head.protected")))
                 setProperty("routeId", row.id.value); setProperty("routeHash", hash(routeFile)); setProperty("endpoint", endpoint)
                 setProperty("offlinePath", offline.toString()); setProperty("offlineInventoryHash", inventoryHash(sourceInventory))
                 setProperty("sourceAbsentPath", source.toString()); setProperty("certificateHash", sha(cert))
@@ -352,12 +356,15 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             check(sha(Json.encodeToString(SyncDeviceLedgerRecord.serializer(), access.ledger().current()).toByteArray()) == expected("ledgerHash"))
             val native = nativeRoot(actual)
             for ((name, path) in listOf("identityHash" to "identity.protected", "authorOriginHash" to "group-profile/joining/node/author/origin.protected",
-                "nativeOriginHash" to "group-profile/joining/node/native/origin.protected", "nativeHeadHash" to "group-profile/joining/node/native/head.protected"))
+                "nativeOriginHash" to "group-profile/joining/node/native/origin.protected"))
                 check(hash(native.resolve(path)) == expected(name))
-            assertAuthorZero(actual, access)
+            phase = "cold-full-content-and-immutable-history-before-edit"
             val reference = SyncVersionRef(SyncStoreId.parse(expected("referenceId")), expected("referenceHash"))
-            check(checkNotNull(access.node.reconcileForPrefetch().history).state(reference.id) == SyncVersionState.ADMITTED)
             assertRestored(actual, expected("sessionHash"), expected("messagesHash"), expected("documentHash"))
+            val retainedRefs = readMap(expected("historyRefs")); val retainedSigned = readMap(expected("signedHistory"))
+            val coldBaseline = awaitPassiveBaseline(actual, coordinator, access, reference,
+                expected("sourceCardHash"), expected("sourceChatHash"), retainedRefs, retainedSigned)
+            check(coldBaseline.observed.view.nativeState.completedSequence >= expected("nativeSequence").toLong())
             val row = access.cloudRoutes().rows().single()
             check(row.enabled && row.id.value == expected("routeId") && row.endpoint == expected("endpoint") && row.username == USER)
             check(hash(access.work.resolve("cloud-connections/cloud-routes.protected")) == expected("routeHash"))
@@ -365,22 +372,29 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             phase = "ordinary-android-source-change-and-saved-route-auto-upload"
             // Normal committed app data change; no Sync button, Runtime.run or node.upload call.
             val card = checkNotNull(actual.characterRepository.getById(CARD))
-            actual.jsonFileStorage.saveEntity("character_cards", CARD, card.copy(name = "synthetic cold ordinary revision", updatedAt = 5), CharacterCard.serializer())
-            val protection = AndroidLanSyncKeyProtection()
-            val author = SyncAuthorJournal(native.resolve("group-profile/joining/node/author"), access.trust, access.certificate,
-                protection::protect, protection::unprotect)
-            await(180_000) { author.state().committedSequence == 1L }
-            val operation = access.node.sourceOperations().single()
-            val newReference = checkNotNull(author.entry(operation)).version.reference()
+            val expectedHash = expectedCardHash(checkNotNull(coldBaseline.observed.view.plan).before)
+            check(expectedHash != expected("sourceCardHash"))
+            val edited = card.copy(name = EDITED_CARD_NAME, updatedAt = 5)
+            actual.characterRepository.save(edited) // ordinary committed repository hook, no Sync/probe/upload
+            phase = "await-exact-card-version-native-frontier"
+            val editedView = awaitExactCardRevision(actual, coordinator, access, coldBaseline, reference,
+                expected("sourceCardHash"), expected("sourceChatHash"), expectedHash)
+            val newVersion = editedView.versions.single { it.author == access.device && CARD_UNIT in it.changes }
+            val newReference = newVersion.reference()
+            check(newReference != reference && newVersion.changes.getValue(CARD_UNIT).valueHash == expectedHash)
             val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, row.id)
+            phase = "await-existing-exact-new-version-cloud-receipt-no-probe"
             await(180_000) {
-                access.targetPublication(access.work.resolve("cloud-runtime/${row.id.value}/target"), target, prepare = false)
-                    .cloudReceipt()?.objects?.any { it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION && it.objectRequest.slot == newReference.id.value } == true
+                val observed = passive(coordinator) ?: return@await false
+                val receipt = existingCloudReceipt(access, target, observed, newReference, reference)
+                if (receipt == null) false else { observedExactCardReceipt = true; true }
             }
-            val newReceipt = checkNotNull(access.targetPublication(access.work.resolve("cloud-runtime/${row.id.value}/target"), target, prepare = false).cloudReceipt())
-            check(newReceipt.target == target && newReceipt.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
-            check(newReference != reference && author.state().committedSequence == 1L)
-            check(messageHash(actual.chatRepository.getMessagesReadOnly(SESSION)) == expected("messagesHash"))
+            check(observedExactCardRevision && observedExactCardReceipt)
+            awaitExactCardRevision(actual, coordinator, access, coldBaseline, reference,
+                expected("sourceCardHash"), expected("sourceChatHash"), expectedHash)
+            check(actual.characterRepository.getById(CARD) == edited)
+            assertRestored(actual, expected("sessionHash"), expected("messagesHash"), expected("documentHash"), EDITED_CARD_NAME)
+            retainSignedHistory(actual, retainedSigned)
             check(!Files.exists(source, NOFOLLOW_LINKS) && inventoryHash(hashes(offline)) == expected("offlineInventoryHash"))
             // A target readback receipt proves encrypted cloud upload, not a second peer's delivery.
             phase = "cold-saved-route-and-new-upload-complete"
@@ -438,12 +452,211 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         // Do not call click(): a second semantic scroll could undo the actual body gesture.
         read.assertIsDisplayed().assertIsEnabled().performClick()
     }
-    private suspend fun assertAuthorZero(app: ChatBarApp, access: LanSyncGroupRuntimeAccess) {
-        val p = AndroidLanSyncKeyProtection()
-        val author = SyncAuthorJournal(nativeRoot(app).resolve("group-profile/joining/node/author"), access.trust,
-            access.certificate, p::protect, p::unprotect)
-        check(author.state().committedSequence == 0L && access.node.sourceOperations().isEmpty())
+    private data class PassiveView(val view: LanSyncGroupNodeView, val history: SyncCausalHistory,
+        val versions: List<SyncCausalVersion>)
+    private data class PassiveBaseline(val observed: PassiveView, val signed: Map<String, String>)
+    private var observedLocalVersions = 0
+    private var observedLocalChanges = 0
+    private var observedImportedCardChanges = 0
+    private var observedImportedChatChanges = 0
+    private var observedOtherNativeMismatches = 0
+    private var observedUnaccountedSigned = 0
+    private var observedStableSigned = false
+    private var observedExactCardRevision = false
+    private var observedExactCardReceipt = false
+    private var observedCardMarkerCount = 0
+    private var observedSessionMarkerCount = 0
+    private var observedMessageMarkerMultiplicity = 0
+
+    // Only existing in-memory runtime projection. Never inspect/reconcile/capture/apply here.
+    private fun passive(coordinator: LanSyncGroupCoordinator): PassiveView? {
+        val view = coordinator.view.value ?: return null
+        val history = view.reconciliation.history?.snapshot() ?: return null
+        return PassiveView(view, history, history.admittedVersions())
     }
+    private fun signedHistory(app: ChatBarApp): Map<String, String> {
+        val directory = nativeRoot(app).resolve("group-profile/joining/node/author")
+        check(Files.isDirectory(directory, NOFOLLOW_LINKS) && !Files.isSymbolicLink(directory))
+        return Files.newDirectoryStream(directory, "signed-*.protected").use { paths ->
+            val result = sortedMapOf<String, String>()
+            for (path in paths) {
+                val name = path.fileName.toString()
+                check(name.matches(Regex("signed-[0-9]{19}\\.protected")))
+                result[name] = hash(path)
+            }
+            result
+        }
+    }
+    private fun retainSignedHistory(app: ChatBarApp, before: Map<String, String>) {
+        val current = signedHistory(app)
+        check(before.all { (name, digest) -> current[name] == digest })
+    }
+    private fun saveMap(values: Map<String, String>): String = values.toSortedMap().entries.joinToString("\n") { it.key + "=" + it.value }
+    private fun readMap(value: String): Map<String, String> = if (value.isEmpty()) emptyMap() else value.lines().associate { line ->
+        val pair = line.split('=', limit = 2); check(pair.size == 2); pair[0] to pair[1]
+    }
+    private fun versionMap(versions: List<SyncCausalVersion>) = versions.associate { it.id.value to it.bodyHash() }
+    private fun retainVersions(observed: PassiveView, before: Map<String, String>) {
+        val current = versionMap(observed.versions)
+        check(before.all { (id, digest) -> current[id] == digest })
+    }
+
+    /** Classify actual admitted signed versions, never a global author counter assumption. */
+    private fun localVersionsMatchNative(app: ChatBarApp, access: LanSyncGroupRuntimeAccess,
+        observed: PassiveView, signed: Map<String, String>, allowedCard: SyncVersionRef? = null): Boolean {
+        val local = observed.versions.filter { it.author == access.device }
+        observedLocalVersions = local.size
+        observedLocalChanges = local.sumOf { it.changes.size }
+        val cards = local.filter { CARD_UNIT in it.changes }
+        observedImportedCardChanges = cards.size
+        observedImportedChatChanges = local.count { CHAT_UNIT in it.changes }
+        check(local.all { it.group == access.trust.group } && access.device !in observed.history.authorForks())
+        check(local.map { it.authorSequence }.distinct().size == local.size)
+        check(observedImportedChatChanges == 0)
+        check(if (allowedCard == null) cards.isEmpty() else cards.size == 1 && cards.single().reference() == allowedCard)
+        val names = local.mapTo(linkedSetOf()) { "signed-${it.authorSequence.toString().padStart(19, '0')}.protected" }
+        observedUnaccountedSigned = (signed.keys - names).size + (names - signed.keys).size
+        val projected = observed.view.plan?.before?.hashes() ?: return false
+        val otherUnits = local.flatMap { it.changes.keys }.toSet() - setOf(CARD_UNIT, CHAT_UNIT)
+        observedOtherNativeMismatches = otherUnits.count { unit ->
+            val latest = local.filter { unit in it.changes }.maxBy { it.authorSequence }
+            val change = latest.changes.getValue(unit)
+            val native = observed.view.nativeState.units[unit]
+            // Classify actual non-imported native units; do not assert unknown units are proven defaults.
+            change.content == null || native == null || projected[unit] != change.valueHash || native.valueHash != change.valueHash ||
+                latest.reference() !in native.frontiers
+        }
+        return observedUnaccountedSigned == 0 && observedOtherNativeMismatches == 0
+    }
+    private fun importedMatches(observed: PassiveView, reference: SyncVersionRef,
+        cardHash: String, chatHash: String, cardReference: SyncVersionRef = reference): Boolean {
+        if (!observed.history.contains(reference)) return false
+        val source = observed.versions.single { it.reference() == reference }
+        check(source.changes.keys == setOf(CARD_UNIT, CHAT_UNIT))
+        check(source.changes.getValue(CARD_UNIT).valueHash == cardHash && source.changes.getValue(CHAT_UNIT).valueHash == chatHash)
+        val card = observed.view.nativeState.units[CARD_UNIT] ?: return false
+        val chat = observed.view.nativeState.units[CHAT_UNIT] ?: return false
+        val plan = observed.view.plan ?: return false
+        val expectedCard = if (cardReference == reference) cardHash else
+            observed.versions.single { it.reference() == cardReference }.changes.getValue(CARD_UNIT).valueHash
+        return card.valueHash == expectedCard && card.frontiers == setOf(cardReference) &&
+            chat.valueHash == chatHash && chat.frontiers == setOf(reference) &&
+            plan.before.hashes()[CARD_UNIT] == expectedCard && plan.before.hashes()[CHAT_UNIT] == chatHash
+    }
+    private suspend fun awaitPassiveBaseline(app: ChatBarApp, coordinator: LanSyncGroupCoordinator,
+        access: LanSyncGroupRuntimeAccess, reference: SyncVersionRef, cardHash: String, chatHash: String,
+        retainedVersions: Map<String, String> = emptyMap(), retainedSigned: Map<String, String> = emptyMap()): PassiveBaseline {
+        var accepted: PassiveBaseline? = null
+        await(180_000) {
+            val before = signedHistory(app)
+            val observed = passive(coordinator) ?: return@await false
+            if (!observed.history.contains(reference)) return@await false
+            retainVersions(observed, retainedVersions)
+            check(retainedSigned.all { (name, digest) -> before[name] == digest })
+            val actual = localVersionsMatchNative(app, access, observed, before)
+            val after = signedHistory(app)
+            observedStableSigned = before == after
+            if (actual && observedStableSigned && importedMatches(observed, reference, cardHash, chatHash)) {
+                accepted = PassiveBaseline(observed, after); true
+            } else false
+        }
+        return checkNotNull(accepted)
+    }
+    private fun expectedCardHash(before: LanSyncSnapshot): String {
+        check(before.records.count { it.type == "character_cards" && it.id == CARD } == 1)
+        val records = before.records.map { record ->
+            if (record.type != "character_cards" || record.id != CARD) record else record.copy(body =
+                kotlinx.serialization.json.JsonObject(record.body.toMutableMap().apply {
+                    put("name", kotlinx.serialization.json.JsonPrimitive(EDITED_CARD_NAME))
+                    put("updatedAt", kotlinx.serialization.json.JsonPrimitive(5))
+                }))
+        }
+        // Official frozen snapshot/unit hashing; no second projection or business serialization format.
+        return before.copy(records = records).hashes().getValue(CARD_UNIT)
+    }
+    private suspend fun awaitExactCardRevision(app: ChatBarApp, coordinator: LanSyncGroupCoordinator,
+        access: LanSyncGroupRuntimeAccess, baseline: PassiveBaseline, source: SyncVersionRef,
+        sourceCardHash: String, sourceChatHash: String, expectedHash: String): PassiveView {
+        val prior = versionMap(baseline.observed.versions)
+        val priorMaximum = baseline.observed.versions.filter { it.author == access.device }.maxOfOrNull { it.authorSequence } ?: 0L
+        val priorCard = baseline.observed.view.nativeState.units.getValue(CARD_UNIT)
+        var accepted: PassiveView? = null
+        await(180_000) {
+            val signed = signedHistory(app)
+            val observed = passive(coordinator) ?: return@await false
+            retainVersions(observed, prior); retainSignedHistory(app, baseline.signed)
+            val candidates = observed.versions.filter { version ->
+                version.author == access.device && version.id.value !in prior && version.authorSequence > priorMaximum &&
+                    version.changes[CARD_UNIT]?.valueHash == expectedHash && CHAT_UNIT !in version.changes
+            }
+            check(candidates.size <= 1)
+            val candidate = candidates.singleOrNull() ?: return@await false
+            check(candidate.changes.getValue(CARD_UNIT).previous == priorCard.frontiers)
+            val reference = candidate.reference()
+            val actual = localVersionsMatchNative(app, access, observed, signed, reference)
+            observedStableSigned = signed == signedHistory(app)
+            if (actual && observedStableSigned && importedMatches(observed, source, sourceCardHash, sourceChatHash, reference)) {
+                observedExactCardRevision = true; accepted = observed; true
+            } else false
+        }
+        return checkNotNull(accepted)
+    }
+
+    /** Existing immutable plan/receipt bytes only. No TargetPublication construction or recovery. */
+    private fun existingCloudReceipt(access: LanSyncGroupRuntimeAccess, target: SyncDeliveryTarget,
+        observed: PassiveView, required: SyncVersionRef, retainedSource: SyncVersionRef = required): LanSyncGroupCloudTargetReceipt? {
+        val directory = access.work.resolve("cloud-runtime/${target.id.value}/target")
+        if (!Files.exists(directory, NOFOLLOW_LINKS)) return null
+        check(Files.isDirectory(directory, NOFOLLOW_LINKS) && !Files.isSymbolicLink(directory))
+        return Files.newDirectoryStream(directory, "cloud-receipt-*.json").use { paths ->
+            var found: LanSyncGroupCloudTargetReceipt? = null
+            for (path in paths) {
+                val name = path.fileName.toString()
+                check(name.matches(Regex("cloud-receipt-[a-f0-9]{64}\\.json")))
+                val receiptRaw = metadataBytes(path)
+                val receipt = Json.decodeFromString(LanSyncGroupCloudTargetReceipt.serializer(), receiptRaw.toString(Charsets.UTF_8))
+                val selected = receipt.objects.singleOrNull { it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION &&
+                    it.objectRequest.slot == required.id.value } ?: continue
+                val planPath = directory.resolve("plan-" + name.removePrefix("cloud-receipt-"))
+                val planRaw = metadataBytes(planPath)
+                val plan = Json.decodeFromString(LanSyncGroupTargetPlan.serializer(), planRaw.toString(Charsets.UTF_8))
+                check(receipt.planHash == sha(planRaw) && receipt.target == target && receipt.checkpoint == plan.checkpoint)
+                check(plan.group == access.trust.group && plan.target == target && required in plan.versions && retainedSource in plan.versions)
+                check(plan.checkpoint == observed.view.reconciliation.ledgerCheckpoint && receipt.rejectedCandidates >= 0)
+                check(receipt.objects.map { it.objectRequest } == plan.objects)
+                check(plan.objects.map { it.key }.distinct().size == plan.objects.size)
+                val witnesses = observed.view.reconciliation.authenticatedVersions.filter { it.envelope.version?.reference() == required }
+                if (witnesses.none { it.metadata.key == selected.objectRequest.key && it.metadata.descriptor == selected.objectRequest.descriptor &&
+                    it.context.group == plan.group && it.context.epoch == plan.epoch && it.keyCommitment == plan.commitment }) continue
+                receipt.objects.forEach { row ->
+                    val readback = row.evidence.readback as? LanSyncGroupCloudTargetObservation.Chunks ?: error("EXPECTED_CHUNK_READBACK")
+                    check(readback.observation.logicalKey == row.objectRequest.key && readback.observation.logicalDescriptor == row.objectRequest.descriptor)
+                    check(readback.observation.manifest.route == target.id && readback.observation.manifest.manifestKey == row.objectRequest.key)
+                    check(readback.observation.manifest.manifestDescriptor.length > 0 && readback.observation.observedAtMillis >= 0)
+                    check(readback.observation.chunkCount >= 0 &&
+                        (readback.observation.chunkCount == 0L) == (row.objectRequest.descriptor.length == 0L))
+                    val evidence = row.evidence
+                    if (evidence is LanSyncGroupCloudTargetEvidence.Appended) {
+                        val append = (evidence.append as? LanSyncGroupCloudTargetObservation.Chunks)?.observation ?: error("EXPECTED_CHUNK_APPEND")
+                        val actual = readback.observation
+                        check(append.logicalKey == actual.logicalKey && append.logicalDescriptor == actual.logicalDescriptor &&
+                            append.logicalOperation == actual.logicalOperation && append.manifest == actual.manifest && append.chunkCount == actual.chunkCount)
+                        check(append.logicalOperation == row.objectRequest.operation && actual.logicalOperation == row.objectRequest.operation && append.observedAtMillis >= 0)
+                    }
+                }
+                check(sha(metadataBytes(path)) == sha(receiptRaw) && sha(metadataBytes(planPath)) == sha(planRaw))
+                found = receipt
+            }
+            found
+        }
+    }
+    private fun metadataBytes(path: Path): ByteArray {
+        check(Files.isRegularFile(path, NOFOLLOW_LINKS) && !Files.isSymbolicLink(path))
+        // Fixture metadata decode budget only, unrelated to attachment/storage/business-data limits.
+        check(Files.size(path) in 1..(Runtime.getRuntime().maxMemory() / 16))
+        return Files.readAllBytes(path)
+    }
+
     private fun tlsPreflight(endpoint: String, pass: String, cert: ByteArray) {
         fun close(client: OkHttpClient) { client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll() }
         val client = WebDavCloudClient.create()
@@ -480,9 +693,10 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             } finally { close(untrusted) }
         }
     }
-    private suspend fun assertRestored(app: ChatBarApp, sessionHash: String, messagesHash: String, documentHash: String) {
+    private suspend fun assertRestored(app: ChatBarApp, sessionHash: String, messagesHash: String, documentHash: String,
+        expectedCardName: String = "synthetic cloud recovery card") {
         val card = checkNotNull(app.characterRepository.getById(CARD))
-        check(card.id == CARD && card.name == "synthetic cloud recovery card" &&
+        check(card.id == CARD && card.name == expectedCardName &&
             card.basicSetting == "synthetic original domain body; no edited Prompt")
         val doc = card.customDocuments.single()
         check(doc.id == "original-document" && doc.fileName == "original.bin")
@@ -506,8 +720,16 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         check(actual.last().content == LAST && actual.last().displayContent == LAST &&
             actual.last().alternativeVersionIds == listOf("a2-v0", "a2-v1") &&
             actual.last().currentAlternativeIndex == 1 && actual.last().currentAlternativeVersionId == "a2-v1")
-        check(app.jsonFileStorage.loadAll("chat_sessions", ChatSession.serializer()).count { it.id == SESSION } == 1)
-        check(app.jsonFileStorage.loadAll("chat_messages", ChatMessage.serializer()).filter { it.sessionId == SESSION }.size == 4)
+        val allCards = app.jsonFileStorage.loadAll("character_cards", CharacterCard.serializer())
+        val allSessions = app.jsonFileStorage.loadAll("chat_sessions", ChatSession.serializer())
+        val allMessages = app.jsonFileStorage.loadAll("chat_messages", ChatMessage.serializer())
+        observedCardMarkerCount = allCards.count { it.basicSetting == "synthetic original domain body; no edited Prompt" }
+        observedSessionMarkerCount = allSessions.count { it.title == "synthetic latest recoverable conversation" }
+        val messageMarkerCounts = messages().map { marker -> allMessages.count { it.content == marker.content } }
+        observedMessageMarkerMultiplicity = messageMarkerCounts.maxOrNull() ?: 0
+        check(observedCardMarkerCount == 1 && observedSessionMarkerCount == 1 && messageMarkerCounts.all { it == 1 })
+        check(allSessions.count { it.id == SESSION } == 1)
+        check(allMessages.filter { it.sessionId == SESSION }.size == 4)
     }
 
     private fun messages() = listOf(
@@ -567,6 +789,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         const val USER = "synthetic-android-cloud-ui"
         const val CARD = "original"
         const val SESSION = "latest-conversation"
+        const val EDITED_CARD_NAME = "synthetic cold ordinary revision"
         const val CARD_UNIT = "character_cards/original"
         const val CHAT_UNIT = "conversation/latest-conversation"
         const val LAST = "Synthetic last assistant reply: the offline trip starts after this exact message."

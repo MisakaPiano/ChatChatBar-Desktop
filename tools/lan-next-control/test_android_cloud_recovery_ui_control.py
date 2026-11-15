@@ -12,7 +12,7 @@ import android_cloud_recovery_ui_control as control
 
 HERE = Path(__file__).resolve().parent
 CONTROL_ROOT = r"I:\CCB-LanSigning-Proof-20261113"
-FIXED_CONTROL = "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7"
+FIXED_CONTROL = "1da064e91a7a94c4ff16da8934b8cec4bbfdb200"
 
 
 def report(method, status=0):
@@ -32,7 +32,8 @@ def argv(method=None):
 
 class DraftPureGuards(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix=".pure-", dir=HERE)
+        parent = ('\\\\?\\' + str(HERE)) if sys.platform == 'win32' else str(HERE)
+        self.temp = tempfile.TemporaryDirectory(prefix=".pure-", dir=parent)
         self.root = Path(self.temp.name)
         for name in control.PINS:
             local = HERE / name
@@ -156,10 +157,49 @@ class DraftPureGuards(unittest.TestCase):
         for denied in ("LanSyncGroupCloudRecoveryOwner(", ".prepareCloudRecovery(", ".openCloudRecovery(", ".confirm(", "trustAll", "setDefaultHostnameVerifier", "setDefaultSSLSocketFactory", "performSemanticsAction", "node.upload("):
             self.assertNotIn(denied, text)
         for expected in ("WebDavCloudClient.create()", "SSLPeerUnverifiedException", "SSLHandshakeException", "Security.removeProvider(NAME)",
-                         "!panel.busy", "hasClickAction()", "isToggleable()", "consent.performClick()", "compose.waitForIdle()", "Process.myPid()", "sourceInventory", "author.state().committedSequence == 1L"):
+                         "!panel.busy", "hasClickAction()", "isToggleable()", "consent.performClick()", "compose.waitForIdle()", "Process.myPid()", "sourceInventory", "history.admittedVersions()", "awaitExactCardRevision", "expectedCardHash"):
             self.assertIn(expected, text)
         self.assertNotIn("failure.message", text); self.assertNotIn("failure.cause", text)
         self.assertEqual(hashlib.sha256((HERE / control.FIXTURE).read_bytes()).hexdigest(), control.FIXTURE_SHA)
+    def test_passive_observer_cannot_advance_or_create_normal_runtime_results(self):
+        text = (HERE / control.FIXTURE).read_text(encoding="utf8")
+        for denied in ("assertAuthorZero", "committedSequence", "SyncAuthorJournal(", "sourceOperations()", "reconcileForPrefetch()",
+                       "targetPublication(", "inspectLocal(", ".node.inspect(", ".node.apply("):
+            self.assertNotIn(denied, text)
+        reader = text[text.index("    private fun existingCloudReceipt("):text.index("    private fun metadataBytes(")]
+        for denied in ("createDirectory", "createDirectories", "CREATE_NEW", "prepare(", "recover", "newOutputStream", ".write("):
+            self.assertNotIn(denied, reader)
+        for expected in ("if (!Files.exists(directory, NOFOLLOW_LINKS)) return null", "LanSyncGroupCloudTargetReceipt.serializer()",
+                         "LanSyncGroupTargetPlan.serializer()", "receipt.planHash == sha(planRaw)", "required in plan.versions",
+                         "retainedSource in plan.versions", "witnesses.none", "selected.objectRequest.descriptor"):
+            self.assertIn(expected, reader)
+        self.assertLess(text.index('phase = "full-original-chat-replies-document-before-author-diagnostics"'),
+                        text.index('val baseline = awaitPassiveBaseline('))
+    def test_cold_allows_progress_but_locks_original_content_and_immutable_history(self):
+        text = (HERE / control.FIXTURE).read_text(encoding="utf8")
+        self.assertNotIn("nativeHeadHash", text)
+        for expected in ("nativeOriginHash", "authorOriginHash", "identityHash", "retainSignedHistory", "retainVersions",
+                         "completedSequence >=", "version.authorSequence > priorMaximum", "priorCard.frontiers",
+                         "before.copy(records = records).hashes()", "actual.characterRepository.save(edited)"):
+            self.assertIn(expected, text)
+        self.assertIn("cards.isEmpty() else cards.size == 1", text)
+        self.assertIn("observedImportedChatChanges == 0", text)
+        self.assertIn("observedCardMarkerCount == 1 && observedSessionMarkerCount == 1", text)
+        self.assertIn("messageMarkerCounts.all { it == 1 }", text)
+    def test_original_ui_tls_and_native_tail_are_byte_preserved(self):
+        original = subprocess.run(["git", "-C", CONTROL_ROOT, "show", FIXED_CONTROL + ":tools/lan-next-control/" + control.FIXTURE],
+                                  check=True, capture_output=True, timeout=30).stdout.decode("utf8")
+        text = (HERE / control.FIXTURE).read_text(encoding="utf8")
+        def section(value, start, end):
+            return value[value.index(start):value.index(end, value.index(start))]
+        self.assertEqual(section(original, "    private fun tlsPreflight(", "    private suspend fun assertRestored("),
+                         section(text, "    private fun tlsPreflight(", "    private suspend fun assertRestored("))
+        self.assertEqual(original[original.index("/** One public certificate,"):], text[text.index("/** One public certificate,"):])
+        self.assertEqual(section(original, '            phase = "real-activity-default-factory-cloud-ui-prepare"',
+                                 "            val access = checkNotNull(owner.groupJoining.runtimeAccess())"),
+                         section(text, '            phase = "real-activity-default-factory-cloud-ui-prepare"',
+                                 "            val access = checkNotNull(owner.groupJoining.runtimeAccess())"))
+
     def test_provider_and_runner_network_are_finite_and_loopback_only(self):
         text = (HERE / "android_cloud_recovery_ui_control.py").read_text(encoding="utf8")
         self.assertIn('"127.0.0.1:" + str(port)', text)
