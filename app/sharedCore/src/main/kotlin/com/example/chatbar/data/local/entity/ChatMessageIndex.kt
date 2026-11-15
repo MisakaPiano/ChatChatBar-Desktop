@@ -41,6 +41,12 @@ data class ChatMessagePage(
     val totalMessageCount: Int
 )
 
+/** Query-owned proof: the complete recent suffix is distinct from separately pinned old turns. */
+data class ChatContextCandidateSnapshot(
+    val messages: List<ChatMessage>,
+    val completeRecentMessageIds: Set<String>,
+)
+
 fun ChatMessage.toIndexEntry(): ChatMessageIndexEntry = ChatMessageIndexEntry(
     messageId = id,
     role = role,

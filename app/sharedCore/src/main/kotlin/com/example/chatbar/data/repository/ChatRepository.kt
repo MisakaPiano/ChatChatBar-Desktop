@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.ChatDraft
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatMessageIndex
 import com.example.chatbar.data.local.entity.ChatMessageIndexEntry
+import com.example.chatbar.data.local.entity.ChatContextCandidateSnapshot
 import com.example.chatbar.data.local.entity.ChatMessagePage
 import com.example.chatbar.data.local.entity.ChatMessageOrderBackup
 import com.example.chatbar.data.local.entity.ChatMessageOrderBackupEntry
@@ -1171,6 +1172,32 @@ class ChatRepository internal constructor(
             recentTurnCount = recentTurnCount,
             includeSourceTurnIds = includeSourceTurnIds,
         ).mapNotNull { byId[it.messageId] }
+    }
+
+    /** Preserve the query's contiguous tail proof without loading the omitted middle history. */
+    suspend fun getContextCandidateSnapshot(sessionId: String, recentTurnCount: Int,
+        includeSourceTurnIds: Set<String> = emptySet()): ChatContextCandidateSnapshot {
+        val index = loadMessageIndex(sessionId)
+        val messages = loadIndexedMessages(sessionId, contextCandidateEntries(index.entries, recentTurnCount, includeSourceTurnIds))
+        return contextCandidateSnapshot(index.entries, messages, recentTurnCount)
+    }
+
+    /** Same proof for inspectors, without repairing an index or tolerating unknown message files. */
+    suspend fun getContextCandidateSnapshotReadOnly(sessionId: String, recentTurnCount: Int,
+        includeSourceTurnIds: Set<String> = emptySet()): ChatContextCandidateSnapshot {
+        val all = mapMessagesReadOnlyStrict(sessionId) { it }.sortedWith(ChatMessage.TimelineComparator)
+        val entries = all.map(ChatMessage::toIndexEntry)
+        val byId = all.associateBy(ChatMessage::id)
+        val messages = contextCandidateEntries(entries, recentTurnCount, includeSourceTurnIds).map { byId.getValue(it.messageId) }
+        return contextCandidateSnapshot(entries, messages, recentTurnCount)
+    }
+
+    private fun contextCandidateSnapshot(entries: List<ChatMessageIndexEntry>, messages: List<ChatMessage>,
+        recentTurnCount: Int): ChatContextCandidateSnapshot {
+        val recent = contextCandidateEntries(entries, recentTurnCount, emptySet())
+        val byId = messages.associateBy(ChatMessage::id)
+        val complete = messages.size == byId.size && recent.all { byId[it.messageId]?.toIndexEntry() == it }
+        return ChatContextCandidateSnapshot(messages, if (complete) recent.mapTo(linkedSetOf()) { it.messageId } else emptySet())
     }
 
     private fun contextCandidateEntries(

@@ -14,6 +14,8 @@ import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptZone
+import com.example.chatbar.domain.chat.ChatHistoryActionProjection
+import com.example.chatbar.domain.chat.ChatHistoryActionRequestSource
 import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.TimelineArchiveBoundaryPolicy
 import com.example.chatbar.domain.chat.MainChatRequestAssembler
@@ -69,6 +71,7 @@ internal class DesktopChatRequestPlanner(
             sessionId = sessionId,
             currentUser = currentUser,
             currentUserPersisted = true,
+            actionRequestSource = ChatHistoryActionRequestSource.PERSISTED_USER,
             inputs = inputs,
             readOnlyRepositoryAccess = readOnlyRepositoryAccess,
             onPreparationStage = onPreparationStage,
@@ -99,6 +102,8 @@ internal class DesktopChatRequestPlanner(
             sessionId = sessionId,
             currentUser = currentUser,
             currentUserPersisted = persistedUser != null,
+            actionRequestSource = if (persistedUser != null) ChatHistoryActionRequestSource.PERSISTED_USER
+                else ChatHistoryActionRequestSource.UI_CONTINUATION,
             inputs = inputs,
             readOnlyRepositoryAccess = readOnlyRepositoryAccess,
             onPreparationStage = onPreparationStage,
@@ -133,6 +138,8 @@ internal class DesktopChatRequestPlanner(
         return planCurrentUser(
             sessionId, user ?: ChatMessage.create(sessionId, MessageRole.USER, ""),
             currentUserPersisted = user != null, inputs = inputs, readOnlyRepositoryAccess = false,
+            actionRequestSource = if (user != null) ChatHistoryActionRequestSource.PERSISTED_USER
+                else ChatHistoryActionRequestSource.NO_USER_REGENERATION,
             regenerationTargetId = targetMessageId, regenerationContext = context,
             includeCurrentUser = user != null,
             onPreparationStage = onPreparationStage,
@@ -143,6 +150,7 @@ internal class DesktopChatRequestPlanner(
         sessionId: String,
         currentUser: ChatMessage,
         currentUserPersisted: Boolean,
+        actionRequestSource: ChatHistoryActionRequestSource,
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
         regenerationTargetId: String? = null,
@@ -169,19 +177,20 @@ internal class DesktopChatRequestPlanner(
         val candidateTurnCount = (effectiveContextWindowSize.toLong() + CONTEXT_CANDIDATE_PADDING)
             .coerceAtMost(Int.MAX_VALUE.toLong())
             .toInt()
-        val candidates = if (readOnlyRepositoryAccess) {
-            chatRepository.getContextCandidateMessagesReadOnly(
+        val candidateSnapshot = if (readOnlyRepositoryAccess) {
+            chatRepository.getContextCandidateSnapshotReadOnly(
                 sessionId = session.id,
                 recentTurnCount = candidateTurnCount,
                 includeSourceTurnIds = protectedSources,
             )
         } else {
-            chatRepository.getContextCandidateMessages(
+            chatRepository.getContextCandidateSnapshot(
                 sessionId = session.id,
                 recentTurnCount = candidateTurnCount,
                 includeSourceTurnIds = protectedSources,
             )
-        }.filterNot { it.id == regenerationTargetId }
+        }
+        val candidates = candidateSnapshot.messages.filterNot { it.id == regenerationTargetId }
         // Whole-turn expansion must operate on the same excluded-target universe. Re-reading
         // an earlier target here otherwise adds it back when a later user belongs to the window.
         val contextCandidates = if (currentUserPersisted) {
@@ -202,6 +211,10 @@ internal class DesktopChatRequestPlanner(
             contextMessages = contextMessages,
             latestMessageId = currentUser.id.takeIf { currentUserPersisted },
         )
+        // Private callers prove UI controls separately from a persisted user's "continue/2".
+        // No control is interpreted as choosing an action and no user input is rewritten.
+        val actionProjection = ChatHistoryActionProjection.prepare(contextCandidates,
+            candidateSnapshot.completeRecentMessageIds, requestSource = actionRequestSource)
 
         val worldBookDebugLog = mutableListOf<String>()
         val worldBookPlan = worldBookRequestPlanner.plan(
@@ -277,6 +290,7 @@ internal class DesktopChatRequestPlanner(
                 inputs = inputs,
                 playerName = playerName,
                 card = card,
+                actionProjection = actionProjection,
             )
         }
         val previousTurn = promptGroups.previousTurnMessages.mapNotNull { message ->
@@ -286,6 +300,7 @@ internal class DesktopChatRequestPlanner(
                 inputs = inputs,
                 playerName = playerName,
                 card = card,
+                actionProjection = actionProjection,
             )
         }
         val renderedCurrentUser = PlaceholderRenderer.render(
@@ -346,13 +361,14 @@ internal class DesktopChatRequestPlanner(
         inputs: DesktopFakeChatInputs,
         playerName: String?,
         card: CharacterCard,
+        actionProjection: ChatHistoryActionProjection,
     ): ChatApiMessage? {
         val source = ChatHistoryPromptPolicy.sourceText(
             message = message,
             excludeAssistantStatusFromHistory = inputs.excludeAssistantStatusFromHistory,
             zone = zone,
         )
-        val rendered = PlaceholderRenderer.render(source, playerName, card.effectiveBotName)
+        val rendered = PlaceholderRenderer.render(actionProjection.project(message, source), playerName, card.effectiveBotName)
         val payload = ChatHistoryPromptPolicy.payloadText(rendered, hasSupportedImage = inputs.supportsImages && message.role == MessageRole.USER && message.images.isNotEmpty())
             ?: return null
         return imageMessage(message.role.name.lowercase(), payload, message.images, inputs.supportsImages)
