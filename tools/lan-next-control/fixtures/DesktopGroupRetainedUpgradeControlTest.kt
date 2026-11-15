@@ -26,7 +26,7 @@ class DesktopGroupRetainedUpgradeControlTest {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
     private val oldSource = "e606bf2a2723fbc896323a8071cfd52dde99a4c6"
-    private val candidateSource = "c643ac151893032d327caa7cf028116d3f901775"
+    private val candidateSource = "c30db003b4e14f355673f7e724d488a9a598662e"
     private var phase = "GUARD"
     private var firstFailureMarker: String? = null
     private var lastScanProjection: String? = null

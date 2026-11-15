@@ -1,4 +1,4 @@
-"""Isolated cloud-only V5/e606 -> LAN6/c643 Program swap + real group component.
+"""Isolated cloud-only V5/e606 -> LAN6/c30 Program swap + real group component.
 
 All package/provenance/ZIP/data/native-window work remains in the pinned owners.
 The companion is compiled in separate fixed source worktrees, never the originals.
@@ -21,8 +21,8 @@ import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 OLD = 'e606bf2a2723fbc896323a8071cfd52dde99a4c6'
-NEW = 'c643ac151893032d327caa7cf028116d3f901775'
-BUILD_CONTROL = 'e4c7baed78576eb37494acd990aaf8f1950a5901'
+NEW = 'c30db003b4e14f355673f7e724d488a9a598662e'
+BUILD_CONTROL = '6fca2430444afbc51bc8645c42b7b1e19f3971d6'
 ORDER = ('contract', 'desktop_control', 'prove_desktop_lan3_lan4', 'desktop_lan5_control',
          'desktop_lan6_control', 'instrumentation_report', 'group_ui_control', 'desktop_group_ui_control')
 HELPERS = {
@@ -37,7 +37,7 @@ HELPERS = {
 }
 LEGACY_SHA = 'a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce'
 FIXTURE = HERE / 'fixtures/DesktopGroupRetainedUpgradeControlTest.kt'
-FIXTURE_SHA = '6f76501b6bdc0f49284595fb1b364a7254a9a4fff7fd95e72b792ef3caf0a1a0'
+FIXTURE_SHA = '568752f3b0b392810633cd1e7cd85077acc8eea8b93f61825f46cb5fe8cab705'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupRetainedUpgradeControlTest'
 METHOD = 'seedOrVerifyRealGroupInRetainedIndependentUserData'
 TARGET = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupRetainedUpgradeControlTest.kt'
@@ -58,8 +58,8 @@ PUBLIC_KEYS = {
     'protectedBytesRetained', 'observerProtectedBytesUnchangedOnClose', 'componentPaused', 'durablePauseClaimed',
     'closeNoticeCount', 'recoveryInputUsedByVerifier', 'networkDeliveryVerified', 'defaultCredentialReadBack',
 }
-READING_POSITION_RULE = 'EXACT_E606_C643_SCROLL_CLOSURE_OBSERVED_OLD_CAPTURED_AT_ONLY'
-READING_POSITION_BINDINGS = {'baseSourceSha': 'e606bf2a2723fbc896323a8071cfd52dde99a4c6', 'candidateSourceSha': 'c643ac151893032d327caa7cf028116d3f901775', 'files': [{'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt', 'baseSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0', 'candidateSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0'}, {'path': 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt', 'baseSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3', 'candidateSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3'}, {'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt', 'baseSha256': '42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c', 'candidateSha256': 'd015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388'}]}
+READING_POSITION_RULE = 'EXACT_E606_C30_SCROLL_CLOSURE_OBSERVED_OLD_CAPTURED_AT_ONLY'
+READING_POSITION_BINDINGS = {'baseSourceSha': 'e606bf2a2723fbc896323a8071cfd52dde99a4c6', 'candidateSourceSha': 'c30db003b4e14f355673f7e724d488a9a598662e', 'files': [{'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt', 'baseSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0', 'candidateSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0'}, {'path': 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt', 'baseSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3', 'candidateSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3'}, {'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt', 'baseSha256': '42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c', 'candidateSha256': 'd015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388'}]}
 
 
 def reading_position_equivalence_enabled(request):
@@ -455,8 +455,8 @@ def validate_request(base, request):
     base.validate_upgrade(request)
     require(type(request['format']) is int, 'INTEGER_FORMAT_REQUIRED')
     require(request['packages'][0]['sourceSha'] == OLD and request['packages'][1]['sourceSha'] == NEW,
-            'EXACT_E606_TO_C643_REQUIRED')
-    require(request['packages'][1]['controlSha'] == BUILD_CONTROL, 'EXACT_C643_BUILD_CONTROL_REQUIRED')
+            'EXACT_E606_TO_C30_REQUIRED')
+    require(request['packages'][1]['controlSha'] == BUILD_CONTROL, 'EXACT_C30_BUILD_CONTROL_REQUIRED')
     return request
 
 
@@ -697,6 +697,129 @@ def owned_window_projection(native, legacy, ids):
         return value
 
 
+NOTICE_OK_SOURCE = 'c30db003b4e14f355673f7e724d488a9a598662e'
+NOTICE_OK_MAIN_SHA256 = 'cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a'
+NOTICE_OK_STAGES = frozenset({'lan6-upgraded', 'lan6-cold-reopen'})
+NOTICE_OK_POLICY = 'ONE_EXACT_C30_INFORMATIONAL_IDOK_POST_PER_CANDIDATE_MAIN_AFTER_ORIGINAL_WM_CLOSE'
+
+
+class OriginalCloseUser32:
+    """Observe the original WM_CLOSE result; forward the exact message and return value."""
+    def __init__(self, original, observation):
+        self.original, self.observation = original, observation
+
+    def __getattr__(self, name):
+        return getattr(self.original, name)
+
+    def PostMessageW(self, hwnd, message, wparam, lparam):
+        result = self.original.PostMessageW(hwnd, message, wparam, lparam)
+        if message == 0x10 and wparam == lparam == 0:
+            self.observation['originalWmCloseQueued'] = bool(result)
+        return result
+
+
+def notice_ok_state(stage):
+    eligible = NEW == NOTICE_OK_SOURCE and stage in NOTICE_OK_STAGES
+    return {'policy': NOTICE_OK_POLICY, 'eligible': eligible,
+            'state': 'WAITING_FOR_ORIGINAL_WM_CLOSE' if eligible else 'NOT_ELIGIBLE',
+            'noticeObserved': None, 'trustedDialogValidated': None, 'trustedButtonValidated': None,
+            'attemptCount': 0, 'postAccepted': None, 'originalExitAndLockGuardPassed': None,
+            'peerCloudOrFullSyncCompletionClaimed': False}
+
+
+def c30_notice_ok_after_original_owned(native, legacy, ids, observation):
+    state = observation['normalNoticeOk']
+    if not state['eligible'] or NEW != NOTICE_OK_SOURCE or observation['stage'] not in NOTICE_OK_STAGES:
+        return
+    if state['attemptCount'] or state['state'] not in {'WAITING_FOR_ORIGINAL_WM_CLOSE', 'NO_NOTICE_CURRENTLY_OBSERVED'}:
+        return
+    if observation.get('originalWmCloseQueued') is not True or not ids:
+        return
+    try:
+        # HWND-returning APIs must retain all pointer bits on Win64. Only this private user32 instance is configured.
+        signatures = {
+            'GetClassNameW': ([legacy.W.HWND, legacy.W.LPWSTR, legacy.C.c_int], legacy.C.c_int),
+            'IsWindowEnabled': ([legacy.W.HWND], legacy.W.BOOL),
+            'GetDlgItem': ([legacy.W.HWND, legacy.C.c_int], legacy.W.HWND),
+            'GetParent': ([legacy.W.HWND], legacy.W.HWND),
+            'GetDlgCtrlID': ([legacy.W.HWND], legacy.C.c_int),
+        }
+        for name, (arguments, result) in signatures.items():
+            function = getattr(native.user, name)
+            function.argtypes, function.restype = arguments, result
+
+        def owned_program_pid(hwnd):
+            pid = legacy.W.DWORD()
+            native.user.GetWindowThreadProcessId(hwnd, legacy.C.byref(pid))
+            if pid.value not in ids:
+                return None
+            handle = native.kernel.OpenProcess(0x1000, False, pid.value)
+            if not handle:
+                raise ValueError('NOTICE_OWNER_UNKNOWN')
+            try:
+                image, size = legacy.C.create_unicode_buffer(32768), legacy.W.DWORD(32768)
+                if not native.kernel.QueryFullProcessImageNameW(handle, 0, image, legacy.C.byref(size)):
+                    raise ValueError('NOTICE_OWNER_UNKNOWN')
+                return pid.value if image.value.lower().startswith(native.prefix) else None
+            finally:
+                native.kernel.CloseHandle(handle)
+
+        def exact_caption(hwnd):
+            caption = legacy.C.create_unicode_buffer(256)
+            native.user.GetWindowTextW(hwnd, caption, 256)
+            return CLOSE_WINDOW_TITLES.get(caption.value) == 'LAN_SYNC_FINAL_FLUSH_NOTICE'
+
+        def exact_class(hwnd, expected):
+            name = legacy.C.create_unicode_buffer(64)
+            return native.user.GetClassNameW(hwnd, name, 64) > 0 and name.value == expected
+
+        matches, unavailable = [], [False]
+        @native.callback
+        def visit(hwnd, ignored):
+            try:
+                if native.user.IsWindowVisible(hwnd):
+                    pid = owned_program_pid(hwnd)
+                    if pid is not None and exact_caption(hwnd):
+                        matches.append((hwnd, pid))  # Private handles/IDs never enter the public state.
+            except BaseException:
+                unavailable[0] = True
+            return True
+        if not native.user.EnumWindows(visit, 0):
+            unavailable[0] = True
+        if unavailable[0]:
+            state['state'] = 'UNKNOWN_WINDOW_OBSERVATION'
+            return
+        if not matches:
+            state['state'] = 'NO_NOTICE_CURRENTLY_OBSERVED'
+            return
+        state['noticeObserved'] = True
+        if len(matches) != 1:
+            state['state'] = 'REFUSED_AMBIGUOUS_NOTICE'
+            return
+        dialog, pid = matches[0]
+        if (owned_program_pid(dialog) != pid or not exact_caption(dialog) or
+                not exact_class(dialog, '#32770') or not native.user.IsWindowVisible(dialog) or
+                not native.user.IsWindowEnabled(dialog)):
+            state.update(state='REFUSED_DIALOG_CLASS_OR_STATE', trustedDialogValidated=False)
+            return
+        state['trustedDialogValidated'] = True
+        button = native.user.GetDlgItem(dialog, 1)  # Standard IDOK, not a text/content lookup.
+        if (not button or native.user.GetParent(button) != dialog or native.user.GetDlgCtrlID(button) != 1 or
+                owned_program_pid(button) != pid or not exact_class(button, 'Button') or
+                not native.user.IsWindowVisible(button) or not native.user.IsWindowEnabled(button)):
+            state.update(state='REFUSED_BUTTON_ID_CLASS_OR_STATE', trustedButtonValidated=False)
+            return
+        state['trustedButtonValidated'] = True
+        state['attemptCount'] = 1  # Set before posting; neither a rejection nor exception may cause a retry.
+        try:
+            state['postAccepted'] = bool(native.user.PostMessageW(button, 0x00F5, 0, 0))  # Asynchronous normal BM_CLICK.
+            state['state'] = 'POSTED_ONCE' if state['postAccepted'] else 'POST_REJECTED'
+        except BaseException:
+            state['state'] = 'POST_UNKNOWN'
+    except BaseException:
+        state['state'] = 'UNKNOWN_API_OR_OWNER'
+
+
 class Companion:
     def __init__(self, modules, sources, private, output):
         self.ui = modules['desktop_group_ui_control']
@@ -793,7 +916,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
     original_retained_entities = native.retained_entities
     equivalence_active = equivalence_request is not None and reading_position_equivalence_enabled(equivalence_request)
     if equivalence_request is not None:
-        require(equivalence_active, 'EXACT_C643_SCROLL_CLOSURE_REQUIRED')
+        require(equivalence_active, 'EXACT_C30_SCROLL_CLOSURE_REQUIRED')
     timestamp_attempts = 0
     timestamp_completed = 0
     main_stages = []
@@ -846,6 +969,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                 if type(result) is list and all(type(pid) is int for pid in result):
                     observation['sameOriginalOwned'] = bool(result)
                     self._close_owned_ids = tuple(result)  # Private only, never serialized.
+                    c30_notice_ok_after_original_owned(self, old, self._close_owned_ids, observation)
                 else:
                     observation['sameOriginalOwned'] = None
                     self._close_owned_ids = None
@@ -856,20 +980,29 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
             _phase = 'PACKAGED_MAIN_' + stage.replace('-', '_').upper()
             observation = {'stage': stage, 'nativeOutcome': 'UNKNOWN', 'failureCode': 'NOT_CLASSIFIED',
                 'sameOriginalOwned': None, 'originalOwnedCallCount': 0, 'rootLockHeldAtOutcome': None,
-                'rootLockBasis': 'UNKNOWN', 'captureStatus': 'NOT_ATTEMPTED'}
+                'rootLockBasis': 'UNKNOWN', 'captureStatus': 'NOT_ATTEMPTED',
+                'originalWmCloseQueued': None, 'normalNoticeOk': notice_ok_state(stage)}
             self._close_observation, self._close_owned_ids = observation, None
             prior_subprocess = old.subprocess
+            prior_user = self.user
             private = getattr(companion, 'private', None)
             proxy = PrivateLauncherStreams(prior_subprocess, self.root, private, stage, observation)
             try:
                 old.subprocess = proxy  # One private module reference only; stdlib subprocess remains untouched.
+                self.user = OriginalCloseUser32(prior_user, observation)
                 result = super().launch(stage, environment)  # Original Main / WM_CLOSE / 60s / root-lock guard.
                 observation.update(nativeOutcome='RETURNED', rootLockHeldAtOutcome=False,
                                    rootLockBasis='ORIGINAL_NATIVE_SUCCESS_GUARD')
+                observation['normalNoticeOk']['originalExitAndLockGuardPassed'] = True
+                if observation['normalNoticeOk']['postAccepted'] is True:
+                    observation['normalNoticeOk']['state'] = 'POSTED_ONCE_AND_ORIGINAL_GUARD_PASSED'
             except BaseException as failure:
                 message = failure.args[0] if type(failure) is RuntimeError and len(failure.args) == 1 and type(failure.args[0]) is str else None
                 code = safe_native_failure_code(_phase, {'type': type(failure).__name__, 'message': message})
                 observation.update(nativeOutcome='FAILED', failureCode=code)
+                observation['normalNoticeOk']['originalExitAndLockGuardPassed'] = False
+                if observation['normalNoticeOk']['postAccepted'] is True:
+                    observation['normalNoticeOk']['state'] = 'POSTED_ONCE_ORIGINAL_GUARD_FAILED'
                 if code == 'PROCESS_OR_LOCK_NOT_RELEASED':
                     if observation['sameOriginalOwned'] is True:
                         observation['rootLockBasis'] = 'UNKNOWN_SHORT_CIRCUIT'
@@ -879,6 +1012,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                 raise  # Same original failure remains fatal; observation never supplies a pass fallback.
             finally:
                 old.subprocess = prior_subprocess
+                self.user = prior_user
                 self._close_observation = None
                 try:
                     observation['ownedWindows'] = owned_window_projection(self, old, self._close_owned_ids)
@@ -920,7 +1054,9 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                     value['failure']['code'] = native_code
                 if getattr(companion, 'failure_diagnostic', None) is not None:
                     value['componentFailureDiagnostic'] = companion.failure_diagnostic
-            value.update(packagedMainCloseObservations=list(native_observations),
+            value.update(normalCloseUiAcknowledgementPolicy=NOTICE_OK_POLICY,
+                         informationalNoticeNotFullSyncDelivery=True,
+                         packagedMainCloseObservations=list(native_observations),
                          closeObservationScope='same original owned calls; five window categories; closed shutdown-stage projection',
                          componentTestRerunPolicy=COMPONENT_TEST_RERUN_POLICY,
                          readingPositionSourceEquivalenceRule=READING_POSITION_RULE,
@@ -965,7 +1101,7 @@ def command(*argv):
 
 def make_worktrees(root, private):
     sources = {}
-    for sha, leaf in ((OLD, 'source-old-e606'), (NEW, 'source-new-c643')):
+    for sha, leaf in ((OLD, 'source-old-e606'), (NEW, 'source-new-c30')):
         source = private / leaf
         require(not source.exists(), 'NEW_SOURCE_WORKTREE_REQUIRED')
         command('git', '-C', str(root), 'worktree', 'add', '--detach', str(source), sha)
