@@ -30,13 +30,13 @@ jobs:
           if ([ActionFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
           "TEMP=$buffer" >> $env:GITHUB_ENV
           "TMP=$buffer" >> $env:GITHUB_ENV
-      - name: Verify shared block reference and query-source policies
+      # The prior396 run separately owns parser/query and unchanged runtime/regen/fake checks.
+      # Its actual result remains required; this narrow successor does not replace that proof.
+      - name: Verify affected reference and trusted control projection
         working-directory: app
         run: >-
           .\gradlew.bat :sharedCore:test
-          --tests 'com.example.chatbar.domain.chat.RoleplayActionOptionsPolicyTest'
           --tests 'com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest'
-          --tests 'com.example.chatbar.data.repository.ChatContextCandidateSnapshotTest'
           --no-daemon --stacktrace
       - name: Verify actual serialized main requests and affected planning paths
         working-directory: app
@@ -45,9 +45,6 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopActionOptionsRequestTest'
-          --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeTest'
-          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
-          --tests 'com.example.chatbar.desktop.DesktopFakeChatRuntimeTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()

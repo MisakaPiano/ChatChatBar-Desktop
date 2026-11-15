@@ -62,4 +62,14 @@ class ChatHistoryActionProjectionTest {
         val earlier = ChatHistoryPromptPolicy.sourceText(reliable, true, ChatHistoryPromptZone.EARLIER_HISTORY)
         assertFalse(q.project(reliable, earlier).contains("STATUS_STAYS"))
     }
+
+    @Test fun `trusted regeneration without a current user may still have older users in its candidate universe`() {
+        val old = message("u", MessageRole.USER, "我推开木门，走到窗边观察街上的雨。", 1)
+        val a = message("a", MessageRole.ASSISTANT, options, 2)
+        val all = listOf(old, a)
+        val control = ChatHistoryActionProjection.prepare(all, all.map { it.id }.toSet(),
+            ChatHistoryActionRequestSource.NO_USER_REGENERATION)
+        assertFalse(control.project(a, options).contains("OLD_NOT_TAKEN"))
+        assertEquals(options, ChatHistoryActionProjection.prepare(all, all.map { it.id }.toSet()).project(a, options))
+    }
 }

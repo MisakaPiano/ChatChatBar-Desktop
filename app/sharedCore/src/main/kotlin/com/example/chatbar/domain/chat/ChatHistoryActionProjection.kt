@@ -3,6 +3,7 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 
+/** Describes the current request's owner; a no-current-USER control may have older USER history. */
 enum class ChatHistoryActionRequestSource { PERSISTED_USER, UI_CONTINUATION, NO_USER_REGENERATION, UNKNOWN }
 
 /** Request-only projection. A numeric/deictic choice remains unresolved, never expanded to text.
@@ -17,7 +18,6 @@ class ChatHistoryActionProjection private constructor(private val omittable: Map
             requestSource: ChatHistoryActionRequestSource = ChatHistoryActionRequestSource.UNKNOWN): ChatHistoryActionProjection {
             if (requestSource == ChatHistoryActionRequestSource.UNKNOWN ||
                 (requestSource == ChatHistoryActionRequestSource.PERSISTED_USER && candidates.lastOrNull()?.role != MessageRole.USER) ||
-                (requestSource == ChatHistoryActionRequestSource.NO_USER_REGENERATION && candidates.any { it.role == MessageRole.USER }) ||
                 candidates.map { it.id }.distinct().size != candidates.size ||
                 candidates.map { it.sessionId }.distinct().size > 1 ||
                 candidates.zipWithNext().any { (a, b) -> ChatMessage.TimelineComparator.compare(a, b) > 0 })

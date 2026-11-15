@@ -182,4 +182,48 @@ class DesktopActionOptionsRequestTest {
         assertTrue(result.assistant.alternatives.contains(target.displayContent))
         f.unchanged(target.id)
     } }
+
+    @Test fun `regeneration retains numeric or ambiguous current user and its prior action source without reinserting the target`() = runBlocking {
+        for (reference in listOf("2", "好", "请继续生成接下来发生的故事。")) fixture { f ->
+            f.add(MessageRole.USER, ordinary)
+            f.add(MessageRole.ASSISTANT, "选择前的剧情\n" + options("REGEN_REFERENCE"))
+            val user = f.add(MessageRole.USER, reference)
+            val target = f.add(MessageRole.ASSISTANT, "旧的待重生回复\n" + options("REGEN_TARGET"))
+            val users = f.chats.getMessagesReadOnly("s").count { it.role == MessageRole.USER }
+            val (wire, result) = f.wire("", regenerate = target)
+            assertEquals(1, wire.count { it == reference })
+            assertTrue(wire.any { it.contains("REGEN_REFERENCE_UNTAKEN") })
+            assertFalse(wire.any { it.contains("REGEN_TARGET_UNTAKEN") })
+            assertEquals(user.id, result.currentUser.id)
+            assertTrue(result.assistant.alternatives.contains(target.displayContent))
+            assertEquals(users, f.chats.getMessagesReadOnly("s").count { it.role == MessageRole.USER })
+            f.unchanged(target.id)
+        }
+    }
+
+    @Test fun `known no current user regeneration filters its complete opening turn even with older users outside the selected context`() = runBlocking { fixture { f ->
+        f.add(MessageRole.USER, ordinary, "old")
+        f.add(MessageRole.ASSISTANT, "更早的完整对话。", "old")
+        f.add(MessageRole.ASSISTANT, "独立的后续开场\n" + options("KNOWN_OPENING"), "opening-a")
+        val target = f.add(MessageRole.ASSISTANT, "待重生的独立开场\n" + options("KNOWN_TARGET"), "opening-b")
+        f.c.settingsRepository.updateAppSettings { it.copy(defaultContextWindowSize = 0) }
+        val userCount = f.chats.getMessagesReadOnly("s").count { it.role == MessageRole.USER }
+        val (wire, result) = f.wire("", regenerate = target)
+        assertFalse(result.currentUserPersisted)
+        assertFalse(wire.any { it.contains("KNOWN_OPENING_UNTAKEN") || it.contains("KNOWN_TARGET_UNTAKEN") })
+        assertEquals(userCount, f.chats.getMessagesReadOnly("s").count { it.role == MessageRole.USER })
+        assertTrue(result.assistant.alternatives.contains(target.displayContent))
+        f.unchanged(target.id)
+    } }
+
+    @Test fun `an explicitly written complete action stays in USER while its unselected sibling is not sent`() = runBlocking { fixture { f ->
+        f.add(MessageRole.USER, "我走进广场，留心观察周围的建筑。")
+        val body = "先前已经发生的剧情。\n————————\n【行动选项】\n1. $ordinary\n2. NEVER_SELECTED_SIBLING\n————————"
+        f.add(MessageRole.ASSISTANT, body)
+        val (wire, _) = f.wire(ordinary)
+        assertEquals(1, wire.count { it == ordinary })
+        assertFalse(wire.any { it.contains("NEVER_SELECTED_SIBLING") })
+        assertTrue(wire.any { it.contains("先前已经发生的剧情") })
+        f.unchanged()
+    } }
 }
