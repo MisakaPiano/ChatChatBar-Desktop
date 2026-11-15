@@ -3,7 +3,7 @@ name: Fixed LAN6 original metadata and upgrade request preparation
 on:
   push:
     branches: ['codex/lan-next-sync-control-*']
-    paths: [.github/lan-next-desktop-lan6-original-metadata-request.json]
+    paths: [.github/lan-next-desktop-lan6-original-metadata-request.json, .github/workflows/lan-next-desktop-lan6-original-metadata.yml]
 permissions:
   contents: read
   actions: read
@@ -12,6 +12,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
+      - name: Enable Git long paths for Windows checkout
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
