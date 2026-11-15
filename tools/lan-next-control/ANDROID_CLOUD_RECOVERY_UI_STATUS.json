@@ -49,7 +49,7 @@
   ],
   "originalFrozenControl": "ca9c2455cf172aeecedcf3d4b9a85e1d706b2b8a",
   "originalFrozenManifestSha256": "5e088a163499919a25f7b7e1e4fe2c724ff51a0d4366d14b16aa3dc8a7cc4f6a",
-  "fixtureSha256": "74a6a5c762ddc74f84ac07847b43d8c01211fa147c00995ce345545d4cef510d",
+  "fixtureSha256": "3334f685be71e95b60c6d62e4aaf1aadde229eb2057bbdd2a98129d3450dfa6b",
   "rebase": {
     "onlyRuntimeDependencyChange": "PINS.android_file_recovery_ui_control.py",
     "oldHelperSha256": "2431d50a5078965648d436909dc8d74997af70108727f99cb82e306eeb1e36c0",
@@ -69,5 +69,19 @@
     "differenceFrom203c": "Only FIXTURE_SHA and SCOPE assignments; normalized other bytes exact",
     "originalFrozenRebasePreserved": true,
     "nativeExecuted": false
+  },
+  "currentCloudCompileCorrection": {
+    "firstRun": 43657244369,
+    "job": 132638393851,
+    "failedStep": "compileLanPreviewAndroidTestKotlin",
+    "nativeExecuted": false,
+    "changes": [
+      "suspend await predicate",
+      "suspend author-zero helper",
+      "actual OkHttp Dns object"
+    ],
+    "fixtureBytes": 38686,
+    "fixtureSha256": "3334f685be71e95b60c6d62e4aaf1aadde229eb2057bbdd2a98129d3450dfa6b",
+    "firstFrozenFixturePreservedInEvidence": "74a6a5c762ddc74f84ac07847b43d8c01211fa147c00995ce345545d4cef510d"
   }
 }

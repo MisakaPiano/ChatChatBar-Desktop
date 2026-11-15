@@ -60,3 +60,5 @@ fixture的数据 builder/oracle/assertRestored部分从固定Android文件fixtur
 `installed-rebase.patch`是以203c中均不存在这8个路径为基线的完整新增patch；`semantic-rebase.diff`另列相对原冻结贡献的最窄内容差异及共同fixture不变。整合者仅应用8文件，不复制原7个helper，不改任何既有文件。未来若control或source再次改变，须核具体diff/哈希再明确重绑，不把本次允许解释为任意接受helper变化。
 
 工作流只允许14个原controller evidence路径；即使失败也保留原phase报告。总成功必须同时满足两个原始方法strict PASS、正常bounded控制/服务器清理/整job成功及固定源码回核。纯mock中生成的instrumentation串只测试parser/控制流，临时目录随测试删除，从未写成native证据。安装布局 pure guards 仍只证明脚本与mock，明确native0。
+
+The first actual cloud run43657244369 failed compiling only this companion, before any emulator/native/TLS probes. The successor makes the await predicate and author-zero helper suspend functions and uses the actual OkHttp Dns interface object. All real TLS probes, UI actions, native/cold and automatic-upload assertions stay unchanged. Native success remains unobserved until new original reports.

@@ -375,7 +375,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         listOf(endpoint, USER, pass, code).forEachIndexed { index, text -> fields()[index].performScrollTo().performTextReplacement(text) }
         click("读取并核对设备组")
     }
-    private fun assertAuthorZero(app: ChatBarApp, access: LanSyncGroupRuntimeAccess) {
+    private suspend fun assertAuthorZero(app: ChatBarApp, access: LanSyncGroupRuntimeAccess) {
         val p = AndroidLanSyncKeyProtection()
         val author = SyncAuthorJournal(nativeRoot(app).resolve("group-profile/joining/node/author"), access.trust,
             access.certificate, p::protect, p::unprotect)
@@ -392,7 +392,12 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             }
             // Only this negative probe maps a deliberately wrong hostname to the real server.
             // Default TLS/hostname verifier is retained; no interceptor/fake transport is used.
-            val negative = client.newBuilder().dns { host -> check(host == "wrong.invalid"); listOf(InetAddress.getByName("10.0.2.2")) }.build()
+            val negative = client.newBuilder().dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<InetAddress> {
+                    check(hostname == "wrong.invalid")
+                    return listOf(InetAddress.getByName("10.0.2.2"))
+                }
+            }).build()
             try {
                 val bad = request.newBuilder().url(endpoint.replace("10.0.2.2", "wrong.invalid")).build()
                 var rejected = false
@@ -462,7 +467,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             sourceTurnId = "turn-1", sourceTurnOrder = 1, timelineTurn = 1,
             createdAt = 4, updatedAt = 4, orderKey = 4_000_000))
 
-    private suspend fun await(timeout: Long = 30_000, condition: () -> Boolean) = withTimeout(timeout) {
+    private suspend fun await(timeout: Long = 30_000, condition: suspend () -> Boolean) = withTimeout(timeout) {
         while (!condition()) delay(50)
     }
     private fun nativeRoot(app: ChatBarApp) = app.noBackupFilesDir.canonicalFile.toPath().resolve("lan-sync-v1")
