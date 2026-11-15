@@ -109,7 +109,8 @@ class DesktopActionOptionsRequestTest {
     }
 
     @Test fun `current numeric and unknown short replies are not expanded and retain their action reference`() = runBlocking {
-        for (reference in listOf("2", "１", "②", "⑴，然后看看她接下来的反应。", "按第二条行动继续。", "好", "继续")) fixture { f ->
+        for (reference in listOf("2", "１", "②", "⑴，然后看看她接下来的反应。", "按第二条行动继续。", "好", "继续",
+            "请继续生成接下来发生的故事。", "Please continue the story for a while.")) fixture { f ->
             f.add(MessageRole.USER, ordinary)
             f.add(MessageRole.ASSISTANT, "最新剧情\n" + options("NEEDED"))
             val wire = f.wire(reference).first
