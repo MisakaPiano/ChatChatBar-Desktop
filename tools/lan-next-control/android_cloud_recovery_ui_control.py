@@ -21,7 +21,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE = "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f"
+SOURCE = "c643ac151893032d327caa7cf028116d3f901775"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupCloudRecoveryUiControlTest"
 FIRST = "realCloudRecoveryUiRestoresOfflineLatestConversationAndSavesKeystoreConnection"
@@ -29,7 +29,7 @@ SECOND = "coldProcessReopensSavedRouteAndOrdinaryAndroidHooksUploadNewRevision"
 TARGET = "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecoveryUiControlTest.kt"
 ARGUMENT = "lanSyncCloudRecoveryUiFixture"
 FIXTURE = "fixtures/LanSyncGroupCloudRecoveryUiControlTest.kt"
-FIXTURE_SHA = "5971d7599937caabf49b01ded4d03b561dec9d62ec2b6808e2b1a2d1228b3ce1"
+FIXTURE_SHA = "5a3c5afb24380f6e1d47bef4e8aec658b119fa3a87a5a3ba9af33ba8f750803a"
 INPUT = "synthetic-cloud-recovery-input.properties"
 USER = "synthetic-android-cloud-ui"
 SCOPE = ("API35 actual Android Activity/CloudRecovery default HTTPS OkHttp, source offline latest "

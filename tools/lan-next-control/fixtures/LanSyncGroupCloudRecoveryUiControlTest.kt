@@ -91,7 +91,8 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             " PASSIVE_AUTHOR_COUNTS[versions=$observedLocalVersions,changes=$observedLocalChanges,importedCard=$observedImportedCardChanges,importedChat=$observedImportedChatChanges,otherNativeMismatch=$observedOtherNativeMismatches,unaccountedSigned=$observedUnaccountedSigned,unaccountedIntent=$observedUnaccountedIntent]" +
             " PASSIVE_BOOLEANS[stableControlHistory=$observedStableSigned,denseAuthorLineage=$observedDenseAuthorLineage,exactCardRevision=$observedExactCardRevision,exactCardReceipt=$observedExactCardReceipt]" +
             " CONTENT_MARKER_COUNTS[card=$observedCardMarkerCount,session=$observedSessionMarkerCount,maxMessageMultiplicity=$observedMessageMarkerMultiplicity]" +
-            " PASSIVE_CLOUD_DIAGNOSTIC[$passiveCloudDiagnostic]").also {
+            " PASSIVE_CLOUD_DIAGNOSTIC[$passiveCloudDiagnostic]" +
+            " PASSIVE_ROUTE_DIAGNOSTIC[$passiveRouteDiagnostic]").also {
             it.stackTrace = failure.stackTrace // never original message, cause, UI tree or credential
         }
     }
@@ -390,8 +391,10 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             check(newReference != reference && newVersion.changes.getValue(CARD_UNIT).valueHash == expectedHash)
             val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, row.id)
             phase = "await-existing-exact-new-version-cloud-receipt-no-probe"
+            observePassiveRouteClass(coordinator, target, PassiveRouteBoundary.BEFORE_WAIT)
             try {
                 await(180_000) {
+                    observePassiveRouteClass(coordinator, target)
                     val observed = passive(coordinator)
                     attemptPassiveCloudDiagnostic {
                         samplePassiveCloudDiagnostic(coordinator, access, target, observed, newReference, reference,
@@ -407,6 +410,8 @@ class LanSyncGroupCloudRecoveryUiControlTest {
                         actual.lanSyncStartupReady, launched.state, owner.backgroundState.value.phase, force = true)
                 }
                 throw failure
+            } finally {
+                observePassiveRouteClass(coordinator, target, PassiveRouteBoundary.AFTER_WAIT)
             }
             check(observedExactCardRevision && observedExactCardReceipt)
             awaitExactCardRevision(actual, coordinator, access, coldBaseline, reference,
@@ -664,6 +669,62 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         "\u7cfb\u7edf\u5c1a\u672a\u5141\u8bb8\u672c\u6279\u7f51\u76d8\u540e\u53f0\u4f20\u8f93\uff0c\u8bf7\u5207\u56de\u5e94\u7528\u68c0\u67e5\uff1b\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559" -> PassivePlatformClass.START_OR_PROMOTION_UNAVAILABLE
         "\u7f51\u76d8\u6838\u5bf9\u672a\u5b8c\u6210\uff0c\u5f85\u4f20\u961f\u5217\u5df2\u4fdd\u7559" -> PassivePlatformClass.OTHER_FAILURE
         else -> PassivePlatformClass.OTHER_OR_NORMAL
+    }
+
+    // Uncompiled controller fragment: only classify already-existing progress.text; no owner/IO calls.
+    private enum class PassiveRouteClass { UNOBSERVED, WAITING, READING, CHECKING, PREPARING, PARTIAL_HELD, UPLOADING, FULL_OBSERVED, PAUSED, ROUTE_CHANGED, AUTH, PERMISSION, STALE_PARTIAL, PARTIAL_UPLOADING, LOCAL_CACHE, QUOTA, CANDIDATE_HELD, INCOMPLETE, CONFIG_UNAVAILABLE, UNKNOWN }
+    private fun passiveRouteClass(text: String?): PassiveRouteClass = when (text) {
+        null -> PassiveRouteClass.UNOBSERVED
+        "\u7b49\u5f85\u68c0\u67e5\u672c\u6b21\u9009\u5b9a\u7248\u672c" -> PassiveRouteClass.WAITING
+        "\u6b63\u5728\u8bfb\u53d6\u6b64\u7f51\u76d8\u7684\u52a0\u5bc6\u5019\u9009" -> PassiveRouteClass.READING
+        "\u6b63\u5728\u68c0\u67e5\u672c\u6b21\u9009\u5b9a\u7248\u672c\u7684\u6295\u9012\u8bb0\u5f55" -> PassiveRouteClass.CHECKING
+        "\u6b63\u5728\u4fdd\u5168\u672c\u6b21\u9009\u5b9a\u7248\u672c" -> PassiveRouteClass.PREPARING
+        "\u72ec\u7acb\u8d44\u6599\u5df2\u5206\u9879\u6838\u9a8c\uff0c\u5b8c\u6574\u9009\u5b9a\u8303\u56f4\u4ecd\u5f85\u8865\u9f50" -> PassiveRouteClass.PARTIAL_HELD
+        "\u6b63\u5728\u6295\u9012\u672c\u6b21\u9009\u5b9a\u7248\u672c" -> PassiveRouteClass.UPLOADING
+        "\u672c\u6b21\u7f51\u76d8\u5de5\u4f5c\u5df2\u6682\u505c\uff0c\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.PAUSED
+        "\u672c\u673a\u7f51\u76d8\u8bbe\u7f6e\u5df2\u53d8\u66f4\uff0c\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.ROUTE_CHANGED
+        "\u8d26\u53f7\u9a8c\u8bc1\u672a\u901a\u8fc7\uff0c\u8bf7\u4fee\u6539\u6b64\u7f51\u76d8\u914d\u7f6e\uff1b\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.AUTH
+        "\u6b64\u7f51\u76d8\u672a\u5141\u8bb8\u672c\u6b21\u8bbf\u95ee\uff0c\u8bf7\u68c0\u67e5\u6b64\u7f51\u76d8\u914d\u7f6e\uff1b\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.PERMISSION
+        "\u672c\u673a\u8d44\u6599\u5df2\u53d8\u5316\uff0c\u8f83\u65e9\u8303\u56f4\u7684\u5206\u9879\u6838\u9a8c\u5df2\u4fdd\u7559\uff0c\u4ecd\u5f85\u540c\u6b65" -> PassiveRouteClass.STALE_PARTIAL
+        "\u6b63\u5728\u5206\u9879\u6295\u9012\u72ec\u7acb\u8d44\u6599\uff0c\u5b8c\u6574\u8303\u56f4\u4ecd\u5f85\u8865\u9f50" -> PassiveRouteClass.PARTIAL_UPLOADING
+        "\u672c\u673a\u4fdd\u5168\u7684\u7f51\u76d8\u5206\u7247\u5f85\u68c0\u67e5\uff0c\u539f\u59cb\u8d44\u6599\u4e0e\u5206\u7247\u5df2\u4fdd\u7559" -> PassiveRouteClass.LOCAL_CACHE
+        "\u6b64\u7f51\u76d8\u7a7a\u95f4\u4e0d\u8db3\uff0c\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.QUOTA
+        "\u6b64\u7f51\u76d8\u7684\u5019\u9009\u5c1a\u672a\u901a\u8fc7\u6838\u9a8c\uff0c\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.CANDIDATE_HELD
+        "\u6b64\u7f51\u76d8\u672c\u6b21\u5c1a\u672a\u5b8c\u6210\uff0c\u5f85\u4f20\u8d44\u6599\u5df2\u4fdd\u7559" -> PassiveRouteClass.INCOMPLETE
+        "\u7f51\u76d8\u8fde\u63a5\u8bbe\u7f6e\u6682\u65f6\u65e0\u6cd5\u8bfb\u53d6\uff0c\u539f\u6587\u4ef6\u5df2\u4fdd\u7559\uff1b\u8bf7\u6253\u5f00\u8fde\u63a5\u8bbe\u7f6e\u68c0\u67e5" -> PassiveRouteClass.CONFIG_UNAVAILABLE
+        else -> if (text.startsWith("\u672c\u6b21\u9009\u5b9a\u7248\u672c\u5df2\u8bfb\u56de\u6838\u9a8c\uff1b\u5168\u7ec4\u4ecd\u5f85\u540e\u7eed\u68c0\u67e5")) PassiveRouteClass.FULL_OBSERVED else PassiveRouteClass.UNKNOWN
+    }
+
+    private enum class PassiveRouteBoundary { POLL, BEFORE_WAIT, AFTER_WAIT }
+    /** First-seen order of closed enum classes only; not a complete transition/event log. */
+    private data class PassiveRouteDiagnostic(
+        var before: PassiveRouteClass? = null, var current: PassiveRouteClass? = null,
+        var after: PassiveRouteClass? = null,
+        var observedInFirstSeenOrder: List<PassiveRouteClass> = emptyList(),
+        var readUnavailableObserved: Boolean = false)
+    private val passiveRouteClassesObserved = linkedSetOf<PassiveRouteClass>()
+    private val passiveRouteDiagnostic = PassiveRouteDiagnostic()
+    private fun observePassiveRouteClass(coordinator: LanSyncGroupCoordinator, target: SyncDeliveryTarget,
+        boundary: PassiveRouteBoundary = PassiveRouteBoundary.POLL) {
+        try {
+            val classification = passiveRouteClass(coordinator.cloudSettings.value.progress[target.id]?.text)
+            passiveRouteClassesObserved += classification
+            passiveRouteDiagnostic.current = classification
+            passiveRouteDiagnostic.observedInFirstSeenOrder = passiveRouteClassesObserved.toList()
+            when (boundary) {
+                PassiveRouteBoundary.BEFORE_WAIT -> passiveRouteDiagnostic.before = classification
+                PassiveRouteBoundary.AFTER_WAIT -> passiveRouteDiagnostic.after = classification
+                PassiveRouteBoundary.POLL -> Unit
+            }
+        } catch (_: Throwable) {
+            passiveRouteDiagnostic.current = null
+            passiveRouteDiagnostic.readUnavailableObserved = true
+            when (boundary) {
+                PassiveRouteBoundary.BEFORE_WAIT -> passiveRouteDiagnostic.before = null
+                PassiveRouteBoundary.AFTER_WAIT -> passiveRouteDiagnostic.after = null
+                PassiveRouteBoundary.POLL -> Unit
+            }
+        }
     }
 
     private enum class PassiveCloudRead { NOT_SAMPLED, NO_TARGET_DIRECTORY, STABLE_FILES, FILE_SET_CHANGED, READ_UNAVAILABLE }

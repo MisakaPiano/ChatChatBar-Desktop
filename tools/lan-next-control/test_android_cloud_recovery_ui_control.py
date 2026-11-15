@@ -191,6 +191,24 @@ class DraftPureGuards(unittest.TestCase):
         self.assertIn("PASSIVE_CLOUD_DIAGNOSTIC[$passiveCloudDiagnostic]", text)
         model = diagnostic[diagnostic.index("    private data class PassiveCloudDiagnostic("):diagnostic.index("    private var passiveCloudDiagnostic")]
         self.assertNotIn("String", model); self.assertNotIn("Path", model)
+        route = text[text.index("    private enum class PassiveRouteClass"):text.index("    private enum class PassiveCloudRead")]
+        for denied in (".open(", "settings.rows", "newOutputStream", "createDirectories", "prepare(", "recover(",
+                       "targetPublication(", "forceIdle(", "node.upload(", "failure.message", "failure.cause"):
+            self.assertNotIn(denied, route)
+        for expected in ("progress[target.id]?.text", "null -> PassiveRouteClass.UNOBSERVED", "else PassiveRouteClass.UNKNOWN",
+                         "passiveRouteClassesObserved.toList()", "readUnavailableObserved = true"):
+            self.assertIn(expected, route)
+        route_model = route[route.index("    private data class PassiveRouteDiagnostic("):route.index("    private val passiveRouteClassesObserved")]
+        self.assertNotIn("String", route_model); self.assertNotIn("Path", route_model)
+        self.assertIn("var before: PassiveRouteClass? = null", route_model)
+        self.assertIn("var after: PassiveRouteClass? = null", route_model)
+        for expected in ("PassiveRouteBoundary.BEFORE_WAIT", "PassiveRouteBoundary.AFTER_WAIT",
+                         "observePassiveRouteClass(coordinator, target)", "PASSIVE_ROUTE_DIAGNOSTIC[$passiveRouteDiagnostic]"):
+            self.assertIn(expected, text)
+        route_enums = route[route.index("private enum class PassiveRouteClass"):route.index("private fun passiveRouteClass")]
+        for name in ("UNOBSERVED", "AUTH", "PERMISSION", "LOCAL_CACHE", "FULL_OBSERVED", "UNKNOWN"):
+            self.assertIn(name, route_enums)
+        self.assertNotIn("NORMAL", route_enums)
     def test_cold_allows_progress_but_locks_original_content_and_immutable_history(self):
         text = (HERE / control.FIXTURE).read_text(encoding="utf8")
         self.assertNotIn("nativeHeadHash", text)
