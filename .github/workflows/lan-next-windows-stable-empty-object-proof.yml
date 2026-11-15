@@ -1,0 +1,48 @@
+name: Windows NTFS stable empty object JDK proof
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/workflows/lan-next-windows-stable-empty-object-proof.yml
+      - tools/lan-next-control/prove_windows_stable_empty_object.py
+      - tools/lan-next-control/fixtures/StableEmptyObjectProof.java
+permissions:
+  contents: read
+jobs:
+  stable-empty-object-jdk:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify fixed JDK helper and real Windows object predicate
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/prove_windows_stable_empty_object.py' -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne '3122358d2754f4dd16a42eb1a4ce7aac6be0c239b76e88a66c2d10f7cffc3c85') { throw 'STABLE_EMPTY_PROOF_CONTROL_BINDING' }
+          python -B tools/lan-next-control/prove_windows_stable_empty_object.py
+          if ($LASTEXITCODE -ne 0) { throw 'STABLE_EMPTY_OBJECT_NATIVE_PROBE' }
+      - name: Audit exact two small public JSON files
+        id: small
+        if: always()
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B tools/lan-next-control/prove_windows_stable_empty_object.py --audit-output
+          if ($LASTEXITCODE -ne 0) { throw 'STABLE_EMPTY_OBJECT_SMALL_OUTPUT' }
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.small.outcome == 'success'
+        with:
+          name: windows-stable-empty-object-proof-small
+          if-no-files-found: error
+          path: |
+            desktop-group-retained-upgrade-evidence/empty-object-proof-native-result.json
+            desktop-group-retained-upgrade-evidence/empty-object-proof-verification.json

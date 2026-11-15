@@ -77,3 +77,8 @@ docs/lan-next-control/windows-group-retained-upgrade-fixed-inputs.json text eol=
 
 # Borrowed original upgrade engine is exact-byte pinned by the group companion.
 tools/lan-preview-signing/prove_desktop_profile_upgrade.py text eol=lf
+
+# JDK-only stable empty object proof; exact pins require LF.
+tools/lan-next-control/fixtures/StableEmptyObjectProof.java text eol=lf
+tools/lan-next-control/prove_windows_stable_empty_object.py text eol=lf
+.github/workflows/lan-next-windows-stable-empty-object-proof.yml text eol=lf
