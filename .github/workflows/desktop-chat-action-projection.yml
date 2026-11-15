@@ -37,6 +37,7 @@ jobs:
         run: >-
           .\gradlew.bat :sharedCore:test
           --tests 'com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest'
+          --tests 'com.example.chatbar.data.repository.ChatContextCandidateSnapshotTest'
           --no-daemon --stacktrace
       - name: Verify actual serialized main requests and affected planning paths
         if: ${{ !cancelled() }}

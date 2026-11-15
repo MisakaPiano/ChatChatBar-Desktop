@@ -117,6 +117,9 @@ class DesktopActionOptionsRequestTest {
 
     @Test fun `unresolved pronoun and same action user text keeps its reference on actual wire`() = runBlocking {
         for (reference in listOf("I will carry it out tomorrow.", "I shall proceed with them tomorrow.",
+            "Tomorrow we will carry it out quietly.", "Tomorrow we shall proceed with them quietly.",
+            "Tomorrow we shall follow the same plan quietly.", "Tomorrow we shall follow the aforementioned instruction quietly.",
+            "I choose B and then wait for her.", "Tomorrow choose B and then wait quietly.", "那就选乙，然后再看看她接下来的反应。",
             "I shall follow the same plan tomorrow.", "I shall follow the aforementioned instruction tomorrow.",
             "我们照旧处理接下来的安排并等待结果。", "我们照常处理接下来的安排并等待结果。", "如上处理接下来的安排并等待结果。",
             "按照她所说的继续处理接下来的事情。", "按他说的做，然后安静等待事情结束。", "按你说的办，然后安静等待事情结束。",
