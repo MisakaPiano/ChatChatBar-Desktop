@@ -1,3 +1,23 @@
+## 2026-11-15：Memory来源实际请求独立调查闭合
+
+Memory独立调查已闭合：e545/sourcec615仅test/workflow，run43671989910/job132683837881原56802B/91b6b30f/28唯一CRC/完整XML两方法2PASS，根端唯一下载，A复用同份原件。16实际service→gateway→transport请求中，4组独立/数字/代指/图片说明的INIT及Episode都读turn0/1原选项+状态和USER原文；UPDATE及BACKFILL读turn2原选项+状态，后者另读已提交Archive，不冒称四模式都有较早引用。图片路径/PNG字节保留但memory只发文字无image_url；8消息/指纹/节点/state从新JsonFileStorage冷实例同值，不是另OS进程；inspectPrompt无写入/新请求。新RAG索引已有状态/长横线选项清理的单夹具2号方法通过，不泛化全部RAG或改旧向量。固定官方41f6来源renderer该调用、Fingerprint/RAG整文件及Episode/HEAD原Prompt/两个builder精确同，不能称Desktop回归。固定loopback响应不证明模型误摘要，旧摘要污染未证实；原Prompt虽有不编造和HEAD事实区分，却未专列未执行选项，后继具体Prompt差异或摘要专用保守投影待单独决策。本调查未改生产/Prompt/原始指纹/旧节点有效性，未清空/收费重建；首轮缺import的0执行失败留史。1257/c615+38冻结、公开REQUESTED_UNANSWERED与公开1252/sign34/真实资料保持，不加发布门槛。T25最新236及独立AndroidF11/退役记录保留，整体1.0不冒称完成。
+
+## 2026-11-15：Memory夹具R02与T25范围236
+
+Memory首轮4a87/run43671352834实际新增测试编译失败：OpenAiStreamingTransport漏显式import，0方法/0wire且API无artifact，解码日志保留；不称产品失败或已证选项输入。e5450919仅补import并把新夹具初始化由4完整组改3完整组、再append第4组，使实际INITIALIZE→UPDATE成立，run43671989910/job132683837881两方法云端在验。生产树仍c615，不动Prompt/来源指纹/旧记忆/1257；根端唯一小原件下载，A复用。另T25登记236：a6 sourceCI原件唯一owner全闭，26focused+1Androidgate+100Desktop/27XML及57scope+10reportguard分别全P，不冒称新689/GB；root只复核原件身份、不重复下载。R06严格被动AndroidCloud控制4131967e/run43671283022和Windows组safe诊断81a5e61f/run43671773288均在验未native结论；235组seed首FAIL保持，所有原5Main/5组件/4VERIFY断言不弱化，R07小补只读审核并行。V5/84仍唯一中间交付，新85/LAN6未交付/人验/日常H，active/Ultra/原模型无人工阻断不变。实际已提交Desktop集成基线c615/remote codex/desktop-chat-action-images-20261115已只读核远端并以本地元数据回执登记，H主头f749不冒称最新私有产品。
+
+## 2026-11-15：Memory来源至真实请求独立核对在验
+
+独立Memory来源核对：静态调用链确认LongTermMemoryService.renderSourceTurns→MemorySourceFingerprint.modelFacingBody→displayContent，把原始行动选项与状态原文送入Episode及HEAD来源；原Prompt有不得编造与HEAD事实/声称等区分，但未明确未执行行动选项。尚不等于真实模型误摘要。RAG新索引已有cleanAssistantContent→stripRoleplayStatusSegments，不能泛称全部泄漏。test-only源4a87e8eb在c615上只增一实际service→gateway→transport合成wire检查及定向云控制，run43671352834/job132681881620在验，未提前PASS。计划核Episode及INITIALIZE/UPDATE/BACKFILL、独立/数字/代指/图片引用和冷读原消息/指纹/节点保全；仅loopback合成返回，不验证模型语义。未改生产代码/Prompt/原始指纹/旧记忆，未清空/收费重建。冻结1257/c615+38与未答公开决定不变，不加其门槛；本机无JVM/日常H改动。
+
+## 2026-11-15：T25范围235真实Windows组seed失败登记
+
+T25补235真实失败：Windows组专项43669436221/job132675961664终态FAIL，原4510B/ff8f064b/4CRC由唯一root代理核。只lan5-fresh一个packagedMain通过；首失败COMPONENT_LAN5_SEED/ControlError，0已验证group component，四VERIFY/升级/cold未到；原件无底层行号原因，不能猜产品/编译或JUnit计数。原seedInvocations0也不证明完全无业务写入。最小安全诊断控制稿继续，固定阶段/类型/白名单code，不上传私有日志/明文，不放宽测试、不盲重试。已闭Androida6同签原地保组数据3PASS/2方法、Windows普通5阶段及default-ownedCloud1方法继续有效；AndroidR06严格被动稿尚待冻结/集成/native。active/Ultra/模型不变且无人工阻断，V5/84仍唯一中间交付，新包无交付/真人/日常H。与Desktop1257原包及待公开决定分开。
+
+## 2026-11-15：T25范围234与独立AndroidF11最终／退役登记
+
+T25追加234：a6确切Android84→85同801f签名原地升级原件3PASS/2不同方法，seed10.707s、verify5.236s、重复UIverify4.702s；5proof24295B相同、16legacy+132group哈希+32pins、UID/初装时间/dataDir保全，无清空重种。仅该范围闭合，Windows组专项和AndroidCloud严格R06继续，V5/84仍唯一中间交付，active/Ultra/原模型及无人工阻断不改。另独立AndroidF11最终26e8实际22JVM+11native、25wire冷源复核，分源70不同方法；干净PR头3856ea28整个app树e19bfeee与验证源同，只移除2个forkCI文件，未提交新PR/公开包/真人验收。该Android阶段3大ZIP实际退役313256453B，112原始小成员及25嵌套wire保存为238959B小ZIP，8保护件哈希保持；净逻辑减少313017494B非物理卷净增且不混旧轮。大ZIP旧路径不可读，失败/假绿小证据保留。以上均独立于冻结1257/c615+38及其REQUESTED_UNANSWERED公开决定，无新日常H操作。
+
 ## 2026-11-15：T25范围233登记，与1257集中交付分开
 
 T25仅登记233小回执，active/Ultra/model unchanged/humanBlockerfalse，源已a6bb882d。4649/e39把ownedTLS清理移入lifecycle-owned IO并纳入drain、保同步撤回/取消，a6仅异常链测试；sourceCI43664583949 API成功但原方法数等唯一sourceowner，不编新689。Windows真实default-owned TLS/AppContainer/DPAPI范围1P86.728s仅同JVM冷；a6确切V5→LAN6普通packagedMain五段已原件通过，17实体16同字节+capturedAt旧对照例外/PNG/旧Program/UserData保留，但未seedgroup。真实Windows组DPAPI/run43669436221与Android同801fSDK原地升级/run43669584410仍待原件。手机CloudR05真实TLS/两读review/recreate/同recipient/物理同意/confirm/READY前缀过，实际1FAIL102.306s于旧globalAuthor0预期，完整消息/附件/cold/确切revision后半未过，严格被动R06继续，不伪称整体PASS。先前7ce云域1.344GB与FILE两native范围复用，a6双构包成功不代表交付；V5/84/LAN5仍唯一中间包，无新真人/代装。与Desktop1257/c615+38私有集中已ready且公开REQUESTED_UNANSWERED完全分开，不加其门槛。
