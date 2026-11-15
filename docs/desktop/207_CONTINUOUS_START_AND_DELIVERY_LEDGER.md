@@ -1,3 +1,7 @@
+## 2026-11-15：T25范围258 Studio旧wire独立RED／最小修复准备
+
+T25范围258：815872bd相对e3ae仅3条test/workflow/skill路径，production/build仍C30；run43707786206/job132792514122实际9=7P2F/0E/S，原5405B/975f3b4c、XMLb5577c6a已sole owner冻并root只读核，A仅核review原件不二下。Direct legacy确SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE；另一comparison因兼容提前拒绝未到真实history-mismatch；显式default/zero/custom及原6methods真P。此为独立合成RED，不倒填7c native尚未观察literal。6313B/e95c69ba最小Studio normalize已静审，尚未production/green，保known inputpresence+临时defaulted历史比较，不改DTO/Prompt/globalhash/signed原正文；sole owner自主apply并保持同9断言及受影响检查。控制30e8bd27本地未push/dispatch，root85pure[9/6/13/9/13/6/15/8/6]P、38basename+4闭集literal，非新native/JVM；原normalclose/exitlockP及5+5+4+2矩阵保。最新native仍7c4Main/3componentP+4th1F/2readonly/0retention；六步增量人工稿仅准备非Gate，V5/e606/84仍T25最后交付，新pair未交/未人验/未dailyinstall。普通1257已由A真实公开/sign38全公开核验，旧unanswered已授权解决，不混入T25新pair；当前公开/现用runtime/T04/T11/T23/Prompt/拒绝清理保持。
+
 ## 2026-11-15：1257与sign38按直接授权公开／十组原增量清单
 
 已按用户“可以批准自动决定公开”直接授权与协调决定，公开普通1257/c615/Release445766973及匹配sign38；旧REQUESTED_UNANSWERED由明确授权解决，不以沉默批准。复用冻结构包43667948120与旧client签验43669085509，不重建/重跑整套。四资产身份一致，公开安装包183800738B完整匿名HTTP流SHA42a79f5d通过后才快进更新分支；固定commit+branch共10角色原字节、root1/签名/到期/链、发行API和Atom十条说明均核验。ZIP本地全hash及公开HEAD/发行digest核验，未冒充公开全ZIP重下。currentCandidate/publicDelivery/query改1257，1252/旧私有状态留历史；现用runtime、旧明确PASS、T04/T11/T23/T25及其未交付LAN范围不变，公开非人验/日常安装/正式1.0。原十组清单另存manual1257-public.md及Downloads副本，仅更新标题/公开首段和链接，原稿及十组内容不动，不追加升级基线/付费请求。
