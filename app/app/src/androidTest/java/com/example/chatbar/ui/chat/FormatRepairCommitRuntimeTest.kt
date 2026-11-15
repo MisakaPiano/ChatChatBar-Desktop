@@ -8,6 +8,8 @@ import com.example.chatbar.ChatBarApp
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.ui.kit.CbText
+import com.example.chatbar.ui.kit.ChatBarTheme
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -89,6 +91,7 @@ class FormatRepairCommitRuntimeTest {
         val app = ChatBarApp.instance
         check(app.packageName == "com.example.chatbar.repaircommit.r1")
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
+        rule.setContent { ChatBarTheme { CbText("Synthetic format repair commit checks") } }
         val settings = runBlocking { app.settingsRepository.getAppSettings() }
         val store = ViewModelStore()
         val seen = CountDownLatch(1)
