@@ -30,7 +30,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_group_retained_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne '34d0ed9e7a64384c8016f8b5fb13405b0235ee7d6adfe888cc19cc1274e0eb67') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
+          if ($actual -ne '3f76866866cd7a009683529be293fb92590ea8d68bbf74a677e014f75ea76204') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
           Write-Output 'REAL_GROUP_SAFE_DIAGNOSTIC_V1_BOUND'
       - name: Verify exact originals then run original Main launches and separate group components
         env:

@@ -28,6 +28,7 @@ class DesktopGroupRetainedUpgradeControlTest {
     private val oldSource = "e606bf2a2723fbc896323a8071cfd52dde99a4c6"
     private val candidateSource = "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f"
     private var phase = "GUARD"
+    private var firstFailureMarker: String? = null
 
     @Test
     fun seedOrVerifyRealGroupInRetainedIndependentUserData() {
@@ -112,17 +113,24 @@ class DesktopGroupRetainedUpgradeControlTest {
                             }
                             coordinator.pauseAndDrain()
                             phase = "ADD_DISABLED_REAL_PROTECTED_ROUTE"
+                            phase = "GET_REAL_DAILY_ACCESS"
                             val access = checkNotNull(app.lanSyncGroupEnrollment.runtimeAccess())
                             val entropy = ByteArray(32).also(SecureRandom()::nextBytes)
                             val password = Base64.getEncoder().encode(entropy)
                             entropy.fill(0)
                             try {
+                                phase = "SAVE_DISABLED_CLOUD_ROUTE"
                                 access.cloudRoutes().add(LanSyncGroupCloudDraft("synthetic upgrade disabled route",
                                     "https://example.invalid/ccb-retained-upgrade/", "synthetic-retained-user", password, enabled = false))
                                 // Use the default AppContainer account adapter and its actual WindowsSecretStore.
+                                phase = "GET_DEFAULT_ACCOUNT_SECRET_STORE"
+                                app.desktopSecretStore.also { check(it === app.desktopSecretStore) }
+                                phase = "SAVE_DEFAULT_ACCOUNT_CREDENTIAL"
                                 app.desktopSecretStore.save(DesktopCredentialKey.FishAudioApiKey, password.toString(Charsets.UTF_8))
+                                phase = "LOAD_DEFAULT_ACCOUNT_CREDENTIAL"
                                 check(app.desktopSecretStore.load(DesktopCredentialKey.FishAudioApiKey) == password.toString(Charsets.UTF_8))
-                                check(!containsPlaintext(userData, password))
+                                phase = "SCAN_LIVE_USERDATA_NO_PLAINTEXT"
+                                check(!containsPlaintext(userData, password, acquired.ownership))
                             } finally { password.fill(0) }
                         } else {
                             phase = "OPEN_EXISTING_WHILE_PAUSED"
@@ -211,22 +219,48 @@ class DesktopGroupRetainedUpgradeControlTest {
                             put("durablePauseClaimed", false); put("closeNoticeCount", notices)
                             put("recoveryInputUsedByVerifier", false); put("networkDeliveryVerified", false)
                         })
+                    } catch (failure: Throwable) {
+                        if (firstFailureMarker == null) firstFailureMarker = safeFailureMarker(phase, failure)
+                        throw failure
                     } finally {
                         if (!closed) withContext(NonCancellable) {
-                            withTimeout(60_000) { closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = {}) }
-                            teardownConfirmed = true
+                            val beforeCleanupPhase = phase
+                            phase = "CLOSE_FALLBACK_APP"
+                            try {
+                                withTimeout(60_000) { closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = {}) }
+                                teardownConfirmed = true
+                            } finally {
+                                if (teardownConfirmed) phase = beforeCleanupPhase
+                            }
                         }
                     }
                 } finally {
                     // A failed/unconfirmed teardown retains ownership until this test JVM dies.
+                    val beforeOwnershipPhase = phase
+                    if (teardownConfirmed) phase = "RELEASE_REAL_OWNERSHIP"
                     if (teardownConfirmed) acquired.ownership.close()
+                    phase = beforeOwnershipPhase
                 }
             }
         } catch (failure: Throwable) {
             // Original message/cause/suppressed data must never reach Gradle XML or logs.
-            throw AssertionError("GROUP_RETAINED_COMPONENT:" + phase + ":" + failure.javaClass.simpleName)
+            val finalMarker = safeFailureMarker(phase, failure)
+            val primary = firstFailureMarker
+            val marker = if (primary != null && primary != finalMarker) finalMarker + "|PRIMARY|" + primary else finalMarker
+            throw AssertionError(marker)
                 .also { it.stackTrace = emptyArray() }
         }
+    }
+
+    private fun safeFailureMarker(atPhase: String, failure: Throwable): String {
+        val safeFiles = setOf("DesktopGroupRetainedUpgradeControlTest.kt", "LanSyncGroupRuntimeAccess.kt",
+                "LanSyncGroupCloudRoutes.kt", "WindowsSecretStore.kt", "DesktopSecretStore.kt",
+                "WindowsDpapiSecretProtector.kt", "DesktopAppContainer.kt", "DesktopLanSync.kt", "DesktopDataRootOwnership.kt")
+        val safeFrame = failure.stackTrace.firstOrNull { frame ->
+                frame.fileName?.let { it in safeFiles } == true && frame.lineNumber in 1..99999
+        }
+        val safeLocation = safeFrame?.let { ":${it.fileName}:${it.lineNumber}" } ?: ""
+        return "GROUP_RETAINED_COMPONENT:" + atPhase + ":" + failure.javaClass.simpleName + safeLocation
     }
 
     private suspend fun await(predicate: () -> Boolean) = withTimeout(150_000) {
@@ -262,11 +296,26 @@ class DesktopGroupRetainedUpgradeControlTest {
         } }
         return buildJsonObject { entries.forEach { (key, digest) -> put(key, digest) } }
     }
-    private fun containsPlaintext(root: Path, secret: ByteArray): Boolean {
+    private fun containsPlaintext(root: Path, secret: ByteArray, ownership: DesktopDataRootOwnership): Boolean {
+        check(secret.isNotEmpty())
+        val ownedLock = ownership.lockPath.toAbsolutePath().normalize()
+        check(ownedLock == ownership.appDataRoot.toAbsolutePath().normalize().resolve(DesktopDataRootOwnership.LOCK_FILE_NAME))
+        check(ownedLock.startsWith(root))
+        fun verifyEmptyOwnedLock(path: Path) {
+            check(path.toAbsolutePath().normalize() == ownedLock && Files.isSameFile(path, ownedLock))
+            val attributes = Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+            check(!attributes.isSymbolicLink && attributes.isRegularFile && attributes.size() == 0L)
+        }
+        verifyEmptyOwnedLock(ownedLock)
+        var verifiedEmptyOwnedLockCount = 0
         var found = false
         Files.walk(root).use { paths -> paths.forEach { path ->
             check(!Files.isSymbolicLink(path))
-            if (Files.isRegularFile(path, NOFOLLOW_LINKS)) {
+            if (path.toAbsolutePath().normalize() == ownedLock) {
+                // Current exact owned infrastructure is proved empty; no content ReadFile is necessary.
+                verifyEmptyOwnedLock(path)
+                verifiedEmptyOwnedLockCount++
+            } else if (Files.isRegularFile(path, NOFOLLOW_LINKS)) {
                 // Include runtime Temp files without inventing a file-size/business-data ceiling.
                 Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
                     val buffer = ByteArray(64 * 1024)
@@ -295,6 +344,8 @@ class DesktopGroupRetainedUpgradeControlTest {
                 }
             }
         } }
+        check(verifiedEmptyOwnedLockCount == 1)
+        verifyEmptyOwnedLock(ownedLock)
         return found
     }
 }
