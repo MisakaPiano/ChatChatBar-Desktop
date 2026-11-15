@@ -21,7 +21,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE = "e39ed8b088b41fe7be2d619370eae260603d8fc6"
+SOURCE = "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupCloudRecoveryUiControlTest"
 FIRST = "realCloudRecoveryUiRestoresOfflineLatestConversationAndSavesKeystoreConnection"
@@ -29,11 +29,11 @@ SECOND = "coldProcessReopensSavedRouteAndOrdinaryAndroidHooksUploadNewRevision"
 TARGET = "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecoveryUiControlTest.kt"
 ARGUMENT = "lanSyncCloudRecoveryUiFixture"
 FIXTURE = "fixtures/LanSyncGroupCloudRecoveryUiControlTest.kt"
-FIXTURE_SHA = "64bde728979833190194b852c44ff15067ff643dce0856bb66b92654bd93c8d4"
+FIXTURE_SHA = "26e8c7b9f8e6ebb65a914861fe36254b8ebaca68117e0713a104f295789bc0ed"
 INPUT = "synthetic-cloud-recovery-input.properties"
 USER = "synthetic-android-cloud-ui"
 SCOPE = ("API35 actual Android Activity/CloudRecovery default HTTPS OkHttp, source offline latest "
-         "four-message conversation and 131113-byte document, at most one physical form-body swipe per read (two total), explicit UI approval/default-save, "
+         "four-message conversation and 131113-byte document, at most one physical form-body swipe per read (two total) plus one physical consent-body swipe, mandatory displayed/enabled/Off-click-On admission/default-save, "
          "AndroidKeystore retained cold process and ordinary Android new-revision encrypted upload; "
          "not restore-only, another peer receipt, physical/commercial provider/GB/performance")
 RCLONE_URL = "https://github.com/rclone/rclone/releases/download/v1.76.0/rclone-v1.76.0-linux-amd64.zip"

@@ -58,6 +58,14 @@ class LanSyncGroupCloudRecoveryUiControlTest {
     private var formBodySwipesCompleted = 0
     private var formReadGeometryBefore = "not-sampled"
     private var formReadGeometryAfter = "not-sampled"
+    private var consentBodySwipesCompleted = 0
+    private var consentGeometryBefore = "not-sampled"
+    private var consentGeometryAfter = "not-sampled"
+    private fun consentGeometry(): String = try {
+        val node = compose.onNode(hasContentDescription("已核对原设备组和新设备身份，并同意登记此设备") and isToggleable()).fetchSemanticsNode()
+        val rect = node.boundsInRoot
+        "root=${rect.left},${rect.top},${rect.right},${rect.bottom},size=${node.size.width},${node.size.height},placed=${node.layoutInfo.isPlaced},attached=${node.layoutInfo.isAttached}"
+    } catch (failure: Throwable) { "UNAVAILABLE:${failure.javaClass.simpleName}" }
     // Dialog-node coordinates only; no text, input value, UI tree or Activity-IME inference.
     private fun readButtonGeometry(): String = try {
         val node = clickable("读取并核对设备组").fetchSemanticsNode()
@@ -78,7 +86,8 @@ class LanSyncGroupCloudRecoveryUiControlTest {
         if (failure is SafeFailure) return failure
         return SafeFailure("SYNTHETIC_CLOUD_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
             " FORM_READ_ATTEMPTS[$formReadAttempts] FORM_BODY_SWIPES_COMPLETED[$formBodySwipesCompleted]" +
-            " FORM_READ_GEOMETRY_BEFORE[$formReadGeometryBefore] FORM_READ_GEOMETRY_AFTER[$formReadGeometryAfter]").also {
+            " FORM_READ_GEOMETRY_BEFORE[$formReadGeometryBefore] FORM_READ_GEOMETRY_AFTER[$formReadGeometryAfter]" +
+            " CONSENT_BODY_SWIPES_COMPLETED[$consentBodySwipesCompleted] CONSENT_GEOMETRY_BEFORE[$consentGeometryBefore] CONSENT_GEOMETRY_AFTER[$consentGeometryAfter]").also {
             it.stackTrace = failure.stackTrace // never original message, cause, UI tree or credential
         }
     }
@@ -207,6 +216,7 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             click("从网盘恢复设备组")
             val recovery = checkNotNull(coordinator.cloudRecovery)
             enterAndRead(endpoint, pass, code)
+            phase = "first-cloud-review-await"
             await(180_000) { !recovery.state.value.busy && (recovery.state.value.review != null || recovery.state.value.error != null) }
             check(recovery.state.value.error == null)
             val reviewed = checkNotNull(recovery.state.value.review)
@@ -226,14 +236,32 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             }
             clickable("读取并核对设备组").performScrollTo().assertIsNotEnabled()
             enterAndRead(endpoint, pass, code)
+            phase = "second-cloud-review-await"
             await(180_000) { !recovery.state.value.busy && (recovery.state.value.review != null || recovery.state.value.error != null) }
             check(recovery.state.value.error == null && checkNotNull(recovery.state.value.review).device == reviewed.device)
             compose.waitForIdle() // settle review-binding LaunchedEffect(clearSecrets) before consent
             val save = compose.onNode(hasContentDescription("恢复后保存此连接并继续自动同步") and isToggleable())
             save.performScrollTo(); compose.waitForIdle(); save.assertIsOn()
             val consent = compose.onNode(hasContentDescription("已核对原设备组和新设备身份，并同意登记此设备") and isToggleable())
-            consent.performScrollTo(); compose.waitForIdle(); consent.assertIsOff().assertIsEnabled()
+            phase = "second-cloud-review-consent-one-physical-body-swipe"
+            consent.performScrollTo(); compose.waitForIdle()
+            consentGeometryBefore = consentGeometry()
+            val reviewBody = compose.onNode(hasScrollAction() and hasAnyAncestor(isDialog()) and
+                hasAnyDescendant(hasContentDescription("已核对原设备组和新设备身份，并同意登记此设备") and isToggleable()))
+            reviewBody.assertIsDisplayed()
+            reviewBody.performTouchInput {
+                check(visibleSize.width > 0 && visibleSize.height > 0)
+                swipeUp(startY = visibleSize.height * 0.45f, endY = visibleSize.height * 0.15f, durationMillis = 450)
+            }
+            consentBodySwipesCompleted++
+            check(consentBodySwipesCompleted == 1)
+            compose.waitForIdle()
+            consentGeometryAfter = consentGeometry()
+            phase = "second-cloud-review-consent-displayed-enabled-off"
+            consent.assertIsDisplayed().assertIsEnabled().assertIsOff()
+            phase = "second-cloud-review-consent-physical-click"
             consent.performClick() // one real physical click, never direct owner/action invocation
+            phase = "second-cloud-review-consent-await-on"
             compose.waitUntil(30_000) {
                 consent.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ToggleableState] ==
                     androidx.compose.ui.state.ToggleableState.On

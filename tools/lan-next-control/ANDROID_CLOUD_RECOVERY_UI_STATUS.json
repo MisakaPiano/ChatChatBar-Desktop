@@ -1,8 +1,8 @@
 {
   "kind": "CCB_ANDROID_CLOUD_RECOVERY_UI_INSTALLED_REBASE_STATUS",
-  "source": "e39ed8b088b41fe7be2d619370eae260603d8fc6",
+  "source": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
   "control": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
-  "state": "R04_FIXED_SOURCE_REQUEST_PREPARED_NATIVE_NOT_OBSERVED",
+  "state": "R05_PHYSICAL_CONSENT_REQUEST_PREPARED_NATIVE_NOT_OBSERVED",
   "nativeCompiled": 0,
   "nativeExecuted": 0,
   "jvmGradleSdkAdbEmulatorServerExecuted": 0,
@@ -120,6 +120,11 @@
       "source": "7ce8446b4da875aed0979c2940e5b5537b7f27a3",
       "fixtureSha256": "64bde728979833190194b852c44ff15067ff643dce0856bb66b92654bd93c8d4",
       "result": "Processcrashed atownedTLSclose onMainthread beforeconsent/native/cold"
+    },
+    {
+      "run": 43664266740,
+      "source": "e39ed8b088b41fe7be2d619370eae260603d8fc6",
+      "result": "NormalJUnitFAIL144.696s at237 consentOn wait afterrecreate+secondreview, notoldProcesscrash/secondreadtimeout"
     }
   ],
   "currentR04": {
@@ -129,5 +134,14 @@
     "fixtureUnchangedFromR03": true,
     "nativeResult": "NOT_OBSERVED",
     "desktopHelperSha256": "b26c92363c5b43c0cec9a1c62b508f8dd8793039a8900913a6fce24258f29eeb"
+  },
+  "currentR05": {
+    "sourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+    "fixtureBytes": 43152,
+    "fixtureSha256": "26e8c7b9f8e6ebb65a914861fe36254b8ebaca68117e0713a104f295789bc0ed",
+    "readBodySwipesMaximum": 2,
+    "consentBodySwipesMaximum": 1,
+    "mandatoryConsent": "Displayed/Enabled/Off→onephysicalclick→On",
+    "nativeResult": "NOT_OBSERVED"
   }
 }
