@@ -6,6 +6,7 @@ import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.memory.MemoryPromptView
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
+import com.example.chatbar.domain.card.PackagedImage
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
@@ -16,6 +17,11 @@ import kotlin.test.*
 class DesktopActionOptionsRequestTest {
     private fun options(tag: String) = "————————\n【行动选项】\n1. ${tag}_UNTAKEN_LEFT\n2. ${tag}_UNTAKEN_RIGHT\n————————"
     private val ordinary = "我推开木门，走到窗边观察街上的雨。"
+    private val imageCaption = "依照图示去做会更合适，请直接推进后续剧情。"
+    private fun syntheticPng(): ByteArray = java.io.ByteArrayOutputStream().use {
+        check(javax.imageio.ImageIO.write(java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", it))
+        it.toByteArray()
+    }
     private class Fixture {
         val root = Files.createTempDirectory("action-wire-")
         val c = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
@@ -26,24 +32,26 @@ class DesktopActionOptionsRequestTest {
         val server = MockWebServer().also { it.start() }
         lateinit var session: ChatSession
         val sources = mutableListOf<ChatMessage>()
-        suspend fun prepare(excludeStatus: Boolean) {
+        var lastWire = JsonArray(emptyList())
+        suspend fun prepare(excludeStatus: Boolean, multimodal: Boolean) {
             c.modelRepository.saveModel(ModelConfig("model", "synthetic", server.url("/v1").toString().trimEnd('/'),
-                "synthetic-key", "synthetic-model", createdAt = 1))
+                "synthetic-key", "synthetic-model", createdAt = 1, isMultimodal = multimodal))
             c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = "model", allowCleartextModelApi = true,
                 defaultContextWindowSize = 20, ragInjectionMode = "OFF", excludeAssistantStatusFromHistory = excludeStatus))
             val card = CharacterCard.create("synthetic")
             c.characterRepository.save(card)
             session = chats.createSession(ChatSession("s", card.id, "synthetic", longTermMemoryEnabled = false, createdAt = 1, updatedAt = 1))
         }
-        suspend fun add(role: MessageRole, text: String, turn: String? = null): ChatMessage {
+        suspend fun add(role: MessageRole, text: String, turn: String? = null, images: List<String> = emptyList()): ChatMessage {
             val n = sources.size.toLong() + 1
-            return chats.addMessage(ChatMessage("source-$n", "s", role, text, createdAt = n, updatedAt = n,
+            return chats.addMessage(ChatMessage("source-$n", "s", role, text, images = images, createdAt = n, updatedAt = n,
                 sourceTurnId = turn, sourceTurnOrder = if (turn != null) n else null)).also { sources += it }
         }
-        suspend fun wire(text: String, regenerate: ChatMessage? = null, runtime: DesktopRealChatRuntime = c.createRealChatRuntime()): Pair<List<String>, DesktopRealChatResult> {
+        suspend fun wire(text: String, regenerate: ChatMessage? = null, runtime: DesktopRealChatRuntime = c.createRealChatRuntime(),
+            attachments: List<DesktopPendingImage> = emptyList()): Pair<List<String>, DesktopRealChatResult> {
             server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
                 "data: {\"choices\":[{\"delta\":{\"content\":\"synthetic model reply\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
-            val result = withTimeout(10_000) { if (regenerate == null) runtime.sendText("s", text) else runtime.regenerate("s", regenerate.id) }
+            val result = withTimeout(10_000) { if (regenerate == null) runtime.sendText("s", text, attachments = attachments) else runtime.regenerate("s", regenerate.id) }
             assertNull(result.failureMessage)
             val request = assertNotNull(server.takeRequest(2, TimeUnit.SECONDS))
             assertEquals("/v1/chat/completions", request.path)
@@ -52,10 +60,19 @@ class DesktopActionOptionsRequestTest {
                 val output = Files.createDirectories(java.nio.file.Path.of(directory).resolve(root.fileName.toString()))
                 Files.writeString(output.resolve("actual-synthetic-request.json"), raw)
                 Files.writeString(output.resolve("synthetic-source-messages.json"), Json.encodeToString(
-                    kotlinx.serialization.builtins.ListSerializer(ChatMessage.serializer()), sources.toList()))
+                    kotlinx.serialization.builtins.ListSerializer(ChatMessage.serializer()), sources.toList() + listOf(result.currentUser).filter { user -> sources.none { it.id == user.id } }))
             }
             val messages = Json.parseToJsonElement(raw).jsonObject.getValue("messages").jsonArray
-            return messages.map { it.jsonObject.getValue("content").jsonPrimitive.content } to result
+            lastWire = messages
+            return messages.map { message -> when (val content = message.jsonObject.getValue("content")) {
+                is JsonArray -> content.mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.content }.joinToString("\n")
+                else -> content.jsonPrimitive.content
+            } } to result
+        }
+        fun imageUrls(): List<String> = lastWire.flatMap { message ->
+            (message.jsonObject["content"] as? JsonArray).orEmpty().mapNotNull {
+                it.jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.content
+            }
         }
         suspend fun unchanged(except: String? = null) {
             val cold = ChatRepository(JsonFileStorage(c.appDataRoot))
@@ -63,9 +80,54 @@ class DesktopActionOptionsRequestTest {
         }
         suspend fun close() { try { c.close(); server.shutdown() } finally { root.toFile().deleteRecursively() } }
     }
-    private suspend fun fixture(exclude: Boolean = false, block: suspend (Fixture) -> Unit) {
+    private suspend fun fixture(exclude: Boolean = false, multimodal: Boolean = false, block: suspend (Fixture) -> Unit) {
         val f = Fixture()
-        try { f.prepare(exclude); withTimeout(25_000) { block(f) } } finally { f.close() }
+        try { f.prepare(exclude, multimodal); withTimeout(25_000) { block(f) } } finally { f.close() }
+    }
+
+    @Test fun `current long caption with image retains earlier choices and exact user multimodal payload`() = runBlocking {
+        for (exclude in listOf(false, true)) fixture(exclude, multimodal = true) { f ->
+            f.add(MessageRole.USER, ordinary)
+            f.add(MessageRole.ASSISTANT, "最近的剧情\n" + options("IMAGE_CURRENT"))
+            val png = syntheticPng()
+            val (wire, result) = f.wire(imageCaption, attachments = listOf(DesktopPendingImage(bytes = png)))
+            assertEquals(1, wire.count { it == imageCaption })
+            assertEquals(listOf("data:image/jpeg;base64," + f.c.chatImages.jpegBase64(png)), f.imageUrls())
+            assertContentEquals(png, f.c.chatImages.read(result.currentUser.images.single()))
+            assertEquals(imageCaption, result.currentUser.displayContent)
+            assertTrue(wire.any { it.contains("IMAGE_CURRENT_UNTAKEN") })
+            f.sources += result.currentUser; f.unchanged()
+        }
+    }
+
+    @Test fun `historical image protects earlier choices but not later independent action blocks on actual wire`() = runBlocking { fixture(multimodal = true) { f ->
+        f.add(MessageRole.USER, ordinary)
+        f.add(MessageRole.ASSISTANT, "图片之前的剧情\n" + options("IMAGE_EARLIER"))
+        val png = syntheticPng()
+        val reference = f.c.characterResourceStore.materializeImage(PackagedImage("synthetic.png", java.util.Base64.getEncoder().encodeToString(png)), 1, "action-fixture")
+        f.add(MessageRole.USER, imageCaption, images = listOf(reference))
+        f.add(MessageRole.ASSISTANT, "图片之后新的剧情\n" + options("IMAGE_LATER"))
+        val wire = f.wire(ordinary).first
+        assertEquals(1, wire.count { it == imageCaption })
+        assertEquals(listOf("data:image/jpeg;base64," + f.c.chatImages.jpegBase64(png)), f.imageUrls())
+        assertContentEquals(png, f.c.chatImages.read(reference))
+        assertEquals(listOf(true, false), listOf(wire.any { it.contains("IMAGE_EARLIER_UNTAKEN") }, wire.any { it.contains("IMAGE_LATER_UNTAKEN") }))
+        f.unchanged()
+    } }
+
+    @Test fun `unresolved pronoun and same action user text keeps its reference on actual wire`() = runBlocking {
+        for (reference in listOf("I will carry it out tomorrow.", "I shall proceed with them tomorrow.",
+            "I shall follow the same plan tomorrow.", "I shall follow the aforementioned instruction tomorrow.",
+            "我们照旧处理接下来的安排并等待结果。", "我们照常处理接下来的安排并等待结果。", "如上处理接下来的安排并等待结果。",
+            "按照她所说的继续处理接下来的事情。", "按他说的做，然后安静等待事情结束。", "按你说的办，然后安静等待事情结束。",
+            "照她的安排继续处理接下来的事情。", "照他的安排继续处理接下来的事情。", "照你的安排继续处理接下来的事情。", "照我的安排继续处理接下来的事情。")) fixture { f ->
+            f.add(MessageRole.USER, ordinary)
+            f.add(MessageRole.ASSISTANT, "等待选择的剧情\n" + options("UNRESOLVED_WORD"))
+            val wire = f.wire(reference).first
+            assertEquals(1, wire.count { it == reference })
+            assertTrue(wire.any { it.contains("UNRESOLVED_WORD_UNTAKEN") }, reference)
+            f.unchanged()
+        }
     }
 
     @Test fun `actual ordinary chat wire removes earlier and previous action blocks independently of status switch`() = runBlocking {

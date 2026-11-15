@@ -1,7 +1,7 @@
 name: Desktop direct chat action projection
 on:
   push:
-    branches: [codex/desktop-chat-action-projection-20261115]
+    branches: [codex/desktop-chat-action-images-20261115]
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,6 +39,7 @@ jobs:
           --tests 'com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest'
           --no-daemon --stacktrace
       - name: Verify actual serialized main requests and affected planning paths
+        if: ${{ !cancelled() }}
         working-directory: app
         env:
           CCB_ACTION_PROJECTION_REVIEW_DIR: ${{ runner.temp }}/ccb-action-wire-review

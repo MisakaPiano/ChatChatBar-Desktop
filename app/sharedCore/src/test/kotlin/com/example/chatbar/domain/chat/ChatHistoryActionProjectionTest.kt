@@ -11,6 +11,35 @@ class ChatHistoryActionProjectionTest {
         if (messages.lastOrNull()?.role == MessageRole.USER) ChatHistoryActionRequestSource.PERSISTED_USER
         else ChatHistoryActionRequestSource.UI_CONTINUATION)
 
+    @Test fun `image user protects its earlier prefix but later independent action sources remain filterable`() {
+        val a = message("a", MessageRole.ASSISTANT, options, 1)
+        val imageUser = message("image", MessageRole.USER, "依照图示去做会更合适，请直接推进后续剧情。", 2)
+            .copy(images = listOf("synthetic-image-reference"))
+        val all = listOf(a, imageUser)
+        assertEquals(options, known(all, all.map { it.id }.toSet()).project(a, options))
+        val b = message("b", MessageRole.ASSISTANT, options.replace("OLD", "NEW"), 3)
+        val current = message("current", MessageRole.USER, "我推开木门，走到窗边观察街上的雨。", 4)
+        val history = all + listOf(b, current)
+        val p = known(history, history.map { it.id }.toSet())
+        assertEquals(options, p.project(a, options))
+        assertFalse(p.project(b, b.displayContent).contains("NEW_NOT_TAKEN"))
+        assertEquals(imageUser.displayContent, p.project(imageUser, imageUser.displayContent))
+    }
+
+    @Test fun `pronoun and same action references protect earlier choices without interpreting user intent`() {
+        for (reference in listOf("I will carry it out tomorrow.", "I shall proceed with them tomorrow.",
+            "I shall follow the same plan tomorrow.", "I shall follow the aforementioned instruction tomorrow.",
+            "我们照旧处理接下来的安排并等待结果。", "我们照常处理接下来的安排并等待结果。", "如上处理接下来的安排并等待结果。",
+            "按照她所说的继续处理接下来的事情。", "按他说的做，然后安静等待事情结束。", "按你说的办，然后安静等待事情结束。",
+            "照她的安排继续处理接下来的事情。", "照他的安排继续处理接下来的事情。", "照你的安排继续处理接下来的事情。", "照我的安排继续处理接下来的事情。")) {
+            val a = message("a", MessageRole.ASSISTANT, options, 1)
+            val user = message("u", MessageRole.USER, reference, 2)
+            val all = listOf(a, user)
+            assertEquals(options, known(all, all.map { it.id }.toSet()).project(a, options), reference)
+        }
+        assertFalse(ChatHistoryActionProjection.mayReferToEarlierChoices("Tomorrow I will visit the quiet botanical garden."))
+    }
+
     @Test fun `ordinary explicit text removes only reliable assistant actions while user source stays exact`() {
         val a = message("a", MessageRole.ASSISTANT, "衣着：青色大衣\n$options\n```status\n位置：广场\n```", 1)
         val user = message("u", MessageRole.USER, "我推开木门，走到窗边观察街上的雨。", 2)
