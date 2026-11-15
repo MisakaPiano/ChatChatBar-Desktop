@@ -34,7 +34,7 @@ class MessageFormatRepairServiceTest {
             assertEquals("high", body.getValue("reasoning_effort").jsonPrimitive.content)
             if (legacy) assertTrue(body.getValue("enable_thinking").jsonPrimitive.boolean)
             else assertFalse("enable_thinking" in body)
-            assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"),
+            assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant"),
                 body.getValue("messages").jsonArray.map { it.jsonObject.getValue("role").jsonPrimitive.content })
             assertEquals(1, server.requestCount)
         }

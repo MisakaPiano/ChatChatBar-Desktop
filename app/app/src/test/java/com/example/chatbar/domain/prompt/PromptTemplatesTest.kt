@@ -40,7 +40,6 @@ class PromptTemplatesTest {
             PromptTemplates.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT,
             PromptTemplates.CCB_CONTINUATION_SYSTEM_PROMPT,
             PromptTemplates.CCB_POST_USER_ACK_ASSISTANT_PROMPT,
-            PromptTemplates.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT,
             PromptTemplates.FORMAT_HISTORY_CONTINUITY_NOTICE,
             PromptTemplates.CONTINUE_GENERATION_USER_PROMPT,
             PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE,
@@ -67,7 +66,6 @@ class PromptTemplatesTest {
             MainChatPromptAuthority.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT,
             MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT,
             MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT,
-            MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT,
             MainChatPromptAuthority.FORMAT_HISTORY_CONTINUITY_NOTICE,
             MainChatPromptAuthority.CONTINUE_GENERATION_USER_PROMPT,
             MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE,
@@ -78,6 +76,11 @@ class PromptTemplatesTest {
 
     @Test
     fun mainChatPromptFacadeBuildersMatchSharedAuthority() {
+        assertEquals("", PromptTemplates.narrativeModeTailSystemPrompt(null, null))
+        assertEquals(MainChatPromptAuthority.narrativeModeTailSystemPrompt(
+            com.example.chatbar.data.local.entity.ChatNarrativeMode.ADVANCE, null),
+            PromptTemplates.narrativeModeTailSystemPrompt(com.example.chatbar.data.local.entity.ChatNarrativeMode.ADVANCE, null))
+
         assertEquals(
             MainChatPromptAuthority.systemPromptTemplate("before {{original}} after"),
             PromptTemplates.systemPromptTemplate("before {{original}} after"),

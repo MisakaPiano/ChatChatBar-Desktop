@@ -46,7 +46,7 @@ class WorldBookAiRequestParityTest {
                     val expected = Json.parseToJsonElement(original.body.readUtf8())
                     val actual = Json.parseToJsonElement(port.body.readUtf8())
                     assertEquals(expected, actual)
-                    assertEquals(8, actual.jsonObject.getValue("messages").jsonArray.size)
+                    assertEquals(7, actual.jsonObject.getValue("messages").jsonArray.size)
                     assertEquals(739, actual.jsonObject.getValue("max_tokens").jsonPrimitive.int)
                     assertEquals(17, actual.jsonObject.getValue("seed").jsonPrimitive.int)
                     assertEquals(0.7, actual.jsonObject.getValue("temperature").jsonPrimitive.double, 0.0)

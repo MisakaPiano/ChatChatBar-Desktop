@@ -133,3 +133,5 @@ Do not move behavior between these owners without tracing every caller and test.
 - Do not change source-turn grouping without checking direct context, RAG, and long-term memory together.
 
 Conversation image planning/final design apply RoleplayActionOptionsPolicy through NovelAiPromptAuthority's scene-source helper before placeholder rendering. This is a derived assistant-only input projection, not a static Prompt wording change or saved-message rewrite. The chat-history assembler's numeric-choice policy is separate. See chatbar-novelai-prompt.
+
+Android compatibility delegates remain covered by `PromptTemplatesTest` and `AiTaskRequestsTest`; the adopted seven-message tails also apply to auxiliary transport, format repair, world-book parity and role-preserving NovelAI scene-history tests. The separate Android-facade cloud workflow runs only these affected JVM tests, without an APK/device or real provider.

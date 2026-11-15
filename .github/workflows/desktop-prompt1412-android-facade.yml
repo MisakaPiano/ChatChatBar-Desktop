@@ -1,0 +1,53 @@
+name: Adopted shared Prompt Android facade parity
+on:
+  push:
+    branches: ['codex/desktop-prompt1412-android-tests-*']
+permissions:
+  contents: read
+jobs:
+  facade-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind exact synthetic parity source
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, subprocess, os
+          request=json.loads(pathlib.Path('.github/desktop-prompt1412-android-request.json').read_text())
+          assert request['kind']=='ADOPTED_SHARED_PROMPT_ANDROID_FACADE_PARITY'
+          assert subprocess.check_output(['git','rev-parse','HEAD^'],text=True).strip()==request['source']
+          changed=subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r','HEAD'],text=True).strip()
+          assert changed=='.github/desktop-prompt1412-android-request.json'
+          pathlib.Path(os.environ['RUNNER_TEMP'],'prompt1412-source.json').write_text(json.dumps(request,indent=2))
+          PY
+      - name: Verify changed facade delegates and auxiliary request parity
+        working-directory: app
+        run: >-
+          bash gradlew :app:testDebugUnitTest --no-daemon --stacktrace --console=plain
+          --tests 'com.example.chatbar.domain.prompt.PromptTemplatesTest.mainChatPromptFacadeConstantsMatchSharedAuthority'
+          --tests 'com.example.chatbar.domain.prompt.PromptTemplatesTest.auxiliaryFacadeUsesSharedAuthority'
+          --tests 'com.example.chatbar.domain.prompt.PromptTemplatesTest.mainChatPromptFacadeBuildersMatchSharedAuthority'
+          --tests 'com.example.chatbar.domain.prompt.AiTaskRequestsTest'
+          --tests 'com.example.chatbar.domain.chat.AuxiliaryTaskTransportTest'
+          --tests 'com.example.chatbar.domain.chat.MessageFormatRepairServiceTest'
+          --tests 'com.example.chatbar.domain.chat.WorldBookAiRequestParityTest'
+          --tests 'com.example.chatbar.domain.image.NovelAiSceneHistoryTest'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prompt1412-android-parity-original-results
+          path: |
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
+            ${{ runner.temp }}/prompt1412-source.json
+          if-no-files-found: warn
