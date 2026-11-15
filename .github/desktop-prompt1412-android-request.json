@@ -1,0 +1,5 @@
+{
+  "kind": "ADOPTED_SHARED_PROMPT_ANDROID_FACADE_PARITY",
+  "source": "b069d5f2a0262ca572cb5688825d6b88c20f4869",
+  "scope": "Selected pure JVM/loopback affected tests only; no device, provider or APK release"
+}
