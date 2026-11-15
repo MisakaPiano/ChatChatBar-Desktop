@@ -2480,9 +2480,11 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 formatRepairNotice = MessageFormatRepairPolicy.applicableNotice(message),
                                 updatedAt = System.currentTimeMillis()
                             )
-                            if (unchanged != message) persistFormatRepairMessage(unchanged)
-                            _messageFormatRepairEvents.tryEmit("格式无需修复")
-                            unchanged
+                            val retained = if (unchanged != message) {
+                                persistFormatRepairMessage(message, unchanged)
+                            } else message
+                            if (retained == unchanged) _messageFormatRepairEvents.tryEmit("格式无需修复")
+                            retained
                         }
                         else -> {
                             val notice = MessageFormatRepairPolicy.completedRepairNotice(
@@ -2490,6 +2492,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 repaired = repairedPrefix
                             )
                             persistFormatRepairMessage(
+                                message,
                                 MessageFormatRepairPolicy.replaceCurrentDisplayContent(
                                     message = message,
                                     replacement = repairedPrefix,
@@ -2505,6 +2508,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         repairedPrefix = repairedPrefix
                     )
                     result = persistFormatRepairMessage(
+                        message,
                         MessageFormatRepairPolicy.replaceCurrentDisplayContent(
                             message = message,
                             replacement = mixedContent,
@@ -2538,6 +2542,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         message: ChatMessage,
         error: String
     ): ChatMessage = persistFormatRepairMessage(
+        message,
         message.copy(
             formatRepairNotice = MessageFormatRepairNotice(
                 kind = MessageFormatRepairNoticeKind.ERROR,
@@ -2548,10 +2553,17 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         )
     )
 
-    private suspend fun persistFormatRepairMessage(message: ChatMessage): ChatMessage {
-        chatRepository.updateMessage(message)
+    private suspend fun persistFormatRepairMessage(
+        expected: ChatMessage,
+        replacement: ChatMessage
+    ): ChatMessage {
+        // Media actions can commit while repair is awaiting its provider. Never write that old
+        // whole-message snapshot over a newer image/version change or recreate a deleted source.
+        val committed = chatRepository.updateMessageIfUnchanged(expected, replacement)
         replaceMessagesFromRepository()
-        return message
+        if (committed) return replacement
+        _messageFormatRepairEvents.tryEmit("消息已变化，本次格式修复未应用")
+        return chatRepository.getMessage(expected.id, expected.sessionId) ?: expected
     }
 
     fun updateDraftInput(text: String) {
@@ -3678,8 +3690,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             if (imagePath !in message.images) return@launch
             val remaining = message.images.filterNot { it == imagePath }
             if (remaining.isEmpty() && message.content.isBlank()) {
+                if (!chatRepository.deleteMessageIfUnchanged(message)) {
+                    _messageActionError.value = "消息已变化，请重新删除图片"
+                    replaceMessagesFromRepository()
+                    return@launch
+                }
                 selectNeighborWindowAnchor(messageId)
-                chatRepository.deleteMessage(messageId, sessionId)
                 _messages.value = _messages.value.filterNot { it.id == messageId }
                 refreshMessages()
                 enqueueLongTermMemoryAfterMessageDeletion()
@@ -3705,7 +3721,11 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     generatedImageMetadata = message.generatedImageMetadata
                         .filter { it.imagePath in remaining }
                 )
-                chatRepository.updateMessage(updatedMessage)
+                if (!chatRepository.updateMessageIfUnchanged(message, updatedMessage)) {
+                    _messageActionError.value = "消息已变化，请重新删除图片"
+                    replaceMessagesFromRepository()
+                    return@launch
+                }
                 _messages.value = _messages.value.map { current ->
                     if (current.id == messageId) updatedMessage else current
                 }

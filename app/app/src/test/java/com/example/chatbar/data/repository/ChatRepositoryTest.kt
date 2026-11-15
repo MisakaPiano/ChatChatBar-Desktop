@@ -23,6 +23,43 @@ class ChatRepositoryTest {
     @get:Rule
     val temp = TemporaryFolder()
 
+    @Test fun `stale image writer cannot overwrite a repair that committed first`() = runTest {
+        val chats = repository("image-after-repair")
+        val session = ChatSession.create("card", "synthetic repair race")
+        chats.createSession(session)
+        chats.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "original",
+            images = listOf("synthetic-image.png")))
+        val id = chats.getMessages(session.id).single().id
+        val read = CompletableDeferred<Unit>()
+        val allowWrite = CompletableDeferred<Unit>()
+        val imageWriter = launch {
+            val stale = requireNotNull(chats.getMessage(id, session.id))
+            read.complete(Unit)
+            allowWrite.await()
+            assertFalse(chats.updateMessageIfUnchanged(stale, stale.copy(images = emptyList())))
+        }
+        read.await()
+        val source = requireNotNull(chats.getMessage(id, session.id))
+        assertTrue(chats.updateMessageIfUnchanged(source, source.copy(content = "repaired")))
+        allowWrite.complete(Unit)
+        imageWriter.join()
+        val retained = requireNotNull(chats.getMessage(id, session.id))
+        assertEquals("repaired", retained.content)
+        assertEquals(listOf("synthetic-image.png"), retained.images)
+    }
+
+    @Test fun `last image deletion cannot erase a message changed after its snapshot`() = runTest {
+        val chats = repository("image-only-stale")
+        val session = ChatSession.create("card", "synthetic last image race")
+        chats.createSession(session)
+        val saved = chats.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "",
+            images = listOf("synthetic-image.png")))
+        val before = requireNotNull(chats.getMessage(saved.id, session.id))
+        chats.updateMessage(before.copy(content = "new durable text"))
+        assertFalse(chats.deleteMessageIfUnchanged(before))
+        assertEquals("new durable text", chats.getMessage(saved.id, session.id)?.content)
+    }
+
     @Test fun `last candidate deletion preserves final user message and persists no assistant`() = runTest {
         val chats = repository("last-candidate")
         val session = ChatSession.create("card", "synthetic")
