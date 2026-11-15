@@ -41,10 +41,11 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         val proceed = CountDownLatch(if (blocked) 1 else 0)
         val thread = AtomicReference<Thread>()
         val calls = AtomicInteger()
+        val failure = IllegalStateException("SYNTHETIC_CLIENT_CLOSE_FAILURE")
         override fun shutdown() {
             calls.incrementAndGet(); thread.set(Thread.currentThread()); delegate.shutdown(); entered.countDown()
             check(proceed.await(5, TimeUnit.SECONDS)) { "SYNTHETIC_CLOSE_NOT_RELEASED" }
-            if (fail) error("SYNTHETIC_CLIENT_CLOSE_FAILURE")
+            if (fail) throw failure
         }
         override fun shutdownNow(): MutableList<Runnable> = delegate.shutdownNow()
         override fun isShutdown() = delegate.isShutdown
@@ -968,17 +969,24 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         val probe = ClientCloseProbe(blocked = false, fail = true)
         val client = f.client.newBuilder().dispatcher(Dispatcher(probe)).connectionPool(ConnectionPool()).build()
         val owner = f.owner(ownedClient = client)
+        fun assertCleanupFailure(failure: Throwable) {
+            assertEquals("SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING", failure.message)
+            // Coroutine stack recovery may wrap the aggregate. The original cleanup error
+            // must remain reachable by identity, not merely be replaced by matching text.
+            assertTrue(generateSequence(failure as Throwable?) { it.cause }.take(16).any { cause ->
+                cause === probe.failure || cause.suppressed.any { it === probe.failure }
+            })
+        }
         try {
             prepareReview(f, owner); owner.drain()
             assertTrue(client.connectionPool.idleConnectionCount() > 0)
             owner.lock()
             val failure = assertFailsWith<IllegalStateException> { withTimeout(5_000) { owner.drain() } }
-            assertEquals("SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING", failure.message)
-            assertTrue(failure.suppressed.any { it.message == "SYNTHETIC_CLIENT_CLOSE_FAILURE" })
+            assertCleanupFailure(failure)
             assertEquals(0, client.connectionPool.connectionCount())
-            assertEquals("SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING", assertFailsWith<IllegalStateException> {
+            assertCleanupFailure(assertFailsWith<IllegalStateException> {
                 withTimeout(5_000) { owner.closeAndDrain() }
-            }.message)
+            })
             assertEquals(1, probe.calls.get()); assertEquals(0, f.readyCalls.get()); f.assertNoDailyActivation()
         } finally {
             try {
