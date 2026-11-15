@@ -91,6 +91,9 @@ class FormatRepairCommitRuntimeTest {
         val app = ChatBarApp.instance
         check(app.packageName == "com.example.chatbar.repaircommit.r1")
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
+        // dependenciesReady publishes service construction; the cold-start model/settings
+        // migrations run separately and must finish before installing this test's configuration.
+        runBlocking { withTimeout(30000) { app.settingsRepository.isInitialized.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic format repair commit checks") } }
         val settings = runBlocking { app.settingsRepository.getAppSettings() }
         val store = ViewModelStore()
@@ -139,9 +142,13 @@ class FormatRepairCommitRuntimeTest {
             }
             lateinit var vm: ChatViewModel
             rule.runOnIdle { vm = ViewModelProvider(store, ChatViewModelFactory(session.id))[ChatViewModel::class.java] }
-            rule.waitUntil(15000) { vm.messages.value.any { it.id == anchor.id } }
+            rule.waitUntil(15000) { vm.session.value?.id == session.id && vm.messages.value.any { it.id == anchor.id } }
             rule.runOnIdle { vm.repairMessageFormat(anchor.id) }
-            assertTrue("Actual loopback repair request must start before the competing mutation", seen.await(15, TimeUnit.SECONDS))
+            val started = seen.await(15, TimeUnit.SECONDS)
+            assertTrue("Actual loopback request must start: responding=${vm.isResponding.value}, " +
+                "segmented=${app.settingsRepository.currentAppSettings.assistantSegmentedBubblesEnabled}, " +
+                "repairModelMatches=${app.settingsRepository.currentAppSettings.formatRepairModelId == model.id}, " +
+                "notice=${cold(Fixture(app, vm, session, anchor, other, release), anchor.id)?.formatRepairNotice?.kind}", started)
             block(Fixture(app, vm, session, anchor, other, release))
         } finally {
             release.countDown()
