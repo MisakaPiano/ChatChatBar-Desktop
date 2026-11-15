@@ -267,7 +267,7 @@ class DesktopGroupRetainedUpgradeControlTest {
         val safeFiles = setOf("DesktopGroupRetainedUpgradeControlTest.kt", "LanSyncGroupRuntimeAccess.kt",
                 "LanSyncGroupCloudRoutes.kt", "WindowsSecretStore.kt", "DesktopSecretStore.kt",
                 "WindowsDpapiSecretProtector.kt", "DesktopAppContainer.kt", "DesktopLanSync.kt", "DesktopDataRootOwnership.kt", "StableEmptyObjectProof.java",
-                "LanSyncGroupNode.kt", "LanSyncWorkspace.kt", "LanSyncGroupNativeApplyOwner.kt", "LanSyncGroupNativePlanner.kt", "LanSyncGroupSourceWriter.kt", "LanSyncGroupSourceReview.kt", "LanSyncGroupRecordEvidence.kt", "LanSyncGroupDependencies.kt", "LanSyncGroupMembership.kt", "LanSyncProjection.kt", "LanSyncGroupUnitCodec.kt", "LanSyncJsonFiles.kt", "LanSyncPlan.kt", "LanSyncResourceStore.kt", "LanSyncScope.kt", "LanSyncModel.kt", "SyncAuthorJournal.kt", "SyncDeviceLedger.kt", "SyncGroupInbox.kt", "SyncGroupCustody.kt", "SyncGroupObjectCodec.kt", "SyncStreamingCipher.kt", "SyncEncryptedOutbox.kt", "CiphertextStore.kt", "FileCiphertextStore.kt", "SyncCiphertextHeader.kt", "SyncDeviceSignatures.kt")
+                "LanSyncGroupNode.kt", "LanSyncWorkspace.kt", "LanSyncStudioCurrent.kt", "LanSyncGroupNativeApplyOwner.kt", "LanSyncGroupNativePlanner.kt", "LanSyncGroupSourceWriter.kt", "LanSyncGroupSourceReview.kt", "LanSyncGroupRecordEvidence.kt", "LanSyncGroupDependencies.kt", "LanSyncGroupMembership.kt", "LanSyncProjection.kt", "LanSyncGroupUnitCodec.kt", "LanSyncJsonFiles.kt", "LanSyncPlan.kt", "LanSyncResourceStore.kt", "LanSyncScope.kt", "LanSyncModel.kt", "SyncAuthorJournal.kt", "SyncDeviceLedger.kt", "SyncGroupInbox.kt", "SyncGroupCustody.kt", "SyncGroupObjectCodec.kt", "SyncStreamingCipher.kt", "SyncEncryptedOutbox.kt", "CiphertextStore.kt", "FileCiphertextStore.kt", "SyncCiphertextHeader.kt", "SyncDeviceSignatures.kt")
         val safeIdentifier = Regex("[A-Za-z_][A-Za-z0-9_$]{0,159}")
         val safeMethod = Regex("(?:<init>|<clinit>|[A-Za-z_][A-Za-z0-9_$-]{0,99})")
         val safePackages = listOf("com.example.chatbar.desktop.", "com.example.chatbar.domain.lanSync.",
@@ -279,8 +279,17 @@ class DesktopGroupRetainedUpgradeControlTest {
         }
         val safeLocation = safeFrame?.let { ":${it.fileName}:${it.lineNumber}" +
                 "|SOURCEFRAME|${it.className.substringAfterLast('.')}:${it.methodName}" } ?: ""
+        // Compare locally and return fixed literals only; never copy an arbitrary exception message.
+        val invariant = if (failure.javaClass == IllegalArgumentException::class.java) when (failure.message) {
+            "SYNC_STUDIO_DRAFT_MISSING" -> "SYNC_STUDIO_DRAFT_MISSING"
+            "SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE" -> "SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE"
+            "SYNC_STUDIO_PENDING_ON_WIRE" -> "SYNC_STUDIO_PENDING_ON_WIRE"
+            "SYNC_STUDIO_HISTORY_MISMATCH" -> "SYNC_STUDIO_HISTORY_MISMATCH"
+            else -> "UNKNOWN"
+        } else "UNKNOWN"
         val scan = if (atPhase == "SCAN_LIVE_USERDATA_NO_PLAINTEXT") lastScanProjection?.let { "|SCANFILE|" + it } ?: "" else ""
-        return "GROUP_RETAINED_COMPONENT:" + atPhase + ":" + failure.javaClass.simpleName + safeLocation + scan
+        return "GROUP_RETAINED_COMPONENT:" + atPhase + ":" + failure.javaClass.simpleName + safeLocation +
+                "|INVARIANT|" + invariant + scan
     }
 
     private suspend fun await(predicate: () -> Boolean) = withTimeout(150_000) {

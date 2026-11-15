@@ -37,7 +37,7 @@ HELPERS = {
 }
 LEGACY_SHA = 'a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce'
 FIXTURE = HERE / 'fixtures/DesktopGroupRetainedUpgradeControlTest.kt'
-FIXTURE_SHA = '69a2810c02b432300398edc666d30b7c301944a69c3dc91d528c8c2995b2dfc3'
+FIXTURE_SHA = 'b4fc5d4b464c36fed6acc5d1217de5768eb656953e75b8495af2afbc9612dd5d'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupRetainedUpgradeControlTest'
 METHOD = 'seedOrVerifyRealGroupInRetainedIndependentUserData'
 TARGET = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupRetainedUpgradeControlTest.kt'
@@ -147,10 +147,13 @@ SAFE_SOURCE_FILES = frozenset({
     'LanSyncGroupCloudRoutes.kt', 'WindowsSecretStore.kt', 'DesktopSecretStore.kt',
     'WindowsDpapiSecretProtector.kt', 'DesktopAppContainer.kt', 'DesktopLanSync.kt', 'DesktopDataRootOwnership.kt',
     'StableEmptyObjectProof.java',
-    'LanSyncGroupNode.kt', 'LanSyncWorkspace.kt', 'LanSyncGroupNativeApplyOwner.kt', 'LanSyncGroupNativePlanner.kt', 'LanSyncGroupSourceWriter.kt', 'LanSyncGroupSourceReview.kt', 'LanSyncGroupRecordEvidence.kt', 'LanSyncGroupDependencies.kt', 'LanSyncGroupMembership.kt', 'LanSyncProjection.kt', 'LanSyncGroupUnitCodec.kt', 'LanSyncJsonFiles.kt', 'LanSyncPlan.kt', 'LanSyncResourceStore.kt', 'LanSyncScope.kt', 'LanSyncModel.kt', 'SyncAuthorJournal.kt', 'SyncDeviceLedger.kt', 'SyncGroupInbox.kt', 'SyncGroupCustody.kt', 'SyncGroupObjectCodec.kt', 'SyncStreamingCipher.kt', 'SyncEncryptedOutbox.kt', 'CiphertextStore.kt', 'FileCiphertextStore.kt', 'SyncCiphertextHeader.kt', 'SyncDeviceSignatures.kt',
+    'LanSyncGroupNode.kt', 'LanSyncWorkspace.kt', 'LanSyncStudioCurrent.kt', 'LanSyncGroupNativeApplyOwner.kt', 'LanSyncGroupNativePlanner.kt', 'LanSyncGroupSourceWriter.kt', 'LanSyncGroupSourceReview.kt', 'LanSyncGroupRecordEvidence.kt', 'LanSyncGroupDependencies.kt', 'LanSyncGroupMembership.kt', 'LanSyncProjection.kt', 'LanSyncGroupUnitCodec.kt', 'LanSyncJsonFiles.kt', 'LanSyncPlan.kt', 'LanSyncResourceStore.kt', 'LanSyncScope.kt', 'LanSyncModel.kt', 'SyncAuthorJournal.kt', 'SyncDeviceLedger.kt', 'SyncGroupInbox.kt', 'SyncGroupCustody.kt', 'SyncGroupObjectCodec.kt', 'SyncStreamingCipher.kt', 'SyncEncryptedOutbox.kt', 'CiphertextStore.kt', 'FileCiphertextStore.kt', 'SyncCiphertextHeader.kt', 'SyncDeviceSignatures.kt',
 })
 SAFE_MARKER = re.compile(r'GROUP_RETAINED_COMPONENT:([A-Z_]{1,80}):([A-Za-z][A-Za-z0-9_]{0,63})'
                          r'(?::([A-Za-z][A-Za-z0-9]*\.(?:kt|java)):([0-9]{1,5}))?')
+SAFE_STUDIO_INVARIANT_CODES = frozenset({
+    'SYNC_STUDIO_DRAFT_MISSING', 'SYNC_STUDIO_LOCAL_FIELDS_ON_WIRE', 'SYNC_STUDIO_PENDING_ON_WIRE', 'SYNC_STUDIO_HISTORY_MISMATCH',
+})
 SAFE_FRAME_CLASS = re.compile(r'[A-Za-z_][A-Za-z0-9_$]{0,159}')
 SAFE_FRAME_METHOD = re.compile(r'(?:<init>|<clinit>|[A-Za-z_][A-Za-z0-9_$-]{0,99})')
 FIXTURE_BASENAME = 'DesktopGroupRetainedUpgradeControlTest.kt'
@@ -237,9 +240,12 @@ def safe_fixture_marker(text):
     if parts[0].count('|SCANFILE|') > 1:
         return None
     scan_parts = parts[0].split('|SCANFILE|', 1)
-    if scan_parts[0].count('|SOURCEFRAME|') > 1:
+    if scan_parts[0].count('|INVARIANT|') > 1:
         return None
-    frame_parts = scan_parts[0].split('|SOURCEFRAME|', 1)
+    invariant_parts = scan_parts[0].split('|INVARIANT|', 1)
+    if invariant_parts[0].count('|SOURCEFRAME|') > 1:
+        return None
+    frame_parts = invariant_parts[0].split('|SOURCEFRAME|', 1)
     text = frame_parts[0]
     match = SAFE_MARKER.fullmatch(text)
     if match is None or match[1] not in SAFE_COMPONENT_PHASES:
@@ -255,6 +261,11 @@ def safe_fixture_marker(text):
                 SAFE_FRAME_CLASS.fullmatch(identifiers[0]) is None or SAFE_FRAME_METHOD.fullmatch(identifiers[1]) is None):
             return None
         value.update(sourceClass=identifiers[0], sourceMethod=identifiers[1])
+    if len(invariant_parts) == 2:
+        code = invariant_parts[1]
+        if code != 'UNKNOWN' and (code not in SAFE_STUDIO_INVARIANT_CODES or match[2] != 'IllegalArgumentException'):
+            return None
+        value['invariantCode'] = code
     if len(scan_parts) == 2:
         scan = safe_scan_projection(scan_parts[1])
         if scan is None or match[1] != 'SCAN_LIVE_USERDATA_NO_PLAINTEXT':

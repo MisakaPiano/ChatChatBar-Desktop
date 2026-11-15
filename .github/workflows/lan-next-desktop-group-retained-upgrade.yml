@@ -26,12 +26,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Bind C30 exact domain source frame and unchanged native guards
+      - name: Bind C30 exact Studio invariant and unchanged native guards
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_group_retained_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne 'cb3e99148447b765857af53cf123a03324c6e313091c2798bf8fdae425d65189') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
-          Write-Output 'REAL_GROUP_C30_DOMAIN_SOURCE_FRAME_AND_ORIGINAL_GUARDS_BOUND'
+          if ($actual -ne '5cf1e93148147ca92308ecfeab454210dd6d27154f5dfadc4a0fdfa661d59f6c') { throw 'REAL_GROUP_SAFE_DIAGNOSTIC_BINDING' }
+          Write-Output 'REAL_GROUP_C30_STUDIO_INVARIANT_AND_ORIGINAL_GUARDS_BOUND'
       - name: Verify exact originals then run original Main launches and separate group components
         env:
           GH_TOKEN: ${{ github.token }}
