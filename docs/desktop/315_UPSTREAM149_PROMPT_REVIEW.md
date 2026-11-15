@@ -1,5 +1,7 @@
 # 官方149及后继已有 Prompt 精确审阅包（未应用）
 
+2026-11-15 定向归属补充见 [旧 Prompt 与支持行复核](20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md)：314原25条待归属记录中7条已有独立采用/实现依据，余18条按明确未决子项保留；不把它们统称25漏功能。255幕后提醒及258头像正负词的既有用户采用继续有效；本文件提出删除提醒是另一项尚未采纳的变化。本次不改下方拟议文字或运行 Prompt。
+
 固定目标 `12e420a58d1c097cb996d09dbf0c3e659d4377d6`；正式149为 `a369fb3e049b36c83ca7b146f3999052587eed7c`。本文件仅展示拟采用差异，不更改任何运行 Prompt。
 
 当前真实文字 owner 是 sharedCore 的 `MainChatPromptAuthority`、`AuxiliaryPromptAuthority`；Android `PromptTemplates` 为 facade。比较当前真实 owner 与固定最终目标，而不是先采用08fc中间增强段再删除它。下方 diff 的删除/增加是应用内文字数据，不是给开发助手的指令。

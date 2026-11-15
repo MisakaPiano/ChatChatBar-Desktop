@@ -4874,8 +4874,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Three previously approved exact confirmation constants; current MainChat/Auxiliary authorities match all three delta literals, facades/assemblers retain owners. Not315 removal of final identity reminders.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -4885,7 +4885,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/14_UPSTREAM_COMPAT.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "fe07771eb4fbf28b2556dc5d5b7c1e57ff62d26e7a38cddf6b1b2404964e4adc",
+        "resolvedSubitems": [
+          "Three previously approved exact confirmation constants; current MainChat/Auxiliary authorities match all three delta literals, facades/assemblers retain owners. Not315 removal of final identity reminders."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -10898,8 +10912,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "User-adopted avatar positive/negative constants and composition builders; exact two constants, actual CharacterAvatarImagePolicy negative call, original positive ordering/512 plan. Reuse258 and APPROVED_AVATAR_NEGATIVE_HELPER_ONE_DELTA; no new approval.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -10909,7 +10923,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/258_UPSTREAM147_AVATAR_PROMPTS.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "f4b92599205f914a015685b265c1170d4a21568a7b0bd9bfd4551e36746c7853",
+        "resolvedSubitems": [
+          "User-adopted avatar positive/negative constants and composition builders; exact two constants, actual CharacterAvatarImagePolicy negative call, original positive ordering/512 plan. Reuse258 and APPROVED_AVATAR_NEGATIVE_HELPER_ONE_DELTA; no new approval."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "bbc4907cac79397be882af4ccef91aec7d397d0c:app/app/src/test/java/com/example/chatbar/domain/image/CharacterAvatarImagePolicyTest.kt",
@@ -16294,8 +16322,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "New explicit opt-in transparent-background tag; shared NovelAiPromptAuthority and actual V5 text/generation policy already implement it. Reuse NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS original text/wire scopes.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -16305,7 +16333,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "51997798e64ccaa58edc9af81c16e9b3e791a586b89e26348f8f6e0f13c3864d",
+        "resolvedSubitems": [
+          "New explicit opt-in transparent-background tag; shared NovelAiPromptAuthority and actual V5 text/generation policy already implement it. Reuse NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS original text/wire scopes."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -16810,8 +16852,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Medium request-only Heavy negative preset and nsfw conditional already owned by NovelAiPromptAuthority and actual ImageService/TextPolicy; literal preset matches original delta. Saved High negative/preferences remain separate.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -16821,7 +16863,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "72f0944de2a86ed2d2de9a7758141ff0e2431b93a717e4c4b9bb6776cb830370",
+        "resolvedSubitems": [
+          "Medium request-only Heavy negative preset and nsfw conditional already owned by NovelAiPromptAuthority and actual ImageService/TextPolicy; literal preset matches original delta. Saved High negative/preferences remain separate."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -17782,8 +17838,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "First-parent composition repeats the same Medium helper delta as310; same original Heavy preset and actual request-only owner, no second feature/test count.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -17793,7 +17849,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "72f0944de2a86ed2d2de9a7758141ff0e2431b93a717e4c4b9bb6776cb830370",
+        "resolvedSubitems": [
+          "First-parent composition repeats the same Medium helper delta as310; same original Heavy preset and actual request-only owner, no second feature/test count."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -18202,8 +18272,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Adds transparent-background tag after Medium helper; actual opt-in shared V5 policies already use the exact tag. No other Prompt delta in this row.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -18213,7 +18283,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "176ceb9ba9ef152d721d8617edf3cc9519ad22f1d690892e5ff1e8b190e51331",
+        "resolvedSubitems": [
+          "Adds transparent-background tag after Medium helper; actual opt-in shared V5 policies already use the exact tag. No other Prompt delta in this row."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -20068,8 +20152,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Merge composition combines Medium helper and transparent tag; both already implemented by shared named authority and actual V5 request policies, not a new315 literal decision.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -20079,7 +20163,21 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "8d8ffccb75afeacddeed8bbf824f1d231b04198ed7ab80d086174e4adc255cd6",
+        "resolvedSubitems": [
+          "Merge composition combines Medium helper and transparent tag; both already implemented by shared named authority and actual V5 request policies, not a new315 literal decision."
+        ],
+        "pendingSubitems": [],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -21217,7 +21315,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315 remove main/aux identity USER tails and retain original assistant ending. Resolved separately: Default-off experimental producers, fragments/decoder/preview/inactivity and cancellation already implemented; named existing skill remains truthful to current8-message application.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-model-request-runtime/SKILL.md",
@@ -21227,7 +21325,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "4a558adab59ff1e51289c7cdf51c3664bc8fc906c5090f146634667bed8d5948",
+        "resolvedSubitems": [
+          "Default-off experimental producers, fragments/decoder/preview/inactivity and cancellation already implemented; named existing skill remains truthful to current8-message application."
+        ],
+        "pendingSubitems": [
+          "315 remove main/aux identity USER tails and retain original assistant ending"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:.agents/skills/chatbar-novelai-prompt/SKILL.md",
@@ -21244,7 +21359,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations. Resolved separately: Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-novelai-prompt/SKILL.md",
@@ -21254,7 +21369,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "62c8f13e02bced66876dd1dd46714c311d159b9bedf968cb3f854ab537d9b3ac",
+        "resolvedSubitems": [
+          "Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7."
+        ],
+        "pendingSubitems": [
+          "315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:.agents/skills/chatbar-prompt-pipeline/SKILL.md",
@@ -21271,7 +21403,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement. Resolved separately: Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-prompt-pipeline/SKILL.md",
@@ -21281,7 +21413,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "e5cfbc36d622457adc709a8e4c8ef4b8dad17b3139f8965b00c79ec53f911f1e",
+        "resolvedSubitems": [
+          "Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path."
+        ],
+        "pendingSubitems": [
+          "315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
@@ -21720,7 +21869,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
+      "reason": "Mixed scoped record: 315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations. Resolved separately: Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/AiTaskRequests.kt",
@@ -21734,8 +21883,23 @@
       ],
       "evidence": [
         "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
-        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
-      ]
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "d333584e2143e83b433651fe38dbd8c21b244896a7cd45467724865da7e3a2a1",
+        "resolvedSubitems": [
+          "Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7."
+        ],
+        "pendingSubitems": [
+          "315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -21752,7 +21916,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
+      "reason": "Mixed scoped record: 315 CCB acknowledgement period-to-colon; 315 removal of CCB and GENERAL final identity USER messages; 315 system-prefix changes; separate subjective style increment excluded, not feature dependency. Resolved separately: New experimental protocol literals and transport already implemented; no wholesale PromptTemplates copying.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -21766,8 +21930,25 @@
       ],
       "evidence": [
         "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
-        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
-      ]
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "e3952822f80a4b4deeb5aba15b5bbe0dcf04e96101b21c63ee724b8f5f3acb51",
+        "resolvedSubitems": [
+          "New experimental protocol literals and transport already implemented; no wholesale PromptTemplates copying."
+        ],
+        "pendingSubitems": [
+          "315 CCB acknowledgement period-to-colon",
+          "315 removal of CCB and GENERAL final identity USER messages",
+          "315 system-prefix changes; separate subjective style increment excluded, not feature dependency"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -21949,7 +22130,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Raw changes expected roles from8 to7 by removing trailing identity user. Internal fixture helper visibility is incidental; existing8-role original checks cannot prove or authorize new7-role assembly. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations. Resolved separately: Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/chat/AuxiliaryTaskTransportTest.kt",
@@ -21962,8 +22143,23 @@
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Raw changes expected roles from8 to7 by removing trailing identity user. Internal fixture helper visibility is incidental; existing8-role original checks cannot prove or authorize new7-role assembly. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "60cbad4b740729ad1e3111aae77523e60d51e01e31065b22d5ab937790f00b1a",
+        "resolvedSubitems": [
+          "Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7."
+        ],
+        "pendingSubitems": [
+          "315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/CleartextHttpChatTemplatePolicyTest.kt",
@@ -22017,14 +22213,29 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Entire222-line new file read. Independent request wrapping/media/context/cache/decoder behavior maps actual currentR04 protocol12; first whole test requires changed auxiliary assistant tail/open string and remains315-dependent. Do not close mixed raw file from generic transport success. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 changed auxiliary assistant logical tail/open-content expectation in mixed test. Resolved separately: Independent experimental wrapping/media/context/cache/decoder currentR04 protocol12 already verified.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [],
       "behaviorIds": [],
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Entire222-line new file read. Independent request wrapping/media/context/cache/decoder behavior maps actual currentR04 protocol12; first whole test requires changed auxiliary assistant tail/open string and remains315-dependent. Do not close mixed raw file from generic transport success. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "bac4c566e89d39cc40a8e535bd7f1710308723bc543fd39b5ddd07903a469afb",
+        "resolvedSubitems": [
+          "Independent experimental wrapping/media/context/cache/decoder currentR04 protocol12 already verified."
+        ],
+        "pendingSubitems": [
+          "315 changed auxiliary assistant logical tail/open-content expectation in mixed test"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/ExperimentalToolTransportTest.kt",
@@ -22071,7 +22282,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Entire raw body reviewed: removes final user role, expected ordinary envelope8->7 and renames repair expectation. This explicitly depends315 user adoption; no independent runtime defect, old8 checks do not prove new7.",
+      "reason": "Mixed scoped record: 315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations. Resolved separately: Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/image/NovelAiSceneHistoryTest.kt",
@@ -22083,8 +22294,23 @@
       "behaviorIds": [],
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Entire raw body reviewed: removes final user role, expected ordinary envelope8->7 and renames repair expectation. This explicitly depends315 user adoption; no independent runtime defect, old8 checks do not prove new7.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "3767424cab4cc8d3e8c0a94cf6f7a2b0150115b3e27613456fb5036f03e5a60f",
+        "resolvedSubitems": [
+          "Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7."
+        ],
+        "pendingSubitems": [
+          "315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/prompt/AiTaskRequestsTest.kt",
@@ -22101,7 +22327,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Expected8->7 auxiliary envelope/sublist and assistant-tail rename explicitly depend on315 adoption; retained old8 tests are not equivalence evidence for new expectation. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations. Resolved separately: Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/prompt/AiTaskRequestsTest.kt",
@@ -22114,8 +22340,23 @@
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Expected8->7 auxiliary envelope/sublist and assistant-tail rename explicitly depend on315 adoption; retained old8 tests are not equivalence evidence for new expectation. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "13b4cdbb5f7a0a416aac3392352c604c407a24c97f4e7bde7170c183e381360c",
+        "resolvedSubitems": [
+          "Existing8-message envelope, role-preserving IMAGE_DESIGN and underlying transport stay verified; old8 is not evidence of new7."
+        ],
+        "pendingSubitems": [
+          "315 GENERAL envelope8-to7, final reminder USER removal, tail/idempotence/input slicing/overhead expectations"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -22132,7 +22373,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Deletes final identity user and shifts system/assistant ordering, adds experimental tail assertion. Generic transport wrapping can be reused independently but actual new tail ordering remains315 pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement. Resolved separately: Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -22145,8 +22386,23 @@
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Deletes final identity user and shifts system/assistant ordering, adds experimental tail assertion. Generic transport wrapping can be reused independently but actual new tail ordering remains315 pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "05159721c690800ac0305ead7e16094316decf18e029ec58d44ab40cd2086ccc",
+        "resolvedSubitems": [
+          "Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path."
+        ],
+        "pendingSubitems": [
+          "315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:doc/handoff.md",
@@ -22195,7 +22451,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315-dependent live mode control, current-prompt gesture/accessory wiring; Android exact28dp/IME layout is not a Desktop parity requirement. Resolved separately: Existing Desktop responsive composer/image/fullscreen/send preferences retained; mode metadata/dormant helpers separately implemented.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-feature-map/SKILL.md",
@@ -22205,7 +22461,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "8a02bd98d18d65a272b99ca4945bbb3cd509ba9e600165399a9ea42395b1f693",
+        "resolvedSubitems": [
+          "Existing Desktop responsive composer/image/fullscreen/send preferences retained; mode metadata/dormant helpers separately implemented."
+        ],
+        "pendingSubitems": [
+          "315-dependent live mode control, current-prompt gesture/accessory wiring; Android exact28dp/IME layout is not a Desktop parity requirement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:.agents/skills/chatbar-model-request-runtime/SKILL.md",
@@ -22222,7 +22495,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement. Resolved separately: Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-model-request-runtime/SKILL.md",
@@ -22232,7 +22505,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "205018d7ceb0b9fe2842547cef607413642164e57ee66c89f03ad3dfb96cbd9c",
+        "resolvedSubitems": [
+          "Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path."
+        ],
+        "pendingSubitems": [
+          "315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:.agents/skills/chatbar-prompt-pipeline/SKILL.md",
@@ -22249,7 +22539,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement. Resolved separately: Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-prompt-pipeline/SKILL.md",
@@ -22259,7 +22549,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "71c374b06145db4f60e74d9f5240bb6b039e53045f49e112718e195e5151be66",
+        "resolvedSubitems": [
+          "Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path."
+        ],
+        "pendingSubitems": [
+          "315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:.agents/skills/chatbar-save-slot/SKILL.md",
@@ -22308,7 +22615,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed scoped record: 315-dependent live mode control, current-prompt gesture/accessory wiring; Android exact28dp/IME layout is not a Desktop parity requirement. Resolved separately: Existing Desktop responsive composer/image/fullscreen/send preferences retained; mode metadata/dormant helpers separately implemented.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-shadcn-compose/SKILL.md",
@@ -22318,7 +22625,24 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ],
+      "priorPendingReason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "c4571a8e31e2fffabdbe866696b6f9469d9b940be4a3fe0ec2e9645784c28e41",
+        "resolvedSubitems": [
+          "Existing Desktop responsive composer/image/fullscreen/send preferences retained; mode metadata/dormant helpers separately implemented."
+        ],
+        "pendingSubitems": [
+          "315-dependent live mode control, current-prompt gesture/accessory wiring; Android exact28dp/IME layout is not a Desktop parity requirement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/data/local/entity/ChatMessage.kt",
@@ -22926,14 +23250,29 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Entire102-line file read. Independent legacy FOCUS/default, per-version select/edit/prune/copy and SaveSlot persistence map currentR04 persistence5/versions8. History wrapper and mode text/tail assertions require315; mixed file remains pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 actual mode source/history wrapper and new main tail wiring. Resolved separately: Default/version/edit/prune/copy/SaveSlot metadata source custody currentR04 persistence5/versions8 already verified.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [],
       "behaviorIds": [],
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Entire102-line file read. Independent legacy FOCUS/default, per-version select/edit/prune/copy and SaveSlot persistence map currentR04 persistence5/versions8. History wrapper and mode text/tail assertions require315; mixed file remains pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "1e5d0173a6b3138f34c4424101fbfb298d253493a18594457a3e98db92be9c28",
+        "resolvedSubitems": [
+          "Default/version/edit/prune/copy/SaveSlot metadata source custody currentR04 persistence5/versions8 already verified."
+        ],
+        "pendingSubitems": [
+          "315 actual mode source/history wrapper and new main tail wiring"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/test/java/com/example/chatbar/domain/chat/PromptAssemblerCharacterModeTest.kt",
@@ -22950,14 +23289,29 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Cached/uncached/combined prompt assembly adds mode system sections and separates memory layer; actual new prompt layering depends315. Dormant helper tests do not authorize production wiring. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement. Resolved separately: Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [],
       "behaviorIds": [],
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Cached/uncached/combined prompt assembly adds mode system sections and separates memory layer; actual new prompt layering depends315. Dormant helper tests do not authorize production wiring. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "df3c172c79dac53dc29cf7495409769c41dabcd2444ba53a2ff1901decc21f1e",
+        "resolvedSubitems": [
+          "Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path."
+        ],
+        "pendingSubitems": [
+          "315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -22974,7 +23328,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Cache identity and stable/tail ordering assertions now include narrative systems. Dormant request helper proof retained but actual new production message layers remain315 pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "reason": "Mixed scoped record: 315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement. Resolved separately: Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path.. Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -22987,8 +23341,23 @@
       "evidence": [
         "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
         "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
-        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
-      ]
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Cache identity and stable/tail ordering assertions now include narrative systems. Dormant request helper proof retained but actual new production message layers remain315 pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "22701aa97c05639f65343edeb7ca158a3074dfde85c54596d1977ceef0d3ca27",
+        "resolvedSubitems": [
+          "Independent helper/protocol/metadata and original scoped tests retain existing dispositions; no new runtime gap inferred from support path."
+        ],
+        "pendingSubitems": [
+          "315 main assistant-only tail and/or narrative prefix/tail/history/cache production placement"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:doc/chat_narrative_modes.md",
@@ -23174,7 +23543,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
+      "reason": "Mixed scoped record: 315 SYSTEM_PROMPT_PREFIX/GENERAL_SYSTEM_PROMPT first-line removal. Resolved separately: . Not wholesale missing functionality; no renewed approval of adopted255/258 or old three-literal exception.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -23188,8 +23557,21 @@
       ],
       "evidence": [
         "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
-        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
-      ]
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
+        "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md"
+      ],
+      "priorPendingReason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
+      "legacyPromptSupportReview": {
+        "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+        "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+        "rawDiffSha256": "efa3f07755418b0f30573502e2ba0df7f765e03c1b0a0a6ba100b831253b1092",
+        "resolvedSubitems": [],
+        "pendingSubitems": [
+          "315 SYSTEM_PROMPT_PREFIX/GENERAL_SYSTEM_PROMPT first-line removal"
+        ],
+        "promptTextApplied": false,
+        "newRuntimeTests": false
+      }
     },
     {
       "id": "12e420a58d1c097cb996d09dbf0c3e659d4377d6:.agents/skills/chatbar-model-request-runtime/SKILL.md",
@@ -23505,5 +23887,16 @@
     "matchedMethods": 4,
     "newRuns": 0,
     "completeWholeInventory": false
+  },
+  "legacyPromptSupportReview": {
+    "source": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+    "fixedOfficialTarget": "41f6e0ccad59d5ae00018a11043f9b03efa60249",
+    "reviewedRows": 25,
+    "independentlyClosedRows": 7,
+    "remainingMixedRows": 18,
+    "remainingBehavior": "POST149_PROMPT",
+    "document": "docs/desktop/20261115_LEGACY_PROMPT_SUPPORT_DISPOSITIONS.md",
+    "baselinePromoted": false,
+    "runtimeChanged": false
   }
 }
