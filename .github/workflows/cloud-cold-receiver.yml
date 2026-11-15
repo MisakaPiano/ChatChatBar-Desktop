@@ -1,0 +1,79 @@
+name: Configured cold receiver automatic HTTPS conversation delivery
+on:
+  push:
+    branches: [codex/cloud-cold-receiver-20261115]
+permissions:
+  contents: read
+jobs:
+  cold-receiver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Execute exact configured cold receiver automatic conversation delivery
+        working-directory: app
+        run: >-
+          bash ./gradlew :sharedCore:test
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudAutomaticReceptionTest.coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'
+          --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
+      - name: Preserve the exact original case and counts
+        if: always()
+        env:
+          CHECKED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          name = 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudAutomaticReceptionTest'
+          method = 'coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'
+          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, 'problems': []}
+          path = Path('app/sharedCore/build/test-results/test/TEST-' + name + '.xml')
+          if not path.is_file():
+              result['problems'].append('MISSING_CLASS')
+          else:
+              raw = path.read_bytes()
+              if b'\x00' in raw or b'<!DOCTYPE' in raw.upper() or b'<!ENTITY' in raw.upper():
+                  result['problems'].append('FORBIDDEN_XML_DECLARATION')
+              else:
+                  suite = ET.fromstring(raw)
+                  nodes = list(suite.iter())
+                  local = lambda node: node.tag.rsplit('}', 1)[-1] if isinstance(node.tag, str) else ''
+                  cases = suite.findall('testcase')
+                  all_cases = [node for node in nodes if local(node) == 'testcase']
+                  counts = {'tests': len(all_cases)}
+                  counts.update({key: sum(local(node) == tag for node in nodes)
+                                 for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
+                  result.update(counts)
+                  if suite.tag != 'testsuite' or suite.get('name') != name:
+                      result['problems'].append('ROOT_SUITE_MISMATCH')
+                  if any(key not in suite.attrib for key in counts):
+                      result['problems'].append('MISSING_COUNT_DECLARATION')
+                  if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
+                      result['problems'].append('COUNT_MISMATCH')
+                  if len(cases) != 1 or all_cases != cases or any(case.get('classname') != name or case.get('name') != method for case in cases):
+                      result['problems'].append('EXACT_METHOD_NOT_EXECUTED')
+                  if counts != {'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}:
+                      result['problems'].append('METHOD_NOT_PASS')
+          output = Path('app/build/reports/cloud-cold-receiver.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(result))
+          if result['problems']:
+              raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cloud-cold-receiver-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/build/reports/cloud-cold-receiver.json
