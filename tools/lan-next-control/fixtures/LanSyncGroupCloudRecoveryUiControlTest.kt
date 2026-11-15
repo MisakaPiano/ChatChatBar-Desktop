@@ -54,6 +54,17 @@ import org.junit.runners.model.Statement
 class LanSyncGroupCloudRecoveryUiControlTest {
     private val compose = createEmptyComposeRule()
     private var phase = "rule"
+    private var formReadAttempts = 0
+    private var formBodySwipesCompleted = 0
+    private var formReadGeometryBefore = "not-sampled"
+    private var formReadGeometryAfter = "not-sampled"
+    // Dialog-node coordinates only; no text, input value, UI tree or Activity-IME inference.
+    private fun readButtonGeometry(): String = try {
+        val node = clickable("读取并核对设备组").fetchSemanticsNode()
+        fun rect(value: androidx.compose.ui.geometry.Rect) = "${value.left},${value.top},${value.right},${value.bottom}"
+        "dialogNodeRoot=${rect(node.boundsInRoot)},dialogNodeWindow=${rect(node.boundsInWindow)}," +
+            "size=${node.size.width},${node.size.height},placed=${node.layoutInfo.isPlaced},attached=${node.layoutInfo.isAttached}"
+    } catch (failure: Throwable) { "UNAVAILABLE:${failure.javaClass.simpleName}" }
     @get:Rule val guardedCompose: TestRule = TestRule { base, description ->
         object : Statement() {
             override fun evaluate() {
@@ -65,7 +76,9 @@ class LanSyncGroupCloudRecoveryUiControlTest {
     private class SafeFailure(message: String) : AssertionError(message)
     private fun sanitized(failure: Throwable): AssertionError {
         if (failure is SafeFailure) return failure
-        return SafeFailure("SYNTHETIC_CLOUD_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}").also {
+        return SafeFailure("SYNTHETIC_CLOUD_RECOVERY_PHASE:$phase TYPE:${failure.javaClass.simpleName}" +
+            " FORM_READ_ATTEMPTS[$formReadAttempts] FORM_BODY_SWIPES_COMPLETED[$formBodySwipesCompleted]" +
+            " FORM_READ_GEOMETRY_BEFORE[$formReadGeometryBefore] FORM_READ_GEOMETRY_AFTER[$formReadGeometryAfter]").also {
             it.stackTrace = failure.stackTrace // never original message, cause, UI tree or credential
         }
     }
@@ -295,7 +308,8 @@ class LanSyncGroupCloudRecoveryUiControlTest {
             val cert = Files.readAllBytes(actual.cacheDir.toPath().resolve(CERT))
             check(sha(cert) == expected("certificateHash")); trust = CloudUiTestTrust.install(cert)
             val source = Path.of(expected("sourceAbsentPath")); val offline = Path.of(expected("offlinePath"))
-            check(source.startsWith(actual.cacheDir.toPath()) && offline.startsWith(actual.cacheDir.toPath()))
+            check(source.isAbsolute && offline.isAbsolute)
+            check(Files.isSameFile(source.parent, actual.cacheDir.toPath()) && Files.isSameFile(offline.parent, actual.cacheDir.toPath()))
             check(!Files.exists(source, NOFOLLOW_LINKS) && inventoryHash(hashes(offline)) == expected("offlineInventoryHash"))
             val owner = actual.lanSyncOwner
             check(owner.hasGroupEvidence() && !actual.getSharedPreferences("lan-sync-background", Context.MODE_PRIVATE).getBoolean("user-paused", false))
@@ -373,7 +387,28 @@ class LanSyncGroupCloudRecoveryUiControlTest {
     private fun enterAndRead(endpoint: String, pass: String, code: String) {
         compose.waitUntil(30_000) { fields().fetchSemanticsNodes().size == 4 }
         listOf(endpoint, USER, pass, code).forEachIndexed { index, text -> fields()[index].performScrollTo().performTextReplacement(text) }
-        click("读取并核对设备组")
+        formReadAttempts++
+        check(formReadAttempts in 1..2) // Exactly the original first read and post-recreate read.
+        phase = "cloud-form-read-$formReadAttempts-scroll-and-one-physical-body-swipe"
+        val read = clickable("读取并核对设备组")
+        read.performScrollTo()
+        compose.waitForIdle()
+        formReadGeometryBefore = readButtonGeometry()
+        // Only the dialog body containing the read button, not an editable field's own scroller.
+        val body = compose.onNode(hasScrollAction() and hasAnyAncestor(isDialog()) and
+            hasAnyDescendant(hasText("读取并核对设备组") and hasClickAction()))
+        body.assertIsDisplayed()
+        body.performTouchInput {
+            check(visibleSize.width > 0 && visibleSize.height > 0)
+            swipeUp(startY = visibleSize.height * 0.45f, endY = visibleSize.height * 0.15f, durationMillis = 450)
+        }
+        formBodySwipesCompleted++
+        check(formBodySwipesCompleted == formReadAttempts)
+        compose.waitForIdle()
+        formReadGeometryAfter = readButtonGeometry()
+        phase = "cloud-form-read-$formReadAttempts-displayed-enabled-physical-click"
+        // Do not call click(): a second semantic scroll could undo the actual body gesture.
+        read.assertIsDisplayed().assertIsEnabled().performClick()
     }
     private suspend fun assertAuthorZero(app: ChatBarApp, access: LanSyncGroupRuntimeAccess) {
         val p = AndroidLanSyncKeyProtection()

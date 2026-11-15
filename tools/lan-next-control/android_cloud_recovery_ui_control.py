@@ -21,7 +21,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE = "db25f8c61fdf237449286b13812a622c9a9d2120"
+SOURCE = "7ce8446b4da875aed0979c2940e5b5537b7f27a3"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupCloudRecoveryUiControlTest"
 FIRST = "realCloudRecoveryUiRestoresOfflineLatestConversationAndSavesKeystoreConnection"
@@ -29,11 +29,11 @@ SECOND = "coldProcessReopensSavedRouteAndOrdinaryAndroidHooksUploadNewRevision"
 TARGET = "app/app/src/androidTest/java/com/example/chatbar/lanSync/LanSyncGroupCloudRecoveryUiControlTest.kt"
 ARGUMENT = "lanSyncCloudRecoveryUiFixture"
 FIXTURE = "fixtures/LanSyncGroupCloudRecoveryUiControlTest.kt"
-FIXTURE_SHA = "3334f685be71e95b60c6d62e4aaf1aadde229eb2057bbdd2a98129d3450dfa6b"
+FIXTURE_SHA = "64bde728979833190194b852c44ff15067ff643dce0856bb66b92654bd93c8d4"
 INPUT = "synthetic-cloud-recovery-input.properties"
 USER = "synthetic-android-cloud-ui"
 SCOPE = ("API35 actual Android Activity/CloudRecovery default HTTPS OkHttp, source offline latest "
-         "four-message conversation and 131113-byte document, explicit UI approval/default-save, "
+         "four-message conversation and 131113-byte document, at most one physical form-body swipe per read (two total), explicit UI approval/default-save, "
          "AndroidKeystore retained cold process and ordinary Android new-revision encrypted upload; "
          "not restore-only, another peer receipt, physical/commercial provider/GB/performance")
 RCLONE_URL = "https://github.com/rclone/rclone/releases/download/v1.76.0/rclone-v1.76.0-linux-amd64.zip"

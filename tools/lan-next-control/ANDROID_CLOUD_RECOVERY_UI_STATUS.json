@@ -1,15 +1,14 @@
 {
   "kind": "CCB_ANDROID_CLOUD_RECOVERY_UI_INSTALLED_REBASE_STATUS",
-  "source": "db25f8c61fdf237449286b13812a622c9a9d2120",
+  "source": "7ce8446b4da875aed0979c2940e5b5537b7f27a3",
   "control": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
-  "state": "MINIMAL_INSTALLED_LAYOUT_REBASE_NOT_NATIVE_COMPILED_OR_EXECUTED",
+  "state": "R03_FIXED_REQUEST_PREPARED_NATIVE_RESULT_NOT_OBSERVED",
   "nativeCompiled": 0,
   "nativeExecuted": 0,
   "jvmGradleSdkAdbEmulatorServerExecuted": 0,
   "binaryDownloads": 0,
-  "requestDispatched": false,
   "productionChanged": false,
-  "controlCheckoutChanged": false,
+  "controlCheckoutChanged": true,
   "canonicalChanged": false,
   "originalArtifactDownloads": 0,
   "syntheticOnly": true,
@@ -85,5 +84,34 @@
     "fixtureBytes": 38686,
     "fixtureSha256": "3334f685be71e95b60c6d62e4aaf1aadde229eb2057bbdd2a98129d3450dfa6b",
     "firstFrozenFixturePreservedInEvidence": "74a6a5c762ddc74f84ac07847b43d8c01211fa147c00995ce345545d4cef510d"
-  }
+  },
+  "historicalRebaseStatus": {
+    "source": "db25f8c61fdf237449286b13812a622c9a9d2120",
+    "control": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
+    "state": "MINIMAL_INSTALLED_LAYOUT_REBASE_NOT_NATIVE_COMPILED_OR_EXECUTED",
+    "nativeCompiled": 0,
+    "nativeExecuted": 0,
+    "requestDispatched": false,
+    "controlCheckoutChanged": false
+  },
+  "controlParent": "b53ff0d0d95577e19c7b8b5c9b4cef58b07e7a13",
+  "currentR03": {
+    "fixtureBytes": 41143,
+    "fixtureSha256": "64bde728979833190194b852c44ff15067ff643dce0856bb66b92654bd93c8d4",
+    "sourceSha": "7ce8446b4da875aed0979c2940e5b5537b7f27a3",
+    "readPhysicalBodySwipesMaximum": 2,
+    "perReadMaximum": 1,
+    "coldParentIdentity": "absolute paths and same actual direct appcache parent",
+    "noProductionChange": true,
+    "R02OriginalFailurePreserved": true,
+    "nativeCompileResult": "NOT_OBSERVED",
+    "nativeExecutionResult": "NOT_OBSERVED"
+  },
+  "priorR02Runtime": {
+    "sourceSha": "db25f8c61fdf237449286b13812a622c9a9d2120",
+    "companionCompiled": true,
+    "firstNativeMethod": "FAILED_BEFORE_RECEIVER_PREPARE",
+    "secondNativeMethod": "NOT_EXECUTED"
+  },
+  "dispatchTracking": "TRACKED_BY_EXTERNAL_ROOT_CHECKPOINT"
 }
