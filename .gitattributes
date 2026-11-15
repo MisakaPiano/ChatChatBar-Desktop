@@ -66,3 +66,14 @@ tools/lan-next-control/android-cloud-recovery-ui-source-callchain.json text eol=
 tools/lan-next-control/android_cloud_recovery_ui_control.py text eol=lf
 tools/lan-next-control/fixtures/LanSyncGroupCloudRecoveryUiControlTest.kt text eol=lf
 tools/lan-next-control/test_android_cloud_recovery_ui_control.py text eol=lf
+
+# Exact bytes for the isolated Windows group-retained upgrade contribution.
+tools/lan-next-control/desktop_group_retained_upgrade_control.py text eol=lf
+tools/lan-next-control/fixtures/DesktopGroupRetainedUpgradeControlTest.kt text eol=lf
+.github/workflows/lan-next-desktop-group-retained-upgrade.yml text eol=lf
+docs/lan-next-control/windows-group-retained-upgrade-readme.md text eol=lf
+docs/lan-next-control/windows-group-retained-upgrade-status.json text eol=lf
+docs/lan-next-control/windows-group-retained-upgrade-fixed-inputs.json text eol=lf
+
+# Borrowed original upgrade engine is exact-byte pinned by the group companion.
+tools/lan-preview-signing/prove_desktop_profile_upgrade.py text eol=lf

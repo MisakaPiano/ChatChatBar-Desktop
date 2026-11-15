@@ -1,0 +1,41 @@
+{
+  "kind": "CCB_WINDOWS_GROUP_RETAINED_UPGRADE_IMPLEMENTATION_DRAFT",
+  "state": "FROZEN_DRAFT_NOT_NATIVE_VALIDATED",
+  "oldSource": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
+  "candidateSourceApiSnapshot": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+  "candidateBuildControlApiSnapshot": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
+  "controllerBaseline": "1014be57d389d117f3adae6b0bf1812aee0bc32e",
+  "candidateActualNextDescriptor": "NOT_OBSERVED_NOT_FABRICATED",
+  "pureGuards": {
+    "executed": 15,
+    "passed": 15,
+    "nativeCompilations": 0,
+    "nativeExecutions": 0,
+    "verifierRepairNegativeCaseRejected": true
+  },
+  "requestDispatched": false,
+  "ciDispatched": false,
+  "localRuntimeOrPackageDownloaded": false,
+  "productRootControlIndexCanonicalWritten": false,
+  "packagedMainProofScope": "existing exact five launch engine unchanged plus separate real AppContainer component hooks",
+  "plannedPackagedMainLaunches": 5,
+  "plannedSeparateAppContainerComponents": 5,
+  "originalV5BaselineUnchanged": true,
+  "timestampBindingsOriginalThreeSourceFiles": true,
+  "durablePauseClaimed": false,
+  "rawJUnitOrLogsUploaded": false,
+  "actualCloudDeliveryClaimed": false,
+  "pending": [
+    "Authenticate actual a6 / 1da build artifact descriptor and generate the unchanged original upgrade request; no future IDs or byte hashes invented",
+    "Cloud Kotlin compilation and real default AppContainer/resources/listener execution",
+    "Five actual original packaged Main launches with real old group seed and candidate retained group/DPAPI/native/credential verification"
+  ],
+  "deletedRejectedTargets": false,
+  "newPathLfAttributesRequired": true,
+  "baseFrozenManifestSha256": "42b90e2baefefb5ae228828f3862a9de2b6f656c3f4d43c0dec77cbc390aa947",
+  "verifyComponentEntitiesAndSeedPngReadOnlyBoundary": "FOUR_VERIFY_PRE_POST_LEGACY_INVENTORY_AND_ORIGINAL_SEED_IMAGE_SHA",
+  "privateHashesPublished": false,
+  "candidateApiSourceBlobsUnchangedFrom7ce": 22,
+  "candidateSourceRebindPending": false,
+  "actualCandidateArtifactDescriptorPending": true
+}

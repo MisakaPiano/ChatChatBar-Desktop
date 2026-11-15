@@ -21,16 +21,16 @@
     {
       "series": "lan6",
       "version": "0.1.0-lan.6",
-      "sourceSha": "db25f8c61fdf237449286b13812a622c9a9d2120",
-      "controlSha": "203c8efaf473f9b424b0403e5bcc4aa4da6d89f7",
-      "runId": 43649177105,
-      "artifactId": 14135996049,
+      "sourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+      "controlSha": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
+      "runId": 43665876837,
+      "artifactId": 14141999848,
       "artifactName": "ccb-lan5-lan6-independent-desktop",
-      "outerBytes": 210273575,
-      "outerSha256": "82e8e6acad6ea5595fbea15924cc1319e2705db3bafdddbc39611c498ed6f1e6",
+      "outerBytes": 210282912,
+      "outerSha256": "0252e7dee8b1795e4f8f247ec05691538b665bd1158b2029970141135bdebf43",
       "filename": "CCB-0.1.0-lan.6-independent-windows-x64.zip",
-      "innerBytes": 210158363,
-      "innerSha256": "d0a69c96c0e7bd6c5baa10ce4e52ac4d7ce56e29c20158bb108bd9a5b5c5160f",
+      "innerBytes": 210167703,
+      "innerSha256": "d52ae9e171cff31a1f819af6ee0c02c5d331c8c3c94ac80be7e4bcdab2468447",
       "installerVersion": "0.1.40006",
       "buildNumber": "40006"
     }
@@ -38,7 +38,7 @@
   "timestampRule": "OBSERVED_OLD_CONTROL_CAPTURED_AT_ONLY_WITH_IDENTICAL_SOURCE",
   "timestampSourceBindings": {
     "baseSourceSha": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
-    "candidateSourceSha": "db25f8c61fdf237449286b13812a622c9a9d2120",
+    "candidateSourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
     "files": [
       {
         "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt",

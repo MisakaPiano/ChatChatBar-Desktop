@@ -1,0 +1,58 @@
+name: Exact V5 to LAN6 real group retained Program-only upgrade
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/lan-next-desktop-group-retained-upgrade-request.json
+      - .github/workflows/lan-next-desktop-group-retained-upgrade.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-group-retained-upgrade:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - name: Enable long source paths on this cloud runner
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify exact originals then run original Main launches and separate group components
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B tools/lan-next-control/desktop_group_retained_upgrade_control.py --request .github/lan-next-desktop-group-retained-upgrade-request.json --output desktop-group-retained-upgrade-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'REAL_GROUP_RETAINED_UPGRADE' }
+      - name: Check isolated small output allowlist
+        id: small
+        if: always()
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B tools/lan-next-control/desktop_group_retained_upgrade_control.py --audit-output --request .github/lan-next-desktop-group-retained-upgrade-request.json --output desktop-group-retained-upgrade-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'REAL_GROUP_SMALL_OUTPUT_ISOLATION' }
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.small.outcome == 'success'
+        with:
+          name: lan5-lan6-desktop-real-group-retained-upgrade-small
+          if-no-files-found: error
+          path: |
+            desktop-group-retained-upgrade-evidence/source-request.json
+            desktop-group-retained-upgrade-evidence/original-provenance.json
+            desktop-group-retained-upgrade-evidence/original-input-bytes.json
+            desktop-group-retained-upgrade-evidence/native-lan5-lan6-group-retained-upgrade-result.json
+            desktop-group-retained-upgrade-evidence/group-retained-validation.json
+            desktop-group-retained-upgrade-evidence/group-component-lan5-seed.json
+            desktop-group-retained-upgrade-evidence/group-component-lan5-populated.json
+            desktop-group-retained-upgrade-evidence/group-component-lan5-warm-control.json
+            desktop-group-retained-upgrade-evidence/group-component-lan6-upgraded.json
+            desktop-group-retained-upgrade-evidence/group-component-lan6-cold-reopen.json

@@ -1,0 +1,289 @@
+{
+  "oldSource": "e606bf2a2723fbc896323a8071cfd52dde99a4c6",
+  "candidateSource": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+  "candidateBuildControl": "1da064e91a7a94c4ff16da8934b8cec4bbfdb200",
+  "controllerBaseline": "1014be57d389d117f3adae6b0bf1812aee0bc32e",
+  "helperPins": {
+    "contract.py": "53f01f7ff3190ee0c677e9221240f77c9e4ab8e95675d7d8533782bc09e98eb2",
+    "desktop_control.py": "6fcd6ace566b67e1693fd4b35781d8a1feda3fa8de618c758c165ad701be0cfb",
+    "prove_desktop_lan3_lan4.py": "cbb40b2fd689e986957f7956cb521956425a7885063ddc7724ee5af227d3d686",
+    "desktop_lan5_control.py": "6694974cf280141d637f2c3f5359c5609db668f598d6ae00eb69d55191801199",
+    "desktop_lan6_control.py": "b2fb329933250c9312248a20d984dcc308bd0b4c61f5a259df3872c63d9a2f55",
+    "instrumentation_report.py": "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158",
+    "group_ui_control.py": "c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b",
+    "desktop_group_ui_control.py": "1b0c56542824dad1f7462c77aee66614eda4f037958239c4f7d2d0e201c75b66"
+  },
+  "legacyPin": "a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce",
+  "inputs": [
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "bytes": 65406,
+      "sha256": "3d293445766bc106b8a6f82f3fa7c095d1f8790a1606ee88468189d669f73328"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "bytes": 11679,
+      "sha256": "9d309e58d3026945cc79ea560cd6b00bbd2949762780a7e5f88afb650982c2d6"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/DesktopLanSync.kt",
+      "bytes": 13358,
+      "sha256": "27a129cb7ab315f645f6e5654f74e6b98f5c47328363d3ad7e2ea84d44019c27"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsDpapiSecretProtector.kt",
+      "bytes": 2069,
+      "sha256": "8986343c9193acb570f5adae4ce58572b14b6a8d16671504a858dab241c1c0a4"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolver.kt",
+      "bytes": 2545,
+      "sha256": "c3170408c56b367a2f62cb6052c0682661fb390e0039aa3d3c8a872045184d49"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupEnrollment.kt",
+      "bytes": 33514,
+      "sha256": "c168c7c571bd1294ff13d107fd9835909f62142fc903e39e643286b593aba140"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt",
+      "bytes": 49720,
+      "sha256": "c73021dddffc809333e96020e24f6bbe9fa518f7c02af48a1411878ecc147ec6"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt",
+      "bytes": 7655,
+      "sha256": "cea2e17256167d7d286049a771b3c0b96b58cbd07226c71a79573e6d63dcdb29"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRoutes.kt",
+      "bytes": 14524,
+      "sha256": "db1e82780b1ee9aeb02114d0b2637b61f10bc029d9d0ea34dd26b89c9dd00cf2"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNode.kt",
+      "bytes": 30570,
+      "sha256": "17a77c9915c9cc9edef9e3188098afe53f5a820abd74132c90ce1b3a7e89bd12"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNativeApplyOwner.kt",
+      "bytes": 30687,
+      "sha256": "124032afcfcaa03b5a354b140c5d13243ea828b3fa7aceb275cef9703758bed6"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncAuthorJournal.kt",
+      "bytes": 18787,
+      "sha256": "f15982b3636187c4e4223dd409a2e8759618328cba2bdd9870bfaab2b6e5704e"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:tools/desktop/nsis/build_independent_zip.py",
+      "bytes": 7135,
+      "sha256": "5240631bfc05bbdda3dbe60885e2710a7cc1599ce8d2a7674b91be1f9aa6ced6"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "bytes": 28958,
+      "sha256": "06771dd97f4f8efea1bdd86fde63e12cd5aa8b20a9759263dfa6a8f68f504506"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+      "bytes": 13744,
+      "sha256": "ad21e753563835129a4313c02125841f41c332ff2b9db0d482179743875e2f87"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+      "bytes": 2826,
+      "sha256": "0a5a912cc8c020200c2a38729b46b4b347582ba8f7ac608f262055a9e947bee6"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretStore.kt",
+      "bytes": 9307,
+      "sha256": "68f83df55fa3280ab258c2587f922c4ff3286d3b313d16d013c1243c8b100fa8"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopAccountStore.kt",
+      "bytes": 18158,
+      "sha256": "445319a3ba03484860903d2bfd3771fe3bb0ddf82937b7f813771c867301ed43"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupPanelState.kt",
+      "bytes": 3202,
+      "sha256": "3a057b200927a27eef53de8c3de544c10830b0b640f5d529cc67d57fb00649c5"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncDeviceLedger.kt",
+      "bytes": 13505,
+      "sha256": "cc4f763b3ddf87680d22c0a647d623ab69b44db0fe2ee35d809bbd48cb7c4cd8"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNativePlanner.kt",
+      "bytes": 15333,
+      "sha256": "1378d6c0f2f77eb269e1582e804507de09e7774c5740a18a00a10960298b00b5"
+    },
+    {
+      "gitObject": "e606bf2a2723fbc896323a8071cfd52dde99a4c6:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncDeviceSignatures.kt",
+      "bytes": 2836,
+      "sha256": "55130f92ff2d6ba313eda47856d216b844500dbdae37d5a1023994aa776d0943"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "bytes": 65406,
+      "sha256": "3d293445766bc106b8a6f82f3fa7c095d1f8790a1606ee88468189d669f73328"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "bytes": 11679,
+      "sha256": "9d309e58d3026945cc79ea560cd6b00bbd2949762780a7e5f88afb650982c2d6"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/DesktopLanSync.kt",
+      "bytes": 14334,
+      "sha256": "b956161eb0d92c6c78b82ed29186b9a9dcdad39b8273174e93efaadfb1dea155"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsDpapiSecretProtector.kt",
+      "bytes": 2069,
+      "sha256": "8986343c9193acb570f5adae4ce58572b14b6a8d16671504a858dab241c1c0a4"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolver.kt",
+      "bytes": 2545,
+      "sha256": "c3170408c56b367a2f62cb6052c0682661fb390e0039aa3d3c8a872045184d49"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupEnrollment.kt",
+      "bytes": 33514,
+      "sha256": "c168c7c571bd1294ff13d107fd9835909f62142fc903e39e643286b593aba140"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt",
+      "bytes": 69330,
+      "sha256": "598b907231249ae146d9efe9b01f7df06bb731cfd853d8d5cb783b2c64681015"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt",
+      "bytes": 8425,
+      "sha256": "6249019c67f3bc84e0348d258ca6515e1ffdadc756c7f696b923a2dc08a89967"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRoutes.kt",
+      "bytes": 14524,
+      "sha256": "db1e82780b1ee9aeb02114d0b2637b61f10bc029d9d0ea34dd26b89c9dd00cf2"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNode.kt",
+      "bytes": 35327,
+      "sha256": "7d88bd66ceec9dae84f5dd820869012136c0edace396c8eb6759400b4c2982eb"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNativeApplyOwner.kt",
+      "bytes": 30687,
+      "sha256": "124032afcfcaa03b5a354b140c5d13243ea828b3fa7aceb275cef9703758bed6"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncAuthorJournal.kt",
+      "bytes": 18787,
+      "sha256": "f15982b3636187c4e4223dd409a2e8759618328cba2bdd9870bfaab2b6e5704e"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:tools/desktop/nsis/build_independent_zip.py",
+      "bytes": 7135,
+      "sha256": "5240631bfc05bbdda3dbe60885e2710a7cc1599ce8d2a7674b91be1f9aa6ced6"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "bytes": 29029,
+      "sha256": "cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+      "bytes": 13744,
+      "sha256": "ad21e753563835129a4313c02125841f41c332ff2b9db0d482179743875e2f87"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+      "bytes": 2826,
+      "sha256": "0a5a912cc8c020200c2a38729b46b4b347582ba8f7ac608f262055a9e947bee6"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretStore.kt",
+      "bytes": 9307,
+      "sha256": "68f83df55fa3280ab258c2587f922c4ff3286d3b313d16d013c1243c8b100fa8"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopAccountStore.kt",
+      "bytes": 18158,
+      "sha256": "445319a3ba03484860903d2bfd3771fe3bb0ddf82937b7f813771c867301ed43"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupPanelState.kt",
+      "bytes": 3292,
+      "sha256": "d6ee314007363a2cd9b34107445ccefa0f4e636d53fd25fffcd84b8af7e85176"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncDeviceLedger.kt",
+      "bytes": 14043,
+      "sha256": "16d24ec148d3e260387c991afcd87d24e7bd074ba081d60e82a9ea8557f23be5"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNativePlanner.kt",
+      "bytes": 15333,
+      "sha256": "1378d6c0f2f77eb269e1582e804507de09e7774c5740a18a00a10960298b00b5"
+    },
+    {
+      "gitObject": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f:app/sharedCore/src/main/kotlin/com/example/chatbar/domain/syncStore/SyncDeviceSignatures.kt",
+      "bytes": 2852,
+      "sha256": "572c03cf571b0f16c1513898235197d1047285f4e6ac47ffd1bf796a5daca5f9"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/contract.py",
+      "bytes": 8819,
+      "sha256": "53f01f7ff3190ee0c677e9221240f77c9e4ab8e95675d7d8533782bc09e98eb2"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/desktop_control.py",
+      "bytes": 16864,
+      "sha256": "6fcd6ace566b67e1693fd4b35781d8a1feda3fa8de618c758c165ad701be0cfb"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/prove_desktop_lan3_lan4.py",
+      "bytes": 6635,
+      "sha256": "cbb40b2fd689e986957f7956cb521956425a7885063ddc7724ee5af227d3d686"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/desktop_lan5_control.py",
+      "bytes": 2451,
+      "sha256": "6694974cf280141d637f2c3f5359c5609db668f598d6ae00eb69d55191801199"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/desktop_lan6_control.py",
+      "bytes": 2829,
+      "sha256": "b2fb329933250c9312248a20d984dcc308bd0b4c61f5a259df3872c63d9a2f55"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/instrumentation_report.py",
+      "bytes": 6482,
+      "sha256": "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/group_ui_control.py",
+      "bytes": 11943,
+      "sha256": "c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-next-control/desktop_group_ui_control.py",
+      "bytes": 9401,
+      "sha256": "1b0c56542824dad1f7462c77aee66614eda4f037958239c4f7d2d0e201c75b66"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:tools/lan-preview-signing/prove_desktop_profile_upgrade.py",
+      "bytes": 19706,
+      "sha256": "a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce"
+    },
+    {
+      "gitObject": "1014be57d389d117f3adae6b0bf1812aee0bc32e:.gitattributes",
+      "bytes": 4338,
+      "sha256": "c422f89b656f9e3bc4239771feb26c2cd71d8cd60d315b45b699785984dc7fa1"
+    }
+  ]
+}
