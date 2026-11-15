@@ -100,6 +100,7 @@ internal data class DesktopSettingsDraft(
     val automaticFormatCheckEnabled: Boolean = false,
     val assistantSegmentedBubblesEnabled: Boolean = true,
     val excludeAssistantStatusFromHistory: Boolean = true,
+    val disableNarrativeModes: Boolean = false,
     val hasSavedFallbackCredential: Boolean = false,
     val fallbackCredentialEdit: DesktopCredentialEdit = DesktopCredentialEdit.Unchanged,
     val fishAudioTtsModelId: String = com.example.chatbar.domain.voice.FishAudioTtsModels.S2_1_PRO_FREE,
@@ -243,6 +244,7 @@ internal class DesktopModelSettingsController(
                     automaticFormatCheckEnabled = app.automaticFormatCheckEnabled,
                     assistantSegmentedBubblesEnabled = app.assistantSegmentedBubblesEnabled,
                     excludeAssistantStatusFromHistory = app.excludeAssistantStatusFromHistory,
+                    disableNarrativeModes = app.disableNarrativeModes,
                     fishAudioTtsModelId = app.fishAudioTtsModelId,
                     voiceTagModelId = app.voiceTagModelId,
                     audiobookModeEnabled = app.audiobookModeEnabled,
@@ -531,6 +533,7 @@ internal class DesktopModelSettingsController(
                 automaticFormatCheckEnabled = baseline.automaticFormatCheckEnabled,
                 assistantSegmentedBubblesEnabled = baseline.assistantSegmentedBubblesEnabled,
                 excludeAssistantStatusFromHistory = baseline.excludeAssistantStatusFromHistory,
+                disableNarrativeModes = baseline.disableNarrativeModes,
                 fishAudioTtsModelId = baseline.fishAudioTtsModelId,
                 voiceTagModelId = baseline.voiceTagModelId,
                 audiobookModeEnabled = baseline.audiobookModeEnabled,
@@ -616,6 +619,7 @@ internal class DesktopModelSettingsController(
             automaticFormatCheckEnabled = draft.automaticFormatCheckEnabled,
             assistantSegmentedBubblesEnabled = draft.assistantSegmentedBubblesEnabled,
             excludeAssistantStatusFromHistory = draft.excludeAssistantStatusFromHistory,
+            disableNarrativeModes = draft.disableNarrativeModes,
             fishAudioTtsModelId = draft.fishAudioTtsModelId,
             voiceTagModelId = draft.voiceTagModelId,
             audiobookModeEnabled = draft.audiobookModeEnabled,
@@ -880,6 +884,7 @@ private fun DesktopSettingsDraft.hasChatDefaultsChanges(baseline: AppSettings): 
         automaticFormatCheckEnabled != baseline.automaticFormatCheckEnabled ||
         assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled ||
         excludeAssistantStatusFromHistory != baseline.excludeAssistantStatusFromHistory ||
+        disableNarrativeModes != baseline.disableNarrativeModes ||
         fishAudioTtsModelId != baseline.fishAudioTtsModelId ||
         voiceTagModelId != baseline.voiceTagModelId ||
         audiobookModeEnabled != baseline.audiobookModeEnabled
@@ -906,6 +911,8 @@ private fun DesktopSettingsDraft.reconcileAppSettingsSave(
         saved.assistantSegmentedBubblesEnabled else assistantSegmentedBubblesEnabled,
     excludeAssistantStatusFromHistory = if (excludeAssistantStatusFromHistory == submitted.excludeAssistantStatusFromHistory)
         saved.excludeAssistantStatusFromHistory else excludeAssistantStatusFromHistory,
+    disableNarrativeModes = if (disableNarrativeModes == submitted.disableNarrativeModes)
+        saved.disableNarrativeModes else disableNarrativeModes,
     fishAudioTtsModelId = if (fishAudioTtsModelId == submitted.fishAudioTtsModelId)
         saved.fishAudioTtsModelId else fishAudioTtsModelId,
     voiceTagModelId = if (voiceTagModelId == submitted.voiceTagModelId) saved.voiceTagModelId else voiceTagModelId,

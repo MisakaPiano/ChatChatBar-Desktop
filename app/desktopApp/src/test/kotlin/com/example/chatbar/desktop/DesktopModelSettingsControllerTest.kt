@@ -89,6 +89,30 @@ class DesktopModelSettingsControllerTest {
             assertEquals(2048, fixture.container.modelRepository.getModel(id)!!.maxOutputTokens)
         }
     }
+    @Test fun `narrative disable draft saves discards and preserves concurrent unrelated runtime settings`() = runBlocking {
+        withFixture { fixture ->
+            val controller = fixture.controller
+            controller.loadSettings()
+            assertFalse(controller.state.value.settings!!.disableNarrativeModes)
+            controller.editSettings { it.copy(disableNarrativeModes = true) }
+            assertTrue(controller.state.value.chatDefaultsDirty)
+            fixture.container.settingsRepository.updateAppSettings { it.copy(chatBubbleFontScale = 1.25f) }
+            controller.saveAppSettings()
+            assertNull(controller.state.value.error)
+            val saved = fixture.container.settingsRepository.getAppSettings()
+            assertTrue(saved.disableNarrativeModes)
+            assertEquals(1.25f, saved.chatBubbleFontScale)
+            assertFalse(controller.state.value.chatDefaultsDirty)
+            controller.editSettings { it.copy(disableNarrativeModes = false) }
+            assertTrue(controller.state.value.chatDefaultsDirty)
+            controller.discardChatDefaults()
+            assertTrue(controller.state.value.settings!!.disableNarrativeModes)
+            assertFalse(controller.state.value.chatDefaultsDirty)
+            controller.loadSettings()
+            assertTrue(controller.state.value.settings!!.disableNarrativeModes)
+        }
+    }
+
     @Test fun `automatic format check setting persists and discard restores the saved choice`() = runBlocking {
         withFixture { fixture ->
             val controller = fixture.controller

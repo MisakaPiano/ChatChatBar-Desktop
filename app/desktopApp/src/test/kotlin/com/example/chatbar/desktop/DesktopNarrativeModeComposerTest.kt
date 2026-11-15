@@ -55,7 +55,11 @@ class DesktopNarrativeModeComposerTest {
                 assertTrue(control(scene, "回复节奏：推进模式").config[SemanticsActions.OnClick].action!!.invoke())
                 frames(scene); clickText(scene, "聚焦模式")
                 withTimeout(6000) { while (controller.state.value.selectedSession?.narrativeMode != ChatNarrativeMode.FOCUS) { frames(scene) } }
-                c.settingsRepository.updateAppSettings { it.copy(disableNarrativeModes = true) }
+                c.modelSettingsController.loadSettings()
+                c.modelSettingsController.editSettings { it.copy(disableNarrativeModes = true) }
+                assertTrue(c.modelSettingsController.state.value.chatDefaultsDirty)
+                c.modelSettingsController.saveAppSettings()
+                assertTrue(c.settingsRepository.getAppSettings().disableNarrativeModes)
                 controller.refresh(); frames(scene)
                 assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().any { label -> label.startsWith("回复节奏：") } })
                 assertEquals("draft stays unchanged", controller.state.value.composerDraft)

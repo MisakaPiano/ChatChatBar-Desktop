@@ -32,7 +32,7 @@ class ExperimentalToolProtocolTest {
         assertEquals("assistant", ordinary.getValue("messages").jsonArray.last().jsonObject.getValue("role").jsonPrimitive.content)
         val experimental = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical, model(), true,
             experimentalApiMode = true)).jsonObject
-        val restored = Json.parseToJsonElement(tool(experimental, "context").getValue("description").jsonPrimitive.content).jsonArray
+        val restored = Json.parseToJsonElement(tool(experimental, "context").getValue("description").jsonPrimitive.content + "\"}]").jsonArray
         assertEquals(logical.drop(1).map { it.role }, restored.map { it.jsonObject.getValue("role").jsonPrimitive.content })
         assertEquals(logical.drop(1).map { it.content }, restored.map { it.jsonObject.getValue("content") })
     }
