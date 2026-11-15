@@ -29,6 +29,8 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
     private val observe: (String) -> Unit = {}) {
     private val lock: ReentrantLock
     private val file get() = root.resolve("group.protected")
+    private data class VerifiedGraph(val trust: SyncGroupTrust, val rows: List<SyncDeviceLedgerRecord>, val ledger: SyncDeviceLedger)
+    private var verifiedGraph: VerifiedGraph? = null
     val device: String get() = recipient.device
     init {
         PrivateSyncFile.checked(root, true)
@@ -166,7 +168,14 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         require(encoded.length in 1..128 * 1024) { "SYNC_GROUP_CUSTODY_BUDGET" }
         return SyncStreamingCipher.open(group, epoch, Base64.getDecoder().decode(encoded), unprotect)
     }
-    private fun build(state: SyncGroupCustodyState) = SyncDeviceLedger(state.trust).also { ledger -> state.ledgers.forEach { ledger.offer(it) } }
+    private fun build(state: SyncGroupCustodyState): SyncDeviceLedger {
+        // read()/unprotect and the custody locks still run on every call. Only identical complete
+        // public graph inputs can reuse validation; a signature or even waiting-row change misses.
+        verifiedGraph?.takeIf { it.trust == state.trust && it.rows == state.ledgers }?.let { return it.ledger.verifiedCopy() }
+        val ledger = SyncDeviceLedger(state.trust).also { graph -> state.ledgers.forEach { graph.offer(it) } }
+        verifiedGraph = VerifiedGraph(state.trust, state.ledgers.map(::freeze), ledger.verifiedCopy())
+        return ledger
+    }
     private fun advance(state: SyncGroupCustodyState, ledger: SyncDeviceLedger): SyncGroupCustodyState {
         val current = ledger.current()
         if (state.trust.checkpoint == current.reference()) return state

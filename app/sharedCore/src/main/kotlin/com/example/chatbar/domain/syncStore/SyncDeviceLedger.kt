@@ -44,13 +44,22 @@ import kotlinx.serialization.Serializable
 }
 
 /** Pinned owner admits/revokes identities; ordinary content authors do not need the owner online. */
-class SyncDeviceLedger(private val trust: SyncGroupTrust) {
+class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, private val owner: SyncPinnedDeviceCertificate) {
+    constructor(trust: SyncGroupTrust) : this(trust, SyncDeviceSignatures.decode(trust.ownerCertificate))
+
     val trustAnchor: SyncGroupTrust get() = trust
     val ownerCertificate: String get() = trust.ownerCertificate
-    private val owner = SyncDeviceSignatures.decode(trust.ownerCertificate)
     private val records = linkedMapOf<SyncStoreId, SyncDeviceLedgerRecord>()
     private val admitted = linkedSetOf<SyncStoreId>()
     private val rejected = linkedMapOf<SyncStoreId, String>()
+
+    /** Copy only a fully reconstructed graph; callers may offer new evidence to their own view. */
+    @Synchronized internal fun verifiedCopy(): SyncDeviceLedger = SyncDeviceLedger(trust, owner).also { copy ->
+        // offer() freezes every record's collections. Preserve waiting, rejected and fork evidence too.
+        copy.records.putAll(records)
+        copy.admitted.addAll(admitted)
+        copy.rejected.putAll(rejected)
+    }
 
     @Synchronized fun offer(input: SyncDeviceLedgerRecord): SyncVersionState {
         val record = input.copy(members = Collections.unmodifiableMap(input.members.toMap()),
