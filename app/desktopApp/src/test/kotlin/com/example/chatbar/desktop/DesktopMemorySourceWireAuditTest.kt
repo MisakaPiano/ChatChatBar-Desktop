@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.chat.ContextWindowManager
+import com.example.chatbar.domain.chat.OpenAiStreamingTransport
 import com.example.chatbar.domain.memory.*
 import com.example.chatbar.domain.rag.ChatMemoryIndexPolicy
 import com.example.chatbar.domain.rag.ChatMemoryTurn
@@ -38,7 +39,7 @@ class DesktopMemorySourceWireAuditTest {
                 f.setup()
                 f.service.maintainHeadAutomatically(f.session.id, f.model)
                 assertEquals(listOf(MemoryHeadUpdateMode.INITIALIZE), f.headModes)
-                f.addTurn(4)
+                f.addTurn(3)
                 val sources = f.chats.getMessages(f.session.id)
                 val fingerprintBefore = f.fingerprints(sources)
                 f.service.updateHeadAfterReply(f.session.id, f.model)
@@ -142,7 +143,7 @@ class DesktopMemorySourceWireAuditTest {
             chats.createSession(session)
             settings.saveAppSettings(AppSettings(defaultContextWindowSize = 0, episodeMaxSourceTurns = 2))
             service.ensureMigrated(session.id)
-            repeat(4) { addTurn(it) }
+            repeat(3) { addTurn(it) }
         }
 
         suspend fun addTurn(index: Int) {
