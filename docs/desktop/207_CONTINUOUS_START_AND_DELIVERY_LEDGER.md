@@ -1,3 +1,7 @@
+## 2026-11-15：T25小回执232登记，与1256集中交付分开
+
+T25仅登记231→232新冻结小回执，以232为当前且active/humanBlockerfalse。7ce云域聚合1344152572B实际1P1635.113s/完整续传/重复PUTGET0/native2/hash/cold闭合；7ce手机FILE实际两方法83.563+5.301s/Keystore/完整业务与移除副本后force-stop不同PID冷读闭合，两scope不冒充CloudUI/整目标。232真实Android生产缺陷：recreate/ON_STOP→CloudRecoveryOwner.release179→owned OkHttp.evictAll→TLS close在UI写网络触发NetworkOnMainThreadException/mainLooper崩溃；原[1,-2]/terminal0，未confirm/native/cold，无虚构FAIL耗时。原执行者修lifecycle-owned IO cleanup并保同步invalidation/cancel/drain，7ce非最终可交付源。db25 Windows五段普通升级已过但未种peer/identity；组DPAPI保留及新成熟同源配对继续；LOCALAPPDATA在UserData/Local，不能外推outsidecanary。此独立T25不阻断Desktop私有1256已完成批次，公开1252/sign34、1256等待具体新公开决定与真人边界不变。
+
 ## 2026-11-15：1256集中私有交付双方闭合，公开等用户新具体决定
 
 1256/sourceb94+签37成熟私有集中交付已由双方原范围闭合：草稿445722136四附件及全文说明实际API独立核同；旧1255/7bd/sign36/草稿445642664原四附件未改。root实查精确四删除路径不存在、新1256两大包和新旧native/sign小原件保留；本轮仅761757506逻辑B不混前轮回收，不宣称物理卷净增。十组集中清单与新包/原生/冻结旧client证据均已备，协调端统一问新1256+37公开决定；旧1255未答由新请求替代，不算默许。公开仍1252/sign34/c711，日常H未改、无真人新增PASS、非整体1.0完成。
