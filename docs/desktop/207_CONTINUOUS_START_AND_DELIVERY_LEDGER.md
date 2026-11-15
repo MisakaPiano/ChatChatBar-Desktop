@@ -1,3 +1,7 @@
+## 2026-11-15：T25第264条 goal实际blocked／仅六步实际人验待反馈
+
+T25状态264仅bookkeeping：262/263/264三个连续真实human-only goalturn同一条件，root已实际update_goal(status=blocked)，返回blocked/updatedAt1794748593，不能继续写active或complete。264原2735B/c98b2e61及前26310007B/a35e19e8、2626050B/a47071db核同；复核source5c90 clean、sourceowner615已完成、V6四文件/真实四links交付和DELIVERED_WAITING_HUMAN实在、人验NOT_RUN，工程/验证/交付/阶段cleanup已COMPLETE、0live、独立requiredwork空、无新用户反馈。实际阻碍仅可用PC/手机六步设备验收，自有HTTPSDAV现成条件可选，不要求注册/付费/交凭据；不是CI/旧目标显示/源码owner/Project批准/Prompt待选/包缺失或清理。仅该T25协调goal blocked停止空转待用户证据，其他独立目标/普通1257/Prompt决定不全局STOP；source工程完成不代认human或正式1.0。真实V6最新交付、旧PASS/精确scopes/原失败/拒绝保留、普通1257c615/sign38公开和H日常不变。复起后按规则重新blocked审计，具体问题由原owner原模型处理；A仅canonical207/I，不改模型/代码/跑测/下载/安装/发布/删除或自调他goal。
+
 ## 2026-11-15：T25第263条 第二次human-only审计（非新工程进展）
 
 T25自动续轮263仅第二次真实待人验状态审计，原10007B/a35e19e8核：上一goalturn为实际修复/GREEN/构包/SDK/native/四链接交付/cleanup的PROGRESS，本轮明确NO_PROGRESS_HUMAN_ONLY，不把落账算新工程进展。root复用当前canonical/207/liveGit、source141十四项scope与source615完成回复：5c90 clean、V6四文件与DELIVERED_WAITING_HUMAN状态保、人验NOT_RUN。root实际API重核Windows43711892104/job132805043281和SDK43711319390/job132803278476均completedSUCCESS，非live/verifiedwait/裸重启，不新增测试/下载/资料操作。262工程/验证/实际交付/阶段cleanup已COMPLETE和独立work空保持；rootobjective含六步实际可用设备人验，source工程目标complete不代认整体完成，自有HTTPSDAV有条件才做。连续同一人验条件count2/threshold3，root仍active且未调用blocked；第三次无新输入按原规则处理，A不自行标blocked、不创造新审计/测试/Gate拖active、不重复催验收或唤醒owner。V6为真实最新交付，旧V5/READY/失败/精确scope保；普通1257/sign38、Prompt四组待实际选择、H日常/已过PASS/T04/暂缓/拒绝边界/1.0未完成不动。
