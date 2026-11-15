@@ -50,6 +50,7 @@ import kotlinx.serialization.json.put
  *   `CURRENT_TURN_LENGTH_REQUIREMENT_SYSTEM_PROMPT_TEMPLATE`、`FORMAT_HISTORY_CONTINUITY_NOTICE`、
  *   `currentTurnOutputRequirementsSystemPrompt`
  * - 角色发言格式：`roleplaySpeakerFormatSystemPrompt`
+ * - 回复节奏模式与历史标记：`narrativeModeSystemPrompt`、`narrativeModeTailSystemPrompt`、`narrativeModeHistoryReply`
  * - 空消息继续生成：`CONTINUE_GENERATION_USER_PROMPT`、`continueGenerationUserPrompt`
  * - user工具请求尾缀：`randomNumberUserToolSuffix`、`appendUserToolSuffixBlock`
  * - 消息格式修复：`MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT`、`messageFormatRepairUserPrompt`
@@ -712,7 +713,7 @@ object PromptTemplates {
     const val FOCUS_NARRATIVE_MODE_SYSTEM_PROMPT = MainChatPromptAuthority.FOCUS_NARRATIVE_MODE_SYSTEM_PROMPT
     const val ADVANCE_NARRATIVE_MODE_SYSTEM_PROMPT = MainChatPromptAuthority.ADVANCE_NARRATIVE_MODE_SYSTEM_PROMPT
     fun narrativeModeSystemPrompt(mode: ChatNarrativeMode): String = MainChatPromptAuthority.narrativeModeSystemPrompt(mode)
-    fun narrativeModeTailSystemPrompt(mode: ChatNarrativeMode, previousMode: ChatNarrativeMode): String =
+    fun narrativeModeTailSystemPrompt(mode: ChatNarrativeMode?, previousMode: ChatNarrativeMode?): String =
         MainChatPromptAuthority.narrativeModeTailSystemPrompt(mode, previousMode)
     fun narrativeModeHistoryReply(body: String, mode: ChatNarrativeMode): String =
         MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
