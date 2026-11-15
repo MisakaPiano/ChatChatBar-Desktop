@@ -297,6 +297,88 @@ class SyncGroupKeyDeliveryTest {
         Files.write(path, original); assertEquals(group.genesis.reference(), retained.ledger().current().reference())
     }
 
+    // Insert into SyncGroupKeyDeliveryTest: Group is that class's existing signed HPKE fixture.
+    // Counts protected custody operations, not native elapsed time or an R10 root cause.
+    @Test fun unchangedCustodyReadsFreshProtectedStateOnlyOncePerAuthorityCall() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-custody-one-fresh-read").toRealPath()
+        var reads = 0; var writes = 0; var locked = false
+        val retained = SyncGroupCustody(root, group.key.group, group.recipient,
+            { writes++; it.reversedArray() }, {
+                reads++
+                if (locked) throw IOException("SYNTHETIC_CUSTODY_FRESH_READ_LOCKED")
+                it.reversedArray()
+            })
+        try {
+            retained.enroll(group.trust, listOf(group.genesis))
+            val path = root.resolve("group.protected")
+            fun unchanged(expected: SyncVersionRef): SyncDeviceLedger {
+                val beforeReads = reads; val beforeWrites = writes; val beforeBytes = Files.readAllBytes(path)
+                val actual = retained.ledger()
+                assertEquals(beforeReads + 1, reads, "SYNTHETIC_CUSTODY_UNCHANGED_CHECKPOINT_FRESH_READ_COUNT")
+                assertEquals(beforeWrites, writes, "SYNTHETIC_CUSTODY_UNCHANGED_CHECKPOINT_MUST_NOT_WRITE")
+                assertEquals(expected, actual.current().reference())
+                assertEquals(expected, actual.trustAnchor.checkpoint)
+                assertContentEquals(beforeBytes, Files.readAllBytes(path))
+                return actual
+            }
+            val first = unchanged(group.genesis.reference())
+            val second = unchanged(group.genesis.reference())
+            assertNotSame(first, second)
+            val (unpublished, _) = group.rotate()
+            assertEquals(SyncVersionState.ADMITTED, first.offer(unpublished))
+            assertEquals(unpublished.reference(), first.current().reference())
+            val independent = unchanged(group.genesis.reference())
+            assertNull(independent.state(unpublished.id))
+            assertEquals(group.genesis.reference(), second.current().reference())
+
+            // An independent owner replaces actual protected bytes while this owner's graph is warm.
+            val (revoked, _) = group.rotate(revoke = true)
+            val writer = SyncGroupCustody(root, group.key.group, group.recipient,
+                { it.reversedArray() }, { it.reversedArray() })
+            writer.update(listOf(revoked))
+            val external = unchanged(revoked.reference())
+            assertFalse(external.current().members.getValue(group.peer.fingerprint).active)
+            assertTrue(second.current().members.getValue(group.peer.fingerprint).active)
+
+            // A genuinely unadvanced checkpoint still requires a forced write and a second readback.
+            val (next, _) = group.rotate(revoked)
+            val interrupted = SyncGroupCustody(root, group.key.group, group.recipient,
+                { it.reversedArray() }, { it.reversedArray() }, observe = {
+                    if (it == "GROUP_LEDGER_EVIDENCE_RETAINED") throw IOException("SYNTHETIC_CUSTODY_EVIDENCE_WITHOUT_CHECKPOINT")
+                })
+            assertEquals("SYNTHETIC_CUSTODY_EVIDENCE_WITHOUT_CHECKPOINT",
+                assertFailsWith<IOException> { interrupted.update(listOf(next)) }.message)
+            val beforeAdvanceReads = reads; val beforeAdvanceWrites = writes
+            val advanced = retained.ledger()
+            assertEquals(beforeAdvanceReads + 2, reads, "SYNTHETIC_CUSTODY_ADVANCE_MUST_READ_BACK_ACTUAL_PROTECTED_STATE")
+            assertEquals(beforeAdvanceWrites + 1, writes, "SYNTHETIC_CUSTODY_ADVANCE_MUST_FORCE_CHECKPOINT")
+            assertEquals(next.reference(), advanced.current().reference())
+            assertEquals(next.reference(), advanced.trustAnchor.checkpoint)
+            unchanged(next.reference())
+
+            // No warm public graph or retained plaintext may bypass a fresh platform refusal.
+            val valid = Files.readAllBytes(path); val beforeLockedReads = reads; val beforeLockedWrites = writes
+            locked = true
+            assertEquals("SYNTHETIC_CUSTODY_FRESH_READ_LOCKED",
+                assertFailsWith<IOException> { retained.ledger() }.message)
+            assertEquals(beforeLockedReads + 1, reads)
+            assertEquals(beforeLockedWrites, writes)
+            assertContentEquals(valid, Files.readAllBytes(path))
+            locked = false
+            unchanged(next.reference())
+
+            // Nonempty corrupt protected bytes must be read/unprotected and refused without repair.
+            val corrupt = byteArrayOf(1)
+            Files.write(path, corrupt)
+            val beforeCorruptReads = reads; val beforeCorruptWrites = writes
+            assertFails { retained.ledger() }
+            assertEquals(beforeCorruptReads + 1, reads)
+            assertEquals(beforeCorruptWrites, writes)
+            assertContentEquals(corrupt, Files.readAllBytes(path))
+            Files.write(path, valid)
+            unchanged(next.reference())
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
     @Test fun warmCustodyStillUnprotectsBothReadsAndRefusesMissingCorruptOrNonFileState() {
         val group = Group(); val root = Files.createTempDirectory("synthetic-custody-live-protection").toRealPath()
         var reads = 0; var refuseAt: Int? = null

@@ -1,0 +1,68 @@
+name: Current custody authority fresh-read regression
+on:
+  push:
+    branches: [codex/cloud-custody-fresh-read-20261115]
+permissions:
+  contents: read
+jobs:
+  custody-fresh-read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Execute exact fresh authority and checkpoint-readback regression
+        working-directory: app
+        run: >-
+          bash ./gradlew :sharedCore:test
+          --tests 'com.example.chatbar.domain.syncStore.SyncGroupKeyDeliveryTest.unchangedCustodyReadsFreshProtectedStateOnlyOncePerAuthorityCall'
+          --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
+      - name: Preserve the exact original case and counts
+        if: always()
+        env:
+          CHECKED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          name = 'com.example.chatbar.domain.syncStore.SyncGroupKeyDeliveryTest'
+          method = 'unchangedCustodyReadsFreshProtectedStateOnlyOncePerAuthorityCall'
+          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, 'problems': []}
+          path = Path('app/sharedCore/build/test-results/test/TEST-' + name + '.xml')
+          if not path.is_file():
+              result['problems'].append('MISSING_CLASS')
+          else:
+              suite = ET.parse(path).getroot()
+              cases = suite.findall('testcase')
+              counts = {'tests': len(cases)}
+              counts.update({key: sum(case.find(tag) is not None for case in cases)
+                             for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
+              result.update(counts)
+              if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
+                  result['problems'].append('COUNT_MISMATCH')
+              if len(cases) != 1 or any(case.get('classname') != name or case.get('name') != method for case in cases):
+                  result['problems'].append('EXACT_METHOD_NOT_EXECUTED')
+              if any(counts[key] for key in ['failures', 'errors', 'skipped']):
+                  result['problems'].append('METHOD_NOT_PASS')
+          output = Path('app/build/reports/custody-fresh-read.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(result))
+          if result['problems']:
+              raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: custody-fresh-read-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/build/reports/custody-fresh-read.json
