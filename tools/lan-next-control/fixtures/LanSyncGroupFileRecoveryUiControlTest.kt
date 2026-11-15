@@ -421,7 +421,12 @@ class LanSyncGroupFileRecoveryUiControlTest {
             val source = Path.of(expected("sourceAbsentPath"))
             val offline = Path.of(expected("offlinePath"))
             val selected = Path.of(expected("packageAbsentPath"))
-            check(source.startsWith(app.cacheDir.toPath()) && offline.startsWith(app.cacheDir.toPath()))
+            phase = "cold-original-paths-share-actual-app-cache-parent"
+            check(source.isAbsolute && offline.isAbsolute)
+            // The producer stores canonical paths; Android may expose /data/user/0 or /data/data.
+            // Require the same actual direct parent instead of comparing those lexical aliases.
+            check(Files.isSameFile(source.parent, app.cacheDir.toPath()) &&
+                Files.isSameFile(offline.parent, app.cacheDir.toPath()))
             check(selected.startsWith(app.filesDir.toPath().resolve("diagnostics/share")))
             check(!Files.exists(source, NOFOLLOW_LINKS) && !Files.exists(selected, NOFOLLOW_LINKS))
             check(inventoryHash(hashes(offline)) == expected("offlineInventoryHash"))

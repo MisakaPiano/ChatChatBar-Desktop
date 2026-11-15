@@ -56,7 +56,7 @@ class DraftPureGuards(unittest.TestCase):
             self.assertIs(sys.modules["instrumentation_report"], sentinel)
             self.assertIsNot(b2, self.base)
             old = control.checked_module(self.root / "android_file_recovery_ui_control.py", control.PINS["android_file_recovery_ui_control.py"], "_pure_old_profile")
-            self.assertEqual("f83a73a388b7c189f81a852fb2cfeabfd6994dd0", old.SOURCE)
+            self.assertEqual("7ce8446b4da875aed0979c2940e5b5537b7f27a3", old.SOURCE)
             self.assertEqual(control.SOURCE, p2.SOURCE)
             self.assertEqual((35, control.CLASS, control.ARGUMENT), (b2.API, b2.CLASS, b2.INSTRUMENTATION_ARGUMENT))
             original_run = subprocess.run

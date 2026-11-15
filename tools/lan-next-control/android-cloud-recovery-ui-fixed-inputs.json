@@ -178,12 +178,12 @@
   "rootIntegration": {
     "controlBase": "d31555d0cae54e5758e1d04e9efb023771b8e67a",
     "privateFileProfileBytes": 9630,
-    "privateFileProfileSha256": "64a75effc9ed0002b546a0e11bc646fe392342eadb61311bf9d7412acf838b69",
+    "privateFileProfileSha256": "76572907ba56e0c3ca586f5e1d8016625f7a76f659fd9afaf877564f1dc59b7d",
     "differenceFrom203c": "Only FIXTURE_SHA and SCOPE assignments; normalized other bytes exact",
     "originalFrozenRebasePreserved": true,
     "nativeExecuted": false,
-    "previousPrivateFileProfileSha256": "7a3785e243052e0a8f219c4e098db46ee85a3686a0b29a0929e33728a60e4cc9",
-    "currentFileCompanion": "R09-specific-result; runner logic otherwise exact"
+    "previousPrivateFileProfileSha256": "64a75effc9ed0002b546a0e11bc646fe392342eadb61311bf9d7412acf838b69",
+    "currentFileCompanion": "R10: latest7ce, same actual direct cache parent instead of lexical alias prefix"
   },
   "currentCloudCompileCorrection": {
     "firstRun": 43657244369,

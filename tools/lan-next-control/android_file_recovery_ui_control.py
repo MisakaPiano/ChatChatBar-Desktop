@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed f83/API35 file-recovery UI and separate cold-process proof.
+"""Fixed 7ce/API35 file-recovery UI and separate cold-process proof.
 
 Composes the authenticated existing runner; no combined instrumentation transcript.
 The request can select neither a source nor a method/API/path beyond this profile.
@@ -13,10 +13,10 @@ from pathlib import Path
 import subprocess
 import sys
 
-SOURCE = "f83a73a388b7c189f81a852fb2cfeabfd6994dd0"
+SOURCE = "7ce8446b4da875aed0979c2940e5b5537b7f27a3"
 ENGINE_SHA = "c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b"
 PARSER_SHA = "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158"
-FIXTURE_SHA = "a413094565a5f591b0f64c0aec9f4265019be2c49223886851d6535cf86f2446"
+FIXTURE_SHA = "a36e801e1fcaf0fc7a42ee766bbe9f541517a57780ff4fa045bde6e72060758e"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupFileRecoveryUiControlTest"
 FIRST = "realFilePickerResultRestoresLatestConversationWithSourceAlreadyOffline"
