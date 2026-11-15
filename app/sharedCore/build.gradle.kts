@@ -26,6 +26,10 @@ dependencies {
     implementation(libs.msgpack.core)
     implementation(libs.okhttp.sse)
     implementation(libs.jsoup)
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.86")
+    // Platforms provide the matching JVM/Android Tink artifact; do not mix their classes on Android.
+    compileOnly("com.google.crypto.tink:tink:1.23.0")
+    testImplementation("com.google.crypto.tink:tink:1.23.0")
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

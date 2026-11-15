@@ -1,0 +1,69 @@
+name: LAN sync and mature Desktop integration seams
+on:
+  push:
+    branches: [codex/compat-c615-lansync-20261115]
+permissions:
+  contents: read
+jobs:
+  shared-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify shared integration seams and compile Android entries
+        run: python tools/lan-sync/run-compat-c615-checks.py shared
+      - name: Require each selected shared class to execute without skips
+        if: always()
+        run: python tools/lan-sync/run-compat-c615-checks.py shared --report-only
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compat-c615-shared-android-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/app/build/test-results/testLanPreviewUnitTest/
+            app/build/reports/compat-c615/
+  desktop:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical temporary directory for synthetic repositories
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-compat-fixtures'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class CompatFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([CompatFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+      - name: Verify backup image history task and Studio integration seams
+        run: python tools/lan-sync/run-compat-c615-checks.py desktop
+      - name: Require each selected Desktop class to execute without skips
+        if: always()
+        run: python tools/lan-sync/run-compat-c615-checks.py desktop --report-only
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compat-c615-desktop-original-results
+          path: |
+            app/desktopApp/build/test-results/test/
+            app/build/reports/compat-c615/

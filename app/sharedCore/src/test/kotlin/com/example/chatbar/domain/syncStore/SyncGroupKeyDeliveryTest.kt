@@ -1,0 +1,343 @@
+package com.example.chatbar.domain.syncStore
+
+import com.example.chatbar.domain.lanSync.LanSyncTlsIdentity
+import com.example.chatbar.domain.lanSync.lanSyncJson
+import java.util.Base64
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.nio.file.Files
+import kotlin.test.*
+import kotlinx.serialization.json.*
+
+/** Real root signatures and HPKE; platform custody and live enrollment remain separate. */
+class SyncGroupKeyDeliveryTest {
+    private class Group {
+        val owner = LanSyncTlsIdentity.create()
+        val peer = LanSyncTlsIdentity.create()
+        val recipient = SyncDeviceEncryptionKey.create(peer.fingerprint)
+        val ownerRecipient = SyncDeviceEncryptionKey.create(owner.fingerprint)
+        val key = SyncStreamingCipher.create()
+        private fun member(identity: LanSyncTlsIdentity, key: SyncDeviceEncryptionKey) = SyncGroupMember(
+            Base64.getEncoder().encodeToString(identity.certificate.encoded), key.publicKey.encoded)
+        fun sign(row: SyncDeviceLedgerRecord) = row.copy(signature = Base64.getEncoder().encodeToString(owner.signSyncGroupPayload(row.signingBytes())))
+        val genesis = sign(SyncDeviceLedgerRecord(key.group, SyncStoreId.random(), null, 1, key.epoch, key.keyCommitment(),
+            setOf("synthetic_records"), mapOf(owner.fingerprint to member(owner, ownerRecipient), peer.fingerprint to member(peer, recipient)), emptySet(), "unsigned"))
+        val trust = SyncGroupTrust(key.group, genesis.reference(), genesis.members.getValue(owner.fingerprint).certificate)
+        fun ledger() = SyncDeviceLedger(trust).also { assertEquals(SyncVersionState.ADMITTED, it.offer(genesis)) }
+        fun rotate(parent: SyncDeviceLedgerRecord = genesis, revoke: Boolean = false): Pair<SyncDeviceLedgerRecord, SyncStreamingCipher> {
+            val nextKey = SyncStreamingCipher.create(key.group, SyncStoreId.random())
+            val members = parent.members.mapValues { (id, member) -> if (id == peer.fingerprint && revoke) member.copy(active = false) else member }
+            return sign(SyncDeviceLedgerRecord(key.group, SyncStoreId.random(), parent.reference(), parent.sequence + 1,
+                nextKey.epoch, nextKey.keyCommitment(), parent.coveredTypes, members, parent.acceptedHeads, "unsigned")) to nextKey
+        }
+        fun delivery(ledger: SyncDeviceLedger, cipher: SyncStreamingCipher = key) = SyncGroupKeyDelivery.create(
+            ledger, cipher, peer.fingerprint, SyncStoreId.random(), owner::signSyncGroupPayload)
+        fun objectKey(delivery: SyncGroupKeyDelivery) = CiphertextObjectKey(CiphertextObjectKind.COMMIT, delivery.context.objectId)
+        fun tentative(delivery: SyncGroupKeyDelivery) = delivery.openTentative(trust, recipient, objectKey(delivery))
+    }
+
+    @Test fun rootAuthenticatedDeliveryBootstrapsANewEpochOnlyAfterItsLedgerAndCanRetainHistoricalKeys() {
+        val group = Group(); val sender = group.ledger(); val receiver = group.ledger()
+        val (rotated, key) = group.rotate(); assertEquals(SyncVersionState.ADMITTED, sender.offer(rotated))
+        val delivery = group.delivery(sender, key); val tentative = group.tentative(delivery)
+        assertEquals(key.keyCommitment(), tentative.cipher.keyCommitment())
+        assertEquals("SYNC_KEY_DELIVERY_LEDGER_MISSING", assertFailsWith<IllegalArgumentException> { tentative.admit(receiver) }.message)
+        assertEquals(SyncVersionState.ADMITTED, receiver.offer(rotated))
+        val admitted = tentative.admit(receiver)
+        assertEquals(key.keyCommitment(), admitted.cipher.keyCommitment())
+        assertEquals(group.peer.fingerprint, admitted.recipient)
+        val historical = group.delivery(sender)
+        assertEquals(group.key.keyCommitment(), group.tentative(historical).admit(receiver).cipher.keyCommitment())
+    }
+
+    @Test fun knownRevocationRefusesBothNewDeliveryAndPreviouslyValidTentativeKeysWithoutDiscardingThem() {
+        val group = Group(); val state = group.ledger(); val delivery = group.delivery(state)
+        val tentative = group.tentative(delivery)
+        val (revocation, replacement) = group.rotate(revoke = true)
+        assertEquals(SyncVersionState.ADMITTED, state.offer(revocation))
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", assertFailsWith<IllegalArgumentException> { group.delivery(state, replacement) }.message)
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", assertFailsWith<IllegalArgumentException> { group.delivery(state) }.message)
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", assertFailsWith<IllegalArgumentException> { tentative.admit(state) }.message)
+        assertEquals(group.key.keyCommitment(), tentative.cipher.keyCommitment())
+    }
+
+    @Test fun wrongRecipientObjectRootSignatureAndClaimedCommitmentRefuse() {
+        val group = Group(); val state = group.ledger(); val delivery = group.delivery(state)
+        assertFails { delivery.openTentative(group.trust, group.ownerRecipient, group.objectKey(delivery)) }
+        assertFails { delivery.openTentative(group.trust, group.recipient, CiphertextObjectKey(CiphertextObjectKind.BLOB, delivery.context.objectId)) }
+        assertFails { delivery.openTentative(group.trust, group.recipient, CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())) }
+        val wrongSignature = delivery.copy(signature = Base64.getEncoder().encodeToString(group.peer.signSyncGroupPayload(delivery.signingBytes())))
+        assertEquals("SYNC_KEY_DELIVERY_SIGNATURE", assertFailsWith<IllegalArgumentException> { group.tentative(wrongSignature) }.message)
+        assertFails { group.delivery(state, SyncStreamingCipher.create(group.key.group, group.key.epoch)) }
+        assertFails { SyncGroupKeyDelivery.create(state, group.key, group.peer.fingerprint, SyncStoreId.random(), group.peer::signSyncGroupPayload) }
+        val changed = delivery.copy(context = delivery.context.copy(keyCommitment = "a".repeat(64)))
+        assertEquals("SYNC_KEY_DELIVERY_SIGNATURE", assertFailsWith<IllegalArgumentException> { group.tentative(changed) }.message)
+    }
+
+    @Test fun admittedKeyRequiresTheSameTrustAnchorAndAuthorizingAncestry() {
+        val group = Group(); val state = group.ledger(); val delivery = group.delivery(state); val tentative = group.tentative(delivery)
+        val otherTrust = group.trust.copy(genesis = SyncVersionRef(SyncStoreId.random(), "b".repeat(64)))
+        val other = SyncDeviceLedger(otherTrust)
+        assertFails { tentative.admit(other) }
+        val (rotated, key) = group.rotate(); state.offer(rotated)
+        assertTrue(state.hasKey(key.epoch, key.keyCommitment()))
+        assertFalse(state.hasKey(key.epoch, key.keyCommitment(), group.genesis.reference()))
+        assertEquals(group.key.keyCommitment(), tentative.admit(state).cipher.keyCommitment())
+    }
+
+    @Test fun durableCapsuleSurvivesLostLocalAndRemoteRepliesAndReopensWithoutSigningAgain() {
+        val group = Group(); val state = group.ledger()
+        val root = Files.createTempDirectory("synthetic-key-queue").toRealPath()
+        val backend = FileCiphertextStore(Files.createTempDirectory("synthetic-key-backend").toRealPath())
+        val operation = SyncStoreId.random()
+        val interrupted = SyncKeyDeliveryQueue(root, group.trust, group.owner.fingerprint, { state }) { stage ->
+            if (stage == "KEY_CAPSULE_RETAINED") throw IOException("SYNTHETIC_LOST_LOCAL_REPLY")
+        }
+        assertFailsWith<IOException> { interrupted.prepare(operation, group.key, group.peer.fingerprint, group.owner::signSyncGroupPayload) }
+        fun reopen() = SyncKeyDeliveryQueue(root, group.trust, group.owner.fingerprint, { state })
+        val retained = requireNotNull(reopen().entry(operation)); assertFalse(retained.uploaded)
+        assertEquals(retained, reopen().prepare(operation, group.key, group.peer.fingerprint) { error("SYNTHETIC_SIGNER_MUST_NOT_RUN") })
+        val lostReply = object : CiphertextStore by backend {
+            override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
+                backend.put(request, source); throw IOException("SYNTHETIC_LOST_REMOTE_REPLY")
+            }
+        }
+        assertFailsWith<IOException> { reopen().upload(operation, lostReply) }
+        assertEquals(retained, reopen().entry(operation))
+        val metadata = requireNotNull(backend.metadata(retained.request.key))
+        assertEquals(group.key.keyCommitment(), SyncKeyDeliveryCodec.read(backend, metadata, group.trust, group.recipient).admit(state).cipher.keyCommitment())
+        assertEquals(CiphertextPutDisposition.ALREADY_PRESENT, reopen().upload(operation, backend).disposition)
+        assertEquals(retained.copy(uploaded = true), reopen().entry(operation))
+        Files.writeString(root.resolve("key-${operation.value}.uploaded"), "a".repeat(63))
+        assertEquals("SYNC_KEY_QUEUE_RECEIPT", assertFailsWith<IllegalArgumentException> { reopen().upload(operation, backend) }.message)
+    }
+
+    @Test fun rotationAndRevocationRefuseOldQueuedUploadsAndLeaveTheirEvidenceInspectable() {
+        val group = Group(); val state = group.ledger()
+        val root = Files.createTempDirectory("synthetic-revoked-key-queue").toRealPath()
+        val backend = FileCiphertextStore(Files.createTempDirectory("synthetic-revoked-key-backend").toRealPath())
+        val queue = SyncKeyDeliveryQueue(root, group.trust, group.owner.fingerprint, { state })
+        val operation = SyncStoreId.random(); val entry = queue.prepare(operation, group.key, group.peer.fingerprint, group.owner::signSyncGroupPayload)
+        val (rotated, key) = group.rotate(); state.offer(rotated)
+        assertEquals("SYNC_KEY_QUEUE_AUTHORITY_CHANGED", assertFailsWith<IllegalArgumentException> { queue.upload(operation, backend) }.message)
+        assertEquals(entry, queue.entry(operation)); assertTrue(backend.listCommits().entries.isEmpty())
+        assertFails { queue.prepare(operation, key, group.peer.fingerprint, group.owner::signSyncGroupPayload) }
+        val nextOperation = SyncStoreId.random(); queue.prepare(nextOperation, key, group.peer.fingerprint, group.owner::signSyncGroupPayload)
+        val (revocation, _) = group.rotate(rotated, revoke = true); state.offer(revocation)
+        assertFails { queue.upload(nextOperation, backend) }; assertNotNull(queue.entry(nextOperation))
+        assertTrue(backend.listCommits().entries.isEmpty())
+        val peerQueue = SyncKeyDeliveryQueue(root, group.trust, group.peer.fingerprint, { state })
+        assertNotNull(peerQueue.entry(operation))
+        assertEquals("SYNC_KEY_QUEUE_LOCAL_REVOKED", assertFailsWith<IllegalArgumentException> { peerQueue.upload(operation, backend) }.message)
+    }
+
+    @Test fun malformedOversizedAndSubstitutedCapsulesRefuseBeforeAnyKeyIsAdmitted() {
+        val group = Group(); val delivery = group.delivery(group.ledger())
+        val bytes = SyncKeyDeliveryCodec.encode(delivery)
+        assertEquals(delivery, SyncKeyDeliveryCodec.decode(bytes))
+        assertFails { SyncKeyDeliveryCodec.decode(bytes.copyOfRange(1, bytes.size)) }
+        assertFails { SyncKeyDeliveryCodec.decode(ByteArray(SyncKeyDeliveryCodec.MAX_BYTES + 1)) }
+        val prefix = "CCB-SYNC-KEY-CAPSULE/1\n".toByteArray()
+        assertFails { SyncKeyDeliveryCodec.decode(prefix + byteArrayOf(0xc3.toByte(), 0x28)) }
+        assertFails { SyncKeyDeliveryCodec.decode(prefix + ("[".repeat(9) + "]".repeat(9)).toByteArray()) }
+        val backend = FileCiphertextStore(Files.createTempDirectory("synthetic-capsule-budget").toRealPath())
+        val key = group.objectKey(delivery)
+        val metadata = CiphertextObjectMetadata(key, SyncKeyDeliveryCodec.descriptor(bytes))
+        val substituted = object : CiphertextStore by backend {
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata {
+                destination.write(ByteArray(SyncKeyDeliveryCodec.MAX_BYTES + 1)); return metadata
+            }
+        }
+        assertEquals("SYNC_KEY_DELIVERY_BUDGET", assertFailsWith<IllegalArgumentException> {
+            SyncKeyDeliveryCodec.read(substituted, metadata, group.trust, group.recipient)
+        }.message)
+        val root = Files.createTempDirectory("synthetic-capsule-local-damage").toRealPath()
+        val state = group.ledger(); lateinit var queue: SyncKeyDeliveryQueue
+        queue = SyncKeyDeliveryQueue(root, group.trust, group.owner.fingerprint, { state }) {
+            if (it == "KEY_CAPSULE_RETAINED") assertFailsWith<IllegalStateException> { queue.entry(key.id) }
+        }
+        queue.prepare(key.id, group.key, group.peer.fingerprint, group.owner::signSyncGroupPayload)
+        val path = root.resolve("key-${key.id.value}.capsule")
+        val changed = SyncKeyDeliveryCodec.decode(Files.readAllBytes(path)).copy(signature = "invalid")
+        Files.write(path, SyncKeyDeliveryCodec.encode(changed))
+        assertEquals("SYNC_KEY_DELIVERY_SIGNATURE", assertFailsWith<IllegalArgumentException> { queue.entry(key.id) }.message)
+    }
+
+    @Test fun protectedGroupCustodyReopensKeysAndAdvancesTheKnownCheckpointBeforeReturningAuthority() {
+        val group = Group(); val source = group.ledger()
+        val root = Files.createTempDirectory("synthetic-group-custody").toRealPath()
+        fun custody() = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        assertEquals("SYNC_GROUP_CUSTODY_MISSING", assertFailsWith<IllegalArgumentException> { custody().ledger() }.message)
+        val retained = custody(); retained.enroll(group.trust, listOf(group.genesis)); retained.ledger()
+        custody().rememberKey(group.tentative(group.delivery(source)).admit(custody().ledger()))
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+        val (rotated, key) = group.rotate(); source.offer(rotated)
+        val interrupted = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() }) {
+            if (it == "GROUP_LEDGER_EVIDENCE_RETAINED") throw IOException("SYNTHETIC_LOST_CHECKPOINT_REPLY")
+        }
+        assertFailsWith<IOException> { interrupted.update(listOf(rotated)) }
+        val reopened = retained.ledger()
+        assertEquals(rotated.reference(), reopened.current().reference())
+        assertEquals(rotated.reference(), reopened.trustAnchor.checkpoint)
+        custody().rememberKey(group.tentative(group.delivery(source, key)).admit(reopened))
+        assertEquals(key.keyCommitment(), custody().key(key.epoch).keyCommitment())
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+        assertEquals(rotated.reference(), custody().update(listOf(group.genesis)).current().reference())
+        assertEquals(rotated.reference(), custody().enroll(group.trust, listOf(group.genesis)).current().reference())
+        assertFails { custody().enroll(group.trust.copy(genesis = SyncVersionRef(SyncStoreId.random(), "c".repeat(64))), listOf(group.genesis)) }
+    }
+
+    @Test fun groupCustodyRetainsOldLocalKeysAfterRevocationAndRetainsForkEvidenceWithoutSelectingAWinner() {
+        val group = Group(); val source = group.ledger()
+        val root = Files.createTempDirectory("synthetic-group-custody-revoked").toRealPath()
+        fun custody() = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        custody().enroll(group.trust, listOf(group.genesis))
+        val admitted = group.tentative(group.delivery(source)).admit(source); custody().rememberKey(admitted)
+        val (revocation, _) = group.rotate(revoke = true)
+        custody().update(listOf(revocation))
+        assertFalse(custody().ledger().current().members.getValue(group.peer.fingerprint).active)
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+        assertEquals("SYNC_GROUP_CUSTODY_RECIPIENT", assertFailsWith<IllegalArgumentException> { custody().rememberKey(admitted) }.message)
+        val (sibling, _) = group.rotate()
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { custody().update(listOf(sibling)) }.message)
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { custody().ledger() }.message)
+        assertEquals(group.key.keyCommitment(), custody().key(group.key.epoch).keyCommitment())
+    }
+
+    @Test fun failedProtectionAndWrongNativeRecipientCannotReplacePreviouslyRetainedGroupTrust() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-group-custody-protection").toRealPath()
+        var fail = false
+        val custody = SyncGroupCustody(root, group.key.group, group.recipient,
+            { if (fail) throw IOException("SYNTHETIC_PROTECTION_UNAVAILABLE") else it.reversedArray() }, { it.reversedArray() })
+        custody.enroll(group.trust, listOf(group.genesis))
+        val path = root.resolve("group.protected"); val before = Files.readAllBytes(path)
+        fail = true
+        val (rotated, _) = group.rotate()
+        assertFailsWith<IOException> { custody.update(listOf(rotated)) }
+        assertContentEquals(before, Files.readAllBytes(path))
+        assertEquals(group.genesis.reference(), custody.ledger().current().reference())
+        val wrong = SyncGroupCustody(root, group.key.group, group.ownerRecipient, { it.reversedArray() }, { it.reversedArray() })
+        assertEquals("SYNC_GROUP_CUSTODY_CONTEXT", assertFailsWith<IllegalArgumentException> { wrong.ledger() }.message)
+        assertContentEquals(before, Files.readAllBytes(path))
+    }
+
+    @Test fun warmCustodyViewsStayIndependentAndObserveAnotherOwnersRevocationAndFork() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-custody-live-views").toRealPath()
+        fun custody() = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        val retained = custody(); retained.enroll(group.trust, listOf(group.genesis))
+        val original = Files.readAllBytes(root.resolve("group.protected"))
+        val borrowed = retained.ledger()
+        val (unpublished, _) = group.rotate()
+        assertEquals(SyncVersionState.ADMITTED, borrowed.offer(unpublished))
+        assertEquals(unpublished.reference(), borrowed.current().reference())
+        assertEquals(group.genesis.reference(), retained.ledger().current().reference())
+        assertNull(retained.ledger().state(unpublished.id))
+        assertContentEquals(original, Files.readAllBytes(root.resolve("group.protected")))
+
+        val (revoked, _) = group.rotate(revoke = true)
+        val writer = custody(); val updated = writer.update(listOf(revoked))
+        val (unpublishedChild, _) = group.rotate(revoked)
+        assertEquals(SyncVersionState.ADMITTED, updated.offer(unpublishedChild))
+        assertEquals(revoked.reference(), writer.ledger().current().reference())
+        assertNull(writer.ledger().state(unpublishedChild.id))
+        val fresh = retained.ledger()
+        assertEquals(revoked.reference(), fresh.current().reference())
+        assertFalse(fresh.current().members.getValue(group.peer.fingerprint).active)
+        assertEquals(group.genesis.reference(), retained.ledger().record(group.genesis.reference())?.reference())
+        val (sibling, _) = group.rotate()
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { custody().update(listOf(sibling)) }.message)
+        assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", assertFailsWith<IllegalArgumentException> { retained.ledger() }.message)
+    }
+
+    @Test fun warmCustodyViewsRetainWaitingAndRejectedEvidenceWithoutSharingCallerAdmission() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-custody-graph-states").toRealPath()
+        fun custody() = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        val retained = custody(); retained.enroll(group.trust, listOf(group.genesis))
+        val (parent, _) = group.rotate(); val (child, _) = group.rotate(parent)
+        retained.update(listOf(child))
+        val borrowed = retained.ledger()
+        assertEquals(SyncVersionState.WAITING_FOR_PARENTS, borrowed.state(child.id))
+        borrowed.offer(parent)
+        assertEquals(child.reference(), borrowed.current().reference())
+        assertEquals(SyncVersionState.WAITING_FOR_PARENTS, retained.ledger().state(child.id))
+        assertEquals(group.genesis.reference(), retained.ledger().current().reference())
+        custody().update(listOf(parent))
+        assertEquals(child.reference(), retained.ledger().current().reference())
+        val (next, _) = group.rotate(child)
+        val rejected = group.sign(next.copy(coveredTypes = setOf("other_synthetic_records")))
+        retained.update(listOf(rejected))
+        repeat(2) {
+            val view = retained.ledger()
+            assertEquals(SyncVersionState.REJECTED, view.state(rejected.id))
+            assertEquals("SYNC_GROUP_SCOPE_SHRINK", view.failure(rejected.id))
+            assertEquals(child.reference(), view.current().reference())
+        }
+    }
+
+    @Test fun warmCustodyCannotReuseValidationForASameBodyBadSignatureOrChangedTrustCheckpoint() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-custody-changed-public-graph").toRealPath()
+        val retained = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() })
+        retained.enroll(group.trust, listOf(group.genesis)); retained.ledger()
+        val path = root.resolve("group.protected"); val original = Files.readAllBytes(path)
+        val state = lanSyncJson.parseToJsonElement(String(original.reversedArray(), Charsets.UTF_8)).jsonObject
+        fun replace(field: String, value: JsonElement) {
+            Files.write(path, JsonObject(state + (field to value)).toString().toByteArray(Charsets.UTF_8).reversedArray())
+        }
+        val forged = group.genesis.copy(signature = "invalid")
+        assertEquals(group.genesis.reference(), forged.reference())
+        replace("ledgers", JsonArray(listOf(lanSyncJson.encodeToJsonElement(SyncDeviceLedgerRecord.serializer(), forged))))
+        val forgedBytes = Files.readAllBytes(path)
+        assertEquals("SYNC_GROUP_OWNER_SIGNATURE", assertFailsWith<IllegalArgumentException> { retained.ledger() }.message)
+        assertContentEquals(forgedBytes, Files.readAllBytes(path))
+        Files.write(path, original); assertEquals(group.genesis.reference(), retained.ledger().current().reference())
+        val absent = group.trust.copy(checkpoint = SyncVersionRef(SyncStoreId.random(), "a".repeat(64)))
+        replace("trust", lanSyncJson.encodeToJsonElement(SyncGroupTrust.serializer(), absent))
+        assertEquals("SYNC_GROUP_KNOWN_CHECKPOINT_MISSING", assertFailsWith<IllegalArgumentException> { retained.ledger() }.message)
+        Files.write(path, original); assertEquals(group.genesis.reference(), retained.ledger().current().reference())
+    }
+
+    @Test fun warmCustodyStillUnprotectsBothReadsAndRefusesMissingCorruptOrNonFileState() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-custody-live-protection").toRealPath()
+        var reads = 0; var refuseAt: Int? = null
+        val retained = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, {
+            reads++
+            if (reads == refuseAt) throw IOException("SYNTHETIC_CUSTODY_LOCKED")
+            it.reversedArray()
+        })
+        retained.enroll(group.trust, listOf(group.genesis)); retained.ledger()
+        for (read in 1..2) {
+            refuseAt = reads + read
+            assertEquals("SYNTHETIC_CUSTODY_LOCKED", assertFailsWith<IOException> { retained.ledger() }.message)
+            refuseAt = null
+            assertEquals(group.genesis.reference(), retained.ledger().current().reference())
+        }
+        val path = root.resolve("group.protected"); val original = Files.readAllBytes(path)
+        val parked = root.resolve("parked.protected"); Files.move(path, parked)
+        assertEquals("SYNC_GROUP_CUSTODY_MISSING", assertFailsWith<IllegalArgumentException> { retained.ledger() }.message)
+        Files.createDirectory(path)
+        assertFails { retained.ledger() }
+        Files.delete(path); Files.move(parked, path)
+        Files.write(path, byteArrayOf())
+        assertEquals("SYNC_GROUP_CUSTODY_BUDGET", assertFailsWith<IllegalArgumentException> { retained.ledger() }.message)
+        Files.write(path, original)
+        assertEquals(group.genesis.reference(), retained.ledger().current().reference())
+    }
+
+    @Test fun warmCustodyCheckpointAdvanceStillAuthenticatesItsActualProtectedReadback() {
+        val group = Group(); val root = Files.createTempDirectory("synthetic-custody-checkpoint-readback").toRealPath()
+        val path = root.resolve("group.protected"); var damageReadback = false
+        val retained = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() }) {
+            if (damageReadback && it == "GROUP_CHECKPOINT_RETAINED") Files.write(path, byteArrayOf())
+        }
+        retained.enroll(group.trust, listOf(group.genesis)); retained.ledger()
+        val (rotated, _) = group.rotate()
+        val interrupted = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, { it.reversedArray() }) {
+            if (it == "GROUP_LEDGER_EVIDENCE_RETAINED") throw IOException("SYNTHETIC_CHECKPOINT_NOT_ADVANCED")
+        }
+        assertFailsWith<IOException> { interrupted.update(listOf(rotated)) }
+        damageReadback = true
+        assertEquals("SYNC_GROUP_CUSTODY_BUDGET", assertFailsWith<IllegalArgumentException> { retained.ledger() }.message)
+        assertEquals(0L, Files.size(path))
+    }
+}

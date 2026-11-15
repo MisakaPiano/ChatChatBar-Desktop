@@ -1,0 +1,372 @@
+package com.example.chatbar.domain.syncStore
+
+import com.example.chatbar.domain.lanSync.LanSyncResourceBudget
+import java.io.InterruptedIOException
+import java.io.OutputStream
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption.WRITE
+import java.security.MessageDigest
+import java.util.Collections
+import java.util.concurrent.CancellationException
+
+enum class SyncInboxStage {
+    MIRRORED, WAITING_FOR_KEY, WAITING_FOR_LEDGER, WAITING_FOR_CURRENT_EPOCH, NOT_FOR_DEVICE,
+    KEY_ADMITTED, LEDGER_ADMITTED, DEVICE_REVOKED, CAUSAL_ADMITTED, WAITING_FOR_PARENTS, REJECTED, TRUST_BLOCKED, LOCAL_CUSTODY_BLOCKED, INVALID_OBJECT,
+    ENROLLMENT_KEY_VERIFIED, ENROLLMENT_LEDGER_VERIFIED
+}
+data class SyncInboxObservation(val key: CiphertextObjectKey, val stage: SyncInboxStage, val code: String? = null,
+    val descriptor: CiphertextDescriptor? = null)
+data class SyncInboxDiscovery(val nextCursor: CommitCursor?, val observations: List<SyncInboxObservation>)
+data class SyncInboxReconciliation(val observations: List<SyncInboxObservation>, val history: SyncCausalHistory?,
+    val authenticatedVersions: List<SyncAuthenticatedGroupObject>, val trustBlocked: Boolean, val ledgerCheckpoint: SyncVersionRef?,
+    val trustFailureCode: String? = null)
+
+enum class SyncGroupBootstrapStage { WAITING_FOR_LEDGER, WAITING_FOR_KEYS, READY, TRUST_BLOCKED, DEVICE_REVOKED }
+class SyncGroupBootstrapEvidence internal constructor(val trust: SyncGroupTrust, val records: List<SyncDeviceLedgerRecord>,
+    internal val keys: List<SyncAdmittedGroupKey>)
+data class SyncGroupBootstrapInspection(val stage: SyncGroupBootstrapStage, val evidence: SyncGroupBootstrapEvidence?,
+    val observations: List<SyncInboxObservation>, val code: String? = null)
+
+/**
+ * Discovery and causal metadata admission only. Encrypted evidence survives process restart.
+ * A causal admission does not mean resources are available, a reduction is approved, or native data changed.
+ * Callers serialize passes on their I/O owner and periodically restart backend discovery from null.
+ */
+class SyncGroupInbox(private val root: Path, private val backend: CiphertextStore,
+    private val custody: SyncGroupCustody, private val recipient: SyncDeviceEncryptionKey,
+    private val observe: (SyncInboxObservation) -> Unit = {}) {
+    private val work: Path
+    private val mirror: FileCiphertextStore
+    private val candidates: SyncCiphertextCandidates
+    private val resourceBudget = LanSyncResourceBudget()
+    init {
+        PrivateSyncFile.checked(root, true)
+        work = root.resolve("preparations")
+        if (!Files.exists(work, NOFOLLOW_LINKS)) Files.createDirectory(work)
+        PrivateSyncFile.checked(work, true)
+        mirror = FileCiphertextStore(root.resolve("ciphertext-mirror"))
+        candidates = SyncCiphertextCandidates(root.resolve("ciphertext-candidates"), mirror)
+    }
+
+    /** A null next cursor is an ended discovery scan, never a complete/fresh group checkpoint. */
+    fun discover(cursor: CommitCursor? = null, pageSize: Int = 100): SyncInboxDiscovery {
+        val page = backend.listCommits(cursor, pageSize)
+        val observations = page.entries.map { metadata ->
+            try { candidates.retain(metadata, backend); SyncInboxObservation(metadata.key, SyncInboxStage.MIRRORED, descriptor = metadata.descriptor) }
+            catch (failure: Exception) { SyncInboxObservation(metadata.key, SyncInboxStage.INVALID_OBJECT, code(failure), metadata.descriptor) }
+                .also(observe)
+        }
+        return SyncInboxDiscovery(page.nextCursor, observations)
+    }
+
+    /** Explicit joining only: external invitation pins trust. This reads no custody and enrolls/writes no keys. */
+    fun prepareEnrollment(trust: SyncGroupTrust): SyncGroupBootstrapInspection {
+        val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
+        fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, failure: String? = null) {
+            statuses[key] = SyncInboxObservation(key.key, stage, failure, key.descriptor).also(observe)
+        }
+        fun result(stage: SyncGroupBootstrapStage, failure: String? = null, evidence: SyncGroupBootstrapEvidence? = null) =
+            SyncGroupBootstrapInspection(stage, evidence, statuses.values.toList(), failure)
+        val ledger = SyncDeviceLedger(trust)
+        val records = linkedMapOf<SyncStoreId, SyncDeviceLedgerRecord>()
+        var collision = false
+        fun offer(rows: List<SyncDeviceLedgerRecord>) = rows.forEach { row ->
+            try { ledger.offer(row); records.putIfAbsent(row.id, row) }
+            catch (failure: Exception) {
+                if (code(failure) == "SYNC_GROUP_LEDGER_ID_COLLISION") collision = true
+                throw failure
+            }
+        }
+        val objects = candidates.entries()
+        val hints = linkedMapOf<CiphertextObjectMetadata, SyncCiphertextHint>()
+        val tentative = linkedMapOf<CiphertextObjectMetadata, SyncTentativeGroupKey>()
+        for (metadata in objects) {
+            try {
+                spool(candidates.exact(metadata), metadata) { path ->
+                    val prefix = prefix(path)
+                    when {
+                        SyncCiphertextHeader.hasPrefix(prefix) -> {
+                            val hint = Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
+                            require(hint.context.group == trust.group && hint.context.key == metadata.key) { "SYNC_INBOX_CONTEXT" }
+                            hints[metadata] = hint
+                        }
+                        SyncKeyDeliveryCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES) { "SYNC_KEY_DELIVERY_BUDGET" }
+                            val delivery = SyncKeyDeliveryCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncKeyDeliveryCodec::read))
+                            delivery.verifyOwner(trust, metadata.key)
+                            if (delivery.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else tentative[metadata] = delivery.openTentative(trust, recipient, metadata.key)
+                        }
+                        SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
+                            val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
+                            notice.verifyOwner(trust, metadata.key)
+                            if (notice.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else { offer(notice.open(trust, recipient, metadata.key).records); status(metadata, SyncInboxStage.DEVICE_REVOKED) }
+                        }
+                        else -> error("SYNC_INBOX_FORMAT")
+                    }
+                }
+            } catch (failure: Exception) { status(metadata, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+        }
+        val codec = SyncGroupObjectCodec(work)
+        val ledgerObjects = linkedMapOf<CiphertextObjectMetadata, SyncStoreId>()
+        for ((key, hint) in hints) {
+            try {
+                val candidate = tentative.values.firstOrNull {
+                    it.context.epoch == hint.context.epoch && it.context.keyCommitment == hint.keyCommitment
+                }
+                if (candidate == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
+                val actual = codec.read(candidates.exact(key), candidate.cipher, hint.context, key.descriptor)
+                val row = actual.envelope.deviceLedger ?: continue
+                require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
+                offer(actual.envelope.ledgerHistory + row)
+                ledgerObjects[key] = row.id
+            } catch (failure: Exception) { status(key, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+        }
+        ledgerObjects.forEach { (key, id) -> status(key, when (ledger.state(id)) {
+            SyncVersionState.ADMITTED -> SyncInboxStage.ENROLLMENT_LEDGER_VERIFIED
+            SyncVersionState.WAITING_FOR_PARENTS -> SyncInboxStage.WAITING_FOR_LEDGER
+            else -> SyncInboxStage.REJECTED
+        }, ledger.failure(id)) }
+        if (collision || records.values.any { ledger.state(it.id) == SyncVersionState.REJECTED })
+            return result(SyncGroupBootstrapStage.TRUST_BLOCKED, "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT")
+        val current = try { ledger.current() } catch (failure: Exception) {
+            val admitted = records.values.filter { ledger.state(it.id) == SyncVersionState.ADMITTED }
+            val parents = admitted.mapNotNull { it.parent?.id }.toSet()
+            val fork = admitted.count { it.id !in parents } > 1
+            return result(if (fork) SyncGroupBootstrapStage.TRUST_BLOCKED else SyncGroupBootstrapStage.WAITING_FOR_LEDGER, code(failure))
+        }
+        if (records.values.any { ledger.state(it.id) == SyncVersionState.WAITING_FOR_PARENTS })
+            return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE")
+        val member = current.members[recipient.device]
+        if (member != null && !member.active) return result(SyncGroupBootstrapStage.DEVICE_REVOKED, "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED")
+        if (member?.recipientKey != recipient.publicKey.encoded)
+            return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING")
+        val keys = linkedMapOf<SyncStoreId, SyncAdmittedGroupKey>()
+        for ((key, candidate) in tentative) {
+            try {
+                val admitted = candidate.admit(ledger)
+                require(keys[candidate.context.epoch]?.cipher?.keyCommitment()?.let { it == admitted.cipher.keyCommitment() } != false) { "SYNC_INBOX_KEY_COMMITMENT" }
+                keys.putIfAbsent(candidate.context.epoch, admitted); status(key, SyncInboxStage.ENROLLMENT_KEY_VERIFIED)
+            } catch (failure: Exception) { status(key, SyncInboxStage.REJECTED, code(failure)) }
+        }
+        if (ledger.history().any { it.epoch !in keys }) return result(SyncGroupBootstrapStage.WAITING_FOR_KEYS, "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING")
+        return result(SyncGroupBootstrapStage.READY, evidence = SyncGroupBootstrapEvidence(trust,
+            ledger.history(), Collections.unmodifiableList(keys.values.toList())))
+    }
+
+    fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation {
+        val trust = localCustody { custody.trust() }
+        val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
+        fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, code: String? = null) {
+            statuses[key] = SyncInboxObservation(key.key, stage, code, key.descriptor).also(observe)
+        }
+        val objects = candidates.entries()
+        val hints = linkedMapOf<CiphertextObjectMetadata, SyncCiphertextHint>()
+        val tentative = linkedMapOf<CiphertextObjectMetadata, SyncTentativeGroupKey>()
+        for (metadata in objects) {
+            try {
+                spool(candidates.exact(metadata), metadata) { path ->
+                    val prefix = prefix(path)
+                    when {
+                        SyncCiphertextHeader.hasPrefix(prefix) -> {
+                            val hint = Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncCiphertextHeader::peek)
+                            require(hint.context.group == trust.group && hint.context.key == metadata.key) { "SYNC_INBOX_CONTEXT" }
+                            hints[metadata] = hint
+                        }
+                        SyncKeyDeliveryCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES) { "SYNC_KEY_DELIVERY_BUDGET" }
+                            val delivery = SyncKeyDeliveryCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncKeyDeliveryCodec::read))
+                            delivery.verifyOwner(trust, metadata.key)
+                            if (delivery.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else tentative[metadata] = delivery.openTentative(trust, recipient, metadata.key)
+                        }
+                        SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
+                            require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
+                            val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
+                            notice.verifyOwner(trust, metadata.key)
+                            if (notice.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
+                            else {
+                                val verified = notice.open(trust, recipient, metadata.key)
+                                val updated = localCustody { custody.update(verified.records) }
+                                require(updated.current().members[recipient.device]?.active == false) { "SYNC_LEDGER_NOTICE_REVOCATION" }
+                                status(metadata, SyncInboxStage.DEVICE_REVOKED)
+                            }
+                        }
+                        else -> error("SYNC_INBOX_FORMAT")
+                    }
+                }
+            } catch (failure: Exception) {
+                val code = code(failure)
+                status(metadata, when (code) {
+                    "SYNC_GROUP_LEDGER_FORK_OR_MISSING" -> SyncInboxStage.TRUST_BLOCKED
+                    "SYNC_INBOX_LOCAL_CUSTODY" -> SyncInboxStage.LOCAL_CUSTODY_BLOCKED
+                    else -> SyncInboxStage.INVALID_OBJECT
+                }, code)
+            }
+        }
+        val codec = SyncGroupObjectCodec(work)
+        val decoded = linkedMapOf<CiphertextObjectMetadata, SyncAuthenticatedGroupObject>()
+        fun knownKey(hint: SyncCiphertextHint, allowTentative: Boolean): SyncStreamingCipher? {
+            val key = try { localCustody { custody.key(hint.context.epoch) } } catch (failure: IllegalArgumentException) {
+                if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") null else throw failure
+            }
+            if (key != null) {
+                require(key.keyCommitment() == hint.keyCommitment) { "SYNC_INBOX_KEY_COMMITMENT" }; return key
+            }
+            return if (allowTentative) tentative.values.firstOrNull {
+                it.context.epoch == hint.context.epoch && it.context.keyCommitment == hint.keyCommitment
+            }?.cipher else null
+        }
+        var progress: Boolean
+        do {
+            progress = false
+            for ((key, hint) in hints) {
+                try {
+                    val cipher = knownKey(hint, true)
+                    if (cipher == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
+                    val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor).also { decoded[key] = it }
+                    val row = actual.envelope.deviceLedger ?: continue
+                    require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
+                    val before = try { localCustody { custody.ledger().current().reference() } } catch (failure: IllegalArgumentException) {
+                        if (failure.message == "SYNC_GROUP_LEDGER_FORK_OR_MISSING") null else throw failure
+                    }
+                    // Validate remote signatures/identities before entering the local protected writer.
+                    val validation = SyncDeviceLedger(trust)
+                    (actual.envelope.ledgerHistory + row).forEach { validation.offer(it) }
+                    val updated = localCustody { custody.update(actual.envelope.ledgerHistory + row) }
+                    if (before != updated.current().reference()) progress = true
+                    when (updated.state(row.id)) {
+                        SyncVersionState.ADMITTED -> status(key, SyncInboxStage.LEDGER_ADMITTED)
+                        SyncVersionState.WAITING_FOR_PARENTS -> status(key, SyncInboxStage.WAITING_FOR_LEDGER)
+                        else -> status(key, SyncInboxStage.REJECTED, updated.failure(row.id))
+                    }
+                } catch (failure: Exception) {
+                    val code = code(failure)
+                    status(key, when (code) {
+                        "SYNC_GROUP_LEDGER_FORK_OR_MISSING" -> SyncInboxStage.TRUST_BLOCKED
+                        "SYNC_INBOX_LOCAL_CUSTODY" -> SyncInboxStage.LOCAL_CUSTODY_BLOCKED
+                        else -> SyncInboxStage.INVALID_OBJECT
+                    }, code)
+                }
+            }
+            for ((key, candidate) in tentative) {
+                try {
+                    val admitted = candidate.admit(localCustody { custody.ledger() })
+                    val prior = try { localCustody { custody.key(candidate.context.epoch) } } catch (failure: IllegalArgumentException) {
+                        if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") null else throw failure
+                    }
+                    if (prior == null) { localCustody { custody.rememberKey(admitted) }; progress = true }
+                    else require(prior.keyCommitment() == admitted.cipher.keyCommitment()) { "SYNC_INBOX_KEY_COMMITMENT" }
+                    status(key, SyncInboxStage.KEY_ADMITTED)
+                } catch (failure: Exception) {
+                    val code = code(failure)
+                    status(key, when (code) {
+                        "SYNC_KEY_DELIVERY_LEDGER_MISSING" -> SyncInboxStage.WAITING_FOR_LEDGER
+                        "SYNC_GROUP_LEDGER_FORK_OR_MISSING" -> SyncInboxStage.TRUST_BLOCKED
+                        "SYNC_INBOX_LOCAL_CUSTODY" -> SyncInboxStage.LOCAL_CUSTODY_BLOCKED
+                        else -> SyncInboxStage.REJECTED
+                    }, code)
+                }
+            }
+        } while (progress)
+        val ledger = try { localCustody { custody.ledger() } } catch (failure: Exception) {
+            return SyncInboxReconciliation(statuses.values.toList(), null, emptyList(), true, null, code(failure))
+        }
+        // Tentative secrets are permitted only for signed ledger bootstrap, never content admission.
+        val versions = mutableListOf<SyncAuthenticatedGroupObject>()
+        for ((key, hint) in hints) {
+            try {
+                val cipher = knownKey(hint, false)
+                if (cipher == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
+                val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor)
+                if (actual.envelope.version != null) versions += actual
+            } catch (failure: Exception) {
+                val code = code(failure)
+                status(key, if (code == "SYNC_INBOX_LOCAL_CUSTODY") SyncInboxStage.LOCAL_CUSTODY_BLOCKED else SyncInboxStage.INVALID_OBJECT, code)
+            }
+        }
+        // Retained outbox AEAD witnesses keep this device's approved, not-yet-uploaded facts in
+        // its causal view while offline. They cannot introduce local ledger/key trust.
+        for (actual in localVersions.toList()) {
+            try {
+                require(actual.context.group == trust.group && actual.envelope.group == trust.group &&
+                    actual.context.key.kind == CiphertextObjectKind.COMMIT && actual.context.key == actual.metadata.key &&
+                    actual.envelope.version != null) { "SYNC_INBOX_LOCAL_VERSION_CONTEXT" }
+                val retained = versions.firstOrNull { it.metadata == actual.metadata }
+                require(retained == null || retained.context == actual.context && retained.metadata == actual.metadata &&
+                    retained.envelope == actual.envelope && retained.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_IMMUTABLE_CONFLICT" }
+                if (retained == null) versions += actual
+            } catch (failure: Exception) { status(actual.metadata, SyncInboxStage.INVALID_OBJECT, code(failure)) }
+        }
+        val logical = versions.map { requireNotNull(it.envelope.version) }
+        val history = SyncCausalHistory(trust.group, ledger.admission(logical, versions))
+        for (actual in versions) {
+            val version = requireNotNull(actual.envelope.version)
+            try { history.offer(version) } catch (failure: Exception) {
+                val code = code(failure)
+                status(actual.metadata, when (code) {
+                    "SYNC_GROUP_LEDGER_MISSING", "SYNC_GROUP_FENCE_CONTENT_MISSING" -> SyncInboxStage.WAITING_FOR_LEDGER
+                    "SYNC_GROUP_CURRENT_EPOCH_REQUIRED" -> SyncInboxStage.WAITING_FOR_CURRENT_EPOCH
+                    else -> SyncInboxStage.REJECTED
+                }, code)
+            }
+        }
+        versions.forEach { actual -> if (statuses[actual.metadata]?.stage !in setOf(SyncInboxStage.REJECTED,
+            SyncInboxStage.INVALID_OBJECT, SyncInboxStage.LOCAL_CUSTODY_BLOCKED,
+            SyncInboxStage.WAITING_FOR_LEDGER, SyncInboxStage.WAITING_FOR_CURRENT_EPOCH)) {
+            val version = requireNotNull(actual.envelope.version)
+            status(actual.metadata, when (history.state(version.id)) {
+                SyncVersionState.ADMITTED -> SyncInboxStage.CAUSAL_ADMITTED
+                SyncVersionState.WAITING_FOR_PARENTS -> SyncInboxStage.WAITING_FOR_PARENTS
+                else -> SyncInboxStage.REJECTED
+            }, history.failure(version.id))
+        } }
+        val usable = versions.filter { statuses[it.metadata]?.stage !in setOf(SyncInboxStage.INVALID_OBJECT,
+            SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED) }
+        return SyncInboxReconciliation(statuses.values.toList(), history, usable, false, ledger.current().reference())
+    }
+
+    private fun prefix(path: Path): ByteArray = Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
+        val bytes = ByteArray(32); var read = 0
+        while (read < bytes.size) { val count = input.read(bytes, read, bytes.size - read); if (count < 0) break; read += count }
+        bytes.copyOf(read)
+    }
+    private fun <T> spool(store: CiphertextStore, metadata: CiphertextObjectMetadata, workOn: (Path) -> T): T {
+        resourceBudget.requireSpace(work, metadata.descriptor.length)
+        PrivateSyncFile.create(work).use { file ->
+            FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel ->
+                var count = 0L
+                val digest = MessageDigest.getInstance("SHA-256")
+                val output = object : OutputStream() {
+                    override fun write(value: Int) = write(byteArrayOf(value.toByte()), 0, 1)
+                    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                        require(length >= 0 && count <= metadata.descriptor.length - length) { "SYNC_INBOX_OBJECT_LENGTH" }
+                        val buffer = ByteBuffer.wrap(bytes, offset, length); while (buffer.hasRemaining()) channel.write(buffer)
+                        digest.update(bytes, offset, length); count += length
+                    }
+                }
+                require(store.readTo(metadata.key, output, metadata.descriptor) == metadata && count == metadata.descriptor.length) { "SYNC_INBOX_OBJECT_MISSING" }
+                require(digest.digest().joinToString("") { "%02x".format(it) } == metadata.descriptor.sha256.hex) { "SYNC_INBOX_OBJECT_CHANGED" }
+                channel.force(true)
+            }
+            return workOn(file.path)
+        }
+    }
+    private fun code(failure: Exception): String {
+        if (failure is CancellationException || failure is InterruptedException || failure is InterruptedIOException) throw failure
+        if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_INBOX_INTERRUPTED")
+        return failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]{1,100}")) }
+            ?: if (failure is CiphertextStoreException) "SYNC_INBOX_STORE_${failure.failure}" else "SYNC_INBOX_INVALID_OBJECT"
+    }
+    private fun <T> localCustody(work: () -> T): T = try { work() } catch (failure: Exception) {
+        code(failure) // Preserve interruption rather than converting it into a blocked-object state.
+        if (failure.message?.matches(Regex("SYNC_[A-Z0-9_]{1,100}")) == true) throw failure
+        throw IllegalStateException("SYNC_INBOX_LOCAL_CUSTODY", failure)
+    }
+}

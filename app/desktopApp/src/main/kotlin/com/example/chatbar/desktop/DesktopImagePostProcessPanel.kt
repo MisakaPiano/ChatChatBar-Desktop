@@ -117,21 +117,21 @@ private fun DesktopImagePostProcessSourcePanel(path: Path, controller: DesktopNo
             }
         }
     }
-    val result by produceState<Pair<String, ByteArray>?>(null, record) {
+    val result by produceState<Pair<DesktopPostProcessResultRecord, ByteArray>?>(null, record) {
         value = null
-        record?.let { selected -> try { value = selected.id to controller.postProcessResults.read(selected) }
+        record?.let { selected -> try { value = selected to controller.postProcessResults.read(selected) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { status = "此结果图片不可读或备份未包含图片；记录和来源保留" } }
     }
-    var resultDimensions by remember(record?.id) { mutableStateOf<IntSize?>(null) }
-    val resultZoom = remember(record?.id) { DesktopImageZoomState() }
-    result?.takeIf { it.first == record?.id }?.second?.let { output ->
+    var resultDimensions by remember(record) { mutableStateOf<IntSize?>(null) }
+    val resultZoom = remember(record) { DesktopImageZoomState() }
+    result?.takeIf { it.first == record }?.second?.let { output ->
         if (record?.sourceSha256 != sourceHash) StatusText("所选为其他来源的已保存结果；不会覆盖当前来源")
         if (record != null && !record.matches(tab, options)) StatusText("参数已更改；预览仍是上次结果")
         val original = input?.takeIf { record?.sourceSha256 == sourceHash }
-        if (original != null) DesktopPostProcessComparisonWorkspace("${path}-${record?.id}", original.first, output,
+        if (original != null) DesktopPostProcessComparisonWorkspace("${path}-${record}", original.first, output,
             IntSize(original.second.first, original.second.second)) { resultDimensions = it }
-        else DesktopImageZoomSurface("after-${record?.id}", { output }, Modifier.fillMaxWidth().height(330.dp), postProcessOutput = true, zoomState = resultZoom)
+        else DesktopImageZoomSurface("after-${record}", { output }, Modifier.fillMaxWidth().height(330.dp), postProcessOutput = true, zoomState = resultZoom)
         (if (original != null) resultDimensions else resultZoom.sourceSize.takeUnless { it == IntSize.Zero })?.let { StatusText("已保存结果 ${it.width} × ${it.height}") }
         StatusText(if (original != null) "左：原图 · 右：处理结果" else "已保存的处理结果")
         StudioActions {

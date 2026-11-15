@@ -209,6 +209,14 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
     var focused by remember { mutableStateOf(false) }
     var fullscreen by remember { mutableStateOf(false) }
     var openingValue by remember { mutableStateOf(value) }
+    val textOwner = LocalDesktopStudioTextHistories.current
+    val editorGuardOwner = remember { Any() }
+    DisposableEffect(textOwner, editorGuardOwner) {
+        textOwner?.registerExpandedEditor(editorGuardOwner) {
+            fullscreen && expandedHistory?.value?.let { it.text != openingValue || it.composition != null } == true
+        }
+        onDispose { textOwner?.unregisterExpandedEditor(editorGuardOwner) }
+    }
     var dismissedQuery by remember { mutableStateOf<String?>(null) }
     var suggestionIndex by remember { mutableStateOf(0) }
     var inspecting by remember { mutableStateOf(true) }

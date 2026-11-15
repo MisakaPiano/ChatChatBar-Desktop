@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop.backup
 
 import com.example.chatbar.data.local.entity.MomentPost
+import com.example.chatbar.data.local.entity.MomentTask
 import com.example.chatbar.desktop.DesktopMomentImageVersions
 import kotlinx.serialization.json.*
 
@@ -8,6 +9,7 @@ import kotlinx.serialization.json.*
 internal object DesktopMomentBackupExtension {
     const val FIELD = "imageVersions"
     const val LEGACY_FIELD = "desktopImageVersions"
+    const val TASK_APPROVAL_FIELD = "requiresLocalScheduleApproval"
     fun hasVersions(value: JsonObject) = FIELD in value || LEGACY_FIELD in value
     fun rawVersions(value: JsonObject): JsonElement? {
         require(!(FIELD in value && LEGACY_FIELD in value)) { "AMBIGUOUS_MOMENT_VERSION_FIELDS" }
@@ -17,6 +19,14 @@ internal object DesktopMomentBackupExtension {
         val raw = rawVersions(value) ?: return value
         require(raw is JsonArray)
         return JsonObject((value - LEGACY_FIELD) + (FIELD to raw))
+    }
+    fun taskSnapshot(value: JsonObject): MomentTaskSnapshot {
+        if (TASK_APPROVAL_FIELD in value) {
+            val marker = value[TASK_APPROVAL_FIELD] as? JsonPrimitive
+            require(marker != null && !marker.isString && marker.booleanOrNull != null) { "MOMENT_TASK_APPROVAL_TYPE" }
+        }
+        if (TASK_APPROVAL_FIELD in value) backupJson.decodeFromJsonElement(MomentTask.serializer(), value)
+        return backupJson.decodeFromJsonElement(MomentTaskSnapshot.serializer(), JsonObject(value - TASK_APPROVAL_FIELD))
     }
     fun snapshot(value: JsonObject): MomentPostSnapshot {
         val canonical = canonical(value)

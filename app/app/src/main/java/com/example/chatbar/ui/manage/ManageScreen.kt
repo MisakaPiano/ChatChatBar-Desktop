@@ -382,6 +382,7 @@ fun ManageScreen(
             CbTopBar(
                 title = "管理",
                 actions = {
+                    CbIconButton(AppIcons.Refresh, "局域网同步", { context.startActivity(Intent(context, com.example.chatbar.lanSync.LanSyncActivity::class.java)) })
                     CbIconButton(AppIcons.HelpOutline, "教程", { showTutorialMenu = true })
                     if (tab == 4) CbDirtySaveButton(settingsDirty, { settingsSaveRequest++ })
                     if (tab == 0) CbIconButton(AppIcons.Import, "导入角色卡", { importCharacter.launch(arrayOf("*/*")) }, tint = ChatBarTheme.colors.primary)

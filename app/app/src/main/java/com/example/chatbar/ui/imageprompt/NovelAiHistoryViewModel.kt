@@ -59,6 +59,9 @@ data class NovelAiHistoryUiState(
 
 class NovelAiHistoryViewModel : ViewModel() {
     private val app = ChatBarApp.instance
+    private fun launchHistoryMutation(work: suspend () -> Unit) = viewModelScope.launch {
+        app.lanSyncOwner.gate.withNormalOperation(work)
+    }
     private val repository = app.novelAiStudioRepository
     private val storage = app.novelAiImageStorage
     private val guidanceAssets = app.novelAiStudioAssetStorage
@@ -295,7 +298,7 @@ class NovelAiHistoryViewModel : ViewModel() {
             _uiState.update { it.copy(error = "部分历史图片已发生变化，请重新选择") }
             return
         }
-        viewModelScope.launch {
+        launchHistoryMutation {
             _uiState.update { it.copy(busy = true, error = null, notice = null) }
             runCatching {
                 repository.deleteHistoryImages(
@@ -390,9 +393,12 @@ class NovelAiHistoryViewModel : ViewModel() {
 
     fun delete(entry: NovelAiGenerationHistoryEntry) {
         if (_uiState.value.busy) return
-        viewModelScope.launch {
+        launchHistoryMutation {
             _uiState.update { it.copy(busy = true, error = null) }
             runCatching {
+                val current = app.jsonFileStorage.readEntityStrict("novelai_generation_history", entry.id,
+                    NovelAiGenerationHistoryEntry.serializer())
+                check(current == com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid(entry)) { "历史记录已变化，请重新选择" }
                 val staged = storage.stageSessionDelete(entry.id)
                 try {
                     repository.deleteHistory(entry.id)
@@ -412,9 +418,15 @@ class NovelAiHistoryViewModel : ViewModel() {
     fun clearAll() {
         if (_uiState.value.busy) return
         val entries = _uiState.value.entries
-        viewModelScope.launch {
+        launchHistoryMutation {
             _uiState.update { it.copy(busy = true, error = null) }
             runCatching {
+                val current = app.jsonFileStorage.scanEntitiesStrict("novelai_generation_history", NovelAiGenerationHistoryEntry.serializer()).map {
+                    val row = (it.result as? com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid<NovelAiGenerationHistoryEntry>)?.value
+                        ?: error("历史记录未完整读取，请检查后重试")
+                    check(row.id == it.storageId); row
+                }
+                check(current.associateBy { it.id } == entries.associateBy { it.id }) { "历史记录已变化，请重新确认清空" }
                 val staged = mutableListOf<com.example.chatbar.domain.image.NovelAiStagedSessionDeletion>()
                 try {
                     entries.forEach { entry -> storage.stageSessionDelete(entry.id)?.let(staged::add) }

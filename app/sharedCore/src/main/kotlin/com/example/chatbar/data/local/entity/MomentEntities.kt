@@ -128,6 +128,7 @@ data class MomentImageVersion(
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class MomentTask(
     val id: String,
     val characterCardId: String,
@@ -137,7 +138,10 @@ data class MomentTask(
     val postId: String? = null,
     val failureReason: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = createdAt
+    val updatedAt: Long = createdAt,
+    /** Imported schedule data carries no local execution approval. LAN always transmits true. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val requiresLocalScheduleApproval: Boolean = false
 ) {
     companion object {
         @OptIn(ExperimentalUuidApi::class)

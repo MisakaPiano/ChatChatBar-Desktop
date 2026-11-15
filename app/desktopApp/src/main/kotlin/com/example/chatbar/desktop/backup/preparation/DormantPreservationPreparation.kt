@@ -83,7 +83,7 @@ internal object DormantPreservationPreparation {
                         DesktopMomentBackupExtension.versions(value.jsonObject).forEach { version -> resource(version.imagePath);resource(version.generatedImageMetadata?.imagePath) }
                     }
                     DormantKind.MOMENT_TASK -> {
-                        val t=backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
+                        val t=DesktopMomentBackupExtension.taskSnapshot(value.jsonObject)
                         require(t.id.isNotBlank() && ids.add(inputs[i].kind to t.id))
                         require(t.characterCardId in context.cards && t.sessionId in context.sessions);tasks += t
                     }

@@ -30,6 +30,7 @@ class MomentRepository(private val storage: JsonFileStorage) {
         _posts.value = storage.loadAll(POST_TYPE, MomentPost.serializer())
             .sortedByDescending { it.generatedAt }
     }
+    suspend fun refreshFromStorage() { refreshPosts(); initialized = true }
 
     suspend fun getAllPosts(): List<MomentPost> {
         initialize()

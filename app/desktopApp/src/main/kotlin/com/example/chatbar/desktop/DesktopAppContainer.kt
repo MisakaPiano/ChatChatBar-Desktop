@@ -46,6 +46,49 @@ class DesktopAppContainer internal constructor(
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
+    private val lanSyncOwner = lazy { DesktopLanSync(this,
+        exclusive = { work ->
+            if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot()
+            val reserved: suspend () -> Unit = {
+                val publish: suspend () -> Unit = { withBackupIoMaintenance(work = {
+                    dataOperationCoordinator.withExclusiveMaintenance {
+                        if (novelAiStudioOwner.isInitialized()) novelAiStudioController.repository.prepareForLanSync()
+                        else DesktopStudioHistoryRepository(jsonFileStorage).prepareForLanSync()
+                        work()
+                    }
+                }) }
+                if (novelAiStudioOwner.isInitialized()) novelAiStudioController.withLanSyncOwner(publish) else publish()
+            }
+            if (momentsOwner.isInitialized() || "moment_tasks" in com.example.chatbar.domain.lanSync.LanSyncScope.schemas) momentsController.withLanSyncMaintenance(
+                synchronizeTasks = "moment_tasks" in com.example.chatbar.domain.lanSync.LanSyncScope.schemas, work = reserved)
+            else taskRuntime.withIdleMaintenance(reserved)
+        },
+        reload = {
+            characterRepository.refreshFromStorage(); formatCardRepository.refreshFromStorage(); worldBookRepository.refreshFromStorage()
+            chatRepository.reloadAfterLanSync(); voiceRepository.reload()
+            settingsRepository.refreshPlayerSettingFromStorage()
+            jsonFileStorage.loadAll("novelai_generation_history", com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry.serializer())
+            if (novelAiStudioOwner.isInitialized()) {
+                novelAiStudioController.reloadStudioAfterLanSync()
+                check(novelAiStudioController.reloadPostProcessResults()) { "SYNC_POSTPROCESS_RELOAD" }
+            }
+            if (primaryChatControllerOwner.isInitialized()) primaryChatController.refresh()
+            if (momentsOwner.isInitialized()) momentsController.refresh()
+        }, resolve = { reference ->
+            val path = java.nio.file.Path.of(reference)
+            if (path.isAbsolute) path else characterResourceStore.resolveOwnedReference(reference)
+        }, asset = characterResourceStore::readBytes,
+        shutdownExclusive = { work -> lanSyncShutdownMaintenance.withExclusive { work() } }) }
+    private val lanSyncShutdownMaintenance by lazy {
+        DesktopLanSyncShutdownMaintenance(automaticBackupRuntime, dataOperationCoordinator)
+    }
+    internal val lanSync get() = lanSyncOwner.value.runtime
+    internal val lanSyncGroupCoordinator get() = lanSyncOwner.value.groupCoordinator
+    internal fun hasLanSyncGroupEvidence(): Boolean = lanSyncOwner.value.hasGroupEvidence()
+    internal val lanSyncGroupEnrollment get() = lanSyncOwner.value.groupEnrollment
+    internal val lanSyncGroupJoining get() = lanSyncOwner.value.groupJoining
+    internal fun onLanSyncForeground() { if (lanSyncOwner.isInitialized()) lanSyncOwner.value.onForeground() }
+    internal fun lockLanSyncGroupManagement() { if (lanSyncOwner.isInitialized()) lanSyncOwner.value.lockGroupManagement() }
     internal val imageToolPreferences by lazy { DesktopImageToolPreferences(jsonFileStorage, dataOperationCoordinator) }
     internal val documentRagReader by lazy {
         DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator, maintenance = audioMaintenance)
@@ -434,10 +477,12 @@ class DesktopAppContainer internal constructor(
     }
 
     suspend fun initializePersistentState() {
+        lanSyncOwner.value.recoverBeforeRepositories()
         automaticBackupRuntime.initialize()
         presetBootstrap.initialize()
         saveSlotService.resumeSessionDeletionCleanup()
         dataOperationCoordinator.withNormalOperation { speakerTagHistoryService.resumePending() }
+        lanSyncOwner.value.startGroupIfConfigured()
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(
@@ -837,6 +882,7 @@ class DesktopAppContainer internal constructor(
     )
 
     suspend fun close() {
+        if (lanSyncOwner.isInitialized()) lanSyncOwner.value.quiesceAndDrain()
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
@@ -875,7 +921,13 @@ class DesktopAppContainer internal constructor(
                 if (trayOwner.isInitialized()) taskTray.closeAndDrain()
                 if (taskCenterOwner.isInitialized()) taskCenter.closeAndDrain()
             },
-            runtimeClose = { automaticBackupRuntime.close() },
+            finalLocalFlush = {
+                if (lanSyncOwner.isInitialized()) lanSyncOwner.value.flushLocalAfterWriters()
+            },
+            runtimeClose = {
+                if (lanSyncOwner.isInitialized()) lanSyncOwner.value.closeAndDrain()
+                automaticBackupRuntime.close()
+            },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },
             migrationServiceClose = {
                 if (mergeServiceOwner.isInitialized()) mergeServiceOwner.value.close()
@@ -891,6 +943,7 @@ internal suspend fun closeDesktopDataRuntimes(
     runtimeClose: suspend () -> Unit,
     coordinatorClose: suspend () -> Unit,
     migrationServiceClose: suspend () -> Unit,
+    finalLocalFlush: suspend () -> Unit = {},
 ) {
     // An incomplete task drain keeps the data coordinator open for feature persistence cleanup.
     DesktopShutdownTrace.record(DesktopShutdownStage.TASK_DRAIN_BEGIN)
@@ -913,11 +966,27 @@ internal suspend fun closeDesktopDataRuntimes(
         // Ordinary draft failure is reported only after the worker has joined.
         primaryFailure = error
     }
+    var completedLocalFlushFailure: DesktopLanSyncFinalFlushIncompleteException? = null
+    if (primaryFailure == null) {
+        try { finalLocalFlush() }
+        catch (pending: DesktopLanSyncFinalFlushTimeoutException) {
+            // The independent retained task may still hold the native gate. Keep every owner live.
+            throw pending
+        } catch (incomplete: DesktopLanSyncFinalFlushIncompleteException) {
+            // The real flush task has ended. Pending sync never keeps ordinary saved data open.
+            completedLocalFlushFailure = incomplete
+            primaryFailure = incomplete
+        } catch (error: Throwable) { primaryFailure = error }
+    }
+    var teardownFailed = false
     try {
         DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_BEGIN)
         runtimeClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_END)
+    } catch (pending: DesktopLanSyncFinalFlushTimeoutException) {
+        throw pending
     } catch (error: Throwable) {
+        teardownFailed = true
         if (primaryFailure == null) primaryFailure = error else primaryFailure.addSuppressed(error)
     }
     try {
@@ -925,6 +994,7 @@ internal suspend fun closeDesktopDataRuntimes(
         coordinatorClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.COORDINATOR_CLOSE_END)
     } catch (error: Throwable) {
+        teardownFailed = true
         if (primaryFailure == null) {
             primaryFailure = error
         } else {
@@ -936,11 +1006,13 @@ internal suspend fun closeDesktopDataRuntimes(
         migrationServiceClose()
         DesktopShutdownTrace.record(DesktopShutdownStage.MIGRATION_CLOSE_END)
     } catch (error: Throwable) {
+        teardownFailed = true
         if (primaryFailure == null) {
             primaryFailure = error
         } else {
             primaryFailure.addSuppressed(error)
         }
     }
+    if (!teardownFailed) completedLocalFlushFailure?.markTeardownCompleted()
     primaryFailure?.let { throw it }
 }

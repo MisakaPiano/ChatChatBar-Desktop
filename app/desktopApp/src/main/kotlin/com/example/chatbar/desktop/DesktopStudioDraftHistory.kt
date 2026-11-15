@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.NovelAiStudioStateRepository
+import com.example.chatbar.data.repository.loadStudioDraftStrict
+import com.example.chatbar.data.repository.loadStudioHistoryJournalStrict
 import com.example.chatbar.domain.image.NovelAiStudioDraft
 import com.example.chatbar.domain.image.NovelAiInlinePayloadStore
 import com.example.chatbar.domain.image.ownedAssetPaths
@@ -12,7 +14,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
+import com.example.chatbar.domain.image.NovelAiStudioHistoryTimeline
+import com.example.chatbar.domain.image.NovelAiStudioHistoryJournal
+import com.example.chatbar.domain.image.toEditHistorySnapshot
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -20,19 +24,8 @@ private class DesktopStudioEditingContext(val boundary: DesktopStudioTextBoundar
     companion object Key : CoroutineContext.Key<DesktopStudioEditingContext>
 }
 
-@Serializable
-internal data class DesktopStudioHistoryTimeline(
-    val entries: List<NovelAiStudioDraft> = emptyList(), val cursor: Int = 0,
-) {
-    fun current() = entries.getOrNull(cursor)
-}
-
-/** Write-ahead intent keeps both alternatives referenced until the draft write is resolved. */
-@Serializable
-internal data class DesktopStudioHistoryJournal(
-    val committed: DesktopStudioHistoryTimeline = DesktopStudioHistoryTimeline(),
-    val pending: DesktopStudioHistoryTimeline? = null,
-)
+internal typealias DesktopStudioHistoryTimeline = NovelAiStudioHistoryTimeline
+internal typealias DesktopStudioHistoryJournal = NovelAiStudioHistoryJournal
 
 internal data class DesktopStudioHistoryAvailability(val undo: Boolean = false, val redo: Boolean = false,
     val replayRevision: Long = 0)
@@ -56,10 +49,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     suspend fun updateFromField(boundary: DesktopStudioTextBoundary, transform: (NovelAiStudioDraft) -> NovelAiStudioDraft) =
         withContext(DesktopStudioEditingContext(boundary)) { updateDraft(transform = transform) }
 
-    private fun snapshot(draft: NovelAiStudioDraft) = draft.copy(contentRevision = 0, promptContentRevision = 0,
-        updatedAt = 0, imageGuidance = draft.imageGuidance.copy(vibes = draft.imageGuidance.vibes.map { vibe ->
-            vibe.copy(encodedVibe = vibe.encodedVibe?.let { if (it.startsWith(NovelAiInlinePayloadStore.PREFIX)) it else storage.retainStudioPayload(it) })
-        }))
+    private fun snapshot(draft: NovelAiStudioDraft) = draft.toEditHistorySnapshot(storage::retainStudioPayload)
 
     private suspend fun store(value: DesktopStudioHistoryJournal) =
         storage.saveSingleton(ENTITY, value, DesktopStudioHistoryJournal.serializer())
@@ -78,15 +68,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
             val legacy = loadUndoDraft()?.let(::snapshot)?.takeIf { it != current }
             DesktopStudioHistoryTimeline(listOfNotNull(legacy, current), if (legacy == null) 0 else 1)
         } else {
-            fun validate(t: DesktopStudioHistoryTimeline) {
-                require(t.entries.isNotEmpty() && t.entries.size <= MAX_ENTRIES && t.cursor in t.entries.indices)
-            }
-            validate(journal.committed); journal.pending?.let(::validate)
-            when (current) {
-                journal.pending?.current() -> requireNotNull(journal.pending)
-                journal.committed.current() -> journal.committed
-                else -> error("Studio history and draft require recovery")
-            }
+            journal.resolved(current)
         }
         store(DesktopStudioHistoryJournal(value))
         publish(value)
@@ -98,6 +80,35 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         loadDraft()
         super.updateDraft(resetPromptEditors = false) { it }
         loaded(snapshot(loadDraft())); Unit
+    }
+
+    override suspend fun prepareForLanSync() = withEditHistoryDataAccess {
+        super.prepareForLanSync()
+        val persisted = storage.loadStudioDraftStrict()
+        val journal = storage.loadStudioHistoryJournalStrict()
+        if (journal != null) {
+            val resolved = journal.resolved(snapshot(requireNotNull(persisted) { "SYNC_STUDIO_DRAFT_MISSING" }))
+            if (journal.pending != null) store(DesktopStudioHistoryJournal(resolved))
+            publish(resolved)
+        }
+        rememberLanSyncPreparedState()
+    }
+
+    override suspend fun reloadAfterLanSync() = withEditHistoryDataAccess {
+        val before = lanSyncRevision.value
+        super.reloadAfterLanSync()
+        if (before == lanSyncRevision.value) return@withEditHistoryDataAccess
+        timeline = null
+        lastTypingKey = null
+        val persisted = storage.loadStudioDraftStrict()
+        val journal = storage.loadStudioHistoryJournalStrict()
+        if (journal != null) {
+            check(journal.pending == null) { "SYNC_STUDIO_PENDING_ON_WIRE" }
+            publish(journal.resolved(snapshot(requireNotNull(persisted))), replay = true)
+        } else {
+            // Absence is retained. loaded() may create a timeline on the next actual local edit.
+            available.value = DesktopStudioHistoryAvailability(replayRevision = available.value.replayRevision + 1)
+        }
     }
 
     override suspend fun updateDraft(resetPromptEditors: Boolean,
@@ -165,8 +176,8 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
 
     companion object {
         const val ENTITY = "desktop_studio_edit_history"
-        const val MAX_ENTRIES = 101
-        private const val MAX_BYTES = 3 * 1024 * 1024
+        const val MAX_ENTRIES = NovelAiStudioHistoryTimeline.MAX_ENTRIES
+        private const val MAX_BYTES = NovelAiStudioHistoryTimeline.MIN_BYTE_BUDGET
     }
 }
 

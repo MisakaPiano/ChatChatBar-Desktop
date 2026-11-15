@@ -57,6 +57,15 @@ class JsonFileStorage(
     }
 
     private val studioPayloads by lazy { NovelAiInlinePayloadStore(appDataRoot.toFile()) }
+    /** Narrow replacement fault seam; ordinary storage always uses the original native moves. */
+    internal var replacementFileMove: ((source: Path, target: Path, replaceExisting: Boolean) -> Unit)? = null
+
+    private fun moveReplacementFile(source: Path, target: Path, replaceExisting: Boolean = false) {
+        val move = replacementFileMove
+        if (move != null) move(source, target, replaceExisting)
+        else if (replaceExisting) Files.move(source, target, StandardCopyOption.REPLACE_EXISTING)
+        else Files.move(source, target)
+    }
 
     /** Desktop history keeps the same content-addressed references as the current Studio draft. */
     fun retainStudioPayload(value: String): String = studioPayloads.retain(value)
@@ -90,6 +99,11 @@ class JsonFileStorage(
     }
 
     private val entityMutexes = ConcurrentHashMap<String, OperationMutex>()
+    private val commitRevision = StorageCommitRevision()
+    /** Actual final file changes, including retained partial writes; never a whole-batch receipt. */
+    val committedRevision = commitRevision.state
+    /** Payload-free invalidation restricted to the consumer's entity coverage. */
+    fun committedRevisionFor(entityTypes: Set<String>): Flow<Long> = commitRevision.forTypes(entityTypes)
     private val _singletonReadFailures = MutableStateFlow<Map<String, SingletonReadException>>(emptyMap())
     val singletonReadFailures = _singletonReadFailures.asStateFlow()
     private val failedSingletonReaders = ConcurrentHashMap<String, suspend () -> Unit>()
@@ -201,6 +215,7 @@ class JsonFileStorage(
         withContext(Dispatchers.IO) {
             val file = entityFile(entityType, id)
             writeJsonFile(file, entity, serializer)
+            commitRevision.committed(entityType)
 
             // 更新缓存
             val flow = getCacheFlow<T>(entityType)
@@ -218,6 +233,7 @@ class JsonFileStorage(
     ) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
             writeJsonFile(entityFile(entityType, id), entity, serializer)
+            commitRevision.committed(entityType)
             onCommitted()
             val flow = getCacheFlow<T>(entityType)
             flow.value = flow.value + (id to entity)
@@ -725,6 +741,7 @@ class JsonFileStorage(
     ) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
             writeJsonFile(entityFile(entityType, id), entity, serializer)
+            commitRevision.committed(entityType)
         }
     }
 
@@ -735,8 +752,14 @@ class JsonFileStorage(
         serializer: KSerializer<T>
     ) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            entities.forEach { (id, entity) ->
-                writeJsonFile(entityFile(entityType, id), entity, serializer)
+            var installed = false
+            try {
+                entities.forEach { (id, entity) ->
+                    writeJsonFile(entityFile(entityType, id), entity, serializer)
+                    installed = true
+                }
+            } finally {
+                if (installed) commitRevision.committed(entityType)
             }
         }
     }
@@ -813,28 +836,32 @@ class JsonFileStorage(
             val installed = mutableListOf<File>()
             try {
                 currentFiles.forEach { file ->
-                    Files.move(file.toPath(), File(backup, file.name).toPath())
+                    moveReplacementFile(file.toPath(), File(backup, file.name).toPath())
                 }
                 staging.listFiles { file -> file.isFile && file.extension == "json" }
                     .orEmpty()
                     .forEach { file ->
                         val target = File(directory, file.name)
-                        Files.move(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                        moveReplacementFile(file.toPath(), target.toPath(), replaceExisting = true)
                         installed += target
                     }
             } catch (error: Throwable) {
                 installed.forEach(File::delete)
                 try {
                     backup.listFiles().orEmpty().forEach { file ->
-                        Files.move(file.toPath(), File(directory, file.name).toPath(), StandardCopyOption.REPLACE_EXISTING)
+                        moveReplacementFile(file.toPath(), File(directory, file.name).toPath(), replaceExisting = true)
                     }
                 } catch (restoreError: Throwable) {
                     preserveBackup = true
                     error.addSuppressed(restoreError)
+                    // Rollback failed, so final paths may differ even though this call still fails.
+                    // Invalidate readers once without turning that failure into a commit receipt.
+                    commitRevision.committed(entityType)
                 }
                 throw error
             }
             backup.deleteRecursively()
+            if (count > 0 || currentFiles.isNotEmpty()) commitRevision.committed(entityType)
             count
         } finally {
             staging.deleteRecursively()
@@ -846,7 +873,7 @@ class JsonFileStorage(
     suspend fun deleteEntityUncached(entityType: String, id: String) =
         mutexFor(entityType).withLock {
             withContext(Dispatchers.IO) {
-                entityFile(entityType, id).delete()
+                entityFile(entityType, id).delete().also { if (it) commitRevision.committed(entityType) }
             }
         }
 
@@ -857,18 +884,21 @@ class JsonFileStorage(
         predicate: (T) -> Boolean
     ): Int = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            entityDir(entityType)
-                .listFiles { file -> file.extension == "json" }
-                .orEmpty()
-                .count { file ->
-                    val matches = readOrNull(entityType) {
-                        openJsonInput(entityType, file).use { input ->
-                            @OptIn(ExperimentalSerializationApi::class)
-                            predicate(json.decodeFromStream(serializer, input))
-                        }
-                    } ?: false
-                    matches && file.delete()
-                }
+            var deleted = false
+            try {
+                entityDir(entityType)
+                    .listFiles { file -> file.extension == "json" }
+                    .orEmpty()
+                    .count { file ->
+                        val matches = readOrNull(entityType) {
+                            openJsonInput(entityType, file).use { input ->
+                                @OptIn(ExperimentalSerializationApi::class)
+                                predicate(json.decodeFromStream(serializer, input))
+                            }
+                        } ?: false
+                        (matches && file.delete()).also { if (it) deleted = true }
+                    }
+            } finally { if (deleted) commitRevision.committed(entityType) }
         }
     }
 
@@ -886,6 +916,7 @@ class JsonFileStorage(
             if (requireSuccess && !deleted && file.exists()) {
                 throw java.io.IOException("删除本地记录失败")
             }
+            if (deleted) commitRevision.committed(entityType)
 
             // 更新缓存
             val flow = getCacheFlow<T>(entityType)
@@ -897,18 +928,21 @@ class JsonFileStorage(
     suspend fun <T : Any> deleteByIdPrefix(entityType: String, prefix: String): Int =
         mutexFor(entityType).withLock {
             withContext(Dispatchers.IO) {
-                val deletedIds = entityDir(entityType)
-                    .listFiles { file ->
-                        file.extension == "json" && file.nameWithoutExtension.startsWith(prefix)
-                    }
-                    .orEmpty()
-                    .mapNotNull { file -> file.nameWithoutExtension.takeIf { file.delete() } }
+                var deleted = false
+                try {
+                    val deletedIds = entityDir(entityType)
+                        .listFiles { file ->
+                            file.extension == "json" && file.nameWithoutExtension.startsWith(prefix)
+                        }
+                        .orEmpty()
+                        .mapNotNull { file -> file.nameWithoutExtension.takeIf { file.delete().also { if (it) deleted = true } } }
 
-                if (deletedIds.isNotEmpty()) {
-                    val flow = getCacheFlow<T>(entityType)
-                    flow.value = flow.value - deletedIds.toSet()
-                }
-                deletedIds.size
+                    if (deletedIds.isNotEmpty()) {
+                        val flow = getCacheFlow<T>(entityType)
+                        flow.value = flow.value - deletedIds.toSet()
+                    }
+                    deletedIds.size
+                } finally { if (deleted) commitRevision.committed(entityType) }
             }
         }
 
@@ -919,24 +953,27 @@ class JsonFileStorage(
         predicate: (T) -> Boolean
     ): Int = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            val deletedIds = entityDir(entityType)
-                .listFiles { file -> file.extension == "json" }
-                .orEmpty()
-                .mapNotNull { file ->
-                    val matches = readOrNull(entityType) {
-                        openJsonInput(entityType, file).use { input ->
-                            @OptIn(ExperimentalSerializationApi::class)
-                            predicate(json.decodeFromStream(serializer, input))
-                        }
-                    } ?: false
-                    file.nameWithoutExtension.takeIf { matches && file.delete() }
-                }
+            var deleted = false
+            try {
+                val deletedIds = entityDir(entityType)
+                    .listFiles { file -> file.extension == "json" }
+                    .orEmpty()
+                    .mapNotNull { file ->
+                        val matches = readOrNull(entityType) {
+                            openJsonInput(entityType, file).use { input ->
+                                @OptIn(ExperimentalSerializationApi::class)
+                                predicate(json.decodeFromStream(serializer, input))
+                            }
+                        } ?: false
+                        file.nameWithoutExtension.takeIf { (matches && file.delete()).also { if (it) deleted = true } }
+                    }
 
-            if (deletedIds.isNotEmpty()) {
-                val flow = getCacheFlow<T>(entityType)
-                flow.value = flow.value - deletedIds.toSet()
-            }
-            deletedIds.size
+                if (deletedIds.isNotEmpty()) {
+                    val flow = getCacheFlow<T>(entityType)
+                    flow.value = flow.value - deletedIds.toSet()
+                }
+                deletedIds.size
+            } finally { if (deleted) commitRevision.committed(entityType) }
         }
     }
 
@@ -975,6 +1012,7 @@ class JsonFileStorage(
             // 拒绝用默认值或尚未加载的编辑状态覆盖损坏/暂不可读的旧文件。
             readSingletonOrThrow(entityType, serializer)
             writeJsonFile(singletonFile(entityType), entity, serializer)
+            commitRevision.committed(entityType)
         }
     }
 
@@ -1045,12 +1083,15 @@ class JsonFileStorage(
     suspend fun deleteByIdPrefixUncached(entityType: String, prefix: String): Int =
         mutexFor(entityType).withLock {
             withContext(Dispatchers.IO) {
-                entityDir(entityType)
-                    .listFiles { file ->
-                        file.extension == "json" && file.nameWithoutExtension.startsWith(prefix)
-                    }
-                    .orEmpty()
-                    .count(File::delete)
+                var deleted = false
+                try {
+                    entityDir(entityType)
+                        .listFiles { file ->
+                            file.extension == "json" && file.nameWithoutExtension.startsWith(prefix)
+                        }
+                        .orEmpty()
+                        .count { file -> file.delete().also { if (it) deleted = true } }
+                } finally { if (deleted) commitRevision.committed(entityType) }
             }
         }
 
@@ -1059,6 +1100,7 @@ class JsonFileStorage(
         withContext(Dispatchers.IO) {
             singletonFile(entityType).delete().also { deleted ->
                 if (deleted) {
+                    commitRevision.committed(entityType)
                     failedSingletonReaders.remove(entityType)
                     _singletonReadFailures.update { it - entityType }
                 }
@@ -1095,6 +1137,7 @@ class JsonFileStorage(
                 }
             } finally {
                 if (saved.isNotEmpty()) {
+                    commitRevision.committed(entityType)
                     val flow = getCacheFlow<T>(entityType)
                     flow.value = flow.value + saved
                 }
@@ -1107,9 +1150,12 @@ class JsonFileStorage(
      */
     suspend fun <T : Any> deleteAll(entityType: String) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            entityDir(entityType).listFiles()?.forEach { it.delete() }
-            val flow = getCacheFlow<T>(entityType)
-            flow.value = emptyMap()
+            var deleted = false
+            try {
+                entityDir(entityType).listFiles()?.forEach { if (it.delete()) deleted = true }
+                val flow = getCacheFlow<T>(entityType)
+                flow.value = emptyMap()
+            } finally { if (deleted) commitRevision.committed(entityType) }
         }
     }
 }

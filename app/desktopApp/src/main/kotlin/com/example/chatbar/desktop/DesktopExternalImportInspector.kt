@@ -88,9 +88,9 @@ internal object DesktopExternalImportInspector {
     }
 
     private fun imageInfo(bytes: ByteArray): SharedImportImageInfo? = MemoryCacheImageInputStream(ByteArrayInputStream(bytes)).use { input ->
-        val readers = ImageIO.getImageReaders(input)
-        if (!readers.hasNext()) return@use null
-        val reader = readers.next()
+        val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull {
+            if (it.formatName.equals("webp", ignoreCase = true)) { it.dispose(); false } else true
+        } ?: return@use null
         try {
             reader.input = input
             val width = reader.getWidth(0); val height = reader.getHeight(0)

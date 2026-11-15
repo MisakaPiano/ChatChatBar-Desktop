@@ -85,7 +85,7 @@ internal class MomentArchiveReadOnlyValidator {
                             edge(Field.VERSION_METADATA_IMAGE_PATH, version.generatedImageMetadata?.imagePath)
                         }
                     } else {
-                        val task = backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
+                        val task = DesktopMomentBackupExtension.taskSnapshot(value.jsonObject)
                         require(task.id.isNotBlank() && tasks.put(task.id, task) == null)
                         taskIdentities[task.id] = identity
                     }

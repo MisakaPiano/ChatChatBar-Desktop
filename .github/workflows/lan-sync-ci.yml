@@ -1,0 +1,320 @@
+name: Isolated LAN sync engineering
+on:
+  push:
+    branches: ['codex/lan-sync-*']
+    paths-ignore: [.github/lan-sync-package-request.json, .github/lan-sync-device-request.json, .github/lan-sync-apk-request.json, .github/lan-sync-group-device-request.json]
+permissions:
+  contents: read
+jobs:
+  proof_scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      legacy_large: ${{ steps.proof_scope.outputs.legacy_large }}
+      group_large: ${{ steps.proof_scope.outputs.group_large }}
+      cloud_large: ${{ steps.proof_scope.outputs.cloud_large }}
+      file_large: ${{ steps.proof_scope.outputs.file_large }}
+      android_mode: ${{ steps.proof_scope.outputs.android_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select independent large proofs and explicit Android test scope
+        id: proof_scope
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -m unittest discover -s tools/lan-sync/tests -p test_proof_scope.py
+          python -m unittest discover -s tools/lan-next-control -p test_instrumentation_report.py
+          python tools/lan-sync/select-proof-scope.py
+  file-large-resources:
+    needs: proof_scope
+    if: needs.proof_scope.outputs.file_large == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CCB_GROUP_FILE_LARGE_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written encrypted file recovery and native activation proof
+        working-directory: app
+        run: |
+          proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"
+          cat > "$proof_logging_init" <<'GROOVY'
+          gradle.projectsEvaluated {
+            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {
+              testLogging.showStandardStreams = true
+            }
+          }
+          GROOVY
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest' --no-daemon --stacktrace
+      - name: Locate failed synthetic encrypted file case
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in sorted(Path('sharedCore/build/test-results/test').glob('TEST-*.xml')):
+              for case in ET.parse(path).getroot().findall('testcase'):
+                  for failure in list(case.findall('failure')) + list(case.findall('error')):
+                      print('FILE_LARGE_CASE_FAILED', case.get('classname'), case.get('name'))
+                      lines = (failure.text or '').splitlines()
+                      for line in lines[:2] + [line for line in lines if 'com.example.chatbar.' in line][:16]:
+                          print(line[:1200])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-file-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+  cloud-large-resources:
+    needs: proof_scope
+    if: needs.proof_scope.outputs.cloud_large == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CCB_GROUP_CLOUD_LARGE_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written cloud chunk resume and native activation proof
+        working-directory: app
+        run: |
+          proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"
+          cat > "$proof_logging_init" <<'GROOVY'
+          gradle.projectsEvaluated {
+            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {
+              testLogging.showStandardStreams = true
+            }
+          }
+          GROOVY
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupCloudLargeNativeProofTest' --no-daemon --stacktrace
+      - name: Locate failed synthetic cloud case
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in sorted(Path('sharedCore/build/test-results/test').glob('TEST-*.xml')):
+              for case in ET.parse(path).getroot().findall('testcase'):
+                  for failure in list(case.findall('failure')) + list(case.findall('error')):
+                      print('CLOUD_LARGE_CASE_FAILED', case.get('classname'), case.get('name'))
+                      lines = (failure.text or '').splitlines()
+                      for line in lines[:2] + [line for line in lines if 'com.example.chatbar.' in line][:16]:
+                          print(line[:1200])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-cloud-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+  group-large-resources:
+    needs: proof_scope
+    if: needs.proof_scope.outputs.group_large == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CCB_GROUP_LARGE_PROOF: 'true'
+      CCB_GROUP_LARGE_TLS_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written encrypted group and native v8 proof
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupLargeNativeProofTest' --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+  large-resources:
+    needs: proof_scope
+    if: needs.proof_scope.outputs.legacy_large == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CCB_LAN_LARGE_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written large Runtime and v8 proof
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSyncProof.LanSyncLargeRuntimeProofTest' --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-sync-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+  android:
+    name: Android (${{ needs.proof_scope.outputs.android_mode }})
+    needs: proof_scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record explicit Android validation scope
+        env:
+          ANDROID_TEST_SCOPE: ${{ needs.proof_scope.outputs.android_mode }}
+        run: |
+          case "$ANDROID_TEST_SCOPE" in
+            full) echo "FULL shared protocol suite and existing Android compilation/unit gate" ;;
+            file-recovery-owner)
+              echo "FOCUS FileRecoveryOwnerTest only; this does not replace the failed full suite"
+              echo "Baseline78 retains 682 shared cases / 681 passed / 1 failed; separate 44-case shared focus retains 43 passed / 1 failed"
+              echo "Existing AndroidLanSyncCloudWorkTest is a separate unit gate, not 43 Android cases"
+              ;;
+            cloud-recovery-owner)
+              echo "FOCUS CloudRecoveryOwnerTest and CloudRecoverySourceTest; exact7ce full689PASS remains historical"
+              echo "Existing Android compilation and AndroidLanSyncCloudWorkTest gate retained"
+              ;;
+            *) echo "ANDROID_TEST_SCOPE_INVALID"; exit 1 ;;
+          esac
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: FULL shared protocol tests and Android compilation
+        if: needs.proof_scope.outputs.android_mode == 'full'
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.*' --tests 'com.example.chatbar.domain.syncStore.*' --tests 'com.example.chatbar.data.local.StorageCommitRevisionTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
+      - name: FOCUS FileRecoveryOwnerTest only and Android compilation (prior full suite remains failed)
+        if: needs.proof_scope.outputs.android_mode == 'file-recovery-owner'
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.FileRecoveryOwnerTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
+      - name: FOCUS CloudRecoveryOwnerTest and CloudRecoverySourceTest and Android compilation
+        if: needs.proof_scope.outputs.android_mode == 'cloud-recovery-owner'
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRecoveryOwnerTest' --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRecoverySourceTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
+      - name: Locate failed synthetic shared cases
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          roots = [(Path('sharedCore/build/test-results/test'), 'SHARED_CASE_FAILED'),
+                   (Path('app/build/test-results/testLanPreviewUnitTest'), 'ANDROID_CLOUD_GATE_CASE_FAILED')]
+          for root, label in roots:
+              for path in sorted(root.glob('TEST-*.xml')):
+                  for case in ET.parse(path).getroot().findall('testcase'):
+                      for failure in list(case.findall('failure')) + list(case.findall('error')):
+                          print(label, case.get('classname'), case.get('name'))
+                          lines = (failure.text or '').splitlines()
+                          for line in lines[:2] + [line for line in lines if 'com.example.chatbar.' in line][:16]:
+                              print(line[:1200])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-sync-android-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-sync-android-cloud-gate-evidence
+          if-no-files-found: warn
+          path: |
+            app/app/build/test-results/testLanPreviewUnitTest/
+            app/app/build/reports/tests/testLanPreviewUnitTest/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ccb-lan-preview-android
+          path: app/app/build/outputs/apk/lanPreview/*.apk
+  desktop:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      CCB_LAN_SENSITIVE_CLIPBOARD_PROOF: 'true'
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Record native path evidence and use a canonical NTFS temporary root
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path ($env:SystemDrive + '\') ('lt' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          $evidence = New-Item -ItemType Directory -Path (Join-Path $base 'evidence') -ErrorAction Stop
+          & java "$env:GITHUB_WORKSPACE/tools/lan-sync/StartupPathEvidence.java" | Set-Content (Join-Path $evidence 'original-temp.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'ORIGINAL_PATH_EVIDENCE_FAILED' }
+          $taskTemp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          $env:TEMP = $taskTemp.FullName; $env:TMP = $taskTemp.FullName
+          & java "$env:GITHUB_WORKSPACE/tools/lan-sync/StartupPathEvidence.java" | Set-Content (Join-Path $evidence 'canonical-temp.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'CANONICAL_PATH_EVIDENCE_FAILED' }
+          @("TEMP=$env:TEMP", "TMP=$env:TMP", "CCB_LAN_TEST_ENV=$($evidence.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Desktop compilation
+        working-directory: app
+        run: .\gradlew.bat :desktopApp:test --tests '*DesktopUpdateNoticesTest*' --tests '*DesktopStartupGateTest*' --tests '*DesktopLanSync*' --tests '*DormantPreservationPreparationTest*' --tests '*DesktopPreservationStoreTest*' --tests '*DesktopMomentVersionBackupTest*' --tests '*DesktopFullBackupWriterTest*' --tests '*DesktopMomentAdmissionStoreTest*' --tests '*DesktopPostProcessResultsTest*' --tests '*DesktopPostProcessRetainedMediaTest*' --tests '*DesktopPostProcessSourceIdentityTest*' --tests '*DesktopStudioDraftHistoryTest*' --no-daemon --stacktrace
+      - name: Require actual synthetic native clipboard execution
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [xml]$report = Get-Content -LiteralPath 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopLanSyncSensitiveClipboardTest.xml' -Raw
+          $suite = $report.testsuite
+          if ($suite.tests -ne '1' -or $suite.failures -ne '0' -or $suite.errors -ne '0' -or $suite.skipped -ne '0') { throw 'SENSITIVE_CLIPBOARD_PROOF_NOT_EXECUTED_SUCCESSFULLY' }
+          $cases = @($suite.testcase)
+          if ($cases.Count -ne 1 -or $cases[0].name -ne 'sensitive native copy publishes exact Unicode plus exclusion marker and refuses a foreign owner' -or $cases[0].skipped) { throw 'SENSITIVE_CLIPBOARD_PROOF_CASE_MISMATCH' }
+      - name: Collect original results within one artifact root
+        if: always()
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = New-Item -ItemType Directory -Path (Join-Path $env:GITHUB_WORKSPACE 'lan-sync-desktop-evidence') -ErrorAction Stop
+          $results = Join-Path $env:GITHUB_WORKSPACE 'app/desktopApp/build/test-results/test'
+          if (Test-Path -LiteralPath $results) { Copy-Item -LiteralPath $results -Destination (Join-Path $target 'test-results') -Recurse }
+          if ($env:CCB_LAN_TEST_ENV -and (Test-Path -LiteralPath $env:CCB_LAN_TEST_ENV)) { Copy-Item -LiteralPath $env:CCB_LAN_TEST_ENV -Destination (Join-Path $target 'native-path-evidence') -Recurse }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan-sync-desktop-evidence
+          path: lan-sync-desktop-evidence/

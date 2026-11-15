@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "a6bb882d7cef9aceba3fda3b0d33329f9d687d8f",
+  "integrationTargetSha": "c615657fcf476312bf459d0b2b6dc4d7fc9eb5ad",
+  "scopes": {
+    "shared": [
+      "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+      "com.example.chatbar.data.local.JsonFileStorageTest",
+      "com.example.chatbar.data.local.StorageCommitRevisionTest",
+      "com.example.chatbar.data.local.entity.ChatSessionSerializationTest",
+      "com.example.chatbar.data.repository.ChatContextCandidateSnapshotTest",
+      "com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest",
+      "com.example.chatbar.data.repository.ChatRepositoryFoundationTest",
+      "com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest",
+      "com.example.chatbar.domain.chat.SessionCharacterParticipationPolicyTest",
+      "com.example.chatbar.domain.lanSync.LanSyncConversationTest",
+      "com.example.chatbar.domain.lanSync.LanSyncMomentGraphTest",
+      "com.example.chatbar.domain.lanSync.LanSyncMomentsAdmissionTest",
+      "com.example.chatbar.domain.lanSync.LanSyncRuntimeTest",
+      "com.example.chatbar.domain.lanSync.LanSyncStudioCurrentTest",
+      "com.example.chatbar.domain.lanSync.LanSyncStudioEditHistoryTest",
+      "com.example.chatbar.domain.lanSync.LanSyncStudioForeignHistoryTest",
+      "com.example.chatbar.domain.lanSync.LanSyncStudioHistoryTest",
+      "com.example.chatbar.domain.lanSync.LanSyncWorkspaceTest"
+    ],
+    "desktop": [
+      "com.example.chatbar.desktop.DesktopBackupCompatibilityTest",
+      "com.example.chatbar.desktop.DesktopBackupEntityIdentityTest",
+      "com.example.chatbar.desktop.DesktopChatRepositoryAdmissionTest",
+      "com.example.chatbar.desktop.DesktopImageViewerToolbarTest",
+      "com.example.chatbar.desktop.DesktopLanSyncMomentsMaintenanceTest",
+      "com.example.chatbar.desktop.DesktopMomentImageCompletionSelectionTest",
+      "com.example.chatbar.desktop.DesktopMomentImageUsageTest",
+      "com.example.chatbar.desktop.DesktopMomentImageVersionsTest",
+      "com.example.chatbar.desktop.DesktopStudioBatchRuntimeTest",
+      "com.example.chatbar.desktop.DesktopStudioDraftHistoryTest",
+      "com.example.chatbar.desktop.DesktopStudioEmptyScopeBackupTest",
+      "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+      "com.example.chatbar.desktop.backup.DesktopBackupSelectionTest",
+      "com.example.chatbar.desktop.backup.DesktopBatchPreferencesBackupTest",
+      "com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest",
+      "com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest",
+      "com.example.chatbar.desktop.backup.DesktopLanSyncMomentsAdmissionTest",
+      "com.example.chatbar.desktop.backup.DesktopMergeOmittedImageRetentionTest",
+      "com.example.chatbar.desktop.backup.DesktopMomentVersionBackupTest"
+    ]
+  },
+  "excludedEvidence": "No packaging, signing, device, provider, human acceptance or new large-byte proof is established by this workflow."
+}

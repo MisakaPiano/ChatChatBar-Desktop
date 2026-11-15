@@ -63,6 +63,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -1141,6 +1142,12 @@ private fun StudioFullscreenPromptEditor(
 ) {
     val field = request.field ?: return
     val editorState = rememberFullscreenTextEditorState(request.value)
+    val editorGuardOwner = remember { Any() }
+    val uncommittedEditor = rememberUpdatedState(editorState.value.text != request.value.text || editorState.value.composition != null)
+    DisposableEffect(viewModel, editorGuardOwner) {
+        viewModel.registerLanSyncEditorGuard(editorGuardOwner) { uncommittedEditor.value }
+        onDispose { viewModel.unregisterLanSyncEditorGuard(editorGuardOwner) }
+    }
     var lastTranslationText by remember { mutableStateOf<String?>(null) }
     var suppressSuggestionFor by remember { mutableStateOf<Pair<String, Int>?>(null) }
     val wrappingTransformation = promptTagWrappingOutputTransformation(request.naturalLanguage)

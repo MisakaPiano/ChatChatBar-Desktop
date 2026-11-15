@@ -18,6 +18,12 @@ import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.applyDesignedPromptPlan
 import com.example.chatbar.domain.image.applyReversePromptPlan
 import com.example.chatbar.domain.image.applyHistoryRecipe
+import com.example.chatbar.domain.image.ownedAssetPaths
+import com.example.chatbar.domain.image.NovelAiStudioHistoryTimeline
+import com.example.chatbar.domain.lanSync.LanSyncStudioCurrent
+import com.example.chatbar.domain.lanSync.lanSyncHash
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +35,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 open class NovelAiStudioStateRepository(
-    protected val storage: JsonFileStorage
+    protected val storage: JsonFileStorage,
+    private val preserveForeignEditHistory: Boolean = false,
 ) {
     private val _draft = MutableStateFlow<NovelAiStudioDraft?>(null)
     val draft: StateFlow<NovelAiStudioDraft?> = _draft.asStateFlow()
@@ -38,10 +45,108 @@ open class NovelAiStudioStateRepository(
         _pendingGuidanceEditorTarget.asStateFlow()
     private val draftMutex = Mutex()
     private val draftStateLock = Any()
+    private var draftDirty = false
+    private val editorGuards = linkedMapOf<Any, () -> Boolean>()
+    private val _lanSyncRevision = MutableStateFlow(0L)
+    val lanSyncRevision: StateFlow<Long> = _lanSyncRevision.asStateFlow()
+    private var lanSyncPreparedSignature: String? = null
+    private var editorHistoryProvider: Pair<Any, () -> NovelAiStudioHistoryTimeline?>? = null
     private val undoMutex = Mutex()
     private val _undoAvailable = MutableStateFlow(false)
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
     protected val historyMutex = Mutex()
+    private val foreignHistory by lazy { ForeignStudioEditHistoryCustody(storage) }
+
+    /** Guards cover local editors whose content has not reached stageDraft yet. */
+    fun registerLanSyncEditorGuard(owner: Any, uncommitted: () -> Boolean) {
+        synchronized(editorGuards) { editorGuards[owner] = uncommitted }
+    }
+
+    fun unregisterLanSyncEditorGuard(owner: Any) {
+        synchronized(editorGuards) { editorGuards.remove(owner) }
+        synchronized(draftStateLock) { if (editorHistoryProvider?.first === owner) editorHistoryProvider = null }
+    }
+
+    fun registerLanSyncEditorHistory(owner: Any, history: () -> NovelAiStudioHistoryTimeline?) {
+        synchronized(draftStateLock) { editorHistoryProvider = owner to history }
+    }
+
+    /** Called inside normal admission, including deferred synchronous UI edits and undo/redo. */
+    fun tryCurrentLanSyncEditor(capturedRevision: Long, observedRevision: Long?, operation: () -> Unit): Boolean {
+        val current = _lanSyncRevision.value
+        if (capturedRevision != current || observedRevision != current) return false
+        operation()
+        return true
+    }
+
+    suspend fun loadEditorTimelineForLanSync(): NovelAiStudioHistoryTimeline? = foreignHistory.currentEditorTimeline()
+
+    private suspend fun studioSyncSignature(): String {
+        val values = LanSyncStudioCurrent.types.associateWith { type ->
+            storage.loadSingleton(type, JsonObject.serializer())?.let { LanSyncStudioCurrent.normalize(type, it) } ?: JsonNull
+        }
+        return lanSyncHash(JsonObject(values))
+    }
+
+    protected suspend fun rememberLanSyncPreparedState() { lanSyncPreparedSignature = studioSyncSignature() }
+
+    fun requireLanSyncEditorsCommitted() {
+        check(synchronized(editorGuards) { editorGuards.values.toList() }.none { it() }) { "SYNC_STUDIO_EDITOR_UNCOMMITTED" }
+    }
+
+    /** Called after platform writers drain and while storage admission is exclusive. */
+    open suspend fun prepareForLanSync() {
+        requireLanSyncEditorsCommitted()
+        if (synchronized(draftStateLock) { draftDirty }) flushLatestDraft()
+        if (preserveForeignEditHistory) foreignHistory.prepareForLanSync()
+        synchronized(draftStateLock) { editorHistoryProvider?.second }?.invoke()?.let { foreignHistory.retainEditorTimeline(it) }
+        rememberLanSyncPreparedState()
+    }
+
+    /** Refresh an existing owner without creating a default file or resolving an account/model. */
+    open suspend fun reloadAfterLanSync(): Unit = draftMutex.withDataAccess {
+        val signature = studioSyncSignature()
+        val changed = lanSyncPreparedSignature != signature
+        val loaded = storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())
+        val undo = storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())
+        synchronized(draftStateLock) {
+            val previous = _draft.value
+            if (previous != null && changed) {
+                val next = loaded ?: emptyDraft().copy(aiDesignModelId = previous.aiDesignModelId)
+                if (previous.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0) !=
+                    next.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0)) {
+                    val revision = maxOf(previous.contentRevision, previous.promptContentRevision,
+                        next.contentRevision, next.promptContentRevision) + 1L
+                    _draft.value = next.copy(contentRevision = revision, promptContentRevision = revision)
+                }
+            }
+            draftDirty = false
+        }
+        _undoAvailable.value = undo?.draft != null
+        if (changed) {
+            _pendingGuidanceEditorTarget.value = null
+            _lanSyncRevision.value++
+        }
+        lanSyncPreparedSignature = signature
+    }
+
+    private fun emptyDraft() = NovelAiStudioDraft(
+        followDefaultNovelAiImageModel = true,
+        v45Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V4_5_FULL),
+        v5Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V5_FULL))
+
+    /** Persistent recipes and foreign undo steps also own native guidance images. */
+    suspend fun <T> withRetainedGuidanceResources(additional: Set<String>, operation: suspend (Set<String>) -> T): T =
+        withStudioDataAccess { draftMutex.withLock { historyMutex.withLock {
+            val retained = additional.toMutableSet()
+            synchronized(draftStateLock) { _draft.value?.imageGuidance?.ownedAssetPaths()?.let(retained::addAll) }
+            storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())?.imageGuidance?.ownedAssetPaths()?.let(retained::addAll)
+            storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())?.draft?.imageGuidance?.ownedAssetPaths()?.let(retained::addAll)
+            storage.loadSingleton(GUIDANCE_CHECKPOINT_ENTITY, NovelAiGuidanceEditorCheckpoint.serializer())?.guidance?.ownedAssetPaths()?.let(retained::addAll)
+            foreignHistory.retainedHistoryDrafts().forEach { retained += it.imageGuidance.ownedAssetPaths() }
+            storage.loadAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer()).forEach { retained += it.recipe.imageGuidance.ownedAssetPaths() }
+            operation(retained)
+        } } }
 
     protected suspend fun <T> withStudioDataAccess(operation: suspend () -> T): T =
         storage.withNormalOperation(operation)
@@ -76,11 +181,7 @@ open class NovelAiStudioStateRepository(
                 _draft.value?.let { return@withDataAccess it }
             }
             val loaded = storage.loadSingleton(DRAFT_ENTITY, NovelAiStudioDraft.serializer())
-                ?: NovelAiStudioDraft(
-                    followDefaultNovelAiImageModel = true,
-                    v45Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V4_5_FULL),
-                    v5Settings = NovelAiGenerationDefaults.forModel(NovelAiImageModel.V5_FULL)
-                )
+                ?: emptyDraft()
             synchronized(draftStateLock) {
                 _draft.value ?: loaded.also { _draft.value = it }
             }
@@ -90,12 +191,17 @@ open class NovelAiStudioStateRepository(
     fun stageDraft(
         resetPromptEditors: Boolean = false,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
-    ): NovelAiStudioDraft = synchronized(draftStateLock) {
+    ): NovelAiStudioDraft = stageDraftChange(resetPromptEditors, transform).after
+
+    private data class DraftChange(val before: NovelAiStudioDraft, val wasDirty: Boolean, val after: NovelAiStudioDraft)
+
+    private fun stageDraftChange(resetPromptEditors: Boolean, transform: (NovelAiStudioDraft) -> NovelAiStudioDraft): DraftChange = synchronized(draftStateLock) {
         val current = checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
+        val wasDirty = draftDirty
         val transformed = transform(current)
-        if (transformed == current) return@synchronized current
+        if (transformed == current) return@synchronized DraftChange(current, wasDirty, current)
         val revision = current.contentRevision + 1L
-        transformed.copy(
+        val next = transformed.copy(
             contentRevision = revision,
             promptContentRevision = if (resetPromptEditors) {
                 revision
@@ -103,7 +209,10 @@ open class NovelAiStudioStateRepository(
                 current.promptContentRevision
             },
             updatedAt = maxOf(System.currentTimeMillis(), current.updatedAt + 1L)
-        ).also { _draft.value = it }
+        )
+        draftDirty = true
+        _draft.value = next
+        DraftChange(current, wasDirty, next)
     }
 
     suspend fun flushLatestDraft(): NovelAiStudioDraft {
@@ -113,9 +222,10 @@ open class NovelAiStudioStateRepository(
                 val snapshot = synchronized(draftStateLock) {
                     checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
                 }
-                storage.saveSingleton(DRAFT_ENTITY, snapshot, NovelAiStudioDraft.serializer())
+                val write: suspend () -> Unit = { storage.saveSingleton(DRAFT_ENTITY, snapshot, NovelAiStudioDraft.serializer()) }
+                if (preserveForeignEditHistory) foreignHistory.persist(snapshot, write) else write()
                 val latest = synchronized(draftStateLock) {
-                    checkNotNull(_draft.value)
+                    checkNotNull(_draft.value).also { if (it.contentRevision == snapshot.contentRevision) draftDirty = false }
                 }
                 if (latest.contentRevision == snapshot.contentRevision) return@withDataAccess latest
             }
@@ -126,20 +236,36 @@ open class NovelAiStudioStateRepository(
     open suspend fun updateDraft(
         resetPromptEditors: Boolean = false,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
-    ): NovelAiStudioDraft {
-        val before = synchronized(draftStateLock) {
-            checkNotNull(_draft.value) { "NovelAI Studio draft is not loaded" }
-        }
-        val next = stageDraft(resetPromptEditors, transform)
-        return try {
+    ): NovelAiStudioDraft = withStudioDataAccess {
+        val change = stageDraftChange(resetPromptEditors, transform)
+        val before = change.before
+        val next = change.after
+        try {
             flushLatestDraft()
             next
         } catch (error: Throwable) {
+            val outcome = if (preserveForeignEditHistory) foreignHistory.outcomeAfterFailure(next) else ForeignStudioEditHistoryCustody.Outcome.Unmanaged
             synchronized(draftStateLock) {
                 if (_draft.value?.contentRevision == next.contentRevision) {
-                    _draft.value = before
+                    when (outcome) {
+                        ForeignStudioEditHistoryCustody.Outcome.Unmanaged -> {
+                            _draft.value = before
+                            draftDirty = change.wasDirty
+                        }
+                        is ForeignStudioEditHistoryCustody.Outcome.Proved -> {
+                            if (!outcome.requestedWasPublished && change.wasDirty) {
+                                _draft.value = before
+                                draftDirty = true
+                            } else {
+                                _draft.value = outcome.draft
+                                draftDirty = false
+                            }
+                        }
+                        is ForeignStudioEditHistoryCustody.Outcome.Unproved -> Unit
+                    }
                 }
             }
+            if (outcome is ForeignStudioEditHistoryCustody.Outcome.Unproved && outcome.failure !== error) error.addSuppressed(outcome.failure)
             throw error
         }
     }

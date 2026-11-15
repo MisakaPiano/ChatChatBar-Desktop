@@ -175,6 +175,15 @@ object AiBackgroundWorkManager {
 
     private val lock = Any()
     private var activeCount = 0
+    private var lanSyncMaintenance = false
+
+    suspend fun <T> withLanSyncMaintenance(work: suspend () -> T): T {
+        synchronized(lock) {
+            check(activeCount == 0 && !lanSyncMaintenance) { "SYNC_BACKGROUND_WORK_BUSY" }
+            lanSyncMaintenance = true
+        }
+        try { return work() } finally { synchronized(lock) { lanSyncMaintenance = false } }
+    }
     private var nextGeneration = 0L
     private var currentLease: ForegroundLease? = null
     private val releasingLeases = mutableMapOf<Long, ForegroundLease>()
@@ -204,6 +213,7 @@ object AiBackgroundWorkManager {
         val lease: ForegroundLease
         val firstLease: Boolean
         synchronized(lock) {
+            check(!lanSyncMaintenance) { "SYNC_MAINTENANCE" }
             lease = if (activeCount == 0) {
                 val protection = ProtectionSignal()
                 ForegroundLease(

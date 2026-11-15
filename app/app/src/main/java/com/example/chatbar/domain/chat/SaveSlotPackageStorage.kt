@@ -1,3 +1,5 @@
+@file:JvmName("AndroidSaveSlotPackageStorageKt")
+
 package com.example.chatbar.domain.chat
 
 import android.content.Context

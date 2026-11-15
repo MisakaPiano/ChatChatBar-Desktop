@@ -30,9 +30,10 @@ internal class DesktopUpdateNotices(
     private val hints: DesktopUpdateNoticeHints?,
     private val startupAllowed: Boolean,
     private val startupQuery: (suspend () -> DesktopUpdateResult)? = null,
+    private val disabledReason: String? = null,
     private val query: suspend (Boolean) -> DesktopUpdateResult,
 ) {
-    private val mutable = MutableStateFlow(DesktopUpdateNoticeState())
+    private val mutable = MutableStateFlow(DesktopUpdateNoticeState(error = disabledReason))
     val state = mutable.asStateFlow()
     private var startupChecked = false
     private var closed = false
@@ -56,6 +57,10 @@ internal class DesktopUpdateNotices(
     }
 
     fun check(startup: Boolean = false): Job? {
+        if (disabledReason != null) {
+            mutable.value = mutable.value.copy(error = disabledReason, result = null, pendingVersion = null)
+            return null
+        }
         if (closed || mutable.value.busy) return work
         val previews = mutable.value.includePreview
         mutable.value = mutable.value.copy(busy = true, result = null, error = null, showStartupNotice = false)

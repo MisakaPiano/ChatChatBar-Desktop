@@ -122,13 +122,16 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val modalActivity = remember { DesktopModalActivity() }
                         val updateNotices = remember {
                             val identity = DesktopBuildIdentity.load()
+                            val lanPreview = identity.version.substringAfter('-', "").startsWith("lan.")
                             val checker = DesktopUpdateChecker(proxySettings = updateProxySettings)
                             DesktopUpdateNotices(applicationScope, identity.version,
                                 System.getenv("LOCALAPPDATA")?.let { DesktopUpdateNoticeHints(java.nio.file.Path.of(it).resolve("ChatChatBarDesktopUpdates")) },
-                                startupAllowed = System.getProperty("jpackage.app-path") != null,
-                                startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null) { previews ->
+                                startupAllowed = !lanPreview && System.getProperty("jpackage.app-path") != null,
+                                startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null,
+                                disabledReason = if (lanPreview) "局域网预览包独立交付，不连接公开更新通道；后续包从当前对话领取。" else null,
+                                query = { previews ->
                                 checker.check(identity.version, previews)
-                            }
+                            })
                         }
                         DisposableEffect(updateNotices) { onDispose { updateNotices.close() } }
                         val backupSettingsController = remember { DesktopAutomaticBackupSettingsController(appContainer.automaticBackupRuntime, applicationScope) }
@@ -213,6 +216,22 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 dialogOwner.attach(window)
                                 onDispose { dialogOwner.detach(window) }
                             }
+                            DisposableEffect(window, appContainer) {
+                                val focus = DesktopLanSyncManagementFocus(window, appContainer::lockLanSyncGroupManagement)
+                                val wake = object : java.awt.event.WindowAdapter() {
+                                    override fun windowGainedFocus(event: java.awt.event.WindowEvent) { appContainer.onLanSyncForeground() }
+                                    override fun windowDeiconified(event: java.awt.event.WindowEvent) { appContainer.onLanSyncForeground() }
+                                }
+                                window.addWindowFocusListener(wake); window.addWindowListener(wake)
+                                onDispose {
+                                    window.removeWindowFocusListener(wake); window.removeWindowListener(wake)
+                                    focus.close(); appContainer.lockLanSyncGroupManagement()
+                                }
+                            }
+                            LaunchedEffect(trayState.windowVisible) {
+                                if (!trayState.windowVisible) appContainer.lockLanSyncGroupManagement()
+                                else appContainer.onLanSyncForeground()
+                            }
                             val systemDark = isSystemInDarkTheme()
                             val palette = remember(appearance.themeMode, appearance.themeColor, appearance.colorStyle, systemDark) {
                                 desktopSemanticColors(appearance.themeMode, appearance.themeColor, systemDark, appearance.colorStyle)
@@ -258,6 +277,10 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     providerUsage = appContainer.providerUsage,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
+                                    lanSyncGroup = appContainer.lanSyncGroupCoordinator,
+                                    legacyLanSync = { appContainer.lanSync },
+                                    hasLanSyncGroupEvidence = appContainer::hasLanSyncGroupEvidence,
+                                    lanSyncFilePicker = pickers.files,
                                     externalImportController = externalImports,
                                     taskCenter = appContainer.taskCenter,
                                     taskTray = tray,
@@ -275,7 +298,11 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                     DesktopShutdownTrace.record(DesktopShutdownStage.COMPOSE_RETURNED)
                 },
                 close = {
-                    closeDesktopWithRecovery(close = { externalOwner.get()?.closeAndDrain(); appContainer.close() })
+                    closeDesktopWithRecovery(close = {
+                        closeDesktopWithLanSyncCompletionNotice(close = {
+                            externalOwner.get()?.closeAndDrain(); appContainer.close()
+                        })
+                    })
                     DesktopShutdownTrace.record(DesktopShutdownStage.CONTAINER_CLOSED)
                 },
             )
@@ -339,9 +366,45 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
     this is DesktopLifecycleCloseIncomplete || this is DesktopLifecycleCloseUnconfirmed || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
-        this is DesktopReadingPositionDrainTimeoutException ||
+        this is DesktopReadingPositionDrainTimeoutException || this is DesktopLanSyncFinalFlushTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true
+
+/** Only the completed, fully torn-down local flush may become a shutdown completion notice. */
+internal suspend fun closeDesktopWithLanSyncCompletionNotice(
+    close: suspend () -> Unit,
+    showNotice: (String) -> Unit = ::showDesktopLanSyncIncompleteNotice,
+) {
+    try { close() }
+    catch (incomplete: DesktopLanSyncFinalFlushIncompleteException) {
+        if (!incomplete.teardownCompleted || incomplete.suppressed.isNotEmpty() ||
+            incomplete.requiresDataRootOwnershipRetention()) throw incomplete
+        // Presentation failure cannot turn an already completed teardown into a live writer.
+        try { showNotice(DesktopLanSyncIncompleteNotice.message) }
+        catch (_: Throwable) { System.err.println("CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE_NOTICE_UNAVAILABLE") }
+    }
+}
+
+internal object DesktopLanSyncIncompleteNotice {
+    const val message = "本机资料已保存，设备组同步仍有待处理项目。原件和待传队列已保留，可正常退出；下次打开后查看同步状态。\n" +
+        "这不表示其他设备或云端已经收到资料。\n\nCCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE"
+}
+
+private fun showDesktopLanSyncIncompleteNotice(message: String) {
+    System.err.println("CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE")
+    if (java.awt.GraphicsEnvironment.isHeadless()) return
+    if (System.getProperty("os.name").startsWith("Windows")) {
+        val result = DesktopNativeDialogBrand.show(messageBox = {
+            com.sun.jna.Native.load("user32", StartupMessageBoxApi::class.java).MessageBoxW(null,
+                com.sun.jna.WString(message), com.sun.jna.WString("ChatChatBar — 设备组同步待处理"), 0x40)
+        })
+        check(result != 0) { "CCB_LAN_SYNC_FINAL_LOCAL_FLUSH_INCOMPLETE_NOTICE_UNAVAILABLE" }
+    } else {
+        val present = { javax.swing.JOptionPane.showMessageDialog(null, message,
+            "ChatChatBar — 设备组同步待处理", javax.swing.JOptionPane.INFORMATION_MESSAGE) }
+        if (java.awt.EventQueue.isDispatchThread()) present() else java.awt.EventQueue.invokeAndWait(present)
+    }
+}
 
 /** Diagnostic marker where the original exception supports suppression. */
 private class DesktopLifecycleCloseIncomplete : IllegalStateException("Desktop lifecycle close did not complete")

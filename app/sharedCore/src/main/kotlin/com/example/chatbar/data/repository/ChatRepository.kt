@@ -66,6 +66,8 @@ class ChatRepository internal constructor(
     val sessions: Flow<List<ChatSession>> = _sessions.asStateFlow()
 
     private var initialized = false
+    private val _lanSyncRevision = MutableStateFlow(0L)
+    val lanSyncRevision = _lanSyncRevision.asStateFlow()
     private val messageAppendMutex = Mutex()
     private val messageIndexMutex = Mutex()
     private val messageIndexes = ConcurrentHashMap<String, ChatMessageIndex>()
@@ -90,6 +92,14 @@ class ChatRepository internal constructor(
         messageIndexMutex.withDataAccess { messageIndexes.remove(sessionId) }
         refreshSessionCache()
         initialized = true
+    }
+
+    /** The LAN owner has already committed and validated the complete graph under exclusive admission. */
+    suspend fun reloadAfterLanSync() = messageAppendMutex.withDataAccess {
+        messageIndexMutex.withDataAccess { messageIndexes.clear() }
+        refreshSessionCache()
+        initialized = true
+        _lanSyncRevision.value += 1
     }
 
     // ===== 会话操作 =====

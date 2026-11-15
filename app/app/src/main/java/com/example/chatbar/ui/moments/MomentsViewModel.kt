@@ -24,6 +24,8 @@ import com.example.chatbar.domain.moment.MomentGenerationResult
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,6 +61,9 @@ data class MomentOnDemandImageUiState(
 )
 
 class MomentsViewModel : ViewModel() {
+    private fun launch(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch gateLaunch@{
+        ChatBarApp.instance.lanSyncOwner.gate.withNormalOperation { block(this@gateLaunch) }
+    }
     private val repository = ChatBarApp.instance.momentRepository
     private val characterRepository = ChatBarApp.instance.characterRepository
     private val chatRepository = ChatBarApp.instance.chatRepository
@@ -83,14 +88,14 @@ class MomentsViewModel : ViewModel() {
     }
 
     fun refresh() {
-        viewModelScope.launch {
+        launch {
             repository.initialize()
             scheduler.kick("moments-screen")
         }
     }
 
     fun toggleLike(id: String) {
-        viewModelScope.launch {
+        launch {
             repository.toggleLike(id)
         }
     }
@@ -100,7 +105,7 @@ class MomentsViewModel : ViewModel() {
         text: String,
         onResult: (String?) -> Unit
     ) {
-        viewModelScope.launch {
+        launch {
             val outcome = runCatching {
                 repository.initialize()
                 repository.updatePostText(postId, text) ?: error("朋友圈不存在")
@@ -112,7 +117,7 @@ class MomentsViewModel : ViewModel() {
     }
 
     fun deletePost(id: String) {
-        viewModelScope.launch {
+        launch {
             val deleted = repository.deletePost(id) ?: return@launch
             val imagePath = deleted.imagePath?.takeIf(String::isNotBlank) ?: return@launch
             runCatching { imageStorage.deleteIfOwned(imagePath) }
@@ -148,7 +153,7 @@ class MomentsViewModel : ViewModel() {
             onResult("主提示词不能为空")
             return
         }
-        viewModelScope.launch {
+        launch {
             val outcome = runCatching {
                 repository.initialize()
                 characterRepository.initialize()
@@ -234,7 +239,7 @@ class MomentsViewModel : ViewModel() {
             return
         }
         _onDemandImage.value = MomentOnDemandImageUiState(phase = MomentOnDemandImagePhase.DESIGNING)
-        viewModelScope.launch {
+        launch {
             val outcome = runCatching {
                 repository.initialize()
                 characterRepository.initialize()
@@ -392,7 +397,7 @@ class MomentsViewModel : ViewModel() {
 
     fun retryPlaceholder(id: String) {
         if (_retryStates.value[id]?.isRunning == true) return
-        viewModelScope.launch {
+        launch {
             setRetryState(id, MomentRetryUiState(isRunning = true, phaseLabel = "准备重新生成"))
             val outcome = runCatching {
                 repository.initialize()
@@ -527,7 +532,7 @@ class MomentsViewModel : ViewModel() {
         target: CharacterCardImageTarget,
         onResult: (Boolean, String) -> Unit
     ) {
-        viewModelScope.launch {
+        launch {
             runCatching {
                 CharacterCardImageUpdater.replace(
                     context = ChatBarApp.instance,

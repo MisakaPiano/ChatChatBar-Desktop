@@ -108,6 +108,11 @@ class SettingsRepository(
 
     suspend fun getPlayerSetting(): PlayerSetting = withDataAccess { getPlayerSettingLocked() }
 
+    /** Sync refreshes only portable player content, without hydrating/migrating account settings. */
+    suspend fun refreshPlayerSettingFromStorage() = withDataAccess {
+        _playerSetting.value = storage.loadSingleton(PLAYER_SETTING_TYPE, PlayerSetting.serializer()) ?: PlayerSetting()
+    }
+
     private suspend fun getPlayerSettingLocked(): PlayerSetting {
         return storage.loadSingleton(PLAYER_SETTING_TYPE, PlayerSetting.serializer())
             ?: PlayerSetting().also { savePlayerSettingLocked(it) }

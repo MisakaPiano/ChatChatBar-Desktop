@@ -6,6 +6,15 @@ plugins {
   alias(libs.plugins.kotlin.serialization)
 }
 
+// Explicitly isolated successor series. No arbitrary package name, label or version is accepted.
+val lanSyncPreviewSeries = providers.gradleProperty("lanSyncPreviewSeries").orNull
+val lanSyncPreviewCodeRaw = providers.gradleProperty("lanSyncPreviewCode").orNull
+require((lanSyncPreviewSeries == null) == (lanSyncPreviewCodeRaw == null)) { "LAN_PREVIEW_SERIES_AND_CODE_REQUIRED" }
+val lanSyncPreviewCode = lanSyncPreviewCodeRaw?.let { raw ->
+    require(lanSyncPreviewSeries == "next" && raw in setOf("81", "82", "83", "84", "85")) { "LAN_PREVIEW_SERIES_OR_CODE_INVALID" }
+    raw.toInt()
+}
+
 android {
     namespace = "com.example.chatbar"
     compileSdk = 36
@@ -20,6 +29,7 @@ android {
         releaseKeyPassword.isPresent
 
     defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         applicationId = "com.example.chatbar"
         minSdk = 26
         targetSdk = 36
@@ -88,6 +98,14 @@ android {
     }
 
     buildTypes {
+        create("lanPreview") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = if (lanSyncPreviewCode == null) ".lansync" else ".lansyncnext"
+            versionNameSuffix = if (lanSyncPreviewCode == null) "-lan-preview" else "-lan-preview.2"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("debug")
+            resValue("string", "app_name", if (lanSyncPreviewCode == null) "CCB 局域网预览" else "CCB 局域网预览 2")
+        }
         release {
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
@@ -96,12 +114,14 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    if (providers.gradleProperty("lanSyncDeviceTests").orNull == "true") testBuildType = "lanPreview"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
+        resValues = true
       compose = true
       aidl = false
       buildConfig = true
@@ -111,11 +131,25 @@ android {
     packaging {
       resources {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        // BC1.86's three JARs share this license; retain all license bytes in the APK.
+        merges += "META-INF/LICENSE.md"
+        // Exact duplicate OSGi/JAR-signature metadata is not an Android runtime resource.
+        excludes += setOf("META-INF/versions/9/OSGI-INF/MANIFEST.MF", "META-INF/BCRSA204.SF", "META-INF/BCRSA204.RSA")
       }
     }
 
     sourceSets.getByName("androidTest") {
+        kotlin.directories += rootProject.file("../tools/lan-sync/fixtures").absolutePath
         assets.srcDir(rootProject.file("interop-fixtures/phase3f"))
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("lanPreview")) { variant ->
+        lanSyncPreviewCode?.let { code -> variant.outputs.forEach { output ->
+            output.versionCode.set(code)
+            output.versionName.set("1.4.1-lan-preview.2.$code")
+        } }
     }
 }
 
@@ -130,7 +164,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
   implementation(project(":sharedCore"))
+  implementation("com.google.crypto.tink:tink-android:1.23.0")
   coreLibraryDesugaring(libs.desugar.jdk.libs)
   val composeBom = platform(libs.androidx.compose.bom)
   implementation(composeBom)

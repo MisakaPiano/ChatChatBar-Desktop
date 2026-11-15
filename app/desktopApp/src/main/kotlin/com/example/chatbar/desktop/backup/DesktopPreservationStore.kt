@@ -64,7 +64,7 @@ internal object DesktopPreservationStore {
             val id = value.getValue("id").jsonPrimitive.also { check(it.isString && it.content.isNotBlank()) }.content
             check(logicalIds.add(type to id)) { "PRESERVATION_DUPLICATE_ID" }
             if (type == "moment_tasks") {
-                val task = backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
+                val task = DesktopMomentBackupExtension.taskSnapshot(value.jsonObject)
                 // No Task is ever registered; a dangling non-null post cannot be called a complete graph.
                 check(task.postId == null || task.postId in postIds) { "PRESERVATION_TASK_POST_MISSING" }
             }
@@ -163,7 +163,7 @@ internal object DesktopPreservationStore {
                 check(post.id == record.id); posts[record.sourcePath] = post
                 postReferences[record.sourcePath] = DesktopMomentBackupExtension.references(value)
             } else {
-                val task = backupJson.decodeFromString(MomentTaskSnapshot.serializer(), writer.toString())
+                val task = DesktopMomentBackupExtension.taskSnapshot(backupJson.parseToJsonElement(writer.toString()).jsonObject)
                 check(task.id == record.id); tasks += task
             }
         }
