@@ -1,4 +1,4 @@
-"""Isolated cloud-only V5/e606 -> LAN6/c30 Program swap + real group component.
+"""Isolated cloud-only V5/e606 -> LAN6/5c90 Program swap + real group component.
 
 All package/provenance/ZIP/data/native-window work remains in the pinned owners.
 The companion is compiled in separate fixed source worktrees, never the originals.
@@ -21,8 +21,8 @@ import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 OLD = 'e606bf2a2723fbc896323a8071cfd52dde99a4c6'
-NEW = 'c30db003b4e14f355673f7e724d488a9a598662e'
-BUILD_CONTROL = '6fca2430444afbc51bc8645c42b7b1e19f3971d6'
+NEW = '5c906e6d4a0f31a114326e35a331c4af4dfa6379'
+BUILD_CONTROL = '1964d3c932127d307ead1586adbd81e06419eb9d'
 ORDER = ('contract', 'desktop_control', 'prove_desktop_lan3_lan4', 'desktop_lan5_control',
          'desktop_lan6_control', 'instrumentation_report', 'group_ui_control', 'desktop_group_ui_control')
 HELPERS = {
@@ -37,7 +37,7 @@ HELPERS = {
 }
 LEGACY_SHA = 'a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce'
 FIXTURE = HERE / 'fixtures/DesktopGroupRetainedUpgradeControlTest.kt'
-FIXTURE_SHA = 'b4fc5d4b464c36fed6acc5d1217de5768eb656953e75b8495af2afbc9612dd5d'
+FIXTURE_SHA = '089834f034fce8f67b94f823c8802392891a30abf77455fc27487fc28cb99a9f'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupRetainedUpgradeControlTest'
 METHOD = 'seedOrVerifyRealGroupInRetainedIndependentUserData'
 TARGET = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupRetainedUpgradeControlTest.kt'
@@ -58,8 +58,8 @@ PUBLIC_KEYS = {
     'protectedBytesRetained', 'observerProtectedBytesUnchangedOnClose', 'componentPaused', 'durablePauseClaimed',
     'closeNoticeCount', 'recoveryInputUsedByVerifier', 'networkDeliveryVerified', 'defaultCredentialReadBack',
 }
-READING_POSITION_RULE = 'EXACT_E606_C30_SCROLL_CLOSURE_OBSERVED_OLD_CAPTURED_AT_ONLY'
-READING_POSITION_BINDINGS = {'baseSourceSha': 'e606bf2a2723fbc896323a8071cfd52dde99a4c6', 'candidateSourceSha': 'c30db003b4e14f355673f7e724d488a9a598662e', 'files': [{'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt', 'baseSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0', 'candidateSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0'}, {'path': 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt', 'baseSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3', 'candidateSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3'}, {'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt', 'baseSha256': '42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c', 'candidateSha256': 'd015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388'}]}
+READING_POSITION_RULE = 'EXACT_E606_5C90_SCROLL_CLOSURE_OBSERVED_OLD_CAPTURED_AT_ONLY'
+READING_POSITION_BINDINGS = {'baseSourceSha': 'e606bf2a2723fbc896323a8071cfd52dde99a4c6', 'candidateSourceSha': '5c906e6d4a0f31a114326e35a331c4af4dfa6379', 'files': [{'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt', 'baseSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0', 'candidateSha256': 'b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0'}, {'path': 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt', 'baseSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3', 'candidateSha256': '52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3'}, {'path': 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt', 'baseSha256': '42929816696f7dda930fcee534a1eb26a485fdc94fcae1ca1ea96d50cec49a1c', 'candidateSha256': 'd015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388'}]}
 
 
 def reading_position_equivalence_enabled(request):
@@ -479,8 +479,8 @@ def validate_request(base, request):
     base.validate_upgrade(request)
     require(type(request['format']) is int, 'INTEGER_FORMAT_REQUIRED')
     require(request['packages'][0]['sourceSha'] == OLD and request['packages'][1]['sourceSha'] == NEW,
-            'EXACT_E606_TO_C30_REQUIRED')
-    require(request['packages'][1]['controlSha'] == BUILD_CONTROL, 'EXACT_C30_BUILD_CONTROL_REQUIRED')
+            'EXACT_E606_TO_5C90_REQUIRED')
+    require(request['packages'][1]['controlSha'] == BUILD_CONTROL, 'EXACT_5C90_BUILD_CONTROL_REQUIRED')
     return request
 
 
@@ -721,10 +721,10 @@ def owned_window_projection(native, legacy, ids):
         return value
 
 
-NOTICE_CLOSE_SOURCE = 'c30db003b4e14f355673f7e724d488a9a598662e'
+NOTICE_CLOSE_SOURCE = '5c906e6d4a0f31a114326e35a331c4af4dfa6379'
 NOTICE_CLOSE_MAIN_SHA256 = 'cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a'
 NOTICE_CLOSE_STAGES = frozenset({'lan6-upgraded', 'lan6-cold-reopen'})
-NOTICE_CLOSE_POLICY = 'ONE_EXACT_C30_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE'
+NOTICE_CLOSE_POLICY = 'ONE_EXACT_5C90_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE'
 
 
 class OriginalCloseUser32:
@@ -937,7 +937,7 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
     original_retained_entities = native.retained_entities
     equivalence_active = equivalence_request is not None and reading_position_equivalence_enabled(equivalence_request)
     if equivalence_request is not None:
-        require(equivalence_active, 'EXACT_C30_SCROLL_CLOSURE_REQUIRED')
+        require(equivalence_active, 'EXACT_5C90_SCROLL_CLOSURE_REQUIRED')
     timestamp_attempts = 0
     timestamp_completed = 0
     main_stages = []
@@ -1122,7 +1122,7 @@ def command(*argv):
 
 def make_worktrees(root, private):
     sources = {}
-    for sha, leaf in ((OLD, 'source-old-e606'), (NEW, 'source-new-c30')):
+    for sha, leaf in ((OLD, 'source-old-e606'), (NEW, 'source-new-5c90')):
         source = private / leaf
         require(not source.exists(), 'NEW_SOURCE_WORKTREE_REQUIRED')
         command('git', '-C', str(root), 'worktree', 'add', '--detach', str(source), sha)
