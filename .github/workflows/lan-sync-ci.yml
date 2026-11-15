@@ -199,6 +199,10 @@ jobs:
               echo "Baseline78 retains 682 shared cases / 681 passed / 1 failed; separate 44-case shared focus retains 43 passed / 1 failed"
               echo "Existing AndroidLanSyncCloudWorkTest is a separate unit gate, not 43 Android cases"
               ;;
+            cloud-recovery-owner)
+              echo "FOCUS CloudRecoveryOwnerTest and CloudRecoverySourceTest; exact7ce full689PASS remains historical"
+              echo "Existing Android compilation and AndroidLanSyncCloudWorkTest gate retained"
+              ;;
             *) echo "ANDROID_TEST_SCOPE_INVALID"; exit 1 ;;
           esac
       - uses: actions/setup-java@v4
@@ -221,6 +225,12 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.FileRecoveryOwnerTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
+      - name: FOCUS CloudRecoveryOwnerTest and CloudRecoverySourceTest and Android compilation
+        if: needs.proof_scope.outputs.android_mode == 'cloud-recovery-owner'
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRecoveryOwnerTest' --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRecoverySourceTest' :app:compileLanPreviewKotlin :app:assembleLanPreview :app:compileLanPreviewAndroidTestKotlin :app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true --continue --no-daemon --stacktrace
       - name: Locate failed synthetic shared cases
         if: always()
         working-directory: app

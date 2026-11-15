@@ -10,10 +10,13 @@ import java.net.Proxy
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.AbstractExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -22,6 +25,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.*
 import okhttp3.Credentials
+import okhttp3.ConnectionPool
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -30,6 +35,24 @@ import kotlin.test.*
 
 /** Actual temporary owner lifecycle over private synthetic HTTP; no real provider or daily root. */
 class LanSyncGroupCloudRecoveryOwnerTest {
+    private class ClientCloseProbe(blocked: Boolean = true, private val fail: Boolean = false) : AbstractExecutorService() {
+        private val delegate = Executors.newCachedThreadPool()
+        val entered = CountDownLatch(1)
+        val proceed = CountDownLatch(if (blocked) 1 else 0)
+        val thread = AtomicReference<Thread>()
+        val calls = AtomicInteger()
+        override fun shutdown() {
+            calls.incrementAndGet(); thread.set(Thread.currentThread()); delegate.shutdown(); entered.countDown()
+            check(proceed.await(5, TimeUnit.SECONDS)) { "SYNTHETIC_CLOSE_NOT_RELEASED" }
+            if (fail) error("SYNTHETIC_CLIENT_CLOSE_FAILURE")
+        }
+        override fun shutdownNow(): MutableList<Runnable> = delegate.shutdownNow()
+        override fun isShutdown() = delegate.isShutdown
+        override fun isTerminated() = delegate.isTerminated
+        override fun awaitTermination(timeout: Long, unit: TimeUnit) = delegate.awaitTermination(timeout, unit)
+        override fun execute(command: Runnable) = delegate.execute(command)
+    }
+
     private class Fixture(val shared: WeakFixture, https: Boolean = false) {
         private val httpsIdentity = if (https) LanSyncTlsIdentity.create() else null
         private val httpsServer = httpsIdentity?.let { identity -> MockWebServer().apply {
@@ -110,13 +133,15 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         fun owner(networkAllowed: () -> Boolean = { true },
             cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
             clockMillis: () -> Long = { System.nanoTime() / 1_000_000L }, observe: (String) -> Unit = {},
-            afterReady: suspend (LanSyncGroupRuntimeAccess) -> Unit = {}): LanSyncGroupCloudRecoveryOwner =
+            afterReady: suspend (LanSyncGroupRuntimeAccess) -> Unit = {},
+            ownedClient: OkHttpClient? = null): LanSyncGroupCloudRecoveryOwner =
             LanSyncGroupCloudRecoveryOwner(root = {
                 roots.incrementAndGet(); Files.createDirectories(recoveryRoot)
             }, joining = ::joining, deviceName = "synthetic restored daily device",
                 beforeSetup = { beforeSetupCalls.incrementAndGet() }, networkAllowed = networkAllowed, cloudWork = cloudWork,
-                onReady = { value -> onReady(value); afterReady(value); readyCalls.incrementAndGet(); ready.complete(value) }, client = client,
-                endpointPolicy = WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, clockMillis = clockMillis, observe = observe).also(owners::add)
+                onReady = { value -> onReady(value); afterReady(value); readyCalls.incrementAndGet(); ready.complete(value) }, client = ownedClient ?: client,
+                endpointPolicy = WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, clockMillis = clockMillis, observe = observe,
+                ownsClient = ownedClient != null).also(owners::add)
         fun fileOwner() = LanSyncGroupFileRecoveryOwner(root = {
             roots.incrementAndGet(); Files.createDirectories(recoveryRoot)
         }, joining = ::joining, deviceName = "synthetic restored daily device",
@@ -904,5 +929,92 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         assertEquals(0, f.readyCalls.get()); f.assertNoDailyActivation()
         assertFalse(Files.exists(f.dailyRoot.resolve("joining/profile.protected")))
         assertEquals(f.originalLedger, f.original.custody().ledger().current())
+    }
+
+    @Test fun hidingAnIdleOwnedHttpsReviewInvalidatesImmediatelyAndBothDrainsJoinItsIoDisposal() = fixture(https = true) { f ->
+        f.publishCloud()
+        val probe = ClientCloseProbe()
+        val client = f.client.newBuilder().dispatcher(Dispatcher(probe)).connectionPool(ConnectionPool()).build()
+        val owner = f.owner(ownedClient = client)
+        val ui = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        try {
+            val review = prepareReview(f, owner)
+            owner.drain()
+            assertTrue(client.connectionPool.idleConnectionCount() > 0)
+            var caller: Thread? = null
+            withContext(ui) {
+                caller = Thread.currentThread(); owner.hide()
+                assertFalse(owner.state.value.visible); assertFalse(owner.state.value.busy)
+                assertNull(owner.state.value.review)
+                owner.confirm(review.binding)
+                assertFalse(owner.state.value.complete)
+            }
+            withContext(Dispatchers.IO) { assertTrue(probe.entered.await(5, TimeUnit.SECONDS)) }
+            assertNotEquals(caller, probe.thread.get())
+            coroutineScope {
+                val drained = async(start = CoroutineStart.UNDISPATCHED) { owner.drain() }
+                val closed = async(start = CoroutineStart.UNDISPATCHED) { owner.closeAndDrain() }
+                assertFalse(drained.isCompleted); assertFalse(closed.isCompleted)
+                probe.proceed.countDown()
+                withTimeout(5_000) { drained.await(); closed.await() }
+            }
+            assertEquals(1, probe.calls.get()); assertEquals(0, client.connectionPool.connectionCount())
+            assertEquals(0, f.readyCalls.get()); f.assertNoDailyActivation()
+        } finally { probe.proceed.countDown(); ui.close(); probe.shutdownNow(); client.connectionPool.evictAll() }
+    }
+
+    @Test fun ownedClientDisposalFailureStillEvictsTlsAndIsReportedByDrainAndClose() = fixture(https = true) { f ->
+        f.publishCloud()
+        val probe = ClientCloseProbe(blocked = false, fail = true)
+        val client = f.client.newBuilder().dispatcher(Dispatcher(probe)).connectionPool(ConnectionPool()).build()
+        val owner = f.owner(ownedClient = client)
+        try {
+            prepareReview(f, owner); owner.drain()
+            assertTrue(client.connectionPool.idleConnectionCount() > 0)
+            owner.lock()
+            val failure = assertFailsWith<IllegalStateException> { withTimeout(5_000) { owner.drain() } }
+            assertEquals("SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING", failure.message)
+            assertTrue(failure.suppressed.any { it.message == "SYNTHETIC_CLIENT_CLOSE_FAILURE" })
+            assertEquals(0, client.connectionPool.connectionCount())
+            assertEquals("SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING", assertFailsWith<IllegalStateException> {
+                withTimeout(5_000) { owner.closeAndDrain() }
+            }.message)
+            assertEquals(1, probe.calls.get()); assertEquals(0, f.readyCalls.get()); f.assertNoDailyActivation()
+        } finally {
+            try {
+                try { owner.closeAndDrain() } catch (failure: IllegalStateException) {
+                    if (failure.message != "SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING") throw failure
+                }
+            } finally {
+                f.owners.remove(owner) // Even an earlier assertion failure must terminate this owner.
+                probe.shutdownNow(); client.connectionPool.evictAll()
+            }
+        }
+    }
+
+    @Test fun stoppingAnOwnedStalledHttpSessionCancelsWorkBeforeClientDisposalAndDoesNotPublishLateReview() = fixture { f ->
+        f.publishCloud()
+        val entered = CountDownLatch(1); val stalled = AtomicBoolean(); val workExited = AtomicBoolean()
+        f.shared.dav.overrideRequest = { request ->
+            if (request.method == "PROPFIND" && stalled.compareAndSet(false, true)) {
+                entered.countDown(); MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)
+            } else null
+        }
+        val probe = ClientCloseProbe()
+        val client = f.client.newBuilder().dispatcher(Dispatcher(probe)).connectionPool(ConnectionPool()).build()
+        val owner = f.owner(ownedClient = client, cloudWork = { work -> try { work() } finally { workExited.set(true) } })
+        try {
+            owner.open()
+            val secret = f.password.toByteArray()
+            try { owner.prepare(f.draft(secret), f.original.code) } finally { secret.fill(0) }
+            withContext(Dispatchers.IO) { assertTrue(entered.await(5, TimeUnit.SECONDS)) }
+            owner.lock()
+            withContext(Dispatchers.IO) { assertTrue(probe.entered.await(5, TimeUnit.SECONDS)) }
+            assertTrue(workExited.get())
+            assertFalse(owner.state.value.visible); assertNull(owner.state.value.review); assertFalse(owner.state.value.complete)
+            probe.proceed.countDown()
+            withTimeout(5_000) { owner.drain() }
+            assertEquals(1, probe.calls.get()); assertEquals(0, f.readyCalls.get()); f.assertNoDailyActivation()
+        } finally { probe.proceed.countDown(); probe.shutdownNow(); client.connectionPool.evictAll() }
     }
 }

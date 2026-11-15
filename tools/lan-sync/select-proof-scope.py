@@ -20,7 +20,7 @@ CLOUD_LAN = {
     "LanSyncGroupCloudSettingsState.kt", "LanSyncGroupCloudTargetReceipt.kt", "LanSyncGroupTargetExport.kt", "LanSyncGroupTargetPublication.kt",
     "LanSyncGroupPartialTargetExport.kt", "LanSyncGroupPartialTargetPublication.kt",
     "LanSyncGroupChunkCloudReadRoute.kt", "LanSyncGroupWeakCloudReadRoute.kt",
-    "LanSyncGroupCloudRecoverySource.kt", "LanSyncGroupCloudRecoveryOwner.kt", "LanSyncGroupCoordinator.kt",
+    "LanSyncGroupCloudRecoverySource.kt", "LanSyncGroupCoordinator.kt",
 }
 CLOUD_STORE = {
     "webdav/WeakWebDavAttemptStore.kt", "webdav/WeakWebDavChunkAssembly.kt", "webdav/WeakWebDavXmlListing.kt",
@@ -63,6 +63,10 @@ APP_CONTROLS = {
     "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
     "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt",
     "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataWorkspace.kt",
+} | {
+    # The four byte fixtures do not instantiate this temporary recovery UI owner.
+    # Its caller lifecycle is covered by focused recovery tests and native UI controls.
+    LAN + "LanSyncGroupCloudRecoveryOwner.kt",
 }
 COMMON_IO = {
     "LanSyncBlobs.kt", "LanSyncFramedJson.kt", "LanSyncGraphRemapper.kt", "LanSyncIdentity.kt",
@@ -231,6 +235,13 @@ ANDROID_BUILD_PATH = "app/app/build.gradle.kts"
 CONTRACT_CHECKED_FILES = CI_CONTROL_FILES | {ANDROID_BUILD_PATH}
 ANDROID_FOCUS_BASELINE = "78d399e037ae5b4f6a88e722261caba8d96ba146"
 ANDROID_FOCUS_MODE = "file-recovery-owner"
+ANDROID_CLOUD_FOCUS_BASELINE = "7ce8446b4da875aed0979c2940e5b5537b7f27a3"
+ANDROID_CLOUD_FOCUS_MODE = "cloud-recovery-owner"
+ANDROID_CLOUD_FOCUS_FILES = CI_CONTROL_FILES | {
+    LAN + "LanSyncGroupCloudRecoveryOwner.kt",
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoveryOwnerTest.kt",
+    "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoverySourceTest.kt",
+}
 ANDROID_FOCUS_FILES = CI_CONTROL_FILES | {
     LAN + "LanSyncGroupFileRecoveryOwner.kt",
     "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/FileRecoveryOwnerTest.kt",
@@ -339,16 +350,23 @@ def android_build_contract(source: str) -> str:
 def select_android_scope(git, head: str, request: object) -> AndroidScope:
     try:
         if (not isinstance(request, dict) or set(request) != {"schema", "mode", "baseline"}
-                or type(request["schema"]) is not int or request["schema"] != 1
-                or request["mode"] != ANDROID_FOCUS_MODE or request["baseline"] != ANDROID_FOCUS_BASELINE):
+                or type(request["schema"]) is not int or request["schema"] != 1):
+            return AndroidScope("full", "ANDROID_FOCUS_REQUEST_INVALID")
+        if request["mode"] == ANDROID_FOCUS_MODE and request["baseline"] == ANDROID_FOCUS_BASELINE:
+            baseline, allowed = ANDROID_FOCUS_BASELINE, ANDROID_FOCUS_FILES
+            diagnostic = "ANDROID_FOCUS_ONLY_PRIOR_FULL_SUITE_REMAINS_FAILED"
+        elif request["mode"] == ANDROID_CLOUD_FOCUS_MODE and request["baseline"] == ANDROID_CLOUD_FOCUS_BASELINE:
+            baseline, allowed = ANDROID_CLOUD_FOCUS_BASELINE, ANDROID_CLOUD_FOCUS_FILES
+            diagnostic = "ANDROID_CLOUD_RECOVERY_FOCUS_PRIOR_7CE_FULL_689_PRESERVED"
+        else:
             return AndroidScope("full", "ANDROID_FOCUS_REQUEST_INVALID")
         git.verify_head(head)
-        if not git.is_ancestor(ANDROID_FOCUS_BASELINE, head):
+        if not git.is_ancestor(baseline, head):
             return AndroidScope("full", "ANDROID_FOCUS_BASELINE_UNAVAILABLE")
-        paths = git.paths(ANDROID_FOCUS_BASELINE, head)
-        if any(path not in ANDROID_FOCUS_FILES and not (path.startswith(".agents/skills/") and path.endswith(".md")) for path in paths):
+        paths = git.paths(baseline, head)
+        if any(path not in allowed and not (path.startswith(".agents/skills/") and path.endswith(".md")) for path in paths):
             return AndroidScope("full", "ANDROID_FOCUS_OUTSIDE_ALLOWED_CHANGE_SCOPE")
-        return AndroidScope(ANDROID_FOCUS_MODE, "ANDROID_FOCUS_ONLY_PRIOR_FULL_SUITE_REMAINS_FAILED")
+        return AndroidScope(request["mode"], diagnostic)
     except Exception:
         return AndroidScope("full", "ANDROID_FOCUS_SCOPE_UNAVAILABLE")
 
@@ -603,10 +621,14 @@ def main() -> None:
                     "the retained prior 44-case shared focus result is 43 passed / 1 failed. Original failure evidence is retained.")
     if android.mode == "full":
         scope_notice = "FULL shared protocol suite and the existing Android compilation/unit gate command are required."
+    elif android.mode == ANDROID_CLOUD_FOCUS_MODE:
+        scope_notice = ("FOCUS: CloudRecoveryOwnerTest and CloudRecoverySourceTest, plus existing Android compilation/unit gate. "
+                        "The exact 7ce selected full-suite 689 PASS remains historical evidence; this is not a new full-suite result.")
     print(scope_notice)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
-            summary.write(scope_notice + "\n\nAndroid scope baseline: `" + ANDROID_FOCUS_BASELINE + "`.\n")
+            baseline = ANDROID_CLOUD_FOCUS_BASELINE if android.mode == ANDROID_CLOUD_FOCUS_MODE else ANDROID_FOCUS_BASELINE
+            summary.write(scope_notice + "\n\nAndroid scope baseline: `" + baseline + "`.\n")
     for kind in PROOF_JOBS:
         baseline = result.baselines.get(kind)
         if baseline:

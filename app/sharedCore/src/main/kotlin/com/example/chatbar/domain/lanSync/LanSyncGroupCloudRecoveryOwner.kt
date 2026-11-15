@@ -50,8 +50,8 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
         onReady: suspend (LanSyncGroupRuntimeAccess) -> Unit, client: OkHttpClient,
         endpointPolicy: WebDavEndpointPolicy, clockMillis: () -> Long = { System.nanoTime() / 1_000_000L },
-        observe: (String) -> Unit = {}) : this(root, joining, deviceName, beforeSetup, networkAllowed,
-        cloudWork, onReady, { client }, false, endpointPolicy, clockMillis, observe)
+        observe: (String) -> Unit = {}, ownsClient: Boolean = false) : this(root, joining, deviceName, beforeSetup, networkAllowed,
+        cloudWork, onReady, { client }, ownsClient, endpointPolicy, clockMillis, observe)
 
     private class Input(val name: String, val credentials: LanSyncGroupCloudCredentials, private val code: CharArray) {
         fun code() = synchronized(this) { check(code.isNotEmpty() && code.any { it != '\u0000' }); String(code) }
@@ -73,6 +73,7 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         var approval: LanSyncGroupRecoveryDevicePreview? = null
         var review: LanSyncGroupCloudRecoveryReview? = null
         var expiry: Job? = null
+        var cleanup: Job? = null // Registered only under lifecycle; retained after completion for exact-once disposal.
     }
     private sealed interface Result {
         data class Review(val value: LanSyncGroupCloudRecoveryReview, val resumed: Boolean) : Result
@@ -84,6 +85,8 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
     private val admission = Mutex()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val jobs = linkedSetOf<Job>()
+    private val cleanups = linkedSetOf<Job>()
+    private val cleanupFailures = mutableListOf<Exception>()
     private var generation = 0L
     private var closed = false
     private var session: Session? = null
@@ -104,13 +107,15 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         val next: Session
         val previous: Session?
         val pending: List<Job>
+        val cleanup: Job?
         synchronized(lifecycle) {
             if (closed) { input.close(); return }
             generation++; previous = session; pending = jobs.toList()
+            cleanup = previous?.let { cleanupJobLocked(it, pending) }
             next = Session(generation, input, clockMillis()); session = next
             mutableState.value = LanSyncGroupCloudRecoveryState(visible = true, busy = true, status = "正在读取并核验原设备组")
         }
-        release(previous); pending.forEach { it.cancel() }
+        releaseAndCancel(previous, pending, cleanup)
         val expiry = scope.launch(start = CoroutineStart.LAZY) { delay(LIFETIME_MILLIS); expire(next) }
         synchronized(lifecycle) { if (session === next && !closed) next.expiry = expiry else expiry.cancel() }
         expiry.start()
@@ -158,25 +163,59 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         reviewOnly: Boolean = false) {
         val previous: Session?
         val pending: List<Job>
+        val cleanup: Job?
         synchronized(lifecycle) {
             if (expected != null && session !== expected) return
             if (reviewOnly && session?.dataPhase == true) return
             if (terminal) closed = true
             generation++; previous = session; session = null; pending = jobs.toList()
+            cleanup = previous?.let { cleanupJobLocked(it, pending) }
             mutableState.value = LanSyncGroupCloudRecoveryState(visible = visible, status = status, error = error)
         }
-        release(previous); pending.forEach { it.cancel() }
+        releaseAndCancel(previous, pending, cleanup)
     }
 
     private fun release(value: Session?) {
         if (value == null) return
-        value.expiry?.cancel()
-        value.input.close()
-        value.transport?.close()
-        value.source?.close()
-        value.vault?.close()
-        value.manager?.lock()
-        if (ownsClient) value.client?.let { it.dispatcher.executorService.shutdown(); it.connectionPool.evictAll() }
+        // Immediate withdrawal contains only cancellation and in-memory secret/authority clearing.
+        // In particular, an idle TLS pool must never be evicted by this lifecycle caller.
+        listOf<() -> Unit>({ value.expiry?.cancel() }, { value.input.close() },
+            { value.transport?.close() }, { value.source?.close() }, { value.vault?.close() },
+            { value.manager?.lock() }).forEach(::cleanupStep)
+    }
+    private fun cleanupStep(work: () -> Unit) {
+        try { work() } catch (failure: Exception) { synchronized(lifecycle) { cleanupFailures += failure } }
+    }
+    private fun releaseAndCancel(value: Session?, pending: List<Job>, cleanup: Job?) {
+        try { release(value) } finally {
+            pending.forEach { job -> cleanupStep { job.cancel() } }
+            cleanup?.start()
+        }
+    }
+    /** Registered before releasing lifecycle, including idle review sessions with no running work. */
+    private fun cleanupJobLocked(value: Session, pending: List<Job>): Job {
+        value.cleanup?.let { return it }
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            withContext(NonCancellable + Dispatchers.IO) {
+                // Retire can be called by a work job itself. Only this separate cleanup joins it.
+                pending.joinAll()
+                cleanupStep { value.manager?.close() }
+                if (ownsClient) cleanupStep { value.client?.let(::closeClient) }
+            }
+        }
+        value.cleanup = job
+        cleanups += job
+        job.invokeOnCompletion { synchronized(lifecycle) { cleanups -= job } }
+        return job
+    }
+    /** Blocking disposal, called only on the owner's IO work/cleanup threads. */
+    private fun closeClient(client: OkHttpClient) {
+        var failure: Exception? = null
+        try { client.dispatcher.executorService.shutdown() } catch (caught: Exception) { failure = caught }
+        try { client.connectionPool.evictAll() } catch (caught: Exception) {
+            failure?.addSuppressed(caught) ?: run { failure = caught }
+        }
+        failure?.let { throw it }
     }
 
     private fun launch(value: Session, work: suspend () -> Result) {
@@ -232,9 +271,11 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         job.start()
     }
     private fun retire(value: Session) {
-        synchronized(lifecycle) { if (session === value) session = null }
-        release(value)
-        value.manager?.close()
+        val cleanup = synchronized(lifecycle) {
+            if (session === value) session = null
+            cleanupJobLocked(value, jobs.toList())
+        }
+        releaseAndCancel(value, emptyList(), cleanup)
     }
     private fun fail(value: Session, status: String, error: String) {
         synchronized(lifecycle) {
@@ -255,7 +296,13 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         try {
             synchronized(lifecycle) { checkSession(value); install(item) }
             return item
-        } catch (failure: Throwable) { dispose(item); throw failure }
+        } catch (failure: Throwable) {
+            try { dispose(item) } catch (cleanup: Exception) {
+                synchronized(lifecycle) { cleanupFailures += cleanup }
+                failure.addSuppressed(cleanup)
+            }
+            throw failure
+        }
     }
 
     private suspend fun prepareOwned(value: Session): Result {
@@ -283,7 +330,7 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         val base = runInterruptible(Dispatchers.IO) { checkSession(value); root().also { lanSyncSafe(it, true) } }
         value.root = base
         val read = runInterruptible(Dispatchers.IO) { Files.createDirectory(base.resolve("read-${value.id.value}")) }
-        val client = own(value, clientProvider(), { if (ownsClient) { it.dispatcher.executorService.shutdown(); it.connectionPool.evictAll() } }) { value.client = it }
+        val client = own(value, clientProvider(), { if (ownsClient) closeClient(it) }) { value.client = it }
         val transport = own(value, WebDavHttpTransport(value.input.credentials.endpoint.toHttpUrl(), client, {
             checkSession(value)
             value.input.credentials.withPassword { password ->
@@ -493,15 +540,18 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
 
     suspend fun drain() = withContext(NonCancellable) {
         while (true) {
-            val pending = synchronized(lifecycle) { jobs.toList() }
+            val pending = synchronized(lifecycle) { jobs.toList() + cleanups.toList() }
             if (pending.isEmpty()) break
             pending.joinAll()
+        }
+        val failures = synchronized(lifecycle) { cleanupFailures.toList() }
+        if (failures.isNotEmpty()) throw IllegalStateException("SYNC_GROUP_CLOUD_RECOVERY_CLEANUP_PENDING").also { result ->
+            failures.forEach(result::addSuppressed)
         }
     }
     suspend fun closeAndDrain() = withContext(NonCancellable) {
         invalidate(true, "恢复已关闭", null, false)
-        drain()
-        scope.coroutineContext[Job]?.cancelAndJoin()
+        try { drain() } finally { scope.coroutineContext[Job]?.cancelAndJoin() }
     }
     override fun toString() = "LanSyncGroupCloudRecoveryOwner(REDACTED)"
     companion object { private const val LIFETIME_MILLIS = 5L * 60 * 1000 }

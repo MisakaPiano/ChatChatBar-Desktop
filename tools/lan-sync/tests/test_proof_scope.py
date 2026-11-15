@@ -192,9 +192,49 @@ class ProofScopeTest(unittest.TestCase):
         self.assertEqual("file-recovery-owner", result.mode)
         self.assertEqual("ANDROID_FOCUS_ONLY_PRIOR_FULL_SUITE_REMAINS_FAILED", result.diagnostic)
         self.assertEqual([(scope.ANDROID_FOCUS_BASELINE, HEAD)], git.compared)
+        self.assertEqual("78d399e037ae5b4f6a88e722261caba8d96ba146", scope.ANDROID_FOCUS_BASELINE)
+
+    def test_fixed_cloud_recovery_focus_uses_its_exact_successful_7ce_baseline_and_fixed_request(self):
+        request = {"schema": 1, "mode": scope.ANDROID_CLOUD_FOCUS_MODE, "baseline": scope.ANDROID_CLOUD_FOCUS_BASELINE}
+        self.assertEqual("7ce8446b4da875aed0979c2940e5b5537b7f27a3", scope.ANDROID_CLOUD_FOCUS_BASELINE)
         actual = json.loads((Path(__file__).resolve().parents[3] / scope.FOCUS_REQUEST).read_text(encoding="utf-8"))
         self.assertEqual(request, actual)
-        self.assertEqual("78d399e037ae5b4f6a88e722261caba8d96ba146", scope.ANDROID_FOCUS_BASELINE)
+        paths = list(scope.ANDROID_CLOUD_FOCUS_FILES) + [".agents/skills/chatbar-lan-sync/SKILL.md"]
+        git = SyntheticGit({scope.ANDROID_CLOUD_FOCUS_BASELINE: paths}, ancestors=(scope.ANDROID_CLOUD_FOCUS_BASELINE,))
+        result = scope.select_android_scope(git, HEAD, request)
+        self.assertEqual("cloud-recovery-owner", result.mode)
+        self.assertEqual("ANDROID_CLOUD_RECOVERY_FOCUS_PRIOR_7CE_FULL_689_PRESERVED", result.diagnostic)
+        self.assertEqual([(scope.ANDROID_CLOUD_FOCUS_BASELINE, HEAD)], git.compared)
+
+    def test_cloud_recovery_focus_refuses_injected_baselines_filters_and_outside_dependencies(self):
+        valid = {"schema": 1, "mode": scope.ANDROID_CLOUD_FOCUS_MODE, "baseline": scope.ANDROID_CLOUD_FOCUS_BASELINE}
+        for request in (dict(valid, baseline=scope.ANDROID_FOCUS_BASELINE), dict(valid, schema=True), dict(valid, tests="OtherTest")):
+            self.assertEqual("full", scope.select_android_scope(SyntheticGit(), HEAD, request).mode)
+        self.assertEqual("full", scope.select_android_scope(SyntheticGit(), HEAD, valid).mode)
+        for path in (scope.LAN + "LanSyncGroupCloudRuntime.kt", scope.LAN + "LanSyncGroupCloudRecoverySource.kt",
+                     scope.STORE + "SyncGroupCustody.kt", scope.LAN + "LanSyncGroupCloudRecoveryOwnerExtra.kt"):
+            git = SyntheticGit({scope.ANDROID_CLOUD_FOCUS_BASELINE: [path]}, ancestors=(scope.ANDROID_CLOUD_FOCUS_BASELINE,))
+            self.assertEqual("full", scope.select_android_scope(git, HEAD, valid).mode)
+        git = SyntheticGit({scope.ANDROID_CLOUD_FOCUS_BASELINE: RuntimeError("synthetic")}, ancestors=(scope.ANDROID_CLOUD_FOCUS_BASELINE,))
+        self.assertEqual("full", scope.select_android_scope(git, HEAD, valid).mode)
+
+    def test_temporary_cloud_recovery_owner_reuses_all_four_unaffected_byte_proofs_only(self):
+        owner = scope.LAN + "LanSyncGroupCloudRecoveryOwner.kt"
+        paths = [owner, "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCloudRecoveryOwnerTest.kt",
+                 ".agents/skills/chatbar-lan-sync/SKILL.md"]
+        proof, _ = self.control_scope(paths)
+        self.assertEqual(dict.fromkeys(scope.PROOF_JOBS, False), proof.required)
+        for neighbor in (scope.LAN + "LanSyncGroupCloudRuntime.kt", scope.LAN + "LanSyncGroupCloudRecoverySource.kt",
+                         scope.STORE + "SyncGroupCustody.kt", scope.LAN + "UnknownRecovery.kt"):
+            mixed, _ = self.control_scope(paths + [neighbor])
+            self.assertTrue(any(mixed.required.values()), neighbor)
+
+    def test_android_cloud_recovery_arm_does_not_change_any_large_execution_contract(self):
+        source = (Path(__file__).resolve().parents[3] / scope.WORKFLOW_PATH).read_text(encoding="utf-8")
+        changed = source.replace("FOCUS CloudRecoveryOwnerTest and CloudRecoverySourceTest; exact7ce", "Scoped recovery caller validation; exact7ce")
+        self.assertNotEqual(source, changed)
+        for kind in scope.PROOF_JOBS:
+            self.assertEqual(scope.workflow_proof_contract(source, kind), scope.workflow_proof_contract(changed, kind))
 
     def test_focus_unknown_source_build_or_test_changes_and_nonancestry_require_the_full_suite(self):
         request = {"schema": 1, "mode": scope.ANDROID_FOCUS_MODE, "baseline": scope.ANDROID_FOCUS_BASELINE}
@@ -547,7 +587,10 @@ class ProofScopeTest(unittest.TestCase):
         self.assertIn("--tests 'com.example.chatbar.domain.lanSync.FileRecoveryOwnerTest'", android)
         for command in (":app:compileLanPreviewKotlin", ":app:assembleLanPreview", ":app:compileLanPreviewAndroidTestKotlin",
                         ":app:testLanPreviewUnitTest --tests 'com.example.chatbar.lanSync.AndroidLanSyncCloudWorkTest' -PlanSyncDeviceTests=true"):
-            self.assertEqual(2, android.count(command), command)
+            self.assertEqual(3, android.count(command), command)
+        self.assertIn("--tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRecoveryOwnerTest'", android)
+        self.assertIn("--tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRecoverySourceTest'", android)
+        self.assertIn("ANDROID_TEST_SCOPE_INVALID", android)
         self.assertNotRegex(android, r"--tests\s+['\"]?\$[({]")
 
     def test_cloud_and_file_live_logging_is_exactly_scoped_and_preserves_failure_and_timeout_contracts(self):
