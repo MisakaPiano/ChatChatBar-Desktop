@@ -150,20 +150,26 @@ class DesktopGroupRetainedUpgradeControlTest {
                         check(profile.device == access.device)
                         // Public certificate bytes are already validated by the actual enrollment/runtime owners.
                         // Compare their SHA256 fingerprints; do not reach sharedCore's internal decode API.
+                        phase = "READ_REAL_CERTIFICATE_FINGERPRINTS"
                         val rootFingerprint = sha(Base64.getDecoder().decode(access.trust.ownerCertificate))
                         val dailyFingerprint = sha(Base64.getDecoder().decode(access.certificate))
                         check(dailyFingerprint == access.device && rootFingerprint != access.device)
+                        phase = "READ_REAL_LEDGER_MEMBERSHIP"
                         val ledger = access.ledger().current()
                         check(ledger.members[access.device]?.active == true && ledger.members[access.device]?.certificate == access.certificate)
+                        phase = "READ_REAL_AUTHOR_JOURNAL"
                         val author = SyncAuthorJournal(sync.resolve("group-profile/node/author"), access.trust,
                             access.certificate, protector::protect, protector::unprotect).state()
                         check(author.committedSequence == 1L && author.pendingApproved == null)
                         val version = checkNotNull(author.last).version
                         check(version.author == access.device && version.group == access.trust.group)
+                        phase = "INSPECT_NATIVE_WITHOUT_RECOVERY"
                         val view = access.node.inspectLocal(recoverNative = false)
+                        phase = "VERIFY_RETAINED_NATIVE_STATE"
                         val native = view.nativeState
                         check(native.completedSequence == 1L && native.pendingTransaction == null && native.units.isNotEmpty())
                         check(native.units.values.any { version.reference() in it.frontiers })
+                        phase = "READ_REAL_DISABLED_CLOUD_ROUTE"
                         val rows = access.cloudRoutes().rows()
                         check(rows.size == 1 && !rows.single().enabled)
                         check(rows.single().endpoint == "https://example.invalid/ccb-retained-upgrade/")
@@ -172,9 +178,11 @@ class DesktopGroupRetainedUpgradeControlTest {
                         val routeCipher = Files.readAllBytes(routePath)
                         val routePlain = protector.unprotect(routeCipher)
                         val routePlainHash = try { sha(routePlain) } finally { routePlain.fill(0) }
+                        phase = "READ_RETAINED_DEFAULT_CREDENTIAL"
                         val credential = checkNotNull(app.desktopSecretStore.load(DesktopCredentialKey.FishAudioApiKey))
                             .toByteArray(Charsets.UTF_8)
                         val credentialHash = try { check(credential.isNotEmpty()); sha(credential) } finally { credential.fill(0) }
+                        phase = "BUILD_RETAINED_GROUP_ORACLE"
                         val graph = native.units.toSortedMap().entries.joinToString("\n") { (unit, state) ->
                             unit + ":" + (state.valueHash ?: "null") + ":" +
                                 state.frontiers.sortedWith(compareBy({ it.id.value }, { it.bodyHash }))
@@ -258,11 +266,19 @@ class DesktopGroupRetainedUpgradeControlTest {
     private fun safeFailureMarker(atPhase: String, failure: Throwable): String {
         val safeFiles = setOf("DesktopGroupRetainedUpgradeControlTest.kt", "LanSyncGroupRuntimeAccess.kt",
                 "LanSyncGroupCloudRoutes.kt", "WindowsSecretStore.kt", "DesktopSecretStore.kt",
-                "WindowsDpapiSecretProtector.kt", "DesktopAppContainer.kt", "DesktopLanSync.kt", "DesktopDataRootOwnership.kt", "StableEmptyObjectProof.java")
+                "WindowsDpapiSecretProtector.kt", "DesktopAppContainer.kt", "DesktopLanSync.kt", "DesktopDataRootOwnership.kt", "StableEmptyObjectProof.java",
+                "LanSyncGroupNode.kt", "LanSyncWorkspace.kt", "LanSyncGroupNativeApplyOwner.kt", "LanSyncGroupNativePlanner.kt", "LanSyncGroupSourceWriter.kt", "LanSyncGroupSourceReview.kt", "LanSyncGroupRecordEvidence.kt", "LanSyncGroupDependencies.kt", "LanSyncGroupMembership.kt", "LanSyncProjection.kt", "LanSyncGroupUnitCodec.kt", "LanSyncJsonFiles.kt", "LanSyncPlan.kt", "LanSyncResourceStore.kt", "LanSyncScope.kt", "LanSyncModel.kt", "SyncAuthorJournal.kt", "SyncDeviceLedger.kt", "SyncGroupInbox.kt", "SyncGroupCustody.kt", "SyncGroupObjectCodec.kt", "SyncStreamingCipher.kt", "SyncEncryptedOutbox.kt", "CiphertextStore.kt", "FileCiphertextStore.kt", "SyncCiphertextHeader.kt", "SyncDeviceSignatures.kt")
+        val safeIdentifier = Regex("[A-Za-z_][A-Za-z0-9_$]{0,159}")
+        val safeMethod = Regex("(?:<init>|<clinit>|[A-Za-z_][A-Za-z0-9_$-]{0,99})")
+        val safePackages = listOf("com.example.chatbar.desktop.", "com.example.chatbar.domain.lanSync.",
+                "com.example.chatbar.domain.syncStore.")
         val safeFrame = failure.stackTrace.firstOrNull { frame ->
-                frame.fileName?.let { it in safeFiles } == true && frame.lineNumber in 1..99999
+                frame.fileName?.let { it in safeFiles } == true && frame.lineNumber in 1..99999 &&
+                safePackages.any { frame.className.startsWith(it) } &&
+                safeIdentifier.matches(frame.className.substringAfterLast('.')) && safeMethod.matches(frame.methodName)
         }
-        val safeLocation = safeFrame?.let { ":${it.fileName}:${it.lineNumber}" } ?: ""
+        val safeLocation = safeFrame?.let { ":${it.fileName}:${it.lineNumber}" +
+                "|SOURCEFRAME|${it.className.substringAfterLast('.')}:${it.methodName}" } ?: ""
         val scan = if (atPhase == "SCAN_LIVE_USERDATA_NO_PLAINTEXT") lastScanProjection?.let { "|SCANFILE|" + it } ?: "" else ""
         return "GROUP_RETAINED_COMPONENT:" + atPhase + ":" + failure.javaClass.simpleName + safeLocation + scan
     }

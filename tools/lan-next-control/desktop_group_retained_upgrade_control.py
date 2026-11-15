@@ -37,7 +37,7 @@ HELPERS = {
 }
 LEGACY_SHA = 'a3b1db7cea226b14c872ba222607ccae5925f449de2e18521a521af61e5753ce'
 FIXTURE = HERE / 'fixtures/DesktopGroupRetainedUpgradeControlTest.kt'
-FIXTURE_SHA = '568752f3b0b392810633cd1e7cd85077acc8eea8b93f61825f46cb5fe8cab705'
+FIXTURE_SHA = '69a2810c02b432300398edc666d30b7c301944a69c3dc91d528c8c2995b2dfc3'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupRetainedUpgradeControlTest'
 METHOD = 'seedOrVerifyRealGroupInRetainedIndependentUserData'
 TARGET = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupRetainedUpgradeControlTest.kt'
@@ -122,6 +122,7 @@ SAFE_COMPONENT_PHASES = frozenset({
     'GET_REAL_DAILY_ACCESS', 'GET_DEFAULT_ACCOUNT_SECRET_STORE',
     'CLOSE_FALLBACK_APP', 'RELEASE_REAL_OWNERSHIP',
     'READ_REAL_DAILY_OWNER_NATIVE_AND_ROUTE',
+    'READ_REAL_CERTIFICATE_FINGERPRINTS', 'READ_REAL_LEDGER_MEMBERSHIP', 'READ_REAL_AUTHOR_JOURNAL', 'INSPECT_NATIVE_WITHOUT_RECOVERY', 'VERIFY_RETAINED_NATIVE_STATE', 'READ_REAL_DISABLED_CLOUD_ROUTE', 'READ_RETAINED_DEFAULT_CREDENTIAL', 'BUILD_RETAINED_GROUP_ORACLE',
     'CLOSE_REAL_APP_AND_VERIFY_OBSERVER_DID_NOT_REWRITE', 'SAFE_REPORT',
 })
 SAFE_CONTROL_CODES = frozenset({
@@ -146,9 +147,12 @@ SAFE_SOURCE_FILES = frozenset({
     'LanSyncGroupCloudRoutes.kt', 'WindowsSecretStore.kt', 'DesktopSecretStore.kt',
     'WindowsDpapiSecretProtector.kt', 'DesktopAppContainer.kt', 'DesktopLanSync.kt', 'DesktopDataRootOwnership.kt',
     'StableEmptyObjectProof.java',
+    'LanSyncGroupNode.kt', 'LanSyncWorkspace.kt', 'LanSyncGroupNativeApplyOwner.kt', 'LanSyncGroupNativePlanner.kt', 'LanSyncGroupSourceWriter.kt', 'LanSyncGroupSourceReview.kt', 'LanSyncGroupRecordEvidence.kt', 'LanSyncGroupDependencies.kt', 'LanSyncGroupMembership.kt', 'LanSyncProjection.kt', 'LanSyncGroupUnitCodec.kt', 'LanSyncJsonFiles.kt', 'LanSyncPlan.kt', 'LanSyncResourceStore.kt', 'LanSyncScope.kt', 'LanSyncModel.kt', 'SyncAuthorJournal.kt', 'SyncDeviceLedger.kt', 'SyncGroupInbox.kt', 'SyncGroupCustody.kt', 'SyncGroupObjectCodec.kt', 'SyncStreamingCipher.kt', 'SyncEncryptedOutbox.kt', 'CiphertextStore.kt', 'FileCiphertextStore.kt', 'SyncCiphertextHeader.kt', 'SyncDeviceSignatures.kt',
 })
 SAFE_MARKER = re.compile(r'GROUP_RETAINED_COMPONENT:([A-Z_]{1,80}):([A-Za-z][A-Za-z0-9_]{0,63})'
                          r'(?::([A-Za-z][A-Za-z0-9]*\.(?:kt|java)):([0-9]{1,5}))?')
+SAFE_FRAME_CLASS = re.compile(r'[A-Za-z_][A-Za-z0-9_$]{0,159}')
+SAFE_FRAME_METHOD = re.compile(r'(?:<init>|<clinit>|[A-Za-z_][A-Za-z0-9_$-]{0,99})')
 FIXTURE_BASENAME = 'DesktopGroupRetainedUpgradeControlTest.kt'
 
 
@@ -233,7 +237,10 @@ def safe_fixture_marker(text):
     if parts[0].count('|SCANFILE|') > 1:
         return None
     scan_parts = parts[0].split('|SCANFILE|', 1)
-    text = scan_parts[0]
+    if scan_parts[0].count('|SOURCEFRAME|') > 1:
+        return None
+    frame_parts = scan_parts[0].split('|SOURCEFRAME|', 1)
+    text = frame_parts[0]
     match = SAFE_MARKER.fullmatch(text)
     if match is None or match[1] not in SAFE_COMPONENT_PHASES:
         return None
@@ -242,6 +249,12 @@ def safe_fixture_marker(text):
         if match[3] not in SAFE_SOURCE_FILES or not 0 < int(match[4]) <= 99999:
             return None
         value.update(sourceFile=match[3], sourceLine=int(match[4]))
+    if len(frame_parts) == 2:
+        identifiers = frame_parts[1].split(':')
+        if (match[3] is None or len(identifiers) != 2 or
+                SAFE_FRAME_CLASS.fullmatch(identifiers[0]) is None or SAFE_FRAME_METHOD.fullmatch(identifiers[1]) is None):
+            return None
+        value.update(sourceClass=identifiers[0], sourceMethod=identifiers[1])
     if len(scan_parts) == 2:
         scan = safe_scan_projection(scan_parts[1])
         if scan is None or match[1] != 'SCAN_LIVE_USERDATA_NO_PLAINTEXT':
