@@ -1,3 +1,7 @@
+## 2026-11-15：T25第259条补root原件回执与层次指针
+
+补第259条root独立回执STUDIO_WIRE_5C90_ORIGINAL_GREEN_ROOT：相同24309B/e5effe5f原RED测试，唯一3038B/d091a2c5/5CRC、XML3bee4383，实际9P0F/E/S；6313B/e95c69ba生产StudioCurrent与前审fragment一致，仅另2skill，非native7c literal/新配套包成功/真人验收。明确层次：最新engineering5c90，最后已构pair仍C30，259观察只有Desktop43709620276/job132798127006与Android43709620308/job132798127017两新5c90构包live，旧skip0d771非live/辅助large未派。原notice/main同源绑定及完整矩阵守卫保持；未受影响35/R11/SDK/receiver按原scope复用，不改旧包标签、不重复232/GB、不唤醒其他owner或加Gate。普通1257/c615/sign38真实公开、现用runtime未新观察；旧用户PASS/Prompt/T04/暂缓/拒绝清理和1.0 ACTIVE保。A仅核既有文本回执和canonical207，没有产品/设置UI/跑测/二下/发布。
+
 ## 2026-11-15：T25范围259 同九项RED→GREEN／5c90新配套构包
 
 T25范围259：sole源码5c906e6d最小1生产StudioCurrent+2skill已落，原测试e5effe5f与815全同；run43708708883/job132795371445真实9P0FES，旧815真实7P2F保，原3038B/d091a2c5/5CRC、review2550B/756c039b已source/root核，A只核既有review不二下。DTO/globalhash/Main均同C30，合成RED→GREEN不倒填旧native7c具体literal。控制1964d3c9仅两buildrequest sourceC30→5c90，pure2validatorP后推，实际Desktop43709620276/job132798127006与Android43709620308/job132798127017在259观察为live；先前0d77171 skip-prep真0runs，未派native，不旧C30无谓重跑。Windows原owner取sole small并按实际新元数据绑定5c90 notice/readsource/fixture，保原normalclose/60秒exitlock和5Main+5component+4readonly+2retention；root取Androidraw签名/SDK和唯一full原件，不改标旧包。C30已准备pair原件保留但未交且被新构包替代，5c90正在build未交/人验/dailyinstall，V5/e606/84仍T25最后交付；未受影响35/R11/SDK/e3ae按原精确scope复用不重复232/GB。普通1257/c615+38已实际公开root回执2638B/b118014a核，T25不重复发布；公开/现用runtime/T04/T11/T23/Prompt/拒绝清理不动，独立工程继续无人工阻碍。
