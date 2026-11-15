@@ -151,6 +151,43 @@ SAFE_MARKER = re.compile(r'GROUP_RETAINED_COMPONENT:([A-Z_]{1,80}):([A-Za-z][A-Z
 FIXTURE_BASENAME = 'DesktopGroupRetainedUpgradeControlTest.kt'
 
 
+# Only fixed native-guard literal codes may leave the private original failure message.
+SAFE_NATIVE_FAILURE_CODES = frozenset({
+    'ENUM_PROCESSES', 'ROOT_LOCK_NOT_EMPTY', 'ROOT_LOCK_UNEXPECTED_ERROR',
+    'PRIOR_PROCESS_OR_ROOT_LOCK', 'LAUNCHER_FAILED', 'WINDOW_AND_ACTUAL_ROOT_LOCK_REQUIRED',
+    'NATIVE_WINDOW_OR_ROOT_LOST', 'NORMAL_CLOSE_FAILED', 'PROCESS_OR_LOCK_NOT_RELEASED',
+})
+SAFE_NATIVE_FAILURE_PHASES = frozenset({
+    'PACKAGED_MAIN_LAN5_FRESH', 'PACKAGED_MAIN_LAN5_POPULATED', 'PACKAGED_MAIN_LAN5_WARM_CONTROL',
+    'PACKAGED_MAIN_LAN6_UPGRADED', 'PACKAGED_MAIN_LAN6_COLD_REOPEN',
+})
+
+
+def safe_native_failure_code(phase, failure):
+    if type(phase) is not str or phase not in SAFE_NATIVE_FAILURE_PHASES or type(failure) is not dict or set(failure) != {'type', 'message'}:
+        return 'NOT_CLASSIFIED'
+    message = failure.get('message')
+    if type(failure.get('type')) is str and failure['type'] == 'RuntimeError' and type(message) is str and message in SAFE_NATIVE_FAILURE_CODES:
+        return message
+    return 'NOT_CLASSIFIED'
+
+
+COMPONENT_TEST_RERUN_POLICY = 'ONLY_DESKTOP_TEST_FORCED_DEPENDENCIES_MAY_BE_UP_TO_DATE'
+
+
+def component_test_rerun_command(original):
+    require(type(original) is list and all(type(item) is str for item in original), 'COMPONENT_TEST_RERUN_COMMAND_CHANGED')
+    require(original.count(':desktopApp:test') == original.count('--rerun-tasks') == original.count('--tests') ==
+            original.count('--no-build-cache') == 1 and '--rerun' not in original,
+            'COMPONENT_TEST_RERUN_COMMAND_CHANGED')
+    require(original.index('--tests') + 1 < len(original) and original[original.index('--tests') + 1] == CLASS,
+            'COMPONENT_TEST_RERUN_COMMAND_CHANGED')
+    changed = list(original)
+    changed.remove('--rerun-tasks')
+    changed.insert(changed.index(':desktopApp:test') + 1, '--rerun')
+    return changed
+
+
 def safe_failure_type(failure):
     name = type(failure).__name__
     return name if name in SAFE_PYTHON_FAILURE_TYPES else 'Exception'
@@ -534,9 +571,11 @@ class Companion:
         # Only its per-invocation environment selection uses the launcher's actual retained roots.
         prior = self.ui.isolated_environment
         prior_overlay_status = self.ui.overlay_status
+        prior_native_command = self.ui.native_command
         try:
             self.ui.isolated_environment = lambda ignored: dict(environment)
             self.ui.overlay_status = lambda checked_source, checked_request: dual_overlay_status(checked_source, checked_request, self.ui)
+            self.ui.native_command = lambda checked_source: component_test_rerun_command(prior_native_command(checked_source))
             self.ui.run(self.requests[sha], source, evidence)
         except Exception as failure:
             self.failure_diagnostic = component_failure_diagnostic(
@@ -550,6 +589,7 @@ class Companion:
         finally:
             self.ui.isolated_environment = prior
             self.ui.overlay_status = prior_overlay_status
+            self.ui.native_command = prior_native_command
         self.previous_xml[sha] = evidence / 'original-test.xml'
         raw = self.previous_xml[sha].read_bytes()
         parsed = self.ui.junit_result(raw)
@@ -569,6 +609,7 @@ class Companion:
         self.original_descriptors.append({'stage': stage, 'sourceSha': sha, 'fixtureSha256': FIXTURE_SHA,
             'controlSha': json.loads(self.templates[sha])['controlSha'],
             'emptyObjectProofJavaSha256': EMPTY_PROOF_SHA, 'javaOverlay': EMPTY_PROOF_TARGET,
+            'componentTestRerunPolicy': COMPONENT_TEST_RERUN_POLICY,
             'originalComponentJson': {'sha256': hashlib.sha256(original_report).hexdigest(), 'bytes': len(original_report)},
             'originalJUnit': {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw), **parsed},
             'originalJUnitUploaded': False, 'scope': 'real AppContainer/DPAPI component; separate from packaged Main'})
@@ -657,10 +698,14 @@ def attach_native(modules, companion, legacy_path, equivalence_request=None):
                 value.update(passed=False, failure={'phase': 'EXACT_GROUP_PHASES', 'type': 'ValueError'})
                 refused = True
             if 'failure' in value:
+                native_code = safe_native_failure_code(_phase, value['failure'])
                 value['failure'] = {'phase': _phase, 'type': value['failure'].get('type', 'Exception')}
+                if _phase in SAFE_NATIVE_FAILURE_PHASES:
+                    value['failure']['code'] = native_code
                 if getattr(companion, 'failure_diagnostic', None) is not None:
                     value['componentFailureDiagnostic'] = companion.failure_diagnostic
-            value.update(readingPositionSourceEquivalenceRule=READING_POSITION_RULE,
+            value.update(componentTestRerunPolicy=COMPONENT_TEST_RERUN_POLICY,
+                         readingPositionSourceEquivalenceRule=READING_POSITION_RULE,
                          readingPositionSourceEquivalenceActive=equivalence_active,
                          readingPositionSourceEquivalenceAttempts=timestamp_attempts,
                          readingPositionSourceEquivalenceCompleted=timestamp_completed,
@@ -759,6 +804,7 @@ def run(request_path, output, modules):
             'candidateApplicationRebuilt': False, 'testClasspathBuiltSeparately': True,
             'emptyObjectProofJavaSha256': EMPTY_PROOF_SHA, 'javaOverlay': EMPTY_PROOF_TARGET,
             'standaloneEmptyProofMainInvokedByGroup': False,
+            'componentTestRerunPolicy': COMPONENT_TEST_RERUN_POLICY,
             'readingPositionSourceEquivalenceRule': READING_POSITION_RULE,
             'wholeFileTimestampSourceIdentical': False,
             'userDataRootMoved': False, 'programOnlySwap': True, 'outsideDefaultGuardUnchanged': True,
