@@ -57,7 +57,10 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
     }
 
     fun ledger(): SyncDeviceLedger = guarded {
-        val state = read(); val ledger = build(state); advance(state, ledger)
+        val state = read(); val ledger = build(state)
+        // The locked protected read is already current; no write needs a second readback.
+        if (state.trust.checkpoint == ledger.current().reference()) return@guarded ledger
+        advance(state, ledger)
         build(read()).also { it.current() }
     }
     fun trust(): SyncGroupTrust = guarded { read().trust }

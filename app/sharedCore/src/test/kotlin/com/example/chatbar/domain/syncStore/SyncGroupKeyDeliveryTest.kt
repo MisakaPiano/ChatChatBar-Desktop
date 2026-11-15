@@ -379,7 +379,7 @@ class SyncGroupKeyDeliveryTest {
             unchanged(next.reference())
         } finally { check(root.toFile().deleteRecursively()) }
     }
-    @Test fun warmCustodyStillUnprotectsBothReadsAndRefusesMissingCorruptOrNonFileState() {
+    @Test fun warmCustodyStillUnprotectsFreshStateAndRefusesMissingCorruptOrNonFileState() {
         val group = Group(); val root = Files.createTempDirectory("synthetic-custody-live-protection").toRealPath()
         var reads = 0; var refuseAt: Int? = null
         val retained = SyncGroupCustody(root, group.key.group, group.recipient, { it.reversedArray() }, {
@@ -388,8 +388,8 @@ class SyncGroupKeyDeliveryTest {
             it.reversedArray()
         })
         retained.enroll(group.trust, listOf(group.genesis)); retained.ledger()
-        for (read in 1..2) {
-            refuseAt = reads + read
+        repeat(2) {
+            refuseAt = reads + 1
             assertEquals("SYNTHETIC_CUSTODY_LOCKED", assertFailsWith<IOException> { retained.ledger() }.message)
             refuseAt = null
             assertEquals(group.genesis.reference(), retained.ledger().current().reference())

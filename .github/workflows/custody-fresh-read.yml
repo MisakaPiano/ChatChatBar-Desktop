@@ -1,13 +1,13 @@
-name: Current custody authority fresh-read regression
+name: Fresh custody authority and affected large delivery proofs
 on:
   push:
     branches: [codex/cloud-custody-fresh-read-20261115]
 permissions:
   contents: read
 jobs:
-  custody-fresh-read:
+  authority-contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,13 +18,23 @@ jobs:
         with:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
-      - name: Execute exact fresh authority and checkpoint-readback regression
+      - name: Execute protected authority and existing application boundaries
         working-directory: app
         run: >-
           bash ./gradlew :sharedCore:test
-          --tests 'com.example.chatbar.domain.syncStore.SyncGroupKeyDeliveryTest.unchangedCustodyReadsFreshProtectedStateOnlyOncePerAuthorityCall'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublicationTest.coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.aCancelledCloudBatchDoesNotRetireAutomaticCloudWorkForLaterOrdinaryEdits'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.pauseCancelsARealStalledRequestDrainsAndAllowsAnExplicitLaterCycleWithoutResettingTheDailyOwner'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.cancellingTheCycleJobClosesItsStalledHttpBeforeJoiningTheBlockingIoChild'
+          --tests 'com.example.chatbar.domain.syncStore.SyncGroupKeyDeliveryTest'
+          --tests 'com.example.chatbar.domain.syncStore.SyncDeviceLedgerTest'
           --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
-      - name: Preserve the exact original case and counts
+      - name: Require the exact32 methods with original case counts
         if: always()
         env:
           CHECKED_HEAD: ${{ github.sha }}
@@ -33,25 +43,26 @@ jobs:
           import json, os
           from pathlib import Path
           import xml.etree.ElementTree as ET
-          name = 'com.example.chatbar.domain.syncStore.SyncGroupKeyDeliveryTest'
-          method = 'unchangedCustodyReadsFreshProtectedStateOnlyOncePerAuthorityCall'
-          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, 'problems': []}
-          path = Path('app/sharedCore/build/test-results/test/TEST-' + name + '.xml')
-          if not path.is_file():
-              result['problems'].append('MISSING_CLASS')
-          else:
+          expected = {'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest': ['coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync', 'coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake', 'aCancelledCloudBatchDoesNotRetireAutomaticCloudWorkForLaterOrdinaryEdits'], 'com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublicationTest': ['coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'], 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest': ['dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved', 'anAuthenticationBackoffDoesNotDelayTheHealthyRouteAndExplicitWakeCannotBypassIt', 'aReal503RetryAfterBlocksBothFrequentTimersAndExplicitWakeUntilItsRelativeFloor', 'pauseCancelsARealStalledRequestDrainsAndAllowsAnExplicitLaterCycleWithoutResettingTheDailyOwner', 'cancellingTheCycleJobClosesItsStalledHttpBeforeJoiningTheBlockingIoChild'], 'com.example.chatbar.domain.syncStore.SyncGroupKeyDeliveryTest': ['rootAuthenticatedDeliveryBootstrapsANewEpochOnlyAfterItsLedgerAndCanRetainHistoricalKeys', 'knownRevocationRefusesBothNewDeliveryAndPreviouslyValidTentativeKeysWithoutDiscardingThem', 'wrongRecipientObjectRootSignatureAndClaimedCommitmentRefuse', 'admittedKeyRequiresTheSameTrustAnchorAndAuthorizingAncestry', 'durableCapsuleSurvivesLostLocalAndRemoteRepliesAndReopensWithoutSigningAgain', 'rotationAndRevocationRefuseOldQueuedUploadsAndLeaveTheirEvidenceInspectable', 'malformedOversizedAndSubstitutedCapsulesRefuseBeforeAnyKeyIsAdmitted', 'protectedGroupCustodyReopensKeysAndAdvancesTheKnownCheckpointBeforeReturningAuthority', 'groupCustodyRetainsOldLocalKeysAfterRevocationAndRetainsForkEvidenceWithoutSelectingAWinner', 'failedProtectionAndWrongNativeRecipientCannotReplacePreviouslyRetainedGroupTrust', 'warmCustodyViewsStayIndependentAndObserveAnotherOwnersRevocationAndFork', 'warmCustodyViewsRetainWaitingAndRejectedEvidenceWithoutSharingCallerAdmission', 'warmCustodyCannotReuseValidationForASameBodyBadSignatureOrChangedTrustCheckpoint', 'unchangedCustodyReadsFreshProtectedStateOnlyOncePerAuthorityCall', 'warmCustodyStillUnprotectsFreshStateAndRefusesMissingCorruptOrNonFileState', 'warmCustodyCheckpointAdvanceStillAuthenticatesItsActualProtectedReadback'], 'com.example.chatbar.domain.syncStore.SyncDeviceLedgerTest': ['pinnedGenesisAndOwnerSignaturesControlOutOfOrderEnrollmentAndExistingDeviceIdentityReopens', 'revokedDeviceCannotBackdateLateVersionsWhileFencedHistoryAndActiveOfflineBranchesSurvive', 'revocationRequiresFreshEpochAndNeverReactivatesTheSameCertificateOrDropsEarlierFences', 'wrongOwnerOrGenesisAndADeviceLedgerForkCannotSilentlyChooseTrust', 'missingFenceBodiesAndForgedContentNeverBecomeImplicitAuthorization', 'anAlreadyObservedLedgerCheckpointCannotBeReplacedByAnOlderBackendView', 'recipientKeysRemainPinnedAndCoverageExpansionRetainsTheExactHistoricalScope']}
+          root = Path('app/sharedCore/build/test-results/test')
+          result = {'head': os.environ['CHECKED_HEAD'], 'cases': [], 'problems': []}
+          for name, methods in expected.items():
+              path = root / ('TEST-' + name + '.xml')
+              if not path.is_file():
+                  result['problems'].append('MISSING_CLASS:' + name)
+                  continue
               suite = ET.parse(path).getroot()
               cases = suite.findall('testcase')
               counts = {'tests': len(cases)}
               counts.update({key: sum(case.find(tag) is not None for case in cases)
                              for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
-              result.update(counts)
               if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
-                  result['problems'].append('COUNT_MISMATCH')
-              if len(cases) != 1 or any(case.get('classname') != name or case.get('name') != method for case in cases):
-                  result['problems'].append('EXACT_METHOD_NOT_EXECUTED')
+                  result['problems'].append('COUNT_MISMATCH:' + name)
+              if len(cases) != len(methods) or any(case.get('classname') != name for case in cases) or sorted(case.get('name') for case in cases) != sorted(methods):
+                  result['problems'].append('EXACT_METHOD_NOT_EXECUTED:' + name)
               if any(counts[key] for key in ['failures', 'errors', 'skipped']):
-                  result['problems'].append('METHOD_NOT_PASS')
+                  result['problems'].append('METHOD_NOT_PASS:' + name)
+              result['cases'].append({'class': name, 'methods': methods, **counts})
           output = Path('app/build/reports/custody-fresh-read.json')
           output.parent.mkdir(parents=True, exist_ok=True)
           output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
@@ -66,3 +77,194 @@ jobs:
           path: |
             app/sharedCore/build/test-results/test/
             app/build/reports/custody-fresh-read.json
+
+  file-large-resources:
+    needs: authority-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CCB_GROUP_FILE_LARGE_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written encrypted file recovery and native activation proof
+        working-directory: app
+        run: |
+          proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"
+          cat > "$proof_logging_init" <<'GROOVY'
+          gradle.projectsEvaluated {
+            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {
+              testLogging.showStandardStreams = true
+            }
+          }
+          GROOVY
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest' --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Locate failed synthetic encrypted file case
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in sorted(Path('sharedCore/build/test-results/test').glob('TEST-*.xml')):
+              for case in ET.parse(path).getroot().findall('testcase'):
+                  for failure in list(case.findall('failure')) + list(case.findall('error')):
+                      print('FILE_LARGE_CASE_FAILED', case.get('classname'), case.get('name'))
+                      lines = (failure.text or '').splitlines()
+                      for line in lines[:2] + [line for line in lines if 'com.example.chatbar.' in line][:16]:
+                          print(line[:1200])
+          PY
+      - name: Verify the exact executed original large case
+        if: always()
+        env:
+          CHECKED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          name = 'com.example.chatbar.domain.syncStoreProof.SyncGroupFileLargeNativeProofTest'
+          method = 'actualEncryptedFileAndColdRecoveryPreserveOverOneGiBThroughOriginalRootJoiningAndNativeOwners'
+          root = Path('app/sharedCore/build/test-results/test')
+          suite = ET.parse(root / ('TEST-' + name + '.xml')).getroot()
+          cases = suite.findall('testcase')
+          counts = {'tests': len(cases), 'failures': sum(c.find('failure') is not None for c in cases), 'errors': sum(c.find('error') is not None for c in cases), 'skipped': sum(c.find('skipped') is not None for c in cases)}
+          assert all(int(suite.get(k, '0')) == value for k, value in counts.items()), 'ORIGINAL_COUNT_MISMATCH'
+          assert len(cases) == 1 and cases[0].get('classname') == name and cases[0].get('name') == method, 'EXACT_ORIGINAL_NOT_EXECUTED'
+          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, **counts}
+          (root / 'custody-large-case-verification.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(result))
+          assert counts == {'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}, 'ORIGINAL_NOT_PASS'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-file-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+
+  cloud-large-resources:
+    needs: authority-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CCB_GROUP_CLOUD_LARGE_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written cloud chunk resume and native activation proof
+        working-directory: app
+        run: |
+          proof_logging_init="$RUNNER_TEMP/ccb-large-proof-logging.init.gradle"
+          cat > "$proof_logging_init" <<'GROOVY'
+          gradle.projectsEvaluated {
+            gradle.rootProject.project(':sharedCore').tasks.named('test', org.gradle.api.tasks.testing.Test) {
+              testLogging.showStandardStreams = true
+            }
+          }
+          GROOVY
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --init-script "$proof_logging_init" --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupCloudLargeNativeProofTest' --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Locate failed synthetic cloud case
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in sorted(Path('sharedCore/build/test-results/test').glob('TEST-*.xml')):
+              for case in ET.parse(path).getroot().findall('testcase'):
+                  for failure in list(case.findall('failure')) + list(case.findall('error')):
+                      print('CLOUD_LARGE_CASE_FAILED', case.get('classname'), case.get('name'))
+                      lines = (failure.text or '').splitlines()
+                      for line in lines[:2] + [line for line in lines if 'com.example.chatbar.' in line][:16]:
+                          print(line[:1200])
+          PY
+      - name: Verify the exact executed original large case
+        if: always()
+        env:
+          CHECKED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          name = 'com.example.chatbar.domain.syncStoreProof.SyncGroupCloudLargeNativeProofTest'
+          method = 'cloudChunkRuntimeColdResumeAndHpkeNativeActivationPreserveOverOneGiBOfIndependentResources'
+          root = Path('app/sharedCore/build/test-results/test')
+          suite = ET.parse(root / ('TEST-' + name + '.xml')).getroot()
+          cases = suite.findall('testcase')
+          counts = {'tests': len(cases), 'failures': sum(c.find('failure') is not None for c in cases), 'errors': sum(c.find('error') is not None for c in cases), 'skipped': sum(c.find('skipped') is not None for c in cases)}
+          assert all(int(suite.get(k, '0')) == value for k, value in counts.items()), 'ORIGINAL_COUNT_MISMATCH'
+          assert len(cases) == 1 and cases[0].get('classname') == name and cases[0].get('name') == method, 'EXACT_ORIGINAL_NOT_EXECUTED'
+          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, **counts}
+          (root / 'custody-large-case-verification.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(result))
+          assert counts == {'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}, 'ORIGINAL_NOT_PASS'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-cloud-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+
+  group-large-resources:
+    needs: authority-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CCB_GROUP_LARGE_PROOF: 'true'
+      CCB_GROUP_LARGE_TLS_PROOF: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fully written encrypted group and native v8 proof
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :sharedCore:test --tests 'com.example.chatbar.domain.syncStoreProof.SyncGroupLargeNativeProofTest' --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Verify the exact executed original large case
+        if: always()
+        env:
+          CHECKED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          name = 'com.example.chatbar.domain.syncStoreProof.SyncGroupLargeNativeProofTest'
+          method = 'actualEncryptedGroupObjectsAndNativeUnitsReopenOverOneGiBAfterInterruptedUploadAndSourceDeletion'
+          root = Path('app/sharedCore/build/test-results/test')
+          suite = ET.parse(root / ('TEST-' + name + '.xml')).getroot()
+          cases = suite.findall('testcase')
+          counts = {'tests': len(cases), 'failures': sum(c.find('failure') is not None for c in cases), 'errors': sum(c.find('error') is not None for c in cases), 'skipped': sum(c.find('skipped') is not None for c in cases)}
+          assert all(int(suite.get(k, '0')) == value for k, value in counts.items()), 'ORIGINAL_COUNT_MISMATCH'
+          assert len(cases) == 1 and cases[0].get('classname') == name and cases[0].get('name') == method, 'EXACT_ORIGINAL_NOT_EXECUTED'
+          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'method': method, **counts}
+          (root / 'custody-large-case-verification.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(result))
+          assert counts == {'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}, 'ORIGINAL_NOT_PASS'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-group-large-resource-evidence
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
