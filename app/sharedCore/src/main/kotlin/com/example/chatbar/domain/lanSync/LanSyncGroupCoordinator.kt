@@ -30,8 +30,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         joining: () -> LanSyncGroupJoining, network: LanSyncNetwork, deviceName: String,
         cloudRuntimeFactory: (LanSyncGroupRuntimeAccess, () -> Boolean, () -> Unit,
             (Map<SyncStoreId, LanSyncGroupCloudRouteProgress>) -> Unit) -> LanSyncGroupCloudRuntime,
-        sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false) : this(hasExistingEvidence,
-        enrollment, joining, network, deviceName, sourceChanges = sourceChanges, initiallyPaused = initiallyPaused) {
+        sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false,
+        cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) : this(hasExistingEvidence,
+        enrollment, joining, network, deviceName, sourceChanges = sourceChanges, initiallyPaused = initiallyPaused,
+        cloudWork = cloudWork) {
         makeCloudRuntime = cloudRuntimeFactory
     }
     private var makeCloudRuntime: (LanSyncGroupRuntimeAccess, () -> Boolean, () -> Unit,

@@ -23,10 +23,11 @@ jobs:
         run: >-
           bash ./gradlew :sharedCore:test
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupTargetPublicationTest.coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudRuntimeTest.dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved'
           --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
-      - name: Require the exact three methods with original case counts
+      - name: Require the exact four methods with original case counts
         if: always()
         env:
           CHECKED_HEAD: ${{ github.sha }}
@@ -36,13 +37,13 @@ jobs:
           from pathlib import Path
           import xml.etree.ElementTree as ET
           expected = {
-              'LanSyncGroupCoordinatorTest': 'coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync',
-              'LanSyncGroupTargetPublicationTest': 'coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact',
-              'LanSyncGroupCloudRuntimeTest': 'dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved',
+              'LanSyncGroupCoordinatorTest': ['coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync', 'coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake'],
+              'LanSyncGroupTargetPublicationTest': ['coldTargetPreflightImportsRetainedLocalMetadataWithoutWarmNodeStateOrAnExtraAuthorFact'],
+              'LanSyncGroupCloudRuntimeTest': ['dirtyDuringAnOldFrozenUploadPreservesItsReceiptTimeWithoutClaimingTheNewSourceWasObserved'],
           }
           root = Path('app/sharedCore/build/test-results/test')
           result = {'head': os.environ['CHECKED_HEAD'], 'cases': [], 'problems': []}
-          for short, method in expected.items():
+          for short, methods in expected.items():
               name = 'com.example.chatbar.domain.lanSync.' + short
               path = root / ('TEST-' + name + '.xml')
               if not path.is_file():
@@ -55,11 +56,11 @@ jobs:
                              for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
               if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
                   result['problems'].append('COUNT_MISMATCH:' + name)
-              if len(cases) != 1 or any(case.get('classname') != name or case.get('name') != method for case in cases):
+              if len(cases) != len(methods) or any(case.get('classname') != name for case in cases) or sorted(case.get('name') for case in cases) != sorted(methods):
                   result['problems'].append('EXACT_METHOD_NOT_EXECUTED:' + name)
               if any(counts[key] for key in ['failures', 'errors', 'skipped']):
                   result['problems'].append('METHOD_NOT_PASS:' + name)
-              result['cases'].append({'class': name, 'method': method, **counts})
+              result['cases'].append({'class': name, 'methods': methods, **counts})
           output = Path('app/build/reports/cloud-tail-cold-regression.json')
           output.parent.mkdir(parents=True, exist_ok=True)
           output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')

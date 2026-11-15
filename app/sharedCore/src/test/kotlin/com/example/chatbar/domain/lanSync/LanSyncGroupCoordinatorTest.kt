@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -692,6 +693,128 @@ class LanSyncGroupCoordinatorTest {
                     assertEquals(edited, secondStorage.loadEntity("character_cards", edited.id, CharacterCard.serializer()))
                     assertContentEquals(editedBytes, Files.readAllBytes(f.card))
                     assertTrue(provider.dav.puts.isNotEmpty()); assertTrue(provider.server.requestCount > 0)
+                } finally { first.closeAndDrain(); cold?.closeAndDrain() }
+            }
+        } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
+
+    @Test fun coldDirtyCloudWorkRetriesAfterPlatformDeferralWithoutAnotherWake() = fixture { f ->
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) { throw BindException("synthetic optional nearby unavailable") }
+        }
+        val founder = f.founder()
+        val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+        val draft = founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) })
+        founder.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+        val access = requireNotNull(founder.runtimeAccess())
+        val catalogRoot = Files.createDirectory(f.root.resolve("deferred-cloud-catalog"))
+        fun catalog() = LanSyncGroupCloudRoutes(catalogRoot, access.trust, access.device,
+            { it.reversedArray() }, { it.reversedArray() }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(60, TimeUnit.SECONDS).build()
+        try {
+            WeakFixture(Files.createDirectory(f.root.resolve("deferred-cloud-provider"))).use { provider ->
+                val firstCatalog = catalog()
+                val password = "synthetic deferred cloud credential".toByteArray()
+                val route = try { firstCatalog.add(LanSyncGroupCloudDraft("synthetic deferred drive",
+                    provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString(),
+                    "synthetic user", password, enabled = true)) } finally { password.fill(0) }
+                val target = SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, route)
+                val directory = access.work.resolve("cloud-runtime/${route.value}/target")
+                fun receipt(wanted: Set<SyncVersionRef>): LanSyncGroupCloudTargetReceipt? {
+                    if (!Files.isDirectory(directory)) return null
+                    return Files.newDirectoryStream(directory, "cloud-receipt-*.json").use { paths ->
+                        var found: LanSyncGroupCloudTargetReceipt? = null
+                        for (path in paths) {
+                            val actual = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupCloudTargetReceipt.serializer()))
+                            val plan = requireNotNull(LanSyncJsonFiles.read(directory.resolve("plan-" +
+                                path.fileName.toString().removePrefix("cloud-receipt-")), LanSyncGroupTargetPlan.serializer(), actual.planHash))
+                            if (!plan.versions.containsAll(wanted)) continue
+                            assertEquals(target, actual.target); assertEquals(target, plan.target)
+                            assertEquals(plan.objects, actual.objects.map { it.objectRequest })
+                            assertTrue(actual.objects.all { it.evidence.readback is LanSyncGroupCloudTargetObservation.Chunks })
+                            for (reference in wanted) assertEquals(1, actual.objects.count {
+                                it.objectRequest.role == LanSyncGroupTargetObjectRole.VERSION && it.objectRequest.slot == reference.id.value })
+                            found = actual
+                        }
+                        found
+                    }
+                }
+                fun coordinator(storage: JsonFileStorage, saved: LanSyncGroupCloudRoutes,
+                    schedule: LanSyncGroupCloudSchedule = LanSyncGroupCloudSchedule(),
+                    cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) = LanSyncGroupCoordinator(
+                    { Files.exists(f.profile.resolve("profile.protected")) }, f::founder,
+                    { error("SYNTHETIC_DEFERRED_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic deferred PC",
+                    cloudRuntimeFactory = { current, allowed, wake, report ->
+                        LanSyncGroupCloudRuntime(current, allowed, wake, report, saved, client,
+                            WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, schedule = schedule)
+                    }, sourceChanges = storage.committedRevisionFor(LanSyncScope.schemas.keys), cloudWork = cloudWork)
+                val firstStorage = JsonFileStorage(f.data)
+                val initial = CharacterCard("card", "synthetic old deferred body", createdAt = 1, updatedAt = 1)
+                firstStorage.saveEntity("character_cards", initial.id, initial, CharacterCard.serializer())
+                val first = coordinator(firstStorage, firstCatalog)
+                var cold: LanSyncGroupCoordinator? = null
+                try {
+                    first.open()
+                    withTimeout(60_000) { while (first.cloudSettings.value.progress[route]?.selectionObserved != true) delay(10) }
+                    val oldReference = requireNotNull(first.view.value?.reconciliation?.history).admittedVersions()
+                        .single { it.author == access.device }.reference()
+                    val original = requireNotNull(receipt(setOf(oldReference)))
+                    first.closeAndDrain()
+                    val schedule = LanSyncGroupCloudSchedule()
+                    val attempts = AtomicInteger(); val business = AtomicInteger(); val completed = AtomicInteger(); val active = AtomicInteger()
+                    val deferNext = AtomicBoolean(false); val deferredAt = AtomicLong()
+                    val deferred = CompletableDeferred<Int>()
+                    val secondStorage = JsonFileStorage(f.data)
+                    val reopened = coordinator(secondStorage, catalog(), schedule) { block ->
+                        attempts.incrementAndGet()
+                        if (deferNext.compareAndSet(true, false)) {
+                            deferredAt.set(System.nanoTime() / 1_000_000L); deferred.complete(business.get()); false
+                        } else {
+                            business.incrementAndGet(); active.incrementAndGet()
+                            try { block().also { if (it) completed.incrementAndGet() } } finally { active.decrementAndGet() }
+                        }
+                    }.also { cold = it }
+                    reopened.open()
+                    withTimeout(60_000) {
+                        while (reopened.state.value.busy || reopened.state.value.stage != LanSyncGroupPanelStage.READY ||
+                            completed.get() == 0 || active.get() != 0) delay(10)
+                    }
+                    // Genuine unchanged checks build a long idle only BEFORE the new business edit.
+                    repeat(2) {
+                        val before = completed.get(); reopened.onNetworkAvailable()
+                        withTimeout(60_000) { while (completed.get() <= before || active.get() != 0) delay(10) }
+                    }
+                    withTimeout(10_000) {
+                        var quiet = false
+                        while (!quiet) { val before = completed.get(); delay(250); quiet = active.get() == 0 && completed.get() == before }
+                    }
+                    val oldIdle = requireNotNull(schedule.state(route))
+                    assertNull(oldIdle.failure); assertTrue(oldIdle.waitMillis > 180_000)
+                    deferNext.set(true)
+                    val edited = initial.copy(name = "synthetic edit awaiting platform retry", updatedAt = 2)
+                    secondStorage.saveEntity("character_cards", edited.id, edited, CharacterCard.serializer())
+                    val businessAtDeferral = withTimeout(20_000) { deferred.await() }
+                    assertEquals(businessAtDeferral, business.get(), "The refused platform attempt must not invoke cloud business")
+                    val attemptsAtDeferral = attempts.get()
+                    val newReference = requireNotNull(reopened.view.value?.reconciliation?.history).admittedVersions()
+                        .single { it.author == access.device && it.authorSequence == 2L }.reference()
+                    // No retry/foreground/network hint/edit follows. Only the existing worker's timer may retry.
+                    var observed: LanSyncGroupCloudTargetReceipt? = null
+                    try {
+                        withTimeout(90_000) { while (observed == null) { observed = receipt(setOf(oldReference, newReference)); if (observed == null) delay(25) } }
+                    } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                        throw AssertionError("SYNTHETIC_DEFERRED_CLOUD_TAIL oldIdleMs=${oldIdle.waitMillis} attempts=${attempts.get()} business=${business.get()} refusedBusiness=$businessAtDeferral", timeout)
+                    }
+                    assertTrue(System.nanoTime() / 1_000_000L - deferredAt.get() >= 60_000,
+                        "The automatic retry must respect the platform deferral instead of spinning")
+                    assertEquals(attemptsAtDeferral + 1, attempts.get()); assertEquals(businessAtDeferral + 1, business.get())
+                    val actual = requireNotNull(observed)
+                    original.objects.forEach { row -> assertEquals(row.evidence.readback.observedAtMillis,
+                        actual.objects.single { it.objectRequest.key == row.objectRequest.key &&
+                            it.objectRequest.descriptor == row.objectRequest.descriptor }.evidence.readback.observedAtMillis) }
+                    assertEquals(edited, secondStorage.loadEntity("character_cards", edited.id, CharacterCard.serializer()))
+                    assertEquals(listOf(1L, 2L), requireNotNull(reopened.view.value?.reconciliation?.history).admittedVersions()
+                        .filter { it.author == access.device }.map { it.authorSequence }.sorted())
                 } finally { first.closeAndDrain(); cold?.closeAndDrain() }
             }
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
