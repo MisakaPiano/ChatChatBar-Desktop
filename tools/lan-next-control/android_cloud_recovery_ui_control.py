@@ -21,7 +21,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE = "c643ac151893032d327caa7cf028116d3f901775"
+SOURCE = "c30db003b4e14f355673f7e724d488a9a598662e"
 PACKAGE = "com.example.chatbar.lansyncnext"
 CLASS = "com.example.chatbar.lanSync.LanSyncGroupCloudRecoveryUiControlTest"
 FIRST = "realCloudRecoveryUiRestoresOfflineLatestConversationAndSavesKeystoreConnection"
