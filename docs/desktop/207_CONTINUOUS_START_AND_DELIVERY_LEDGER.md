@@ -1,3 +1,7 @@
+## 2026-11-16：PR7全量独立审核两条P2／原实施者接手补修，未有新head通过
+
+PR7 base41f6→head46cc的完整33文件独立审核已完成，结论为REVIEW_COMPLETE_CHANGES_REQUESTED：确认两条P2，R1旧UI快照切换可把已删除候选写回复活，R2 ADD_COPIES重映射后隐式版本身份使格式撤销/重做失效；U1窄屏朋友圈行仅为未验证布局疑点，不算第三条确认缺陷。原PR实施者已自行接手两条同批补修、必要云端验证及新head独立复审，A仅登记，不接管或催报；尚无新head验证或通过。46cc原作者两处反馈的补修检查和37JVM/API26与30各5UI、上游CI成功证据保留，不抵消新增发现；作者旧b7的CHANGES_REQUESTED与open/mergedfalse仍独立记录，不记整个PR通过/作者批准/合并。R1不等于9c后继，r1/9c/dataPR/F11 3856/Desktop1259及其他任务原样，不重开工程、测试/构建/安装/发布/清理。
+
 ## 2026-11-16：未来CCB PR独立审核流程／PR7已派全量审查，未记录通过
 
 用户新要求：今后每个完成的CCB PR或实质补修交专用独立对话“CCB · PR 独立代码审核”（01a1e3f7-2d67-7da3-aa40-6f1d34b4112b/local）检查完整PR与真实调用/数据流，请求绑定repo/PR/base/head和验证范围；问题由原实施者修复及必要验证后按新head复审，未受影响证据复用。独立审阅、作者review、CI、合并、交付和真人分别记，不增加全局Gate/STOP，不代批准或主动GitHub发消息。PR7 base41f6→head46cc已实际派专用审核，19:45:55 JST回执为REVIEW_RUNNING，未有独立通过结论；37专项JVM、API26/30各5UI和上游43850032790/job133239899923成功分别保留，PR仍open/mergedfalse，作者5916201638对旧b7仍CHANGES_REQUESTED，无新head批准。只登记未来流程与本次观察，不追溯已合并1/2/3/4或Desktop1259，不重复审查/测试、不下载安装/构包/发布/清理；当前review由原PR负责人跟进。
