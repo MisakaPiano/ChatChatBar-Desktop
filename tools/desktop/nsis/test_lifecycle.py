@@ -163,10 +163,12 @@ class Lifecycle(unittest.TestCase):
 
     def run_manager(self, mode, *args, expected=0, manager=None):
         environment = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        home = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState'
+        before = {p: p.read_bytes() for p in home.glob('*.log')}
         result = subprocess.run([str(manager or self.launcher), mode, str(self.root), *args, '--quiet'], timeout=20, env=environment)
         # The actual .NET owner may expand an 8.3 TEMP alias. Read this case's sole
-        # isolated log instead of reconstructing its key from Python's path spelling.
-        logs = list((self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState').glob('*.log'))
+        # changed invocation log; some cases deliberately use multiple program roots.
+        logs = [p for p in home.glob('*.log') if p not in before or p.read_bytes() != before[p]]
         self.assertLessEqual(len(logs), 1)
         text = logs[0].read_text(encoding='utf-8') if logs else 'no lifecycle log'
         self.assertEqual(expected, result.returncode, mode + '\n' + text)
