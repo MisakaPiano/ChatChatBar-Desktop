@@ -380,6 +380,7 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--companion', type=Path)
     parser.add_argument('--installer', type=Path)
+    parser.add_argument('--repair-install', action='store_true', help='Use the ordinary installer explicit /REPAIR option in the owned cloud profile')
     parser.add_argument('--label', required=True)
     parser.add_argument('--fresh-default-profile', action='store_true', help='New empty profile, no companion/data/credential claim')
     parser.add_argument('--expect-install-failure', action='store_true', help='Explicit task-owned fault installer only; old entry/data must remain')
@@ -415,6 +416,9 @@ def main():
     require(json.loads((case / 'TASK_OWNER.json').read_text())['kind'] == OWNER, 'CASE_OWNER_REFUSED')
     exe = args.installer if args.installer else args.root / 'ChatChatBar.exe'
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
+    if args.repair_install:
+        require(args.installer and args.ci_source and args.fresh_default_profile, 'REPAIR_REQUIRES_OWNED_CLOUD_INSTALLER')
+        arguments.insert(1, '/REPAIR')
     cold_paths = []
     require(not args.cold_external_ascii or args.cold_external_file, 'ASCII_CONTROL_REQUIRES_COLD')
     require(not args.cold_external_matrix or (args.cold_external_file and not args.cold_external_ascii), 'MATRIX_REQUIRES_COLD_WITHOUT_ASCII_CONTROL')

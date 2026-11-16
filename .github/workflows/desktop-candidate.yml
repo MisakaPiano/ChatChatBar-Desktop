@@ -70,6 +70,10 @@ jobs:
             if ($request.signedUpdateOnly -isnot [bool] -or $null -eq $request.reuseBuildRun -or $request.communityAuthOnly -eq $true) { throw 'SIGNED_ONLY_REQUIRES_EXACT_REUSE' }
             'CCB_SIGNED_UPDATE_ONLY=true' | Add-Content $env:GITHUB_ENV -Encoding utf8
           }
+          if ('${{ github.event_name }}' -eq 'push' -and $request.retirementRepairProbe -eq $true) {
+            if ($request.retirementRepairProbe -isnot [bool]) { throw 'RETIREMENT_REPAIR_PROBE_TYPE' }
+            'CCB_RETIREMENT_REPAIR_PROBE=true' | Add-Content $env:GITHUB_ENV -Encoding utf8
+          }
           if ($env:CCB_CANDIDATE_SOURCE -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
           $identityArgs = @('tools/desktop/update/version_identity.py', '--display', $env:CCB_CANDIDATE_VERSION)
           if ($env:CCB_CANDIDATE_BUILD) { $identityArgs += @('--build-number', $env:CCB_CANDIDATE_BUILD) }
@@ -248,6 +252,32 @@ jobs:
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_EXTERNAL_CANARY_CHANGED' }
           [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
           "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Exact ordinary repair and completed predecessor retirement
+        if: env.CCB_RETIREMENT_REPAIR_PROBE == 'true' && env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $case = $env:CCB_NATIVE_CASE
+          $program = Join-Path $env:CCB_BUILD_BASE 'installed'
+          $beforeId = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
+          $beforeHome = Join-Path $program "versions\$beforeId"
+          $readonly = Join-Path $beforeHome 'app\.jpackage.xml'
+          if (-not (Test-Path -LiteralPath $readonly)) { throw 'REPAIR_READONLY_FIXTURE_MISSING' }
+          (Get-Item -LiteralPath $readonly).IsReadOnly = $true
+          $canary = Join-Path $case 'local-appdata\ChatChatBarDesktop\cloud-native-retained-canary.txt'
+          $canaryHash = (Get-FileHash -LiteralPath $canary -Algorithm SHA256).Hash
+          $driver = Join-Path $env:GITHUB_WORKSPACE 'tools\desktop\nsis\native_smoke.py'
+          $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --repair-install --label candidate-explicit-repair --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-completed-cache
+          if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_REPAIR_NATIVE_FAILED' }
+          $afterId = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
+          if ($afterId -notmatch ('^' + [regex]::Escape($beforeId) + '-r[a-f0-9]{32}$')) { throw 'REPAIR_NOT_FRESH_STAGE' }
+          if (Test-Path -LiteralPath $beforeHome) { throw 'COMPLETED_REPAIR_OLD_PROGRAM_NOT_RETIRED' }
+          if (@(Get-ChildItem -LiteralPath (Join-Path $program 'repair-retained') -Force).Count -ne 0) { throw 'COMPLETED_REPAIR_ENTRY_NOT_RETIRED' }
+          if (Test-Path -LiteralPath (Join-Path $program 'pending-repair.txt')) { throw 'COMPLETED_REPAIR_PENDING_NOT_RETIRED' }
+          if ((Get-FileHash -LiteralPath $canary -Algorithm SHA256).Hash -ne $canaryHash) { throw 'REPAIR_CANARY_CHANGED' }
+          if (-not (Test-Path -LiteralPath (Join-Path $program "receipts\$afterId.completed.json"))) { throw 'REPAIR_COMPLETION_AUDIT_MISSING' }
+          [ordered]@{passed=$true;old=$beforeId;current=$afterId;readonlyOwnedPredecessorRetired=$true;entryCopiesRetired=$true;smallAuditsRetained=$true;syntheticCanaryUnchanged=$true;humanAcceptance=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $case 'ordinary-repair-retirement-result.json') -Encoding utf8
 
       - name: Actual independent Chinese entry and isolated data lifecycle
         if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'

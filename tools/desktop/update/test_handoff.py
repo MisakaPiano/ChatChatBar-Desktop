@@ -24,6 +24,7 @@ class Fixture {
    } else Thread.Sleep(1700);
    if(args[0].EndsWith("fail")) Environment.Exit(2); return;
   }
+  if (args.Length>0 && args[0]=="--complete-cleanup") File.WriteAllText(marker+".manager-cwd",Environment.CurrentDirectory);
   File.WriteAllText(marker,"SYNTHETIC INSTALLER CALLED");
  }
 }'''
@@ -110,6 +111,7 @@ class HandoffTest(unittest.TestCase):
                         record = json.loads(records[0].read_text())
                         self.assertEqual(120, record['build']); self.assertEqual('b'*40, record['sourceSha'])
                         self.assertEqual(hashlib.sha256(manifest).hexdigest(), record['manifestSha256'])
+                        self.assertEqual(str(root), Path(str(marker) + '.manager-cwd').read_text())
                 finally:
                     self.assertEqual(2 if defect == 'exit' else 0, old.wait(timeout=10))
 

@@ -132,6 +132,8 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
                 check(Path.of(result.getValue("cache").jsonPrimitive.content).toAbsolutePath().normalize() == cache)
                 val available = result["availableBytes"]?.jsonPrimitive?.longOrNull?.takeIf { it >= 0 }
                 val deferredProgram = result["programCleanup"]?.jsonPrimitive?.contentOrNull == "DEFERRED"
+                if (unavailable > 0 || automatic && result["programCleanup"]?.jsonPrimitive?.contentOrNull != "COMPLETE")
+                    outcome.phase = DesktopWorkPhase.UNCONFIRMED
                 mutable.value = previous.copy(busy = false, error = null, notice = desktopUpdateCacheCleanupMessage(
                     cache, removed, bytes, retained, missing, unavailable,
                     result["installationConfirmed"]?.jsonPrimitive?.booleanOrNull == true, available,

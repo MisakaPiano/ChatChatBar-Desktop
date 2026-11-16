@@ -9,6 +9,9 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 ## Desktop retirement receipts
 
+The ordinary installer accepts explicit `/REPAIR` (the same checkbox policy); default installation remains upgrade. `native_smoke --repair-install` is a cloud observer of this real path, not a runtime fault flag. A `retirementRepairProbe:true` candidate request adds exact same-package repair after ordinary upgrade/reopen, verifies a readonly manifest-owned predecessor and original entry copies retire after completion, and preserves synthetic data plus small audits.
+
+
 `Launcher` seals activation lineage and successful completion separately. Normal launch (including warm forwarding) retries only completed predecessors; merely staged/failed/unconfirmed versions remain. Captured reciprocal repair links bridge legacy retained originals only after a newer actual completion. Matching old program files use the original manifest lease/hash/parent pin; damaged manifests or changed files remain deferred. Repair entry retirement has a sealed per-file plan outside the backup directory, so partial busy cleanup can retry without inferring missing metadata. Small activation/completion/retirement audits remain. Native deletion uses FileDispositionInfoEx with readonly permission and image-section checks on the already hashed handle; no attribute mutation or POSIX unlink. Unsupported/read-denied/in-use cases defer.
 
 ## Desktop entrypoints

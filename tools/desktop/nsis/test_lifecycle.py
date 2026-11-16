@@ -320,13 +320,18 @@ class Lifecycle(unittest.TestCase):
         (old / 'unknown.txt').write_text('keep')
         second, new = self.version(2)
         self.run_manager('--activate', second)
-        self.run_manager('--cleanup')
+        import time
+        time.sleep(2.1)
+        self.complete(second, expected=3)
         self.assertEqual(second, (self.root / 'current.txt').read_text())
         self.assertEqual('keep', (old / 'unknown.txt').read_text())
+        self.assertFalse((old / 'identity.txt').exists())
+        self.assertFalse((old / 'ChatChatBarDesktop.exe').exists())
+        self.assertEqual('DEFERRED', (self.root / 'cleanup-status.txt').read_text())
         self.assertTrue(new.is_dir())
         self.run_manager('--cleanup')
 
-    def complete(self, identity, expected=0):
+    def complete(self, identity, expected=0, defect=None):
         package = self.root / 'versions' / identity
         manifest = json.loads((package / 'install-manifest.json').read_text())
         build = manifest.get('buildNumber', int(manifest['version'].rsplit('.', 1)[1]))
@@ -334,10 +339,26 @@ class Lifecycle(unittest.TestCase):
         (cache / 'owner.txt').write_text('ccb-desktop-nsis-synthetic-v1')
         confirmations = cache / 'confirmations'; confirmations.mkdir(exist_ok=True)
         path = confirmations / ('a' * 32 + '.json')
-        path.write_text(json.dumps(dict(format=1, product='ccb-desktop-nsis-synthetic-v1', build=build,
+        record = dict(format=1, product='ccb-desktop-nsis-synthetic-v1', build=build,
             displayVersion=manifest['version'], sourceSha=manifest['commit'], root=str(self.root), current=identity,
-            manifestSha256=digest(package / 'install-manifest.json'))))
+            manifestSha256=digest(package / 'install-manifest.json'))
+        if defect == 'source': record['sourceSha'] = 'f' * 40
+        elif defect == 'manifest': record['manifestSha256'] = 'f' * 64
+        elif defect == 'root': record['root'] = str(self.root.parent / 'other')
+        elif defect == 'type': record['build'] = str(build)
+        path.write_text(json.dumps(record))
         return self.run_manager('--complete-cleanup', str(path), expected=expected)
+
+    def test_unconfirmed_completion_cannot_grant_old_program_retirement(self):
+        import time
+        first, old = self.version(1); self.run_manager('--activate', first)
+        second, _ = self.version(2); self.run_manager('--activate', second); time.sleep(2.1)
+        original = {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()}
+        for defect in ('source', 'manifest', 'root', 'type'):
+            with self.subTest(defect=defect):
+                self.complete(second, expected=2, defect=defect)
+                self.assertEqual(original, {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()})
+                self.assertFalse((self.root / 'receipts' / (second + '.completed.json')).exists())
 
     def test_completed_upgrade_retires_readonly_predecessor_but_never_pending_stage(self):
         import stat,time
@@ -419,6 +440,7 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual('unchanged synthetic data', witness.read_text())
         self.assertEqual(1, len(list((self.root / 'repair-retained').iterdir())))
         original_files = {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()}
+        self.complete(repaired, expected=3)
         self.run_manager('--cleanup')
         self.assertEqual(original_files, {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()})
         self.run_manager('--launch')

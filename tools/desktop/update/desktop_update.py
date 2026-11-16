@@ -324,7 +324,7 @@ def retry_owned_cleanup(installed, cache, package, protected_version=None):
             if not confirmed_installation(installed, cache, package):
                 raise UpdateRejected('PROGRAM_CLEANUP_UNCONFIRMED')
             process = subprocess.run([str(manager), '--complete-cleanup', str(root), str(receipt), '--quiet'],
-                                     timeout=120, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                                     timeout=120, cwd=root, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         result['programCleanup'] = 'COMPLETE' if process.returncode == 0 else 'DEFERRED'
     except Exception as failure:
         result['programCleanup'] = 'DEFERRED'

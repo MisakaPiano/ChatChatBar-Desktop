@@ -1,0 +1,49 @@
+name: Retirement affected native and UI follow-up
+on:
+  push:
+    branches: ['codex/desktop-retirement-followup-*']
+permissions:
+  contents: read
+jobs:
+  followup:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify changed native completion refusals, protected unknown files and handoff cwd
+        shell: pwsh
+        run: |
+          @'
+          import json, os, pathlib, sys, unittest
+          sys.path.insert(0,str(pathlib.Path('tools/desktop/nsis').resolve()))
+          sys.path.insert(0,str(pathlib.Path('tools/desktop/update').resolve()))
+          import test_lifecycle, test_handoff
+          selected=['test_first_start_and_upgrade_retire_only_owned_files','test_unconfirmed_completion_cannot_grant_old_program_retirement','test_fresh_installer_repairs_corrupt_same_version_without_running_damaged_program']
+          suite=unittest.TestSuite([test_lifecycle.Lifecycle(n) for n in selected])
+          suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test_handoff.HandoffTest))
+          result=unittest.TextTestRunner(verbosity=2).run(suite)
+          out=pathlib.Path(os.environ['RUNNER_TEMP'],'retirement-followup');out.mkdir()
+          (out/'original.json').write_text(json.dumps(dict(source=os.environ['GITHUB_SHA'],tests=result.testsRun,failures=[dict(test=n.id(),traceback=t) for n,t in result.failures],errors=[dict(test=n.id(),traceback=t) for n,t in result.errors],skipped=[dict(test=n.id(),reason=t) for n,t in result.skipped],scope='Tiny native synthetic managers/executables only; no ordinary NSIS or user profile; eight affected test methods'),indent=2))
+          sys.exit(not result.wasSuccessful())
+          '@ | python -B -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify actual UI update owner after deferred task projection
+        working-directory: app
+        run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain --tests com.example.chatbar.desktop.DesktopUpdateWorkOwnershipTest --tests com.example.chatbar.desktop.DesktopUpdateCacheSummaryTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retirement-followup-original-results
+          path: |
+            ${{ runner.temp }}/retirement-followup/
+            app/desktopApp/build/test-results/test/
+          if-no-files-found: warn

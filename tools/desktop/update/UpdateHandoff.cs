@@ -107,7 +107,7 @@ static class DesktopUpdateHandoff {
                 Require(entry != null && new FileInfo(manager).Length == Convert.ToInt64(entry["bytes"]), "UPDATE_COMPLETION_MANAGER");
                 using (var input = File.OpenRead(manager)) Require(Hash(input) == (string)entry["sha256"], "UPDATE_COMPLETION_MANAGER");
                 using (var clean = Process.Start(new ProcessStartInfo(manager,
-                    "--complete-cleanup \"" + root + "\" \"" + receipt + "\" --quiet") { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })) {
+                    "--complete-cleanup \"" + root + "\" \"" + receipt + "\" --quiet") { UseShellExecute = false, WorkingDirectory = root, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })) {
                     programDeferred = !clean.WaitForExit(120000) || clean.ExitCode != 0;
                 }
             } catch (Exception) { programDeferred = true; }

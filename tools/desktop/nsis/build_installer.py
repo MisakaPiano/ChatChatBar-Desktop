@@ -75,7 +75,7 @@ def build(image, output, version, commit, installer_version, profile, compiler, 
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     # Explicit file list: no wildcard can pull private or newly appeared files into the installer.
     longest = max(len(e['path'].encode('utf-16-le')) // 2 for e in report['files']) + len(version_id) + 11
-    script = ['Unicode true', '!include "x64.nsh"', '!include "nsDialogs.nsh"', 'Var Repair', 'Var RepairCheck', 'Var TargetId',
+    script = ['Unicode true', '!include "x64.nsh"', '!include "nsDialogs.nsh"', '!include "FileFunc.nsh"', 'Var Repair', 'Var RepairCheck', 'Var TargetId',
               'Var DiagnosticExit', 'Var DiagnosticPhase', 'Var DiagnosticCode', 'Var DiagnosticText', 'Var DiagnosticLog',
               'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
               f'VIProductVersion "{installer_version}.0"', f'VIAddVersionKey "ProductName" "{label}"',
@@ -95,12 +95,16 @@ def build(image, output, version, commit, installer_version, profile, compiler, 
                    f'System::Call \'kernel32::CreateMutexW(p 0, i 0, w "Local\\{folder}-Extraction") p.r9 ?e\'',
                    'Pop $0', 'IntCmp $0 183 init_busy init_mutex_ok init_mutex_ok', 'init_busy:',
                    'StrCpy $DiagnosticExit 22', 'StrCpy $DiagnosticPhase "启动安装"', f'Call {diagnostic}',
-                   'init_mutex_ok:', 'FunctionEnd']
+                   'init_mutex_ok:']
+        if function == '.onInit':
+            script += ['${GetParameters} $0', 'ClearErrors', '${GetOptions} $0 "/REPAIR" $1',
+                       'IfErrors repair_option_done', 'StrCpy $Repair 1', 'repair_option_done:']
+        script += ['FunctionEnd']
     script += ['Function RepairPage', 'IfFileExists "$INSTDIR\\install-owner.txt" +2 0', 'Abort',
                'nsDialogs::Create 1018', 'Pop $0', '${If} $0 == error', 'Abort', '${EndIf}',
                '${NSD_CreateLabel} 0 0 100% 28u "升级会保留资料。若程序损坏，可以从这份安装包修复程序。"', 'Pop $0',
-               '${NSD_CreateCheckbox} 0 36u 100% 36u "修复已有程序（保留原程序副本，不更改资料与凭据）"', 'Pop $RepairCheck',
-               'nsDialogs::Show', 'FunctionEnd', 'Function RepairPageLeave',
+               '${NSD_CreateCheckbox} 0 36u 100% 36u "修复已有程序（保留资料与凭据；确认成功后清理可核实的旧程序）"', 'Pop $RepairCheck',
+               '${NSD_SetState} $RepairCheck $Repair', 'nsDialogs::Show', 'FunctionEnd', 'Function RepairPageLeave',
                '${NSD_GetState} $RepairCheck $Repair', 'FunctionEnd']
     script += ['Section "Install"',
               'StrLen $0 "$INSTDIR"', f'IntOp $0 $0 + {longest}',
