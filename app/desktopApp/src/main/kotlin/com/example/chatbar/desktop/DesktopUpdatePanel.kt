@@ -123,7 +123,7 @@ internal fun DesktopUpdatePanel(
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim), contentAlignment = androidx.compose.ui.Alignment.Center) {
             Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DesktopDataSectionHeading("清理旧更新安装包")
-                StatusText("只清理本应用缓存中已验证且可重新下载的旧安装包，保留当前版本、已选更新和两份近期包。正在使用、缺失或无法确认的材料保留。")
+                StatusText("只清理本应用缓存中已确认完成安装的本版本或更旧安装包。待安装、尚未确认完成、正在使用或身份无法确认的文件保留。")
                 StatusText("全部校验记录和防回滚信息保留；不清理已安装程序、聊天、图片、录音或备份。")
                 updater?.cacheLocation?.let { StatusText("位置：$it") }
                 ActionRow {

@@ -129,11 +129,10 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
                 val unavailable = result.getValue("unavailableCount").jsonPrimitive.long.also { require(it in 0..1000) }
                 check(Path.of(result.getValue("cache").jsonPrimitive.content).toAbsolutePath().normalize() == cache)
                 val available = result["availableBytes"]?.jsonPrimitive?.longOrNull?.takeIf { it >= 0 }
-                mutable.value = previous.copy(busy = false, error = null, notice =
-                    (if (result["installationConfirmed"]?.jsonPrimitive?.booleanOrNull == false) "尚无本版本的安装完成确认；未把下载或待安装包当作已用包。\n" else "") +
-                    "更新缓存：$cache\n已清理 $removed 份旧安装包，共 $bytes 字节；保留 $retained 份待安装或尚未确认完成的包。" +
-                        "保留 $missing 份已无安装包的校验记录；另有 $unavailable 项正使用或无法确认，保留原件与记录。\n" +
-                        (available?.let { "该磁盘当前可用 $it 字节，可重新点击下载。" } ?: "已完成清理，但无法读取磁盘余量，请核对后重试下载。"))
+                mutable.value = previous.copy(busy = false, error = null, notice = desktopUpdateCacheCleanupMessage(
+                    cache, removed, bytes, retained, missing, unavailable,
+                    result["installationConfirmed"]?.jsonPrimitive?.booleanOrNull == true, available,
+                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
             } catch (cancelled: CancellationException) {
                 mutable.value = previous.copy(busy = false, error = "清理已停止；可能已回收部分旧安装包。校验记录保留，请核对空间后再下载。")
                 throw cancelled

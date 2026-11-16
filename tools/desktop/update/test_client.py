@@ -128,6 +128,19 @@ class ClientTest(unittest.TestCase):
             self.assertEqual(0, again['removedCount']); self.assertEqual(2, again['missingCount'])
             self.assertEqual(0, again['unavailableCount'])
 
+    def test_receipt_only_history_counts_no_pending_payloads_and_preserves_all_evidence(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-receipt-only-') as tmp:
+            cache = Path(tmp) / 'updates'
+            _, installed, ready = self.cache_history(cache)
+            for record in ready.values():
+                Path(record['installer']).unlink()
+            before = {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()}
+            with patch.object(client, '_delete_verified_cached_installer', side_effect=AssertionError('No payload exists')):
+                result = client.cleanup_downloads(installed, cache, '0.1.0-preview.121', package=self.confirmed_package)
+            self.assertEqual((0, 0, 0, 0), tuple(result[k] for k in ('removedCount', 'removedBytes', 'retainedCount', 'unavailableCount')))
+            self.assertEqual(len(ready), result['missingCount'])
+            self.assertEqual(before, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()})
+
     def test_cleanup_preserves_busy_hardlinked_changed_and_unknown_material_with_visible_reasons(self):
         for refusal in ('busy', 'hardlink', 'changed', 'unknown', 'duplicate-receipt'):
             with self.subTest(refusal=refusal), tempfile.TemporaryDirectory(prefix='ccb-clean-retain-') as tmp:
