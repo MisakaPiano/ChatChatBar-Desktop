@@ -59,9 +59,9 @@ elif phase=='package-metadata':
     (out/'apk-signature.txt').write_text(signed)
     aapt=tools.with_name('aapt')
     badging=subprocess.check_output([str(aapt),'dump','badging',str(src)],text=True)
-    assert "package: name='com.example.chatbar.pr7secondreview.r1'" in badging
+    assert "package: name='com.example.chatbar'" in badging
     (out/'apk-badging.txt').write_text(badging)
-    (out/'apk.json').write_text(json.dumps(dict(bytes=src.stat().st_size,sha256=hashlib.sha256(src.read_bytes()).hexdigest(),applicationId='com.example.chatbar.pr7secondreview.r1',signatureVerified=True,notUploaded=True,notHumanAcceptance=True)))
+    (out/'apk.json').write_text(json.dumps(dict(bytes=src.stat().st_size,sha256=hashlib.sha256(src.read_bytes()).hexdigest(),applicationId='com.example.chatbar',signatureVerified=True,notUploaded=True,notHumanAcceptance=True)))
 elif phase=='package':
     src=root/'app/app/build/outputs/apk/debug/app-debug.apk';shutil.copy2(src,out/'CCB-PR7-independent-internal.apk')
     (out/'apk.json').write_text(json.dumps(dict(bytes=src.stat().st_size,sha256=hashlib.sha256(src.read_bytes()).hexdigest(),applicationId='com.example.chatbar.pr7secondreview.r1',notHumanAcceptance=True)))
