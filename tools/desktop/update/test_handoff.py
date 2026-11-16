@@ -81,7 +81,9 @@ class HandoffTest(unittest.TestCase):
                 package = root / 'versions' / current; runtime = package / 'app' / 'desktop-updater'; runtime.mkdir(parents=True)
                 (root / 'install-owner.txt').write_text('ccb-desktop-nsis-v1')
                 (root / 'current.txt').write_text('other' if defect == 'pointer' else current)
-                manifest = json.dumps(dict(product='ccb-desktop-nsis-v1', version='0.1.0-preview.120', commit='b'*40, buildNumber=120)).encode()
+                manager = package / 'install-manager.exe'; manager.write_bytes(self.fixture.read_bytes())
+                manifest = json.dumps(dict(product='ccb-desktop-nsis-v1', version='0.1.0-preview.120', commit='b'*40, buildNumber=120,
+                    files=[dict(path='install-manager.exe', bytes=manager.stat().st_size, sha256=hashlib.sha256(manager.read_bytes()).hexdigest())])).encode()
                 (package / 'install-manifest.json').write_bytes(manifest)
                 (root / 'receipts').mkdir(); (root / 'receipts' / (current+'.sha256')).write_text(hashlib.sha256(manifest).hexdigest())
                 (runtime / 'update-config.json').write_text(json.dumps(dict(product='ccb-desktop-nsis-v1', displayVersion='0.1.0-preview.120', sourceSha='b'*40, version=120)))

@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import shutil
 import stat
+import subprocess
 import time
 import uuid
 from tuf.ngclient import Updater
@@ -262,7 +263,7 @@ def cleanup_downloads(installed, cache, protected_version=None, package=None):
                 # Future/pending selected updates remain protected even after a confirmed older install.
                 if (not confirmed or item['build'] > installed.version or
                         (item['build'] == installed.version and item['source'] != installed.source_sha) or
-                        (protected_version is not None and protected_version != installed.display_version and item['display'] == protected_version)):
+                        (protected_version is not None and item['display'] == protected_version)):
                     result['retainedCount'] += 1; continue
                 try:
                     if (safe(item['receipt']).stat().st_size > 32768 or
@@ -280,6 +281,54 @@ def cleanup_downloads(installed, cache, protected_version=None, package=None):
             result['availableBytes'] = shutil.disk_usage(cache).free
         except OSError:
             result['spaceReadFailed'] = True
+    return result
+
+
+def retry_owned_cleanup(installed, cache, package, protected_version=None):
+    """Offline retry; the original owners retain their locks and deletion policies."""
+    result = cleanup_downloads(installed, cache, protected_version, package=package)
+    result['programCleanup'] = 'UNCONFIRMED'
+    if not result['installationConfirmed']:
+        return result
+    try:
+        root = safe(package).parent.parent
+        manifest_raw = (safe(package) / 'install-manifest.json').read_bytes()
+        if len(manifest_raw) > 2 * 1024 * 1024 or hashlib.sha256(manifest_raw).hexdigest() != (safe(root / 'receipts') / (package.name + '.sha256')).read_text(encoding='utf-8'):
+            raise UpdateRejected('PROGRAM_CLEANUP_MANIFEST_CHANGED')
+        manifest = json.loads(manifest_raw)
+        entries = [e for e in manifest['files'] if e['path'] == 'install-manager.exe']
+        if len(entries) != 1:
+            raise UpdateRejected('PROGRAM_CLEANUP_MANAGER_REFUSED')
+        entry = entries[0]; manager = safe(package / 'install-manager.exe')
+        if (not manager.is_file() or manager.stat().st_size != entry['bytes'] or
+                hashlib.sha256(manager.read_bytes()).hexdigest() != entry['sha256']):
+            raise UpdateRejected('PROGRAM_CLEANUP_MANAGER_REFUSED')
+        # confirmed_installation already bound the immutable manifest to the active root.
+        confirmations = safe(cache / 'confirmations')
+        candidates = list(confirmations.iterdir())
+        if len(candidates) > 1000:
+            raise UpdateRejected('PROGRAM_CLEANUP_RECEIPT_LIMIT')
+        expected = dict(format=1, product=PRODUCT, build=installed.version, displayVersion=installed.display_version,
+                        sourceSha=installed.source_sha, root=str(root), current=package.name,
+                        manifestSha256=hashlib.sha256((package / 'install-manifest.json').read_bytes()).hexdigest())
+        receipt = None
+        for p in candidates:
+            try:
+                if re.fullmatch('[a-f0-9]{32}\\.json', p.name) and _cache_receipt_object(_cache_receipt_bytes(p)) == expected:
+                    receipt = p; break
+            except (OSError, ValueError, UnicodeError):
+                continue
+        if receipt is None:
+            raise UpdateRejected('PROGRAM_CLEANUP_UNCONFIRMED')
+        with exclusive(cache):
+            if not confirmed_installation(installed, cache, package):
+                raise UpdateRejected('PROGRAM_CLEANUP_UNCONFIRMED')
+            process = subprocess.run([str(manager), '--complete-cleanup', str(root), str(receipt), '--quiet'],
+                                     timeout=120, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        result['programCleanup'] = 'COMPLETE' if process.returncode == 0 else 'DEFERRED'
+    except Exception as failure:
+        result['programCleanup'] = 'DEFERRED'
+        result['programCleanupReason'] = str(failure) if isinstance(failure, UpdateRejected) else type(failure).__name__
     return result
 
 
@@ -550,7 +599,9 @@ def main():
     parser.add_argument('--package', type=Path, required=True)
     parser.add_argument('--cache', type=Path, required=True)
     parser.add_argument('--download', action='store_true')
-    parser.add_argument('--clean-cache', action='store_true')
+    maintenance = parser.add_mutually_exclusive_group()
+    maintenance.add_argument('--clean-cache', action='store_true')
+    maintenance.add_argument('--retry-cleanup', action='store_true')
     parser.add_argument('--verify-file', type=Path)
     parser.add_argument('--expected-version')
     routes_group = parser.add_mutually_exclusive_group()
@@ -561,11 +612,12 @@ def main():
     try:
         if cache == package or cache.is_relative_to(package) or package.is_relative_to(cache):
             raise UpdateRejected('UPDATE_CACHE_OVERLAP')
-        routes = None if args.clean_cache else parse_proxy_routes(args.proxy_routes, args.proxy_routes_base64)
-        if args.clean_cache:
+        routes = None if args.clean_cache or args.retry_cleanup else parse_proxy_routes(args.proxy_routes, args.proxy_routes_base64)
+        if args.clean_cache or args.retry_cleanup:
             if args.download or args.verify_file:
                 raise UpdateRejected('UPDATE_ARGUMENTS_REFUSED')
-            print(json.dumps(cleanup_downloads(Installed.load(package), cache, args.expected_version, package), ensure_ascii=True), flush=True)
+            value = retry_owned_cleanup(Installed.load(package), cache, package, args.expected_version) if args.retry_cleanup else cleanup_downloads(Installed.load(package), cache, args.expected_version, package)
+            print(json.dumps(value, ensure_ascii=True), flush=True)
         else:
             execute(Installed.load(package), cache, args.download, args.verify_file,
                     report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True),

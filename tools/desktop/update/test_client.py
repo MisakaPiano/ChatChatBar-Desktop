@@ -141,6 +141,17 @@ class ClientTest(unittest.TestCase):
             self.assertEqual(len(ready), result['missingCount'])
             self.assertEqual(before, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()})
 
+    def test_explicitly_selected_current_version_package_is_not_retired_as_completed(self):
+        with tempfile.TemporaryDirectory(prefix='ccb-selected-current-') as tmp:
+            cache = Path(tmp) / 'updates'
+            _, installed, ready = self.cache_history(cache)
+            current = Path(ready[installed.version]['installer'])
+            original = current.read_bytes()
+            result = client.cleanup_downloads(installed, cache, installed.display_version, package=self.confirmed_package)
+            self.assertEqual(1, result['removedCount'])
+            self.assertEqual(5, result['retainedCount'])
+            self.assertEqual(original, current.read_bytes())
+
     def test_cleanup_preserves_busy_hardlinked_changed_and_unknown_material_with_visible_reasons(self):
         for refusal in ('busy', 'hardlink', 'changed', 'unknown', 'duplicate-receipt'):
             with self.subTest(refusal=refusal), tempfile.TemporaryDirectory(prefix='ccb-clean-retain-') as tmp:

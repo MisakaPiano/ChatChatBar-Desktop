@@ -62,12 +62,12 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     internal companion object {
         fun helperArguments(runtime: Path, packageHome: Path, cache: Path,
             settings: com.example.chatbar.domain.ApplicationProxySettings, download: Boolean = false,
-            verify: Path? = null, expectedVersion: String? = null, cleanCache: Boolean = false): List<String> = buildList {
+            verify: Path? = null, expectedVersion: String? = null, cleanCache: Boolean = false, retryPrograms: Boolean = false): List<String> = buildList {
             addAll(listOf(runtime.resolve("python.exe").toString(), "-B", runtime.resolve("lib/desktop_update.py").toString(),
                 "--package", packageHome.toString(), "--cache", cache.toString(),
                 "--proxy-routes-base64", DesktopUpdateNetworkRouting.signedRoutesArgument(settings)))
             if (download) add("--download")
-            if (cleanCache) add("--clean-cache")
+            if (retryPrograms) add("--retry-cleanup") else if (cleanCache) add("--clean-cache")
             if (verify != null) addAll(listOf("--verify-file", verify.toString()))
             if (expectedVersion != null) addAll(listOf("--expected-version", expectedVersion))
         }
@@ -76,7 +76,7 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     /** Startup/manual discovery for installed programs authenticates metadata without downloading. */
     suspend fun checkAvailable(): DesktopUpdateResult {
         check(!mutable.value.busy)
-        val result = invoke(expectedVersion = null, observeProgress = false)
+        val result = try { invoke(expectedVersion = null, observeProgress = false) } finally { retryMaintenance() }
         fun string(key: String) = result.getValue(key).jsonPrimitive.let { require(it.isString); it.content }
         val status = string("status")
         require(status in setOf("AVAILABLE", "UP_TO_DATE"))
@@ -113,13 +113,15 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
 
     fun stop() { activeWork?.first?.let(::stopTask) }
 
-    fun cleanCache(selectedVersion: String?) {
+    fun retryMaintenance() { cleanCache(null, automatic = true) }
+
+    fun cleanCache(selectedVersion: String?, automatic: Boolean = false) {
         if (state.value.busy || !supportsInstall) return
         val previous = state.value
         mutable.value = previous.copy(busy = true, phase = "CLEANING_CACHE", error = null, notice = null)
         launchWork(DesktopWorkKind.UPDATE_CACHE) { outcome ->
             try {
-                val result = invoke(cleanCache = true, expectedVersion = previous.ready?.version ?: selectedVersion, observeProgress = false)
+                val result = invoke(cleanCache = !automatic, retryPrograms = automatic, expectedVersion = previous.ready?.version ?: selectedVersion, observeProgress = false)
                 check(result["status"]?.jsonPrimitive?.contentOrNull == "CACHE_CLEANED")
                 val cache = requireNotNull(cacheLocation)
                 val removed = result.getValue("removedCount").jsonPrimitive.long.also { require(it in 0..1000) }
@@ -129,10 +131,12 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
                 val unavailable = result.getValue("unavailableCount").jsonPrimitive.long.also { require(it in 0..1000) }
                 check(Path.of(result.getValue("cache").jsonPrimitive.content).toAbsolutePath().normalize() == cache)
                 val available = result["availableBytes"]?.jsonPrimitive?.longOrNull?.takeIf { it >= 0 }
+                val deferredProgram = result["programCleanup"]?.jsonPrimitive?.contentOrNull == "DEFERRED"
                 mutable.value = previous.copy(busy = false, error = null, notice = desktopUpdateCacheCleanupMessage(
                     cache, removed, bytes, retained, missing, unavailable,
                     result["installationConfirmed"]?.jsonPrimitive?.booleanOrNull == true, available,
-                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
+                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))) +
+                    if (deferredProgram) "\n旧程序或修复原件因占用、内容变化或归属未确认而保留，下次正常启动或检查更新时重试。" else "")
             } catch (cancelled: CancellationException) {
                 mutable.value = previous.copy(busy = false, error = "清理已停止；可能已回收部分旧安装包。校验记录保留，请核对空间后再下载。")
                 throw cancelled
@@ -197,11 +201,11 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     }
 
     private suspend fun invoke(download: Boolean = false, verify: Path? = null, expectedVersion: String?,
-        observeProgress: Boolean = true, cleanCache: Boolean = false): JsonObject = withContext(Dispatchers.IO) {
+        observeProgress: Boolean = true, cleanCache: Boolean = false, retryPrograms: Boolean = false): JsonObject = withContext(Dispatchers.IO) {
         val packageHome = packageHome()
         val runtime = packageHome.resolve("app/desktop-updater")
         val cache = requireNotNull(local).resolve("ChatChatBarDesktopUpdates")
-        val args = helperArguments(runtime, packageHome, cache, proxySettings(), download, verify, expectedVersion, cleanCache)
+        val args = helperArguments(runtime, packageHome, cache, proxySettings(), download, verify, expectedVersion, cleanCache, retryPrograms)
         ensureActive()
         val process = ProcessBuilder(args).directory(runtime.toFile()).redirectErrorStream(true).start()
         try { coroutineScope {

@@ -127,7 +127,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 System.getenv("LOCALAPPDATA")?.let { DesktopUpdateNoticeHints(java.nio.file.Path.of(it).resolve("ChatChatBarDesktopUpdates")) },
                                 startupAllowed = System.getProperty("jpackage.app-path") != null,
                                 startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null) { previews ->
-                                checker.check(identity.version, previews)
+                                try { checker.check(identity.version, previews) } finally { updater.retryMaintenance() }
                             }
                         }
                         DisposableEffect(updateNotices) { onDispose { updateNotices.close() } }

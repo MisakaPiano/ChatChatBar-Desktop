@@ -7,6 +7,10 @@ description: "Publish or repair a complete ChatBar GitHub update. Use whenever t
 
 For Android APK releases, treat “更新” as authorization to publish every current ChatBar workspace change directly; do not open a PR or leave unrelated dirty files behind.
 
+## Desktop retirement receipts
+
+`Launcher` seals activation lineage and successful completion separately. Normal launch (including warm forwarding) retries only completed predecessors; merely staged/failed/unconfirmed versions remain. Captured reciprocal repair links bridge legacy retained originals only after a newer actual completion. Matching old program files use the original manifest lease/hash/parent pin; damaged manifests or changed files remain deferred. Repair entry retirement has a sealed per-file plan outside the backup directory, so partial busy cleanup can retry without inferring missing metadata. Small activation/completion/retirement audits remain. Native deletion uses FileDispositionInfoEx with readonly permission and image-section checks on the already hashed handle; no attribute mutation or POSIX unlink. Unsupported/read-denied/in-use cases defer.
+
 ## Desktop entrypoints
 
 `native_smoke.py --probe-completed-cache` is cloud-only and runs the actual ordinary NSIS from a task-owned receipted cache copy. After normal application close and the full installation Job drain, `completed_cache_probe.py` requires the new installer's exact completion record and removal of that used copy, while future synthetic payloads, unknown material and small fixture receipts remain. The receipt fixtures are not signed download authority; real python-tuf synthetic signature tests remain separate. This observer never enters the app image and does not establish public discovery or human update acceptance.

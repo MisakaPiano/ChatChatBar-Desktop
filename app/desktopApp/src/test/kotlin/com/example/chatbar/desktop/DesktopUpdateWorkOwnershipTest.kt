@@ -29,6 +29,9 @@ class DesktopUpdateWorkOwnershipTest {
             withTimeout(5000) { firstEntered.await() }
             val original = updater.workRows.value.single()
             assertTrue(original.active); assertEquals(DesktopWorkKind.UPDATE_CACHE, original.kind)
+            updater.retryMaintenance()
+            assertEquals(1, calls.get())
+            assertEquals(1, updater.workRows.value.size)
             assertTrue(updater.stopTask(original.id))
             assertTrue(updater.workRows.value.single().stopRequested)
             firstRelease.countDown()

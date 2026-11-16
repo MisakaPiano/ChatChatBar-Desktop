@@ -16,6 +16,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Net.Sockets;
 using System.Net;
+using System.Collections.Generic;
 
 internal static class Launcher {
 #if SYNTHETIC
@@ -37,6 +38,10 @@ internal static class Launcher {
     internal sealed class ReleaseId { public string display; public long build; public string channel; public string storage; }
     internal sealed class VersionReceipt { public int format; public string product; public string displayVersion; public object buildNumber;
         public string channel; public string storageVersion; public string commit; public string manifestSha256; }
+    internal sealed class RepairLink { public string original; public string repaired; public string markerSha256; public string reciprocalSha256; }
+    internal sealed class ActivationRecord { public int format; public string product; public string id; public string manifestSha256; public string previous; public RepairLink[] repairs; }
+    internal sealed class CompletionRecord { public int format; public string product; public string id; public string manifestSha256; }
+    internal sealed class EntryRetirement { public int format; public string product; public string original; public string repaired; public string directory; public Entry[] files; }
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 2097152 };
     static string Root;
     static bool ShellDeferred;
@@ -76,6 +81,8 @@ internal static class Launcher {
     static extern SafeFileHandle CreateFile(string path, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool SetFileInformationByHandle(SafeFileHandle file, int kind, ref byte value, uint size);
+    [DllImport("kernel32.dll", EntryPoint = "SetFileInformationByHandle", SetLastError = true)]
+    static extern bool SetDispositionEx(SafeFileHandle file, int kind, ref uint value, uint size);
     // Pin every parent against rename/reparse replacement; digest and deletion use one file handle.
     static bool DeleteOwned(string path, long bytes, string digest) {
         var parents = new System.Collections.Generic.List<SafeFileHandle>();
@@ -86,13 +93,20 @@ internal static class Launcher {
                 var h = CreateFile(d, 0x80, 1, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero);
                 Require(!h.IsInvalid, "PARENT_BUSY"); parents.Add(h); Safe(d);
             }
-            var handle = CreateFile(path, 0x80010000, 1, IntPtr.Zero, 3, 0x00200000, IntPtr.Zero);
+            var handle = CreateFile(path, 0x80010100, 1, IntPtr.Zero, 3, 0x00200000, IntPtr.Zero);
             Require(!handle.IsInvalid, "FILE_BUSY");
             using (handle) using (var stream = new FileStream(handle, FileAccess.Read)) using (var hash = SHA256.Create()) {
                 Safe(path);
                 if (stream.Length != bytes || BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant() != digest) return false;
-                byte disposition = 1;
-                Require(SetFileInformationByHandle(handle, 4, ref disposition, 1), "FILE_DELETE_DEFERRED");
+                // Keep normal image-section checks and the pinned handle. This flag permits an
+                // owned read-only file without changing its attributes or using POSIX unlink.
+                uint flags = 1 | 4 | 16;
+                if (!SetDispositionEx(handle, 21, ref flags, 4)) {
+                    var error = Marshal.GetLastWin32Error();
+                    Require(error == 87 || error == 50, "FILE_DELETE_DEFERRED");
+                    byte disposition = 1;
+                    Require(SetFileInformationByHandle(handle, 4, ref disposition, 1), "FILE_DELETE_DEFERRED");
+                }
                 return true;
             }
         } finally { foreach (var h in parents) h.Dispose(); }
@@ -431,6 +445,131 @@ internal static class Launcher {
         Shortcut(ShortcutPath(false), "programs-shortcut.sha256", remove);
         Atomic(Child(Root, "shell-status.txt"), ShellDeferred ? "DEFERRED" : "COMPLETE");
     }
+    static string AuditPath(string name) { return Child(Root, "receipts/" + name + ".json"); }
+    static void WriteAudit(string name, object value) {
+        var path = AuditPath(name); var seal = path + ".sha256"; var text = Json.Serialize(value);
+        if (File.Exists(path)) {
+            Require(File.Exists(seal) && Hash(path) == File.ReadAllText(seal) && File.ReadAllText(path) == text, "CLEANUP_AUDIT_CHANGED"); return;
+        }
+        Require(!File.Exists(seal), "CLEANUP_AUDIT_CHANGED");
+        Atomic(path, text); Atomic(seal, Hash(path));
+    }
+    static T ReadAudit<T>(string name) {
+        var path = AuditPath(name); var seal = path + ".sha256";
+        Require(new FileInfo(path).Length <= 262144 && File.Exists(seal), "CLEANUP_AUDIT_REFUSED");
+        var digest = File.ReadAllText(seal);
+        Require(Regex.IsMatch(digest, "^[a-f0-9]{64}$") && Hash(path) == digest, "CLEANUP_AUDIT_CHANGED");
+        return Json.Deserialize<T>(File.ReadAllText(path));
+    }
+    static RepairLink[] CaptureRepairLinks() {
+        var links = new List<RepairLink>();
+        var paths = Directory.GetFiles(Child(Root, "receipts"), "*.repair-retained");
+        Require(paths.Length <= 1000, "CLEANUP_RECEIPT_LIMIT");
+        foreach (var path in paths) try {
+            Safe(path); var original = Path.GetFileName(path).Replace(".repair-retained", ""); VersionRoot(original);
+            Require(new FileInfo(path).Length <= 256, "REPAIR_RETENTION_MARKER_REFUSED");
+            var repaired = File.ReadAllText(path); VersionRoot(repaired);
+            var reciprocal = Child(Root, "receipts/" + repaired + ".repair-current");
+            Require(new FileInfo(reciprocal).Length <= 256 && File.ReadAllText(reciprocal) == original, "REPAIR_LINK_UNCONFIRMED");
+            links.Add(new RepairLink { original = original, repaired = repaired, markerSha256 = Hash(path), reciprocalSha256 = Hash(reciprocal) });
+        } catch (Exception) { Event("DEFERRED REPAIR_LINK_UNCONFIRMED " + Path.GetFileName(path)); }
+        return links.ToArray();
+    }
+    static void RecordActivation(string id, string previous) {
+        var manifest = Child(VersionRoot(id), "install-manifest.json");
+        var digest = File.ReadAllText(Child(Root, "receipts/" + id + ".sha256"));
+        Require(Hash(manifest) == digest, "CURRENT_MANIFEST_CHANGED");
+        if (File.Exists(AuditPath(id + ".activation"))) {
+            var old = ReadAudit<ActivationRecord>(id + ".activation");
+            Require(old.format == 1 && old.product == Product && old.id == id && old.manifestSha256 == digest, "CLEANUP_ACTIVATION_CHANGED"); return;
+        }
+        WriteAudit(id + ".activation", new ActivationRecord { format = 1, product = Product, id = id,
+            manifestSha256 = digest, previous = previous == id ? null : previous, repairs = CaptureRepairLinks() });
+    }
+    static void ConfirmCompletedInstallation(string path) {
+        var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        Require(!String.IsNullOrEmpty(local), "CLEANUP_COMPLETION_ROOT");
+        var cache = Safe(Path.Combine(local, "ChatChatBarDesktopUpdates"));
+        path = Safe(path);
+        Require(Path.GetDirectoryName(path) == Child(cache, "confirmations") && Regex.IsMatch(Path.GetFileName(path), "^[a-f0-9]{32}\\.json$") &&
+            File.ReadAllText(Child(cache, "owner.txt")) == Product && new FileInfo(path).Length <= 32768, "CLEANUP_COMPLETION_REFUSED");
+        var record = Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(path));
+        var fields = new[] { "format", "product", "build", "displayVersion", "sourceSha", "root", "current", "manifestSha256" };
+        Require(record.Keys.OrderBy(x => x).SequenceEqual(fields.OrderBy(x => x)) && record["format"] is int && (int)record["format"] == 1 &&
+            (record["build"] is int || record["build"] is long), "CLEANUP_COMPLETION_REFUSED");
+        var id = Current(); var directory = VersionRoot(id); var m = ReadManifest(directory); var identity = Identity(m);
+        var digest = File.ReadAllText(Child(Root, "receipts/" + id + ".sha256"));
+        Require(Hash(Child(directory, "install-manifest.json")) == digest && (string)record["product"] == Product &&
+            (string)record["root"] == Root && (string)record["current"] == id && (string)record["sourceSha"] == m.commit &&
+            (string)record["displayVersion"] == m.version && Convert.ToInt64(record["build"]) == identity.build &&
+            (string)record["manifestSha256"] == digest, "CLEANUP_COMPLETION_IDENTITY");
+        var activation = ReadAudit<ActivationRecord>(id + ".activation");
+        Require(activation.id == id && activation.product == Product && activation.manifestSha256 == digest, "CLEANUP_ACTIVATION_CHANGED");
+        WriteAudit(id + ".completed", new CompletionRecord { format = 1, product = Product, id = id, manifestSha256 = digest });
+    }
+    static HashSet<string> CompletedPredecessors(string id, out RepairLink[] repairs) {
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase); var links = new List<RepairLink>(); repairs = new RepairLink[0];
+        if (!File.Exists(AuditPath(id + ".completed"))) return allowed;
+        var completed = ReadAudit<CompletionRecord>(id + ".completed");
+        Require(completed.format == 1 && completed.product == Product && completed.id == id &&
+            completed.manifestSha256 == Hash(Child(VersionRoot(id), "install-manifest.json")) &&
+            completed.manifestSha256 == File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")), "CLEANUP_COMPLETION_CHANGED");
+        var seen = new HashSet<string>(); var cursor = id;
+        while (File.Exists(AuditPath(cursor + ".activation"))) {
+            Require(seen.Add(cursor) && seen.Count <= 1000, "CLEANUP_LINEAGE_REFUSED");
+            var step = ReadAudit<ActivationRecord>(cursor + ".activation");
+            Require(step.format == 1 && step.product == Product && step.id == cursor && Regex.IsMatch(step.manifestSha256 ?? "", "^[a-f0-9]{64}$"), "CLEANUP_ACTIVATION_CHANGED");
+            foreach (var link in step.repairs ?? new RepairLink[0]) {
+                VersionRoot(link.original); VersionRoot(link.repaired);
+                var marker = Child(Root, "receipts/" + link.original + ".repair-retained");
+                var reciprocal = Child(Root, "receipts/" + link.repaired + ".repair-current");
+                if (File.Exists(marker) && File.Exists(reciprocal) && Hash(marker) == link.markerSha256 && Hash(reciprocal) == link.reciprocalSha256 &&
+                    File.ReadAllText(marker) == link.repaired && File.ReadAllText(reciprocal) == link.original) { allowed.Add(link.original); links.Add(link); }
+            }
+            if (step.previous == null) break;
+            VersionRoot(step.previous); Require(step.previous != id, "CLEANUP_LINEAGE_REFUSED");
+            allowed.Add(step.previous); cursor = step.previous;
+        }
+        repairs = links.GroupBy(x => x.original).Select(x => x.First()).ToArray(); return allowed;
+    }
+    static bool RetireRepairEntries(RepairLink link) {
+        if (Directory.Exists(VersionRoot(link.original))) return false;
+        var home = Child(Root, "repair-retained");
+        if (Directory.Exists(home)) foreach (var directory in Directory.GetDirectories(home)) {
+            Safe(directory); var key = Path.GetFileName(directory);
+            if (!Regex.IsMatch(key, "^[a-f0-9]{32}$")) return false;
+            var planName = "repair-entry-" + key + ".retirement"; EntryRetirement plan;
+            if (File.Exists(AuditPath(planName))) {
+                plan = ReadAudit<EntryRetirement>(planName);
+                Require(plan.format == 1 && plan.product == Product && plan.directory == key, "REPAIR_ENTRY_AUDIT_CHANGED");
+                if (plan.original != link.original || plan.repaired != link.repaired) continue;
+            } else {
+                var pointer = Child(directory, "current.txt"); var resources = Child(directory, "generated-resources.json");
+                if (!File.Exists(pointer) || !File.Exists(resources) || new FileInfo(pointer).Length > 256 || new FileInfo(resources).Length > 16384) return false;
+                if (File.ReadAllText(pointer).Trim() != link.original) continue;
+                var entries = Json.Deserialize<Entry[]>(File.ReadAllText(resources)); Require(ResourceEntries(entries), "REPAIR_ENTRY_RESOURCE_REFUSED");
+                Require(entries.All(e => new FileInfo(Child(directory, e.path)).Length == e.bytes && Hash(Child(directory, e.path)) == e.sha256), "REPAIR_ENTRY_CHANGED");
+                var files = entries.Concat(new[] { "current.txt", "generated-resources.json" }.Select(name => new Entry {
+                    path = name, bytes = new FileInfo(Child(directory, name)).Length, sha256 = Hash(Child(directory, name)) })).ToArray();
+                Require(!Directory.GetDirectories(directory).Any() && Directory.GetFiles(directory).Select(Path.GetFileName).OrderBy(x => x).SequenceEqual(files.Select(x => x.path).OrderBy(x => x)), "REPAIR_ENTRY_UNKNOWN");
+                plan = new EntryRetirement { format = 1, product = Product, original = link.original, repaired = link.repaired, directory = key, files = files };
+                WriteAudit(planName, plan);
+            }
+            var names = new[] { "ChatChatBar.exe", "OpenChatBarFile.exe", "Uninstall.exe", "current.txt", "generated-resources.json" };
+            Require(plan.files != null && plan.files.Length >= 4 && plan.files.Length <= 5 && plan.files.All(e => names.Contains(e.path) && e.bytes >= 0 && e.bytes <= 16777216 && Regex.IsMatch(e.sha256 ?? "", "^[a-f0-9]{64}$")), "REPAIR_ENTRY_AUDIT_CHANGED");
+            Require(!Directory.GetDirectories(directory).Any() && Directory.GetFiles(directory).All(p => plan.files.Any(e => e.path == Path.GetFileName(p))), "REPAIR_ENTRY_UNKNOWN");
+            foreach (var e in plan.files) { var file = Child(directory, e.path); if (File.Exists(file) && !DeleteOwned(file, e.bytes, e.sha256)) return false; }
+            Require(!Directory.EnumerateFileSystemEntries(directory).Any(), "REPAIR_ENTRY_BUSY"); Directory.Delete(directory);
+            Event("RETIRED REPAIR_ENTRY " + key);
+        }
+        foreach (var item in new[] { Tuple.Create(link.original + ".repair-retained", link.repaired), Tuple.Create(link.repaired + ".repair-current", link.original) }) {
+            var file = Child(Root, "receipts/" + item.Item1);
+            if (File.Exists(file)) { Require(File.ReadAllText(file) == item.Item2, "REPAIR_LINK_CHANGED"); Require(DeleteOwned(file, new FileInfo(file).Length, Hash(file)), "REPAIR_LINK_BUSY"); }
+        }
+        var pending = Child(Root, "pending-repair.txt");
+        if (File.Exists(pending) && File.ReadAllText(pending) == link.repaired) Require(DeleteOwned(pending, new FileInfo(pending).Length, Hash(pending)), "REPAIR_LINK_BUSY");
+        return true;
+    }
     static bool RetainedRepairOriginal(string id) {
         VersionRoot(id);
         var marker = Child(Root, "receipts/" + id + ".repair-retained");
@@ -443,12 +582,18 @@ internal static class Launcher {
         var shellStatus = Child(Root, "shell-status.txt");
         bool deferred = ShellDeferred || (File.Exists(shellStatus) && File.ReadAllText(shellStatus) == "DEFERRED");
         var versions = Child(Root, "versions");
+        RepairLink[] repairs = new RepairLink[0]; var eligible = new HashSet<string>();
+        if (keep != null) try { eligible = CompletedPredecessors(keep, out repairs); }
+        catch (Exception) { deferred = true; Event("DEFERRED COMPLETION_OR_LINEAGE_UNCONFIRMED"); }
         foreach (var dir in Directory.GetDirectories(versions)) {
             if (Path.GetFileName(dir) == keep) continue;
             if (only != null && Path.GetFileName(dir) != only) continue;
             try {
                 VersionRoot(Path.GetFileName(dir));
-                if (RetainedRepairOriginal(Path.GetFileName(dir))) {
+                if (keep != null && !eligible.Contains(Path.GetFileName(dir))) {
+                    deferred = true; Event("DEFERRED VERSION_NOT_CONFIRMED_FOR_RETIREMENT " + Path.GetFileName(dir)); continue;
+                }
+                if (RetainedRepairOriginal(Path.GetFileName(dir)) && !repairs.Any(x => x.original == Path.GetFileName(dir))) {
                     deferred = true; Event("DEFERRED REPAIR_ORIGINAL_RETAINED " + Path.GetFileName(dir)); continue;
                 }
                 var m = ReadManifest(dir);
@@ -473,6 +618,10 @@ internal static class Launcher {
                 } else { deferred = true; Event("DEFERRED UNKNOWN_OR_MODIFIED " + Path.GetFileName(dir)); }
             } catch (Exception) { deferred = true; Event("DEFERRED BUSY_OR_UNOWNED " + Path.GetFileName(dir)); }
         }
+        foreach (var link in repairs) try { if (!RetireRepairEntries(link)) deferred = true; }
+        catch (Exception) { deferred = true; Event("DEFERRED REPAIR_ENTRY_OR_LINK_UNCONFIRMED " + link.original); }
+        if (keep != null && (Directory.GetFiles(Child(Root, "receipts"), "*.repair-retained").Any() ||
+            Directory.Exists(Child(Root, "repair-retained")) && Directory.EnumerateFileSystemEntries(Child(Root, "repair-retained")).Any())) deferred = true;
         Atomic(Child(Root, "cleanup-status.txt"), deferred ? "DEFERRED" : "COMPLETE");
     }
     static int Launch(string id, bool activate, string expectedCurrent = null, bool retainRepairOriginal = false) {
@@ -481,7 +630,7 @@ internal static class Launcher {
         Require(id == identity || Regex.IsMatch(id, "^" + Regex.Escape(identity) + "-r[a-f0-9]{32}$"), "VERSION_MISMATCH");
         if (!activate) {
             Require(File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")) == Hash(Child(directory, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
-            if (TryForward(new string[0])) return 0;
+            if (TryForward(new string[0])) { try { Cleanup(id); } catch { Event("DEFERRED CLEANUP"); } return 0; }
         }
         Verify(directory, m);
         var nonce = Guid.NewGuid().ToString("N");
@@ -514,6 +663,7 @@ internal static class Launcher {
                     Require(expectedCurrent == null ? !File.Exists(Child(Root, "current.txt")) : Current() == expectedCurrent,
                         "ACTIVATION_ENTRY_CHANGED");
                     if (retainRepairOriginal) Atomic(Child(Root, "receipts/" + expectedCurrent + ".repair-retained"), id);
+                    RecordActivation(id, expectedCurrent);
                     Atomic(Child(Root, "current.txt"), id);
                 }
                 OpenWith(false);
@@ -789,6 +939,7 @@ internal static class Launcher {
                         return Launch(args[2], true, expectedCurrent, repair);
                     }
                     if (mode == "--launch") { Require(!ExtractionActive(), "INSTALLATION_BUSY"); return Launch(Current(), false); }
+                    if (mode == "--complete-cleanup" && args.Length >= 3) { ConfirmCompletedInstallation(args[2]); Cleanup(Current()); return File.ReadAllText(Child(Root, "cleanup-status.txt")) == "COMPLETE" ? 0 : 3; }
                     if (mode == "--cleanup") { Cleanup(Current()); return 0; }
                     if (mode == "--uninstall") {
                         // Preflight every lease before removing any version or shell integration.

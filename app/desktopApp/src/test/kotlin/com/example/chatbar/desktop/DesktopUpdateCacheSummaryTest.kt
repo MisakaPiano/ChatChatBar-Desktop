@@ -6,6 +6,15 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopUpdateCacheSummaryTest {
+    @Test fun `offline retry transports explicitly selected current version without download authority`() {
+        val args = DesktopUpdateRuntime.helperArguments(Path.of("runtime"), Path.of("program"), Path.of("cache"),
+            com.example.chatbar.domain.ApplicationProxySettings(), expectedVersion = "0.1.0-preview.1257", retryPrograms = true)
+        assertTrue("--retry-cleanup" in args)
+        assertTrue(args[args.indexOf("--expected-version") + 1] == "0.1.0-preview.1257")
+        assertFalse("--download" in args)
+        assertFalse("--verify-file" in args)
+    }
+
     @Test fun `receipt-only scan distinguishes missing packages from retained payloads and dates the snapshot`() {
         val cache = Path.of("cache", "updates")
         val text = desktopUpdateCacheCleanupMessage(cache, 0, 0, 0, 19, 0, true, 4096, "2026-11-16 12:34:56")

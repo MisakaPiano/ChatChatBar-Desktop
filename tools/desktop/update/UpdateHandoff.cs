@@ -79,7 +79,14 @@ static class DesktopUpdateHandoff {
         var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         Require(!String.IsNullOrEmpty(local) && Path.IsPathRooted(local), "UPDATE_COMPLETION_CACHE_ROOT");
         var cache = Safe(Path.Combine(local, "ChatChatBarDesktopUpdates"));
-        if (!Directory.Exists(cache)) return 0;
+        if (!Directory.Exists(cache)) Directory.CreateDirectory(cache);
+        var owner = Safe(Path.Combine(cache, "owner.txt"));
+        if (!File.Exists(owner)) {
+            Require(!Directory.EnumerateFileSystemEntries(cache).Any(), "UPDATE_COMPLETION_CACHE");
+            using (var output = new FileStream(owner, FileMode.CreateNew, FileAccess.Write, FileShare.Read)) {
+                var raw = System.Text.Encoding.UTF8.GetBytes("ccb-desktop-nsis-v1"); output.Write(raw, 0, raw.Length); output.Flush(true);
+            }
+        }
         Require(File.ReadAllText(Safe(Path.Combine(cache, "owner.txt"))) == "ccb-desktop-nsis-v1", "UPDATE_COMPLETION_CACHE");
         var confirmations = Safe(Path.Combine(cache, "confirmations")); Directory.CreateDirectory(confirmations);
         var value = json.Serialize(new { format = 1, product = "ccb-desktop-nsis-v1", build = Convert.ToInt64(c["version"]),
@@ -90,18 +97,29 @@ static class DesktopUpdateHandoff {
         }
         // The old updater may still hold the used EXE briefly; exclusive deletion refuses it.
         // Retry once after normal handoff drain; manual cleanup consumes the same retained marker.
+        bool programDeferred = false, cacheDeferred = false;
         for (var attempt = 0; attempt < 2; attempt++) {
             if (attempt > 0) Thread.Sleep(1500);
+            try {
+                var manager = Safe(Path.Combine(package, "install-manager.exe"));
+                var files = (System.Collections.IEnumerable)m["files"]; Dictionary<string, object> entry = null;
+                foreach (Dictionary<string, object> file in files) if ((string)file["path"] == "install-manager.exe") { Require(entry == null, "UPDATE_COMPLETION_MANAGER"); entry = file; }
+                Require(entry != null && new FileInfo(manager).Length == Convert.ToInt64(entry["bytes"]), "UPDATE_COMPLETION_MANAGER");
+                using (var input = File.OpenRead(manager)) Require(Hash(input) == (string)entry["sha256"], "UPDATE_COMPLETION_MANAGER");
+                using (var clean = Process.Start(new ProcessStartInfo(manager,
+                    "--complete-cleanup \"" + root + "\" \"" + receipt + "\" --quiet") { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })) {
+                    programDeferred = !clean.WaitForExit(120000) || clean.ExitCode != 0;
+                }
+            } catch (Exception) { programDeferred = true; }
             var python = Safe(Path.Combine(package, "app", "desktop-updater", "python.exe"));
             var helper = Safe(Path.Combine(package, "app", "desktop-updater", "lib", "desktop_update.py"));
             using (var clean = Process.Start(new ProcessStartInfo(python,
                 "-B \"" + helper + "\" --package \"" + package + "\" --cache \"" + cache + "\" --clean-cache") {
                 UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })) {
-                Require(clean.WaitForExit(120000), "UPDATE_COMPLETION_CLEANUP_PENDING");
-                if (attempt == 1) Require(clean.ExitCode == 0, "UPDATE_COMPLETION_CLEANUP_PENDING");
+                cacheDeferred = !clean.WaitForExit(120000) || clean.ExitCode != 0;
             }
         }
-        return 0;
+        return programDeferred || cacheDeferred ? 3 : 0;
     }
     [STAThread] static int Main(string[] args) {
         try {

@@ -326,6 +326,65 @@ class Lifecycle(unittest.TestCase):
         self.assertTrue(new.is_dir())
         self.run_manager('--cleanup')
 
+    def complete(self, identity, expected=0):
+        package = self.root / 'versions' / identity
+        manifest = json.loads((package / 'install-manifest.json').read_text())
+        build = manifest.get('buildNumber', int(manifest['version'].rsplit('.', 1)[1]))
+        cache = self.local / 'ChatChatBarDesktopUpdates'; cache.mkdir(exist_ok=True)
+        (cache / 'owner.txt').write_text('ccb-desktop-nsis-synthetic-v1')
+        confirmations = cache / 'confirmations'; confirmations.mkdir(exist_ok=True)
+        path = confirmations / ('a' * 32 + '.json')
+        path.write_text(json.dumps(dict(format=1, product='ccb-desktop-nsis-synthetic-v1', build=build,
+            displayVersion=manifest['version'], sourceSha=manifest['commit'], root=str(self.root), current=identity,
+            manifestSha256=digest(package / 'install-manifest.json'))))
+        return self.run_manager('--complete-cleanup', str(path), expected=expected)
+
+    def test_completed_upgrade_retires_readonly_predecessor_but_never_pending_stage(self):
+        import stat,time
+        first, old = self.version(1); self.run_manager('--activate', first)
+        future, pending = self.version(3)
+        second, new = self.version(2); self.run_manager('--activate', second); time.sleep(2.1)
+        self.run_manager('--cleanup')
+        self.assertTrue((old / 'identity.txt').exists(), 'READY alone is not installer completion')
+        (old / 'identity.txt').chmod(stat.S_IREAD)
+        self.complete(second, expected=3)
+        self.assertFalse(old.exists()); self.assertTrue(pending.exists()); self.assertTrue(new.exists())
+        self.assertTrue((self.root / 'receipts' / (second + '.completed.json')).exists())
+
+    def test_completed_busy_predecessor_is_retried_on_next_normal_launch(self):
+        import time
+        first, old = self.version(1); self.run_manager('--activate', first)
+        second, _ = self.version(2); self.run_manager('--activate', second); time.sleep(2.1)
+        with (old / 'install-manifest.json').open('rb'):
+            self.complete(second, expected=3)
+            self.assertTrue(old.exists())
+        self.run_manager('--launch')
+        self.assertFalse(old.exists())
+
+    def test_new_completed_install_releases_verified_legacy_repair_chain_and_entry_backups(self):
+        import shutil,time
+        first, old = self.version(1); self.run_manager('--activate', first); time.sleep(2.1)
+        self.run_manager('--prepare-repair')
+        payload = Path(self.case.name) / 'payload-1'
+        self.run_manager('--stage-repair', first, str(payload / 'install-manifest.json'))
+        repaired = (self.root / 'pending-repair.txt').read_text(); repairhome = self.root / 'versions' / repaired
+        for p in payload.iterdir():
+            if p.name != 'install-manifest.json': (repairhome / p.name).write_bytes(p.read_bytes())
+        self.run_manager('--activate', repaired); time.sleep(2.1)
+        second, previous = self.version(2); self.run_manager('--activate', second); time.sleep(2.1)
+        # Legacy state observed in the real issue: repaired target retired, reciprocal
+        # repair custody and original entry snapshots remain, no new activation audit.
+        shutil.rmtree(repairhome)
+        for suffix in ('.activation.json', '.activation.json.sha256'):
+            (self.root / 'receipts' / (second + suffix)).unlink()
+        third, current = self.version(3); self.run_manager('--activate', third); time.sleep(2.1)
+        self.complete(third)
+        self.assertFalse(old.exists()); self.assertFalse(previous.exists()); self.assertTrue(current.exists())
+        self.assertEqual([], list((self.root / 'repair-retained').iterdir()))
+        self.assertFalse((self.root / 'pending-repair.txt').exists())
+        self.assertFalse((self.root / 'receipts' / (first + '.repair-retained')).exists())
+        self.assertTrue(list((self.root / 'receipts').glob('repair-entry-*.retirement.json')))
+
     def test_failed_new_app_keeps_old_entry(self):
         first, old = self.version(1)
         self.run_manager('--activate', first)
