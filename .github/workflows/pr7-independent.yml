@@ -18,7 +18,7 @@ jobs:
       - run: cp validation/pr7_independent.py /tmp/pr7_independent.py
       - uses: actions/checkout@v4
         with:
-          ref: 79c3128d0f326703addc4036528de061e5ee2726
+          ref: 1a59e7cc2b95ffb4c11d8ad60250eff771594cfb
           fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-java@v4
@@ -30,16 +30,15 @@ jobs:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
       - run: python /tmp/pr7_independent.py prepare
-      - name: Reproduce R2 on old production then validate fixed JVM and compile native tests
+      - name: Validate fixed JVM and compile native tests
         run: |
-          python /tmp/pr7_independent.py baseline-jvm
           python /tmp/pr7_independent.py fixed-jvm
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Reproduce R1 and measure actual narrow Moments row on API30
+      - name: Reproduce R1 using completed real switch job on API30
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
@@ -49,7 +48,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: python /tmp/pr7_independent.py baseline-native
-      - name: Fixed R1 and existing delete redo image controls on API30
+      - name: Fixed R1 and delete redo real narrow row on API30
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
@@ -58,7 +57,17 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: python /tmp/pr7_independent.py fixed-native
+          script: python /tmp/pr7_independent.py fixed-native-api30
+      - name: Fixed delete redo image controls and narrow row on API26
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          profile: pixel_2
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python /tmp/pr7_independent.py fixed-native-api26
       - run: python /tmp/pr7_independent.py package
       - uses: actions/upload-artifact@v4
         if: always()

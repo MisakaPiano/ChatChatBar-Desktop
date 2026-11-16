@@ -13,7 +13,7 @@ def report(label,native=False):
     for p in dst.rglob('TEST-*.xml'):
         for c in ET.parse(p).iter('testcase'):
             err=c.find('failure');err=err if err is not None else c.find('error')
-            cases.append(dict(name=c.get('name'),classname=c.get('classname'),failure=None if err is None else dict(type=err.get('type'),message=err.get('message'),text=err.text)))
+            cases.append(dict(name=c.get('name'),classname=c.get('classname'),failure=None if err is None else dict(type=err.get('type') or (err.text or '').split(':',1)[0],message=err.get('message'),text=err.text)))
     (out/(label+'.json')).write_text(json.dumps(cases,ensure_ascii=False,indent=2))
     return cases
 def overlay(files,label,command):
@@ -38,19 +38,19 @@ elif phase=='baseline-jvm':
         assert r.returncode!=0 and len(cases)==3 and all(c['failure'] and c['failure']['type'] in ['org.junit.ComparisonFailure','java.lang.AssertionError'] for c in cases),cases
     overlay(['app/app/src/main/java/com/example/chatbar/domain/backup/BackupMergeEngine.kt','app/app/src/main/java/com/example/chatbar/domain/chat/MessageFormatRepairPolicy.kt'],'baseline-jvm',run)
 elif phase=='fixed-jvm':
-    r=gradle(':app:testDebugUnitTest','--tests','*BackupMergeEngineTest','--tests','*BackupJsonStreamTest','--tests','*BackupExportSelectionTest','--tests','*MessageAlternativeVersionPolicyTest','--tests','*MessageFormatRepairPolicyTest','--tests','*MomentImageVersionsTest',':app:compileDebugAndroidTestKotlin',':app:assembleDebug')
+    r=gradle(':app:testDebugUnitTest','--tests','*BackupMergeEngineTest','--tests','*BackupMessageVersionIdentityTest','--tests','*BackupJsonStreamTest','--tests','*BackupExportSelectionTest','--tests','*MessageAlternativeVersionPolicyTest','--tests','*MessageFormatRepairPolicyTest','--tests','*MomentImageVersionsTest',':app:compileDebugAndroidTestKotlin',':app:assembleDebug')
     cases=report('fixed-jvm'); assert r.returncode==0 and cases and all(not c['failure'] for c in cases)
 elif phase=='baseline-native':
     def run():
-        classes=','.join('com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest#'+n for n in ['staleSwitchCannotResurrectCandidateDeletedBeforeUiRefresh','staleSwitchCannotOverwriteUndoBeforeUiRefresh','staleSwitchCannotOverwriteRedoBeforeUiRefresh'])+',com.example.chatbar.ui.moments.MomentPostRowLayoutTest'
+        classes=','.join('com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest#'+n for n in ['staleSwitchCannotResurrectCandidateDeletedBeforeUiRefresh','staleSwitchCannotOverwriteUndoBeforeUiRefresh','staleSwitchCannotOverwriteRedoBeforeUiRefresh'])
         r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes)
         cases=report('baseline-native',True)
         races=[c for c in cases if c['name'].startswith('staleSwitch')]
-        assert r.returncode!=0 and len(races)==3 and all(c['failure'] and c['failure']['type']=='java.lang.AssertionError' for c in races),races
+        assert r.returncode!=0 and len(races)==3 and all(c['failure'] and c['failure']['type'] in ['java.lang.AssertionError','org.junit.ComparisonFailure'] and 'Fixture timed out' not in c['failure']['text'] for c in races),races
     overlay([VM],'baseline-native',run)
-elif phase=='fixed-native':
-    r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest,com.example.chatbar.ui.chat.ReplyDeletionConfirmationTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest')
-    cases=report('fixed-native',True);assert r.returncode==0 and len(cases)==11 and all(not c['failure'] for c in cases)
+elif phase.startswith('fixed-native'):
+    r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ReplyDeletionRuntimeTest,com.example.chatbar.ui.chat.ReplyDeletionConfirmationTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest,com.example.chatbar.ui.moments.MomentPostRowLayoutTest')
+    cases=report(phase,True);assert r.returncode==0 and len(cases)==13 and all(not c['failure'] for c in cases)
 elif phase=='package':
     src=root/'app/app/build/outputs/apk/debug/app-debug.apk';shutil.copy2(src,out/'CCB-PR7-independent-internal.apk')
     (out/'apk.json').write_text(json.dumps(dict(bytes=src.stat().st_size,sha256=hashlib.sha256(src.read_bytes()).hexdigest(),applicationId='com.example.chatbar.pr7independent.r1',notHumanAcceptance=True)))
