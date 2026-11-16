@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: 1a59e7cc2b95ffb4c11d8ad60250eff771594cfb
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
