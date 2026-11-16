@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -140,6 +141,28 @@ class ClientTest(unittest.TestCase):
             self.assertEqual((0, 0, 0, 0), tuple(result[k] for k in ('removedCount', 'removedBytes', 'retainedCount', 'unavailableCount')))
             self.assertEqual(len(ready), result['missingCount'])
             self.assertEqual(before, {p: p.read_bytes() for p in cache.rglob('*') if p.is_file()})
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows directory aliases')
+    def test_confirmation_root_aliases_keep_exact_identity_and_signed_cache_cleanup(self):
+        import ctypes
+        from ctypes import wintypes
+        with tempfile.TemporaryDirectory(prefix='ccb-alias-cleanup-') as tmp:
+            cache = Path(tmp) / 'updates'
+            _, installed, _ = self.cache_history(cache)
+            receipt = cache / 'confirmations' / ('a' * 32 + '.json')
+            record = json.loads(receipt.read_text()); root = self.confirmed_package.parent.parent
+            for api in ('GetLongPathNameW', 'GetShortPathNameW'):
+                method = getattr(ctypes.WinDLL('kernel32', use_last_error=True), api)
+                method.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]; method.restype = wintypes.DWORD
+                buffer = ctypes.create_unicode_buffer(32768)
+                length = method(str(root), buffer, len(buffer)); self.assertTrue(0 < length < len(buffer))
+                record['root'] = buffer.value.swapcase(); receipt.write_text(json.dumps(record))
+                self.assertTrue(client.confirmed_installation(installed, cache, self.confirmed_package))
+            cleaned = client.cleanup_downloads(installed, cache, package=self.confirmed_package)
+            self.assertEqual(2, cleaned['removedCount'], cleaned)
+            other = root.parent / 'foreign'; other.mkdir()
+            record['root'] = str(other); receipt.write_text(json.dumps(record))
+            self.assertFalse(client.confirmed_installation(installed, cache, self.confirmed_package))
 
     def test_explicitly_selected_current_version_package_is_not_retired_as_completed(self):
         with tempfile.TemporaryDirectory(prefix='ccb-selected-current-') as tmp:

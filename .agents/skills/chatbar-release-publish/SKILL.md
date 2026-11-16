@@ -9,6 +9,10 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 ## Desktop retirement receipts
 
+Completion roots and confirmation directories use safe native volume/file identity, preserving reparse refusal while admitting Windows case and 8.3 aliases. Python confirmation selection uses the same existing-directory identity; exclusive cache-file location checks expand only short spelling before comparing the native handle path. Tiny native tests read their own isolated actual log instead of guessing its hash from Python's spelling. A present repair target outside activated lineage retains its original/pending custody.
+
+At a cutover from an older current program without activation lineage, the new activation seals a bounded list of complete, unchanged legacy ordinary programs strictly older than that previous current identity. Each needs its sealed extraction identity, external manifest receipt and exact file set; repair custody, newer stages, changed/unknown content and post-lineage stages are excluded. Retirement waits for new installer completion and rechecks those sealed identities; partial deletion can retry through the normal owner.
+
 The ordinary installer accepts explicit `/REPAIR` (the same checkbox policy); default installation remains upgrade. `native_smoke --repair-install` is a cloud observer of this real path, not a runtime fault flag. A `retirementRepairProbe:true` candidate request adds exact same-package repair after ordinary upgrade/reopen, verifies a readonly manifest-owned predecessor and original entry copies retire after completion, and preserves synthetic data plus small audits.
 
 

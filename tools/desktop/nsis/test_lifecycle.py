@@ -164,10 +164,13 @@ class Lifecycle(unittest.TestCase):
     def run_manager(self, mode, *args, expected=0, manager=None):
         environment = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
         result = subprocess.run([str(manager or self.launcher), mode, str(self.root), *args, '--quiet'], timeout=20, env=environment)
-        key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
-        log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
-        self.assertEqual(expected, result.returncode, mode + '\n' + (log.read_text(encoding='utf-8') if log.exists() else 'no lifecycle log'))
-        return log.read_text(encoding='utf-8') if log.exists() else ''
+        # The actual .NET owner may expand an 8.3 TEMP alias. Read this case's sole
+        # isolated log instead of reconstructing its key from Python's path spelling.
+        logs = list((self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState').glob('*.log'))
+        self.assertLessEqual(len(logs), 1)
+        text = logs[0].read_text(encoding='utf-8') if logs else 'no lifecycle log'
+        self.assertEqual(expected, result.returncode, mode + '\n' + text)
+        return text
 
     def test_diagnostic_overlap_is_current_invocation_and_legacy_status_is_unchanged(self):
         data = self.root / 'input' / 'synthetic-data'
@@ -331,7 +334,7 @@ class Lifecycle(unittest.TestCase):
         self.assertTrue(new.is_dir())
         self.run_manager('--cleanup')
 
-    def complete(self, identity, expected=0, defect=None):
+    def complete(self, identity, expected=0, defect=None, root_alias=None):
         package = self.root / 'versions' / identity
         manifest = json.loads((package / 'install-manifest.json').read_text())
         build = manifest.get('buildNumber', int(manifest['version'].rsplit('.', 1)[1]))
@@ -346,8 +349,23 @@ class Lifecycle(unittest.TestCase):
         elif defect == 'manifest': record['manifestSha256'] = 'f' * 64
         elif defect == 'root': record['root'] = str(self.root.parent / 'other')
         elif defect == 'type': record['build'] = str(build)
+        if root_alias is not None: record['root'] = root_alias
         path.write_text(json.dumps(record))
         return self.run_manager('--complete-cleanup', str(path), expected=expected)
+
+    def test_completion_accepts_same_directory_case_and_short_long_aliases_only(self):
+        import ctypes, time
+        from ctypes import wintypes
+        first, old = self.version(1); self.run_manager('--activate', first)
+        second, _ = self.version(2); self.run_manager('--activate', second); time.sleep(2.1)
+        for api in ('GetLongPathNameW', 'GetShortPathNameW'):
+            method = getattr(ctypes.WinDLL('kernel32', use_last_error=True), api)
+            method.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]; method.restype = wintypes.DWORD
+            buffer = ctypes.create_unicode_buffer(32768)
+            length = method(str(self.root), buffer, len(buffer)); self.assertTrue(0 < length < len(buffer))
+            self.assertTrue(os.path.samefile(self.root, buffer.value))
+            self.complete(second, root_alias=buffer.value.swapcase())
+        self.assertFalse(old.exists())
 
     def test_unconfirmed_completion_cannot_grant_old_program_retirement(self):
         import time
@@ -382,6 +400,22 @@ class Lifecycle(unittest.TestCase):
         self.run_manager('--launch')
         self.assertFalse(old.exists())
 
+    def test_present_unconfirmed_repair_target_never_loses_its_pending_custody(self):
+        import time
+        first, old = self.version(1); self.run_manager('--activate', first); time.sleep(2.1)
+        self.run_manager('--prepare-repair')
+        payload = Path(self.case.name) / 'payload-1'
+        self.run_manager('--stage-repair', first, str(payload / 'install-manifest.json'))
+        pending = (self.root / 'pending-repair.txt').read_text()
+        # Reproduce a READY-before-pointer-publication interruption: mutual custody is
+        # insufficient to label this still-present, never-activated stage completed.
+        (self.root / 'receipts' / (first + '.repair-retained')).write_text(pending)
+        second, _ = self.version(2); self.run_manager('--activate', second); time.sleep(2.1)
+        self.complete(second, expected=3)
+        self.assertTrue(old.exists()); self.assertTrue((self.root / 'versions' / pending).exists())
+        self.assertEqual(pending, (self.root / 'pending-repair.txt').read_text())
+        self.assertEqual(1, len(list((self.root / 'repair-retained').iterdir())))
+
     def test_new_completed_install_releases_verified_legacy_repair_chain_and_entry_backups(self):
         import shutil,time
         first, old = self.version(1); self.run_manager('--activate', first); time.sleep(2.1)
@@ -405,6 +439,23 @@ class Lifecycle(unittest.TestCase):
         self.assertFalse((self.root / 'pending-repair.txt').exists())
         self.assertFalse((self.root / 'receipts' / (first + '.repair-retained')).exists())
         self.assertTrue(list((self.root / 'receipts').glob('repair-entry-*.retirement.json')))
+
+    def test_completed_cutover_retires_verified_legacy_ordinary_residue_but_preserves_changed_and_pending(self):
+        import time
+        first, old = self.version(1); self.run_manager('--activate', first); time.sleep(2.1)
+        broken, changed = self.version(2); self.run_manager('--activate', broken); time.sleep(2.1)
+        (changed / 'identity.txt').write_bytes(b'changed bytes remain')
+        previous, prior = self.version(3); self.run_manager('--activate', previous); time.sleep(2.1)
+        # Model an old owner with sealed extraction identities but no lineage feature.
+        for identity in (first, broken, previous):
+            for suffix in ('.activation.json', '.activation.json.sha256'):
+                (self.root / 'receipts' / (identity + suffix)).unlink()
+        future, pending = self.version(5)
+        current, active = self.version(4); self.run_manager('--activate', current); time.sleep(2.1)
+        self.complete(current, expected=3)
+        self.assertFalse(old.exists()); self.assertFalse(prior.exists()); self.assertTrue(active.exists())
+        self.assertEqual(b'changed bytes remain', (changed / 'identity.txt').read_bytes())
+        self.assertTrue(pending.exists()); self.assertEqual(current, (self.root / 'current.txt').read_text())
 
     def test_failed_new_app_keeps_old_entry(self):
         first, old = self.version(1)

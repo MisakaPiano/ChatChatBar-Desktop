@@ -111,7 +111,7 @@ class HandoffTest(unittest.TestCase):
                         record = json.loads(records[0].read_text())
                         self.assertEqual(120, record['build']); self.assertEqual('b'*40, record['sourceSha'])
                         self.assertEqual(hashlib.sha256(manifest).hexdigest(), record['manifestSha256'])
-                        self.assertEqual(str(root), Path(str(marker) + '.manager-cwd').read_text())
+                        self.assertTrue(os.path.samefile(root, Path(str(marker) + '.manager-cwd').read_text()))
                 finally:
                     self.assertEqual(2 if defect == 'exit' else 0, old.wait(timeout=10))
 

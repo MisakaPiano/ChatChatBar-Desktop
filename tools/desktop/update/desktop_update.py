@@ -81,6 +81,8 @@ def _delete_verified_cached_installer(path, expected_bytes, expected_sha, remove
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
     kernel.GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_void_p]
     kernel.GetFinalPathNameByHandleW.argtypes = [wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD]
+    kernel.GetLongPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+    kernel.GetLongPathNameW.restype = wintypes.DWORD
     kernel.ReadFile.argtypes = [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p]
     kernel.SetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
     class Info(ctypes.Structure):
@@ -106,7 +108,10 @@ def _delete_verified_cached_installer(path, expected_bytes, expected_sha, remove
                 name = '\\\\' + name[8:]
             elif name.startswith('\\\\?\\'):
                 name = name[4:]
-            return os.path.normcase(os.path.normpath(name)) == os.path.normcase(str(path))
+            spelling = ctypes.create_unicode_buffer(32768)
+            length = kernel.GetLongPathNameW(str(path), spelling, len(spelling))
+            return (0 < length < len(spelling) and
+                    os.path.normcase(os.path.normpath(name)) == os.path.normcase(os.path.normpath(spelling.value)))
         if not matches_path():
             return 'LOCATION_REFUSED'
         digest = hashlib.sha256(); total = 0; buffer = ctypes.create_string_buffer(256 * 1024)
@@ -133,6 +138,17 @@ def _delete_verified_cached_installer(path, expected_bytes, expected_sha, remove
     finally:
         kernel.CloseHandle(handle)
     return 'REMOVED' if not path.exists() else 'DELETE_UNCONFIRMED'
+
+
+def _matches_confirmation(value, expected):
+    if (not isinstance(value, dict) or value.keys() != expected.keys() or type(value.get('format')) is not int or
+            type(value.get('build')) is not int or not isinstance(value.get('root'), str) or not Path(value['root']).is_absolute()):
+        return False
+    # safe rejects reparse ancestors before the OS compares existing directory identities.
+    # Do not make Windows short/long names or case differences into different installations.
+    actual_root, expected_root = safe(value['root']), safe(expected['root'])
+    return (actual_root.is_dir() and expected_root.is_dir() and os.path.samefile(actual_root, expected_root) and
+            all(value[key] == item for key, item in expected.items() if key != 'root'))
 
 
 def confirmed_installation(installed, cache, package):
@@ -168,7 +184,7 @@ def confirmed_installation(installed, cache, package):
                 if not record.is_file() or record.stat().st_nlink != 1:
                     continue
                 value = _cache_receipt_object(_cache_receipt_bytes(record))
-                if isinstance(value, dict) and type(value.get('format')) is int and type(value.get('build')) is int and value == expected:
+                if _matches_confirmation(value, expected):
                     return True
             except (OSError, ValueError, TypeError, KeyError, UnicodeError):
                 continue
@@ -314,7 +330,7 @@ def retry_owned_cleanup(installed, cache, package, protected_version=None):
         receipt = None
         for p in candidates:
             try:
-                if re.fullmatch('[a-f0-9]{32}\\.json', p.name) and _cache_receipt_object(_cache_receipt_bytes(p)) == expected:
+                if re.fullmatch('[a-f0-9]{32}\\.json', p.name) and _matches_confirmation(_cache_receipt_object(_cache_receipt_bytes(p)), expected):
                     receipt = p; break
             except (OSError, ValueError, UnicodeError):
                 continue

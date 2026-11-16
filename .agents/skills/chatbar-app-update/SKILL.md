@@ -73,6 +73,8 @@ Workflow increments Android `versionCode`, commits version metadata, tags `v<ver
 
 ## Desktop completed-install maintenance
 
+Successful-install confirmation root comparison admits only the same safe existing directory (including Windows case/8.3 aliases); all other receipt fields remain exact. Native retirement compares pinned directory file identities. Python's exclusive cache-file path reproof expands short spelling before comparing the handle's final path; no reparse or foreign-root fallback is introduced.
+
 `--retry-cleanup` is an offline owner retry after startup/manual update checks, skipped while the runtime is busy. It forwards the selected package version including same-version repair selection. Cache cleanup retains its original lock/receipts; program retirement calls only the active manifest-hash-bound manager with an exact successful-install confirmation. `UpdateHandoff --complete` confirms installer zero exit and active identity before independently attempting both owners. Neither path scans development outputs or data roots.
 
 ## Desktop Preview discovery (D-041)

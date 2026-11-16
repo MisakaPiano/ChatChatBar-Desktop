@@ -39,7 +39,8 @@ internal static class Launcher {
     internal sealed class VersionReceipt { public int format; public string product; public string displayVersion; public object buildNumber;
         public string channel; public string storageVersion; public string commit; public string manifestSha256; }
     internal sealed class RepairLink { public string original; public string repaired; public string markerSha256; public string reciprocalSha256; }
-    internal sealed class ActivationRecord { public int format; public string product; public string id; public string manifestSha256; public string previous; public RepairLink[] repairs; }
+    internal sealed class LegacyProgram { public string id; public string manifestSha256; }
+    internal sealed class ActivationRecord { public int format; public string product; public string id; public string manifestSha256; public string previous; public RepairLink[] repairs; public LegacyProgram[] legacy; }
     internal sealed class CompletionRecord { public int format; public string product; public string id; public string manifestSha256; }
     internal sealed class EntryRetirement { public int format; public string product; public string original; public string repaired; public string directory; public Entry[] files; }
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 2097152 };
@@ -83,6 +84,26 @@ internal static class Launcher {
     static extern bool SetFileInformationByHandle(SafeFileHandle file, int kind, ref byte value, uint size);
     [DllImport("kernel32.dll", EntryPoint = "SetFileInformationByHandle", SetLastError = true)]
     static extern bool SetDispositionEx(SafeFileHandle file, int kind, ref uint value, uint size);
+    [StructLayout(LayoutKind.Sequential)] struct FileIdentity {
+        public uint attributes; public System.Runtime.InteropServices.ComTypes.FILETIME created, accessed, written;
+        public uint volume, sizeHigh, sizeLow, links, indexHigh, indexLow;
+    }
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool GetFileInformationByHandle(SafeFileHandle file, out FileIdentity identity);
+    static bool SameDirectory(string left, string right) {
+        if (String.IsNullOrEmpty(left) || !Path.IsPathRooted(left) || Path.GetPathRoot(left).Length <= 1) return false;
+        left = Safe(left); right = Safe(right);
+        if (!Directory.Exists(left) || !Directory.Exists(right)) return false;
+        // Reparse admission remains strict. Pin both existing directories against replacement;
+        // Windows short/long names and case differences must identify the same NTFS object.
+        using (var a = CreateFile(left, 0x80, 3, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero))
+        using (var b = CreateFile(right, 0x80, 3, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero)) {
+            FileIdentity x = new FileIdentity(), y = new FileIdentity();
+            Require(!a.IsInvalid && !b.IsInvalid && GetFileInformationByHandle(a, out x) && GetFileInformationByHandle(b, out y), "CLEANUP_DIRECTORY_IDENTITY_UNAVAILABLE");
+            Require((x.attributes & 0x410) == 0x10 && (y.attributes & 0x410) == 0x10, "REPARSE_REFUSED");
+            return x.volume == y.volume && x.indexHigh == y.indexHigh && x.indexLow == y.indexLow && (x.indexHigh != 0 || x.indexLow != 0);
+        }
+    }
     // Pin every parent against rename/reparse replacement; digest and deletion use one file handle.
     static bool DeleteOwned(string path, long bytes, string digest) {
         var parents = new System.Collections.Generic.List<SafeFileHandle>();
@@ -475,6 +496,35 @@ internal static class Launcher {
         } catch (Exception) { Event("DEFERRED REPAIR_LINK_UNCONFIRMED " + Path.GetFileName(path)); }
         return links.ToArray();
     }
+    static bool RepairCustody(string id) {
+        if (File.Exists(Child(Root, "receipts/" + id + ".repair-retained")) || File.Exists(Child(Root, "receipts/" + id + ".repair-current"))) return true;
+        var pending = Child(Root, "pending-repair.txt");
+        if (!File.Exists(pending)) return false;
+        Require(new FileInfo(pending).Length <= 256, "REPAIR_RETENTION_MARKER_REFUSED");
+        return File.ReadAllText(pending).Trim() == id;
+    }
+    static LegacyProgram[] CaptureLegacyPrograms(string id, string previous) {
+        var result = new List<LegacyProgram>();
+        // One-time bridge from a pre-lineage current program. Ownership alone is not
+        // enough: snapshot only complete, unchanged, strictly superseded programs.
+        if (previous == null || File.Exists(AuditPath(previous + ".activation"))) return result.ToArray();
+        ReleaseId boundary;
+        try { boundary = InstalledIdentity(previous, false); }
+        catch (Exception) { Event("DEFERRED LEGACY_BOUNDARY_UNCONFIRMED"); return result.ToArray(); }
+        foreach (var directory in Directory.GetDirectories(Child(Root, "versions"))) try {
+            var candidate = Path.GetFileName(directory); VersionRoot(candidate);
+            if (candidate == id || candidate == previous || candidate.Contains("-r") || RepairCustody(candidate) ||
+                File.Exists(AuditPath(candidate + ".activation"))) continue;
+            var version = ReadVersionReceipt(candidate);
+            if (version.build >= boundary.build || CompareRelease(version.display, boundary.display) >= 0) continue;
+            var manifest = ReadManifest(directory); var path = Child(directory, "install-manifest.json");
+            var digest = File.ReadAllText(Child(Root, "receipts/" + candidate + ".sha256"));
+            Require(Hash(path) == digest, "LEGACY_MANIFEST_CHANGED");
+            Verify(directory, manifest); Require(ExactProgramFiles(directory, manifest), "LEGACY_PROGRAM_UNKNOWN");
+            result.Add(new LegacyProgram { id = candidate, manifestSha256 = digest });
+        } catch (Exception) { Event("DEFERRED LEGACY_PROGRAM_NOT_PROVEN " + Path.GetFileName(directory)); }
+        return result.ToArray();
+    }
     static void RecordActivation(string id, string previous) {
         var manifest = Child(VersionRoot(id), "install-manifest.json");
         var digest = File.ReadAllText(Child(Root, "receipts/" + id + ".sha256"));
@@ -484,14 +534,14 @@ internal static class Launcher {
             Require(old.format == 1 && old.product == Product && old.id == id && old.manifestSha256 == digest, "CLEANUP_ACTIVATION_CHANGED"); return;
         }
         WriteAudit(id + ".activation", new ActivationRecord { format = 1, product = Product, id = id,
-            manifestSha256 = digest, previous = previous == id ? null : previous, repairs = CaptureRepairLinks() });
+            manifestSha256 = digest, previous = previous == id ? null : previous, repairs = CaptureRepairLinks(), legacy = CaptureLegacyPrograms(id, previous) });
     }
     static void ConfirmCompletedInstallation(string path) {
         var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         Require(!String.IsNullOrEmpty(local), "CLEANUP_COMPLETION_ROOT");
         var cache = Safe(Path.Combine(local, "ChatChatBarDesktopUpdates"));
         path = Safe(path);
-        Require(Path.GetDirectoryName(path) == Child(cache, "confirmations") && Regex.IsMatch(Path.GetFileName(path), "^[a-f0-9]{32}\\.json$") &&
+        Require(SameDirectory(Path.GetDirectoryName(path), Child(cache, "confirmations")) && Regex.IsMatch(Path.GetFileName(path), "^[a-f0-9]{32}\\.json$") &&
             File.ReadAllText(Child(cache, "owner.txt")) == Product && new FileInfo(path).Length <= 32768, "CLEANUP_COMPLETION_REFUSED");
         var record = Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(path));
         var fields = new[] { "format", "product", "build", "displayVersion", "sourceSha", "root", "current", "manifestSha256" };
@@ -500,7 +550,7 @@ internal static class Launcher {
         var id = Current(); var directory = VersionRoot(id); var m = ReadManifest(directory); var identity = Identity(m);
         var digest = File.ReadAllText(Child(Root, "receipts/" + id + ".sha256"));
         Require(Hash(Child(directory, "install-manifest.json")) == digest && (string)record["product"] == Product &&
-            (string)record["root"] == Root && (string)record["current"] == id && (string)record["sourceSha"] == m.commit &&
+            SameDirectory(record["root"] as string, Root) && (string)record["current"] == id && (string)record["sourceSha"] == m.commit &&
             (string)record["displayVersion"] == m.version && Convert.ToInt64(record["build"]) == identity.build &&
             (string)record["manifestSha256"] == digest, "CLEANUP_COMPLETION_IDENTITY");
         var activation = ReadAudit<ActivationRecord>(id + ".activation");
@@ -519,18 +569,32 @@ internal static class Launcher {
             Require(seen.Add(cursor) && seen.Count <= 1000, "CLEANUP_LINEAGE_REFUSED");
             var step = ReadAudit<ActivationRecord>(cursor + ".activation");
             Require(step.format == 1 && step.product == Product && step.id == cursor && Regex.IsMatch(step.manifestSha256 ?? "", "^[a-f0-9]{64}$"), "CLEANUP_ACTIVATION_CHANGED");
+            foreach (var legacy in step.legacy ?? new LegacyProgram[0]) try {
+                var directory = VersionRoot(legacy.id);
+                if (!Directory.Exists(directory) || RepairCustody(legacy.id)) continue;
+                ReadVersionReceipt(legacy.id);
+                Require(Regex.IsMatch(legacy.manifestSha256 ?? "", "^[a-f0-9]{64}$") &&
+                    Hash(Child(directory, "install-manifest.json")) == legacy.manifestSha256 &&
+                    File.ReadAllText(Child(Root, "receipts/" + legacy.id + ".sha256")) == legacy.manifestSha256, "LEGACY_MANIFEST_CHANGED");
+                allowed.Add(legacy.id);
+            } catch (Exception) { Event("DEFERRED LEGACY_PROGRAM_NOT_PROVEN " + legacy.id); }
             foreach (var link in step.repairs ?? new RepairLink[0]) {
                 VersionRoot(link.original); VersionRoot(link.repaired);
                 var marker = Child(Root, "receipts/" + link.original + ".repair-retained");
                 var reciprocal = Child(Root, "receipts/" + link.repaired + ".repair-current");
                 if (File.Exists(marker) && File.Exists(reciprocal) && Hash(marker) == link.markerSha256 && Hash(reciprocal) == link.reciprocalSha256 &&
-                    File.ReadAllText(marker) == link.repaired && File.ReadAllText(reciprocal) == link.original) { allowed.Add(link.original); links.Add(link); }
+                    File.ReadAllText(marker) == link.repaired && File.ReadAllText(reciprocal) == link.original) links.Add(link);
             }
             if (step.previous == null) break;
             VersionRoot(step.previous); Require(step.previous != id, "CLEANUP_LINEAGE_REFUSED");
             allowed.Add(step.previous); cursor = step.previous;
         }
-        repairs = links.GroupBy(x => x.original).Select(x => x.First()).ToArray(); return allowed;
+        // A present repair target outside the activated lineage may still be a failed or
+        // pending stage. Legacy targets already retired by an older owner are distinct.
+        repairs = links.Where(x => x.repaired == id || allowed.Contains(x.repaired) || !Directory.Exists(VersionRoot(x.repaired)))
+            .GroupBy(x => x.original).Select(x => x.First()).ToArray();
+        foreach (var link in repairs) allowed.Add(link.original);
+        return allowed;
     }
     static bool RetireRepairEntries(RepairLink link) {
         if (Directory.Exists(VersionRoot(link.original))) return false;
