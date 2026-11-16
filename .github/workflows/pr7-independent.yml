@@ -18,7 +18,7 @@ jobs:
       - run: cp validation/pr7_independent.py /tmp/pr7_independent.py
       - uses: actions/checkout@v4
         with:
-          ref: 79c3128
+          ref: 79c3128d0f326703addc4036528de061e5ee2726
           fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-java@v4
