@@ -1,5 +1,6 @@
 package com.example.chatbar.ui.character
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.*
@@ -51,6 +52,7 @@ internal fun CharacterNovelAiPromptFullscreenHost(
     currentSource: () -> String,
     onDismiss: () -> Unit
 ) {
+    BackHandler(onBack = onDismiss)
     val source = currentSource()
     if (source != request.initialValue.text) {
         LaunchedEffect(source) { onDismiss() }
