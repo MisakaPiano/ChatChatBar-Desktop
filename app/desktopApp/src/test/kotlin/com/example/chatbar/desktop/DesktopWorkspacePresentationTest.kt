@@ -31,7 +31,7 @@ class DesktopWorkspacePresentationTest {
         assertTrue(panel.contains("DesktopPersonDetailKind.NAME_AND_AVATAR -> CharacterAvatarBookFields(selected, controller)"))
         val detail = panel.substringAfter("private fun CharacterAvatarBookFields(")
             .substringBefore("private fun CharacterEntryFields(")
-        assertEquals(1, Regex("EditorField\\(").findAll(detail).count())
+        assertEquals(1, Regex("DesktopCharacterTextField\\(").findAll(detail).count())
         assertTrue(detail.contains("DesktopUiText.CHARACTER_NAME"))
         assertEquals(1, Regex("ImageSlot\\(").findAll(detail).count())
         assertTrue(detail.contains("entry.appearanceImage"))

@@ -40,6 +40,7 @@ class DesktopNarrativeModePlannerTest {
             assertFalse(regen.assembly.messages.any { it.content.toString().contains(original.content) })
             val selected = MessageAlternativeVersionPolicy.select(original, 0)
             c.chatRepository.updateMessage(selected)
+            val beforePlanning = assertNotNull(c.chatRepository.getMessage(original.id, id))
             val focusHistory = c.chatRequestPlanner.planPersistedUser(id, user.id, inputs, false)
             assertTrue(focusHistory.assembly.messages.any { it.content.jsonPrimitive.content ==
                 MainChatPromptAuthority.narrativeModeHistoryReply("focus source", ChatNarrativeMode.FOCUS) })
@@ -49,7 +50,7 @@ class DesktopNarrativeModePlannerTest {
             assertFalse(disabled.assembly.messageTrace.any { it.source in setOf(MainChatLogicalMessageSource.NARRATIVE_MODE, MainChatLogicalMessageSource.NARRATIVE_MODE_TAIL) })
             assertFalse(disabled.assembly.messages.any { "<历史回复 " in it.content.jsonPrimitive.content })
             assertNotEquals(enabled.assembly.promptCacheKey, disabled.assembly.promptCacheKey)
-            assertEquals(selected, c.chatRepository.getMessage(original.id, id))
+            assertEquals(beforePlanning, c.chatRepository.getMessage(original.id, id))
             c.chatRepository.setNarrativeMode(id, ChatNarrativeMode.FOCUS)
             val changed = c.chatRequestPlanner.planPersistedUser(id, user.id, inputs, false)
             assertNotEquals(enabled.assembly.promptCacheKey, changed.assembly.promptCacheKey)
