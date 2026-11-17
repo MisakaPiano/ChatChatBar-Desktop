@@ -151,7 +151,7 @@ class FormatRepairCommitRuntimeTest {
 
     private fun withFixture(fail: Boolean = false, partial: Boolean = false, block: (Fixture) -> Unit) {
         val app = ChatBarApp.instance
-        check(app.packageName == "com.example.chatbar.repaircommit.r1")
+        check(app.packageName in setOf("com.example.chatbar.repaircommit.r1", "com.example.chatbar.nextreview.r2"))
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         // dependenciesReady publishes service construction; the cold-start model/settings
         // migrations run separately and must finish before installing this test's configuration.
