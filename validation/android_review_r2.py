@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os,re,zipfile,tarfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'android-review-r2';out.mkdir(exist_ok=True)
-SOURCE='0d6ad72a6ca5e7c1f82d1c81063d591804b0cfe2'
+SOURCE='fcc475d17e3b229e260021a9093ac7aed9c80646'
 APP_ID='com.example.chatbar.nextreview.r2'
 CLASSES=pathlib.Path('/tmp/android_r2_native_classes.txt').read_text().strip()
 
@@ -14,7 +14,7 @@ def pull_app_directory(directory,destination):
     archive=destination.parent/(directory+'.tar')
     with archive.open('wb') as output:
         subprocess.run(['adb','exec-out','run-as',APP_ID,'tar','-cf','-',
-            '-C','/sdcard/Android/data/'+APP_ID+'/files',directory],stdout=output,check=True)
+            '-C','files',directory],stdout=output,check=True)
     with tarfile.open(archive) as packed:
         assert all(pathlib.PurePosixPath(m.name).parts[0]==directory for m in packed.getmembers())
         packed.extractall(destination.parent,filter='data')
@@ -74,10 +74,8 @@ elif phase.startswith('native-'):
         '-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true')
     cases=report(phase,True)
     evidence_root=out/(phase+'-screenshots');evidence_root.mkdir(exist_ok=True)
-    for directory in ['ui-previews','alignment-people-evidence']:
+    for directory in ['ui-previews','alignment-people-evidence','safe-batch-retained']:
         pull_app_directory(directory,evidence_root/directory)
-    if phase=='native-api26':
-        pull_app_directory('safe-batch-retained',evidence_root/'safe-batch-retained')
     assert r.returncode==0 and len(cases)==111 and len({c['classname'] for c in cases})==24
     assert all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='package':
