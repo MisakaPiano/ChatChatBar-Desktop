@@ -1,3 +1,7 @@
+## 2026-11-18：PR7已更新3132／专项与独立复审闭合，上游CI及正式接受仍待
+
+PR7第四轮3132已由原负责人更新至原PR，root直接GitHub读回3132/base41f6、open未合并。专用独立复审原报告INDEPENDENT_CODE_AND_SCOPED_VALIDATION_COMPLETE_ACCEPTANCE_PENDING，F1–F4均CODE_AND_SCOPED_RUNTIME_VERIFIED、开放findings空；只绑定代码及所列专项证据，不重开已完成独审。同3132专项44144080302/job134254406331实跑85JVM、标准com.example.chatbar API26/30各27，即27个不同方法/54次执行，0fail/skip，编译及debug签名核验PASS；本轮13方法加前14方法同source重新执行，不跨轮累加或复用旧PASS。旧05ef VM覆盖负控2真AssertionError（仅VM覆盖、非全05ef运行）及初5b真实失败原件保留。artifact14356871768原件ZIP256483B、SHA256 1a9bd2f745cbfc7b070c555fd5b6f3113a8f68c7dff3e3bb5159e92a28668190按原负责人/独审原件登记；root及本记录者未重新下载APK/XML或重跑。上游44147237964/job134265602409同3132仍in_progress、conclusion=null，不记上游PASS。作者最新仍5937432509对旧05ef要求修改，尚无新接受；维护者删除/存档恢复兼容确认、合并、真人分列待，长期每PR跟至正式接受继续。Desktop仅登记未核，旧9c具体异步CAS风险、r1/9c/dataPR/F11/Desktop1259及全部人验保持。只同步canonical I/207，不接管源码、不重跑验证/下载APK/构建/安装/发布/清理；保持GPT-6.1 Sol High。
+
 ## 2026-11-18：PR7第四轮隔离3132补代码／13原生回归已添加，最终验证复审待
 
 PR7第四轮隔离候选3132f4658eb33cea3eee02ca432f1fbc526086ae、控制975dbee290d789659d153ca9c5a4f5fb9a0c4063已由原负责人报告补代码：独立复审发现的旧UI观察复活锚点、CAS后legacy迁归属错误、last-item共享音频保护及未捕获清理失败路径；新增13条原生回归仅为已添加，不记通过。root直接GitHub读取最终云端44144080302/control975dbee为in_progress、conclusion=null，最终原件和新候选独立复审仍待。初版5b云端44140627962的旧VM负控1真断言失败、fixed-5b API30的21项中5项锚点真断言失败原件保留，不能冒最终PASS。原PR仍05ef/base41f6、open未合并，尚未推3132；root确认PR1/2/3/4已合并、7为本端唯一本轮open，已合并PR不重开。长期每个提交PR跟进至正式接受继续，CI/独审/推送不代接受或合并；维护者删除/存档恢复兼容确认仍待，删除到0设计不变。前轮证据、旧9c具体异步CAS风险、r1/9c/dataPR/F11/Desktop1259与全部真人状态不动。本次仅登记中间实际检查点，不接管源码、不跑测试/构建/安装/发布/清理，保持GPT-6.1 Sol High。
