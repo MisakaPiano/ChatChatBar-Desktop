@@ -72,7 +72,7 @@ class SafeBatchChatRuntimeTest {
     private fun withFixture(blockSecondQuote: Boolean, block: (Fixture) -> Unit) {
         val app = ChatBarApp.instance
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
-        check(app.packageName in setOf("com.example.chatbar.safebatch.n2", "com.example.chatbar.nextreview.r1"))
+        check(app.packageName in setOf("com.example.chatbar.safebatch.n2", "com.example.chatbar.nextreview.r1", "com.example.chatbar.nextreview.r2"))
         rule.setContent { ChatBarTheme { CbText("Synthetic Chat runtime checks") } }
         val oldToken = app.novelAiCredentialStore.load()
         val oldSettings = runBlocking { app.settingsRepository.getAppSettings() }

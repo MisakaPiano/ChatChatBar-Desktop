@@ -36,7 +36,7 @@ class ChatHistoryActionWireTest {
 
     @Before fun surface() {
         val app = ChatBarApp.instance
-        check(app.packageName == "com.example.chatbar.actionhistory.r1")
+        check(app.packageName in setOf("com.example.chatbar.actionhistory.r1", "com.example.chatbar.nextreview.r2"))
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         runBlocking { withTimeout(30000) { app.settingsRepository.isInitialized.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic action projection wire verification") } }
