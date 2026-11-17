@@ -2698,6 +2698,7 @@ class ChatViewModel(
         var result = message
         var repairedPrefix = ""
         var sawDone = false
+        var stoppedReplacement: ChatMessage? = null
         formatRepairStopRequested = false
         _messageFormatRepairState.value = MessageFormatRepairState(
             messageId = message.id,
@@ -2741,9 +2742,11 @@ class ChatViewModel(
                                 formatRepairNotice = MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(message),
                                 updatedAt = System.currentTimeMillis()
                             )
-                            if (unchanged != message) persistFormatRepairMessage(unchanged)
-                            _messageFormatRepairEvents.tryEmit("格式无需修复")
-                            unchanged
+                            val retained = if (unchanged != message) {
+                                persistFormatRepairMessage(message, unchanged)
+                            } else message
+                            if (retained == unchanged) _messageFormatRepairEvents.tryEmit("格式无需修复")
+                            retained
                         }
                         else -> {
                             val notice = MessageFormatRepairPolicy.completedRepairNotice(
@@ -2751,6 +2754,7 @@ class ChatViewModel(
                                 repaired = repairedPrefix
                             )
                             persistFormatRepairMessage(
+                                message,
                                 MessageFormatRepairPolicy.replaceCurrentDisplayContent(
                                     message = message,
                                     replacement = repairedPrefix,
@@ -2765,15 +2769,15 @@ class ChatViewModel(
                         original = originalContent,
                         repairedPrefix = repairedPrefix
                     )
-                    result = persistFormatRepairMessage(
-                        MessageFormatRepairPolicy.replaceCurrentDisplayContent(
-                            message = message,
-                            replacement = mixedContent,
-                            notice = MessageFormatRepairNotice(
-                                kind = MessageFormatRepairNoticeKind.STOPPED,
-                                targetContent = mixedContent,
-                                originalContent = originalContent
-                            )
+                    // This child is already cancelled. Its owner commits the stopped result
+                    // after joining it, using the same source check and normal data admission.
+                    stoppedReplacement = MessageFormatRepairPolicy.replaceCurrentDisplayContent(
+                        message = message,
+                        replacement = mixedContent,
+                        notice = MessageFormatRepairNotice(
+                            kind = MessageFormatRepairNoticeKind.STOPPED,
+                            targetContent = mixedContent,
+                            originalContent = originalContent
                         )
                     )
                 } catch (error: Exception) {
@@ -2786,6 +2790,15 @@ class ChatViewModel(
             activeFormatRepairJob = repairJob
             try {
                 repairJob.join()
+                stoppedReplacement?.let { replacement ->
+                    try {
+                        result = persistFormatRepairMessage(message, replacement)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        _messageFormatRepairEvents.tryEmit("停止结果保存未完成：${error.message ?: "请稍后重试"}")
+                    }
+                }
             } finally {
                 if (activeFormatRepairJob == repairJob) activeFormatRepairJob = null
                 formatRepairStopRequested = false
@@ -2799,16 +2812,24 @@ class ChatViewModel(
         message: ChatMessage,
         error: String
     ): ChatMessage = persistFormatRepairMessage(
+        message,
         message.copy(
             formatRepairNotice = MessageFormatRepairPolicy.failedAttemptNotice(message, error),
             updatedAt = System.currentTimeMillis()
         )
     )
 
-    private suspend fun persistFormatRepairMessage(message: ChatMessage): ChatMessage {
-        chatRepository.updateMessage(message)
+    private suspend fun persistFormatRepairMessage(
+        expected: ChatMessage,
+        replacement: ChatMessage
+    ): ChatMessage {
+        // Media actions can commit while repair is awaiting its provider. Never write that old
+        // whole-message snapshot over a newer image/version change or recreate a deleted source.
+        val committed = chatRepository.updateMessageIfUnchanged(expected, replacement)
         replaceMessagesFromRepository()
-        return message
+        if (committed) return replacement
+        _messageFormatRepairEvents.tryEmit("消息已变化，本次格式修复未应用")
+        return chatRepository.getMessage(expected.id, expected.sessionId) ?: expected
     }
 
     fun updateDraftInput(text: String) {
@@ -3966,8 +3987,12 @@ class ChatViewModel(
             if (imagePath !in message.images) return@launch
             val remaining = message.images.filterNot { it == imagePath }
             if (remaining.isEmpty() && message.content.isBlank()) {
+                if (!chatRepository.deleteMessageIfUnchanged(message)) {
+                    _messageActionError.value = "消息已变化，请重新删除图片"
+                    replaceMessagesFromRepository()
+                    return@launch
+                }
                 selectNeighborWindowAnchor(messageId)
-                chatRepository.deleteMessage(messageId, sessionId)
                 _messages.value = _messages.value.filterNot { it.id == messageId }
                 refreshMessages()
                 enqueueLongTermMemoryAfterMessageDeletion()
@@ -3993,7 +4018,11 @@ class ChatViewModel(
                     generatedImageMetadata = message.generatedImageMetadata
                         .filter { it.imagePath in remaining }
                 )
-                chatRepository.updateMessage(updatedMessage)
+                if (!chatRepository.updateMessageIfUnchanged(message, updatedMessage)) {
+                    _messageActionError.value = "消息已变化，请重新删除图片"
+                    replaceMessagesFromRepository()
+                    return@launch
+                }
                 _messages.value = _messages.value.map { current ->
                     if (current.id == messageId) updatedMessage else current
                 }
