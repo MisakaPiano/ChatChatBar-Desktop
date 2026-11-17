@@ -1,14 +1,8 @@
 import pathlib,subprocess,sys,json,shutil,hashlib,os,re,zipfile,tarfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'card-fields-pr-native';out.mkdir(exist_ok=True)
-PR='6da3c6211fb77b5b575ed61d7c03e8ccbeb6904f'
-COMBINED='ba6f2dc9131dd0e13b3b8c630f7943d0ddec99a0'
-APP_ID='com.example.chatbar.cardfields.review.n1'
-CLASSES=','.join(['com.example.chatbar.ui.character.CharacterCardFieldControlsTest',
- 'com.example.chatbar.ui.character.CharacterCardFieldsPersistenceTest',
- 'com.example.chatbar.ui.chat.SaveSlotActionsTest',
- 'com.example.chatbar.ui.character.CharacterNovelAiPromptFieldTest',
- 'com.example.chatbar.ui.kit.CbInputStateTest'])
+PR='1799c3f77d026f60f2e25881323425ce2c11c8ec'
+APP_ID='com.example.chatbar.instrumented'
 def gradle(*args):return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace'],cwd=root/'app')
 def check_source(expected):
  assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==expected
@@ -45,16 +39,30 @@ def collect(directory,label):
   packed.extractall(out/(label+'-screenshots'),filter='data')
 
 check_source(PR)
-p=root/'app/app/build.gradle.kts';s=p.read_text();assert s.count('applicationId = "com.example.chatbar"')==1
-p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "'+APP_ID+'"'))
-p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();p.write_text(re.sub(r'(<string name="app_name">)[^<]*(</string>)',r'\g<1>CCB card fields internal\2',s,count=1))
-(out/'package-projection.patch').write_bytes(subprocess.check_output(['git','diff']))
+# Default upstream build must report explicit assumptions, with no repository fixture writes.
+result=gradle(':app:connectedDebugAndroidTest',
+ '-Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.character.CharacterCardFieldsPersistenceTest',
+ '-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true')
+default_cases=report('pr-native-default',True)
+assert result.returncode==0 and len(default_cases)==3 and all(c['skipped'] and not c['failure'] for c in default_cases)
+metadata('pr-default-apk',PR,'com.example.chatbar')
+rejections={}
+for name,flags in [('formal-id',['-PCHATBAR_ISOLATED_ANDROID_TEST=true','-PCHATBAR_ISOLATED_ANDROID_TEST_APP_ID=com.example.chatbar']),
+ ('orphan-id',['-PCHATBAR_ISOLATED_ANDROID_TEST_APP_ID=com.example.chatbar.instrumented'])]:
+ r=subprocess.run(['./gradlew',':app:help',*flags,'--no-daemon'],cwd=root/'app',capture_output=True,text=True)
+ (out/(name+'-rejection.txt')).write_text(r.stdout+'\n'+r.stderr)
+ assert r.returncode!=0 and ('non-production' in r.stdout+r.stderr or 'requires CHATBAR_ISOLATED' in r.stdout+r.stderr)
+ rejections[name]=dict(returncode=r.returncode,rejected=True)
+(out/'configuration-checks.json').write_text(json.dumps(rejections))
+# The supported Gradle property, not a source patch, enables the real behavioral fixtures.
+assert subprocess.check_output(['git','diff','--name-only'],text=True).strip()==''
+(out/'package-projection.patch').write_text('')
 classes='com.example.chatbar.ui.character.CharacterCardFieldControlsTest,com.example.chatbar.ui.character.CharacterCardFieldsPersistenceTest'
-result=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes,
+result=gradle(':app:connectedDebugAndroidTest','-PCHATBAR_ISOLATED_ANDROID_TEST=true','-Pandroid.testInstrumentationRunnerArguments.class='+classes,
  '-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true')
 cases=report('pr-native-api30',True)
 assert result.returncode==0 and len(cases)==7 and all(not c['failure'] and not c['skipped'] for c in cases)
 collect('card-fields-review','pr-native-api30')
 metadata('pr-native-apk',PR,APP_ID)
 (out/'source.json').write_text(json.dumps(dict(source=PR,syntheticOnly=True,realAccountCalls=False,apkForDelivery=False,
- scope='Seven new methods on exact upstream PR head in isolated internal app; no consolidation code')))
+ scope='Default build: 3 intentional assumptions, no behavioral pass. Supported isolated Gradle switch: seven real methods, no source patch or consolidation code')))

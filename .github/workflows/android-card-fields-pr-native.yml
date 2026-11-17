@@ -21,7 +21,7 @@ jobs:
       - run: cp validation/card_fields_pr_native.py /tmp/card_fields_pr_native.py
       - uses: actions/checkout@v4
         with:
-          ref: 6da3c6211fb77b5b575ed61d7c03e8ccbeb6904f
+          ref: 1799c3f77d026f60f2e25881323425ce2c11c8ec
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-java@v4
