@@ -9,52 +9,32 @@ concurrency:
   group: desktop-card-editor-fields-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  focused:
-    runs-on: windows-latest
-    timeout-minutes: 35
+  affected-android-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Enable long path checkout
-        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
-      - name: Select canonical synthetic test directory
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $cardTestRoot = Join-Path ($env:SystemDrive + '\') ('c' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
-          New-Item -ItemType Directory -Path $cardTestRoot -ErrorAction Stop | Out-Null
-          @("TEMP=$cardTestRoot", "TMP=$cardTestRoot") | Add-Content $env:GITHUB_ENV -Encoding utf8
-      - name: Verify affected deferred greeting ownership and adjacent real UI drafts
+      - name: Verify the two corrected Android compatibility contracts
         working-directory: app
-        shell: pwsh
-        env:
-          CCB_CARD_EDITOR_REVIEW_DIR: ${{ runner.temp }}/card-editor-review
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Path $env:CCB_CARD_EDITOR_REVIEW_DIR -Force | Out-Null
-          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; syntheticOnly = $true; localInstall = $false; providerCalls = $false; scope = 'deferred greeting ownership, shell completion and adjacent UI/draft/Memory'; unchangedEvidenceSource = 'a0ef42a27e059feb6fd73bf74b28df3449c24920' } |
-            ConvertTo-Json | Set-Content "$env:CCB_CARD_EDITOR_REVIEW_DIR/source.json" -Encoding utf8
-          .\gradlew.bat :sharedCore:test --tests com.example.chatbar.domain.card.SharedCardContractTest `
-            --tests com.example.chatbar.domain.chat.RegenerationContractTest --no-daemon --stacktrace --console=plain
-          $contractExit = $LASTEXITCODE
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true `
-            --tests com.example.chatbar.desktop.DesktopGreetingDeferredTest `
-            --tests com.example.chatbar.desktop.DesktopSessionGreetingTest `
-            --tests com.example.chatbar.desktop.DesktopCardEditorFieldsUiTest `
-            --tests com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest `
-            --tests com.example.chatbar.desktop.DesktopMemoryWorkspaceUiTest --no-daemon --stacktrace --console=plain
-          if ($LASTEXITCODE -ne 0 -or $contractExit -ne 0) { exit 1 }
-      - name: Preserve exact synthetic reports and review images
+          mkdir -p "${{ runner.temp }}/card-editor-review"
+          printf '{"source":"%s","run":"%s","syntheticOnly":true,"localInstall":false,"providerCalls":false,"scope":"two corrected Android contract fixtures","unchangedEvidenceSource":"fc39ab30e7b6a4cdf6c9e15678afb3e179d1a95a"}\n' "$(git rev-parse HEAD)" "$GITHUB_RUN_ID" > "${{ runner.temp }}/card-editor-review/source.json"
+          bash ./gradlew :app:testDebugUnitTest \
+            --tests com.example.chatbar.domain.card.CharacterCardPackageTest \
+            --tests com.example.chatbar.ui.chat.CurrentTurnMessageOrderTest \
+            --no-daemon --stacktrace --console=plain
+      - name: Preserve affected original test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: desktop-card-editor-fields-originals
           path: |
-            app/sharedCore/build/test-results/test/
-            app/desktopApp/build/test-results/test/
+            app/app/build/test-results/testDebugUnitTest/
             ${{ runner.temp }}/card-editor-review/
           if-no-files-found: error

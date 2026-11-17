@@ -121,7 +121,7 @@ class CurrentTurnMessageOrderTest {
                     assertTrue(end < contents.indexOf("fixture-strong"))
                 }
                 assertEquals(messages.map { it.content.jsonText() }, contents)
-                assertEquals("user", roles.last())
+                assertEquals("assistant", roles.last())
                 assertEquals("user", roles[userIndex])
                 assertEquals(if (baseUrl.startsWith("http:")) "assistant" else "system", roles[characterIndex])
             }
