@@ -38,8 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -1950,6 +1954,7 @@ fun SaveSlotItem(
     onDelete: () -> Unit,
     renderText: (String) -> String = { it }
 ) {
+    var confirmLoad by remember(slot.id) { mutableStateOf(false) }
     CbSurface(Modifier.fillMaxWidth(), color = ChatBarTheme.colors.muted, border = BorderStroke(1.dp, ChatBarTheme.colors.border)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -1968,10 +1973,47 @@ fun SaveSlotItem(
                     style = ChatBarTheme.typography.caption
                 )
             }
-            CbIconButton(AppIcons.Restore, "读档", onLoad, tint = ChatBarTheme.colors.primary, enabled = enabled)
-            CbIconButton(AppIcons.Export, "导出存档", onExport, tint = ChatBarTheme.colors.primary, enabled = enabled)
-            CbIconButton(AppIcons.Delete, "删除", onDelete, tint = ChatBarTheme.colors.destructive, enabled = enabled)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                SaveSlotAction("载入", "载入存档", AppIcons.Restore, { confirmLoad = true }, enabled, ChatBarTheme.colors.primary)
+                SaveSlotAction("导出", "导出存档", AppIcons.Export, onExport, enabled, ChatBarTheme.colors.primary)
+                SaveSlotAction("删除", "删除存档", AppIcons.Delete, onDelete, enabled, ChatBarTheme.colors.destructive)
+            }
         }
+    }
+    if (confirmLoad) {
+        CbDialog(
+            onDismissRequest = { confirmLoad = false },
+            title = "载入存档",
+            dismiss = { CbButton("取消", { confirmLoad = false }, variant = ButtonVariant.Ghost) },
+            confirm = {
+                CbButton("覆盖并载入", { confirmLoad = false; onLoad() },
+                    variant = ButtonVariant.Destructive, enabled = enabled)
+            }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CbText(renderText(slot.name), style = ChatBarTheme.typography.heading)
+                CbText("${SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(slot.createdAt))} · ${slot.messageCount} 条消息",
+                    color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
+                CbText("载入会用此存档替换当前会话内容和存档包含的状态。当前尚未存档的进度将丢失。")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaveSlotAction(label: String, description: String, icon: ImageVector, onClick: () -> Unit,
+    enabled: Boolean, tint: Color) {
+    Column(
+        Modifier.width(48.dp).heightIn(min = 48.dp)
+            .semantics(mergeDescendants = true) { contentDescription = description }
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        CbIcon(icon, null, Modifier.size(20.dp), if (enabled) tint else ChatBarTheme.colors.mutedForeground)
+        CbText(label, color = if (enabled) tint else ChatBarTheme.colors.mutedForeground,
+            style = ChatBarTheme.typography.caption)
     }
 }
 
