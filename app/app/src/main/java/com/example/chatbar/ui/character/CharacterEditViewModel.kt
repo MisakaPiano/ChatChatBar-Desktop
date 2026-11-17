@@ -379,6 +379,11 @@ class CharacterEditViewModel(
     var postHistoryInstructions by mutableStateOf("")
     var mesExample by mutableStateOf("")
     var creatorNotes by mutableStateOf("")
+    var tags by mutableStateOf(listOf<String>())
+    var creator by mutableStateOf("")
+    var characterVersion by mutableStateOf("")
+    var extensions by mutableStateOf("")
+        private set
     var momentsEnabled by mutableStateOf(true)
     var defaultNovelAiImageModel by mutableStateOf<NovelAiImageModel?>(null)
     var defaultImageGenerationSettings by mutableStateOf<com.example.chatbar.domain.image.NovelAiCharacterImageSettings?>(null)
@@ -2468,6 +2473,10 @@ class CharacterEditViewModel(
         postHistoryInstructions = card.postHistoryInstructions
         mesExample = card.mesExample
         creatorNotes = card.creatorNotes
+        tags = card.tags
+        creator = card.creator
+        characterVersion = card.characterVersion
+        extensions = card.extensions
         momentsEnabled = card.momentsEnabled
         defaultNovelAiImageModel = card.defaultNovelAiImageModel
         defaultImageGenerationSettings = card.defaultImageGenerationSettings
@@ -2551,6 +2560,10 @@ class CharacterEditViewModel(
                 postHistoryInstructions = postHistoryInstructions,
                 mesExample = mesExample,
                 creatorNotes = creatorNotes,
+                tags = tags,
+                creator = creator,
+                characterVersion = characterVersion,
+                extensions = extensions,
                 momentsEnabled = momentsEnabled,
                 defaultNovelAiImageModel = defaultNovelAiImageModel,
                 defaultImageGenerationSettings = defaultImageGenerationSettings,
@@ -2569,6 +2582,7 @@ class CharacterEditViewModel(
             avatar != null || coverImage != null || chatBackground != null || chatBackgroundImages.isNotEmpty() || editMode != CharacterEditMode.STRUCTURED ||
             basicSetting.isNotBlank() || freeformCharacterText.isNotBlank() || defaultImagePrompt.isNotBlank() ||
             systemPrompt.isNotBlank() || postHistoryInstructions.isNotBlank() || mesExample.isNotBlank() ||
+            tags.isNotEmpty() || creator.isNotBlank() || characterVersion.isNotBlank() ||
             creatorNotes.isNotBlank() || !momentsEnabled || selectedWorldBookIds.isNotEmpty() ||
             defaultNovelAiImageModel != null || defaultImageGenerationSettings != null || selectedDefaultFormatCardId != null ||
             documentsList.isNotEmpty() || charactersList.any { it.hasEditorContent() }
@@ -2603,6 +2617,10 @@ class CharacterEditViewModel(
             postHistoryInstructions = postHistoryInstructions,
             mesExample = mesExample,
             creatorNotes = creatorNotes,
+            tags = tags,
+            creator = creator,
+            characterVersion = characterVersion,
+            extensions = extensions,
             momentsEnabled = momentsEnabled,
             defaultNovelAiImageModel = defaultNovelAiImageModel,
             defaultImageGenerationSettings = defaultImageGenerationSettings,
@@ -2637,6 +2655,10 @@ class CharacterEditViewModel(
             postHistoryInstructions = postHistoryInstructions,
             mesExample = mesExample,
             creatorNotes = creatorNotes,
+            tags = tags,
+            creator = creator,
+            characterVersion = characterVersion,
+            extensions = extensions,
             momentsEnabled = momentsEnabled,
             defaultNovelAiImageModel = defaultNovelAiImageModel,
             defaultImageGenerationSettings = defaultImageGenerationSettings,
