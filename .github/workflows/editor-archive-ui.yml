@@ -21,8 +21,8 @@ jobs:
       - run: cp validation/editor_archive_ui.py /tmp/editor_archive_ui.py
       - uses: actions/checkout@v4
         with:
-          ref: 2d4a899c02dec280c637cbfab5f4c9c8835cf053
-          fetch-depth: 3
+          ref: 8d8e8f6dc612582b55f0aa74e6b0a8ac6c1a2fc1
+          fetch-depth: 4
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -76,7 +76,10 @@ jobs:
         if: always()
         with:
           name: editor-archive-ui-originals
-          path: editor-archive-ui/
+          path: |
+            editor-archive-ui/
+            app/app/build/outputs/androidTest-results/
+            app/app/build/reports/androidTests/
           retention-days: 14
       - uses: actions/upload-artifact@v4
         with:

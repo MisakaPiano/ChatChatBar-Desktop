@@ -1,13 +1,13 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'editor-archive-ui';out.mkdir(exist_ok=True)
-SOURCE='2d4a899c02dec280c637cbfab5f4c9c8835cf053'
+SOURCE='8d8e8f6dc612582b55f0aa74e6b0a8ac6c1a2fc1'
 REVIEW_ID='com.example.chatbar.uireview.n1'
 
 def gradle(*args):
-    subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace'],cwd=root/'app',check=True)
+    return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace'],cwd=root/'app')
 
-def report(label,native=False):
+def report(label,native=False,verify=True):
     src=root/('app/app/build/outputs/androidTest-results/connected' if native else 'app/app/build/test-results/testDebugUnitTest')
     dst=out/label;shutil.copytree(src,dst);cases=[]
     for p in dst.rglob('TEST-*.xml'):
@@ -16,7 +16,8 @@ def report(label,native=False):
             cases.append(dict(name=c.get('name'),classname=c.get('classname'),skipped=c.find('skipped') is not None,
                 failure=None if err is None else dict(type=err.get('type'),message=err.get('message'),text=err.text)))
     (out/(label+'.json')).write_text(json.dumps(cases,ensure_ascii=False,indent=2))
-    assert cases and all(not c['failure'] and not c['skipped'] for c in cases)
+    assert cases
+    if verify: assert all(not c['failure'] and not c['skipped'] for c in cases)
     return cases
 
 def metadata(label,app_id):
@@ -39,13 +40,15 @@ elif phase=='jvm':
     args=[':app:testDebugUnitTest']
     for name in ['NovelAiPromptTranslationTest','NovelAiTagCompletionTest','NovelAiTagSuggestionServiceTest','SaveSlotSerializationTest']:
         args.extend(['--tests','*'+name])
-    gradle(*args,':app:compileDebugAndroidTestKotlin',':app:assembleDebug')
-    report('jvm');metadata('standard-apk','com.example.chatbar')
+    r=gradle(*args,':app:compileDebugAndroidTestKotlin',':app:assembleDebug')
+    report('jvm');assert r.returncode==0
+    metadata('standard-apk','com.example.chatbar')
 elif phase.startswith('native-'):
     classes='com.example.chatbar.ui.chat.SaveSlotActionsTest,com.example.chatbar.ui.character.CharacterNovelAiPromptFieldTest,com.example.chatbar.ui.kit.CbInputStateTest'
-    gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes)
-    cases=report(phase,True);assert len(cases)==14
-    subprocess.run(['adb','pull','/sdcard/Android/data/com.example.chatbar/files/ui-previews',str(out/(phase+'-screenshots'))],check=True)
+    r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes)
+    cases=report(phase,True,verify=False)
+    subprocess.run(['adb','pull','/sdcard/Android/data/com.example.chatbar/files/ui-previews',str(out/(phase+'-screenshots'))],check=False)
+    assert r.returncode==0 and len(cases)==14 and all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='prepare-review-apk':
     p=root/'app/app/build.gradle.kts';s=p.read_text();assert s.count('applicationId = "com.example.chatbar"')==1
     p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "'+REVIEW_ID+'"'))
@@ -53,12 +56,13 @@ elif phase=='prepare-review-apk':
     import re
     p.write_text(re.sub(r'(<string name="app_name">)[^<]*(</string>)',r'\g<1>CCB 界面测试 n1\2',s,count=1))
     (out/'review-apk-projection.patch').write_bytes(subprocess.check_output(['git','diff']))
-    gradle(':app:assembleDebug',':app:compileDebugAndroidTestKotlin')
+    assert gradle(':app:assembleDebug',':app:compileDebugAndroidTestKotlin').returncode==0
     metadata('review-apk',REVIEW_ID)
 elif phase=='review-smoke':
     classes='com.example.chatbar.ui.chat.SaveSlotActionsTest#exportNeverLoadsAndOnlyExplicitConfirmationLoadsOnce,com.example.chatbar.ui.character.CharacterNovelAiPromptFieldTest#styleAndNegativeFieldsResolveTranslationsWithoutWritingChineseOrChangingWeights'
-    gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes)
-    assert len(report(phase,True))==2
+    r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes)
+    cases=report(phase,True,verify=False)
+    assert r.returncode==0 and len(cases)==2 and all(not c['failure'] and not c['skipped'] for c in cases)
     target=root/'review-apk/CCB-ui-review-n1.apk';target.parent.mkdir(exist_ok=True)
     shutil.copy2(root/'app/app/build/outputs/apk/debug/app-debug.apk',target)
 else:raise ValueError(phase)
