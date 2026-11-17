@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'editor-archive-ui';out.mkdir(exist_ok=True)
-SOURCE='8d8e8f6dc612582b55f0aa74e6b0a8ac6c1a2fc1'
+SOURCE='4e81743be1744a2ddd1b1d6c873bd30a62958ae2'
 REVIEW_ID='com.example.chatbar.uireview.n1'
 
 def gradle(*args):
