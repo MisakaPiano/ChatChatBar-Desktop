@@ -24,8 +24,8 @@ jobs:
           cp validation/android_r2_native_classes.txt /tmp/android_r2_native_classes.txt
       - uses: actions/checkout@v4
         with:
-          ref: 45ee52fa96db426c4daf4d2469ff85d613b67ef7
-          fetch-depth: 8
+          ref: 9a796f321c748a943e0b0ed0eda1f024a74593da
+          fetch-depth: 10
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:

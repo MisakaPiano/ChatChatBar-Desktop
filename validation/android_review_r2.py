@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os,re,zipfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'android-review-r2';out.mkdir(exist_ok=True)
-SOURCE='45ee52fa96db426c4daf4d2469ff85d613b67ef7'
+SOURCE='9a796f321c748a943e0b0ed0eda1f024a74593da'
 APP_ID='com.example.chatbar.nextreview.r2'
 CLASSES=pathlib.Path('/tmp/android_r2_native_classes.txt').read_text().strip()
 
@@ -39,7 +39,7 @@ if phase=='prepare':
     assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==SOURCE
     (root/'app/gradlew').chmod(0o755)
     (out/'source.json').write_text(json.dumps(dict(source=SOURCE,baseline='9f30c105c5c8dd8dbcbab372d8d37e55e540ebaa',
-        includes=dict(pr7='3132f4658eb33cea3eee02ca432f1fbc526086ae',ui='8d8e8f6dc612582b55f0aa74e6b0a8ac6c1a2fc1',
+        includes=dict(pr7='3132f4658eb33cea3eee02ca432f1fbc526086ae',ui='4e81743be1744a2ddd1b1d6c873bd30a62958ae2',
             data='0858292d431a23d5639b21e1403b13f664ec2213',action='3856ea28e4048aeb6af8fa1aa49ce8f12be206a9',format='9c4856f4883ad83df2d555eefd5b465bad7bef41'),
         syntheticOnly=True,realAccountCalls=False,humanAcceptance=False)))
     (out/'native-classes.txt').write_text(CLASSES)
