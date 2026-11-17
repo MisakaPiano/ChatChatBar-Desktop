@@ -2,6 +2,9 @@ name: PR7 fourth author review fixes
 on:
   push:
     branches: [validation/pr7-fourth-review-20261118]
+concurrency:
+  group: pr7-fourth-review
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -18,8 +21,8 @@ jobs:
       - run: cp validation/pr7_fourth_review.py /tmp/pr7_fourth_review.py
       - uses: actions/checkout@v4
         with:
-          ref: 5b1b4cb93635a4538a0d18c33cd9b162b89a9ea1
-          fetch-depth: 2
+          ref: 4fac0c2512a419cb96e322f41be4ea9022c40c8f
+          fetch-depth: 3
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
