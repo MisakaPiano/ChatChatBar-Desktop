@@ -1,4 +1,4 @@
-import pathlib,subprocess,json,shutil,sys,hashlib,os,re,zipfile
+import pathlib,subprocess,json,shutil,sys,hashlib,os,re,zipfile,tarfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'android-review-r2';out.mkdir(exist_ok=True)
 SOURCE='0d6ad72a6ca5e7c1f82d1c81063d591804b0cfe2'
@@ -7,6 +7,17 @@ CLASSES=pathlib.Path('/tmp/android_r2_native_classes.txt').read_text().strip()
 
 def gradle(*args):
     return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace'],cwd=root/'app')
+
+def pull_app_directory(directory,destination):
+    # Scoped storage can deny adb's shell UID on API30. Read as the installed debug
+    # app's UID; retain the original tar bytes as well as safely extracted files.
+    archive=destination.parent/(directory+'.tar')
+    with archive.open('wb') as output:
+        subprocess.run(['adb','exec-out','run-as',APP_ID,'tar','-cf','-',
+            '-C','/sdcard/Android/data/'+APP_ID+'/files',directory],stdout=output,check=True)
+    with tarfile.open(archive) as packed:
+        assert all(pathlib.PurePosixPath(m.name).parts[0]==directory for m in packed.getmembers())
+        packed.extractall(destination.parent,filter='data')
 
 def report(label,native=False):
     src=root/('app/app/build/outputs/androidTest-results/connected' if native else 'app/app/build/test-results/testDebugUnitTest')
@@ -64,9 +75,9 @@ elif phase.startswith('native-'):
     cases=report(phase,True)
     evidence_root=out/(phase+'-screenshots');evidence_root.mkdir(exist_ok=True)
     for directory in ['ui-previews','alignment-people-evidence']:
-        subprocess.run(['adb','pull','/sdcard/Android/data/'+APP_ID+'/files/'+directory,str(evidence_root/directory)],check=True)
+        pull_app_directory(directory,evidence_root/directory)
     if phase=='native-api26':
-        subprocess.run(['adb','pull','/sdcard/Android/data/'+APP_ID+'/files/safe-batch-retained',str(evidence_root/'safe-batch-retained')],check=True)
+        pull_app_directory('safe-batch-retained',evidence_root/'safe-batch-retained')
     assert r.returncode==0 and len(cases)==111 and len({c['classname'] for c in cases})==24
     assert all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='package':
