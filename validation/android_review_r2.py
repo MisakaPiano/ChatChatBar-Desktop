@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os,re,zipfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'android-review-r2';out.mkdir(exist_ok=True)
-SOURCE='9a796f321c748a943e0b0ed0eda1f024a74593da'
+SOURCE='0d6ad72a6ca5e7c1f82d1c81063d591804b0cfe2'
 APP_ID='com.example.chatbar.nextreview.r2'
 CLASSES=pathlib.Path('/tmp/android_r2_native_classes.txt').read_text().strip()
 
@@ -59,9 +59,14 @@ elif phase=='prepare-review':
     assert gradle(':app:assembleDebug',':app:compileDebugAndroidTestKotlin').returncode==0
     metadata('review-apk-before-native',APP_ID)
 elif phase.startswith('native-'):
-    r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+CLASSES)
+    r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+CLASSES,
+        '-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true')
     cases=report(phase,True)
-    subprocess.run(['adb','pull','/sdcard/Android/data/'+APP_ID+'/files/ui-previews',str(out/(phase+'-screenshots'))],check=False)
+    evidence_root=out/(phase+'-screenshots');evidence_root.mkdir(exist_ok=True)
+    for directory in ['ui-previews','alignment-people-evidence']:
+        subprocess.run(['adb','pull','/sdcard/Android/data/'+APP_ID+'/files/'+directory,str(evidence_root/directory)],check=True)
+    if phase=='native-api26':
+        subprocess.run(['adb','pull','/sdcard/Android/data/'+APP_ID+'/files/safe-batch-retained',str(evidence_root/'safe-batch-retained')],check=True)
     assert r.returncode==0 and len(cases)==111 and len({c['classname'] for c in cases})==24
     assert all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='package':
