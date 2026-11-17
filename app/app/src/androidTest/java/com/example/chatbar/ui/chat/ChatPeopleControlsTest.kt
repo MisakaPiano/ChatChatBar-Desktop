@@ -154,8 +154,11 @@ class ChatPeopleControlsTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val directory = File(context.getExternalFilesDir(null), "alignment-people-evidence").apply { mkdirs() }
         val target = if (name == "people-list-phone.png") rule.onNode(isDialog()) else rule.onRoot()
+        val bitmap = if (android.os.Build.VERSION.SDK_INT < 28) {
+            requireNotNull(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
+        } else target.captureToImage().asAndroidBitmap()
         File(directory, name).outputStream().use {
-            target.captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+            assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
         }
     }
 }

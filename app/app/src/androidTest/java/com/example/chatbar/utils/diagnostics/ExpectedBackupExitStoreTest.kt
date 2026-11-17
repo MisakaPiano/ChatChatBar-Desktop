@@ -48,7 +48,16 @@ class ExpectedBackupExitStoreTest {
             parentFile!!.mkdirs(); writeText("synthetic real crash report")
         }
         assertTrue(CrashReportManager.recordExpectedBackupExit(context).isSuccess)
-        val marker = requireNotNull(ExpectedBackupExitStore(noBackup).read())
+        val recorded = ExpectedBackupExitStore(noBackup).read()
+        // Android exit-history diagnostics start at API30. Earlier Android versions must
+        // leave the marker absent while preserving any existing real crash report.
+        if (android.os.Build.VERSION.SDK_INT < 30) {
+            assertNull(recorded)
+            assertEquals("synthetic real crash report", report.readText())
+            assertFalse(File(files, "diagnostics/expected-backup-exit.json").exists())
+            return
+        }
+        val marker = requireNotNull(recorded)
         assertEquals(Process.myPid(), marker.processId)
         assertEquals("synthetic real crash report", report.readText())
         assertFalse(File(files, "diagnostics/expected-backup-exit.json").exists())

@@ -5,7 +5,7 @@ import android.content.Context
 import android.provider.MediaStore
 import java.io.File
 
-/** Synthetic review originals must survive AGP uninstalling the target app after connected tests. */
+/** Synthetic originals use scoped Downloads on API29+, app files plus CI pre-uninstall pull below. */
 object SafeBatchReviewFiles {
     fun captureScreen(context: Context, name: String) {
         val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
@@ -23,7 +23,13 @@ object SafeBatchReviewFiles {
         retain(context, info)
     }
     fun retain(context: Context, file: File) {
-        check(android.os.Build.VERSION.SDK_INT >= 29)
+        if (android.os.Build.VERSION.SDK_INT < 29) {
+            // MediaStore.Downloads/RELATIVE_PATH do not exist on API26. No storage permission
+            // is needed for app-specific files; CI retains the APK until these are pulled.
+            val directory = File(context.getExternalFilesDir(null), "safe-batch-retained").apply { mkdirs() }
+            file.copyTo(File(directory, file.name), overwrite = true)
+            return
+        }
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
             put(MediaStore.MediaColumns.MIME_TYPE, if (file.extension == "png") "image/png" else "application/json")
