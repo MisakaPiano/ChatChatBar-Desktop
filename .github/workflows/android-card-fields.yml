@@ -1,0 +1,79 @@
+name: Android card editor fields and consolidated r3
+on:
+  push:
+    branches: [validation/android-card-fields-20261118]
+concurrency:
+  group: android-card-fields-review
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.repository == 'MisakaPiano/ChatChatBar-Desktop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      CHATBAR_VERSION_NAME: 1.4.12-next-review-r3
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp validation/card_fields.py /tmp/card_fields.py
+      - uses: actions/checkout@v4
+        with:
+          ref: 7565bc946ebe19be9c0d57098923e98cd278ad07
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Scoped PR full JVM and standard compile
+        run: python /tmp/card_fields.py pr
+      - name: Build consolidated r3 and verify changed domain paths
+        run: python /tmp/card_fields.py combined
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Editor and neighboring controls API30
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python /tmp/card_fields.py native-api30
+      - name: Editor and neighboring controls API26
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python /tmp/card_fields.py native-api26
+      - run: python /tmp/card_fields.py package
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-card-fields-originals
+          path: |
+            card-fields-originals/
+            app/app/build/outputs/androidTest-results/
+            app/app/build/reports/androidTests/
+            app/app/build/reports/tests/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CCB-consolidated-review-r3-apk
+          path: review-apk/CCB-consolidated-review-r3.apk
+          retention-days: 14
