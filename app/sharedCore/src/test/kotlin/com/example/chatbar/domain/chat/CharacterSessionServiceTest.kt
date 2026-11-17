@@ -155,6 +155,27 @@ class CharacterSessionServiceTest {
         )
     }
 
+    @Test fun `selected alternate is exact and does not change the card or existing conversation`() = runTest {
+        val fixture = fixture()
+        val card = CharacterCard.create("Choice", greeting = "Main").copy(alternateGreetings = listOf("", " Alternate\n  "))
+        fixture.characters.save(card)
+        val first = fixture.service.createSessionForCharacter(card.id)
+        val choice = com.example.chatbar.domain.card.CharacterGreetingPolicy.choices(card).last()
+        val second = fixture.service.createSessionForCharacter(card.id, choice)
+        assertEquals("Main", fixture.chats.getMessages(first).single().content)
+        assertEquals(choice.text, fixture.chats.getMessages(second).single().content)
+        assertEquals(card, fixture.characters.getById(card.id))
+    }
+
+    @Test fun `stale selected opening fails before any session or message is created`() = runTest {
+        val fixture = fixture()
+        val card = CharacterCard.create("Choice", greeting = "Main").copy(alternateGreetings = listOf("Old"))
+        fixture.characters.save(card.copy(alternateGreetings = listOf("New")))
+        val choice = com.example.chatbar.domain.card.CharacterGreetingPolicy.choices(card).last()
+        assertFailsWith<IllegalArgumentException> { fixture.service.createSessionForCharacter(card.id, choice) }
+        assertEquals(emptyList(), fixture.chats.getAllSessions())
+    }
+
     private fun newRoot(): Path = Files.createTempDirectory("character-session-service-").also(roots::add)
 
     private data class Fixture(

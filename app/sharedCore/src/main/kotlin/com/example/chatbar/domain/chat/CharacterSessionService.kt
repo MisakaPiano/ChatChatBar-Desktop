@@ -6,6 +6,8 @@ import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
+import com.example.chatbar.domain.card.CharacterGreetingChoice
+import com.example.chatbar.domain.card.CharacterGreetingPolicy
 
 class CharacterSessionService(
     private val characterRepository: CharacterRepository,
@@ -13,8 +15,9 @@ class CharacterSessionService(
     private val formatCardRepository: FormatCardRepository,
     private val staleFormatCardWarning: (String) -> Unit = {},
 ) {
-    suspend fun createSessionForCharacter(cardId: String): String {
+    suspend fun createSessionForCharacter(cardId: String, greetingChoice: CharacterGreetingChoice? = null): String {
         val card = requireNotNull(characterRepository.getById(cardId)) { "角色卡不存在" }
+        val greeting = CharacterGreetingPolicy.resolve(card, greetingChoice)
         val defaultFormatCardId = card.defaultFormatCardId?.takeIf(String::isNotBlank)?.let { id ->
             if (formatCardRepository.getById(id) != null) {
                 id
@@ -35,7 +38,7 @@ class CharacterSessionService(
             ChatMessage.create(
                 sessionId = session.id,
                 role = MessageRole.ASSISTANT,
-                content = card.greeting,
+                content = greeting,
             )
         )
         return session.id

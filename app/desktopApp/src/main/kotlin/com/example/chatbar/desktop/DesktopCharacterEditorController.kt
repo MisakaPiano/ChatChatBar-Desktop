@@ -440,6 +440,29 @@ internal class DesktopCharacterEditorController(
         card.copy(alternateGreetings = card.alternateGreetings.filterIndexed { i, _ -> i != index })
     }
 
+    fun moveGreeting(index: Int, offset: Int) = edit { card ->
+        val destination = index + offset
+        if (offset !in listOf(-1, 1) || index !in card.alternateGreetings.indices ||
+            destination !in card.alternateGreetings.indices) card
+        else card.copy(alternateGreetings = card.alternateGreetings.toMutableList().apply {
+            add(destination, removeAt(index))
+        })
+    }
+
+    fun setCardTag(index: Int, text: String) = edit { card ->
+        card.copy(tags = card.tags.mapIndexed { current, old -> if (current == index) text else old })
+    }
+
+    fun removeCardTag(index: Int) = edit { card ->
+        card.copy(tags = card.tags.filterIndexed { current, _ -> current != index })
+    }
+
+    fun addCardTag(text: String) = edit { card ->
+        val tag = text.trim()
+        if (tag.isEmpty() || card.tags.any { it.trim().equals(tag, ignoreCase = true) }) card
+        else card.copy(tags = card.tags + tag)
+    }
+
     fun toggleWorldBook(id: String) = edit { card ->
         if (id in card.worldBookIds) card.copy(
             worldBookIds = card.worldBookIds - id,
@@ -748,6 +771,7 @@ internal class DesktopCharacterEditorController(
                 defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
                 systemPrompt = card.systemPrompt, postHistoryInstructions = card.postHistoryInstructions,
                 mesExample = card.mesExample, creatorNotes = card.creatorNotes,
+                tags = card.tags, creator = card.creator, characterVersion = card.characterVersion,
                 characters = card.characters.filterNot(CharacterPlaceholderPolicy::isEmpty)
                     .map { it.copy(name = NamePolicy.normalize(it.name)) },
                 customDocuments = mergedDocuments, worldBookIds = card.worldBookIds,
