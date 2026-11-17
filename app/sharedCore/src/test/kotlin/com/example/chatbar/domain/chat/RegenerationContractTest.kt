@@ -15,7 +15,7 @@ class RegenerationContractTest {
         )
         var current = original
         repeat(7) { index ->
-            current = MessageAlternativeVersionPolicy.append(current, "reply-$index", "version-$index")
+            current = MessageAlternativeVersionPolicy.append(current, "reply-$index", "version-$index", maxVersions = 5)
             assertEquals(original.id, current.id)
             assertEquals(original.createdAt, current.createdAt)
             assertEquals(original.orderKey, current.orderKey)

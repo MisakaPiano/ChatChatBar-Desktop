@@ -44,6 +44,7 @@ class SharedCardContractTest {
     @Test
     fun `character schema nine round trips current fields and embedded default format`() {
         val packageData = CharacterCardPackage(
+            schemaVersion = 9,
             exportedAt = 42L,
             card = PackagedCharacterCard(
                 name = "Current",

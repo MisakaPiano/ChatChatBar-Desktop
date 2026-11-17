@@ -38,13 +38,16 @@ jobs:
           New-Item -ItemType Directory -Path $env:CCB_CARD_EDITOR_REVIEW_DIR -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; syntheticOnly = $true; localInstall = $false; providerCalls = $false; scope = 'deferred greeting ownership, shell completion and adjacent UI/draft/Memory'; unchangedEvidenceSource = 'a0ef42a27e059feb6fd73bf74b28df3449c24920' } |
             ConvertTo-Json | Set-Content "$env:CCB_CARD_EDITOR_REVIEW_DIR/source.json" -Encoding utf8
+          .\gradlew.bat :sharedCore:test --tests com.example.chatbar.domain.card.SharedCardContractTest `
+            --tests com.example.chatbar.domain.chat.RegenerationContractTest --no-daemon --stacktrace --console=plain
+          $contractExit = $LASTEXITCODE
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true `
             --tests com.example.chatbar.desktop.DesktopGreetingDeferredTest `
             --tests com.example.chatbar.desktop.DesktopSessionGreetingTest `
             --tests com.example.chatbar.desktop.DesktopCardEditorFieldsUiTest `
             --tests com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest `
             --tests com.example.chatbar.desktop.DesktopMemoryWorkspaceUiTest --no-daemon --stacktrace --console=plain
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($LASTEXITCODE -ne 0 -or $contractExit -ne 0) { exit 1 }
       - name: Preserve exact synthetic reports and review images
         if: always()
         uses: actions/upload-artifact@v4
