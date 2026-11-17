@@ -21,7 +21,7 @@ jobs:
       - run: cp validation/card_fields.py /tmp/card_fields.py
       - uses: actions/checkout@v4
         with:
-          ref: ba2db7d4d3c18e771ddae038304e1effa60b538d
+          ref: 6da3c6211fb77b5b575ed61d7c03e8ccbeb6904f
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-java@v4
