@@ -48,6 +48,7 @@ internal data class DesktopSessionGreetingSelection(
     val selected: CharacterGreetingChoice,
     val submitting: Boolean = false,
     val requestId: String = UUID.randomUUID().toString(),
+    val submissionId: String? = null,
 )
 
 internal data class DesktopPrimarySessionItem(
@@ -158,6 +159,7 @@ internal class DesktopPrimaryChatController(
     val maintenance: DesktopChatMaintenanceController? = null,
     private val sessionDeletion: (suspend (String) -> String?)? = null,
     private val sessionDeletionNotice: () -> String? = { null },
+    private val createCharacterSession: suspend (String, CharacterGreetingChoice?) -> String = sessionService::createSessionForCharacter,
 ) {
     val canDeleteSessions: Boolean get() = sessionDeletion != null
     private val deletingSessions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
@@ -390,7 +392,7 @@ internal class DesktopPrimaryChatController(
         mutableState.update { current ->
             val pending = current.greetingSelection
             if (pending == null || pending.submitting || choice !in pending.choices) current
-            else current.copy(greetingSelection = pending.copy(selected = choice, requestId = UUID.randomUUID().toString()), error = null)
+            else current.copy(greetingSelection = pending.copy(selected = choice, requestId = UUID.randomUUID().toString(), submissionId = null), error = null)
         }
     }
 
@@ -403,16 +405,8 @@ internal class DesktopPrimaryChatController(
         val pending = before.greetingSelection?.takeUnless { it.submitting } ?: return null
         val previousSession = before.selectedSession?.id
         if (!mutableState.compareAndSet(before, before.copy(greetingSelection = pending.copy(submitting = true), error = null))) return null
-        try {
-            createSession(pending.cardId, pending.selected, pending.requestId)
-            return state.value.selectedSession?.takeIf { it.id != previousSession && it.characterCardId == pending.cardId }?.id
-        } finally {
-            mutableState.update { current ->
-                val active = current.greetingSelection
-                if (active != null && active.requestId == pending.requestId)
-                    current.copy(greetingSelection = active.copy(submitting = false)) else current
-            }
-        }
+        createSession(pending.cardId, pending.selected, pending.requestId)
+        return state.value.selectedSession?.takeIf { it.id != previousSession && it.characterCardId == pending.cardId }?.id
     }
 
     /** One completion signal survives Memory/settings deferral; only the shell consumes it. */
@@ -434,60 +428,89 @@ internal class DesktopPrimaryChatController(
         return false
     }
 
+    /** Each actual continuation owns its submission state through service IO, not just its caller. */
+    private fun reserveGreetingSubmission(requestId: String, choice: CharacterGreetingChoice?, submissionId: String): Boolean {
+        while (true) {
+            val before = state.value
+            val pending = before.greetingSelection
+            if (pending == null || pending.requestId != requestId || pending.selected != choice) {
+                mutableState.update { it.copy(status = "旧开场选择已取消或更改，本次新建未执行。") }
+                return false
+            }
+            if (mutableState.compareAndSet(before, before.copy(greetingSelection = pending.copy(
+                submitting = true, submissionId = submissionId)))) return true
+        }
+    }
+
+    private fun releaseGreetingSubmission(requestId: String, submissionId: String) {
+        mutableState.update { current ->
+            val pending = current.greetingSelection
+            if (pending != null && pending.requestId == requestId && pending.submissionId == submissionId)
+                current.copy(greetingSelection = pending.copy(submitting = false, submissionId = null)) else current
+        }
+    }
+
     suspend fun createSession(characterId: String) = createSession(characterId, null, null)
 
     private suspend fun createSession(characterId: String, greetingChoice: CharacterGreetingChoice?,
         requestId: String?): Unit = guarded {
-        if (!greetingRequestCurrent(requestId, greetingChoice)) return@guarded
-        val generation = sessionSaveGeneration.get()
-        if (blockDuringSessionSave()) return@guarded
-        if (memory?.deferNavigationIfDirty { createSession(characterId, greetingChoice, requestId) } == true) return@guarded
-        if (state.value.sessionSettingsDirty) {
-            requestSessionSettingsLeave { createSession(characterId, greetingChoice, requestId) }
-            return@guarded
-        }
-        draftLock.withLock { stateLock.withLock creation@ {
-            if (generation != sessionSaveGeneration.get()) {
-                mutableState.update { it.copy(status = "保存期间的新建请求未执行，请完成后重试") }
-                return@creation
+        if (requestId == null && state.value.greetingSelection?.submitting == true) return@guarded
+        val submissionId = UUID.randomUUID().toString()
+        if (requestId != null && !reserveGreetingSubmission(requestId, greetingChoice, submissionId)) return@guarded
+        try {
+            if (!greetingRequestCurrent(requestId, greetingChoice)) return@guarded
+            val generation = sessionSaveGeneration.get()
+            if (blockDuringSessionSave()) return@guarded
+            if (memory?.deferNavigationIfDirty { createSession(characterId, greetingChoice, requestId) } == true) return@guarded
+            if (state.value.sessionSettingsDirty) {
+                requestSessionSettingsLeave { createSession(characterId, greetingChoice, requestId) }
+                return@guarded
             }
-            if (!greetingRequestCurrent(requestId, greetingChoice)) return@creation
-            if (deferSessionSettingsLeave { createSession(characterId, greetingChoice, requestId) }) return@creation
-            val card = requireNotNull(characters.getById(characterId)) { "Character no longer exists" }
-            val modelStatus = models.status(settings.getAppSettings())
-            if (!modelStatus.isUsable) {
-                val message = modelStatus.errors.firstOrNull() ?: "Configure a usable chat model"
-                mutableState.update {
-                    it.copy(
-                        configurationMessage = if (it.selectedSession == null) message else it.configurationMessage,
-                        error = message,
-                    )
+            draftLock.withLock { stateLock.withLock creation@ {
+                if (generation != sessionSaveGeneration.get()) {
+                    mutableState.update { it.copy(status = "保存期间的新建请求未执行，请完成后重试") }
+                    return@creation
                 }
-                return@creation
-            }
-            val choices = CharacterGreetingPolicy.choices(card)
-            if (greetingChoice == null && choices.size > 1) {
-                mutableState.update { it.copy(greetingSelection = DesktopSessionGreetingSelection(card.id, card.name, choices, choices.first()), error = null) }
-                return@creation
-            }
-            // Refresh stale chooser contents before the shared service's final pre-write check.
-            if (greetingChoice != null && greetingChoice !in choices) {
-                mutableState.update { it.copy(greetingSelection = DesktopSessionGreetingSelection(card.id, card.name, choices, choices.first()),
-                    error = "开场内容已变化，请重新选择后创建会话。") }
-                return@creation
-            }
-            if (!greetingRequestCurrent(requestId, greetingChoice)) return@creation
-            val id = sessionService.createSessionForCharacter(characterId, greetingChoice)
-            mutableState.update { it.copy(greetingSelection = null) }
-            searchGeneration.incrementAndGet()
-            val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-            val sessions = sessionItems(characterItems, "")
-            mutableState.update {
-                it.copy(sessionQuery = "", sessions = sessions)
-            }
-            loadSelection(id, characterItems, sessions, preserveWindow = false)
-            if (requestId != null) mutableState.update { it.copy(completedGreetingSessionId = id) }
-        } }
+                if (!greetingRequestCurrent(requestId, greetingChoice)) return@creation
+                if (deferSessionSettingsLeave { createSession(characterId, greetingChoice, requestId) }) return@creation
+                val card = requireNotNull(characters.getById(characterId)) { "Character no longer exists" }
+                val modelStatus = models.status(settings.getAppSettings())
+                if (!modelStatus.isUsable) {
+                    val message = modelStatus.errors.firstOrNull() ?: "Configure a usable chat model"
+                    mutableState.update {
+                        it.copy(
+                            configurationMessage = if (it.selectedSession == null) message else it.configurationMessage,
+                            error = message,
+                        )
+                    }
+                    return@creation
+                }
+                val choices = CharacterGreetingPolicy.choices(card)
+                if (greetingChoice == null && choices.size > 1) {
+                    mutableState.update { it.copy(greetingSelection = DesktopSessionGreetingSelection(card.id, card.name, choices, choices.first()), error = null) }
+                    return@creation
+                }
+                // Refresh stale chooser contents before the shared service's final pre-write check.
+                if (greetingChoice != null && greetingChoice !in choices) {
+                    mutableState.update { it.copy(greetingSelection = DesktopSessionGreetingSelection(card.id, card.name, choices, choices.first()),
+                        error = "开场内容已变化，请重新选择后创建会话。") }
+                    return@creation
+                }
+                if (!greetingRequestCurrent(requestId, greetingChoice)) return@creation
+                val id = createCharacterSession(characterId, greetingChoice)
+                mutableState.update { it.copy(greetingSelection = null) }
+                searchGeneration.incrementAndGet()
+                val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+                val sessions = sessionItems(characterItems, "")
+                mutableState.update {
+                    it.copy(sessionQuery = "", sessions = sessions)
+                }
+                loadSelection(id, characterItems, sessions, preserveWindow = false)
+                if (requestId != null) mutableState.update { it.copy(completedGreetingSessionId = id) }
+            } }
+        } finally {
+            if (requestId != null) releaseGreetingSubmission(requestId, submissionId)
+        }
     }
 
     suspend fun loadOlder() = guarded {

@@ -4,6 +4,9 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.nio.file.Files
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -108,6 +111,56 @@ class DesktopGreetingDeferredTest {
         memory.beginHeadEdit()
         memory.headDraft(assertNotNull(memory.state.value.headDraft).copy(location = "Unsaved synthetic location"))
         assertTrue(memory.state.value.dirty)
+    }
+
+    @Test fun `resumed Memory and settings continuations reserve submission through the real service boundary`() = runBlocking {
+        for (memoryGuard in listOf(false, true)) withApp { app, card, oldId -> coroutineScope {
+            val enteredService = CompletableDeferred<Unit>()
+            val releaseService = CompletableDeferred<Unit>()
+            val primary = DesktopPrimaryChatController(
+                characters = app.characterRepository, chats = app.chatRepository,
+                settings = app.settingsRepository, models = app.effectiveModelResolver,
+                formats = app.formatCardRepository, worldBooks = app.worldBookRepository,
+                sessionService = app.characterSessionService, characterResources = app.characterResourceStore,
+                taskRuntime = app.taskRuntime, memory = app.memoryController,
+                createCharacterSession = { id, choice ->
+                    enteredService.complete(Unit)
+                    releaseService.await()
+                    app.characterSessionService.createSessionForCharacter(id, choice)
+                },
+            )
+            try {
+                primary.refresh(); primary.selectSession(oldId); primary.createSession(card.id)
+                primary.selectSessionGreeting(primary.state.value.greetingSelection!!.choices.last())
+                if (memoryGuard) dirtyMemory(app, oldId)
+                else primary.editSessionSettings { it.copy(supplementarySetting = "Guard draft") }
+                assertNull(primary.confirmSessionGreeting())
+                assertFalse(primary.state.value.greetingSelection!!.submitting)
+                val resumed = if (memoryGuard) {
+                    app.memoryController.resolveLeave(discard = true)
+                    null
+                } else async { primary.resolveSessionSettingsLeave(save = false) }
+                withTimeout(10_000) { enteredService.await() }
+                val reserved = assertNotNull(primary.state.value.greetingSelection)
+                assertTrue(reserved.submitting)
+                assertNotNull(reserved.submissionId)
+                assertEquals(1, app.chatRepository.getAllSessions().size)
+                primary.cancelSessionGreeting()
+                primary.selectSessionGreeting(reserved.choices.first())
+                primary.createSession(card.id)
+                assertEquals(reserved, primary.state.value.greetingSelection)
+                releaseService.complete(Unit)
+                resumed?.await()
+                val done = withTimeout(10_000) { primary.state.first { it.completedGreetingSessionId != null } }
+                val id = assertNotNull(done.completedGreetingSessionId)
+                assertEquals("B exact  ", app.chatRepository.getMessages(id).single().content)
+                assertEquals(2, app.chatRepository.getAllSessions().size)
+                assertTrue(primary.consumeGreetingSessionCreated(id)); assertFalse(primary.consumeGreetingSessionCreated(id))
+            } finally {
+                releaseService.complete(Unit)
+                primary.closeDraftPersistence()
+            }
+        } }
     }
 
     private suspend fun withApp(block: suspend (DesktopAppContainer, CharacterCard, String) -> Unit) {
