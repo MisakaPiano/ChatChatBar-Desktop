@@ -132,6 +132,107 @@ class MessageFormatRepairPolicyTest {
         assertNull(MessageFormatRepairPolicy.applicableNotice(message))
     }
 
+    @Test fun repairWriterPersistsStableVersionIdentityBeforeMessageIdChanges() {
+        for (mode in listOf(null, com.example.chatbar.data.local.entity.ChatNarrativeMode.ADVANCE, com.example.chatbar.data.local.entity.ChatNarrativeMode.FOCUS)) for (multi in listOf(false, true)) {
+            val original = message().copy(content = "before", alternatives = if (multi) listOf("other", "before") else emptyList(),
+                currentAlternativeIndex = if (multi) 1 else 0, narrativeMode = mode)
+            val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "after",
+                MessageFormatRepairPolicy.completedRepairNotice("before", "after"))
+            val identity = MessageAlternativeVersionPolicy.activeVersionId(original)
+            assertEquals(original.narrativeMode, repaired.narrativeMode)
+            assertEquals(original.alternativeNarrativeModes, repaired.alternativeNarrativeModes)
+            assertEquals(identity, repaired.currentAlternativeVersionId)
+            assertEquals(if (multi) 2 else 0, repaired.alternativeVersionIds.size)
+            val copied = repaired.copy(id = "copied-message")
+            assertEquals(identity, MessageAlternativeVersionPolicy.activeVersionId(copied))
+            val undone = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(copied))
+            assertEquals("before", undone.displayContent)
+            assertEquals("after", requireNotNull(MessageFormatRepairPolicy.redoRepair(undone)).displayContent)
+        }
+    }
+
+    @Test fun unchangedSuccessClearsNoticesWithoutLocalRecovery() {
+        for (kind in MessageFormatRepairNoticeKind.values()) {
+            val original = message().copy(formatRepairNotice = MessageFormatRepairNotice(kind,
+                targetContent = message().content, errorMessage = "previous failure"))
+            assertNull(MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(original))
+        }
+    }
+
+    @Test fun unchangedSuccessKeepsAppliedAndStoppedUndoPairs() {
+        for (kind in listOf(MessageFormatRepairNoticeKind.APPLIED, MessageFormatRepairNoticeKind.STOPPED)) {
+            val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "after",
+                MessageFormatRepairNotice(kind, "after", originalContent = message().content))
+            val kept = MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(repaired)
+            assertEquals(repaired.formatRepairNotice, kept)
+            assertEquals(message().content, MessageFormatRepairPolicy.restoreOriginal(repaired.copy(formatRepairNotice = kept))?.displayContent)
+        }
+    }
+
+    @Test fun unchangedSuccessKeepsRestoredLocalRedoPair() {
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "after",
+            MessageFormatRepairPolicy.completedRepairNotice(message().content, "after"))
+        val restored = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(repaired))
+        val kept = MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(restored)
+        assertEquals(restored.formatRepairNotice, kept)
+        assertEquals("after", MessageFormatRepairPolicy.redoRepair(restored.copy(formatRepairNotice = kept))?.displayContent)
+    }
+
+    @Test fun unchangedSuccessRejectsStaleVersionAndEditedText() {
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "after",
+            MessageFormatRepairPolicy.completedRepairNotice(message().content, "after"))
+        assertNull(MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(repaired.copy(content = "edited")))
+        assertNull(MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(repaired.copy(
+            formatRepairNotice = repaired.formatRepairNotice!!.copy(versionId = "another-version"))))
+    }
+
+    @Test fun unchangedSuccessClearsLegacyErrorWhileKeepingItsRecoverableText() {
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "after",
+            MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, "after", originalContent = message().content,
+                errorMessage = "legacy partial repair error"))
+        val kept = requireNotNull(MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(repaired))
+        assertEquals(MessageFormatRepairNoticeKind.APPLIED, kept.kind)
+        assertNull(kept.errorMessage)
+        assertEquals(message().content, MessageFormatRepairPolicy.restoreOriginal(repaired.copy(formatRepairNotice = kept))?.displayContent)
+    }
+
+    @Test fun failedRetryKeepsRestoredPairAndLocalRedoClearsAttemptError() {
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "cached repaired",
+            MessageFormatRepairPolicy.completedRepairNotice(message().content, "cached repaired"))
+        val restored = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(repaired))
+        val notice = MessageFormatRepairPolicy.failedAttemptNotice(restored, "retry failed")
+        assertEquals(restored.formatRepairNotice!!.copy(errorMessage = "retry failed"), notice)
+        val failed = restored.copy(formatRepairNotice = notice)
+        val redone = requireNotNull(MessageFormatRepairPolicy.redoRepair(failed))
+        assertEquals("cached repaired", redone.displayContent)
+        assertNull(redone.formatRepairNotice?.errorMessage)
+        assertEquals(restored.currentAlternativeVersionId, redone.currentAlternativeVersionId)
+    }
+
+    @Test fun failedRetryKeepsAppliedUndoPairAndRestoreClearsAttemptError() {
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "cached repaired",
+            MessageFormatRepairPolicy.completedRepairNotice(message().content, "cached repaired"))
+        val failed = repaired.copy(formatRepairNotice = MessageFormatRepairPolicy.failedAttemptNotice(repaired, "retry failed"))
+        val restored = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(failed))
+        assertEquals(message().content, restored.displayContent)
+        assertNull(restored.formatRepairNotice?.errorMessage)
+        assertEquals("cached repaired", MessageFormatRepairPolicy.redoRepair(restored)?.displayContent)
+    }
+
+    @Test fun failedRetryNeverKeepsStaleVersionOrEditedRecoveryPair() {
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(message(), "cached repaired",
+            MessageFormatRepairPolicy.completedRepairNotice(message().content, "cached repaired"))
+        for (changed in listOf(repaired.copy(content = "manual edit"), repaired.copy(
+            formatRepairNotice = repaired.formatRepairNotice!!.copy(versionId = "another-version")))) {
+            val notice = MessageFormatRepairPolicy.failedAttemptNotice(changed, "retry failed")
+            assertEquals(MessageFormatRepairNoticeKind.ERROR, notice.kind)
+            assertNull(notice.originalContent)
+            assertFalse(notice.restored)
+            assertEquals(changed.displayContent, notice.targetContent)
+            assertEquals(MessageAlternativeVersionPolicy.activeVersionId(changed), notice.versionId)
+        }
+    }
+
     private fun message() = ChatMessage(
         id = "m",
         sessionId = "s",

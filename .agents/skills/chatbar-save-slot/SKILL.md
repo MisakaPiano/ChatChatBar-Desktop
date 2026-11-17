@@ -14,6 +14,7 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
 - v8 package creation, validation, import/export, and media materialization: `domain/chat/SaveSlotPackageStorage.kt`.
 - Chat orchestration and rollback: `ui/chat/ChatViewModel.kt`.
 - Image/audio choices, progress, cancellation, and document pickers: `ui/chat/ChatSettingsDialog.kt`.
+- Existing archive cards keep Restore/Export/Delete icons in place with visible 载入/导出/删除 captions. `SaveSlotItem` confirms the selected archive name/time/message count and replacement consequence before calling the existing load callback; cancel/back never loads, export remains direct, and busy state disables actions/confirmation. Creation/import and archive formats are unchanged.
 - Streaming entity replacement primitives: `data/local/JsonFileStorage.kt`, `data/repository/ChatRepository.kt`, and `domain/rag/RagRepository.kt`.
 - Voice file restore: `domain/voice/FishAudioStorage.kt`; use `chatbar-fish-audio-voice` when voice ownership changes.
 - Image metadata/display behavior: use `chatbar-image-generation-runtime`.

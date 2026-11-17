@@ -28,7 +28,6 @@ class ReplyMediaVersionControlsTest {
         rule.onNodeWithText("撤销修复").performClick()
         rule.runOnIdle { assertEquals("before", state.value.displayContent) }
         rule.onNodeWithText("重做修复").assertIsDisplayed()
-        capture("repair-redo-after-undo.png")
         rule.onNodeWithText("重做修复").performClick()
         rule.runOnIdle { assertEquals("after", state.value.displayContent) }
         rule.onNodeWithText("撤销修复").assertIsDisplayed()
@@ -45,24 +44,31 @@ class ReplyMediaVersionControlsTest {
         rule.onNodeWithText("›").assertIsNotEnabled()
         rule.onNodeWithText("‹").performClick()
         rule.onNodeWithText("1/2").assertIsDisplayed()
-        capture("moment-image-candidates.png")
         rule.runOnIdle { assertEquals("first prompt", state.value.imagePrompt); assertEquals(2, state.value.imageVersions.size) }
         rule.onNodeWithText("›").performClick()
         rule.runOnIdle { assertEquals("second.png", state.value.imagePath) }
     }
-    private fun capture(name: String) {
-        rule.waitForIdle()
-        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
-        val values = android.content.ContentValues().apply {
-            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/png")
-            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Download/ccb-version-review")
-        }
-        val resolver = instrumentation.targetContext.contentResolver
-        val uri = requireNotNull(resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
-        requireNotNull(resolver.openOutputStream(uri)).use { check(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)) }
-        bitmap.recycle()
-    }
+    @Test fun failedRetryShowsErrorWithRedoAndRedoUsesCachedText() = verifyFailureControl(true)
+    @Test fun failedRetryShowsErrorWithUndoAndUndoKeepsRedo() = verifyFailureControl(false)
 
+    private fun verifyFailureControl(restored: Boolean) {
+        val original = ChatMessage("failure-ui", "session", MessageRole.ASSISTANT, "before", createdAt = 1, updatedAt = 1)
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "after",
+            MessageFormatRepairPolicy.completedRepairNotice("before", "after"))
+        val selected = if (restored) requireNotNull(MessageFormatRepairPolicy.restoreOriginal(repaired)) else repaired
+        val state = mutableStateOf(selected.copy(formatRepairNotice = MessageFormatRepairPolicy.failedAttemptNotice(selected, "synthetic failed retry")))
+        rule.setContent { ChatBarTheme {
+            MessageFormatRepairNoticeRow(state.value, false,
+                { state.value = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(state.value)) },
+                { state.value = requireNotNull(MessageFormatRepairPolicy.redoRepair(state.value)) })
+        } }
+        rule.onNodeWithText("synthetic failed retry", substring = true).assertIsDisplayed()
+        rule.onNodeWithText(if (restored) "重做修复" else "撤销修复").performClick()
+        rule.runOnIdle {
+            assertEquals(if (restored) "after" else "before", state.value.displayContent)
+            assertNull(state.value.formatRepairNotice?.errorMessage)
+        }
+        rule.onAllNodesWithText("synthetic failed retry", substring = true).assertCountEquals(0)
+        rule.onNodeWithText(if (restored) "撤销修复" else "重做修复").assertIsDisplayed()
+    }
 }

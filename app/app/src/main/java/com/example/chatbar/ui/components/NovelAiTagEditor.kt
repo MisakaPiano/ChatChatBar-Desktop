@@ -159,7 +159,8 @@ internal fun NovelAiTagInput(
     onValueChange: (TextFieldValue) -> Unit,
     isError: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {},
-    showInlineSuggestions: Boolean = true
+    showInlineSuggestions: Boolean = true,
+    placeholder: String = ""
 ) {
     var focused by remember { mutableStateOf(false) }
     val assistance = rememberTagEditorAssistance(value, focused && showInlineSuggestions)
@@ -167,6 +168,7 @@ internal fun NovelAiTagInput(
         CbInput(
             value = value,
             onValueChange = onValueChange,
+            placeholder = placeholder,
             singleLine = false,
             minLines = 3,
             modifier = Modifier.height(150.dp).then(

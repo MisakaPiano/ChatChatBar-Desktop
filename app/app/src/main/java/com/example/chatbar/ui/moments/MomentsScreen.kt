@@ -315,7 +315,7 @@ fun MomentsScreen(
 }
 
 @Composable
-private fun MomentPostRow(
+internal fun MomentPostRow(
     post: MomentPost,
     highlighted: Boolean,
     retryState: MomentRetryUiState?,
@@ -396,7 +396,7 @@ private fun MomentPostRow(
                             )
                     )
                 }
-                post.imagePath?.takeIf(String::isNotBlank)?.let { path ->
+                MomentImageVersions.currentImagePath(post)?.let { path ->
                     AsyncImage(
                         model = File(path),
                         contentDescription = post.imageBrief.ifBlank { post.text },
@@ -409,6 +409,7 @@ private fun MomentPostRow(
                         contentScale = ContentScale.Crop
                     )
                 } ?: MomentOnDemandImageBlock(post, onDemandImage, onGenerateImage)
+                MomentImageVersionControls(post) { versionId -> onSelectImageVersion(post, versionId) }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -429,9 +430,13 @@ private fun MomentPostRow(
                             CbText("仅你可见", color = muted, style = ChatBarTheme.typography.caption)
                         }
                     }
-                    MomentImageVersionControls(post) { versionId -> onSelectImageVersion(post, versionId) }
-                    Spacer(Modifier.weight(1f))
-                    post.imagePath?.takeIf(String::isNotBlank)?.let { path ->
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MomentImageVersions.currentImagePath(post)?.let { path ->
                         CbIconButton(
                             imageVector = AppIcons.Refresh,
                             contentDescription = "重新生成图片",

@@ -2627,15 +2627,27 @@ class ChatViewModel(
         if (_isResponding.value) return
         viewModelScope.launch {
             try {
+                fishAudioCoordinator.cancelAndJoinForMessage(sessionId, messageId)
                 val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
                 val changed = MessageAlternativeVersionPolicy.remove(message, versionId)
                 if (changed == null) {
                     deleteMessage(messageId, message)
                     return@launch
                 }
-                check(chatRepository.updateMessageIfUnchanged(message, changed)) { "消息已变化，请重新操作" }
+                val audioCleanupSucceeded = withContext(NonCancellable) {
+                    com.example.chatbar.domain.backup.LocalDataMaintenance.access {
+                        val deletedVoices = voiceMessageRepository.deleteForVersion(message, versionId) {
+                            chatRepository.updateMessageIfUnchanged(message, changed)
+                        }
+                        if (deletedVoices.any { it.id == voicePlaybackState.value.currentVoiceId }) {
+                            fishAudioCoordinator.stopPlayback()
+                        }
+                        deleteUnreferencedVoiceAudio(deletedVoices)
+                    }
+                }
                 replaceMessagesFromRepository()
                 refreshMemoryAfterMessageEdit(changed)
+                if (!audioCleanupSucceeded) _messageActionError.value = "备选已删除，但语音文件清理失败"
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { _messageActionError.value = error.message ?: "删除备选失败" }
         }
@@ -2724,7 +2736,7 @@ class ChatViewModel(
                         MessageFormatRepairPolicy.isUnchangedResult(repairedPrefix) ||
                             repairedPrefix == originalContent -> {
                             val unchanged = message.copy(
-                                formatRepairNotice = MessageFormatRepairPolicy.applicableNotice(message),
+                                formatRepairNotice = MessageFormatRepairPolicy.retainedNoticeAfterUnchangedSuccess(message),
                                 updatedAt = System.currentTimeMillis()
                             )
                             if (unchanged != message) persistFormatRepairMessage(unchanged)
@@ -2786,11 +2798,7 @@ class ChatViewModel(
         error: String
     ): ChatMessage = persistFormatRepairMessage(
         message.copy(
-            formatRepairNotice = MessageFormatRepairNotice(
-                kind = MessageFormatRepairNoticeKind.ERROR,
-                targetContent = message.displayContent,
-                errorMessage = error
-            ),
+            formatRepairNotice = MessageFormatRepairPolicy.failedAttemptNotice(message, error),
             updatedAt = System.currentTimeMillis()
         )
     )
@@ -3842,6 +3850,20 @@ class ChatViewModel(
 
     fun deleteMessage(messageId: String) = deleteMessage(messageId, null)
 
+    private fun deleteUnreferencedVoiceAudio(deletedVoices: List<com.example.chatbar.data.local.entity.GeneratedVoiceMessage>): Boolean {
+        val retainedPaths = voiceMessageRepository.voices.value.mapNotNull {
+            runCatching { File(it.audioPath).canonicalPath }.getOrNull()
+        }.toSet()
+        var succeeded = true
+        deletedVoices.forEach { voice ->
+            val path = runCatching { File(voice.audioPath).canonicalPath }.getOrNull()
+            if (path != null && path !in retainedPaths) {
+                if (!ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)) succeeded = false
+            }
+        }
+        return succeeded
+    }
+
     private fun deleteMessage(messageId: String, expected: ChatMessage?) {
         viewModelScope.launch {
             fishAudioCoordinator.cancelAndJoinForMessage(sessionId, messageId)
@@ -3865,12 +3887,11 @@ class ChatViewModel(
             if (deletedVoices.any { it.id == voicePlaybackState.value.currentVoiceId }) {
                 fishAudioCoordinator.stopPlayback()
             }
-            deletedVoices.forEach { voice ->
-                ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
-            }
+            val audioCleanupSucceeded = deleteUnreferencedVoiceAudio(deletedVoices)
             _messages.value = _messages.value.filter { it.id != messageId }
             if (expected == null) chatRepository.deleteMessage(messageId, sessionId)
             refreshMessages()
+            if (!audioCleanupSucceeded) _messageActionError.value = "消息已删除，但语音文件清理失败"
             enqueueLongTermMemoryAfterMessageDeletion()
 
             if (deletedMessage == null || ChatMemoryIndexPolicy.contributesToIndex(deletedMessage)) {
@@ -4148,23 +4169,24 @@ class ChatViewModel(
 
     fun switchAssistantAlternative(messageId: String, direction: Int) {
         viewModelScope.launch {
-            val message = _messages.value.find { it.id == messageId }
-                ?: chatRepository.getMessage(messageId, sessionId)
-                ?: return@launch
-            if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@launch
-            val isRecent = contextWindowManager
-                .getRecentMessages(_messages.value, effectiveContextWindowSize())
-                .any { it.id == messageId }
-            if (!isRecent) return@launch
-            val nextIndex = (message.currentAlternativeIndex + direction)
-                .coerceIn(0, message.alternatives.lastIndex)
-            if (nextIndex == message.currentAlternativeIndex) return@launch
-            val updated = MessageAlternativeVersionPolicy.select(
-                message = message,
-                alternativeIndex = nextIndex
-            )
-            _messages.value = _messages.value.map { if (it.id == messageId) updated else it }
-            chatRepository.updateMessage(updated)
+            try {
+                val message = _messages.value.find { it.id == messageId }
+                    ?: chatRepository.getMessage(messageId, sessionId)
+                    ?: return@launch
+                if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@launch
+                val isRecent = contextWindowManager
+                    .getRecentMessages(_messages.value, effectiveContextWindowSize())
+                    .any { it.id == messageId }
+                if (!isRecent) return@launch
+                val nextIndex = (message.currentAlternativeIndex + direction)
+                    .coerceIn(0, message.alternatives.lastIndex)
+                if (nextIndex == message.currentAlternativeIndex) return@launch
+                val updated = MessageAlternativeVersionPolicy.select(message, nextIndex)
+                val committed = chatRepository.updateMessageIfUnchanged(message, updated)
+                replaceMessagesFromRepository()
+                check(committed) { "消息已变化，请重新操作" }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _messageActionError.value = error.message ?: "切换备选失败" }
         }
     }
 

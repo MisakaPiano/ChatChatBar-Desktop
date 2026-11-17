@@ -313,6 +313,7 @@ fun CharacterEditScreen(
     var confirmConvertToFreeform by remember { mutableStateOf(false) }
     var fullscreenField by remember { mutableStateOf<Pair<String, String>?>(null) }
     var fullscreenOnChange by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var fullscreenTagField by remember { mutableStateOf<CharacterNaiPromptFullscreen?>(null) }
     var charDlgFullscreen by remember { mutableStateOf<Triple<String, String, (String) -> Unit>?>(null) }
     var editDocument by remember { mutableStateOf<DocumentInfo?>(null) }
     var editDocName by remember { mutableStateOf("") }
@@ -629,12 +630,14 @@ fun CharacterEditScreen(
                     minLines = 4
                 )
             }
-            CbField(
-                "NovelAI 默认风格提示词",
+            CharacterNovelAiPromptField(
+                title = "NovelAI 默认风格提示词",
+                value = viewModel.defaultImagePrompt,
+                onValueChange = viewModel::updateDefaultImagePrompt,
                 description = "英文标签或自然语言。会固定加入每次生图的基础 Prompt；自由模式可在此直接写角色提示词。",
-                onFullscreenEdit = {
-                    fullscreenField = "NovelAI 默认风格提示词" to viewModel.defaultImagePrompt
-                    fullscreenOnChange = viewModel::updateDefaultImagePrompt
+                placeholder = "例如：anime screencap, cinematic lighting, detailed background",
+                onFullscreenEdit = { value, confirm ->
+                    fullscreenTagField = CharacterNaiPromptFullscreen(CharacterNaiPromptTarget.STYLE, value, confirm)
                 }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -664,13 +667,6 @@ fun CharacterEditScreen(
                             )
                         }
                     }
-                    CbInput(
-                        viewModel.defaultImagePrompt,
-                        viewModel::updateDefaultImagePrompt,
-                        placeholder = "例如：anime screencap, cinematic lighting, detailed background",
-                        singleLine = false,
-                        minLines = 3
-                    )
                 }
             }
             var imageAdvancedExpanded by remember { mutableStateOf(false) }
@@ -733,21 +729,16 @@ fun CharacterEditScreen(
                     CbButton("恢复默认生图参数", { viewModel.defaultImageGenerationSettings = null }, variant = ButtonVariant.Ghost)
                 }
             }
-            CbField(
-                "NovelAI 默认负面提示词",
+            CharacterNovelAiPromptField(
+                title = "NovelAI 默认负面提示词",
+                value = viewModel.defaultImageNegativePrompt,
+                onValueChange = { viewModel.defaultImageNegativePrompt = it },
                 description = "用于排除质量问题、文字、水印等不想出现的标签。",
-                onFullscreenEdit = {
-                    fullscreenField = "NovelAI 默认负面提示词" to viewModel.defaultImageNegativePrompt; fullscreenOnChange = { viewModel.defaultImageNegativePrompt = it }
+                placeholder = "例如：low quality, watermark, logo, bad anatomy",
+                onFullscreenEdit = { value, confirm ->
+                    fullscreenTagField = CharacterNaiPromptFullscreen(CharacterNaiPromptTarget.NEGATIVE, value, confirm)
                 }
-            ) {
-                CbInput(
-                    viewModel.defaultImageNegativePrompt,
-                    { viewModel.defaultImageNegativePrompt = it },
-                    placeholder = "例如：low quality, watermark, logo, bad anatomy",
-                    singleLine = false,
-                    minLines = 3
-                )
-            }
+            )
 
             CbDivider()
             SectionTitle("人物编辑模式")
@@ -1011,6 +1002,17 @@ fun CharacterEditScreen(
             multiple = true,
             onSelect = viewModel::toggleWorldBookBinding,
             onDismiss = { showWorldBookPicker = false }
+        )
+    }
+
+    fullscreenTagField?.let { request ->
+        CharacterNovelAiPromptFullscreenHost(
+            request,
+            currentSource = { when (request.target) {
+                CharacterNaiPromptTarget.STYLE -> viewModel.defaultImagePrompt
+                CharacterNaiPromptTarget.NEGATIVE -> viewModel.defaultImageNegativePrompt
+            } },
+            onDismiss = { fullscreenTagField = null }
         )
     }
 

@@ -32,6 +32,8 @@ object MessageFormatRepairPolicy {
         notice: MessageFormatRepairNotice? = message.formatRepairNotice,
         updatedAt: Long = System.currentTimeMillis()
     ): ChatMessage {
+        val identity = MessageAlternativeVersionPolicy.identity(message.id, message.alternatives.size,
+            message.alternativeVersionIds, message.currentAlternativeIndex, message.currentAlternativeVersionId)
         val alternatives = message.alternatives
         val updatedAlternatives = if (
             alternatives.isNotEmpty() && message.currentAlternativeIndex in alternatives.indices
@@ -41,9 +43,11 @@ object MessageFormatRepairPolicy {
             alternatives
         }
         return message.copy(
+            alternativeVersionIds = identity.alternativeVersionIds,
+            currentAlternativeVersionId = identity.currentAlternativeVersionId,
             content = replacement,
             alternatives = updatedAlternatives,
-            formatRepairNotice = notice?.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(message)),
+            formatRepairNotice = notice?.copy(versionId = identity.currentAlternativeVersionId),
             updatedAt = updatedAt
         )
     }
@@ -54,6 +58,25 @@ object MessageFormatRepairPolicy {
                 (if (it.restored) it.originalContent else it.targetContent) == message.displayContent
         }
 
+    /** A successful no-op clears failures, retaining only a usable local undo/redo pair. */
+    fun retainedNoticeAfterUnchangedSuccess(message: ChatMessage): MessageFormatRepairNotice? =
+        applicableNotice(message)?.takeIf { it.originalContent != null }?.withoutAttemptError()
+
+    /** Attach the latest request error without replacing the selected version's recovery pair. */
+    fun failedAttemptNotice(message: ChatMessage, error: String): MessageFormatRepairNotice =
+        applicableNotice(message)?.takeIf { it.originalContent != null }?.copy(errorMessage = error)
+            ?: MessageFormatRepairNotice(
+                kind = MessageFormatRepairNoticeKind.ERROR,
+                targetContent = message.displayContent,
+                errorMessage = error,
+                versionId = MessageAlternativeVersionPolicy.activeVersionId(message)
+            )
+
+    private fun MessageFormatRepairNotice.withoutAttemptError(): MessageFormatRepairNotice = copy(
+        kind = if (kind == MessageFormatRepairNoticeKind.ERROR) MessageFormatRepairNoticeKind.APPLIED else kind,
+        errorMessage = null
+    )
+
     fun recoverableNotice(message: ChatMessage): MessageFormatRepairNotice? =
         applicableNotice(message)?.takeIf { it.originalContent != null && !it.restored }
 
@@ -63,14 +86,14 @@ object MessageFormatRepairPolicy {
         return replaceCurrentDisplayContent(
             message = message,
             replacement = original,
-            notice = notice.copy(restored = true),
+            notice = notice.withoutAttemptError().copy(restored = true),
             updatedAt = updatedAt
         )
     }
 
     fun redoRepair(message: ChatMessage, updatedAt: Long = System.currentTimeMillis()): ChatMessage? {
         val notice = applicableNotice(message)?.takeIf { it.restored } ?: return null
-        return replaceCurrentDisplayContent(message, notice.targetContent, notice.copy(restored = false), updatedAt)
+        return replaceCurrentDisplayContent(message, notice.targetContent, notice.withoutAttemptError().copy(restored = false), updatedAt)
     }
 
     private fun isPossibleUnchangedMarkerPrefix(outputPrefix: String): Boolean {
