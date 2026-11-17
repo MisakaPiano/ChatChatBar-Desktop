@@ -249,6 +249,9 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
+        DesktopSessionGreetingPicker(primaryChatController) { id ->
+            if (compactChatNavigation.onSessionEntered(id, primaryChatController.state.value)) navigate(DesktopPrimaryRoute.CHAT)
+        }
         helpRoute?.let { DesktopContextHelpPanel(it, startInGuide = helpStartsInGuide) { helpRoute = null } }
         if (centerOpen && helpRoute == null && !centerLocked && (modalActivity?.otherCount ?: 0) == 0 && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
             onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray,

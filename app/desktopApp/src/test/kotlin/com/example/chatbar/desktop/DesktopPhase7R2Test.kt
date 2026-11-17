@@ -27,16 +27,19 @@ class DesktopPhase7R2Test {
         }
     }
 
-    @Test fun `exact deletion retains shared reference and removes only unreferenced candidate`() = runBlocking {
-        fixture { storage, resources, _, library, _ ->
+    @Test fun `gallery removal retains files until explicit cleanup removes only unreferenced candidate`() = runBlocking {
+        fixture { storage, resources, gate, library, root ->
             library.import("a", png()); library.import("a", png())
             val paths = library.load("a").images
             storage.saveSingleton("another_owner", buildJsonObject { put("image", paths[0]) }, JsonObject.serializer())
             library.prefer("a", paths[1])
             library.remove("a", paths[1])
             assertNull(library.load("a").preferred)
+            assertTrue(resources.readBytes(paths[1]).isNotEmpty())
+            DesktopOwnedImageCleanup(root, resources, gate).deleteUnreferenced(listOf(paths[1]))
             assertFails { resources.readBytes(paths[1]) }
             library.remove("a", paths[0])
+            DesktopOwnedImageCleanup(root, resources, gate).deleteUnreferenced(listOf(paths[0]))
             assertTrue(resources.readBytes(paths[0]).isNotEmpty())
         }
     }

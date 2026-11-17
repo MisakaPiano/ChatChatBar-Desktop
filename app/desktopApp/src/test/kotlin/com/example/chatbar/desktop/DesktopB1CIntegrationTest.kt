@@ -54,6 +54,7 @@ class DesktopB1CIntegrationTest {
             DesktopDirectoryPicker { null }, { false }, { error("Migration not requested") }) }
         val scope = rememberCoroutineScope()
         CompositionLocalProvider(LocalDesktopApiAccounts provides c.apiAccountController,
+            LocalDesktopEditorAuxiliaryFrame provides { content -> Box { content() } },
             LocalDesktopUpdateNotices provides updateNotices,
             LocalDesktopTaskCenter provides if (enableTasks) c.taskCenter else null) {
         DesktopPrimaryShell(chrome, navigation, root, transfer,

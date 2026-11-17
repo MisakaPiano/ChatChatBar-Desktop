@@ -37,7 +37,7 @@ class DesktopCommunityPanelTest {
                 val source = PackagedCharacterCard(name = "Synthetic local", greeting = "Local greeting", creator = "Synthetic creator",
                     characterVersion = "Synthetic version", defaultImagePrompt = "synthetic positive image words", defaultImageNegativePrompt = "synthetic negative image words")
                 val local = app.characterTransfers.importNew(CharacterCardPackage(card = source))
-                val data = CharacterCardPackage(card = source.copy(greeting = "Remote greeting"))
+                val data = CharacterCardPackage(schemaVersion = 9, card = source.copy(greeting = "Remote greeting"))
                 val raw = app.transferJson.encodeToString(CharacterCardPackage.serializer(), data)
                 val item = CommunityItemDto(id = "remote", type = "character", title = local.name, authorUserId = "owner",
                     authorName = "Synthetic owner", sourceLocalName = local.name, description = "Synthetic detail",

@@ -21,6 +21,7 @@ class CharacterCardPackageTest {
     @Test
     fun packageContainsPortableResourcesOnly() {
         val packageData = CharacterCardPackage(
+            schemaVersion = 9,
             card = PackagedCharacterCard(
                 name = "测试卡",
                 botName = "第一行\n第二行",

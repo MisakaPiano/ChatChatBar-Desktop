@@ -135,6 +135,10 @@ internal fun DesktopPrimaryChatPanel(
     val terminalTasks = tasks.filter { it.status != DesktopTaskStatus.RUNNING }
     val terminalSignature = terminalTasks.joinToString("|") { "${it.taskId}:${it.completedAt}" }
     LaunchedEffect(controller) { controller.chatUi?.load(); controller.refresh() }
+    LaunchedEffect(state.selectedSession?.id) {
+        // A greeting can be confirmed from the shell after createSession first opened its picker.
+        if (state.selectedSession != null) browser = browser.closeNewChat()
+    }
     LaunchedEffect(controller, state.selectedSession?.id, state.modelChoicesObservationRevision) {
         controller.observeModelChoices(state.selectedSession?.id)
     }

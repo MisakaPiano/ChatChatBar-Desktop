@@ -171,7 +171,11 @@ jobs:
           CCB_RECOVERY_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/recovery-images
           CCB_STUDIO_IMAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/studio-image-readiness
           CCB_MEDIA_USAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/media-usage-images
-        run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
+          CCB_ARCHIVE_PATH_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/archive-path-prerequisite
+          CCB_ARCHIVE_CANONICAL_TEMP: ${{ env.TEMP }}
+        run: |
+          New-Item -ItemType Directory -Path $env:CCB_ARCHIVE_PATH_REVIEW_DIR -Force | Out-Null
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
       - name: Test Studio streaming storage on NTFS
         if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}

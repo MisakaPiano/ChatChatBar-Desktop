@@ -55,7 +55,8 @@ class DesktopChatDensityTest {
         val all = DesktopMessageAction.entries
         val footerActions = setOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY)
         val overflowActions = setOf(DesktopMessageAction.EDIT, DesktopMessageAction.DELETE,
-            DesktopMessageAction.REPAIR_FORMAT, DesktopMessageAction.RESTORE_FORMAT, DesktopMessageAction.STOP_FORMAT)
+            DesktopMessageAction.REPAIR_FORMAT, DesktopMessageAction.REDO_FORMAT,
+            DesktopMessageAction.RESTORE_FORMAT, DesktopMessageAction.STOP_FORMAT)
         for (mask in 0 until (1 shl all.size)) {
             val eligible = all.filterIndexed { index, _ -> mask and (1 shl index) != 0 }
             val primary = desktopFooterMessageActions(eligible)

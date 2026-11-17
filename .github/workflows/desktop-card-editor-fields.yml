@@ -1,0 +1,68 @@
+name: Desktop character editor fields and opening choice
+on:
+  push:
+    branches: [codex/desktop-card-editor-gaps-20261118]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-card-editor-fields-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  affected-windows-fixtures:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare canonical native fixture directories
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $fixture = Join-Path ($env:SystemDrive + '\') ('c' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          New-Item -ItemType Directory -Path $fixture -ErrorAction Stop | Out-Null
+          $proof = New-Item -ItemType Directory -Path (Join-Path $fixture 'proof') -ErrorAction Stop
+          @("TEMP=$fixture", "TMP=$fixture", "CCB_ARCHIVE_CANONICAL_TEMP=$fixture", "CCB_ARCHIVE_PATH_REVIEW_DIR=$($proof.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Verify only the ten failed Windows fixture classes
+        working-directory: app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path "${{ runner.temp }}/card-editor-review" -Force | Out-Null
+          @{source=(git rev-parse HEAD);run=$env:GITHUB_RUN_ID;syntheticOnly=$true;providerCalls=$false;localInstall=$false;scope='ten failed Windows fixture classes';unchangedEvidenceSource='64abe73cf3b4ab93df4ec69991bfb9ba8b3ac432'} | ConvertTo-Json | Set-Content "${{ runner.temp }}/card-editor-review/source.json" -Encoding utf8
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true `
+            --tests com.example.chatbar.desktop.backup.DesktopArchiveTempIdentityTest `
+            --tests com.example.chatbar.desktop.DesktopB1CIntegrationTest `
+            --tests com.example.chatbar.desktop.DesktopChatDensityTest `
+            --tests com.example.chatbar.desktop.DesktopCommunityControllerTest `
+            --tests com.example.chatbar.desktop.DesktopCommunityPanelTest `
+            --tests com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest `
+            --tests com.example.chatbar.desktop.DesktopManagementControllerTest `
+            --tests com.example.chatbar.desktop.DesktopNarrativeModePlannerTest `
+            --tests com.example.chatbar.desktop.DesktopPhase7R2Test `
+            --tests com.example.chatbar.desktop.DesktopWorkspacePresentationTest `
+            --no-daemon --stacktrace --console=plain
+          exit $LASTEXITCODE
+      - name: Consolidate the exact native prerequisite proof for upload
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Join-Path $env:CCB_ARCHIVE_PATH_REVIEW_DIR 'temp-path-native-proof.json'
+          $destination = Join-Path '${{ runner.temp }}/card-editor-review' 'temp-path-native-proof.json'
+          Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+          if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -cne (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash) { throw 'NATIVE_PROOF_COPY_MISMATCH' }
+      - name: Preserve affected original reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-card-editor-fields-originals
+          path: |
+            app/desktopApp/build/test-results/test/
+            ${{ runner.temp }}/card-editor-review/
+          if-no-files-found: error

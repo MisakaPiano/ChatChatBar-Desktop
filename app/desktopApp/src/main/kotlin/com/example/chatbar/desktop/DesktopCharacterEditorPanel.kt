@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.Image
@@ -27,6 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -247,8 +249,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             EditorSection(t(DesktopUiText.CHARACTER_CARD_INFORMATION), Modifier.testTag("character-editor-card")) {
                 ImageSlot(t(DesktopUiText.AVATAR_IMAGE), card.avatar,
                     { controller.chooseAvatar(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearAvatar, controller, controller::cropAvatar)
-                EditorField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
-                EditorField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
+                CharacterCardMetadata(card, controller)
             }
             EditorSection(t(DesktopUiText.CHARACTER_ORIGINAL_COVER), Modifier.testTag("character-editor-original-cover")) {
                 ImageSlot(t(DesktopUiText.CHARACTER_ORIGINAL_COVER), card.coverImage,
@@ -259,14 +262,23 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     onClick = controller::copyAvatarAsCover)
             }
             Column(Modifier.testTag("character-editor-greeting")) {
-                EditorField(t(DesktopUiText.GREETING), card.greeting, multiline = true) { value -> controller.edit { it.copy(greeting = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.GREETING), card.greeting, multiline = true) { value -> controller.edit { it.copy(greeting = value) } }
                 StudioDisclosure(t(DesktopUiText.ALTERNATE_GREETINGS)) {
+                    StatusText(t(DesktopUiText.CARD_GREETING_HELP))
                     card.alternateGreetings.forEachIndexed { index, greeting ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(Modifier.weight(1f)) {
-                                EditorField("${index + 1}", greeting, multiline = true) { controller.setGreeting(index, it) }
+                                DesktopCharacterTextField("${index + 1}", greeting, multiline = true) { controller.setGreeting(index, it) }
                             }
-                            BootstrapButton(t(DesktopUiText.REMOVE)) { controller.removeGreeting(index) }
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                BootstrapButton(t(DesktopUiText.CARD_MOVE_GREETING_UP), secondary = true, enabled = index > 0) {
+                                    controller.moveGreeting(index, -1)
+                                }
+                                BootstrapButton(t(DesktopUiText.CARD_MOVE_GREETING_DOWN), secondary = true, enabled = index < card.alternateGreetings.lastIndex) {
+                                    controller.moveGreeting(index, 1)
+                                }
+                                BootstrapButton(t(DesktopUiText.REMOVE), secondary = true) { controller.removeGreeting(index) }
+                            }
                         }
                     }
                     BootstrapButton(t(DesktopUiText.ADD_GREETING)) { controller.addGreeting() }
@@ -317,7 +329,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
             }) { StudioSwitch("该角色卡启用朋友圈", card.momentsEnabled) { controller.edit { it.copy(momentsEnabled = !it.momentsEnabled) } } }
             EditorSection(t(DesktopUiText.CHARACTER_COMMON_SETTING), Modifier.testTag("character-editor-common")) {
-                EditorField(t(DesktopUiText.CHARACTER_COMMON_SETTING), card.basicSetting, true, showLabel = false) { value -> controller.edit { it.copy(basicSetting = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.CHARACTER_COMMON_SETTING), card.basicSetting, true, showLabel = false) { value -> controller.edit { it.copy(basicSetting = value) } }
             }
             Column(Modifier.fillMaxWidth().testTag("character-editor-style").onGloballyPositioned { imageSettingsTop = it.positionInRoot().y }) {
                 EditorSection(t(DesktopUiText.CHARACTER_DEFAULT_STYLE)) {
@@ -328,7 +340,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     state.stylePromptUndo?.let { undo ->
                         StatusText("已应用 ${undo.displayName} · ${if (undo.appliedCustomNegativePrompt) "专属负面词" else "默认负面词"}")
                     }
-                    EditorField(t(DesktopUiText.CHARACTER_DEFAULT_STYLE), card.defaultImagePrompt, true, showLabel = false) { value -> controller.edit { it.copy(defaultImagePrompt = value) } }
+                    DesktopCharacterTextField(t(DesktopUiText.CHARACTER_DEFAULT_STYLE), card.defaultImagePrompt, true, showLabel = false) { value -> controller.edit { it.copy(defaultImagePrompt = value) } }
                 }
             }
             Column(Modifier.fillMaxWidth().testTag("character-editor-image-advanced")) {
@@ -337,7 +349,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
             }
             EditorSection(t(DesktopUiText.CHARACTER_DEFAULT_NEGATIVE), Modifier.testTag("character-editor-negative")) {
-                EditorField(t(DesktopUiText.CHARACTER_DEFAULT_NEGATIVE), card.defaultImageNegativePrompt, true, showLabel = false) { value -> controller.edit { it.copy(defaultImageNegativePrompt = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.CHARACTER_DEFAULT_NEGATIVE), card.defaultImageNegativePrompt, true, showLabel = false) { value -> controller.edit { it.copy(defaultImageNegativePrompt = value) } }
             }
             EditorSection(t(DesktopUiText.CHARACTER_PEOPLE_EDITING), Modifier.testTag("character-editor-people")) {
                 EditorActions {
@@ -355,7 +367,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                         BootstrapButton(t(DesktopUiText.CHARACTER_CONVERT_FREEFORM), secondary = true,
                             enabled = controller.canConvertStructuredToFreeform) { convertConfirm = true }
                     }
-                } else EditorField(t(DesktopUiText.FREEFORM_BODY), card.freeformCharacterText, multiline = true) { value ->
+                } else DesktopCharacterTextField(t(DesktopUiText.FREEFORM_BODY), card.freeformCharacterText, multiline = true) { value ->
                     controller.edit { it.copy(freeformCharacterText = value) }
                 }
                 CharacterPersonWorkspace(card, selectedEntry, controller, personFocus,
@@ -363,10 +375,14 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     personFocusExtent, editorViewportTop, editorViewportHeight, { handledPersonFocus = it }) { selectedEntry = it }
             }
             EditorSection(t(DesktopUiText.CHARACTER_ADVANCED_SETTING), Modifier.testTag("character-editor-advanced")) {
-                EditorField(t(DesktopUiText.SYSTEM_PROMPT_FIELD), card.systemPrompt, true) { value -> controller.edit { it.copy(systemPrompt = value) } }
-                EditorField(t(DesktopUiText.POST_HISTORY_FIELD), card.postHistoryInstructions, true) { value -> controller.edit { it.copy(postHistoryInstructions = value) } }
-                EditorField(t(DesktopUiText.CREATOR_NOTES), card.creatorNotes, true) { value -> controller.edit { it.copy(creatorNotes = value) } }
-                EditorField(t(DesktopUiText.MESSAGE_EXAMPLE), card.mesExample, true) { value -> controller.edit { it.copy(mesExample = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.SYSTEM_PROMPT_FIELD), card.systemPrompt, true) { value -> controller.edit { it.copy(systemPrompt = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.POST_HISTORY_FIELD), card.postHistoryInstructions, true) { value -> controller.edit { it.copy(postHistoryInstructions = value) } }
+                DesktopCharacterTextField(t(DesktopUiText.CREATOR_NOTES), card.creatorNotes, true) { value -> controller.edit { it.copy(creatorNotes = value) } }
+                StatusText(t(DesktopUiText.CARD_EXAMPLE_HELP))
+                key(card.id, state.draftSessionId) {
+                    DesktopCharacterTextField(t(DesktopUiText.MESSAGE_EXAMPLE), card.mesExample, true, expandable = true) { value -> controller.edit { it.copy(mesExample = value) } }
+                }
+                CharacterCardExtensions(card)
             }
             EditorSection(t(DesktopUiText.REFERENCE_DOCUMENTS), Modifier.testTag("character-editor-documents")) {
                 BootstrapButton(t(DesktopUiText.IMPORT_TEXT_DOCUMENT)) {
@@ -374,8 +390,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
                 var newName by remember(card.id) { mutableStateOf("") }
                 var newBody by remember(card.id) { mutableStateOf("") }
-                EditorField(t(DesktopUiText.DOCUMENT_NAME), newName) { newName = it }
-                EditorField(t(DesktopUiText.DOCUMENT_BODY), newBody, true) { newBody = it }
+                DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_NAME), newName) { newName = it }
+                DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_BODY), newBody, true) { newBody = it }
                 BootstrapButton(t(DesktopUiText.NEW_TEXT_DOCUMENT)) {
                     controller.addTextDocument(newName, newBody); newName = ""; newBody = ""
                 }
@@ -408,10 +424,10 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                         var name by remember(doc.id, doc.filePath) { mutableStateOf(doc.fileName) }
                         val loaded = remember(doc.id, doc.filePath) { controller.documentText(doc.id) }
                         var body by remember(doc.id, doc.filePath) { mutableStateOf(loaded?.getOrNull().orEmpty()) }
-                        EditorField(t(DesktopUiText.DOCUMENT_NAME), name) { name = it }
+                        DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_NAME), name) { name = it }
                         if (loaded?.isFailure == true) StatusText(t(DesktopUiText.CHARACTER_DOCUMENT_READ_FAILED),
                             DesktopBootstrapColors.destructive)
-                        else EditorField(t(DesktopUiText.DOCUMENT_BODY), body, true) { body = it }
+                        else DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_BODY), body, true) { body = it }
                         EditorActions {
                             BootstrapButton(t(DesktopUiText.SAVE_DOCUMENT_EDIT), enabled = loaded?.isSuccess == true) {
                                 controller.editDocument(doc.id, name, body)
@@ -680,7 +696,7 @@ internal fun CharacterPersonRow(
 private fun CharacterAvatarBookFields(entry: CharacterInfo, controller: DesktopCharacterEditorController) {
     val t = LocalDesktopUiStrings.current
     controller.cardImages?.let { images -> BootstrapButton("生成该人物头像候选", secondary = true) { images.openAvatar(entry.id) } }
-    EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
     ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
         { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
         { controller.clearAppearance(entry.id) }, controller, { controller.cropAppearance(entry.id, it) })
@@ -690,21 +706,21 @@ private fun CharacterAvatarBookFields(entry: CharacterInfo, controller: DesktopC
 private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharacterEditorController) {
     val t = LocalDesktopUiStrings.current
     controller.cardImages?.let { images -> BootstrapButton("生成该人物头像候选", secondary = true) { images.openAvatar(entry.id) } }
-    EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
-    EditorField(t(DesktopUiText.PROFILE), entry.profile, true) { v -> controller.updateCharacter(entry.id) { it.copy(profile = v) } }
-    EditorField(t(DesktopUiText.APPEARANCE), entry.appearance, true) { v -> controller.updateCharacter(entry.id) { it.copy(appearance = v) } }
-    EditorField(t(DesktopUiText.CLOTHING), entry.clothing, true) { v -> controller.updateCharacter(entry.id) { it.copy(clothing = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.PROFILE), entry.profile, true) { v -> controller.updateCharacter(entry.id) { it.copy(profile = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.APPEARANCE), entry.appearance, true) { v -> controller.updateCharacter(entry.id) { it.copy(appearance = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.CLOTHING), entry.clothing, true) { v -> controller.updateCharacter(entry.id) { it.copy(clothing = v) } }
     controller.appearanceAi?.let { ai -> BootstrapButton("从图片补外貌／服装", secondary = true) { ai.open(entry.id) } }
-    EditorField(t(DesktopUiText.ABILITIES), entry.abilities, true) { v -> controller.updateCharacter(entry.id) { it.copy(abilities = v) } }
-    EditorField(t(DesktopUiText.HABITS), entry.habits, true) { v -> controller.updateCharacter(entry.id) { it.copy(habits = v) } }
-    EditorField(t(DesktopUiText.BACKGROUND_FIELD), entry.background, true) { v -> controller.updateCharacter(entry.id) { it.copy(background = v) } }
-    EditorField(t(DesktopUiText.RELATIONSHIPS), entry.relationships, true) { v -> controller.updateCharacter(entry.id) { it.copy(relationships = v) } }
-    EditorField(t(DesktopUiText.SPEAKING_STYLE), entry.speakingStyle, true) { v -> controller.updateCharacter(entry.id) { it.copy(speakingStyle = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.ABILITIES), entry.abilities, true) { v -> controller.updateCharacter(entry.id) { it.copy(abilities = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.HABITS), entry.habits, true) { v -> controller.updateCharacter(entry.id) { it.copy(habits = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.BACKGROUND_FIELD), entry.background, true) { v -> controller.updateCharacter(entry.id) { it.copy(background = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.RELATIONSHIPS), entry.relationships, true) { v -> controller.updateCharacter(entry.id) { it.copy(relationships = v) } }
+    DesktopCharacterTextField(t(DesktopUiText.SPEAKING_STYLE), entry.speakingStyle, true) { v -> controller.updateCharacter(entry.id) { it.copy(speakingStyle = v) } }
     val promptTools = controller.imagePromptTools
     if (promptTools != null) DesktopCharacterImagePromptField(entry, controller, promptTools)
     else {
         StatusText("本地标签辅助未配置；仍可编辑人物提示词", DesktopBootstrapColors.warning)
-        EditorField(t(DesktopUiText.IMAGE_PROMPT), entry.imagePrompt, true) { v -> controller.updateCharacter(entry.id) { it.copy(imagePrompt = v) } }
+        DesktopCharacterTextField(t(DesktopUiText.IMAGE_PROMPT), entry.imagePrompt, true) { v -> controller.updateCharacter(entry.id) { it.copy(imagePrompt = v) } }
     }
     ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
         { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
@@ -756,15 +772,81 @@ private fun EditorActions(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun EditorField(label: String, value: String, multiline: Boolean = false, showLabel: Boolean = true, onChange: (String) -> Unit) {
+internal fun DesktopCharacterTextField(label: String, value: String, multiline: Boolean = false, showLabel: Boolean = true,
+    expandable: Boolean = false, onChange: (String) -> Unit) {
+    val t = LocalDesktopUiStrings.current
+    var opening by remember(label) { mutableStateOf<String?>(null) }
+    var expandedValue by remember(label) { mutableStateOf("") }
+    LaunchedEffect(value) { if (opening != null && value != opening) opening = null }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (showLabel) StatusText(label)
+        if (showLabel || expandable) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (showLabel) Box(Modifier.weight(1f)) { StatusText(label) }
+            if (expandable) BootstrapButton(t(DesktopUiText.EXPAND_COMPOSER), secondary = true) {
+                expandedValue = value; opening = value
+            }
+        }
         BasicTextField(value, onChange, Modifier.fillMaxWidth().semantics { contentDescription = label }
             .heightIn(min = if (multiline) 70.dp else 36.dp)
             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
             .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(9.dp),
             cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             singleLine = !multiline)
+    }
+    opening?.let { basis -> DesktopEditorAuxiliaryWindow(label, { opening = null }, width = 850.dp, height = 650.dp) {
+        Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            BasicTextField(expandedValue, { expandedValue = it }, Modifier.weight(1f).fillMaxWidth()
+                .verticalScroll(rememberScrollState()).border(1.dp, DesktopBootstrapColors.border).padding(10.dp)
+                .testTag("character-expanded-text-field").semantics { contentDescription = label }, cursorBrush = DesktopBootstrapColors.inputCaret,
+                textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
+            EditorActions {
+                BootstrapButton(t(DesktopUiText.CONFIRM)) { if (value == basis) onChange(expandedValue); opening = null }
+                BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { opening = null }
+            }
+        }
+    } }
+}
+
+@Composable
+private fun CharacterCardMetadata(card: CharacterCard, controller: DesktopCharacterEditorController) {
+    val t = LocalDesktopUiStrings.current
+    DesktopCharacterTextField(t(DesktopUiText.CARD_CREATOR), card.creator) { value -> controller.edit { it.copy(creator = value) } }
+    DesktopCharacterTextField(t(DesktopUiText.CARD_CONTENT_VERSION), card.characterVersion) { value -> controller.edit { it.copy(characterVersion = value) } }
+    StatusText(t(DesktopUiText.CARD_VERSION_HELP))
+    StudioDisclosure(t(DesktopUiText.CARD_TAGS)) {
+        StatusText(t(DesktopUiText.CARD_TAGS_HELP))
+        card.tags.forEachIndexed { index, tag ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { DesktopCharacterTextField("${t(DesktopUiText.CARD_TAGS)} ${index + 1}", tag) { controller.setCardTag(index, it) } }
+                BootstrapButton(t(DesktopUiText.REMOVE), secondary = true) { controller.removeCardTag(index) }
+            }
+        }
+        var newTag by remember(card.id) { mutableStateOf("") }
+        DesktopCharacterTextField(t(DesktopUiText.CARD_NEW_TAG), newTag) { newTag = it }
+        BootstrapButton(t(DesktopUiText.CARD_ADD_TAG), secondary = true,
+            enabled = newTag.isNotBlank() && card.tags.none { it.trim().equals(newTag.trim(), ignoreCase = true) }) {
+            controller.addCardTag(newTag); newTag = ""
+        }
+    }
+}
+
+@Composable
+private fun CharacterCardExtensions(card: CharacterCard) {
+    val t = LocalDesktopUiStrings.current
+    val scope = rememberCoroutineScope()
+    val platformClipboard = LocalClipboard.current
+    val clipboard = remember(platformClipboard) { DesktopSafeClipboard(platformClipboard) }
+    var copied by remember(card.id, card.extensions) { mutableStateOf(false) }
+    StudioDisclosure(t(DesktopUiText.CARD_EXTENSIONS)) {
+        StatusText(t(DesktopUiText.CARD_EXTENSIONS_HELP))
+        SelectionContainer { Box(Modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState())
+            .border(1.dp, DesktopBootstrapColors.border).padding(9.dp)) {
+            StatusText(card.extensions)
+        } }
+        BootstrapButton(t(DesktopUiText.CARD_COPY_EXTENSIONS), secondary = true, enabled = card.extensions.isNotEmpty()) {
+            scope.launch { copied = clipboard.copyText(card.extensions) == DesktopClipboardResult.COPIED }
+        }
+        if (copied) StatusText(t(DesktopUiText.CARD_EXTENSIONS_COPIED))
+        if (clipboard.unavailable) StatusText(t(DesktopUiText.CARD_COPY_UNAVAILABLE), DesktopBootstrapColors.warning)
     }
 }
 

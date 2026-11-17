@@ -460,7 +460,8 @@ class DesktopManagementControllerTest {
                     assertNull(f.transfer.state.value.characterJsonExport)
                 }
                 val expected = when (kind) {
-                    DesktopTransferKind.CHARACTER -> f.c.characterTransfers.exportJson(id)
+                    DesktopTransferKind.CHARACTER -> f.c.characterTransfers.exportJson(id,
+                        com.example.chatbar.domain.card.CharacterCardExportCompatibility.OFFICIAL_V9)
                     DesktopTransferKind.FORMAT -> f.c.formatTransfers.exportJson(id)
                     DesktopTransferKind.WORLD_BOOK -> f.c.worldBookTransfers.exportJson(id)
                 }

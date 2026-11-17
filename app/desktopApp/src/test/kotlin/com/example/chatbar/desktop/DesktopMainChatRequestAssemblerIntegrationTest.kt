@@ -46,7 +46,7 @@ class DesktopMainChatRequestAssemblerIntegrationTest {
             assertNotNull(container.promptAssembler)
             assertNotNull(result.promptCacheKey)
             assertEquals(1, result.messages.count { it.content.jsonPrimitive.content == "desktop-current" })
-            assertEquals("user", result.messages.last().role)
+            assertEquals("assistant", result.messages.last().role)
         } finally {
             container.close()
             parent.toFile().deleteRecursively()

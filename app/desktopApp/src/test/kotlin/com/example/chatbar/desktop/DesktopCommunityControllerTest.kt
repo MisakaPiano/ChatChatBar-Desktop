@@ -116,7 +116,7 @@ class DesktopCommunityControllerTest {
             DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, parent.resolve("bootstrap.json")))
         try {
         val enabled = AtomicBoolean(true); val corrupt = AtomicBoolean(false); val downloads = AtomicInteger()
-        val data = CharacterCardPackage(card = PackagedCharacterCard(name = "Synthetic community", greeting = "Synthetic greeting"))
+        val data = CharacterCardPackage(schemaVersion = 9, card = PackagedCharacterCard(name = "Synthetic community", greeting = "Synthetic greeting"))
         val raw = app.transferJson.encodeToString(CharacterCardPackage.serializer(), data)
         val item = CommunityItemDto(id = "remote", type = "character", title = data.card.name,
             filePath = "owner/packages/character/synthetic.json", sha256 = CommunityPackagePolicy.sha256(raw.toByteArray()),
