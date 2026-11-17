@@ -19,6 +19,8 @@ import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.ChatContextGroupPolicy
+import com.example.chatbar.domain.chat.ChatHistoryActionProjection
+import com.example.chatbar.domain.chat.ChatHistoryActionRequestSource
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptZone
 import com.example.chatbar.domain.chat.ChatMessageOrderSnapshot
@@ -2995,11 +2997,29 @@ class ChatViewModel(
                 } else {
                     null
                 }
-                val allMsgs = chatRepository.getContextCandidateMessages(
+                val candidateSnapshot = chatRepository.getContextCandidateSnapshot(
                     sessionId = sessionId,
                     recentTurnCount = effectiveContextWindowSize + 6,
                     includeSourceTurnIds = boundaryView?.pendingSourceTurnIds.orEmpty()
-                ).filterNot { it.id == alternativeTargetMessageId }
+                )
+                val allMsgs = candidateSnapshot.messages.filterNot { it.id == alternativeTargetMessageId }
+                // Assess references against the query universe, before context/RAG budget projection.
+                // Bind a persisted request to its own USER, not a concurrent later append.
+                val actionCandidates = if (persistUserMessage || resumedUserMessage != null) {
+                    val currentIndex = allMsgs.indexOfLast { it.id == userMsg.id && it.role == MessageRole.USER }
+                    if (currentIndex >= 0) allMsgs.take(currentIndex + 1) else emptyList()
+                } else allMsgs
+                val actionRequestSource = when {
+                    persistUserMessage || resumedUserMessage != null -> ChatHistoryActionRequestSource.PERSISTED_USER
+                    alternativeTargetMessageId != null -> ChatHistoryActionRequestSource.NO_USER_REGENERATION
+                    resumeLatestUser -> ChatHistoryActionRequestSource.UI_CONTINUATION
+                    else -> ChatHistoryActionRequestSource.UNKNOWN
+                }
+                val actionProjection = ChatHistoryActionProjection.prepare(
+                    candidates = actionCandidates,
+                    completeRecentMessageIds = candidateSnapshot.completeRecentMessageIds,
+                    requestSource = actionRequestSource
+                )
                 ragMemoryMutationMutex.withLock {
                     ChatBarApp.instance.ragRepository.pruneChatMemory(
                         sessionId = sessionId,
@@ -3374,7 +3394,7 @@ class ChatViewModel(
                                 appSettings.excludeAssistantStatusFromHistory,
                             zone = zone
                         )
-                        val renderedBody = renderSessionText(sourceText)
+                        val renderedBody = renderSessionText(actionProjection.project(msg, sourceText))
                         val hasSupportedImage = msg.images.isNotEmpty() &&
                             modelConfig.isMultimodal &&
                             msg.role == MessageRole.USER
