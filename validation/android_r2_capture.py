@@ -1,7 +1,7 @@
-import pathlib,subprocess,json,shutil,os,hashlib,re
+import pathlib,subprocess,json,shutil,os,hashlib,re,tarfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'android-r2-capture';out.mkdir(exist_ok=True)
-source='9a796f321c748a943e0b0ed0eda1f024a74593da';app_id='com.example.chatbar.nextreview.r2'
+source='0d6ad72a6ca5e7c1f82d1c81063d591804b0cfe2';app_id='com.example.chatbar.nextreview.r2'
 assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==source
 (root/'app/gradlew').chmod(0o755)
 p=root/'app/app/build.gradle.kts';s=p.read_text();assert s.count('applicationId = "com.example.chatbar"')==1
@@ -24,7 +24,12 @@ for p in (out/'native').rglob('TEST-*.xml'):
 assert r.returncode==0 and len(cases)==3 and all(not c['failure'] and not c['skipped'] for c in cases)
 installed=subprocess.check_output(['adb','shell','pm','path',app_id],text=True)
 assert 'package:' in installed,installed
-subprocess.run(['adb','pull','/sdcard/Android/data/'+app_id+'/files/ui-previews',str(out/'screenshots')],check=True)
+with (out/'ui-previews.tar').open('wb') as output:
+    subprocess.run(['adb','exec-out','run-as',app_id,'tar','-cf','-',
+        '-C','/sdcard/Android/data/'+app_id+'/files','ui-previews'],stdout=output,check=True)
+with tarfile.open(out/'ui-previews.tar') as packed:
+    assert all(pathlib.PurePosixPath(m.name).parts[0]=='ui-previews' for m in packed.getmembers())
+    packed.extractall(out/'screenshots',filter='data')
 png=list((out/'screenshots').rglob('*.png'));projections=list((out/'screenshots').rglob('tag-input-projection.json'))
 assert len(png)==2 and len(projections)==1
 projection=json.loads(projections[0].read_text());assert any(', ' in x for x in projection['input'])

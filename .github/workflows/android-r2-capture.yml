@@ -21,7 +21,7 @@ jobs:
       - run: cp validation/android_r2_capture.py /tmp/android_r2_capture.py
       - uses: actions/checkout@v4
         with:
-          ref: 9a796f321c748a943e0b0ed0eda1f024a74593da
+          ref: 0d6ad72a6ca5e7c1f82d1c81063d591804b0cfe2
           fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-java@v4
