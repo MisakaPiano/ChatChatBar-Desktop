@@ -96,6 +96,17 @@ class CharacterNovelAiPromptFieldTest {
         rule.runOnIdle { assertEquals(0, writes) }
     }
 
+    @Test fun systemBackDiscardsFullscreenDraftWithoutLeavingTheCardEditor() = fixture {
+        val value = mutableStateOf(raw)
+        var writes = 0
+        harness(value) { writes++ }
+        rule.onNodeWithContentDescription("全屏编辑").performClick()
+        rule.onAllNodes(hasSetTextAction()).onLast().performTextReplacement("unconfirmed synthetic draft")
+        rule.runOnIdle { rule.activity.onBackPressedDispatcher.onBackPressed() }
+        rule.onNodeWithContentDescription("确认").assertDoesNotExist()
+        rule.runOnIdle { assertEquals(raw, value.value); assertEquals(0, writes); assertFalse(rule.activity.isFinishing) }
+    }
+
     @Test fun translationToggleUsesSharedConsentWithoutEditingTheRawPrompt() = fixture(enabled = false) { app ->
         val value = mutableStateOf(raw)
         var writes = 0
