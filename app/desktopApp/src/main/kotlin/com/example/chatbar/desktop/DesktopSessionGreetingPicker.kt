@@ -21,10 +21,16 @@ import kotlinx.coroutines.launch
 internal fun DesktopSessionGreetingPicker(controller: DesktopPrimaryChatController, onCreated: (String) -> Unit) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val created by rememberUpdatedState(onCreated)
+    LaunchedEffect(controller, state.completedGreetingSessionId) {
+        state.completedGreetingSessionId?.let { id ->
+            if (controller.consumeGreetingSessionCreated(id)) created(id)
+        }
+    }
     state.greetingSelection?.let { selection ->
         DesktopSessionGreetingContent(selection, state.error, controller::selectSessionGreeting,
             controller::cancelSessionGreeting) {
-            scope.launch { controller.confirmSessionGreeting()?.let(onCreated) }
+            scope.launch { controller.confirmSessionGreeting() }
         }
     }
 }

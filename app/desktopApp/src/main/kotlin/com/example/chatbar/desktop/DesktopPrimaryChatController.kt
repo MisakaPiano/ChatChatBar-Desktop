@@ -28,6 +28,7 @@ import com.example.chatbar.ui.chat.isRetryableGenerationError
 import com.example.chatbar.ui.chat.regenerationTargetAssistantMessageId
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicLong
+import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,7 @@ internal data class DesktopSessionGreetingSelection(
     val choices: List<CharacterGreetingChoice>,
     val selected: CharacterGreetingChoice,
     val submitting: Boolean = false,
+    val requestId: String = UUID.randomUUID().toString(),
 )
 
 internal data class DesktopPrimarySessionItem(
@@ -105,6 +107,7 @@ internal data class DesktopPrimaryChatState(
     val error: String? = null,
     val status: String? = null,
     val greetingSelection: DesktopSessionGreetingSelection? = null,
+    val completedGreetingSessionId: String? = null,
 )
 
 internal enum class DesktopRegenerationAction { REGENERATE, RETRY }
@@ -387,7 +390,7 @@ internal class DesktopPrimaryChatController(
         mutableState.update { current ->
             val pending = current.greetingSelection
             if (pending == null || pending.submitting || choice !in pending.choices) current
-            else current.copy(greetingSelection = pending.copy(selected = choice), error = null)
+            else current.copy(greetingSelection = pending.copy(selected = choice, requestId = UUID.randomUUID().toString()), error = null)
         }
     }
 
@@ -396,23 +399,51 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun confirmSessionGreeting(): String? {
-        val pending = state.value.greetingSelection?.takeUnless { it.submitting } ?: return null
-        val previousSession = state.value.selectedSession?.id
-        mutableState.update { it.copy(greetingSelection = pending.copy(submitting = true), error = null) }
+        val before = state.value
+        val pending = before.greetingSelection?.takeUnless { it.submitting } ?: return null
+        val previousSession = before.selectedSession?.id
+        if (!mutableState.compareAndSet(before, before.copy(greetingSelection = pending.copy(submitting = true), error = null))) return null
         try {
-            createSession(pending.cardId, pending.selected)
+            createSession(pending.cardId, pending.selected, pending.requestId)
             return state.value.selectedSession?.takeIf { it.id != previousSession && it.characterCardId == pending.cardId }?.id
         } finally {
-            mutableState.update { current -> current.copy(greetingSelection = current.greetingSelection?.copy(submitting = false)) }
+            mutableState.update { current ->
+                val active = current.greetingSelection
+                if (active != null && active.requestId == pending.requestId)
+                    current.copy(greetingSelection = active.copy(submitting = false)) else current
+            }
         }
     }
 
-    suspend fun createSession(characterId: String, greetingChoice: CharacterGreetingChoice? = null): Unit = guarded {
+    /** One completion signal survives Memory/settings deferral; only the shell consumes it. */
+    fun consumeGreetingSessionCreated(id: String): Boolean {
+        while (true) {
+            val before = state.value
+            if (before.completedGreetingSessionId != id) return false
+            if (mutableState.compareAndSet(before, before.copy(completedGreetingSessionId = null))) {
+                return before.selectedSession?.id == id
+            }
+        }
+    }
+
+    private fun greetingRequestCurrent(requestId: String?, choice: CharacterGreetingChoice?): Boolean {
+        if (requestId == null) return true // Original non-chooser creation path.
+        val pending = state.value.greetingSelection
+        if (pending?.requestId == requestId && pending.selected == choice) return true
+        mutableState.update { it.copy(status = "旧开场选择已取消或更改，本次新建未执行。") }
+        return false
+    }
+
+    suspend fun createSession(characterId: String) = createSession(characterId, null, null)
+
+    private suspend fun createSession(characterId: String, greetingChoice: CharacterGreetingChoice?,
+        requestId: String?): Unit = guarded {
+        if (!greetingRequestCurrent(requestId, greetingChoice)) return@guarded
         val generation = sessionSaveGeneration.get()
         if (blockDuringSessionSave()) return@guarded
-        if (memory?.deferNavigationIfDirty { createSession(characterId, greetingChoice) } == true) return@guarded
+        if (memory?.deferNavigationIfDirty { createSession(characterId, greetingChoice, requestId) } == true) return@guarded
         if (state.value.sessionSettingsDirty) {
-            requestSessionSettingsLeave { createSession(characterId, greetingChoice) }
+            requestSessionSettingsLeave { createSession(characterId, greetingChoice, requestId) }
             return@guarded
         }
         draftLock.withLock { stateLock.withLock creation@ {
@@ -420,7 +451,8 @@ internal class DesktopPrimaryChatController(
                 mutableState.update { it.copy(status = "保存期间的新建请求未执行，请完成后重试") }
                 return@creation
             }
-            if (deferSessionSettingsLeave { createSession(characterId, greetingChoice) }) return@creation
+            if (!greetingRequestCurrent(requestId, greetingChoice)) return@creation
+            if (deferSessionSettingsLeave { createSession(characterId, greetingChoice, requestId) }) return@creation
             val card = requireNotNull(characters.getById(characterId)) { "Character no longer exists" }
             val modelStatus = models.status(settings.getAppSettings())
             if (!modelStatus.isUsable) {
@@ -444,6 +476,7 @@ internal class DesktopPrimaryChatController(
                     error = "开场内容已变化，请重新选择后创建会话。") }
                 return@creation
             }
+            if (!greetingRequestCurrent(requestId, greetingChoice)) return@creation
             val id = sessionService.createSessionForCharacter(characterId, greetingChoice)
             mutableState.update { it.copy(greetingSelection = null) }
             searchGeneration.incrementAndGet()
@@ -453,6 +486,7 @@ internal class DesktopPrimaryChatController(
                 it.copy(sessionQuery = "", sessions = sessions)
             }
             loadSelection(id, characterItems, sessions, preserveWindow = false)
+            if (requestId != null) mutableState.update { it.copy(completedGreetingSessionId = id) }
         } }
     }
 

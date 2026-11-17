@@ -10,6 +10,8 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.domain.card.CharacterGreetingPolicy
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.nio.file.Files
@@ -103,6 +105,39 @@ class DesktopCardEditorFieldsUiTest {
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+    }
+
+    @Test fun `shell picker receives deferred successful creation once after settings leave resolution`() = runBlocking(edt) {
+        val parent = Files.createTempDirectory("greeting-shell-deferred-")
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { path ->
+                check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray()
+            })
+        try {
+            app.modelRepository.saveModel(ModelConfig(id = "synthetic", displayName = "Synthetic", modelName = "fixture",
+                baseUrl = "http://127.0.0.1:12345/v1", apiKey = "synthetic-no-request", createdAt = 1))
+            app.settingsRepository.saveAppSettings(AppSettings(defaultModelId = "synthetic", allowCleartextModelApi = true, ragInjectionMode = "OFF"))
+            val card = CharacterCard.create("Synthetic", "Main").copy(alternateGreetings = listOf("Alt"))
+            app.characterRepository.save(card)
+            val oldId = app.characterSessionService.createSessionForCharacter(card.id)
+            val primary = app.primaryChatController; primary.refresh(); primary.selectSession(oldId)
+            primary.createSession(card.id); primary.editSessionSettings { it.copy(supplementarySetting = "Unsaved") }
+            val completed = mutableListOf<String>()
+            val scene = ImageComposeScene(700, 620, coroutineContext = edt) {
+                DesktopSessionGreetingPicker(primary) { completed += it }
+            }
+            try {
+                scene.frames(); scene.click("备用开场 1"); scene.click("创建会话")
+                assertTrue(primary.state.value.sessionSettingsLeavePrompt); assertTrue(completed.isEmpty())
+                primary.resolveSessionSettingsLeave(save = false)
+                withTimeout(5_000) { while (completed.isEmpty()) scene.frames() }
+                val id = completed.single()
+                assertEquals("Alt", app.chatRepository.getMessages(id).single().content)
+                assertNull(primary.state.value.completedGreetingSessionId)
+                scene.frames(); assertEquals(listOf(id), completed)
+            } finally { scene.close() }
+        } finally { app.close(); check(parent.toFile().deleteRecursively()) }
     }
     private fun SemanticsNode.text(label: String): Boolean = config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true || children.any { it.text(label) }
     private fun ImageComposeScene.button(label: String) = nodes().first { it.text(label) && it.config.contains(SemanticsActions.OnClick) }
