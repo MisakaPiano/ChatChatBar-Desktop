@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'pr7-fourth-review';out.mkdir(exist_ok=True)
-SOURCE='4fac0c2512a419cb96e322f41be4ea9022c40c8f'
+SOURCE='1667b10c4164478025786a64aa5b7e3ca2d49570'
 BASE='05efc6a51e1ef97183c3f5b748973bfd3ba188f2'
 REPO='app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt'
 VM='app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt'
@@ -46,7 +46,7 @@ elif phase=='baseline-native':
 elif phase.startswith('fixed-native'):
     names='com.example.chatbar.ui.chat.ReplyAlternativeVoiceCleanupRuntimeTest,com.example.chatbar.data.repository.MomentImageCommitRuntimeTest,com.example.chatbar.ui.chat.FormatRepairRetryRuntimeTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest,com.example.chatbar.ui.moments.MomentPostRowLayoutTest'
     r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+names)
-    cases=report(phase,True);assert r.returncode==0 and len(cases)==22 and all(not c['failure'] and not c['skipped'] for c in cases)
+    cases=report(phase,True);assert r.returncode==0 and len(cases)==24 and all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='package-metadata':
     src=root/'app/app/build/outputs/apk/debug/app-debug.apk'
     tools=sorted(pathlib.Path(os.environ['ANDROID_HOME']).glob('build-tools/*/apksigner'))[-1]
