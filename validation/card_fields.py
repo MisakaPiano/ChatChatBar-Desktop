@@ -1,8 +1,8 @@
 import pathlib,subprocess,sys,json,shutil,hashlib,os,re,zipfile,tarfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'card-fields-originals';out.mkdir(exist_ok=True)
-PR='7565bc946ebe19be9c0d57098923e98cd278ad07'
-COMBINED='d9bf67c039b8f45a48dd3eca23d9eef83d3f92d8'
+PR='bd7fc1225d8a86cc9feeba35babc38dc827ed785'
+COMBINED='ba6f2dc9131dd0e13b3b8c630f7943d0ddec99a0'
 APP_ID='com.example.chatbar.nextreview.r3'
 CLASSES=','.join(['com.example.chatbar.ui.character.CharacterCardFieldControlsTest',
  'com.example.chatbar.ui.character.CharacterCardFieldsPersistenceTest',
