@@ -67,7 +67,7 @@ class CharacterNovelAiPromptFieldTest {
         val inputs = nodes.map { it.config[SemanticsProperties.InputText].text }
         val display = nodes.map { it.config[SemanticsProperties.EditableText].text }
         // OutputTransformation changes display commas/spaces; InputText is the actual editable state.
-        val preview = File(app.getExternalFilesDir(null), "ui-previews/tag-input-projection.json")
+        val preview = File(app.filesDir, "ui-previews/tag-input-projection.json")
         preview.parentFile!!.mkdirs()
         preview.writeText(kotlinx.serialization.json.buildJsonObject {
             put("input", kotlinx.serialization.json.JsonArray(inputs.map { text -> kotlinx.serialization.json.JsonPrimitive(text) }))

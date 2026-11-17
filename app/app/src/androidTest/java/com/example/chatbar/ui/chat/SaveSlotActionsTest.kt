@@ -88,7 +88,7 @@ class SaveSlotActionsTest {
 
     private fun screenshot(name: String, node: SemanticsNodeInteraction) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val out = File(context.getExternalFilesDir(null), "ui-previews/$name.png")
+        val out = File(context.filesDir, "ui-previews/$name.png")
         out.parentFile!!.mkdirs()
         val bitmap = if (Build.VERSION.SDK_INT < 28) {
             // Compose cannot capture dialog windows below API28; retain API26 behavior checks.

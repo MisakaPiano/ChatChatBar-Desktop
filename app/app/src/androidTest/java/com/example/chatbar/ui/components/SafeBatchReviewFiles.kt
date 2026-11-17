@@ -5,7 +5,7 @@ import android.content.Context
 import android.provider.MediaStore
 import java.io.File
 
-/** Synthetic originals use scoped Downloads on API29+, app files plus CI pre-uninstall pull below. */
+/** Retain synthetic originals in app-internal files for CI run-as collection before uninstall. */
 object SafeBatchReviewFiles {
     fun captureScreen(context: Context, name: String) {
         val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
@@ -23,11 +23,10 @@ object SafeBatchReviewFiles {
         retain(context, info)
     }
     fun retain(context: Context, file: File) {
+        val directory = File(context.filesDir, "safe-batch-retained").apply { mkdirs() }
+        file.copyTo(File(directory, file.name), overwrite = true)
         if (android.os.Build.VERSION.SDK_INT < 29) {
-            // MediaStore.Downloads/RELATIVE_PATH do not exist on API26. No storage permission
-            // is needed for app-specific files; CI retains the APK until these are pulled.
-            val directory = File(context.getExternalFilesDir(null), "safe-batch-retained").apply { mkdirs() }
-            file.copyTo(File(directory, file.name), overwrite = true)
+            // MediaStore.Downloads/RELATIVE_PATH do not exist on API26.
             return
         }
         val values = ContentValues().apply {
