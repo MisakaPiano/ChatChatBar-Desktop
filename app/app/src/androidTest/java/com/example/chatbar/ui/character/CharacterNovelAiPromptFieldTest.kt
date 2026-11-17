@@ -13,6 +13,7 @@ import com.example.chatbar.ChatBarApp
 import com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.ui.kit.ChatBarTheme
+import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -54,7 +55,7 @@ class CharacterNovelAiPromptFieldTest {
         }
     }
 
-    @Test fun styleAndNegativeFieldsResolveTranslationsWithoutWritingChineseOrChangingWeights() = fixture {
+    @Test fun styleAndNegativeFieldsResolveTranslationsWithoutWritingChineseOrChangingWeights() = fixture { app ->
         var edits = 0
         rule.setContent { if (visible.value) ChatBarTheme { Column {
             CharacterNovelAiPromptField("合成风格", raw, { edits++ }, "", "", { _, _ -> })
@@ -62,9 +63,18 @@ class CharacterNovelAiPromptFieldTest {
         } } }
         rule.waitUntil(10_000) { requests.any { "synthetic_tag" in it } && requests.any { "synthetic_negative" in it } }
         rule.runOnIdle { assertEquals(0, edits) }
-        val texts = rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().map { it.config[SemanticsProperties.EditableText].text }
-        assertTrue(texts.contains(raw))
-        assertTrue(texts.contains("bad_quality, synthetic_negative"))
+        val nodes = rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes()
+        val inputs = nodes.map { it.config[SemanticsProperties.InputText].text }
+        val display = nodes.map { it.config[SemanticsProperties.EditableText].text }
+        // OutputTransformation changes display commas/spaces; InputText is the actual editable state.
+        val preview = File(app.getExternalFilesDir(null), "ui-previews/tag-input-projection.json")
+        preview.parentFile!!.mkdirs()
+        preview.writeText(kotlinx.serialization.json.buildJsonObject {
+            put("input", kotlinx.serialization.json.JsonArray(inputs.map { text -> kotlinx.serialization.json.JsonPrimitive(text) }))
+            put("display", kotlinx.serialization.json.JsonArray(display.map { text -> kotlinx.serialization.json.JsonPrimitive(text) }))
+        }.toString())
+        assertTrue("Raw style text must preserve weights and ASCII punctuation: $inputs", inputs.contains(raw))
+        assertTrue("Raw negative text must remain exact: $inputs", inputs.contains("bad_quality, synthetic_negative"))
     }
 
     @Test fun fullscreenCancelKeepsRawAndConfirmationUsesOriginalCursor() = fixture {
