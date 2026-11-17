@@ -48,6 +48,15 @@ jobs:
             --tests com.example.chatbar.desktop.DesktopWorkspacePresentationTest `
             --no-daemon --stacktrace --console=plain
           exit $LASTEXITCODE
+      - name: Consolidate the exact native prerequisite proof for upload
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Join-Path $env:CCB_ARCHIVE_PATH_REVIEW_DIR 'temp-path-native-proof.json'
+          $destination = Join-Path '${{ runner.temp }}/card-editor-review' 'temp-path-native-proof.json'
+          Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+          if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -cne (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash) { throw 'NATIVE_PROOF_COPY_MISMATCH' }
       - name: Preserve affected original reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,5 +65,4 @@ jobs:
           path: |
             app/desktopApp/build/test-results/test/
             ${{ runner.temp }}/card-editor-review/
-            ${{ env.CCB_ARCHIVE_PATH_REVIEW_DIR }}/
           if-no-files-found: error
