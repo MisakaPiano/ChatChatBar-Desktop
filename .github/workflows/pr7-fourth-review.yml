@@ -21,8 +21,8 @@ jobs:
       - run: cp validation/pr7_fourth_review.py /tmp/pr7_fourth_review.py
       - uses: actions/checkout@v4
         with:
-          ref: 1667b10c4164478025786a64aa5b7e3ca2d49570
-          fetch-depth: 4
+          ref: 4c5d37cace58a6941835a47023097c33d466736e
+          fetch-depth: 5
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
