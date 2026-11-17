@@ -1,3 +1,15 @@
+## 2026-11-18：Desktop PR4已Ready且定向工程闭合／Linux通过、Windows仍运行
+
+Desktop PR4最新64abe已Ready/draft=false、open未合并。实际定向Android12（9+3）原XML/source/CRC/hash与既有独审均通过、0fail/error/skip，独审SCOPED_ENGINEERING_REVIEW_COMPLETE_NO_OPEN_FINDINGS_FULL_CI_AND_ACCEPTANCE_PENDING、findings空；fc39产品及shared/Desktop测试整树同字节，原34（9+25）及3原图按同scope复用，a0ef未变35仅原范围保留，不跨轮相加。自动44192245511 Linux/job134424535183已completed/success：共享1385原XML全0fail/error/skip，Android原HTML588/0fail/0ignored（自动artifact无Android XML，受影响12另有XML），Windows/job134424535513仍in_progress/Test Desktop on Windows，不冒全CI通过。96ff SDK tools准备失败未开始测试、各旧head取消/失败保历史；64abe SDK配置与既有CI一致，无Prompt/runtime变更。实际现用1259/日常H未安装，正式接受/合并、人验另待；本机未Gradle/构建/付费。AndroidPR8 1799隔离配置补码已由原owner推，root原回执已读，默认3项Assume不算P、隔离7实跑/负控2仍待，不将旧6da/r3结果冒新通过；r2人验、PR7接受及所有其他task/ledger字段保持。
+
+## 2026-11-18：Desktop PR4 F1定向34项原件通过／96ff旧fixture修正待CI；Android作者意见独立保留
+
+Desktop PR4 F1延迟恢复中提交态已用每执行submissionId闭合，fc39实际原件34项（shared9/Desktop25，Deferred6含两guard服务IO窗口、UI4含Shell一次导航）全0fail/error/skip；原3图同hash精确复用。专用独审fc39静态无开放发现，最终96ff与fc39产品main及全部shared/Desktop测试字节相同。自动全库Linux共享1385原XML全过，Android日志588/2且原HTML定位两条既有旧预期：默认schema9及末user；96ff只显式schema9/改助手ACK断言和定向workflow，不改产品或Prompt。新44191882453两Android类运行、自动44191892189待，最终原件/独审待；PR仍draft/open未合并，正式接受/人验分开，不冒全库通过。现1259/日常H未动、本机未Gradle构建或付费调用。Android独立PR8作者5947614749对6da提出隔离测试配置P2，root原回执已读，原owner修复待验，不把Ready/旧r3success当作者接受/新配置通过；r2已交待人验、PR7接受待与其他全部task状态保持。
+
+## 2026-11-18：Desktop PR4首51项通过但独审F1需修／fd11补码与定向云测复审中
+
+Desktop Fork PR4首版a0ef定向云端44182967475/job134391882687已成功，原ZIP95245B/aa22be32与source绑定核同，逐XML共享18+Desktop33=51全0fail/error/skip，3实际轻主题合成图已看，仅各自范围通过。专用完整独审发现F1 P2：Memory/会话设置离开保护延迟创建后，取消/改选/重开未撤销旧回调；旧绿CI不抵消该具体路径。现已隔离提交fd11d191：chooser独立UUID跨两guard继续前重核，取消/改选/替换使旧ticket失效；正常延迟创建通过一次性完成信号由shell消费导航，保原dirty/保存/放弃保护。新增5真实controller延迟方法及实际shell完成UI测试，尚未验证；受影响云端44186842316同fd11运行中、既有自动PR CI44186852508排队，非手动加跑全套。新head独审已请求未有结论；未影响shared/元数据/扩展/导出精确字节复用a0ef原证据，不冒新head全51重跑或F1已闭合。PR仍草稿/open未合并、正式接受/真人待，现1259/日常H未安装或替换。首个失败检出目录已只读确认不存在，无待清理副本。Android PR8/r3由原owner继续且不混本端结论，r2已交待人验/PR7正式接受待及其他范围不动；本机未跑Gradle/构建或真实付费调用。
+
 ## 2026-11-18：Desktop角色卡真实缺口已补并建PR4草稿／云测与独审待，现Preview及人验不变
 
 用户已直接授权两端核实并实际修复角色卡入口缺口、分别准备PR，非仅登记。Desktop以已交付1259源码1b4为基线独立核到已有mesExample多行、备用开场增删/草稿；只补标签/作者/内容版本、原扩展只读复制、备用排序与新会话预览选择，并给原对话示例补全屏与作用说明。中立CharacterGreetingPolicy按Android fce8c3e原字节复用，主开场默认/空备用原序/取消零创建/提交前位置与原文重核、未知扩展与空System/Post保全；官方Prompt未改。隔离I:/CCB-Card-Fields-20261118、codex/desktop-card-editor-gaps-20261118已提交a0ef42a2并建立MisakaPiano/ChatChatBar-Desktop PR4草稿，目标为实际1259产品基线分支，不向镜像master混提Desktop。云端44182967475/job134391882687同head运行中，无PASS；已交既有独审聊天完整PR复审请求并要求保留当前Android审查，未有审查结论。首个全量检出因历史证据长路径已停，当前稀疏源码不检出旧docs/evidence；未清理其部分目录、不动H主源码/index/日常程序。现Preview1259、r2本地已交待人验、PR7正式接受待及全部其他任务/人验状态不变；必要验证在云端，本机未跑Gradle/构建，未安装/发布新候选、未真实付费调用。
