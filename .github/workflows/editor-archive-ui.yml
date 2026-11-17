@@ -21,8 +21,8 @@ jobs:
       - run: cp validation/editor_archive_ui.py /tmp/editor_archive_ui.py
       - uses: actions/checkout@v4
         with:
-          ref: f7a8ea25c39e6505f795c21f9845445537cb7763
-          fetch-depth: 2
+          ref: 2d4a899c02dec280c637cbfab5f4c9c8835cf053
+          fetch-depth: 3
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:

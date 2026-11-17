@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'editor-archive-ui';out.mkdir(exist_ok=True)
-SOURCE='f7a8ea25c39e6505f795c21f9845445537cb7763'
+SOURCE='2d4a899c02dec280c637cbfab5f4c9c8835cf053'
 REVIEW_ID='com.example.chatbar.uireview.n1'
 
 def gradle(*args):
@@ -44,7 +44,7 @@ elif phase=='jvm':
 elif phase.startswith('native-'):
     classes='com.example.chatbar.ui.chat.SaveSlotActionsTest,com.example.chatbar.ui.character.CharacterNovelAiPromptFieldTest,com.example.chatbar.ui.kit.CbInputStateTest'
     gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+classes)
-    cases=report(phase,True);assert len(cases)==13
+    cases=report(phase,True);assert len(cases)==14
     subprocess.run(['adb','pull','/sdcard/Android/data/com.example.chatbar/files/ui-previews',str(out/(phase+'-screenshots'))],check=True)
 elif phase=='prepare-review-apk':
     p=root/'app/app/build.gradle.kts';s=p.read_text();assert s.count('applicationId = "com.example.chatbar"')==1
