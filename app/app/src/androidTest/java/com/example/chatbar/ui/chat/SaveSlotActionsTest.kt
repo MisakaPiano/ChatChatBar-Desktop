@@ -1,6 +1,7 @@
 package com.example.chatbar.ui.chat
 
 import android.graphics.Bitmap
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
@@ -89,6 +90,10 @@ class SaveSlotActionsTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val out = File(context.getExternalFilesDir(null), "ui-previews/$name.png")
         out.parentFile!!.mkdirs()
-        out.outputStream().use { assertTrue(node.captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        val bitmap = if (Build.VERSION.SDK_INT < 28) {
+            // Compose cannot capture dialog windows below API28; retain API26 behavior checks.
+            requireNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
+        } else node.captureToImage().asAndroidBitmap()
+        out.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
     }
 }
