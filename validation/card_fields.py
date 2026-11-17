@@ -1,15 +1,16 @@
 import pathlib,subprocess,sys,json,shutil,hashlib,os,re,zipfile,tarfile
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'card-fields-originals';out.mkdir(exist_ok=True)
-PR='6da3c6211fb77b5b575ed61d7c03e8ccbeb6904f'
-COMBINED='1e1245a22bd06dc7a34193473d8b42c215688be8'
+PR='1799c3f77d026f60f2e25881323425ce2c11c8ec'
+COMBINED='f0203776d89c031b6b4b8655fec798f2cc601123'
 APP_ID='com.example.chatbar.nextreview.r3'
 CLASSES=','.join(['com.example.chatbar.ui.character.CharacterCardFieldControlsTest',
  'com.example.chatbar.ui.character.CharacterCardFieldsPersistenceTest',
  'com.example.chatbar.ui.chat.SaveSlotActionsTest',
  'com.example.chatbar.ui.character.CharacterNovelAiPromptFieldTest',
  'com.example.chatbar.ui.kit.CbInputStateTest'])
-def gradle(*args):return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace'],cwd=root/'app')
+ISOLATED_FLAGS=[] if sys.argv[1]=='pr' else ['-PCHATBAR_ISOLATED_ANDROID_TEST=true','-PCHATBAR_ISOLATED_ANDROID_TEST_APP_ID='+APP_ID]
+def gradle(*args):return subprocess.run(['./gradlew',*args,*ISOLATED_FLAGS,'--no-daemon','--stacktrace'],cwd=root/'app')
 def check_source(expected):
  assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==expected
  subprocess.run(['git','config','core.filemode','false'],check=True)
@@ -57,11 +58,9 @@ if phase=='pr':
 elif phase=='combined':
  subprocess.run(['git','fetch','origin',COMBINED,'--depth=1'],check=True)
  subprocess.run(['git','checkout','--detach',COMBINED],check=True);check_source(COMBINED)
- p=root/'app/app/build.gradle.kts';s=p.read_text();assert s.count('applicationId = "com.example.chatbar"')==1
- p.write_text(s.replace('applicationId = "com.example.chatbar"','applicationId = "'+APP_ID+'"'))
  p=root/'app/app/src/main/res/values/strings.xml';s=p.read_text();p.write_text(re.sub(r'(<string name="app_name">)[^<]*(</string>)',r'\g<1>CCB 集中验收 r3\2',s,count=1))
  (out/'review-package-projection.patch').write_bytes(subprocess.check_output(['git','diff']))
- assert set(subprocess.check_output(['git','diff','--name-only'],text=True).splitlines())=={'app/app/build.gradle.kts','app/app/src/main/res/values/strings.xml'}
+ assert set(subprocess.check_output(['git','diff','--name-only'],text=True).splitlines())=={'app/app/src/main/res/values/strings.xml'}
  result=gradle(':app:testDebugUnitTest','--tests','com.example.chatbar.domain.card.CharacterGreetingPolicyTest',
   '--tests','com.example.chatbar.domain.chat.CharacterSessionServiceTest','--tests','com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest',
   ':app:compileDebugAndroidTestKotlin',':app:assembleDebug')
