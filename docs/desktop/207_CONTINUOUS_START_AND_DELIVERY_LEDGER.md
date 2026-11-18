@@ -1,3 +1,19 @@
+## 2026-11-18：Desktop PR4 b327完整CI及最终独审工程闭合／正式接受合并与人工仍待
+
+Desktop PR4最终b327b6c23d49411235ad6f0922bbc8fac65bffc4工程与既有独审已闭合，无开放发现；Ready/open未合并，正式接受/候选/真人另待。完整CI44199283623两job（Linux134448924609、Windows134448925196）均completed/success，当前source/artifact/CRC/SHA与逐XML已独立核：Windows主3054/0fail/error/28skip，28名单与此前64abe完全一致；独立打包proxy11全P/0skip；shared1385原XML全0fail/error/skip，Android原HTML588/0fail/0ignored（自动artifact无Android XML，前受影响12原XML保范围）。旧十失败在最终全量逐方法真P，图库改名映射与native canonicalReadPassed真另列；十类定向68原XML全0fail/error/skip也已原独审核。b746业务步骤成功但跨盘artifact失败只记历史；b327仅同盘归拢原proof并双SHA校验，产品main同fc39、测试同b746，旧失败/取消/SDK失败原件不抹。字段/开场与F1提交态实际修复完整保留，Prompt文字/原资料未改，不跨轮相加。现长期H程序1259未安装替换、H main/index未动，本机未重型构建/付费/公开发行。Androidr3已本地交付待真人/PR8作者待、PR7作者待及所有其他tasks/ledger/正式1.0目标保持。
+
+## 2026-11-18：Desktop PR4 b327十失败类68项原件和独审闭合／完整Windows CI仍运行
+
+Desktop PR4最终b327 Ready/open未合并，产品main同fc39，测试同b746；十失败类补码及取证工作流已独审无开放发现。定向44199275110/job134448824930原ZIP14462B/e07036a6逐source/CRC/SHA/XML和nativeproof核同，68不同方法全0fail/error/skip；此前十失败均对应实际通过，图库方法明确改名保文件再显式原GC、其余九同名。旧b746业务步骤BUILD SUCCESSFUL但跨盘artifact上传失败/artifact0只记日志，不冒原XML；b327只把C盘proof精确SHA校验复制到D盘review后上传，现原件完整。旧64abe完整主3054/10fail/28skip和独立proxy11P、Linux原件均保历史；当前自动44199283623 Linux已success，Windows134448925196仍运行，不冒全CI通过。fc39字段/F134、64abe Android12和a0ef未变35仅各自未改源范围复用、不跨轮相加。正式接受/合并/人验待，现1259日常H未安装/替换。Androidr3已本地交付待真人/PR8作者待，和本Windows结论分开；所有其他task/ledger/目标状态保持，本机未重型构建或付费。
+
+## 2026-11-18：Desktop PR4 Windows10失败补纯fixture／b746定向验证复审中；Androidr3已本地交付待人验
+
+Desktop PR4最新b746已推、Ready/open未合并，11文件只修测试和workflow，产品main与64abe精确相同。旧64abe自动Windows已完整failure后才push，未取消有效后续：原ZIP11571579B/e91c0025逐XML主3054/10fail/0error/28skip、独立打包代理11全P，NTFS/NSIS/updater/handoff等后续通过。10失败涉及Archive探针缺env、B1C headless native窗口、旧Redo枚举、两Community schema9 DTO/raw11、末user预期、官方9导出预期11、时间戳写前对象、图库移除误当自动GC、本PRhelper改名对应旧regex。已逐项最小修fixture/环境；图库先验保文件再显式GC验无引用删/共享留，Narrative存后捕获再验plan不写；不改Prompt/产品默认、不删业务断言、不加skip。新定向44198156343/job134444960751只10失败类与自动44198168119运行，原独审增量待，不冒补码通过。旧fc39字段/F1定向与64abe Android12保持各自未改源范围，不跨轮相加。原10test文件与1259同blob仅静态身份，不当baseline实际执行结论。Android原owner已本地交付r3=f020/PR1799，root最终原回执已读，独审工程闭合、真人和作者接受待，21不同方法两API42执行与各JVM/default3skip/隔离7范围不累加；Desktop失败不阻Android交付。现H程序未动、所有其他task/ledger/人验状态原样，本机未重型构建/付费。
+
+## 2026-11-18：Desktop PR4 Windows全量测试步骤失败／完整job后续与具体原件待
+
+64abe PR4自动Windows/job134424535513的Test Desktop on Windows于UTC23:06:08/JST08:06:08结束为failure；完整job仍in_progress、NTFS已success、NSIS等后续仍跑，具体失败用例与原因待原报告上传，不由步骤切换/404推断PASS或hang。此前一次即时口头误报已立即更正，任何canonical/207均未记Windows PASS。Linux原件和定向12/fc39精确复用证据、独审无开放发现保持各自范围；PRReady不代全CI、正式接受或合并。不取消重开，继续当前有效后续和报告定位。
+
 ## 2026-11-18：Desktop PR4已Ready且定向工程闭合／Linux通过、Windows仍运行
 
 Desktop PR4最新64abe已Ready/draft=false、open未合并。实际定向Android12（9+3）原XML/source/CRC/hash与既有独审均通过、0fail/error/skip，独审SCOPED_ENGINEERING_REVIEW_COMPLETE_NO_OPEN_FINDINGS_FULL_CI_AND_ACCEPTANCE_PENDING、findings空；fc39产品及shared/Desktop测试整树同字节，原34（9+25）及3原图按同scope复用，a0ef未变35仅原范围保留，不跨轮相加。自动44192245511 Linux/job134424535183已completed/success：共享1385原XML全0fail/error/skip，Android原HTML588/0fail/0ignored（自动artifact无Android XML，受影响12另有XML），Windows/job134424535513仍in_progress/Test Desktop on Windows，不冒全CI通过。96ff SDK tools准备失败未开始测试、各旧head取消/失败保历史；64abe SDK配置与既有CI一致，无Prompt/runtime变更。实际现用1259/日常H未安装，正式接受/合并、人验另待；本机未Gradle/构建/付费。AndroidPR8 1799隔离配置补码已由原owner推，root原回执已读，默认3项Assume不算P、隔离7实跑/负控2仍待，不将旧6da/r3结果冒新通过；r2人验、PR7接受及所有其他task/ledger字段保持。
