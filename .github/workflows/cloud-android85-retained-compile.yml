@@ -1,0 +1,88 @@
+name: Compile Android retained-upgrade companion
+on:
+  push:
+    branches: [codex/metadata-repair-android-retained-compile-20261120]
+permissions:
+  contents: read
+jobs:
+  android-test-source:
+    name: Compile companion on Android ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: '85'
+            checkout: delivered
+            source: 5c906e6d4a0f31a114326e35a331c4af4dfa6379
+          - version: '86'
+            checkout: .
+            source: 8587b8771a86d4a0e809efaad298f8c27160ddf0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Checkout actual Android 85 source
+        if: matrix.version == '85'
+        uses: actions/checkout@v4
+        with:
+          ref: 5c906e6d4a0f31a114326e35a331c4af4dfa6379
+          path: delivered
+          persist-credentials: false
+      - name: Bind the same fixture to the delivered test source
+        if: matrix.version == '85'
+        run: |
+          fixture=app/app/src/androidTest/java/com/example/chatbar/lanSync/Android85RetainedEvidence.kt
+          test ! -e "delivered/$fixture"
+          cp "$fixture" "delivered/$fixture"
+          cmp "$fixture" "delivered/$fixture"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile instrumentation Kotlin without packaging or running it
+        working-directory: ${{ matrix.checkout }}/app
+        env:
+          CODE: ${{ matrix.version }}
+        run: >-
+          bash ./gradlew :app:compileLanPreviewAndroidTestKotlin
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode="$CODE"
+          -Pkotlin.daemon.jvmargs=-Xmx4g --max-workers=1 --no-parallel --no-daemon --stacktrace
+      - name: Bind the compiled class to its fixture and input
+        working-directory: ${{ matrix.checkout }}
+        env:
+          CODE: ${{ matrix.version }}
+          SOURCE: ${{ matrix.source }}
+          HARNESS: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+          import json, os, subprocess
+          code = os.environ['CODE']
+          base, harness = os.environ['SOURCE'], os.environ['HARNESS']
+          proof = Path('app/app/src/androidTest/java/com/example/chatbar/lanSync/Android85RetainedEvidence.kt')
+          assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == (base if code == '85' else harness)
+          if code == '86':
+              assert subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip() == base
+          root = Path('app/app/build')
+          classes = sorted(root.rglob('Android85RetainedEvidence.class'))
+          assert classes
+          result = {'base': base, 'harness': harness, 'versionCode': int(code),
+                    'fixtureSha256': sha256(proof.read_bytes()).hexdigest(),
+                    'compileScope': 'Android instrumentation Kotlin; no APK, signature, device or test execution', 'classes': []}
+          for path in classes:
+              contents = path.read_bytes()
+              assert contents[:4] == bytes.fromhex('cafebabe')
+              result['classes'].append({'path': str(path.relative_to(root)), 'bytes': len(contents), 'sha256': sha256(contents).hexdigest()})
+          (root / 'android85-retained-companion-compile.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-retained-companion-compile-${{ matrix.version }}
+          path: ${{ matrix.checkout }}/app/app/build/android85-retained-companion-compile.json
