@@ -1,0 +1,77 @@
+name: Desktop declared action options
+on:
+  push:
+    branches: [codex/desktop-action-options-20261119]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-action-options-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical synthetic temporary directory and source proof
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-action-options'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class ActionRuleFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([ActionRuleFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'review-action-options' | Out-Null
+          git rev-parse HEAD | Set-Content 'review-action-options/source.txt'
+      - name: Verify shared declared rule transport and projections
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.ActionOptionsFormatTest'
+          --tests 'com.example.chatbar.domain.chat.ActionOptionsDeclaredFenceCompatibilityTest'
+          --tests 'com.example.chatbar.domain.chat.RoleplayActionOptionsPolicyTest'
+          --tests 'com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest'
+          --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
+          --tests 'com.example.chatbar.domain.image.NovelAiActionOptionsProjectionTest'
+          --tests 'com.example.chatbar.domain.voice.VoiceAnchorPolicyTest'
+          --tests 'com.example.chatbar.domain.voice.VoiceGenerationPolicyTest'
+          --tests 'com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest'
+          --tests 'com.example.chatbar.domain.card.FormatCardTransferServiceTest'
+          --tests 'com.example.chatbar.domain.card.CharacterCardTransferCoreTest'
+          --tests 'com.example.chatbar.domain.card.FormatCardAutoFillGeneratorTest'
+          --no-daemon --stacktrace
+      - name: Verify actual Desktop rule ownership and UI
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopActionChoicesTest'
+          --tests 'com.example.chatbar.desktop.DesktopActionOptionsFormatIntegrationTest'
+          --tests 'com.example.chatbar.desktop.DesktopActionOptionsRequestTest'
+          --tests 'com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest'
+          --tests 'com.example.chatbar.desktop.DesktopMessageFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopFishGenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-action-options-original-results
+          path: |
+            app/desktopApp/build/test-results/test/
+            app/sharedCore/build/test-results/test/
+            review-action-options/

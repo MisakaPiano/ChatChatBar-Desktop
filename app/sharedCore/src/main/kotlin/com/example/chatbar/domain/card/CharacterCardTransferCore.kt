@@ -486,6 +486,7 @@ class CharacterCardTransferCore internal constructor(
                     name = format.name,
                     content = format.content,
                     userTools = format.userTools,
+                    actionOptionsFormat = format.actionOptionsFormat,
                     sourcePresetKey = format.sourcePresetKey,
                     sourcePresetVersion = format.sourcePresetVersion,
                 ).also { it.validateForImport() }

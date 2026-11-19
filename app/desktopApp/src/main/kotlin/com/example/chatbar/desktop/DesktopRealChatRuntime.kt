@@ -259,7 +259,8 @@ class DesktopRealChatRuntime internal constructor(
             sessionId = sessionId,
             role = MessageRole.ASSISTANT,
             content = "",
-        )).copy(narrativeMode = if (turn.settings.disableNarrativeModes) null else plan.session.narrativeMode)
+        )).copy(narrativeMode = if (turn.settings.disableNarrativeModes) null else plan.session.narrativeMode,
+            actionOptionsFormat = plan.actionOptionsFormat)
         var accumulatedContent = ""
         var previewContent: String? = null
         var accumulatedReasoning = ""
@@ -272,6 +273,7 @@ class DesktopRealChatRuntime internal constructor(
             val updated = MessageAlternativeVersionPolicy.append(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
                 narrativeMode = message.narrativeMode,
+                actionOptionsFormat = message.actionOptionsFormat,
             ).copy(reasoningContent = message.reasoningContent, formatRepairNotice = null)
             return chatRepository.updateMessageReturningSnapshot(updated)
         }

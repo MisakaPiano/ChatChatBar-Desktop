@@ -6,6 +6,7 @@ description: Maintain Desktop stable reply alternatives, candidate deletion and 
 # Desktop reply alternatives
 
 - Shared `MessageAlternativeVersionPolicy.append` preserves all candidates by default. Explicit `maxVersions` remains available for callers that deliberately request bounded retention. Stable IDs distinguish identical candidate text and preserve narrative modes; `remove` returns null only when no candidate survives.
+- Reply versions also retain their captured `ActionOptionsFormat`; append/select/edit/remove align that metadata without borrowing the current format card. See `chatbar-action-options` for recognition and projections.
 - `RoleplayContentSegments.editRoleplayMessageSegment` removes only the active candidate when its final text is deleted with no shared images. Shared-image captions can remain blank; surviving candidates and shared media stay intact.
 - `ChatRepository.updateMessageIfUnchanged` and `deleteMessageIfUnchanged` compare the complete strict durable snapshot under the original append/data mutex before existing index/preview/tombstone writes. They are same-instance conditional operations, not cross-process transactions.
 - `DesktopPrimaryChatController.deleteAssistantAlternative` uses the normal task/voice mutation owners. Last-candidate and whole-message deletion reuse existing message/recording/resource cleanup. The preceding user turn and ordinary empty-composer continuation path remain independent.

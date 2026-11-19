@@ -345,6 +345,7 @@ internal class DesktopChatRequestPlanner(
             worldBook = worldBookPlan,
             worldBookDebugLog = worldBookDebugLog,
             currentUserPersisted = currentUserPersisted,
+            actionOptionsFormat = activeFormatCard?.actionOptionsFormat,
             knowledgeNotice = knowledge.notice,
             runtimeBudgetSelection = PromptRuntimeBudgetSelection(
                 loadedCandidateMessages = contextCandidates.size,
@@ -404,6 +405,7 @@ internal data class DesktopChatRequestPlan(
     val currentUserPersisted: Boolean,
     val knowledgeNotice: String? = null,
     val runtimeBudgetSelection: PromptRuntimeBudgetSelection? = null,
+    val actionOptionsFormat: com.example.chatbar.data.local.entity.ActionOptionsFormat? = null,
 ) {
     fun toFakeRequest(): DesktopFakeChatRequest = DesktopFakeChatRequest(
         sessionId = session.id,

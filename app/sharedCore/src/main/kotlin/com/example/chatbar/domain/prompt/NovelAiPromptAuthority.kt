@@ -640,7 +640,8 @@ JSON only, no Markdown, no explanation:
     }
 
     private fun novelAiImagePromptSceneSource(message: ChatMessage): String =
-        if (message.role == MessageRole.ASSISTANT) RoleplayActionOptionsPolicy.withoutExplicitOptions(message.displayContent)
+        if (message.role == MessageRole.ASSISTANT)
+            RoleplayActionOptionsPolicy.withoutExplicitOptions(message.displayContent, message.displayActionOptionsFormat)
         else message.displayContent
 
     fun novelAiImagePromptConversation(

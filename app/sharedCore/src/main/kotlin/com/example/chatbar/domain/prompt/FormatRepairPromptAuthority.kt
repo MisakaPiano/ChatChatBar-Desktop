@@ -1,5 +1,8 @@
 package com.example.chatbar.domain.prompt
 
+import com.example.chatbar.data.local.entity.ActionOptionsFormat
+import com.example.chatbar.data.local.entity.ActionOptionLabels
+
 /** Exact official 1.4.1 repair prompt authority; Android retains delegating facades. */
 object FormatRepairPromptAuthority {
     const val MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER = "[[CHATBAR_FORMAT_OK]]"
@@ -30,4 +33,17 @@ object FormatRepairPromptAuthority {
         }
         add("{待修复消息}\n$message")
     }.joinToString("\n\n")
+
+    fun actionOptionsRepairRequirement(format: ActionOptionsFormat?): String = buildString {
+        append("仅整理原回复已经列出的行动选项。保留每个选项的文字、数目与顺序，不能新增或合并选项。")
+        if (format != null) {
+            append("\n行动区单独一行开始于：${format.opening.trim()}")
+            append("\n行动区单独一行结束于：${format.closing.trim()}")
+            if (format.heading.isNotBlank()) append("\n区块标题：${format.heading.trim()}")
+            append(if (format.labels == ActionOptionLabels.LETTERS) "\n每项单独一行，从 A) 起连续编号。"
+                else "\n每项单独一行，从 1. 起连续编号。")
+        } else {
+            append("\n识别到有效的行动选项区时，保留原围栏、标题和编号。")
+        }
+    }
 }

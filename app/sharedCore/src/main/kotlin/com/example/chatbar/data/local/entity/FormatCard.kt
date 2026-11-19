@@ -1,6 +1,8 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -37,6 +39,7 @@ data class FormatCardUserToolConfig(
  * 格式卡片 - prompt模板
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class FormatCard(
     val id: String,
     val name: String,
@@ -45,7 +48,9 @@ data class FormatCard(
     val isDefault: Boolean = false,
     val sourcePresetKey: String? = null,
     val sourcePresetVersion: Int? = null,
-    val createdAt: Long
+    val createdAt: Long,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val actionOptionsFormat: ActionOptionsFormat? = null
 ) {
     companion object {
         @OptIn(ExperimentalUuidApi::class)
