@@ -50,18 +50,24 @@ object MemoryHashes {
         }
     )
 
-    fun parentCoverage(children: List<MemoryNode>, units: List<MemoryCoverageUnit>): String = sha256(
-        buildString {
-            children.forEach { child ->
-                appendLine(
-                    "${child.id}:${child.sourceTurnIds.joinToString(",")}:" +
-                        "${child.sourceHash}:${child.coverageHash}"
-                )
-            }
-            append("units=")
-            append(units.joinToString("\n") { "${it.sourceId}:${it.text}" })
+    fun parentCoverage(children: List<MemoryNode>, units: List<MemoryCoverageUnit>): String =
+        parentCoverage(children.asSequence().map { ParentCoverageChild(it.id, it.sourceTurnIds, it.sourceHash, it.coverageHash) }, units)
+
+    internal data class ParentCoverageChild(val id: String, val sourceTurnIds: List<String>, val sourceHash: String, val coverageHash: String)
+
+    internal fun parentCoverage(children: Sequence<ParentCoverageChild>, units: List<MemoryCoverageUnit>): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        fun append(value: String) { digest.update(value.toByteArray(Charsets.UTF_8)) }
+        children.forEach { child ->
+            append("${child.id}:${child.sourceTurnIds.joinToString(",")}:${child.sourceHash}:${child.coverageHash}\n")
         }
-    )
+        append("units=")
+        units.forEachIndexed { index, unit ->
+            if (index > 0) append("\n")
+            append("${unit.sourceId}:${unit.text}")
+        }
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+    }
 
     /** Parent ancestry proof is program-owned; AI summary never supplies per-child text. */
     fun parentCoverageUnits(children: List<MemoryNode>): List<MemoryCoverageUnit> = children.map { child ->

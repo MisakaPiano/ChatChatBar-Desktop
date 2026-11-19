@@ -1,7 +1,7 @@
 name: Isolated LAN sync engineering
 on:
   push:
-    branches: ['codex/lan-sync-*']
+    branches: ['codex/lan-sync-*', '!codex/lan-sync-metadata-enrollment-20261120']
     paths-ignore: [.github/lan-sync-package-request.json, .github/lan-sync-device-request.json, .github/lan-sync-apk-request.json, .github/lan-sync-group-device-request.json]
 permissions:
   contents: read

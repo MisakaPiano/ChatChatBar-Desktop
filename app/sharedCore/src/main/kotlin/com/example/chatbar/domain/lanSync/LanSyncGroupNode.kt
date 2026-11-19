@@ -257,7 +257,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, values) ->
                 values.firstOrNull { it.context.epoch == ledger.current().epoch } ?: values.first()
             }
-        val service = LanSyncGroupDependencies(trust.group, dependencyStore, custody, prefetchWork, workspace.resourceStore, validateResource)
+        val service = LanSyncGroupDependencies(trust.group, dependencyStore, custody, prefetchWork, workspace.resourceStore,
+            validateResource, workspace.metadataBudget)
         metadata.values.forEach { actual ->
             val version = requireNotNull(actual.envelope.version)
             require(actual.context.group == trust.group && history.contains(version.reference())) { "SYNC_GROUP_PREFETCH_NOT_ADMITTED" }
@@ -302,7 +303,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         state = exclusive { native.state() }
         val view = currentView(); val history = requireNotNull(view.history) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
         val evidence = LanSyncGroupRecordEvidence(history, requireNotNull(view.ledgerCheckpoint))
-        val service = LanSyncGroupDependencies(trust.group, if (allowNetwork) dependencyStore else localDependencies(), custody, work, workspace.resourceStore, validateResource)
+        val service = LanSyncGroupDependencies(trust.group, if (allowNetwork) dependencyStore else localDependencies(), custody, work,
+            workspace.resourceStore, validateResource, workspace.metadataBudget)
         val metadata = view.authenticatedVersions.filter { it.envelope.version?.reference()?.let(history::contains) == true }
             .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, candidates) ->
                 candidates.firstOrNull { it.context.epoch == latest.epoch } ?: candidates.first()
@@ -318,9 +320,14 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             history.frontier(unit).forEach { required += LanSyncGroupMembershipRequest(it.version, unit) }
         }
         state.units.forEach { (unit, applied) -> applied.frontiers.forEach { required += LanSyncGroupMembershipRequest(it, unit) } }
+        var retainedIndexCost = 0L
         val dependencies = required.associateWith { request ->
             val actual = requireNotNull(metadata[request.version]) { "SYNC_GROUP_APPLIED_EVIDENCE_MISSING" }
-            service.inspect(view, actual, request.unit)
+            service.inspect(view, actual, request.unit).also { result ->
+                retainedIndexCost = lanSyncAddLength(retainedIndexCost,
+                    512 + (result.available?.decoded?.metadataIndexCost ?: 0))
+                require(retainedIndexCost <= workspace.metadataBudget.maximumIndexCost) { "SYNC_METADATA_INDEX_BUDGET" }
+            }
         }
         val plan = exclusive { workspace.capture(identity.fingerprint, projection).use {
             val known = it.snapshot.units().keys + state.units.keys + history.admittedVersions().flatMap { version -> version.changes.keys } + pendingResolutions

@@ -64,17 +64,33 @@ object LanSyncImpactReview {
     fun changes(before: List<LanSyncRecord>, after: List<LanSyncRecord>): List<LanSyncRecordImpact> {
         val old = before.associateBy { it.key }; val desired = after.associateBy { it.key }
         require(old.size == before.size && desired.size == after.size) { "SYNC_REVIEW_IDENTITIES" }
+        val indexLimit = (before.asSequence() + after.asSequence()).firstNotNullOfOrNull(LanSyncRecord::metadataIndexLimit)
+            ?: LanSyncMetadataBudget().maximumIndexCost
+        var indexCost = 0L
         return (old.keys + desired.keys).sorted().mapNotNull { key ->
             val a = old[key]; val b = desired[key]
             if (a?.comparisonBody() == b?.comparisonBody()) return@mapNotNull null
             val change = when { a == null -> LanSyncRecordChange.ADD; b == null -> LanSyncRecordChange.REMOVE; else -> LanSyncRecordChange.REPLACE }
             val oldBody = a?.body.orEmpty(); val newBody = b?.body.orEmpty()
-            val fields = (oldBody.keys + newBody.keys).sorted().filter { oldBody[it] != newBody[it] }
-                .map { LanSyncFieldChange(it, oldBody[it], newBody[it]) }
+            val names = (oldBody.keys + newBody.keys).sorted().filter { oldBody[it] != newBody[it] }
+            val inlineOld = oldBody.filterKeys(names::contains).takeIf { a?.metadataIndexLimit == null }
+            val inlineNew = newBody.filterKeys(names::contains).takeIf { b?.metadataIndexLimit == null }
+            val fields = object : AbstractList<LanSyncFieldChange>() {
+                override val size get() = names.size
+                override fun get(index: Int): LanSyncFieldChange {
+                    val name = names[index]
+                    return LanSyncFieldChange(name, if (inlineOld == null) a?.body?.get(name) else inlineOld[name],
+                        if (inlineNew == null) b?.body?.get(name) else inlineNew[name])
+                }
+            }
             val oldResources = resourceCounts(a); val newResources = resourceCounts(b)
             val removedReferences = oldResources.entries.sumOf { (identity, count) -> maxOf(0, count - newResources.getOrDefault(identity, 0)) }
-            LanSyncRecordImpact(key, change, (a ?: b)?.type == "chat_messages", versions(a) - versions(b), removedReferences, fields,
-                embeddedMessages(a).map { it.id }.toSet() - embeddedMessages(b).map { it.id }.toSet())
+            val removedVersions = versions(a) - versions(b)
+            val removedMessages = embeddedMessages(a).map { it.id }.toSet() - embeddedMessages(b).map { it.id }.toSet()
+            indexCost = lanSyncAddLength(indexCost, 288 + 4L * key.length +
+                (names.asSequence() + removedVersions.asSequence() + removedMessages.asSequence()).sumOf { 64L + 4L * it.length })
+            require(indexCost <= indexLimit) { "SYNC_METADATA_INDEX_BUDGET" }
+            LanSyncRecordImpact(key, change, (a ?: b)?.type == "chat_messages", removedVersions, removedReferences, fields, removedMessages)
         }
     }
 

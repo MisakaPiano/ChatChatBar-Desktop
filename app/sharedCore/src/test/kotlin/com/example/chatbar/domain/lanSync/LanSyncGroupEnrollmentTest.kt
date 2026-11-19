@@ -1,6 +1,9 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
 import java.nio.file.Files
@@ -157,6 +160,71 @@ class LanSyncGroupEnrollmentTest {
         assertEquals(0, admissions); assertNull(service.profile())
         Files.newDirectoryStream(f.profileRoot).use { entries -> assertEquals(setOf("profile.lock"), entries.map { it.fileName.toString() }.toSet()) }
         assertNotNull(service.prepare(f.request, SyncRootGroupCreateAdmission {}))
+    }
+
+    @Test fun oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState() = withFixture { f ->
+        val unit = "conversation/session"
+        val sessionFile = f.data.resolve("entities/chat_sessions/session.json")
+        Files.createDirectories(sessionFile.parent)
+        LanSyncJsonFiles.write(sessionFile, ChatSession.serializer(), ChatSession("session", "card", "合成会话",
+            createdAt = 1, updatedAt = 1))
+        val messages = (1..5).map { index ->
+            ChatMessage("message-$index", "session", MessageRole.USER, "第 $index 段：" + "合成内容😀".repeat(512),
+                createdAt = index.toLong(), updatedAt = index.toLong())
+        }
+        val messagePaths = messages.map { message ->
+            val path = f.data.resolve("entities/chat_messages/${message.sessionId}_${message.id}.json")
+            Files.createDirectories(path.parent)
+            LanSyncJsonFiles.write(path, ChatMessage.serializer(), message)
+            path
+        }
+        val uncapped = LanSyncMetadataBudget(maximumDecodedCost = 1024 * 1024)
+        val rawCosts = (messagePaths + listOf(sessionFile)).map(uncapped::validate)
+        val budget = LanSyncMetadataBudget(maximumDecodedCost = rawCosts.max() + 1024)
+        assertTrue(rawCosts.sum() > budget.maximumDecodedCost)
+        val owner = f.service(metadataBudget = budget)
+        val draft = owner.prepare(f.request, SyncRootGroupCreateAdmission {})
+        val node = owner.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+        val view = node.inspect()
+        val before = requireNotNull(view.plan).before
+        val expectedRows = before.units().getValue(unit).sortedBy { it.key }
+        assertEquals(messages.size + 1, expectedRows.size)
+        assertEquals(messages.associate { it.id to it.content },
+            expectedRows.filter { it.type == "chat_messages" }.associate { it.id to it.text("content") })
+
+        val operation = SyncStoreId.random()
+        val commit = node.commit(view.review(setOf(unit)), operation = operation)
+        val change = commit.entry.version.changes.getValue(unit)
+        val identity = requireNotNull(change.content)
+        val path = requireNotNull(f.workspace.resourceStore.completed(identity.sha256, identity.length))
+        assertEquals("SYNC_METADATA_WORKING_BUDGET", assertFailsWith<IllegalArgumentException> { budget.validate(path) }.message)
+        val usage = Files.newBufferedReader(path).use { LanSyncRecordPreflight(it, budget, listOf("records")).validate() }
+        assertEquals(expectedRows.size, usage.records)
+        assertTrue(usage.largestRecordCost in 1..budget.maximumDecodedCost)
+        assertTrue(usage.indexCost in 1..budget.maximumIndexCost)
+        val codec = LanSyncGroupUnitCodec(Files.createDirectory(f.workspaceRoot.resolve("unit-readback")), metadataBudget = budget)
+        val unitBody = codec.readCached(f.workspace.resourceStore, unit, change)
+        assertEquals(expectedRows, unitBody.payload.records)
+        assertEquals(before.hashes().getValue(unit), unitBody.valueHash)
+        assertEquals(LanSyncGroupMembership.identity(expectedRows), unitBody.membership)
+        assertEquals(identity.sha256, LanSyncResourceStore.hashFile(path, identity.length))
+
+        val runtime = requireNotNull(owner.runtimeAccess())
+        val receipt = node.upload(operation, runtime.replica, runtime.localTarget)
+        assertEquals(commit.publication.metadata.descriptor, receipt.metadata)
+        assertEquals(runtime.localTarget, receipt.target)
+        val checkpoint = requireNotNull(f.workspace.recovery.read(commit.entry.request.sourceCheckpoint))
+        owner.close()
+        val cold = f.service(metadataBudget = budget)
+        val reopened = requireNotNull(cold.open())
+        val state = reopened.inspect().nativeState
+        assertEquals(1L, state.completedSequence)
+        assertNull(state.pendingTransaction)
+        assertEquals(setOf(commit.entry.version.reference()), state.units.getValue(unit).frontiers)
+        assertEquals(unitBody.valueHash, state.units.getValue(unit).valueHash)
+        val history = reopened.browseRecovery(checkpoint.transaction).units.getValue(unit).sortedBy { it.key }
+        assertEquals(expectedRows, history)
+        assertEquals(before, requireNotNull(reopened.inspect().plan).before)
     }
 
     @Test fun preparedGroupNeedsSavedCodeAndNormalReopenUsesOnlyDailyCustody() = withFixture { f ->

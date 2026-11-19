@@ -62,7 +62,10 @@ class LanSyncGroupUnitCodecTest {
                 } finally { resources.values.forEach { it.close() } }
             }
         } }
-        assertTrue(Files.newDirectoryStream(f.units).use { !it.iterator().hasNext() })
+        assertTrue(Files.newDirectoryStream(f.units).use { paths -> paths.all { it.fileName.toString() == "decoded-records" } })
+        assertTrue(Files.newDirectoryStream(f.units.resolve("decoded-records")).use { paths ->
+            paths.all { it.fileName.toString().matches(Regex("(?:write\\.lock|[0-9a-f]{64})")) }
+        })
         assertTrue(Files.newDirectoryStream(f.crypto).use { !it.iterator().hasNext() })
     }
 

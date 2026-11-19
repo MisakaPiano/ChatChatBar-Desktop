@@ -193,7 +193,7 @@ class LanSyncGroupRecoveryControlSnapshot private constructor() {
                     require(row.key.kind == CiphertextObjectKind.COMMIT && selected[row.key]?.let { it == row } != false) {
                         "SYNC_GROUP_RECOVERY_CONTROL_INVENTORY_CHANGED"
                     }
-                    require((selected.size.toLong() + 1) * 1024 <= LanSyncMetadataBudget().maximumDecodedCost) { "SYNC_METADATA_WORKING_BUDGET" }
+                    require((selected.size.toLong() + 1) * 1024 <= LanSyncMetadataBudget().maximumDecodedCost) { "SYNC_METADATA_INDEX_BUDGET" }
                     selected[row.key] = row
                 }
                 cursor = page.nextCursor

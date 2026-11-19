@@ -20,7 +20,7 @@ import kotlinx.serialization.json.encodeToStream
     val records: List<LanSyncRecord>, val resources: Map<String, Long>)
 
 class LanSyncDecodedGroupUnit internal constructor(val payload: LanSyncGroupUnitPayload,
-    val plaintext: SyncPlaintextIdentity, val valueHash: String) {
+    val plaintext: SyncPlaintextIdentity, val valueHash: String, internal val metadataIndexCost: Long = 0) {
     val dependencies: Set<SyncPlaintextIdentity> get() = payload.resources.map { (hash, size) -> SyncPlaintextIdentity(size, hash) }.toSet()
     val membership: SyncPlaintextIdentity = LanSyncGroupMembership.identity(payload.records)
 }
@@ -37,6 +37,7 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
     coverage: Set<String> = LanSyncScope.schemas.keys,
     private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget()) {
     private val coverage = Collections.unmodifiableSet(coverage.toSet())
+    private val recordBodies by lazy { LanSyncRecordBodies(privateDirectory.resolve("decoded-records"), metadataBudget) }
     init {
         PrivateSyncFile.checked(privateDirectory, true)
         require(coverage.isNotEmpty() && LanSyncScope.schemas.keys.containsAll(coverage)) { "SYNC_GROUP_SCOPE" }
@@ -47,9 +48,15 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
         capture.snapshot.validate(); LanSyncScope.validateGraph(capture.snapshot)
         require(capture.snapshot.coveredTypes == coverage) { "SYNC_GROUP_SCOPE" }
         val records = requireNotNull(capture.snapshot.units()[unit]) { "SYNC_GROUP_UNIT_MISSING" }
+        return prepareValidated(capture.snapshot, unit, records)
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    internal fun prepareValidated(snapshot: LanSyncSnapshot, unit: String, records: List<LanSyncRecord>): LanSyncPreparedGroupUnit {
+        require(snapshot.coveredTypes == coverage) { "SYNC_GROUP_SCOPE" }
         val references = LanSyncScope.referencedResources(records)
         val payload = LanSyncGroupUnitPayload(1, unit, coverage.toSortedSet(), records.sortedBy { it.key },
-            capture.snapshot.resources.filterKeys(references::contains).toSortedMap())
+            references.associateWith { snapshot.resources.getValue(it) }.toSortedMap())
         val expectedValue = validate(payload)
         val file = PrivateSyncFile.create(privateDirectory)
         var members: PrivateSyncFile? = null
@@ -84,12 +91,13 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
     }
 
     private fun parse(path: Path, identity: SyncPlaintextIdentity): LanSyncDecodedGroupUnit {
-        metadataBudget.validate(path)
-        val payload = requireNotNull(LanSyncJsonFiles.read(path, LanSyncGroupUnitPayload.serializer(), identity.sha256)) { "SYNC_GROUP_UNIT_MISSING" }
+        var indexCost = 0L
+        val payload = requireNotNull(LanSyncJsonFiles.readRecords(path, LanSyncGroupUnitPayload.serializer(), recordBodies,
+            listOf("records"), identity.sha256, identity.length) { indexCost = it.indexCost }) { "SYNC_GROUP_UNIT_MISSING" }
         val hash = validate(payload)
         val frozen = payload.copy(coveredTypes = Collections.unmodifiableSet(payload.coveredTypes.toSet()),
             records = Collections.unmodifiableList(payload.records.toList()), resources = Collections.unmodifiableMap(payload.resources.toMap()))
-        return LanSyncDecodedGroupUnit(frozen, identity, hash)
+        return LanSyncDecodedGroupUnit(frozen, identity, hash, indexCost)
     }
     private fun validate(payload: LanSyncGroupUnitPayload): String {
         require(payload.format == 1 && payload.unit.length in 1..600 && payload.coveredTypes == coverage && payload.records.isNotEmpty()) { "SYNC_GROUP_UNIT_SCOPE" }

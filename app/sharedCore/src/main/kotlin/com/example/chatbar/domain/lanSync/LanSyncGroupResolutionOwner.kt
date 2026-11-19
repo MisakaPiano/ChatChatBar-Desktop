@@ -104,8 +104,9 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
                 }
             }
             val target = root.resolve("target-${preview.operation}.json")
-            if (!Files.exists(target, NOFOLLOW_LINKS)) LanSyncJsonFiles.write(target, LanSyncSnapshot.serializer(), preview.target)
-            else require(readJson(target, LanSyncSnapshot.serializer(), identity(target)) == preview.target) { "SYNC_GROUP_RESOLUTION_OPERATION_CHANGED" }
+            if (!Files.exists(target, NOFOLLOW_LINKS)) LanSyncJsonFiles.writeRecords(target, LanSyncSnapshot.serializer(),
+                preview.target, workspace.metadataBudget, listOf("records"))
+            else require(readSnapshot(target, identity(target)) == preview.target) { "SYNC_GROUP_RESOLUTION_OPERATION_CHANGED" }
             val checkpointId = UUID.nameUUIDFromBytes("ccb-resolution-original/${trust.group.value}/${preview.operation}".toByteArray()).toString()
             val original = if (preview.resolvedUnits.isEmpty()) null else
                 workspace.recovery.checkpointSource(workspace.dataRoot, capture, trust.group, checkpointId, projection)
@@ -141,7 +142,7 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
     }
     private fun complete(state: State, row: Row): Row {
         if (row.stage != LanSyncGroupResolutionLocalStage.PREPARED) return row
-        val data = data(row); val target = readJson(root.resolve("target-${row.operation}.json"), LanSyncSnapshot.serializer(), data.target)
+        val data = data(row); val target = readSnapshot(root.resolve("target-${row.operation}.json"), data.target)
         target.validate(); LanSyncScope.validateGraph(target)
         workspace.recover()
         if (!workspace.applied(row.operation)) {
@@ -201,7 +202,7 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
         require(row.stage == LanSyncGroupResolutionLocalStage.LOCAL_READY && row.applied && !row.reload && row.resolved.isNotEmpty()) { "SYNC_GROUP_RESOLUTION_REVIEW_REQUIRED" }
         val data = data(row); require(fresh(data)) { "SYNC_GROUP_RESOLUTION_STALE" }
         val post = readJson(root.resolve("post-$operation.json"), Post.serializer(), requireNotNull(row.post))
-        val target = readJson(root.resolve("target-$operation.json"), LanSyncSnapshot.serializer(), data.target)
+        val target = readSnapshot(root.resolve("target-$operation.json"), data.target)
         workspace.capture(actor.fingerprint, projection).use {
             require(it.sourceFiles == post.files && it.snapshot.hashes() == target.hashes() && it.snapshot.coveredTypes == target.coveredTypes) { "SYNC_GROUP_RESOLUTION_POST_CHANGED" }
         }
@@ -216,6 +217,12 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
     }
     private fun writeState(state: State) = writeProtected(root.resolve("state.protected"), State.serializer(), state)
     private fun identity(path: Path): SyncPlaintextIdentity { PrivateSyncFile.checked(path); val length = Files.size(path); return SyncPlaintextIdentity(length, LanSyncResourceStore.hashFile(path, length)) }
+    private fun readSnapshot(path: Path, expected: SyncPlaintextIdentity): LanSyncSnapshot {
+        PrivateSyncFile.checked(path)
+        return requireNotNull(LanSyncJsonFiles.readRecords(path, LanSyncSnapshot.serializer(), workspace.recordBodies,
+            listOf("records"), expected.sha256, expected.length,
+            acceptPreviousWholeDocumentBudget = true)) { "SYNC_GROUP_RESOLUTION_DAMAGED" }
+    }
     private fun <T> readJson(path: Path, serializer: KSerializer<T>, identity: SyncPlaintextIdentity): T {
         PrivateSyncFile.checked(path); require(Files.size(path) == identity.length) { "SYNC_GROUP_RESOLUTION_DAMAGED" }
         LanSyncMetadataBudget().validate(path)

@@ -90,19 +90,20 @@ object LanSyncScope {
 
     fun validateRecord(record: LanSyncRecord) {
         val serializer = requireNotNull(schemas[record.type]) { "SYNC_UNSUPPORTED_TYPE" }
-        lanSyncJson.decodeFromJsonElement(serializer, record.body)
+        val body = record.body
+        lanSyncJson.decodeFromJsonElement(serializer, body)
         if (record.type in LanSyncMoments.types) LanSyncMoments.validate(record)
         LanSyncPostProcess.validate(record)
         if (record.type == LanSyncStudioCurrent.HISTORY) {
-            val journal = lanSyncJson.decodeFromJsonElement(NovelAiStudioHistoryJournal.serializer(), record.body)
+            val journal = lanSyncJson.decodeFromJsonElement(NovelAiStudioHistoryJournal.serializer(), body)
             require(journal.pending == null) { "SYNC_STUDIO_PENDING_ON_WIRE" }
             journal.committed.validate()
         }
-        require(identity(record.type, record.body) == record.id) { "SYNC_BODY_ID" }
+        require(identity(record.type, body) == record.id) { "SYNC_BODY_ID" }
         // Pending state-machine journals have their own owner; do not transport an active transaction.
         if (record.type == "chat_sessions") {
             listOf("memoryUpdateStatus", "memoryArchiveStatus", "memoryHeadStatus").forEach {
-                require((record.body[it] as? JsonPrimitive)?.contentOrNull !in setOf("UPDATING", "WAITING_FOR_NETWORK")) { "SYNC_BUSY_MEMORY" }
+                require((body[it] as? JsonPrimitive)?.contentOrNull !in setOf("UPDATING", "WAITING_FOR_NETWORK")) { "SYNC_BUSY_MEMORY" }
             }
         }
     }

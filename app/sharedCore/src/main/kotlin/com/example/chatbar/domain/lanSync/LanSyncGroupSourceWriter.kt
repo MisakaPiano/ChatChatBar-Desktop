@@ -78,8 +78,10 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             val reuse by lazy { blobReuse(key) }
             val prepared = mutableListOf<LanSyncPreparedGroupUnit>()
             try {
-                val unitProofs = selected.filter { it in capture.snapshot.units() }.associateWith { unit ->
-                    LanSyncGroupUnitCodec(work, capture.snapshot.coveredTypes).prepare(capture, unit).also { prepared += it }
+                val grouped = capture.snapshot.units()
+                val codec = LanSyncGroupUnitCodec(work, capture.snapshot.coveredTypes, workspace.metadataBudget)
+                val unitProofs = selected.filter(grouped::containsKey).associateWith { unit ->
+                    codec.prepareValidated(capture.snapshot, unit, grouped.getValue(unit)).also { prepared += it }
                 }
                 val paths = linkedMapOf<String, Pair<SyncPlaintextIdentity, Path>>()
                 unitProofs.values.forEach { unit ->
@@ -257,7 +259,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
                     source.blobs.getValue(plain.sha256).key) && it.keyCommitment == source.commitment) { "SYNC_GROUP_SOURCE_BLOB_CHANGED" }
                 workspace.resourceStore.retain(it.plaintext.path, plain.sha256, plain.length)
             }
-            LanSyncGroupUnitCodec(work, source.coverage).readCached(workspace.resourceStore, unit, change)
+            LanSyncGroupUnitCodec(work, source.coverage, workspace.metadataBudget).readCached(workspace.resourceStore, unit, change)
         }
         val known = currentView().authenticatedVersions.mapNotNull { it.envelope.version }
         val publication = publisher(key.epoch).prepare(metadata, proofs, delivery.blobs.mapValues { it.value.operation }, known)

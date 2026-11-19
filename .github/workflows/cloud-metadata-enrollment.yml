@@ -1,4 +1,4 @@
-name: Bounded metadata founder enrollment regressions
+name: Bounded device-group metadata regressions
 on:
   push:
     branches: [codex/lan-sync-metadata-enrollment-20261120]
@@ -7,7 +7,7 @@ permissions:
 jobs:
   metadata-enrollment:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 36
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -16,15 +16,25 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Execute synthetic aggregate and single-record founder enrollment contracts
+      - name: Execute exact synthetic metadata and founder lifecycle contracts
         working-directory: app
         run: >-
           bash ./gradlew :sharedCore:test
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.singleRecordWorkingBudgetFailureRetainsPreparedIdentityAndColdRetryNeverResetsItsOrigins'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncWorkspaceTest.aggregateMetadataKeepsEveryBodyAndEnforcesIndependentRecordAndIndexLimits'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncMetadataBudgetTest.overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'
           --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
+      - name: Compile both changed platform entries
+        if: always()
+        working-directory: app
+        run: bash ./gradlew :app:compileLanPreviewKotlin :desktopApp:compileKotlin --continue --no-daemon --stacktrace
       - name: Preserve exact class original methods and counts
         if: always()
         env:
@@ -34,19 +44,39 @@ jobs:
           import json, os
           from pathlib import Path
           import xml.etree.ElementTree as ET
-          name = 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest'
-          expected = {
-              'aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup',
-              'singleRecordWorkingBudgetFailureRetainsPreparedIdentityAndColdRetryNeverResetsItsOrigins',
+          base = 'com.example.chatbar.domain.lanSync.'
+          scope = {
+              'LanSyncGroupEnrollmentTest': {
+                  'aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup',
+                  'singleRecordWorkingBudgetFailureRetainsPreparedIdentityAndColdRetryNeverResetsItsOrigins',
+                  'oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState',
+              },
+              'LanSyncWorkspaceTest': {'aggregateMetadataKeepsEveryBodyAndEnforcesIndependentRecordAndIndexLimits'},
+              'LanSyncGroupUnitCodecTest': {
+                  'actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes',
+                  'wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority',
+              },
+              'LanSyncGroupCoordinatorTest': {'reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'},
+              'LanSyncMetadataBudgetTest': {'overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'},
           }
-          result = {'head': os.environ['CHECKED_HEAD'], 'class': name, 'expectedMethods': sorted(expected), 'problems': []}
-          path = Path('app/sharedCore/build/test-results/test/TEST-' + name + '.xml')
-          if not path.is_file():
-              result['problems'].append('MISSING_CLASS')
-          else:
+          directory = Path('app/sharedCore/build/test-results/test')
+          result = {'head': os.environ['CHECKED_HEAD'], 'classes': [], 'problems': [],
+                    'tests': 0, 'failures': 0, 'errors': 0, 'skipped': 0}
+          expected_xml = {'TEST-' + base + short + '.xml' for short in scope}
+          if {item.name for item in directory.glob('TEST-*.xml')} != expected_xml:
+              result['problems'].append('UNEXPECTED_XML_INVENTORY')
+          for short, expected in scope.items():
+              name = base + short
+              case_result = {'class': name, 'expectedMethods': sorted(expected), 'problems': []}
+              result['classes'].append(case_result)
+              path = directory / ('TEST-' + name + '.xml')
+              problems = case_result['problems']
+              if not path.is_file():
+                  problems.append('MISSING_CLASS')
+                  continue
               raw = path.read_bytes()
               if b'\x00' in raw or b'<!DOCTYPE' in raw.upper() or b'<!ENTITY' in raw.upper():
-                  result['problems'].append('FORBIDDEN_XML_DECLARATION')
+                  problems.append('FORBIDDEN_XML_DECLARATION')
               else:
                   suite = ET.fromstring(raw)
                   nodes = list(suite.iter())
@@ -56,18 +86,22 @@ jobs:
                   counts = {'tests': len(all_cases)}
                   counts.update({key: sum(local(node) == tag for node in nodes)
                                  for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
-                  result.update(counts)
-                  result['actualMethods'] = [case.get('name') for case in all_cases]
+                  case_result.update(counts)
+                  for key, count in counts.items():
+                      result[key] += count
+                  case_result['actualMethods'] = [case.get('name') for case in all_cases]
                   if suite.tag != 'testsuite' or suite.get('name') != name:
-                      result['problems'].append('ROOT_SUITE_MISMATCH')
+                      problems.append('ROOT_SUITE_MISMATCH')
                   if any(key not in suite.attrib for key in counts):
-                      result['problems'].append('MISSING_COUNT_DECLARATION')
+                      problems.append('MISSING_COUNT_DECLARATION')
                   if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
-                      result['problems'].append('COUNT_MISMATCH')
+                      problems.append('COUNT_MISMATCH')
                   if len(cases) != len(expected) or all_cases != cases or {case.get('name') for case in cases} != expected or any(case.get('classname') != name for case in cases):
-                      result['problems'].append('EXACT_METHODS_NOT_EXECUTED')
+                      problems.append('EXACT_METHODS_NOT_EXECUTED')
                   if counts != {'tests': len(expected), 'failures': 0, 'errors': 0, 'skipped': 0}:
-                      result['problems'].append('METHODS_NOT_PASS')
+                      problems.append('METHODS_NOT_PASS')
+          if any(case['problems'] for case in result['classes']):
+              result['problems'].append('SCOPED_CASES_NOT_ALL_PASS')
           output = Path('app/build/reports/metadata-enrollment-regression.json')
           output.parent.mkdir(parents=True, exist_ok=True)
           output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')

@@ -173,7 +173,12 @@ internal fun lanSyncRead(path: Path, limit: Int): ByteArray {
     return Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
         val output = java.io.ByteArrayOutputStream()
         val buffer = ByteArray(16 * 1024); var total = 0
-        while (true) { val count = input.read(buffer); if (count < 0) break; total += count; require(total <= limit); output.write(buffer, 0, count) }
+        while (true) {
+            val count = input.read(buffer); if (count < 0) break
+            require(count <= limit - total) { "SYNC_FILE_LIMIT" }
+            total += count
+            output.write(buffer, 0, count)
+        }
         output.toByteArray()
     }
 }

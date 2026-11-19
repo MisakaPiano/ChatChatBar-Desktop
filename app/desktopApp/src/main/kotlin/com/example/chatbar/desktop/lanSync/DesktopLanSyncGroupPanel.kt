@@ -56,8 +56,10 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             state.setupBinding?.let { binding -> BootstrapButton("完成创建", enabled = !interactionBlocked && saved) { actions.recoverySaved(binding) } }
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
-            key(state.privacyRevision) { LabeledField("恢复码 · 临时解锁管理", recoveryInput, secret = true, enabled = !interactionBlocked, onChange = { recoveryInput = it }) }
-            BootstrapButton("解锁管理", secondary = true, enabled = !interactionBlocked && recoveryInput.isNotBlank()) {
+            val continuing = state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED
+            key(state.privacyRevision) { LabeledField(if (continuing) "为该组保存的恢复码" else "恢复码 · 临时解锁管理",
+                recoveryInput, secret = true, enabled = !interactionBlocked, onChange = { recoveryInput = it }) }
+            BootstrapButton(if (continuing) "用恢复码继续设置" else "解锁管理", secondary = true, enabled = !interactionBlocked && recoveryInput.isNotBlank()) {
                 val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured)
             }
         }
@@ -70,7 +72,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 val captured = recoveryInput; recoveryInput = ""; actions.recoverManagement(captured)
             }
         }
-        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
+        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED && state.canAbandonUnactivated)
             BootstrapButton("放弃未完成的设置", secondary = true, enabled = !interactionBlocked) { actions.abandonUnusedSetup() }
         if (state.recoveryJoining) {
             StatusText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")

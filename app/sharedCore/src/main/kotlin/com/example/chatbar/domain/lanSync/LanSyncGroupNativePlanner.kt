@@ -36,9 +36,19 @@ object LanSyncGroupNativePlanner {
         require(!reconciled.trustBlocked && reconciled.history != null && reconciled.ledgerCheckpoint != null) { "SYNC_GROUP_NATIVE_TRUST_VIEW" }
         val history = reconciled.history.snapshot(); val checkpoint = reconciled.ledgerCheckpoint
         recordEvidence.requireView(history, checkpoint)
-        val localUnits = source.units(); val hashes = source.hashes(); val versions = history.admittedVersions().associateBy { it.reference() }
+        val indexLimit = source.records.firstNotNullOfOrNull(LanSyncRecord::metadataIndexLimit) ?: LanSyncMetadataBudget().maximumIndexCost
+        var indexCost = 0L
+        fun chargeIndex(amount: Long) {
+            indexCost = lanSyncAddLength(indexCost, amount)
+            require(indexCost <= indexLimit) { "SYNC_METADATA_INDEX_BUDGET" }
+        }
+        val localUnits = source.units(); val hashes = lanSyncUnitHashes(localUnits); val versions = history.admittedVersions().associateBy { it.reference() }
         require(unpublishedLocalUnits.all { it.length in 1..600 }) { "SYNC_GROUP_LOCAL_REVISION_UNIT" }
-        val allUnits = (localUnits.keys + applied.keys + versions.values.flatMap { it.changes.keys } + unpublishedLocalUnits).toSortedSet()
+        val allUnits = sortedSetOf<String>()
+        (localUnits.keys.asSequence() + applied.keys.asSequence() + versions.values.asSequence().flatMap { it.changes.keys.asSequence() } +
+            unpublishedLocalUnits.asSequence()).forEach { unit ->
+            if (allUnits.add(unit)) chargeIndex(768 + 4L * unit.length)
+        }
         require(freshLocalRevisions.all { it in allUnits }) { "SYNC_GROUP_LOCAL_REVISION_UNIT" }
         applied.forEach { (unit, state) ->
             require(unit.length in 1..600 && state.frontiers.all { reference ->
@@ -105,10 +115,28 @@ object LanSyncGroupNativePlanner {
 
         // A record move, strict live-format reference or immutable media identity is one native component.
         val links = allUnits.associateWith { linkedSetOf<String>() }
-        fun link(owners: Set<String>) { owners.forEach { unit -> links.getValue(unit).addAll(owners - unit) } }
-        val records = localUnits.flatMap { (unit, records) -> records.map { unit to it } } +
-            rows.values.flatMap { row -> row.incoming.values.flatMap { candidate -> candidate.decoded.payload.records.map { row.unit to it } } }
-        val owners = records.groupBy({ it.second.key }, { it.first }).mapValues { it.value.toSet() }
+        fun link(owners: Set<String>) {
+            val first = owners.firstOrNull() ?: return
+            owners.forEach { unit ->
+                if (unit != first && links.getValue(first).add(unit)) {
+                    chargeIndex(144)
+                    links.getValue(unit).add(first)
+                }
+            }
+        }
+        val records = sequence {
+            for ((unit, group) in localUnits) for (record in group) yield(unit to record)
+            for (row in rows.values) {
+                for (candidate in row.incoming.values) {
+                    for (record in candidate.decoded.payload.records) yield(row.unit to record)
+                }
+            }
+        }
+        val owners = linkedMapOf<String, MutableSet<String>>()
+        records.forEach { (unit, record) ->
+            chargeIndex(256 + 4L * (record.type.length + record.id.length))
+            owners.getOrPut(record.key) { linkedSetOf() }.add(unit)
+        }
         owners.values.forEach(::link)
         records.filter { it.second.type == "chat_sessions" }.forEach { (unit, session) ->
             session.text("formatCardId")?.let { format ->
@@ -120,7 +148,7 @@ object LanSyncGroupNativePlanner {
         records.forEach { (unit, record) -> LanSyncWorkspace.mapResources(record.body) { reference, _ ->
             if (reference.startsWith("ccb-lan-v1/")) {
                 val parts = reference.split('/'); require(parts.size == 5) { "SYNC_RESOURCE_REFERENCE" }
-                mediaOwners.getOrPut("${parts[1]}/${parts[2]}") { linkedSetOf() }.add(unit)
+                if (mediaOwners.getOrPut("${parts[1]}/${parts[2]}") { linkedSetOf() }.add(unit)) chargeIndex(240)
             }; reference
         } }
         mediaOwners.values.forEach { link(it) }
@@ -128,8 +156,12 @@ object LanSyncGroupNativePlanner {
         val components = linkedMapOf<String, Set<String>>()
         var target = source
         while (remaining.isNotEmpty()) {
-            val component = linkedSetOf<String>(); val queue = java.util.ArrayDeque<String>(); queue.add(remaining.first())
-            while (queue.isNotEmpty()) { val unit = queue.removeFirst(); if (component.add(unit)) queue.addAll(links.getValue(unit)) }
+            val first = remaining.first()
+            val component = linkedSetOf(first)
+            val queue = java.util.ArrayDeque<String>(); queue.add(first)
+            while (queue.isNotEmpty()) {
+                links.getValue(queue.removeFirst()).forEach { if (component.add(it)) queue.add(it) }
+            }
             remaining.removeAll(component)
             val frozen = Collections.unmodifiableSet(component.toSet()); component.forEach { components[it] = frozen }
             val ready = component.filter { rows.getValue(it).stage in readyStages }.toSet()

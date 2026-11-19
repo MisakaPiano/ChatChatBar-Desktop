@@ -46,9 +46,11 @@ class LanSyncRecoveryVault(
     private val budget: LanSyncResourceBudget = LanSyncResourceBudget(),
     private val observe: (String) -> Unit = {},
     objectStore: LanSyncResourceStore? = null,
+    private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
 ) {
     private val objects = objectStore ?: LanSyncResourceStore(root.resolve("objects"), budget)
     private val entries = root.resolve("entries")
+    private val recordBodies by lazy { LanSyncRecordBodies(root.resolve("decoded-records"), metadataBudget) }
     init {
         LanSyncResourceStore.createCheckedRoot(root)
         lanSyncSafe(root, true)
@@ -196,9 +198,7 @@ class LanSyncRecoveryVault(
             }
         }
         val snapshotFile = freshFile("snapshot.json") { file ->
-            Files.newOutputStream(file, StandardOpenOption.CREATE_NEW).buffered().use {
-                lanSyncJson.encodeToStream(LanSyncSnapshot.serializer(), current.snapshot, it)
-            }
+            LanSyncJsonFiles.writeRecords(file, LanSyncSnapshot.serializer(), current.snapshot, metadataBudget, listOf("records"))
         }
         val projectionFile = freshFile("projection.json") { file -> LanSyncJsonFiles.write(file, LanSyncProjection.serializer(), projection) }
         observe("METADATA_PROTECTED")
@@ -257,8 +257,8 @@ class LanSyncRecoveryVault(
     @OptIn(ExperimentalSerializationApi::class)
     fun snapshot(entry: LanSyncRecoveryEntry): LanSyncSnapshot {
         verifyFiles(entry)
-        val stored = requireNotNull(LanSyncJsonFiles.read(directory(entry.transaction).resolve("snapshot.json"),
-            LanSyncSnapshot.serializer(), entry.snapshotHash))
+        val stored = requireNotNull(LanSyncJsonFiles.readRecords(directory(entry.transaction).resolve("snapshot.json"),
+            LanSyncSnapshot.serializer(), recordBodies, listOf("records"), entry.snapshotHash, entry.snapshotBytes))
         val compatible = if (stored.protocol == LAN_SYNC_PROTOCOL) stored else {
             LanSyncScope.validateLegacyPending(stored)
             stored.copy(protocol = LAN_SYNC_PROTOCOL, records = stored.records.map { it.copy(body = LanSyncScope.normalize(it.type, it.body)) })
@@ -300,7 +300,8 @@ class LanSyncRecoveryVault(
             val fields = if (type == "format_cards") emptySet() else if (type == LanSyncStudioCurrent.DRAFT) setOf("aiDesignModelId", "selectedModel", "followDefaultNovelAiImageModel")
                 else LanSyncScope.retainedLocalFields(type)
             if (fields.isNotEmpty()) {
-                val body = lanSyncJson.parseToJsonElement(lanSyncUtf8(lanSyncRead(file, budget.maximumRecordBytes))).jsonObject
+                val (body, hash) = LanSyncJsonFiles.readEntity(file, budget.maximumRecordBytes, metadataBudget)
+                require(hash == original.hash) { "SYNC_RECOVERY_DAMAGED" }
                 val record = LanSyncRecord(type, requireNotNull(LanSyncScope.identity(type, body)) { "SYNC_RECOVERY_SOURCE" }, body)
                 LanSyncScope.validateRecord(record)
                 val wireKey = projection.rewrite(listOf(record)).single().key

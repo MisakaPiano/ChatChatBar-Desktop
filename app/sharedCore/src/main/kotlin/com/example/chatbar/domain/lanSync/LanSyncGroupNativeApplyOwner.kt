@@ -119,7 +119,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
             entry.version, held)
         verifySource(payload)
         val file = payloadPath(transaction); require(!Files.exists(file, NOFOLLOW_LINKS)) { "SYNC_GROUP_NATIVE_EXISTING_PAYLOAD" }
-        LanSyncJsonFiles.write(file, Payload.serializer(), payload)
+        LanSyncJsonFiles.writeRecords(file, Payload.serializer(), payload, workspace.metadataBudget, listOf("plan", "snapshot", "records"))
         val intent = Intent(loaded.completed + 1, transaction, loaded.receipt,
             SyncPlaintextIdentity(Files.size(file), LanSyncResourceStore.hashFile(file, Files.size(file))), null)
         write(intentPath(intent.sequence), "INTENT", Intent.serializer(), intent)
@@ -151,7 +151,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         require(loaded.completed < Long.MAX_VALUE) { "SYNC_GROUP_NATIVE_SEQUENCE_EXHAUSTED" }
         val payload = payload(plan); val file = payloadPath(plan.plan.transaction)
         require(!Files.exists(file, NOFOLLOW_LINKS)) { "SYNC_GROUP_NATIVE_EXISTING_PAYLOAD" }
-        LanSyncJsonFiles.write(file, Payload.serializer(), payload)
+        LanSyncJsonFiles.writeRecords(file, Payload.serializer(), payload, workspace.metadataBudget, listOf("plan", "snapshot", "records"))
         val identity = SyncPlaintextIdentity(Files.size(file), LanSyncResourceStore.hashFile(file, Files.size(file)))
         val intent = Intent(loaded.completed + 1, plan.plan.transaction, loaded.receipt, identity, preimage?.transaction)
         write(intentPath(intent.sequence), "INTENT", Intent.serializer(), intent)
@@ -211,22 +211,24 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         require(intent.transaction.matches(Regex("[a-f0-9-]{36}")) && intent.sequence > 0) { "SYNC_GROUP_NATIVE_INTENT" }
         val file = payloadPath(intent.transaction)
         require(Files.size(file) == intent.payload.length) { "SYNC_GROUP_NATIVE_PAYLOAD_CHANGED" }
-        LanSyncMetadataBudget().validate(file)
-        val payload = requireNotNull(LanSyncJsonFiles.read(file, Payload.serializer(), intent.payload.sha256)) { "SYNC_GROUP_NATIVE_PAYLOAD_MISSING" }
+        val payload = requireNotNull(LanSyncJsonFiles.readRecords(file, Payload.serializer(), workspace.recordBodies,
+            listOf("plan", "snapshot", "records"), intent.payload.sha256, intent.payload.length,
+            acceptPreviousWholeDocumentBudget = true)) { "SYNC_GROUP_NATIVE_PAYLOAD_MISSING" }
         require(payload.plan.transaction == intent.transaction && payload.plan.snapshot.deviceId == actor.fingerprint && (payload.advances.isNotEmpty() || payload.sourceOperation != null) &&
             payload.rawSource.matches(Regex("[a-f0-9]{64}")) && payload.appliedBefore.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_NATIVE_PAYLOAD_CHANGED" }
         payload.plan.snapshot.validate(); LanSyncScope.validateGraph(payload.plan.snapshot)
+        val snapshotHashes = payload.plan.snapshot.hashes()
         require((payload.sourceOperation == null) == (payload.sourceVersion == null) && (payload.sourceOperation != null || payload.sourceHeld.isEmpty())) { "SYNC_GROUP_NATIVE_PAYLOAD_CHANGED" }
         payload.sourceVersion?.let { source ->
             require(source.group == trust.group && source.author == actor.fingerprint && actor.verifies(source.signingBytes(), source.signature) &&
                 payload.checkpoint == source.deviceLedger && payload.heads == source.parents &&
-                source.changes.all { (unit, change) -> payload.plan.snapshot.hashes()[unit] == change.valueHash } &&
+                source.changes.all { (unit, change) -> snapshotHashes[unit] == change.valueHash } &&
                 payload.advances.all { (unit, value) -> unit in source.changes && value.valueHash == source.changes[unit]?.valueHash && value.frontiers == setOf(source.reference()) } &&
                 payload.sourceHeld.all { it in source.changes && it !in payload.advances }) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
         }
         val expected = payload.before.toMutableMap()
         payload.advances.forEach { (unit, next) -> if (next.valueHash == null) expected.remove(unit) else expected[unit] = next.valueHash }
-        require(payload.plan.snapshot.hashes() == expected) { "SYNC_GROUP_NATIVE_UNPROCESSED_UNIT_CHANGED" }
+        require(snapshotHashes == expected) { "SYNC_GROUP_NATIVE_UNPROCESSED_UNIT_CHANGED" }
         return payload
     }
     private fun verifySource(payload: Payload) {
@@ -243,8 +245,10 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
                 workspace.recovery.sourceProjection(checkpoint) == projection) { "SYNC_GROUP_NATIVE_SOURCE_ORIGINALS_CHANGED" }
             workspace.recovery.verify(checkpoint)
         }
-        require(entry.version.changes.all { (unit, change) -> change.valueHash == payload.plan.snapshot.hashes()[unit] &&
-            (change.membership == null || change.membership == LanSyncGroupMembership.identity(payload.plan.snapshot.units().getValue(unit))) }) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
+        val units = payload.plan.snapshot.units()
+        val hashes = lanSyncUnitHashes(units)
+        require(entry.version.changes.all { (unit, change) -> change.valueHash == hashes[unit] &&
+            (change.membership == null || change.membership == LanSyncGroupMembership.identity(units.getValue(unit))) }) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
     }
     private fun verifyPreimage(intent: Intent, payload: Payload) {
         require(!payload.preimageRequired || intent.preimage != null) { "SYNC_GROUP_NATIVE_PREIMAGE_MISSING" }

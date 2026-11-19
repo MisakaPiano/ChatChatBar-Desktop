@@ -1,6 +1,10 @@
 package com.example.chatbar.domain.lanSync
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.security.MessageDigest
 import java.util.UUID
@@ -8,15 +12,39 @@ import java.util.UUID
 const val LAN_SYNC_PROTOCOL = 7
 
 /** Protocol identities are independent of filenames, clocks, IP addresses and display names. */
-@Serializable
-data class LanSyncRecord(val type: String, val id: String, val body: JsonObject) {
+@Serializable(with = LanSyncRecordSerializer::class)
+class LanSyncRecord private constructor(val type: String, val id: String, private val inline: JsonObject?,
+    private val retained: LanSyncRecordBodies.StoredBody?) {
+    constructor(type: String, id: String, body: JsonObject) : this(type, id, body, null)
+    internal constructor(type: String, id: String, body: LanSyncRecordBodies.StoredBody) : this(type, id, null, body)
+
+    val body: JsonObject get() = retained?.get() ?: requireNotNull(inline)
+    internal val metadataIndexLimit get() = retained?.store?.budget?.maximumIndexCost
+
+    fun copy(type: String = this.type, id: String = this.id): LanSyncRecord =
+        LanSyncRecord(type, id, inline, retained)
+
+    fun copy(type: String = this.type, id: String = this.id, body: JsonObject): LanSyncRecord =
+        retained?.store?.retain(type, id, body) ?: LanSyncRecord(type, id, body)
+
+    operator fun component1() = type
+    operator fun component2() = id
+    operator fun component3() = body
+
+    override fun equals(other: Any?): Boolean = this === other ||
+        other is LanSyncRecord && type == other.type && id == other.id && body == other.body
+    override fun hashCode(): Int = (31 * type.hashCode() + id.hashCode()) * 31 + body.hashCode()
+    override fun toString() = "LanSyncRecord(type=$type, id=$id, body=$body)"
+
     internal val value get() = body
     internal val singleton get() = LanSyncScope.isSingleton(type)
     internal fun text(field: String) = (body[field] as? JsonPrimitive)?.contentOrNull
     internal fun comparisonBody(): JsonObject {
-        val ignored = if (!text("sourcePresetKey").isNullOrBlank()) setOf("updatedAt", "createdAt") else setOf("updatedAt")
+        val original = body
+        val sourcePreset = (original["sourcePresetKey"] as? JsonPrimitive)?.contentOrNull
+        val ignored = if (!sourcePreset.isNullOrBlank()) setOf("updatedAt", "createdAt") else setOf("updatedAt")
         val aliases = linkedMapOf<String, Int>()
-        val normalized = LanSyncWorkspace.mapResources(JsonObject(body.filterKeys { it !in ignored })) { reference, _ ->
+        val normalized = LanSyncWorkspace.mapResources(JsonObject(original.filterKeys { it !in ignored })) { reference, _ ->
             if (reference.startsWith("ccb-lan-v1/")) {
                 val parts = reference.split('/')
                 if (parts.size == 5) {
@@ -35,8 +63,33 @@ data class LanSyncRecord(val type: String, val id: String, val body: JsonObject)
         type == "chat_sessions" -> "conversation/$id"
         type == "vector_chunks" && text("sourceType") == "CHAT_MEMORY" -> "conversation/${text("sourceId")}"
         type == "vector_chunks" -> "character_cards/${text("sourceId")}"
-        body["sessionId"] is JsonPrimitive -> "conversation/${body.getValue("sessionId").jsonPrimitive.content}"
-        else -> key
+        else -> (body["sessionId"] as? JsonPrimitive)?.let { "conversation/${it.content}" } ?: key
+    }
+}
+
+/** The wire fields and declaration order match the original generated record serializer. */
+internal object LanSyncRecordSerializer : KSerializer<LanSyncRecord> {
+    @SerialName("com.example.chatbar.domain.lanSync.LanSyncRecord")
+    @Serializable private data class Wire(val type: String, val id: String, val body: JsonObject)
+    private val delegate = Wire.serializer()
+    private val active = ThreadLocal<LanSyncRecordBodies>()
+
+    override val descriptor = delegate.descriptor
+    override fun serialize(encoder: Encoder, value: LanSyncRecord) =
+        delegate.serialize(encoder, Wire(value.type, value.id, value.body))
+    override fun deserialize(decoder: Decoder): LanSyncRecord {
+        val (type, id, body) = delegate.deserialize(decoder)
+        val store = active.get() ?: return LanSyncRecord(type, id, body)
+        require(type in LanSyncScope.schemas && id.isNotBlank() && id.length <= 256) { "SYNC_ID" }
+        return store.retain(type, id, body)
+    }
+
+    fun <T> retaining(store: LanSyncRecordBodies, decode: () -> T): T {
+        val previous = active.get()
+        active.set(store)
+        try { return decode() } finally {
+            if (previous == null) active.remove() else active.set(previous)
+        }
     }
 }
 

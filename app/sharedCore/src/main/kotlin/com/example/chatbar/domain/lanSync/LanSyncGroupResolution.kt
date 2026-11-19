@@ -272,13 +272,21 @@ object LanSyncGroupResolution {
     }
     private fun refJson(ref: SyncVersionRef) = buildJsonObject { put("id", ref.id.value); put("bodyHash", ref.bodyHash) }
     private fun refsJson(refs: Set<SyncVersionRef>) = JsonArray(refs.sortedBy { it.id.value }.map(::refJson))
-    private fun recordsJson(rows: List<LanSyncRecord>) = JsonArray(rows.sortedBy { it.key }.map { buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.body) } })
+    private fun recordsJson(rows: List<LanSyncRecord>): JsonArray {
+        val sorted = rows.sortedBy { it.key }
+        return JsonArray(object : AbstractList<JsonElement>() {
+            override val size get() = sorted.size
+            override fun get(index: Int): JsonElement = sorted[index].let {
+                buildJsonObject { put("type", it.type); put("id", it.id); put("body", it.body) }
+            }
+        })
+    }
     private fun removalsJson(rows: Set<LanSyncGroupRecordRemoval>) = JsonArray(rows.sortedWith(compareBy({ it.record }, { it.formerUnit }, { it.removal.id.value })).map {
         buildJsonObject { put("record", it.record); put("unit", it.formerUnit); put("removal", refJson(it.removal)) }
     })
     private fun freezeRecord(row: LanSyncRecord) = row.copy(body = freezeJson(row.body).jsonObject)
     private fun freezeImpact(row: LanSyncRecordImpact) = row.copy(removedVersionIds = resolutionSet(row.removedVersionIds),
-        removedEmbeddedMessageIds = resolutionSet(row.removedEmbeddedMessageIds), fields = resolutionList(row.fields))
+        removedEmbeddedMessageIds = resolutionSet(row.removedEmbeddedMessageIds))
     private fun freezeJson(value: JsonElement, depth: Int = 0): JsonElement {
         require(depth <= 128) { "MERGE_JSON_DEPTH" }
         return when (value) {

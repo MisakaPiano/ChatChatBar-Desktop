@@ -94,10 +94,11 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             state.setupBinding?.let { binding -> CbButton("完成创建", { actions.recoverySaved(binding) }, enabled = !interactionBlocked && saved) }
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
-            CbField("恢复码 · 临时解锁管理") {
+            val continuing = state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED
+            CbField(if (continuing) "为该组保存的恢复码" else "恢复码 · 临时解锁管理") {
                 key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !interactionBlocked) }
             }
-            CbButton("解锁管理", { val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured) },
+            CbButton(if (continuing) "用恢复码继续设置" else "解锁管理", { val captured = recoveryInput; recoveryInput = ""; actions.unlockManagement(captured) },
                 enabled = !interactionBlocked && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.READY && !state.localManagementAvailable &&
@@ -110,7 +111,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
                 val captured = recoveryInput; recoveryInput = ""; actions.recoverManagement(captured)
             }, enabled = !interactionBlocked && recoveryInput.isNotBlank(), variant = ButtonVariant.Secondary)
         }
-        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED)
+        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED && state.canAbandonUnactivated)
             CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         if (state.recoveryJoining) {
             CbText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
