@@ -88,10 +88,12 @@ class DesktopActionOptionsRequestTest {
     @Test fun `actual wire keeps unknown letter references and ordinary English has no invented choice`() = runBlocking {
         val rule = ActionOptionsFormat("<choices>", "</choices>", "", ActionOptionLabels.LETTERS)
         val references = listOf("Let's go with B and wait quietly.", "She suggested A so we will wait quietly.",
-            "She suggested I so we will wait quietly.", "I'll open a window while we're waiting nearby.")
+            "She suggested I so we will wait quietly.", "a 然后静静地等待门口下一轮反应。",
+            "I'll open a window while we're waiting nearby.")
         for (reference in references) fixture { f ->
             val count = if ("suggested I" in reference) 9 else 2
-            val menu = ('A' until ('A'.code + count).toChar()).joinToString("\n") { "$it) SOURCE_OPTION_$it" }
+            val start = if (reference.startsWith("a ")) 'a' else 'A'
+            val menu = (start until (start.code + count).toChar()).joinToString("\n") { "$it) SOURCE_OPTION_$it" }
             f.add(MessageRole.USER, ordinary)
             val before = f.add(MessageRole.ASSISTANT, "Story before choices.\n<choices>\n$menu\n</choices>")
             val source = before.copy(actionOptionsFormat = rule)
