@@ -13,7 +13,7 @@ jobs:
       matrix:
         api: [26, 30]
     env:
-      SOURCE: 268a91fd738c7f84b04d4047ea94ef80faa6431b
+      SOURCE: fd287f8e7a4055350c9bb8ffcc184831ff97b55c
       API: ${{ matrix.api }}
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
@@ -68,7 +68,7 @@ jobs:
               target.parent.mkdir(parents=True, exist_ok=True)
               shutil.copy2(path, target)
               cases.extend(ET.parse(path).iter('testcase'))
-          assert len(cases) == 20 and 'deletingRepliesKeepsSharedSaveSlotImageUntilItsLastReference' in {case.attrib['name'] for case in cases}
+          assert len(cases) == 22 and 'deletingRepliesKeepsSharedSaveSlotImageUntilItsLastReference' in {case.attrib['name'] for case in cases}
           assert all(case.find(node) is None for case in cases for node in ('failure', 'error', 'skipped'))
           PY
       - uses: actions/upload-artifact@v4
