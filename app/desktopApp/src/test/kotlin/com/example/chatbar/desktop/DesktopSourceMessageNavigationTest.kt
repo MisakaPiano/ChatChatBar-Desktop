@@ -139,4 +139,29 @@ class DesktopSourceMessageNavigationTest {
     @Test fun `gallery source action loads old history and scrolls the real primary panel`() = runBlocking(edt) {
         sourceThroughPanel(old = true)
     }
+
+    @Test fun `pending source target rejects stale capture and stale completion without affecting another session`() = runBlocking(edt) {
+        fixture { app, count ->
+            val controller = app.primaryChatController
+            assertTrue(controller.revealMessage("s", "m${count - 21}"))
+            val first = assertNotNull(controller.state.value.messageRevealRequest)
+            assertNull(controller.submitReadingPosition(ChatScrollPosition("s", "m${count - 1}", 0, 17, 0)))
+            assertEquals(first.position, controller.state.value.viewportRestorePosition)
+            assertTrue(controller.revealMessage("s", first.position.anchorMessageId!!))
+            val second = assertNotNull(controller.state.value.messageRevealRequest)
+            assertNotEquals(first.requestId, second.requestId)
+            controller.completeMessageReveal(first.requestId)
+            assertTrue(controller.state.value.messageRevealRequest!!.pending)
+            controller.completeMessageReveal(second.requestId)
+            assertFalse(controller.state.value.messageRevealRequest!!.pending)
+            assertNotNull(controller.submitReadingPosition(ChatScrollPosition("s", "m${count - 1}", 0, 17, 0)))
+            val cardId = controller.state.value.selectedSession!!.characterCardId
+            app.chatRepository.createSession(ChatSession("other", cardId, "Synthetic other", createdAt = 2, updatedAt = 2))
+            controller.selectSession("other")
+            controller.completeMessageReveal(second.requestId)
+            assertNull(controller.state.value.messageRevealRequest)
+            assertEquals("other", controller.state.value.selectedSession!!.id)
+            assertEquals("Unsent source-navigation draft", app.chatRepository.getSessionDraft("s"))
+        }
+    }
 }

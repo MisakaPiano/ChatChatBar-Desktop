@@ -6,6 +6,11 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopSessionCommitJournalTest {
+    private fun evidence(root: Path): Map<String, List<Byte>> = Files.walk(root).use { paths ->
+        paths.filter { Files.isRegularFile(it) }.toList().associate {
+            root.relativize(it).toString() to Files.readAllBytes(it).toList()
+        }
+    }
     private suspend fun fixture(test: suspend (Path, Path, DesktopDataOperationCoordinator) -> Unit) {
         val base = Files.createTempDirectory("session-journal-")
         val root = Files.createDirectory(base.resolve("root"))
@@ -33,6 +38,36 @@ class DesktopSessionCommitJournalTest {
         DesktopSessionCommitJournal(root).recover()
         assertFalse(DesktopSessionCommitJournal(root).hasPending())
         assertEquals(DesktopDataOperationCoordinatorState.OPEN, gate.state)
+    } }
+
+    @Test fun `completed transaction retains recovery evidence without replaying it over later live data`(): Unit = runBlocking { fixture { root, staged, gate ->
+        val relative = "entities/chat_sessions/session.json"
+        val live = put(root, relative, "old synthetic session")
+        val expected = mapOf(relative to DesktopArchiveFiles.hash(live, 1024))
+        gate.withExclusiveMaintenance {
+            DesktopSessionCommitJournal(root).commit(mapOf(relative to put(staged, "next", "new synthetic session")), expected)
+        }
+        val home = root.resolve("backups/.restore-session.tmp")
+        val completed = Files.newDirectoryStream(home, "done-*").use { it.toList().single() }
+        assertEquals("old synthetic session", Files.readString(completed.resolve("0.old")))
+        assertEquals("new synthetic session", Files.readString(completed.resolve("0.next")))
+        assertTrue(Files.exists(completed.resolve("intent.json")))
+        assertTrue(Files.exists(completed.resolve("committed")))
+        val retained = evidence(home)
+        // Completed evidence is not an instruction to undo legitimate work done after publication.
+        Files.writeString(live, "later synthetic user edit")
+        DesktopSessionCommitJournal(root).recover()
+        assertEquals("later synthetic user edit", Files.readString(live))
+        assertFalse(DesktopSessionCommitJournal(root).hasPending())
+        assertEquals(retained, evidence(home))
+
+        val incomplete = Files.createDirectory(home.resolve("active-synthetic-preparation"))
+        Files.writeString(incomplete.resolve("0.old"), "uncommitted preparation evidence")
+        val withPreparation = evidence(home)
+        DesktopSessionCommitJournal(root).recover()
+        assertFalse(DesktopSessionCommitJournal(root).hasPending())
+        assertEquals(withPreparation, evidence(home), "No intent means no permission to publish or sweep the preparation")
+        assertEquals("later synthetic user edit", Files.readString(live))
     } }
 
     @Test fun `failure restores all old files and removes only newly published files`(): Unit = runBlocking { fixture { root, staged, gate ->

@@ -161,7 +161,11 @@ internal fun rememberDesktopChatViewport(
     state: DesktopPrimaryChatState, mapping: DesktopChatTimelineMapping,
     controller: DesktopPrimaryChatController, streamRevision: Pair<String?, String?>,
 ): DesktopChatViewportState {
-    val viewport = remember(state.selectedSession?.id) { DesktopChatViewportState(state.selectedSession?.id, mapping) }
+    // Re-enter the existing restoration lifecycle for each explicit navigation, including the same
+    // message twice. Old pagination/follow-bottom effects then belong to the disposed viewport only.
+    val viewport = remember(state.selectedSession?.id, state.messageRevealRequest?.requestId) {
+        DesktopChatViewportState(state.selectedSession?.id, mapping)
+    }
     val latestStreamRevision by rememberUpdatedState(streamRevision)
     SideEffect { viewport.mapping = mapping }
     DisposableEffect(viewport, controller) {
@@ -171,11 +175,14 @@ internal fun rememberDesktopChatViewport(
         viewport.restoring = true
         try {
             viewport.awaitLayout()
-            val target = viewport.mapping.initialTarget(state.viewportRestorePosition)
-            if (state.viewportRestorePosition == null) viewport.bottom(animated = false)
+            val reveal = state.messageRevealRequest?.takeIf { it.pending && it.position.sessionId == viewport.sessionId }
+            val position = reveal?.position ?: state.viewportRestorePosition
+            val target = viewport.mapping.initialTarget(position)
+            if (position == null) viewport.bottom(animated = false)
             else target?.let { viewport.list.scrollToItem(it.index, it.offset) }
             viewport.followingBottom = viewport.atBottom()
             viewport.ready = true
+            reveal?.let { controller.completeMessageReveal(it.requestId) }
         } finally { viewport.restoring = false }
     }
     LaunchedEffect(viewport) {

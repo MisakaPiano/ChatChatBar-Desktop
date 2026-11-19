@@ -41,6 +41,13 @@ import kotlinx.coroutines.sync.withLock
 
 internal data class DesktopPrimaryChoice(val id: String, val label: String)
 
+/** Explicit UI navigation, separate from continuously captured reading positions. */
+internal data class DesktopMessageRevealRequest(
+    val position: ChatScrollPosition,
+    val requestId: String = UUID.randomUUID().toString(),
+    val pending: Boolean = true,
+)
+
 internal data class DesktopSessionGreetingSelection(
     val cardId: String,
     val cardName: String,
@@ -77,6 +84,7 @@ internal data class DesktopPrimaryChatState(
     val readingPosition: ChatScrollPosition? = null,
     // A same-process return may restore an accepted snapshot whose write is still pending.
     val viewportRestorePosition: ChatScrollPosition? = null,
+    val messageRevealRequest: DesktopMessageRevealRequest? = null,
     val readingPositionError: Boolean = false,
     val messageWindowAnchorId: String? = null,
     val messageWindowRevision: Long = 0,
@@ -271,10 +279,22 @@ internal class DesktopPrimaryChatController(
 
     fun submitReadingPosition(snapshot: ChatScrollPosition): ChatScrollPosition? = synchronized(readingLock) {
         if (snapshot.sessionId in deletingSessions) return@synchronized null
+        // The outgoing list may still report its old viewport while the new page enters composition.
+        // It must not replace the immutable target of an explicit source-message navigation.
+        if (state.value.messageRevealRequest?.let { it.pending && it.position.sessionId == snapshot.sessionId } == true)
+            return@synchronized null
         updateMessageWindowAnchor(snapshot.sessionId, snapshot.anchorMessageId)
         readingPositions.submit(snapshot)?.also { accepted ->
             mutableState.update { if (it.selectedSession?.id == accepted.sessionId)
                 it.copy(viewportRestorePosition = accepted) else it }
+        }
+    }
+
+    fun completeMessageReveal(requestId: String) = synchronized(readingLock) {
+        mutableState.update { current ->
+            val request = current.messageRevealRequest
+            if (request != null && request.requestId == requestId && request.position.sessionId == current.selectedSession?.id)
+                current.copy(messageRevealRequest = request.copy(pending = false)) else current
         }
     }
 
@@ -537,12 +557,16 @@ internal class DesktopPrimaryChatController(
         }
     }
 
-    private fun applyMessageWindow(page: ChatMessagePage, anchor: String?, preserveViewport: Boolean = true) {
+    private fun applyMessageWindow(page: ChatMessagePage, anchor: String?, preserveViewport: Boolean = true,
+        reveal: Boolean = false) {
         mutableState.update { it.copy(messages = page.messages, hasOlderMessages = page.hasOlder,
             hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null,
             viewportRestorePosition = anchor?.let { target -> ChatScrollPosition(it.selectedSession!!.id, target,
                 page.messages.indexOfFirst { message -> message.id == target }.coerceAtLeast(0),
                 if (preserveViewport && it.viewportRestorePosition?.anchorMessageId == target) it.viewportRestorePosition.scrollOffset else 0, 0) },
+            messageRevealRequest = if (reveal && anchor != null) DesktopMessageRevealRequest(ChatScrollPosition(
+                it.selectedSession!!.id, anchor, page.messages.indexOfFirst { message -> message.id == anchor }, 0, 0))
+                else it.messageRevealRequest,
             messageWindowAnchorId = anchor, messageWindowRevision = it.messageWindowRevision + 1) }
     }
 
@@ -559,7 +583,7 @@ internal class DesktopPrimaryChatController(
                 if (message.sessionId != sessionId) return@withLock
                 val page = chats.getInitialMessagePage(sessionId, messageId)
                 if (page.messages.none { it.id == messageId }) return@withLock
-                synchronized(readingLock) { applyMessageWindow(page, messageId, preserveViewport = false) }
+                synchronized(readingLock) { applyMessageWindow(page, messageId, preserveViewport = false, reveal = true) }
                 found = true
             }
         }
@@ -1446,6 +1470,7 @@ internal class DesktopPrimaryChatController(
                             hasNewerMessages = page.hasNewer,
                             readingPosition = if (sameSession) current.readingPosition else position,
                             viewportRestorePosition = if (sameSession) current.viewportRestorePosition else restorePosition,
+                            messageRevealRequest = if (sameSession) current.messageRevealRequest else null,
                             readingPositionError = if (sameSession) current.readingPositionError else readingPositions.hasError(id),
                             messageWindowAnchorId = anchor?.takeIf { a -> page.messages.any { it.id == a } }
                                 ?: page.messages.lastOrNull()?.id,
