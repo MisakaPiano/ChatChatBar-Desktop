@@ -124,3 +124,62 @@ jobs:
         if: always()
         working-directory: app
         run: bash ./gradlew :app:compileLanPreviewKotlin :desktopApp:compileKotlin --continue --no-daemon --stacktrace
+  metadata-text-scale:
+    needs: metadata-enrollment
+    runs-on: ubuntu-latest
+    timeout-minutes: 36
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Execute exact text-scale test with a 256 MiB worker heap
+        working-directory: app
+        run: |
+          cat > "$RUNNER_TEMP/metadata-text-scale.gradle" <<'GROOVY'
+          import org.gradle.api.tasks.testing.Test
+          gradle.projectsEvaluated {
+              gradle.rootProject.project(':sharedCore').tasks.named('test', Test).configure {
+                  minHeapSize = '64m'
+                  maxHeapSize = '256m'
+                  maxParallelForks = 1
+                  systemProperty 'ccb.lan.metadata.scale', 'unicode24MiB'
+              }
+          }
+          GROOVY
+          bash ./gradlew -I "$RUNNER_TEMP/metadata-text-scale.gradle" :sharedCore:test \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState' \
+            --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Verify the original scaled case and measurement
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          cls = 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest'
+          method = 'oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState'
+          directory = Path('app/sharedCore/build/test-results/test')
+          path = directory / ('TEST-' + cls + '.xml')
+          assert set(directory.glob('TEST-*.xml')) == {path}
+          raw = path.read_bytes()
+          assert not any(token in raw.upper() for token in (b'\x00', b'<!DOCTYPE', b'<!ENTITY'))
+          suite = ET.fromstring(raw)
+          assert suite.tag == 'testsuite' and suite.get('name') == cls
+          assert [suite.get(key) for key in ('tests', 'failures', 'errors', 'skipped')] == ['1', '0', '0', '0']
+          cases = list(suite.iter('testcase'))
+          assert len(cases) == 1 and cases[0].get('name') == method and cases[0].get('classname') == cls
+          assert not any(node.tag in ('failure', 'error', 'skipped') for node in suite.iter())
+          markers = [line for node in suite.findall('system-out') for line in (node.text or '').splitlines()
+                     if line.startswith('SYNTHETIC_METADATA_SCALE_V1 ')]
+          assert len(markers) == 1 and ' mode=unicode24MiB ' in markers[0]
+          print(markers[0])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metadata-text-scale-original-result
+          path: app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.xml

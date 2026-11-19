@@ -5,7 +5,7 @@ description: Maintain app-owned Android/Desktop device groups, LAN/cloud/file ci
 
 # LAN Sync
 
-- `.github/workflows/cloud-metadata-enrollment.yml` selects exact founder, single-conversation checkpoint/cold-reopen, metadata write, authorized WAL recovery, retained founder invitation and same-group automatic reception cases. It retains original XML before compiling both platform entries. Synthetic JVM results do not replace GB-attachment, native packaged-app or physical-device evidence.
+- `.github/workflows/cloud-metadata-enrollment.yml` selects exact founder, single-conversation checkpoint/cold-reopen, metadata write, authorized WAL recovery, retained founder invitation and same-group automatic reception cases. It retains original XML before compiling both platform entries. After both succeed, a 256 MiB worker runs the same conversation case in its explicit text-scale mode with at least 24 MiB of synthetic message text. Preserve the separate XML and measurements for that run, alongside the separate GB-attachment, native packaged-app and physical-device evidence.
 
 - `.github/workflows/cloud-studio-wire-compat.yml` runs the synthetic Studio wire graph, immutable legacy/current pacing-body and native publication contracts in `LanSyncStudioCurrentTest`; it neither reads bundled presets nor replaces actual retained-platform upgrade evidence.
 - Studio current wire normalization preserves the original presence of the later `batchPacing` field in Draft, Undo.draft and each timeline entry. Graph current/history equivalence fills defaults only in temporary comparison values; signed historical bodies and the global comparison/hash algorithm keep their existing identity.

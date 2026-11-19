@@ -53,6 +53,15 @@ class LanSyncAppliedSourceFilesTest {
                 assertTrue(actual.snapshot.records.all { it.text("name") == "新卡" })
             }
             assertEquals(authorization, Files.readString(directory.resolve("authorized")))
+            val journalBytes = Files.readAllBytes(journal)
+            Files.write(journal, journalBytes + '\n'.code.toByte())
+            assertEquals("SYNC_JOURNAL_DAMAGED", assertFailsWith<IllegalArgumentException> { reopened.retire(transaction) }.message)
+            assertTrue(Files.isRegularFile(directory.resolve("0.old")))
+            assertTrue(Files.isRegularFile(directory.resolve("0.new")))
+            assertFalse(Files.exists(directory.resolve("retired")))
+            Files.write(journal, journalBytes)
+            reopened.retire(transaction)
+            assertEquals(post, reopened.appliedSourceFiles(transaction, before.second))
         } finally { check(root.toFile().deleteRecursively()) }
     }
 

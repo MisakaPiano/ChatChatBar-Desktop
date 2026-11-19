@@ -465,9 +465,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     fun retire(transactionId: String) {
         require(transactionId.matches(Regex("[a-f0-9-]{36}")))
         val transaction = stateRoot.resolve("transaction-$transactionId")
-        if (!Files.exists(transaction.resolve("applied")) || Files.exists(transaction.resolve("retired"))) return
-        val journal = requireNotNull(LanSyncJsonFiles.read(transaction.resolve("journal.json"), LanSyncJournal.serializer()))
-        require(journal.transaction == transactionId)
+        if (!applied(transactionId) || Files.exists(transaction.resolve("retired"))) return
+        val journal = readAuthorizedJournal(transaction)
         val payloads = journal.entries.flatMap { entry -> listOfNotNull(
             entry.oldHash?.let { transaction.resolve("${entry.index}.old") to it },
             entry.newHash?.let { transaction.resolve("${entry.index}.new") to it }) }

@@ -163,34 +163,60 @@ class LanSyncGroupEnrollmentTest {
     }
 
     @Test fun oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState() = withFixture { f ->
+        val scaleMode = System.getProperty("ccb.lan.metadata.scale")
+        require(scaleMode == null || scaleMode == "unicode24MiB") { "SYNTHETIC_METADATA_SCALE_MODE" }
+        val scaled = scaleMode != null
+        val workerHeap = Runtime.getRuntime().maxMemory()
+        val mib = 1024L * 1024
+        if (scaled) require(workerHeap in (240 * mib)..(256 * mib)) { "SYNTHETIC_METADATA_SCALE_HEAP" }
+        val messageCount = if (scaled) 96 else 5
+        val repetitions = if (scaled) 16_384 else 512
+        val defaultBudget = LanSyncMetadataBudget()
+        val measuring = if (scaled) defaultBudget else LanSyncMetadataBudget(maximumDecodedCost = mib)
+        val originalHashes = linkedMapOf<String, String>()
+        val messageHashes = linkedMapOf<String, String>()
+        var rawBytes = 0L
+        var rawCost = 0L
+        var largestRawCost = 0L
+        fun measureSource(file: Path) {
+            val size = Files.size(file)
+            val relative = f.data.relativize(file).toString().replace('\\', '/')
+            originalHashes[relative] = LanSyncResourceStore.hashFile(file, size)
+            rawBytes = lanSyncAddLength(rawBytes, size)
+            val cost = measuring.validate(file)
+            rawCost = lanSyncAddLength(rawCost, cost)
+            largestRawCost = maxOf(largestRawCost, cost)
+        }
         val unit = "conversation/session"
         val sessionFile = f.data.resolve("entities/chat_sessions/session.json")
         Files.createDirectories(sessionFile.parent)
         LanSyncJsonFiles.write(sessionFile, ChatSession.serializer(), ChatSession("session", "card", "合成会话",
             createdAt = 1, updatedAt = 1))
-        val messages = (1..5).map { index ->
-            ChatMessage("message-$index", "session", MessageRole.USER, "第 $index 段：" + "合成内容😀".repeat(512),
+        measureSource(sessionFile)
+        for (index in 1..messageCount) {
+            val message = ChatMessage("message-$index", "session", MessageRole.USER, "第 $index 段：" + "合成内容😀".repeat(repetitions),
                 createdAt = index.toLong(), updatedAt = index.toLong())
-        }
-        val messagePaths = messages.map { message ->
             val path = f.data.resolve("entities/chat_messages/${message.sessionId}_${message.id}.json")
             Files.createDirectories(path.parent)
             LanSyncJsonFiles.write(path, ChatMessage.serializer(), message)
-            path
+            messageHashes[message.id] = lanSyncHash(message.content.toByteArray(Charsets.UTF_8))
+            measureSource(path)
         }
-        val uncapped = LanSyncMetadataBudget(maximumDecodedCost = 1024 * 1024)
-        val rawCosts = (messagePaths + listOf(sessionFile)).map(uncapped::validate)
-        val budget = LanSyncMetadataBudget(maximumDecodedCost = rawCosts.max() + 1024)
-        assertTrue(rawCosts.sum() > budget.maximumDecodedCost)
+        val budget = if (scaled) defaultBudget else LanSyncMetadataBudget(maximumDecodedCost = largestRawCost + 1024)
+        assertTrue(largestRawCost <= budget.maximumDecodedCost && rawCost > budget.maximumDecodedCost)
+        if (scaled) assertTrue(rawBytes >= 24 * mib && rawCost >= 72 * mib)
         val owner = f.service(metadataBudget = budget)
         val draft = owner.prepare(f.request, SyncRootGroupCreateAdmission {})
         val node = owner.activate(draft, LanSyncGroupRecoverySavedAdmission {})
         val view = node.inspect()
         val before = requireNotNull(view.plan).before
         val expectedRows = before.units().getValue(unit).sortedBy { it.key }
-        assertEquals(messages.size + 1, expectedRows.size)
-        assertEquals(messages.associate { it.id to it.content },
-            expectedRows.filter { it.type == "chat_messages" }.associate { it.id to it.text("content") })
+        assertEquals(messageCount + 1, expectedRows.size)
+        assertTrue(before.resources.isEmpty())
+        val capturedHashes = expectedRows.asSequence().filter { it.type == "chat_messages" }.associate { record ->
+            record.id to lanSyncHash(requireNotNull(record.text("content")).toByteArray(Charsets.UTF_8))
+        }
+        assertTrue(messageHashes == capturedHashes, "The captured synthetic message IDs and text hashes must match")
 
         val operation = SyncStoreId.random()
         val commit = node.commit(view.review(setOf(unit)), operation = operation)
@@ -204,7 +230,7 @@ class LanSyncGroupEnrollmentTest {
         assertTrue(usage.indexCost in 1..budget.maximumIndexCost)
         val codec = LanSyncGroupUnitCodec(Files.createDirectory(f.workspaceRoot.resolve("unit-readback")), metadataBudget = budget)
         val unitBody = codec.readCached(f.workspace.resourceStore, unit, change)
-        assertEquals(expectedRows, unitBody.payload.records)
+        assertTrue(expectedRows == unitBody.payload.records, "The signed unit must retain every synthetic record")
         assertEquals(before.hashes().getValue(unit), unitBody.valueHash)
         assertEquals(LanSyncGroupMembership.identity(expectedRows), unitBody.membership)
         assertEquals(identity.sha256, LanSyncResourceStore.hashFile(path, identity.length))
@@ -214,6 +240,9 @@ class LanSyncGroupEnrollmentTest {
         assertEquals(commit.publication.metadata.descriptor, receipt.metadata)
         assertEquals(runtime.localTarget, receipt.target)
         val checkpoint = requireNotNull(f.workspace.recovery.read(commit.entry.request.sourceCheckpoint))
+        val retainedOriginals = linkedMapOf<String, String>()
+        f.workspace.recovery.originals(checkpoint) { original, _ -> retainedOriginals[original.relative] = original.hash }
+        assertTrue(originalHashes == retainedOriginals, "The sealed checkpoint must retain every exact synthetic source file")
         owner.close()
         val cold = f.service(metadataBudget = budget)
         val reopened = requireNotNull(cold.open())
@@ -223,8 +252,14 @@ class LanSyncGroupEnrollmentTest {
         assertEquals(setOf(commit.entry.version.reference()), state.units.getValue(unit).frontiers)
         assertEquals(unitBody.valueHash, state.units.getValue(unit).valueHash)
         val history = reopened.browseRecovery(checkpoint.transaction).units.getValue(unit).sortedBy { it.key }
-        assertEquals(expectedRows, history)
-        assertEquals(before, requireNotNull(reopened.inspect().plan).before)
+        assertTrue(expectedRows == history, "The reopened checkpoint must retain every synthetic record")
+        assertTrue(before == requireNotNull(reopened.inspect().plan).before, "Cold native reopen must preserve the exact synthetic snapshot")
+        if (scaled) println("SYNTHETIC_METADATA_SCALE_V1 mode=unicode24MiB workerHeapBytes=$workerHeap records=${usage.records}" +
+            " messages=$messageCount rawUtf8Bytes=$rawBytes aggregateRawCost=$rawCost largestRawCost=$largestRawCost" +
+            " recordWindow=${budget.maximumDecodedCost} largestUnitRecordCost=${usage.largestRecordCost}" +
+            " indexWindow=${budget.maximumIndexCost} unitIndexCost=${usage.indexCost}" +
+            " unitBytes=${identity.length} unitSha256=${identity.sha256} valueHash=${unitBody.valueHash}" +
+            " membershipSha256=${unitBody.membership.sha256} checkpointSha256=${checkpoint.snapshotHash}")
     }
 
     @Test fun preparedGroupNeedsSavedCodeAndNormalReopenUsesOnlyDailyCustody() = withFixture { f ->
