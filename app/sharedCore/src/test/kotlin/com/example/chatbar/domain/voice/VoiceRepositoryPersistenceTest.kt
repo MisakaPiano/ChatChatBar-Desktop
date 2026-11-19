@@ -11,6 +11,25 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 class VoiceRepositoryPersistenceTest {
+    @Test fun `explicit version anchor proves old recording ownership even when alternative bodies are identical`() = runBlocking {
+        val root = Files.createTempDirectory("explicit-anchor-same-content-")
+        try {
+            val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            val body = "<n=\"甲\"/>[同一句]()"
+            val message = ChatMessage("message", "session", MessageRole.ASSISTANT, body,
+                alternatives = listOf(body, body), alternativeVersionIds = listOf("a", "b"),
+                currentAlternativeIndex = 1, currentAlternativeVersionId = "b", createdAt = 1, updatedAt = 1)
+            val anchor = repo.ensureAnchorsForVersion(message, "b", body).single()
+            val old = GeneratedVoiceMessage.create("session", message.id, null, anchor.anchor.id, 0, "DIALOGUE", "甲", "同一句",
+                "同一句", "同一句", "person", "甲", FishAudioVoiceBinding("synthetic", "Synthetic"), "synthetic", "synthetic-not-opened.mp3", 100, 100)
+            repo.save(old); repo.placementsForMessage(message)
+            val migrated = assertNotNull(VoiceMessageRepository(JsonFileStorage(root), strictReads = true).get(old.id))
+            assertEquals("b", migrated.messageVersionId)
+            assertEquals(false, migrated.desktopVersionOwnershipUncertain)
+            assertEquals(listOf(old.id), repo.deleteForRemovedVersions(message, MessageAlternativeVersionPolicy.remove(message, "b")!!).map { it.id })
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun `uncertain legacy ownership survives reload and later source edits without authorizing pruning`() = runBlocking {
         val root = Files.createTempDirectory("uncertain-version-repository-")
         try {

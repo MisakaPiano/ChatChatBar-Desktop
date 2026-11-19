@@ -409,7 +409,7 @@ class VoiceMessageRepository(
                         state.sessionId == message.sessionId && state.anchors.any { it.id == anchorId } }
                 }
                 val uniqueVersion = VoiceMessageVersionPolicy.uniqueLegacyVersionId(message, voice, ownershipState)
-                val versionId = VoiceMessageVersionPolicy.inferLegacyVersionId(
+                val versionId = if (strictReads && uniqueVersion != null) uniqueVersion else VoiceMessageVersionPolicy.inferLegacyVersionId(
                     message = message,
                     voice = voice,
                     legacyState = if (strictReads) ownershipState else legacyState

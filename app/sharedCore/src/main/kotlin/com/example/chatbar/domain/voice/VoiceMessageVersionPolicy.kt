@@ -78,6 +78,9 @@ object VoiceMessageVersionPolicy {
     fun uniqueLegacyVersionId(message: ChatMessage, voice: GeneratedVoiceMessage, legacyState: VoiceAnchorState?): String? {
         val versions = MessageAlternativeVersionPolicy.versions(message)
         if (voice.anchorId != null && legacyState?.anchors?.any { it.id == voice.anchorId } == true) {
+            legacyState.messageVersionId?.let { explicit ->
+                if (versions.any { it.id == explicit && it.content == legacyState.displayContentSnapshot }) return explicit
+            }
             return versions.singleOrNull { it.content == legacyState.displayContentSnapshot }?.id
         }
         return versions.filter { versionContainsVoice(it, voice) }.singleOrNull()?.id
