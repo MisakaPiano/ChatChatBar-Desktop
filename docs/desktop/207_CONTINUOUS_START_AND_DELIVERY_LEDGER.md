@@ -1,3 +1,7 @@
+## 2026-11-19：角色草稿完整CI原件成功／叙事和行动具体后继云验复审中
+
+角色草稿PR6/52aa完整44515825696原件成功：Windows3067/28旧skip名单精确相同、独立proxy11/Studio7、shared1387原XML与Android588原HTML；checkout双parent及synthetic树核同，最终独审full followup待。双模式旧04e完整44515833829亦成功（shared1392、Windows3067/28skip），只保旧head范围；新e5707精确接上游e4657/1aec9d30，保开头标签示例及行内代码，新44521542306/44521552185待。行动c793仅shared95过而Desktop回调编译失败；baa91修编译后269=shared95/Desktop174全过，仍有独审F1长closing展开入口/F2字母引用。600b真实UI/wire负控44521440965运行；806d92已最小修F1、精确采用0601/a1ce4b84 F2并接新叙事，补实际UI/语音来源/8备选存档/现代备份/Android facade，新44522478044及独审待。不把补码当通过。AI旧样张指导句恢复基底，规则放编辑UI和repair。PR5 Ready/公开1259/日常H及全部原手验子范围和其他任务保持；无安装发布合并，本机无Gradle付费。
+
 ## 2026-11-19：PR5完整工程Ready／角色草稿与双模式独审定向闭合；行动规则首增量云验
 
 DesktopPR5最终4486已Ready/open未合并：定向shared32+Desktop137全过，完整44511070443两job成功且原件/独审终核闭合；Windows主3063零失败、28既有skip名单逐项相同，独立packaged11和Studio7过，Linux1387原XML与Android588原HTML过（非Android原XML）。旧97单断言失败保历史，不跨轮相加。角色草稿52aa定向72全过、独审F1实际负控及补码闭合，ForkPR6草稿/full44515825696运行；双模式04e定向48（共享14/Desktop34）全过，负控4中3真实失败保留且独审闭合，ForkPR7草稿/full44515833829运行。二者不冒完整CI/人工。行动规则首完整c793隔离增量40文件已推：复用Android79a9中立blob，保旧显式与声明围栏、代码排除；规则卡传输/备选快照/请求捕获及chat/image/voice共享，保原光标撤销与source坐标，完成/Stop修复保选项。新44517960732与独审运行，未建actionPR/未记通过。Prompt限已采纳默认句和原repair helper。Androidr5固定root回执为工程Ready/待人验，JVM1575+1旧skip、两API同64合128执行；PR10/11 Ready未合并，root未观察实际交付，不套Desktop通过。当前公开1259、原手验子范围、其他tasks/日常H和资料均保持。
