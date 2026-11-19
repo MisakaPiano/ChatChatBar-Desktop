@@ -94,6 +94,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest'
           --tests 'com.example.chatbar.desktop.DesktopCharacterEditorControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopCharacterManualDraftAdmissionTest'
+          --tests 'com.example.chatbar.desktop.DesktopPostProcessComparisonTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
