@@ -230,8 +230,8 @@ internal fun DesktopFormatActionOptions(card: FormatCard, controller: DesktopFor
     val rule = card.actionOptionsFormat
     val effective = rule ?: RoleplayActionOptionsPolicy.defaultFormat
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StudioToggle(t(DesktopUiText.FORMAT_ACTION_RULE), rule != null) { enabled ->
-            controller.edit { it.copy(actionOptionsFormat = if (enabled) ActionOptionsFormat() else null) }
+        StudioToggle(t(DesktopUiText.FORMAT_ACTION_RULE), rule != null) {
+            controller.edit { it.copy(actionOptionsFormat = if (it.actionOptionsFormat == null) ActionOptionsFormat() else null) }
         }
         StatusText(t(DesktopUiText.FORMAT_ACTION_RULE_HINT))
         if (rule != null) {
