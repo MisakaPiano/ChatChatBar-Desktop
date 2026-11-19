@@ -1,0 +1,100 @@
+name: Android character draft save lifecycle
+on:
+  push:
+    branches: [validation/android-card-draft-save-20261119]
+permissions:
+  contents: read
+concurrency:
+  group: android-card-draft-save
+  cancel-in-progress: false
+jobs:
+  jvm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CHATBAR_VERSION_NAME: 1.4.12-card-draft-review
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+      DRAFT_CHECK_PHASE: jvm
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp validation/card_draft_save.py /tmp/card_draft_save.py
+      - uses: actions/checkout@v4
+        with:
+          ref: 781e3538bfc976d4a95d4782855d02d2a8423128
+          fetch-depth: 8
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: python /tmp/card_draft_save.py prepare
+      - run: python /tmp/card_draft_save.py jvm
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: card-draft-save-jvm-originals
+          path: card-draft-save-originals/
+          retention-days: 14
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - phase: negative-api30
+            api: 30
+          - phase: fixed-api26
+            api: 26
+          - phase: fixed-api30
+            api: 30
+    env:
+      CHATBAR_VERSION_NAME: 1.4.12-card-draft-review
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+      DRAFT_CHECK_PHASE: ${{ matrix.phase }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp validation/card_draft_save.py /tmp/card_draft_save.py
+      - uses: actions/checkout@v4
+        with:
+          ref: 781e3538bfc976d4a95d4782855d02d2a8423128
+          fetch-depth: 8
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: python /tmp/card_draft_save.py prepare
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          profile: pixel_2
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python /tmp/card_draft_save.py ${{ matrix.phase }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: card-draft-save-${{ matrix.phase }}-originals
+          path: card-draft-save-originals/
+          retention-days: 14
