@@ -38,9 +38,9 @@ class ChatHistoryActionWireTest {
     private fun u(text: String = independent) = row(MessageRole.USER, text)
 
     @Before fun surface() {
-        assumeTrue(BuildConfig.ISOLATED_ANDROID_TEST)
+        assumeTrue("Run with -PCHATBAR_ISOLATED_ANDROID_TEST=true on a clean emulator", BuildConfig.ISOLATED_ANDROID_TEST)
         val app = ChatBarApp.instance
-        check(app.packageName == BuildConfig.APPLICATION_ID)
+        check(app.packageName == BuildConfig.APPLICATION_ID && app.packageName.startsWith("com.example.chatbar."))
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         runBlocking { withTimeout(30000) { app.settingsRepository.isInitialized.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic action projection wire verification") } }
@@ -59,6 +59,14 @@ class ChatHistoryActionWireTest {
             verify("current-${UUID.randomUUID()}", listOf(a("OLD")), input) { wire, contents ->
                 assertTrue(wire.contains("OLD_LEFT")); assertTrue(contents.contains(input))
             }
+        }
+        val letterChoices = row(MessageRole.ASSISTANT, "我看向木门。\n<cyoa>\nA) Read the map\nB) Wait by the door\n</cyoa>")
+            .copy(actionOptionsFormat = ActionOptionsFormat("<cyoa>", "</cyoa>", "", ActionOptionLabels.LETTERS))
+        val reference = "Let's go with B and wait quietly."
+        verify("declared-letter-reference", listOf(letterChoices), reference) { wire, contents ->
+            assertTrue(wire.contains("A) Read the map"))
+            assertTrue(wire.contains("B) Wait by the door"))
+            assertTrue(contents.contains(reference))
         }
     }
     @Test fun historicalNumericReferenceProtectsEarlierButNotLaterIndependentOptions() {
@@ -150,15 +158,21 @@ class ChatHistoryActionWireTest {
     }
 
     @Test fun focusAndAdvanceKeepHistoryWrappingInTheRequestButNeverPersistTheEcho() {
-        val expected = "木门打开了。\n走廊里亮着灯。"
         for (mode in ChatNarrativeMode.entries) {
+            val history = listOf(row(MessageRole.ASSISTANT, "旧回复").copy(narrativeMode = mode))
+            val expected = "木门打开了。\n走廊里亮着灯。示例：`<历史回复 模式=\"${mode.shortLabel}\">`。"
             verify(
                 "history-echo-${mode.name}",
-                listOf(row(MessageRole.ASSISTANT, "旧回复").copy(narrativeMode = mode)),
+                history,
                 input = independent,
                 mode = mode,
                 echoedReply = expected
             ) { wire, _ ->
+                assertTrue(wire.contains(PromptTemplates.narrativeModeHistoryReply("旧回复", mode)))
+            }
+            val example = PromptTemplates.narrativeModeHistoryReply("这是一段标签示例。", mode) + "\n这里是示例后的正文。"
+            verify("history-example-${mode.name}", history, input = independent, mode = mode,
+                echoedReply = example, modelReplyOverride = example) { wire, _ ->
                 assertTrue(wire.contains(PromptTemplates.narrativeModeHistoryReply("旧回复", mode)))
             }
         }
@@ -166,12 +180,12 @@ class ChatHistoryActionWireTest {
 
     private fun verify(label: String, messages: List<ChatMessage>, input: String = "", regenerate: Boolean = false,
         exclude: Boolean = true, withCurrentImage: Boolean = false, mode: ChatNarrativeMode = ChatNarrativeMode.FOCUS,
-        echoedReply: String? = null, assertions: (String, List<String>) -> Unit) {
+        echoedReply: String? = null, modelReplyOverride: String? = null, assertions: (String, List<String>) -> Unit) {
         val app = ChatBarApp.instance
         val settings = runBlocking { app.settingsRepository.getAppSettings() }
         val server = MockWebServer()
         val fragments = if (echoedReply == null) listOf("Synthetic generated response") else {
-            val reply = PromptTemplates.narrativeModeHistoryReply(echoedReply, mode)
+            val reply = modelReplyOverride ?: PromptTemplates.narrativeModeHistoryReply(echoedReply, mode)
             listOf(reply.take(4), reply.drop(4))
         }
         val sse = fragments.mapIndexed { index, fragment ->
