@@ -129,6 +129,26 @@ class ChatHistoryActionWireTest {
         }
     }
 
+    @Test fun declaredAndLegacyFencesAreRemovedFromTheRequestButNestedExamplesStay() {
+        val legacy = "```行动选项\n1. LEGACY_MAP\n2. LEGACY_GUIDE\n```"
+        val custom = "~~~next sail\nA) CUSTOM_DOCK\nB) CUSTOM_WAIT\n~~~"
+        val sample = "````markdown\n```action choices\n1. EXAMPLE_LEFT\n2. EXAMPLE_RIGHT\n```\n````"
+        val customSource = row(MessageRole.ASSISTANT, "CUSTOM_STORY\n$custom").copy(
+            actionOptionsFormat = ActionOptionsFormat("~~~next sail", "~~~", "", ActionOptionLabels.LETTERS)
+        )
+        verify(
+            "legacy-and-configured-fences",
+            listOf(row(MessageRole.ASSISTANT, "LEGACY_STORY\n$legacy\n$sample"), customSource),
+            independent, exclude = false
+        ) { wire, _ ->
+            assertTrue(wire.contains("LEGACY_STORY"))
+            assertTrue(wire.contains("CUSTOM_STORY"))
+            assertFalse(wire.contains("LEGACY_MAP"))
+            assertFalse(wire.contains("CUSTOM_DOCK"))
+            assertTrue(wire.contains("EXAMPLE_LEFT"))
+        }
+    }
+
     @Test fun focusAndAdvanceKeepHistoryWrappingInTheRequestButNeverPersistTheEcho() {
         val expected = "木门打开了。\n走廊里亮着灯。"
         for (mode in ChatNarrativeMode.entries) {
