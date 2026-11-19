@@ -1,0 +1,69 @@
+name: Public signing and actual founder group delivered85 to86 V6 upgrade
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-delivered85-candidate86-v6-sign-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sign-and-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate fixed85 to86 public signing request
+        run: python3 -B tools/lan-next-control/candidate86_v6_control.py validate-sign --request .github/lan-delivered85-candidate86-v6-sign-request.json
+      - name: Authenticate actual raw artifact API ZIP and manifest before signing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/lan-next-control/candidate86_v6_control.py fetch-raw --request .github/lan-delivered85-candidate86-v6-sign-request.json --archive "$RUNNER_TEMP/candidate86-v6-original-raw.zip" --destination original --evidence original-evidence
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;36.0.0
+      - name: Assemble public blocks and require SDK v2 certificate identity zipalign and tamper rejection
+        run: python3 -B tools/lan-next-control/candidate86_v6_control.py verify --raw-dir original --request .github/lan-delivered85-candidate86-v6-sign-request.json --output candidate --build-tools "$ANDROID_HOME/build-tools/36.0.0" --control-sha "$GITHUB_SHA"
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Actual group seed85 preserve-data86 verifier and repeated group-page verifier
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          CCB_LAN_SYNTHETIC_UPGRADE_CLOUD: 'true'
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            python3 -B tools/lan-next-control/candidate86_v6_control.py upgrade --signed-dir candidate
+            python3 -B tools/lan-next-control/candidate86_v6_control.py ui --signed-dir candidate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ccb-lan-delivered85-candidate86-v6-evidence
+          path: |
+            original-evidence/*.json
+            candidate/*.json
+            candidate/*.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered85-candidate86-v6-verified-apks
+          path: |
+            candidate/base85.apk
+            candidate/seed85.apk
+            candidate/candidate86.apk
+            candidate/verify86.apk
+          if-no-files-found: error
