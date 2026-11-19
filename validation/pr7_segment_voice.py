@@ -1,8 +1,8 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'pr7-segment-voice';out.mkdir(exist_ok=True)
-SOURCE='efa6ffbb20cfc52096f0f5df03b41c419fc14e4a'
-BASE='3132f4658eb33cea3eee02ca432f1fbc526086ae'
+SOURCE='88ecf3e9638468fa492c34a3aeecc15acd849435'
+BASE='efa6ffbb20cfc52096f0f5df03b41c419fc14e4a'
 REPO='app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt'
 VM='app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt'
 def gradle(*args):return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace','--info','--console=plain'],cwd=root/'app')
@@ -37,7 +37,7 @@ elif phase=='fixed-jvm':
     r=gradle(*args);cases=report('fixed-jvm');assert r.returncode==0 and cases and all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='baseline-native':
     def run():
-        names='com.example.chatbar.ui.chat.ReplyAlternativeVoiceCleanupRuntimeTest#clearingLastTextSegmentCleansRemovedVersionVoiceAndAnchorFromBackup'
+        names='com.example.chatbar.ui.chat.ReplyAlternativeVoiceCleanupRuntimeTest#lastVersionDeletionFinishesVoiceCleanupAfterEditorCancellation'
         r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+names)
         cases=report('baseline-native',True);failed=[c for c in cases if c['failure']]
         assert r.returncode!=0 and len(cases)==1 and len(failed)==1
@@ -47,7 +47,7 @@ elif phase=='baseline-native':
 elif phase.startswith('fixed-native'):
     names='com.example.chatbar.ui.chat.ReplyAlternativeVoiceCleanupRuntimeTest,com.example.chatbar.data.repository.MomentImageCommitRuntimeTest,com.example.chatbar.ui.chat.FormatRepairRetryRuntimeTest,com.example.chatbar.ui.chat.ReplyMediaVersionControlsTest,com.example.chatbar.ui.moments.MomentPostRowLayoutTest'
     r=gradle(':app:connectedDebugAndroidTest','-Pandroid.testInstrumentationRunnerArguments.class='+names)
-    cases=report(phase,True);assert r.returncode==0 and len(cases)==32 and all(not c['failure'] and not c['skipped'] for c in cases)
+    cases=report(phase,True);assert r.returncode==0 and len(cases)==33 and all(not c['failure'] and not c['skipped'] for c in cases)
 elif phase=='package-metadata':
     src=root/'app/app/build/outputs/apk/debug/app-debug.apk'
     tools=sorted(pathlib.Path(os.environ['ANDROID_HOME']).glob('build-tools/*/apksigner'))[-1]
