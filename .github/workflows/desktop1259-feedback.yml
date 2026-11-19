@@ -53,6 +53,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopSessionImageGalleryTest'
           --tests 'com.example.chatbar.desktop.DesktopChatViewportTest'
           --tests 'com.example.chatbar.desktop.DesktopChatReadingLifecycleTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatFloatingNavigationTest'
           --tests 'com.example.chatbar.desktop.DesktopSessionDeletionTargetPresentationTest'
           --tests 'com.example.chatbar.desktop.DesktopSessionDeletionControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopPrimaryChatControllerTest'
