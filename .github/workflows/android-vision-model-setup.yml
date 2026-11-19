@@ -13,7 +13,7 @@ jobs:
       matrix:
         api: [26, 30]
     env:
-      SOURCE: 1dac6fd26a2e050014cab4fba11a3ec3a3c9762c
+      SOURCE: d425c865972cb28e2626d2afc6d73ad236a737ae
       API: ${{ matrix.api }}
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
@@ -71,8 +71,9 @@ jobs:
           expected = {
               'discoveryAndVisionUseTheCurrentExplicitConnectionWithoutReplacingPro',
               'separateVisionEndpointUsesItsOwnKeyAndProReceivesTheDescription',
+              'explicitVisionDoesNotFollowARedirectToAnotherPath',
           }
-          assert len(cases) == 2 and {case.attrib['name'] for case in cases} == expected
+          assert len(cases) == len(expected) and {case.attrib['name'] for case in cases} == expected
           assert all(case.find(node) is None for case in cases for node in ('failure', 'error', 'skipped'))
           PY
       - uses: actions/upload-artifact@v4
