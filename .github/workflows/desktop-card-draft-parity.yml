@@ -1,0 +1,50 @@
+name: Desktop character draft save parity
+on:
+  push:
+    branches: [codex/desktop-card-draft-parity-20261119]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-card-draft-parity-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical synthetic temporary directory and source proof
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-character-draft-parity'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class CardDraftFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([CardDraftFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'review-character-draft' | Out-Null
+          git rev-parse HEAD | Set-Content 'review-character-draft/source.txt'
+      - name: Verify actual character editor draft lifecycle
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-character-draft-original-results
+          path: |
+            app/desktopApp/build/test-results/test/
+            review-character-draft/
