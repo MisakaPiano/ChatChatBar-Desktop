@@ -13,7 +13,7 @@ jobs:
       matrix:
         suite: [jvm, api26, api30]
     env:
-      SOURCE: e40616b4167ba7ef66c45e3d263218b64053d5e3
+      SOURCE: 36c68af92bfeb44a3cb2a0568d90d43211d7a735
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
     steps:
