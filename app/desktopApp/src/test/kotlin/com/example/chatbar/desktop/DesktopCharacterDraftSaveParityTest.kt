@@ -29,6 +29,55 @@ class DesktopCharacterDraftSaveParityTest {
         extensions = """{"unknown_vendor":{"retained":[1,2,3]}}""", creatorNotes = "Original notes")
     private fun coldDrafts(app: DesktopAppContainer) = EditorDraftRepository(JsonFileStorage(app.appDataRoot))
 
+    @Test fun `ordinary edit cannot reinstall a retired resource session across obsolete draft admission`() = runBlocking {
+        fixture { app, _ -> coroutineScope {
+            val cleanupAdmitted = CompletableDeferred<Unit>()
+            val admissionCount = java.util.concurrent.atomic.AtomicInteger()
+            val armed = AtomicBoolean()
+            val gate = object : AppDataOperationGate {
+                override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                    if (armed.get() && admissionCount.incrementAndGet() == 2) cleanupAdmitted.complete(Unit)
+                    return operation()
+                }
+            }
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json, dataGate = gate)
+            val a = source(); app.characterRepository.save(a); editor.openExisting(a.id)
+            editor.edit { it.copy(creatorNotes = "Old persisted edit") }; editor.flushDraft()
+            editor.edit { it.copy(creatorNotes = a.creatorNotes) }
+            editor.flushDraft()
+            val oldSession = editor.state.value.draftSessionId
+            val captured = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
+            val editing = async(Dispatchers.Default) {
+                editor.edit {
+                    captured.complete(Unit)
+                    check(release.await(10, TimeUnit.SECONDS))
+                    it.copy(creatorNotes = "Accepted during cleanup admission")
+                }
+            }
+            try {
+                withTimeout(5_000) { captured.await() }
+                armed.set(true)
+                val saving = async(Dispatchers.Default) { editor.save() }
+                try {
+                    withTimeout(5_000) { cleanupAdmitted.await() }
+                    release.countDown(); editing.await()
+                    assertFalse(saving.await())
+                    armed.set(false)
+                    assertEquals(oldSession, editor.state.value.draftSessionId)
+                    editor.addTextDocument("after-edit.txt", "Retained after old-state writer")
+                    editor.flushDraft()
+                    val doc = editor.state.value.card!!.customDocuments.single()
+                    assertEquals("Retained after old-state writer", Files.readString(app.appDataRoot.resolve(doc.filePath)))
+                    val draft = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, a.id))
+                    assertEquals(doc, draft.characterPayload!!.customDocuments.single())
+                    assertEquals("Accepted during cleanup admission", draft.characterPayload!!.creatorNotes)
+                } finally { release.countDown(); saving.cancelAndJoin() }
+            } finally { release.countDown(); editing.cancelAndJoin(); editor.closeAndDrain() }
+        } }
+    }
+
     @Test fun `clean draft deletion cannot erase attachments accepted while its old directory is being retired`() = runBlocking {
         fixture { app, _ -> coroutineScope {
             val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
@@ -55,7 +104,6 @@ class DesktopCharacterDraftSaveParityTest {
                 val saving = async { editor.save() }
                 try {
                     withTimeout(5_000) { entered.await() }
-                    assertNotEquals(oldSession, editor.state.value.draftSessionId)
                     editor.addTextDocument("new.txt", "New accepted bytes")
                     val newDoc = editor.state.value.card!!.customDocuments.single()
                     assertTrue(editor.state.value.dirty)
@@ -64,6 +112,8 @@ class DesktopCharacterDraftSaveParityTest {
                     assertFalse(saving.await(), "A newer accepted edit remains pending for its own Save")
                     editor.flushDraft()
                     assertFalse(Files.exists(app.appDataRoot.resolve(oldPath)))
+                    assertTrue(Files.exists(app.appDataRoot.resolve(newDoc.filePath)), "Accepted new attachment was erased by old-session cleanup")
+                    assertNotEquals(oldSession, editor.state.value.draftSessionId)
                     val draft = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, a.id))
                     assertEquals(newDoc, draft.characterPayload!!.customDocuments.single())
                     assertEquals("New accepted bytes", Files.readString(app.appDataRoot.resolve(newDoc.filePath)))

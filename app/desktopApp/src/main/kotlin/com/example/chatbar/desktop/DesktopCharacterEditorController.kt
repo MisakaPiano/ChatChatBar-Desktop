@@ -340,35 +340,38 @@ internal class DesktopCharacterEditorController(
     fun switchMode(mode: CharacterEditMode) = edit { it.copy(editMode = mode) }
 
     fun edit(transform: (CharacterCard) -> CharacterCard) {
-        val current = _state.value
-        val card = current.card ?: return
-        if (current.busy) return
-        if (!current.dirty && current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
-            _state.value = current.copy(problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
-            return
+        synchronized(resourceMutationLock) {
+            val current = _state.value
+            val card = current.card ?: return
+            if (current.busy) return
+            if (!current.dirty && current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
+                _state.value = current.copy(problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
+                return
+            }
+            if (current.base?.isCommunityDownload == true && current.targetId != null) {
+                _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
+                return
+            }
+            val transformed = transform(card)
+            val next = if (!sameDocumentSources(transformed.customDocuments, card.customDocuments)) transformed.copy(
+                ragIndexStatus = RagIndexStatus.NOT_INDEXED.name,
+                ragIndexDone = 0, ragIndexTotal = transformed.customDocuments.size,
+                ragIndexMessage = null, ragIndexedAt = null,
+            ) else transformed
+            if (next == card) return
+            _state.value = current.copy(card = next,
+                stylePromptUndo = current.stylePromptUndo?.takeIf {
+                    next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
+                },
+                dirty = current.base == null || !sameEditableCard(next, current.base), draftPersisted = false,
+                problem = current.problem?.takeIf {
+                    it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED ||
+                        it == CharacterEditorProblem.RESOURCE_FAILED && current.resourceCleanupPending
+                }, detail = null)
+            scheduleDraft()
         }
-        if (current.base?.isCommunityDownload == true && current.targetId != null) {
-            _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
-            return
-        }
-        val transformed = transform(card)
-        val next = if (!sameDocumentSources(transformed.customDocuments, card.customDocuments)) transformed.copy(
-            ragIndexStatus = RagIndexStatus.NOT_INDEXED.name,
-            ragIndexDone = 0, ragIndexTotal = transformed.customDocuments.size,
-            ragIndexMessage = null, ragIndexedAt = null,
-        ) else transformed
-        if (next == card) return
-        _state.value = current.copy(card = next,
-            stylePromptUndo = current.stylePromptUndo?.takeIf {
-                next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
-            },
-            dirty = current.base == null || !sameEditableCard(next, current.base), draftPersisted = false,
-            problem = current.problem?.takeIf {
-                it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED ||
-                    it == CharacterEditorProblem.RESOURCE_FAILED && current.resourceCleanupPending
-            }, detail = null)
-        scheduleDraft()
     }
+
 
     /** A picker belongs to one draft lifetime and one existing person, never a list position. */
     fun bindFishVoice(draftSessionId: String, personId: String,
@@ -914,7 +917,7 @@ internal class DesktopCharacterEditorController(
         val nextSession = UUID.randomUUID().toString()
         val before = synchronized(resourceMutationLock) {
             val captured = _state.value
-            if (!needsCleanDraftCleanup(captured)) return@withLock true
+            if (!needsCleanDraftCleanup(captured)) return@withLock !captured.dirty
             // New edits/resources belong to a fresh directory while the old draft deletion suspends.
             if (!_state.compareAndSet(captured, captured.copy(draftSessionId = nextSession,
                     draftBasis = null, draftPersisted = false))) return@withLock false
