@@ -80,7 +80,8 @@ data class ModelConfig(
     val sourcePresetKey: String? = null,
     val sourcePresetVersion: Int? = null,
     val requiresExplicitApiKey: Boolean = false,
-    val createdAt: Long
+    val createdAt: Long,
+    val llmAccountId: String? = null
 ) {
     companion object {
         @OptIn(ExperimentalUuidApi::class)

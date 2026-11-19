@@ -24,13 +24,16 @@ import com.example.chatbar.domain.model.GeminiOpenAiEndpoint
 import com.example.chatbar.domain.model.ModelDiscoveryService
 import com.example.chatbar.domain.model.isSiliconFlowVisionApiBase
 import com.example.chatbar.domain.model.visionApiBase
-import com.example.chatbar.domain.model.withBoundVisionApiKey
+import com.example.chatbar.domain.model.canonicalLlmApiEndpoint
+import com.example.chatbar.data.local.entity.LlmApiAccount
 
 /**
  * 大模型连接设置编辑器 ViewModel
  */
 class ModelEditViewModel(private val modelId: String?) : ViewModel() {
     private val modelRepository = ChatBarApp.instance.modelRepository
+    private val llmAccounts = ChatBarApp.instance.llmApiAccountRepository
+    val apiAccounts = llmAccounts.accounts
 
     private val _modelConfig = MutableStateFlow<ModelConfig?>(null)
     val modelConfig: StateFlow<ModelConfig?> = _modelConfig.asStateFlow()
@@ -47,6 +50,9 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
         get() = baseUrlDraft
         set(value) {
             if (value != baseUrlDraft) invalidateModelDiscovery()
+            if (canonicalLlmApiEndpoint(value) != canonicalLlmApiEndpoint(baseUrlDraft)) {
+                apiKeyDraft = ""
+            }
             baseUrlDraft = value
         }
     private var apiKeyDraft by mutableStateOf("")
@@ -65,6 +71,8 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
     private val hasKeyForPreviousEndpoint: Boolean
         get() = apiKey.isNotBlank() && apiKeyForCurrentVision.isBlank()
     var modelName by mutableStateOf("")
+    var llmAccountId by mutableStateOf<String?>(null)
+        private set
     var templateType by mutableStateOf(ModelTemplate.OPENAI)
     var isMultimodal by mutableStateOf(false)
     var selectableForChat by mutableStateOf(true)
@@ -90,6 +98,15 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
     private var discoveryGeneration = 0L
     private val discoveryService = ModelDiscoveryService()
 
+    fun selectLlmAccount(account: LlmApiAccount?) {
+        if (llmAccountId == account?.id) return
+        invalidateModelDiscovery()
+        llmAccountId = account?.id
+        apiKey = ""
+        if (account != null) baseUrl = account.baseUrl
+        saveError = null
+    }
+
     private fun invalidateModelDiscovery() {
         discoveryGeneration++
         discoveryJob?.cancel()
@@ -114,17 +131,24 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
         modelDiscoveryError = null
         showModelPicker = true
         val generation = discoveryGeneration
+        val accountId = llmAccountId
         val url = baseUrl.trim()
         val key = apiKey
-        val allowsLegacyKey = _modelConfig.value?.requiresExplicitApiKey != true && isSiliconFlowVisionApiBase(url)
+        val requiresExplicitKey = _modelConfig.value?.requiresExplicitApiKey == true
         isDiscoveringModels = true
         discoveryJob = viewModelScope.launch {
             try {
                 val settings = ChatBarApp.instance.settingsRepository.getAppSettings()
-                val lookupKey = key.trim().ifEmpty {
-                    if (allowsLegacyKey) settings.siliconFlowApiKey.trim() else ""
+                val connection = accountId?.let {
+                    llmAccounts.connection(it) ?: throw IllegalArgumentException("所选对话 API 账户不可用")
                 }
-                val ids = discoveryService.fetch(url, lookupKey, settings.allowCleartextModelApi)
+                val discoveryKey = connection?.apiKey ?: if (requiresExplicitKey) key
+                    else ChatBarApp.instance.effectiveModelResolver.unboundLlmApiKey(key, url, settings)
+                val ids = discoveryService.fetch(
+                    connection?.account?.baseUrl ?: url,
+                    discoveryKey,
+                    settings.allowCleartextModelApi
+                )
                 if (generation == discoveryGeneration) {
                     discoveredModelIds = ids
                 }
@@ -168,8 +192,9 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
                 _modelConfig.value = config
                 if (config != null) {
                     displayName = config.displayName
-                    baseUrl = config.baseUrl
-                    apiKey = config.apiKey
+                    llmAccountId = config.llmAccountId
+                    baseUrl = config.llmAccountId?.let { llmAccounts.connection(it)?.account?.baseUrl } ?: config.baseUrl
+                    apiKey = config.apiKey.takeIf { config.llmAccountId == null }.orEmpty()
                     modelName = config.modelName
                     templateType = config.templateType
                     isMultimodal = config.isMultimodal
@@ -188,6 +213,7 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
      * 根据选择的模板，自动填充默认参数
      */
     fun applyTemplateDefaults(template: ModelTemplate) {
+        val accountBaseUrl = baseUrl.takeIf { llmAccountId != null }
         templateType = template
         customParamsMap.clear()
         
@@ -213,6 +239,7 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
                 modelName = ""
             }
         }
+        if (accountBaseUrl != null) baseUrl = accountBaseUrl
     }
 
     /**
@@ -232,7 +259,8 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
             original?.copy(
                 displayName = displayName,
                 baseUrl = baseUrl,
-                apiKey = apiKey.trim(),
+                apiKey = apiKey.trim().takeIf { llmAccountId == null }.orEmpty(),
+                llmAccountId = llmAccountId,
                 modelName = modelName,
                 templateType = templateType,
                 isMultimodal = isMultimodal,
@@ -244,7 +272,8 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
                 id = modelId ?: java.util.UUID.randomUUID().toString(),
                 displayName = displayName,
                 baseUrl = baseUrl,
-                apiKey = apiKey.trim(),
+                apiKey = apiKey.trim().takeIf { llmAccountId == null }.orEmpty(),
+                llmAccountId = llmAccountId,
                 modelName = modelName,
                 templateType = templateType,
                 isMultimodal = isMultimodal,
@@ -266,7 +295,7 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
                         val saved = modelRepository.getModel(config.visionModelId)
                             ?: throw IllegalArgumentException("已保存的视觉模型不存在，请重新选择")
                         val settings = ChatBarApp.instance.settingsRepository.getAppSettings()
-                        require(saved.withBoundVisionApiKey(settings) != null) {
+                        require(ChatBarApp.instance.effectiveModelResolver.boundVisionModel(saved.id, settings) != null) {
                             "请先给所选视觉模型填写它自己的 API Key，或使用图片解析模型的添加入口"
                         }
                         saved

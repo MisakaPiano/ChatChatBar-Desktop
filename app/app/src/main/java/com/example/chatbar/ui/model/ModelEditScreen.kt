@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.model.visionProviderLabel
+import com.example.chatbar.data.local.entity.LlmApiAccount
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.chatbar.data.local.entity.FormatPromptPosition
 import com.example.chatbar.data.local.entity.ModelTemplate
@@ -61,6 +62,7 @@ fun ModelEditScreen(
     viewModel: ModelEditViewModel = viewModel(key = modelId, factory = ModelEditViewModelFactory(modelId))
 ) {
     val multimodalModels by viewModel.availableMultimodalModels.collectAsState()
+    val apiAccounts by viewModel.apiAccounts.collectAsState()
     val originalModel by viewModel.modelConfig.collectAsState()
     var showAddParam by remember { mutableStateOf(false) }
     var visionSetup by remember { mutableStateOf<VisionSetup?>(null) }
@@ -120,18 +122,27 @@ fun ModelEditScreen(
                     placeholder = "选择接口预设"
                 )
             }
-            CbField("Base URL") {
-                CbInput(viewModel.baseUrl, { viewModel.baseUrl = it }, placeholder = "https://api.openai.com/v1")
-            }
-            val explicitCredential = originalModel?.requiresExplicitApiKey == true
-            CbField("API Key", description = if (explicitCredential) "填写这个模型接口自己的 API Key。"
-                else "留空时可使用设置里的全局默认 API Key。") {
-                CbInput(
-                    viewModel.apiKey,
-                    { viewModel.apiKey = it },
-                    placeholder = if (explicitCredential) "此接口的 Key" else "可留空，默认使用全局 API Key",
-                    secure = true
+            val accountOptions = listOf(LlmAccountOption(null)) + apiAccounts.map { LlmAccountOption(it) }
+            val boundAccount = apiAccounts.firstOrNull { it.id == viewModel.llmAccountId }
+            CbField("对话 API 账户", description = "在管理 → 设置 → 模型与连接中添加账户，同一账户可用于多个模型。") {
+                CbSelect(
+                    value = accountOptions.firstOrNull { it.account?.id == viewModel.llmAccountId },
+                    options = accountOptions,
+                    optionLabel = { it.account?.let { account -> "${account.displayName} · ${account.baseUrl}" } ?: "未绑定账户" },
+                    onValueChange = { viewModel.selectLlmAccount(it.account) },
+                    placeholder = if (viewModel.llmAccountId == null) "选择账户" else "当前账户不可用，请重新选择",
+                    enabled = !viewModel.isSaving
                 )
+            }
+            if (viewModel.llmAccountId != null) {
+                CbField("Base URL") { CbText(boundAccount?.baseUrl ?: viewModel.baseUrl) }
+            } else {
+                CbField("Base URL") {
+                    CbInput(viewModel.baseUrl, { viewModel.baseUrl = it }, placeholder = "https://api.openai.com/v1")
+                }
+                CbField("API Key", description = "保存后会创建对应的命名账户。硅基流动接口可留空以使用其默认 Key。") {
+                    CbInput(viewModel.apiKey, { viewModel.apiKey = it }, placeholder = "填写此接口的 Key", secure = true)
+                }
             }
             CbField("模型标识") {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -196,7 +207,10 @@ fun ModelEditScreen(
                     VisionOption(null, "不关联视觉模型"),
                     VisionOption(null, "从当前接口添加…", VisionSetup.Current),
                     VisionOption(null, "新增其他接口…", VisionSetup.Other)
-                ) + configured.map { VisionOption(it.id, "${it.displayName} · ${visionProviderLabel(it.baseUrl)}") }
+                ) + configured.map { model ->
+                    val account = apiAccounts.firstOrNull { it.id == model.llmAccountId }
+                    VisionOption(model.id, "${model.displayName} · ${account?.displayName ?: visionProviderLabel(model.baseUrl)}")
+                }
                 CbField("图片解析视觉模型", description = "文本模型收到图片时，先由此模型生成描述。") {
                     CbSelect(
                         value = options.firstOrNull { it.setup == null && it.id == viewModel.visionModelId },
@@ -236,6 +250,7 @@ fun ModelEditScreen(
         VisionModelSetupDialog(
             currentBaseUrl = viewModel.baseUrl.takeIf { setup == VisionSetup.Current },
             currentApiKey = viewModel.apiKeyForCurrentVision.takeIf { setup == VisionSetup.Current }.orEmpty(),
+            currentAccountId = viewModel.llmAccountId.takeIf { setup == VisionSetup.Current },
             onDismiss = { visionSetup = null },
             onSelect = { model ->
                 viewModel.stageVisionModel(model)
@@ -399,6 +414,7 @@ private fun PresetGrid(existingKeys: Set<String>, onAdd: (CommonParamPreset) -> 
 
 private enum class VisionSetup { Current, Other }
 private data class VisionOption(val id: String?, val label: String, val setup: VisionSetup? = null)
+private data class LlmAccountOption(val account: LlmApiAccount?)
 private enum class ParamType(val label: String) { Number("数字"), Boolean("布尔"), String("文本") }
 private data class CommonParamPreset(
     val key: String,

@@ -15,6 +15,8 @@ import com.example.chatbar.domain.backup.LocalDataMaintenance
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.model.matchesVisionConnection
 import com.example.chatbar.domain.model.sameVisionApiBase
+import com.example.chatbar.domain.model.requireValidModelBinding
+import com.example.chatbar.domain.model.canonicalLlmApiEndpoint
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +30,11 @@ import kotlinx.coroutines.sync.withLock
 /**
  * 模型配置仓库 - 管理LLM和Embedding模型配置
  */
-class ModelRepository(private val storage: JsonFileStorage) {
+class ModelRepository(
+    private val storage: JsonFileStorage,
+    private val llmAccounts: LlmApiAccountRepository? = null,
+    private val canMigrateLlmKeys: () -> Boolean = { true }
+) {
 
     companion object {
         private const val MODEL_TYPE = "model_configs"
@@ -39,6 +45,8 @@ class ModelRepository(private val storage: JsonFileStorage) {
 
     private val _models = MutableStateFlow<List<ModelConfig>>(emptyList())
     val models: Flow<List<ModelConfig>> = _models.asStateFlow()
+    private val _llmMigrationPending = MutableStateFlow(false)
+    val llmMigrationPending = _llmMigrationPending.asStateFlow()
 
     private val _embeddings = MutableStateFlow<List<EmbeddingConfig>>(emptyList())
     val embeddings: Flow<List<EmbeddingConfig>> = _embeddings.asStateFlow()
@@ -52,6 +60,7 @@ class ModelRepository(private val storage: JsonFileStorage) {
         if (initialized) return@withLock
         migrateLegacyPlanningModel()
         refreshModelCache()
+        migrateLegacyLlmKeysLocked()
         refreshEmbeddingCache()
         refreshEmbeddingModelCache()
         initialized = true
@@ -141,34 +150,79 @@ class ModelRepository(private val storage: JsonFileStorage) {
                 _models.value.any { it == expectedVision }
             ) { "所选视觉模型已变化，请重新选择" }
         }
-        storage.saveEntity(MODEL_TYPE, model.id, model, ModelConfig.serializer())
-        refreshModelCache()
+        LocalDataMaintenance.access {
+            val bound = withProtectedLlmCredential(model)
+            storage.saveEntity(MODEL_TYPE, bound.id, bound, ModelConfig.serializer())
+            refreshModelCache()
+        }
     }
 
     /** Commit a staged visual connection only when its owning text model is saved. */
     suspend fun saveModelWithVision(model: ModelConfig, vision: ModelConfig) = mutate {
         require(model.id != vision.id && model.visionModelId == vision.id && vision.isMultimodal)
-        val oldWithId = _models.value.firstOrNull { it.id == vision.id }
-        check(oldWithId == null || oldWithId == vision) { "视觉模型记录已变化，请重新选择" }
-        val existing = oldWithId ?: _models.value.firstOrNull {
-            it.id != model.id && it.matchesVisionConnection(vision)
-        }
-        val linked = model.copy(visionModelId = existing?.id ?: vision.id)
         LocalDataMaintenance.access {
+            val protectedVision = withProtectedLlmCredential(vision)
+            val protectedModel = withProtectedLlmCredential(model)
+            val oldWithId = _models.value.firstOrNull { it.id == protectedVision.id }
+            check(oldWithId == null || oldWithId == protectedVision) { "视觉模型记录已变化，请重新选择" }
+            val existing = oldWithId ?: _models.value.firstOrNull {
+                it.id != protectedModel.id && it.matchesVisionConnection(protectedVision)
+            }
+            val linked = protectedModel.copy(visionModelId = existing?.id ?: protectedVision.id)
             try {
                 if (existing == null) {
                     // Keep the old owner intact until the new vision record is durable.
                     storage.saveEntity(
-                        VISION_LINK_TRANSACTION_TYPE, vision.id, PendingVisionModelLink(vision.id, vision.createdAt),
+                        VISION_LINK_TRANSACTION_TYPE, protectedVision.id,
+                        PendingVisionModelLink(protectedVision.id, protectedVision.createdAt),
                         PendingVisionModelLink.serializer()
                     )
-                    storage.saveEntity(MODEL_TYPE, vision.id, vision, ModelConfig.serializer())
+                    storage.saveEntity(MODEL_TYPE, protectedVision.id, protectedVision, ModelConfig.serializer())
                 }
                 storage.saveEntity(MODEL_TYPE, linked.id, linked, ModelConfig.serializer())
             } finally {
                 refreshModelCache()
             }
         }
+    }
+
+    suspend fun retryLlmKeyMigration() = mutate { migrateLegacyLlmKeysLocked() }
+
+    private suspend fun migrateLegacyLlmKeysLocked() {
+        if (llmAccounts == null) return
+        llmAccounts.initialize()
+        if (!canMigrateLlmKeys()) return
+        var pending = false
+        for (model in _models.value.filter { it.llmAccountId == null && it.apiKey.isNotBlank() }) {
+            try {
+                LocalDataMaintenance.enter().use {
+                    val migrated = withProtectedLlmCredential(model)
+                    storage.saveEntity(MODEL_TYPE, migrated.id, migrated, ModelConfig.serializer())
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                pending = true
+            }
+        }
+        refreshModelCache()
+        _llmMigrationPending.value = pending
+    }
+
+    private suspend fun withProtectedLlmCredential(model: ModelConfig): ModelConfig {
+        val accounts = llmAccounts ?: return model
+        if (model.llmAccountId != null) return accounts.requireValidModelBinding(model)
+        if (model.apiKey.isBlank()) return model
+        val account = accounts.adoptLegacy(
+            "model:${model.id}", model.displayName.ifBlank { model.modelName }.ifBlank { "旧模型账户" },
+            model.baseUrl, model.apiKey
+        )
+        return model.copy(baseUrl = account.baseUrl, apiKey = "", llmAccountId = account.id)
+    }
+
+    internal suspend fun removeLlmApiAccount(id: String) = mutate {
+        check(_models.value.none { it.llmAccountId == id }) { "请先为使用此账户的模型更换账户" }
+        checkNotNull(llmAccounts).remove(id)
     }
 
     suspend fun duplicateModel(id: String): ModelConfig = mutate {
@@ -180,9 +234,13 @@ class ModelRepository(private val storage: JsonFileStorage) {
             sourcePresetVersion = null,
             createdAt = System.currentTimeMillis()
         )
-        storage.saveEntity(MODEL_TYPE, copy.id, copy, ModelConfig.serializer())
+        val saved = LocalDataMaintenance.enter().use {
+            val bound = withProtectedLlmCredential(copy)
+            storage.saveEntity(MODEL_TYPE, bound.id, bound, ModelConfig.serializer())
+            bound
+        }
         refreshModelCache()
-        copy
+        saved
     }
 
     suspend fun ensurePresetChatModels(catalog: PresetModelCatalog, catalogVersion: Int): List<ModelConfig> =
@@ -252,7 +310,10 @@ class ModelRepository(private val storage: JsonFileStorage) {
         formatPromptPosition = existing?.formatPromptPosition ?: FormatPromptPosition.BOTH,
         sourcePresetKey = modelKey,
         sourcePresetVersion = catalogVersion,
-        createdAt = existing?.createdAt ?: 0L
+        createdAt = existing?.createdAt ?: 0L,
+        llmAccountId = existing?.takeIf {
+            canonicalLlmApiEndpoint(it.baseUrl) == canonicalLlmApiEndpoint(catalog.baseUrl)
+        }?.llmAccountId
     )
 
     private suspend fun upsertPresetEmbeddingModel(

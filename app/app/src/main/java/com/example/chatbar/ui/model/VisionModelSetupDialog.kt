@@ -34,6 +34,7 @@ import kotlinx.coroutines.CancellationException
 internal fun VisionModelSetupDialog(
     currentBaseUrl: String?,
     currentApiKey: String,
+    currentAccountId: String?,
     onDismiss: () -> Unit,
     onSelect: (ModelConfig) -> Unit
 ) {
@@ -58,8 +59,14 @@ internal fun VisionModelSetupDialog(
 
     val base = visionApiBase(baseUrl)
     val explicitKey = apiKey.trim()
+    val accounts = ChatBarApp.instance.llmApiAccountRepository
+    val namedAccount = currentAccountId?.let { id -> accounts.accounts.value.firstOrNull { it.id == id } }
     val canUseConnection = base != null && (base.isHttps || allowCleartext) &&
-        explicitKey.isNotEmpty() && explicitKey.all { it in '!'..'~' }
+        if (currentAccountId != null) {
+            namedAccount != null && visionApiBase(namedAccount.baseUrl) == base
+        } else {
+            explicitKey.isNotEmpty() && explicitKey.all { it in '!'..'~' }
+        }
     val suggestion = officialVisionModelSuggestion(baseUrl)
     val imageInput = models.firstOrNull { it.id == modelId.trim() }?.imageInput ?: ModelImageInput.UNKNOWN
     val documentedImageInput = imageInput == ModelImageInput.UNKNOWN && suggestion != null && modelId.trim() == suggestion
@@ -74,7 +81,11 @@ internal fun VisionModelSetupDialog(
         discoveryError = null
         loading = true
         try {
-            models = service.fetchModels(baseUrl, explicitKey, allowCleartext)
+            val key = if (currentAccountId == null) explicitKey else {
+                accounts.connection(currentAccountId)?.takeIf { visionApiBase(it.account.baseUrl) == base }?.apiKey
+                    ?: throw IllegalArgumentException("所选对话 API 账户不可用")
+            }
+            models = service.fetchModels(baseUrl, key, allowCleartext)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -116,8 +127,13 @@ internal fun VisionModelSetupDialog(
                         val id = modelId.trim()
                         val model = ModelConfig.create(
                             displayName = alias.trim().ifBlank { id }, baseUrl = baseUrl.trim(),
-                            apiKey = explicitKey, modelName = id, isMultimodal = true
-                        ).copy(selectableForChat = showInChat, requiresExplicitApiKey = true)
+                            apiKey = explicitKey.takeIf { currentAccountId == null }.orEmpty(),
+                            modelName = id, isMultimodal = true
+                        ).copy(
+                            selectableForChat = showInChat,
+                            requiresExplicitApiKey = true,
+                            llmAccountId = currentAccountId
+                        )
                         onSelect(model)
                     },
                     enabled = canUseConnection && modelId.isNotBlank() && when (imageInput) {
@@ -143,18 +159,24 @@ internal fun VisionModelSetupDialog(
                         }, placeholder = "https://api.example.com/v1")
                     }
                 }
-                CbField(
-                    "API Key",
-                    description = if (currentApiKey.isNotBlank()) "已填入当前接口的 Key，可为这一模型另填。"
-                    else "填写此接口自己的 Key。"
-                ) {
-                    CbInput(apiKey, { value ->
-                        if (apiKey != value) {
-                            models = emptyList()
-                            confirmedImageInput = false
-                        }
-                        apiKey = value
-                    }, secure = true)
+                if (currentAccountId != null) {
+                    CbField("对话 API 账户") {
+                        CbText(namedAccount?.displayName ?: "所选账户不可用")
+                    }
+                } else {
+                    CbField(
+                        "API Key",
+                        description = if (currentApiKey.isNotBlank()) "已填入当前接口的 Key，可为这一模型另填。"
+                        else "填写此接口自己的 Key。"
+                    ) {
+                        CbInput(apiKey, { value ->
+                            if (apiKey != value) {
+                                models = emptyList()
+                                confirmedImageInput = false
+                            }
+                            apiKey = value
+                        }, secure = true)
+                    }
                 }
                 if (base?.isHttps == false && !allowCleartext) {
                     CbText("明文 HTTP 模型 API 已禁用。", color = ChatBarTheme.colors.destructive)
