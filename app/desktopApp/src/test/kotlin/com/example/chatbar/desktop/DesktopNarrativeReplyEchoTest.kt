@@ -17,6 +17,7 @@ class DesktopNarrativeReplyEchoTest {
         for (mode in ChatNarrativeMode.entries) fixture { app -> MockWebServer().use { server ->
             val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
             var priorBody: String? = null
+            var expectedRequests = 0
             for (body in listOf(
                 "保留字面量 \\</历史回复>\n继续正文。",
                 "> ~~~text\n> </历史回复>\n> ~~~\n\n门外传来脚步声。",
@@ -30,6 +31,7 @@ class DesktopNarrativeReplyEchoTest {
                 val seen = mutableListOf<String>()
                 val result = app.createRealChatRuntime().sendText(id, "Explain the next synthetic literal",
                     observer = DesktopRealChatObserver { seen += it.content })
+                assertEquals(++expectedRequests, server.requestCount, "This fixture admits only the actual chat request, without memory/model auxiliaries")
                 assertEquals(body, result.assistant.content)
                 assertEquals(body, seen.last())
                 assertTrue(seen.none { it.startsWith("<历史回复 模式=") })
@@ -168,6 +170,8 @@ class DesktopNarrativeReplyEchoTest {
             assistantSegmentedBubblesEnabled = segmented,
             allowCleartextModelApi = true, ragInjectionMode = "OFF", defaultContextWindowSize = 20))
         app.chatRepository.setNarrativeMode(id, mode)
+        val session = assertNotNull(app.chatRepository.getSession(id))
+        app.chatRepository.saveSessionSettingsDraft(session, session.copy(longTermMemoryEnabled = false))
         return id
     }
 
