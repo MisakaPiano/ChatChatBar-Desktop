@@ -4,10 +4,12 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
+import com.example.chatbar.BuildConfig
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.ui.kit.CbText
 import com.example.chatbar.ui.kit.ChatBarTheme
 import java.io.File
@@ -20,6 +22,7 @@ import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -35,8 +38,9 @@ class ChatHistoryActionWireTest {
     private fun u(text: String = independent) = row(MessageRole.USER, text)
 
     @Before fun surface() {
+        assumeTrue(BuildConfig.ISOLATED_ANDROID_TEST)
         val app = ChatBarApp.instance
-        check(app.packageName in setOf("com.example.chatbar.actionhistory.r1", "com.example.chatbar.nextreview.r2"))
+        check(app.packageName == BuildConfig.APPLICATION_ID)
         runBlocking { withTimeout(30000) { app.dependenciesReady.first { it } } }
         runBlocking { withTimeout(30000) { app.settingsRepository.isInitialized.first { it } } }
         rule.setContent { ChatBarTheme { CbText("Synthetic action projection wire verification") } }
@@ -125,15 +129,39 @@ class ChatHistoryActionWireTest {
         }
     }
 
+    @Test fun focusAndAdvanceKeepHistoryWrappingInTheRequestButNeverPersistTheEcho() {
+        val expected = "木门打开了。\n走廊里亮着灯。"
+        for (mode in ChatNarrativeMode.entries) {
+            verify(
+                "history-echo-${mode.name}",
+                listOf(row(MessageRole.ASSISTANT, "旧回复").copy(narrativeMode = mode)),
+                input = independent,
+                mode = mode,
+                echoedReply = expected
+            ) { wire, _ ->
+                assertTrue(wire.contains(PromptTemplates.narrativeModeHistoryReply("旧回复", mode)))
+            }
+        }
+    }
+
     private fun verify(label: String, messages: List<ChatMessage>, input: String = "", regenerate: Boolean = false,
-        exclude: Boolean = true, withCurrentImage: Boolean = false, assertions: (String, List<String>) -> Unit) {
+        exclude: Boolean = true, withCurrentImage: Boolean = false, mode: ChatNarrativeMode = ChatNarrativeMode.FOCUS,
+        echoedReply: String? = null, assertions: (String, List<String>) -> Unit) {
         val app = ChatBarApp.instance
         val settings = runBlocking { app.settingsRepository.getAppSettings() }
         val server = MockWebServer()
-        val event = buildJsonObject { put("choices", buildJsonArray { add(buildJsonObject {
-            put("delta", buildJsonObject { put("content", "Synthetic generated response") }); put("finish_reason", "stop")
-        }) }) }.toString()
-        server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody("data: $event\n\ndata: [DONE]\n\n"))
+        val fragments = if (echoedReply == null) listOf("Synthetic generated response") else {
+            val reply = PromptTemplates.narrativeModeHistoryReply(echoedReply, mode)
+            listOf(reply.take(4), reply.drop(4))
+        }
+        val sse = fragments.mapIndexed { index, fragment ->
+            val event = buildJsonObject { put("choices", buildJsonArray { add(buildJsonObject {
+                put("delta", buildJsonObject { put("content", fragment) })
+                if (index == fragments.lastIndex) put("finish_reason", "stop")
+            }) }) }.toString()
+            "data: $event\n\n"
+        }.joinToString("") + "data: [DONE]\n\n"
+        server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(sse))
         server.start()
         val model = ModelConfig.create("Synthetic action model", server.url("/v1").toString(), "synthetic-action-key", "synthetic-model", isMultimodal = withCurrentImage)
         val image = if (withCurrentImage) File(app.filesDir, "action-input-${UUID.randomUUID()}.png").also {
@@ -142,7 +170,8 @@ class ChatHistoryActionWireTest {
         } else null
         val card = CharacterCard.create("Synthetic action card ${UUID.randomUUID()}")
         val session = ChatSession.create(card.id, "Synthetic action history").copy(modelId = model.id,
-            longTermMemoryEnabled = false, automaticImageGenerationEnabled = false, contextWindowSize = 20)
+            longTermMemoryEnabled = false, automaticImageGenerationEnabled = false, contextWindowSize = 20,
+            narrativeMode = mode)
         val store = ViewModelStore()
         val originals = runBlocking {
             app.modelRepository.saveModel(model); app.characterRepository.save(card); app.chatRepository.createSession(session)
@@ -190,6 +219,15 @@ class ChatHistoryActionWireTest {
             }
             originals.zip(after).forEachIndexed { n, (before, saved) ->
                 if (!regenerate || n != originals.lastIndex) assertEquals("Persisted source/version must remain exact", before, saved)
+            }
+            if (echoedReply != null) {
+                val generated = runBlocking {
+                    cold.getMessages(session.id).single { message ->
+                        message.role == MessageRole.ASSISTANT && originals.none { it.id == message.id }
+                    }
+                }
+                assertEquals(echoedReply, generated.displayContent)
+                assertEquals(mode, generated.narrativeMode)
             }
             wireFile.writeText(buildJsonObject {
                 put("stage", "COLD_SOURCE_VERIFIED"); put("request", json); put("originals", Json.encodeToJsonElement(originals)); put("coldAfter", Json.encodeToJsonElement(after)); put("currentInput", Json.encodeToJsonElement(currentInput))
