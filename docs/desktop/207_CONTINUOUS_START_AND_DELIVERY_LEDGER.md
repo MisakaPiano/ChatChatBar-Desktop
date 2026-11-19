@@ -1,3 +1,7 @@
+## 2026-11-20：T25收到邀请测试电脑建组失败／265原负责人处理中，四PR及1259保持
+
+T25同步线已核对邀请测试者部分反馈及协调回执265：LAN6电脑完成创建报SYNC_METADATA_WORKING_BUDGET，保留并放弃报SYNC_GROUP_PROFILE_LOCAL_HISTORY_EXISTS，未到邀请/二维码；Android85仅报告本地建组和发邀请码、截图本机加密副本与监听待加入，未配置网盘，跨端/云同步未证。用户是转述者，非用户亲测通过。原5c90合成验证/已发V6原件及历史262–264保持；新反馈已使当前状态从仅待人验改为原源码负责人实际处理中，精确触发、合成复现、安全接续和预算修复仍待，不记新代码或运行通过。历史Goal工具264 blocked原样保留，非当前实作或全局阻塞。现行安装更正只引用“V6电脑端安装说明更正-现行.md”（2399B/d4ba6220）：完整解压根脚本、Program替换仅旧LAN5独立版，保外部自选资料根；普通程序可能被覆盖时先勿启动或删除。初稿和旧包说明留历史。四PR工程Ready、1259及其他任务/全部原验收范围不变；本次仅记录，不做新测试、构包、安装、真实数据操作或公开。
+
 ## 2026-11-19：四PR已Ready／c23最终独审与完整原件闭合；普通候选待组合
 
 ForkPR5/4486、PR6/52aa、PR7/e570、PR8/c23已逐个直接GitHub读回Ready/open未合并。PR7源码/51定向/full最终原件专用独审已闭合；PR8最终c23源码、276定向（shared96/Desktop179/Android1，12wire场景同1方法）及完整44529872292专用独审均实际读回，无开放发现。完整Windows3078零失败、28旧skip名单精确逐名同PR5，独立proxy11/Studio7/shared1403原XML/Android589原HTML；无Android原XML。四原ZIP/SHA/CRC/XML及synthetic e12ab双parent e570+c23、8f2fa604精确head树核同，非真实merge。最新neutral reference3590cb0d、corefd0821c3、narrative1aec9d30三owner字节保全。旧272两真负控、806/8a fixture失败、6afc276与有效完整成功、Android8 ICU失败和b03e后继均保各自范围，不跨轮相加。实际规则编辑组件图已看且与前图同hash，非完整App或真人验收。当前只是工程Ready：普通候选组合/必要验证与实际交付仍按原路线继续，各PR正式接受/合并与人验独立；公开1259/日常H/原第三方手验子范围及其他任务保持，未安装发布或自merge，本机未重型/付费。
