@@ -12,7 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.sql.DriverManager
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -141,14 +141,88 @@ class DesktopNovelAiCatalogUpdateTest {
             override suspend fun exactChineseTranslations(names: Collection<String>) = emptyMap<String, String>()
             override suspend fun search(query: String): NovelAiTagSearchOutcome = error("not used")
         }
+        val commitSha = "c".repeat(40)
         val client = OkHttpClient.Builder().addInterceptor { chain ->
             val request = chain.request()
-            val body = if (request.url.encodedPath.endsWith("/commits")) """[{"sha":"commit-fixture","commit":{"committer":{"date":"inline"}}}]"""
-            else { assertEquals("commit-fixture", request.url.queryParameter("ref")); """{"sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","size":25,"download_url":"https://raw.githubusercontent.com/mutable"}""" }
+            val body = if (request.url.encodedPath.endsWith("/commits")) """[{"sha":"$commitSha","commit":{"committer":{"date":"inline"}}}]"""
+            else { assertEquals(commitSha, request.url.queryParameter("ref")); """{"sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","size":25,"download_url":"https://raw.githubusercontent.com/mutable"}""" }
             Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200).message("fixture").body(body.toResponseBody()).build()
         }.build()
         val update = assertNotNull(SharedDanbooruCatalogUpdateChecker(lookup, "fixture", client).checkLatestCatalog())
-        assertTrue(update.downloadUrl.endsWith("/commit-fixture/tag.sqlite"))
+        assertTrue(update.downloadUrl.endsWith("/$commitSha/tag.sqlite"))
         assertEquals("b".repeat(40), update.latestSourceSha)
     }
+
+    @Test fun `contents retries a transient response exactly once at the same pinned commit`(): Unit = runBlocking {
+        val commitSha = "c".repeat(40)
+        val requestedRefs = mutableListOf<String?>()
+        val checker = checker { request ->
+            if (request.url.encodedPath.endsWith("/commits")) {
+                response(request, 200, """[{"sha":"$commitSha"}]""")
+            } else {
+                requestedRefs += request.url.queryParameter("ref")
+                if (requestedRefs.size == 1) response(request, 503)
+                else response(request, 200, """{"sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","size":25,"download_url":"https://raw.githubusercontent.com/mutable"}""")
+            }
+        }
+        assertTrue(assertNotNull(checker.checkLatestCatalog()).downloadUrl.endsWith("/$commitSha/tag.sqlite"))
+        assertEquals(listOf(commitSha, commitSha), requestedRefs)
+    }
+
+    @Test fun `contents preserves HTTP evidence and does not retry throttled or permanent responses`(): Unit = runBlocking {
+        for ((status, remaining, limited) in listOf(Triple(403, "0", true), Triple(403, "8", false), Triple(429, "8", true), Triple(404, "8", false))) {
+            var requests = 0
+            val checker = checker { request ->
+                requests++
+                if (request.url.encodedPath.endsWith("/commits")) response(request, 200, "[]")
+                else response(request, status, "SYNTHETIC_PRIVATE_RESPONSE_BODY",
+                    headersOf("X-RateLimit-Remaining", remaining, "Retry-After", "15"))
+            }
+            val error = assertFailsWith<DanbooruCatalogCheckFailure> { checker.checkLatestCatalog() }
+            assertEquals(DanbooruCatalogCheckStage.CONTENTS, error.stage)
+            assertEquals(DanbooruCatalogCheckKind.HTTP, error.kind)
+            assertEquals(status, error.httpStatus)
+            assertEquals(limited, error.rateLimited)
+            assertEquals(15L, error.retryAfterSeconds)
+            assertFalse(error.message.orEmpty().contains("SYNTHETIC_PRIVATE_RESPONSE_BODY"))
+            assertEquals(2, requests)
+        }
+    }
+
+    @Test fun `request cancellation interrupts a scheduled retry without falling back to another ref`(): Unit = runBlocking {
+        val transient = CompletableDeferred<Unit>()
+        val commitSha = "c".repeat(40)
+        val requestedRefs = java.util.concurrent.CopyOnWriteArrayList<String?>()
+        val checker = checker { request ->
+            if (request.url.encodedPath.endsWith("/commits")) response(request, 200, """[{"sha":"$commitSha"}]""")
+            else {
+                requestedRefs += request.url.queryParameter("ref")
+                transient.complete(Unit)
+                response(request, 503)
+            }
+        }
+        val job = launch { checker.checkLatestCatalog() }
+        try {
+            withTimeout(5_000) { transient.await() }
+            job.cancelAndJoin()
+            assertTrue(job.isCancelled)
+            assertEquals(listOf(commitSha), requestedRefs)
+        } finally {
+            job.cancelAndJoin()
+        }
+    }
+
+    private fun checker(respond: (Request) -> Response): SharedDanbooruCatalogUpdateChecker {
+        val lookup = object : NovelAiTagLookup {
+            override suspend fun catalogMetadata() = DanbooruCatalogMetadata("a".repeat(40), "inline", 1)
+            override suspend fun exactChineseTranslations(names: Collection<String>) = emptyMap<String, String>()
+            override suspend fun search(query: String): NovelAiTagSearchOutcome = error("not used")
+        }
+        val client = OkHttpClient.Builder().addInterceptor { respond(it.request()) }.build()
+        return SharedDanbooruCatalogUpdateChecker(lookup, "fixture", client, retryTransientHttp = true)
+    }
+
+    private fun response(request: Request, status: Int, body: String = "", headers: Headers? = null): Response =
+        Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(status).message("fixture")
+            .apply { if (headers != null) headers(headers) }.body(body.toResponseBody()).build()
 }

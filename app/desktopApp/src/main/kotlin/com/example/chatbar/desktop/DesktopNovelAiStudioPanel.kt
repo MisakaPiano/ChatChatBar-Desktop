@@ -225,14 +225,6 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                         DesktopDesignField("额外要求", d.extraRequirement) { value -> edit { it.copy(extraRequirement = value) } }
                         StudioAction("完成设置") { auxiliary = "AI 设计" }
                     }
-                "设计历史" -> {
-                    conversations.forEach { conversation ->
-                        StudioActions {
-                            StudioAction("${if (conversation.id == currentDesignId) "● " else ""}${conversation.title}", enabled = !busy) { scope.launch { controller.switchDesign(conversation.id); auxiliary = "AI 设计" } }
-                            StudioAction("删除设计", enabled = !busy && conversation.id != currentDesignId) { scope.launch { controller.deleteDesign(conversation.id) } }
-                        }
-                    }
-                }
                 "图像引导" -> {
                     guidanceImages()
                     StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> StudioAction("导入 · ${target.displayName}") { scope.launch {
@@ -391,6 +383,13 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 if (surface == "AI 设计") DesktopDesignConversation(controller, d, busy, authentication,
                     onSettings = { auxiliary = "设计设置" }, onHistory = { auxiliary = "设计历史" },
                     onModelSettings = { auxiliary = null; onModelSettings(authentication.modelId) }, onApplied = { auxiliary = null })
+                else if (surface == "设计历史") {
+                    if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
+                    if (imageError.isNotBlank()) StatusText(imageError)
+                    DesktopStudioDesignHistory(conversations, currentDesignId, busy, Modifier.weight(1f),
+                        onOpen = { id -> scope.launch { controller.switchDesign(id); auxiliary = "AI 设计" } },
+                        onDelete = { id -> scope.launch { controller.deleteDesign(id) } })
+                }
                 else if (surface == "历史") Box(Modifier.weight(1f).fillMaxWidth()) {
                     DesktopStudioHistory(controller, onApply = ::reuse,
                         onPreview = { paths, index -> viewing = paths; viewingIndex = index },

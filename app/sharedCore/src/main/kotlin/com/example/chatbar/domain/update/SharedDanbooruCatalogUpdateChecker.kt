@@ -1,13 +1,13 @@
 package com.example.chatbar.domain.update
+
 import com.example.chatbar.domain.image.DanbooruCatalogMetadata
 import com.example.chatbar.domain.ProxyAwareClient
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -30,6 +30,23 @@ data class DanbooruCatalogUpdateInfo(
     val sizeBytes: Long
 )
 
+enum class DanbooruCatalogCheckStage { LOCAL_METADATA, COMMITS, CONTENTS }
+
+enum class DanbooruCatalogCheckKind { HTTP, NETWORK, INVALID_RESPONSE, LOCAL }
+
+class DanbooruCatalogCheckFailure internal constructor(
+    val stage: DanbooruCatalogCheckStage,
+    val kind: DanbooruCatalogCheckKind,
+    val httpStatus: Int? = null,
+    val rateLimited: Boolean = false,
+    val retryAfterSeconds: Long? = null,
+    internal val hasRetryAfter: Boolean = false,
+    cause: Exception? = null,
+) : IOException(
+    "Danbooru 词库检查失败 ($stage / $kind" + (httpStatus?.let { " / HTTP $it" } ?: "") + ")",
+    cause
+)
+
 class SharedDanbooruCatalogUpdateChecker(
     private val catalog: com.example.chatbar.domain.image.NovelAiTagLookup,
     private val userAgent: String,
@@ -38,19 +55,35 @@ class SharedDanbooruCatalogUpdateChecker(
         .readTimeout(20, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
         .build(),
-    private val json: Json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json: Json = Json { ignoreUnknownKeys = true; isLenient = true },
+    private val retryTransientHttp: Boolean = false,
 ) {
     suspend fun checkLatestCatalog(): DanbooruCatalogUpdateInfo? = withContext(Dispatchers.IO) {
-        val current = catalog.catalogMetadata()
-        val commit = try { fetchLatestCommit() } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { null }
-        val content = fetchContents(commit?.sha?.takeIf(String::isNotBlank) ?: DanbooruCatalogSource.SOURCE_BRANCH)
-        if (content.sha.equals(current.sourceSha, ignoreCase = true)) return@withContext null
-        if (content.sha.isBlank() || content.size <= 0L || content.downloadUrl.isBlank()) {
-            throw IOException("GitHub 返回的词库文件信息不完整")
+        val current = try {
+            catalog.catalogMetadata()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            throw DanbooruCatalogCheckFailure(DanbooruCatalogCheckStage.LOCAL_METADATA, DanbooruCatalogCheckKind.LOCAL, cause = failure)
         }
-        val pinnedDownloadUrl = commit?.sha?.takeIf(String::isNotBlank)?.let { commitSha ->
+        val commit = try {
+            fetchLatestCommit()?.takeIf { GIT_SHA.matches(it.sha) }
+        } catch (failure: DanbooruCatalogCheckFailure) {
+            if (failure.rateLimited || failure.hasRetryAfter) throw failure
+            null
+        }
+        val commitSha = commit?.sha
+        val content = fetchContents(commitSha ?: DanbooruCatalogSource.SOURCE_BRANCH)
+        if (!GIT_SHA.matches(content.sha)) {
+            throw DanbooruCatalogCheckFailure(DanbooruCatalogCheckStage.CONTENTS, DanbooruCatalogCheckKind.INVALID_RESPONSE)
+        }
+        if (content.sha.equals(current.sourceSha, ignoreCase = true)) return@withContext null
+        if (content.size <= 0L || content.downloadUrl.isBlank()) {
+            throw DanbooruCatalogCheckFailure(DanbooruCatalogCheckStage.CONTENTS, DanbooruCatalogCheckKind.INVALID_RESPONSE)
+        }
+        val pinnedDownloadUrl = commitSha?.let {
             "https://raw.githubusercontent.com/${DanbooruCatalogSource.SOURCE_OWNER}/" +
-                "${DanbooruCatalogSource.SOURCE_REPOSITORY}/$commitSha/${DanbooruCatalogSource.SOURCE_PATH}"
+                "${DanbooruCatalogSource.SOURCE_REPOSITORY}/$it/${DanbooruCatalogSource.SOURCE_PATH}"
         } ?: content.downloadUrl
         DanbooruCatalogUpdateInfo(
             currentMetadata = current,
@@ -66,11 +99,8 @@ class SharedDanbooruCatalogUpdateChecker(
         val url = "https://api.github.com/repos/${DanbooruCatalogSource.SOURCE_OWNER}/" +
             "${DanbooruCatalogSource.SOURCE_REPOSITORY}/contents/${DanbooruCatalogSource.SOURCE_PATH}" +
             "?ref=$ref"
-        val request = githubRequest(url)
-        return execute(request) { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw IOException("GitHub 词库 API HTTP ${response.code}")
-            json.decodeFromString(GitHubContentFile.serializer(), body)
+        return readGitHub(githubRequest(url), DanbooruCatalogCheckStage.CONTENTS) {
+            json.decodeFromString(GitHubContentFile.serializer(), it)
         }
     }
 
@@ -78,11 +108,40 @@ class SharedDanbooruCatalogUpdateChecker(
         val url = "https://api.github.com/repos/${DanbooruCatalogSource.SOURCE_OWNER}/" +
             "${DanbooruCatalogSource.SOURCE_REPOSITORY}/commits" +
             "?path=${DanbooruCatalogSource.SOURCE_PATH}&per_page=1"
-        val request = githubRequest(url)
-        return execute(request) { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw IOException("GitHub 词库提交 API HTTP ${response.code}")
-            json.decodeFromString(ListSerializer(GitHubCommitItem.serializer()), body).firstOrNull()
+        return readGitHub(githubRequest(url), DanbooruCatalogCheckStage.COMMITS) {
+            json.decodeFromString(ListSerializer(GitHubCommitItem.serializer()), it).firstOrNull()
+        }
+    }
+
+    private suspend fun <T> readGitHub(request: Request, stage: DanbooruCatalogCheckStage, decode: (String) -> T): T {
+        suspend fun readOnce(): T = execute(request) { response ->
+            if (!response.isSuccessful) {
+                val retryAfter = response.header("Retry-After")
+                throw DanbooruCatalogCheckFailure(
+                    stage, DanbooruCatalogCheckKind.HTTP, response.code,
+                    rateLimited = response.code == 429 ||
+                        (response.code == 403 && response.header("X-RateLimit-Remaining")?.trim() == "0"),
+                    retryAfterSeconds = retryAfter?.trim()?.toLongOrNull()?.takeIf { it >= 0 },
+                    hasRetryAfter = retryAfter != null,
+                )
+            }
+            decode(response.body?.string().orEmpty())
+        }
+        return try {
+            try {
+                readOnce()
+            } catch (failure: DanbooruCatalogCheckFailure) {
+                if (!retryTransientHttp || failure.hasRetryAfter || failure.httpStatus?.let(TRANSIENT_HTTP::contains) != true) throw failure
+                delay(350)
+                readOnce()
+            }
+        } catch (failure: DanbooruCatalogCheckFailure) {
+            throw failure
+        } catch (failure: SerializationException) {
+            throw DanbooruCatalogCheckFailure(stage, DanbooruCatalogCheckKind.INVALID_RESPONSE, cause = failure)
+        } catch (failure: IOException) {
+            currentCoroutineContext().ensureActive()
+            throw DanbooruCatalogCheckFailure(stage, DanbooruCatalogCheckKind.NETWORK, cause = failure)
         }
     }
 
@@ -102,6 +161,11 @@ class SharedDanbooruCatalogUpdateChecker(
         .header("User-Agent", userAgent)
         .get()
         .build()
+
+    private companion object {
+        val GIT_SHA = Regex("[0-9a-fA-F]{40}")
+        val TRANSIENT_HTTP = setOf(502, 503, 504)
+    }
 }
 
 @Serializable

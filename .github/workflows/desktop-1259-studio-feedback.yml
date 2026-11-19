@@ -1,0 +1,40 @@
+name: Desktop 1259 Studio feedback verification
+on:
+  push:
+    branches: [codex/desktop-1259-studio-feedback-20261120]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 32
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run annotation, design history and catalog regressions with synthetic inputs
+        working-directory: app
+        shell: pwsh
+        run: |
+          .\gradlew.bat :sharedCore:test `
+            --tests com.example.chatbar.domain.image.NovelAiPromptTranslationTest `
+            :desktopApp:test `
+            --tests com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest `
+            --tests com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest `
+            --tests com.example.chatbar.desktop.DesktopCatalogUpdatesTest `
+            --tests com.example.chatbar.desktop.DesktopDesignParityTest `
+            -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+          exit $LASTEXITCODE
+      - name: Preserve original test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-1259-studio-feedback-reports
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/
+          if-no-files-found: warn
