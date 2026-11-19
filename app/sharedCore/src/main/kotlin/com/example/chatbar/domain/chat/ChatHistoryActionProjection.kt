@@ -1,18 +1,20 @@
 package com.example.chatbar.domain.chat
 
+import com.example.chatbar.data.local.entity.ActionOptionLabels
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 
 /** Describes the current request's owner; a no-current-USER control may have older USER history. */
 enum class ChatHistoryActionRequestSource { PERSISTED_USER, UI_CONTINUATION, NO_USER_REGENERATION, UNKNOWN }
 
-/** Request-only projection. A numeric/deictic choice remains unresolved, never expanded to text.
+/** Request-only projection. An unresolved choice reference retains its source options.
  * The query owner supplies a complete recent suffix; separately pinned old turns are not proof
  * that all intervening user references were loaded. Existing status projection runs independently. */
 class ChatHistoryActionProjection private constructor(private val omittable: Map<String, ChatMessage>) {
     fun project(message: ChatMessage, source: String): String =
-        if (omittable[message.id] == message)
-            RoleplayActionOptionsPolicy.withoutExplicitOptions(source, message.displayActionOptionsFormat) else source
+        if (omittable[message.id] == message) {
+            RoleplayActionOptionsPolicy.withoutExplicitOptions(source, message.displayActionOptionsFormat)
+        } else source
 
     companion object {
         fun prepare(candidates: List<ChatMessage>, completeRecentMessageIds: Set<String>,
@@ -24,36 +26,66 @@ class ChatHistoryActionProjection private constructor(private val omittable: Map
                 candidates.zipWithNext().any { (a, b) -> ChatMessage.TimelineComparator.compare(a, b) > 0 })
                 return ChatHistoryActionProjection(emptyMap())
             // Protect every earlier action source, not only the immediately preceding assistant:
-            // an old pure-number reply or an image may still depend on an older block.
-            // The boundary is per USER: later independent action sources remain eligible.
-            val lastUnresolvedReference = candidates.indexOfLast {
-                it.role == MessageRole.USER && (it.images.isNotEmpty() || mayReferToEarlierChoices(it.displayContent))
-            }
+            // an old pure-number or image-bearing reply may depend on an older block.
+            // A generated visual description is not proof of independent typed intent.
+            val lastUnresolvedReference = lastPossibleChoiceReference(candidates)
             return ChatHistoryActionProjection(candidates.withIndex().filter { (index, message) ->
                 index > lastUnresolvedReference && message.id in completeRecentMessageIds && message.role == MessageRole.ASSISTANT
             }.associate { it.value.id to it.value })
+        }
+
+        private fun lastPossibleChoiceReference(candidates: List<ChatMessage>): Int {
+            var last = -1
+            val ambiguousLabelsSeen = mutableSetOf<Char>()
+            for ((index, message) in candidates.withIndex()) {
+                if (message.role == MessageRole.USER) {
+                    val content = message.displayContent
+                    if (message.images.isNotEmpty() || mayReferToEarlierChoices(content) ||
+                        (ambiguousLabelsSeen.isNotEmpty() && ambiguousLetterLabel.findAll(content)
+                            .any { it.value.single().uppercaseChar() in ambiguousLabelsSeen })
+                    ) last = index
+                } else if (message.role == MessageRole.ASSISTANT && ambiguousLabelsSeen.size < 2) {
+                    val format = message.displayActionOptionsFormat
+                    if (format?.labels != ActionOptionLabels.LETTERS) continue
+                    for (block in RoleplayActionOptionsPolicy.blocks(message.displayContent, format)) {
+                        block.options.mapNotNullTo(ambiguousLabelsSeen) { option ->
+                            option.label.singleOrNull()?.uppercaseChar()?.takeIf { it == 'A' || it == 'I' }
+                        }
+                    }
+                }
+            }
+            return last
         }
 
         /** Deliberately conservative lexical admission, not natural-language intent inference. */
         fun mayReferToEarlierChoices(text: String): Boolean {
             val normalized = text.trim().lowercase()
             if (normalized.isBlank() || numeric.containsMatchIn(normalized) ||
-                normalized.contains("```") || reference.containsMatchIn(normalized) || acknowledgement.matches(normalized)) return true
+                normalized.contains("```") || reference.containsMatchIn(normalized) ||
+                standaloneLetterLabel.containsMatchIn(normalized) || acknowledgement.matches(normalized)) return true
             if (normalized.any { it.isLetter() && it !in 'a'..'z' && it !in '\u3400'..'\u9fff' }) return true
             // Bare numbers, labels, emoji and short/unknown responses do not prove independence.
             return normalized.count(Char::isLetter) < 8
         }
 
         private val numeric = Regex("\\p{N}")
+        // Avoid treating the English article, pronoun and parts of contractions as labels.
+        private fun standaloneLetter(characters: String) =
+            Regex("(?<![\\p{L}\\p{N}_])(?<!\\p{L}['’])[$characters](?![\\p{L}\\p{N}_]|['’]\\p{L})")
+        private val standaloneLetterLabel = standaloneLetter("b-hj-z")
+        // A and I can be ordinary English. Keep the source when an earlier menu defines them.
+        private val ambiguousLetterLabel = standaloneLetter("AIi")
         private val reference = Regex(
             "第[\\s一二三四五六七八九十百两〇零壹贰叁肆伍陆柒捌玖拾0-9０-９]+(?:个|项|条|种|步|段|选|方案)|" +
                 "(?:选|选择|采用|执行|按照|按|走|用|要)[\\s:：\"'“‘（(]*[一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾0-9０-９①-⑳甲乙丙丁戊己庚辛壬癸a-z]|" +
                 "^[一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾甲乙丙丁]+(?:[,，.、。)）：\\s]|号|然后|再|并)|" +
-                "^[a-t][,，.、。)）：\\s]|" +
+                "^[a-t][,，.、。)）：]|" +
                 "(?:前|后)[一二三四五六七八九十两]*(?:个|项|条)|" +
-                "(?:选项|行动选项|可选行动|上面|上述|上边|刚才|之前|前面|前者|后者|这个|那个|这条|那条|这些|那些|此项|此条|上个|下个|这样|那样|照着|照做|照办|照旧|照常|如上|所说的|说的[做办]|照[她他你我]|最后一个|中间那个)|" +
+                "(?:选项|行动选项|可选行动|上面|上述|上边|刚才|之前|前面|前者|后者|这个|那个|这条|那条|这些|那些|此项|此条|上个|下个|这样|那样|照着|照做|照办|最后一个|中间那个|照旧|照常|如上|所说的|说的做|说的办|照她|照他|照你|照我)|" +
                 "\\b(?:option|options|choice|choices|above|previous|former|latter|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|last|this|that|those|these|it|them|same|aforementioned)\\b|" +
-                "\\b(?:choose|select|pick|take)\\s+(?:the\\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|[a-z])\\b"
+                "\\b(?:choose|select|pick|take|do|go\\s+with|go\\s+for|opt\\s+for|settle\\s+on)\\s+" +
+                "(?:the\\s+)?['’\"“‘]?(?:one|two|three|four|five|six|seven|eight|nine|ten|[a-z])\\b(?!['’]\\p{L})|" +
+                "['\"“‘][ai]['\"”’]"
         )
         private val acknowledgement = Regex("(?:(?:请|再|那就|那么)?(?:继续|接着|接下来).*|好[的吧啊呀]?|行|可以|是|不|随便|都行|嗯+|快点|ok|yes|no|(?:please\\s+)?(?:continue|go on|keep going).*|do it)[。.!！?？\\s]*")
     }

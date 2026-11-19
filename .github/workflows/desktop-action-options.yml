@@ -68,7 +68,15 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopFishGenerationTest'
           --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
           --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest.modern backup staging retains format declaration and active reply alternatives'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
+      # Keep the Android compatibility facade under its actual module compiler.
+      - name: Verify Android action repair facade
+        working-directory: app
+        run: >-
+          .\gradlew.bat :app:testDebugUnitTest
+          --tests 'com.example.chatbar.domain.prompt.PromptTemplatesTest.actionOptionsRepairFacadeUsesSharedAuthority'
+          --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -76,4 +84,5 @@ jobs:
           path: |
             app/desktopApp/build/test-results/test/
             app/sharedCore/build/test-results/test/
+            app/app/build/test-results/testDebugUnitTest/
             review-action-options/

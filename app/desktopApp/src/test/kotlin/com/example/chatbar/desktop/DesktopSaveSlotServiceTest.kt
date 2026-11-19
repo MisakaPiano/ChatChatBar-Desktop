@@ -12,6 +12,35 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `declared rules and eight alternatives survive real slot export restore duplicate and cold read`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val rule = ActionOptionsFormat("<next>", "</next>", "Next", ActionOptionLabels.LETTERS)
+            val alternatives = (0..7).map { "Synthetic reply $it" }
+            val formats = alternatives.indices.map { if (it % 2 == 0) rule else null }
+            val source = MessageAlternativeVersionPolicy.normalize(f.message.copy(content = alternatives[6],
+                alternatives = alternatives, currentAlternativeIndex = 6, actionOptionsFormat = rule,
+                alternativeActionOptionsFormats = formats))
+            f.chats.updateMessage(source)
+            val service = f.service()
+            val slot = service.create("s", "Rules", SaveSlotImagePolicy.NONE, false)
+            val output = f.root.resolve("rules.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            f.chats.updateMessage(source.copy(actionOptionsFormat = null, alternativeActionOptionsFormats = emptyList()))
+            service.restore(imported.id, "s")
+            val duplicate = service.duplicate("s")
+            val cold = ChatRepository(JsonFileStorage(f.root))
+            for (id in listOf("s", duplicate.id)) {
+                val saved = cold.getMessagesReadOnly(id).single()
+                assertEquals(alternatives, saved.alternatives)
+                assertEquals(formats, saved.alternativeActionOptionsFormats)
+                assertEquals(rule, saved.displayActionOptionsFormat)
+                assertEquals(source.alternativeVersionIds, saved.alternativeVersionIds)
+            }
+        }
+    }
+
     @Test fun `narrative mode survives actual slot export import restore duplicate and repository reopen`() = runBlocking {
         Fixture().use { f ->
             f.seed()

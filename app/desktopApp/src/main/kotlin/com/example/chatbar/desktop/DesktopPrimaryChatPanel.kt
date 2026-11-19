@@ -1131,7 +1131,7 @@ internal fun PrimaryMessageBubble(
                 voicePlacements.filter { it.segmentIndex != null && it.segmentIndex == segment.index }, state,
                 if (segmentWidth > 0) with(LocalDensity.current) { segmentWidth.toDp().value } else null)
         }
-        val foldedActionStarts = presented.segments.filter { it.kind == RoleplaySegmentKind.STATUS }
+        val foldedActionStarts = presented.segments.filter { it.kind == RoleplaySegmentKind.STATUS && it.text.isNotBlank() }
             .mapNotNull { it.source?.start }.toSet()
         actionChoices.filter { it.blockStart !in foldedActionStarts }.groupBy { it.blockStart }.forEach { (start, choices) ->
             val expansion = remember(message.id, message.currentAlternativeIndex, start) { DesktopPresentationExpansion(false) }

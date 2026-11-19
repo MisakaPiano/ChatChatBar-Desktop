@@ -9,6 +9,38 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `modern backup staging retains format declaration and active reply alternatives`() = runBlocking {
+        Fixture().use { f ->
+            val storage = com.example.chatbar.data.local.JsonFileStorage(f.root, f.gate)
+            val cards = com.example.chatbar.data.repository.CharacterRepository(storage)
+            val formats = com.example.chatbar.data.repository.FormatCardRepository(storage)
+            val chats = com.example.chatbar.data.repository.ChatRepository(storage)
+            val rule = ActionOptionsFormat("<next>", "</next>", "Next", ActionOptionLabels.LETTERS)
+            val format = FormatCard.create("Synthetic", "Synthetic format").copy(actionOptionsFormat = rule)
+            formats.save(format)
+            val card = CharacterCard.create("Synthetic").copy(defaultFormatCardId = format.id)
+            cards.save(card)
+            val session = chats.createSession(ChatSession.create(card.id, "Synthetic"))
+            val source = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.normalize(
+                ChatMessage.create(session.id, MessageRole.ASSISTANT, "Current").copy(
+                    alternatives = listOf("Old", "Current"), currentAlternativeIndex = 1,
+                    actionOptionsFormat = rule, alternativeActionOptionsFormats = listOf(null, rule)))
+            val message = chats.addMessage(source)
+            val output = f.base.resolve("declared-rules.cbbackup")
+            f.service.exportModern(output, null)
+            DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(f.base.resolve("inspect-rules"))).use { staged ->
+                val restoredFormat = backupJson.decodeFromJsonElement(FormatCard.serializer(),
+                    staged.entities.getValue("entities/format_cards/${format.id}.json"))
+                val restored = backupJson.decodeFromJsonElement(ChatMessage.serializer(),
+                    staged.entities.getValue("entities/chat_messages/${session.id}_${message.id}.json"))
+                assertEquals(rule, restoredFormat.actionOptionsFormat)
+                assertEquals(message, restored)
+                assertEquals(rule, restored.displayActionOptionsFormat)
+            }
+            assertEquals(message, chats.getMessage(message.id, session.id))
+        }
+    }
+
     @Test fun `immediate password retry from idle publication cannot resurrect the prior waiting row`() = runBlocking {
         Fixture().use { f ->
             f.service.release(f.seed())
