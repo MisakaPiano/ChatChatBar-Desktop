@@ -33,7 +33,19 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest'
+          --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest'
+          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeModePlannerTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - name: Verify shared exact wrapper projection
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.NarrativeHistoryEchoTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModeRequestAssemblyTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModePersistenceTest'
+          --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
