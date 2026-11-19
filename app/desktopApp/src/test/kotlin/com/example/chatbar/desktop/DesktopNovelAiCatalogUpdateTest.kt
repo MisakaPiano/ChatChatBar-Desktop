@@ -155,12 +155,12 @@ class DesktopNovelAiCatalogUpdateTest {
 
     @Test fun `contents retries a transient response exactly once at the same pinned commit`(): Unit = runBlocking {
         val commitSha = "c".repeat(40)
-        val requestedRefs = mutableListOf<String?>()
+        val requestedRefs = mutableListOf<String>()
         val checker = checker { request ->
             if (request.url.encodedPath.endsWith("/commits")) {
                 response(request, 200, """[{"sha":"$commitSha"}]""")
             } else {
-                requestedRefs += request.url.queryParameter("ref")
+                requestedRefs += requireNotNull(request.url.queryParameter("ref"))
                 if (requestedRefs.size == 1) response(request, 503)
                 else response(request, 200, """{"sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","size":25,"download_url":"https://raw.githubusercontent.com/mutable"}""")
             }
@@ -176,7 +176,7 @@ class DesktopNovelAiCatalogUpdateTest {
                 requests++
                 if (request.url.encodedPath.endsWith("/commits")) response(request, 200, "[]")
                 else response(request, status, "SYNTHETIC_PRIVATE_RESPONSE_BODY",
-                    headersOf("X-RateLimit-Remaining", remaining, "Retry-After", "15"))
+                    Headers.Builder().add("X-RateLimit-Remaining", remaining).add("Retry-After", "15").build())
             }
             val error = assertFailsWith<DanbooruCatalogCheckFailure> { checker.checkLatestCatalog() }
             assertEquals(DanbooruCatalogCheckStage.CONTENTS, error.stage)
@@ -192,11 +192,11 @@ class DesktopNovelAiCatalogUpdateTest {
     @Test fun `request cancellation interrupts a scheduled retry without falling back to another ref`(): Unit = runBlocking {
         val transient = CompletableDeferred<Unit>()
         val commitSha = "c".repeat(40)
-        val requestedRefs = java.util.concurrent.CopyOnWriteArrayList<String?>()
+        val requestedRefs = java.util.concurrent.CopyOnWriteArrayList<String>()
         val checker = checker { request ->
             if (request.url.encodedPath.endsWith("/commits")) response(request, 200, """[{"sha":"$commitSha"}]""")
             else {
-                requestedRefs += request.url.queryParameter("ref")
+                requestedRefs += requireNotNull(request.url.queryParameter("ref"))
                 transient.complete(Unit)
                 response(request, 503)
             }

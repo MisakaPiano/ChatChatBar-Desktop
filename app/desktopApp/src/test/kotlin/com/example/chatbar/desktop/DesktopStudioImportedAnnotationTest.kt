@@ -90,7 +90,11 @@ class DesktopStudioImportedAnnotationTest {
                         node.children.any(::contains)
                 return scene.semanticsOwners.any { contains(it.rootSemanticsNode) }
             }
-            withTimeout(5_000) { while (!retryStarted.isCompleted) scene.frames() }
+            val retried = withTimeoutOrNull(5_000) {
+                while (!retryStarted.isCompleted) scene.frames()
+                true
+            }
+            assertEquals(true, retried, "Editor did not retry the same Prompt after its initial read failed")
             scene.frames()
             assertTrue(hasWarning())
             assertEquals(initial, editor.value)
