@@ -1,7 +1,7 @@
 name: Desktop narrative reply and action rules
 on:
   push:
-    branches: [codex/desktop-action-narrative-20261119]
+    branches: [codex/desktop-action-narrative-20261119, codex/desktop-narrative-review-proof-20261120]
   workflow_dispatch:
 permissions:
   contents: read
