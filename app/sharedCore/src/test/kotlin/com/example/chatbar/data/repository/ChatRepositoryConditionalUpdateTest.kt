@@ -16,6 +16,17 @@ import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryConditionalUpdateTest {
+    @Test fun `conditional update receipt is exact durable timestamp order and stale rejection`() = runTest {
+        val f = fixture()
+        val replacement = MessageAlternativeVersionPolicy.remove(f.expected, "v2")!!.copy(updatedAt = 1, orderKey = -100)
+        val saved = assertNotNull(f.repo.updateMessageIfUnchangedReturningSnapshot(f.expected, replacement))
+        assertEquals(f.expected.orderKey, saved.orderKey)
+        assertTrue(saved.updatedAt > replacement.updatedAt)
+        assertEquals(saved, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value)
+        assertNull(f.repo.updateMessageIfUnchangedReturningSnapshot(f.expected, replacement))
+        assertEquals(saved, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value)
+    }
+
     @Test fun `candidate and whole deletion compare complete durable confirmation snapshot`() = runTest {
         val f = fixture()
         val changed = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.append(f.expected,

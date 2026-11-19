@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -1212,10 +1215,7 @@ internal class DesktopPrimaryChatController(
                     saved = true
                 } else {
                     val persisted = updated.copy(formatRepairNotice = null)
-                    check(chats.updateMessageIfUnchanged(message, persisted)) {
-                        "消息已变化，请重新打开分段操作"
-                    }
-                    voices?.removeDeletedAlternatives(message, persisted)
+                    commitAlternativeChange(message, persisted, "消息已变化，请重新打开分段操作")
                     refreshAfterTerminalTask(session.id)
                     saved = true
                 }
@@ -1234,8 +1234,7 @@ internal class DesktopPrimaryChatController(
                 val replacement = MessageAlternativeVersionPolicy.remove(expected, versionId)
                 val warning = if (replacement == null) deleteOwnedMessage(session.id, expected.id, expected)
                 else {
-                    check(chats.updateMessageIfUnchanged(expected, replacement)) { "消息已变化，请重新确认删除" }
-                    voices?.removeDeletedAlternatives(expected, replacement)
+                    commitAlternativeChange(expected, replacement, "消息已变化，请重新确认删除")
                     null
                 }
                 refreshAfterTerminalTask(session.id)
@@ -1259,6 +1258,21 @@ internal class DesktopPrimaryChatController(
             }
         }
         return deleted
+    }
+
+    private suspend fun commitAlternativeChange(previous: ChatMessage, replacement: ChatMessage, staleMessage: String) {
+        val retained = MessageAlternativeVersionPolicy.versions(replacement).map { it.id }.toSet()
+        val removesVersion = MessageAlternativeVersionPolicy.versions(previous).any { it.id !in retained }
+        val commit: suspend () -> Unit = {
+            val saved = checkNotNull(chats.updateMessageIfUnchangedReturningSnapshot(previous, replacement)) { staleMessage }
+            voices?.removeDeletedAlternatives(previous, saved)
+        }
+        if (removesVersion) {
+            // Cancellation before admission keeps the source intact. Once source publication starts,
+            // its exact receipt and version cleanup finish together under the existing mutation owner.
+            currentCoroutineContext().ensureActive()
+            withContext(NonCancellable) { commit() }
+        } else commit()
     }
 
     private suspend fun deleteOwnedMessage(sessionId: String, messageId: String, expected: ChatMessage? = null): String? {

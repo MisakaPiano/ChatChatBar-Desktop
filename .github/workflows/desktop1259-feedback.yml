@@ -41,6 +41,7 @@ jobs:
           .\gradlew.bat :sharedCore:test
           --tests 'com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest'
           --tests 'com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest'
+          --tests 'com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest'
           --no-daemon --stacktrace
       - name: Verify actual primary viewport and gallery source action
         working-directory: app

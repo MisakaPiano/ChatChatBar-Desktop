@@ -649,15 +649,18 @@ class ChatRepository internal constructor(
     }
 
     /** Confirmation snapshots cannot overwrite a later edit, selection or appended candidate. */
-    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean =
+        updateMessageIfUnchangedReturningSnapshot(expected, replacement) != null
+
+    /** Conditional write receipt includes the repository-owned persisted fields under the same lock. */
+    suspend fun updateMessageIfUnchangedReturningSnapshot(expected: ChatMessage, replacement: ChatMessage): ChatMessage? = messageAppendMutex.withDataAccess {
         require(expected.id == replacement.id && expected.sessionId == replacement.sessionId)
         val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
-            else -> return@withDataAccess false
+            else -> return@withDataAccess null
         }
-        if (current != expected) return@withDataAccess false
+        if (current != expected) return@withDataAccess null
         updateMessageLocked(replacement)
-        true
     }
 
     private suspend fun updateMessageLocked(message: ChatMessage): ChatMessage {
