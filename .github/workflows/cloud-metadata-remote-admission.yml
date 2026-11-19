@@ -1,0 +1,54 @@
+name: Device-group receiver metadata admission
+on:
+  push:
+    branches: [codex/metadata-repair-remote-admission-20261120]
+permissions:
+  contents: read
+jobs:
+  remote-metadata-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run exact authenticated receiver case
+        working-directory: app
+        run: >-
+          bash ./gradlew :sharedCore:test
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupDependenciesTest.authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable'
+          --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Verify exact original result
+        env:
+          CHECKED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          cls = 'com.example.chatbar.domain.lanSync.LanSyncGroupDependenciesTest'
+          method = 'authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable'
+          directory = Path('app/sharedCore/build/test-results/test')
+          case_file = directory / ('TEST-' + cls + '.xml')
+          assert set(directory.glob('TEST-*.xml')) == {case_file}
+          suite = ET.fromstring(case_file.read_bytes())
+          counts = {'tests': '1', 'failures': '0', 'errors': '0', 'skipped': '0'}
+          assert suite.tag == 'testsuite' and suite.get('name') == cls
+          assert all(suite.get(key) == value for key, value in counts.items())
+          cases = suite.findall('testcase')
+          assert len(cases) == 1 and not list(cases[0])
+          assert cases[0].get('classname') == cls and cases[0].get('name') == method
+          proof = {'head': os.environ['CHECKED_HEAD'], 'case': cls + '.' + method}
+          (directory / 'exact-remote-metadata-case.json').write_text(json.dumps(proof) + '\n', encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: remote-metadata-admission-original
+          path: app/sharedCore/build/test-results/test/
