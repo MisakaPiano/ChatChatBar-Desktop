@@ -265,13 +265,15 @@ class VoiceMessageRepository(
         // Infer old versionless ownership while the removed text/anchors are still available.
         migrateLegacyVoiceVersionsLocked(previous)
         val removed = _voices.value.filter { it.messageId == previous.id && it.sessionId == previous.sessionId &&
-            it.messageVersionId in removedVersions }
+            it.messageVersionId in removedVersions && (!strictReads || !it.desktopVersionOwnershipUncertain) }
         removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id) }
-        val anchorKeys = anchorsByVersion.keys.filter { it.messageId == previous.id && it.messageVersionId in removedVersions }
+        val removedIds = removed.map { it.id }.toSet()
+        val retained = _voices.value.filterNot { it.id in removedIds }
+        val anchorKeys = anchorsByVersion.keys.filter { key -> key.messageId == previous.id && key.messageVersionId in removedVersions &&
+            retained.none { it.messageId == key.messageId && it.messageVersionId == key.messageVersionId } }
         anchorKeys.forEach { storage.deleteEntity<VoiceAnchorState>(ANCHOR_TYPE, anchorStorageId(it)) }
         anchorsByVersion = anchorsByVersion - anchorKeys.toSet()
-        val removedIds = removed.map { it.id }.toSet()
-        _voices.value = _voices.value.filterNot { it.id in removedIds }
+        _voices.value = retained
         removed
     }
 
@@ -424,6 +426,8 @@ class VoiceMessageRepository(
                 }
                 voice.copy(
                     messageVersionId = versionId,
+                    desktopVersionOwnershipUncertain = voice.desktopVersionOwnershipUncertain ||
+                        (strictReads && VoiceMessageVersionPolicy.uniqueLegacyVersionId(message, voice, legacyState) != versionId),
                     anchorId = state?.let {
                         VoiceMessageVersionPolicy.anchorIdForVoice(voice, it)
                     },

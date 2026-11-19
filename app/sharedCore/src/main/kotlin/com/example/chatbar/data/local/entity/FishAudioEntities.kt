@@ -1,8 +1,11 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import java.util.UUID
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class GeneratedVoiceMessage(
     val id: String,
@@ -26,7 +29,10 @@ data class GeneratedVoiceMessage(
     val durationMs: Long,
     val byteLength: Long,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    /** 播放迁移仅推断出的归属，不足以授权随备选版本删除录音。 */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopVersionOwnershipUncertain: Boolean = false
 ) {
     val effectiveSynthesisText: String
         get() = synthesisText ?: sourceText

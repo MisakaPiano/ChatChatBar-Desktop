@@ -74,6 +74,15 @@ object VoiceMessageVersionPolicy {
         }
     }
 
+    /** A display fallback is not proof that a recording belongs exclusively to one alternative. */
+    fun uniqueLegacyVersionId(message: ChatMessage, voice: GeneratedVoiceMessage, legacyState: VoiceAnchorState?): String? {
+        val versions = MessageAlternativeVersionPolicy.versions(message)
+        if (voice.anchorId != null && legacyState?.anchors?.any { it.id == voice.anchorId } == true) {
+            return versions.singleOrNull { it.content == legacyState.displayContentSnapshot }?.id
+        }
+        return versions.filter { versionContainsVoice(it, voice) }.singleOrNull()?.id
+    }
+
     fun anchorIdForVoice(
         voice: GeneratedVoiceMessage,
         state: VoiceAnchorState

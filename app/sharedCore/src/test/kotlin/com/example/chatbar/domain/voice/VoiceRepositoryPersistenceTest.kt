@@ -6,9 +6,36 @@ import com.example.chatbar.data.repository.VoiceMessageRepository
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 class VoiceRepositoryPersistenceTest {
+    @Test fun `uncertain legacy ownership survives reload and later source edits without authorizing pruning`() = runBlocking {
+        val root = Files.createTempDirectory("uncertain-version-repository-")
+        try {
+            val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            val message = ChatMessage("message", "session", MessageRole.ASSISTANT, "甲：『相同』\n删版叙述",
+                alternatives = listOf("甲：『相同』\n删版叙述", "甲：『相同』\n保留叙述"), alternativeVersionIds = listOf("a", "b"),
+                currentAlternativeVersionId = "a", createdAt = 1, updatedAt = 1)
+            val old = GeneratedVoiceMessage.create("session", message.id, null, null, 0, "DIALOGUE", "甲", "相同",
+                "相同", "相同", "person", "甲", FishAudioVoiceBinding("synthetic", "Synthetic"), "synthetic", "synthetic-not-opened.mp3", 100, 100)
+            val json = Json { encodeDefaults = true }
+            assertFalse("desktopVersionOwnershipUncertain" in json.parseToJsonElement(json.encodeToString(GeneratedVoiceMessage.serializer(), old)).jsonObject)
+            repo.save(old)
+            repo.placementsForMessage(message)
+            val cold = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            assertTrue(assertNotNull(cold.get(old.id)).desktopVersionOwnershipUncertain)
+            val replacement = MessageAlternativeVersionPolicy.remove(message, "a")!!
+            assertTrue(cold.deleteForRemovedVersions(message, replacement).isEmpty())
+            cold.placementsForMessage(replacement)
+            val durable = assertNotNull(VoiceMessageRepository(JsonFileStorage(root), strictReads = true).get(old.id))
+            assertTrue(durable.desktopVersionOwnershipUncertain)
+            assertEquals("a", durable.messageVersionId)
+            assertEquals(old.id, assertNotNull(cold.delete(old.id)).id) // Explicit recording deletion still owns it.
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun `explicit removed version pruning migrates old ownership and retains sibling and unrelated history after restart`() = runBlocking {
         val root = Files.createTempDirectory("removed-version-repository-")
         try {
