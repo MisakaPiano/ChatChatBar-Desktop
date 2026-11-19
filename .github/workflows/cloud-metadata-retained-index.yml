@@ -1,0 +1,79 @@
+name: Retained device-group metadata compatibility
+on:
+  push:
+    branches: [codex/metadata-repair-retained-index-20261120]
+permissions:
+  contents: read
+jobs:
+  retained-index:
+    name: Retained compact conversation (${{ matrix.scope }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scope: lan6
+            checkout: legacy
+            writer: '1'
+          - scope: candidate
+            checkout: .
+            writer: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout exact delivered source
+        if: matrix.scope == 'lan6'
+        uses: actions/checkout@v4
+        with:
+          ref: 5c906e6d4a0f31a114326e35a331c4af4dfa6379
+          path: legacy
+          persist-credentials: false
+      - name: Install the common synthetic fixture on delivered source
+        if: matrix.scope == 'lan6'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          fixture = Path('app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRetainedDescriptorBudgetTest.kt')
+          text = fixture.read_text(encoding='utf-8')
+          for current, delivered in (
+              (', maximumIndexCost = 320L * 1024)', ')'),
+              ('objectStore = workspace.resourceStore, metadataBudget = readBudget)', 'objectStore = workspace.resourceStore)'),
+          ):
+              assert text.count(current) == 1
+              text = text.replace(current, delivered)
+          destination = Path('legacy') / fixture
+          assert not destination.exists()
+          destination.write_text(text, encoding='utf-8')
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run the exact unit and sealed checkpoint cold readers
+        working-directory: ${{ matrix.checkout }}/app
+        env:
+          CCB_RETAINED_LEGACY_WRITER: ${{ matrix.writer }}
+        run: >-
+          bash ./gradlew :sharedCore:test
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncRetainedDescriptorBudgetTest'
+          --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Record exact sources and preserve original results
+        if: always()
+        working-directory: ${{ matrix.checkout }}
+        env:
+          HARNESS_HEAD: ${{ github.sha }}
+        run: |
+          dir=app/sharedCore/build/test-results/test
+          mkdir -p "$dir"
+          git rev-parse HEAD > "$dir/source.txt"
+          printf '%s\n' "$HARNESS_HEAD" > "$dir/harness.txt"
+          git hash-object app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncRetainedDescriptorBudgetTest.kt > "$dir/fixture-git-blob.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retained-compact-metadata-${{ matrix.scope }}-original
+          path: ${{ matrix.checkout }}/app/sharedCore/build/test-results/test/
