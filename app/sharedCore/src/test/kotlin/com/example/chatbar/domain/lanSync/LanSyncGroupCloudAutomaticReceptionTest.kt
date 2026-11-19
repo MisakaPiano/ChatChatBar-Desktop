@@ -53,6 +53,7 @@ class LanSyncGroupCloudAutomaticReceptionTest {
 
     private class Https(private val shared: WeakFixture) : AutoCloseable {
         private val identity = LanSyncTlsIdentity.create()
+        private var serverClosed = false
         val authorized = AtomicInteger()
         private val authorization = Credentials.basic("synthetic user", "synthetic password", Charsets.UTF_8)
         val server = MockWebServer().apply {
@@ -81,8 +82,38 @@ class LanSyncGroupCloudAutomaticReceptionTest {
                 .hostnameVerifier { host, session -> host == "127.0.0.1" &&
                     session.peerCertificates.single().encoded.contentEquals(identity.certificate.encoded) }.build()
         }
+        private fun stopServer() {
+            if (!serverClosed) {
+                server.close()
+                serverClosed = true
+            }
+        }
+
+        fun verifyRecordedAuthentication(): Int {
+            stopServer()
+            var authenticated = 0
+            var incomplete = 0
+            // MockWebServer queues incomplete requests but never dispatches them.
+            repeat(server.requestCount) {
+                val request = requireNotNull(server.takeRequest(0, TimeUnit.MILLISECONDS))
+                val header = request.getHeader("Authorization")
+                if (request.failure == null) {
+                    assertTrue(header == authorization, "Complete HTTPS request lacked saved route authentication")
+                    authenticated++
+                } else {
+                    assertTrue(header == null || header == authorization, "Incomplete HTTPS request had incorrect authentication")
+                    incomplete++
+                }
+            }
+            assertTrue(authenticated > 0)
+            assertEquals(authorized.get(), authenticated)
+            return incomplete
+        }
+
         override fun close() {
-            server.close(); client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll()
+            stopServer()
+            client.dispatcher.executorService.shutdownNow()
+            client.connectionPool.evictAll()
         }
     }
 
@@ -374,7 +405,7 @@ class LanSyncGroupCloudAutomaticReceptionTest {
                 val beforeRevision = cold.chats.lanSyncRevision.value
                 val observed = AtomicReference(cold.chats.getAllSessions())
                 observedJob = launch(start = CoroutineStart.UNDISPATCHED) { cold.chats.observeSessions().collect { observed.set(it) } }
-                val requestsBeforeReceiver = https.server.requestCount
+                val authorizedBeforeReceiver = https.authorized.get()
                 cold.coordinator.startIfConfigured()
                 cold.coordinator.onNetworkAvailable() // One normal lifecycle hint; no explicit sync or recovery action.
                 awaitStage("COLD_RECEIVER_AUTOMATIC_REPOSITORY_APPLY") {
@@ -388,7 +419,7 @@ class LanSyncGroupCloudAutomaticReceptionTest {
                 }
                 observedJob?.cancelAndJoin(); observedJob = null
                 cold.close() // Freeze successful business results and drain owned HTTP before total-counter checks.
-                assertTrue(https.server.requestCount > requestsBeforeReceiver)
+                assertTrue(https.authorized.get() > authorizedBeforeReceiver)
                 val receivedSession = cold.chats.getAllSessions().single { it.id == "measured-new" }
                 assertEquals(expectedSession.title, receivedSession.title)
                 assertEquals(expectedSession.lastMessagePreview, receivedSession.lastMessagePreview)
@@ -422,8 +453,7 @@ class LanSyncGroupCloudAutomaticReceptionTest {
                 assertContentEquals(fullReceiptBytes, Files.readAllBytes(offline.resolve(sourceRoot.relativize(full.receiptPath))))
                 assertFalse(Files.exists(sourceRoot, NOFOLLOW_LINKS))
                 assertEquals(0, shared.server.requestCount)
-                awaitStage("HTTPS_AUTH_COUNTS_DRAINED", 5_000) { https.server.requestCount == https.authorized.get() }
-                assertEquals(https.server.requestCount, https.authorized.get())
+                val incompleteHttpsRequests = https.verifyRecordedAuthentication()
                 assertTrue(peers.all { it.network.connects.get() == 0 })
                 println("CCB_GROUP_CLOUD_AUTOMATIC_RECEPTION " + buildJsonObject {
                     put("actualInvitationTlsJoin", true); put("actualPinnedHttps", true)
@@ -435,6 +465,7 @@ class LanSyncGroupCloudAutomaticReceptionTest {
                     put("bothOriginalConversationsRetained", true); put("receiverAuthorUnchanged", true)
                     put("sourceVersionCount", sourceVersions.size); put("receiverAuthorSequence", finalAuthor.committedSequence)
                     put("plainHttpRequests", shared.server.requestCount); put("lanConnectAttempts", peers.sumOf { it.network.connects.get() })
+                    put("authenticatedHttpsRequests", https.authorized.get()); put("incompleteHttpsRequests", incompleteHttpsRequests)
                 })
                 } finally {
                     withContext(NonCancellable) {

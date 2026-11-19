@@ -1,13 +1,13 @@
-name: Bounded device-group metadata regressions
+name: Device-group HTTPS observation and bounded text scale
 on:
   push:
-    branches: [codex/lan-sync-metadata-enrollment-20261120, codex/metadata-repair-retained-index-fix-20261120]
+    branches: [codex/metadata-repair-auth-observation-20261120]
 permissions:
   contents: read
 jobs:
   metadata-enrollment:
     runs-on: ubuntu-latest
-    timeout-minutes: 36
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -16,28 +16,15 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools platforms;android-36 build-tools;36.0.0
+          packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
-      - name: Execute exact synthetic metadata and founder lifecycle contracts
+      - name: Execute the authenticated cold HTTPS receiver
         working-directory: app
         run: >-
           bash ./gradlew :sharedCore:test
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.singleRecordWorkingBudgetFailureRetainsPreparedIdentityAndColdRetryNeverResetsItsOrigins'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncWorkspaceTest.aggregateMetadataKeepsEveryBodyAndEnforcesIndependentRecordAndIndexLimits'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupDependenciesTest.authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncRetainedDescriptorBudgetTest'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncMetadataBudgetTest.overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'
-          --tests 'com.example.chatbar.domain.lanSync.LanSyncAppliedSourceFilesTest.anAuthorizedJournalAboveTheEntityWindowRecoversAndProvesEveryExactPostApplyFile'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudAutomaticReceptionTest.coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'
-          --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
-      - name: Preserve exact class original methods and counts
-        if: always()
+          --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Check the exact original case and actual HTTPS counters
         env:
           CHECKED_HEAD: ${{ github.sha }}
         run: |
@@ -45,98 +32,34 @@ jobs:
           import json, os
           from pathlib import Path
           import xml.etree.ElementTree as ET
-          base = 'com.example.chatbar.domain.lanSync.'
-          scope = {
-              'LanSyncGroupEnrollmentTest': {
-                  'aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup',
-                  'singleRecordWorkingBudgetFailureRetainsPreparedIdentityAndColdRetryNeverResetsItsOrigins',
-                  'oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState',
-              },
-              'LanSyncWorkspaceTest': {'aggregateMetadataKeepsEveryBodyAndEnforcesIndependentRecordAndIndexLimits'},
-              'LanSyncGroupUnitCodecTest': {
-                  'actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes',
-                  'wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority',
-              },
-              'LanSyncGroupDependenciesTest': {'authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable'},
-              'LanSyncRetainedDescriptorBudgetTest': {
-                  'aRetainedCompactOldConversationReopensWithExactUnitAndMembership',
-                  'aRetainedCompactSourceCheckpointKeepsEveryOriginalRecordAndFile',
-              },
-              'LanSyncGroupCoordinatorTest': {
-                  'reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode',
-                  'lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation',
-              },
-              'LanSyncMetadataBudgetTest': {'overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'},
-              'LanSyncAppliedSourceFilesTest': {'anAuthorizedJournalAboveTheEntityWindowRecoversAndProvesEveryExactPostApplyFile'},
-              'LanSyncGroupCloudAutomaticReceptionTest': {'coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'},
-          }
+          cls = 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudAutomaticReceptionTest'
+          method = 'coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'
           directory = Path('app/sharedCore/build/test-results/test')
-          result = {'head': os.environ['CHECKED_HEAD'], 'classes': [], 'problems': [],
-                    'tests': 0, 'failures': 0, 'errors': 0, 'skipped': 0}
-          expected_xml = {'TEST-' + base + short + '.xml' for short in scope}
-          if {item.name for item in directory.glob('TEST-*.xml')} != expected_xml:
-              result['problems'].append('UNEXPECTED_XML_INVENTORY')
-          for short, expected in scope.items():
-              name = base + short
-              case_result = {'class': name, 'expectedMethods': sorted(expected), 'problems': []}
-              result['classes'].append(case_result)
-              path = directory / ('TEST-' + name + '.xml')
-              problems = case_result['problems']
-              if not path.is_file():
-                  problems.append('MISSING_CLASS')
-                  continue
-              raw = path.read_bytes()
-              if b'\x00' in raw or b'<!DOCTYPE' in raw.upper() or b'<!ENTITY' in raw.upper():
-                  problems.append('FORBIDDEN_XML_DECLARATION')
-              else:
-                  suite = ET.fromstring(raw)
-                  nodes = list(suite.iter())
-                  local = lambda node: node.tag.rsplit('}', 1)[-1] if isinstance(node.tag, str) else ''
-                  cases = suite.findall('testcase')
-                  all_cases = [node for node in nodes if local(node) == 'testcase']
-                  counts = {'tests': len(all_cases)}
-                  counts.update({key: sum(local(node) == tag for node in nodes)
-                                 for key, tag in [('failures', 'failure'), ('errors', 'error'), ('skipped', 'skipped')]})
-                  case_result.update(counts)
-                  for key, count in counts.items():
-                      result[key] += count
-                  case_result['actualMethods'] = [case.get('name') for case in all_cases]
-                  if suite.tag != 'testsuite' or suite.get('name') != name:
-                      problems.append('ROOT_SUITE_MISMATCH')
-                  if any(key not in suite.attrib for key in counts):
-                      problems.append('MISSING_COUNT_DECLARATION')
-                  if any(int(suite.get(key, '0')) != value for key, value in counts.items()):
-                      problems.append('COUNT_MISMATCH')
-                  if len(cases) != len(expected) or all_cases != cases or {case.get('name') for case in cases} != expected or any(case.get('classname') != name for case in cases):
-                      problems.append('EXACT_METHODS_NOT_EXECUTED')
-                  if counts != {'tests': len(expected), 'failures': 0, 'errors': 0, 'skipped': 0}:
-                      problems.append('METHODS_NOT_PASS')
-          if any(case['problems'] for case in result['classes']):
-              result['problems'].append('SCOPED_CASES_NOT_ALL_PASS')
-          output = Path('app/build/reports/metadata-enrollment-regression.json')
-          output.parent.mkdir(parents=True, exist_ok=True)
-          output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
-          print(json.dumps(result))
-          if result['problems']:
-              raise SystemExit(1)
+          original = directory / ('TEST-' + cls + '.xml')
+          assert set(directory.glob('TEST-*.xml')) == {original}
+          suite = ET.fromstring(original.read_bytes())
+          assert suite.tag == 'testsuite' and suite.get('name') == cls
+          assert all(suite.get(key) == count for key, count in
+                     {'tests': '1', 'failures': '0', 'errors': '0', 'skipped': '0'}.items())
+          cases = suite.findall('testcase')
+          assert len(cases) == 1 and not list(cases[0])
+          assert cases[0].get('classname') == cls and cases[0].get('name') == method
+          prefix = 'CCB_GROUP_CLOUD_AUTOMATIC_RECEPTION '
+          lines = (suite.findtext('system-out') or '').splitlines()
+          matches = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
+          assert len(matches) == 1
+          observation = matches[0]
+          assert observation['authenticatedHttpsRequests'] > 0 and observation['incompleteHttpsRequests'] >= 0
+          assert observation['plainHttpRequests'] == observation['lanConnectAttempts'] == 0
+          assert observation['senderOfflineRootMoved'] and observation['receiverAuthorUnchanged']
+          proof = {'head': os.environ['CHECKED_HEAD'], 'case': cls + '.' + method, 'observation': observation}
+          (directory / 'exact-https-auth-observation.json').write_text(json.dumps(proof) + '\n', encoding='utf-8')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: metadata-enrollment-regression-original-results
-          path: |
-            app/sharedCore/build/test-results/test/
-            app/build/reports/metadata-enrollment-regression.json
-      - name: Compile the Android preview entry
-        if: always()
-        working-directory: app
-        run: >-
-          bash ./gradlew :app:compileLanPreviewKotlin
-          -Pkotlin.daemon.jvmargs=-Xmx4g --max-workers=1 --no-parallel --no-daemon --stacktrace
-      - name: Compile the desktop entry
-        if: always()
-        working-directory: app
-        run: bash ./gradlew :desktopApp:compileKotlin --max-workers=1 --no-parallel --no-daemon --stacktrace
+          name: https-auth-observation-original
+          path: app/sharedCore/build/test-results/test/
   metadata-text-scale:
     needs: metadata-enrollment
     runs-on: ubuntu-latest
