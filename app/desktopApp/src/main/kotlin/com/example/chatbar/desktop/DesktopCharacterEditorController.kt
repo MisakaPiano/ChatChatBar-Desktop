@@ -727,18 +727,19 @@ internal class DesktopCharacterEditorController(
                 current.base != before.base) return false
             if (current.card != before.card || !current.dirty || !current.draftPersisted) {
                 if (current.dirty) reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED,
-                    "保存检查期间内容已变化，最新编辑已保留，请再次保存。")
+                    "保存检查期间内容已变化，最新编辑已保留，请再次保存。", allowChangedCard = true)
                 return false
             }
             if (_state.compareAndSet(current, current.copy(busy = true, problem = null, detail = null))) return true
         }
     }
 
-    private fun reportSaveProblem(before: DesktopCharacterEditorState, problem: CharacterEditorProblem, detail: String? = null) {
+    private fun reportSaveProblem(before: DesktopCharacterEditorState, problem: CharacterEditorProblem,
+        detail: String? = null, allowChangedCard: Boolean = false) {
         while (true) {
             val current = _state.value
             if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
-                current.base != before.base) return
+                current.base != before.base || (!allowChangedCard && current.card != before.card)) return
             if (_state.compareAndSet(current, current.copy(problem = problem, detail = detail))) return
         }
     }
@@ -754,11 +755,13 @@ internal class DesktopCharacterEditorController(
             reportSaveProblem(before, CharacterEditorProblem.DRAFT_FAILED)
             return false
         }
-        if (!validate(card, before.targetId)) return false
+        val valid = try { validate(card, before) }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, error.message); return false }
+        if (!valid) return false
         val source = try { before.targetId?.let { characters.getById(it) } }
-        catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, error.message); return false }
         val newIdConflict = try { before.targetId == null && characters.getById(card.id) != null }
-        catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, error.message); return false }
         if (newIdConflict) {
             reportSaveProblem(before, CharacterEditorProblem.SOURCE_CHANGED)
             return false
@@ -772,7 +775,7 @@ internal class DesktopCharacterEditorController(
             return false
         }
         val persistedDraft = try { drafts.getForTarget(EditorDraftType.CHARACTER_CARD, before.targetId) }
-        catch (error: Throwable) { report(CharacterEditorProblem.DRAFT_FAILED, error); return false }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.DRAFT_FAILED, error.message); return false }
         if (source != null && persistedDraft != null && drafts.isChanged(source, persistedDraft)) {
             reportSaveProblem(before, CharacterEditorProblem.SOURCE_CHANGED)
             return false
@@ -1030,7 +1033,7 @@ internal class DesktopCharacterEditorController(
         }
     }
 
-    private suspend fun validate(card: CharacterCard, targetId: String?): Boolean {
+    private suspend fun validate(card: CharacterCard, before: DesktopCharacterEditorState): Boolean {
         val issue = when {
             NamePolicy.normalize(card.name).isBlank() -> CharacterEditorProblem.NAME_REQUIRED
             card.greeting.isBlank() -> CharacterEditorProblem.GREETING_REQUIRED
@@ -1038,16 +1041,16 @@ internal class DesktopCharacterEditorController(
                 CharacterEditorProblem.CHARACTER_NAME_REQUIRED
             CharacterSpeakerNamePolicy.duplicateNames(card.characters).isNotEmpty() ->
                 CharacterEditorProblem.DUPLICATE_CHARACTER_NAME
-            NamePolicy.conflict(card.name, characters.getAll().map { it.id to it.name }, targetId) != null ->
+            NamePolicy.conflict(card.name, characters.getAll().map { it.id to it.name }, before.targetId) != null ->
                 CharacterEditorProblem.DUPLICATE_CARD_NAME
             else -> null
         }
-        if (issue != null) { _state.value = _state.value.copy(problem = issue); return false }
+        if (issue != null) { reportSaveProblem(before, issue); return false }
         val imageIssue = card.defaultImageGenerationSettings?.applyTo(
             com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel
                 ?: com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL))?.validationError(0)
         if (imageIssue != null) {
-            _state.value = _state.value.copy(problem = CharacterEditorProblem.SAVE_FAILED, detail = imageIssue)
+            reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, imageIssue)
             return false
         }
         return true
