@@ -99,6 +99,9 @@ class DesktopActionOptionsRequestTest {
             Triple("我同意B方案，先检查营地周边。", 'A', true),
             Triple("我同意B并守在营地附近观察四周。", 'A', true),
             Triple("我赞成B的方案，今天沿着山路向前探索。", 'A', true),
+            Triple("我赞成 B 的方案，今天沿着山路向前探索。", 'A', true),
+            Triple("我赞成C的方案，今天沿着山路向前探索。", 'A', false),
+            Triple("我赞成B的方案，今天沿着山路向前探索。", '1', false),
             Triple("I'll take the penultimate and wait quietly nearby.", 'A', true),
             Triple("我沿着C路线前往城外再寻找新的落脚处。", 'A', false),
             Triple("我在营地里整理工具并等待下一次动静。", 'A', false),
@@ -125,8 +128,9 @@ class DesktopActionOptionsRequestTest {
         }
     }
 
-    @Test fun `empty list item code example remains inert and survives actual outgoing history`() = runBlocking { fixture { f ->
-        val literal = "- \n  ```action options\n  1. EXAMPLE_ONE\n  2. EXAMPLE_TWO\n  ```"
+    @Test fun `empty list item code example remains inert and survives actual outgoing history`() = runBlocking {
+        for (marker in listOf("- ", "-", "+")) fixture { f ->
+        val literal = "$marker\n  ```action options\n  1. EXAMPLE_ONE\n  2. EXAMPLE_TWO\n  ```"
         f.add(MessageRole.USER, ordinary)
         val source = f.add(MessageRole.ASSISTANT, literal)
         val wire = f.wire(ordinary).first.joinToString("\n")

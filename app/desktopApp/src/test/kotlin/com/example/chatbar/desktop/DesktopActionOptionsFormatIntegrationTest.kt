@@ -79,7 +79,9 @@ class DesktopActionOptionsFormatIntegrationTest {
         val numericRule = ActionOptionsFormat("[ACTIONS]", "[END-ACTIONS]", "", ActionOptionLabels.NUMBERS)
         for (example in listOf(
             "> ~~~text\n> [ACTIONS]\n> 1. 仅示例甲\n> 2. 仅示例乙\n> ~~~",
-            "- 示例\n  ~~~text\n  [ACTIONS]\n  1. 仅示例甲\n  2. 仅示例乙\n  ~~~"
+            "- 示例\n  ~~~text\n  [ACTIONS]\n  1. 仅示例甲\n  2. 仅示例乙\n  ~~~",
+            "- \n  ~~~text\n  [ACTIONS]\n  1. 仅示例甲\n  2. 仅示例乙\n  ~~~",
+            "+\n  ~~~text\n  [ACTIONS]\n  1. 仅示例甲\n  2. 仅示例乙\n  ~~~"
         )) {
             val f = DesktopMessageFormatRepairTest.Fixture()
             try {
