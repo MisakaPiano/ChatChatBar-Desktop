@@ -48,6 +48,7 @@ class DesktopCharacterDraftSaveParityTest {
                     app.editorDraftRepository.deleteForTarget(type, id)
                 })
             val person = CharacterInfo.create("Synthetic person")
+            Files.createDirectories(app.appDataRoot) // This fixture materializes before any repository has initialized the root.
             val originalRef = app.characterResourceStore.materializeDocument(
                 com.example.chatbar.domain.card.PackagedDocument("source.txt", "txt", "Original document"), 1, "focus-source")
             val doc = DocumentInfo.create("source.txt", originalRef, "txt")
