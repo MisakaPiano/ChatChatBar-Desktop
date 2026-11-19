@@ -11,7 +11,7 @@ from xml.etree import ElementTree as ET
 root = Path.cwd()
 out = root/'android-review-r6-originals'
 out.mkdir(exist_ok=True)
-SOURCE = '2bdb44b17e0541ac9ce5f1a80bcffd7bb259be7e'
+SOURCE = 'ff181b6cf0590d88b12af0c98f6b280968da05e8'
 APP_ID = 'com.example.chatbar.nextreview.r6'
 LABEL = 'CCB 集中验收 r6'
 FLAGS = ['-PCHATBAR_ISOLATED_ANDROID_TEST=true', '-PCHATBAR_ISOLATED_ANDROID_TEST_APP_ID='+APP_ID]
@@ -59,7 +59,7 @@ if phase == 'prepare':
     strings.write_text(projected)
     (out/'display-name-only-projection.patch').write_bytes(subprocess.check_output(['git','diff']))
     (out/'source.json').write_text(json.dumps(dict(source=SOURCE,
-        previousCombined='eeb4f1253fda98444e51e2ae73ebaced0c762b95',focus='7e540e04a5a3a75f256f656de6430de7ec3f2f60',action='43efdb532f4d98c45e72776fa1e80bdc70f6190e',
+        previousCombined='eeb4f1253fda98444e51e2ae73ebaced0c762b95',focus='e4657bae489deea9f9ce1a8b3fee7a56eded19c9',action='d4e0233ce238ad1a76be44577a768cf6d6c5bb87',
         cardDraftFix='b370d46d3d766ad11fb5a0d6b1c37cab97a64637',pr7='efa6ffbb20cfc52096f0f5df03b41c419fc14e4a',
         flags=FLAGS,applicationId=APP_ID,label=LABEL,syntheticOnly=True,realAccountCalls=False,humanAcceptance=False)))
     path = root/'app/gradlew'
