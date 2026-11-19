@@ -1,0 +1,68 @@
+name: Android consolidated review r6
+on:
+  push:
+    branches: [validation/android-review-r6-20261119]
+permissions:
+  contents: read
+concurrency:
+  group: android-review-r6
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 26]
+    env:
+      CHATBAR_VERSION_NAME: 1.4.12-next-review-r6
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp validation/android_review_r6.py /tmp/android_review_r6.py
+      - uses: actions/checkout@v4
+        with:
+          ref: dcf0a87b487f39d50e81f8381e3505be562f0c28
+          fetch-depth: 12
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: python /tmp/android_review_r6.py prepare
+      - name: Full combined JVM and same APK preparation
+        if: matrix.api == 30
+        run: python /tmp/android_review_r6.py full-jvm-and-package
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          profile: pixel_2
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python /tmp/android_review_r6.py native-api${{ matrix.api }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-review-r6-api${{ matrix.api }}-originals
+          path: android-review-r6-originals/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success() && matrix.api == 30
+        with:
+          name: android-review-r6-apk
+          path: CCB-consolidated-review-r6.apk
+          retention-days: 14
