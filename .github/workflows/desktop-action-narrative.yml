@@ -1,0 +1,44 @@
+name: Desktop narrative reply and action rules
+on:
+  push:
+    branches: [codex/desktop-action-narrative-20261119]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-action-narrative-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Record exact synthetic test source
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path 'review-action-narrative' | Out-Null
+          git rev-parse HEAD | Set-Content 'review-action-narrative/source.txt'
+      - name: Verify narrative reply streaming and persistence
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-action-narrative-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/
+            review-action-narrative/
