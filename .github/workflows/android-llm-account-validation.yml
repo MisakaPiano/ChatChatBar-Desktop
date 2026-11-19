@@ -1,0 +1,87 @@
+name: Android named LLM account validation
+on:
+  push:
+    branches: [validation/android-llm-account-keystore-20261120]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [jvm, api26, api30]
+    env:
+      SOURCE: ee09090f9d685960885941722d488c2c3745e148
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Record source
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE"
+          mkdir -p account-originals
+          printf 'source=%s\nsuite=%s\n' "$SOURCE" '${{ matrix.suite }}' > account-originals/source.txt
+          chmod +x app/gradlew
+      - name: JVM regression suite and Android test compilation
+        if: matrix.suite == 'jvm'
+        run: cd app && ./gradlew test compileDebugAndroidTestKotlin --no-daemon --stacktrace
+      - name: Enable KVM
+        if: matrix.suite != 'jvm'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        if: matrix.suite != 'jvm'
+        with:
+          api-level: ${{ matrix.suite == 'api26' && '26' || '30' }}
+          profile: pixel_2
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            cd app && ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_ISOLATED_ANDROID_TEST=true -PCHATBAR_ISOLATED_ANDROID_TEST_APP_ID=com.example.chatbar.llmaccountvalidation -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.data.security.LlmApiAccountStoreTest --no-daemon --stacktrace
+      - name: Collect and check raw test reports
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          import shutil
+
+          out = Path('account-originals')
+          root = Path('app/app/build')
+          suites = []
+          for directory in ('test-results/testDebugUnitTest', 'outputs/androidTest-results/connected'):
+              folder = root / directory
+              for report in folder.rglob('TEST-*.xml'):
+                  target = out / directory / report.relative_to(folder)
+                  target.parent.mkdir(exist_ok=True, parents=True)
+                  shutil.copy2(report, target)
+                  suites.extend(ET.parse(report).iter('testcase'))
+          if '${{ matrix.suite }}' != 'jvm':
+              assert len(suites) == 1
+              assert suites[0].attrib['name'] == 'keyIsEncryptedOnDiskAndReopensWithTheSameBinding'
+              assert all(suites[0].find(field) is None for field in ('failure', 'error', 'skipped'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-named-llm-accounts-${{ matrix.suite }}-originals
+          path: account-originals/
+          retention-days: 14
