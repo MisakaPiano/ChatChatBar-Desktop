@@ -35,7 +35,9 @@ object NarrativeHistoryEcho {
         var unmatchedClosing = false
         for (match in wrapperFamilyTokens.getValue(wrapper.name).findAll(end)) {
             val position = match.range.first
-            if (literalRanges.any { position in it } || isIndentedCodeLine(end, position)) continue
+            if (isEscaped(end, position) || literalRanges.any { position in it } ||
+                isIndentedCodeLine(end, position)
+            ) continue
 
             if (match.value.startsWith("</")) {
                 if (innerDepth > 0) {
@@ -58,7 +60,7 @@ object NarrativeHistoryEcho {
             // At completion, only discard a truncated tag if its name already identifies it.
             val identifiable = suffix.startsWith("</历史回复") || suffix.startsWith("</聚焦模式")
             if ((streaming || identifiable) && wrapper.closings.any { suffix.length < it.length && it.startsWith(suffix) } &&
-                literalRanges.none { lastTag in it } && !isIndentedCodeLine(end, lastTag)
+                !isEscaped(end, lastTag) && literalRanges.none { lastTag in it } && !isIndentedCodeLine(end, lastTag)
             ) {
                 return end.substring(0, lastTag).trimEnd()
             }
@@ -67,7 +69,7 @@ object NarrativeHistoryEcho {
     }
 
     private fun codeLiteralRanges(body: String): List<IntRange> {
-        val fences = MarkdownCodeFences.ranges(body)
+        val fences = MarkdownCodeFences.blocks(body).map { it.range }
         if ('`' !in body) return fences
         val boundaries = (fences + paragraphBreak.findAll(body).map { it.range }.toList())
             .sortedBy { it.first }
@@ -89,9 +91,7 @@ object NarrativeHistoryEcho {
             val opening = runs[index++]
             val position = opening.range.first
             if (isIndentedCodeLine(text, position)) continue
-            var preceding = position
-            while (preceding > 0 && text[preceding - 1] == '\\') preceding--
-            val unescapedStart = position + (position - preceding) % 2
+            val unescapedStart = if (isEscaped(text, position)) position + 1 else position
             val length = opening.range.last + 1 - unescapedStart
             if (length == 0) continue
             // A span closes with the next run of equal length. Backslashes inside it are literal.
@@ -101,9 +101,16 @@ object NarrativeHistoryEcho {
         }
     }
 
+    private fun isEscaped(text: String, position: Int): Boolean {
+        var preceding = position
+        while (preceding > 0 && text[preceding - 1] == '\\') preceding--
+        return (position - preceding) % 2 != 0
+    }
+
     private fun isIndentedCodeLine(text: String, offset: Int): Boolean {
         val lineStart = text.lastIndexOf('\n', offset - 1) + 1
-        val indent = text.substring(lineStart, offset).takeWhile { it == ' ' || it == '\t' }
+        val contentStart = MarkdownCodeFences.afterQuotePrefixes(text, lineStart)
+        val indent = text.substring(contentStart.coerceAtMost(offset), offset).takeWhile { it == ' ' || it == '\t' }
         return indent.length >= 4 || '\t' in indent
     }
 }
