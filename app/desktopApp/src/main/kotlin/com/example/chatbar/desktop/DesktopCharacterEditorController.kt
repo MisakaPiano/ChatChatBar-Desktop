@@ -26,6 +26,7 @@ import com.example.chatbar.domain.draft.CharacterEditorDraftUiState
 import com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodec
 import com.example.chatbar.domain.draft.CharacterEditorPostCommitState
 import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
+import com.example.chatbar.domain.draft.CharacterEditorSemanticProjection
 import com.example.chatbar.domain.chat.SpeakerTagHistoryService
 import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
@@ -323,7 +324,7 @@ internal class DesktopCharacterEditorController(
         val displayed = displayCard(draft.characterPayload!!)
         _state.value = _state.value.copy(card = displayed, base = source, draftBasis = draft,
             targetId = draft.targetId, draftSessionId = draft.draftSessionId,
-            draftPersisted = true, dirty = source == null || displayed != displayCard(source) ||
+            draftPersisted = true, dirty = source == null || !sameEditableCard(displayed, source) ||
                 problem == CharacterEditorProblem.SOURCE_CHANGED, problem = problem, detail = null)
     }
 
@@ -353,7 +354,7 @@ internal class DesktopCharacterEditorController(
             stylePromptUndo = current.stylePromptUndo?.takeIf {
                 next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
             },
-            dirty = current.base == null || next != displayCard(current.base), draftPersisted = false,
+            dirty = current.base == null || !sameEditableCard(next, current.base), draftPersisted = false,
             problem = current.problem?.takeIf {
                 it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED ||
                     it == CharacterEditorProblem.RESOURCE_FAILED && current.resourceCleanupPending
@@ -661,6 +662,10 @@ internal class DesktopCharacterEditorController(
         defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
     )
 
+    private fun sameEditableCard(left: CharacterCard, right: CharacterCard): Boolean =
+        CharacterEditorSemanticProjection.normalize(displayCard(left)) ==
+            CharacterEditorSemanticProjection.normalize(displayCard(right))
+
     private fun editableNegativePrompt(value: String): String =
         value.takeUnless(String::isBlank) ?: CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt()
 
@@ -681,7 +686,7 @@ internal class DesktopCharacterEditorController(
 
     private suspend fun persistDraft() = dataGate.withNormalOperation { draftMutex.withLock {
         val current = _state.value
-        if (!current.dirty || current.draftPersisted) return@withLock
+        if (current.busy || !current.dirty || current.draftPersisted) return@withLock
         val card = current.card ?: return@withLock
         val session = current.draftSessionId ?: return@withLock
         val draft = current.draftBasis?.copy(characterPayload = card, draftAssetPaths = draftAssets(card))
@@ -714,6 +719,30 @@ internal class DesktopCharacterEditorController(
         return saved
     }
 
+    /** Preflight may suspend while the user continues editing. Never publish its older form. */
+    private fun reserveSaveSnapshot(before: DesktopCharacterEditorState): Boolean {
+        while (true) {
+            val current = _state.value
+            if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
+                current.base != before.base) return false
+            if (current.card != before.card || !current.dirty || !current.draftPersisted) {
+                if (current.dirty) reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED,
+                    "保存检查期间内容已变化，最新编辑已保留，请再次保存。")
+                return false
+            }
+            if (_state.compareAndSet(current, current.copy(busy = true, problem = null, detail = null))) return true
+        }
+    }
+
+    private fun reportSaveProblem(before: DesktopCharacterEditorState, problem: CharacterEditorProblem, detail: String? = null) {
+        while (true) {
+            val current = _state.value
+            if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
+                current.base != before.base) return
+            if (_state.compareAndSet(current, current.copy(problem = problem, detail = detail))) return
+        }
+    }
+
     private suspend fun saveWithinDataOperation(): Boolean {
         flushDraft()
         val before = _state.value
@@ -722,7 +751,7 @@ internal class DesktopCharacterEditorController(
         if (!before.dirty) return if (before.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) false
             else cleanObsoleteDraft()
         if (before.dirty && !before.draftPersisted) {
-            _state.value = before.copy(problem = CharacterEditorProblem.DRAFT_FAILED)
+            reportSaveProblem(before, CharacterEditorProblem.DRAFT_FAILED)
             return false
         }
         if (!validate(card, before.targetId)) return false
@@ -731,24 +760,24 @@ internal class DesktopCharacterEditorController(
         val newIdConflict = try { before.targetId == null && characters.getById(card.id) != null }
         catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
         if (newIdConflict) {
-            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_CHANGED)
+            reportSaveProblem(before, CharacterEditorProblem.SOURCE_CHANGED)
             return false
         }
         if (before.targetId != null && source == null) {
-            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_DELETED)
+            reportSaveProblem(before, CharacterEditorProblem.SOURCE_DELETED)
             return false
         }
         if (source?.isCommunityDownload == true) {
-            _state.value = before.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
+            reportSaveProblem(before, CharacterEditorProblem.COMMUNITY_READ_ONLY)
             return false
         }
         val persistedDraft = try { drafts.getForTarget(EditorDraftType.CHARACTER_CARD, before.targetId) }
         catch (error: Throwable) { report(CharacterEditorProblem.DRAFT_FAILED, error); return false }
         if (source != null && persistedDraft != null && drafts.isChanged(source, persistedDraft)) {
-            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_CHANGED)
+            reportSaveProblem(before, CharacterEditorProblem.SOURCE_CHANGED)
             return false
         }
-        _state.value = before.copy(busy = true, problem = null, detail = null)
+        if (!reserveSaveSnapshot(before)) return false
         var created = emptyList<String>()
         try {
             val documentsChanged = source == null || !sameDocumentSources(source.customDocuments, card.customDocuments)
@@ -865,7 +894,7 @@ internal class DesktopCharacterEditorController(
 
     private fun needsCleanDraftCleanup(current: DesktopCharacterEditorState): Boolean =
         !current.dirty && current.card != null && current.base != null &&
-            current.card == displayCard(current.base) &&
+            sameEditableCard(current.card, current.base) &&
             ((current.draftBasis != null && current.draftBasis.targetId == current.targetId) ||
                 current.problem == CharacterEditorProblem.CLEAN_DRAFT_WARNING) &&
             current.problem != CharacterEditorProblem.SAVE_COMMITTED_WARNING

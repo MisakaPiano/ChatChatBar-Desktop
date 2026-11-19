@@ -40,6 +40,8 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest'
+          --tests 'com.example.chatbar.desktop.DesktopCharacterEditorControllerTest'
+          --tests 'com.example.chatbar.desktop.DesktopCharacterManualDraftAdmissionTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
