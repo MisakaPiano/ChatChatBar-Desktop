@@ -98,6 +98,7 @@ class DesktopActionOptionsRequestTest {
             Triple("a 然后静静地等待门口下一轮反应。", 'a', true),
             Triple("我同意B方案，先检查营地周边。", 'A', true),
             Triple("我同意B并守在营地附近观察四周。", 'A', true),
+            Triple("我赞成B的方案，今天沿着山路向前探索。", 'A', true),
             Triple("I'll take the penultimate and wait quietly nearby.", 'A', true),
             Triple("我沿着C路线前往城外再寻找新的落脚处。", 'A', false),
             Triple("我在营地里整理工具并等待下一次动静。", 'A', false),
@@ -123,6 +124,16 @@ class DesktopActionOptionsRequestTest {
             f.unchanged()
         }
     }
+
+    @Test fun `empty list item code example remains inert and survives actual outgoing history`() = runBlocking { fixture { f ->
+        val literal = "- \n  ```action options\n  1. EXAMPLE_ONE\n  2. EXAMPLE_TWO\n  ```"
+        f.add(MessageRole.USER, ordinary)
+        val source = f.add(MessageRole.ASSISTANT, literal)
+        val wire = f.wire(ordinary).first.joinToString("\n")
+        f.unchanged()
+        assertTrue(literal in wire, "Literal nested code was removed from the actual request as if it were an action menu")
+        assertTrue(desktopActionChoices(source).isEmpty(), "An empty list marker still owns its following indented code")
+    } }
 
     @Test fun `current long caption with image retains earlier choices and exact user multimodal payload`() = runBlocking {
         for (exclude in listOf(false, true)) fixture(exclude, multimodal = true) { f ->
