@@ -71,6 +71,7 @@ class DesktopCharacterDraftSaveParityTest {
             assertEquals(payload.customDocuments, editor.state.value.card!!.customDocuments,
                 "Comparison must not strip metadata from the retained payload")
             editor.closeClean()
+            withTimeout(5_000) { while (editor.state.value.card != null) delay(20) }
             assertFalse(coldDrafts(app).existsForTarget(EditorDraftType.CHARACTER_CARD, a.id))
             editor.openExisting(a.id)
             editor.edit { it.copy(customDocuments = it.customDocuments.map { d -> d.copy(fileName = "renamed.txt") }) }
