@@ -1,0 +1,37 @@
+name: Android action fence baseline
+on:
+  push:
+    branches: [validation/android-action-fence-baseline-20261119]
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: fixture
+      - uses: actions/checkout@v4
+        with:
+          ref: 0f57b676859d4f964a455dfeab3d31f7aaf3f600
+          path: old
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: python fixture/validation/action_fence_baseline.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-action-fence-baseline-xml
+          path: action-fence-baseline/
