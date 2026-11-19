@@ -29,6 +29,57 @@ class DesktopCharacterDraftSaveParityTest {
         extensions = """{"unknown_vendor":{"retained":[1,2,3]}}""", creatorNotes = "Original notes")
     private fun coldDrafts(app: DesktopAppContainer) = EditorDraftRepository(JsonFileStorage(app.appDataRoot))
 
+    @Test fun `clean draft deletion cannot erase attachments accepted while its old directory is being retired`() = runBlocking {
+        fixture { app, _ -> coroutineScope {
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val armed = AtomicBoolean()
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json,
+                deleteDraft = { type, id ->
+                    if (armed.compareAndSet(true, false)) { entered.complete(Unit); release.await() }
+                    app.editorDraftRepository.deleteForTarget(type, id)
+                })
+            val a = source()
+            app.characterRepository.save(a)
+            try {
+                editor.openExisting(a.id)
+                editor.edit { it.copy(creatorNotes = "Temporary draft edit") }
+                editor.addTextDocument("obsolete.txt", "Old staged bytes")
+                editor.flushDraft()
+                val oldPath = editor.state.value.card!!.customDocuments.single().filePath
+                editor.edit { it.copy(creatorNotes = a.creatorNotes, customDocuments = a.customDocuments) }
+                assertFalse(editor.state.value.dirty)
+                val oldSession = editor.state.value.draftSessionId
+                armed.set(true)
+                val saving = async { editor.save() }
+                try {
+                    withTimeout(5_000) { entered.await() }
+                    assertNotEquals(oldSession, editor.state.value.draftSessionId)
+                    editor.addTextDocument("new.txt", "New accepted bytes")
+                    val newDoc = editor.state.value.card!!.customDocuments.single()
+                    assertTrue(editor.state.value.dirty)
+                    assertEquals("New accepted bytes", Files.readString(app.appDataRoot.resolve(newDoc.filePath)))
+                    release.complete(Unit)
+                    assertFalse(saving.await(), "A newer accepted edit remains pending for its own Save")
+                    editor.flushDraft()
+                    assertFalse(Files.exists(app.appDataRoot.resolve(oldPath)))
+                    val draft = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, a.id))
+                    assertEquals(newDoc, draft.characterPayload!!.customDocuments.single())
+                    assertEquals("New accepted bytes", Files.readString(app.appDataRoot.resolve(newDoc.filePath)))
+                } finally { release.complete(Unit); saving.cancelAndJoin() }
+            } finally { release.complete(Unit); editor.closeAndDrain() }
+            val reopened = app.characterEditorController
+            reopened.openExisting(a.id)
+            val restored = reopened.state.value.card!!.customDocuments.single()
+            assertEquals("New accepted bytes", Files.readString(app.appDataRoot.resolve(restored.filePath)))
+            assertTrue(reopened.save())
+            val durable = assertNotNull(CharacterRepository(JsonFileStorage(app.appDataRoot)).getById(a.id)).customDocuments.single()
+            assertFalse(durable.filePath.startsWith("draft_assets/"))
+            assertEquals("New accepted bytes", app.characterResourceStore.readText(durable.filePath))
+        } }
+    }
+
     @Test fun `formal save cancels pending autosave and reentering same or another card cannot recreate its draft`() = runBlocking {
         fixture { app, editor ->
             val a = source(); val b = source("Synthetic B")

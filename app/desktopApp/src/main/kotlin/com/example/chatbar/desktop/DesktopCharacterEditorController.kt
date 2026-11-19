@@ -138,8 +138,8 @@ internal class DesktopCharacterEditorController(
 
     internal fun stageGeneratedCardImage(session: String, basis: CharacterCard, destination: CharacterCard,
         personId: String?, image: ByteArray, crop: ByteArray? = null,
-        assign: (CharacterCard) -> Boolean = { applyCardAi(session, basis, it) }): Boolean {
-        if (!canUseCardAi || _state.value.draftSessionId != session || _state.value.card != basis) return false
+        assign: (CharacterCard) -> Boolean = { applyCardAi(session, basis, it) }): Boolean = synchronized(resourceMutationLock) {
+        if (!canUseCardAi || _state.value.draftSessionId != session || _state.value.card != basis) return@synchronized false
         require(destination.id == basis.id && destination.createdAt == basis.createdAt)
         val staged = mutableListOf<String>()
         var assignmentEntered = false
@@ -154,15 +154,16 @@ internal class DesktopCharacterEditorController(
                 destination.copy(characters = destination.characters.map { if (it.id == personId) it.copy(appearanceImage = full) else it })
             }
             assignmentEntered = true
-            if (assign(next)) return true
+            if (assign(next)) return@synchronized true
             staged.asReversed().forEach(resources::discardNew)
-            return false
+            false
         } catch (error: Throwable) {
             if (!assignmentEntered) staged.asReversed().forEach { runCatching { resources.discardNew(it) }.onFailure(error::addSuppressed) }
             throw error
         }
     }
 
+    private val resourceMutationLock = Any()
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
     private val draftMutex = Mutex()
@@ -182,6 +183,13 @@ internal class DesktopCharacterEditorController(
     private var pendingRename: PendingRename? = null
     private var pendingObsoleteSource: CharacterCard? = null
     private val committedCleanupMutex = Mutex()
+
+    private fun withManualResourceSession(session: String, operation: () -> Unit) = manualResourceAccess {
+        synchronized(resourceMutationLock) {
+            check(_state.value.draftSessionId == session && canMutate()) { "草稿已切换，请重新添加资料" }
+            operation()
+        }
+    }
     private val resourceCleanupCards = linkedSetOf<CharacterCard>()
     private val resourceCleanupSessions = linkedSetOf<String>()
 
@@ -488,7 +496,7 @@ internal class DesktopCharacterEditorController(
         if (!canMutate()) return
         val avatar = _state.value.card?.avatar ?: return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val reference = resources.copyAsCover(session, avatar)
             edit { it.copy(coverImage = reference) }
         } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
@@ -523,7 +531,7 @@ internal class DesktopCharacterEditorController(
     private fun cropImage(bytes: ByteArray, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val ref = resources.stageImage(session, bytes)
             edit { assign(it, ref) }
         } }
@@ -560,7 +568,7 @@ internal class DesktopCharacterEditorController(
     fun addTextDocument(name: String, content: String) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val effectiveName = name.ifBlank { "document.txt" }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments +
@@ -572,7 +580,7 @@ internal class DesktopCharacterEditorController(
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
         val previous = _state.value.card?.customDocuments?.firstOrNull { it.id == id } ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val effectiveName = name.ifBlank { previous.fileName }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments.map { doc ->
@@ -640,7 +648,7 @@ internal class DesktopCharacterEditorController(
     private fun stageResource(path: Path, image: Boolean, originalCover: Boolean = false, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val ref = resources.stage(session, path, image, originalCover)
             edit { assign(it, ref) }
         } }
@@ -903,23 +911,30 @@ internal class DesktopCharacterEditorController(
             current.problem != CharacterEditorProblem.SAVE_COMMITTED_WARNING
 
     private suspend fun cleanObsoleteDraft(): Boolean = dataGate.withNormalOperation { draftMutex.withLock {
-        val before = _state.value
-        if (!needsCleanDraftCleanup(before)) return@withLock true
+        val nextSession = UUID.randomUUID().toString()
+        val before = synchronized(resourceMutationLock) {
+            val captured = _state.value
+            if (!needsCleanDraftCleanup(captured)) return@withLock true
+            // New edits/resources belong to a fresh directory while the old draft deletion suspends.
+            if (!_state.compareAndSet(captured, captured.copy(draftSessionId = nextSession,
+                    draftBasis = null, draftPersisted = false))) return@withLock false
+            captured
+        }
         val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
         val current = _state.value
-        if (current.card != before.card || current.draftSessionId != before.draftSessionId || current.dirty)
+        if (current.card != before.card || current.draftSessionId != nextSession || current.dirty)
             return@withLock false
         if (cleanup.blocking) {
-            _state.value = current.copy(draftBasis = if (cleanup.removed) null else current.draftBasis,
-                draftPersisted = current.draftPersisted && !cleanup.removed,
+            _state.compareAndSet(current, current.copy(draftSessionId = if (cleanup.removed) nextSession else before.draftSessionId,
+                draftBasis = if (cleanup.removed) null else before.draftBasis,
+                draftPersisted = before.draftPersisted && !cleanup.removed,
                 problem = CharacterEditorProblem.CLEAN_DRAFT_WARNING,
-                detail = cleanup.draft.errors.firstOrNull()?.message)
+                detail = cleanup.draft.errors.firstOrNull()?.message))
             return@withLock false
         }
-        _state.value = current.copy(draftBasis = null, draftPersisted = false,
+        _state.compareAndSet(current, current.copy(draftBasis = null, draftPersisted = false,
             problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
-            detail = cleanup.assetFailure?.message)
-        true
+            detail = cleanup.assetFailure?.message))
     } }
 
     suspend fun retryCleanup() {
