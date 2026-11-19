@@ -8,6 +8,7 @@ import com.example.chatbar.domain.syncStore.webdav.WeakFixture
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.io.IOException
 import java.io.OutputStream
 import java.net.BindException
 import java.net.InetAddress
@@ -250,11 +251,13 @@ class LanSyncGroupCoordinatorTest {
             override suspend fun reload(sessionIds: Set<String>) { reloads.incrementAndGet() }
         }
         fun founder() = founder(workspace)
-        fun founder(activeWorkspace: LanSyncWorkspace) = LanSyncGroupEnrollment(profile, activeWorkspace, platform, identity,
-            { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(owners::add)
+        fun founder(activeWorkspace: LanSyncWorkspace, observe: (String) -> Unit = {}) =
+            LanSyncGroupEnrollment(profile, activeWorkspace, platform, identity,
+                { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }, observe).also(owners::add)
         fun coordinator(sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false,
             enrollment: () -> LanSyncGroupEnrollment = ::founder, beforeSetup: suspend () -> Unit = {}) =
-            LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
+            LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) ||
+                Files.exists(profile.resolve("abandon.protected")) },
                 enrollment, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC",
                 { setupCalls++; beforeSetup() }, sourceChanges, initiallyPaused).also(coordinators::add)
         fun author(trust: SyncGroupTrust) = SyncAuthorJournal(profile.resolve("node/author"), trust,
@@ -439,6 +442,81 @@ class LanSyncGroupCoordinatorTest {
         assertEquals(operations, requireNotNull(f.founder().runtimeAccess()).node.sourceOperations())
         assertContentEquals(original, Files.readAllBytes(f.card))
         assertEquals(1, f.setupCalls)
+    }
+
+    @Test fun coldPageOffersExplicitArchiveForAnUnusedFounderBeforeItsProfileWasWritten() = fixture { f ->
+        f.writeCard("synthetic untouched conversation data")
+        val entity = Files.readAllBytes(f.card)
+        val first = f.coordinator(enrollment = { f.founder(f.workspace) { phase ->
+            if (phase == "APPROVED_GROUP_CREATION_RETAINED") throw IOException("SYNTHETIC_FIRST_CREATION_INTERRUPTED")
+        } })
+        first.createGroup()
+        await { !first.state.value.busy && first.state.value.error != null }
+        val intent = Files.readAllBytes(f.profile.resolve("creation/intent.protected"))
+        assertNull(f.founder().profile())
+        assertTrue(f.founder().canAbandonUnactivated())
+        first.closeAndDrain()
+
+        val cold = f.coordinator(initiallyPaused = true)
+        cold.open()
+        await { !cold.state.value.busy && (cold.state.value.stage != LanSyncGroupPanelStage.EMPTY || cold.state.value.error != null) }
+        val opened = cold.state.value
+        assertEquals(LanSyncGroupPanelStage.PREPARED_LOCKED, opened.stage)
+        assertTrue(opened.canAbandonUnactivated)
+        assertFalse(opened.localManagementAvailable)
+        assertNull(opened.recoveryCode)
+        assertNull(opened.error)
+        assertFalse(Files.exists(f.profile.resolve("abandon.protected")))
+
+        cold.abandonUnusedSetup()
+        await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.EMPTY }
+        val archive = Files.newDirectoryStream(f.profile.resolve("abandoned-drafts")).use { it.single() }
+        assertTrue(Files.isRegularFile(archive.resolve("completed.protected")))
+        assertTrue(intent.contentEquals(Files.readAllBytes(archive.resolve("creation/intent.protected"))))
+        assertContentEquals(entity, Files.readAllBytes(f.card))
+        cold.createGroup()
+        await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+        assertTrue(cold.state.value.canAbandonUnactivated)
+    }
+
+    @Test fun coldPageResumesAnInterruptedArchiveAfterTheLastDraftEntryMoved() = fixture { f ->
+        f.writeCard("synthetic unchanged user data")
+        val entity = Files.readAllBytes(f.card)
+        val inProgress = f.coordinator(enrollment = { f.founder(f.workspace) { phase ->
+            if (phase == "UNACTIVATED_GROUP_ENTRY_RETAINED" && Files.newDirectoryStream(f.profile).use { paths ->
+                paths.none { it.fileName.toString() in setOf("creation", "recipient", "management-vault.bin", "profile.protected") }
+            }) throw IOException("SYNTHETIC_ARCHIVE_INTERRUPTED_AFTER_FINAL_MOVE")
+        } })
+        inProgress.createGroup()
+        await { !inProgress.state.value.busy && inProgress.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+        val liveBytes = Files.readAllBytes(f.profile.resolve("creation/intent.protected"))
+        inProgress.lockManagement()
+        inProgress.abandonUnusedSetup()
+        await { !inProgress.state.value.busy && inProgress.state.value.error != null }
+        assertFalse(Files.exists(f.profile.resolve("profile.protected")))
+        assertFalse(Files.exists(f.profile.resolve("creation")))
+        val decision = Files.readAllBytes(f.profile.resolve("abandon.protected"))
+        val archive = Files.newDirectoryStream(f.profile.resolve("abandoned-drafts")).use { it.single() }
+        assertFalse(Files.exists(archive.resolve("completed.protected")))
+        inProgress.closeAndDrain()
+
+        val cold = f.coordinator(initiallyPaused = true)
+        cold.open()
+        await { !cold.state.value.busy && (cold.state.value.stage != LanSyncGroupPanelStage.EMPTY || cold.state.value.error != null) }
+        val opened = cold.state.value
+        assertEquals(LanSyncGroupPanelStage.PREPARED_LOCKED, opened.stage)
+        assertTrue(opened.canAbandonUnactivated)
+        assertFalse(opened.localManagementAvailable)
+        assertNull(opened.recoveryCode)
+        assertNull(opened.error)
+        assertTrue(decision.contentEquals(Files.readAllBytes(f.profile.resolve("abandon.protected"))))
+
+        cold.abandonUnusedSetup()
+        await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.EMPTY }
+        assertFalse(Files.exists(f.profile.resolve("abandon.protected")))
+        assertTrue(Files.isRegularFile(archive.resolve("completed.protected")))
+        assertTrue(liveBytes.contentEquals(Files.readAllBytes(archive.resolve("creation/intent.protected"))))
+        assertContentEquals(entity, Files.readAllBytes(f.card))
     }
 
     @Test fun lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation() = fixture { f ->

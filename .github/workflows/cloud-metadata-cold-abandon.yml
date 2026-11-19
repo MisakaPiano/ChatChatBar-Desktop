@@ -1,0 +1,88 @@
+name: Cold device-group setup archival
+on:
+  push:
+    branches: [codex/metadata-repair-cold-abandon-red-20261120, codex/metadata-repair-cold-abandon-20261120]
+permissions:
+  contents: read
+jobs:
+  cold-abandon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Exercise exact cold resume, archive and invitation cases
+        working-directory: app
+        run: >-
+          bash ./gradlew :sharedCore:test
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldPageOffersExplicitArchiveForAnUnusedFounderBeforeItsProfileWasWritten'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.coldPageResumesAnInterruptedArchiveAfterTheLastDraftEntryMoved'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.explicitSavedCreationPublishesLocalReplicaAndReopenRunsWithManagementLocked'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.firstReturnFailuresCanExplicitlyArchiveOnlyUnusedSetupAndStartAgainWithoutChangingEntities'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.interruptedUnusedSetupArchiveCompletesTheRetainedDecisionWithoutDeletingEvidence'
+          --rerun-tasks --no-build-cache --no-daemon --stacktrace
+      - name: Preserve exact method results and outcomes
+        if: always()
+        env:
+          TESTED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          prefix = 'com.example.chatbar.domain.lanSync.'
+          expected = {
+              prefix + 'LanSyncGroupCoordinatorTest': {
+                  'coldPageOffersExplicitArchiveForAnUnusedFounderBeforeItsProfileWasWritten',
+                  'coldPageResumesAnInterruptedArchiveAfterTheLastDraftEntryMoved',
+                  'lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation',
+                  'reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode',
+                  'explicitSavedCreationPublishesLocalReplicaAndReopenRunsWithManagementLocked',
+              },
+              prefix + 'LanSyncGroupEnrollmentTest': {
+                  'firstReturnFailuresCanExplicitlyArchiveOnlyUnusedSetupAndStartAgainWithoutChangingEntities',
+                  'interruptedUnusedSetupArchiveCompletesTheRetainedDecisionWithoutDeletingEvidence',
+              },
+          }
+          directory = Path('app/sharedCore/build/test-results/test')
+          expected_files = {directory / ('TEST-' + cls + '.xml') for cls in expected}
+          assert set(directory.glob('TEST-*.xml')) == expected_files
+          methods = {}
+          for cls, names in expected.items():
+              raw = (directory / ('TEST-' + cls + '.xml')).read_bytes()
+              assert not any(token in raw.upper() for token in (b'\x00', b'<!DOCTYPE', b'<!ENTITY'))
+              suite = ET.fromstring(raw)
+              cases = suite.findall('testcase')
+              assert suite.tag == 'testsuite' and suite.get('name') == cls
+              assert len(cases) == len(names) and {case.get('name') for case in cases} == names
+              for case in cases:
+                  assert case.get('classname') == cls
+                  methods[cls + '.' + case.get('name')] = [child.tag for child in case]
+          result = {'head': os.environ['TESTED_HEAD'], 'methods': methods}
+          (directory / 'cold-abandon-exact-cases.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          assert not any(methods.values()), 'Not all exact methods passed'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cold-abandon-original
+          path: app/sharedCore/build/test-results/test/
+      - name: Compile the Android preview entry
+        if: always() && github.ref_name == 'codex/metadata-repair-cold-abandon-20261120'
+        working-directory: app
+        run: >-
+          bash ./gradlew :app:compileLanPreviewKotlin
+          -Pkotlin.daemon.jvmargs=-Xmx4g --max-workers=1 --no-parallel --no-daemon --stacktrace
+      - name: Compile the Desktop entry
+        if: always() && github.ref_name == 'codex/metadata-repair-cold-abandon-20261120'
+        working-directory: app
+        run: bash ./gradlew :desktopApp:compileKotlin --max-workers=1 --no-parallel --no-daemon --stacktrace
