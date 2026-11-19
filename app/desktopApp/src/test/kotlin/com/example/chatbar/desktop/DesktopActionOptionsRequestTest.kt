@@ -94,9 +94,11 @@ class DesktopActionOptionsRequestTest {
             Triple("a 然后静静地等待门口下一轮反应。", 'A', true),
             Triple("a然后静静地等待门口下一轮反应。", 'A', true),
             Triple("A然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("a　然后静静地等待门口下一轮反应。", 'A', true),
             Triple("a 然后静静地等待门口下一轮反应。", 'a', true),
             Triple("I'll open a window while we're waiting nearby.", 'A', false),
             Triple("I open a window and wait nearby.", 'A', false),
+            Triple("Maria 然后静静地等待门口下一轮反应。", 'A', false),
             Triple("a 然后静静地等待门口下一轮反应。", '1', false))
         for ((reference, start, keepSource) in references) fixture { f ->
             val count = if ("suggested I" in reference) 9 else 2
