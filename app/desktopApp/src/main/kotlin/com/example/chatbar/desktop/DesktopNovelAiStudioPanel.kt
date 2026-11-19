@@ -387,7 +387,9 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                     if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
                     if (imageError.isNotBlank()) StatusText(imageError)
                     DesktopStudioDesignHistory(conversations, currentDesignId, busy, Modifier.weight(1f),
-                        onOpen = { id -> scope.launch { controller.switchDesign(id); auxiliary = "AI 设计" } },
+                        onOpen = { id -> scope.launch {
+                            if (controller.switchDesign(id) && auxiliary == "设计历史") auxiliary = "AI 设计"
+                        } },
                         onDelete = { id -> scope.launch { controller.deleteDesign(id) } })
                 }
                 else if (surface == "历史") Box(Modifier.weight(1f).fillMaxWidth()) {

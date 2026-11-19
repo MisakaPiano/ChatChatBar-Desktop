@@ -23,6 +23,7 @@ jobs:
           .\gradlew.bat :sharedCore:test `
             --tests com.example.chatbar.domain.image.NovelAiPromptTranslationTest `
             :desktopApp:test `
+            --tests com.example.chatbar.desktop.DesktopStudioImportedAnnotationTest `
             --tests com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest `
             --tests com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest `
             --tests com.example.chatbar.desktop.DesktopCatalogUpdatesTest `

@@ -231,10 +231,27 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
     val annotationRevision = LocalDesktopStudioTextHistories.current?.annotationRevision ?: 0L
     val annotations by produceState<Pair<String, NovelAiPromptTranslationResult>?>(null, source, translated, translationService, authorityRevision, replayRevision, annotationRevision) {
         this.value = null
-        if (translated) this.value = source to try {
-            translationService.resolve(NovelAiPromptTranslationParser.parse(source, false))
-        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-        catch (_: Exception) { NovelAiPromptTranslationResult(emptyList(), warning = "中文注释读取失败；Prompt 原文已保留，可继续编辑") }
+        if (!translated) return@produceState
+        val segments = NovelAiPromptTranslationParser.parse(source, false)
+        suspend fun readAnnotations() = try {
+            translationService.resolve(segments)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            NovelAiPromptTranslationResult(emptyList(), warning = "中文注释读取失败；Prompt 原文已保留，可继续编辑")
+        }
+        val first = readAnnotations()
+        this.value = source to first
+        if (first.warning != null) {
+            // A data or catalog read may recover without requiring the user to edit the Prompt.
+            kotlinx.coroutines.delay(350)
+            val retry = readAnnotations()
+            val result = if (retry.warning == null) retry else retry.copy(
+                annotations = (first.annotations + retry.annotations).associateBy { it.start }.values.sortedBy { it.start },
+                translations = first.translations + retry.translations
+            )
+            this.value = source to result
+        }
     }
     val currentAnnotations = annotations?.takeIf { translated && it.first == input.text }?.second
     val candidates = suggestions.candidates.takeIf { suggestionService.isCurrent(suggestions) }.orEmpty()
