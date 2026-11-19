@@ -55,7 +55,8 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             BootstrapButton(if (saved) "✓ 已妥善保存恢复码" else "我已妥善保存恢复码", secondary = true, enabled = !interactionBlocked) { saved = !saved }
             state.setupBinding?.let { binding -> BootstrapButton("完成创建", enabled = !interactionBlocked && saved) { actions.recoverySaved(binding) } }
         }
-        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
+        if (state.localManagementAvailable && !state.managementUnlocked &&
+            state.stage in setOf(LanSyncGroupPanelStage.PREPARED_LOCKED, LanSyncGroupPanelStage.READY)) {
             val continuing = state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED
             key(state.privacyRevision) { LabeledField(if (continuing) "为该组保存的恢复码" else "恢复码 · 临时解锁管理",
                 recoveryInput, secret = true, enabled = !interactionBlocked, onChange = { recoveryInput = it }) }

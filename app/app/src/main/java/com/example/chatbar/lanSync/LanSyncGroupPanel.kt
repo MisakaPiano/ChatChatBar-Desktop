@@ -93,7 +93,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             }
             state.setupBinding?.let { binding -> CbButton("完成创建", { actions.recoverySaved(binding) }, enabled = !interactionBlocked && saved) }
         }
-        if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED || state.stage == LanSyncGroupPanelStage.READY && state.localManagementAvailable && !state.managementUnlocked) {
+        if (state.localManagementAvailable && !state.managementUnlocked &&
+            state.stage in setOf(LanSyncGroupPanelStage.PREPARED_LOCKED, LanSyncGroupPanelStage.READY)) {
             val continuing = state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED
             CbField(if (continuing) "为该组保存的恢复码" else "恢复码 · 临时解锁管理") {
                 key(state.privacyRevision) { CbInput(recoveryInput, { recoveryInput = it }, secure = true, enabled = !interactionBlocked) }

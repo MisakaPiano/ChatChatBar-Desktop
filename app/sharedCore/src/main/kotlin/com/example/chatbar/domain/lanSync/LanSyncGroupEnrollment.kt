@@ -66,6 +66,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         val localReplica: SyncDeliveryTarget)
     @Serializable private data class Abandon(val format: Int, val device: String, val root: String,
         val id: SyncStoreId, val names: List<String>)
+    internal data class PanelSetup(val profile: LanSyncGroupProfile?, val canAbandon: Boolean)
     private val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
     private val mutex = locks.computeIfAbsent(root) { Mutex() }
     private val sessions = Any()
@@ -95,6 +96,13 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
             { emptySet() }, validateResource, observe = observe)
     }
     suspend fun profile(): LanSyncGroupProfile? = guarded { requireNoAbandon(); read()?.let(::profile) }
+    internal suspend fun panelSetup(): PanelSetup = guarded {
+        val record = read()
+        val pending = readAbandon()
+        val canAbandon = canAbandon(record, pending)
+        require(pending == null || canAbandon) { "SYNC_GROUP_PROFILE_ABANDON_PENDING" }
+        PanelSetup(if (pending == null) record?.let(::profile) else null, canAbandon)
+    }
     suspend fun encryptedManagementBackup(): SyncManagementVaultBlob = guarded {
         requireNoAbandon(); val record = requireNotNull(read()) { "SYNC_GROUP_PROFILE_MISSING" }
         val bytes = lanSyncRead(root.resolve("management-vault.bin"), 272 * 1024)
@@ -392,18 +400,25 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
             }
         } finally { plain.fill(0) }
     }
-    suspend fun canAbandonUnactivated(): Boolean = guarded {
-        noNativeHistory() && read()?.stage != LanSyncGroupEnrollmentStage.READY &&
-            (readAbandon() != null || draftNames.any { Files.exists(root.resolve(it), NOFOLLOW_LINKS) })
+    private fun hasOnlyDraftEntries(pending: Abandon?): Boolean {
+        val allowed = draftNames + setOf("profile.lock", "abandoned-drafts") +
+            listOfNotNull("abandon.protected".takeIf { pending != null })
+        return Files.newDirectoryStream(root).use { entries -> entries.all { it.fileName.toString() in allowed } }
     }
+    private fun canAbandon(record: Record?, pending: Abandon?): Boolean =
+        noNativeHistory() && record?.stage != LanSyncGroupEnrollmentStage.READY &&
+            (pending != null || draftNames.any { Files.exists(root.resolve(it), NOFOLLOW_LINKS) }) &&
+            hasOnlyDraftEntries(pending)
+
+    suspend fun canAbandonUnactivated(): Boolean = guarded { canAbandon(read(), readAbandon()) }
+
     /** Explicit discard of unpublished setup only. Retain every byte in a private archive; delete no data. */
     suspend fun abandonUnactivated(admission: LanSyncGroupDraftAbandonAdmission): Path = guarded {
         require(read()?.stage != LanSyncGroupEnrollmentStage.READY) { "SYNC_GROUP_PROFILE_ALREADY_ACTIVE" }
         require(noNativeHistory()) { "SYNC_GROUP_PROFILE_LOCAL_HISTORY_EXISTS" }
-        val intent = readAbandon() ?: run {
-            require(Files.newDirectoryStream(root).use { entries -> entries.all {
-                it.fileName.toString() in draftNames + setOf("profile.lock", "abandoned-drafts")
-            } }) { "SYNC_GROUP_PROFILE_UNEXPECTED_EVIDENCE" }
+        val pending = readAbandon()
+        require(hasOnlyDraftEntries(pending)) { "SYNC_GROUP_PROFILE_UNEXPECTED_EVIDENCE" }
+        val intent = pending ?: run {
             val names = draftNames.filter { Files.exists(root.resolve(it), NOFOLLOW_LINKS) }.sorted()
             require(names.isNotEmpty()) { "SYNC_GROUP_PROFILE_NO_DRAFT" }
             admission.requireApproved(read()?.let(::profile)); lockManagement()
