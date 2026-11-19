@@ -1,3 +1,7 @@
+## 2026-11-19：1259第三方回执精确分项收录／来源定位候选云验中
+
+1259 第三方回执按实际子范围收录，非用户亲测或全版验收。D01 的缩略图重开和草稿通过，来源定位失败；已静态定位同会话未重入列表恢复及旧视口抢写，49c697 独立候选补码，5fe 负控云端仍运行，尚无通过/复现结论。删除目标未复现，补实际复制/菜单/确认/提交验证待跑；恢复目录含设计保留的事务证据，补生命周期回归，不扫测试者原根。PR7 efa 上游 CI成功、99 JVM全P，旧专项55分钟取消且无native原件/签名；e534新控制三矩阵补验仍待，已交r3 f020不含此补码。PR4 b327最终工程闭合/接受与合并人验待、1259日常程序及其他任务保持。
+
 ## 2026-11-18：Desktop PR4 b327完整CI及最终独审工程闭合／正式接受合并与人工仍待
 
 Desktop PR4最终b327b6c23d49411235ad6f0922bbc8fac65bffc4工程与既有独审已闭合，无开放发现；Ready/open未合并，正式接受/候选/真人另待。完整CI44199283623两job（Linux134448924609、Windows134448925196）均completed/success，当前source/artifact/CRC/SHA与逐XML已独立核：Windows主3054/0fail/error/28skip，28名单与此前64abe完全一致；独立打包proxy11全P/0skip；shared1385原XML全0fail/error/skip，Android原HTML588/0fail/0ignored（自动artifact无Android XML，前受影响12原XML保范围）。旧十失败在最终全量逐方法真P，图库改名映射与native canonicalReadPassed真另列；十类定向68原XML全0fail/error/skip也已原独审核。b746业务步骤成功但跨盘artifact失败只记历史；b327仅同盘归拢原proof并双SHA校验，产品main同fc39、测试同b746，旧失败/取消/SDK失败原件不抹。字段/开场与F1提交态实际修复完整保留，Prompt文字/原资料未改，不跨轮相加。现长期H程序1259未安装替换、H main/index未动，本机未重型构建/付费/公开发行。Androidr3已本地交付待真人/PR8作者待、PR7作者待及所有其他tasks/ledger/正式1.0目标保持。
