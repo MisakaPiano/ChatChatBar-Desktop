@@ -1,0 +1,71 @@
+name: Exact delivered85 to candidate86 V6 four input build
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-delivered85-candidate86-v6-build-request.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  four-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate fixed85 to86 request and overlay only test companions
+        shell: bash
+        run: |
+          candidate=$(python3 -B tools/lan-next-control/candidate86_v6_control.py validate-build --request .github/lan-delivered85-candidate86-v6-build-request.json)
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          seed="$RUNNER_TEMP/ccb-candidate86-v6-seed85-source"
+          next="$RUNNER_TEMP/ccb-candidate86-v6-source"
+          git worktree add --detach "$seed" 5c906e6d4a0f31a114326e35a331c4af4dfa6379
+          git worktree add --detach "$next" "$candidate"
+          python3 -B tools/lan-next-control/candidate86_v6_control.py prepare-build --request .github/lan-delivered85-candidate86-v6-build-request.json --seed-dir "$seed" --candidate-dir "$next" --output raw-inputs
+          echo "CCB_LAN_SEED_SOURCE=$seed" >> "$GITHUB_ENV"
+          echo "CCB_LAN_CANDIDATE_SOURCE=$next" >> "$GITHUB_ENV"
+      - name: Authenticate original delivered85 raw API and complete original ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/lan-next-control/candidate86_v6_control.py fetch-base --archive "$RUNNER_TEMP/candidate86-v6-original85.zip" --output original85
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build only seed companion against exact delivered85 source
+        working-directory: ${{ env.CCB_LAN_SEED_SOURCE }}/app
+        run: bash ./gradlew :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=85 --no-daemon --stacktrace
+      - name: Build candidate86 production and separate verify companion
+        working-directory: ${{ env.CCB_LAN_CANDIDATE_SOURCE }}/app
+        run: bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=86 --no-daemon --stacktrace
+      - name: Inspect four actual inputs and preserve exact delivered85 lineage
+        run: python3 -B tools/lan-next-control/candidate86_v6_control.py collect-build --request .github/lan-delivered85-candidate86-v6-build-request.json --seed-dir "$CCB_LAN_SEED_SOURCE" --candidate-dir "$CCB_LAN_CANDIDATE_SOURCE" --original-dir original85 --output raw-inputs --control-sha "$GITHUB_SHA" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered85-candidate86-v6-manifests
+          path: raw-inputs/*.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered85-candidate86-v6-new-signing-inputs
+          path: |
+            raw-inputs/*.json
+            raw-inputs/seed85-tests-input.apk
+            raw-inputs/candidate86-input.apk
+            raw-inputs/verify86-tests-input.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ccb-lan-delivered85-candidate86-v6-inputs
+          path: raw-inputs/
+          if-no-files-found: error
