@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.EditorDraftRepository
+import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import kotlinx.coroutines.*
 import java.nio.file.Files
@@ -11,6 +12,8 @@ import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.io.IOException
 import kotlin.test.*
 
 class DesktopCharacterDraftSaveParityTest {
@@ -119,5 +122,50 @@ class DesktopCharacterDraftSaveParityTest {
             assertEquals("Latest accepted edit", coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, a.id)?.characterPayload?.creatorNotes)
             assertEquals(a.extensions, editor.state.value.card!!.extensions)
         }
+    }
+
+    @Test fun `late save preflight failure cannot mark a newer form or another card as failed`() = runBlocking {
+        for (switchOwner in listOf(false, true)) fixture { app, _ -> coroutineScope {
+            val armed = AtomicBoolean(false)
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val gate = object : AppDataOperationGate {
+                override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                    if (armed.compareAndSet(true, false)) {
+                        entered.complete(Unit)
+                        release.await()
+                        throw IOException("Synthetic preflight read failure")
+                    }
+                    return operation()
+                }
+            }
+            val cards = CharacterRepository(JsonFileStorage(app.appDataRoot, gate))
+            val editor = DesktopCharacterEditorController(cards, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json)
+            val a = source(); val b = source("Synthetic B")
+            app.characterRepository.save(a); app.characterRepository.save(b)
+            try {
+                cards.initialize()
+                editor.openExisting(a.id)
+                editor.edit { it.copy(creatorNotes = "Old save attempt") }
+                editor.flushDraft()
+                armed.set(true)
+                val saving = async { editor.save() }
+                try {
+                    withTimeout(5_000) { entered.await() }
+                    if (switchOwner) { editor.discard(); editor.openExisting(b.id) }
+                    editor.edit { it.copy(creatorNotes = "Newer accepted form") }
+                    val expected = editor.state.value.card
+                    assertNull(editor.state.value.problem)
+                    release.complete(Unit)
+                    assertFalse(saving.await())
+                    assertEquals(expected, editor.state.value.card)
+                    assertNull(editor.state.value.problem, "Old preflight errors belong to their captured form only")
+                    assertEquals(a, app.characterRepository.getById(a.id))
+                    assertEquals(b, app.characterRepository.getById(b.id))
+                } finally { release.complete(Unit); saving.cancelAndJoin() }
+            } finally { release.complete(Unit); editor.closeAndDrain() }
+        } }
     }
 }
