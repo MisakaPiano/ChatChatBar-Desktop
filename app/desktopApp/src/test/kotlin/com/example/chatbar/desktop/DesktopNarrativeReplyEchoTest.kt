@@ -59,6 +59,29 @@ class DesktopNarrativeReplyEchoTest {
         } }
     }
 
+    @Test fun `leading paired examples and inline literal tags survive actual transport in both modes`() = runBlocking {
+        for (mode in ChatNarrativeMode.entries) fixture { app -> MockWebServer().use { server ->
+            val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode)
+            val opening = "<历史回复 模式=\"${mode.shortLabel}\">"
+            val example = MainChatPromptAuthority.narrativeModeHistoryReply("标签里是一段示例。", mode) + "\n\n这里开始解释。"
+            for ((raw, expected) in listOf(example to example,
+                MainChatPromptAuthority.narrativeModeHistoryReply("开头标记是 `$opening`，正文继续。", mode) to
+                    "开头标记是 `$opening`，正文继续。",
+                MainChatPromptAuthority.narrativeModeHistoryReply("写成 ``例：`$opening` 或\n</历史回复>`` 后接正文。", mode) to
+                    "写成 ``例：`$opening` 或\n</历史回复>`` 后接正文。")) {
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                    raw.chunked(3).joinToString("") { "data: ${delta(it)}\n\n" } +
+                        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                val seen = mutableListOf<String>()
+                val result = app.createRealChatRuntime().sendText(id, "Explain this synthetic example",
+                    observer = DesktopRealChatObserver { seen += it.content })
+                assertEquals(expected, result.assistant.content)
+                assertEquals(expected, ChatRepository(JsonFileStorage(app.appDataRoot)).getMessage(result.assistant.id, id)?.content)
+                assertEquals(expected, seen.last())
+            }
+        } }
+    }
+
     @Test fun `explicit stop finalizes echoed partial wrappers for both modes without changing prior replies`() = runBlocking {
         for (mode in ChatNarrativeMode.entries) fixture { app -> coroutineScope {
             val body = "已经生成的正文。"
