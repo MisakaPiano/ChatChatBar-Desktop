@@ -1,0 +1,55 @@
+name: Desktop 1259 feedback source navigation
+on:
+  push:
+    branches: [codex/desktop-1259-feedback-20261119]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop1259-feedback-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind native canonical synthetic temporary directory
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb1259-feedback-fixtures'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class FeedbackFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([FeedbackFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path '.review1259' | Out-Null
+          git rev-parse HEAD | Set-Content '.review1259/source.txt'
+      - name: Verify actual primary viewport and gallery source action
+        working-directory: app
+        env:
+          CCB_SOURCE_NAVIGATION_REVIEW_DIR: ${{ github.workspace }}/.review1259
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopSourceMessageNavigationTest'
+          --tests 'com.example.chatbar.desktop.DesktopSessionImageGalleryTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatViewportTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop1259-feedback-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/
+            .review1259/
