@@ -11,6 +11,8 @@ class NarrativeHistoryEchoTest {
             "保留字面量 \\</历史回复>\n继续正文。",
             "> ~~~text\n> </历史回复>\n> ~~~\n\n门外传来脚步声。",
             "- 示例\n  ~~~text\n  </历史回复>\n  ~~~\n\n门外传来脚步声。",
+            "- \n  ~~~text\n  </历史回复>\n  ~~~\n\n门外传来脚步声。",
+            "+\n  ~~~text\n  </历史回复>\n  ~~~\n\n门外传来脚步声。",
             "普通正文中的标点与换行。\n下一段。"
         )) for (streaming in listOf(false, true)) {
             assertEquals(body, NarrativeHistoryEcho.replyBody(MainChatPromptAuthority.narrativeModeHistoryReply(body, mode), streaming))
