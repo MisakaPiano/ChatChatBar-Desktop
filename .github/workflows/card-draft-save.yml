@@ -21,7 +21,7 @@ jobs:
       - run: cp validation/card_draft_save.py /tmp/card_draft_save.py
       - uses: actions/checkout@v4
         with:
-          ref: b370d46d3d766ad11fb5a0d6b1c37cab97a64637
+          ref: 1ecc21f9220d1d6903143be3ffdac837bb785a81
           fetch-depth: 8
           persist-credentials: false
       - uses: actions/setup-java@v4
@@ -65,7 +65,7 @@ jobs:
       - run: cp validation/card_draft_save.py /tmp/card_draft_save.py
       - uses: actions/checkout@v4
         with:
-          ref: b370d46d3d766ad11fb5a0d6b1c37cab97a64637
+          ref: 1ecc21f9220d1d6903143be3ffdac837bb785a81
           fetch-depth: 8
           persist-credentials: false
       - uses: actions/setup-java@v4

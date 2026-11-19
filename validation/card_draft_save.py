@@ -10,8 +10,8 @@ from xml.etree import ElementTree as ET
 root = Path.cwd()
 out = root / 'card-draft-save-originals'
 out.mkdir(exist_ok=True)
-SOURCE = 'b370d46d3d766ad11fb5a0d6b1c37cab97a64637'
-BASE = '2d363ff316f7aaf7c204f46700a2100ff9c04db4'
+SOURCE = '1ecc21f9220d1d6903143be3ffdac837bb785a81'
+BASE = 'b370d46d3d766ad11fb5a0d6b1c37cab97a64637'
 VM = 'app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt'
 PREFIX = 'com.example.chatbar.'
 NEW = PREFIX + 'ui.character.CharacterDraftSaveLifecycleTest'
@@ -71,17 +71,13 @@ elif phase == 'negative-api30':
         path.write_bytes(old)
         (out/'old-vm-overlay.patch').write_bytes(subprocess.check_output(['git', 'diff']))
         (out/'old-vm-sha256.txt').write_text(hashlib.sha256(old).hexdigest())
-        names = ','.join(NEW+'#'+method for method in [
-            'formalSaveDoesNotRecreateDraftWhenOpeningAnotherCard',
-            'successfulFormalSaveClearsSavedDraftStatus',
-            'derivedDocumentIndexUpdatesDoNotCreateADraftButRealDocumentEditsDo'])
+        names = NEW+'#croppedAvatarInUnconfirmedCharacterDialogSurvivesDraftRestore'
         result = gradle(':app:connectedDebugAndroidTest', '-Pandroid.testInstrumentationRunnerArguments.class='+names, isolated=True)
         cases = report(phase, True)
-        assert result.returncode != 0 and len(cases) == 3
-        assert all(c['failure'] and not c['skipped'] and c['failure']['type']=='java.lang.AssertionError' for c in cases), cases
-        assert any('Saving A must not recreate its draft' in c['failure']['text'] for c in cases), cases
-        assert any('Formal save must clear the old draft banner' in c['failure']['text'] for c in cases), cases
-        assert any('Background index progress must not create a character draft' in c['failure']['text'] for c in cases), cases
+        assert result.returncode != 0 and len(cases) == 1
+        failure = cases[0]['failure']
+        assert failure and 'TimeoutCancellationException' in failure['type'], cases
+        assert '8000 ms' in failure['text'], cases
     finally:
         path.write_bytes(fixed)
         assert path.read_bytes() == fixed
@@ -90,9 +86,9 @@ elif phase in ('fixed-api26', 'fixed-api30'):
         PREFIX+'ui.manage.ManagementDraftDiscardTest', PREFIX+'ui.character.CharacterCardFieldsPersistenceTest'])
     result = gradle(':app:connectedDebugAndroidTest', '-Pandroid.testInstrumentationRunnerArguments.class='+names, isolated=True)
     cases = report(phase, True)
-    assert result.returncode == 0 and len(cases) == 20
+    assert result.returncode == 0 and len(cases) == 21
     assert all(not c['failure'] and not c['skipped'] for c in cases), cases
-    assert len([c for c in cases if c['classname']==NEW]) == 6
+    assert len([c for c in cases if c['classname']==NEW]) == 7
     metadata(True)
 else:
     raise ValueError(phase)
