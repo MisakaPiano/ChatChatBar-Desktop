@@ -96,17 +96,51 @@ class LanSyncGroupUnitCodecTest {
 
     @Test fun wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority() = withRoot { root ->
         val f = Fixture(root); f.card()
-        f.workspace.capture("source").use { capture -> f.codec.prepare(capture, "character_cards/card").use { prepared ->
-            f.transfer(prepared.path, prepared.decoded.plaintext).use { plaintext ->
-                val change = SyncUnitChange(prepared.decoded.valueHash, prepared.decoded.plaintext, emptySet())
-                assertEquals("SYNC_GROUP_UNIT_BINDING", assertFailsWith<IllegalArgumentException> { f.codec.read(plaintext, "character_cards/other", change) }.message)
-                assertEquals("SYNC_GROUP_UNIT_BINDING", assertFailsWith<IllegalArgumentException> { f.codec.read(plaintext, "character_cards/card", change.copy(valueHash = "0".repeat(64))) }.message)
+        val cache = f.units.resolve("decoded-records")
+        fun preparationNames() = Files.newDirectoryStream(f.units).use { paths -> paths.map { it.fileName.toString() }.toSet() }
+        fun cachedFiles() = Files.newDirectoryStream(cache).use { paths ->
+            paths.associate { path ->
+                val name = path.fileName.toString()
+                val identity = if (name == "write.lock") {
+                    assertTrue(Files.isRegularFile(path, java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                    assertEquals(0L, Files.size(path))
+                    SyncPlaintextIdentity(0, lanSyncHash(byteArrayOf()))
+                } else f.identity(path)
+                name to identity
             }
         }
+        assertTrue(preparationNames().isEmpty())
+        f.workspace.capture("source").use { capture ->
+            val originalCache = f.codec.prepare(capture, "character_cards/card").use { prepared ->
+                val names = setOf("decoded-records", prepared.path.fileName.toString(), prepared.membershipPath.fileName.toString())
+                assertEquals(names, preparationNames())
+                val existing = cachedFiles()
+                assertTrue("write.lock" in existing)
+                val records = existing.filterKeys { it != "write.lock" }
+                assertEquals(1, records.size)
+                assertEquals(records.keys, records.values.map { it.sha256 }.toSet())
+                f.transfer(prepared.path, prepared.decoded.plaintext).use { plaintext ->
+                    val change = SyncUnitChange(prepared.decoded.valueHash, prepared.decoded.plaintext, emptySet())
+                    assertEquals("SYNC_GROUP_UNIT_BINDING", assertFailsWith<IllegalArgumentException> {
+                        f.codec.read(plaintext, "character_cards/other", change)
+                    }.message)
+                    assertEquals(names, preparationNames())
+                    assertEquals(existing, cachedFiles())
+                    assertEquals("SYNC_GROUP_UNIT_BINDING", assertFailsWith<IllegalArgumentException> {
+                        f.codec.read(plaintext, "character_cards/card", change.copy(valueHash = "0".repeat(64)))
+                    }.message)
+                    assertEquals(names, preparationNames())
+                    assertEquals(existing, cachedFiles())
+                }
+                existing
+            }
+            assertEquals(setOf("decoded-records"), preparationNames())
             val bounded = LanSyncGroupUnitCodec(f.units, metadataBudget = LanSyncMetadataBudget(maximumDecodedCost = 1))
             assertEquals("SYNC_METADATA_WORKING_BUDGET", assertFailsWith<IllegalArgumentException> { bounded.prepare(capture, "character_cards/card") }.message)
+            assertEquals(setOf("decoded-records"), preparationNames())
+            assertEquals(originalCache, cachedFiles())
         }
-        assertTrue(Files.newDirectoryStream(f.units).use { !it.iterator().hasNext() })
+        assertTrue(Files.newDirectoryStream(f.crypto).use { !it.iterator().hasNext() })
     }
 
     @Test fun aUnitCannotReplaceTheNativeWireReferenceContractWithAnArbitraryResourceAlias() = withRoot { root ->

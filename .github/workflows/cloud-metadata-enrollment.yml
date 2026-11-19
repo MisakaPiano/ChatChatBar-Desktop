@@ -120,10 +120,16 @@ jobs:
           path: |
             app/sharedCore/build/test-results/test/
             app/build/reports/metadata-enrollment-regression.json
-      - name: Compile both changed platform entries
+      - name: Compile the Android preview entry
         if: always()
         working-directory: app
-        run: bash ./gradlew :app:compileLanPreviewKotlin :desktopApp:compileKotlin --continue --no-daemon --stacktrace
+        run: >-
+          bash ./gradlew :app:compileLanPreviewKotlin
+          -Pkotlin.daemon.jvmargs=-Xmx4g --max-workers=1 --no-parallel --no-daemon --stacktrace
+      - name: Compile the desktop entry
+        if: always()
+        working-directory: app
+        run: bash ./gradlew :desktopApp:compileKotlin --max-workers=1 --no-parallel --no-daemon --stacktrace
   metadata-text-scale:
     needs: metadata-enrollment
     runs-on: ubuntu-latest
