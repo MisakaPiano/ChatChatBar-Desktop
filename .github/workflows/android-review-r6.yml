@@ -6,7 +6,7 @@ permissions:
   contents: read
 concurrency:
   group: android-review-r6
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -24,7 +24,7 @@ jobs:
       - run: cp validation/android_review_r6.py /tmp/android_review_r6.py
       - uses: actions/checkout@v4
         with:
-          ref: 4df619411c1ca0645b0275a90b61e03d72a5c013
+          ref: 2bdb44b17e0541ac9ce5f1a80bcffd7bb259be7e
           fetch-depth: 12
           persist-credentials: false
       - uses: actions/setup-java@v4
