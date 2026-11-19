@@ -126,7 +126,7 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
             modelDiscoveryError = "接口地址已变化，请重新填写它自己的 API Key"
             return
         }
-        if (_modelConfig.value?.requiresExplicitApiKey == true && apiKey.isBlank()) {
+        if (llmAccountId == null && _modelConfig.value?.requiresExplicitApiKey == true && apiKey.isBlank()) {
             modelDiscoveryError = "请填写此接口的 API Key 后查找模型"
             return
         }

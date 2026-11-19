@@ -86,6 +86,112 @@ class VisionModelSetupWireTest {
         }
     }
 
+    @Test
+    fun sharedNamedAccountRoutesFlashThenProAfterRename() {
+        val app = ChatBarApp.instance
+        val accounts = app.llmApiAccountRepository
+        val previousSettings = runBlocking { app.settingsRepository.getAppSettings() }
+        val key = "synthetic-shared-vision-key"
+        val viewModels = ViewModelStore()
+        MockWebServer().use { server ->
+            server.start()
+            val baseUrl = server.url("/v1").toString()
+            val account = runBlocking { accounts.create("Synthetic DeepSeek account", baseUrl, key) }
+            val text = ModelConfig.create("Synthetic Pro", account.baseUrl, "", "deepseek-v4-pro")
+                .copy(llmAccountId = account.id)
+            val vision = ModelConfig.create(
+                "Synthetic Flash", account.baseUrl, "", "deepseek-flash", isMultimodal = true
+            ).copy(selectableForChat = false, requiresExplicitApiKey = true, llmAccountId = account.id)
+            val character = CharacterCard.create("Synthetic shared account")
+            val session = ChatSession.create(character.id, "Shared account wire test").copy(
+                modelId = text.id, longTermMemoryEnabled = false, automaticImageGenerationEnabled = false
+            )
+            val file = File(app.filesDir, "shared-vision-test-${UUID.randomUUID()}.png")
+            file.writeBytes(Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAD0lEQVR4nGP4zwAE/xkaAAt+An+rqPSSAAAAAElFTkSuQmCC"
+            ))
+            try {
+                runBlocking {
+                    app.settingsRepository.saveAppSettings(previousSettings.copy(
+                        allowCleartextModelApi = true, defaultModelId = text.id, defaultEmbeddingId = null,
+                        defaultFormatCardId = null, automaticFormatCheckEnabled = false, momentsEnabled = false,
+                        experimentalApiModeEnabled = false
+                    ))
+                    app.modelRepository.saveModel(text)
+                    app.characterRepository.save(character)
+                    app.chatRepository.createSession(session)
+                }
+                lateinit var editor: ModelEditViewModel
+                rule.runOnIdle {
+                    editor = ViewModelProvider(viewModels, ModelEditViewModelFactory(text.id))[ModelEditViewModel::class.java]
+                }
+                rule.waitUntil(20_000) { editor.modelConfig.value?.id == text.id && editor.llmAccountId == account.id }
+                server.enqueue(MockResponse().setBody("""{"data":[{"id":"deepseek-flash"},{"id":"deepseek-v4-pro"}]}"""))
+                rule.runOnIdle { editor.fetchAvailableModels() }
+                rule.waitUntil(20_000) { editor.discoveredModelIds.contains("deepseek-flash") }
+                val discovery = request(server)
+                assertEquals("/v1/models", discovery.path)
+                assertEquals("Bearer $key", discovery.getHeader("Authorization"))
+                val saved = AtomicBoolean(false)
+                rule.runOnIdle {
+                    editor.stageVisionModel(vision)
+                    editor.saveModelConfig { saved.set(true) }
+                }
+                rule.waitUntil(20_000) { saved.get() || editor.saveError != null }
+                assertTrue(editor.saveError, saved.get())
+
+                runBlocking {
+                    accounts.update(account.id, "Renamed synthetic account", apiKey = null)
+                    assertEquals("Renamed synthetic account", accounts.connection(account.id)?.account?.displayName)
+                    val cold = ModelRepository(JsonFileStorage(app))
+                    val savedText = checkNotNull(cold.getModel(text.id))
+                    val savedVision = checkNotNull(cold.getModel(checkNotNull(savedText.visionModelId)))
+                    assertEquals(account.id, savedText.llmAccountId)
+                    assertEquals(account.id, savedVision.llmAccountId)
+                    assertTrue(savedText.apiKey.isEmpty() && savedVision.apiKey.isEmpty())
+                    assertEquals(text.id, app.effectiveModelResolver.defaultChatModel()?.id)
+                }
+
+                server.enqueue(stream("A synthetic red bicycle"))
+                server.enqueue(stream("Synthetic Pro reply"))
+                lateinit var chat: ChatViewModel
+                rule.runOnIdle {
+                    chat = ViewModelProvider(viewModels, ChatViewModelFactory(session.id))[ChatViewModel::class.java]
+                }
+                rule.waitUntil(20_000) { chat.session.value?.id == session.id && chat.isModelUsable.value }
+                rule.runOnIdle { assertTrue(chat.sendMessage("请描述这张图。", listOf(file.absolutePath))) }
+                val flash = request(server)
+                assertEquals("/v1/chat/completions", flash.path)
+                assertEquals("Bearer $key", flash.getHeader("Authorization"))
+                val flashBody = flash.body.readUtf8()
+                assertEquals("deepseek-flash", model(flashBody))
+                assertTrue(flashBody.contains("image_url"))
+                val pro = request(server)
+                assertEquals("/v1/chat/completions", pro.path)
+                assertEquals("Bearer $key", pro.getHeader("Authorization"))
+                val proBody = pro.body.readUtf8()
+                assertEquals("deepseek-v4-pro", model(proBody))
+                assertTrue(proBody.contains("A synthetic red bicycle"))
+                assertFalse(proBody.contains("data:image"))
+                rule.waitUntil(30_000) { !chat.isResponding.value }
+                assertEquals(3, server.requestCount)
+            } finally {
+                rule.runOnIdle { viewModels.clear() }
+                runBlocking {
+                    app.settingsRepository.saveAppSettings(previousSettings)
+                    app.voiceMessageRepository.deleteForSession(session.id)
+                    app.chatRepository.deleteMessagesForSession(session.id)
+                    app.chatRepository.deleteSessionRecord(session.id)
+                    app.modelRepository.deleteModel(text.id)
+                    app.modelRepository.deleteModel(vision.id)
+                    app.characterRepository.delete(character.id)
+                    accounts.remove(account.id)
+                }
+                file.delete()
+            }
+        }
+    }
+
     private fun verifyVisionRouting(separateEndpoint: Boolean) {
         val app = ChatBarApp.instance
         val settings = runBlocking { app.settingsRepository.getAppSettings() }
