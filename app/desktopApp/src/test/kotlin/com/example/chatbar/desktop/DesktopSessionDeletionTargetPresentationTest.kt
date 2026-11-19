@@ -8,6 +8,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+import com.example.chatbar.domain.chat.SessionDisplayTitlePolicy
 import kotlinx.coroutines.*
 import java.nio.file.Files
 import javax.swing.SwingUtilities
@@ -58,7 +59,8 @@ class DesktopSessionDeletionTargetPresentationTest {
             controller.persistComposer(); controller.flushComposerForSnapshot()
             val first = duplicate(app, "source")
             val second = duplicate(app, "source")
-            assertNotEquals(first.id, second.id); assertNotEquals(first.title, second.title)
+            assertNotEquals(first.id, second.id)
+            assertNotEquals(SessionDisplayTitlePolicy.resolve(first), SessionDisplayTitlePolicy.resolve(second))
             app.saveSlotController.closePanel()
             controller.selectSession(first.id)
             val scene = ImageComposeScene(1380, 900, coroutineContext = edt) {
@@ -67,7 +69,7 @@ class DesktopSessionDeletionTargetPresentationTest {
             try {
                 frames(scene)
                 suspend fun openMenu(target: ChatSession) {
-                    val title = nodes(scene).first { it.label(target.title) && it.boundsInRoot.left < 280 }
+                    val title = nodes(scene).first { it.label(SessionDisplayTitlePolicy.resolve(target)) && it.boundsInRoot.left < 280 }
                     scene.sendPointerEvent(PointerEventType.Press, title.boundsInRoot.center, button = PointerButton.Secondary)
                     scene.sendPointerEvent(PointerEventType.Release, title.boundsInRoot.center, button = PointerButton.Secondary)
                     frames(scene)
@@ -78,8 +80,8 @@ class DesktopSessionDeletionTargetPresentationTest {
                         descendants(ancestor).any { it.label("确认删除") }
                     }
                     val texts = descendants(modal).flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.map { it.text }
-                    assertTrue(target.title in texts, "Confirmation must name the exact menu target")
-                    assertFalse(other.title in texts, "Another copy must not replace the confirmation target")
+                    assertTrue(SessionDisplayTitlePolicy.resolve(target) in texts, "Confirmation must name the exact menu target")
+                    assertFalse(SessionDisplayTitlePolicy.resolve(other) in texts, "Another copy must not replace the confirmation target")
                 }
                 openMenu(first)
                 controller.selectSession(second.id)
