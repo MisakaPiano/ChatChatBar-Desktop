@@ -10,7 +10,7 @@ from xml.etree import ElementTree as ET
 root = Path.cwd()
 out = root / 'card-draft-save-originals'
 out.mkdir(exist_ok=True)
-SOURCE = '781e3538bfc976d4a95d4782855d02d2a8423128'
+SOURCE = 'b370d46d3d766ad11fb5a0d6b1c37cab97a64637'
 BASE = '2d363ff316f7aaf7c204f46700a2100ff9c04db4'
 VM = 'app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt'
 PREFIX = 'com.example.chatbar.'
@@ -73,13 +73,15 @@ elif phase == 'negative-api30':
         (out/'old-vm-sha256.txt').write_text(hashlib.sha256(old).hexdigest())
         names = ','.join(NEW+'#'+method for method in [
             'formalSaveDoesNotRecreateDraftWhenOpeningAnotherCard',
-            'successfulFormalSaveClearsSavedDraftStatus'])
+            'successfulFormalSaveClearsSavedDraftStatus',
+            'derivedDocumentIndexUpdatesDoNotCreateADraftButRealDocumentEditsDo'])
         result = gradle(':app:connectedDebugAndroidTest', '-Pandroid.testInstrumentationRunnerArguments.class='+names, isolated=True)
         cases = report(phase, True)
-        assert result.returncode != 0 and len(cases) == 2
+        assert result.returncode != 0 and len(cases) == 3
         assert all(c['failure'] and not c['skipped'] and c['failure']['type']=='java.lang.AssertionError' for c in cases), cases
         assert any('Saving A must not recreate its draft' in c['failure']['text'] for c in cases), cases
         assert any('Formal save must clear the old draft banner' in c['failure']['text'] for c in cases), cases
+        assert any('Background index progress must not create a character draft' in c['failure']['text'] for c in cases), cases
     finally:
         path.write_bytes(fixed)
         assert path.read_bytes() == fixed
@@ -88,9 +90,9 @@ elif phase in ('fixed-api26', 'fixed-api30'):
         PREFIX+'ui.manage.ManagementDraftDiscardTest', PREFIX+'ui.character.CharacterCardFieldsPersistenceTest'])
     result = gradle(':app:connectedDebugAndroidTest', '-Pandroid.testInstrumentationRunnerArguments.class='+names, isolated=True)
     cases = report(phase, True)
-    assert result.returncode == 0 and len(cases) == 19
+    assert result.returncode == 0 and len(cases) == 20
     assert all(not c['failure'] and not c['skipped'] for c in cases), cases
-    assert len([c for c in cases if c['classname']==NEW]) == 5
+    assert len([c for c in cases if c['classname']==NEW]) == 6
     metadata(True)
 else:
     raise ValueError(phase)
