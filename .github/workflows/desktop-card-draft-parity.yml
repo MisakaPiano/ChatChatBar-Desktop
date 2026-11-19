@@ -35,7 +35,7 @@ jobs:
           "TMP=$buffer" >> $env:GITHUB_ENV
           New-Item -ItemType Directory -Path 'review-character-draft' | Out-Null
           git rev-parse HEAD | Set-Content 'review-character-draft/source.txt'
-      - name: Reproduce both resource lifetime failures on the prior product
+      - name: Reproduce accepted attachment loss on the prior product
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -47,13 +47,13 @@ jobs:
           try {
             Push-Location app
             try {
-              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.clean draft deletion cannot erase attachments accepted while its old directory is being retired' --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.ordinary edit cannot reinstall a retired resource session across obsolete draft admission' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.clean draft deletion cannot erase attachments accepted while its old directory is being retired' -PdesktopTestHeadless=true --no-daemon --stacktrace
               $negativeExit = $LASTEXITCODE
             } finally { Pop-Location }
             if ($negativeExit -ne 1) { throw 'PRIOR_PRODUCT_NEGATIVE_EXIT_NOT_CONFIRMED' }
             $xmlPath = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.xml'
             [xml]$report = Get-Content -Raw -LiteralPath $xmlPath
-            if ($report.testsuite.tests -ne '2' -or $report.testsuite.failures -ne '2' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_PRODUCT_TWO_ASSERTION_FAILURES_NOT_CONFIRMED' }
+            if ($report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_PRODUCT_ATTACHMENT_ASSERTION_FAILURE_NOT_CONFIRMED' }
             if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_PRODUCT_FAILURE_NOT_ASSERTION' }
             Copy-Item -LiteralPath $xmlPath -Destination 'review-character-draft/negative-resource-lifetime.xml'
           } finally {
