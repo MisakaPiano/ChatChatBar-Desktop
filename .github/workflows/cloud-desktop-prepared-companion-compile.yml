@@ -1,0 +1,86 @@
+name: Compile Desktop retained PREPARED companion
+on:
+  push:
+    branches: [codex/metadata-repair-desktop-retained-compile-20261120]
+permissions:
+  contents: read
+jobs:
+  desktop-test-source:
+    name: Compile Desktop companion on ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: delivered
+            checkout: delivered
+            source: 5c906e6d4a0f31a114326e35a331c4af4dfa6379
+          - target: candidate
+            checkout: .
+            source: 8587b8771a86d4a0e809efaad298f8c27160ddf0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Checkout actual Desktop LAN6 source
+        if: matrix.target == 'delivered'
+        uses: actions/checkout@v4
+        with:
+          ref: 5c906e6d4a0f31a114326e35a331c4af4dfa6379
+          path: delivered
+          persist-credentials: false
+      - name: Bind the same companion to the delivered test source
+        if: matrix.target == 'delivered'
+        run: |
+          fixture=app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupPreparedUpgradeControlTest.kt
+          test ! -e "delivered/$fixture"
+          mkdir -p "delivered/$(dirname "$fixture")"
+          cp "$fixture" "delivered/$fixture"
+          cmp "$fixture" "delivered/$fixture"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile the exact Desktop test source without running the fixture
+        working-directory: ${{ matrix.checkout }}/app
+        run: >-
+          bash ./gradlew :desktopApp:compileTestKotlin
+          -Pkotlin.daemon.jvmargs=-Xmx4g --max-workers=1 --no-parallel --no-daemon --stacktrace
+      - name: Bind the compiled test class to its fixture and input
+        working-directory: ${{ matrix.checkout }}
+        env:
+          TARGET_REF: ${{ matrix.target }}
+          SOURCE: ${{ matrix.source }}
+          HARNESS: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+          import json, os, subprocess
+          target = os.environ['TARGET_REF']
+          base, harness = os.environ['SOURCE'], os.environ['HARNESS']
+          proof = Path('app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopGroupPreparedUpgradeControlTest.kt')
+          assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == (base if target == 'delivered' else harness)
+          if target == 'candidate':
+              assert subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip() == base
+          root = Path('app/desktopApp/build')
+          classes = sorted(root.rglob('DesktopGroupPreparedUpgradeControlTest.class'))
+          assert classes
+          result = {'base': base, 'harness': harness, 'target': target,
+                    'fixtureSha256': sha256(proof.read_bytes()).hexdigest(),
+                    'compileScope': 'Desktop test Kotlin; no DPAPI execution or package acceptance', 'classes': []}
+          for path in classes:
+              contents = path.read_bytes()
+              assert contents[:4] == bytes.fromhex('cafebabe')
+              result['classes'].append({'path': str(path.relative_to(root)), 'bytes': len(contents), 'sha256': sha256(contents).hexdigest()})
+          (root / 'desktop-prepared-companion-compile.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-prepared-companion-compile-${{ matrix.target }}
+          path: ${{ matrix.checkout }}/app/desktopApp/build/desktop-prepared-companion-compile.json
