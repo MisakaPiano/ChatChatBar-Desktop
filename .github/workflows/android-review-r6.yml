@@ -24,7 +24,7 @@ jobs:
       - run: cp validation/android_review_r6.py /tmp/android_review_r6.py
       - uses: actions/checkout@v4
         with:
-          ref: a77dba550123ae16a197ed97cb99563eca579a93
+          ref: 4df619411c1ca0645b0275a90b61e03d72a5c013
           fetch-depth: 12
           persist-credentials: false
       - uses: actions/setup-java@v4
