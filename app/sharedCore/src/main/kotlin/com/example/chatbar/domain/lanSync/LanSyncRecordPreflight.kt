@@ -80,29 +80,17 @@ internal class LanSyncRecordPreflight(private val input: Reader, private val bud
         }
     }
 
-    private fun fields(depth: Int, pathIndex: Int, record: Boolean = false) {
+    private fun fields(depth: Int, pathIndex: Int) {
         open(depth)
         expect('{')
-        var foundBody = false
+        val expected = recordPath.getOrNull(pathIndex)
         whitespace()
         if (!at('}')) {
             while (true) {
-                val expected = if (record) "body" else recordPath.getOrNull(pathIndex)
-                val matched = expected != null && string(expected) == expected
-                if (expected == null) string()
+                val field = string(expected?.length ?: 0)
                 expect(':')
                 charge(64)
-                if (record && matched) {
-                    require(!foundBody) { "SYNC_METADATA_STRUCTURE" }
-                    foundBody = true
-                    whitespace()
-                    require(at('{')) { "SYNC_METADATA_STRUCTURE" }
-                    inRecord = true
-                    recordCost = 0
-                    value(depth, -1)
-                    largest = maxOf(largest, recordCost)
-                    inRecord = false
-                } else value(depth, if (matched) pathIndex + 1 else -1)
+                value(depth, if (expected != null && field == expected) pathIndex + 1 else -1)
                 whitespace()
                 if (!at(',')) break
                 advance()
@@ -111,7 +99,41 @@ internal class LanSyncRecordPreflight(private val input: Reader, private val bud
             }
         }
         expect('}')
-        require(!record || foundBody) { "SYNC_METADATA_STRUCTURE" }
+    }
+
+    private fun record(depth: Int) {
+        require(depth <= budget.maximumDepth) { "SYNC_METADATA_DEPTH" }
+        expect('{')
+        val fields = HashSet<String>(3)
+        // The typed decoder drops these fixed wire keys and punctuation after each
+        // record. Budget the retained handle and identity strings independently.
+        while (true) {
+            val field = requireNotNull(string(captureCharacters = 4, descriptor = true)) { "SYNC_METADATA_STRUCTURE" }
+            require(fields.add(field)) { "SYNC_METADATA_STRUCTURE" }
+            expect(':')
+            when (field) {
+                "type", "id" -> {
+                    val identity = requireNotNull(string(captureCharacters = 256, descriptor = true)) { "SYNC_ID" }
+                    require(identity.isNotBlank() && identity.length <= 256) { "SYNC_ID" }
+                    charge(8L * identity.length)
+                }
+                "body" -> {
+                    whitespace()
+                    require(at('{')) { "SYNC_METADATA_STRUCTURE" }
+                    inRecord = true
+                    recordCost = 0
+                    value(depth, -1)
+                    largest = maxOf(largest, recordCost)
+                    inRecord = false
+                }
+                else -> throw IllegalArgumentException("SYNC_METADATA_STRUCTURE")
+            }
+            whitespace()
+            if (!at(',')) break
+            advance()
+        }
+        expect('}')
+        require(fields.size == 3) { "SYNC_METADATA_STRUCTURE" }
     }
 
     private fun array(depth: Int) {
@@ -129,8 +151,8 @@ internal class LanSyncRecordPreflight(private val input: Reader, private val bud
             require(at('{')) { "SYNC_METADATA_STRUCTURE" }
             require(recordCount < 100_000) { "SYNC_RECORD_LIMIT" }
             recordCount++
-            charge(512) // Record handles, list/index entries and bounded identifiers.
-            fields(depth + 1, -1, record = true)
+            charge(512) // Record locator and list/index entries.
+            record(depth + 1)
         }
     }
 
@@ -149,22 +171,23 @@ internal class LanSyncRecordPreflight(private val input: Reader, private val bud
         expect(']')
     }
 
-    private fun string(expected: String? = null): String? {
+    private fun string(captureCharacters: Int = 0, descriptor: Boolean = false): String? {
         expect('"')
-        charge(128)
-        val limit = expected?.let { it.length * 6 + 2 } ?: 0
-        val token = expected?.let { StringBuilder().append('"') }
+        if (!descriptor) charge(128)
+        val limit = captureCharacters * 6 + 1 // Worst-case escaped UTF-16 characters and closing quote.
+        val token = if (captureCharacters > 0) StringBuilder().append('"') else null
         var escaped = false
         var characters = 0L
         while (current >= 0) {
             val char = current.toChar()
             advance()
-            charge(8)
+            if (!descriptor) charge(8)
             characters++
             require(characters <= budget.maximumStringCharacters) { "SYNC_METADATA_STRING_BUDGET" }
-            if (token != null && token.length < limit) token.append(char)
+            if (descriptor) require(characters <= limit) { "SYNC_METADATA_STRUCTURE" }
+            if (token != null && characters <= limit) token.append(char)
             if (!escaped && char == '"') {
-                return if (token != null && characters < limit) lanSyncJson.decodeFromString<String>(token.toString()) else null
+                return if (token != null && characters <= limit) lanSyncJson.decodeFromString<String>(token.toString()) else null
             }
             escaped = !escaped && char == '\\'
         }

@@ -1,7 +1,7 @@
 name: Bounded device-group metadata regressions
 on:
   push:
-    branches: [codex/lan-sync-metadata-enrollment-20261120]
+    branches: [codex/lan-sync-metadata-enrollment-20261120, codex/metadata-repair-retained-index-fix-20261120]
 permissions:
   contents: read
 jobs:
@@ -28,6 +28,8 @@ jobs:
           --tests 'com.example.chatbar.domain.lanSync.LanSyncWorkspaceTest.aggregateMetadataKeepsEveryBodyAndEnforcesIndependentRecordAndIndexLimits'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupDependenciesTest.authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncRetainedDescriptorBudgetTest'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncMetadataBudgetTest.overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'
@@ -54,6 +56,11 @@ jobs:
               'LanSyncGroupUnitCodecTest': {
                   'actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes',
                   'wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority',
+              },
+              'LanSyncGroupDependenciesTest': {'authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable'},
+              'LanSyncRetainedDescriptorBudgetTest': {
+                  'aRetainedCompactOldConversationReopensWithExactUnitAndMembership',
+                  'aRetainedCompactSourceCheckpointKeepsEveryOriginalRecordAndFile',
               },
               'LanSyncGroupCoordinatorTest': {
                   'reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode',

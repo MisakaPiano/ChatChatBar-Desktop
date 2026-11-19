@@ -7,6 +7,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import java.util.UUID
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 class LanSyncGroupDependenciesTest {
@@ -36,8 +40,9 @@ class LanSyncGroupDependenciesTest {
             assertEquals(SyncVersionState.ADMITTED, history.offer(version))
             return SyncInboxReconciliation(emptyList(), history, listOf(actual), false, custody().ledger().current().reference()) to actual
         }
-        fun service(backend: CiphertextStore = source.backend, validator: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> }) =
-            LanSyncGroupDependencies(source.cipher.group, backend, custody(), source.work, workspace.resourceStore, validator)
+        fun service(backend: CiphertextStore = source.backend, budget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
+            validator: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> }) =
+            LanSyncGroupDependencies(source.cipher.group, backend, custody(), source.work, workspace.resourceStore, validator, budget)
     }
 
     @Test fun missingImageWaitsThenVerifiedUnitAppliesAndReopensWithoutRedownloadingCachedContent() = withRoot { root ->
@@ -94,6 +99,68 @@ class LanSyncGroupDependenciesTest {
         f.custody().update(listOf(newer))
         assertEquals(LanSyncGroupDependencyStage.RECONCILE_AGAIN, f.service().inspect(validReconciliation, valid, unit).stage)
         f.workspace.capture(source.owner.fingerprint).use { assertTrue(it.snapshot.records.isEmpty()) }
+    }
+
+    @Test fun authenticatedRemoteRecordShapeUtf8AndBudgetsAreCheckedBeforeContentIsAvailable() = withRoot { root ->
+        val f = Fixture(root)
+        val source = f.source
+        val original = f.prepared.metadata.envelope
+        val version = requireNotNull(original.version)
+        val unit = f.prepared.unit.payload.unit
+        val change = version.changes.getValue(unit)
+        val originalContent = requireNotNull(change.content)
+        f.prepared.operations.values.forEach { source.outbox.upload(it, source.backend) }
+
+        fun receivedWithContent(bytes: ByteArray): Pair<SyncInboxReconciliation, SyncAuthenticatedGroupObject> {
+            val path = Files.createTempFile(root, "signed-unit-", ".json")
+            Files.write(path, bytes)
+            val identity = SyncPlaintextIdentity(bytes.size.toLong(), lanSyncHash(bytes))
+            val operation = SyncStoreId.random()
+            val key = CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random())
+            val binding = source.blobs.enqueue(source.outbox, operation, key, source.cipher, path, identity)
+            source.outbox.upload(operation, source.backend)
+            val unsigned = version.copy(id = SyncStoreId.random(),
+                changes = mapOf(unit to change.copy(content = identity)), signature = "unsigned")
+            val signed = unsigned.copy(signature = Base64.getEncoder()
+                .encodeToString(source.sender.signSyncGroupPayload(unsigned.signingBytes())))
+            val prepared = source.codec.enqueue(source.outbox, SyncStoreId.random(),
+                CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), source.cipher,
+                original.copy(version = signed, blobs = original.blobs - originalContent.sha256 + (identity.sha256 to binding)))
+            return f.received(prepared)
+        }
+
+        fun assertRejected(result: LanSyncGroupDependencyResult, code: String) {
+            assertEquals(code, result.code)
+            assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, result.stage)
+            assertNull(result.available)
+            assertNull(result.membership)
+        }
+
+        val payload = lanSyncJson.encodeToJsonElement(LanSyncGroupUnitPayload.serializer(), f.prepared.unit.payload).jsonObject
+        val record = payload.getValue("records").jsonArray.single().jsonObject
+        val invalidRecord = JsonObject(record + ("body" to JsonArray(emptyList())))
+        val invalidPayload = JsonObject(payload + ("records" to JsonArray(listOf(invalidRecord))))
+        val (badShape, badShapeObject) = receivedWithContent(invalidPayload.toString().encodeToByteArray())
+        assertRejected(f.service().inspect(badShape, badShapeObject, unit), "SYNC_METADATA_STRUCTURE")
+
+        val badUtf8 = payload.toString().encodeToByteArray()
+        val startOfNonAsciiText = badUtf8.indexOfFirst { it < 0 }
+        assertTrue(startOfNonAsciiText >= 0)
+        badUtf8[startOfNonAsciiText] = 0xff.toByte()
+        val (badEncoding, badEncodingObject) = receivedWithContent(badUtf8)
+        assertRejected(f.service().inspect(badEncoding, badEncodingObject, unit), "SYNC_INVALID_UTF8")
+
+        val (reconciled, metadata) = f.received()
+        val smallBodyWindow = LanSyncMetadataBudget(maximumDecodedCost = 1)
+        assertRejected(f.service(budget = smallBodyWindow).inspect(reconciled, metadata, unit), "SYNC_METADATA_WORKING_BUDGET")
+        val smallIndexWindow = LanSyncMetadataBudget(maximumIndexCost = 1)
+        assertRejected(f.service(budget = smallIndexWindow).inspect(reconciled, metadata, unit), "SYNC_METADATA_INDEX_BUDGET")
+        Files.newDirectoryStream(source.work.resolve("decoded-records")).use { assertFalse(it.iterator().hasNext()) }
+        f.workspace.capture(source.owner.fingerprint).use { assertTrue(it.snapshot.records.isEmpty()) }
+
+        val ready = f.service().inspect(reconciled, metadata, unit)
+        assertEquals(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE, ready.stage)
+        assertEquals(f.prepared.unit.valueHash, requireNotNull(ready.available).decoded.valueHash)
     }
 
     @Test fun deletionEvidenceRequiresReviewAndAnAuthorForkCannotExposeAnAutomaticallySelectedUnit() = withRoot { root ->
