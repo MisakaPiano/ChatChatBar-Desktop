@@ -5,7 +5,7 @@ SOURCE='efa6ffbb20cfc52096f0f5df03b41c419fc14e4a'
 BASE='3132f4658eb33cea3eee02ca432f1fbc526086ae'
 REPO='app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt'
 VM='app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt'
-def gradle(*args):return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace'],cwd=root/'app')
+def gradle(*args):return subprocess.run(['./gradlew',*args,'--no-daemon','--stacktrace','--info','--console=plain'],cwd=root/'app')
 def report(label,native=False):
     src=root/('app/app/build/outputs/androidTest-results/connected' if native else 'app/app/build/test-results/testDebugUnitTest')
     dst=out/label;shutil.copytree(src,dst);cases=[]
