@@ -22,7 +22,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import com.example.chatbar.domain.model.GeminiOpenAiEndpoint
 import com.example.chatbar.domain.model.ModelDiscoveryService
-import com.example.chatbar.domain.model.isSiliconFlowVisionApiBase
 import com.example.chatbar.domain.model.visionApiBase
 import com.example.chatbar.domain.model.canonicalLlmApiEndpoint
 import com.example.chatbar.data.local.entity.LlmApiAccount
@@ -125,6 +124,10 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
         if (isDiscoveringModels) return
         if (hasKeyForPreviousEndpoint) {
             modelDiscoveryError = "接口地址已变化，请重新填写它自己的 API Key"
+            return
+        }
+        if (_modelConfig.value?.requiresExplicitApiKey == true && apiKey.isBlank()) {
+            modelDiscoveryError = "请填写此接口的 API Key 后查找模型"
             return
         }
         discoveryGeneration++
