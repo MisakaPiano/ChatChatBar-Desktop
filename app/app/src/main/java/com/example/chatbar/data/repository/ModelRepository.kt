@@ -14,9 +14,7 @@ import com.example.chatbar.data.local.entity.uncommittedVisionModels
 import com.example.chatbar.domain.backup.LocalDataMaintenance
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.model.matchesVisionConnection
-import com.example.chatbar.domain.model.sameVisionApiBase
 import com.example.chatbar.domain.model.requireValidModelBinding
-import com.example.chatbar.domain.model.canonicalLlmApiEndpoint
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -268,7 +266,9 @@ class ModelRepository(
             catalog.chatModels.forEach { preset ->
                 val stableId = PRESET_MODEL_ID_PREFIX + preset.modelKey
                 val existing = current.firstOrNull { it.sourcePresetKey == preset.modelKey || it.id == stableId }
-                val next = if (existing != null && (!overwriteExisting || existing.llmAccountId != null)) {
+                val next = if (existing != null &&
+                    (!overwriteExisting || existing.llmAccountId != null || existing.apiKey.isNotBlank())
+                ) {
                     existing
                 } else {
                     preset.toModelConfig(
@@ -297,7 +297,7 @@ class ModelRepository(
         id = existing?.id ?: PRESET_MODEL_ID_PREFIX + modelKey,
         displayName = displayName,
         baseUrl = catalog.baseUrl,
-        apiKey = existing?.takeIf { sameVisionApiBase(it.baseUrl, catalog.baseUrl) }?.apiKey.orEmpty(),
+        apiKey = "",
         modelName = modelName,
         selectableForChat = selectableForChat,
         isMultimodal = isMultimodal,
