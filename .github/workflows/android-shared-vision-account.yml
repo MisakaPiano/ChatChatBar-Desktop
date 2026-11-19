@@ -1,0 +1,80 @@
+name: Android shared Pro and Flash account wire
+on:
+  push:
+    branches: [validation/android-vision-and-llm-accounts-20261120]
+permissions:
+  contents: read
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 30]
+    env:
+      SOURCE: 0b142b843db317f0ea71c4d8c441bc74993e3d68
+      API: ${{ matrix.api }}
+      CHATBAR_SUPABASE_URL: https://synthetic.invalid
+      CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Record exact source and configure KVM
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE"
+          test -z "$(git diff -- app/app/src/main)"
+          mkdir -p wire-originals
+          printf 'source=%s\napi=%s\n' "$SOURCE" "$API" > wire-originals/source.txt
+          chmod +x app/gradlew
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          profile: pixel_2
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            cd app && ./gradlew :app:connectedDebugAndroidTest -PCHATBAR_ISOLATED_ANDROID_TEST=true -PCHATBAR_ISOLATED_ANDROID_TEST_APP_ID=com.example.chatbar.sharedvisionwire -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.VisionModelSetupWireTest#sharedNamedAccountRoutesFlashThenProAfterRename --no-daemon --stacktrace
+      - name: Verify shared-account wire method and archive the originals
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          from xml.etree import ElementTree as ET
+
+          source = Path('app/app/build/outputs/androidTest-results/connected')
+          destination = Path('wire-originals')
+          destination.mkdir(exist_ok=True)
+          cases = []
+          for path in source.rglob('TEST-*.xml'):
+              target = destination / path.relative_to(source)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(path, target)
+              cases.extend(ET.parse(path).iter('testcase'))
+          expected = {'sharedNamedAccountRoutesFlashThenProAfterRename'}
+          assert len(cases) == len(expected) and {case.attrib['name'] for case in cases} == expected
+          assert all(case.find(node) is None for case in cases for node in ('failure', 'error', 'skipped'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-shared-vision-account-api${{ matrix.api }}-originals
+          path: wire-originals/
+          retention-days: 14
