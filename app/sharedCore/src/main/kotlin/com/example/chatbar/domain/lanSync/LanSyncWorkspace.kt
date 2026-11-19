@@ -1,6 +1,13 @@
 package com.example.chatbar.domain.lanSync
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
@@ -285,6 +292,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         Files.createDirectory(transaction)
         val entries = mutableListOf<LanSyncJournalEntry>()
         fun stage(relative: String, body: JsonObject?) {
+            require(entries.size < MAX_JOURNAL_ENTRIES) { "SYNC_JOURNAL_DAMAGED" }
             val index = entries.size
             val path = target(relative)
             val old = if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) lanSyncRead(path, budget.maximumRecordBytes) else null
@@ -374,9 +382,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             if (Files.exists(target(relative), LinkOption.NOFOLLOW_LINKS)) stage(relative, null)
         } }
         val journal = LanSyncJournal(plan.transaction, entries)
-        LanSyncJsonFiles.write(transaction.resolve("journal.json"), LanSyncJournal.serializer(), journal)
-        // This marker is the only recovery authority; earlier preparation is inert evidence.
+        validateJournal(journal)
         val journalFile = transaction.resolve("journal.json")
+        LanSyncJsonFiles.write(journalFile, LanSyncJournal.serializer(), journal)
+        // This marker is the only recovery authority; earlier preparation is inert evidence.
         lanSyncAtomicWrite(transaction.resolve("authorized"), LanSyncResourceStore.hashFile(journalFile, Files.size(journalFile)).toByteArray())
         observeJournal("AUTHORIZED", -1)
         recoverTransaction(transaction)
@@ -431,18 +440,9 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         require(transactionId.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
         if (!applied(transactionId)) return null
         val transaction = stateRoot.resolve("transaction-$transactionId"); lanSyncSafe(transaction, true)
-        val file = transaction.resolve("journal.json")
-        require(lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128)) ==
-            LanSyncResourceStore.hashFile(file, Files.size(file))) { "SYNC_JOURNAL_DAMAGED" }
-        metadataBudget.validate(file)
-        val journal = requireNotNull(LanSyncJsonFiles.read(file, LanSyncJournal.serializer())) { "SYNC_JOURNAL_DAMAGED" }
-        require(journal.transaction == transactionId && journal.entries.size <= 300_000 &&
-            journal.entries.map { it.path }.toSet().size == journal.entries.size &&
-            journal.entries.withIndex().all { (index, entry) -> entry.index == index }) { "SYNC_JOURNAL_DAMAGED" }
+        val journal = readAuthorizedJournal(transaction)
         val result = before.toMutableMap()
         journal.entries.forEach { entry ->
-            target(entry.path)
-            require(listOfNotNull(entry.oldHash, entry.newHash).all { it.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_JOURNAL_DAMAGED" }
             val parts = entry.path.split('/')
             val derivedIndex = parts.size == 3 && parts[0] == "entities" &&
                 parts[1] in setOf("chat_message_indexes", "chat_message_order_backups") && parts[2].length > 5 && parts[2].endsWith(".json")
@@ -477,12 +477,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     private fun recoverTransaction(transaction: Path) {
-        val journalFile = transaction.resolve("journal.json")
-        require(lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128)) ==
-            LanSyncResourceStore.hashFile(journalFile, Files.size(journalFile))) { "SYNC_JOURNAL_DAMAGED" }
-        val journal = requireNotNull(LanSyncJsonFiles.read(journalFile, LanSyncJournal.serializer()))
-        require(transaction.fileName.toString() == "transaction-${journal.transaction}" && journal.entries.map { it.path }.toSet().size == journal.entries.size)
-        require(journal.entries.size <= 300_000 && journal.entries.withIndex().all { (index, entry) -> entry.index == index }) { "SYNC_JOURNAL_DAMAGED" }
+        val journal = readAuthorizedJournal(transaction)
         // Validate the entire recovery authority before the first entity changes.
         journal.entries.forEach { entry ->
             require(entry.index in journal.entries.indices)
@@ -504,6 +499,33 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             observeJournal("ENTRY", entry.index)
         }
         lanSyncAtomicWrite(transaction.resolve("applied"), journal.transaction.toByteArray(Charsets.UTF_8))
+    }
+
+    private fun readAuthorizedJournal(transaction: Path): LanSyncJournal {
+        val authorized = lanSyncUtf8(lanSyncRead(transaction.resolve("authorized"), 128))
+        require(JOURNAL_HASH.matches(authorized)) { "SYNC_JOURNAL_DAMAGED" }
+        val journal = try {
+            requireNotNull(LanSyncJsonFiles.read(transaction.resolve("journal.json"), LanSyncJournal.serializer(), authorized)) {
+                "SYNC_JOURNAL_DAMAGED"
+            }
+        } catch (failure: IllegalArgumentException) {
+            if (failure.message == "SYNC_METADATA_DAMAGED") throw IllegalArgumentException("SYNC_JOURNAL_DAMAGED", failure)
+            throw failure
+        }
+        require(transaction.fileName.toString() == "transaction-${journal.transaction}") { "SYNC_JOURNAL_DAMAGED" }
+        validateJournal(journal)
+        return journal
+    }
+
+    /** A WAL contains bounded control rows. An entity body window does not limit its authorized history. */
+    private fun validateJournal(journal: LanSyncJournal) {
+        require(journal.entries.size <= MAX_JOURNAL_ENTRIES) { "SYNC_JOURNAL_DAMAGED" }
+        val paths = hashSetOf<String>()
+        journal.entries.forEachIndexed { index, entry ->
+            require(entry.index == index && paths.add(entry.path) && entry.oldHash?.let(JOURNAL_HASH::matches) != false &&
+                entry.newHash?.let(JOURNAL_HASH::matches) != false) { "SYNC_JOURNAL_DAMAGED" }
+            target(entry.path)
+        }
     }
 
     private fun target(relative: String): Path {
@@ -570,5 +592,31 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 }
 
-@Serializable internal data class LanSyncJournal(val transaction: String, val entries: List<LanSyncJournalEntry>)
+private const val MAX_JOURNAL_ENTRIES = 300_000
+private val JOURNAL_HASH = Regex("[a-f0-9]{64}")
+
+@Serializable internal data class LanSyncJournal(val transaction: String,
+    @Serializable(with = LanSyncJournalEntriesSerializer::class) val entries: List<LanSyncJournalEntry>)
 @Serializable internal data class LanSyncJournalEntry(val path: String, val oldHash: String?, val newHash: String?, val index: Int)
+
+@OptIn(ExperimentalSerializationApi::class)
+private object LanSyncJournalEntriesSerializer : KSerializer<List<LanSyncJournalEntry>> {
+    private val entry = LanSyncJournalEntry.serializer()
+    private val delegate = ListSerializer(entry)
+    override val descriptor = delegate.descriptor
+    override fun serialize(encoder: Encoder, value: List<LanSyncJournalEntry>) = delegate.serialize(encoder, value)
+    override fun deserialize(decoder: Decoder): List<LanSyncJournalEntry> = decoder.decodeStructure(descriptor) {
+        val entries = mutableListOf<LanSyncJournalEntry>()
+        if (decodeSequentially()) {
+            val count = decodeCollectionSize(descriptor)
+            require(count in 0..MAX_JOURNAL_ENTRIES) { "SYNC_JOURNAL_DAMAGED" }
+            repeat(count) { entries += decodeSerializableElement(descriptor, it, entry) }
+        } else while (true) {
+            val index = decodeElementIndex(descriptor)
+            if (index == CompositeDecoder.DECODE_DONE) break
+            require(index == entries.size && index < MAX_JOURNAL_ENTRIES) { "SYNC_JOURNAL_DAMAGED" }
+            entries += decodeSerializableElement(descriptor, index, entry)
+        }
+        entries
+    }
+}

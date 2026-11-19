@@ -29,12 +29,11 @@ jobs:
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupUnitCodecTest.wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation'
           --tests 'com.example.chatbar.domain.lanSync.LanSyncMetadataBudgetTest.overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncAppliedSourceFilesTest.anAuthorizedJournalAboveTheEntityWindowRecoversAndProvesEveryExactPostApplyFile'
+          --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCloudAutomaticReceptionTest.coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'
           --rerun-tasks --no-build-cache --continue --no-daemon --stacktrace
-      - name: Compile both changed platform entries
-        if: always()
-        working-directory: app
-        run: bash ./gradlew :app:compileLanPreviewKotlin :desktopApp:compileKotlin --continue --no-daemon --stacktrace
       - name: Preserve exact class original methods and counts
         if: always()
         env:
@@ -56,8 +55,13 @@ jobs:
                   'actualCardUnitAndDeclaredImageDecryptValidateApplyAndReopenWithExactBusinessAndResourceHashes',
                   'wrongUnitOrValueHashAndMetadataWorkingBudgetNeverGainUnitAuthority',
               },
-              'LanSyncGroupCoordinatorTest': {'reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode'},
+              'LanSyncGroupCoordinatorTest': {
+                  'reopeningAPausedLiveFounderDraftPreservesItsSaveCodeFormButNeverResurrectsALockedCode',
+                  'lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation',
+              },
               'LanSyncMetadataBudgetTest': {'overBudgetEncodedSnapshotCannotReplaceRetainedMetadataOrPublishANewFile'},
+              'LanSyncAppliedSourceFilesTest': {'anAuthorizedJournalAboveTheEntityWindowRecoversAndProvesEveryExactPostApplyFile'},
+              'LanSyncGroupCloudAutomaticReceptionTest': {'coldConfiguredReceiverAutomaticallyAppliesNewConversationFromHttpsAfterSenderGoesOffline'},
           }
           directory = Path('app/sharedCore/build/test-results/test')
           result = {'head': os.environ['CHECKED_HEAD'], 'classes': [], 'problems': [],
@@ -116,3 +120,7 @@ jobs:
           path: |
             app/sharedCore/build/test-results/test/
             app/build/reports/metadata-enrollment-regression.json
+      - name: Compile both changed platform entries
+        if: always()
+        working-directory: app
+        run: bash ./gradlew :app:compileLanPreviewKotlin :desktopApp:compileKotlin --continue --no-daemon --stacktrace

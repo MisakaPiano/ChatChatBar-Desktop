@@ -249,10 +249,14 @@ class LanSyncGroupCoordinatorTest {
             override suspend fun exclusive(work: suspend () -> Unit) = work()
             override suspend fun reload(sessionIds: Set<String>) { reloads.incrementAndGet() }
         }
-        fun founder() = LanSyncGroupEnrollment(profile, workspace, platform, identity,
+        fun founder() = founder(workspace)
+        fun founder(activeWorkspace: LanSyncWorkspace) = LanSyncGroupEnrollment(profile, activeWorkspace, platform, identity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(owners::add)
-        fun coordinator(sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false, beforeSetup: suspend () -> Unit = {}) = LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
-            ::founder, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC", { setupCalls++; beforeSetup() }, sourceChanges, initiallyPaused).also(coordinators::add)
+        fun coordinator(sourceChanges: Flow<Long>? = null, initiallyPaused: Boolean = false,
+            enrollment: () -> LanSyncGroupEnrollment = ::founder, beforeSetup: suspend () -> Unit = {}) =
+            LanSyncGroupCoordinator({ Files.exists(profile.resolve("profile.protected")) || Files.exists(profile.resolve("creation")) },
+                enrollment, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, network, "synthetic PC",
+                { setupCalls++; beforeSetup() }, sourceChanges, initiallyPaused).also(coordinators::add)
         fun author(trust: SyncGroupTrust) = SyncAuthorJournal(profile.resolve("node/author"), trust,
             Base64.getEncoder().encodeToString(identity.certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
         fun custody(trust: SyncGroupTrust): SyncGroupCustody {
@@ -433,6 +437,152 @@ class LanSyncGroupCoordinatorTest {
         assertNull(restarted.state.value.recoveryCode)
         assertNull(restarted.state.value.local.lastSuccessAt, "Historical receipts have no invented wall-clock time")
         assertEquals(operations, requireNotNull(f.founder().runtimeAccess()).node.sourceOperations())
+        assertContentEquals(original, Files.readAllBytes(f.card))
+        assertEquals(1, f.setupCalls)
+    }
+
+    @Test fun lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation() = fixture { f ->
+        f.writeCard("synthetic original card")
+        val original = Files.readAllBytes(f.card)
+        val recordCost = LanSyncMetadataBudget().validate(f.card)
+        val tight = LanSyncWorkspace(f.data, f.root.resolve("workspace"), { Path.of(it) },
+            metadataBudget = LanSyncMetadataBudget(maximumDecodedCost = recordCost - 1))
+        val first = f.coordinator(enrollment = { f.founder(tight) })
+        first.createGroup()
+        await { !first.state.value.busy && first.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+        val code = requireNotNull(first.state.value.recoveryCode)
+        val binding = requireNotNull(first.state.value.setupBinding)
+        val prepared = requireNotNull(f.founder().profile())
+        assertEquals(LanSyncGroupEnrollmentStage.PREPARED, prepared.stage)
+        assertTrue(first.state.value.canAbandonUnactivated)
+        assertFalse(Files.exists(f.profile.resolve("node")))
+
+        first.recoverySaved(binding)
+        await { !first.state.value.busy && first.state.value.error?.contains("SYNC_METADATA_WORKING_BUDGET") == true }
+        assertEquals(LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE, first.state.value.stage)
+        assertFalse(first.state.value.canAbandonUnactivated)
+        assertFalse(first.state.value.managementCanInvite)
+        assertTrue(first.state.value.error?.contains("恢复码继续原设备组") == true)
+        assertEquals(prepared, f.founder().profile())
+        val origins = listOf("creation/genesis.protected", "management-vault.bin", "recipient/recipient.protected",
+            "custody/group.protected", "root-actions/origin.protected", "node/author/origin.protected",
+            "node/native/origin.protected", "node/native/head.protected", "node/resolutions/state.protected")
+            .associateWith { Files.readAllBytes(f.profile.resolve(it)) }
+        val vault = SyncManagementSession.locate(code)
+        val replica = FileCiphertextStore(f.profile.resolve("local-replica"))
+        val retainedVault = requireNotNull(replica.metadata(vault.key))
+        val rootCommits = replica.listCommits(null).entries
+        assertTrue(rootCommits.isNotEmpty())
+        assertEquals(0L, f.author(prepared.trust).state().committedSequence)
+        assertContentEquals(original, Files.readAllBytes(f.card))
+
+        first.createInvitation()
+        await { !first.state.value.busy && first.state.value.error?.contains("SYNC_GROUP_NEARBY_NOT_AVAILABLE") == true }
+        assertNull(first.state.value.invitation)
+        first.pauseAndDrain()
+        assertEquals(LanSyncGroupPanelStage.PREPARED_LOCKED, first.state.value.stage)
+        assertNull(first.state.value.recoveryCode)
+        assertNull(first.state.value.setupBinding)
+        assertFalse(first.state.value.canAbandonUnactivated)
+        first.closeAndDrain()
+
+        val cold = f.coordinator(initiallyPaused = true)
+        cold.open()
+        await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.PREPARED_LOCKED }
+        assertFalse(cold.state.value.canAbandonUnactivated)
+        assertNull(cold.state.value.recoveryCode)
+        assertNull(cold.state.value.setupBinding)
+        cold.unlockManagement(code)
+        await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+        assertTrue(cold.state.value.recoveryCode == code, "The retained synthetic code must reopen the original setup")
+        assertEquals(binding, cold.state.value.setupBinding)
+        assertFalse(cold.state.value.canAbandonUnactivated)
+        assertFalse(cold.state.value.managementCanInvite)
+        assertEquals(prepared, f.founder().profile())
+        assertNull(f.founder().runtimeAccess())
+
+        cold.recoverySaved(binding)
+        await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.READY }
+        assertTrue(cold.state.value.paused)
+        assertNull(cold.state.value.recoveryCode)
+        assertFalse(cold.state.value.managementCanInvite)
+        assertNull(cold.state.value.invitation)
+        assertEquals(prepared.copy(stage = LanSyncGroupEnrollmentStage.READY), f.founder().profile())
+        origins.forEach { (relative, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.profile.resolve(relative))) }
+        assertEquals(retainedVault, replica.metadata(vault.key))
+        assertEquals(rootCommits, replica.listCommits(null).entries)
+        assertEquals(0L, f.author(prepared.trust).state().committedSequence)
+        val access = requireNotNull(f.founder().runtimeAccess())
+        assertTrue(access.node.sourceOperations().isEmpty())
+
+        cold.resumeIfConfigured()
+        await { !cold.state.value.busy && !cold.state.value.paused && cold.state.value.local.lastSuccessAt != null }
+        val source = requireNotNull(f.author(prepared.trust).state().last)
+        assertEquals(1L, source.version.authorSequence)
+        val ownReceipt = requireNotNull(access.node.receipt(source.request.operation, access.localTarget))
+        assertEquals(prepared.localReplica, ownReceipt.target)
+        assertSourceOriginal(f, source, original)
+        assertNull(cold.state.value.invitation)
+        cold.unlockManagement(code)
+        await { !cold.state.value.busy && cold.state.value.managementCanInvite }
+        cold.createInvitation()
+        await { !cold.state.value.busy && cold.state.value.invitation != null }
+        val offer = requireNotNull(cold.state.value.invitation)
+        val parsed = LanSyncGroupInviteOffer.parse(offer.code())
+        val bootstrap = requireNotNull(parsed.bootstrap)
+        assertEquals(prepared.trust.copy(checkpoint = f.custody(prepared.trust).ledger().current().reference()), parsed.trust)
+        assertEquals(prepared.device, parsed.inviter)
+        assertEquals(vault, bootstrap.vault)
+        assertEquals(setOf(source.version.reference()), bootstrap.dataHeads)
+        val localPeer = LanSyncPeer(prepared.device, "synthetic self", "10.0.0.1", bootstrap.storePort)
+        assertEquals(retainedVault, access.remote(localPeer, f.network).metadata(vault.key))
+
+        val joiningRoot = Files.createDirectory(f.root.resolve("receiver-profile"))
+        val joiningData = Files.createDirectory(f.root.resolve("receiver-data"))
+        val joiningWorkspace = LanSyncWorkspace(joiningData, Files.createDirectory(f.root.resolve("receiver-workspace")), { Path.of(it) })
+        val joiningIdentity = LanSyncTlsIdentity.create()
+        val joining = LanSyncGroupJoining(joiningRoot, joiningWorkspace, f.platform, joiningIdentity,
+            { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+        val pending = joining.prepare(offer.code()) { it.validate() }
+        assertEquals(LanSyncGroupJoinStage.PREPARED, pending.stage)
+        assertEquals(parsed.trust, pending.trust)
+        val proof = joining.proveUsing("synthetic receiving device", f.network)
+        assertEquals(prepared.device, proof.inviter)
+        await { !cold.state.value.busy && cold.state.value.peerConfirmation?.fingerprint == joiningIdentity.fingerprint }
+        val previousLedger = access.ledger().current()
+        cold.acceptPeer(requireNotNull(cold.state.value.peerConfirmation).binding)
+        await { !cold.state.value.busy && cold.state.value.devices.any { it.id == joiningIdentity.fingerprint } }
+        assertNull(cold.state.value.error)
+        val admitted = access.ledger().current()
+        assertEquals(previousLedger.reference(), admitted.parent)
+        assertEquals(proof.member, admitted.members.getValue(joiningIdentity.fingerprint))
+
+        // The joining owner uses the approved receiver identity against the pinned store listener.
+        val joined = joining.activate(joining.bootstrapStore(f.network))
+        assertEquals(LanSyncGroupJoinStage.READY, joined.profile.stage, joined.waitingCode)
+        assertEquals(parsed.trust, joined.profile.trust)
+        assertEquals(joiningIdentity.fingerprint, joined.profile.device)
+        val receiver = requireNotNull(joined.node)
+        val unit = "character_cards/card"
+        val incoming = requireNotNull(receiver.inspect().plan)
+        assertEquals(LanSyncGroupNativeStage.READY_CONTENT, incoming.units.getValue(unit).stage)
+        val received = requireNotNull(receiver.apply(incoming))
+        assertEquals(setOf(unit), received.advancedUnits)
+        val receiverCard = joiningData.resolve("entities/character_cards/card.json")
+        assertEquals("synthetic original card", requireNotNull(LanSyncJsonFiles.read(receiverCard, CharacterCard.serializer())).name)
+        val reopenedReceiver = requireNotNull(joining.open()).inspect()
+        val receiverApplied = reopenedReceiver.nativeState.units.getValue(unit)
+        assertEquals(setOf(source.version.reference()), receiverApplied.frontiers)
+        assertEquals(source.version.changes.getValue(unit).valueHash, receiverApplied.valueHash)
+        assertEquals(receiverApplied.valueHash, requireNotNull(reopenedReceiver.plan).before.hashes().getValue(unit))
+        val receiverAuthor = SyncAuthorJournal(joiningRoot.resolve("joining/node/author"), joined.profile.trust,
+            Base64.getEncoder().encodeToString(joiningIdentity.certificate.encoded), { it.reversedArray() }, { it.reversedArray() }).state()
+        assertEquals(0L, receiverAuthor.committedSequence)
+        assertNull(receiverAuthor.pendingApproved)
+        cold.closeInvitation()
+        cold.lockManagement()
+        assertNull(cold.state.value.invitation)
+        assertFalse(cold.state.value.managementCanInvite)
         assertContentEquals(original, Files.readAllBytes(f.card))
         assertEquals(1, f.setupCalls)
     }
