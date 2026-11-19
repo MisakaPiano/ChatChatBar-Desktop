@@ -1,7 +1,7 @@
 import pathlib,subprocess,json,shutil,sys,hashlib,os
 from xml.etree import ElementTree as ET
 root=pathlib.Path.cwd();out=root/'pr7-segment-voice';out.mkdir(exist_ok=True)
-SOURCE='0b36a3d31f41f41e7eb6b23b1cfe81213d67c330'
+SOURCE='595a3861e68e30348a26397286bb00667152d840'
 BASE='efa6ffbb20cfc52096f0f5df03b41c419fc14e4a'
 REPO='app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt'
 VM='app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt'
