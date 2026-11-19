@@ -85,6 +85,26 @@ class DesktopActionOptionsRequestTest {
         try { f.prepare(exclude, multimodal); withTimeout(25_000) { block(f) } } finally { f.close() }
     }
 
+    @Test fun `actual wire keeps unknown letter references and ordinary English has no invented choice`() = runBlocking {
+        val rule = ActionOptionsFormat("<choices>", "</choices>", "", ActionOptionLabels.LETTERS)
+        val references = listOf("Let's go with B and wait quietly.", "She suggested A so we will wait quietly.",
+            "She suggested I so we will wait quietly.", "I'll open a window while we're waiting nearby.")
+        for (reference in references) fixture { f ->
+            val count = if ("suggested I" in reference) 9 else 2
+            val menu = ('A' until ('A'.code + count).toChar()).joinToString("\n") { "$it) SOURCE_OPTION_$it" }
+            f.add(MessageRole.USER, ordinary)
+            val before = f.add(MessageRole.ASSISTANT, "Story before choices.\n<choices>\n$menu\n</choices>")
+            val source = before.copy(actionOptionsFormat = rule)
+            f.chats.updateMessage(source); f.sources[f.sources.lastIndex] = source
+            val (wire, result) = f.wire(reference)
+            assertEquals(1, wire.count { it == reference })
+            if (reference.startsWith("I'll")) assertFalse(wire.any { "SOURCE_OPTION_" in it })
+            else assertTrue(wire.any { "SOURCE_OPTION_" in it }, reference)
+            assertEquals(reference, result.currentUser.content)
+            f.unchanged()
+        }
+    }
+
     @Test fun `current long caption with image retains earlier choices and exact user multimodal payload`() = runBlocking {
         for (exclude in listOf(false, true)) fixture(exclude, multimodal = true) { f ->
             f.add(MessageRole.USER, ordinary)

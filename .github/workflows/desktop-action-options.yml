@@ -54,6 +54,8 @@ jobs:
           --no-daemon --stacktrace
       - name: Verify actual Desktop rule ownership and UI
         working-directory: app
+        env:
+          CCB_ACTION_RULE_REVIEW_DIR: ${{ github.workspace }}/review-action-options
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopActionChoicesTest'

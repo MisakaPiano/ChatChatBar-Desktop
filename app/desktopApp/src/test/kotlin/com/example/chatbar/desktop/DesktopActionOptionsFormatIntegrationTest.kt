@@ -1,4 +1,15 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
 package com.example.chatbar.desktop
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.dp
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
@@ -8,6 +19,7 @@ import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.chat.*
 import com.example.chatbar.domain.prompt.FormatRepairPromptAuthority
 import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flowOf
@@ -18,6 +30,83 @@ import kotlin.test.*
 class DesktopActionOptionsFormatIntegrationTest {
     private val rule = ActionOptionsFormat("<cyoa>", "</cyoa>", "Next", ActionOptionLabels.LETTERS)
     private val menu = "<cyoa>\nNext\nA) Check the map\nB) Ask the guide\n</cyoa>"
+
+    @Test fun `long closing fence still has one real disclosure and inserts its choice`() = runBlocking { fixture { app ->
+        for (segmented in listOf(false, true)) {
+            val raw = "```行动选项\n1. 查地图\n2. 找向导\n````"
+            val message = ChatMessage.create("synthetic", MessageRole.ASSISTANT, raw)
+            val state = DesktopPrimaryChatState(messages = listOf(message), assistantSegmentedBubblesEnabled = segmented)
+            val clipboard = DesktopSafeClipboard(object : Clipboard {
+                override val nativeClipboard: Any get() = error("Synthetic clipboard only")
+                override suspend fun getClipEntry(): ClipEntry? = null
+                override suspend fun setClipEntry(clipEntry: ClipEntry?) = Unit
+            })
+            val picked = mutableListOf<String>()
+            val scene = ImageComposeScene(800, 900) {
+                PrimaryMessageBubble(message, state, app.primaryChatController, clipboard,
+                    onActionChoice = { picked += it.text })
+            }
+            suspend fun frames() { repeat(8) { scene.render(System.nanoTime()).close(); delay(20) } }
+            fun nodes(): List<SemanticsNode> {
+                fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+                return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+            }
+            fun labels(value: String) = nodes().filter {
+                it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == value } == true
+            }
+            fun click(label: String) {
+                var node = labels(label).first()
+                while (!node.config.contains(SemanticsActions.OnClick)) node = requireNotNull(node.parent)
+                assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
+            }
+            try {
+                frames()
+                assertEquals(1, labels("行动选项").size, "A recognized block must have one rendered disclosure")
+                click("行动选项"); frames(); click("1. 查地图"); frames()
+                assertEquals(listOf("查地图"), picked)
+                assertEquals(raw, message.content)
+                assertEquals(desktopPresentMessage(message, null, null, segmented).copyText,
+                    desktopPresentMessage(message, null, null, segmented, inlineActionChoices = true).copyText)
+            } finally { scene.close() }
+        }
+    } }
+
+    @Test fun `actual declaration switch label choice and preview stay in the current editor`() = runBlocking { fixture { app ->
+        val editor = app.formatCardEditorController
+        editor.openNew()
+        val scene = ImageComposeScene(width = 800, height = 900) {
+            val state by editor.state.collectAsState()
+            Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp)) {
+                DesktopFormatActionOptions(requireNotNull(state.card), editor)
+            }
+        }
+        suspend fun frames() { repeat(8) { scene.render(System.nanoTime()).close(); delay(20) } }
+        fun nodes(): List<SemanticsNode> {
+            fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+            return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+        }
+        fun click(label: String) {
+            var node = nodes().first { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == label } == true }
+            while (!node.config.contains(SemanticsActions.OnClick)) node = requireNotNull(node.parent)
+            assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
+        }
+        try {
+            frames(); assertNull(editor.state.value.card?.actionOptionsFormat)
+            click("自定义行动选项格式"); frames()
+            assertNotNull(editor.state.value.card?.actionOptionsFormat)
+            click("编号：数字"); frames()
+            assertEquals(ActionOptionLabels.LETTERS, editor.state.value.card?.actionOptionsFormat?.labels)
+            assertTrue(nodes().any { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
+                "A) 查看地图" in text.text && "B) 询问向导" in text.text
+            } == true })
+            System.getenv("CCB_ACTION_RULE_REVIEW_DIR")?.let { folder ->
+                val target = Files.createDirectories(Path.of(folder)).resolve("format-action-options-letters.png")
+                scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(target, it.bytes) } }
+            }
+            click("自定义行动选项格式"); frames()
+            assertNull(editor.state.value.card?.actionOptionsFormat)
+        } finally { scene.close() }
+    } }
 
     @Test fun `format editor formal save and actual export import retain declared rule`() = runBlocking { fixture { app ->
         val editor = app.formatCardEditorController
