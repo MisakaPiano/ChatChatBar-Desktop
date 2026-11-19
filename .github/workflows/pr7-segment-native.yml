@@ -32,7 +32,7 @@ jobs:
       - run: cp validation/pr7_segment_voice.py /tmp/pr7_segment_voice.py
       - uses: actions/checkout@v4
         with:
-          ref: b0d7e37c6eedf76c4cea3140465f6195075f7d18
+          ref: 0b36a3d31f41f41e7eb6b23b1cfe81213d67c330
           fetch-depth: 8
           persist-credentials: false
       - uses: actions/setup-java@v4
