@@ -236,15 +236,13 @@ internal class DesktopCharacterEditorController(
             if (deferLeave { scope.launch { openPerson(cardId, personId) } }) return
             openExisting(cardId)
         }
-        val current = _state.value
         val source = characters.getById(cardId)
-        if (current.targetId != cardId || current.card?.characters?.count { it.id == personId } != 1 ||
-            source?.characters?.count { it.id == personId } != 1) {
-            _state.value = current.copy(problem = CharacterEditorProblem.PERSON_UNAVAILABLE)
-            return
+        _state.update { current ->
+            if (current.targetId != cardId || current.card == null || current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) current
+            else if (current.card.characters.count { it.id == personId } != 1 || source?.characters?.count { it.id == personId } != 1)
+                current.copy(problem = CharacterEditorProblem.PERSON_UNAVAILABLE)
+            else current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
         }
-        // Focus is ephemeral. Do not reload or replace an existing unsaved draft of the same card.
-        _state.value = current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
     }
 
     suspend fun openMoments(cardId: String) {
@@ -256,9 +254,8 @@ internal class DesktopCharacterEditorController(
             if (deferLeave { scope.launch { openMoments(cardId) } }) return
             openExisting(cardId)
         }
-        val current = _state.value
-        if (current.targetId == cardId && current.card != null)
-            _state.value = current.copy(momentsFocusRevision = current.momentsFocusRevision + 1)
+        _state.update { current -> if (current.targetId == cardId && current.card != null)
+            current.copy(momentsFocusRevision = current.momentsFocusRevision + 1) else current }
     }
 
     suspend fun openExisting(id: String) {
@@ -290,13 +287,16 @@ internal class DesktopCharacterEditorController(
             if (deferLeave { scope.launch { openDocument(cardId, documentId, unavailable) } }) return
             openExisting(cardId)
         }
-        val current = _state.value
         val source = characters.getById(cardId)
-        if (current.targetId != cardId || current.card?.customDocuments?.count { it.id == documentId } != 1 ||
-            source?.customDocuments?.count { it.id == documentId } != 1) {
-            unavailable(); return
+        while (true) {
+            val current = _state.value
+            if (current.targetId != cardId || current.card?.customDocuments?.count { it.id == documentId } != 1 ||
+                source?.customDocuments?.count { it.id == documentId } != 1) {
+                unavailable(); return
+            }
+            if (_state.compareAndSet(current, current.copy(documentFocusId = documentId,
+                    documentFocusRevision = current.documentFocusRevision + 1))) return
         }
-        _state.value = current.copy(documentFocusId = documentId, documentFocusRevision = current.documentFocusRevision + 1)
     }
 
     private suspend fun restoreCommittedDraft(draft: EditorDraft,
@@ -662,7 +662,7 @@ internal class DesktopCharacterEditorController(
         val current = _state.value
         if (current.busy || current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return false
         if (current.base?.isCommunityDownload == true && current.targetId != null) {
-            _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
+            _state.compareAndSet(current, current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY))
             return false
         }
         return true

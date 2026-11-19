@@ -29,6 +29,67 @@ class DesktopCharacterDraftSaveParityTest {
         extensions = """{"unknown_vendor":{"retained":[1,2,3]}}""", creatorNotes = "Original notes")
     private fun coldDrafts(app: DesktopAppContainer) = EditorDraftRepository(JsonFileStorage(app.appDataRoot))
 
+    @Test fun `suspended person and document focus preserve the freshly rotated draft owner and its accepted attachment`() = runBlocking {
+        for (personFocus in listOf(true, false)) fixture { app, _ -> coroutineScope {
+            val sourceEntered = CompletableDeferred<Unit>(); val sourceRelease = CompletableDeferred<Unit>()
+            val cleanupEntered = CompletableDeferred<Unit>(); val cleanupRelease = CompletableDeferred<Unit>()
+            val armedSource = AtomicBoolean(); val armedCleanup = AtomicBoolean()
+            val gate = object : AppDataOperationGate {
+                override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                    if (armedSource.compareAndSet(true, false)) { sourceEntered.complete(Unit); sourceRelease.await() }
+                    return operation()
+                }
+            }
+            val cards = CharacterRepository(JsonFileStorage(app.appDataRoot, gate))
+            val editor = DesktopCharacterEditorController(cards, app.editorDraftRepository, app.worldBookRepository,
+                app.formatCardRepository, app.chatRepository, DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore),
+                app.jsonFileStorage.json, deleteDraft = { type, id ->
+                    if (armedCleanup.compareAndSet(true, false)) { cleanupEntered.complete(Unit); cleanupRelease.await() }
+                    app.editorDraftRepository.deleteForTarget(type, id)
+                })
+            val person = CharacterInfo.create("Synthetic person")
+            val originalRef = app.characterResourceStore.materializeDocument(
+                com.example.chatbar.domain.card.PackagedDocument("source.txt", "txt", "Original document"), 1, "focus-source")
+            val doc = DocumentInfo.create("source.txt", originalRef, "txt")
+            val a = source().copy(characters = listOf(person), customDocuments = listOf(doc))
+            app.characterRepository.save(a)
+            try {
+                editor.openExisting(a.id)
+                editor.edit { it.copy(creatorNotes = "Old persisted edit") }; editor.flushDraft()
+                editor.edit { it.copy(creatorNotes = a.creatorNotes) }; editor.flushDraft()
+                val oldSession = editor.state.value.draftSessionId
+                armedSource.set(true)
+                val focusing = async {
+                    if (personFocus) editor.openPerson(a.id, person.id)
+                    else editor.openDocument(a.id, doc.id) { error("Current document unexpectedly unavailable") }
+                }
+                try {
+                    withTimeout(5_000) { sourceEntered.await() }
+                    armedCleanup.set(true)
+                    val cleaning = async { editor.save() }
+                    try {
+                        withTimeout(5_000) { cleanupEntered.await() }
+                        val freshSession = editor.state.value.draftSessionId
+                        assertNotEquals(oldSession, freshSession)
+                        sourceRelease.complete(Unit); focusing.await()
+                        editor.addTextDocument("focus-new.txt", "Attachment accepted after focus")
+                        val added = editor.state.value.card!!.customDocuments.single { it.id != doc.id }
+                        cleanupRelease.complete(Unit); assertFalse(cleaning.await()); editor.flushDraft()
+                        assertTrue(Files.exists(app.appDataRoot.resolve(added.filePath)), "A resumed focus callback reinstalled the retired attachment directory")
+                        assertEquals(freshSession, editor.state.value.draftSessionId)
+                        assertEquals("Attachment accepted after focus", Files.readString(app.appDataRoot.resolve(added.filePath)))
+                        val restored = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, a.id))
+                        assertEquals(freshSession, restored.draftSessionId)
+                        assertEquals(added, restored.characterPayload!!.customDocuments.single { it.id != doc.id })
+                        assertTrue(editor.save())
+                        val durable = assertNotNull(CharacterRepository(JsonFileStorage(app.appDataRoot)).getById(a.id))
+                        assertEquals("Attachment accepted after focus", app.characterResourceStore.readText(durable.customDocuments.single { it.id != doc.id }.filePath))
+                    } finally { cleanupRelease.complete(Unit); cleaning.cancelAndJoin() }
+                } finally { sourceRelease.complete(Unit); focusing.cancelAndJoin() }
+            } finally { sourceRelease.complete(Unit); cleanupRelease.complete(Unit); editor.closeAndDrain() }
+        } }
+    }
+
     @Test fun `ordinary edit cannot reinstall a retired resource session across obsolete draft admission`() = runBlocking {
         fixture { app, _ -> coroutineScope {
             val cleanupAdmitted = CompletableDeferred<Unit>()
