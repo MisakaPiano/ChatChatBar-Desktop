@@ -1,7 +1,7 @@
 name: Desktop declared action options
 on:
   push:
-    branches: [codex/desktop-action-options-20261119]
+    branches: [codex/desktop-action-options-20261119, codex/desktop-action-options-review-proof-20261120]
   workflow_dispatch:
 permissions:
   contents: read

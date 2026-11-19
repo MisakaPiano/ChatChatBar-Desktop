@@ -58,15 +58,15 @@ object RoleplayActionOptionsPolicy {
     fun blocks(content: String, format: ActionOptionsFormat? = null): List<RoleplayActionOptionsBlock> {
         if (format != null && validationError(format) != null) return emptyList()
         if (content.isBlank()) return emptyList()
-        val markdownFences = MarkdownCodeFences.ranges(content)
+        val markdownFences = MarkdownCodeFences.blocks(content)
         val declaresFence = format != null && fenceMarker(format.opening.trim()) != null
         val fenced = if (format == null || declaresFence) {
-            markdownFences.mapNotNull { fencedBlock(content, it, format) }
+            markdownFences.mapNotNull { fence -> if (fence.topLevel) fencedBlock(content, fence.range, format) else null }
         } else emptyList()
         if (declaresFence) return fenced
         val codeRanges = parseRoleplayTextSegments(content).filter {
             it.kind == RoleplaySegmentKind.STATUS && it.rawText.trimStart().startsWith("```")
-        }.map { it.start until it.endExclusive } + markdownFences
+        }.map { it.start until it.endExclusive } + markdownFences.map { it.range }
 
         val literal = format ?: defaultFormat
         val ranges = literalRanges(content, literal, codeRanges)
@@ -165,10 +165,11 @@ object RoleplayActionOptionsPolicy {
 
     /** Only restore a missing closing line when the declared opener and every option are present. */
     fun completeTrailingBlock(content: String, format: ActionOptionsFormat?): String {
-        val active = format ?: defaultFormat
+        val closing = (format ?: defaultFormat).closing.trim()
         val last = content.trimEnd()
-        if (last.endsWith(active.closing.trim())) return content
-        val candidate = last + "\n" + active.closing.trim()
+        val lastLine = last.substringAfterLast('\n')
+        if (!isCodeIndented(lastLine) && lastLine.trim() == closing) return content
+        val candidate = "$last\n$closing"
         val tail = blocks(candidate, format).lastOrNull() ?: return content
         return if (tail.range.last == candidate.lastIndex) candidate else content
     }
@@ -187,6 +188,7 @@ object RoleplayActionOptionsPolicy {
                 start = null
                 continue
             }
+            if (isCodeIndented(line)) continue
             val marker = line.trim()
             val openStart = start
             when {

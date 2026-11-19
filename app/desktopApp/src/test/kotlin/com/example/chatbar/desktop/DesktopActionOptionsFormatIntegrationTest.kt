@@ -24,12 +24,78 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopActionOptionsFormatIntegrationTest {
     private val rule = ActionOptionsFormat("<cyoa>", "</cyoa>", "Next", ActionOptionLabels.LETTERS)
     private val menu = "<cyoa>\nNext\nA) Check the map\nB) Ask the guide\n</cyoa>"
+
+    @Test fun `actual repair wire preserves inline closing literals and indented continuations before cold commit`() = runBlocking {
+        val numericRule = ActionOptionsFormat("[ACTIONS]", "[END-ACTIONS]", "", ActionOptionLabels.NUMBERS)
+        for (tail in listOf("2. 核对日志标记 [END-ACTIONS]", "2. 核对日志标记\n    [END-ACTIONS]"))
+            for (changed in listOf(false, true)) {
+            val f = DesktopMessageFormatRepairTest.Fixture()
+            try { MockWebServer().use { server ->
+                f.prepare()
+                f.container.modelRepository.saveModel(ModelConfig("model", "Synthetic local repair", server.url("/v1").toString().trimEnd('/'),
+                    "synthetic-key", "synthetic-model", createdAt = 1))
+                f.settings { it.copy(allowCleartextModelApi = true) }
+                val missing = "本轮叙述。\n[ACTIONS]\n1. 检查地图\n$tail"
+                val completed = "$missing\n[END-ACTIONS]"
+                f.replace(f.saved().copy(content = missing, alternatives = listOf("first", missing, "last"),
+                    actionOptionsFormat = numericRule, alternativeActionOptionsFormats = listOf(null, numericRule, null)))
+                val before = f.saved()
+                val reply = if (changed) "仅保留叙述。" else FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                    "data: {\"choices\":[{\"delta\":{\"content\":${JsonPrimitive(reply)}}}]}\n\n" +
+                        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                f.response = { request -> OpenAiStreamingTransport(allowCleartextHttp = { request.allowCleartext })
+                    .streamFormatRepair(request.formatCard, request.segmentedFormat, request.original, request.model) }
+                val result = f.run()
+                val wire = Json.parseToJsonElement(assertNotNull(server.takeRequest(5, java.util.concurrent.TimeUnit.SECONDS)).body.readUtf8()).jsonObject
+                    .getValue("messages").jsonArray.joinToString("\n") { it.jsonObject.getValue("content").jsonPrimitive.content }
+                assertTrue(completed in wire)
+                assertTrue(FormatRepairPromptAuthority.actionOptionsRepairRequirement(numericRule) in wire)
+                val cold = f.reopened()
+                if (changed) {
+                    assertEquals(DesktopRepairStatus.ERROR, result.status); assertEquals("ACTION_OPTIONS_CHANGED", result.code)
+                    assertEquals(before.displayContent, cold.displayContent); assertEquals(before.alternatives, cold.alternatives)
+                } else {
+                    assertEquals(DesktopRepairStatus.APPLIED, result.status); assertEquals(completed, cold.displayContent)
+                    assertEquals(2, RoleplayActionOptionsPolicy.blocks(cold.displayContent, numericRule).single().options.size)
+                }
+                assertEquals(before.alternativeVersionIds, cold.alternativeVersionIds)
+                assertEquals(before.images, cold.images)
+            } } finally { f.close() }
+        }
+    }
+
+    @Test fun `quoted list code examples do not create action repairs or append a closing line`() = runBlocking {
+        val numericRule = ActionOptionsFormat("[ACTIONS]", "[END-ACTIONS]", "", ActionOptionLabels.NUMBERS)
+        for (example in listOf(
+            "> ~~~text\n> [ACTIONS]\n> 1. 仅示例甲\n> 2. 仅示例乙\n> ~~~",
+            "- 示例\n  ~~~text\n  [ACTIONS]\n  1. 仅示例甲\n  2. 仅示例乙\n  ~~~"
+        )) {
+            val f = DesktopMessageFormatRepairTest.Fixture()
+            try {
+                f.prepare()
+                f.replace(f.saved().copy(content = example, alternatives = listOf("first", example, "last"),
+                    actionOptionsFormat = numericRule, alternativeActionOptionsFormats = listOf(null, numericRule, null)))
+                f.response = { request ->
+                    assertEquals(example, request.original)
+                    assertFalse(request.formatCard.orEmpty().contains("仅整理原回复已经列出的行动选项"))
+                    flowOf(StreamEvent.Delta(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER), StreamEvent.Done)
+                }
+                assertEquals(DesktopRepairStatus.UNCHANGED, f.run().status)
+                assertEquals(example, f.reopened().displayContent)
+            } finally { f.close() }
+        }
+    }
 
     @Test fun `long closing fence still has one real disclosure and inserts its choice`() = runBlocking { fixture { app ->
         for (segmented in listOf(false, true)) {
