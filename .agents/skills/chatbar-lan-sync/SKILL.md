@@ -5,6 +5,8 @@ description: Maintain app-owned Android/Desktop device groups, LAN/cloud/file ci
 
 # LAN Sync
 
+- `.github/workflows/cloud-metadata-enrollment.yml` isolates the two inline-synthetic founder regressions in `LanSyncGroupEnrollmentTest`: aggregate records versus one working window, and single-record refusal with retained PREPARED identity, guarded abandon and same-code cold retry. Its exact-method original XML/counts remain separate from native packaged-app, large-body pipeline and physical-user acceptance.
+
 - `.github/workflows/cloud-studio-wire-compat.yml` runs the synthetic Studio wire graph, immutable legacy/current pacing-body and native publication contracts in `LanSyncStudioCurrentTest`; it neither reads bundled presets nor replaces actual retained-platform upgrade evidence.
 - Studio current wire normalization preserves the original presence of the later `batchPacing` field in Draft, Undo.draft and each timeline entry. Graph current/history equivalence fills defaults only in temporary comparison values; signed historical bodies and the global comparison/hash algorithm keep their existing identity.
 - `.github/workflows/compat-c615-lansync.yml` separately verifies the mature Desktop integration seams with the explicit classes in `tools/lan-sync/compat-c615-test-scope.json`, Android entry compilation and original per-class XML/no-skip receipts. It neither selects nor replaces the independently retained large-byte proofs or native/package acceptance.

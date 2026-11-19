@@ -6,20 +6,24 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 /** Actual founder/profile/key/root publication/native node; synthetic platform protection only. */
 class LanSyncGroupEnrollmentTest {
     private class Fixture(root: Path) {
         val profileRoot = Files.createDirectory(root.resolve("profile")); val data = Files.createDirectory(root.resolve("data"))
-        val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("workspace")), { Path.of(it) })
+        val workspaceRoot = Files.createDirectory(root.resolve("workspace"))
+        val workspace = LanSyncWorkspace(data, workspaceRoot, { Path.of(it) })
         val identity = LanSyncTlsIdentity.create(); var gated = false; var failReady = false; var failNativeHead = false
         val services = mutableListOf<LanSyncGroupEnrollment>()
         val platform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) { check(!gated); gated = true; try { work() } finally { gated = false } }
             override suspend fun reload(sessionIds: Set<String>) { check(gated) }
         }
-        fun service(observe: (String) -> Unit = {}) = LanSyncGroupEnrollment(profileRoot, workspace, platform, identity, { bytes ->
+        fun service(metadataBudget: LanSyncMetadataBudget? = null, observe: (String) -> Unit = {}) = LanSyncGroupEnrollment(profileRoot,
+            metadataBudget?.let { LanSyncWorkspace(data, workspaceRoot, { Path.of(it) }, metadataBudget = it) } ?: workspace,
+            platform, identity, { bytes ->
             if (failNativeHead && bytes.toString(Charsets.UTF_8).let { it.contains("\"kind\":\"HEAD\"") && it.contains("CCB-SYNC-NATIVE-CONTROL/1") }) {
                 failNativeHead = false; throw IOException("SYNTHETIC_INITIAL_HEAD_PROTECTION_FAILED")
             }
@@ -36,6 +40,113 @@ class LanSyncGroupEnrollmentTest {
         val root = Files.createTempDirectory("synthetic-group-enrollment-").toRealPath()
         val fixture = Fixture(root)
         try { work(fixture) } finally { fixture.services.forEach { it.close() }; check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test fun aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup() = withFixture { f ->
+        val cards = listOf("a", "b").map { id -> CharacterCard(id, "synthetic-$id-" + "x".repeat(2048), createdAt = 1, updatedAt = 1) }
+        val paths = cards.associate { card ->
+            val path = f.data.resolve("entities/character_cards/${card.id}.json")
+            Files.createDirectories(path.parent); LanSyncJsonFiles.write(path, CharacterCard.serializer(), card)
+            card.id to path
+        }
+        val original = paths.mapValues { Files.readAllBytes(it.value) }
+        val costs = paths.mapValues { LanSyncMetadataBudget(maximumDecodedCost = 1024 * 1024).validate(it.value) }
+        val window = costs.values.max() + costs.values.min() / 2
+        val budget = LanSyncMetadataBudget(maximumDecodedCost = window)
+        assertTrue(costs.values.all { it < window })
+        assertTrue(costs.values.fold(0L, Math::addExact) > window)
+        paths.forEach { (id, path) -> assertEquals(costs.getValue(id), budget.validate(path)) }
+        val owner = f.service(metadataBudget = budget)
+        val draft = owner.prepare(f.request, SyncRootGroupCreateAdmission {})
+        val prepared = draft.profile; val code = draft.recoveryCode()
+        var saved = 0
+        val node = owner.activate(draft, LanSyncGroupRecoverySavedAdmission { assertEquals(prepared, it); saved++ })
+        assertEquals(1, saved)
+        val view = node.inspect(); val before = requireNotNull(view.plan).before
+        assertEquals(LanSyncScope.schemas.keys, before.coveredTypes)
+        assertEquals(2, before.records.size)
+        assertEquals(paths.keys, before.records.filter { it.type == "character_cards" }.map { it.id }.toSet())
+        before.records.forEach { record ->
+            val expected = lanSyncJson.parseToJsonElement(original.getValue(record.id).toString(Charsets.UTF_8)).jsonObject
+            assertEquals(LanSyncScope.normalize(record.type, expected), record.body)
+        }
+        assertEquals(0L, view.nativeState.completedSequence)
+        assertTrue(view.nativeState.units.isEmpty()); assertNull(view.nativeState.pendingTransaction)
+        assertEquals(LanSyncGroupEnrollmentStage.READY, owner.profile()?.stage)
+        assertEquals(prepared.trust, owner.profile()?.trust)
+        val pins = listOf("profile.protected", "creation/genesis.protected", "management-vault.bin", "recipient/recipient.protected",
+            "custody/group.protected", "root-actions/origin.protected", "node/author/origin.protected",
+            "node/native/origin.protected", "node/native/head.protected", "node/resolutions/state.protected")
+            .associateWith { Files.readAllBytes(f.profileRoot.resolve(it)) }
+        owner.close()
+        // New workspace/enrollment owners use the same paths and identity; this is a JVM-owner reopen.
+        val cold = f.service(metadataBudget = budget)
+        val opened = requireNotNull(cold.open()); val reopened = opened.inspect()
+        assertEquals(prepared.trust, cold.profile()?.trust)
+        assertEquals(prepared.device, cold.profile()?.device)
+        assertEquals(before, requireNotNull(reopened.plan).before)
+        assertEquals(0L, reopened.nativeState.completedSequence)
+        pins.forEach { (name, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.profileRoot.resolve(name))) }
+        original.forEach { (id, bytes) -> assertContentEquals(bytes, Files.readAllBytes(paths.getValue(id))) }
+        val unlocked = cold.resume(code)
+        assertEquals(code, unlocked.recoveryCode()); assertEquals(prepared.trust, unlocked.profile.trust)
+        unlocked.close()
+    }
+
+    @Test fun singleRecordWorkingBudgetFailureRetainsPreparedIdentityAndColdRetryNeverResetsItsOrigins() = withFixture { f ->
+        f.card()
+        val entity = f.data.resolve("entities/character_cards/card.json")
+        val original = Files.readAllBytes(entity)
+        val cost = LanSyncMetadataBudget(maximumDecodedCost = 1024 * 1024).validate(entity)
+        assertTrue(cost > 1)
+        val tight = LanSyncMetadataBudget(maximumDecodedCost = cost - 1)
+        assertEquals("SYNC_METADATA_WORKING_BUDGET", assertFailsWith<IllegalArgumentException> { tight.validate(entity) }.message)
+        val owner = f.service(metadataBudget = tight)
+        val draft = owner.prepare(f.request, SyncRootGroupCreateAdmission {})
+        val prepared = draft.profile; val code = draft.recoveryCode()
+        val before = listOf("profile.protected", "creation/genesis.protected", "management-vault.bin", "recipient/recipient.protected")
+            .associateWith { Files.readAllBytes(f.profileRoot.resolve(it)) }
+        assertEquals("SYNC_METADATA_WORKING_BUDGET", assertFailsWith<IllegalArgumentException> {
+            owner.activate(draft, LanSyncGroupRecoverySavedAdmission { assertEquals(prepared, it) })
+        }.message)
+        assertEquals(LanSyncGroupEnrollmentStage.PREPARED, owner.profile()?.stage)
+        assertEquals(prepared.trust, owner.profile()?.trust)
+        assertEquals(code, draft.recoveryCode())
+        before.forEach { (name, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.profileRoot.resolve(name))) }
+        val origins = listOf("custody/group.protected", "root-actions/origin.protected", "node/author/origin.protected",
+            "node/native/origin.protected", "node/native/head.protected", "node/resolutions/state.protected")
+            .associateWith { Files.readAllBytes(f.profileRoot.resolve(it)) }
+        val published = listOf("local-replica", "root-delivery", "root-queues").flatMap { name ->
+            Files.walk(f.profileRoot.resolve(name)).use { paths -> paths.filter {
+                Files.isRegularFile(it) && !it.fileName.toString().endsWith(".lock")
+            }.toList() }
+        }.associate { f.profileRoot.relativize(it).toString() to Files.readAllBytes(it) }
+        assertTrue(published.isNotEmpty())
+        assertFalse(owner.canAbandonUnactivated())
+        assertEquals("SYNC_GROUP_PROFILE_LOCAL_HISTORY_EXISTS", assertFailsWith<IllegalArgumentException> {
+            owner.abandonUnactivated(LanSyncGroupDraftAbandonAdmission { error("SYNTHETIC_NEVER_APPROVE_HISTORY_DISCARD") })
+        }.message)
+        assertFalse(Files.exists(f.profileRoot.resolve("abandon.protected")))
+        assertContentEquals(original, Files.readAllBytes(entity))
+        draft.close(); owner.close()
+        // Only this synthetic single-record guard is relaxed to test lifecycle retry. The aggregate
+        // contract above retains its unchanged working window; this is not a product cap fix.
+        val cold = f.service(metadataBudget = LanSyncMetadataBudget(maximumDecodedCost = cost + 1))
+        assertFails { cold.resume("synthetic-invalid-recovery-code") }
+        val resumed = cold.resume(code)
+        assertEquals(code, resumed.recoveryCode()); assertEquals(prepared, resumed.profile)
+        val node = cold.activate(resumed, LanSyncGroupRecoverySavedAdmission { assertEquals(prepared, it) })
+        assertEquals(LanSyncGroupEnrollmentStage.READY, cold.profile()?.stage)
+        assertEquals(prepared.trust, cold.profile()?.trust); assertEquals(prepared.device, cold.profile()?.device)
+        val view = node.inspect(); val records = requireNotNull(view.plan).before.records
+        assertEquals(setOf("character_cards/card"), records.map { it.key }.toSet())
+        assertEquals(0L, view.nativeState.completedSequence); assertTrue(view.nativeState.units.isEmpty())
+        assertNull(view.nativeState.pendingTransaction)
+        (before - "profile.protected" + origins).forEach { (name, bytes) ->
+            assertContentEquals(bytes, Files.readAllBytes(f.profileRoot.resolve(name)))
+        }
+        published.forEach { (name, bytes) -> assertContentEquals(bytes, Files.readAllBytes(f.profileRoot.resolve(name))) }
+        assertContentEquals(original, Files.readAllBytes(entity))
     }
 
     @Test fun unsupportedPartialCaptureScopeRefusesBeforeAdmissionOrAnyKeyAndGroupMaterial() = withFixture { f ->
