@@ -87,21 +87,31 @@ class DesktopActionOptionsRequestTest {
 
     @Test fun `actual wire keeps unknown letter references and ordinary English has no invented choice`() = runBlocking {
         val rule = ActionOptionsFormat("<choices>", "</choices>", "", ActionOptionLabels.LETTERS)
-        val references = listOf("Let's go with B and wait quietly.", "She suggested A so we will wait quietly.",
-            "She suggested I so we will wait quietly.", "a 然后静静地等待门口下一轮反应。",
-            "I'll open a window while we're waiting nearby.")
-        for (reference in references) fixture { f ->
+        val references = listOf(
+            Triple("Let's go with B and wait quietly.", 'A', true),
+            Triple("She suggested A so we will wait quietly.", 'A', true),
+            Triple("She suggested I so we will wait quietly.", 'A', true),
+            Triple("a 然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("a然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("A然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("a 然后静静地等待门口下一轮反应。", 'a', true),
+            Triple("I'll open a window while we're waiting nearby.", 'A', false),
+            Triple("I open a window and wait nearby.", 'A', false),
+            Triple("a 然后静静地等待门口下一轮反应。", '1', false))
+        for ((reference, start, keepSource) in references) fixture { f ->
             val count = if ("suggested I" in reference) 9 else 2
-            val start = if (reference.startsWith("a ")) 'a' else 'A'
-            val menu = (start until (start.code + count).toChar()).joinToString("\n") { "$it) SOURCE_OPTION_$it" }
+            val numbered = start == '1'
+            val menu = (start until (start.code + count).toChar()).joinToString("\n") {
+                "$it${if (numbered) "." else ")"} SOURCE_OPTION_$it"
+            }
             f.add(MessageRole.USER, ordinary)
-            val before = f.add(MessageRole.ASSISTANT, "Story before choices.\n<choices>\n$menu\n</choices>")
-            val source = before.copy(actionOptionsFormat = rule)
-            f.chats.updateMessage(source); f.sources[f.sources.lastIndex] = source
+            val block = if (numbered) "---\n【行动选项】\n$menu\n---" else "<choices>\n$menu\n</choices>"
+            val before = f.add(MessageRole.ASSISTANT, "Story before choices.\n$block")
+            f.chats.updateMessage(before.copy(actionOptionsFormat = if (numbered) null else rule))
+            f.sources[f.sources.lastIndex] = assertNotNull(f.chats.getMessage(before.id, "s"))
             val (wire, result) = f.wire(reference)
             assertEquals(1, wire.count { it == reference })
-            if (reference.startsWith("I'll")) assertFalse(wire.any { "SOURCE_OPTION_" in it })
-            else assertTrue(wire.any { "SOURCE_OPTION_" in it }, reference)
+            assertEquals(keepSource, wire.any { "SOURCE_OPTION_" in it }, reference)
             assertEquals(reference, result.currentUser.content)
             f.unchanged()
         }
