@@ -1211,9 +1211,11 @@ internal class DesktopPrimaryChatController(
                     if (warning != null) mutableState.update { it.copy(status = warning) }
                     saved = true
                 } else {
-                    check(chats.updateMessageIfUnchanged(message, updated.copy(formatRepairNotice = null))) {
+                    val persisted = updated.copy(formatRepairNotice = null)
+                    check(chats.updateMessageIfUnchanged(message, persisted)) {
                         "消息已变化，请重新打开分段操作"
                     }
+                    voices?.removeDeletedAlternatives(message, persisted)
                     refreshAfterTerminalTask(session.id)
                     saved = true
                 }
@@ -1233,6 +1235,7 @@ internal class DesktopPrimaryChatController(
                 val warning = if (replacement == null) deleteOwnedMessage(session.id, expected.id, expected)
                 else {
                     check(chats.updateMessageIfUnchanged(expected, replacement)) { "消息已变化，请重新确认删除" }
+                    voices?.removeDeletedAlternatives(expected, replacement)
                     null
                 }
                 refreshAfterTerminalTask(session.id)

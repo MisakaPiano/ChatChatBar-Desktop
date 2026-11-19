@@ -9,6 +9,37 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class VoiceRepositoryPersistenceTest {
+    @Test fun `explicit removed version pruning migrates old ownership and retains sibling and unrelated history after restart`() = runBlocking {
+        val root = Files.createTempDirectory("removed-version-repository-")
+        try {
+            val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            val message = ChatMessage("message", "session", MessageRole.ASSISTANT, "Alice：『删除』",
+                alternatives = listOf("Alice：『删除』", "Alice：『保留』"), alternativeVersionIds = listOf("a", "b"),
+                currentAlternativeVersionId = "a", createdAt = 1, updatedAt = 1)
+            val a = repo.ensureAnchorsForVersion(message, "a", message.alternatives[0]).first()
+            val b = repo.ensureAnchorsForVersion(message, "b", message.alternatives[1]).first()
+            repo.ensureAnchorsForVersion(message, "history", "Alice：『历史』")
+            fun voice(version: String?, text: String, anchor: String?) = GeneratedVoiceMessage.create("session", message.id,
+                version, anchor, 0, "DIALOGUE", "Alice", text, text, text, "alice", "Alice",
+                FishAudioVoiceBinding("synthetic", "Synthetic"), "synthetic", "synthetic-not-opened.mp3", 100, 100)
+            val legacy = voice(null, "删除", a.anchor.id)
+            val sibling = voice("b", "保留", b.anchor.id)
+            val history = voice("history", "历史", null)
+            listOf(legacy, sibling, history).forEach { repo.save(it) }
+            val replacement = MessageAlternativeVersionPolicy.remove(message, "a")!!
+            assertEquals(listOf(legacy.id), repo.deleteForRemovedVersions(message, replacement).map { it.id })
+            val cold = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            assertEquals(setOf(sibling.id, history.id), cold.listForMessage(message.id).map { it.id }.toSet())
+            assertEquals(setOf("b", "history"), cold.snapshotAnchorsForMessages(setOf(message.id)).map { it.messageVersionId }.toSet())
+            assertTrue(cold.deleteForRemovedVersions(message, replacement).isEmpty())
+            val edited = MessageAlternativeVersionPolicy.editCurrentContent(replacement, "Alice：『继续保留』")
+            assertTrue(cold.deleteForRemovedVersions(replacement, edited).isEmpty())
+            assertEquals(setOf(sibling.id, history.id), cold.listForMessage(message.id).map { it.id }.toSet())
+            assertFailsWith<IllegalArgumentException> { cold.deleteForRemovedVersions(message, replacement.copy(sessionId = "foreign")) }
+            assertEquals(2, cold.listForMessage(message.id).size)
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun `multiple takes and alternative versions retain independent snapshots through restart and edits`() = runBlocking {
         val root = Files.createTempDirectory("s3-official-repo-")
         val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)

@@ -32,6 +32,7 @@ class DesktopRemovedAlternativeVoiceTest {
                 createdAt = 2, updatedAt = 2, orderKey = 2))
             val deletedAnchor = app.voiceRepository.ensureAnchorsForVersion(target, "deleted", "Deleted source text").single()
             val retainedAnchor = app.voiceRepository.ensureAnchorsForVersion(target, "retained", "Retained source text").single()
+            app.voiceRepository.ensureAnchorsForVersion(target, "historical", "Retained historical source")
             val unique = app.voiceAudioStore.persist("session", "deleted-owned", fishPreviewMp3().inputStream())
             val shared = app.voiceAudioStore.persist("session", "shared-owned", fishPreviewMp3().inputStream())
             fun voice(id: String, version: String, path: String) = GeneratedVoiceMessage(
@@ -41,13 +42,23 @@ class DesktopRemovedAlternativeVoiceTest {
                 taggedText = "Synthetic tagged text", characterId = card.id, characterName = card.name,
                 voice = FishAudioVoiceBinding("synthetic-reference", "Synthetic voice"), fishModelId = "synthetic-model",
                 audioPath = path, durationMs = 1000, byteLength = Files.size(Path.of(path)), createdAt = 1, updatedAt = 1)
-            app.voiceRepository.save(voice("deleted-unique", "deleted", unique.path))
+            app.voiceRepository.save(voice("deleted-unique", "deleted", unique.path).copy(messageVersionId = null))
             app.voiceRepository.save(voice("deleted-shared", "deleted", shared.path))
             app.voiceRepository.save(voice("retained-shared", "retained", shared.path))
+            app.voiceRepository.save(voice("historical-shared", "historical", shared.path).copy(anchorId = null))
             val controller = app.primaryChatController
             controller.refresh(); controller.selectSession("session")
             controller.editComposer("Synthetic retained voice draft")
             controller.persistComposer(); controller.flushComposerForSnapshot()
+            // Stale editor/confirmation data never authorizes voice or anchor deletion.
+            val stale = target.copy(updatedAt = target.updatedAt + 1)
+            if (editLastSegment) {
+                val segment = parseRoleplayTextSegments(target.displayContent).single()
+                assertFalse(controller.editMessageSegment(target.id, segment.start, segment.endExclusive, "", target.displayContent, stale))
+            } else assertFalse(controller.deleteAssistantAlternative(stale, "deleted"))
+            assertEquals(4, app.voiceRepository.listForMessage(target.id).size)
+            assertTrue(Files.exists(Path.of(unique.path)))
+            assertEquals(target, app.chatRepository.getMessage(target.id, target.sessionId))
             if (editLastSegment) {
                 val segment = parseRoleplayTextSegments(target.displayContent).single()
                 assertTrue(controller.editMessageSegment(target.id, segment.start, segment.endExclusive, "", target.displayContent, target))
@@ -56,9 +67,9 @@ class DesktopRemovedAlternativeVoiceTest {
             assertEquals(listOf("Retained source text"), updated.alternatives)
             assertEquals("retained", updated.currentAlternativeVersionId)
             val cold = VoiceMessageRepository(JsonFileStorage(app.appDataRoot), strictReads = true)
-            assertEquals(listOf("retained-shared"), cold.listForMessage(target.id).map { it.id },
+            assertEquals(setOf("retained-shared", "historical-shared"), cold.listForMessage(target.id).map { it.id }.toSet(),
                 "Removed alternative retains durable voice metadata after ${if (editLastSegment) "last-segment empty edit" else "delete button"}")
-            assertEquals(setOf("retained"), cold.snapshotAnchorsForMessages(setOf(target.id)).map { it.messageVersionId }.toSet())
+            assertEquals(setOf("retained", "historical"), cold.snapshotAnchorsForMessages(setOf(target.id)).map { it.messageVersionId }.toSet())
             assertFalse(Files.exists(Path.of(unique.path)), "Unreferenced receipt-owned deleted-version audio must be released")
             assertTrue(Files.exists(Path.of(shared.path)), "A sibling version's shared recording must stay")
             assertEquals(separate, app.chatRepository.getMessage(separate.id, "session"))
@@ -72,13 +83,13 @@ class DesktopRemovedAlternativeVoiceTest {
             val summary = app.saveSlotController.state.value.slots.single()
             val slotPath = app.appDataRoot.resolve("entities/save_slots/${summary.id}.json")
             val slot = Json { ignoreUnknownKeys = true }.decodeFromString(SaveSlot.serializer(), Files.readString(slotPath))
-            assertEquals(1, slot.packageRef!!.audioCount)
+            assertEquals(2, slot.packageRef!!.audioCount)
             ZipFile(app.appDataRoot.resolve("save_slot_packages/${slot.packageRef!!.fileName}").toFile()).use { zip ->
                 val voices = zip.getInputStream(zip.getEntry("voices.jsonl")).bufferedReader().use { reader ->
                     reader.lineSequence().filter { it.isNotBlank() }.map { Json.decodeFromString(GeneratedVoiceMessage.serializer(), it) }.toList()
                 }
-                assertEquals(listOf("retained-shared"), voices.map { it.id })
-                assertEquals(listOf("retained"), voices.map { it.messageVersionId })
+                assertEquals(setOf("retained-shared", "historical-shared"), voices.map { it.id }.toSet())
+                assertEquals(setOf("retained", "historical"), voices.map { it.messageVersionId }.toSet())
             }
         } finally { app.close(); ownership.close(); parent.toFile().deleteRecursively() }
     }

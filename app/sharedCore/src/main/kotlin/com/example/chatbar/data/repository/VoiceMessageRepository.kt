@@ -255,6 +255,26 @@ class VoiceMessageRepository(
         removed
     }
 
+    /** Caller proves the durable replacement. Unrelated historical versions are not pruning authority. */
+    suspend fun deleteForRemovedVersions(previous: ChatMessage, replacement: ChatMessage): List<GeneratedVoiceMessage> = withDataAccess {
+        require(previous.id == replacement.id && previous.sessionId == replacement.sessionId)
+        val removedVersions = MessageAlternativeVersionPolicy.versions(previous).map { it.id }.toSet() -
+            MessageAlternativeVersionPolicy.versions(replacement).map { it.id }.toSet()
+        if (removedVersions.isEmpty()) return@withDataAccess emptyList()
+        ensureInitializedLocked()
+        // Infer old versionless ownership while the removed text/anchors are still available.
+        migrateLegacyVoiceVersionsLocked(previous)
+        val removed = _voices.value.filter { it.messageId == previous.id && it.sessionId == previous.sessionId &&
+            it.messageVersionId in removedVersions }
+        removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id) }
+        val anchorKeys = anchorsByVersion.keys.filter { it.messageId == previous.id && it.messageVersionId in removedVersions }
+        anchorKeys.forEach { storage.deleteEntity<VoiceAnchorState>(ANCHOR_TYPE, anchorStorageId(it)) }
+        anchorsByVersion = anchorsByVersion - anchorKeys.toSet()
+        val removedIds = removed.map { it.id }.toSet()
+        _voices.value = _voices.value.filterNot { it.id in removedIds }
+        removed
+    }
+
     suspend fun deleteForSession(sessionId: String): List<GeneratedVoiceMessage> = withDataAccess {
         ensureInitializedLocked()
         val removed = _voices.value.filter { it.sessionId == sessionId }

@@ -35,6 +35,13 @@ jobs:
           "TMP=$buffer" >> $env:GITHUB_ENV
           New-Item -ItemType Directory -Path '.review1259' | Out-Null
           git rev-parse HEAD | Set-Content '.review1259/source.txt'
+      - name: Verify shared version voice custody
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest'
+          --tests 'com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest'
+          --no-daemon --stacktrace
       - name: Verify actual primary viewport and gallery source action
         working-directory: app
         env:
