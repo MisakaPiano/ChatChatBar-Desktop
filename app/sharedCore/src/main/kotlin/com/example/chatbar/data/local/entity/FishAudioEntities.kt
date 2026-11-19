@@ -30,9 +30,9 @@ data class GeneratedVoiceMessage(
     val byteLength: Long,
     val createdAt: Long,
     val updatedAt: Long,
-    /** 播放迁移仅推断出的归属，不足以授权随备选版本删除录音。 */
+    /** true=推断不唯一；false=已证明归属；缺省=升级前来源未知，均不把未知当删除依据。 */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val desktopVersionOwnershipUncertain: Boolean = false
+    val desktopVersionOwnershipUncertain: Boolean? = null
 ) {
     val effectiveSynthesisText: String
         get() = synthesisText ?: sourceText
@@ -78,7 +78,8 @@ data class GeneratedVoiceMessage(
                 durationMs = durationMs,
                 byteLength = byteLength,
                 createdAt = now,
-                updatedAt = now
+                updatedAt = now,
+                desktopVersionOwnershipUncertain = messageVersionId?.takeIf(String::isNotBlank)?.let { false }
             )
         }
     }

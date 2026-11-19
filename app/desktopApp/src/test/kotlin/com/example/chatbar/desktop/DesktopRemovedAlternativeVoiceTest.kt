@@ -17,7 +17,8 @@ import kotlin.test.*
 
 class DesktopRemovedAlternativeVoiceTest {
     private suspend fun exercise(editLastSegment: Boolean, cancelAfterCommit: Boolean = false,
-        ambiguousLegacy: Boolean = false, summaryFailure: Boolean = false) {
+        ambiguousLegacy: Boolean = false, summaryFailure: Boolean = false,
+        preMigratedLegacy: Boolean = false, restoreBeforeDelete: Boolean = false) {
         val parent = Files.createTempDirectory("removed-alternative-voice-")
         val resolution = DesktopDataRootResolution.Resolved(Files.createDirectory(parent.resolve("data")),
             DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json"))
@@ -34,9 +35,9 @@ class DesktopRemovedAlternativeVoiceTest {
             val retainedText = "Retained source text" + if (ambiguousLegacy) "\nAlice：『Shared line』" else ""
             val target = app.chatRepository.addMessage(ChatMessage("target", "session", MessageRole.ASSISTANT, deletedText,
                 alternatives = listOf(deletedText, retainedText), alternativeVersionIds = listOf("deleted", "retained"),
-                currentAlternativeIndex = 0, currentAlternativeVersionId = "deleted", createdAt = 1, updatedAt = 1, orderKey = 1))
+                currentAlternativeIndex = 0, currentAlternativeVersionId = "deleted", createdAt = 1, updatedAt = 1, orderKey = if (summaryFailure) 3 else 1))
             val separate = app.chatRepository.addMessage(ChatMessage("separate", "session", MessageRole.ASSISTANT, "Unrelated reply",
-                createdAt = if (summaryFailure) 0 else 2, updatedAt = 2, orderKey = if (summaryFailure) 0 else 2))
+                createdAt = 2, updatedAt = 2, orderKey = 2))
             val deletedAnchor = app.voiceRepository.ensureAnchorsForVersion(target, "deleted", "Deleted source text").single()
             val retainedAnchor = app.voiceRepository.ensureAnchorsForVersion(target, "retained", "Retained source text").single()
             app.voiceRepository.ensureAnchorsForVersion(target, "historical", "Retained historical source")
@@ -48,8 +49,10 @@ class DesktopRemovedAlternativeVoiceTest {
                 0, "NARRATION", "", if (version == "deleted") "Deleted source text" else "Retained source text",
                 taggedText = "Synthetic tagged text", characterId = card.id, characterName = card.name,
                 voice = FishAudioVoiceBinding("synthetic-reference", "Synthetic voice"), fishModelId = "synthetic-model",
-                audioPath = path, durationMs = 1000, byteLength = Files.size(Path.of(path)), createdAt = 1, updatedAt = 1)
-            app.voiceRepository.save(voice("deleted-unique", "deleted", unique.path).copy(messageVersionId = null,
+                audioPath = path, durationMs = 1000, byteLength = Files.size(Path.of(path)), createdAt = 1, updatedAt = 1,
+                desktopVersionOwnershipUncertain = false)
+            app.voiceRepository.save(voice("deleted-unique", "deleted", unique.path).copy(messageVersionId = if (preMigratedLegacy) "deleted" else null,
+                desktopVersionOwnershipUncertain = null,
                 anchorId = if (ambiguousLegacy) null else deletedAnchor.anchor.id,
                 sourceText = if (ambiguousLegacy) "Shared line" else "Deleted source text",
                 sourceSegmentKind = if (ambiguousLegacy) "DIALOGUE" else "NARRATION"))
@@ -59,6 +62,7 @@ class DesktopRemovedAlternativeVoiceTest {
             val explicitUnique = if (ambiguousLegacy) app.voiceAudioStore.persist("session", "explicit-deleted-owned", fishPreviewMp3().inputStream()) else null
             if (explicitUnique != null) {
                 app.voiceRepository.save(voice("deleted-explicit-unique", "deleted", explicitUnique.path))
+                if (restoreBeforeDelete) app.voiceRepository.restoreForSession("session", app.voiceRepository.listForSession("session"), listOf(target, separate))
                 // Ordinary playback migrates before confirmation. Cold read must retain uncertainty.
                 app.voiceRepository.placementsForMessage(target)
                 val coldLegacy = VoiceMessageRepository(JsonFileStorage(app.appDataRoot), strictReads = true).get("deleted-unique")
@@ -162,7 +166,7 @@ class DesktopRemovedAlternativeVoiceTest {
                 }
                 assertEquals(expectedVoices, voices.map { it.id }.toSet())
                 assertEquals(setOf("retained", "historical") + if (ambiguousLegacy) setOf("deleted") else emptySet(), voices.map { it.messageVersionId }.toSet())
-                if (ambiguousLegacy) assertTrue(voices.single { it.id == "deleted-unique" }.desktopVersionOwnershipUncertain)
+                if (ambiguousLegacy) assertEquals(if (preMigratedLegacy) null else true, voices.single { it.id == "deleted-unique" }.desktopVersionOwnershipUncertain)
             }
         } finally { customController?.closeDraftPersistence(); app.close(); ownership.close(); parent.toFile().deleteRecursively() }
     }
@@ -184,5 +188,11 @@ class DesktopRemovedAlternativeVoiceTest {
     }
     @Test fun `durable source with failed session summary still refreshes and cleans proven version audio`() = runBlocking {
         exercise(editLastSegment = false, summaryFailure = true)
+    }
+    @Test fun `pre upgrade persisted version guesses remain protected after upgrade and archive creation`() = runBlocking {
+        exercise(editLastSegment = false, ambiguousLegacy = true, preMigratedLegacy = true)
+    }
+    @Test fun `archive restoration of ambiguous versionless voice retains deletion protection through primary mutation`() = runBlocking {
+        exercise(editLastSegment = false, ambiguousLegacy = true, restoreBeforeDelete = true)
     }
 }

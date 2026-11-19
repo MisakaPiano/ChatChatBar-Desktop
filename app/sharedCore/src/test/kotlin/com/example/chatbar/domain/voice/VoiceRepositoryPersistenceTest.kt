@@ -25,12 +25,12 @@ class VoiceRepositoryPersistenceTest {
             repo.save(old)
             repo.placementsForMessage(message)
             val cold = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
-            assertTrue(assertNotNull(cold.get(old.id)).desktopVersionOwnershipUncertain)
+            assertEquals(true, assertNotNull(cold.get(old.id)).desktopVersionOwnershipUncertain)
             val replacement = MessageAlternativeVersionPolicy.remove(message, "a")!!
             assertTrue(cold.deleteForRemovedVersions(message, replacement).isEmpty())
             cold.placementsForMessage(replacement)
             val durable = assertNotNull(VoiceMessageRepository(JsonFileStorage(root), strictReads = true).get(old.id))
-            assertTrue(durable.desktopVersionOwnershipUncertain)
+            assertEquals(true, durable.desktopVersionOwnershipUncertain)
             assertEquals("a", durable.messageVersionId)
             assertEquals(old.id, assertNotNull(cold.delete(old.id)).id) // Explicit recording deletion still owns it.
         } finally { root.toFile().deleteRecursively() }
