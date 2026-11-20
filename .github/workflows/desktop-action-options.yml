@@ -58,6 +58,7 @@ jobs:
           if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'ACTION_MEMORY_PRIOR_ASSERTION_NOT_REACHED' }
           if ($report.testsuite.testcase.failure.message -notlike '*Unchosen action menus entered the actual episode request*') { throw 'ACTION_MEMORY_PRIOR_WRONG_FAILURE' }
           Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-memory-request.xml'
+          $global:LASTEXITCODE = 0 # The validated expected Gradle failure is successful control evidence.
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-
