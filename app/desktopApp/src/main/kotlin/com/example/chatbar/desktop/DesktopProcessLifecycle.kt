@@ -41,7 +41,7 @@ internal fun runDesktopProcessLifecycle(
     terminate(exitCode)
 }
 
-/** Retry only documented writer drains and retained numeric tails, never a failed entity transaction. */
+/** Retry documented writer drains, retained numeric tails and the same pending local sync seal. */
 internal suspend fun closeDesktopWithRecovery(
     close: suspend () -> Unit,
     awaitRetry: (() -> Unit)? = null,
@@ -56,6 +56,7 @@ internal suspend fun closeDesktopWithRecovery(
         } catch (failure: Throwable) {
             val resumable = failure is DesktopTaskDrainTimeoutException ||
                 failure is DesktopDraftDrainTimeoutException || failure is DesktopReadingPositionDrainTimeoutException ||
+                failure is DesktopLanSyncFinalFlushTimeoutException ||
                 failure is DesktopUsageDrainException
             if (!resumable) throw DesktopUnsafeShutdownException(failure)
             DesktopShutdownTrace.record(DesktopShutdownStage.DRAIN_DEFERRED)

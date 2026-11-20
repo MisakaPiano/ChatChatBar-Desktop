@@ -22,6 +22,7 @@ jobs:
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.finalSealInspectsFreshSourceOnceWhenItsCurrentLocalDeliveryAlreadyHasAReceipt"
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.committedStorageRevisionAutomaticallyPublishesAndLateShutdownSaveSealsWithoutNetworkOrReload"
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation"
+          --tests "com.example.chatbar.domain.lanSync.LanSyncGroupLocalSourceTest.sourceOnlyShutdownRefusesAuthorizedWorkspaceWalWithoutApplyingOrDiscardingIt"
           --max-workers=1 --no-parallel --no-daemon --stacktrace
       - name: Exercise Desktop close and ownership
         if: always()

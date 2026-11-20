@@ -1047,6 +1047,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     /** Local-only inspection/publication. A completed check is not a peer/cloud completion receipt. */
     private suspend fun cycle(force: Boolean = false, shutdown: Boolean = false): Boolean {
         val current = access ?: return true
+        val finalSeal = shutdown && quiesced
         val request = localRequests.get(); val revision = latestSourceRevision
         val stamp = candidateStamp(current.reader)
         val now = System.nanoTime()
@@ -1081,13 +1082,17 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         var outgoingChanged = safe.isNotEmpty()
         for (operation in current.node.sourceOperations()) {
             val before = current.node.receipt(operation, current.localTarget)
+            // The fresh inspection has already verified the signed source and recorded its native proof.
+            if (finalSeal && before != null) continue
             current.node.upload(operation, current.replica, current.localTarget, recoverNative = !shutdown)
             if (before == null) {
                 outgoingChanged = true
                 mutableState.update { it.copy(local = LanSyncGroupRouteStatus("已保全并发布到本机加密副本", System.currentTimeMillis())) }
             }
         }
-        mutableView.value = current.node.inspectLocal(recoverNative = !shutdown)
+        if (!finalSeal || outgoingChanged) {
+            mutableView.value = current.node.inspectLocal(recoverNative = !shutdown)
+        }
         val invalid = mutableView.value?.reconciliation?.observations.orEmpty().count {
             it.stage in setOf(SyncInboxStage.INVALID_OBJECT, SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED)
         }
