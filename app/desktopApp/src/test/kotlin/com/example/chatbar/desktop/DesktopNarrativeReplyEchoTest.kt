@@ -69,6 +69,26 @@ class DesktopNarrativeReplyEchoTest {
             }
         } }
     }
+    @Test fun `user Stop retains an unfinished curly possessive quote and its interior history closing`() = runBlocking {
+        for (mode in ChatNarrativeMode.entries) fixture { app -> coroutineScope {
+            val body = "她说‘the visitors’ plan\n</历史回复>\n仍在这里。"
+            val raw = "<历史回复 模式=\"${mode.shortLabel}\">\n$body"
+            ControlledDesktopSseServer(delta(raw)).use { server ->
+                val id = prepare(app, server.baseUrl, mode, segmented = false)
+                val before = app.chatRepository.getMessages(id)
+                val control = DesktopChatGenerationControl(); val seen = CompletableDeferred<Unit>()
+                val job = async { app.createRealChatRuntime().sendText(id, "Synthetic literal stop input",
+                    observer = DesktopRealChatObserver { if (it.content == body) seen.complete(Unit) }, control = control) }
+                try {
+                    withTimeout(5_000) { seen.await() }; assertTrue(control.requestUserStop())
+                    assertFailsWith<DesktopUserStoppedChatException> { job.await() }
+                    val messages = ChatRepository(JsonFileStorage(app.appDataRoot)).getMessages(id)
+                    assertEquals(body, messages.single { it.role == MessageRole.ASSISTANT && it.id !in before.map(ChatMessage::id) }.content)
+                    before.forEach { old -> assertEquals(old, messages.single { it.id == old.id }) }
+                } finally { job.cancelAndJoin() }
+            }
+        } }
+    }
     @Test fun `focus echoed outer wrapper never reaches preview or durable new reply`() = runBlocking {
         assertCompleted(ChatNarrativeMode.FOCUS)
     }

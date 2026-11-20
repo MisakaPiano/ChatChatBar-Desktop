@@ -357,5 +357,103 @@ class NarrativeHistoryEchoTest {
             assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, streaming = true))
             assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, interrupted = true))
         }
+    }    @Test
+    fun indentedCodeQuotesCannotHideMultipartOuterClosings() {
+        val echoes = listOf(
+            "<聚焦模式=\"沉浸\">" to "</聚焦模式>",
+            "<历史回复 模式=\"推进\">" to "</历史回复>",
+        )
+        for (code in listOf("    val mark = \"", "\tval mark = \"", "- 说明\r\n  > 示例\r\n  >\r\n  >     val mark = \"")) {
+            for (quoteLiteralClosing in listOf(false, true)) {
+                val bodies = echoes.map { (_, closing) ->
+                    "正文。\n\n$code" + if (quoteLiteralClosing) "\n\n她说 \"示例 $closing 仍是正文\"。" else ""
+                }
+                val parts = echoes.zip(bodies).map { (echo, body) -> "${echo.first}\n$body\n${echo.second}" }
+                val expected = bodies.joinToString("\n")
+                for ((streaming, interrupted) in listOf(true to false, false to true, false to false)) {
+                    assertEquals(expected, NarrativeHistoryEcho.completedBody(
+                        parts.joinToString("\n"), enabled = true, interrupted = interrupted,
+                        partLengths = parts.map(String::length), streaming = streaming,
+                    ))
+                }
+                val partial = parts.dropLast(1) + parts.last().dropLast(1)
+                assertEquals(expected, NarrativeHistoryEcho.completedBody(
+                    partial.joinToString("\n"), enabled = true, interrupted = true,
+                    partLengths = partial.map(String::length),
+                ))
+            }
+        }
     }
+
+    @Test
+    fun fourSpaceParagraphContinuationsStillOpenProseQuotes() {
+        for (mode in ChatNarrativeMode.entries) {
+            val opening = "<历史回复 模式=\"${mode.shortLabel}\">"
+            val closing = "</历史回复>"
+            val body = "正文。\n    她说 \"原样引用\n$closing"
+            for ((streaming, interrupted) in listOf(true to false, false to true)) {
+                assertEquals(body, NarrativeHistoryEcho.completedBody(
+                    "$opening\n$body", enabled = true, interrupted = interrupted, streaming = streaming,
+                ))
+            }
+            val complete = "$body 后还有内容\"。"
+            assertEquals(complete, NarrativeHistoryEcho.replyBody("$opening\n$complete\n$closing"))
+        }
+    }
+
+    @Test fun unfinishedCurlyPossessiveKeepsInteriorLiterallyQuotedTag() {
+        for ((opening, closing) in listOf(
+            "<历史回复 模式=\"聚焦\">" to "</历史回复>",
+            "<历史回复 模式=\"推进\">" to "</历史回复>",
+            "<聚焦模式=\"沉浸\">" to "</聚焦模式>",
+        )) {
+            for (breakLine in listOf("\n", "\r\n", "\r")) {
+                val lead = "她说‘the visitors’ plan"
+                val prefix = "$lead$breakLine$closing$breakLine" + "仍在这里。"
+                val incoming = "$opening$breakLine$prefix"
+                assertEquals(prefix, NarrativeHistoryEcho.completedBody(incoming, enabled = true, streaming = true))
+                assertEquals(prefix, NarrativeHistoryEcho.completedBody(incoming, enabled = true, interrupted = true))
+                assertEquals(incoming, NarrativeHistoryEcho.completedBody(incoming, enabled = true))
+                val completed = "$prefix’然后转身。"
+                assertEquals(completed,
+                    NarrativeHistoryEcho.completedBody("$opening$breakLine$completed$breakLine$closing", enabled = true))
+
+                // These bytes alone still look like a real terminal outer close.
+                val ambiguous = "$opening$breakLine$lead$breakLine$closing"
+                assertEquals(lead, NarrativeHistoryEcho.completedBody(ambiguous, enabled = true, streaming = true))
+                val twoLiteralClosers = "$prefix$breakLine$closing"
+                assertEquals(twoLiteralClosers, NarrativeHistoryEcho.completedBody(
+                    "$opening$breakLine$twoLiteralClosers", enabled = true, interrupted = true,
+                ))
+            }
+        }
+    }
+
+    @Test fun separateParagraphDoesNotReinterpretAnExampleAsAnUnclosedCurlyQuote() {
+        val opening = "<历史回复 模式=\"聚焦\">"
+        val closing = "</历史回复>"
+        val heading = "She titled it ‘Visitors’ before leaving"
+        for (breakLine in listOf("\n", "\r\n", "\r")) for (blank in listOf("", " \t")) {
+            val example = "$opening$breakLine$heading$breakLine$closing$breakLine$blank$breakLine" +
+                "This is a markup example."
+            for ((streaming, interrupted) in listOf(true to false, false to true, false to false)) {
+                assertEquals(example, NarrativeHistoryEcho.completedBody(example, true, interrupted, streaming = streaming))
+            }
+        }
+    }
+
+    @Test fun finishedPluralQuoteStillAllowsARealOuterClose() {
+        val opening = "<历史回复 模式=\"推进\">"
+        val closing = "</历史回复>"
+        val body = "她重复‘the visitors’ and walked away."
+        val wrapped = "$opening\n$body\n$closing"
+        val standaloneExample = "$wrapped\n她在解释刚才的示例。"
+        for ((streaming, interrupted) in listOf(true to false, false to true, false to false)) {
+            assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, true, interrupted, streaming = streaming))
+            assertEquals(standaloneExample,
+                NarrativeHistoryEcho.completedBody(standaloneExample, true, interrupted, streaming = streaming))
+        }
+    }
+
+
 }
