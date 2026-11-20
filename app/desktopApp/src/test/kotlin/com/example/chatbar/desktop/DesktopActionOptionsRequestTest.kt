@@ -221,7 +221,7 @@ class DesktopActionOptionsRequestTest {
             f.add(MessageRole.USER, ordinary)
             f.add(MessageRole.ASSISTANT, "新剧情\n" + options("NEW_UNSELECTED"))
             val text = f.wire(if (continuation) "" else ordinary).first.joinToString("\n")
-            assertEquals(!excludeStatus, text.contains("OLD_REFERENCE_UNTAKEN"), reference)
+            assertTrue(text.contains("OLD_REFERENCE_UNTAKEN"), reference)
             assertTrue(text.contains(reference)); assertFalse(text.contains("NEW_UNSELECTED_UNTAKEN"), reference)
             f.unchanged()
         }

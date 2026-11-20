@@ -56,7 +56,7 @@ class NovelAiPromptDesigner(
         require(!naturalLanguageMode || targetImageModel == NovelAiImageModel.V5_FULL) {
             "自然语言 Prompt 仅支持 NovelAI Diffusion V5 Full"
         }
-        val context = contextForAnchor(messages, anchorMessageId)
+        val context = contextForAnchor(messages, anchorMessageId, imageContentHint)
         require(context.isNotEmpty()) { "没有可用于生图的聊天上下文" }
         val botName = card.effectiveBotName
         val structured = card.editMode == CharacterEditMode.STRUCTURED
@@ -788,13 +788,15 @@ class NovelAiPromptDesigner(
     companion object {
         fun contextForAnchor(
             messages: List<ChatMessage>,
-            anchorMessageId: String
+            anchorMessageId: String,
+            imageContentHint: String = "",
         ): List<ChatMessage> {
             val msg = messages.firstOrNull { it.id == anchorMessageId }
                 ?: return emptyList()
-            if (msg.role == MessageRole.SYSTEM || msg.displayContent.isBlank()) return emptyList()
-            if (msg.role == MessageRole.ASSISTANT && RoleplayActionOptionsPolicy.withoutExplicitOptions(msg.displayContent).isBlank())
-                return emptyList()
+            val scene = if (msg.role == MessageRole.ASSISTANT)
+                RoleplayActionOptionsPolicy.imageScene(msg.displayContent, msg.displayActionOptionsFormat, imageContentHint)
+            else msg.displayContent
+            if (msg.role == MessageRole.SYSTEM || scene.isBlank()) return emptyList()
             return listOf(msg)
         }
 
@@ -876,7 +878,9 @@ class NovelAiPromptDesigner(
             val scene = messages.singleOrNull()
                 ?: error("聊天生图必须传入一条锚定消息")
             val sceneText = PromptTemplates.novelAiImagePromptAssistantScene(
-                message = scene, playerName = playerName, botName = botName, preserveUsername = true)
+                message = scene, playerName = playerName, botName = botName, preserveUsername = true,
+                imageContentHint = imageContentHint,
+            )
             require(sceneText.isNotBlank()) { "回复剔除行动选项后没有可用画面内容" }
             return listOf(
                 ChatApiMessage.text(

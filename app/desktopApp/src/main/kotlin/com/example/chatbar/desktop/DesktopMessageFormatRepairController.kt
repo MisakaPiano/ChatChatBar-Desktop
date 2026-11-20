@@ -213,7 +213,8 @@ internal class DesktopMessageFormatRepairController(
         val repairInput = RoleplayActionOptionsPolicy.completeTrailingBlock(original, actionFormat)
         fun actionItems(text: String) = RoleplayActionOptionsPolicy.blocks(text, actionFormat)
             .map { block -> block.options.map { it.text } }
-        val originalActions = actionItems(repairInput)
+        val originalActions = RoleplayActionOptionsPolicy.blocksBeforeRepair(repairInput, actionFormat)
+            .map { block -> block.options.map { it.text } }
         val format = listOfNotNull(renderedFormat,
             FormatRepairPromptAuthority.actionOptionsRepairRequirement(actionFormat)
                 .takeIf { originalActions.isNotEmpty() }).joinToString("\n\n").takeIf(String::isNotBlank)
@@ -294,7 +295,8 @@ internal class DesktopMessageFormatRepairController(
         if (terminal.kind == DesktopRepairTerminalKind.STOP) {
             val mixed = RoleplayActionOptionsPolicy.completeTrailingBlock(
                 MessageFormatRepairPolicy.progressiveOverlay(original, prefix), actionFormat)
-            if (actionItems(mixed) != originalActions) return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
+            if (mixed != original && actionItems(mixed) != originalActions)
+                return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
             return commit(session, snapshot, mixed,
                 MessageFormatRepairNotice(MessageFormatRepairNoticeKind.STOPPED, mixed, original), DesktopRepairStatus.STOPPED, gate = gate)
         }
@@ -303,7 +305,8 @@ internal class DesktopMessageFormatRepairController(
             return recordFailure(session, snapshot, terminal.code ?: "EMPTY_OUTPUT", gate)
         val candidate = if (MessageFormatRepairPolicy.isUnchangedResult(prefix)) repairInput
             else RoleplayActionOptionsPolicy.completeTrailingBlock(prefix, actionFormat)
-        if (actionItems(candidate) != originalActions) return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
+        if (candidate != repairInput && actionItems(candidate) != originalActions)
+            return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
         if (candidate == original)
             return commit(session, snapshot, null, MessageFormatRepairPolicy.applicableNotice(snapshot), DesktopRepairStatus.UNCHANGED, gate = gate)
         return commit(session, snapshot, candidate, MessageFormatRepairPolicy.completedRepairNotice(original, candidate), DesktopRepairStatus.APPLIED, gate = gate)

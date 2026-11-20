@@ -117,7 +117,7 @@ class DesktopActionChoicesTest {
         }
         try {
             frames(); click("1. 等待回答"); frames()
-            assertEquals("等待回答\n我的草稿", persisted)
+            assertEquals("我的草稿\n等待回答", persisted)
             click("撤销选项填入"); frames()
             assertEquals("我的草稿", persisted)
         } finally { scene.close() }

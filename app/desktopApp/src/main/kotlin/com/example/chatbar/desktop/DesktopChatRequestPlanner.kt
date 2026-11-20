@@ -263,7 +263,9 @@ internal class DesktopChatRequestPlanner(
                 ),
         )
         onPreparationStage(DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL)
-        val knowledge = retrieveKnowledge(card, session, currentUser, contextMessages, inputs, readOnlyRepositoryAccess)
+        val knowledge = retrieveKnowledge(
+            card, session, currentUser, contextMessages.map(actionProjection::forRetrieval), inputs, readOnlyRepositoryAccess,
+        )
         onPreparationStage(DesktopChatPreparationStage.REQUEST_ASSEMBLY)
         val renderMeasurements = mutableListOf<PromptRenderMeasurement>()
         val promptLayers = promptAssembler.assembleCachePromptLayers(
@@ -371,12 +373,11 @@ internal class DesktopChatRequestPlanner(
         card: CharacterCard,
         actionProjection: ChatHistoryActionProjection,
     ): ChatApiMessage? {
-        val source = ChatHistoryPromptPolicy.sourceText(
-            message = message,
-            excludeAssistantStatusFromHistory = inputs.excludeAssistantStatusFromHistory,
-            zone = zone,
+        val source = actionProjection.sourceForHistory(
+            message, stripStatus = inputs.excludeAssistantStatusFromHistory &&
+                zone == ChatHistoryPromptZone.EARLIER_HISTORY,
         )
-        val rendered = PlaceholderRenderer.render(actionProjection.project(message, source), playerName, card.effectiveBotName)
+        val rendered = PlaceholderRenderer.render(source, playerName, card.effectiveBotName)
         val payload = ChatHistoryPromptPolicy.payloadText(rendered, hasSupportedImage = inputs.supportsImages && message.role == MessageRole.USER && message.images.isNotEmpty())
             ?: return null
         val text = ChatHistoryPromptPolicy.renderedHistoryText(message, payload,
