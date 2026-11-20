@@ -109,6 +109,20 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
 
     suspend fun <T> withExclusiveMaintenance(
         operation: suspend DesktopExclusiveMaintenanceScope.() -> T,
+    ): T = runExclusiveMaintenance(immediate = false, operation)
+
+    /** A caller holding a mutation owner must never wait for normal work queued behind it. */
+    suspend fun <T> withImmediateExclusiveMaintenance(
+        operation: suspend DesktopExclusiveMaintenanceScope.() -> T,
+    ): T = runExclusiveMaintenance(immediate = true, operation)
+
+    suspend fun requireExclusiveMaintenance() {
+        check(currentCoroutineContext()[DesktopDataOperationContext]?.containsExclusive(identity) == true)
+    }
+
+    private suspend fun <T> runExclusiveMaintenance(
+        immediate: Boolean,
+        operation: suspend DesktopExclusiveMaintenanceScope.() -> T,
     ): T {
         val inherited = currentCoroutineContext()[DesktopDataOperationContext]
         if (inherited?.containsExclusive(identity) == true) {
@@ -124,7 +138,7 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
             )
         }
 
-        val waiter = acquireExclusive()
+        val waiter = acquireExclusive(immediate)
         val scope = ExclusiveScope()
         try {
             val context = inherited.orEmpty().withExclusive(identity)
@@ -214,9 +228,15 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
         return waiter
     }
 
-    private suspend fun acquireExclusive(): ExclusiveWaiter {
+    private suspend fun acquireExclusive(immediate: Boolean): ExclusiveWaiter {
         val waiter = ExclusiveWaiter()
         val rejection = synchronized(stateLock) {
+            if (immediate && (currentState in setOf(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING,
+                    DesktopDataOperationCoordinatorState.EXCLUSIVE) ||
+                currentState == DesktopDataOperationCoordinatorState.OPEN && activeNormalCount > 0)) {
+                return@synchronized DesktopDataOperationRejectedException(DesktopDataOperationRejectionReason.MAINTENANCE_BUSY,
+                    "资料正在使用，请稍后重试本次删除")
+            }
             when (currentState) {
                 DesktopDataOperationCoordinatorState.OPEN -> {
                     if (activeNormalCount == 0 && exclusiveWaiters.isEmpty()) {

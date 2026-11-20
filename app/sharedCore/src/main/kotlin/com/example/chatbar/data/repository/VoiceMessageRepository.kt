@@ -242,13 +242,13 @@ class VoiceMessageRepository(
         existing
     }
 
-    suspend fun deleteForMessage(messageId: String): List<GeneratedVoiceMessage> = withDataAccess {
+    suspend fun deleteForMessage(messageId: String, requireDurableDeletion: Boolean = false): List<GeneratedVoiceMessage> = withDataAccess {
         ensureInitializedLocked()
         val removed = _voices.value.filter { it.messageId == messageId }
-        removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id) }
+        removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id, requireSuccess = requireDurableDeletion) }
         val anchorKeys = anchorsByVersion.keys.filter { it.messageId == messageId }
         anchorKeys.map(::anchorStorageId).plus(messageId).distinct().forEach { storageId ->
-            storage.deleteEntity<VoiceAnchorState>(ANCHOR_TYPE, storageId)
+            storage.deleteEntity<VoiceAnchorState>(ANCHOR_TYPE, storageId, requireSuccess = requireDurableDeletion)
         }
         anchorsByVersion = anchorsByVersion.filterKeys { it.messageId != messageId }
         _voices.value = _voices.value.filterNot { it.messageId == messageId }
@@ -273,13 +273,13 @@ class VoiceMessageRepository(
             }
             persistChangedVoicesLocked(_voices.value, _voices.value.map { detached[it.id] ?: it })
         }
-        removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id) }
+        removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id, requireSuccess = strictReads) }
         val removedIds = removed.map { it.id }.toSet()
         val retained = _voices.value.filterNot { it.id in removedIds }
         val anchorKeys = anchorsByVersion.keys.filter { key -> key.messageId == previous.id && key.messageVersionId in removedVersions &&
             retained.none { it.messageId == key.messageId && it.sessionId == previous.sessionId &&
                 (it.messageVersionId == key.messageVersionId || it.desktopRetiredVersionId == key.messageVersionId) } }
-        anchorKeys.forEach { storage.deleteEntity<VoiceAnchorState>(ANCHOR_TYPE, anchorStorageId(it)) }
+        anchorKeys.forEach { storage.deleteEntity<VoiceAnchorState>(ANCHOR_TYPE, anchorStorageId(it), requireSuccess = strictReads) }
         anchorsByVersion = anchorsByVersion - anchorKeys.toSet()
         _voices.value = retained
         removed

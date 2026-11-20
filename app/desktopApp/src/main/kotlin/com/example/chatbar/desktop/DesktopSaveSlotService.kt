@@ -31,6 +31,7 @@ internal class DesktopSaveSlotService(
     private val journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root),
     private val cleanupDeletedMedia: suspend (List<String>) -> Unit = {},
     private val temporaryAsset: suspend (String) -> DesktopSaveSlotTemporaryAsset? = { null },
+    private val cleanupDeletedMediaInExclusive: suspend (List<String>) -> Unit = cleanupDeletedMedia,
 ) {
     private val mutex = Mutex()
     private val storage = JsonFileStorage(root, gate)
@@ -130,14 +131,13 @@ internal class DesktopSaveSlotService(
     } }
 
     private suspend fun cleanupDeletionReceipt(sessionId: String) {
-        require(sessionId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
-        val path = root.resolve("backups/.session-deletion-cleanup/$sessionId.json")
+        val path = root.resolve(mediaCleanupPath(sessionId))
         val (value, proof) = gate.withNormalOperation {
             DesktopArchiveFiles.safe(path, false)
             check(Files.size(path) <= 12L * 1024 * 1024)
             val proof = DesktopArchiveFiles.hash(path, 12L * 1024 * 1024)
             val value = Json.parseToJsonElement(Files.readString(path)).jsonObject.also {
-                check(it["sessionId"]?.jsonPrimitive?.content == sessionId)
+                check((it["cleanupId"] ?: it["sessionId"])?.jsonPrimitive?.content == sessionId)
             }
             check(DesktopArchiveFiles.hash(path, 12L * 1024 * 1024) == proof)
             value to proof
@@ -147,6 +147,139 @@ internal class DesktopSaveSlotService(
             check(DesktopArchiveFiles.hash(path, 12L * 1024 * 1024) == proof) { "清理记录已变化，未删除记录" }
             Files.delete(path)
         }
+    }
+
+    private fun mediaCleanupPath(id: String): String {
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,128}")))
+        return "backups/.session-deletion-cleanup/$id.json"
+    }
+
+    /** Caller already owns the message/task and voice mutation. Never wait for data admission here. */
+    suspend fun commitRemovedAlternatives(previous: ChatMessage, replacement: ChatMessage?, staleMessage: String): String? =
+        withContext(Dispatchers.IO) {
+            require(replacement == null || previous.id == replacement.id && previous.sessionId == replacement.sessionId)
+            require(previous.role == MessageRole.ASSISTANT && (replacement == null || replacement.role == MessageRole.ASSISTANT))
+            gate.withImmediateExclusiveMaintenance {
+                check(!journal.hasPending())
+                val budget = com.example.chatbar.desktop.backup.DesktopBackupRecords.recordBudget
+                val messageKey = "${previous.sessionId}_${previous.id}"
+                val messagePath = "entities/chat_messages/$messageKey.json"
+                val expected = linkedMapOf<String, String?>()
+                expected[messagePath] = DesktopArchiveFiles.hash(root.resolve(messagePath), budget)
+                val next = checkNotNull(chats.planCoordinatedMessageReplacement(previous, replacement)) { staleMessage }
+
+                ensureWorkspace()
+                val work = DesktopSaveSlotOwnedWork.create(workspace)
+                var warning: String? = null
+                var failure: Throwable? = null
+                try {
+                    val plan = stageRemovedAlternatives(work.directory, previous, next, messageKey, messagePath, expected)
+                    journal.commit(plan.changes, plan.changes.mapValues { (path, _) -> expected[path] }, discardCompleted = true)
+                    try {
+                        chats.reloadAfterSessionCommit(previous.sessionId)
+                        voices.reload()
+                    }
+                    catch (error: Exception) { requireRestart(); throw error }
+                    if (plan.media.isNotEmpty()) {
+                        try {
+                            cleanupDeletedMediaInExclusive(plan.media)
+                            Files.delete(root.resolve(plan.cleanupPath))
+                        } catch (_: Exception) {
+                            warning = "备选已删除，部分附件文件尚未清理，重启后会重试。"
+                        }
+                    }
+                } catch (error: Throwable) {
+                    failure = error
+                    if (journal.hasPending()) requireRestart()
+                    throw error
+                } finally {
+                    try { withContext(NonCancellable) { work.seal().release() } }
+                    catch (cleanup: Exception) {
+                        failure?.addSuppressed(cleanup)
+                        if (failure == null && warning == null) warning = "备选已删除，部分准备文件仍保留。"
+                    }
+                }
+                warning
+            }
+        }
+
+    private data class AlternativeRemovalPlan(val changes: Map<String, Path?>, val media: List<String>, val cleanupPath: String)
+
+    private suspend fun stageRemovedAlternatives(directory: Path, previous: ChatMessage, next: ChatRepository.CoordinatedMessageReplacement,
+        messageKey: String, messagePath: String, expected: MutableMap<String, String?>): AlternativeRemovalPlan {
+        val budget = com.example.chatbar.desktop.backup.DesktopBackupRecords.recordBudget
+        val stagedStorage = JsonFileStorage(directory)
+        val voiceTypes = listOf("generated_voice_messages", "voice_anchor_states")
+        var selected = 0
+        suspend fun <T : Any> stage(type: String, serializer: KSerializer<T>, belongs: (T) -> Boolean) {
+            storage.visitEntitiesStrict(type, serializer, validatePath = {
+                DesktopArchiveFiles.safe(it, Files.isDirectory(it, LinkOption.NOFOLLOW_LINKS))
+            }) { id, entity ->
+                if (belongs(entity)) {
+                    check(++selected <= 40000)
+                    val relative = "entities/$type/$id.json"
+                    check(id.matches(Regex("[A-Za-z0-9_-]{1,256}")))
+                    val target = directory.resolve(relative)
+                    Files.createDirectories(target.parent)
+                    expected[relative] = DesktopArchiveFiles.copyNew(root.resolve(relative), target, budget)
+                }
+            }
+        }
+        stage("generated_voice_messages", GeneratedVoiceMessage.serializer()) {
+            it.messageId == previous.id && it.sessionId == previous.sessionId
+        }
+        stage("voice_anchor_states", VoiceAnchorState.serializer()) {
+            it.messageId == previous.id && (it.sessionId == previous.sessionId || it.sessionId.isBlank())
+        }
+        val replacement = next.message
+        val stagedVoices = VoiceMessageRepository(stagedStorage, strictReads = true)
+        val removed = if (replacement != null) stagedVoices.deleteForRemovedVersions(previous, replacement)
+            else stagedVoices.deleteForMessage(previous.id, requireDurableDeletion = true)
+        val voicePaths = (expected.keys - messagePath).toMutableSet()
+        for (type in voiceTypes) {
+            val entityDirectory = directory.resolve("entities/$type")
+            if (!Files.exists(entityDirectory, LinkOption.NOFOLLOW_LINKS)) continue
+            Files.newDirectoryStream(entityDirectory, "*.json").use { files ->
+                files.forEach { voicePaths += "entities/$type/${it.fileName}" }
+            }
+        }
+        val changes = linkedMapOf<String, Path?>()
+        for (relative in voicePaths) {
+            val file = directory.resolve(relative)
+            val exists = Files.exists(file, LinkOption.NOFOLLOW_LINKS)
+            if (!exists || DesktopArchiveFiles.hash(file, budget) != expected[relative]) {
+                changes[relative] = file.takeIf { exists }
+            }
+        }
+        // The index and preview are published in the same journal before the source row.
+        suspend fun <T : Any> stageDerived(type: String, value: T, serializer: KSerializer<T>) {
+            val relative = "entities/$type/${previous.sessionId}.json"
+            val live = root.resolve(relative)
+            expected[relative] = if (Files.exists(live, LinkOption.NOFOLLOW_LINKS)) DesktopArchiveFiles.hash(live, budget) else null
+            stagedStorage.saveEntityUncached(type, previous.sessionId, value, serializer)
+            changes[relative] = directory.resolve(relative)
+        }
+        stageDerived("chat_message_indexes", next.index, ChatMessageIndex.serializer())
+        next.session?.let { stageDerived("chat_sessions", it, ChatSession.serializer()) }
+        changes[messagePath] = replacement?.let {
+            stagedStorage.saveEntityUncached("chat_messages", messageKey, it, ChatMessage.serializer())
+            directory.resolve(messagePath)
+        }
+        val audio = removed.map { it.audioPath }.filter { isDesktopOwnedAudioCandidate(root, it) }
+        val images = if (replacement == null) ownedChatImageCleanupCandidates(previous.images) else emptyList()
+        val media = (audio + images).distinct()
+        val cleanupId = "voice-${UUID.randomUUID()}"
+        val cleanupPath = mediaCleanupPath(cleanupId)
+        if (media.isNotEmpty()) {
+            val receipt = directory.resolve("removed-audio.json")
+            Files.writeString(receipt, buildJsonObject {
+                put("sessionId", previous.sessionId)
+                put("cleanupId", cleanupId)
+                put("media", buildJsonArray { media.forEach { add(JsonPrimitive(it)) } })
+            }.toString(), StandardOpenOption.CREATE_NEW)
+            changes[cleanupPath] = receipt
+        }
+        return AlternativeRemovalPlan(changes, media, cleanupPath)
     }
     private val archive get() = DesktopSaveSlotArchive(workspace)
     private val planner = DesktopSaveSlotRestorePlan(root) { target, ids -> gate.withNormalOperation {

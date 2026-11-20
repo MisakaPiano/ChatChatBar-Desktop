@@ -33,6 +33,7 @@ import okhttp3.mockwebserver.MockWebServer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -1112,7 +1113,7 @@ class DesktopPrimaryChatControllerTest {
             assertEquals(com.example.chatbar.domain.chat.editRoleplayMessageSegment(edited, next.start, next.endExclusive, "").message?.displayContent,
                 container.chatRepository.getMessage(message.id, id)?.displayContent)
             val final = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT, "Only text"))
-            assertTrue(controller.editMessageSegment(final.id, 0, final.displayContent.length, ""))
+            assertTrue(controller.editMessageSegment(final.id, 0, final.displayContent.length, ""), controller.state.value.error)
             assertNull(container.chatRepository.getMessage(final.id, id))
             assertFalse(controller.state.value.messages.any { it.id == final.id })
             val image = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT, "Caption").copy(images = listOf("images/test.png")))
@@ -1440,8 +1441,13 @@ class DesktopPrimaryChatControllerTest {
     private suspend fun withContainer(block: suspend (DesktopAppContainer) -> Unit) {
         val parent = Files.createTempDirectory("primary-chat-controller-")
         val container = container(parent)
+        Files.createDirectories(container.appDataRoot)
+        val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(
+            DesktopDataRootOwnership.acquire(container.resolvedRoot)
+        ).ownership
         try { block(container) } finally {
             container.close()
+            ownership.close()
             parent.toFile().deleteRecursively()
         }
     }
