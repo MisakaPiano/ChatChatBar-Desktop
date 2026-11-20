@@ -30,17 +30,21 @@ class NarrativeHistoryEchoTest {
     @Test fun quotedAndBareCarriageReturnCodeTagsStayInsideTheStory() {
         val opening = "<历史回复 模式=\"聚焦\">"
         val closing = "</历史回复>"
-        val quoted = "她写下「$closing」，然后又继续。"
+        val quoted = "她写下「$closing」和\"$closing\"，然后又继续。"
         val code = "示例：\r```text\r$closing\r```\r正文。"
         assertEquals(quoted, NarrativeHistoryEcho.replyBody("$opening\n$quoted\n$closing"))
         assertEquals(code, NarrativeHistoryEcho.replyBody("$opening\r$code\r$closing"))
     }
 
     @Test fun onlyCompletedToolOutputCanJoinSeparateEchoParts() {
-        val raw = "<历史回复 模式=\"聚焦\">\n甲\n</历史回复>\n" +
-            "<历史回复 模式=\"推进\">\n乙\n</历史回复>"
-        assertEquals("甲\n乙", NarrativeHistoryEcho.replyBody(raw, joinedToolOutput = true))
-        assertEquals(raw, NarrativeHistoryEcho.replyBody(raw))
+        val first = "<历史回复 模式=\"聚焦\">\n甲\n</历史回复>"
+        val second = "<历史回复 模式=\"推进\">\n乙\n</历史回复>"
+        val raw = "$first\n$second"
+        assertEquals("甲\n乙", NarrativeHistoryEcho.completedBody(raw, enabled = true,
+            partLengths = listOf(first.length, second.length)))
+        assertEquals(raw, NarrativeHistoryEcho.completedBody(raw, enabled = true))
+        assertEquals("甲\n普通正文", NarrativeHistoryEcho.completedBody("$first\n普通正文", enabled = true,
+            partLengths = listOf(first.length, "普通正文".length)))
     }
 
     @Test fun escapedAndContainerCodeTagsRemainLiteralInsideTheOuterWrapper() {

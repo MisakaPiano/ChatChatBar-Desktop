@@ -29,6 +29,7 @@ data class ProviderCompletionMetadata(
     val refused: Boolean = false,
     val transportFailed: Boolean = false,
     val toolReplyCompleted: Boolean = false,
+    val toolReplyPartLengths: List<Int> = emptyList(),
 )
 
 sealed interface ProviderStreamEvent {
@@ -233,7 +234,10 @@ class OpenAiStreamingTransport(
                                     trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText))
                                 }
                                 if (event is ProviderStreamEvent.Completed) {
-                                    finalEvent = ProviderStreamEvent.Completed(evidence.copy(toolReplyCompleted = decoded.toolReplyCompleted))
+                                    finalEvent = ProviderStreamEvent.Completed(evidence.copy(
+                                        toolReplyCompleted = decoded.toolReplyCompleted,
+                                        toolReplyPartLengths = decoded.partLengths,
+                                    ))
                                 }
                             } catch (error: Exception) {
                                 finalEvent = ProviderStreamEvent.Error("实验模式工具回复解析失败", completion.get(), error)

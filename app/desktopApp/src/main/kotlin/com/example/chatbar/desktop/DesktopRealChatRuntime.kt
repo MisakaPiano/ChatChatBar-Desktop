@@ -319,11 +319,11 @@ class DesktopRealChatRuntime internal constructor(
                             throw ModelResponseTruncatedException()
                         }
                         val replyBody = ChatHistoryPromptPolicy.requirePersistableAssistantBody(
-                            NarrativeHistoryEcho.replyBody(
+                            NarrativeHistoryEcho.completedBody(
                                 accumulatedContent,
                                 enabled = plan.cleanNarrativeEcho,
                                 interrupted = event.metadata.finishReason == "length",
-                                joinedToolOutput = event.metadata.toolReplyCompleted,
+                                partLengths = event.metadata.toolReplyPartLengths,
                             )
                         )
                         val generated =
