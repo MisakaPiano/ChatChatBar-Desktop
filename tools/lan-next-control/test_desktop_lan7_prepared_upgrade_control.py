@@ -18,6 +18,9 @@ def additional(action):
  'unusedSetupOnly':True,'explicitArchiveAction':action=='ARCHIVE','completedArchiveRetained':True,'liveEntitiesUnchanged':True,'coldEmptyStateVerified':action=='ARCHIVE_COLD','archiveSha256':'4'*64}
  return {'kind':'CCB_LAN6_LAN7_ADDITIONAL_DPAPI_COMPONENT_V1','sourceSha':d.NEW,'action':action,'passed':True,'realDpapi':True,
  'realAppContainer':True,'packagedMainExercised':False,'visibleUiExercised':False,'networkDeliveryExercised':False,'closeReturned':True,'closeNoticeKnown':True,'closeNoticeCount':0,'closeOutcome':'RETURNED_WITHOUT_NOTICE','details':details}
+DIRECT_CLOSE_BODY = "        withContext(NonCancellable) {\n            withTimeout(60_000) {\n                closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { message ->\n                    notices++\n                    // Main's presentation callback catches Throwable. Record first; validate outside it.\n                    knownNotice = knownNotice && message == DesktopLanSyncIncompleteNotice.message\n                })\n            }\n        }\n"
+def sampling():
+ return {'kind':'CCB_RESUME_DIRECT_CLOSE_SAMPLING_V1','sourceSha':d.NEW,'action':'RESUME','scope':'THIS_TEST_JVM_MATCHED_FRAMES_ONLY','failureType':'DesktopLanSyncFinalFlushTimeoutException','failureElapsedMillis':30010,'scheduledMillis':[6000,14000,23000,28000],'observerStopRequested':True,'rawStackPersisted':False,'threadNamesOrIdsExported':False,'productMutationOrCloseRetry':False,'samples':[{'targetMillis':6000,'elapsedMillis':6001,'status':'OBSERVED','cpuTimeState':'AVAILABLE','threadScanTruncated':False,'observationsTruncated':False,'stackDepthLimitReached':False,'heapUsedBytes':190000000,'heapMaxBytes':268435456,'gcCollections':5,'gcMillis':50,'dataGate':'EXCLUSIVE','backupMode':'MAINTENANCE_PAUSED','backupSchedulerRunning':False,'observations':[{'state':'RUNNABLE','frameFamilies':['SOURCE_CAPTURE','CRYPTO_FIXED'],'cpuDeltaNanos':150000000}]}]}
 class PreparedTests(unittest.TestCase):
  def test_exact_real_candidate_and_all_baseline_fields(self):
   with d.borrowed() as (bridge,modules,p):
@@ -242,5 +245,59 @@ class PreparedTests(unittest.TestCase):
    self.assertEqual(value('CCB_V6_PREPARED_COMPONENT:CLOSE_REAL_APP:CLOSE_REAL_APP')['safePhase'],'CLOSE_REAL_APP')
    self.assertEqual(value('CCB_V6_PREPARED_COMPONENT:VERIFY_CLOSE_NOTICE:VERIFY_CLOSE_NOTICE:IllegalStateException')['safeCaughtType'],'IllegalStateException')
    self.assertIsNone(value('CCB_V6_PREPARED_COMPONENT:VERIFY_CLOSE_NOTICE:VERIFY_CLOSE_NOTICE:SecretToken')['safePhase'])
+
+
+ def test_close_sampling_normalizes_to_exact_v3_fixture_and_preserves_direct_close(self):
+  fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
+  normalized,n=re.subn(r'    // CLOSE_SAMPLE_OBSERVER_BEGIN.*?    // CLOSE_SAMPLE_OBSERVER_END\n','',fixture,count=1,flags=re.S);self.assertEqual(n,1)
+  normalized,n=re.subn(r'        // RESUME_CLOSE_SAMPLING_BEGIN\n.*?        // RESUME_CLOSE_SAMPLING_END\n',lambda _:DIRECT_CLOSE_BODY,normalized,count=1,flags=re.S);self.assertEqual(n,1)
+  self.assertEqual(hashlib.sha256(normalized.encode('utf8')).hexdigest(),'3f6d6281ba5cf1de45d2579255ebdb4844464dd64cb415c7f18366ab76f5eccd')
+  block=fixture.split('// CLOSE_SAMPLE_OBSERVER_BEGIN',1)[1].split('// CLOSE_SAMPLE_OBSERVER_END',1)[0]
+  self.assertIn('ThreadFactory',block);self.assertIn('isDaemon = true',block);self.assertIn('Runnable { observe(at) }',block)
+  self.assertIn('it.cancel(true)',block);self.assertIn('executor.shutdownNow()',block);self.assertNotIn('awaitTermination',block)
+  self.assertIn('CloseSampleObserver(app, candidate)',fixture)
+  self.assertIn('rule.methods.any { name.startsWith(root +',block)
+  for forbidden in ('setThreadCpuTimeEnabled','setThreadContentionMonitoringEnabled','getThreadName','info.threadName','ThreadInfo.toString','Thread.sleep','runBlocking','app.close()'):
+   self.assertNotIn(forbidden,block)
+  self.assertIn('val backup = app.automaticBackupRuntime.state.value',block);self.assertEqual(block.count('app.automaticBackupRuntime.state.value'),1)
+ def test_close_sampling_strict_projection_rejects_poison_duplicate_nonfinite_and_unknown_cpu_zero(self):
+  value=sampling();self.assertEqual(d.validate_close_sampling(value),value)
+  unknown=copy.deepcopy(value);unknown['samples']=[{'targetMillis':6000,'elapsedMillis':6001,'status':'UNAVAILABLE'}];d.validate_close_sampling(unknown)
+  disabled=copy.deepcopy(value);disabled['samples'][0]['cpuTimeState']='DISABLED';disabled['samples'][0]['observations'][0]['cpuDeltaNanos']=None;d.validate_close_sampling(disabled)
+  bads=[]
+  for key,bad in [('sourceSha','0'*40),('rawStackPersisted',True),('failureElapsedMillis',True),('privatePath','PRIVATE_SECRET')]:
+   v=copy.deepcopy(value);v[key]=bad;bads.append(v)
+  for key,bad in [('dataGate','PRIVATE_SECRET'),('backupMode','PRIVATE_SECRET'),('backupSchedulerRunning',0),('heapUsedBytes',True)]:
+   v=copy.deepcopy(value);v['samples'][0][key]=bad;bads.append(v)
+  for key,bad in [('state','PRIVATE_SECRET'),('frameFamilies',['PRIVATE_SECRET']),('frameFamilies',['RSA_FRAME']),('threadId',4),('cpuDeltaNanos',True)]:
+   v=copy.deepcopy(value);v['samples'][0]['observations'][0][key]=bad;bads.append(v)
+  v=copy.deepcopy(disabled);v['samples'][0]['observations'][0]['cpuDeltaNanos']=0;bads.append(v)
+  v=copy.deepcopy(value);v['samples']*=5;bads.append(v)
+  v=copy.deepcopy(value);v['samples'][0]['observations']*=13;bads.append(v)
+  for bad in bads:
+   with self.assertRaises((ValueError,TypeError)):d.validate_close_sampling(bad)
+  with tempfile.TemporaryDirectory() as td:
+   path=pathlib.Path(td)/'close-samples-resume.private.json'
+   diagnostic={'status':'ONE_ORIGINAL_CASE_OBSERVED','counts':{'tests':'1','failures':'1','errors':'0','skipped':'0'},'safePhase':'CLOSE_REAL_APP_CALL','safeCaughtType':'DesktopLanSyncFinalFlushTimeoutException'}
+   self.assertEqual(d.close_sampling_projection(path,diagnostic),{'status':'NOT_OBSERVED'})
+   d.write_new(path,value);self.assertEqual(d.close_sampling_projection(path,diagnostic)['status'],'VALIDATED')
+   for mismatch in ({},dict(diagnostic,safePhase='VERIFY_CLOSE_NOTICE'),dict(diagnostic,safeCaughtType='IllegalArgumentException'),dict(diagnostic,counts={'tests':'1','failures':'0','errors':'0','skipped':'0'})):
+    self.assertEqual(d.close_sampling_projection(path,mismatch),{'status':'UNAVAILABLE_MARKER_MISMATCH'})
+   for raw in ['{"kind":"PRIVATE_SECRET","kind":"duplicate"}','{"value":NaN}','{"privatePath":"PRIVATE_SECRET"}']:
+    path.write_text(raw);result=d.close_sampling_projection(path,diagnostic);self.assertEqual(result,{'status':'REJECTED_OR_UNAVAILABLE'});self.assertNotIn('PRIVATE_SECRET',json.dumps(result))
+ def test_sampling_failure_collection_cannot_replace_original_resume_failure_or_restore_hooks(self):
+  with tempfile.TemporaryDirectory() as td,d.borrowed() as (bridge,modules,p):
+   base=pathlib.Path(td);private=base/'private';private.mkdir();output=base/'output';output.mkdir();source=base/'source';source.mkdir();root=base/'root'
+   for leaf in ('Local','Roaming','Temp'):(root/'UserData'/leaf).mkdir(parents=True,exist_ok=True)
+   comp=d.Companion(bridge,modules,{d.NEW:source},private,output);comp.requests[d.NEW]=private/'r.json';comp.templates[d.NEW]=b'{}'
+   ui=comp.ui;old=(ui.isolated_environment,ui.native_command,ui.METHOD)
+   def original_failure(*args):
+    (private/'close-samples-resume.private.json').write_text('{"rawStack":"PRIVATE_SECRET"}')
+    raise RuntimeError('original synthetic failure')
+   with patch.object(ui,'run',side_effect=original_failure):
+    with self.assertRaisesRegex(RuntimeError,'original synthetic failure'):comp.run(root,'RESUME')
+   self.assertEqual((ui.isolated_environment,ui.native_command,ui.METHOD),old)
+   self.assertEqual(comp.failure['closeSampling'],{'status':'REJECTED_OR_UNAVAILABLE'});self.assertNotIn('PRIVATE_SECRET',json.dumps(comp.failure))
+
 
 if __name__=='__main__':unittest.main()

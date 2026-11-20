@@ -24,7 +24,7 @@ EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '
 BRIDGE_SHA = '896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1'
 PROFILE_SHA = 'c1f9a5a0fbca1ed0dfb11571b2abe51cbc23fa60403699234840ec3be4020209'
 FIXTURE = HERE / 'fixtures/DesktopGroupPreparedUpgradeControlTest.kt'
-FIXTURE_SHA = '3f6d6281ba5cf1de45d2579255ebdb4844464dd64cb415c7f18366ab76f5eccd'
+FIXTURE_SHA = '97f54c1e581c6f2ce1f5ec0e0690e2491b2cc29a0c70649ea2bda14302258af4'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupPreparedUpgradeControlTest'
 METHODS = {
     'SEED': 'seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi',
@@ -209,6 +209,55 @@ def failure_projection(evidence, ui, bridge, source):
     except Exception:
         return {'status':'UNAVAILABLE','counts':None,'safePhase':None,'safePrimaryPhase':None}
 
+CLOSE_SAMPLE_TIMES = (6000,14000,23000,28000)
+CLOSE_FRAME_FAMILIES = frozenset({'GROUP_NODE','SOURCE_CAPTURE','DEPENDENCY','NATIVE_OWNER','CUSTODY_PROTECTION','LEDGER_VALIDATION','SOURCE_PUBLICATION','FINAL_FLUSH','EXCLUSIVE_WORK','CRYPTO_FIXED','RSA_FRAME','MUTEX_OR_GATE','PARK_OR_WAIT','FILE_IO','FILE_LOCK_WAIT'})
+CLOSE_ANCHOR_FAMILIES = CLOSE_FRAME_FAMILIES - {'RSA_FRAME','MUTEX_OR_GATE','PARK_OR_WAIT','FILE_IO','FILE_LOCK_WAIT'}
+CLOSE_DATA_GATES = frozenset({'OPEN','MAINTENANCE_PENDING','EXCLUSIVE','RESTART_REQUIRED','CLOSING','CLOSED'})
+CLOSE_BACKUP_MODES = frozenset({'NEW','ACTIVE','MAINTENANCE_PAUSED','RESTART_REQUIRED','CLOSED'})
+CLOSE_THREAD_STATES = frozenset({'NEW','RUNNABLE','BLOCKED','WAITING','TIMED_WAITING','TERMINATED'})
+
+def validate_close_sampling(value):
+    fields={'kind','sourceSha','action','scope','failureType','failureElapsedMillis','scheduledMillis','samples','observerStopRequested','rawStackPersisted','threadNamesOrIdsExported','productMutationOrCloseRetry'}
+    require(type(value) is dict and set(value)==fields, 'CLOSE_SAMPLE_FIELDS')
+    require(value['kind']=='CCB_RESUME_DIRECT_CLOSE_SAMPLING_V1' and value['sourceSha']==NEW and value['action']=='RESUME' and value['scope']=='THIS_TEST_JVM_MATCHED_FRAMES_ONLY', 'CLOSE_SAMPLE_IDENTITY')
+    require(value['failureType'] in ('DesktopLanSyncFinalFlushTimeoutException','TimeoutCancellationException'), 'CLOSE_SAMPLE_FAILURE_TYPE')
+    require(type(value['failureElapsedMillis']) is int and 0 <= value['failureElapsedMillis'] <= 3600000, 'CLOSE_SAMPLE_FAILURE_ELAPSED')
+    require(type(value['scheduledMillis']) is list and all(type(n) is int for n in value['scheduledMillis']) and value['scheduledMillis']==list(CLOSE_SAMPLE_TIMES), 'CLOSE_SAMPLE_SCHEDULE')
+    require(value['observerStopRequested'] is True and all(value[k] is False for k in ('rawStackPersisted','threadNamesOrIdsExported','productMutationOrCloseRetry')), 'CLOSE_SAMPLE_READ_ONLY')
+    samples=value['samples'];require(type(samples) is list and len(samples)<=4, 'CLOSE_SAMPLE_COUNT')
+    previous=0
+    observed={'targetMillis','elapsedMillis','status','cpuTimeState','threadScanTruncated','observationsTruncated','stackDepthLimitReached','heapUsedBytes','heapMaxBytes','gcCollections','gcMillis','dataGate','backupMode','backupSchedulerRunning','observations'}
+    def nullable_counter(n): return n is None or type(n) is int and 0 <= n <= 2**63-1
+    for sample in samples:
+        require(type(sample) is dict and sample.get('status') in ('OBSERVED','UNAVAILABLE'), 'CLOSE_SAMPLE_STATUS')
+        require(type(sample.get('targetMillis')) is int and sample['targetMillis'] in CLOSE_SAMPLE_TIMES and sample['targetMillis']>previous, 'CLOSE_SAMPLE_ORDER')
+        previous=sample['targetMillis']
+        require(type(sample.get('elapsedMillis')) is int and sample['targetMillis']<=sample['elapsedMillis']<=value['failureElapsedMillis'], 'CLOSE_SAMPLE_ELAPSED')
+        if sample['status']=='UNAVAILABLE':
+            require(set(sample)=={'targetMillis','elapsedMillis','status'}, 'CLOSE_SAMPLE_UNKNOWN_FIELDS');continue
+        require(set(sample)==observed, 'CLOSE_SAMPLE_OBSERVED_FIELDS')
+        require(sample['cpuTimeState'] in ('AVAILABLE','DISABLED','UNSUPPORTED'), 'CLOSE_SAMPLE_CPU_STATE')
+        require(all(type(sample[k]) is bool for k in ('threadScanTruncated','observationsTruncated','stackDepthLimitReached','backupSchedulerRunning')), 'CLOSE_SAMPLE_BOOLEANS')
+        require(type(sample['dataGate']) is str and sample['dataGate'] in CLOSE_DATA_GATES and type(sample['backupMode']) is str and sample['backupMode'] in CLOSE_BACKUP_MODES, 'CLOSE_SAMPLE_GATE_ENUMS')
+        require(all(nullable_counter(sample[k]) for k in ('heapUsedBytes','heapMaxBytes','gcCollections','gcMillis')), 'CLOSE_SAMPLE_COUNTER')
+        observations=sample['observations'];require(type(observations) is list and len(observations)<=12, 'CLOSE_SAMPLE_THREADS_BOUND')
+        for thread in observations:
+            require(type(thread) is dict and set(thread)=={'state','frameFamilies','cpuDeltaNanos'}, 'CLOSE_SAMPLE_THREAD_FIELDS')
+            require(type(thread['state']) is str and thread['state'] in CLOSE_THREAD_STATES, 'CLOSE_SAMPLE_THREAD_STATE')
+            families=thread['frameFamilies'];require(type(families) is list and 1<=len(families)<=8 and all(type(f) is str and f in CLOSE_FRAME_FAMILIES for f in families) and len(set(families))==len(families) and any(f in CLOSE_ANCHOR_FAMILIES for f in families), 'CLOSE_SAMPLE_FRAME_FAMILIES')
+            require(nullable_counter(thread['cpuDeltaNanos']) and (sample['cpuTimeState']=='AVAILABLE' or thread['cpuDeltaNanos'] is None), 'CLOSE_SAMPLE_CPU_COUNTER')
+    return value
+
+def close_sampling_projection(path, diagnostic):
+    try:
+        if not path.exists() and not path.is_symlink(): return {'status':'NOT_OBSERVED'}
+        value=validate_close_sampling(small(path))
+        if not (diagnostic.get('status')=='ONE_ORIGINAL_CASE_OBSERVED' and diagnostic.get('counts')=={'tests':'1','failures':'1','errors':'0','skipped':'0'} and diagnostic.get('safePhase')=='CLOSE_REAL_APP_CALL' and diagnostic.get('safeCaughtType')==value['failureType']):
+            return {'status':'UNAVAILABLE_MARKER_MISMATCH'}
+        return {'status':'VALIDATED','observation':value}
+    except Exception:
+        return {'status':'REJECTED_OR_UNAVAILABLE'} # No arbitrary parser/IO text can replace the first close failure.
+
 class Companion:
     def __init__(self, bridge, modules, sources, private, output):
         self.bridge, self.ui, self.sources, self.private, self.output = bridge, modules['desktop_group_ui_control'], sources, private, output
@@ -234,6 +283,7 @@ class Companion:
         xml = source / ('app/desktopApp/build/test-results/test/TEST-'+CLASS+'.xml')
         if sha in self.previous_xml: self.bridge.remove_owned_previous_xml(xml,self.previous_xml[sha])
         target = self.private / ('report-'+action.lower()+'.json')
+        if action == 'RESUME': require(not (self.private/'close-samples-resume.private.json').exists() and not (self.private/'close-samples-resume.private.json').is_symlink(), 'FRESH_CLOSE_SAMPLE_FILE')
         env = environment_for(root,self.private,sha,action,target)
         prior_env, prior_cmd, prior_method = self.ui.isolated_environment, self.ui.native_command, self.ui.METHOD
         def command(checked_source):
@@ -249,6 +299,7 @@ class Companion:
             self.ui.run(self.requests[sha],source,evidence)
         except Exception:
             self.failure = failure_projection(evidence,self.ui,self.bridge,source)
+            if action == 'RESUME': self.failure['closeSampling'] = close_sampling_projection(self.private/'close-samples-resume.private.json',self.failure)
             raise
         finally:
             self.ui.isolated_environment, self.ui.native_command, self.ui.METHOD = prior_env, prior_cmd, prior_method

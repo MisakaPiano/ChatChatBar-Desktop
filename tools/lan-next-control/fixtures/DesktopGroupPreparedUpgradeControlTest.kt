@@ -524,20 +524,165 @@ class DesktopGroupPreparedUpgradeControlTest {
         phase = "CLOSE_REAL_APP_CALL"
         var notices = 0
         var knownNotice = true
-        withContext(NonCancellable) {
-            withTimeout(60_000) {
-                closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { message ->
-                    notices++
-                    // Main's presentation callback catches Throwable. Record first; validate outside it.
-                    knownNotice = knownNotice && message == DesktopLanSyncIncompleteNotice.message
-                })
+        // RESUME_CLOSE_SAMPLING_BEGIN
+        val sampler = if (env("CCB_V6_PREPARED_ACTION") == "RESUME") runCatching { CloseSampleObserver(app, candidate) }.getOrNull() else null
+        try {
+            withContext(NonCancellable) {
+                withTimeout(60_000) {
+                    closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { message ->
+                        notices++
+                        // Main's presentation callback catches Throwable. Record first; validate outside it.
+                        knownNotice = knownNotice && message == DesktopLanSyncIncompleteNotice.message
+                    })
+                }
             }
-        }
+        } catch (failure: Throwable) {
+            val type = safeThrowableType(failure)
+            if (type == "DesktopLanSyncFinalFlushTimeoutException" || type == "TimeoutCancellationException") {
+                // Observation failure must never replace the original close failure or release its ownership.
+                runCatching { sampler?.writeTimeout(Path.of(env("CCB_V6_PREPARED_PRIVATE")).resolve("close-samples-resume.private.json"), type) }
+            }
+            throw failure
+        } finally { runCatching { sampler?.close() } }
+        // RESUME_CLOSE_SAMPLING_END
         onReturned() // Ownership may release only after the actual wrapper returned safely.
         phase = "VERIFY_CLOSE_NOTICE"
         check(knownNotice && notices in 0..(if (allowExpectedNotice) 1 else 0))
         lastClose = SafeCloseResult(notices, knownNotice, true)
     }
+    // CLOSE_SAMPLE_OBSERVER_BEGIN: fixed-source read-only diagnostics; never a close retry.
+    private class CloseSampleObserver(private val app: DesktopAppContainer, private val source: String) : AutoCloseable {
+        private val started = System.nanoTime()
+        private val lock = Any()
+        @Volatile private var stopped = false
+        private val samples = mutableListOf<JsonObject>()
+        private var priorCpu = emptyMap<Long, Long>() // Internal only; IDs/names never enter JSON.
+        private val executor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(
+            java.util.concurrent.ThreadFactory { action -> Thread(action, "ccb-retained-close-observer").apply { isDaemon = true } })
+        private val tasks = mutableListOf<java.util.concurrent.ScheduledFuture<*>>()
+        private fun elapsed() = (System.nanoTime() - started).coerceAtLeast(0L) / 1_000_000L
+        private data class SourceRule(val root: String, val file: String, val family: String, val methods: Set<String>)
+        private val sourceRules = listOf(
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncWorkspace", "LanSyncWorkspace.kt", "SOURCE_CAPTURE", setOf("capture", "freeze", "hashFile", "copyHash", "mapResources")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncJsonFiles", "LanSyncJsonFiles.kt", "SOURCE_CAPTURE", setOf("readEntity", "readChecked", "writeChecked")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncScope", "LanSyncScope.kt", "SOURCE_CAPTURE", setOf("normalize", "validateRecord", "validateGraph")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncGroupDependencies", "LanSyncGroupDependencies.kt", "DEPENDENCY", setOf("inspect", "membership", "fetch")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncGroupInbox", "SyncGroupInbox.kt", "DEPENDENCY", setOf("reconcile", "discover", "spool")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncGroupNativeApplyOwner", "LanSyncGroupNativeApplyOwner.kt", "NATIVE_OWNER", setOf("state", "recordSource", "recover", "recoverOwned", "requireFreshSource", "load", "read", "write", "guarded")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncPinnedDeviceCertificate", "SyncDeviceSignatures.kt", "CRYPTO_FIXED", setOf("verifies")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncRecipientPublicKey", "SyncDeviceEncryptionKey.kt", "CRYPTO_FIXED", setOf("encrypt")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncDeviceEncryptionKey", "SyncDeviceEncryptionKey.kt", "CRYPTO_FIXED", setOf("decrypt", "open", "openKey", "protectedKeyset")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncGroupNativePlanner", "LanSyncGroupNativePlanner.kt", "DEPENDENCY", setOf("prepare", "restrict")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncGroupObjectCodec", "SyncGroupObjectCodec.kt", "DEPENDENCY", setOf("read", "readQueued", "decode", "freeze")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncGroupCustody", "SyncGroupCustody.kt", "CUSTODY_PROTECTION", setOf("ledger", "key", "openKey", "openEnvelope", "build", "read", "write")),
+            SourceRule("com.example.chatbar.desktop.security.WindowsDpapiSecretProtector", "WindowsDpapiSecretProtector.kt", "CUSTODY_PROTECTION", setOf("protect", "unprotect", "invokeDpapi")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncDeviceLedger", "SyncDeviceLedger.kt", "LEDGER_VALIDATION", setOf("offer", "verifiedCopy", "admission", "validateChild", "hasKey")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncGroupSourceWriter", "LanSyncGroupSourceWriter.kt", "SOURCE_PUBLICATION", setOf("commit", "resume", "resumeOwned", "verifyCustody", "finish")),
+            SourceRule("com.example.chatbar.domain.syncStore.SyncStreamingCipher", "SyncStreamingCipher.kt", "SOURCE_PUBLICATION", setOf("encrypt", "decrypt", "verify", "open", "copy")),
+            SourceRule("com.example.chatbar.desktop.DesktopLanSync", "DesktopLanSync.kt", "FINAL_FLUSH", setOf("flushLocalAfterWriters", "closeAndDrain")),
+            SourceRule("com.example.chatbar.desktop.DesktopLanSyncShutdownMaintenance", "DesktopLanSync.kt", "EXCLUSIVE_WORK", setOf("withExclusive")),
+            SourceRule("com.example.chatbar.desktop.DesktopDataOperationCoordinator", "DesktopDataOperationCoordinator.kt", "EXCLUSIVE_WORK", setOf("withExclusiveMaintenance", "acquireExclusive", "closeAndDrain", "getState")),
+            SourceRule("com.example.chatbar.desktop.DesktopAppContainer", "DesktopAppContainer.kt", "EXCLUSIVE_WORK", setOf("close", "exclusivePersistenceWork")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator", "LanSyncGroupCoordinator.kt", "FINAL_FLUSH", setOf("flushLocalAfterWriters", "cycle")),
+            SourceRule("com.example.chatbar.domain.lanSync.LanSyncGroupNode", "LanSyncGroupNode.kt", "GROUP_NODE", setOf("inspectLocal", "inspectOwned", "discoverLocal", "exclusive", "serialized"))
+        ).associateBy { it.root }
+        init {
+            try {
+            executor.execute { runCatching {
+                val bean = java.lang.management.ManagementFactory.getThreadMXBean()
+                if (bean.isThreadCpuTimeSupported && bean.isThreadCpuTimeEnabled)
+                    priorCpu = bean.allThreadIds.sorted().take(256).associateWith { bean.getThreadCpuTime(it) }
+            } }
+            for (at in listOf(6_000L, 14_000L, 23_000L, 28_000L))
+                tasks += executor.schedule(Runnable { observe(at) }, at, java.util.concurrent.TimeUnit.MILLISECONDS)
+            } catch (failure: Throwable) { executor.shutdownNow(); throw failure }
+        }
+        private fun family(frame: StackTraceElement): String? {
+            val name = frame.className
+            val root = name.substringBefore('$')
+            val rule = sourceRules[root]
+            if (rule != null && frame.fileName == rule.file) {
+                val generated = frame.methodName in setOf("invoke", "invokeSuspend") && rule.methods.any { name.startsWith(root + '$' + it + '$') }
+                val localCapture = root == "com.example.chatbar.domain.lanSync.LanSyncWorkspace" && frame.methodName.startsWith("capture" + '$')
+                if (generated || localCapture || frame.methodName in rule.methods) return rule.family
+            }
+            return when {
+                name.startsWith("sun.security.rsa.") -> "RSA_FRAME"
+                name.startsWith("sun.security.ec.") || name.startsWith("java.security.Signature") || name.startsWith("com.google.crypto.tink.") -> "CRYPTO_FIXED"
+                name.startsWith("kotlinx.coroutines.sync.Mutex") || name.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") -> "MUTEX_OR_GATE"
+                (name == "jdk.internal.misc.Unsafe" && frame.methodName == "park") || name == "java.util.concurrent.locks.LockSupport" -> "PARK_OR_WAIT"
+                name.startsWith("sun.nio.ch.FileChannelImpl") && frame.methodName in setOf("lock", "tryLock") -> "FILE_LOCK_WAIT"
+                name.startsWith("sun.nio.ch.FileDispatcherImpl") || name.startsWith("sun.nio.fs.WindowsNativeDispatcher") || name.startsWith("sun.nio.ch.FileChannelImpl") || name == "java.io.FileInputStream" || name == "java.io.FileOutputStream" -> "FILE_IO"
+                else -> null
+            }
+        }
+        private fun observe(at: Long) {
+            if (stopped) return
+            val seenAt = elapsed()
+            val sample = runCatching {
+                val bean = java.lang.management.ManagementFactory.getThreadMXBean()
+                val allIds = bean.allThreadIds
+                val ids = allIds.sorted().take(256).toLongArray()
+                val cpuState = when { !bean.isThreadCpuTimeSupported -> "UNSUPPORTED"; !bean.isThreadCpuTimeEnabled -> "DISABLED"; else -> "AVAILABLE" }
+                val currentCpu = if (cpuState == "AVAILABLE") ids.associateWith { bean.getThreadCpuTime(it) } else emptyMap()
+                val information = bean.getThreadInfo(ids, 64)
+                val matches = information.mapNotNull { info ->
+                    info ?: return@mapNotNull null
+                    val frames = info.stackTrace
+                    // Require a fixed app frame; background JDK-only IO/crypto is not attributed to this close.
+                    if (frames.none { it.className.startsWith("com.example.chatbar.") && family(it) != null }) return@mapNotNull null
+                    val families = frames.mapNotNull { family(it) }.distinct().take(8)
+                    val now = currentCpu[info.threadId]; val before = priorCpu[info.threadId]
+                    val delta = if (now != null && before != null && before >= 0L && now >= before) now - before else null
+                    buildJsonObject {
+                        put("state", info.threadState.name); put("frameFamilies", buildJsonArray { families.forEach { add(JsonPrimitive(it)) } })
+                        put("cpuDeltaNanos", delta?.let(::JsonPrimitive) ?: JsonNull)
+                    }
+                }
+                priorCpu = currentCpu
+                val heap = runCatching { java.lang.management.ManagementFactory.getMemoryMXBean().heapMemoryUsage }.getOrNull()
+                val collectors = runCatching { java.lang.management.ManagementFactory.getGarbageCollectorMXBeans() }.getOrNull()
+                fun gc(totalTime: Boolean): Long? {
+                    val values = collectors?.map { if (totalTime) it.collectionTime else it.collectionCount } ?: return null
+                    if (values.isEmpty() || values.any { it < 0L }) return null
+                    return values.fold(0L) { acc, n -> if (Long.MAX_VALUE - acc < n) return null else acc + n }
+                }
+                buildJsonObject {
+                    put("targetMillis", at); put("elapsedMillis", seenAt); put("status", "OBSERVED"); put("cpuTimeState", cpuState)
+                    put("threadScanTruncated", allIds.size > 256); put("observationsTruncated", matches.size > 12)
+                    put("stackDepthLimitReached", information.any { it != null && it.stackTrace.size >= 64 })
+                    val backup = app.automaticBackupRuntime.state.value
+                    put("dataGate", app.dataOperationCoordinator.state.name); put("backupMode", backup.mode.name)
+                    put("backupSchedulerRunning", backup.schedulerRunning)
+                    put("heapUsedBytes", heap?.used?.takeIf { it >= 0L }?.let(::JsonPrimitive) ?: JsonNull)
+                    put("heapMaxBytes", heap?.max?.takeIf { it >= 0L }?.let(::JsonPrimitive) ?: JsonNull)
+                    put("gcCollections", gc(false)?.let(::JsonPrimitive) ?: JsonNull); put("gcMillis", gc(true)?.let(::JsonPrimitive) ?: JsonNull)
+                    put("observations", buildJsonArray { matches.take(12).forEach { add(it) } })
+                }
+            }.getOrElse {
+                buildJsonObject { put("targetMillis", at); put("elapsedMillis", seenAt); put("status", "UNAVAILABLE") }
+            }
+            synchronized(lock) { if (!stopped && samples.size < 4) samples += sample }
+        }
+        fun writeTimeout(path: Path, type: String) {
+            val failedAt = elapsed()
+            close()
+            val completed = synchronized(lock) { samples.toList() }
+            val value = buildJsonObject {
+                put("kind", "CCB_RESUME_DIRECT_CLOSE_SAMPLING_V1"); put("sourceSha", source); put("action", "RESUME")
+                put("scope", "THIS_TEST_JVM_MATCHED_FRAMES_ONLY"); put("failureType", type); put("failureElapsedMillis", failedAt)
+                put("scheduledMillis", buildJsonArray { listOf(6_000L, 14_000L, 23_000L, 28_000L).forEach { add(JsonPrimitive(it)) } })
+                put("samples", buildJsonArray { completed.forEach { add(it) } }); put("observerStopRequested", true)
+                put("rawStackPersisted", false); put("threadNamesOrIdsExported", false); put("productMutationOrCloseRetry", false)
+            }
+            Files.writeString(path, value.toString(), CREATE_NEW, WRITE)
+        }
+        override fun close() {
+            synchronized(lock) { stopped = true }
+            tasks.forEach { it.cancel(true) }; executor.shutdownNow() // Only this daemon; never a product worker.
+        }
+    }
+    // CLOSE_SAMPLE_OBSERVER_END
     private fun safeThrowableType(failure: Throwable): String {
         val name = failure.javaClass.simpleName
         return if (name in setOf("AssertionError", "IllegalStateException", "IllegalArgumentException", "IOException",
