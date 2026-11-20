@@ -40,11 +40,22 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $base = '52aa19d462fa96fdcdd3fc923212589d7b0948fa'
-          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt'
-          git fetch origin $base --depth=1
-          git restore --source=$base --worktree -- $file
-          $base | Set-Content 'review-character-draft/negative-product-source.txt'
+          $proofTests = 'c3fb6648fa702e063f7f6ea3c4a2d07dad5c1cd6'
+          $editorFiles = @(
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt'
+          )
+          $testFile = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftSaveParityTest.kt'
+          $files = $editorFiles + @($testFile)
+          git fetch origin $base $proofTests --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_PRODUCT_SOURCE_UNAVAILABLE' }
           try {
+            git restore --source=$base --worktree -- $editorFiles
+            if ($LASTEXITCODE -ne 0) { throw 'PRIOR_PRODUCT_SOURCE_NOT_RESTORED' }
+            git restore --source=$proofTests --worktree -- $testFile
+            if ($LASTEXITCODE -ne 0) { throw 'PRIOR_PRODUCT_TEST_SOURCE_NOT_RESTORED' }
+            $base | Set-Content 'review-character-draft/negative-product-source.txt'
+            $proofTests | Set-Content 'review-character-draft/negative-test-source.txt'
             Push-Location app
             try {
               .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.clean draft deletion cannot erase attachments accepted while its old directory is being retired' -PdesktopTestHeadless=true --no-daemon --stacktrace
@@ -57,8 +68,8 @@ jobs:
             if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_PRODUCT_FAILURE_NOT_ASSERTION' }
             Copy-Item -LiteralPath $xmlPath -Destination 'review-character-draft/negative-resource-lifetime.xml'
           } finally {
-            git restore --source=HEAD --worktree -- $file
-            git diff --exit-code -- $file
+            git restore --source=HEAD --worktree -- $files
+            git diff --exit-code -- $files
             if ($LASTEXITCODE -ne 0) { throw 'POSITIVE_PRODUCT_NOT_RESTORED' }
           }
       - name: Reproduce resumed focus resurrecting the retired resource owner
@@ -66,11 +77,22 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $base = '34388b17bdfae3f8dbf25ca2a3e3494d0bcb8867'
-          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt'
-          git fetch origin $base --depth=1
-          git restore --source=$base --worktree -- $file
-          $base | Set-Content 'review-character-draft/negative-focus-source.txt'
+          $proofTests = 'c3fb6648fa702e063f7f6ea3c4a2d07dad5c1cd6'
+          $editorFiles = @(
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt'
+          )
+          $testFile = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftSaveParityTest.kt'
+          $files = $editorFiles + @($testFile)
+          git fetch origin $base $proofTests --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_FOCUS_SOURCE_UNAVAILABLE' }
           try {
+            git restore --source=$base --worktree -- $editorFiles
+            if ($LASTEXITCODE -ne 0) { throw 'PRIOR_FOCUS_SOURCE_NOT_RESTORED' }
+            git restore --source=$proofTests --worktree -- $testFile
+            if ($LASTEXITCODE -ne 0) { throw 'PRIOR_FOCUS_TEST_SOURCE_NOT_RESTORED' }
+            $base | Set-Content 'review-character-draft/negative-focus-source.txt'
+            $proofTests | Set-Content 'review-character-draft/negative-focus-test-source.txt'
             Push-Location app
             try {
               .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.suspended person and document focus preserve the freshly rotated draft owner and its accepted attachment' -PdesktopTestHeadless=true --no-daemon --stacktrace
@@ -83,8 +105,8 @@ jobs:
             if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_FOCUS_FAILURE_NOT_ASSERTION' }
             Copy-Item -LiteralPath $xmlPath -Destination 'review-character-draft/negative-focus-lifetime.xml'
           } finally {
-            git restore --source=HEAD --worktree -- $file
-            git diff --exit-code -- $file
+            git restore --source=HEAD --worktree -- $files
+            git diff --exit-code -- $files
             if ($LASTEXITCODE -ne 0) { throw 'POSITIVE_PRODUCT_NOT_RESTORED' }
           }
       - name: Verify actual character editor draft lifecycle
