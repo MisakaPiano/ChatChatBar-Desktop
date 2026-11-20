@@ -18,13 +18,13 @@ import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 OLD = '5c906e6d4a0f31a114326e35a331c4af4dfa6379'
-NEW = '8b4e88553243a910bc5682da48e72cd8e25220c3'
-BUILD_CONTROL = '15394b991348b3a63f0babd1b33cb38fe6856587'
-EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '8b4e88553243a910bc5682da48e72cd8e25220c3', 'controlSha': '15394b991348b3a63f0babd1b33cb38fe6856587', 'runId': 44650796570, 'artifactId': 14590848815, 'artifactName': 'ccb-lan6-lan7-independent-desktop', 'outerBytes': 210772708, 'outerSha256': 'a985e6062dd3fb0312a08dd067f08550cf6aaafd9a2a846080c31e58c9761d53', 'filename': 'CCB-0.1.0-lan.7-independent-windows-x64.zip', 'innerBytes': 210657520, 'innerSha256': 'c9c9ed6104c2de0e481aaf87a9afe85677c9f4c3e631380567a8bb06335c642e', 'installerVersion': '0.1.40007', 'buildNumber': '40007'}
+NEW = 'f5fc060546eb9479b2566375761903d383c538b1'
+BUILD_CONTROL = '3bd17c5c78c7e1dd3a67e2b082675f292a57cf1d'
+EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': 'f5fc060546eb9479b2566375761903d383c538b1', 'controlSha': '3bd17c5c78c7e1dd3a67e2b082675f292a57cf1d', 'runId': 44662039110, 'artifactId': 14596173695, 'artifactName': 'ccb-lan6-lan7-independent-desktop', 'outerBytes': 210775355, 'outerSha256': '6c1bec0a8ab4db25f81f47d1514f8b823096290b6c9a72aedb42d46a4fd82140', 'filename': 'CCB-0.1.0-lan.7-independent-windows-x64.zip', 'innerBytes': 210660167, 'innerSha256': '390b2a0630316140ca3f9703ce92eb5f17091226989701472c33f0ecd3d6c457', 'installerVersion': '0.1.40007', 'buildNumber': '40007'}
 BRIDGE_SHA = '896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1'
-PROFILE_SHA = 'c1f9a5a0fbca1ed0dfb11571b2abe51cbc23fa60403699234840ec3be4020209'
+PROFILE_SHA = '56f1260d9f1fa222f108518b9b5d5a1821c4e094c070ad283e97e2095ad69ffd'
 FIXTURE = HERE / 'fixtures/DesktopGroupPreparedUpgradeControlTest.kt'
-FIXTURE_SHA = '97f54c1e581c6f2ce1f5ec0e0690e2491b2cc29a0c70649ea2bda14302258af4'
+FIXTURE_SHA = '9cf9e155a66e0aeddac18dc4f2010f4a01c52a0a39bbeacef17464b62232b2fc'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupPreparedUpgradeControlTest'
 METHODS = {
     'SEED': 'seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi',
@@ -101,7 +101,7 @@ def borrowed():
         profile = load_module('private_lan7_profile', HERE / 'desktop_lan7_control.py')
         # These are private module globals; shared defaults and files are never changed.
         changes = {'NEW': NEW, 'NOTICE_CLOSE_SOURCE': NEW, 'NOTICE_CLOSE_STAGES': frozenset(MAIN_STAGES[-2:]),
-                   'NOTICE_CLOSE_POLICY': 'ONE_EXACT_8B4E_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE',
+                   'NOTICE_CLOSE_POLICY': 'ONE_EXACT_F5FC_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE',
                    'CLASS': CLASS, 'TARGET': TARGET, 'FIXTURE_BASENAME': FIXTURE.name}
         previous = {k: getattr(bridge, k) for k in changes}
         try:
@@ -114,7 +114,7 @@ def validate_request(control, request):
     control.validate_upgrade(request)
     require(type(request['format']) is int and request['packages'][0]['sourceSha'] == OLD and
             request['packages'][1]['sourceSha'] == NEW and request['packages'][1] == EXPECTED_CANDIDATE,
-            'EXACT_LAN6_8B4E_BUILD_REQUIRED')
+            'EXACT_LAN6_F5FC_BUILD_REQUIRED')
     expected = {'baseSourceSha': OLD, 'candidateSourceSha': NEW, 'files': [
         {'path': path, 'baseSha256': value, 'candidateSha256': value}
         for path, value in zip(control.TIMESTAMP_PATHS, TIMESTAMP_HASHES)]}

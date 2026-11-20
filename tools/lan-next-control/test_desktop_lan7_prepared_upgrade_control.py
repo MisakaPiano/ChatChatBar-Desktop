@@ -249,6 +249,9 @@ class PreparedTests(unittest.TestCase):
 
  def test_close_sampling_normalizes_to_exact_v3_fixture_and_preserves_direct_close(self):
   fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
+  candidate_line='    private val candidate = "'+d.NEW+'"\n'
+  self.assertEqual(fixture.count(candidate_line),1)
+  fixture=fixture.replace(candidate_line,'    private val candidate = "8b4e88553243a910bc5682da48e72cd8e25220c3"\n',1)
   normalized,n=re.subn(r'    // CLOSE_SAMPLE_OBSERVER_BEGIN.*?    // CLOSE_SAMPLE_OBSERVER_END\n','',fixture,count=1,flags=re.S);self.assertEqual(n,1)
   normalized,n=re.subn(r'        // RESUME_CLOSE_SAMPLING_BEGIN\n.*?        // RESUME_CLOSE_SAMPLING_END\n',lambda _:DIRECT_CLOSE_BODY,normalized,count=1,flags=re.S);self.assertEqual(n,1)
   self.assertEqual(hashlib.sha256(normalized.encode('utf8')).hexdigest(),'3f6d6281ba5cf1de45d2579255ebdb4844464dd64cb415c7f18366ab76f5eccd')

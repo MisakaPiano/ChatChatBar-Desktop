@@ -25,11 +25,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Bind exact 8B4E controller and unchanged native owners
+      - name: Bind exact F5FC controller and unchanged native owners
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_lan7_prepared_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne '3c0da191de04a8748586fe26e91e02206aa6850d6657a35374ae31bc7e0b4c25') { throw 'LAN7_PREPARED_CONTROL_BINDING' }
+          if ($actual -ne '8cb56b528b57fe3e179779a67ad5d4151069a28e414e671f82a302b1eb6494e4') { throw 'LAN7_PREPARED_CONTROL_BINDING' }
       - name: Authenticate full originals, run ordinary Main and separate DPAPI components
         env:
           GH_TOKEN: ${{ github.token }}

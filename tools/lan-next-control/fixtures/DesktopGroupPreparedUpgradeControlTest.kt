@@ -33,7 +33,7 @@ import kotlinx.serialization.json.*
  */
 class DesktopGroupPreparedUpgradeControlTest {
     private val base = "5c906e6d4a0f31a114326e35a331c4af4dfa6379"
-    private val candidate = "8b4e88553243a910bc5682da48e72cd8e25220c3"
+    private val candidate = "f5fc060546eb9479b2566375761903d383c538b1"
     private val wire = Json { encodeDefaults = true }
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
