@@ -18,13 +18,13 @@ import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
 OLD = '5c906e6d4a0f31a114326e35a331c4af4dfa6379'
-NEW = '49b7edf434178611c72d31f599b7300a3a3225f2'
-BUILD_CONTROL = '86bceeb269b8180520df0ec831f567911a3b3dd4'
-EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '49b7edf434178611c72d31f599b7300a3a3225f2', 'controlSha': '86bceeb269b8180520df0ec831f567911a3b3dd4', 'runId': 44638907278, 'artifactId': 14586330470, 'artifactName': 'ccb-lan6-lan7-independent-desktop', 'outerBytes': 210772514, 'outerSha256': 'c75c607a0c88d97c4579ee540016c2432c2d1e54d9d23adcf270dc16fdf421d9', 'filename': 'CCB-0.1.0-lan.7-independent-windows-x64.zip', 'innerBytes': 210657323, 'innerSha256': '8392f891035e7c64c89522289887c95d7a52b3283393eb9134e606ab08697951', 'installerVersion': '0.1.40007', 'buildNumber': '40007'}
+NEW = '8b4e88553243a910bc5682da48e72cd8e25220c3'
+BUILD_CONTROL = '15394b991348b3a63f0babd1b33cb38fe6856587'
+EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '8b4e88553243a910bc5682da48e72cd8e25220c3', 'controlSha': '15394b991348b3a63f0babd1b33cb38fe6856587', 'runId': 44650796570, 'artifactId': 14590848815, 'artifactName': 'ccb-lan6-lan7-independent-desktop', 'outerBytes': 210772708, 'outerSha256': 'a985e6062dd3fb0312a08dd067f08550cf6aaafd9a2a846080c31e58c9761d53', 'filename': 'CCB-0.1.0-lan.7-independent-windows-x64.zip', 'innerBytes': 210657520, 'innerSha256': 'c9c9ed6104c2de0e481aaf87a9afe85677c9f4c3e631380567a8bb06335c642e', 'installerVersion': '0.1.40007', 'buildNumber': '40007'}
 BRIDGE_SHA = '896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1'
-PROFILE_SHA = '515264a0b2be9e6e6db5369511b54055d0bdca7f0c5b162d6ea75422c5a9b891'
+PROFILE_SHA = 'c1f9a5a0fbca1ed0dfb11571b2abe51cbc23fa60403699234840ec3be4020209'
 FIXTURE = HERE / 'fixtures/DesktopGroupPreparedUpgradeControlTest.kt'
-FIXTURE_SHA = '7b6cb845e4eaeaf86da4c3658188c72322d94c557680e16f8228de83991d8d70'
+FIXTURE_SHA = '3f6d6281ba5cf1de45d2579255ebdb4844464dd64cb415c7f18366ab76f5eccd'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupPreparedUpgradeControlTest'
 METHODS = {
     'SEED': 'seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi',
@@ -101,7 +101,7 @@ def borrowed():
         profile = load_module('private_lan7_profile', HERE / 'desktop_lan7_control.py')
         # These are private module globals; shared defaults and files are never changed.
         changes = {'NEW': NEW, 'NOTICE_CLOSE_SOURCE': NEW, 'NOTICE_CLOSE_STAGES': frozenset(MAIN_STAGES[-2:]),
-                   'NOTICE_CLOSE_POLICY': 'ONE_EXACT_49B7_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE',
+                   'NOTICE_CLOSE_POLICY': 'ONE_EXACT_8B4E_INFORMATIONAL_NOTICE_WINDOW_CLOSE_AFTER_ORIGINAL_MAIN_WM_CLOSE',
                    'CLASS': CLASS, 'TARGET': TARGET, 'FIXTURE_BASENAME': FIXTURE.name}
         previous = {k: getattr(bridge, k) for k in changes}
         try:
@@ -114,7 +114,7 @@ def validate_request(control, request):
     control.validate_upgrade(request)
     require(type(request['format']) is int and request['packages'][0]['sourceSha'] == OLD and
             request['packages'][1]['sourceSha'] == NEW and request['packages'][1] == EXPECTED_CANDIDATE,
-            'EXACT_LAN6_49B7_BUILD_REQUIRED')
+            'EXACT_LAN6_8B4E_BUILD_REQUIRED')
     expected = {'baseSourceSha': OLD, 'candidateSourceSha': NEW, 'files': [
         {'path': path, 'baseSha256': value, 'candidateSha256': value}
         for path, value in zip(control.TIMESTAMP_PATHS, TIMESTAMP_HASHES)]}
@@ -137,7 +137,7 @@ def environment_for(root, private, source, action, report):
 def validate_close_fields(value, action):
     require(value['closeReturned'] is True and value['closeNoticeKnown'] is True, 'ACTUAL_SAFE_CLOSE_RETURN_REQUIRED')
     count=value['closeNoticeCount']
-    require(type(count) is int and count in ((0,1) if action in ('RESUME','COLD_INVITE') else (0,)), 'EXPECTED_CLOSE_NOTICE_COUNT')
+    require(type(count) is int and count in ((0,1) if action == 'COLD_INVITE' else (0,)), 'EXPECTED_CLOSE_NOTICE_COUNT')
     expected='RETURNED_WITHOUT_NOTICE' if count==0 else 'RETURNED_WITH_EXPECTED_PENDING_SYNC_NOTICE'
     require(value['closeOutcome']==expected, 'EXPECTED_CLOSE_OUTCOME')
 

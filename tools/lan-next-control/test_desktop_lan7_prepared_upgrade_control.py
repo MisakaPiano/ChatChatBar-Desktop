@@ -86,6 +86,9 @@ class PreparedTests(unittest.TestCase):
    with self.assertRaises(ValueError):d.environment_for(root,private,d.OLD,'UNKNOWN',private/'report.json')
  def test_original_compiled_fixture_body_and_helpers_unchanged(self):
   fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_bytes()
+  candidate_line=('    private val candidate = "'+d.NEW+'"\n').encode('ascii')
+  self.assertEqual(fixture.count(candidate_line),1)
+  fixture=fixture.replace(candidate_line,b'    private val candidate = "49b7edf434178611c72d31f599b7300a3a3225f2"\n',1)
   fixture=re.sub(rb'                    // LAN7_COLD_BASELINE_BEGIN\n.*?                    // LAN7_COLD_BASELINE_END\n',b'',fixture,flags=re.S)
   fixture=fixture.replace(b'    private var lastClose: SafeCloseResult? = null\n',b'',1)
   fixture=re.sub(rb'                        // LAN7_EXPECTED_CLOSE_BEGIN\n.*?                        // LAN7_EXPECTED_CLOSE_END\n',ORIGINAL_CLOSE_BLOCK,fixture,count=1,flags=re.S)
@@ -200,12 +203,12 @@ class PreparedTests(unittest.TestCase):
    with self.assertRaises(ValueError):d.audit_output(directory)
 
 
- def test_expected_notice_only_for_resume_and_cold_invite(self):
+ def test_expected_notice_only_for_cold_invite_resume_requires_none(self):
   for action in d.ACTIONS:
    value=first(action) if action in ('SEED','RESUME') else additional(action)
    d.report(value,action)
    value.update(closeNoticeCount=1,closeOutcome='RETURNED_WITH_EXPECTED_PENDING_SYNC_NOTICE')
-   if action in ('RESUME','COLD_INVITE'):d.report(value,action)
+   if action == 'COLD_INVITE':d.report(value,action)
    else:
     with self.subTest(action=action),self.assertRaises(ValueError):d.report(value,action)
   for field,invalid in [('closeReturned',False),('closeNoticeKnown',False),('closeNoticeCount',2),('closeNoticeCount',True),('closeOutcome','UNKNOWN_NOTICE')]:
@@ -215,6 +218,8 @@ class PreparedTests(unittest.TestCase):
   fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
   helper=fixture.split('private suspend fun closeObserved(',1)[1].split('private fun safeThrowableType',1)[0]
   self.assertIn('withTimeout(60_000)',helper)
+  self.assertIn('closeObserved(app, allowExpectedNotice = false) { canRelease = true }',fixture)
+  self.assertNotIn('closeDesktopWithRecovery',helper)
   self.assertLess(helper.index('closeDesktopWithLanSyncCompletionNotice'),helper.index('onReturned()'))
   self.assertLess(helper.index('onReturned()'),helper.index('check(knownNotice'))
   callback=helper.split('showNotice = { message ->',1)[1].split('})',1)[0]

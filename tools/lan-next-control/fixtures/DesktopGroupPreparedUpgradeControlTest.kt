@@ -33,7 +33,7 @@ import kotlinx.serialization.json.*
  */
 class DesktopGroupPreparedUpgradeControlTest {
     private val base = "5c906e6d4a0f31a114326e35a331c4af4dfa6379"
-    private val candidate = "49b7edf434178611c72d31f599b7300a3a3225f2"
+    private val candidate = "8b4e88553243a910bc5682da48e72cd8e25220c3"
     private val wire = Json { encodeDefaults = true }
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
@@ -226,7 +226,7 @@ class DesktopGroupPreparedUpgradeControlTest {
                         val previous = phase
                         phase = "CLOSE_REAL_APP"
                         // LAN7_EXPECTED_CLOSE_BEGIN
-                        closeObserved(app, allowExpectedNotice = !seeding) { canRelease = true }
+                        closeObserved(app, allowExpectedNotice = false) { canRelease = true }
                         // LAN7_EXPECTED_CLOSE_END
                         phase = previous
                     }
