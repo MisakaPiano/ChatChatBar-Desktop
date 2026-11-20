@@ -28,7 +28,8 @@ class DesktopCharacterCopyRetryUiTest {
             app.characterRepository.save(card)
             val editor = app.characterEditorController
             editor.openExisting(card.id)
-            assertTrue(editor.addTextDocument("retry.txt", "COPY_RETRY_BYTES"))
+            editor.addTextDocument("retry.txt", "COPY_RETRY_BYTES")
+            assertEquals("retry.txt", editor.state.value.card!!.customDocuments.single().fileName)
             editor.flushDraft()
             val path = app.appDataRoot.resolve(editor.state.value.card!!.customDocuments.single().filePath)
             app.characterRepository.save(card.copy(creatorNotes = "External newer source"))
