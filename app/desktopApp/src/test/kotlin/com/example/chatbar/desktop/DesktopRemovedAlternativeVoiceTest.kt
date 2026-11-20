@@ -286,7 +286,8 @@ class DesktopRemovedAlternativeVoiceTest {
         val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(source)).ownership
         val service = DesktopMergeImportService(source, gate, InMemoryDesktopSecretStore(), {}, { it() },
             DesktopMigrationDestinationPreparer({ unavailable }, DesktopDataRootOwnership::acquire),
-            DesktopBootstrapAuthorityTransaction(applicationHomeResolver = { unavailable }),
+            DesktopBootstrapAuthorityTransaction(storeFactory = { DesktopBootstrapSettingsStore(it) },
+                applicationHomeResolver = { unavailable }),
             freshAuthority = { DesktopFreshRootAuthority(it, keys, MergeRootSyntheticProtector) })
         val destination = base.resolve("published")
         try {
