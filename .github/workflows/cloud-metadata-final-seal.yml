@@ -9,12 +9,22 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
+      - name: Enable long-path checkout
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Select a fresh canonical NTFS temporary directory
+        id: windows-temp
+        shell: pwsh
+        run: |
+          $folder = Join-Path ($env:SystemDrive + '\') ('ccb' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($folder)).DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
+          $temp = New-Item -ItemType Directory -Path $folder -ErrorAction Stop
+          @("TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
       - name: Exercise fresh local sealing and retained receipts
         working-directory: app
         run: >-
@@ -24,7 +34,7 @@ jobs:
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation"
           --max-workers=1 --no-parallel --no-daemon --stacktrace
       - name: Exercise Desktop close and ownership
-        if: always()
+        if: "!cancelled() && steps.windows-temp.outcome == 'success'"
         working-directory: app
         run: >-
           .\gradlew.bat :desktopApp:test "-PdesktopTestHeadless=true"
