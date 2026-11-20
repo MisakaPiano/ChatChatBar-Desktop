@@ -266,6 +266,9 @@ class DesktopRealChatRuntime internal constructor(
         var persistedAssistant: ChatMessage? = null
         var completion: ProviderCompletionMetadata? = null
 
+        fun previewBody(body: String): String =
+            NarrativeHistoryEcho.replyBody(body, streaming = true, enabled = plan.cleanNarrativeEcho)
+
         suspend fun persist(message: ChatMessage): ChatMessage {
             if (regenerationTarget == null) return chatRepository.addMessage(message)
             val old = requireNotNull(chatRepository.getMessage(regenerationTarget.id, sessionId)) { "回复不存在" }
@@ -291,17 +294,17 @@ class DesktopRealChatRuntime internal constructor(
                     is ProviderStreamEvent.ContentDelta -> {
                         previewContent = null
                         accumulatedContent += event.text
-                        observer.onUpdate(DesktopRealChatStreamUpdate(NarrativeHistoryEcho.replyBody(accumulatedContent, streaming = true),
+                        observer.onUpdate(DesktopRealChatStreamUpdate(previewBody(accumulatedContent),
                             accumulatedReasoning, regenerationTarget?.id))
                     }
                     is ProviderStreamEvent.ContentPreview -> {
                         previewContent = event.text.takeIf(String::isNotEmpty)
-                        observer.onUpdate(DesktopRealChatStreamUpdate(NarrativeHistoryEcho.replyBody(previewContent ?: accumulatedContent, streaming = true),
+                        observer.onUpdate(DesktopRealChatStreamUpdate(previewBody(previewContent ?: accumulatedContent),
                             accumulatedReasoning, regenerationTarget?.id))
                     }
                     is ProviderStreamEvent.ReasoningDelta -> {
                         accumulatedReasoning += event.text
-                        observer.onUpdate(DesktopRealChatStreamUpdate(NarrativeHistoryEcho.replyBody(previewContent ?: accumulatedContent, streaming = true),
+                        observer.onUpdate(DesktopRealChatStreamUpdate(previewBody(previewContent ?: accumulatedContent),
                             accumulatedReasoning, regenerationTarget?.id))
                     }
                     is ProviderStreamEvent.Usage -> Unit
@@ -316,7 +319,13 @@ class DesktopRealChatRuntime internal constructor(
                             throw ModelResponseTruncatedException()
                         }
                         val replyBody = ChatHistoryPromptPolicy.requirePersistableAssistantBody(
-                            NarrativeHistoryEcho.replyBody(accumulatedContent))
+                            NarrativeHistoryEcho.replyBody(
+                                accumulatedContent,
+                                enabled = plan.cleanNarrativeEcho,
+                                interrupted = event.metadata.finishReason == "length",
+                                joinedToolOutput = event.metadata.toolReplyCompleted,
+                            )
+                        )
                         val generated =
                             assistantBase.copy(
                                 content = replyBody,
@@ -341,7 +350,11 @@ class DesktopRealChatRuntime internal constructor(
             if (cancelled is DesktopUserStoppedChatException || control?.isStopRequested() == true) {
                 val draft = InterruptedReplyPolicy.persistableDraft(
                     assistantBase.copy(
-                        content = NarrativeHistoryEcho.replyBody(accumulatedContent.ifBlank { previewContent.orEmpty() }),
+                        content = NarrativeHistoryEcho.replyBody(
+                            accumulatedContent.ifBlank { previewContent.orEmpty() },
+                            enabled = plan.cleanNarrativeEcho,
+                            interrupted = true,
+                        ),
                         reasoningContent = accumulatedReasoning.takeIf(String::isNotBlank),
                         updatedAt = System.currentTimeMillis(),
                     ),

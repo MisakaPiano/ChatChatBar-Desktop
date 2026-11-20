@@ -6,6 +6,43 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class NarrativeHistoryEchoTest {
+    @Test fun interruptedTrailingMarkerStaysHiddenOnSave() {
+        val opening = "<历史回复 模式=\"聚焦\">"
+        val closing = "</历史回复>"
+        for (length in 1 until closing.length) {
+            val raw = "$opening\n正文\n${closing.take(length)}"
+            assertEquals("正文", NarrativeHistoryEcho.replyBody(raw, streaming = true))
+            assertEquals("正文", NarrativeHistoryEcho.replyBody(raw, interrupted = true))
+        }
+        assertEquals("2 <", NarrativeHistoryEcho.replyBody("$opening\n2 <", interrupted = true))
+    }
+
+    @Test fun declaredOrDisabledReplyFormatKeepsIdenticalText() {
+        val opening = "<历史回复 模式=\"推进\">"
+        val raw = "$opening\n格式卡正文\n</历史回复>"
+        for ((mode, format) in listOf(null to null, ChatNarrativeMode.ADVANCE to raw)) {
+            val enabled = NarrativeHistoryEcho.appliesToRequest(mode, format)
+            assertEquals(raw, NarrativeHistoryEcho.replyBody(raw, enabled = enabled))
+            assertEquals(raw, NarrativeHistoryEcho.replyBody(raw, streaming = true, enabled = enabled))
+        }
+    }
+
+    @Test fun quotedAndBareCarriageReturnCodeTagsStayInsideTheStory() {
+        val opening = "<历史回复 模式=\"聚焦\">"
+        val closing = "</历史回复>"
+        val quoted = "她写下「$closing」，然后又继续。"
+        val code = "示例：\r```text\r$closing\r```\r正文。"
+        assertEquals(quoted, NarrativeHistoryEcho.replyBody("$opening\n$quoted\n$closing"))
+        assertEquals(code, NarrativeHistoryEcho.replyBody("$opening\r$code\r$closing"))
+    }
+
+    @Test fun onlyCompletedToolOutputCanJoinSeparateEchoParts() {
+        val raw = "<历史回复 模式=\"聚焦\">\n甲\n</历史回复>\n" +
+            "<历史回复 模式=\"推进\">\n乙\n</历史回复>"
+        assertEquals("甲\n乙", NarrativeHistoryEcho.replyBody(raw, joinedToolOutput = true))
+        assertEquals(raw, NarrativeHistoryEcho.replyBody(raw))
+    }
+
     @Test fun escapedAndContainerCodeTagsRemainLiteralInsideTheOuterWrapper() {
         for (mode in ChatNarrativeMode.entries) for (body in listOf(
             "保留字面量 \\</历史回复>\n继续正文。",

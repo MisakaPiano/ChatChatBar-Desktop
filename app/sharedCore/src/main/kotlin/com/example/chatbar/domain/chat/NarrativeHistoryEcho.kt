@@ -15,57 +15,87 @@ object NarrativeHistoryEcho {
     }
     private val backtickRuns = Regex("`+")
     private val paragraphBreak = Regex("\\r?\\n[ \\t]*\\r?\\n")
+    private val bareCarriageReturn = Regex("\\r(?!\\n)")
+    private val quotedText = Regex("「[^」\\r\\n]*」|『[^』\\r\\n]*』|“[^”\\r\\n]*”|‘[^’\\r\\n]*’")
 
-    fun replyBody(text: String, streaming: Boolean = false): String {
-        val start = text.trimStart()
-        if (isIndentedCodeLine(text, text.length - start.length)) return text
-        val wrapper = wrappers.firstOrNull { start.startsWith(it.opening) }
-        if (wrapper == null) {
-            val identifiable = start.startsWith("<历史回复 模式=") || start.startsWith("<聚焦模式=")
-            if ((streaming || identifiable) && start.isNotEmpty() &&
-                wrappers.any { it.opening.startsWith(start) }
-            ) return ""
-            return text
-        }
+    fun appliesToRequest(narrativeMode: ChatNarrativeMode?, formatCard: String?): Boolean =
+        narrativeMode != null && (formatCard == null || wrappers.none { it.opening in formatCard })
 
-        val body = start.removePrefix(wrapper.opening).trimStart('\r', '\n')
-        val end = body.trimEnd()
-        val literalRanges by lazy(LazyThreadSafetyMode.NONE) { codeLiteralRanges(end) }
-        var innerDepth = 0
-        var unmatchedClosing = false
-        for (match in wrapperFamilyTokens.getValue(wrapper.name).findAll(end)) {
-            val position = match.range.first
-            if (isEscaped(end, position) || literalRanges.any { position in it } ||
-                isIndentedCodeLine(end, position)
-            ) continue
+    fun replyBody(
+        text: String,
+        streaming: Boolean = false,
+        enabled: Boolean = true,
+        interrupted: Boolean = false,
+        joinedToolOutput: Boolean = false,
+    ): String {
+        if (!enabled) return text
+        var remaining = text
+        val parts = mutableListOf<String>()
+        partsLoop@ while (true) {
+            val start = remaining.trimStart()
+            if (isIndentedCodeLine(remaining, remaining.length - start.length)) return text
+            val wrapper = wrappers.firstOrNull { start.startsWith(it.opening) }
+            if (wrapper == null) {
+                if (parts.isNotEmpty()) return text
+                val identifiable = start.startsWith("<历史回复 模式=") || start.startsWith("<聚焦模式=")
+                if ((streaming || identifiable || interrupted && start.length > 1) && start.isNotEmpty() &&
+                    wrappers.any { it.opening.startsWith(start) }
+                ) return ""
+                return text
+            }
 
-            if (match.value.startsWith("</")) {
-                if (innerDepth > 0) {
-                    innerDepth--
-                } else if (!unmatchedClosing && match.value in wrapper.closings) {
-                    // A complete pair followed by prose is a leading example, not a reply wrapper.
-                    return if (match.range.last == end.lastIndex) end.substring(0, position).trimEnd() else text
-                } else {
-                    unmatchedClosing = true
+            val body = start.removePrefix(wrapper.opening).trimStart('\r', '\n')
+            val end = body.trimEnd()
+            val literalRanges by lazy(LazyThreadSafetyMode.NONE) {
+                codeLiteralRanges(bareCarriageReturn.replace(end, "\n")) +
+                    quotedText.findAll(end).map { it.range }.toList()
+            }
+            var innerDepth = 0
+            var unmatchedClosing = false
+            for (match in wrapperFamilyTokens.getValue(wrapper.name).findAll(end)) {
+                val position = match.range.first
+                if (isEscaped(end, position) || literalRanges.any { position in it } ||
+                    isIndentedCodeLine(end, position)
+                ) continue
+
+                if (match.value.startsWith("</")) {
+                    if (innerDepth > 0) {
+                        innerDepth--
+                    } else if (!unmatchedClosing && match.value in wrapper.closings) {
+                        val trailing = end.substring(match.range.last + 1)
+                        val part = end.substring(0, position).trimEnd()
+                        if (trailing.isEmpty()) return (parts + part).joinToString("\n")
+                        // Experimental tool outputs are joined with a newline by the decoder.
+                        if (joinedToolOutput && trailing.startsWith('\n') &&
+                            wrappers.any { trailing.trimStart().startsWith(it.opening) }
+                        ) {
+                            parts += part
+                            remaining = trailing
+                            continue@partsLoop
+                        }
+                        // A complete leading pair followed by prose is an example.
+                        return text
+                    } else {
+                        unmatchedClosing = true
+                    }
+                } else if (!match.value.dropLast(1).trimEnd().endsWith('/')) {
+                    innerDepth++
                 }
-            } else if (!match.value.dropLast(1).trimEnd().endsWith('/')) {
-                innerDepth++
             }
-        }
 
-        val lastTag = end.lastIndexOf('<')
-        if (lastTag >= 0 && innerDepth == 0 && !unmatchedClosing) {
-            val suffix = end.substring(lastTag)
-            // While receiving deltas, withhold a potential closing tag until it can be classified.
-            // At completion, only discard a truncated tag if its name already identifies it.
-            val identifiable = suffix.startsWith("</历史回复") || suffix.startsWith("</聚焦模式")
-            if ((streaming || identifiable) && wrapper.closings.any { suffix.length < it.length && it.startsWith(suffix) } &&
-                !isEscaped(end, lastTag) && literalRanges.none { lastTag in it } && !isIndentedCodeLine(end, lastTag)
-            ) {
-                return end.substring(0, lastTag).trimEnd()
+            if (parts.isNotEmpty()) return text
+            val lastTag = end.lastIndexOf('<')
+            if (lastTag >= 0 && innerDepth == 0 && !unmatchedClosing) {
+                val suffix = end.substring(lastTag)
+                val identifiable = suffix.startsWith("</历史回复") || suffix.startsWith("</聚焦模式")
+                val aloneOnLine = end.substring(0, lastTag).substringAfterLast('\n').substringAfterLast('\r').isBlank()
+                if ((streaming || identifiable || interrupted && (suffix.length > 1 || aloneOnLine)) &&
+                    wrapper.closings.any { suffix.length < it.length && it.startsWith(suffix) } &&
+                    !isEscaped(end, lastTag) && literalRanges.none { lastTag in it } && !isIndentedCodeLine(end, lastTag)
+                ) return end.substring(0, lastTag).trimEnd()
             }
+            return body
         }
-        return body
     }
 
     private fun codeLiteralRanges(body: String): List<IntRange> {
@@ -108,7 +138,7 @@ object NarrativeHistoryEcho {
     }
 
     private fun isIndentedCodeLine(text: String, offset: Int): Boolean {
-        val lineStart = text.lastIndexOf('\n', offset - 1) + 1
+        val lineStart = maxOf(text.lastIndexOf('\n', offset - 1), text.lastIndexOf('\r', offset - 1)) + 1
         val contentStart = MarkdownCodeFences.afterQuotePrefixes(text, lineStart)
         val indent = text.substring(contentStart.coerceAtMost(offset), offset).takeWhile { it == ' ' || it == '\t' }
         return indent.length >= 4 || '\t' in indent
