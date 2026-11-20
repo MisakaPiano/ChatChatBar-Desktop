@@ -109,6 +109,38 @@ jobs:
             git diff --exit-code -- $files
             if ($LASTEXITCODE -ne 0) { throw 'POSITIVE_PRODUCT_NOT_RESTORED' }
           }
+      - name: Reproduce orphan copy attachment loss on the handed-off product
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '1d3f1da16545306d5c37c51db4d72be65dadc6fe'
+          $files = @(
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftResources.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagementController.kt'
+          )
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'ORPHAN_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $files
+            if ($LASTEXITCODE -ne 0) { throw 'ORPHAN_PRIOR_NOT_RESTORED' }
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.orphan Save as New survives restart and deletion of the original draft with independent attachments' --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.legacy cross draft attachment references survive cold management deletion and formal save' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $xmlPath = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $xmlPath
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '2' -or $report.testsuite.failures -ne '2' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'ORPHAN_PRIOR_EXPECTED_TWO_ASSERTIONS_NOT_REACHED' }
+            foreach ($failure in $report.testsuite.testcase.failure) {
+              if ($failure.message -notlike '*Deleting the original draft removed the surviving draft attachment*') { throw 'ORPHAN_PRIOR_WRONG_FAILURE' }
+            }
+            Copy-Item -LiteralPath $xmlPath -Destination 'review-character-draft/negative-orphan-restart.xml'
+            $prior | Set-Content 'review-character-draft/negative-orphan-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $files
+            if ($LASTEXITCODE -ne 0) { throw 'ORPHAN_CURRENT_NOT_RESTORED' }
+          }
       - name: Verify actual character editor draft lifecycle
         working-directory: app
         run: >-
@@ -116,6 +148,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopCharacterDraftSaveParityTest'
           --tests 'com.example.chatbar.desktop.DesktopCharacterEditorControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopCharacterManualDraftAdmissionTest'
+          --tests 'com.example.chatbar.desktop.DesktopManagementDraftAdmissionTest'
           --tests 'com.example.chatbar.desktop.DesktopPostProcessComparisonTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4

@@ -27,6 +27,64 @@ class DesktopCharacterDraftSaveParityTest {
         try { block(app, app.characterEditorController) }
         finally { app.close(); parent.toFile().deleteRecursively() }
     }
+    @Test fun `orphan Save as New survives restart and deletion of the original draft with independent attachments`() = runBlocking {
+        orphanCopyAfterRestart(legacySharedReference = false)
+    }
+
+    @Test fun `legacy cross draft attachment references survive cold management deletion and formal save`() = runBlocking {
+        orphanCopyAfterRestart(legacySharedReference = true)
+    }
+
+    private suspend fun orphanCopyAfterRestart(legacySharedReference: Boolean) {
+        val parent = Files.createTempDirectory("orphan-copy-restart-")
+        val root = Files.createDirectories(parent.resolve("data"))
+        fun reopen() = DesktopAppContainer(DesktopDataRootResolution.Resolved(root,
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { """{"entries":[]}""".toByteArray() })
+        var app = reopen()
+        try {
+            val original = source()
+            app.characterRepository.save(original)
+            val editor = app.characterEditorController
+            editor.openExisting(original.id)
+            assertTrue(editor.addTextDocument("retained.txt", "SYNTHETIC_ATTACHMENT_BYTES"))
+            editor.flushDraft()
+            val old = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+            val oldReference = old.characterPayload!!.customDocuments.single().filePath
+            app.close()
+            app = reopen()
+            app.characterRepository.delete(original.id)
+            app.characterEditorController.openExisting(original.id)
+            app.characterEditorController.saveAsNew()
+            var survivor = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, null))
+            if (legacySharedReference) {
+                survivor = survivor.copy(characterPayload = survivor.characterPayload!!.copy(
+                    customDocuments = old.characterPayload!!.customDocuments), draftAssetPaths = listOf(oldReference))
+            }
+            // Stop at the durable new draft, before the guarded UI Save/Discard decision.
+            app.close()
+            if (legacySharedReference) EditorDraftRepository(JsonFileStorage(root)).save(survivor)
+            app = reopen()
+            val management = app.createManagementController(app.createTypedTransferController())
+            management.requestDiscard(old)
+            management.confirmDeletion()
+            assertNull(management.state.value.error)
+            assertNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+            val recovered = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, null))
+            val reference = recovered.characterPayload!!.customDocuments.single().filePath
+            assertTrue(Files.isRegularFile(root.resolve(reference)), "Deleting the original draft removed the surviving draft attachment")
+            assertEquals("SYNTHETIC_ATTACHMENT_BYTES", Files.readString(root.resolve(reference)))
+            if (!legacySharedReference) assertNotEquals(oldReference, reference)
+            app.characterEditorController.openNew()
+            assertTrue(app.characterEditorController.save())
+            val saved = assertNotNull(CharacterRepository(JsonFileStorage(root)).getById(recovered.characterPayload!!.id))
+            assertEquals("SYNTHETIC_ATTACHMENT_BYTES", app.characterResourceStore.readText(saved.customDocuments.single().filePath))
+        } finally {
+            app.close()
+            parent.toFile().deleteRecursively()
+        }
+    }
+
     private fun source(name: String = "Synthetic A") = CharacterCard.create(name, greeting = "Synthetic greeting").copy(
         extensions = """{"unknown_vendor":{"retained":[1,2,3]}}""", creatorNotes = "Original notes")
     private fun coldDrafts(app: DesktopAppContainer) = EditorDraftRepository(JsonFileStorage(app.appDataRoot))

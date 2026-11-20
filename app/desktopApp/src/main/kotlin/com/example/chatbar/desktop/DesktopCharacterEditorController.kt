@@ -915,7 +915,7 @@ internal class DesktopCharacterEditorController(
     private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?): CharacterDraftCleanup = dataGate.withNormalOperation {
         val draft = deleteEditorDraftConfirmed(drafts, EditorDraftType.CHARACTER_CARD, targetId, deleteDraft)
         val assetFailure = if (draft.removed && sessionId != null)
-            runCatching { discardDraftAssets(sessionId) }.exceptionOrNull()
+            runCatching { discardUnreferencedCharacterDraftAssets(drafts, sessionId, discardDraftAssets) }.exceptionOrNull()
         else null
         CharacterDraftCleanup(draft, assetFailure)
     }
@@ -980,7 +980,7 @@ internal class DesktopCharacterEditorController(
                 check(session != _state.value.draftSessionId || !_state.value.dirty && _state.value.draftBasis == null) {
                     "Active draft resource cleanup is deferred"
                 }
-                discardDraftAssets(session)
+                discardUnreferencedCharacterDraftAssets(drafts, session, discardDraftAssets)
             } }.exceptionOrNull()
             if (error == null) resourceCleanupSessions.remove(session) else if (failure == null) failure = error
         }
@@ -1106,16 +1106,29 @@ internal class DesktopCharacterEditorController(
             _state.value = before.copy(problem = CharacterEditorProblem.NEW_DRAFT_EXISTS)
             return
         }
-        val newCard = card.copy(id = UUID.randomUUID().toString(),
-            name = NamePolicy.nextCopyName(card.name, characters.getAll().map { it.name }),
-            communityItemId = null, communityItemUpdatedAt = null, communityItemSha256 = null,
-            communityItemTitle = null, sourcePresetKey = null, sourcePresetVersion = null,
-            createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis())
-        val newSession = UUID.randomUUID().toString()
-        _state.value = before.copy(card = newCard, base = null, draftBasis = null, targetId = null,
-            draftSessionId = newSession, recoveryTargetId = before.targetId,
-            recoverySessionId = before.draftSessionId,
-            dirty = true, draftPersisted = false, problem = null)
+        val existingNames = characters.getAll().map { it.name }
+        try {
+            dataGate.withNormalOperation {
+                synchronized(resourceMutationLock) {
+                    check(_state.value == before) { "Draft changed during copy" }
+                    val newSession = UUID.randomUUID().toString()
+                    val newCard = resources.fork(card, newSession).copy(id = UUID.randomUUID().toString(),
+                        name = NamePolicy.nextCopyName(card.name, existingNames),
+                        communityItemId = null, communityItemUpdatedAt = null, communityItemSha256 = null,
+                        communityItemTitle = null, sourcePresetKey = null, sourcePresetVersion = null,
+                        createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis())
+                    _state.value = before.copy(card = newCard, base = null, draftBasis = null, targetId = null,
+                        draftSessionId = newSession, recoveryTargetId = before.targetId,
+                        recoverySessionId = before.draftSessionId,
+                        dirty = true, draftPersisted = false, problem = null)
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            report(CharacterEditorProblem.RESOURCE_FAILED, failure)
+            return
+        }
         // Preserve the original conflict draft; user may recover it independently.
         persistDraft()
     }

@@ -174,7 +174,7 @@ internal class DesktopManagementController(
                 val result = deleteEditorDraftConfirmed(draftRepository, expected.entityType, expected.targetId, deleteDraft)
                 if (result.removed) {
                     if (expected.entityType == EditorDraftType.CHARACTER_CARD) {
-                        try { discardAssets(expected.draftSessionId) }
+                        try { discardUnreferencedCharacterDraftAssets(draftRepository, expected.draftSessionId, discardAssets) }
                         catch (error: Exception) {
                             if (error is CancellationException) throw error
                             mutableState.value = mutableState.value.copy(warning = DesktopUiText.MANAGE_DRAFT_CLEANUP_WARNING)

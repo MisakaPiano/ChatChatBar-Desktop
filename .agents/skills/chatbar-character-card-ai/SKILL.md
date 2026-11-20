@@ -110,3 +110,5 @@ powershell -ExecutionPolicy Bypass -File .\ci.ps1 -SkipAssemble
 ```
 
 If an Android device is connected, use `chatbar-emulator-test` data-preserving install flow.
+
+- Desktop orphan Save as New forks every staged character resource into the new draft session before autosave. Session cleanup strictly scans all persisted draft payloads and resource lists, preserving directories referenced by legacy cross-draft copies. The editor and management deletion share this guard, including deferred resource cleanup retries. Cold-reopen tests cover both new independent copies and previously persisted shared attachments.

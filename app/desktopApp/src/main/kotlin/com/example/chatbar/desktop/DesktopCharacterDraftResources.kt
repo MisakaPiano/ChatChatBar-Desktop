@@ -133,6 +133,25 @@ internal class DesktopCharacterDraftResources(
         }
     }
 
+    /** Fork temporary references before publishing an independently recoverable draft. */
+    fun fork(card: CharacterCard, sessionId: String): CharacterCard {
+        val copied = linkedMapOf<String, String>()
+        fun copy(reference: String?): String? = reference?.let {
+            if (!isDraft(it)) it else copied.getOrPut(it) {
+                stageBytes(sessionId, it.substringAfterLast('/'), readBytes(it))
+            }
+        }
+        return try {
+            card.copy(avatar = copy(card.avatar), coverImage = copy(card.coverImage),
+                chatBackground = copy(card.chatBackground), chatBackgroundImages = card.chatBackgroundImages.map { requireNotNull(copy(it)) },
+                characters = card.characters.map { it.copy(appearanceImage = copy(it.appearanceImage)) },
+                customDocuments = card.customDocuments.map { it.copy(filePath = requireNotNull(copy(it.filePath))) })
+        } catch (failure: Throwable) {
+            copied.values.forEach { runCatching { discardNew(it) }.onFailure(failure::addSuppressed) }
+            throw failure
+        }
+    }
+
     fun discardSession(sessionId: String) {
         val dir = sessionDirectory(sessionId)
         require(!Files.isSymbolicLink(draftRoot)) { "Unsafe draft root" }
@@ -211,4 +230,19 @@ internal fun desktopCharacterResourceReferences(card: CharacterCard): List<Strin
     addAll(card.chatBackgroundImages)
     card.characters.mapNotNullTo(this) { it.appearanceImage }
     card.customDocuments.mapTo(this) { it.filePath }
+}
+
+/** Legacy recovered drafts can reference another draft's directory after an interrupted copy. */
+internal suspend fun discardUnreferencedCharacterDraftAssets(
+    drafts: com.example.chatbar.data.repository.EditorDraftRepository,
+    sessionId: String,
+    discard: (String) -> Unit,
+) {
+    val marker = "/draft_assets/$sessionId/"
+    val retained = drafts.getAllStrict().any { draft ->
+        val references = draft.draftAssetPaths + draft.pendingDeletedAssets +
+            draft.characterPayload?.let(::desktopCharacterResourceReferences).orEmpty()
+        references.any { marker in "/${it.replace('\\', '/')}" }
+    }
+    if (!retained) discard(sessionId)
 }
