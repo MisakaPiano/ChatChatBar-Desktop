@@ -37,7 +37,9 @@ internal class ReplyRemovalCoordinator(
                         id = UUID.randomUUID().toString(), sessionId = expected.sessionId, messageId = expected.id,
                         versionId = versionId, role = expected.role, sourceTurnId = expected.sourceTurnId,
                         sourceTurnOrder = expected.sourceTurnOrder, timelineTurn = expected.timelineTurn,
-                        images = if (replacement == null) expected.images else emptyList(),
+                        images = if (replacement == null) {
+                            (expected.images + expected.generatedImageMetadata.map { it.imagePath }).distinct()
+                        } else emptyList(),
                         audioPaths = collectAudioPaths()
                     )
                     storage.saveEntityUncached(STORE, pending.id, pending, ReplyRemoval.serializer())
@@ -74,6 +76,14 @@ internal class ReplyRemovalCoordinator(
                     Log.w("ReplyRemoval", "Local cleanup is still pending")
                 }
             }
+        }
+    }
+
+    /** A new save slot must not capture voice records from a half-completed reply removal. */
+    suspend fun <T> withSettledSession(sessionId: String, capture: suspend () -> T): T = mutex.withLock {
+        LocalDataMaintenance.access {
+            pending().filter { it.sessionId == sessionId }.forEach { finish(it) }
+            capture()
         }
     }
 

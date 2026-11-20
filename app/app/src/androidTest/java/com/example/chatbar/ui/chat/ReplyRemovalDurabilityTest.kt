@@ -56,15 +56,32 @@ class ReplyRemovalDurabilityTest {
 
     @Test fun anotherMessageImageMetadataKeepsItsOwnedImage() = withFixture { fixture ->
         val session = fixture.createSession()
-        val message = fixture.addReply(session, versionOnly = false)
+        val message = fixture.addReply(session, versionOnly = false, imagePath = "images/migrated_backup/synthetic/chat_img_case.png")
         val file = File(message.images.single())
-        fixture.chats.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "Metadata owner").copy(
+        val owner = fixture.chats.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "Metadata owner").copy(
             generatedImageMetadata = listOf(GeneratedImageMetadata(
                 file.toURI().toString(), "synthetic", emptyList(), "", "normal", 64, 64
             ))
         ))
         assertNull(fixture.removals.remove(message, null, null))
         assertTrue(file.isFile)
+        assertNull(fixture.removals.remove(owner, null, null))
+        assertFalse(file.exists())
+    }
+
+    @Test fun legacyVoiceWithSameMessageIdInAnotherSessionIsNotMigrated() = withFixture { fixture ->
+        val session = fixture.createSession()
+        val otherSession = fixture.createSession()
+        val message = fixture.addReply(session, versionOnly = true)
+        val voice = fixture.addVoice(message)
+        fixture.voices.save(voice.copy(messageVersionId = null))
+        val otherVoice = voice.copy(id = "other-legacy", sessionId = otherSession.id, messageVersionId = null)
+        fixture.voices.save(otherVoice)
+        val version = MessageAlternativeVersionPolicy.activeVersionId(message)
+        val replacement = requireNotNull(MessageAlternativeVersionPolicy.remove(message, version))
+        assertNull(fixture.removals.remove(message, replacement, version))
+        assertEquals(otherVoice, fixture.voices.get(otherVoice.id))
+        assertTrue(File(otherVoice.audioPath).isFile)
     }
 
     private fun verifyFailure(
@@ -100,6 +117,9 @@ class ReplyRemovalDurabilityTest {
                 assertTrue(runCatching {
                     ReplyRemovalCoordinator.requireSettledForBackup(fixture.context.filesDir)
                 }.exceptionOrNull() is IllegalStateException)
+                assertNotNull(runCatching {
+                    fixture.removals.withSettledSession(session.id) { error("A pending removal must block this capture") }
+                }.exceptionOrNull()?.takeUnless { it.message == "A pending removal must block this capture" })
             } finally {
                 assertTrue(directory.setWritable(true))
             }
@@ -157,8 +177,12 @@ class ReplyRemovalDurabilityTest {
         suspend fun createSession(): ChatSession =
             chats.createSession(ChatSession.create("synthetic-card", "Synthetic chat"))
 
-        suspend fun addReply(session: ChatSession, versionOnly: Boolean): ChatMessage {
-            val image = File(context.filesDir, "images/save_slots/synthetic/image.png").also {
+        suspend fun addReply(
+            session: ChatSession,
+            versionOnly: Boolean,
+            imagePath: String = "images/save_slots/synthetic/image.png"
+        ): ChatMessage {
+            val image = File(context.filesDir, imagePath).also {
                 check(it.parentFile!!.mkdirs())
                 it.writeText("synthetic image")
             }
