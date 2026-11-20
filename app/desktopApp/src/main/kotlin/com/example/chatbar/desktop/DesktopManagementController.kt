@@ -175,7 +175,7 @@ internal class DesktopManagementController(
                 if (result.removed) {
                     if (expected.entityType == EditorDraftType.CHARACTER_CARD) {
                         try { discardUnreferencedCharacterDraftAssets(draftRepository, expected.draftSessionId, discardAssets,
-                            characterEditor::draftAssetSessionPath, expected) }
+                            characterEditor::draftAssetSessionPath, expected, characterEditor::deferDraftResourceCleanup) }
                         catch (error: Exception) {
                             if (error is CancellationException) throw error
                             mutableState.value = mutableState.value.copy(warning = DesktopUiText.MANAGE_DRAFT_CLEANUP_WARNING)

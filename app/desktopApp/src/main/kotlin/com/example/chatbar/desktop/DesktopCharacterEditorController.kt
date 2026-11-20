@@ -285,7 +285,7 @@ internal class DesktopCharacterEditorController(
         _state.value = _state.value.copy(card = displayCard(source), base = source, targetId = id,
             draftBasis = null, draftSessionId = UUID.randomUUID().toString(), draftPersisted = false,
             dirty = false, problem = if (source.isCommunityDownload) CharacterEditorProblem.COMMUNITY_READ_ONLY else null,
-            detail = null)
+            detail = null, saveAsNewFailed = false)
     }
 
     suspend fun openDocument(cardId: String, documentId: String, unavailable: () -> Unit) {
@@ -917,7 +917,7 @@ internal class DesktopCharacterEditorController(
         val retired = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, targetId)
         val draft = deleteEditorDraftConfirmed(drafts, EditorDraftType.CHARACTER_CARD, targetId, deleteDraft)
         val assetFailure = if (draft.removed && sessionId != null)
-            runCatching { discardUnreferencedCharacterDraftAssets(drafts, sessionId, discardDraftAssets, resources::sessionPath, retired) }.exceptionOrNull()
+            runCatching { discardUnreferencedCharacterDraftAssets(drafts, sessionId, discardDraftAssets, resources::sessionPath, retired, ::deferDraftResourceCleanup) }.exceptionOrNull()
         else null
         CharacterDraftCleanup(draft, assetFailure)
     }
@@ -962,6 +962,11 @@ internal class DesktopCharacterEditorController(
         }
     } }
 
+    internal fun deferDraftResourceCleanup(session: String) = synchronized(resourceMutationLock) {
+        resourceCleanupSessions.add(session)
+        _state.update { it.copy(resourceCleanupPending = true) }
+    }
+
     suspend fun retryCleanup() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) retryCommittedCleanup()
         else if (_state.value.resourceCleanupPending) committedCleanupMutex.withLock { retryResourceCleanupLocked() }
@@ -982,7 +987,7 @@ internal class DesktopCharacterEditorController(
                 check(session != _state.value.draftSessionId || !_state.value.dirty && _state.value.draftBasis == null) {
                     "Active draft resource cleanup is deferred"
                 }
-                discardUnreferencedCharacterDraftAssets(drafts, session, discardDraftAssets, resources::sessionPath)
+                discardUnreferencedCharacterDraftAssets(drafts, session, discardDraftAssets, resources::sessionPath, onFailure = ::deferDraftResourceCleanup)
             } }.exceptionOrNull()
             if (error == null) resourceCleanupSessions.remove(session) else if (failure == null) failure = error
         }

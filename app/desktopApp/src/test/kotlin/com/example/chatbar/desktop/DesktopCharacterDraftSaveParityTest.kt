@@ -132,6 +132,9 @@ class DesktopCharacterDraftSaveParityTest {
                 another.saveAsNew()
                 assertEquals(CharacterEditorProblem.SOURCE_DELETED, another.state.value.problem)
                 assertEquals(original.id, another.state.value.targetId)
+                val other = source("Another card")
+                app.characterRepository.save(other)
+
                 assertEquals(draft, coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
                 Files.writeString(sourcePath, "SYNTHETIC_COPY_RETRY")
                 another.saveAsNew()
@@ -139,6 +142,68 @@ class DesktopCharacterDraftSaveParityTest {
                 val copied = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, null))
                 assertEquals("SYNTHETIC_COPY_RETRY", Files.readString(app.appDataRoot.resolve(copied.characterPayload!!.customDocuments.single().filePath)))
             } finally { another.closeAndDrain() }
+        }
+    }
+
+    @Test fun `failed inherited attachment directory cleanup retries the actual owner after its last draft is removed`() = runBlocking {
+        fixture { app, _ ->
+            val resources = DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore)
+            val inherited = UUID.randomUUID().toString()
+            val reference = resources.stageText(inherited, "legacy.txt", "INHERITED_RETRY_BYTES")
+            val card = source()
+            val document = DocumentInfo("legacy", "legacy.txt", reference, "txt", 21)
+            val draft = app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(null,
+                UUID.randomUUID().toString(), card.copy(customDocuments = listOf(document)), null,
+                listOf(reference), emptyList(), emptyList()))
+            var failed = false
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository, resources, app.jsonFileStorage.json,
+                discardDraftAssets = { session ->
+                    if (session == inherited && !failed) { failed = true; throw IOException("Synthetic inherited directory busy") }
+                    resources.discardSession(session)
+                })
+            try {
+                // Management uses this editor's existing retry queue, including when no card is open.
+                val management = DesktopManagementController(app.characterRepository, app.formatCardRepository,
+                    app.worldBookRepository, app.chatRepository, app.editorDraftRepository,
+                    app.characterTransfers, app.formatTransfers, app.worldBookTransfers,
+                    app.createTypedTransferController(), editor, app.formatCardEditorController,
+                    app.worldBookEditorController, discardAssets = { session ->
+                        if (session == inherited && !failed) { failed = true; throw IOException("Synthetic inherited directory busy") }
+                        resources.discardSession(session)
+                    })
+                management.requestDiscard(draft); management.confirmDeletion()
+                assertTrue(failed)
+                assertTrue(editor.state.value.resourceCleanupPending)
+                assertTrue(Files.exists(app.appDataRoot.resolve(reference)))
+                assertNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, null))
+                editor.retryCleanup()
+                assertFalse(editor.state.value.resourceCleanupPending)
+                assertFalse(Files.exists(app.appDataRoot.resolve("draft_assets/$inherited")),
+                    "Retry must retire the failed inherited owner, not only the deleted draft's own empty directory")
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `opening another ordinary card clears only the prior copy failure feedback`() = runBlocking {
+        fixture { app, editor ->
+            val card = source(); val other = source("Another ordinary card")
+            app.characterRepository.save(card); app.characterRepository.save(other)
+            editor.openExisting(card.id)
+            editor.addTextDocument("missing.txt", "COPY_FAILURE")
+            editor.flushDraft()
+            val path = app.appDataRoot.resolve(editor.state.value.card!!.customDocuments.single().filePath)
+            app.characterRepository.save(card.copy(creatorNotes = "Concurrent source edit"))
+            val recovered = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json)
+            try {
+                recovered.openExisting(card.id); Files.delete(path); recovered.saveAsNew()
+                assertNotNull(recovered.state.value.detail)
+                recovered.discard(); recovered.openExisting(other.id)
+                assertEquals(other.id, recovered.state.value.targetId)
+                assertNull(recovered.state.value.detail, "Copy failure belongs only to the failed draft")
+            } finally { recovered.closeAndDrain() }
         }
     }
 

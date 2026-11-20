@@ -43,7 +43,8 @@ jobs:
           $proofTests = 'c3fb6648fa702e063f7f6ea3c4a2d07dad5c1cd6'
           $editorFiles = @(
             'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt',
-            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt'
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagementController.kt'
           )
           $testFile = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftSaveParityTest.kt'
           $files = $editorFiles + @($testFile)
@@ -80,7 +81,8 @@ jobs:
           $proofTests = 'c3fb6648fa702e063f7f6ea3c4a2d07dad5c1cd6'
           $editorFiles = @(
             'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt',
-            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt'
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagementController.kt'
           )
           $testFile = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftSaveParityTest.kt'
           $files = $editorFiles + @($testFile)

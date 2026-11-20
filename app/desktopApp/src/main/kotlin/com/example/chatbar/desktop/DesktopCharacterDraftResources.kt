@@ -245,6 +245,7 @@ internal suspend fun discardUnreferencedCharacterDraftAssets(
     discard: (String) -> Unit,
     sessionPath: (String) -> Path?,
     retired: com.example.chatbar.data.local.entity.EditorDraft? = null,
+    onFailure: (String) -> Unit = {},
 ) {
     fun references(draft: com.example.chatbar.data.local.entity.EditorDraft): List<String> =
         draft.draftAssetPaths + draft.pendingDeletedAssets +
@@ -252,8 +253,15 @@ internal suspend fun discardUnreferencedCharacterDraftAssets(
     val retained = drafts.getAllStrict().flatMap(::references).mapNotNull(sessionPath).toSet()
     val retiredSessions = retired?.let(::references).orEmpty().mapNotNull(sessionPath)
         .map { it.fileName.toString() }
+    var failure: Exception? = null
     for (session in (listOf(sessionId) + retiredSessions).distinct()) {
         val directory = requireNotNull(sessionPath("draft_assets/$session/retention"))
-        if (directory !in retained) discard(session)
+        if (directory !in retained) try { discard(session) }
+        catch (error: Exception) {
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            onFailure(session)
+            if (failure == null) failure = error else failure.addSuppressed(error)
+        }
     }
+    failure?.let { throw it }
 }
