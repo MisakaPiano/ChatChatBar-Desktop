@@ -60,6 +60,7 @@ jobs:
           if ($report.testsuite.tests -ne '2' -or $report.testsuite.failures -ne '2' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_PRODUCT_TWO_ASSERTION_FAILURES_NOT_CONFIRMED' }
           if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_PRODUCT_FAILURE_NOT_ASSERTION' }
           Copy-Item -LiteralPath $xmlPath -Destination '.review1259/negative-primary-voice.xml'
+          $global:LASTEXITCODE = 0 # The validated expected Gradle failure is successful control evidence.
       - name: Reproduce inactive alternative redo checkpoint loss
         shell: pwsh
         run: |
