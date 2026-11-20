@@ -28,6 +28,28 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path 'review-action-narrative' | Out-Null
           git rev-parse HEAD | Set-Content 'review-action-narrative/source.txt'
+      - name: Reproduce missing multipart preview boundaries in the prior runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '25b2c0355f1e4d0532deacc3e74dcff58d8c88a1'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRealChatRuntime.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'NARRATIVE_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.multipart tool reply boundaries clean preview and user Stop before terminal persistence' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'NARRATIVE_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Part boundaries must reach preview before Completed*') { throw 'NARRATIVE_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-narrative/negative-multipart.xml'
+            $prior | Set-Content 'review-action-narrative/negative-multipart-source.txt'
+          } finally { git restore --source=HEAD --worktree -- $file }
       - name: Verify narrative reply streaming and persistence
         working-directory: app
         run: >-

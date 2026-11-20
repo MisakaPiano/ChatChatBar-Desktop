@@ -205,4 +205,135 @@ class NarrativeHistoryEchoTest {
             assertEquals(body, NarrativeHistoryEcho.replyBody("$opening\n$body\n</历史回复>"))
         }
     }
+
+
+    @Test
+    fun escapedWrapperTokensStayLiteralEvenWhenTheRealOuterClosingIsMissing() {
+        for (mode in ChatNarrativeMode.entries) {
+            val opening = "<历史回复 模式=\"${mode.shortLabel}\">"
+            val closing = "</历史回复>"
+            for (streaming in listOf(false, true)) {
+                val story = "写作 \\$opening 和 \\$closing，再继续。"
+                assertEquals(story, NarrativeHistoryEcho.replyBody("$opening\n$story\n$closing", streaming))
+                for (literal in listOf(closing, closing.dropLast(1))) {
+                    val tail = "她输入了 \\$literal"
+                    assertEquals(tail, NarrativeHistoryEcho.replyBody("$opening\n$tail", streaming))
+                }
+                val beforeClosing = "两个反斜杠\\\\"
+                assertEquals(beforeClosing, NarrativeHistoryEcho.replyBody("$opening\n$beforeClosing$closing", streaming))
+            }
+        }
+    }
+
+    @Test
+    fun quotedFencesProtectLiteralTagsOnlyInsideTheirQuote() {
+        val opening = "<历史回复 模式=\"推进\">"
+        val closing = "</历史回复>"
+        for (streaming in listOf(false, true)) {
+            for (marker in listOf("~~~", "```")) {
+                val example = "> > ${marker}text\r\n> > $closing\r\n> > $marker\r\n外面的正文。"
+                assertEquals(example, NarrativeHistoryEcho.replyBody("$opening\r\n$example\r\n$closing", streaming))
+            }
+            val unclosedQuote = "> ~~~text\n> $closing"
+            assertEquals(unclosedQuote, NarrativeHistoryEcho.replyBody("$opening\n$unclosedQuote\n$closing", streaming))
+            val topLevelCode = "~~~text\n> ~~~text\n$closing\n~~~"
+            assertEquals(topLevelCode, NarrativeHistoryEcho.replyBody("$opening\n$topLevelCode\n$closing", streaming))
+        }
+    }
+
+    @Test
+    fun quotesWithIndentedCodeAndListFencesDoNotCloseTheOuterWrapper() {
+        val opening = "<历史回复 模式=\"聚焦\">"
+        val closing = "</历史回复>"
+        for (streaming in listOf(false, true)) {
+            for (story in listOf(
+                ">     $closing\n引用外的正文。",
+                "> >     $closing\n引用外的正文。",
+                "- ~~~text\n  $closing\n  ~~~\n列表外的正文。",
+                "2. ~~~text\n   $closing\n   ~~~\n列表外的正文。",
+                "- 代码示例\n\n  ~~~\n  $closing\n\n列表外的正文。",
+                "- > ~~~\n  > $closing\n  > ~~~",
+                "- ~~~text\n  $closing\n> ~~~text\n> $closing\n> ~~~"
+            )) {
+                assertEquals(story, NarrativeHistoryEcho.replyBody("$opening\n$story\n$closing", streaming))
+            }
+            val paragraph = "她站在墙边。\n2. ~~~"
+            assertEquals(paragraph, NarrativeHistoryEcho.replyBody("$opening\n$paragraph\n   $closing", streaming))
+        }
+    }
+
+    @Test
+    fun theRealClosingTagIsOutsideTheCodeUnderAnEmptyListMarker() {
+        val closing = "</历史回复>"
+        val stories = listOf(
+            "-   \n  ~~~text\n  $closing",
+            "    普通代码\n-\n  ~~~text\n  $closing",
+            "-\n \t~~~text\n  $closing\n  ~~~",
+            "> 说明文字\n+\n  ~~~text\n  $closing\n  ~~~",
+            "> 说明文字\n接着说明。\n> +\n>   ~~~text\n> $closing\n>   ~~~"
+        )
+        for (mode in ChatNarrativeMode.entries) {
+            val opening = "<历史回复 模式=\"${mode.shortLabel}\">"
+            for (streaming in listOf(false, true)) {
+                for (story in stories) {
+                    assertEquals(story, NarrativeHistoryEcho.replyBody("$opening\n$story\n$closing", streaming))
+                }
+            }
+        }
+    }
+
+
+    @Test fun pairedProseQuotesKeepLiteralTagsAcrossLines() {
+        val closing = "</历史回复>"
+        for (mode in ChatNarrativeMode.entries) {
+            val opening = "<历史回复 模式=\"${mode.shortLabel}\">"
+            val body = "她念道：“示例的结束标签是\n$closing\n就这样写。”\n旁白继续。"
+            val wrapped = "$opening\n$body\n$closing"
+            assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, enabled = true))
+            assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, enabled = true, streaming = true))
+        }
+    }
+
+    @Test fun asciiProseQuotesKeepLiteralClosingTags() {
+        for ((opening, closing) in listOf(
+            "<聚焦模式=\"沉浸\">" to "</聚焦模式>",
+            "<历史回复 模式=\"推进\">" to "</历史回复>",
+        )) {
+            val body = "He said: \"Type \\\"the label\\\" $closing to finish.\"\nThen she continued."
+            val wrapped = "$opening\n$body\n$closing"
+            assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, enabled = true, streaming = true))
+            assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, enabled = true, interrupted = true))
+            val contraction = "Don't stop now."
+            assertEquals(contraction, NarrativeHistoryEcho.replyBody("$opening\n$contraction\n$closing"))
+        }
+    }
+
+    @Test fun provisionalProseQuotesStayLiteralWhenTheReplyIsStopped() {
+        val opening = "<历史回复 模式=\"聚焦\">"
+        val closing = "</历史回复>"
+        for (beginning in listOf("她说：\"", "她说：“", "她说：「")) {
+            val body = "${beginning}Type $closing to finish."
+            val raw = "$opening\n$body"
+            assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, streaming = true))
+            assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, interrupted = true))
+        }
+    }
+
+    @Test fun measurementMarkDoesNotStartAnOpenProseQuote() {
+        val body = "She fitted a 6\" pipe."
+        val raw = "<历史回复 模式=\"推进\">\n$body\n</历史回复>"
+        assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, streaming = true))
+        assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, interrupted = true))
+    }
+
+    @Test fun curlyPossessiveDoesNotEndTheOuterProseQuote() {
+        val closing = "</历史回复>"
+        for (gap in listOf(" ", "\n", "\t  ")) {
+            val body = "‘James’${gap}book uses\n$closing\nas an example’."
+            val raw = "<历史回复 模式=\"推进\">\n$body\n$closing"
+            assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true))
+            assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, streaming = true))
+            assertEquals(body, NarrativeHistoryEcho.completedBody(raw, enabled = true, interrupted = true))
+        }
+    }
 }

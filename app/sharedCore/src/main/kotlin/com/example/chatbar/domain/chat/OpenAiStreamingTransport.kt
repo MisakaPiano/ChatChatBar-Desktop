@@ -33,7 +33,7 @@ data class ProviderCompletionMetadata(
 )
 
 sealed interface ProviderStreamEvent {
-    data class ContentDelta(val text: String) : ProviderStreamEvent
+    data class ContentDelta(val text: String, val toolReplyPartLengths: List<Int> = emptyList()) : ProviderStreamEvent
     data class ContentPreview(val text: String) : ProviderStreamEvent
     data class ReasoningDelta(val text: String) : ProviderStreamEvent
     data class Usage(val usage: PromptCacheUsage) : ProviderStreamEvent
@@ -231,7 +231,7 @@ class OpenAiStreamingTransport(
                                     !evidence.refused && !evidence.transportFailed && evidence.finishReason != "length")
                                 if (decoded.remainingText.isNotEmpty()) {
                                     diagnostics.onDecodedContent(decoded.remainingText)
-                                    trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText))
+                                    trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText, decoded.partLengths))
                                 }
                                 if (event is ProviderStreamEvent.Completed) {
                                     finalEvent = ProviderStreamEvent.Completed(evidence.copy(

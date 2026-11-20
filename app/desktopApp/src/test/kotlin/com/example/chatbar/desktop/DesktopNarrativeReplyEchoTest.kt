@@ -24,7 +24,10 @@ class DesktopNarrativeReplyEchoTest {
                 "- 示例\n  ~~~text\n  </历史回复>\n  ~~~\n\n门外传来脚步声。",
                 "- \n  ~~~text\n  </历史回复>\n  ~~~\n\n门外传来脚步声。",
                 "+\n  ~~~text\n  </历史回复>\n  ~~~\n\n门外传来脚步声。",
-                "普通正文中的标点与换行。\n下一段。"
+                "普通正文中的标点与换行。\n下一段。",
+                "她说‘the visitors’ plan\n</历史回复>\n仍在这里。’然后转身。",
+                "她说“先保留这行\n</历史回复>\n再继续”。",
+                "A visitor's note mentions \"a literal </历史回复> marker\" here."
             )) {
                 val raw = MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
                 server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
@@ -172,6 +175,46 @@ class DesktopNarrativeReplyEchoTest {
             assertEquals(literal, seen.last())
             assertEquals(literal, result.assistant.content)
             assertEquals(literal, ChatRepository(JsonFileStorage(app.appDataRoot)).getMessage(result.assistant.id, id)?.content)
+        } }
+    }
+
+    @Test fun `multipart tool reply boundaries clean preview and user Stop before terminal persistence`() = runBlocking {
+        for (mode in ChatNarrativeMode.entries) for (stop in listOf(false, true)) fixture { app -> coroutineScope {
+            MockWebServer().use { server ->
+                val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
+                app.settingsRepository.updateAppSettings { it.copy(experimentalApiModeEnabled = true) }
+                val first = MainChatPromptAuthority.narrativeModeHistoryReply("第一段正文。", mode)
+                val second = MainChatPromptAuthority.narrativeModeHistoryReply("第二段正文。", mode)
+                val expected = "第一段正文。\n第二段正文。"
+                val calls = buildJsonArray {
+                    for ((index, body) in listOf(first, second).withIndex()) add(buildJsonObject {
+                        put("index", index); put("id", "synthetic-$index"); put("type", "function")
+                        putJsonObject("function") {
+                            put("name", "game_content")
+                            put("arguments", buildJsonObject { put("content", body) }.toString())
+                        }
+                    })
+                }
+                val chunk = buildJsonObject { putJsonArray("choices") { add(buildJsonObject {
+                    putJsonObject("delta") { put("tool_calls", calls) }
+                }) } }
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                    "data: $chunk\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n"))
+                val control = DesktopChatGenerationControl()
+                val seen = mutableListOf<String>()
+                val oldIds = app.chatRepository.getMessages(id).map { it.id }.toSet()
+                val job = async { app.createRealChatRuntime().sendText(id, "Synthetic multipart input",
+                    observer = DesktopRealChatObserver {
+                        seen += it.content
+                        if (stop && it.content == expected) control.requestUserStop()
+                    }, control = control) }
+                if (stop) assertFailsWith<DesktopUserStoppedChatException> { job.await() }
+                else assertEquals(expected, job.await().assistant.content)
+                assertEquals(expected, seen.last(), "Part boundaries must reach preview before Completed")
+                val stored = ChatRepository(JsonFileStorage(app.appDataRoot)).getMessages(id)
+                    .single { it.role == MessageRole.ASSISTANT && it.id !in oldIds }
+                assertEquals(expected, stored.content)
+            }
         } }
     }
 

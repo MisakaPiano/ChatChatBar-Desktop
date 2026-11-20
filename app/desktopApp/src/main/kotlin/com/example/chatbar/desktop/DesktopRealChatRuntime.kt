@@ -262,12 +262,14 @@ class DesktopRealChatRuntime internal constructor(
         )).copy(narrativeMode = if (turn.settings.disableNarrativeModes) null else plan.session.narrativeMode)
         var accumulatedContent = ""
         var previewContent: String? = null
+        var receivedToolReplyPartLengths = emptyList<Int>()
         var accumulatedReasoning = ""
         var persistedAssistant: ChatMessage? = null
         var completion: ProviderCompletionMetadata? = null
 
         fun previewBody(body: String): String =
-            NarrativeHistoryEcho.replyBody(body, streaming = true, enabled = plan.cleanNarrativeEcho)
+            NarrativeHistoryEcho.completedBody(body, streaming = true, enabled = plan.cleanNarrativeEcho,
+                partLengths = receivedToolReplyPartLengths)
 
         suspend fun persist(message: ChatMessage): ChatMessage {
             if (regenerationTarget == null) return chatRepository.addMessage(message)
@@ -294,6 +296,7 @@ class DesktopRealChatRuntime internal constructor(
                     is ProviderStreamEvent.ContentDelta -> {
                         previewContent = null
                         accumulatedContent += event.text
+                        receivedToolReplyPartLengths = event.toolReplyPartLengths
                         observer.onUpdate(DesktopRealChatStreamUpdate(previewBody(accumulatedContent),
                             accumulatedReasoning, regenerationTarget?.id))
                     }
@@ -350,10 +353,11 @@ class DesktopRealChatRuntime internal constructor(
             if (cancelled is DesktopUserStoppedChatException || control?.isStopRequested() == true) {
                 val draft = InterruptedReplyPolicy.persistableDraft(
                     assistantBase.copy(
-                        content = NarrativeHistoryEcho.replyBody(
+                        content = NarrativeHistoryEcho.completedBody(
                             accumulatedContent.ifBlank { previewContent.orEmpty() },
                             enabled = plan.cleanNarrativeEcho,
                             interrupted = true,
+                            partLengths = receivedToolReplyPartLengths,
                         ),
                         reasoningContent = accumulatedReasoning.takeIf(String::isNotBlank),
                         updatedAt = System.currentTimeMillis(),
