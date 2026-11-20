@@ -653,22 +653,24 @@ class ChatRepository internal constructor(
         updateMessageIfUnchangedReturningSnapshot(expected, replacement) != null
 
     /** Conditional write receipt includes the repository-owned persisted fields under the same lock. */
-    suspend fun updateMessageIfUnchangedReturningSnapshot(expected: ChatMessage, replacement: ChatMessage): ChatMessage? = messageAppendMutex.withDataAccess {
+    suspend fun updateMessageIfUnchangedReturningSnapshot(expected: ChatMessage, replacement: ChatMessage,
+        onWriteAttempt: (ChatMessage) -> Unit = {}): ChatMessage? = messageAppendMutex.withDataAccess {
         require(expected.id == replacement.id && expected.sessionId == replacement.sessionId)
         val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
             else -> return@withDataAccess null
         }
         if (current != expected) return@withDataAccess null
-        updateMessageLocked(replacement)
+        updateMessageLocked(replacement, onWriteAttempt)
     }
 
-    private suspend fun updateMessageLocked(message: ChatMessage): ChatMessage {
+    private suspend fun updateMessageLocked(message: ChatMessage, onWriteAttempt: (ChatMessage) -> Unit = {}): ChatMessage {
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),
             orderKey = persisted?.orderKey ?: message.orderKey
         )
+        onWriteAttempt(updated) // Exact proposed fields; this callback alone is not a commit receipt.
         saveMessageRecord(updated)
 
         val latest = latestMessage(updated.sessionId)
@@ -684,6 +686,26 @@ class ChatRepository internal constructor(
             }
         }
         return updated
+    }
+
+    /** Repair only derived metadata after an exact durable source readback, without rewriting text. */
+    suspend fun reconcileCommittedMessage(expected: ChatMessage) = messageAppendMutex.withDataAccess {
+        val observed = readMessageDurable(expected.id, expected.sessionId)
+        check(observed is JsonFileStorage.EntityReadResult.Valid && observed.value == expected) { "消息已变化，不能续接旧写入" }
+        messageIndexes.remove(expected.sessionId)
+        val index = loadMessageIndex(expected.sessionId)
+        updateMessageIndex(expected.sessionId, index) { entries ->
+            entries.filterNot { it.messageId == expected.id } + expected.toIndexEntry()
+        }
+        val latest = latestMessage(expected.sessionId)
+        sessionSettingsMutex.withDataAccess {
+            val session = when (val read = readSessionDurable(expected.sessionId)) {
+                is JsonFileStorage.EntityReadResult.Valid -> read.value
+                else -> error("会话状态未知，摘要待重新核对")
+            }
+            updateSessionLocked(session.copy(lastMessagePreview = latest?.previewText(),
+                lastMessageTime = latest?.createdAt, lastMessageRole = latest?.role))
+        }
     }
 
     /**

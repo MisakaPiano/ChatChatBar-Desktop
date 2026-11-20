@@ -1215,8 +1215,9 @@ internal class DesktopPrimaryChatController(
                     saved = true
                 } else {
                     val persisted = updated.copy(formatRepairNotice = null)
-                    commitAlternativeChange(message, persisted, "消息已变化，请重新打开分段操作")
+                    val warning = commitAlternativeChange(message, persisted, "消息已变化，请重新打开分段操作")
                     refreshAfterTerminalTask(session.id)
+                    if (warning != null) mutableState.update { it.copy(status = warning) }
                     saved = true
                 }
             }
@@ -1235,7 +1236,6 @@ internal class DesktopPrimaryChatController(
                 val warning = if (replacement == null) deleteOwnedMessage(session.id, expected.id, expected)
                 else {
                     commitAlternativeChange(expected, replacement, "消息已变化，请重新确认删除")
-                    null
                 }
                 refreshAfterTerminalTask(session.id)
                 if (warning != null) mutableState.update { it.copy(status = warning) }
@@ -1260,14 +1260,34 @@ internal class DesktopPrimaryChatController(
         return deleted
     }
 
-    private suspend fun commitAlternativeChange(previous: ChatMessage, replacement: ChatMessage, staleMessage: String) {
+    private suspend fun commitAlternativeChange(previous: ChatMessage, replacement: ChatMessage, staleMessage: String): String? {
         val retained = MessageAlternativeVersionPolicy.versions(replacement).map { it.id }.toSet()
         val removesVersion = MessageAlternativeVersionPolicy.versions(previous).any { it.id !in retained }
-        val commit: suspend () -> Unit = {
-            val saved = checkNotNull(chats.updateMessageIfUnchangedReturningSnapshot(previous, replacement)) { staleMessage }
+        val commit: suspend () -> String? = commit@{
+            var attempted: ChatMessage? = null
+            var writeFailure: Exception? = null
+            val saved = try {
+                checkNotNull(chats.updateMessageIfUnchangedReturningSnapshot(previous, replacement) { attempted = it }) { staleMessage }
+            } catch (failure: Exception) {
+                val proposed = attempted ?: throw failure
+                val observed = chats.readMessageDurable(previous.id, previous.sessionId)
+                if (observed !is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid || observed.value != proposed) throw failure
+                writeFailure = failure
+                proposed
+            }
             voices?.removeDeletedAlternatives(previous, saved)
+            if (writeFailure != null) {
+                try { chats.reconcileCommittedMessage(saved) }
+                catch (failure: Exception) {
+                    // The source is already committed and voice cleanup finished. Refresh that fact,
+                    // retain a visible warning and let the normal mutation owner notify memory.
+                    refreshAfterTerminalTask(previous.sessionId)
+                    return@commit "正文已保存，已清理明确归属录音；会话摘要仍待重新核对"
+                }
+                "正文已保存；首次写入的派生信息发生错误，现已重新核对并完成录音清理"
+            } else null
         }
-        if (removesVersion) {
+        return if (removesVersion) {
             // Cancellation before admission keeps the source intact. Once source publication starts,
             // its exact receipt and version cleanup finish together under the existing mutation owner.
             currentCoroutineContext().ensureActive()

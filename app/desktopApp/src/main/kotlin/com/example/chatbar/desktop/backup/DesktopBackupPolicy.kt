@@ -59,6 +59,8 @@ internal object DesktopBackupPolicy {
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =
+        (value["desktopVersionOwnershipUncertain"] as? JsonPrimitive)?.booleanOrNull != null ||
+        (value["desktopRetiredVersionId"] as? JsonPrimitive)?.contentOrNull != null ||
         DesktopMomentBackupExtension.hasVersions(value) ||
         (value["imageBatchPreferences"] as? JsonObject)?.let {
             backupJson.decodeFromJsonElement(ImageBatchPreferences.serializer(), it) != ImageBatchPreferences()

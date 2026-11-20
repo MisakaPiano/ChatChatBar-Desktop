@@ -1,7 +1,7 @@
 name: Desktop 1259 feedback source navigation
 on:
   push:
-    branches: [codex/desktop-1259-feedback-20261119]
+    branches: [codex/desktop-1259-feedback-20261119, codex/desktop-1259-review-proof-20261120]
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +35,37 @@ jobs:
           "TMP=$buffer" >> $env:GITHUB_ENV
           New-Item -ItemType Directory -Path '.review1259' | Out-Null
           git rev-parse HEAD | Set-Content '.review1259/source.txt'
+      - name: Reproduce both new Primary failures on the unchanged prior product
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = '4486b326683bc4dba3b71d7127612ff65dcbc521'
+          $files = @(
+            'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt',
+            'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt',
+            'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/VoiceMessageVersionPolicy.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt'
+          )
+          git fetch origin $base --depth=1
+          git restore --source=$base --worktree -- $files
+          $base | Set-Content '.review1259/negative-product-source.txt'
+          try {
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopRemovedAlternativeVoiceTest.same dialogue legacy playback inference never authorizes deletion of its unique audio' --tests 'com.example.chatbar.desktop.DesktopRemovedAlternativeVoiceTest.durable source with failed session summary still refreshes and cleans proven version audio' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            if ($negativeExit -ne 1) { throw 'PRIOR_PRODUCT_NEGATIVE_EXIT_NOT_CONFIRMED' }
+            $xmlPath = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopRemovedAlternativeVoiceTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $xmlPath
+            if ($report.testsuite.tests -ne '2' -or $report.testsuite.failures -ne '2' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_PRODUCT_TWO_ASSERTION_FAILURES_NOT_CONFIRMED' }
+            if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_PRODUCT_FAILURE_NOT_ASSERTION' }
+            Copy-Item -LiteralPath $xmlPath -Destination '.review1259/negative-primary-voice.xml'
+          } finally {
+            git restore --source=HEAD --worktree -- $files
+            git diff --exit-code -- $files
+            if ($LASTEXITCODE -ne 0) { throw 'POSITIVE_PRODUCT_NOT_RESTORED' }
+          }
       - name: Verify shared version voice custody
         working-directory: app
         run: >-
@@ -53,6 +84,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopSessionImageGalleryTest'
           --tests 'com.example.chatbar.desktop.DesktopChatViewportTest'
           --tests 'com.example.chatbar.desktop.DesktopChatReadingLifecycleTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatFloatingNavigationTest'
           --tests 'com.example.chatbar.desktop.DesktopSessionDeletionTargetPresentationTest'
           --tests 'com.example.chatbar.desktop.DesktopSessionDeletionControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopPrimaryChatControllerTest'

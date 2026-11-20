@@ -90,8 +90,11 @@ internal class DesktopVoiceArchiveHandoff(private val store: DesktopVoiceAudioSt
                     }
                 }
                 staged.paths += audio.path; totalBytes += audio.byteLength
+                val needsPlaybackVersion = voice.messageVersionId == null && voice.desktopRetiredVersionId == null
                 staged.voices += voice.copy(id = id, sessionId = targetSession, messageId = target.id,
-                    messageVersionId = voice.messageVersionId ?: VoiceMessageVersionPolicy.inferLegacyVersionId(target, voice, null),
+                    messageVersionId = if (needsPlaybackVersion) VoiceMessageVersionPolicy.inferLegacyVersionId(target, voice, null)
+                        else voice.messageVersionId,
+                    desktopVersionOwnershipUncertain = if (needsPlaybackVersion) true else voice.desktopVersionOwnershipUncertain,
                     anchorId = null, audioPath = audio.path, durationMs = audio.durationMs, byteLength = audio.byteLength,
                     updatedAt = System.currentTimeMillis())
             }
