@@ -116,6 +116,7 @@ jobs:
           $prior = '1d3f1da16545306d5c37c51db4d72be65dadc6fe'
           $files = @(
             'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt',
             'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterDraftResources.kt',
             'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagementController.kt'
           )
@@ -149,6 +150,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopCharacterEditorControllerTest'
           --tests 'com.example.chatbar.desktop.DesktopCharacterManualDraftAdmissionTest'
           --tests 'com.example.chatbar.desktop.DesktopManagementDraftAdmissionTest'
+          --tests 'com.example.chatbar.desktop.DesktopCharacterCopyRetryUiTest'
           --tests 'com.example.chatbar.desktop.DesktopPostProcessComparisonTest'
           -PdesktopTestHeadless=true --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4

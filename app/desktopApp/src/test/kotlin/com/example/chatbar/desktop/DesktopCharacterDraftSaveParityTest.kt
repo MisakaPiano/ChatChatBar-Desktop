@@ -130,7 +130,7 @@ class DesktopCharacterDraftSaveParityTest {
                 val sourcePath = app.appDataRoot.resolve(reference)
                 Files.delete(sourcePath)
                 another.saveAsNew()
-                assertEquals(CharacterEditorProblem.RESOURCE_FAILED, another.state.value.problem)
+                assertEquals(CharacterEditorProblem.SOURCE_DELETED, another.state.value.problem)
                 assertEquals(original.id, another.state.value.targetId)
                 assertEquals(draft, coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
                 Files.writeString(sourcePath, "SYNTHETIC_COPY_RETRY")

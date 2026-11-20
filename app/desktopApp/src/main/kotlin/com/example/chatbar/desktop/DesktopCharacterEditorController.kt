@@ -78,6 +78,7 @@ internal data class DesktopCharacterEditorState(
     val problem: CharacterEditorProblem? = null,
     val detail: String? = null,
     val resourceCleanupPending: Boolean = false,
+    val saveAsNewFailed: Boolean = false,
     val personFocusId: String? = null,
     val personFocusRevision: Long = 0,
     val momentsFocusRevision: Long = 0,
@@ -231,7 +232,7 @@ internal class DesktopCharacterEditorController(
         } else {
             _state.value = _state.value.copy(card = displayCard(CharacterCard.create("")), base = null,
                 draftBasis = null, targetId = null, draftSessionId = UUID.randomUUID().toString(),
-                draftPersisted = false, dirty = false, problem = null, detail = null)
+                draftPersisted = false, dirty = false, problem = null, detail = null, saveAsNewFailed = false)
         }
     }
 
@@ -339,7 +340,7 @@ internal class DesktopCharacterEditorController(
         _state.value = _state.value.copy(card = displayed, base = source, draftBasis = draft,
             targetId = draft.targetId, draftSessionId = draft.draftSessionId,
             draftPersisted = true, dirty = source == null || !sameEditableCard(displayed, source) ||
-                problem == CharacterEditorProblem.SOURCE_CHANGED, problem = problem, detail = null)
+                problem == CharacterEditorProblem.SOURCE_CHANGED, problem = problem, detail = null, saveAsNewFailed = false)
     }
 
     /** Only the mode changes; the inactive body remains in the payload and in storage. */
@@ -1123,13 +1124,15 @@ internal class DesktopCharacterEditorController(
                     _state.value = before.copy(card = newCard, base = null, draftBasis = null, targetId = null,
                         draftSessionId = newSession, recoveryTargetId = before.targetId,
                         recoverySessionId = before.draftSessionId,
-                        dirty = true, draftPersisted = false, problem = null)
+                        dirty = true, draftPersisted = false, problem = null, saveAsNewFailed = false)
                 }
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            report(CharacterEditorProblem.RESOURCE_FAILED, failure)
+            _state.update { current ->
+                if (current == before) current.copy(saveAsNewFailed = true, detail = failure.message) else current
+            }
             return
         }
         // Preserve the original conflict draft; user may recover it independently.
