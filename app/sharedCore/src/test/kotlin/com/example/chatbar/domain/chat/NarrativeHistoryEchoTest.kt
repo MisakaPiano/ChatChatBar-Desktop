@@ -20,7 +20,7 @@ class NarrativeHistoryEchoTest {
 
     @Test fun indentedParagraphContinuationStillStartsAProseQuote() {
         for (mode in ChatNarrativeMode.entries) {
-            val body = "正文未断，\n    她说 \"这是引用，\n示例 </聚焦模式> 仍是正文\"。"
+            val body = "正文未断，\n    她说 \"这是引用，\n示例 </历史回复> 仍是正文\"。"
             val wrapped = MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
             assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, enabled = true, streaming = true))
             assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, enabled = true, interrupted = true))
