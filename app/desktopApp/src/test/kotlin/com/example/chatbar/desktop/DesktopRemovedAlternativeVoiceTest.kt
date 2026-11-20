@@ -287,7 +287,7 @@ class DesktopRemovedAlternativeVoiceTest {
         val service = DesktopMergeImportService(source, gate, InMemoryDesktopSecretStore(), {}, { it() },
             DesktopMigrationDestinationPreparer({ unavailable }, DesktopDataRootOwnership::acquire),
             DesktopBootstrapAuthorityTransaction(storeFactory = { DesktopBootstrapSettingsStore(it) },
-                applicationHomeResolver = { unavailable }),
+                applicationHomeResolver = { unavailable }, portableRootResolver = DesktopPortableRootResolver()),
             freshAuthority = { DesktopFreshRootAuthority(it, keys, MergeRootSyntheticProtector) })
         val destination = base.resolve("published")
         try {
