@@ -680,6 +680,33 @@ class DesktopSaveSlotServiceTest {
         }
     }
 
+    @Test fun `foreign head only raw export and reimport cannot acquire its intermediate library owners withholding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "head-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val head = MemoryHead(throughSourceTurnId = "head-turn", location = "Foreign but identical HEAD")
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
+                actionProjection = MemoryHeadActionProjection.WITHHELD)))
+            val incoming = SaveSlot(id = "raw-foreign", sessionId = "foreign-original", name = "Foreign HEAD", createdAt = 1,
+                messages = listOf(source.copy(sessionId = "foreign-original")), memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
+            val original = f.root.resolve("raw-foreign.cbsave")
+            Files.writeString(original, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val originalBytes = Files.readAllBytes(original)
+            val service = f.service()
+            val first = service.import(original, "s")
+            assertEquals("foreign-original", first.inlineSourceSessionId)
+            val exported = f.root.resolve("foreign-via-rebound-library.cbsave")
+            service.export(first.id, exported)
+            val second = service.import(exported, "s")
+            assertEquals("", second.inlineSourceSessionId, "Raw export provenance must deny the rebound header")
+            service.restore(second.id, "s")
+            assertNull(MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!.head.actionProjection)
+            assertContentEquals(originalBytes, Files.readAllBytes(original))
+        }
+    }
+
     @Test fun `new inline same session head only import retains its observed owner across cold library reopen`() = runBlocking {
         Fixture().use { f ->
             f.seed()

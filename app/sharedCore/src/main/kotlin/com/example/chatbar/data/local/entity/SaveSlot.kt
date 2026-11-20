@@ -60,6 +60,7 @@ data class SaveSlot(
     val memorySnapshot: MemorySnapshot? = null,
     /** Desktop inline-library provenance captured from the original envelope before rebinding. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @kotlinx.serialization.json.JsonNames("desktopMemorySourceSessionId")
     val inlineSourceSessionId: String? = null,
     val contextWindowSize: Int? = null,
     val extraWorldBookIds: List<String> = emptyList(),
