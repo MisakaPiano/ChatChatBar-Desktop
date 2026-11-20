@@ -156,6 +156,36 @@ class DesktopFormatRepairInteractionTest {
         assertNull(primary.restoreMessageFormat(f.original))
     } }
 
+    @Test fun `inactive alternative redo checkpoint survives no change unchanged marker and error on another alternative`() = runBlocking {
+        for (outcome in listOf("same", "marker", "error")) fixture { f ->
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.repair("A", f.original.id)).status)
+            assertEquals(DesktopRepairStatus.RESTORED, f.await(f.repair.restore("A", f.original.id)).status)
+            val checkpoint = assertNotNull(f.saved().formatRepairNotice)
+            assertTrue(checkpoint.restored)
+            f.primary.selectAssistantAlternative(f.original.id, -1)
+            assertEquals("v1", MessageAlternativeVersionPolicy.activeVersionId(f.saved()))
+            val otherText = f.saved().displayContent
+            f.response = { when (outcome) {
+                "same" -> flowOf(StreamEvent.Delta(otherText), StreamEvent.Done)
+                "marker" -> flowOf(StreamEvent.Delta(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER), StreamEvent.Done)
+                else -> flowOf(StreamEvent.Error("synthetic failure on B"))
+            } }
+            val state = f.await(f.repair.repair("A", f.original.id))
+            assertEquals(if (outcome == "error") DesktopRepairStatus.ERROR else DesktopRepairStatus.UNCHANGED, state.status)
+            if (outcome == "error") assertNotNull(state.code)
+            val cold = com.example.chatbar.data.repository.ChatRepository(com.example.chatbar.data.local.JsonFileStorage(f.c.appDataRoot))
+            assertEquals(checkpoint, cold.getMessage(f.original.id, "A")!!.formatRepairNotice,
+                "Repairing B without a replacement erased A's durable redo checkpoint")
+            f.primary.selectAssistantAlternative(f.original.id, 1)
+            assertTrue(desktopCanRedoFormat(f.saved()))
+            val requestsBefore = f.requests.size
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.redo("A", f.original.id)).status)
+            assertEquals(requestsBefore, f.requests.size)
+            assertEquals("fixed", f.saved().displayContent)
+            assertEquals(otherText, f.saved().alternatives[0])
+        }
+    }
+
     @Test fun `unchanged error applied and stopped have distinct sanitized status labels`() = runBlocking { fixture { f ->
         f.response = { flowOf(StreamEvent.Delta(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER), StreamEvent.Done) }
         assertEquals(DesktopUiText.FORMAT_UNCHANGED, desktopRepairStatusText(f.await(f.repair.repair("A", f.original.id))))

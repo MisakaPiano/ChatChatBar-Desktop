@@ -26,6 +26,7 @@ import com.example.chatbar.domain.draft.CharacterEditorDraftUiState
 import com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodec
 import com.example.chatbar.domain.draft.CharacterEditorPostCommitState
 import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
+import com.example.chatbar.domain.draft.CharacterEditorSemanticProjection
 import com.example.chatbar.domain.chat.SpeakerTagHistoryService
 import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
@@ -33,6 +34,7 @@ import com.example.chatbar.domain.image.*
 import java.nio.file.Path
 import java.nio.file.Files
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -71,10 +73,12 @@ internal data class DesktopCharacterEditorState(
     val draftPersisted: Boolean = false,
     val dirty: Boolean = false,
     val busy: Boolean = false,
+    val cleanDraftCleanupInProgress: Boolean = false,
     val leavePrompt: Boolean = false,
     val problem: CharacterEditorProblem? = null,
     val detail: String? = null,
     val resourceCleanupPending: Boolean = false,
+    val saveAsNewFailed: Boolean = false,
     val personFocusId: String? = null,
     val personFocusRevision: Long = 0,
     val momentsFocusRevision: Long = 0,
@@ -127,18 +131,18 @@ internal class DesktopCharacterEditorController(
                 CharacterEditorProblem.SOURCE_CHANGED, CharacterEditorProblem.SOURCE_DELETED)
     }
 
-    internal fun applyCardAi(session: String, basis: CharacterCard, result: CharacterCard): Boolean {
+    internal fun applyCardAi(session: String, basis: CharacterCard, result: CharacterCard): Boolean = synchronized(resourceMutationLock) {
         val current = _state.value
         if (!canUseCardAi || current.draftSessionId != session || current.card != basis ||
-            result.id != basis.id || result.createdAt != basis.createdAt) return false
+            result.id != basis.id || result.createdAt != basis.createdAt) return@synchronized false
         edit { result }
-        return _state.value.card == result
+        _state.value.card == result
     }
 
     internal fun stageGeneratedCardImage(session: String, basis: CharacterCard, destination: CharacterCard,
         personId: String?, image: ByteArray, crop: ByteArray? = null,
-        assign: (CharacterCard) -> Boolean = { applyCardAi(session, basis, it) }): Boolean {
-        if (!canUseCardAi || _state.value.draftSessionId != session || _state.value.card != basis) return false
+        assign: (CharacterCard) -> Boolean = { applyCardAi(session, basis, it) }): Boolean = synchronized(resourceMutationLock) {
+        if (!canUseCardAi || _state.value.draftSessionId != session || _state.value.card != basis) return@synchronized false
         require(destination.id == basis.id && destination.createdAt == basis.createdAt)
         val staged = mutableListOf<String>()
         var assignmentEntered = false
@@ -153,20 +157,22 @@ internal class DesktopCharacterEditorController(
                 destination.copy(characters = destination.characters.map { if (it.id == personId) it.copy(appearanceImage = full) else it })
             }
             assignmentEntered = true
-            if (assign(next)) return true
+            if (assign(next)) return@synchronized true
             staged.asReversed().forEach(resources::discardNew)
-            return false
+            false
         } catch (error: Throwable) {
             if (!assignmentEntered) staged.asReversed().forEach { runCatching { resources.discardNew(it) }.onFailure(error::addSuppressed) }
             throw error
         }
     }
 
+    private val resourceMutationLock = Any()
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
     private val draftMutex = Mutex()
     private var draftJob: Job? = null
     private var leaveAction: (() -> Unit)? = null
+    private val pendingCleanLeave = AtomicBoolean()
     private data class PendingDraft(val targetId: String?, val sessionId: String?)
     private data class PendingRename(val characterId: String, val oldName: String, val newName: String)
     private data class CharacterDraftCleanup(
@@ -181,6 +187,14 @@ internal class DesktopCharacterEditorController(
     private var pendingRename: PendingRename? = null
     private var pendingObsoleteSource: CharacterCard? = null
     private val committedCleanupMutex = Mutex()
+
+    private fun withManualResourceSession(session: String, operation: () -> Unit) = manualResourceAccess {
+        synchronized(resourceMutationLock) {
+            val current = _state.value
+            check(current.card != null && current.draftSessionId == session && canMutate()) { "草稿已切换，请重新添加资料" }
+            operation()
+        }
+    }
     private val resourceCleanupCards = linkedSetOf<CharacterCard>()
     private val resourceCleanupSessions = linkedSetOf<String>()
 
@@ -192,13 +206,14 @@ internal class DesktopCharacterEditorController(
         _state.update { it.copy(characters = cards, worldBooks = worldBooks, formatCards = formatCards) }
     }
 
-    fun search(query: String) { _state.value = _state.value.copy(query = query) }
+    fun search(query: String) { _state.update { it.copy(query = query) } }
 
     suspend fun openNew() {
-        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+        if (leaveBlocked()) return
         if (deferLeave { scope.launch { openNew() } }) return
         flushDraft()
         val recovered = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, null)
+        if (leaveBlocked()) return
         val uiState = try { CharacterEditorDraftUiStateCodec.decode(json, recovered?.openModalState) }
         catch (error: Exception) { report(CharacterEditorProblem.DRAFT_FAILED, error); return }
         if (recovered != null && restoreCommittedDraft(recovered, uiState?.postCommit)) return
@@ -217,7 +232,7 @@ internal class DesktopCharacterEditorController(
         } else {
             _state.value = _state.value.copy(card = displayCard(CharacterCard.create("")), base = null,
                 draftBasis = null, targetId = null, draftSessionId = UUID.randomUUID().toString(),
-                draftPersisted = false, dirty = false, problem = null, detail = null)
+                draftPersisted = false, dirty = false, problem = null, detail = null, saveAsNewFailed = false)
         }
     }
 
@@ -227,15 +242,13 @@ internal class DesktopCharacterEditorController(
             if (deferLeave { scope.launch { openPerson(cardId, personId) } }) return
             openExisting(cardId)
         }
-        val current = _state.value
         val source = characters.getById(cardId)
-        if (current.targetId != cardId || current.card?.characters?.count { it.id == personId } != 1 ||
-            source?.characters?.count { it.id == personId } != 1) {
-            _state.value = current.copy(problem = CharacterEditorProblem.PERSON_UNAVAILABLE)
-            return
+        _state.update { current ->
+            if (current.targetId != cardId || current.card == null || current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) current
+            else if (current.card.characters.count { it.id == personId } != 1 || source?.characters?.count { it.id == personId } != 1)
+                current.copy(problem = CharacterEditorProblem.PERSON_UNAVAILABLE)
+            else current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
         }
-        // Focus is ephemeral. Do not reload or replace an existing unsaved draft of the same card.
-        _state.value = current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
     }
 
     suspend fun openMoments(cardId: String) {
@@ -247,17 +260,17 @@ internal class DesktopCharacterEditorController(
             if (deferLeave { scope.launch { openMoments(cardId) } }) return
             openExisting(cardId)
         }
-        val current = _state.value
-        if (current.targetId == cardId && current.card != null)
-            _state.value = current.copy(momentsFocusRevision = current.momentsFocusRevision + 1)
+        _state.update { current -> if (current.targetId == cardId && current.card != null)
+            current.copy(momentsFocusRevision = current.momentsFocusRevision + 1) else current }
     }
 
     suspend fun openExisting(id: String) {
-        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+        if (leaveBlocked()) return
         if (deferLeave { scope.launch { openExisting(id) } }) return
         flushDraft()
         val source = characters.getById(id)
         val recovered = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, id)
+        if (leaveBlocked()) return
         val uiState = try { CharacterEditorDraftUiStateCodec.decode(json, recovered?.openModalState) }
         catch (error: Exception) { report(CharacterEditorProblem.DRAFT_FAILED, error); return }
         if (recovered != null && restoreCommittedDraft(recovered, uiState?.postCommit, source)) return
@@ -272,7 +285,7 @@ internal class DesktopCharacterEditorController(
         _state.value = _state.value.copy(card = displayCard(source), base = source, targetId = id,
             draftBasis = null, draftSessionId = UUID.randomUUID().toString(), draftPersisted = false,
             dirty = false, problem = if (source.isCommunityDownload) CharacterEditorProblem.COMMUNITY_READ_ONLY else null,
-            detail = null)
+            detail = null, saveAsNewFailed = false)
     }
 
     suspend fun openDocument(cardId: String, documentId: String, unavailable: () -> Unit) {
@@ -281,13 +294,16 @@ internal class DesktopCharacterEditorController(
             if (deferLeave { scope.launch { openDocument(cardId, documentId, unavailable) } }) return
             openExisting(cardId)
         }
-        val current = _state.value
         val source = characters.getById(cardId)
-        if (current.targetId != cardId || current.card?.customDocuments?.count { it.id == documentId } != 1 ||
-            source?.customDocuments?.count { it.id == documentId } != 1) {
-            unavailable(); return
+        while (true) {
+            val current = _state.value
+            if (current.targetId != cardId || current.card?.customDocuments?.count { it.id == documentId } != 1 ||
+                source?.customDocuments?.count { it.id == documentId } != 1) {
+                unavailable(); return
+            }
+            if (_state.compareAndSet(current, current.copy(documentFocusId = documentId,
+                    documentFocusRevision = current.documentFocusRevision + 1))) return
         }
-        _state.value = current.copy(documentFocusId = documentId, documentFocusRevision = current.documentFocusRevision + 1)
     }
 
     private suspend fun restoreCommittedDraft(draft: EditorDraft,
@@ -323,43 +339,46 @@ internal class DesktopCharacterEditorController(
         val displayed = displayCard(draft.characterPayload!!)
         _state.value = _state.value.copy(card = displayed, base = source, draftBasis = draft,
             targetId = draft.targetId, draftSessionId = draft.draftSessionId,
-            draftPersisted = true, dirty = source == null || displayed != displayCard(source) ||
-                problem == CharacterEditorProblem.SOURCE_CHANGED, problem = problem, detail = null)
+            draftPersisted = true, dirty = source == null || !sameEditableCard(displayed, source) ||
+                problem == CharacterEditorProblem.SOURCE_CHANGED, problem = problem, detail = null, saveAsNewFailed = false)
     }
 
     /** Only the mode changes; the inactive body remains in the payload and in storage. */
     fun switchMode(mode: CharacterEditMode) = edit { it.copy(editMode = mode) }
 
     fun edit(transform: (CharacterCard) -> CharacterCard) {
-        val current = _state.value
-        val card = current.card ?: return
-        if (current.busy) return
-        if (!current.dirty && current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
-            _state.value = current.copy(problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
-            return
+        synchronized(resourceMutationLock) {
+            val current = _state.value
+            val card = current.card ?: return
+            if (current.busy) return
+            if (!current.dirty && current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
+                _state.value = current.copy(problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
+                return
+            }
+            if (current.base?.isCommunityDownload == true && current.targetId != null) {
+                _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
+                return
+            }
+            val transformed = transform(card)
+            val next = if (!sameDocumentSources(transformed.customDocuments, card.customDocuments)) transformed.copy(
+                ragIndexStatus = RagIndexStatus.NOT_INDEXED.name,
+                ragIndexDone = 0, ragIndexTotal = transformed.customDocuments.size,
+                ragIndexMessage = null, ragIndexedAt = null,
+            ) else transformed
+            if (next == card) return
+            _state.value = current.copy(card = next,
+                stylePromptUndo = current.stylePromptUndo?.takeIf {
+                    next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
+                },
+                dirty = current.base == null || !sameEditableCard(next, current.base), draftPersisted = false,
+                problem = current.problem?.takeIf {
+                    it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED ||
+                        it == CharacterEditorProblem.RESOURCE_FAILED && current.resourceCleanupPending
+                }, detail = null)
+            scheduleDraft()
         }
-        if (current.base?.isCommunityDownload == true && current.targetId != null) {
-            _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
-            return
-        }
-        val transformed = transform(card)
-        val next = if (!sameDocumentSources(transformed.customDocuments, card.customDocuments)) transformed.copy(
-            ragIndexStatus = RagIndexStatus.NOT_INDEXED.name,
-            ragIndexDone = 0, ragIndexTotal = transformed.customDocuments.size,
-            ragIndexMessage = null, ragIndexedAt = null,
-        ) else transformed
-        if (next == card) return
-        _state.value = current.copy(card = next,
-            stylePromptUndo = current.stylePromptUndo?.takeIf {
-                next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
-            },
-            dirty = current.base == null || next != displayCard(current.base), draftPersisted = false,
-            problem = current.problem?.takeIf {
-                it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED ||
-                    it == CharacterEditorProblem.RESOURCE_FAILED && current.resourceCleanupPending
-            }, detail = null)
-        scheduleDraft()
     }
+
 
     /** A picker belongs to one draft lifetime and one existing person, never a list position. */
     fun bindFishVoice(draftSessionId: String, personId: String,
@@ -487,7 +506,7 @@ internal class DesktopCharacterEditorController(
         if (!canMutate()) return
         val avatar = _state.value.card?.avatar ?: return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val reference = resources.copyAsCover(session, avatar)
             edit { it.copy(coverImage = reference) }
         } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
@@ -522,7 +541,7 @@ internal class DesktopCharacterEditorController(
     private fun cropImage(bytes: ByteArray, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val ref = resources.stageImage(session, bytes)
             edit { assign(it, ref) }
         } }
@@ -556,22 +575,22 @@ internal class DesktopCharacterEditorController(
         }
     }
 
-    fun addTextDocument(name: String, content: String) {
-        if (!canMutate()) return
-        val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+    fun addTextDocument(name: String, content: String): Boolean {
+        if (!canMutate()) return false
+        val session = _state.value.draftSessionId ?: return false
+        return runCatching { withManualResourceSession(session) {
             val effectiveName = name.ifBlank { "document.txt" }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments +
                 DocumentInfo.create(effectiveName, ref, documentType(effectiveName))) }
-        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
+        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }.isSuccess
     }
 
     fun editDocument(id: String, name: String, content: String) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
         val previous = _state.value.card?.customDocuments?.firstOrNull { it.id == id } ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val effectiveName = name.ifBlank { previous.fileName }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments.map { doc ->
@@ -639,7 +658,7 @@ internal class DesktopCharacterEditorController(
     private fun stageResource(path: Path, image: Boolean, originalCover: Boolean = false, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { manualResourceAccess {
+        runCatching { withManualResourceSession(session) {
             val ref = resources.stage(session, path, image, originalCover)
             edit { assign(it, ref) }
         } }
@@ -650,7 +669,7 @@ internal class DesktopCharacterEditorController(
         val current = _state.value
         if (current.busy || current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return false
         if (current.base?.isCommunityDownload == true && current.targetId != null) {
-            _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
+            _state.compareAndSet(current, current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY))
             return false
         }
         return true
@@ -660,6 +679,10 @@ internal class DesktopCharacterEditorController(
         worldBookIds = CharacterWorldBookBindings.effectiveIds(card),
         defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
     )
+
+    private fun sameEditableCard(left: CharacterCard, right: CharacterCard): Boolean =
+        CharacterEditorSemanticProjection.normalize(displayCard(left)) ==
+            CharacterEditorSemanticProjection.normalize(displayCard(right))
 
     private fun editableNegativePrompt(value: String): String =
         value.takeUnless(String::isBlank) ?: CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt()
@@ -681,7 +704,7 @@ internal class DesktopCharacterEditorController(
 
     private suspend fun persistDraft() = dataGate.withNormalOperation { draftMutex.withLock {
         val current = _state.value
-        if (!current.dirty || current.draftPersisted) return@withLock
+        if (current.busy || !current.dirty || current.draftPersisted) return@withLock
         val card = current.card ?: return@withLock
         val session = current.draftSessionId ?: return@withLock
         val draft = current.draftBasis?.copy(characterPayload = card, draftAssetPaths = draftAssets(card))
@@ -689,8 +712,12 @@ internal class DesktopCharacterEditorController(
                 draftAssets(card), emptyList(), emptyList())
         try {
             drafts.save(draft)
-            if (_state.value.card == card && _state.value.draftSessionId == session) {
-                _state.value = _state.value.copy(draftPersisted = true, draftBasis = draft)
+            synchronized(resourceMutationLock) {
+                _state.update { latest ->
+                    if (!latest.busy && latest.card == card && latest.draftSessionId == session) {
+                        latest.copy(draftPersisted = true, draftBasis = draft)
+                    } else latest
+                }
             }
         } catch (error: Throwable) { report(CharacterEditorProblem.DRAFT_FAILED, error) }
     } }
@@ -714,6 +741,35 @@ internal class DesktopCharacterEditorController(
         return saved
     }
 
+    /** Preflight may suspend while the user continues editing. Never publish its older form. */
+    private fun reserveSaveSnapshot(before: DesktopCharacterEditorState): Boolean {
+        // Generated images and manual resources can stage and edit off the window thread.
+        // Reserve under their lock so an accepted edit cannot overwrite the busy snapshot.
+        synchronized(resourceMutationLock) {
+            while (true) {
+                val current = _state.value
+                if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
+                    current.base != before.base) return false
+                if (current.card != before.card || !current.dirty || !current.draftPersisted) {
+                    if (current.dirty) reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED,
+                        "保存检查期间内容已变化，最新编辑已保留，请再次保存。", allowChangedCard = true)
+                    return false
+                }
+                if (_state.compareAndSet(current, current.copy(busy = true, problem = null, detail = null))) return true
+            }
+        }
+    }
+
+    private fun reportSaveProblem(before: DesktopCharacterEditorState, problem: CharacterEditorProblem,
+        detail: String? = null, allowChangedCard: Boolean = false) {
+        while (true) {
+            val current = _state.value
+            if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
+                current.base != before.base || (!allowChangedCard && current.card != before.card)) return
+            if (_state.compareAndSet(current, current.copy(problem = problem, detail = detail))) return
+        }
+    }
+
     private suspend fun saveWithinDataOperation(): Boolean {
         flushDraft()
         val before = _state.value
@@ -722,33 +778,35 @@ internal class DesktopCharacterEditorController(
         if (!before.dirty) return if (before.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) false
             else cleanObsoleteDraft()
         if (before.dirty && !before.draftPersisted) {
-            _state.value = before.copy(problem = CharacterEditorProblem.DRAFT_FAILED)
+            reportSaveProblem(before, CharacterEditorProblem.DRAFT_FAILED)
             return false
         }
-        if (!validate(card, before.targetId)) return false
+        val valid = try { validate(card, before) }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, error.message); return false }
+        if (!valid) return false
         val source = try { before.targetId?.let { characters.getById(it) } }
-        catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, error.message); return false }
         val newIdConflict = try { before.targetId == null && characters.getById(card.id) != null }
-        catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, error.message); return false }
         if (newIdConflict) {
-            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_CHANGED)
+            reportSaveProblem(before, CharacterEditorProblem.SOURCE_CHANGED)
             return false
         }
         if (before.targetId != null && source == null) {
-            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_DELETED)
+            reportSaveProblem(before, CharacterEditorProblem.SOURCE_DELETED)
             return false
         }
         if (source?.isCommunityDownload == true) {
-            _state.value = before.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
+            reportSaveProblem(before, CharacterEditorProblem.COMMUNITY_READ_ONLY)
             return false
         }
         val persistedDraft = try { drafts.getForTarget(EditorDraftType.CHARACTER_CARD, before.targetId) }
-        catch (error: Throwable) { report(CharacterEditorProblem.DRAFT_FAILED, error); return false }
+        catch (error: Throwable) { reportSaveProblem(before, CharacterEditorProblem.DRAFT_FAILED, error.message); return false }
         if (source != null && persistedDraft != null && drafts.isChanged(source, persistedDraft)) {
-            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_CHANGED)
+            reportSaveProblem(before, CharacterEditorProblem.SOURCE_CHANGED)
             return false
         }
-        _state.value = before.copy(busy = true, problem = null, detail = null)
+        if (!reserveSaveSnapshot(before)) return false
         var created = emptyList<String>()
         try {
             val documentsChanged = source == null || !sameDocumentSources(source.customDocuments, card.customDocuments)
@@ -856,39 +914,58 @@ internal class DesktopCharacterEditorController(
     }
 
     private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?): CharacterDraftCleanup = dataGate.withNormalOperation {
+        val retired = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, targetId)
         val draft = deleteEditorDraftConfirmed(drafts, EditorDraftType.CHARACTER_CARD, targetId, deleteDraft)
         val assetFailure = if (draft.removed && sessionId != null)
-            runCatching { discardDraftAssets(sessionId) }.exceptionOrNull()
+            runCatching { discardUnreferencedCharacterDraftAssets(drafts, sessionId, discardDraftAssets, resources::sessionPath, retired, ::deferDraftResourceCleanup) }.exceptionOrNull()
         else null
         CharacterDraftCleanup(draft, assetFailure)
     }
 
     private fun needsCleanDraftCleanup(current: DesktopCharacterEditorState): Boolean =
         !current.dirty && current.card != null && current.base != null &&
-            current.card == displayCard(current.base) &&
+            sameEditableCard(current.card, current.base) &&
             ((current.draftBasis != null && current.draftBasis.targetId == current.targetId) ||
                 current.problem == CharacterEditorProblem.CLEAN_DRAFT_WARNING) &&
             current.problem != CharacterEditorProblem.SAVE_COMMITTED_WARNING
 
     private suspend fun cleanObsoleteDraft(): Boolean = dataGate.withNormalOperation { draftMutex.withLock {
-        val before = _state.value
-        if (!needsCleanDraftCleanup(before)) return@withLock true
-        val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
-        val current = _state.value
-        if (current.card != before.card || current.draftSessionId != before.draftSessionId || current.dirty)
-            return@withLock false
-        if (cleanup.blocking) {
-            _state.value = current.copy(draftBasis = if (cleanup.removed) null else current.draftBasis,
-                draftPersisted = current.draftPersisted && !cleanup.removed,
-                problem = CharacterEditorProblem.CLEAN_DRAFT_WARNING,
-                detail = cleanup.draft.errors.firstOrNull()?.message)
-            return@withLock false
+        val nextSession = UUID.randomUUID().toString()
+        val before = synchronized(resourceMutationLock) {
+            val captured = _state.value
+            if (!needsCleanDraftCleanup(captured)) return@withLock !captured.dirty
+            // New edits/resources belong to a fresh directory while the old draft deletion suspends.
+            if (!_state.compareAndSet(captured, captured.copy(draftSessionId = nextSession,
+                    draftBasis = null, draftPersisted = false, cleanDraftCleanupInProgress = true))) return@withLock false
+            captured
         }
-        _state.value = current.copy(draftBasis = null, draftPersisted = false,
-            problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
-            detail = cleanup.assetFailure?.message)
-        true
+        try {
+            val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
+            val current = _state.value
+            if (current.card != before.card || current.draftSessionId != nextSession || current.dirty)
+                return@withLock false
+            if (cleanup.blocking) {
+                _state.compareAndSet(current, current.copy(draftSessionId = if (cleanup.removed) nextSession else before.draftSessionId,
+                    draftBasis = if (cleanup.removed) null else before.draftBasis,
+                    draftPersisted = before.draftPersisted && !cleanup.removed,
+                    problem = CharacterEditorProblem.CLEAN_DRAFT_WARNING,
+                    detail = cleanup.draft.errors.firstOrNull()?.message))
+                return@withLock false
+            }
+            _state.compareAndSet(current, current.copy(draftBasis = null, draftPersisted = false,
+                problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
+                detail = cleanup.assetFailure?.message))
+        } finally {
+            synchronized(resourceMutationLock) {
+                _state.update { it.copy(cleanDraftCleanupInProgress = false) }
+            }
+        }
     } }
+
+    internal fun deferDraftResourceCleanup(session: String) = synchronized(resourceMutationLock) {
+        resourceCleanupSessions.add(session)
+        _state.update { it.copy(resourceCleanupPending = true) }
+    }
 
     suspend fun retryCleanup() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) retryCommittedCleanup()
@@ -910,7 +987,7 @@ internal class DesktopCharacterEditorController(
                 check(session != _state.value.draftSessionId || !_state.value.dirty && _state.value.draftBasis == null) {
                     "Active draft resource cleanup is deferred"
                 }
-                discardDraftAssets(session)
+                discardUnreferencedCharacterDraftAssets(drafts, session, discardDraftAssets, resources::sessionPath, onFailure = ::deferDraftResourceCleanup)
             } }.exceptionOrNull()
             if (error == null) resourceCleanupSessions.remove(session) else if (failure == null) failure = error
         }
@@ -1001,7 +1078,7 @@ internal class DesktopCharacterEditorController(
         }
     }
 
-    private suspend fun validate(card: CharacterCard, targetId: String?): Boolean {
+    private suspend fun validate(card: CharacterCard, before: DesktopCharacterEditorState): Boolean {
         val issue = when {
             NamePolicy.normalize(card.name).isBlank() -> CharacterEditorProblem.NAME_REQUIRED
             card.greeting.isBlank() -> CharacterEditorProblem.GREETING_REQUIRED
@@ -1009,22 +1086,24 @@ internal class DesktopCharacterEditorController(
                 CharacterEditorProblem.CHARACTER_NAME_REQUIRED
             CharacterSpeakerNamePolicy.duplicateNames(card.characters).isNotEmpty() ->
                 CharacterEditorProblem.DUPLICATE_CHARACTER_NAME
-            NamePolicy.conflict(card.name, characters.getAll().map { it.id to it.name }, targetId) != null ->
+            NamePolicy.conflict(card.name, characters.getAll().map { it.id to it.name }, before.targetId) != null ->
                 CharacterEditorProblem.DUPLICATE_CARD_NAME
             else -> null
         }
-        if (issue != null) { _state.value = _state.value.copy(problem = issue); return false }
+        if (issue != null) { reportSaveProblem(before, issue); return false }
         val imageIssue = card.defaultImageGenerationSettings?.applyTo(
             com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel
                 ?: com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL))?.validationError(0)
         if (imageIssue != null) {
-            _state.value = _state.value.copy(problem = CharacterEditorProblem.SAVE_FAILED, detail = imageIssue)
+            reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED, imageIssue)
             return false
         }
         return true
     }
 
     /** Recovery and read-only copy retain editor payload but sever the protected source identity. */
+    internal fun draftAssetSessionPath(reference: String): Path? = resources.sessionPath(reference)
+
     suspend fun saveAsNew() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
         flushDraft()
@@ -1036,46 +1115,77 @@ internal class DesktopCharacterEditorController(
             _state.value = before.copy(problem = CharacterEditorProblem.NEW_DRAFT_EXISTS)
             return
         }
-        val newCard = card.copy(id = UUID.randomUUID().toString(),
-            name = NamePolicy.nextCopyName(card.name, characters.getAll().map { it.name }),
-            communityItemId = null, communityItemUpdatedAt = null, communityItemSha256 = null,
-            communityItemTitle = null, sourcePresetKey = null, sourcePresetVersion = null,
-            createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis())
-        val newSession = UUID.randomUUID().toString()
-        _state.value = before.copy(card = newCard, base = null, draftBasis = null, targetId = null,
-            draftSessionId = newSession, recoveryTargetId = before.targetId,
-            recoverySessionId = before.draftSessionId,
-            dirty = true, draftPersisted = false, problem = null)
+        val existingNames = characters.getAll().map { it.name }
+        try {
+            dataGate.withNormalOperation {
+                synchronized(resourceMutationLock) {
+                    check(_state.value == before) { "Draft changed during copy" }
+                    val newSession = UUID.randomUUID().toString()
+                    val newCard = resources.fork(card, newSession).copy(id = UUID.randomUUID().toString(),
+                        name = NamePolicy.nextCopyName(card.name, existingNames),
+                        communityItemId = null, communityItemUpdatedAt = null, communityItemSha256 = null,
+                        communityItemTitle = null, sourcePresetKey = null, sourcePresetVersion = null,
+                        createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis())
+                    _state.value = before.copy(card = newCard, base = null, draftBasis = null, targetId = null,
+                        draftSessionId = newSession, recoveryTargetId = before.targetId,
+                        recoverySessionId = before.draftSessionId,
+                        dirty = true, draftPersisted = false, problem = null, saveAsNewFailed = false)
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            _state.update { current ->
+                if (current == before) current.copy(saveAsNewFailed = true, detail = failure.message) else current
+            }
+            return
+        }
         // Preserve the original conflict draft; user may recover it independently.
         persistDraft()
     }
 
     suspend fun discard() {
-        draftJob?.cancelAndJoin()
-        draftJob = null
-        val before = _state.value
-        if (!before.dirty && before.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        val draftTarget = if (before.draftBasis != null) before.draftBasis.targetId else before.targetId
-        val cleanup = cleanupDraftAndAssets(draftTarget, before.draftSessionId)
-        if (!cleanup.removed) {
-            _state.value = before.copy(problem = CharacterEditorProblem.DRAFT_FAILED,
-                detail = cleanup.draft.errors.firstOrNull()?.message)
-            return
+        val before = synchronized(resourceMutationLock) {
+            val current = _state.value
+            if (current.card == null || current.busy || current.cleanDraftCleanupInProgress ||
+                pendingCleanLeave.get() || current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+            _state.update { it.copy(busy = true) }
+            current
         }
-        _state.value = before.copy(card = null, base = null, draftBasis = null, targetId = null, draftSessionId = null,
-            recoveryTargetId = null, recoverySessionId = null,
-            dirty = false, draftPersisted = false, leavePrompt = false,
-            problem = (cleanup.assetFailure ?: cleanup.draft.errors.firstOrNull())
-                ?.let { CharacterEditorProblem.RESOURCE_FAILED },
-            detail = (cleanup.assetFailure ?: cleanup.draft.errors.firstOrNull())?.message)
+        try {
+            draftJob?.cancelAndJoin()
+            draftJob = null
+            val draftTarget = if (before.draftBasis != null) before.draftBasis.targetId else before.targetId
+            val cleanup = dataGate.withNormalOperation { draftMutex.withLock {
+                cleanupDraftAndAssets(draftTarget, before.draftSessionId)
+            } }
+            if (!cleanup.removed) {
+                _state.update { it.copy(problem = CharacterEditorProblem.DRAFT_FAILED,
+                    detail = cleanup.draft.errors.firstOrNull()?.message) }
+                return
+            }
+            val error = cleanup.assetFailure ?: cleanup.draft.errors.firstOrNull()
+            _state.update { it.copy(card = null, base = null, draftBasis = null, targetId = null, draftSessionId = null,
+                recoveryTargetId = null, recoverySessionId = null,
+                dirty = false, draftPersisted = false, leavePrompt = false,
+                problem = error?.let { CharacterEditorProblem.RESOURCE_FAILED }, detail = error?.message) }
+        } finally {
+            synchronized(resourceMutationLock) { _state.update { it.copy(busy = false) } }
+        }
         leaveAction?.also { leaveAction = null; it() }
     }
 
     fun requestLeave(action: () -> Unit) {
-        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        if (deferLeave(action)) return
-        if (needsCleanDraftCleanup(_state.value)) {
-            scope.launch { if (cleanObsoleteDraft() && !_state.value.dirty) action() }
+        val cleanFirst = synchronized(resourceMutationLock) {
+            if (leaveBlocked() || deferLeave(action)) return
+            needsCleanDraftCleanup(_state.value).also { if (it) pendingCleanLeave.set(true) }
+        }
+        if (cleanFirst) {
+            scope.launch {
+                val mayLeave = try { cleanObsoleteDraft() }
+                finally { pendingCleanLeave.set(false) }
+                if (mayLeave && !_state.value.dirty) action()
+            }
         } else action()
     }
 
@@ -1104,12 +1214,19 @@ internal class DesktopCharacterEditorController(
     }
 
     fun closeClean() {
-        if (_state.value.dirty) { requestLeave { closeClean() }; return }
-        if (needsCleanDraftCleanup(_state.value)) { requestLeave { closeClean() }; return }
-        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        _state.value = _state.value.copy(card = null, base = null, leavePrompt = false,
-            problem = if (_state.value.resourceCleanupPending) CharacterEditorProblem.RESOURCE_FAILED else null)
-        leaveAction?.also { leaveAction = null; it() }
+        requestLeave {
+            synchronized(resourceMutationLock) {
+                if (leaveBlocked() || _state.value.dirty) return@synchronized
+                _state.update { it.copy(card = null, base = null, leavePrompt = false,
+                    problem = if (it.resourceCleanupPending) CharacterEditorProblem.RESOURCE_FAILED else null) }
+                leaveAction?.also { leaveAction = null; it() }
+            }
+        }
+    }
+
+    private fun leaveBlocked(): Boolean = _state.value.let {
+        it.busy || it.cleanDraftCleanupInProgress || pendingCleanLeave.get() ||
+            it.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING
     }
 
     suspend fun closeAndDrain() {
@@ -1125,7 +1242,7 @@ internal class DesktopCharacterEditorController(
     }
 
     private fun report(problem: CharacterEditorProblem, error: Throwable) {
-        _state.value = _state.value.copy(problem = problem, detail = error.message)
+        _state.update { it.copy(problem = problem, detail = error.message) }
     }
 
     private companion object {

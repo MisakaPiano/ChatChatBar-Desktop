@@ -133,6 +133,25 @@ internal class DesktopCharacterDraftResources(
         }
     }
 
+    /** Fork temporary references before publishing an independently recoverable draft. */
+    fun fork(card: CharacterCard, sessionId: String): CharacterCard {
+        val copied = linkedMapOf<String, String>()
+        fun copy(reference: String?): String? = reference?.let {
+            if (!isDraft(it)) it else copied.getOrPut(it) {
+                stageBytes(sessionId, it.substringAfterLast('/'), readBytes(it))
+            }
+        }
+        return try {
+            card.copy(avatar = copy(card.avatar), coverImage = copy(card.coverImage),
+                chatBackground = copy(card.chatBackground), chatBackgroundImages = card.chatBackgroundImages.map { requireNotNull(copy(it)) },
+                characters = card.characters.map { it.copy(appearanceImage = copy(it.appearanceImage)) },
+                customDocuments = card.customDocuments.map { it.copy(filePath = requireNotNull(copy(it.filePath))) })
+        } catch (failure: Throwable) {
+            copied.values.forEach { runCatching { discardNew(it) }.onFailure(failure::addSuppressed) }
+            throw failure
+        }
+    }
+
     fun discardSession(sessionId: String) {
         val dir = sessionDirectory(sessionId)
         require(!Files.isSymbolicLink(draftRoot)) { "Unsafe draft root" }
@@ -184,6 +203,12 @@ internal class DesktopCharacterDraftResources(
         return "draft_assets/$sessionId/$fileName"
     }
 
+    internal fun sessionPath(reference: String): Path? {
+        val parts = draftRelativeReference(reference)?.split('/') ?: return null
+        require(parts.size == 3 && parts[2].matches(Regex("[A-Za-z0-9._-]{1,130}"))) { "Invalid draft reference" }
+        return sessionDirectory(parts[1])
+    }
+
     private fun sessionDirectory(sessionId: String): Path {
         require(sessionId.matches(Regex("[A-Za-z0-9-]{1,80}"))) { "Invalid draft session" }
         return draftRoot.resolve(sessionId)
@@ -211,4 +236,32 @@ internal fun desktopCharacterResourceReferences(card: CharacterCard): List<Strin
     addAll(card.chatBackgroundImages)
     card.characters.mapNotNullTo(this) { it.appearanceImage }
     card.customDocuments.mapTo(this) { it.filePath }
+}
+
+/** Legacy recovered drafts can reference another draft's directory after an interrupted copy. */
+internal suspend fun discardUnreferencedCharacterDraftAssets(
+    drafts: com.example.chatbar.data.repository.EditorDraftRepository,
+    sessionId: String,
+    discard: (String) -> Unit,
+    sessionPath: (String) -> Path?,
+    retired: com.example.chatbar.data.local.entity.EditorDraft? = null,
+    onFailure: (String) -> Unit = {},
+) {
+    fun references(draft: com.example.chatbar.data.local.entity.EditorDraft): List<String> =
+        draft.draftAssetPaths + draft.pendingDeletedAssets +
+            draft.characterPayload?.let(::desktopCharacterResourceReferences).orEmpty()
+    val retained = drafts.getAllStrict().flatMap(::references).mapNotNull(sessionPath).toSet()
+    val retiredSessions = retired?.let(::references).orEmpty().mapNotNull(sessionPath)
+        .map { it.fileName.toString() }
+    var failure: Exception? = null
+    for (session in (listOf(sessionId) + retiredSessions).distinct()) {
+        val directory = requireNotNull(sessionPath("draft_assets/$session/retention"))
+        if (directory !in retained) try { discard(session) }
+        catch (error: Exception) {
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            onFailure(session)
+            if (failure == null) failure = error else failure.addSuppressed(error)
+        }
+    }
+    failure?.let { throw it }
 }

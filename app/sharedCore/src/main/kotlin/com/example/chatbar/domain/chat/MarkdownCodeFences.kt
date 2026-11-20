@@ -38,12 +38,14 @@ object MarkdownCodeFences {
 
     fun blocks(content: String): List<Block> = blocks(content, null)
 
-    internal fun blocks(content: String, onLazyQuoteLine: ((Int) -> Unit)?): List<Block> =
-        findBlocks(content, onLazyQuoteLine) {}
+    internal fun blocks(content: String, onLazyQuoteLine: ((Int) -> Unit)?,
+        onIndentedCodeLine: ((IntRange) -> Unit)? = null): List<Block> =
+        findBlocks(content, onLazyQuoteLine, onIndentedCodeLine) {}
 
     internal fun findBlocks(
         content: String,
         onLazyQuoteLine: ((Int) -> Unit)? = null,
+        onIndentedCodeLine: ((IntRange) -> Unit)? = null,
         onContainerLine: (Int) -> Unit,
     ): List<Block> = buildList {
         val containers = mutableListOf<Container>()
@@ -103,6 +105,7 @@ object MarkdownCodeFences {
             if (match == null) {
                 if (existing == null) {
                     val startsIndentedCode = !paragraph && dedentedParagraph.isEmpty() && remainder.startsWith("    ")
+                    if (startsIndentedCode) onIndentedCodeLine?.invoke(start until start + rawLine.length)
                     val endsSetextHeading = paragraph && setextUnderline.matches(remainder)
                     paragraph = !startsIndentedCode && remainder.isNotBlank() && !thematicBreak.matches(remainder) &&
                         !endsSetextHeading && !heading.containsMatchIn(remainder)

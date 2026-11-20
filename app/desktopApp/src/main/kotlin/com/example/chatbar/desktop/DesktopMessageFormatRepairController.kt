@@ -308,7 +308,7 @@ internal class DesktopMessageFormatRepairController(
         if (candidate != repairInput && actionItems(candidate) != originalActions)
             return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
         if (candidate == original)
-            return commit(session, snapshot, null, MessageFormatRepairPolicy.applicableNotice(snapshot), DesktopRepairStatus.UNCHANGED, gate = gate)
+            return commit(session, snapshot, null, MessageFormatRepairPolicy.applicableNotice(snapshot) ?: otherVersionRecoveryPoint(snapshot), DesktopRepairStatus.UNCHANGED, gate = gate)
         return commit(session, snapshot, candidate, MessageFormatRepairPolicy.completedRepairNotice(original, candidate), DesktopRepairStatus.APPLIED, gate = gate)
     }
 
@@ -323,9 +323,16 @@ internal class DesktopMessageFormatRepairController(
         val old = MessageFormatRepairPolicy.applicableNotice(snapshot)?.takeIf {
             it.kind == MessageFormatRepairNoticeKind.APPLIED || it.kind == MessageFormatRepairNoticeKind.STOPPED
         }
-        val notice = old ?: MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, snapshot.displayContent, errorMessage = code)
+        val notice = old ?: otherVersionRecoveryPoint(snapshot) ?: MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, snapshot.displayContent, errorMessage = code)
         return commit(session, snapshot, null, notice, DesktopRepairStatus.ERROR, code, gate)
     }
+
+    /** A no-op/error on the active alternative does not consume another alternative's local recovery. */
+    private fun otherVersionRecoveryPoint(snapshot: ChatMessage): MessageFormatRepairNotice? =
+        snapshot.formatRepairNotice?.takeIf {
+            it.originalContent != null && it.versionId != null &&
+                it.versionId != MessageAlternativeVersionPolicy.activeVersionId(snapshot)
+        }
 
     private fun failureCode(error: Throwable?): String = when (error) {
         is AuxiliaryProtocolException -> error.failure.name
