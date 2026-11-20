@@ -1789,7 +1789,8 @@ class LongTermMemoryService constructor(
     suspend fun loadSnapshot(
         sessionId: String,
         snapshot: MemorySnapshot?,
-        sourceSessionId: String? = null
+        sourceSessionId: String? = null,
+        previousSnapshot: MemorySnapshot? = null
     ) = stateLock(sessionId) {
         val loaded = loadLocked(sessionId)
         val contextWindowSize = currentContextWindowSize()
@@ -1804,9 +1805,10 @@ class LongTermMemoryService constructor(
                 .filter { it.sessionId == sessionId && it.tier == MemoryTier.LEGACY_REFERENCE && !it.actionProjectionWithheld }
                 .map { it.id }
             val currentLegacy = loaded.state.legacyReferenceNodeIds.mapNotNull(loaded.nodes::get)
-            val localLegacyNodes = (currentLegacy + memoryRepository.getNodes(localLegacyIds)).associateBy(MemoryNode::id)
+            val localLegacyNodes = (currentLegacy + memoryRepository.getNodes(localLegacyIds) +
+                previousSnapshot?.nodes.orEmpty()).associateBy(MemoryNode::id)
             MemorySnapshotImportPolicy.preserveKnownActionWithholding(
-                normalizedSnapshot, sessionId, sourceSessionId, localLegacyNodes, loaded.state.head
+                normalizedSnapshot, sessionId, sourceSessionId, localLegacyNodes, previousSnapshot?.state?.head ?: loaded.state.head
             )
         } else {
             normalizedSnapshot

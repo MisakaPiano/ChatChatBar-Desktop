@@ -162,13 +162,15 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
             com.example.chatbar.desktop.backup.DesktopSlotHistoricalVoiceCustody.preserve(prepared, directory,
                 voiceIds.mapValues { (_, id) -> restoredVoices.getValue(id) })
             val memory = MemoryRepository(storage, strictReads = true)
-            val snapshot = slot.memorySnapshot?.let { incoming ->
-                if (duplicate || previousMemorySnapshot == null) incoming else
-                    MemorySnapshotImportPolicy.preserveKnownActionWithholding(incoming, target.id, slot.sessionId,
-                        previousMemorySnapshot.nodes.associateBy { it.id }, previousMemorySnapshot.state?.head ?: MemoryHead())
-            }
+            // ZIP manifest retains its original owner. An inline library envelope has already
+            // been rebound; only its unchanged memory graph can prove the original owner.
+            val originalOwner = if (prepared.format == SlotInspectFormat.ZIP_V8) slot.sessionId else
+                (slot.memorySnapshot?.nodes.orEmpty().map { it.sessionId } +
+                    listOfNotNull(slot.memorySnapshot?.legacyCommit?.sessionId)).distinct().singleOrNull()
             LongTermMemoryService(chats, memory, SettingsRepository(storage), NoArchiveNetwork,
-                ContextWindowManager()).loadSnapshot(target.id, snapshot, sourceSessionId = slot.sessionId)
+                ContextWindowManager()).loadSnapshot(target.id, slot.memorySnapshot,
+                    sourceSessionId = originalOwner,
+                    previousSnapshot = previousMemorySnapshot.takeUnless { duplicate })
             session = requireNotNull(chats.getSession(target.id))
             archive.verify(prepared)
             val files = linkedMapOf<String, Path>()

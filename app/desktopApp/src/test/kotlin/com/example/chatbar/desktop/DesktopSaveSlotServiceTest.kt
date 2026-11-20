@@ -636,6 +636,55 @@ class DesktopSaveSlotServiceTest {
         }
     }
 
+    @Test fun `inline foreign head only snapshot does not inherit local withheld provenance after library rebinding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "head-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val head = MemoryHead(throughSourceTurnId = "head-turn", location = "Identical old location")
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
+                actionProjection = MemoryHeadActionProjection.WITHHELD)))
+            val incoming = SaveSlot(id = "foreign-inline-head", sessionId = "foreign-original", name = "Foreign head only", createdAt = 1,
+                messages = listOf(source.copy(sessionId = "foreign-original")), memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
+            val file = f.root.resolve("foreign-inline-head.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val service = f.service()
+            val local = service.import(file, "s")
+            assertEquals("s", local.sessionId)
+            service.restore(local.id, "s")
+            val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
+            assertNull(state.head.actionProjection, "A rebound inline envelope does not prove the original HEAD owner")
+        }
+    }
+
+    @Test fun `same session v3 inline restoration retains live withholding after node normalization`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "old-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val body = "UNVERIFIED_V3_SUMMARY"
+            val oldNode = MemoryNode(id = "old-episode", sessionId = "s", tier = MemoryTier.EPISODE,
+                sourceTurnIds = listOf("old-turn"), summary = body)
+            val incoming = SaveSlot(id = "local-v3", sessionId = "s", name = "Same owner old v3", createdAt = 1,
+                messages = listOf(source), memorySnapshot = MemorySnapshot(schemaVersion = 3,
+                    nodes = listOf(oldNode), legacyCommit = MemoryCommit(id = "old-commit", sessionId = "s", activeEpisodeNodeIds = listOf(oldNode.id))))
+            val retained = MemoryNode(id = "normalized-live-reference", sessionId = "s", tier = MemoryTier.LEGACY_REFERENCE,
+                sourceTurnIds = listOf("old-turn"), coverageUnits = listOf(MemoryCoverageUnit("legacy:${oldNode.id}", body)),
+                actionProjectionWithheld = true)
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(retained.id)), nodes = listOf(retained))
+            val file = f.root.resolve("same-session-v3.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val service = f.service(); val local = service.import(file, "s")
+            service.restore(local.id, "s")
+            val cold = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
+            val normalized = cold.nodes.single { it.coverageUnits.any { unit -> unit.sourceId == "legacy:${oldNode.id}" } }
+            assertEquals(body, normalized.body)
+            assertTrue(normalized.actionProjectionWithheld, "V3 normalization must not erase the live legacy origin exclusion")
+        }
+    }
+
     @Test fun `restoring an older same session slot cannot clear known legacy action withholding`() = runBlocking {
         Fixture().use { f ->
             f.seed()
