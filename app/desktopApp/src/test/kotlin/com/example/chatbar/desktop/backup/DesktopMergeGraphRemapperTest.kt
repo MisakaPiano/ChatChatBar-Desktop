@@ -23,6 +23,21 @@ class DesktopMergeGraphRemapperTest {
         assertEquals("id p", result.getValue("title").jsonPrimitive.content)
     }
 
+    @Test fun `automatic choice provenance remaps only typed reply dependencies during merge`() {
+        val chunk = VectorChunk("chunk", ChunkSourceType.CHAT_MEMORY, "s", "Chosen text stays unchanged", embedding = listOf(1f, 0f),
+            messageId = "user", metadata = mapOf("sessionId" to "s", "messageIds" to "user", "actionChoiceSourceIds" to "menu-a,menu-b", "note" to "menu-a,menu-b"), createdAt = 1)
+        val source = record("vector_chunks", backupJson.encodeToJsonElement(VectorChunk.serializer(), chunk).jsonObject)
+        val ids = DesktopMergeIdentity().apply {
+            bind("chat_sessions", "s", "new-s"); bind("chat_messages", "user", "new-user")
+            bind("chat_messages", "menu-a", "new-a"); bind("chat_messages", "menu-b", "new-b")
+        }
+        val rewritten = backupJson.decodeFromJsonElement(VectorChunk.serializer(), DesktopMergeGraphRemapper(listOf(source), ids).rewrite(source))
+        assertEquals("new-a,new-b", rewritten.metadata["actionChoiceSourceIds"])
+        assertEquals("new-user", rewritten.metadata["messageIds"])
+        assertEquals("menu-a,menu-b", rewritten.metadata["note"])
+        assertEquals(chunk.content, rewritten.content)
+    }
+
     private fun obj(text: String) = backupJson.parseToJsonElement(text).jsonObject
     private fun record(type: String, value: JsonObject) = DesktopMergeRecord("entities/$type/item.json", value)
     private fun record(node: MemoryNode) = record("memory_nodes", backupJson.encodeToJsonElement(MemoryNode.serializer(), node).jsonObject)

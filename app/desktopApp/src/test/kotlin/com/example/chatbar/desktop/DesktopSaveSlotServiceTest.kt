@@ -636,6 +636,26 @@ class DesktopSaveSlotServiceTest {
         }
     }
 
+    @Test fun `actual session duplication remaps choice dependencies without changing the indexed meaning`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val menu = ChatMessage.create("s", MessageRole.ASSISTANT, "Synthetic choice source")
+            f.chats.addMessage(menu)
+            val chunk = VectorChunk("choice-index", ChunkSourceType.CHAT_MEMORY, "s", "Selected choice only", embedding = listOf(1f, 0f),
+                messageId = f.message.id, metadata = mapOf("sessionId" to "s", "messageIds" to f.message.id,
+                    "actionChoiceSourceIds" to menu.id), createdAt = 1)
+            f.storage.saveEntity("vector_chunks", chunk.id, chunk, VectorChunk.serializer())
+            val copy = f.service().duplicate("s")
+            val copiedMessages = f.chats.getMessages(copy.id)
+            val copiedMenu = copiedMessages.single { it.displayContent == menu.displayContent }
+            val copiedChunk = f.storage.loadAll("vector_chunks", VectorChunk.serializer()).single { it.sourceId == copy.id }
+            assertEquals(copiedMenu.id, copiedChunk.metadata["actionChoiceSourceIds"])
+            assertNotEquals(menu.id, copiedMenu.id)
+            assertEquals(chunk.content, copiedChunk.content)
+            assertEquals(chunk, f.storage.loadEntity("vector_chunks", chunk.id, VectorChunk.serializer()))
+        }
+    }
+
     @Test fun `inline foreign head only snapshot does not inherit local withheld provenance after library rebinding`() = runBlocking {
         Fixture().use { f ->
             f.seed()
