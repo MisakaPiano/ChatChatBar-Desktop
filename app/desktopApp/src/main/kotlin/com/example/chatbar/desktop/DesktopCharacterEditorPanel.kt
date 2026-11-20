@@ -198,6 +198,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 StatusText(t(if (problem == CharacterEditorProblem.RESOURCE_FAILED && state.resourceCleanupPending)
                     DesktopUiText.CHARACTER_SAVED_RESOURCE_WARNING else problem.uiText()), DesktopBootstrapColors.destructive)
             if (problem == CharacterEditorProblem.SOURCE_CHANGED || problem == CharacterEditorProblem.SOURCE_DELETED ||
+                (problem == CharacterEditorProblem.RESOURCE_FAILED && state.targetId != null &&
+                    (state.base == null || state.base.isCommunityDownload)) ||
                 problem == CharacterEditorProblem.COMMUNITY_READ_ONLY) {
                 BootstrapButton(t(if (problem == CharacterEditorProblem.COMMUNITY_READ_ONLY) DesktopUiText.COPY_AS_NEW
                     else DesktopUiText.SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }

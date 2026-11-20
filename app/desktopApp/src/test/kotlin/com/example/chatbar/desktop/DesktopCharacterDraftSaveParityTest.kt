@@ -85,6 +85,63 @@ class DesktopCharacterDraftSaveParityTest {
         }
     }
 
+    @Test fun `Windows relative and absolute case aliases retain attachments until the last draft is deleted`() = runBlocking {
+        org.junit.Assume.assumeTrue(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
+        for (absolute in listOf(false, true)) for (uppercase in listOf(false, true)) fixture { app, _ ->
+            Files.createDirectories(app.appDataRoot)
+            val resources = DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore)
+            val session = "abcdef00-1234-1234-1234-abcdef123456"
+            val staged = resources.stageText(session, "retained.txt", "SYNTHETIC_CASE_BYTES")
+            val alias = if (uppercase) staged.replace(session, session.uppercase()) else staged
+            val reference = if (absolute) app.appDataRoot.resolve(alias).toString() else alias
+            assertEquals("SYNTHETIC_CASE_BYTES", resources.readDocument(reference))
+            val card = source()
+            val document = DocumentInfo("case-doc", "retained.txt", reference, "txt", 1)
+            val first = app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(card.id, session,
+                card.copy(customDocuments = listOf(document)), card, listOf(reference), emptyList(), emptyList()))
+            val last = app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(null, UUID.randomUUID().toString(),
+                card.copy(id = UUID.randomUUID().toString(), customDocuments = listOf(document)), null,
+                listOf(reference), emptyList(), emptyList()))
+            val management = app.createManagementController(app.createTypedTransferController())
+            management.requestDiscard(first); management.confirmDeletion()
+            assertNull(management.state.value.error)
+            assertEquals("SYNTHETIC_CASE_BYTES", resources.readDocument(reference))
+            management.requestDiscard(last); management.confirmDeletion()
+            assertNull(management.state.value.error)
+            assertFalse(Files.exists(app.appDataRoot.resolve("draft_assets/$session")), "The last draft must retire its inherited directory")
+        }
+    }
+
+    @Test fun `orphan copy can retry a transient resource failure with the original source and draft retained`() = runBlocking {
+        fixture { app, editor ->
+            val original = source()
+            app.characterRepository.save(original)
+            editor.openExisting(original.id)
+            assertTrue(editor.addTextDocument("transient.txt", "SYNTHETIC_COPY_RETRY"))
+            editor.flushDraft()
+            val draft = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+            val reference = draft.characterPayload!!.customDocuments.single().filePath
+            app.characterRepository.delete(original.id)
+            val another = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json)
+            try {
+                another.openExisting(original.id)
+                val sourcePath = app.appDataRoot.resolve(reference)
+                Files.delete(sourcePath)
+                another.saveAsNew()
+                assertEquals(CharacterEditorProblem.RESOURCE_FAILED, another.state.value.problem)
+                assertEquals(original.id, another.state.value.targetId)
+                assertEquals(draft, coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                Files.writeString(sourcePath, "SYNTHETIC_COPY_RETRY")
+                another.saveAsNew()
+                assertNull(another.state.value.problem)
+                val copied = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, null))
+                assertEquals("SYNTHETIC_COPY_RETRY", Files.readString(app.appDataRoot.resolve(copied.characterPayload!!.customDocuments.single().filePath)))
+            } finally { another.closeAndDrain() }
+        }
+    }
+
     private fun source(name: String = "Synthetic A") = CharacterCard.create(name, greeting = "Synthetic greeting").copy(
         extensions = """{"unknown_vendor":{"retained":[1,2,3]}}""", creatorNotes = "Original notes")
     private fun coldDrafts(app: DesktopAppContainer) = EditorDraftRepository(JsonFileStorage(app.appDataRoot))

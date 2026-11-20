@@ -203,6 +203,12 @@ internal class DesktopCharacterDraftResources(
         return "draft_assets/$sessionId/$fileName"
     }
 
+    internal fun sessionPath(reference: String): Path? {
+        val parts = draftRelativeReference(reference)?.split('/') ?: return null
+        require(parts.size == 3 && parts[2].matches(Regex("[A-Za-z0-9._-]{1,130}"))) { "Invalid draft reference" }
+        return sessionDirectory(parts[1])
+    }
+
     private fun sessionDirectory(sessionId: String): Path {
         require(sessionId.matches(Regex("[A-Za-z0-9-]{1,80}"))) { "Invalid draft session" }
         return draftRoot.resolve(sessionId)
@@ -237,12 +243,17 @@ internal suspend fun discardUnreferencedCharacterDraftAssets(
     drafts: com.example.chatbar.data.repository.EditorDraftRepository,
     sessionId: String,
     discard: (String) -> Unit,
+    sessionPath: (String) -> Path?,
+    retired: com.example.chatbar.data.local.entity.EditorDraft? = null,
 ) {
-    val marker = "/draft_assets/$sessionId/"
-    val retained = drafts.getAllStrict().any { draft ->
-        val references = draft.draftAssetPaths + draft.pendingDeletedAssets +
+    fun references(draft: com.example.chatbar.data.local.entity.EditorDraft): List<String> =
+        draft.draftAssetPaths + draft.pendingDeletedAssets +
             draft.characterPayload?.let(::desktopCharacterResourceReferences).orEmpty()
-        references.any { marker in "/${it.replace('\\', '/')}" }
+    val retained = drafts.getAllStrict().flatMap(::references).mapNotNull(sessionPath).toSet()
+    val retiredSessions = retired?.let(::references).orEmpty().mapNotNull(sessionPath)
+        .map { it.fileName.toString() }
+    for (session in (listOf(sessionId) + retiredSessions).distinct()) {
+        val directory = requireNotNull(sessionPath("draft_assets/$session/retention"))
+        if (directory !in retained) discard(session)
     }
-    if (!retained) discard(sessionId)
 }

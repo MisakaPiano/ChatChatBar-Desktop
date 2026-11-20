@@ -913,9 +913,10 @@ internal class DesktopCharacterEditorController(
     }
 
     private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?): CharacterDraftCleanup = dataGate.withNormalOperation {
+        val retired = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, targetId)
         val draft = deleteEditorDraftConfirmed(drafts, EditorDraftType.CHARACTER_CARD, targetId, deleteDraft)
         val assetFailure = if (draft.removed && sessionId != null)
-            runCatching { discardUnreferencedCharacterDraftAssets(drafts, sessionId, discardDraftAssets) }.exceptionOrNull()
+            runCatching { discardUnreferencedCharacterDraftAssets(drafts, sessionId, discardDraftAssets, resources::sessionPath, retired) }.exceptionOrNull()
         else null
         CharacterDraftCleanup(draft, assetFailure)
     }
@@ -980,7 +981,7 @@ internal class DesktopCharacterEditorController(
                 check(session != _state.value.draftSessionId || !_state.value.dirty && _state.value.draftBasis == null) {
                     "Active draft resource cleanup is deferred"
                 }
-                discardUnreferencedCharacterDraftAssets(drafts, session, discardDraftAssets)
+                discardUnreferencedCharacterDraftAssets(drafts, session, discardDraftAssets, resources::sessionPath)
             } }.exceptionOrNull()
             if (error == null) resourceCleanupSessions.remove(session) else if (failure == null) failure = error
         }
@@ -1095,6 +1096,8 @@ internal class DesktopCharacterEditorController(
     }
 
     /** Recovery and read-only copy retain editor payload but sever the protected source identity. */
+    internal fun draftAssetSessionPath(reference: String): Path? = resources.sessionPath(reference)
+
     suspend fun saveAsNew() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
         flushDraft()
