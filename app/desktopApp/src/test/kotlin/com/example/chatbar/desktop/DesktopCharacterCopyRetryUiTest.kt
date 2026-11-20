@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
 package com.example.chatbar.desktop
 
+import androidx.compose.runtime.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.entity.*
@@ -38,11 +39,13 @@ class DesktopCharacterCopyRetryUiTest {
             Files.delete(path)
             recovery.saveAsNew()
             assertEquals(CharacterEditorProblem.SOURCE_CHANGED, recovery.state.value.problem)
-            val management = app.createManagementController(app.createTypedTransferController())
             var label = ""
             val scene = ImageComposeScene(1000, 1600, coroutineContext = edt) {
                 label = LocalDesktopUiStrings.current(DesktopUiText.SAVE_AS_NEW)
-                DesktopCharacterManagementPanel(recovery, management)
+                val state by recovery.state.collectAsState()
+                CompositionLocalProvider(LocalDesktopModalActivity provides remember { DesktopModalActivity() }) {
+                    DesktopCharacterEditorOverlay(recovery, state)
+                }
             }
             try {
                 suspend fun frames() { repeat(6) { scene.render(System.nanoTime()).close(); delay(20) } }
