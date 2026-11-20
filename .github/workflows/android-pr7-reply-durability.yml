@@ -13,7 +13,7 @@ jobs:
       matrix:
         api: [26, 30]
     env:
-      SOURCE: 4b85c75f0b66800f17669278dff6e343016c0338
+      SOURCE: 20b58a877c5872cafaf37fc91854985a9825875f
       API: ${{ matrix.api }}
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
@@ -68,7 +68,7 @@ jobs:
               target.parent.mkdir(parents=True, exist_ok=True)
               shutil.copy2(path, target)
               cases.extend(ET.parse(path).iter('testcase'))
-          assert len(cases) == 28 and sum(case.attrib['classname'].endswith('ReplyRemovalDurabilityTest') for case in cases) == 6
+          assert len(cases) == 30 and sum(case.attrib['classname'].endswith('ReplyRemovalDurabilityTest') for case in cases) == 8
           assert all(case.find(node) is None for case in cases for node in ('failure', 'error', 'skipped'))
           PY
       - uses: actions/upload-artifact@v4
