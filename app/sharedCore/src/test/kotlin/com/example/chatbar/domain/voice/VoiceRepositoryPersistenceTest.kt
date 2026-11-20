@@ -50,8 +50,33 @@ class VoiceRepositoryPersistenceTest {
             cold.placementsForMessage(replacement)
             val durable = assertNotNull(VoiceMessageRepository(JsonFileStorage(root), strictReads = true).get(old.id))
             assertEquals(true, durable.desktopVersionOwnershipUncertain)
-            assertEquals("a", durable.messageVersionId)
+            assertNull(durable.messageVersionId)
+            assertEquals("a", durable.desktopRetiredVersionId)
             assertEquals(old.id, assertNotNull(cold.delete(old.id)).id) // Explicit recording deletion still owns it.
+        } finally { root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `legacy anchor without a version cannot prove ownership after an edit`() = runBlocking {
+        val root = Files.createTempDirectory("unversioned-anchor-")
+        try {
+            val storage = JsonFileStorage(root)
+            val original = "甲：『旧录音』"
+            val edited = "甲：『新文字』"
+            val message = ChatMessage("message", "session", MessageRole.ASSISTANT, original,
+                alternatives = listOf(original, edited), alternativeVersionIds = listOf("a", "b"),
+                currentAlternativeVersionId = "a", createdAt = 1, updatedAt = 1)
+            val oldAnchor = VoiceAnchorPolicy.initialState(message.id, original, sessionId = message.sessionId, includeNarration = true)
+            storage.saveEntity("voice_anchor_states", message.id, oldAnchor, VoiceAnchorState.serializer())
+            val repo = VoiceMessageRepository(storage, strictReads = true)
+            val old = GeneratedVoiceMessage.create(message.sessionId, message.id, null, oldAnchor.anchors.single().id,
+                0, "DIALOGUE", "甲", "旧录音", "旧录音", "旧录音", "person", "甲",
+                FishAudioVoiceBinding("synthetic", "Synthetic"), "synthetic", "synthetic-not-opened.mp3", 100, 100)
+            repo.save(old)
+            assertEquals(old.id, repo.placementsForMessage(message).single().voice.id)
+            assertEquals(true, repo.get(old.id)?.desktopVersionOwnershipUncertain)
+            val cold = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            assertTrue(cold.deleteForRemovedVersions(message, MessageAlternativeVersionPolicy.remove(message, "a")!!).isEmpty())
+            assertEquals("a", cold.get(old.id)?.desktopRetiredVersionId)
         } finally { root.toFile().deleteRecursively() }
     }
 

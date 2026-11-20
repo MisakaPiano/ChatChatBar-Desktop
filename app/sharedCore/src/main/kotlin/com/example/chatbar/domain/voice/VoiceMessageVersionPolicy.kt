@@ -74,16 +74,14 @@ object VoiceMessageVersionPolicy {
         }
     }
 
-    /** A display fallback is not proof that a recording belongs exclusively to one alternative. */
-    fun uniqueLegacyVersionId(message: ChatMessage, voice: GeneratedVoiceMessage, legacyState: VoiceAnchorState?): String? {
-        val versions = MessageAlternativeVersionPolicy.versions(message)
-        if (voice.anchorId != null && legacyState?.anchors?.any { it.id == voice.anchorId } == true) {
-            legacyState.messageVersionId?.let { explicit ->
-                if (versions.any { it.id == explicit && it.content == legacyState.displayContentSnapshot }) return explicit
-            }
-            return versions.singleOrNull { it.content == legacyState.displayContentSnapshot }?.id
+    /** Historical ownership requires an existing anchor with an explicit, scoped version identity. */
+    fun anchoredLegacyVersionId(message: ChatMessage, voice: GeneratedVoiceMessage, state: VoiceAnchorState?): String? {
+        val anchorId = voice.anchorId ?: return null
+        if (state == null || state.messageId != message.id || state.sessionId != message.sessionId ||
+            state.anchors.none { it.id == anchorId }) return null
+        return state.messageVersionId?.takeIf { versionId ->
+            MessageAlternativeVersionPolicy.versions(message).any { it.id == versionId }
         }
-        return versions.filter { versionContainsVoice(it, voice) }.singleOrNull()?.id
     }
 
     fun anchorIdForVoice(

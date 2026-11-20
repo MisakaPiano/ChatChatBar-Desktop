@@ -5,7 +5,12 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.VoiceMessageRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.desktop.backup.AppBackupSelection
+import com.example.chatbar.desktop.backup.BackupSessionChoice
+import com.example.chatbar.desktop.backup.DesktopBackupRestoreMode
+import com.example.chatbar.desktop.backup.MergeRootSyntheticProtector
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
@@ -165,8 +170,12 @@ class DesktopRemovedAlternativeVoiceTest {
                     reader.lineSequence().filter { it.isNotBlank() }.map { Json.decodeFromString(GeneratedVoiceMessage.serializer(), it) }.toList()
                 }
                 assertEquals(expectedVoices, voices.map { it.id }.toSet())
-                assertEquals(setOf("retained", "historical") + if (ambiguousLegacy) setOf("deleted") else emptySet(), voices.map { it.messageVersionId }.toSet())
-                if (ambiguousLegacy) assertEquals(if (preMigratedLegacy) null else true, voices.single { it.id == "deleted-unique" }.desktopVersionOwnershipUncertain)
+                assertEquals(setOf("retained", "historical") + if (ambiguousLegacy) setOf(null) else emptySet(), voices.map { it.messageVersionId }.toSet())
+                if (ambiguousLegacy) {
+                    val retained = voices.single { it.id == "deleted-unique" }
+                    assertEquals(if (preMigratedLegacy) null else true, retained.desktopVersionOwnershipUncertain)
+                    assertEquals("deleted", retained.desktopRetiredVersionId)
+                }
             }
         } finally { customController?.closeDraftPersistence(); app.close(); ownership.close(); parent.toFile().deleteRecursively() }
     }
@@ -194,5 +203,98 @@ class DesktopRemovedAlternativeVoiceTest {
     }
     @Test fun `archive restoration of ambiguous versionless voice retains deletion protection through primary mutation`() = runBlocking {
         exercise(editLastSegment = false, ambiguousLegacy = true, restoreBeforeDelete = true)
+    }
+
+    @Test fun `locally retired and text matched old recordings survive full and selected backup restore to empty roots`() = runBlocking {
+        val parent = Files.createTempDirectory("ccb-retained-legacy-voice-")
+        val root = Files.createDirectory(parent.resolve("recorded"))
+        val resolution = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("unused.json"))
+        val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolution)).ownership
+        val app = DesktopAppContainer(resolution, secretStoreFactory = { InMemoryDesktopSecretStore() },
+            bundledAssets = { """{"entries":[]}""".toByteArray() })
+        try {
+            val card = CharacterCard("card", "Synthetic voice backup", createdAt = 1, updatedAt = 1)
+            app.characterRepository.save(card)
+            app.chatRepository.createSession(ChatSession("session", card.id, "Synthetic session", createdAt = 1, updatedAt = 1))
+            val sharedLine = "Alice：『Shared line』"
+            val original = app.chatRepository.addMessage(ChatMessage("target", "session", MessageRole.ASSISTANT, sharedLine,
+                alternatives = listOf(sharedLine, sharedLine), alternativeVersionIds = listOf("a", "b"),
+                currentAlternativeIndex = 1, currentAlternativeVersionId = "b", createdAt = 1, updatedAt = 1))
+            suspend fun legacy(id: String, version: String?, text: String): GeneratedVoiceMessage {
+                val audio = app.voiceAudioStore.persist("session", id, fishPreviewMp3().inputStream())
+                return GeneratedVoiceMessage(id, "session", original.id, version, sourceOrder = 0, sourceSegmentKind = "DIALOGUE",
+                    sourceSpeakerName = "Alice", sourceText = text, taggedText = text, characterId = card.id, characterName = card.name,
+                    voice = FishAudioVoiceBinding("synthetic", "Synthetic voice"), fishModelId = "synthetic",
+                    audioPath = audio.path, durationMs = audio.durationMs, byteLength = audio.byteLength, createdAt = 1, updatedAt = 1)
+            }
+            val oldA = legacy("old-a", "a", "Shared line")
+            val oldB = legacy("old-b", "b", "Shared line")
+            // This take was made on B when both versions contained the same line.
+            val sourceBWithoutVersion = legacy("old-b-versionless", null, "Shared line")
+            listOf(oldA, oldB, sourceBWithoutVersion).forEach { app.voiceRepository.save(it) }
+            val edited = MessageAlternativeVersionPolicy.editCurrentContent(original, "Alice：『Edited line』")
+            val selectedA = MessageAlternativeVersionPolicy.select(edited, 0)
+            assertNotNull(app.chatRepository.updateMessageIfUnchangedReturningSnapshot(original, selectedA))
+            val reopened = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+            val controller = app.primaryChatController
+            controller.refresh(); controller.selectSession("session")
+            val beforeDelete = assertNotNull(app.chatRepository.getMessage(original.id, original.sessionId))
+            assertEquals(listOf(sharedLine, "Alice：『Edited line』"), beforeDelete.alternatives)
+            assertEquals("a", reopened.listForCurrentVersion(beforeDelete).single { it.id == sourceBWithoutVersion.id }.messageVersionId)
+            assertEquals(true, assertNotNull(reopened.get(sourceBWithoutVersion.id)).desktopVersionOwnershipUncertain)
+            app.voiceRepository.reload()
+            assertTrue(controller.deleteAssistantAlternative(beforeDelete, "a"))
+
+            val backup = DesktopFullBackupService(root, app.dataOperationCoordinator, DesktopAudioMaintenance({ DesktopAudioFocus() }) {})
+            val archives = listOf(
+                parent.resolve("full.cbbackup") to null,
+                parent.resolve("selected.cbbackup") to AppBackupSelection(characterIds = setOf(card.id),
+                    sessions = mapOf(original.sessionId to BackupSessionChoice(images = false, voice = true, archives = false)))
+            )
+            for ((index, archive) in archives.withIndex()) {
+                backup.exportModern(archive.first, null, selection = archive.second)
+                assertTrue(backup.verifyFile(archive.first, null).desktopOnly)
+                val restoredRoot = restoreInEmptyRoot(parent.resolve("restore-$index"), archive.first)
+                val storage = JsonFileStorage(restoredRoot)
+                val restored = VoiceMessageRepository(storage, strictReads = true)
+                val current = assertNotNull(ChatRepository(storage).getMessage(original.id, original.sessionId))
+                assertEquals(listOf("Alice：『Edited line』"), current.alternatives)
+                assertEquals(listOf(oldB.id), restored.listForCurrentVersion(current).map { it.id })
+                val voices = restored.listForSession(original.sessionId).associateBy { it.id }
+                assertEquals(setOf(oldA.id, oldB.id, sourceBWithoutVersion.id), voices.keys)
+                for (source in listOf(oldA, sourceBWithoutVersion)) {
+                    val retained = voices.getValue(source.id)
+                    assertNull(retained.messageVersionId)
+                    assertEquals("a", retained.desktopRetiredVersionId)
+                    assertContentEquals(Files.readAllBytes(Path.of(source.audioPath)), Files.readAllBytes(Path.of(retained.audioPath)))
+                }
+                assertEquals("b", voices.getValue(oldB.id).messageVersionId)
+                assertTrue(Files.exists(Path.of(sourceBWithoutVersion.audioPath)))
+            }
+        } finally { app.close(); owner.close(); parent.toFile().deleteRecursively() }
+    }
+
+    private suspend fun restoreInEmptyRoot(base: Path, archive: Path): Path {
+        Files.createDirectory(base)
+        val source = DesktopDataRootResolution.Resolved(Files.createDirectory(base.resolve("empty")),
+            DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, base.resolve("bootstrap.json"))
+        val bootstrap = DesktopBootstrapSettingsStore(source.bootstrapPath)
+        bootstrap.save((bootstrap.load() as DesktopBootstrapLoadResult.Missing).document, DesktopDataRootSelection.custom(source.appDataRoot))
+        val keys = Files.createDirectory(base.resolve("keys"))
+        val unavailable = DesktopApplicationHomeResult.Unavailable(DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT)
+        val gate = DesktopDataOperationCoordinator()
+        val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(source)).ownership
+        val service = DesktopMergeImportService(source, gate, InMemoryDesktopSecretStore(), {}, { it() },
+            DesktopMigrationDestinationPreparer({ unavailable }, DesktopDataRootOwnership::acquire),
+            DesktopBootstrapAuthorityTransaction(applicationHomeResolver = { unavailable }),
+            freshAuthority = { DesktopFreshRootAuthority(it, keys, MergeRootSyntheticProtector) })
+        val destination = base.resolve("published")
+        try {
+            val preview = service.inspect(archive, null)
+            assertEquals(DesktopMergeImportService.Publication.COMMITTED, service.commitModeWithProgress(preview, destination,
+                emptyMap(), emptyMap(), true, false, DesktopBackupRestoreMode.REPLACE_SELECTED) {})
+            DesktopFreshRootAuthority(destination, keys, MergeRootSyntheticProtector).verifyAndResolve()
+        } finally { service.close(); gate.closeAndDrain(); owner.close() }
+        return destination
     }
 }
