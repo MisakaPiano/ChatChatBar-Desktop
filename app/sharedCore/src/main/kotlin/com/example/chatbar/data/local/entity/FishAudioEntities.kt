@@ -1,8 +1,11 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import java.util.UUID
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class GeneratedVoiceMessage(
     val id: String,
@@ -26,8 +29,19 @@ data class GeneratedVoiceMessage(
     val durationMs: Long,
     val byteLength: Long,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    /** true=仅供显示的推断；false=已证明归属；缺省=升级前来源未知。 */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopVersionOwnershipUncertain: Boolean? = null,
+    /** Former version label of a retained recording. The live version link is empty. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopRetiredVersionId: String? = null
 ) {
+    init {
+        require(desktopRetiredVersionId == null ||
+            (desktopRetiredVersionId.isNotBlank() && messageVersionId == null && desktopVersionOwnershipUncertain != false))
+    }
+
     val effectiveSynthesisText: String
         get() = synthesisText ?: sourceText
 
@@ -72,7 +86,8 @@ data class GeneratedVoiceMessage(
                 durationMs = durationMs,
                 byteLength = byteLength,
                 createdAt = now,
-                updatedAt = now
+                updatedAt = now,
+                desktopVersionOwnershipUncertain = messageVersionId?.takeIf(String::isNotBlank)?.let { false }
             )
         }
     }
