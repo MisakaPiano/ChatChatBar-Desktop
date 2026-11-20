@@ -229,6 +229,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         val expected = payload.before.toMutableMap()
         payload.advances.forEach { (unit, next) -> if (next.valueHash == null) expected.remove(unit) else expected[unit] = next.valueHash }
         require(snapshotHashes == expected) { "SYNC_GROUP_NATIVE_UNPROCESSED_UNIT_CHANGED" }
+        observe("NATIVE_PAYLOAD_VERIFIED")
         return payload
     }
     private fun verifySource(payload: Payload) {

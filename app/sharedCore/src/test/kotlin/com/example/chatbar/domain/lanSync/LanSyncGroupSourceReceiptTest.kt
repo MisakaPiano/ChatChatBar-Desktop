@@ -27,6 +27,62 @@ class LanSyncGroupSourceReceiptTest {
         val root = Files.createTempDirectory("synthetic-source-native-receipt-").toRealPath()
         try { work(Fixture(root)) } finally { check(root.toFile().deleteRecursively()) }
     }
+
+    private fun withChangedText(file: Path, original: String, work: () -> Unit) {
+        val bytes = Files.readAllBytes(file)
+        val edited = bytes.toString(Charsets.UTF_8).replace(original, "x" + original.drop(1)).toByteArray(Charsets.UTF_8)
+        check(edited.size == bytes.size && !edited.contentEquals(bytes))
+        val modified = Files.getLastModifiedTime(file)
+        Files.write(file, edited)
+        try {
+            Files.setLastModifiedTime(file, modified)
+            work()
+        } finally {
+            Files.write(file, bytes)
+            Files.setLastModifiedTime(file, modified)
+        }
+    }
+
+    @Test fun sourceOnlyRepeatVerifiesOneNativePayloadAndAuthenticatesItOnEveryCall() = withFixture { f ->
+        val commit = f.commit()
+        val receipt = f.owner().recordSource(commit)
+        val state = f.owner().state()
+        f.source.localCard("a", "本机保留新写入")
+        val current = f.card("a")
+        var checks = 0
+        val owner = f.owner { if (it == "NATIVE_PAYLOAD_VERIFIED") checks++ }
+        assertEquals(receipt, owner.recordSource(commit, recoverNative = false))
+        assertEquals(1, checks)
+        val payload = f.control.resolve("plan-${receipt.transaction}.json")
+        withChangedText(payload, receipt.transaction) {
+            assertEquals("SYNC_METADATA_DAMAGED", assertFailsWith<IllegalArgumentException> {
+                owner.recordSource(commit, recoverNative = false)
+            }.message)
+            assertEquals(1, checks)
+            assertEquals(current, f.card("a"))
+        }
+        assertEquals(receipt, owner.recordSource(commit, recoverNative = false))
+        assertEquals(2, checks)
+        assertEquals(state, f.owner().state())
+        assertEquals(current, f.card("a"))
+        assertEquals(1L, f.source.journal().state().committedSequence)
+    }
+
+    @Test fun completedSourceRevalidatesTheCheckpointEvenWhenItsSizeAndTimestampMatch() = withFixture { f ->
+        val commit = f.commit()
+        val writer = f.source.writer()
+        val operation = commit.entry.request.operation
+        assertEquals(commit.entry, writer.resume(operation).entry)
+        val current = f.card("a")
+        val checkpoint = f.source.f.state.resolve("recovery/entries").resolve(commit.entry.request.sourceCheckpoint).resolve("snapshot.json")
+        withChangedText(checkpoint, f.source.f.source.owner.fingerprint) {
+            assertEquals("SYNC_RECOVERY_DAMAGED", assertFailsWith<IllegalArgumentException> { writer.resume(operation) }.message)
+            assertEquals(current, f.card("a"))
+        }
+        assertEquals(commit.publication, writer.resume(operation).publication)
+        assertEquals(1L, f.source.journal().state().committedSequence)
+    }
+
     @Test fun recordingTheSignedSourceAfterLaterLocalEditsNeverReplaysItsOldSnapshot() = withFixture { f ->
         val commit = f.commit(); f.source.localCard("a", "签名以后本机又修改")
         val receipt = f.owner().recordSource(commit)
@@ -44,6 +100,10 @@ class LanSyncGroupSourceReceiptTest {
         assertFailsWith<IOException> { f.owner { if (it == "NATIVE_SOURCE_INTENT_RETAINED") throw IOException("SYNTHETIC_SOURCE_RECEIPT_INTERRUPTION") }.recordSource(commit) }
         val pending = requireNotNull(f.owner().state().pendingTransaction)
         f.source.localCard("a", "中断后的本机内容")
+        assertEquals("SYNC_GROUP_SOURCE_RECOVERY_REQUIRED", assertFailsWith<IllegalArgumentException> {
+            f.owner().recordSource(commit, recoverNative = false)
+        }.message)
+        assertEquals(pending, f.owner().state().pendingTransaction)
         val state = f.owner().recover()
         assertNull(state.pendingTransaction); assertEquals(setOf(commit.entry.version.reference()), state.units.getValue("character_cards/a").frontiers)
         assertFalse(f.source.f.workspace.applied(pending)); assertEquals("中断后的本机内容", f.card("a").name)

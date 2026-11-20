@@ -1,7 +1,11 @@
 name: Device-group final local seal
 on:
   push:
-    branches: [codex/metadata-repair-final-seal-red-20261120, codex/metadata-repair-final-seal-20261120]
+    branches:
+      - codex/metadata-repair-final-seal-red-20261120
+      - codex/metadata-repair-final-seal-20261120
+      - codex/metadata-repair-native-validation-red-20261120
+      - codex/metadata-repair-native-validation-20261120
 permissions:
   contents: read
 jobs:
@@ -33,6 +37,9 @@ jobs:
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.committedStorageRevisionAutomaticallyPublishesAndLateShutdownSaveSealsWithoutNetworkOrReload"
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.lateFounderMetadataRefusalKeepsTheSameSetupThroughColdResumeAndRealInvitation"
           --tests "com.example.chatbar.domain.lanSync.LanSyncGroupLocalSourceTest.sourceOnlyShutdownRefusesAuthorizedWorkspaceWalWithoutApplyingOrDiscardingIt"
+          --tests "com.example.chatbar.domain.lanSync.LanSyncGroupSourceReceiptTest"
+          --tests "com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.coldSourceOnlyRetriesWithOrWithoutMetadataPrefetchReuseTheOriginalLocalReceiptWithoutNativeOrLiveRouteWork"
+          --tests "com.example.chatbar.domain.lanSync.LanSyncGroupSourceWriterTest.epochRotationRewrapsFromRetainedCiphertextWithoutResigningOrReusingOldDeliveryIds"
           --max-workers=1 --no-parallel --no-daemon --stacktrace
       - name: Exercise Desktop close and ownership
         if: "!cancelled() && steps.windows-temp.outcome == 'success'"
@@ -48,8 +55,34 @@ jobs:
           path: |
             app/sharedCore/build/test-results/test/TEST-*.xml
             app/desktopApp/build/test-results/test/TEST-*.xml
+      - name: Verify the existing 24 MiB conversation with a 256 MiB worker
+        if: github.ref_name == 'codex/metadata-repair-native-validation-20261120'
+        shell: pwsh
+        working-directory: app
+        run: |
+          $init = Join-Path $env:RUNNER_TEMP 'final-seal-metadata-scale.gradle'
+          @'
+          import org.gradle.api.tasks.testing.Test
+          gradle.projectsEvaluated {
+              gradle.rootProject.project(':sharedCore').tasks.named('test', Test).configure {
+                  minHeapSize = '64m'
+                  maxHeapSize = '256m'
+                  maxParallelForks = 1
+                  systemProperty 'ccb.lan.metadata.scale', 'unicode24MiB'
+              }
+          }
+          '@ | Set-Content -LiteralPath $init -Encoding utf8
+          .\gradlew.bat -I $init :sharedCore:test --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.oneConversationAboveTheRecordWindowPreservesExactSourceUnitCheckpointAndColdNativeState' --max-workers=1 --no-parallel --no-daemon --stacktrace
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $result = Get-Content -Raw -LiteralPath 'sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.xml'
+          if ($result -notmatch 'SYNTHETIC_METADATA_SCALE_V1 mode=unicode24MiB') { throw 'EXACT_SCALE_MARKER_MISSING' }
+      - uses: actions/upload-artifact@v4
+        if: always() && github.ref_name == 'codex/metadata-repair-native-validation-20261120'
+        with:
+          name: final-local-seal-large-conversation-original
+          path: app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.xml
   android-compile:
-    if: github.ref_name == 'codex/metadata-repair-final-seal-20261120'
+    if: github.ref_name == 'codex/metadata-repair-final-seal-20261120' || github.ref_name == 'codex/metadata-repair-native-validation-20261120'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
