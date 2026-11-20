@@ -138,7 +138,7 @@ class DesktopNarrativeReplyEchoTest {
     @Test fun `explicit stop finalizes echoed partial wrappers for both modes without changing prior replies`() = runBlocking {
         for (mode in ChatNarrativeMode.entries) fixture { app -> coroutineScope {
             val body = "已经生成的正文。"
-            val raw = "<历史回复 模式=\"${mode.shortLabel}\">\n$body\n</历史回复"
+            val raw = "<历史回复 模式=\"${mode.shortLabel}\">\n$body\n</历史回"
             ControlledDesktopSseServer(delta(raw)).use { server ->
                 val id = prepare(app, server.baseUrl, mode)
                 val before = app.chatRepository.getMessages(id)
@@ -159,9 +159,28 @@ class DesktopNarrativeReplyEchoTest {
         } }
     }
 
+    @Test fun `history-shaped response stays literal when narrative modes are disabled`() = runBlocking {
+        fixture { app -> MockWebServer().use { server ->
+            val id = prepare(app, server.url("/v1").toString().trimEnd('/'), ChatNarrativeMode.FOCUS,
+                disableNarrativeModes = true)
+            val literal = "<历史回复 模式=\"推进\">\n合法格式正文。\n</历史回复>"
+            server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                "data: ${delta(literal)}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+            val seen = mutableListOf<String>()
+            val result = app.createRealChatRuntime().sendText(id, "Return the literal format",
+                observer = DesktopRealChatObserver { seen += it.content })
+            assertEquals(literal, seen.last())
+            assertEquals(literal, result.assistant.content)
+            assertEquals(literal, ChatRepository(JsonFileStorage(app.appDataRoot)).getMessage(result.assistant.id, id)?.content)
+        } }
+    }
+
     private fun delta(text: String) = """{"choices":[{"delta":{"content":${JsonPrimitive(text)}}}]}"""
 
-    private suspend fun prepare(app: DesktopAppContainer, url: String, mode: ChatNarrativeMode, segmented: Boolean = true): String {
+    private suspend fun prepare(
+        app: DesktopAppContainer, url: String, mode: ChatNarrativeMode, segmented: Boolean = true,
+        disableNarrativeModes: Boolean = false,
+    ): String {
         val card = CharacterCard.create("Synthetic narrative", greeting = "Synthetic opening")
         app.characterRepository.save(card)
         val id = app.characterSessionService.createSessionForCharacter(card.id)
@@ -170,6 +189,7 @@ class DesktopNarrativeReplyEchoTest {
         app.modelRepository.saveModel(model)
         app.settingsRepository.saveAppSettings(AppSettings(defaultModelId = model.id,
             assistantSegmentedBubblesEnabled = segmented,
+            disableNarrativeModes = disableNarrativeModes,
             allowCleartextModelApi = true, ragInjectionMode = "OFF", defaultContextWindowSize = 20))
         app.chatRepository.setNarrativeMode(id, mode)
         val session = assertNotNull(app.chatRepository.getSession(id))
