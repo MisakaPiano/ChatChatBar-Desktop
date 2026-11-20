@@ -11,6 +11,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.SwingUtilities
@@ -138,6 +139,51 @@ class DesktopSourceMessageNavigationTest {
     }
     @Test fun `gallery source action loads old history and scrolls the real primary panel`() = runBlocking(edt) {
         sourceThroughPanel(old = true)
+    }
+
+    @Test fun `a Gallery reveal waits for the exact rendered reply during regeneration`() = runBlocking(edt) {
+        fixture { app, _ ->
+            val controller = app.primaryChatController
+            ControlledDesktopSseServer(null, holdSeconds = 30).use { stream ->
+                app.modelRepository.saveModel(ModelConfig(id = "model", displayName = "Synthetic",
+                    modelName = "synthetic", baseUrl = stream.baseUrl, apiKey = "synthetic-key", createdAt = 1))
+                app.settingsRepository.saveAppSettings(AppSettings(defaultModelId = "model",
+                    allowCleartextModelApi = true, defaultContextWindowSize = 20, ragInjectionMode = "OFF"))
+                app.chatRepository.addMessage(ChatMessage.create("s", MessageRole.USER, "Synthetic source question"))
+                val original = app.chatRepository.addMessage(ChatMessage.create("s", MessageRole.ASSISTANT,
+                    "Synthetic original source", images = listOf("same.png")))
+                controller.refresh()
+                val scene = ImageComposeScene(1380, 900, coroutineContext = edt) {
+                    DesktopPrimaryChatPanel(controller, DesktopShellSize.WIDE, remember { DesktopComposerLayoutState() })
+                }
+                try {
+                    frames(scene)
+                    val taskId = assertNotNull(controller.regenerate(original.id))
+                    assertTrue(stream.awaitReady(), stream.phase)
+                    val source = controller.sessionImageGallery("s").occurrences.single { it.messageId == original.id }
+                    assertTrue(controller.revealMessage("s", source.messageId))
+                    frames(scene)
+                    val pending = assertNotNull(controller.state.value.messageRevealRequest)
+                    assertTrue(pending.pending)
+                    assertEquals(original.id, pending.position.anchorMessageId)
+                    assertFalse(visible(scene, "Synthetic original source"))
+
+                    stream.sendEvent("""{"choices":[{"delta":{"content":"Synthetic regenerated source"},"finish_reason":"stop"}]}""")
+                    stream.sendEvent("[DONE]")
+                    val terminal = withTimeout(10_000) {
+                        app.taskRuntime.tasks.first { tasks -> tasks.any { it.taskId == taskId && it.status != DesktopTaskStatus.RUNNING } }
+                            .single { it.taskId == taskId }
+                    }
+                    assertEquals(DesktopTaskStatus.COMPLETED, terminal.status, terminal.message)
+                    frames(scene)
+                    val completed = assertNotNull(controller.state.value.messageRevealRequest)
+                    assertEquals(pending.requestId, completed.requestId)
+                    assertFalse(completed.pending)
+                    assertTrue(visible(scene, "Synthetic regenerated source"))
+                    assertEquals("Unsent source-navigation draft", controller.state.value.composerDraft)
+                } finally { scene.close() }
+            }
+        }
     }
 
     @Test fun `pending source target rejects stale capture and stale completion without affecting another session`() = runBlocking(edt) {
