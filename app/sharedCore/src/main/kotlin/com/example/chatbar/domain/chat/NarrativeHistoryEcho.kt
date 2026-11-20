@@ -69,11 +69,26 @@ object NarrativeHistoryEcho {
         val literals by lazy(LazyThreadSafetyMode.NONE) {
             val markdown = bareCarriageReturn.replace(end, "\n")
             val lazyQuoteLineStarts = mutableSetOf<Int>()
-            val indentedCode = mutableListOf<IntRange>()
-            val fences = MarkdownCodeFences.blocks(markdown, { lazyQuoteLineStarts += it }, indentedCode::add).map { it.range }
-            val ranges = codeLiteralRanges(markdown, fences + indentedCode)
+            val codeBlocks = mutableListOf<IntRange>()
+            MarkdownCodeFences.blocks(markdown,
+                onLazyQuoteLine = { lazyQuoteLineStarts += it },
+                onIndentedCodeLine = { codeBlocks += it },
+            ).mapTo(codeBlocks) { it.range }
+            val ranges = codeLiteralRanges(markdown, codeBlocks)
             val quoteDelimitersToSkip = ranges + familyTags.map { it.range }
-            val quotes = proseQuoteRanges(end, quoteDelimitersToSkip, includeUnclosed = streaming || interrupted)
+            val includeUnclosed = streaming || interrupted
+            val interiorClosings = if (includeUnclosed) familyTags.mapIndexedNotNull { index, tag ->
+                val position = tag.range.first
+                val linePrefix = end.subSequence(lineStart(end, position), position)
+                val nextTag = familyTags.getOrNull(index + 1)?.range?.first ?: end.length
+                val continuationLines = end.subSequence(tag.range.last + 1, nextTag).lineSequence().iterator()
+                position.takeIf {
+                    tag.value in wrapper.closings && linePrefix.isBlank() && !isIndentedCodeLine(end, position) &&
+                        ranges.none { position in it } && continuationLines.next().isBlank() &&
+                        continuationLines.hasNext() && continuationLines.next().any(Char::isLetterOrDigit)
+                }
+            } else emptyList()
+            val quotes = proseQuoteRanges(end, quoteDelimitersToSkip, includeUnclosed, interiorClosings)
             ReplyLiterals(ranges + quotes, lazyQuoteLineStarts)
         }
         fun isMarkdownQuoteLine(offset: Int): Boolean {
@@ -120,9 +135,9 @@ object NarrativeHistoryEcho {
         return body
     }
 
-    private fun codeLiteralRanges(body: String, fences: List<IntRange>): List<IntRange> {
-        if ('`' !in body) return fences
-        val boundaries = (fences + paragraphBreak.findAll(body).map { it.range }.toList())
+    private fun codeLiteralRanges(body: String, codeBlocks: List<IntRange>): List<IntRange> {
+        if ('`' !in body) return codeBlocks
+        val boundaries = (codeBlocks + paragraphBreak.findAll(body).map { it.range }.toList())
             .sortedBy { it.first }
         val inline = buildList {
             var start = 0
@@ -132,7 +147,7 @@ object NarrativeHistoryEcho {
             }
             if (start < body.length) addAll(inlineCodeRanges(body, start, body.length))
         }
-        return fences + inline
+        return codeBlocks + inline
     }
 
     private fun inlineCodeRanges(text: String, start: Int, end: Int): List<IntRange> = buildList {
@@ -153,7 +168,7 @@ object NarrativeHistoryEcho {
     }
 
     private fun proseQuoteRanges(
-        text: String, delimiterExclusions: List<IntRange>, includeUnclosed: Boolean,
+        text: String, delimiterExclusions: List<IntRange>, includeUnclosed: Boolean, interiorClosings: List<Int>,
     ): List<IntRange> = buildList {
         var open = -1
         var closing: Char? = null
@@ -167,7 +182,9 @@ object NarrativeHistoryEcho {
             val precedesWord = text.getOrNull(index + 1)?.isLetterOrDigit() == true
             // Apostrophes in contractions and possessives do not start a prose quote.
             if (symbol == '\'' && followsWord && (precedesWord || open < 0)) continue
-            if (symbol == '’' && followsWord && (precedesWord || hasClosingAfterCurlyPossessive(text, index))) continue
+            if (symbol == '’' && followsWord && (precedesWord ||
+                    isCurlyPossessive(text, index, if (closing == '’') interiorClosings else emptyList()))
+            ) continue
             if (symbol == '"' && open < 0 && text.getOrNull(index - 1)?.isDigit() == true && !precedesWord) continue
             when {
                 open < 0 && matchingClose != null -> {
@@ -188,7 +205,7 @@ object NarrativeHistoryEcho {
         if (includeUnclosed && open >= 0) add(open..text.lastIndex)
     }
 
-    private fun hasClosingAfterCurlyPossessive(text: String, position: Int): Boolean {
+    private fun isCurlyPossessive(text: String, position: Int, interiorClosings: List<Int>): Boolean {
         if (!text[position - 1].equals('s', ignoreCase = true) ||
             text.getOrNull(position + 1)?.isWhitespace() != true
         ) return false
@@ -196,7 +213,13 @@ object NarrativeHistoryEcho {
         if (!text[wordStart].isLetter()) return false
         val nextClose = text.indexOf('’', position + 1)
         val nextOpen = text.indexOf('‘', position + 1)
-        return nextClose >= 0 && (nextOpen < 0 || nextClose < nextOpen)
+        if (nextClose >= 0) return nextOpen < 0 || nextClose < nextOpen
+        if (nextOpen >= 0) return false
+        // A standalone interior tag and prose beyond it can resolve an unfinished quote.
+        // A terminal-looking tag alone still takes the ordinary wrapper-closing path.
+        val tagLine = interiorClosings.firstOrNull { it > wordStart }?.let { lineStart(text, it) } ?: return false
+        if (tagLine <= wordStart) return false
+        return text.subSequence(wordStart, tagLine).lastOrNull { !it.isWhitespace() }?.isLetterOrDigit() == true
     }
 
     private fun isEscaped(text: String, position: Int): Boolean {
