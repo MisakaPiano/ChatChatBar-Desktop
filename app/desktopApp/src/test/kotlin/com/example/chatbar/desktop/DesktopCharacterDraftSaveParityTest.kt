@@ -149,8 +149,9 @@ class DesktopCharacterDraftSaveParityTest {
         fixture { app, _ ->
             val resources = DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore)
             val inherited = UUID.randomUUID().toString()
-            val reference = resources.stageText(inherited, "legacy.txt", "INHERITED_RETRY_BYTES")
             val card = source()
+            app.characterRepository.save(card) // Establish the real owned root before staging.
+            val reference = resources.stageText(inherited, "legacy.txt", "INHERITED_RETRY_BYTES")
             val document = DocumentInfo("legacy", "legacy.txt", reference, "txt", 21)
             val draft = app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(null,
                 UUID.randomUUID().toString(), card.copy(customDocuments = listOf(document)), null,
