@@ -276,9 +276,12 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         if (entry == null) require(source.checkpointHash == null && source.sourceHashes.isEmpty() && source.rawSource == rawBinding(emptyMap())) { "SYNC_GROUP_SOURCE_ORIGINALS_MISSING" }
         else {
             require(entry.sourceCheckpointGroup == source.group.value && entry.sourceDevice == identity.fingerprint && entry.hasLocalOriginals &&
-                entry.snapshotHash == source.checkpointHash && entry.rawSourceBinding == source.rawSource &&
-                workspace.recovery.snapshot(entry).hashes() == source.sourceHashes && workspace.recovery.sourceProjection(entry) == projection) { "SYNC_GROUP_SOURCE_ORIGINALS_CHANGED" }
-            workspace.recovery.verify(entry)
+                entry.snapshotHash == source.checkpointHash && entry.rawSourceBinding == source.rawSource) { "SYNC_GROUP_SOURCE_ORIGINALS_CHANGED" }
+            workspace.recovery.verify(entry) { hashes ->
+                require(hashes == source.sourceHashes && workspace.recovery.sourceProjection(entry) == projection) {
+                    "SYNC_GROUP_SOURCE_ORIGINALS_CHANGED"
+                }
+            }
         }
     }
     private fun readSource(operation: SyncStoreId): Source? {

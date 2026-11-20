@@ -65,7 +65,7 @@ class LanSyncRecoveryVault(
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_ID" }
         return entries.resolve(transaction)
     }
-    private fun binding(snapshot: LanSyncSnapshot) = lanSyncHash(JsonObject(snapshot.hashes().mapValues { JsonPrimitive(it.value) }))
+    private fun binding(hashes: Map<String, String>) = lanSyncHash(JsonObject(hashes.mapValues { JsonPrimitive(it.value) }))
     private fun rawBinding(files: Map<String, String>) = lanSyncHashSequence(files.toSortedMap().asSequence().map { (path, hash) ->
         buildJsonObject { put("path", path); put("hash", hash) }
     })
@@ -121,7 +121,8 @@ class LanSyncRecoveryVault(
         val affected = beforeUnits.filterValues { rows -> rows.any { it.key in affectedKeys } }.keys.sorted()
         require(affected.isNotEmpty()) { "SYNC_RECOVERY_SOURCE" }
         val raw = if (hasLocalOriginals) rawBinding(current.sourceFiles) else rawBinding(current.snapshot)
-        val preparation = Preparation(plan.transaction, binding(current.snapshot), binding(plan.snapshot), projection.digest(), custodyDevice, hasLocalOriginals, raw, sourceCheckpointGroup)
+        val preparation = Preparation(plan.transaction, binding(current.snapshot.hashes()), binding(plan.snapshot.hashes()), projection.digest(),
+            custodyDevice, hasLocalOriginals, raw, sourceCheckpointGroup)
         fun variant(): LanSyncRecoveryEntry? {
             val publication = publicationTransaction ?: plan.transaction
             val domain = if (sourceCheckpointGroup == null) "ccb-lan-custody-raw" else "ccb-group-source-custody/$sourceCheckpointGroup"
@@ -254,8 +255,12 @@ class LanSyncRecoveryVault(
         return requireNotNull(LanSyncJsonFiles.read(file, LanSyncProjection.serializer(), hash)).also { it.validate() }
     }
 
+    private data class CheckedSnapshot(val snapshot: LanSyncSnapshot, val hashes: Map<String, String>)
+
+    fun snapshot(entry: LanSyncRecoveryEntry): LanSyncSnapshot = checkedSnapshot(entry).snapshot
+
     @OptIn(ExperimentalSerializationApi::class)
-    fun snapshot(entry: LanSyncRecoveryEntry): LanSyncSnapshot {
+    private fun checkedSnapshot(entry: LanSyncRecoveryEntry): CheckedSnapshot {
         verifyFiles(entry)
         val stored = requireNotNull(LanSyncJsonFiles.readRecords(directory(entry.transaction).resolve("snapshot.json"),
             LanSyncSnapshot.serializer(), recordBodies, listOf("records"), entry.snapshotHash, entry.snapshotBytes))
@@ -263,12 +268,12 @@ class LanSyncRecoveryVault(
             LanSyncScope.validateLegacyPending(stored)
             stored.copy(protocol = LAN_SYNC_PROTOCOL, records = stored.records.map { it.copy(body = LanSyncScope.normalize(it.type, it.body)) })
         }
-        return compatible.also {
-            it.validate(); LanSyncScope.validateGraph(it)
-            require(it.deviceId == entry.sourceDevice && binding(it) == entry.sourceBinding &&
-                it.records.size.toLong() == entry.recordCount &&
-                it.records.count { row -> row.type == "chat_messages" }.toLong() == entry.messageCount) { "SYNC_RECOVERY_DAMAGED" }
-        }
+        compatible.validate(); LanSyncScope.validateGraph(compatible)
+        require(compatible.deviceId == entry.sourceDevice) { "SYNC_RECOVERY_DAMAGED" }
+        val hashes = compatible.hashes()
+        require(binding(hashes) == entry.sourceBinding && compatible.records.size.toLong() == entry.recordCount &&
+            compatible.records.count { it.type == "chat_messages" }.toLong() == entry.messageCount) { "SYNC_RECOVERY_DAMAGED" }
+        return CheckedSnapshot(compatible, hashes)
     }
 
     fun affected(entry: LanSyncRecoveryEntry): Set<String> {
@@ -347,8 +352,11 @@ class LanSyncRecoveryVault(
             else !LanSyncScope.isSingleton(type) && parts[2].endsWith(".json")) { "SYNC_RECOVERY_SOURCE" }
     }
 
-    fun verify(entry: LanSyncRecoveryEntry) {
-        val snapshot = snapshot(entry)
+    fun verify(entry: LanSyncRecoveryEntry) = verify(entry) { }
+
+    internal fun verify(entry: LanSyncRecoveryEntry, checkSnapshot: (Map<String, String>) -> Unit) {
+        val (snapshot, hashes) = checkedSnapshot(entry)
+        checkSnapshot(hashes)
         snapshot.resources.forEach { (hash, size) -> requireNotNull(objects.completed(hash, size)) { "SYNC_RECOVERY_RESOURCE_MISSING" } }
         originals(entry) { _, _ -> }
     }

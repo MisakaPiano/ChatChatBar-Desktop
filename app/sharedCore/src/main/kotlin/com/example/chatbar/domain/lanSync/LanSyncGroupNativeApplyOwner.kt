@@ -44,7 +44,8 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         val preimageRequired: Boolean, val sourceOperation: SyncStoreId? = null, val sourceVersion: SyncCausalVersion? = null,
         val sourceHeld: Set<String> = emptySet())
     private data class Loaded(val units: Map<String, LanSyncGroupAppliedUnit>, val completed: Long, val receipt: String?, val pending: Intent?,
-        val matched: Intent? = null, val matchedReceipt: Receipt? = null)
+        val matched: Intent? = null, val matchedReceipt: Receipt? = null,
+        val matchedSourceReceipt: LanSyncGroupNativeApplyReceipt? = null)
     init { PrivateSyncFile.checked(root, true); projection.validate()
         require(actor.encoded == actorCertificate) { "SYNC_GROUP_NATIVE_CERTIFICATE" }
         lock = locks.computeIfAbsent(root) { ReentrantLock() } }
@@ -87,18 +88,18 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
     /** Records an approved historical local source fact; never applies its old full snapshot. */
     fun recordSource(commit: LanSyncGroupSourceCommit, recoverNative: Boolean = true): LanSyncGroupNativeApplyReceipt = guarded {
         if (recoverNative) recoverOwned()
-        else {
-            require(load().pending == null) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+        val operation = commit.entry.request.operation
+        val transaction = java.util.UUID.nameUUIDFromBytes("ccb-group-source-receipt/${trust.group.value}/${actor.fingerprint}/${operation.value}"
+            .toByteArray(Charsets.UTF_8)).toString()
+        val loaded = load(transaction, commit.entry)
+        if (!recoverNative) {
+            require(loaded.pending == null) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
             workspace.requireSettledForSourceOnly()
         }
-        val entry = requireNotNull(authorJournal?.entry(commit.entry.request.operation)) { "SYNC_GROUP_NATIVE_SOURCE_JOURNAL_MISSING" }
+        val entry = requireNotNull(authorJournal?.entry(operation)) { "SYNC_GROUP_NATIVE_SOURCE_JOURNAL_MISSING" }
         require(entry == commit.entry && commit.expectedApplied.keys == entry.version.changes.keys) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
-        val transaction = java.util.UUID.nameUUIDFromBytes("ccb-group-source-receipt/${trust.group.value}/${actor.fingerprint}/${entry.request.operation.value}"
-            .toByteArray(Charsets.UTF_8)).toString()
-        val loaded = load(transaction)
-        loaded.matched?.let { previous ->
-            require(payload(previous).sourceOperation == entry.request.operation && payload(previous).sourceVersion == entry.version) { "SYNC_GROUP_NATIVE_OPERATION_CHANGED" }
-            return@guarded publicReceipt(previous, requireNotNull(loaded.matchedReceipt))
+        if (loaded.matched != null) {
+            return@guarded requireNotNull(loaded.matchedSourceReceipt) { "SYNC_GROUP_NATIVE_OPERATION_CHANGED" }
         }
         val checkpoint = workspace.recovery.read(entry.request.sourceCheckpoint)
         val snapshot = checkpoint?.let(workspace.recovery::snapshot) ?: LanSyncSnapshot(deviceId = actor.fingerprint,
@@ -269,7 +270,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(intent.sequence, binding(Receipt.serializer(), receipt)), true)
         return receipt
     }
-    private fun load(match: String? = null): Loaded {
+    private fun load(match: String? = null, source: SyncAuthorJournalEntry? = null): Loaded {
         val origin = requireNotNull(read(root.resolve("origin.protected"), "ORIGIN", Origin.serializer())) { "SYNC_GROUP_NATIVE_ORIGIN_MISSING" }
         require(sameAnchor(origin.trust, trust) && origin.certificate == actorCertificate && origin.projection == projection.digest()) { "SYNC_GROUP_NATIVE_ORIGIN_CHANGED" }
         originTrust = origin.trust
@@ -278,6 +279,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         require(head.sequence in 0..receipts && receipts <= intents && intents - receipts <= 1 && (head.sequence == 0L) == (head.receipt == null)) { "SYNC_GROUP_NATIVE_HISTORY_MISSING" }
         val units = linkedMapOf<String, LanSyncGroupAppliedUnit>(); var previous: String? = null
         var pending: Intent? = null; var matched: Intent? = null; var matchedReceipt: Receipt? = null
+        var matchedSourceReceipt: LanSyncGroupNativeApplyReceipt? = null
         var sequence = 0L
         while (sequence < intents) {
             sequence++
@@ -296,10 +298,16 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
                 previous = binding(Receipt.serializer(), receipt)
                 if (sequence == head.sequence) require(previous == head.receipt) { "SYNC_GROUP_NATIVE_HEAD_CHANGED" }
             }
-            if (intent.transaction == match) { require(matched == null) { "SYNC_GROUP_NATIVE_OPERATION_CHANGED" }; matched = intent; matchedReceipt = receipt }
+            if (intent.transaction == match) {
+                require(matched == null) { "SYNC_GROUP_NATIVE_OPERATION_CHANGED" }
+                matched = intent; matchedReceipt = receipt
+                if (source != null && receipt != null && payload.sourceOperation == source.request.operation && payload.sourceVersion == source.version) {
+                    matchedSourceReceipt = publicReceipt(intent, receipt, payload)
+                }
+            }
         }
         if (head.sequence < receipts) write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(receipts, previous), true)
-        return Loaded(Collections.unmodifiableMap(units), receipts, previous, pending, matched, matchedReceipt)
+        return Loaded(Collections.unmodifiableMap(units), receipts, previous, pending, matched, matchedReceipt, matchedSourceReceipt)
     }
     private fun inventory(prefix: String): Long {
         var count = 0L; var maximum = 0L
@@ -312,9 +320,11 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         require(count == maximum) { "SYNC_GROUP_NATIVE_HISTORY_MISSING" }; return count
     }
     private fun publicState(state: Loaded) = LanSyncGroupNativeState(state.units, state.completed, state.pending?.transaction)
-    private fun publicReceipt(intent: Intent, receipt: Receipt) = LanSyncGroupNativeApplyReceipt(intent.transaction, receipt.status,
-        if (receipt.status in setOf(LanSyncGroupNativeApplyStatus.APPLIED, LanSyncGroupNativeApplyStatus.SOURCE_COMMIT_RECORDED)) Collections.unmodifiableSet(payload(intent).advances.keys) else emptySet(),
-        Collections.unmodifiableSet(payload(intent).sourceHeld))
+    private fun publicReceipt(intent: Intent, receipt: Receipt, checked: Payload = payload(intent)) =
+        LanSyncGroupNativeApplyReceipt(intent.transaction, receipt.status,
+            if (receipt.status in setOf(LanSyncGroupNativeApplyStatus.APPLIED, LanSyncGroupNativeApplyStatus.SOURCE_COMMIT_RECORDED))
+                Collections.unmodifiableSet(checked.advances.keys.toSet()) else emptySet(),
+            Collections.unmodifiableSet(checked.sourceHeld.toSet()))
     private fun intentPath(sequence: Long) = root.resolve("intent-${sequence.toString().padStart(19, '0')}.protected")
     private fun receiptPath(sequence: Long) = root.resolve("receipt-${sequence.toString().padStart(19, '0')}.protected")
     private fun payloadPath(transaction: String) = root.resolve("plan-$transaction.json")
