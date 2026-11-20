@@ -113,3 +113,5 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 2. Check cancellation before materialization, during media copy, and during transactional replacement.
 3. Check schema 1–7 listing/export/load separately from v8.
 4. Verify default no-image, compressed-image, original-image, and audio-off paths without increasing peak memory with archive size.
+
+Desktop new inline-library imports capture `desktopMemorySourceSessionId` from the verified original envelope before rebinding; ignore any prefilled input value. `Prepared.originalSessionId` is runtime-only and local-library preparation reads the captured field. Old ownerless HEAD-only records do not prove same-session custody. ZIP restores continue to use the untouched manifest owner.

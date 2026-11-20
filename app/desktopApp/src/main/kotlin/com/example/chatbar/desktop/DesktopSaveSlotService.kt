@@ -536,6 +536,8 @@ internal class DesktopSaveSlotService(
             files[relative] = work.resolve(relative)
             imported
         } else prepared.slot.copy(id = UUID.randomUUID().toString(), sessionId = sessionId,
+            // Input-provided provenance is not evidence. Capture the verified raw envelope owner.
+            desktopMemorySourceSessionId = prepared.originalSessionId,
             // Keep source graph identity together; local library ownership differs only at its envelope.
             messages = prepared.slot.messages.map { it.copy(sessionId = sessionId) },
             vectorChunks = prepared.slot.vectorChunks.map { it.copy(sourceId = sessionId,
@@ -555,7 +557,9 @@ internal class DesktopSaveSlotService(
             check(name.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
             root.resolve("save_slot_packages/$name")
         } else root.resolve("entities/save_slots/$slotId.json")
-        return archive.prepare(path)
+        val prepared = archive.prepare(path)
+        return if (prepared.format == SlotInspectFormat.ZIP_V8) prepared else
+            prepared.copy(originalSessionId = slot.desktopMemorySourceSessionId)
     }
 
     private suspend fun publish(sourceId: String, sourceProof: Map<String, String>, plan: DesktopSaveSlotRestorePlan.Plan?,

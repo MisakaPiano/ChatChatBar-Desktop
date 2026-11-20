@@ -666,15 +666,42 @@ class DesktopSaveSlotServiceTest {
             f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
                 actionProjection = MemoryHeadActionProjection.WITHHELD)))
             val incoming = SaveSlot(id = "foreign-inline-head", sessionId = "foreign-original", name = "Foreign head only", createdAt = 1,
+                desktopMemorySourceSessionId = "s",
                 messages = listOf(source.copy(sessionId = "foreign-original")), memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
             val file = f.root.resolve("foreign-inline-head.cbsave")
             Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
             val service = f.service()
             val local = service.import(file, "s")
             assertEquals("s", local.sessionId)
+            assertEquals("foreign-original", local.desktopMemorySourceSessionId, "Input provenance must not override its actual envelope owner")
             service.restore(local.id, "s")
             val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
             assertNull(state.head.actionProjection, "A rebound inline envelope does not prove the original HEAD owner")
+        }
+    }
+
+    @Test fun `new inline same session head only import retains its observed owner across cold library reopen`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "head-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val head = MemoryHead(throughSourceTurnId = "head-turn", location = "Known unsafe old HEAD")
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
+                actionProjection = MemoryHeadActionProjection.WITHHELD)))
+            val incoming = SaveSlot(id = "same-inline-head", sessionId = "s", name = "Same owner head only", createdAt = 1,
+                desktopMemorySourceSessionId = "foreign-prefilled-value", messages = listOf(source),
+                memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
+            val file = f.root.resolve("same-inline-head.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val local = f.service().import(file, "s")
+            val coldSlot = JsonFileStorage(f.root).loadEntity("save_slots", local.id, SaveSlot.serializer())!!
+            assertEquals("s", coldSlot.desktopMemorySourceSessionId)
+            f.service().restore(local.id, "s")
+            val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
+            assertEquals(MemoryHeadActionProjection.WITHHELD, state.head.actionProjection,
+                "A new same-owner inline HEAD-only import must retain known unsafe provenance")
+            assertEquals(head.location, state.head.location)
         }
     }
 

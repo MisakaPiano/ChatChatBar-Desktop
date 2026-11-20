@@ -163,8 +163,8 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
                 voiceIds.mapValues { (_, id) -> restoredVoices.getValue(id) })
             val memory = MemoryRepository(storage, strictReads = true)
             // ZIP manifest retains its original owner. An inline library envelope has already
-            // been rebound; only its unchanged memory graph can prove the original owner.
-            val originalOwner = if (prepared.format == SlotInspectFormat.ZIP_V8) slot.sessionId else
+            // been rebound; use its locally captured owner or an unchanged memory graph.
+            val originalOwner = prepared.originalSessionId ?: if (prepared.format == SlotInspectFormat.ZIP_V8) slot.sessionId else
                 (slot.memorySnapshot?.nodes.orEmpty().map { it.sessionId } +
                     listOfNotNull(slot.memorySnapshot?.legacyCommit?.sessionId)).distinct().singleOrNull()
             LongTermMemoryService(chats, memory, SettingsRepository(storage), NoArchiveNetwork,

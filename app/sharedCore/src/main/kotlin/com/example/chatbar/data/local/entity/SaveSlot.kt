@@ -58,6 +58,9 @@ data class SaveSlot(
     val timelineTombstones: Set<Long> = emptySet(),
     val memoryLimitChars: Int = 2000,
     val memorySnapshot: MemorySnapshot? = null,
+    /** Desktop inline-library provenance captured from the original envelope before rebinding. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopMemorySourceSessionId: String? = null,
     val contextWindowSize: Int? = null,
     val extraWorldBookIds: List<String> = emptyList(),
     val timedWorldInfo: Map<String, TimedEffectState> = emptyMap(),

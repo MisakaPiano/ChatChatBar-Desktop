@@ -24,7 +24,8 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
     internal data class Prepared(val directory: Path, val file: Path, val slot: SaveSlot, val sha256: String,
         val format: SlotInspectFormat, val historicalVoices: Int = 0,
         val ownedWork: DesktopSaveSlotOwnedWork? = null,
-        val temporaryAssets: List<DesktopSaveSlotTemporaryAsset> = emptyList())
+        val temporaryAssets: List<DesktopSaveSlotTemporaryAsset> = emptyList(),
+        val originalSessionId: String? = null)
 
     suspend fun prepare(source: Path): Prepared = withContext(Dispatchers.IO) {
         requireCapacity(source, "INPUT")
@@ -85,7 +86,8 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
             json.decodeFromString(SaveSlot.serializer(), Files.readString(file))
         }
         check(DesktopArchiveFiles.hash(file, MAX_ARCHIVE) == hash)
-        return Prepared(owned.directory, file, slot, hash, result.format, result.counts?.historicalVoices ?: 0, owned)
+        return Prepared(owned.directory, file, slot, hash, result.format, result.counts?.historicalVoices ?: 0, owned,
+            originalSessionId = slot.sessionId)
     }
 
     private fun newWork() = DesktopSaveSlotOwnedWork.create(workspace)
