@@ -73,8 +73,10 @@ class DesktopCharacterDraftSaveParityTest {
                         // The previous implementation enters persistence here. The fixed save waits
                         // at the same lock used by the already admitted image assignment.
                         withTimeout(5_000) {
-                            while (!writingOldSnapshot.isCompleted && savingThread.get()?.stackTrace.orEmpty()
-                                    .none { it.methodName == "reserveSaveSnapshot" }) delay(10)
+                            while (!writingOldSnapshot.isCompleted && savingThread.get()?.let { thread ->
+                                    thread.state == Thread.State.BLOCKED &&
+                                        thread.stackTrace.any { it.methodName == "reserveSaveSnapshot" }
+                                } != true) delay(10)
                         }
                         assertFalse(writingOldSnapshot.isCompleted, "Save reserved the old card during image assignment")
                         releaseEdit.countDown()
@@ -91,6 +93,91 @@ class DesktopCharacterDraftSaveParityTest {
                     } finally { releaseEdit.countDown(); saving.cancelAndJoin() }
                 } finally { releaseEdit.countDown(); applying.cancelAndJoin() }
             } finally { saveDispatcher.close(); editor.closeAndDrain() }
+        } }
+    }
+
+    @Test fun `close stays on the editor until cleanup confirms draft deletion`() = runBlocking {
+        fixture { app, _ ->
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            var rejectDelete = true
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json,
+                deleteDraft = { type, id ->
+                    entered.complete(Unit)
+                    release.await()
+                    if (rejectDelete) error("synthetic draft deletion failure")
+                    app.editorDraftRepository.deleteForTarget(type, id)
+                })
+            val original = source()
+            app.characterRepository.save(original)
+            try {
+                editor.openExisting(original.id)
+                editor.edit { it.copy(creatorNotes = "Obsolete draft") }
+                editor.flushDraft()
+                editor.edit { it.copy(creatorNotes = original.creatorNotes) }
+                editor.closeClean()
+                withTimeout(5_000) { entered.await() }
+                editor.closeClean()
+                assertNotNull(editor.state.value.card, "A second close bypassed the pending confirmation")
+                release.complete(Unit)
+                withTimeout(5_000) {
+                    while (editor.state.value.problem != CharacterEditorProblem.CLEAN_DRAFT_WARNING) delay(10)
+                }
+                assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                assertNotNull(editor.state.value.card)
+                rejectDelete = false
+                withTimeout(5_000) {
+                    while (editor.state.value.cleanDraftCleanupInProgress) delay(10)
+                }
+                editor.retryCleanup()
+                editor.closeClean()
+                withTimeout(5_000) { while (editor.state.value.card != null) delay(10) }
+                assertNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+            } finally { release.complete(Unit); editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `document form reports a stale session rejection and can resubmit the same input`() = runBlocking {
+        fixture { app, _ -> coroutineScope {
+            val captured = CompletableDeferred<Unit>()
+            val releaseDocument = CountDownLatch(1)
+            val pause = AtomicBoolean(true)
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json,
+                manualResourceAccess = { operation ->
+                    if (pause.compareAndSet(true, false)) {
+                        captured.complete(Unit)
+                        check(releaseDocument.await(10, TimeUnit.SECONDS))
+                    }
+                    operation()
+                })
+            val original = source()
+            app.characterRepository.save(original)
+            try {
+                editor.openExisting(original.id)
+                editor.edit { it.copy(creatorNotes = "Obsolete draft") }
+                editor.flushDraft()
+                editor.edit { it.copy(creatorNotes = original.creatorNotes) }
+                val title = "new form.txt"
+                val body = "User input retained for retry"
+                val adding = async(Dispatchers.IO) { editor.addTextDocument(title, body) }
+                try {
+                    withTimeout(5_000) { captured.await() }
+                    assertTrue(editor.save(), "Clean save rotates the draft session")
+                    releaseDocument.countDown()
+                    assertFalse(adding.await(), "The UI must retain the form contents when the add is rejected")
+                    assertTrue(editor.state.value.card!!.customDocuments.isEmpty())
+                    assertTrue(editor.addTextDocument(title, body))
+                    assertTrue(editor.save())
+                    val durable = assertNotNull(CharacterRepository(JsonFileStorage(app.appDataRoot)).getById(original.id))
+                    val document = durable.customDocuments.single()
+                    assertEquals(title, document.fileName)
+                    assertEquals(body, app.characterResourceStore.readText(document.filePath))
+                } finally { releaseDocument.countDown(); adding.cancelAndJoin() }
+            } finally { editor.closeAndDrain() }
         } }
     }
 

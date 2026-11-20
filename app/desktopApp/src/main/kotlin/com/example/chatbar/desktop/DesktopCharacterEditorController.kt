@@ -34,6 +34,7 @@ import com.example.chatbar.domain.image.*
 import java.nio.file.Path
 import java.nio.file.Files
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,7 @@ internal data class DesktopCharacterEditorState(
     val draftPersisted: Boolean = false,
     val dirty: Boolean = false,
     val busy: Boolean = false,
+    val cleanDraftCleanupInProgress: Boolean = false,
     val leavePrompt: Boolean = false,
     val problem: CharacterEditorProblem? = null,
     val detail: String? = null,
@@ -169,6 +171,7 @@ internal class DesktopCharacterEditorController(
     private val draftMutex = Mutex()
     private var draftJob: Job? = null
     private var leaveAction: (() -> Unit)? = null
+    private val pendingCleanLeave = AtomicBoolean()
     private data class PendingDraft(val targetId: String?, val sessionId: String?)
     private data class PendingRename(val characterId: String, val oldName: String, val newName: String)
     private data class CharacterDraftCleanup(
@@ -186,7 +189,8 @@ internal class DesktopCharacterEditorController(
 
     private fun withManualResourceSession(session: String, operation: () -> Unit) = manualResourceAccess {
         synchronized(resourceMutationLock) {
-            check(_state.value.draftSessionId == session && canMutate()) { "草稿已切换，请重新添加资料" }
+            val current = _state.value
+            check(current.card != null && current.draftSessionId == session && canMutate()) { "草稿已切换，请重新添加资料" }
             operation()
         }
     }
@@ -568,15 +572,15 @@ internal class DesktopCharacterEditorController(
         }
     }
 
-    fun addTextDocument(name: String, content: String) {
-        if (!canMutate()) return
-        val session = _state.value.draftSessionId ?: return
-        runCatching { withManualResourceSession(session) {
+    fun addTextDocument(name: String, content: String): Boolean {
+        if (!canMutate()) return false
+        val session = _state.value.draftSessionId ?: return false
+        return runCatching { withManualResourceSession(session) {
             val effectiveName = name.ifBlank { "document.txt" }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments +
                 DocumentInfo.create(effectiveName, ref, documentType(effectiveName))) }
-        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
+        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }.isSuccess
     }
 
     fun editDocument(id: String, name: String, content: String) {
@@ -924,24 +928,28 @@ internal class DesktopCharacterEditorController(
             if (!needsCleanDraftCleanup(captured)) return@withLock !captured.dirty
             // New edits/resources belong to a fresh directory while the old draft deletion suspends.
             if (!_state.compareAndSet(captured, captured.copy(draftSessionId = nextSession,
-                    draftBasis = null, draftPersisted = false))) return@withLock false
+                    draftBasis = null, draftPersisted = false, cleanDraftCleanupInProgress = true))) return@withLock false
             captured
         }
-        val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
-        val current = _state.value
-        if (current.card != before.card || current.draftSessionId != nextSession || current.dirty)
-            return@withLock false
-        if (cleanup.blocking) {
-            _state.compareAndSet(current, current.copy(draftSessionId = if (cleanup.removed) nextSession else before.draftSessionId,
-                draftBasis = if (cleanup.removed) null else before.draftBasis,
-                draftPersisted = before.draftPersisted && !cleanup.removed,
-                problem = CharacterEditorProblem.CLEAN_DRAFT_WARNING,
-                detail = cleanup.draft.errors.firstOrNull()?.message))
-            return@withLock false
+        try {
+            val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
+            val current = _state.value
+            if (current.card != before.card || current.draftSessionId != nextSession || current.dirty)
+                return@withLock false
+            if (cleanup.blocking) {
+                _state.compareAndSet(current, current.copy(draftSessionId = if (cleanup.removed) nextSession else before.draftSessionId,
+                    draftBasis = if (cleanup.removed) null else before.draftBasis,
+                    draftPersisted = before.draftPersisted && !cleanup.removed,
+                    problem = CharacterEditorProblem.CLEAN_DRAFT_WARNING,
+                    detail = cleanup.draft.errors.firstOrNull()?.message))
+                return@withLock false
+            }
+            _state.compareAndSet(current, current.copy(draftBasis = null, draftPersisted = false,
+                problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
+                detail = cleanup.assetFailure?.message))
+        } finally {
+            _state.update { it.copy(cleanDraftCleanupInProgress = false) }
         }
-        _state.compareAndSet(current, current.copy(draftBasis = null, draftPersisted = false,
-            problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
-            detail = cleanup.assetFailure?.message))
     } }
 
     suspend fun retryCleanup() {
@@ -1126,10 +1134,16 @@ internal class DesktopCharacterEditorController(
     }
 
     fun requestLeave(action: () -> Unit) {
-        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        if (deferLeave(action)) return
-        if (needsCleanDraftCleanup(_state.value)) {
-            scope.launch { if (cleanObsoleteDraft() && !_state.value.dirty) action() }
+        val cleanFirst = synchronized(resourceMutationLock) {
+            if (leaveBlocked() || deferLeave(action)) return
+            needsCleanDraftCleanup(_state.value).also { if (it) pendingCleanLeave.set(true) }
+        }
+        if (cleanFirst) {
+            scope.launch {
+                val mayLeave = try { cleanObsoleteDraft() }
+                finally { pendingCleanLeave.set(false) }
+                if (mayLeave && !_state.value.dirty) action()
+            }
         } else action()
     }
 
@@ -1158,12 +1172,19 @@ internal class DesktopCharacterEditorController(
     }
 
     fun closeClean() {
-        if (_state.value.dirty) { requestLeave { closeClean() }; return }
-        if (needsCleanDraftCleanup(_state.value)) { requestLeave { closeClean() }; return }
-        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        _state.value = _state.value.copy(card = null, base = null, leavePrompt = false,
-            problem = if (_state.value.resourceCleanupPending) CharacterEditorProblem.RESOURCE_FAILED else null)
-        leaveAction?.also { leaveAction = null; it() }
+        requestLeave {
+            synchronized(resourceMutationLock) {
+                if (leaveBlocked() || _state.value.dirty) return@synchronized
+                _state.update { it.copy(card = null, base = null, leavePrompt = false,
+                    problem = if (it.resourceCleanupPending) CharacterEditorProblem.RESOURCE_FAILED else null) }
+                leaveAction?.also { leaveAction = null; it() }
+            }
+        }
+    }
+
+    private fun leaveBlocked(): Boolean = _state.value.let {
+        it.busy || it.cleanDraftCleanupInProgress || pendingCleanLeave.get() ||
+            it.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING
     }
 
     suspend fun closeAndDrain() {

@@ -393,7 +393,10 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_NAME), newName) { newName = it }
                 DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_BODY), newBody, true) { newBody = it }
                 BootstrapButton(t(DesktopUiText.NEW_TEXT_DOCUMENT)) {
-                    controller.addTextDocument(newName, newBody); newName = ""; newBody = ""
+                    if (controller.addTextDocument(newName, newBody)) {
+                        newName = ""
+                        newBody = ""
+                    }
                 }
                 card.customDocuments.forEach { doc ->
                     controller.documentIndex?.let { indexing ->
