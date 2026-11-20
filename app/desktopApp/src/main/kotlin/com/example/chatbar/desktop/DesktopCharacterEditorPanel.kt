@@ -476,7 +476,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         }
         EditorActions {
             BootstrapButton(t(DesktopUiText.SAVE), enabled = !state.busy && !readOnly) { scope.launch { controller.save() } }
-            BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), enabled = !readOnly) { scope.launch { controller.discard() } }
+            BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), enabled = !state.busy && !readOnly) {
+                scope.launch { controller.discard() }
+            }
             BootstrapButton(t(DesktopUiText.CANCEL)) { controller.requestLeave { controller.closeClean() } }
         }
     } }

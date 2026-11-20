@@ -139,6 +139,97 @@ class DesktopCharacterDraftSaveParityTest {
         }
     }
 
+    @Test fun `old draft publication waits for the resource edit and never marks a newer image written`() = runBlocking {
+        fixture { app, editor -> coroutineScope {
+            val original = source()
+            app.characterRepository.save(original)
+            editor.openExisting(original.id)
+            editor.edit { it.copy(creatorNotes = "Snapshot before image") }
+            val basis = assertNotNull(editor.state.value.card)
+            val session = assertNotNull(editor.state.value.draftSessionId)
+            val bytes = DesktopImageEditing.png(java.awt.image.BufferedImage(4, 4, java.awt.image.BufferedImage.TYPE_INT_RGB))
+            val applying = CompletableDeferred<Unit>()
+            val release = CountDownLatch(1)
+            val image = async(Dispatchers.IO) {
+                editor.stageGeneratedCardImage(session, basis, basis, null, bytes) { next ->
+                    editor.edit {
+                        applying.complete(Unit)
+                        check(release.await(10, TimeUnit.SECONDS))
+                        next
+                    }
+                    editor.state.value.card == next
+                }
+            }
+            val writer = AtomicReference<Thread>()
+            val dispatcher = Executors.newSingleThreadExecutor { work ->
+                Thread(work, "character-autosave-test").also { writer.set(it) }
+            }.asCoroutineDispatcher()
+            try {
+                withTimeout(5_000) { applying.await() }
+                val flushing = async(dispatcher) { editor.flushDraft() }
+                try {
+                    withTimeout(5_000) {
+                        while (!flushing.isCompleted && writer.get()?.let { thread ->
+                                thread.state == Thread.State.BLOCKED &&
+                                    thread.stackTrace.any { it.className.contains("DesktopCharacterEditorController") }
+                            } != true) delay(10)
+                    }
+                    assertFalse(flushing.isCompleted, "Draft publication raced the in-progress resource edit")
+                    val oldDraft = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                    assertNull(oldDraft.characterPayload?.coverImage)
+                    release.countDown()
+                    assertTrue(image.await())
+                    flushing.await()
+                    if (editor.state.value.draftPersisted) {
+                        val latest = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                        assertNotNull(latest.characterPayload?.coverImage, "The prior snapshot cannot mark a newer image persisted")
+                    }
+                    editor.flushDraft()
+                    val current = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                    assertContentEquals(bytes, editor.imageBytes(assertNotNull(current.characterPayload?.coverImage)))
+                } finally { release.countDown(); flushing.cancelAndJoin() }
+            } finally { release.countDown(); image.cancelAndJoin(); dispatcher.close() }
+        } }
+    }
+
+    @Test fun `discard reserves the staged session before suspension and rejects a pending generated image`() = runBlocking {
+        fixture { app, _ -> coroutineScope {
+            val deleting = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json,
+                deleteDraft = { type, id ->
+                    deleting.complete(Unit)
+                    release.await()
+                    app.editorDraftRepository.deleteForTarget(type, id)
+                })
+            val original = source()
+            app.characterRepository.save(original)
+            try {
+                editor.openExisting(original.id)
+                editor.edit { it.copy(creatorNotes = "Draft being discarded") }
+                editor.flushDraft()
+                val session = assertNotNull(editor.state.value.draftSessionId)
+                val basis = assertNotNull(editor.state.value.card)
+                val bytes = DesktopImageEditing.png(java.awt.image.BufferedImage(4, 4, java.awt.image.BufferedImage.TYPE_INT_RGB))
+                val discarding = async { editor.discard() }
+                try {
+                    withTimeout(5_000) { deleting.await() }
+                    assertFalse(withContext(Dispatchers.IO) {
+                        editor.stageGeneratedCardImage(session, basis, basis, null, bytes)
+                    })
+                    assertNull(editor.state.value.card?.coverImage)
+                    release.complete(Unit)
+                    discarding.await()
+                    assertNull(editor.state.value.card)
+                    assertNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                    assertFalse(Files.exists(app.appDataRoot.resolve("draft_assets").resolve(session)))
+                } finally { release.complete(Unit); discarding.cancelAndJoin() }
+            } finally { release.complete(Unit); editor.closeAndDrain() }
+        } }
+    }
+
     @Test fun `document form reports a stale session rejection and can resubmit the same input`() = runBlocking {
         fixture { app, _ -> coroutineScope {
             val captured = CompletableDeferred<Unit>()
