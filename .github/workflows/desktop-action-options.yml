@@ -35,6 +35,29 @@ jobs:
           "TMP=$buffer" >> $env:GITHUB_ENV
           New-Item -ItemType Directory -Path 'review-action-options' | Out-Null
           git rev-parse HEAD | Set-Content 'review-action-options/source.txt'
+      - name: Check out exact prior product independently
+        uses: actions/checkout@v4
+        with:
+          ref: e26a6ea00fe19c6e145ae0402eb08603f71193de
+          path: prior-product
+          persist-credentials: false
+      - name: Reproduce raw menus entering the actual memory request
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $test = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopActionMemoryPriorRegressionTest.kt'
+          Copy-Item -LiteralPath $test -Destination (Join-Path 'prior-product' $test)
+          git -C prior-product rev-parse HEAD | Set-Content 'review-action-options/negative-product-source.txt'
+          Push-Location 'prior-product/app'
+          try {
+            .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopActionMemoryPriorRegressionTest' -PdesktopTestHeadless=true --no-daemon --stacktrace
+            $negativeExit = $LASTEXITCODE
+          } finally { Pop-Location }
+          $path = 'prior-product/app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopActionMemoryPriorRegressionTest.xml'
+          [xml]$report = Get-Content -Raw -LiteralPath $path
+          if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'ACTION_MEMORY_PRIOR_ASSERTION_NOT_REACHED' }
+          if ($report.testsuite.testcase.failure.message -notlike '*Unchosen action menus entered the actual episode request*') { throw 'ACTION_MEMORY_PRIOR_WRONG_FAILURE' }
+          Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-memory-request.xml'
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-
@@ -68,6 +91,7 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
           --tests 'com.example.chatbar.desktop.DesktopFishGenerationTest'
           --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopActionMemoryPriorRegressionTest'
           --tests 'com.example.chatbar.desktop.DesktopChatMemoryIndexTest'
           --tests 'com.example.chatbar.desktop.DesktopMemoryInjectionTransportTest'
           --tests 'com.example.chatbar.desktop.DesktopMemorySafetyTest'
