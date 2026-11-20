@@ -1831,6 +1831,47 @@ class LanSyncGroupCoordinatorTest {
         }
     }
 
+    @Test fun finalSealInspectsFreshSourceOnceWhenItsCurrentLocalDeliveryAlreadyHasAReceipt() {
+        fixture { f ->
+            f.writeCard("synthetic original already sealed to local replica")
+            val original = Files.readAllBytes(f.card)
+            val inspections = AtomicInteger()
+            val sourceProofs = AtomicInteger()
+            val owner = f.founder(f.workspace) { event ->
+                when (event) {
+                    "NATIVE_PLAN_READY" -> inspections.incrementAndGet()
+                    "SOURCE_SIGNED_DELIVERY_READY" -> sourceProofs.incrementAndGet()
+                    else -> Unit
+                }
+            }
+            val coordinator = f.coordinator(initiallyPaused = true, enrollment = { owner })
+            coordinator.createGroup()
+            await { coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE && !coordinator.state.value.busy }
+            coordinator.recoverySaved(requireNotNull(coordinator.state.value.setupBinding))
+            await { coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy }
+            assertTrue(coordinator.state.value.paused)
+
+            val access = requireNotNull(owner.runtimeAccess())
+            val inspected = access.node.inspectLocal()
+            val unit = "character_cards/card"
+            val commit = access.node.commit(inspected.review(setOf(unit)))
+            val operation = commit.entry.request.operation
+            val receipt = access.node.upload(operation, access.replica, access.localTarget)
+            coordinator.quiesceAndDrain()
+            inspections.set(0)
+            sourceProofs.set(0)
+
+            assertTrue(coordinator.flushLocalAfterWriters())
+            assertEquals(1, inspections.get())
+            assertEquals(1, sourceProofs.get())
+            assertEquals(LanSyncGroupNativeStage.UNCHANGED, coordinator.view.value?.plan?.units?.get(unit)?.stage)
+            assertEquals(listOf(operation), access.node.sourceOperations())
+            assertEquals(receipt, access.node.receipt(operation, access.localTarget))
+            assertContentEquals(original, Files.readAllBytes(f.card))
+            assertSourceOriginal(f, commit.entry, original)
+        }
+    }
+
     @Test fun committedStorageRevisionAutomaticallyPublishesAndLateShutdownSaveSealsWithoutNetworkOrReload() {
         val forbidden = AtomicBoolean(false)
         val networkCalls = AtomicInteger()

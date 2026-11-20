@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.snapshot.AutomaticBackupExecutionResult
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
@@ -79,6 +80,52 @@ class DesktopLanSyncShutdownFlushTest {
             assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolved))
         } finally {
             held?.close()
+            check(root.toFile().deleteRecursively())
+        }
+    }
+
+    @Test fun safeCloseRetryJoinsThePendingLanSealBeforeReleasingStorage() {
+        val root = Files.createTempDirectory("synthetic-desktop-lan-retry-seal-").toRealPath()
+        val resolved = DesktopDataRootResolution.Resolved(appDataRoot = root,
+            provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+            bootstrapPath = root.resolveSibling("synthetic-bootstrap.json"))
+        val finished = CompletableDeferred<Unit>()
+        val events = mutableListOf<String>()
+        var ownership: DesktopDataRootOwnership? = null
+        try {
+            runDesktopApplicationWithDataRootOwnership(resolved, acquireOwnership = { selected ->
+                DesktopDataRootOwnership.acquire(selected).also {
+                    ownership = (it as DesktopDataRootOwnershipResult.Acquired).ownership
+                }
+            }, closeOwnership = {
+                events += "root"
+                it.close()
+                ownership = null
+            }) {
+                runBlocking {
+                    closeDesktopWithRecovery(close = {
+                        closeDesktopDataRuntimes(
+                            finalLocalFlush = {
+                                events += "seal"
+                                if (!finished.isCompleted) throw DesktopLanSyncFinalFlushTimeoutException()
+                                finished.await()
+                            },
+                            runtimeClose = { events += "backup" },
+                            coordinatorClose = { events += "gate" },
+                            migrationServiceClose = { events += "migration" },
+                        )
+                    }, awaitRetry = {
+                        assertEquals(listOf("seal"), events)
+                        assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolved))
+                        events += "retry"
+                        finished.complete(Unit)
+                    }, observeWait = { AutoCloseable {} })
+                }
+            }
+            assertEquals(listOf("seal", "retry", "seal", "backup", "gate", "migration", "root"), events)
+            assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolved)).ownership.close()
+        } finally {
+            ownership?.close()
             check(root.toFile().deleteRecursively())
         }
     }
