@@ -40,7 +40,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
     fun fieldSpace(record: DesktopMergeRecord, fields: List<String>): String? {
         val field = fields.lastOrNull() ?: return null
         if (opaque(fields)) return null
-        if (record.type == "save_slots" && fields == listOf("desktopMemorySourceSessionId")) return "chat_sessions"
+        if (record.type == "save_slots" && fields == listOf("inlineSourceSessionId")) return "chat_sessions"
         if (record.type == "vector_chunks" && record.text("sourceType") == "DOCUMENT" &&
             fields.size == 2 && fields.first() == "metadata" && field in setOf("documentId", "originalDocId")) return "documents"
         if (record.type == "vector_chunks" && record.text("sourceType") == "CHAT_MEMORY" &&
@@ -136,7 +136,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
         else -> text
     }
     companion object {
-        val fields = setOf("id", "sessionId", "characterCardId", "importedCharacterCardId", "characterId", "senderCharacterId", "messageId", "messageIds", "actionChoiceSourceIds", "desktopMemorySourceSessionId",
+        val fields = setOf("id", "sessionId", "characterCardId", "importedCharacterCardId", "characterId", "senderCharacterId", "messageId", "messageIds", "actionChoiceSourceIds", "inlineSourceSessionId",
             "generatedFromMessageId", "anchorMessageId", "longTermMemoryUpdatedThroughMessageId", "modelId", "imageModelId", "defaultModelId",
             "defaultImageModelId", "visionModelId", "formatRepairModelId", "voiceTagModelId", "aiDesignModelId", "designModelId", "defaultEmbeddingId",
             "formatCardId", "defaultFormatCardId", "worldBookIds", "extraWorldBookIds", "boundWorldBookId", "entryId", "postId", "currentConversationId",

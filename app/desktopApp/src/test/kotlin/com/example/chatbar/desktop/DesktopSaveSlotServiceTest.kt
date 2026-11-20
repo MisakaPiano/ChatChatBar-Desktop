@@ -666,14 +666,14 @@ class DesktopSaveSlotServiceTest {
             f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
                 actionProjection = MemoryHeadActionProjection.WITHHELD)))
             val incoming = SaveSlot(id = "foreign-inline-head", sessionId = "foreign-original", name = "Foreign head only", createdAt = 1,
-                desktopMemorySourceSessionId = "s",
+                inlineSourceSessionId = "s",
                 messages = listOf(source.copy(sessionId = "foreign-original")), memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
             val file = f.root.resolve("foreign-inline-head.cbsave")
             Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
             val service = f.service()
             val local = service.import(file, "s")
             assertEquals("s", local.sessionId)
-            assertEquals("foreign-original", local.desktopMemorySourceSessionId, "Input provenance must not override its actual envelope owner")
+            assertEquals("", local.inlineSourceSessionId, "Conflicting input provenance can deny, never replace, its envelope owner")
             service.restore(local.id, "s")
             val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
             assertNull(state.head.actionProjection, "A rebound inline envelope does not prove the original HEAD owner")
@@ -690,13 +690,13 @@ class DesktopSaveSlotServiceTest {
             f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
                 actionProjection = MemoryHeadActionProjection.WITHHELD)))
             val incoming = SaveSlot(id = "same-inline-head", sessionId = "s", name = "Same owner head only", createdAt = 1,
-                desktopMemorySourceSessionId = "foreign-prefilled-value", messages = listOf(source),
+                messages = listOf(source),
                 memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
             val file = f.root.resolve("same-inline-head.cbsave")
             Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
             val local = f.service().import(file, "s")
             val coldSlot = JsonFileStorage(f.root).loadEntity("save_slots", local.id, SaveSlot.serializer())!!
-            assertEquals("s", coldSlot.desktopMemorySourceSessionId)
+            assertEquals("s", coldSlot.inlineSourceSessionId)
             f.service().restore(local.id, "s")
             val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
             assertEquals(MemoryHeadActionProjection.WITHHELD, state.head.actionProjection,
@@ -706,7 +706,7 @@ class DesktopSaveSlotServiceTest {
     }
 
     @Test fun `same session v3 inline restoration retains live withholding after node normalization`() = runBlocking {
-        Fixture().use { f ->
+        for (viaOtherSession in listOf(false, true)) Fixture().use { f ->
             f.seed()
             val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
                 sourceTurnId = "old-turn", sourceTurnOrder = 0)
@@ -723,7 +723,18 @@ class DesktopSaveSlotServiceTest {
             f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(retained.id)), nodes = listOf(retained))
             val file = f.root.resolve("same-session-v3.cbsave")
             Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
-            val service = f.service(); val local = service.import(file, "s")
+            val service = f.service()
+            val importFile = if (viaOtherSession) {
+                f.chats.createSession(f.session.copy(id = "intermediate", title = "Intermediate owner"))
+                val retainedSnapshot = f.snapshot
+                f.snapshot = null
+                val intermediate = service.import(file, "intermediate")
+                val exported = f.root.resolve("v3-through-intermediate.cbsave")
+                service.export(intermediate.id, exported)
+                f.snapshot = retainedSnapshot
+                exported
+            } else file
+            val local = service.import(importFile, "s")
             service.restore(local.id, "s")
             val cold = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
             val normalized = cold.nodes.single { it.coverageUnits.any { unit -> unit.sourceId == "legacy:${oldNode.id}" } }

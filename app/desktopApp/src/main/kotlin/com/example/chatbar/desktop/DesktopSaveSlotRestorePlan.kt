@@ -162,11 +162,15 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
             com.example.chatbar.desktop.backup.DesktopSlotHistoricalVoiceCustody.preserve(prepared, directory,
                 voiceIds.mapValues { (_, id) -> restoredVoices.getValue(id) })
             val memory = MemoryRepository(storage, strictReads = true)
-            // ZIP manifest retains its original owner. An inline library envelope has already
-            // been rebound; use its locally captured owner or an unchanged memory graph.
-            val originalOwner = prepared.originalSessionId ?: if (prepared.format == SlotInspectFormat.ZIP_V8) slot.sessionId else
-                (slot.memorySnapshot?.nodes.orEmpty().map { it.sessionId } +
-                    listOfNotNull(slot.memorySnapshot?.legacyCommit?.sessionId)).distinct().singleOrNull()
+            // Library envelopes may be rebound. An unchanged memory graph has priority over
+            // optional provenance, including when a v3 slot has travelled through another session.
+            val graphOwners = (slot.memorySnapshot?.nodes.orEmpty().map { it.sessionId } +
+                listOfNotNull(slot.memorySnapshot?.legacyCommit?.sessionId)).distinct()
+            val originalOwner = when {
+                prepared.format == SlotInspectFormat.ZIP_V8 -> slot.sessionId
+                graphOwners.isNotEmpty() -> graphOwners.singleOrNull()?.takeIf(String::isNotBlank)
+                else -> prepared.originalSessionId?.takeIf(String::isNotBlank)
+            }
             LongTermMemoryService(chats, memory, SettingsRepository(storage), NoArchiveNetwork,
                 ContextWindowManager()).loadSnapshot(target.id, slot.memorySnapshot,
                     sourceSessionId = originalOwner,
