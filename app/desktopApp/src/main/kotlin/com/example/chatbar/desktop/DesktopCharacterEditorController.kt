@@ -205,7 +205,7 @@ internal class DesktopCharacterEditorController(
         _state.update { it.copy(characters = cards, worldBooks = worldBooks, formatCards = formatCards) }
     }
 
-    fun search(query: String) { _state.value = _state.value.copy(query = query) }
+    fun search(query: String) { _state.update { it.copy(query = query) } }
 
     suspend fun openNew() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
@@ -948,7 +948,9 @@ internal class DesktopCharacterEditorController(
                 problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
                 detail = cleanup.assetFailure?.message))
         } finally {
-            _state.update { it.copy(cleanDraftCleanupInProgress = false) }
+            synchronized(resourceMutationLock) {
+                _state.update { it.copy(cleanDraftCleanupInProgress = false) }
+            }
         }
     } }
 
@@ -1200,7 +1202,7 @@ internal class DesktopCharacterEditorController(
     }
 
     private fun report(problem: CharacterEditorProblem, error: Throwable) {
-        _state.value = _state.value.copy(problem = problem, detail = error.message)
+        _state.update { it.copy(problem = problem, detail = error.message) }
     }
 
     private companion object {
