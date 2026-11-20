@@ -13,7 +13,7 @@ jobs:
       matrix:
         api: [26, 30]
     env:
-      SOURCE: 54eff2e1efc382a4338d510fd956757decc987c4
+      SOURCE: c4b25ab48745435c8e56d58b25d3ba5370f061e2
       API: ${{ matrix.api }}
       CHATBAR_SUPABASE_URL: https://synthetic.invalid
       CHATBAR_SUPABASE_ANON_KEY: synthetic-no-real-key
