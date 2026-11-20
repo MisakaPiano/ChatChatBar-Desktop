@@ -1,7 +1,7 @@
 {
   "kind": "CCB_LAN_DELIVERED85_CANDIDATE86_V6_BUILD_V1",
   "format": 1,
-  "sourceSha": "8b4e88553243a910bc5682da48e72cd8e25220c3",
+  "sourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
   "series": "next",
   "versions": [
     85,
@@ -44,7 +44,7 @@
       },
       "candidate86_v6_profile.py": {
         "bytes": 3182,
-        "sha256": "45a68b5fbde8be656c240a7f96d8dfc417cc75f97f511d4bd675c4c035c1b27e"
+        "sha256": "164fb2cc766a7b5c1ab72e0182159163536f770781b423c77e67677bed4ef348"
       },
       "upgrade_series_engine.py": {
         "bytes": 32375,
