@@ -69,8 +69,9 @@ object NarrativeHistoryEcho {
         val literals by lazy(LazyThreadSafetyMode.NONE) {
             val markdown = bareCarriageReturn.replace(end, "\n")
             val lazyQuoteLineStarts = mutableSetOf<Int>()
-            val fences = MarkdownCodeFences.blocks(markdown) { lazyQuoteLineStarts += it }.map { it.range }
-            val ranges = codeLiteralRanges(markdown, fences)
+            val indentedCode = mutableListOf<IntRange>()
+            val fences = MarkdownCodeFences.blocks(markdown, { lazyQuoteLineStarts += it }, indentedCode::add).map { it.range }
+            val ranges = codeLiteralRanges(markdown, fences + indentedCode)
             val quoteDelimitersToSkip = ranges + familyTags.map { it.range }
             val quotes = proseQuoteRanges(end, quoteDelimitersToSkip, includeUnclosed = streaming || interrupted)
             ReplyLiterals(ranges + quotes, lazyQuoteLineStarts)
@@ -161,7 +162,7 @@ object NarrativeHistoryEcho {
             val symbol = text[index]
             val matchingClose = proseDelimiters[symbol]
             if (matchingClose == null && symbol != closing) continue
-            if (isEscaped(text, index) || isIndentedCodeLine(text, index) || delimiterExclusions.any { index in it }) continue
+            if (isEscaped(text, index) || delimiterExclusions.any { index in it }) continue
             val followsWord = text.getOrNull(index - 1)?.isLetterOrDigit() == true
             val precedesWord = text.getOrNull(index + 1)?.isLetterOrDigit() == true
             // Apostrophes in contractions and possessives do not start a prose quote.

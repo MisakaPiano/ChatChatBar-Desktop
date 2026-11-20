@@ -39,7 +39,7 @@ class DesktopNarrativeReplyEchoTest {
                 assertEquals(++expectedRequests, server.requestCount, "This fixture admits only the actual chat request, without memory/model auxiliaries")
                 assertEquals(body, result.assistant.content)
                 assertEquals(body, seen.last())
-                assertTrue(seen.none { it.startsWith("<历史回复 模式=") })
+                assertTrue(seen.none { it.startsWith("<历史回复 模式=") }, "Unexpected preview for $body: ${seen.firstOrNull { it.startsWith("<历史回复 模式=") }}")
                 assertEquals(body, ChatRepository(JsonFileStorage(app.appDataRoot)).getMessage(result.assistant.id, id)?.content)
                 val wire = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
                     .getValue("messages").jsonArray.joinToString("\n") { it.jsonObject.getValue("content").jsonPrimitive.content }
