@@ -60,8 +60,8 @@ class VoiceRepositoryPersistenceTest {
         val root = Files.createTempDirectory("unversioned-anchor-")
         try {
             val storage = JsonFileStorage(root)
-            val original = "甲：『旧录音』"
-            val edited = "甲：『新文字』"
+            val original = "<n=\"甲\"/>[旧录音]()"
+            val edited = "<n=\"甲\"/>[新文字]()"
             val message = ChatMessage("message", "session", MessageRole.ASSISTANT, original,
                 alternatives = listOf(original, edited), alternativeVersionIds = listOf("a", "b"),
                 currentAlternativeVersionId = "a", createdAt = 1, updatedAt = 1)
