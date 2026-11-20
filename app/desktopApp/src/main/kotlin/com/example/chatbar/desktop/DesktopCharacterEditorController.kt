@@ -128,12 +128,12 @@ internal class DesktopCharacterEditorController(
                 CharacterEditorProblem.SOURCE_CHANGED, CharacterEditorProblem.SOURCE_DELETED)
     }
 
-    internal fun applyCardAi(session: String, basis: CharacterCard, result: CharacterCard): Boolean {
+    internal fun applyCardAi(session: String, basis: CharacterCard, result: CharacterCard): Boolean = synchronized(resourceMutationLock) {
         val current = _state.value
         if (!canUseCardAi || current.draftSessionId != session || current.card != basis ||
-            result.id != basis.id || result.createdAt != basis.createdAt) return false
+            result.id != basis.id || result.createdAt != basis.createdAt) return@synchronized false
         edit { result }
-        return _state.value.card == result
+        _state.value.card == result
     }
 
     internal fun stageGeneratedCardImage(session: String, basis: CharacterCard, destination: CharacterCard,
@@ -732,16 +732,20 @@ internal class DesktopCharacterEditorController(
 
     /** Preflight may suspend while the user continues editing. Never publish its older form. */
     private fun reserveSaveSnapshot(before: DesktopCharacterEditorState): Boolean {
-        while (true) {
-            val current = _state.value
-            if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
-                current.base != before.base) return false
-            if (current.card != before.card || !current.dirty || !current.draftPersisted) {
-                if (current.dirty) reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED,
-                    "保存检查期间内容已变化，最新编辑已保留，请再次保存。", allowChangedCard = true)
-                return false
+        // Generated images and manual resources can stage and edit off the window thread.
+        // Reserve under their lock so an accepted edit cannot overwrite the busy snapshot.
+        synchronized(resourceMutationLock) {
+            while (true) {
+                val current = _state.value
+                if (current.busy || current.targetId != before.targetId || current.draftSessionId != before.draftSessionId ||
+                    current.base != before.base) return false
+                if (current.card != before.card || !current.dirty || !current.draftPersisted) {
+                    if (current.dirty) reportSaveProblem(before, CharacterEditorProblem.SAVE_FAILED,
+                        "保存检查期间内容已变化，最新编辑已保留，请再次保存。", allowChangedCard = true)
+                    return false
+                }
+                if (_state.compareAndSet(current, current.copy(busy = true, problem = null, detail = null))) return true
             }
-            if (_state.compareAndSet(current, current.copy(busy = true, problem = null, detail = null))) return true
         }
     }
 

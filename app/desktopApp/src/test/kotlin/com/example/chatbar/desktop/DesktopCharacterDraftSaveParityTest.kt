@@ -11,8 +11,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.io.IOException
 import kotlin.test.*
 
@@ -28,6 +30,69 @@ class DesktopCharacterDraftSaveParityTest {
     private fun source(name: String = "Synthetic A") = CharacterCard.create(name, greeting = "Synthetic greeting").copy(
         extensions = """{"unknown_vendor":{"retained":[1,2,3]}}""", creatorNotes = "Original notes")
     private fun coldDrafts(app: DesktopAppContainer) = EditorDraftRepository(JsonFileStorage(app.appDataRoot))
+
+    @Test fun `generated image edit and formal save cannot publish competing snapshots`() = runBlocking {
+        fixture { app, _ -> coroutineScope {
+            val savingThread = AtomicReference<Thread>()
+            val writingOldSnapshot = CompletableDeferred<Unit>()
+            val saveDispatcher = Executors.newSingleThreadExecutor { work ->
+                Thread(work, "character-save-test").also { savingThread.set(it) }
+            }.asCoroutineDispatcher()
+            val editEntered = CompletableDeferred<Unit>()
+            val releaseEdit = CountDownLatch(1)
+            val editor = DesktopCharacterEditorController(app.characterRepository, app.editorDraftRepository,
+                app.worldBookRepository, app.formatCardRepository, app.chatRepository,
+                DesktopCharacterDraftResources(app.appDataRoot, app.characterResourceStore), app.jsonFileStorage.json,
+                persistCharacter = {
+                    writingOldSnapshot.complete(Unit)
+                    app.characterRepository.save(it)
+                })
+            val original = source()
+            app.characterRepository.save(original)
+            try {
+                editor.openExisting(original.id)
+                editor.edit { it.copy(creatorNotes = "An edit ready to save") }
+                editor.flushDraft()
+                val basis = assertNotNull(editor.state.value.card)
+                val session = assertNotNull(editor.state.value.draftSessionId)
+                val bytes = DesktopImageEditing.png(java.awt.image.BufferedImage(4, 4, java.awt.image.BufferedImage.TYPE_INT_RGB))
+                val applying = async(Dispatchers.IO) {
+                    editor.stageGeneratedCardImage(session, basis, basis, null, bytes) { next ->
+                        editor.edit {
+                            editEntered.complete(Unit)
+                            check(releaseEdit.await(10, TimeUnit.SECONDS))
+                            next
+                        }
+                        editor.state.value.card == next
+                    }
+                }
+                try {
+                    withTimeout(5_000) { editEntered.await() }
+                    val saving = async(saveDispatcher) { editor.save() }
+                    try {
+                        // The previous implementation enters persistence here. The fixed save waits
+                        // at the same lock used by the already admitted image assignment.
+                        withTimeout(5_000) {
+                            while (!writingOldSnapshot.isCompleted && savingThread.get()?.stackTrace.orEmpty()
+                                    .none { it.methodName == "reserveSaveSnapshot" }) delay(10)
+                        }
+                        assertFalse(writingOldSnapshot.isCompleted, "Save reserved the old card during image assignment")
+                        releaseEdit.countDown()
+                        assertTrue(applying.await())
+                        assertFalse(saving.await(), "The stale preflight must yield to the newer accepted edit")
+                        editor.flushDraft()
+                        val draft = assertNotNull(coldDrafts(app).getForTarget(EditorDraftType.CHARACTER_CARD, original.id))
+                        val staged = assertNotNull(draft.characterPayload?.coverImage)
+                        assertContentEquals(bytes, editor.imageBytes(staged))
+                        assertTrue(editor.save())
+                        val durable = assertNotNull(CharacterRepository(JsonFileStorage(app.appDataRoot)).getById(original.id))
+                        assertEquals("An edit ready to save", durable.creatorNotes)
+                        assertContentEquals(bytes, editor.imageBytes(assertNotNull(durable.coverImage)))
+                    } finally { releaseEdit.countDown(); saving.cancelAndJoin() }
+                } finally { releaseEdit.countDown(); applying.cancelAndJoin() }
+            } finally { saveDispatcher.close(); editor.closeAndDrain() }
+        } }
+    }
 
     @Test fun `suspended person and document focus preserve the freshly rotated draft owner and its accepted attachment`() = runBlocking {
         for (personFocus in listOf(true, false)) fixture { app, _ -> coroutineScope {
