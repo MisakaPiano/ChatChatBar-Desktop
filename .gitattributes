@@ -94,3 +94,10 @@ tools/lan-next-control/candidate86_v6_verify86.kt text eol=lf
 .github/lan-delivered85-candidate86-v6-build-request.json text eol=lf
 .github/workflows/lan-delivered85-candidate86-v6-sign-upgrade.yml text eol=lf
 .github/lan-delivered85-candidate86-v6-sign-request.json text eol=lf
+
+# Exact LAN7 prepared-retained upgrade controller, fixture, request and pure guards.
+.github/lan-next-desktop-lan7-prepared-upgrade-request.json text eol=lf
+.github/workflows/lan-next-desktop-lan7-prepared-upgrade.yml text eol=lf
+tools/lan-next-control/desktop_lan7_prepared_upgrade_control.py text eol=lf
+tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt text eol=lf
+tools/lan-next-control/test_desktop_lan7_prepared_upgrade_control.py text eol=lf
