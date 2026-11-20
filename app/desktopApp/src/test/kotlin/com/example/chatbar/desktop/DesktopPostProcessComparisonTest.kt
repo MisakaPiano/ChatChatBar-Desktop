@@ -59,15 +59,24 @@ class DesktopPostProcessComparisonTest {
         fun greenRows(bitmap: BufferedImage, x: Int): List<Int> = (1 until view.viewport.height - 1).filter { y ->
             val c = Color(bitmap.getRGB(x, y), true); c.green > 240 && c.red < 15 && c.blue < 15
         }
-        fun assertAligned() {
-            val bitmap = pixels()
-            try {
-                val left = greenRows(bitmap, view.viewport.width / 4)
-                val right = greenRows(bitmap, view.viewport.width * 3 / 4)
-                assertTrue(left.size > 10 && right.size > 10, "Both source and result must actually render")
-                assertTrue(abs(left.first() - right.first()) <= 2 && abs(left.last() - right.last()) <= 2,
-                    "Normalized stripe must align across the viewport clip despite different raster sizes: $left / $right")
-            } finally { bitmap.flush() }
+        suspend fun assertAligned() {
+            var left = emptyList<Int>(); var right = emptyList<Int>()
+            // Decode identity is published before its asynchronously uploaded pixels can paint.
+            // Await the actual visual prerequisite, then keep the original geometric assertion.
+            withTimeoutOrNull(5_000) {
+                while (true) {
+                    val bitmap = pixels()
+                    try {
+                        left = greenRows(bitmap, view.viewport.width / 4)
+                        right = greenRows(bitmap, view.viewport.width * 3 / 4)
+                    } finally { bitmap.flush() }
+                    if (left.size > 10 && right.size > 10) break
+                    frames()
+                }
+            }
+            assertTrue(left.size > 10 && right.size > 10, "Both source and result must actually render")
+            assertTrue(abs(left.first() - right.first()) <= 2 && abs(left.last() - right.last()) <= 2,
+                "Normalized stripe must align across the viewport clip despite different raster sizes: $left / $right")
         }
         suspend fun drag(from: Offset, to: Offset) {
             scene.sendPointerEvent(PointerEventType.Press, from, button = PointerButton.Primary)

@@ -60,9 +60,10 @@ internal object DesktopArchiveFiles {
         return "\\\\?\\$absolute"
     }
 
-    suspend fun copyNew(source: Path, target: Path, maximum: Long): String {
+    suspend fun copyNew(source: Path, target: Path, maximum: Long, onCreated: (Path) -> Unit = {}): String {
         safe(target.parent, true)
         FileChannel.open(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { output ->
+            onCreated(target)
             val hash = read(source, maximum) { bytes, count ->
                 val buffer = ByteBuffer.wrap(bytes, 0, count)
                 while (buffer.hasRemaining()) output.write(buffer)
