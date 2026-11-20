@@ -24,7 +24,7 @@ EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '
 BRIDGE_SHA = '896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1'
 PROFILE_SHA = '515264a0b2be9e6e6db5369511b54055d0bdca7f0c5b162d6ea75422c5a9b891'
 FIXTURE = HERE / 'fixtures/DesktopGroupPreparedUpgradeControlTest.kt'
-FIXTURE_SHA = '4952c1afc87122cd224fcc4bc8c4f3e0fb748c7bae97ed6efb347993ed62f423'
+FIXTURE_SHA = '7b6cb845e4eaeaf86da4c3658188c72322d94c557680e16f8228de83991d8d70'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupPreparedUpgradeControlTest'
 METHODS = {
     'SEED': 'seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi',
@@ -52,7 +52,8 @@ SAFE_PHASES = frozenset({'GUARD','READ_BASE_ORACLE','OWNERSHIP','VERIFY_RETAINED
  'OPEN_PREPARED_ON_CANDIDATE','UNLOCK_SAME_DPAPI_CODE','COMPLETE_SAME_SETUP','VERIFY_REAL_LOCAL_SOURCE_AND_PUBLISH_OFFLINE',
  'CLOSE_REAL_APP','POST_CLOSE_EVIDENCE','COLD_OPEN_READY','RESUME_READY_FOR_INVITATION','UNLOCK_READY_WITH_ORIGINAL_DPAPI_CODE',
  'ISSUE_REAL_COORDINATOR_INVITATION','CREATE_UNUSED_SYNTHETIC_SETUP','EXPLICIT_ARCHIVE_UNUSED_SETUP','READ_ARCHIVE_DPAPI_ORACLE',
- 'COLD_OPEN_COMPLETED_ARCHIVE','CAPTURE_AUTHENTICATED_COLD_BASELINE'})
+ 'COLD_OPEN_COMPLETED_ARCHIVE','CAPTURE_AUTHENTICATED_COLD_BASELINE','CLOSE_REAL_APP_CALL','VERIFY_CLOSE_NOTICE'})
+SAFE_JVM_TYPES = frozenset({'AssertionError','IllegalStateException','IllegalArgumentException','IOException','SecurityException','CancellationException','TimeoutCancellationException','OutOfMemoryError','DesktopLanSyncFinalFlushIncompleteException','DesktopLanSyncFinalFlushTimeoutException','UNKNOWN'})
 _phase = 'GUARD'
 
 def require(value, code):
@@ -73,8 +74,11 @@ def pairs(items):
         require(key not in out, 'DUPLICATE_JSON_KEY'); out[key] = value
     return out
 
+MAX_NATIVE_RESULT_BYTES = 256 * 1024
+
 def small(path):
-    require(path.is_file() and not path.is_symlink() and 0 < path.stat().st_size < 65536, 'SMALL_JSON_REQUIRED')
+    maximum = MAX_NATIVE_RESULT_BYTES if path.name == RESULT else 65536
+    require(path.is_file() and not path.is_symlink() and 0 < path.stat().st_size < maximum, 'SMALL_JSON_REQUIRED')
     def reject_constant(ignored): raise ValueError('NONFINITE_JSON')
     return json.loads(path.read_bytes(), object_pairs_hook=pairs, parse_constant=reject_constant)
 
@@ -130,9 +134,17 @@ def environment_for(root, private, source, action, report):
         CCB_V6_PREPARED_PRIVATE=str(private.resolve(strict=True)), CCB_V6_PREPARED_REPORT=str(report))
     return value
 
+def validate_close_fields(value, action):
+    require(value['closeReturned'] is True and value['closeNoticeKnown'] is True, 'ACTUAL_SAFE_CLOSE_RETURN_REQUIRED')
+    count=value['closeNoticeCount']
+    require(type(count) is int and count in ((0,1) if action in ('RESUME','COLD_INVITE') else (0,)), 'EXPECTED_CLOSE_NOTICE_COUNT')
+    expected='RETURNED_WITHOUT_NOTICE' if count==0 else 'RETURNED_WITH_EXPECTED_PENDING_SYNC_NOTICE'
+    require(value['closeOutcome']==expected, 'EXPECTED_CLOSE_OUTCOME')
+
 def report(value, action):
-    common = {'kind','sourceSha','action','passed','realDpapi','realAppContainer','packagedMainExercised','networkDeliveryExercised'}
+    common = {'kind','sourceSha','action','passed','realDpapi','realAppContainer','packagedMainExercised','networkDeliveryExercised','closeReturned','closeNoticeKnown','closeNoticeCount','closeOutcome'}
     require(type(value) is dict and value.get('action') == action and value.get('sourceSha') == (OLD if action == 'SEED' else NEW), 'COMPONENT_IDENTITY')
+    validate_close_fields(value,action)
     if action in ('SEED','RESUME'):
         keys = common | {'baseMetadataWorkingBudgetObserved','samePreparedSetupResumed','heapBytes','recordWindow',
             'rawFixtureBytes','aggregateQuotedCostLowerBound','rawFixtureSha256','retainedProfileSha256'}
@@ -184,9 +196,9 @@ def _failure_projection(evidence, ui, bridge, source):
                 if len(bad) == 1 and bad[0].get('type') in ('java.lang.AssertionError','AssertionError'):
                     message = bad[0].get('message','')
                     if message.startswith('java.lang.AssertionError: '): message = message[len('java.lang.AssertionError: '):]
-                    match = re.fullmatch(r'CCB_V6_PREPARED_COMPONENT:([A-Z_]+):([A-Z_]+)',message)
-                    if match and all(k in SAFE_PHASES for k in match.groups()):
-                        value.update(safePhase=match[1], safePrimaryPhase=match[2])
+                    match = re.fullmatch(r'CCB_V6_PREPARED_COMPONENT:([A-Z_]+):([A-Z_]+)(?::([A-Za-z]+))?',message)
+                    if match and match[1] in SAFE_PHASES and match[2] in SAFE_PHASES and (match[3] is None or match[3] in SAFE_JVM_TYPES):
+                        value.update(safePhase=match[1], safePrimaryPhase=match[2], safeCaughtType=match[3])
     try: value['compiler'] = bridge.compiler_diagnostic(evidence, source)
     except Exception: value['compiler'] = {'status':'UNAVAILABLE','fixtureLocations':[]}
     return value
@@ -314,6 +326,18 @@ def attach(modules, bridge, companion):
         old.seed,old.Native,old.write_json = seed,Native,writer
         native.legacy,native.RESULT_FILE = prior_legacy,prior_result
 
+def isolated_archive_pair(root, private, temporary):
+    require(root.parent == temporary and private.parent == temporary and root != private and
+            not root.is_relative_to(private) and not private.is_relative_to(root), 'ARCHIVE_ROOT_PRIVATE_MUST_BE_SIBLINGS')
+
+def make_archive_root(temporary, private):
+    temporary=temporary.resolve(strict=True);private=private.resolve(strict=True)
+    root=temporary/('ccb-lan7-archive-'+uuid.uuid4().hex)
+    isolated_archive_pair(root,private,temporary)
+    root.mkdir(exist_ok=False)
+    for leaf in ('Local/ChatChatBarDesktop','Roaming','Temp'): (root/'UserData'/leaf).mkdir(parents=True,exist_ok=True)
+    return root
+
 def audit_output(output, complete=False):
     require(output.is_dir() and not output.is_symlink(), 'ISOLATED_OUTPUT')
     paths = list(output.iterdir())
@@ -353,8 +377,7 @@ def run(request_path, output):
                 failed=small(output/RESULT); failed.update(passed=False,proofComplete=False,failure={'phase':_phase,'type':safe_type(failure)},componentFailureDiagnostic=companion.failure)
                 (output/RESULT).write_text(json.dumps(failed,indent=2)+'\n',encoding='utf8',newline='\n')
                 raise
-            archive_root=private/'archive-independent'
-            for leaf in ('Local/ChatChatBarDesktop','Roaming','Temp'): (archive_root/'UserData'/leaf).mkdir(parents=True,exist_ok=True)
+            archive_root=make_archive_root(temporary,private)
             try:
                 companion.run(archive_root,'ARCHIVE');companion.run(archive_root,'ARCHIVE_COLD')
             except Exception as failure:

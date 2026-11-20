@@ -43,6 +43,7 @@ class DesktopGroupPreparedUpgradeControlTest {
     private val mib = 1024L * 1024
     private var phase = "GUARD"
     private var primary: String? = null
+    private var lastClose: SafeCloseResult? = null
 
     @Test fun seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi() {
         try {
@@ -224,15 +225,9 @@ class DesktopGroupPreparedUpgradeControlTest {
                     } finally {
                         val previous = phase
                         phase = "CLOSE_REAL_APP"
-                        var notices = 0
-                        withContext(NonCancellable) {
-                            withTimeout(60_000) {
-                                closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { notices++ })
-                            }
-                        }
-                        // Hold the root ownership until AppContainer teardown is confirmed.
-                        canRelease = true
-                        check(notices == 0)
+                        // LAN7_EXPECTED_CLOSE_BEGIN
+                        closeObserved(app, allowExpectedNotice = !seeding) { canRelease = true }
+                        // LAN7_EXPECTED_CLOSE_END
                         phase = previous
                     }
                     phase = "POST_CLOSE_EVIDENCE"
@@ -262,6 +257,7 @@ class DesktopGroupPreparedUpgradeControlTest {
                     Files.writeString(report, buildJsonObject {
                         put("kind", "CCB_V6_PREPARED_DPAPI_COMPONENT_V1"); put("sourceSha", source); put("action", action)
                         put("passed", true); put("realDpapi", true); put("realAppContainer", true)
+                        closeFields()
                         put("baseMetadataWorkingBudgetObserved", seeding); put("samePreparedSetupResumed", !seeding)
                         put("packagedMainExercised", false); put("networkDeliveryExercised", false)
                         put("heapBytes", heap); put("recordWindow", window); put("rawFixtureBytes", rawSize)
@@ -271,9 +267,9 @@ class DesktopGroupPreparedUpgradeControlTest {
                     }.toString(), CREATE_NEW, WRITE)
                 } finally { if (canRelease) acquired.ownership.close() }
             }
-        } catch (_: Throwable) {
+        } catch (failure: Throwable) {
             // Neither the arbitrary exception nor any cause contains safe caller-facing material.
-            throw AssertionError("CCB_V6_PREPARED_COMPONENT:$phase:${primary ?: phase}").also { it.stackTrace = emptyArray() }
+            throw AssertionError("CCB_V6_PREPARED_COMPONENT:$phase:${primary ?: phase}:${safeThrowableType(failure)}").also { it.stackTrace = emptyArray() }
         }
     }
 
@@ -463,6 +459,7 @@ class DesktopGroupPreparedUpgradeControlTest {
         Files.writeString(report, buildJsonObject {
             put("kind", "CCB_LAN6_LAN7_ADDITIONAL_DPAPI_COMPONENT_V1"); put("sourceSha", candidate); put("action", action)
             put("passed", true); put("realDpapi", true); put("realAppContainer", true)
+            closeFields()
             put("packagedMainExercised", false); put("visibleUiExercised", false); put("networkDeliveryExercised", false)
             put("details", details)
         }.toString(), CREATE_NEW, WRITE)
@@ -487,8 +484,8 @@ class DesktopGroupPreparedUpgradeControlTest {
             val sync = DesktopLanSyncStartup.localRoot(data).toAbsolutePath().normalize()
             check(sync.startsWith(local) && !sync.startsWith(data))
             runBlocking(edt) { operation(root, privateRoot, data, sync, WindowsDpapiSecretProtector()) }
-        } catch (_: Throwable) {
-            throw AssertionError("CCB_V6_PREPARED_COMPONENT:$phase:${primary ?: phase}").also { it.stackTrace = emptyArray() }
+        } catch (failure: Throwable) {
+            throw AssertionError("CCB_V6_PREPARED_COMPONENT:$phase:${primary ?: phase}:${safeThrowableType(failure)}").also { it.stackTrace = emptyArray() }
         }
     }
     private suspend fun withCandidateApp(data: Path, operation: suspend (DesktopAppContainer, LanSyncGroupCoordinator) -> Unit) {
@@ -511,19 +508,42 @@ class DesktopGroupPreparedUpgradeControlTest {
             } finally {
                 val previous = phase
                 phase = "CLOSE_REAL_APP"
-                var notices = 0
-                withContext(NonCancellable) {
-                    withTimeout(60_000) {
-                        closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { notices++ })
-                    }
-                }
-                canRelease = true
-                check(notices == 0)
+                closeObserved(app, allowExpectedNotice = env("CCB_V6_PREPARED_ACTION") == "COLD_INVITE") { canRelease = true }
                 phase = previous
             }
         } finally { if (canRelease) acquired.ownership.close() }
     }
 
+    private data class SafeCloseResult(val notices: Int, val known: Boolean, val returned: Boolean)
+    private fun JsonObjectBuilder.closeFields() {
+        val result = checkNotNull(lastClose)
+        put("closeReturned", result.returned); put("closeNoticeKnown", result.known); put("closeNoticeCount", result.notices)
+        put("closeOutcome", if (result.notices == 0) "RETURNED_WITHOUT_NOTICE" else "RETURNED_WITH_EXPECTED_PENDING_SYNC_NOTICE")
+    }
+    private suspend fun closeObserved(app: DesktopAppContainer, allowExpectedNotice: Boolean, onReturned: () -> Unit) {
+        phase = "CLOSE_REAL_APP_CALL"
+        var notices = 0
+        var knownNotice = true
+        withContext(NonCancellable) {
+            withTimeout(60_000) {
+                closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { message ->
+                    notices++
+                    // Main's presentation callback catches Throwable. Record first; validate outside it.
+                    knownNotice = knownNotice && message == DesktopLanSyncIncompleteNotice.message
+                })
+            }
+        }
+        onReturned() // Ownership may release only after the actual wrapper returned safely.
+        phase = "VERIFY_CLOSE_NOTICE"
+        check(knownNotice && notices in 0..(if (allowExpectedNotice) 1 else 0))
+        lastClose = SafeCloseResult(notices, knownNotice, true)
+    }
+    private fun safeThrowableType(failure: Throwable): String {
+        val name = failure.javaClass.simpleName
+        return if (name in setOf("AssertionError", "IllegalStateException", "IllegalArgumentException", "IOException",
+            "SecurityException", "CancellationException", "TimeoutCancellationException", "OutOfMemoryError",
+            "DesktopLanSyncFinalFlushIncompleteException", "DesktopLanSyncFinalFlushTimeoutException")) name else "UNKNOWN"
+    }
     private fun messageId(index: Int) = "v6-message-" + index.toString().padStart(3, '0')
     private fun text(index: Int) = "合成第 $index 段：" + "合成内容😀".repeat(16_384)
 

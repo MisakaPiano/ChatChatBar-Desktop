@@ -1,11 +1,12 @@
 import copy, hashlib, json, os, pathlib, re, sys, tempfile, types, unittest
 from unittest.mock import patch
 import desktop_lan7_prepared_upgrade_control as d
+ORIGINAL_CLOSE_BLOCK = b'                        var notices = 0\n                        withContext(NonCancellable) {\n                            withTimeout(60_000) {\n                                closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { notices++ })\n                            }\n                        }\n                        // Hold the root ownership until AppContainer teardown is confirmed.\n                        canRelease = true\n                        check(notices == 0)\n'
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 REQUEST=json.loads((ROOT/d.REQUEST).read_bytes())
 def first(action='SEED'):
  v={'kind':'CCB_V6_PREPARED_DPAPI_COMPONENT_V1','sourceSha':d.OLD if action=='SEED' else d.NEW,'action':action,
- 'passed':True,'realDpapi':True,'realAppContainer':True,'packagedMainExercised':False,'networkDeliveryExercised':False,
+ 'passed':True,'realDpapi':True,'realAppContainer':True,'packagedMainExercised':False,'networkDeliveryExercised':False,'closeReturned':True,'closeNoticeKnown':True,'closeNoticeCount':0,'closeOutcome':'RETURNED_WITHOUT_NOTICE',
  'baseMetadataWorkingBudgetObserved':action=='SEED','samePreparedSetupResumed':action=='RESUME','heapBytes':256*1024**2,
  'recordWindow':64*1024**2,'rawFixtureBytes':25*1024**2,'aggregateQuotedCostLowerBound':96*16384*6*8,
  'rawFixtureSha256':'1'*64,'retainedProfileSha256':'2'*64}
@@ -16,7 +17,7 @@ def additional(action):
  'managementLockedAfterward':True,'immutableProtectedOriginsRetained':True,'originalSyntheticEntitiesUnchanged':True,'originalAuthenticatedDeliveryObjectsRetained':True,'profileSha256':'2'*64} if action=='COLD_INVITE' else {
  'unusedSetupOnly':True,'explicitArchiveAction':action=='ARCHIVE','completedArchiveRetained':True,'liveEntitiesUnchanged':True,'coldEmptyStateVerified':action=='ARCHIVE_COLD','archiveSha256':'4'*64}
  return {'kind':'CCB_LAN6_LAN7_ADDITIONAL_DPAPI_COMPONENT_V1','sourceSha':d.NEW,'action':action,'passed':True,'realDpapi':True,
- 'realAppContainer':True,'packagedMainExercised':False,'visibleUiExercised':False,'networkDeliveryExercised':False,'details':details}
+ 'realAppContainer':True,'packagedMainExercised':False,'visibleUiExercised':False,'networkDeliveryExercised':False,'closeReturned':True,'closeNoticeKnown':True,'closeNoticeCount':0,'closeOutcome':'RETURNED_WITHOUT_NOTICE','details':details}
 class PreparedTests(unittest.TestCase):
  def test_exact_real_candidate_and_all_baseline_fields(self):
   with d.borrowed() as (bridge,modules,p):
@@ -86,6 +87,11 @@ class PreparedTests(unittest.TestCase):
  def test_original_compiled_fixture_body_and_helpers_unchanged(self):
   fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_bytes()
   fixture=re.sub(rb'                    // LAN7_COLD_BASELINE_BEGIN\n.*?                    // LAN7_COLD_BASELINE_END\n',b'',fixture,flags=re.S)
+  fixture=fixture.replace(b'    private var lastClose: SafeCloseResult? = null\n',b'',1)
+  fixture=re.sub(rb'                        // LAN7_EXPECTED_CLOSE_BEGIN\n.*?                        // LAN7_EXPECTED_CLOSE_END\n',ORIGINAL_CLOSE_BLOCK,fixture,count=1,flags=re.S)
+  fixture=fixture.replace(b'                        closeFields()\n',b'',1)
+  fixture=fixture.replace(b'} catch (failure: Throwable) {\n            // Neither',b'} catch (_: Throwable) {\n            // Neither',1)
+  fixture=fixture.replace(b'${primary ?: phase}:${safeThrowableType(failure)}',b'${primary ?: phase}',1)
   marker=b'    private fun messageId(index: Int)'
   self.assertEqual(hashlib.sha256(fixture.split(b'    @Test fun coldReadyUsesOriginalDpapiCodeAndIssuesInvitation',1)[0].rstrip()).hexdigest(),'73c27ebac1c3653ee8633b3deaa2b9ba540af6799e55ed5c7f65a161b6e8c8a7')
   self.assertEqual(hashlib.sha256(fixture.split(marker,1)[1]).hexdigest(),'59846e23d86c89f1e678c1678e0caa583f869ca72cf8f182c7c59862bb9816da')
@@ -160,5 +166,76 @@ class PreparedTests(unittest.TestCase):
   self.assertIn('pinnedReplicaFiles.all',cold);self.assertNotIn('check(deliveryPin(',cold)
   self.assertIn('if (!seeding)',fixture);self.assertIn('replica.readTo(item.key, java.io.OutputStream.nullOutputStream(), item.descriptor)',fixture)
   self.assertIn('rootDeliveries == retained.getValue("rootDelivery")',fixture)
+
+
+ def test_115_entity_five_hash_maps_result_survives_both_reads_and_complete_audit(self):
+  with tempfile.TemporaryDirectory() as td:
+   directory=pathlib.Path(td)
+   names=['character_cards/synthetic-card.json','chat_sessions/synthetic-v6-prepared.json']+[f'chat_messages/synthetic-v6-prepared_v6-message-{i:03d}.json' for i in range(1,97)]+[f'old_control_entity/retained-{i:02d}.json' for i in range(17)]
+   hashes={name:'1'*64 for name in names}
+   value={'snapshots':{stage:hashes for stage in d.MAIN_STAGES[1:]},'entityHashesBefore':hashes,'passed':True}
+   d.write_new(directory/d.RESULT,value)
+   self.assertEqual(len(names),115);self.assertGreater((directory/d.RESULT).stat().st_size,65536)
+   self.assertEqual(d.small(directory/d.RESULT),value);self.assertEqual(d.small(directory/d.RESULT),value)
+   for name in d.OUTPUTS:
+    if name!=d.RESULT:d.write_new(directory/name,{'passed':True})
+   d.audit_output(directory,complete=True)
+ def test_result_bound_is_still_finite_and_only_for_exact_native_filename(self):
+  with tempfile.TemporaryDirectory() as td:
+   directory=pathlib.Path(td)
+   self.assertEqual(d.MAX_NATIVE_RESULT_BYTES,256*1024)
+   result=directory/d.RESULT
+   result.write_bytes(b'"'+b'x'*(d.MAX_NATIVE_RESULT_BYTES-2)+b'"')
+   self.assertEqual(result.stat().st_size,d.MAX_NATIVE_RESULT_BYTES)
+   with self.assertRaises(ValueError):d.small(result)
+   for name in d.OUTPUTS:
+    if name==d.RESULT:continue
+    path=directory/name;path.write_bytes(b'"'+b'x'*65534+b'"')
+    with self.subTest(name=name),self.assertRaises(ValueError):d.small(path)
+ def test_non_result_75kb_cannot_hide_in_allowlisted_json(self):
+  with tempfile.TemporaryDirectory() as td:
+   directory=pathlib.Path(td)
+   d.write_new(directory/d.RESULT,{'passed':False})
+   d.write_new(directory/'component-resume.json',{'privatePadding':'x'*75000})
+   with self.assertRaises(ValueError):d.audit_output(directory)
+
+
+ def test_expected_notice_only_for_resume_and_cold_invite(self):
+  for action in d.ACTIONS:
+   value=first(action) if action in ('SEED','RESUME') else additional(action)
+   d.report(value,action)
+   value.update(closeNoticeCount=1,closeOutcome='RETURNED_WITH_EXPECTED_PENDING_SYNC_NOTICE')
+   if action in ('RESUME','COLD_INVITE'):d.report(value,action)
+   else:
+    with self.subTest(action=action),self.assertRaises(ValueError):d.report(value,action)
+  for field,invalid in [('closeReturned',False),('closeNoticeKnown',False),('closeNoticeCount',2),('closeNoticeCount',True),('closeOutcome','UNKNOWN_NOTICE')]:
+   value=first('RESUME');value[field]=invalid
+   with self.subTest(field=field,invalid=invalid),self.assertRaises(ValueError):d.report(value,'RESUME')
+ def test_close_callback_records_known_flag_then_validates_outside_swallow_boundary(self):
+  fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
+  helper=fixture.split('private suspend fun closeObserved(',1)[1].split('private fun safeThrowableType',1)[0]
+  self.assertIn('withTimeout(60_000)',helper)
+  self.assertLess(helper.index('closeDesktopWithLanSyncCompletionNotice'),helper.index('onReturned()'))
+  self.assertLess(helper.index('onReturned()'),helper.index('check(knownNotice'))
+  callback=helper.split('showNotice = { message ->',1)[1].split('})',1)[0]
+  self.assertIn('message == DesktopLanSyncIncompleteNotice.message',callback);self.assertNotIn('check(',callback)
+  self.assertNotIn('message)',callback);self.assertIn('VERIFY_CLOSE_NOTICE',helper)
+ def test_archive_root_is_runner_temp_sibling_and_old_nested_pair_refuses(self):
+  with tempfile.TemporaryDirectory() as td:
+   temporary=pathlib.Path(td).resolve();private=temporary/'private';private.mkdir()
+   root=d.make_archive_root(temporary,private)
+   self.assertEqual(root.parent,temporary);self.assertNotEqual(root,private)
+   self.assertTrue((root/'UserData/Local/ChatChatBarDesktop').is_dir())
+   for a,b in [(private/'nested',private),(private,private/'nested')]:
+    with self.assertRaises(ValueError):d.isolated_archive_pair(a,b,temporary)
+ def test_safe_failure_type_backward_and_new_marker_closed(self):
+  with tempfile.TemporaryDirectory() as td:
+   directory=pathlib.Path(td);bridge=types.SimpleNamespace(compiler_diagnostic=lambda *args:{'status':'NO_ERROR','fixtureLocations':[]})
+   def value(marker):
+    (directory/'original-test.xml').write_text('<testsuite name="'+d.CLASS+'" tests="1" failures="1" errors="0" skipped="0"><testcase><failure type="java.lang.AssertionError" message="'+marker+'"/></testcase></testsuite>')
+    return d.failure_projection(directory,None,bridge,directory)
+   self.assertEqual(value('CCB_V6_PREPARED_COMPONENT:CLOSE_REAL_APP:CLOSE_REAL_APP')['safePhase'],'CLOSE_REAL_APP')
+   self.assertEqual(value('CCB_V6_PREPARED_COMPONENT:VERIFY_CLOSE_NOTICE:VERIFY_CLOSE_NOTICE:IllegalStateException')['safeCaughtType'],'IllegalStateException')
+   self.assertIsNone(value('CCB_V6_PREPARED_COMPONENT:VERIFY_CLOSE_NOTICE:VERIFY_CLOSE_NOTICE:SecretToken')['safePhase'])
 
 if __name__=='__main__':unittest.main()
