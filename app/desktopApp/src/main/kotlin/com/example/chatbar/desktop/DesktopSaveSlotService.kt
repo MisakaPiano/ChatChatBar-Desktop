@@ -558,8 +558,10 @@ internal class DesktopSaveSlotService(
             root.resolve("save_slot_packages/$name")
         } else root.resolve("entities/save_slots/$slotId.json")
         val prepared = archive.prepare(path)
-        return if (prepared.format == SlotInspectFormat.ZIP_V8) prepared else
-            prepared.copy(originalSessionId = slot.desktopMemorySourceSessionId)
+        return if (prepared.format == SlotInspectFormat.ZIP_V8) prepared else {
+            check(prepared.slot == slot) { "存档库记录已变化，请重新选择" }
+            prepared.copy(originalSessionId = prepared.slot.desktopMemorySourceSessionId)
+        }
     }
 
     private suspend fun publish(sourceId: String, sourceProof: Map<String, String>, plan: DesktopSaveSlotRestorePlan.Plan?,
