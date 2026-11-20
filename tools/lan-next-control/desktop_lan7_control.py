@@ -4,7 +4,7 @@ from types import MappingProxyType
 import desktop_control as control
 import desktop_lan6_control as prior
 native = prior.native
-SOURCE = "49b7edf434178611c72d31f599b7300a3a3225f2"
+SOURCE = "8b4e88553243a910bc5682da48e72cd8e25220c3"
 DELIVERED_LAN6 = MappingProxyType({'series': 'lan6', 'version': '0.1.0-lan.6', 'sourceSha': '5c906e6d4a0f31a114326e35a331c4af4dfa6379', 'controlSha': '1964d3c932127d307ead1586adbd81e06419eb9d', 'runId': 43709620276, 'artifactId': 14160026856, 'artifactName': 'ccb-lan5-lan6-independent-desktop', 'outerBytes': 210710242, 'outerSha256': '1c3f623a3c76ab27c6f7c2e6b3e70d51afab17f829b3edcaf92ac1a132b7f43a', 'filename': 'CCB-0.1.0-lan.6-independent-windows-x64.zip', 'innerBytes': 210595028, 'innerSha256': '9aa08f32971a004fc34fdbb6ecb47a1e69c7fb5a7f6d44452d5631f10054d2c1', 'installerVersion': '0.1.40006', 'buildNumber': '40006'})
 
 @contextmanager

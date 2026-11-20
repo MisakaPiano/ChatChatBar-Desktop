@@ -3,7 +3,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from upgrade_series_engine import Role
 from candidate85_group_profile import PROFILE as PRIOR_PROFILE
-SOURCE = '49b7edf434178611c72d31f599b7300a3a3225f2'
+SOURCE = '8b4e88553243a910bc5682da48e72cd8e25220c3'
 BUILD_REQUEST_PATH = '.github/lan-delivered85-candidate86-v6-build-request.json'
 SIGN_REQUEST_PATH = '.github/lan-delivered85-candidate86-v6-sign-request.json'
 BASE = MappingProxyType({
