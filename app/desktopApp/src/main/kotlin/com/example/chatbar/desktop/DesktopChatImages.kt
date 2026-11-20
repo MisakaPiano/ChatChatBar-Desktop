@@ -150,9 +150,7 @@ internal class DesktopChatImages(
     }
 
     suspend fun cleanupRemoved(references: List<String>): String? {
-        // Imported card/legacy/external resources have a different owner.
-        val owned = references.filter { Regex("images/card_[0-9]+_p7(?:[0-9a-f-]+|chat[0-9a-f-]+_[0-9]+)\\.(png|jpg|webp|gif)").matches(it) }
-        return try { cleanup(owned); null }
+        return try { cleanup(ownedChatImageCleanupCandidates(references)); null }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { "已保存；旧图片清理未完成：${failure.message}" }
     }
@@ -175,3 +173,7 @@ internal class DesktopChatImages(
         return Base64.getEncoder().encodeToString(bytes)
     }
 }
+
+/** Imported card, legacy and external files do not belong to chat attachment cleanup. */
+internal fun ownedChatImageCleanupCandidates(references: List<String>): List<String> =
+    references.filter { Regex("images/card_[0-9]+_p7(?:[0-9a-f-]+|chat[0-9a-f-]+_[0-9]+)\\.(png|jpg|webp|gif)").matches(it) }

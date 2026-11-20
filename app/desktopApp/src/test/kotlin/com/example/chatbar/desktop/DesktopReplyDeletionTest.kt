@@ -24,48 +24,53 @@ class DesktopReplyDeletionTest {
     }
     @Test fun `actual chat panel whole deletion removes only target reply after second confirmation and cold read`() = runBlocking(edt) {
         val root = Files.createTempDirectory("panel-reply-deletion-")
-        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
-            DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
-            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { path ->
-                check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray()
-            })
+        val resolution = DesktopDataRootResolution.Resolved(Files.createDirectory(root.resolve("data")),
+            DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json"))
         try {
-            val card = CharacterCard.create("Synthetic deletion panel", greeting = "Greeting")
-            app.characterRepository.save(card)
-            app.chatRepository.createSession(ChatSession("session", card.id, "Synthetic session", createdAt = 1, updatedAt = 1))
-            val user = app.chatRepository.addMessage(ChatMessage.create("session", MessageRole.USER, "Retained user"))
-            val target = app.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "Target visible")
-                .copy(alternatives = listOf("Other target candidate", "Target visible"),
-                    alternativeVersionIds = listOf("a", "b"), currentAlternativeIndex = 1, currentAlternativeVersionId = "b"))
-            val separate = app.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "Separate AI reply retained"))
-            app.primaryChatController.refresh(); app.primaryChatController.selectSession("session")
-            val scene = ImageComposeScene(1200, 900, coroutineContext = edt) {
-                DesktopPrimaryChatPanel(app.primaryChatController, DesktopShellSize.WIDE, remember { DesktopComposerLayoutState() })
+            assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolution)).ownership.use {
+                val app = DesktopAppContainer(resolution,
+                    secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { path ->
+                        check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray()
+                    })
+                try {
+                    val card = CharacterCard.create("Synthetic deletion panel", greeting = "Greeting")
+                    app.characterRepository.save(card)
+                    app.chatRepository.createSession(ChatSession("session", card.id, "Synthetic session", createdAt = 1, updatedAt = 1))
+                    val user = app.chatRepository.addMessage(ChatMessage.create("session", MessageRole.USER, "Retained user"))
+                    val target = app.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "Target visible")
+                        .copy(alternatives = listOf("Other target candidate", "Target visible"),
+                            alternativeVersionIds = listOf("a", "b"), currentAlternativeIndex = 1, currentAlternativeVersionId = "b"))
+                    val separate = app.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "Separate AI reply retained"))
+                    app.primaryChatController.refresh(); app.primaryChatController.selectSession("session")
+                    val scene = ImageComposeScene(1200, 900, coroutineContext = edt) {
+                        DesktopPrimaryChatPanel(app.primaryChatController, DesktopShellSize.WIDE, remember { DesktopComposerLayoutState() })
+                    }
+                    try {
+                        suspend fun tap(label: String, button: PointerButton = PointerButton.Primary) {
+                            scene.until { scene.nodes().any { it.label(label) && it.boundsInRoot.width > 0 && it.boundsInRoot.height > 0 } }
+                            val node = scene.nodes().first { it.label(label) && it.boundsInRoot.width > 0 && it.boundsInRoot.height > 0 }
+                            scene.sendPointerEvent(PointerEventType.Press, node.boundsInRoot.center, button = button)
+                            scene.sendPointerEvent(PointerEventType.Release, node.boundsInRoot.center, button = button)
+                            repeat(3) { scene.render().close(); yield(); delay(20) }
+                        }
+                        tap("Target visible", PointerButton.Secondary)
+                        tap("整条 · 删除")
+                        scene.until { scene.nodes().any { it.label("删除当前备选") } }
+                        assertEquals(target, app.chatRepository.getMessage(target.id, "session"))
+                        tap("删除全部备选")
+                        scene.until { scene.nodes().any { it.label(DesktopUiText.DELETE_MESSAGE_WARNING.zhCn) } }
+                        assertEquals(target, app.chatRepository.getMessage(target.id, "session"))
+                        tap(DesktopUiText.DELETE.zhCn)
+                        scene.until { app.primaryChatController.state.value.messages.none { it.id == target.id } }
+                        val cold = ChatRepository(JsonFileStorage(app.appDataRoot))
+                        assertNull(cold.getMessage(target.id, "session"))
+                        assertEquals(user, cold.getMessage(user.id, "session"))
+                        assertEquals(separate, cold.getMessage(separate.id, "session"))
+                        assertEquals(setOf(user.id, separate.id), cold.getMessages("session").map { it.id }.toSet())
+                    } finally { scene.close() }
+                } finally { app.close() }
             }
-            try {
-                suspend fun tap(label: String, button: PointerButton = PointerButton.Primary) {
-                    scene.until { scene.nodes().any { it.label(label) && it.boundsInRoot.width > 0 && it.boundsInRoot.height > 0 } }
-                    val node = scene.nodes().first { it.label(label) && it.boundsInRoot.width > 0 && it.boundsInRoot.height > 0 }
-                    scene.sendPointerEvent(PointerEventType.Press, node.boundsInRoot.center, button = button)
-                    scene.sendPointerEvent(PointerEventType.Release, node.boundsInRoot.center, button = button)
-                    repeat(3) { scene.render().close(); yield(); delay(20) }
-                }
-                tap("Target visible", PointerButton.Secondary)
-                tap("整条 · 删除")
-                scene.until { scene.nodes().any { it.label("删除当前备选") } }
-                assertEquals(target, app.chatRepository.getMessage(target.id, "session"))
-                tap("删除全部备选")
-                scene.until { scene.nodes().any { it.label(DesktopUiText.DELETE_MESSAGE_WARNING.zhCn) } }
-                assertEquals(target, app.chatRepository.getMessage(target.id, "session"))
-                tap(DesktopUiText.DELETE.zhCn)
-                scene.until { app.primaryChatController.state.value.messages.none { it.id == target.id } }
-                val cold = ChatRepository(JsonFileStorage(app.appDataRoot))
-                assertNull(cold.getMessage(target.id, "session"))
-                assertEquals(user, cold.getMessage(user.id, "session"))
-                assertEquals(separate, cold.getMessage(separate.id, "session"))
-                assertEquals(setOf(user.id, separate.id), cold.getMessages("session").map { it.id }.toSet())
-            } finally { scene.close() }
-        } finally { app.close(); root.toFile().deleteRecursively() }
+        } finally { root.toFile().deleteRecursively() }
     }
 
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {

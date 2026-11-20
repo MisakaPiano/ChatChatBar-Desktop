@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -171,6 +172,7 @@ internal class DesktopPrimaryChatController(
     private val sessionDeletion: (suspend (String) -> String?)? = null,
     private val sessionDeletionNotice: () -> String? = { null },
     private val createCharacterSession: suspend (String, CharacterGreetingChoice?) -> String = sessionService::createSessionForCharacter,
+    private val alternativeRemoval: (suspend (ChatMessage, ChatMessage?, String) -> String?)? = null,
 ) {
     val canDeleteSessions: Boolean get() = sessionDeletion != null
     private val deletingSessions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
@@ -200,11 +202,23 @@ internal class DesktopPrimaryChatController(
         }
         return deleted
     }
-    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
-        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
-        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
-        memory?.sourceChanged(sessionId)
-        return result
+    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String,
+        retryAlternativeAdmission: Boolean = false, block: suspend () -> T): T {
+        var retries = 0
+        while (true) {
+            val result = try {
+                if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
+                else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+            } catch (busy: DesktopDataOperationRejectedException) {
+                if (!retryAlternativeAdmission || busy.reason != DesktopDataOperationRejectionReason.MAINTENANCE_BUSY ||
+                    retries++ >= 15) throw busy
+                // Both mutation owners have been released. Recheck the original confirmation on retry.
+                delay(20)
+                continue
+            }
+            memory?.sourceChanged(sessionId)
+            return result
+        }
     }
 
     private suspend fun <T> withNormalMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
@@ -1198,29 +1212,20 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
-            withMessageMutation(session.id, messageId) {
-                val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-                check(expected == null || message == expected) { "消息已变化，请重新打开分段操作" }
-                require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
-                check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
-                require(parseRoleplayTextSegments(message.displayContent).any {
-                    it.start == start && it.endExclusive == endExclusive
-                }) { "Message segment changed; reopen segment actions" }
-                val outcome = editRoleplayMessageSegment(message, start, endExclusive, replacement)
-                val updated = outcome.message
-                if (updated == null) {
-                    val warning = deleteOwnedMessage(session.id, messageId, message)
-                    refreshAfterTerminalTask(session.id)
-                    if (warning != null) mutableState.update { it.copy(status = warning) }
-                    saved = true
-                } else {
-                    val persisted = updated.copy(formatRepairNotice = null)
-                    val warning = commitAlternativeChange(message, persisted, "消息已变化，请重新打开分段操作")
-                    refreshAfterTerminalTask(session.id)
-                    if (warning != null) mutableState.update { it.copy(status = warning) }
-                    saved = true
-                }
+            val message = expected ?: chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+            check(message.id == messageId && message.sessionId == session.id) { "消息已变化，请重新打开分段操作" }
+            require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
+            check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
+            require(parseRoleplayTextSegments(message.displayContent).any {
+                it.start == start && it.endExclusive == endExclusive
+            }) { "Message segment changed; reopen segment actions" }
+            val updated = editRoleplayMessageSegment(message, start, endExclusive, replacement).message?.copy(formatRepairNotice = null)
+            val warning = withMessageMutation(session.id, messageId, retryAlternativeAdmission = replacement.isBlank()) {
+                commitAlternativeChange(message, updated, "消息已变化，请重新打开分段操作")
             }
+            saved = true
+            refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
         }
         return saved
     }
@@ -1231,16 +1236,13 @@ internal class DesktopPrimaryChatController(
             val session = state.value.selectedSession ?: return@guarded
             check(session.id == expected.sessionId && expected.role == MessageRole.ASSISTANT) { "回复不属于当前会话" }
             check(!hasActiveTask(session.id)) { "生成期间不能删除备选" }
-            withMessageMutation(session.id, expected.id) {
-                val replacement = MessageAlternativeVersionPolicy.remove(expected, versionId)
-                val warning = if (replacement == null) deleteOwnedMessage(session.id, expected.id, expected)
-                else {
-                    commitAlternativeChange(expected, replacement, "消息已变化，请重新确认删除")
-                }
-                refreshAfterTerminalTask(session.id)
-                if (warning != null) mutableState.update { it.copy(status = warning) }
-                deleted = true
+            val replacement = MessageAlternativeVersionPolicy.remove(expected, versionId)
+            val warning = withMessageMutation(session.id, expected.id, retryAlternativeAdmission = true) {
+                commitAlternativeChange(expected, replacement, "消息已变化，请重新确认删除")
             }
+            deleted = true
+            refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
         }
         return deleted
     }
@@ -1250,17 +1252,26 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
-            withMessageMutation(session.id, messageId) {
-                val cleanupWarning = deleteOwnedMessage(session.id, messageId, expected)
-                refreshAfterTerminalTask(session.id)
-                if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
-                deleted = true
+            val source = expected ?: chats.getMessage(messageId, session.id) ?: error("消息已不存在")
+            check(source.id == messageId && source.sessionId == session.id) { "消息已变化，请重新确认删除" }
+            val assistant = source.role == MessageRole.ASSISTANT
+            val warning = withMessageMutation(session.id, messageId, retryAlternativeAdmission = assistant) {
+                if (assistant) commitAlternativeChange(source, null, "消息已变化，请重新确认删除")
+                else deleteOwnedMessage(session.id, messageId, source)
             }
+            deleted = true
+            refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
         }
         return deleted
     }
 
-    private suspend fun commitAlternativeChange(previous: ChatMessage, replacement: ChatMessage, staleMessage: String): String? {
+    private suspend fun commitAlternativeChange(previous: ChatMessage, replacement: ChatMessage?, staleMessage: String): String? {
+        if (replacement == null) {
+            if (alternativeRemoval == null) return deleteOwnedMessage(previous.sessionId, previous.id, previous)
+            currentCoroutineContext().ensureActive()
+            return withContext(NonCancellable) { alternativeRemoval.invoke(previous, null, staleMessage) }
+        }
         val retained = MessageAlternativeVersionPolicy.versions(replacement).map { it.id }.toSet()
         val removesVersion = MessageAlternativeVersionPolicy.versions(previous).any { it.id !in retained }
         val commit: suspend () -> String? = commit@{
@@ -1281,7 +1292,6 @@ internal class DesktopPrimaryChatController(
                 catch (failure: Exception) {
                     // The source is already committed and voice cleanup finished. Refresh that fact,
                     // retain a visible warning and let the normal mutation owner notify memory.
-                    refreshAfterTerminalTask(previous.sessionId)
                     return@commit "正文已保存，已清理明确归属录音；会话摘要仍待重新核对"
                 }
                 "正文已保存；首次写入的派生信息发生错误，现已重新核对并完成录音清理"
@@ -1291,7 +1301,9 @@ internal class DesktopPrimaryChatController(
             // Cancellation before admission keeps the source intact. Once source publication starts,
             // its exact receipt and version cleanup finish together under the existing mutation owner.
             currentCoroutineContext().ensureActive()
-            withContext(NonCancellable) { commit() }
+            withContext(NonCancellable) {
+                if (alternativeRemoval == null) commit() else alternativeRemoval.invoke(previous, replacement, staleMessage)
+            }
         } else commit()
     }
 

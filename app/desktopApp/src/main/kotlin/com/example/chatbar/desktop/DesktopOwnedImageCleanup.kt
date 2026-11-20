@@ -14,7 +14,13 @@ internal class DesktopOwnedImageCleanup(
     private val coordinator: DesktopDataOperationCoordinator,
     private val deleteAudio: (suspend (String) -> Boolean)? = null,
 ) {
-    suspend fun deleteUnreferenced(candidates: List<String>) {
+    suspend fun deleteUnreferenced(candidates: List<String>) =
+        clean(candidates) { operation -> coordinator.withExclusiveMaintenance { operation() } }
+
+    suspend fun deleteUnreferencedDuringExclusiveMaintenance(candidates: List<String>) =
+        clean(candidates) { operation -> coordinator.requireExclusiveMaintenance(); operation() }
+
+    private suspend fun clean(candidates: List<String>, runExclusive: suspend (suspend () -> Unit) -> Unit) {
         fun identity(raw: String): String = if (raw.startsWith(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX))
             "novelai-vibe-payloads/" + raw.removePrefix(com.example.chatbar.domain.image.NovelAiInlinePayloadStore.PREFIX)
         else if (isDesktopOwnedAudioCandidate(root, raw)) {
@@ -25,7 +31,7 @@ internal class DesktopOwnedImageCleanup(
             isDesktopPresetPayloadCandidate(it) || deleteAudio != null && isDesktopOwnedAudioCandidate(root, it)) && !it.contains("..") }.distinctBy(::identity)
         if (owned.isEmpty()) return
         val identities = owned.associateBy(::identity)
-        coordinator.withExclusiveMaintenance {
+        runExclusive {
             withContext(Dispatchers.IO) {
                 val payloadCleanup = owned.any(::isDesktopPresetPayloadCandidate)
                 if (payloadCleanup && Files.exists(root.resolve("backups"), LinkOption.NOFOLLOW_LINKS)) {

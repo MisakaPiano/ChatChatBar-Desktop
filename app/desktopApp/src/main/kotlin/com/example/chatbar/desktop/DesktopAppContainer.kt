@@ -140,7 +140,8 @@ class DesktopAppContainer internal constructor(
                 java.nio.file.Path.of(reference).isAbsolute -> voiceAudioStore.verify(reference)
                 else -> characterResourceStore.resolveOwnedReference(reference).also { DesktopArchiveFiles.safe(it, false) }
             }
-        }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced, temporaryAsset = { reference ->
+        }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced,
+        cleanupDeletedMediaInExclusive = ownedImageCleanup::deleteUnreferencedDuringExclusiveMaintenance, temporaryAsset = { reference ->
             if (!reference.startsWith("asset:")) null else {
                 val bytes = characterResourceStore.readScreenshotImageBytes(reference)
                 val extension = reference.substringAfterLast('.', "png").lowercase().takeIf { it in setOf("png", "jpg", "jpeg", "gif", "webp") } ?: "png"
@@ -711,6 +712,7 @@ class DesktopAppContainer internal constructor(
             maintenance = chatMaintenanceController,
             sessionDeletion = saveSlotService::deleteSession,
             sessionDeletionNotice = { saveSlotService.sessionDeletionCleanupNotice },
+            alternativeRemoval = saveSlotService::commitRemovedAlternatives,
             voices = chatVoiceRuntime,
             residency = characterResidency,
             memory = memoryController,
