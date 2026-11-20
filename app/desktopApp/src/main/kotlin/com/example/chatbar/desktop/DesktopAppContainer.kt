@@ -582,6 +582,7 @@ class DesktopAppContainer internal constructor(
             modelResolver = effectiveModelResolver,
             requestPlanner = chatRequestPlanner,
             images = chatImages,
+            beforeSourceMutation = { memoryController.service.preserveActionProjectionBeforeMutation(it) },
         )
 
     private val automaticChatImages by lazy {
@@ -654,7 +655,8 @@ class DesktopAppContainer internal constructor(
 
     private val formatRepairSafety by lazy {
         DesktopFormatRepairSourceSafety(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime,
-            audioMaintenance, { chatVoiceRuntime }, { memoryController.sourceChanged(it) })
+            audioMaintenance, { chatVoiceRuntime }, { memoryController.sourceChanged(it) },
+            beforeSourceMutation = { memoryController.service.preserveActionProjectionBeforeMutation(it) })
     }
     private val automaticFormatRepair by lazy {
         DesktopAutomaticFormatRepair(settingsRepository, { messageFormatRepairController }, { formatRepairSafety })

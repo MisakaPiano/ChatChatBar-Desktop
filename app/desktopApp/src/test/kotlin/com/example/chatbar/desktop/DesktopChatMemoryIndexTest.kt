@@ -82,6 +82,37 @@ class DesktopChatMemoryIndexTest {
         }
         suspend fun close() { gateway.closeAndDrain(); server.close(); app.close(); owner.close(); base.toFile().deleteRecursively() }
     }
+    @Test fun `real automatic index omits menu alternatives carries choice provenance and rejects changed source menus`() = runBlocking {
+        val f = Fixture(); f.setup()
+        try {
+            val repository = f.app.chatRepository
+            val format = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS)
+            val original = repository.getMessage("message-2", f.session.id)!!
+            val menu = original.copy(content = "星图展开了。\n[choices]\nChoices\nA. 封好地图\nB. 把铜钥匙交给天文学家\n[/choices]",
+                actionOptionsFormat = format)
+            repository.updateMessage(menu)
+            val user = repository.getMessage("message-3", f.session.id)!!
+            repository.updateMessage(user.copy(content = "B"))
+            // Source time is fixed before the user; ordinary edit timestamps cannot prove that relation.
+            val storedMenu = repository.getMessage(menu.id, f.session.id)!!
+            val storedUser = repository.getMessage(user.id, f.session.id)!!
+            f.app.jsonFileStorage.saveEntity("chat_messages", "${f.session.id}_${storedMenu.id}",
+                storedMenu.copy(createdAt = 2, updatedAt = 2), ChatMessage.serializer())
+            f.app.jsonFileStorage.saveEntity("chat_messages", "${f.session.id}_${storedUser.id}",
+                storedUser.copy(createdAt = 3, updatedAt = 3), ChatMessage.serializer())
+            assertEquals(2, f.index.rebuild(f.session.id, 1))
+            val identity = DesktopRagEmbeddingIdentity.from(f.config)
+            val candidates = f.index.candidates(f.session.id, emptySet(), identity)
+            assertTrue(candidates.none { "封好地图" in it.content || "[choices]" in it.content }, "Unselected menu leaked into automatic retrieval")
+            val selected = candidates.single { it.metadata["sourceTurnId"] == "turn-1" }
+            assertTrue("把铜钥匙交给天文学家" in selected.content, "Confirmed selection was lost")
+            assertEquals(menu.id, selected.metadata["actionChoiceSourceIds"])
+            repository.updateMessage(storedMenu.copy(content = "星图展开了。\n[choices]\nChoices\nA. 交出铜钥匙\nB. 改走地下通道\n[/choices]", updatedAt = 99))
+            assertTrue(f.index.candidates(f.session.id, emptySet(), identity).none { "把铜钥匙交给天文学家" in it.content },
+                "A derived selection must not survive the menu identity changing")
+        } finally { f.close() }
+    }
+
     @Test fun `raw turn publication is idempotent excludes active context and rejects changed sources`(): Unit = runBlocking {
         val f = Fixture(); f.setup()
         try {
@@ -90,7 +121,7 @@ class DesktopChatMemoryIndexTest {
             val identity = DesktopRagEmbeddingIdentity.from(f.config)
             val matches = f.index.candidates(f.session.id, setOf("message-5", "message-6"), identity)
             assertEquals(2, matches.size)
-            assertTrue(matches.all { it.metadata["indexMode"] == "timeline_turn" && it.metadata["contentVersion"] == "7" })
+            assertTrue(matches.all { it.metadata["indexMode"] == "timeline_turn" && it.metadata["contentVersion"] == com.example.chatbar.domain.rag.ChatMemoryIndexPolicy.CONTENT_VERSION })
             assertEquals(0, f.index.rebuild(f.session.id, 1))
             assertEquals(2, f.server.requestCount)
             val changed = f.app.chatRepository.getMessage("message-1", f.session.id)!!

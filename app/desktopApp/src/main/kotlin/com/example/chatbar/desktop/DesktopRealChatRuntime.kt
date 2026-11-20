@@ -107,6 +107,7 @@ class DesktopRealChatRuntime internal constructor(
     private val modelResolver: EffectiveModelResolver,
     private val requestPlanner: DesktopChatRequestPlanner,
     private val images: DesktopChatImages? = null,
+    private val beforeSourceMutation: suspend (ChatMessage) -> Unit = {},
     private val transportFactory: (Boolean) -> OpenAiStreamingTransport = { allowCleartext ->
         OpenAiStreamingTransport(allowCleartextHttp = { allowCleartext })
     },
@@ -193,6 +194,7 @@ class DesktopRealChatRuntime internal constructor(
                 currentUser = persistedUser,
                 inputs = turn.inputs,
                 readOnlyRepositoryAccess = false,
+                newlyPersistedUser = true,
                 onPreparationStage = observer::onPreparationStage,
             )
         }
@@ -273,6 +275,7 @@ class DesktopRealChatRuntime internal constructor(
         suspend fun persist(message: ChatMessage): ChatMessage {
             if (regenerationTarget == null) return chatRepository.addMessage(message)
             val old = requireNotNull(chatRepository.getMessage(regenerationTarget.id, sessionId)) { "回复不存在" }
+            beforeSourceMutation(old)
             val updated = MessageAlternativeVersionPolicy.append(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
                 narrativeMode = message.narrativeMode,

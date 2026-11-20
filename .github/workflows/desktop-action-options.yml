@@ -42,6 +42,7 @@ jobs:
           --tests 'com.example.chatbar.domain.chat.ActionOptionsFormatTest'
           --tests 'com.example.chatbar.domain.chat.ActionOptionsDeclaredFenceCompatibilityTest'
           --tests 'com.example.chatbar.domain.chat.RoleplayActionOptionsPolicyTest'
+          --tests '*ActionProjectionParityTest'
           --tests 'com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest'
           --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
           --tests 'com.example.chatbar.domain.image.NovelAiActionOptionsProjectionTest'
@@ -67,6 +68,10 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
           --tests 'com.example.chatbar.desktop.DesktopFishGenerationTest'
           --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatMemoryIndexTest'
+          --tests 'com.example.chatbar.desktop.DesktopMemoryInjectionTransportTest'
+          --tests 'com.example.chatbar.desktop.DesktopMemorySafetyTest'
+          --tests 'com.example.chatbar.desktop.DesktopMemoryLifecycleTest'
           --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
           --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest.modern backup staging retains format declaration and active reply alternatives'
           -PdesktopTestHeadless=true --no-daemon --stacktrace

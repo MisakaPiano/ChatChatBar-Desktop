@@ -88,3 +88,5 @@ Use chatbar-prompt-pipeline when changing general prompt layering or final messa
 ## Stop Conditions
 
 Do not report completion while persisted compatibility, continuity checks, failure preservation, stale-source safety, and relevant tests remain unknown. Record untested real-model and device flows in handoff instead of claiming them complete.
+
+Action-option projection is shared by memory source rendering and fingerprints. Persist legacy reference/HEAD withholding before a recognized-menu source changes; read-only inspection computes the exclusion without writes. Same-session SaveSlot replacement must compare its incoming snapshot with the retained live safety snapshot so old unmarked summaries cannot clear known withholding. Raw summary bodies are retained; explicit source repair remains separate.

@@ -67,12 +67,14 @@ internal class DesktopChatRequestPlanner(
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
         onPreparationStage: (DesktopChatPreparationStage) -> Unit = {},
+        newlyPersistedUser: Boolean = false,
     ): DesktopChatRequestPlan {
         return planCurrentUser(
             sessionId = sessionId,
             currentUser = currentUser,
             currentUserPersisted = true,
-            actionRequestSource = ChatHistoryActionRequestSource.PERSISTED_USER,
+            actionRequestSource = if (newlyPersistedUser) ChatHistoryActionRequestSource.PERSISTED_USER
+                else ChatHistoryActionRequestSource.RESUMED_USER,
             inputs = inputs,
             readOnlyRepositoryAccess = readOnlyRepositoryAccess,
             onPreparationStage = onPreparationStage,
@@ -103,7 +105,7 @@ internal class DesktopChatRequestPlanner(
             sessionId = sessionId,
             currentUser = currentUser,
             currentUserPersisted = persistedUser != null,
-            actionRequestSource = if (persistedUser != null) ChatHistoryActionRequestSource.PERSISTED_USER
+            actionRequestSource = if (persistedUser != null) ChatHistoryActionRequestSource.RESUMED_USER
                 else ChatHistoryActionRequestSource.UI_CONTINUATION,
             inputs = inputs,
             readOnlyRepositoryAccess = readOnlyRepositoryAccess,
@@ -139,7 +141,7 @@ internal class DesktopChatRequestPlanner(
         return planCurrentUser(
             sessionId, user ?: ChatMessage.create(sessionId, MessageRole.USER, ""),
             currentUserPersisted = user != null, inputs = inputs, readOnlyRepositoryAccess = false,
-            actionRequestSource = if (user != null) ChatHistoryActionRequestSource.PERSISTED_USER
+            actionRequestSource = if (user != null) ChatHistoryActionRequestSource.RESUMED_USER
                 else ChatHistoryActionRequestSource.NO_USER_REGENERATION,
             regenerationTargetId = targetMessageId, regenerationContext = context,
             includeCurrentUser = user != null,
@@ -220,7 +222,7 @@ internal class DesktopChatRequestPlanner(
             com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.activeVersion(target).narrativeMode
         } else ChatHistoryPromptPolicy.previousNarrativeMode(contextMessages)
         // Private callers prove UI controls separately from a persisted user's "continue/2".
-        // No control is interpreted as choosing an action and no user input is rewritten.
+        // No control chooses an action. Historical choices require their original source proof.
         val actionProjection = ChatHistoryActionProjection.prepare(contextCandidates,
             candidateSnapshot.completeRecentMessageIds, requestSource = actionRequestSource)
 

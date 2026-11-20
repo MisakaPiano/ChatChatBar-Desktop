@@ -201,15 +201,23 @@ internal class DesktopPrimaryChatController(
         return deleted
     }
     private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
-        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
-        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+        val mutation: suspend () -> T = {
+            chats.getMessage(messageId, sessionId)?.let { memory?.service?.preserveActionProjectionBeforeMutation(it) }
+            block()
+        }
+        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, mutation)
+        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, mutation) }
         memory?.sourceChanged(sessionId)
         return result
     }
 
     private suspend fun <T> withNormalMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
-        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
-        else voices.mutateNormalMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+        val mutation: suspend () -> T = {
+            chats.getMessage(messageId, sessionId)?.let { memory?.service?.preserveActionProjectionBeforeMutation(it) }
+            block()
+        }
+        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, mutation)
+        else voices.mutateNormalMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, mutation) }
         memory?.sourceChanged(sessionId)
         return result
     }

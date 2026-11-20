@@ -21,6 +21,7 @@ internal class DesktopFormatRepairSourceSafety(
     private val audio: DesktopAudioMaintenance,
     private val voices: () -> DesktopChatVoiceRuntime,
     private val sourceChanged: (String) -> Unit,
+    private val beforeSourceMutation: suspend (ChatMessage) -> Unit = {},
 ) : DesktopRepairSafetyGate {
     private val paths = DesktopDocumentRagSource(root)
     override suspend fun check(session: ChatSession, message: ChatMessage): DesktopRepairSafety {
@@ -36,6 +37,7 @@ internal class DesktopFormatRepairSourceSafety(
                 voices().mutateRepairSource(session.id, message.id) {
                     admitted {
                         if (inspect(session, message) == DesktopRepairSafety.VERIFIED_SAFE) {
+                            beforeSourceMutation(message)
                             write().also { receipt = it }
                         } else null
                     }

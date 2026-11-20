@@ -636,6 +636,24 @@ class DesktopSaveSlotServiceTest {
         }
     }
 
+    @Test fun `restoring an older same session slot cannot clear known legacy action withholding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val legacy = MemoryNode(id = "legacy-action", sessionId = "s", tier = MemoryTier.LEGACY_REFERENCE,
+                overview = "Legacy summary", coverageUnits = listOf(MemoryCoverageUnit("legacy:s", "UNVERIFIED_MENU_SUMMARY")),
+                author = MemoryAuthor.MIGRATION)
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(legacy.id)), nodes = listOf(legacy))
+            val service = f.service()
+            val old = service.create("s", "Old unmarked snapshot", SaveSlotImagePolicy.NONE, false)
+            f.snapshot = f.snapshot!!.copy(nodes = listOf(legacy.copy(actionProjectionWithheld = true)))
+            service.restore(old.id, "s")
+            val cold = MemoryRepository(JsonFileStorage(f.root), strictReads = true).snapshot("s")!!
+            assertTrue(cold.nodes.single { it.id == legacy.id }.actionProjectionWithheld,
+                "The isolated replacement must retain the current provenance exclusion")
+            assertEquals(legacy.body, cold.nodes.single { it.id == legacy.id }.body)
+        }
+    }
+
     @Test fun `audio images and current memory survive duplicate under separate owned identities`(): Unit = runBlocking {
         Fixture().use { f ->
             f.seed()

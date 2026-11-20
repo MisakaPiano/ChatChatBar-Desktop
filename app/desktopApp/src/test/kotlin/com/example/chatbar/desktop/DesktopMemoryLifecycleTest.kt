@@ -133,6 +133,57 @@ class DesktopMemoryLifecycleTest {
             assertEquals(7L, actual.memoryStateRevision)
         } finally { f.close() }
     }
+    @Test fun `real memory generation receives only confirmed choices and preserves source transcript`() = runBlocking {
+        val f = Fixture()
+        try {
+            f.setup()
+            val menu = f.chats.getMessage("message-2", f.session.id)!!.copy(
+                content = "星图展开了。\n[choices]\nChoices\nA. 封好地图\nB. 把铜钥匙交给天文学家\n[/choices]",
+                actionOptionsFormat = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS),
+                createdAt = 2, updatedAt = 2)
+            val user = f.chats.getMessage("message-3", f.session.id)!!.copy(content = "B", createdAt = 3, updatedAt = 3)
+            f.storage.saveEntity("chat_messages", "${f.session.id}_${menu.id}", menu, ChatMessage.serializer())
+            f.storage.saveEntity("chat_messages", "${f.session.id}_${user.id}", user, ChatMessage.serializer())
+            val seen = mutableListOf<String>()
+            f.episodeContext = { seen += it }
+            assertEquals(2, f.service.updateArchiveAfterReply(f.session.id, f.model, 1, maxEpisodeBatches = 2).committedEpisodes)
+            val rendered = seen.joinToString("\n")
+            assertFalse("封好地图" in rendered || "[choices]" in rendered, "Unselected menus entered the actual memory request")
+            assertTrue("把铜钥匙交给天文学家" in rendered, "Actual memory lost the selected meaning")
+            assertEquals(menu.displayContent, f.chats.getMessage(menu.id, f.session.id)!!.displayContent)
+            assertEquals("B", f.chats.getMessage(user.id, f.session.id)!!.displayContent)
+        } finally { f.close() }
+    }
+
+    @Test fun `legacy action references stay excluded after source mutation while read only inspection writes nothing`() = runBlocking {
+        val f = Fixture()
+        try {
+            f.setup()
+            val menu = f.chats.getMessage("message-2", f.session.id)!!.copy(
+                content = "星图展开了。\n[choices]\nChoices\nA. 封好地图\nB. 交出铜钥匙\n[/choices]",
+                actionOptionsFormat = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS))
+            f.chats.updateMessage(menu)
+            val node = MemoryNode(id = "legacy-action-reference", sessionId = f.session.id, tier = MemoryTier.LEGACY_REFERENCE,
+                sourceTurnIds = listOf("turn-0"), coverageUnits = listOf(MemoryCoverageUnit("legacy:synthetic", "UNVERIFIED_LEGACY_MENU")))
+            f.repository.saveNodes(listOf(node))
+            val state = f.service.currentState(f.session.id)!!
+            f.repository.saveState(state.copy(legacyReferenceNodeIds = listOf(node.id)))
+            fun bytes() = Files.walk(f.root).use { paths -> paths.filter(Files::isRegularFile).toList().associate {
+                f.root.relativize(it).toString() to java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(it))
+            } }
+            val before = bytes(); val calls = f.calls
+            assertFalse("UNVERIFIED_LEGACY_MENU" in f.service.inspectPrompt(f.session.id).prompt!!.fullText)
+            assertEquals(before, bytes(), "Inspecting unsafe legacy context must remain read only")
+            f.service.preserveActionProjectionBeforeMutation(f.chats.getMessage(menu.id, f.session.id)!!)
+            f.chats.updateMessage(menu.copy(content = "正文已改为安全的独立剧情。"))
+            val cold = MemoryRepository(JsonFileStorage(f.root), true)
+            assertTrue(cold.getNode(node.id)!!.actionProjectionWithheld)
+            assertEquals(node.body, cold.getNode(node.id)!!.body)
+            assertFalse("UNVERIFIED_LEGACY_MENU" in f.service.promptView(f.session.id).fullText)
+            assertEquals(calls, f.calls, "Provenance protection must not make model calls")
+        } finally { f.close() }
+    }
+
     private class Fixture(private val turns: Int = 4) {
         val root = Files.createTempDirectory("desktop-memory-lifecycle-")
         val gate = DesktopDataOperationCoordinator()

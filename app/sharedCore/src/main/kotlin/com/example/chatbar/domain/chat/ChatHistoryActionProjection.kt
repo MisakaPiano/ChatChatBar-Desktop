@@ -6,7 +6,24 @@ import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 
 /** Describes the current request's owner; a no-current-USER control may have older USER history. */
-enum class ChatHistoryActionRequestSource { PERSISTED_USER, UI_CONTINUATION, NO_USER_REGENERATION, UNKNOWN }
+enum class ChatHistoryActionRequestSource {
+    PERSISTED_USER, RESUMED_USER, UI_CONTINUATION, NO_USER_REGENERATION, UNKNOWN;
+
+    internal companion object {
+        fun forSend(
+            persistsNewUser: Boolean,
+            resumedUser: ChatMessage?,
+            regeneratesAlternative: Boolean,
+            continuesFromUi: Boolean,
+        ): ChatHistoryActionRequestSource = when {
+            persistsNewUser -> PERSISTED_USER
+            resumedUser != null -> RESUMED_USER
+            regeneratesAlternative -> NO_USER_REGENERATION
+            continuesFromUi -> UI_CONTINUATION
+            else -> UNKNOWN
+        }
+    }
+}
 
 /** Request-only projection. An unresolved choice reference retains its source options.
  * The query owner supplies a complete recent suffix; separately pinned old turns are not proof
@@ -14,6 +31,7 @@ enum class ChatHistoryActionRequestSource { PERSISTED_USER, UI_CONTINUATION, NO_
 class ChatHistoryActionProjection private constructor(
     private val omittable: Map<String, ChatMessage>,
     private val referenced: Map<String, ChatMessage>,
+    private val retrievalChoice: Pair<ChatMessage, String>? = null,
 ) {
     fun project(message: ChatMessage, source: String): String =
         if (omittable[message.id] == message) {
@@ -38,9 +56,14 @@ class ChatHistoryActionProjection private constructor(
         )
     }
 
+    /** The retrieval model only needs the known selection, never the other options. */
     fun forRetrieval(message: ChatMessage): ChatMessage {
+        if (message.role != MessageRole.ASSISTANT) return message
         val source = message.displayContent
-        val projected = project(message, source)
+        val scene = RoleplayActionOptionsPolicy.withoutExplicitOptions(source, message.displayActionOptionsFormat)
+        val choice = retrievalChoice?.takeIf { it.first == message }?.second
+        val projected = if (choice == null) scene else
+            listOf(scene.trimEnd(), choice).filter(String::isNotBlank).joinToString("\n")
         if (projected == source) return message
         val activeIndex = message.currentAlternativeIndex
         return if (activeIndex in message.alternatives.indices) {
@@ -72,7 +95,9 @@ class ChatHistoryActionProjection private constructor(
         fun prepare(candidates: List<ChatMessage>, completeRecentMessageIds: Set<String>,
             requestSource: ChatHistoryActionRequestSource = ChatHistoryActionRequestSource.UNKNOWN): ChatHistoryActionProjection {
             if (requestSource == ChatHistoryActionRequestSource.UNKNOWN ||
-                (requestSource == ChatHistoryActionRequestSource.PERSISTED_USER && candidates.lastOrNull()?.role != MessageRole.USER) ||
+                ((requestSource == ChatHistoryActionRequestSource.PERSISTED_USER ||
+                    requestSource == ChatHistoryActionRequestSource.RESUMED_USER) &&
+                    candidates.lastOrNull()?.role != MessageRole.USER) ||
                 candidates.map { it.id }.distinct().size != candidates.size ||
                 candidates.map { it.sessionId }.distinct().size > 1 ||
                 candidates.zipWithNext().any { (a, b) -> ChatMessage.TimelineComparator.compare(a, b) > 0 })
@@ -87,7 +112,29 @@ class ChatHistoryActionProjection private constructor(
                     index > lastUnresolvedReference && message.id in completeRecentMessageIds
                 }.associate { it.value.id to it.value },
                 referenced = assistants.filter { it.index < lastUnresolvedReference }.associate { it.value.id to it.value },
+                retrievalChoice = confirmedRetrievalChoice(candidates, completeRecentMessageIds, requestSource),
             )
+        }
+
+        private fun confirmedRetrievalChoice(
+            candidates: List<ChatMessage>,
+            completeRecentMessageIds: Set<String>,
+            requestSource: ChatHistoryActionRequestSource,
+        ): Pair<ChatMessage, String>? {
+            if (requestSource != ChatHistoryActionRequestSource.PERSISTED_USER &&
+                requestSource != ChatHistoryActionRequestSource.RESUMED_USER
+            ) return null
+            val user = candidates.lastOrNull()?.takeIf { it.images.isEmpty() } ?: return null
+            val reply = candidates.dropLast(1)
+                .lastOrNull { it.role != MessageRole.SYSTEM && !it.isGeneratedImageOnlyReply() }
+                ?.takeIf { it.role == MessageRole.ASSISTANT && it.id in completeRecentMessageIds } ?: return null
+            val choice = when (requestSource) {
+                ChatHistoryActionRequestSource.PERSISTED_USER ->
+                    RoleplayActionOptionsPolicy.confirmedChoice(reply, user.displayContent)
+                ChatHistoryActionRequestSource.RESUMED_USER ->
+                    RoleplayActionOptionsPolicy.confirmedMemoryChoice(user, candidates)?.takeIf { it.replyId == reply.id }
+            } ?: return null
+            return reply to choice.text
         }
 
         private fun lastPossibleChoiceReference(candidates: List<ChatMessage>): Int {

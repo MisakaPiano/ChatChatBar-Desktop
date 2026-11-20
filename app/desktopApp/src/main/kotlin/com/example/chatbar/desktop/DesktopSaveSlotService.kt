@@ -286,7 +286,7 @@ internal class DesktopSaveSlotService(
             val safety = capture(sessionId, "恢复前自动保全", SaveSlotImagePolicy.ORIGINAL, true, progress)
             val before = libraryAddition(safety.prepared, sessionId)
             val prepared = gate.withNormalOperation { prepareLibrary(slotId) }
-            val plan = planner.prepare(archive, prepared, safety.session)
+            val plan = planner.prepare(archive, prepared, safety.session, previousMemorySnapshot = safety.prepared.slot.memorySnapshot)
             completePrepared(safety.prepared, prepared) {
                 publish(sessionId, safety.proof, plan, safety.proof, before.second)
                 plan.session

@@ -46,7 +46,8 @@ class ChatHistoryActionProjectionTest {
             val earlier = projection.sourceForHistory(assistant, stripStatus = true)
             assertTrue("2. 问守卫" in earlier)
             assertFalse("实际位置" in earlier)
-            assertEquals(original, projection.forRetrieval(assistant).displayContent)
+            assertFalse("1. 检查站台" in projection.forRetrieval(assistant).displayContent)
+            assertFalse("3. 等下一班" in projection.forRetrieval(assistant).displayContent)
         }
         val independent = message("user", MessageRole.USER, "我们安静地给窗台边的花草浇水。", 2)
         val projection = known(listOf(assistant, independent), setOf(assistant.id, independent.id))

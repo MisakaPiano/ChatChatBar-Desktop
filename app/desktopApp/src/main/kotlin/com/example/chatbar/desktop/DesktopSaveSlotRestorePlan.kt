@@ -17,7 +17,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
         val files: Map<String, Path>, val proof: Map<String, String>)
 
     suspend fun prepare(archive: DesktopSaveSlotArchive, prepared: DesktopSaveSlotArchive.Prepared,
-        target: ChatSession, duplicate: Boolean = false): Plan = withContext(Dispatchers.IO) {
+        target: ChatSession, duplicate: Boolean = false, previousMemorySnapshot: MemorySnapshot? = null): Plan = withContext(Dispatchers.IO) {
         archive.verify(prepared)
         val directory = Files.createDirectory(prepared.directory.resolve("restore-${UUID.randomUUID()}"))
         val storage = JsonFileStorage(directory) // Offline graph only; live commit uses the real coordinator.
@@ -162,8 +162,13 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
             com.example.chatbar.desktop.backup.DesktopSlotHistoricalVoiceCustody.preserve(prepared, directory,
                 voiceIds.mapValues { (_, id) -> restoredVoices.getValue(id) })
             val memory = MemoryRepository(storage, strictReads = true)
+            val snapshot = slot.memorySnapshot?.let { incoming ->
+                if (duplicate || previousMemorySnapshot == null) incoming else
+                    MemorySnapshotImportPolicy.preserveKnownActionWithholding(incoming, target.id, slot.sessionId,
+                        previousMemorySnapshot.nodes.associateBy { it.id }, previousMemorySnapshot.state?.head ?: MemoryHead())
+            }
             LongTermMemoryService(chats, memory, SettingsRepository(storage), NoArchiveNetwork,
-                ContextWindowManager()).loadSnapshot(target.id, slot.memorySnapshot)
+                ContextWindowManager()).loadSnapshot(target.id, snapshot, sourceSessionId = slot.sessionId)
             session = requireNotNull(chats.getSession(target.id))
             archive.verify(prepared)
             val files = linkedMapOf<String, Path>()
