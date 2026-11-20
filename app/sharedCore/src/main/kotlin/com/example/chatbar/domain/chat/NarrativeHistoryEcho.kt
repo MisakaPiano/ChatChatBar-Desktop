@@ -161,7 +161,7 @@ object NarrativeHistoryEcho {
             val symbol = text[index]
             val matchingClose = proseDelimiters[symbol]
             if (matchingClose == null && symbol != closing) continue
-            if (isEscaped(text, index) || delimiterExclusions.any { index in it }) continue
+            if (isEscaped(text, index) || isIndentedCodeLine(text, index) || delimiterExclusions.any { index in it }) continue
             val followsWord = text.getOrNull(index - 1)?.isLetterOrDigit() == true
             val precedesWord = text.getOrNull(index + 1)?.isLetterOrDigit() == true
             // Apostrophes in contractions and possessives do not start a prose quote.

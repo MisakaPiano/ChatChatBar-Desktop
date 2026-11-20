@@ -218,6 +218,34 @@ class DesktopNarrativeReplyEchoTest {
         } }
     }
 
+    @Test fun `indented code quote cannot keep outer markers in actual preview Stop and completion`() = runBlocking {
+        for (mode in ChatNarrativeMode.entries) for (stop in listOf(false, true)) fixture { app -> coroutineScope {
+            val body = "    val mark = \"\n\n她写道：“保留 </历史回复> 作为示例。”"
+            val raw = MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
+            MockWebServer().use { server ->
+                val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                    "data: ${delta(raw)}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                val before = app.chatRepository.getMessages(id).map { it.id }.toSet()
+                val control = DesktopChatGenerationControl()
+                val seen = mutableListOf<String>()
+                val operation = async { app.createRealChatRuntime().sendText(id, "Synthetic code quote input",
+                    observer = DesktopRealChatObserver {
+                        seen += it.content
+                        if (stop && it.content == body) control.requestUserStop()
+                    }, control = control) }
+                try {
+                    if (stop) assertFailsWith<DesktopUserStoppedChatException> { operation.await() }
+                    else assertEquals(body, operation.await().assistant.content)
+                    assertEquals(body, seen.last())
+                    val saved = ChatRepository(JsonFileStorage(app.appDataRoot)).getMessages(id)
+                        .single { it.role == MessageRole.ASSISTANT && it.id !in before }
+                    assertEquals(body, saved.content)
+                } finally { operation.cancelAndJoin() }
+            }
+        } }
+    }
+
     private fun delta(text: String) = """{"choices":[{"delta":{"content":${JsonPrimitive(text)}}}]}"""
 
     private suspend fun prepare(

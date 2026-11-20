@@ -6,6 +6,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class NarrativeHistoryEchoTest {
+    @Test fun indentedCodeQuotesCannotConsumeTheRealClosingOrFollowingProseQuotes() {
+        for (mode in ChatNarrativeMode.entries) for (code in listOf("    val mark = \"", "\tval mark = '")) {
+            for (tail in listOf("", "\n\n她写道：“保留 </历史回复> 作为示例。”")) {
+                val body = code + tail
+                val raw = MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
+                assertEquals(body, NarrativeHistoryEcho.replyBody(raw, streaming = true))
+                assertEquals(body, NarrativeHistoryEcho.replyBody(raw, interrupted = true))
+                assertEquals(body, NarrativeHistoryEcho.replyBody(raw))
+            }
+        }
+    }
+
     @Test fun markdownQuotesAreLiteralDuringPreviewCompletionAndStop() {
         val closing = "</历史回复>"
         for (mode in ChatNarrativeMode.entries) {
