@@ -18,7 +18,7 @@ internal class DesktopMergeGraphRemapper(
         val scopedProofs = if (record.type == "save_slots")
             DesktopMergeMemoryProofs(listOf(DesktopMergeRecord(record.relative, originalValue)), identity, checkActive) else proofs
         val snapshot = originalValue["memorySnapshot"] as? JsonObject
-        val memoryOwners = if (record.type == "save_slots") {
+        val memoryOwners = if (record.type == "save_slots" && record.text("schemaVersion") != "8") {
             (snapshot?.get("nodes") as? JsonArray).orEmpty().mapNotNull {
                 (it as? JsonObject)?.get("sessionId")?.jsonPrimitive?.contentOrNull
             } + listOfNotNull((snapshot?.get("commit") as? JsonObject)?.get("sessionId")?.jsonPrimitive?.contentOrNull)

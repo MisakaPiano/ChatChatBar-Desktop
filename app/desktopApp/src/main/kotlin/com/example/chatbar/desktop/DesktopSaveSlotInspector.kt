@@ -253,7 +253,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
                 it.nodes.forEach { node -> identity(node.id); identity(node.sessionId) }
                 if (ids.size != it.nodes.size || it.nodes.any { node -> node.childIds.any { child -> child !in ids } }) fail(SlotInspectCode.REFERENCE)
                 if (it.nodes.any { node -> node.sessionId != slot.sessionId }) {
-                    if (!retainHistoricalReferences) fail(SlotInspectCode.REFERENCE)
+                    if (entries != null || !retainHistoricalReferences) fail(SlotInspectCode.REFERENCE)
                     notes += "HISTORICAL_MEMORY_OWNER_RETAINED_NOT_REBOUND"
                 }
                 it.state?.let { state -> if ((state.episodeNodeIds + state.arcNodeIds + state.eraNodeIds + state.legacyReferenceNodeIds).any { id -> id !in ids }) fail(SlotInspectCode.REFERENCE) }
