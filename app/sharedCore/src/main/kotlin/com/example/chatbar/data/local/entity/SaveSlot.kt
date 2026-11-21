@@ -58,7 +58,7 @@ data class SaveSlot(
     val timelineTombstones: Set<Long> = emptySet(),
     val memoryLimitChars: Int = 2000,
     val memorySnapshot: MemorySnapshot? = null,
-    /** Desktop inline-library provenance captured from the original envelope before rebinding. */
+    /** Desktop inline-library memory-graph ownership; an empty value records unproved provenance. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @kotlinx.serialization.json.JsonNames("desktopMemorySourceSessionId")
     val inlineSourceSessionId: String? = null,

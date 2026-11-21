@@ -536,8 +536,8 @@ internal class DesktopSaveSlotService(
             files[relative] = work.resolve(relative)
             imported
         } else prepared.slot.copy(id = UUID.randomUUID().toString(), sessionId = sessionId,
-            // Input-provided provenance is not evidence. Capture the verified raw envelope owner.
-            inlineSourceSessionId = prepared.originalSessionId,
+            // A rebound legacy header and input-provided metadata are not ownership evidence.
+            inlineSourceSessionId = prepared.originalSessionId.orEmpty(),
             // Keep source graph identity together; local library ownership differs only at its envelope.
             messages = prepared.slot.messages.map { it.copy(sessionId = sessionId) },
             vectorChunks = prepared.slot.vectorChunks.map { it.copy(sourceId = sessionId,
@@ -560,7 +560,7 @@ internal class DesktopSaveSlotService(
         val prepared = archive.prepare(path)
         return if (prepared.format == SlotInspectFormat.ZIP_V8) prepared else {
             check(prepared.slot == slot) { "存档库记录已变化，请重新选择" }
-            prepared.copy(originalSessionId = prepared.slot.inlineSourceSessionId)
+            prepared
         }
     }
 

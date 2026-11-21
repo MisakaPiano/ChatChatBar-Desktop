@@ -87,8 +87,10 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
         }
         check(DesktopArchiveFiles.hash(file, MAX_ARCHIVE) == hash)
         return Prepared(owned.directory, file, slot, hash, result.format, result.counts?.historicalVoices ?: 0, owned,
-            originalSessionId = if (result.format != SlotInspectFormat.ZIP_V8 &&
-                slot.inlineSourceSessionId != null && slot.inlineSourceSessionId != slot.sessionId) "" else slot.sessionId)
+            originalSessionId = if (result.format == SlotInspectFormat.ZIP_V8) slot.sessionId else
+                (slot.memorySnapshot?.nodes.orEmpty().map { it.sessionId } +
+                    listOfNotNull(slot.memorySnapshot?.legacyCommit?.sessionId))
+                    .distinct().singleOrNull()?.takeIf(String::isNotBlank))
     }
 
     private fun newWork() = DesktopSaveSlotOwnedWork.create(workspace)

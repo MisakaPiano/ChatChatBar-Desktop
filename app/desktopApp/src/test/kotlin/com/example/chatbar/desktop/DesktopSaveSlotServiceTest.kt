@@ -696,7 +696,7 @@ class DesktopSaveSlotServiceTest {
             val originalBytes = Files.readAllBytes(original)
             val service = f.service()
             val first = service.import(original, "s")
-            assertEquals("foreign-original", first.inlineSourceSessionId)
+            assertEquals("", first.inlineSourceSessionId)
             val exported = f.root.resolve("foreign-via-rebound-library.cbsave")
             service.export(first.id, exported)
             val second = service.import(exported, "s")
@@ -707,7 +707,7 @@ class DesktopSaveSlotServiceTest {
         }
     }
 
-    @Test fun `new inline same session head only import retains its observed owner across cold library reopen`() = runBlocking {
+    @Test fun `old rebound ownerless inline head only export never proves same session custody`() = runBlocking {
         Fixture().use { f ->
             f.seed()
             val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
@@ -721,14 +721,18 @@ class DesktopSaveSlotServiceTest {
                 memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
             val file = f.root.resolve("same-inline-head.cbsave")
             Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val originalBytes = Files.readAllBytes(file)
+            assertFalse(f.storage.json.parseToJsonElement(Files.readString(file)).jsonObject.containsKey("inlineSourceSessionId"),
+                "The old rebound export fixture must have no new provenance field")
             val local = f.service().import(file, "s")
             val coldSlot = JsonFileStorage(f.root).loadEntity("save_slots", local.id, SaveSlot.serializer())!!
-            assertEquals("s", coldSlot.inlineSourceSessionId)
+            assertEquals("", coldSlot.inlineSourceSessionId)
             f.service().restore(local.id, "s")
             val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
-            assertEquals(MemoryHeadActionProjection.WITHHELD, state.head.actionProjection,
-                "A new same-owner inline HEAD-only import must retain known unsafe provenance")
+            assertNull(state.head.actionProjection,
+                "An old rebound header with no original graph cannot inherit local withholding")
             assertEquals(head.location, state.head.location)
+            assertContentEquals(originalBytes, Files.readAllBytes(file))
         }
     }
 
