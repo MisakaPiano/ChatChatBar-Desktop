@@ -222,7 +222,8 @@ class ChatMemoryIndexPolicyTest {
         assertTrue(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("message_pair", "4")))
         assertTrue(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("memory_node", "1")))
         assertTrue(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("timeline_turn", "6")))
-        assertFalse(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("timeline_turn", "7")))
+        assertTrue(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("timeline_turn", "7")))
+        assertFalse(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("timeline_turn", ChatMemoryIndexPolicy.CONTENT_VERSION)))
         assertFalse(ChatMemoryIndexPolicy.needsAutomaticRebuild(chunk("manual", "1")))
     }
 

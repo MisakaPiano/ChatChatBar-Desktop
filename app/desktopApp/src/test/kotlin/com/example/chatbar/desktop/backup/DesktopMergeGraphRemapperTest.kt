@@ -24,7 +24,7 @@ class DesktopMergeGraphRemapperTest {
     }
 
     @Test fun `automatic choice provenance remaps only typed reply dependencies during merge`() {
-        val chunk = VectorChunk("chunk", ChunkSourceType.CHAT_MEMORY, "s", "Chosen text stays unchanged", embedding = listOf(1f, 0f),
+        val chunk = VectorChunk("chunk", ChunkSourceType.CHAT_MEMORY, "s", content = "Chosen text stays unchanged", embedding = listOf(1f, 0f),
             messageId = "user", metadata = mapOf("sessionId" to "s", "messageIds" to "user", "actionChoiceSourceIds" to "menu-a,menu-b", "note" to "menu-a,menu-b"), createdAt = 1)
         val source = record("vector_chunks", backupJson.encodeToJsonElement(VectorChunk.serializer(), chunk).jsonObject)
         val ids = DesktopMergeIdentity().apply {

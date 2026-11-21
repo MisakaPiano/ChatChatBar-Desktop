@@ -67,6 +67,7 @@ jobs:
           --tests 'com.example.chatbar.domain.chat.ActionOptionsDeclaredFenceCompatibilityTest'
           --tests 'com.example.chatbar.domain.chat.RoleplayActionOptionsPolicyTest'
           --tests '*ActionProjectionParityTest'
+          --tests 'com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest'
           --tests 'com.example.chatbar.domain.chat.ChatHistoryActionProjectionTest'
           --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
           --tests 'com.example.chatbar.domain.image.NovelAiActionOptionsProjectionTest'

@@ -641,7 +641,7 @@ class DesktopSaveSlotServiceTest {
             f.seed()
             val menu = ChatMessage.create("s", MessageRole.ASSISTANT, "Synthetic choice source")
             f.chats.addMessage(menu)
-            val chunk = VectorChunk("choice-index", ChunkSourceType.CHAT_MEMORY, "s", "Selected choice only", embedding = listOf(1f, 0f),
+            val chunk = VectorChunk("choice-index", ChunkSourceType.CHAT_MEMORY, "s", content = "Selected choice only", embedding = listOf(1f, 0f),
                 messageId = f.message.id, metadata = mapOf("sessionId" to "s", "messageIds" to f.message.id,
                     "actionChoiceSourceIds" to menu.id), createdAt = 1)
             f.storage.saveEntity("vector_chunks", chunk.id, chunk, VectorChunk.serializer())
