@@ -122,6 +122,25 @@ class DesktopSaveSlotInspectorTest {
             assertEquals(SlotInspectStatus.STRUCTURE_VALID, inspect(file).status)
         }
     } }
+    @Test fun `historical reference mode retains foreign memory owners without waiving child or identity proof`() = runBlocking { fixture { root ->
+        val node = MemoryNode("historical-node", "foreign", MemoryTier.LEGACY_REFERENCE,
+            coverageUnits = listOf(MemoryCoverageUnit("legacy:source", "Original historical summary")))
+        val slot = SyntheticSaveSlotCorpus.slot(4).copy(memorySnapshot = MemorySnapshot(nodes = listOf(node)))
+        val file = SyntheticSaveSlotCorpus.legacy(root.resolve("foreign-memory.cbsave"), slot)
+        val before = Files.readAllBytes(file)
+        assertEquals(SlotInspectCode.REFERENCE, inspect(file).code)
+        val historical = DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(file)
+        assertEquals(SlotInspectStatus.STRUCTURE_VALID, historical.status)
+        assertTrue("HISTORICAL_MEMORY_OWNER_RETAINED_NOT_REBOUND" in historical.limitations)
+        val missing = SyntheticSaveSlotCorpus.legacy(root.resolve("foreign-memory-missing.cbsave"),
+            slot.copy(memorySnapshot = MemorySnapshot(nodes = listOf(node.copy(childIds = listOf("missing"))))))
+        assertEquals(SlotInspectCode.REFERENCE, DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(missing).code)
+        val malformed = SyntheticSaveSlotCorpus.legacy(root.resolve("foreign-memory-invalid.cbsave"),
+            slot.copy(memorySnapshot = MemorySnapshot(nodes = listOf(node.copy(sessionId = "../invalid")))))
+        assertEquals(SlotInspectCode.IDENTITY, DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(malformed).code)
+        assertContentEquals(before, Files.readAllBytes(file))
+    } }
+
     @Test fun `candidates source turns RAG and memory remain inspect only`() = runBlocking { fixture { root ->
         val message = SyntheticSaveSlotCorpus.message(text = "selected").copy(alternatives = listOf("old", "selected"),
             alternativeVersionIds = listOf("a", "v"), currentAlternativeIndex = 1)
