@@ -749,13 +749,22 @@ class DesktopSaveSlotServiceTest {
             val incoming = SaveSlot(id = "local-v3", sessionId = "s", name = "Same owner old v3", createdAt = 1,
                 messages = listOf(source), memorySnapshot = MemorySnapshot(schemaVersion = 3,
                     nodes = listOf(oldNode), legacyCommit = MemoryCommit(id = "old-commit", sessionId = "s", activeEpisodeNodeIds = listOf(oldNode.id))))
-            val retained = MemoryNode(id = "normalized-live-reference", sessionId = "s", tier = MemoryTier.LEGACY_REFERENCE,
-                sourceTurnIds = listOf("old-turn"), coverageUnits = listOf(MemoryCoverageUnit("legacy:${oldNode.id}", body)),
-                actionProjectionWithheld = true)
-            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(retained.id)), nodes = listOf(retained))
+            val service = f.service()
+            val rule = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS)
+            val unsafe = incoming.copy(id = "initial-unsafe-v3", messages = listOf(source.copy(
+                content = "旧剧情。\n[choices]\nChoices\nA. 打开仓库\nB. 检查地窖\n[/choices]", actionOptionsFormat = rule)))
+            val unsafeFile = f.root.resolve("initial-unsafe-v3.cbsave")
+            Files.writeString(unsafeFile, f.storage.json.encodeToString(SaveSlot.serializer(), unsafe))
+            val initial = service.import(unsafeFile, "s")
+            service.restore(initial.id, "s")
+            // Use the actual normalizer's body/range/origin, not a hand-built presumed migration.
+            f.snapshot = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
+            val retained = f.snapshot!!.nodes.single { it.coverageUnits.any { unit -> unit.sourceId == "legacy:${oldNode.id}" } }
+            assertTrue(retained.actionProjectionWithheld, "The actual unsafe legacy restoration must establish the source exclusion")
+            val active = f.chats.getMessages("s").single()
+            f.chats.updateMessage(active.copy(content = source.content, actionOptionsFormat = null))
             val file = f.root.resolve("same-session-v3.cbsave")
             Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
-            val service = f.service()
             val importFile = if (viaOtherSession) {
                 f.chats.createSession(f.session.copy(id = "intermediate", title = "Intermediate owner"))
                 val retainedSnapshot = f.snapshot
@@ -770,7 +779,7 @@ class DesktopSaveSlotServiceTest {
             service.restore(local.id, "s")
             val cold = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
             val normalized = cold.nodes.single { it.coverageUnits.any { unit -> unit.sourceId == "legacy:${oldNode.id}" } }
-            assertEquals(body, normalized.body)
+            assertEquals(retained.body, normalized.body)
             assertTrue(normalized.actionProjectionWithheld, "V3 normalization must not erase the live legacy origin exclusion")
         }
     }
