@@ -6,6 +6,7 @@ import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.chat.*
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
+import com.example.chatbar.domain.prompt.FormatRepairPromptAuthority
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -204,9 +205,19 @@ internal class DesktopMessageFormatRepairController(
         val character = owningCard?.let { SessionCharacterParticipationPolicy.effectiveCard(session, it) }
         val player = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, owningCard, settings.getPlayerSetting().playerName)
         val formatId = session.formatCardId ?: appSettings.defaultFormatCardId
-        val format = formatId?.let { formats.getById(it)?.content }?.let {
+        val renderedFormat = formatId?.let { formats.getById(it)?.content }?.let {
             PlaceholderRenderer.render(it, player, character?.effectiveBotName ?: session.title)
         }?.takeIf(String::isNotBlank)
+        val original = snapshot.displayContent
+        val actionFormat = snapshot.displayActionOptionsFormat
+        val repairInput = RoleplayActionOptionsPolicy.completeTrailingBlock(original, actionFormat)
+        fun actionItems(text: String) = RoleplayActionOptionsPolicy.blocks(text, actionFormat)
+            .map { block -> block.options.map { it.text } }
+        val originalActions = RoleplayActionOptionsPolicy.blocksBeforeRepair(repairInput, actionFormat)
+            .map { block -> block.options.map { it.text } }
+        val format = listOfNotNull(renderedFormat,
+            FormatRepairPromptAuthority.actionOptionsRepairRequirement(actionFormat)
+                .takeIf { originalActions.isNotEmpty() }).joinToString("\n\n").takeIf(String::isNotBlank)
         // An already identified speaker may return through history/world-book content. Repair
         // must recognize that name without injecting the disabled person's profile or enabling it.
         val visibleSpeakers = owningCard?.let { CharacterResidencyPolicy.presentPersonIds(it, snapshot) }.orEmpty()
@@ -223,14 +234,13 @@ internal class DesktopMessageFormatRepairController(
         val model = models.resolveFormatRepairModel(appSettings.formatRepairModelId, appSettings)
             ?: return configurationFailure(control, session, snapshot, "INVALID_MODEL", gate)
         if (!model.hasConfiguredAuthentication(appSettings)) return configurationFailure(control, session, snapshot, "AUTHENTICATION_REQUIRED", gate)
-        val original = snapshot.displayContent
         var prefix = ""
         val terminal = supervisorScope {
             val network = async(start = CoroutineStart.LAZY) {
                 try {
                     // Stop collecting at the first trusted transport terminal; do not await an
                     // upstream Flow's post-terminal suspension or accept its late events.
-                    stream(DesktopRepairRequest(format, segmented, original, model, appSettings.allowCleartextModelApi, appSettings.experimentalApiModeEnabled)).firstOrNull { event ->
+                    stream(DesktopRepairRequest(format, segmented, repairInput, model, appSettings.allowCleartextModelApi, appSettings.experimentalApiModeEnabled)).firstOrNull { event ->
                         when (event) {
                             is StreamEvent.Delta -> {
                                 var preview: String? = null
@@ -283,16 +293,23 @@ internal class DesktopMessageFormatRepairController(
         }
         currentCoroutineContext().ensureActive()
         if (terminal.kind == DesktopRepairTerminalKind.STOP) {
-            val mixed = MessageFormatRepairPolicy.progressiveOverlay(original, prefix)
+            val mixed = RoleplayActionOptionsPolicy.completeTrailingBlock(
+                MessageFormatRepairPolicy.progressiveOverlay(original, prefix), actionFormat)
+            if (mixed != original && actionItems(mixed) != originalActions)
+                return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
             return commit(session, snapshot, mixed,
                 MessageFormatRepairNotice(MessageFormatRepairNoticeKind.STOPPED, mixed, original), DesktopRepairStatus.STOPPED, gate = gate)
         }
         if (terminal.kind == DesktopRepairTerminalKind.CANCELLED) throw CancellationException("Repair collection cancelled")
         if (terminal.kind == DesktopRepairTerminalKind.ERROR || prefix.isBlank())
             return recordFailure(session, snapshot, terminal.code ?: "EMPTY_OUTPUT", gate)
-        if (MessageFormatRepairPolicy.isUnchangedResult(prefix) || prefix == original)
+        val candidate = if (MessageFormatRepairPolicy.isUnchangedResult(prefix)) repairInput
+            else RoleplayActionOptionsPolicy.completeTrailingBlock(prefix, actionFormat)
+        if (candidate != repairInput && actionItems(candidate) != originalActions)
+            return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
+        if (candidate == original)
             return commit(session, snapshot, null, MessageFormatRepairPolicy.applicableNotice(snapshot) ?: otherVersionRecoveryPoint(snapshot), DesktopRepairStatus.UNCHANGED, gate = gate)
-        return commit(session, snapshot, prefix, MessageFormatRepairPolicy.completedRepairNotice(original, prefix), DesktopRepairStatus.APPLIED, gate = gate)
+        return commit(session, snapshot, candidate, MessageFormatRepairPolicy.completedRepairNotice(original, candidate), DesktopRepairStatus.APPLIED, gate = gate)
     }
 
     private suspend fun configurationFailure(control: DesktopRepairControl, session: ChatSession,

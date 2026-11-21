@@ -17,7 +17,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
         val files: Map<String, Path>, val proof: Map<String, String>)
 
     suspend fun prepare(archive: DesktopSaveSlotArchive, prepared: DesktopSaveSlotArchive.Prepared,
-        target: ChatSession, duplicate: Boolean = false): Plan = withContext(Dispatchers.IO) {
+        target: ChatSession, duplicate: Boolean = false, previousMemorySnapshot: MemorySnapshot? = null): Plan = withContext(Dispatchers.IO) {
         archive.verify(prepared)
         val directory = Files.createDirectory(prepared.directory.resolve("restore-${UUID.randomUUID()}"))
         val storage = JsonFileStorage(directory) // Offline graph only; live commit uses the real coordinator.
@@ -162,8 +162,19 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
             com.example.chatbar.desktop.backup.DesktopSlotHistoricalVoiceCustody.preserve(prepared, directory,
                 voiceIds.mapValues { (_, id) -> restoredVoices.getValue(id) })
             val memory = MemoryRepository(storage, strictReads = true)
+            // Library envelopes may be rebound. An unchanged memory graph has priority over
+            // optional provenance, including when a v3 slot has travelled through another session.
+            val graphOwners = (slot.memorySnapshot?.nodes.orEmpty().map { it.sessionId } +
+                listOfNotNull(slot.memorySnapshot?.legacyCommit?.sessionId)).distinct()
+            val originalOwner = when {
+                prepared.format == SlotInspectFormat.ZIP_V8 -> slot.sessionId
+                graphOwners.isNotEmpty() -> graphOwners.singleOrNull()?.takeIf(String::isNotBlank)
+                else -> prepared.originalSessionId?.takeIf(String::isNotBlank)
+            }
             LongTermMemoryService(chats, memory, SettingsRepository(storage), NoArchiveNetwork,
-                ContextWindowManager()).loadSnapshot(target.id, slot.memorySnapshot)
+                ContextWindowManager()).loadSnapshot(target.id, slot.memorySnapshot,
+                    sourceSessionId = originalOwner,
+                    previousSnapshot = previousMemorySnapshot.takeUnless { duplicate })
             session = requireNotNull(chats.getSession(target.id))
             archive.verify(prepared)
             val files = linkedMapOf<String, Path>()

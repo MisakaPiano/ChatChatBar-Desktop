@@ -4,6 +4,71 @@ import com.example.chatbar.data.local.entity.*
 import kotlin.test.*
 
 class ChatHistoryActionProjectionTest {
+    @Test fun `Chinese continuation retains an offered letter adjacent to Han text`() {
+        val assistant = message("assistant", MessageRole.ASSISTANT,
+            "场景。\n<actions>\nA) 检查站台\nB) 问守卫\n</actions>", 1).copy(
+            actionOptionsFormat = ActionOptionsFormat("<actions>", "</actions>", "", ActionOptionLabels.LETTERS),
+        )
+        for ((label, expected) in listOf("B" to true, "b" to true, "C" to false)) {
+            val user = message("user", MessageRole.USER, "${label}保持安静并贴着墙走", 2)
+            val projected = known(listOf(assistant, user), setOf(assistant.id, user.id))
+                .sourceForHistory(assistant, stripStatus = false)
+            assertEquals(expected, "B) 问守卫" in projected)
+        }
+    }
+    @Test fun `nested examples stay literal and an explicit image hint retains one chosen item`() {
+        val format = ActionOptionsFormat("<actions>", "</actions>", "Actions")
+        val menu = "<actions>\nActions\n1. 检查站台\n2. 问守卫\n</actions>"
+        val nested = "- 格式示例\n\n" + menu.lineSequence().joinToString("\n") { "  $it" }
+        assertTrue(RoleplayActionOptionsPolicy.blocks(nested, format).isEmpty())
+        assertEquals(nested, RoleplayActionOptionsPolicy.withoutExplicitOptions(nested, format))
+        assertEquals("站台。", RoleplayActionOptionsPolicy.imageScene("站台。\n$menu", format, "").trim())
+        assertEquals("站台。\n问守卫", RoleplayActionOptionsPolicy.imageScene("站台。\n$menu", format, "请画第2项"))
+        assertEquals("站台。", RoleplayActionOptionsPolicy.imageScene("站台。\n$menu", format, "不要画第2项").trim())
+    }
+
+    @Test fun `repair can recognize a declared title typo without making it clickable`() {
+        val format = ActionOptionsFormat("<actions>", "</actions>", "Actions")
+        val draft = "<actions>\nAcitons\n1. 检查站台\n2. 问守卫\n</actions>"
+        assertTrue(RoleplayActionOptionsPolicy.blocks(draft, format).isEmpty())
+        assertEquals(
+            RoleplayActionOptionsPolicy.blocks(draft.replace("Acitons", "Actions"), format).single().options,
+            RoleplayActionOptionsPolicy.blocksBeforeRepair(draft, format).single().options,
+        )
+    }
+
+    @Test fun `status filtering retains a referenced earlier menu and removes separate statuses`() {
+        val original = "她拉开门。\n\n---\n行动选项\n1. 检查站台\n2. 问守卫\n3. 等下一班\n---\n\n```status\n实际位置：站里\n```"
+        val assistant = message("assistant", MessageRole.ASSISTANT, original, 1)
+        for (reference in listOf("Please select option 2.", "Please carry out the middle one quietly.")) {
+            val user = message("user", MessageRole.USER, reference, 2)
+            val projection = known(listOf(assistant, user), setOf(assistant.id, user.id))
+            val earlier = projection.sourceForHistory(assistant, stripStatus = true)
+            assertTrue("2. 问守卫" in earlier)
+            assertFalse("实际位置" in earlier)
+            assertFalse("1. 检查站台" in projection.forRetrieval(assistant).displayContent)
+            assertFalse("3. 等下一班" in projection.forRetrieval(assistant).displayContent)
+        }
+        val independent = message("user", MessageRole.USER, "我们安静地给窗台边的花草浇水。", 2)
+        val projection = known(listOf(assistant, independent), setOf(assistant.id, independent.id))
+        assertFalse("2. 问守卫" in projection.sourceForHistory(assistant, stripStatus = true))
+        assertFalse("2. 问守卫" in projection.forRetrieval(assistant).displayContent)
+        assertEquals(original, assistant.displayContent)
+    }
+
+    @Test fun `earlier history retains fenced examples while removing actual statuses`() {
+        val literal = "```text\n$options\n```"
+        val quoted = "> ```status\n> 衣着：示例\n> ```"
+        val listed = "- 格式示例\n\n  ```status\n  位置：示例\n  ```"
+        val statuses = "```status\n真实状态\n```\n\n```text\n🕰时间：黄昏\n```"
+        val body = "$literal\n\n$quoted\n\n$listed"
+        val assistant = message("assistant", MessageRole.ASSISTANT, "$body\n\n$statuses", 1)
+        for (content in listOf("我们安静地给窗台边的花草浇水。", "Please select option 2.")) {
+            val user = message("user", MessageRole.USER, content, 2)
+            val projection = known(listOf(assistant, user), setOf(assistant.id, user.id))
+            assertEquals(body, projection.sourceForHistory(assistant, stripStatus = true))
+        }
+    }
     private fun message(id: String, role: MessageRole, content: String, order: Long) =
         ChatMessage(id, "s", role, content, orderKey = order, createdAt = order, updatedAt = order)
     private val options = "————————\n【行动选项】\n1. OLD_NOT_TAKEN_LEFT\n2. OLD_NOT_TAKEN_RIGHT\n————————"
@@ -79,6 +144,47 @@ class ChatHistoryActionProjectionTest {
             val p = known(all, all.map { it.id }.toSet())
             assertEquals(options, p.project(a, options))
         }
+    }
+
+    @Test fun `retain an unknown letter reference without treating ordinary English as a choice`() {
+        val source = "旁白\n<choices>\nA) Read the map\nB) Wait by the door\n</choices>"
+        val assistant = message("a", MessageRole.ASSISTANT, source, 1)
+            .copy(actionOptionsFormat = ActionOptionsFormat("<choices>", "</choices>", "", ActionOptionLabels.LETTERS))
+        for (reference in listOf(
+            "Let's go with B and wait quietly.",
+            "Perhaps ‘b’ would work better here.",
+            "Let's go with A and wait quietly.",
+            "She suggested B so we will wait quietly.",
+            "She suggested A so we will wait quietly.",
+            "a 然后静静地等待门口下一轮反应。",
+            "A然后静静地等待门口下一轮反应。",
+            "a　然后静静地等待门口下一轮反应。"
+        )) {
+            val user = message("u", MessageRole.USER, reference, 2)
+            val projection = known(listOf(assistant, user), setOf(assistant.id, user.id))
+            assertEquals(source, projection.project(assistant, source), reference)
+        }
+        for (text in listOf("I'll open a window while we're waiting nearby.", "I open a window and wait nearby.")) {
+            val independent = message("u", MessageRole.USER, text, 2)
+            val projection = known(listOf(assistant, independent), setOf(assistant.id, independent.id))
+            assertEquals("旁白\n", projection.project(assistant, source))
+        }
+        val nameEndingInA = message("u", MessageRole.USER, "Maria 然后静静地等待门口下一轮反应。", 2)
+        val nameProjection = known(listOf(assistant, nameEndingInA), setOf(assistant.id, nameEndingInA.id))
+        assertEquals("旁白\n", nameProjection.project(assistant, source))
+        val nineOptions = ('A'..'I').joinToString("\n") { "$it) Action $it" }
+        val longMenu = assistant.copy(content = "旁白\n<choices>\n$nineOptions\n</choices>")
+        val referenceI = message("u", MessageRole.USER, "She suggested I so we will wait quietly.", 2)
+        val projection = known(listOf(longMenu, referenceI), setOf(longMenu.id, referenceI.id))
+        assertEquals(longMenu.content, projection.project(longMenu, longMenu.content))
+
+        val lowerMenu = assistant.copy(content = source.replace("A)", "a)").replace("B)", "b)"))
+        val lowerReference = message("u", MessageRole.USER, "a 然后静静地等待门口下一轮反应。", 2)
+        val lowerProjection = known(listOf(lowerMenu, lowerReference), setOf(lowerMenu.id, lowerReference.id))
+        assertEquals(lowerMenu.content, lowerProjection.project(lowerMenu, lowerMenu.content))
+        val numbered = assistant.copy(content = "旁白\n$options", actionOptionsFormat = null)
+        val numberedProjection = known(listOf(numbered, lowerReference), setOf(numbered.id, lowerReference.id))
+        assertEquals("旁白\n", numberedProjection.project(numbered, numbered.content))
     }
 
     @Test fun `unreliable list narration code and legacy status projection keep their separate semantics`() {

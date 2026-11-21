@@ -11,6 +11,7 @@ import com.example.chatbar.domain.card.FormatCardUserToolValidator
 import com.example.chatbar.domain.card.FormatCardAutoFillDraft
 import com.example.chatbar.domain.card.FormatCardAutoFillPolicy
 import com.example.chatbar.domain.card.NamePolicy
+import com.example.chatbar.domain.chat.RoleplayActionOptionsPolicy
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +26,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 internal enum class FormatEditorProblem {
-    NAME_REQUIRED, CONTENT_REQUIRED, DUPLICATE_NAME, INVALID_TOOL, SOURCE_CHANGED,
+    NAME_REQUIRED, CONTENT_REQUIRED, DUPLICATE_NAME, INVALID_TOOL, INVALID_ACTION_FORMAT, SOURCE_CHANGED,
     SOURCE_DELETED, NEW_DRAFT_EXISTS, DRAFT_FAILED, SAVE_FAILED, SAVE_COMMITTED_WARNING,
     CLEAN_DRAFT_WARNING,
 }
@@ -195,14 +196,18 @@ internal class DesktopFormatCardEditorController(
             NamePolicy.normalize(card.name).isBlank() -> FormatEditorProblem.NAME_REQUIRED
             card.content.isBlank() -> FormatEditorProblem.CONTENT_REQUIRED
             FormatCardUserToolValidator.firstValidationError(card.userTools) != null -> FormatEditorProblem.INVALID_TOOL
+            card.actionOptionsFormat?.let(RoleplayActionOptionsPolicy::validationError) != null -> FormatEditorProblem.INVALID_ACTION_FORMAT
             NamePolicy.conflict(card.name, formats.getAll().map { it.id to it.name }, targetId) != null ->
                 FormatEditorProblem.DUPLICATE_NAME
             else -> null
         }
         if (issue != null) {
             mutableState.value = mutableState.value.copy(problem = issue,
-                detail = if (issue == FormatEditorProblem.INVALID_TOOL)
-                    FormatCardUserToolValidator.firstValidationError(card.userTools) else null)
+                detail = when (issue) {
+                    FormatEditorProblem.INVALID_TOOL -> FormatCardUserToolValidator.firstValidationError(card.userTools)
+                    FormatEditorProblem.INVALID_ACTION_FORMAT -> card.actionOptionsFormat?.let(RoleplayActionOptionsPolicy::validationError)
+                    else -> null
+                })
             return false
         }
         return true
@@ -228,7 +233,7 @@ internal class DesktopFormatCardEditorController(
             return false
         }
         val retained = (source ?: card).copy(name = NamePolicy.normalize(card.name), content = card.content,
-            userTools = card.userTools, isDefault = card.isDefault)
+            userTools = card.userTools, isDefault = card.isDefault, actionOptionsFormat = card.actionOptionsFormat)
         try {
             persistCard(retained)
         } catch (error: Exception) {

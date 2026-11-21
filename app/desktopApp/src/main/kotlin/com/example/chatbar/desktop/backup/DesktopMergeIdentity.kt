@@ -40,8 +40,11 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
     fun fieldSpace(record: DesktopMergeRecord, fields: List<String>): String? {
         val field = fields.lastOrNull() ?: return null
         if (opaque(fields)) return null
+        if (record.type == "save_slots" && fields.size == 1 && fields.single() in setOf("inlineSourceSessionId", "desktopMemorySourceSessionId")) return "chat_sessions"
         if (record.type == "vector_chunks" && record.text("sourceType") == "DOCUMENT" &&
             fields.size == 2 && fields.first() == "metadata" && field in setOf("documentId", "originalDocId")) return "documents"
+        if (record.type == "vector_chunks" && record.text("sourceType") == "CHAT_MEMORY" &&
+            fields == listOf("metadata", "actionChoiceSourceIds")) return "chat_messages"
         if ("desktopPlayerRole" in fields) {
             if (field == "cardId") return "character_cards"
             if (field == "personId") return "characters"
@@ -124,7 +127,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
     }
     fun string(record: DesktopMergeRecord, text: String, fields: List<String>): String {
         val type = fieldSpace(record, fields) ?: return text
-        if (fields == listOf("metadata", "messageIds")) return text.split(',').joinToString(",") { value(type, it) }
+        if (fields == listOf("metadata", "messageIds") || fields == listOf("metadata", "actionChoiceSourceIds")) return text.split(',').joinToString(",") { value(type, it) }
         return value(type, text)
     }
     fun key(text: String, fields: List<String>): String = when (fields.lastOrNull()) {
@@ -133,7 +136,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
         else -> text
     }
     companion object {
-        val fields = setOf("id", "sessionId", "characterCardId", "importedCharacterCardId", "characterId", "senderCharacterId", "messageId", "messageIds",
+        val fields = setOf("id", "sessionId", "characterCardId", "importedCharacterCardId", "characterId", "senderCharacterId", "messageId", "messageIds", "actionChoiceSourceIds", "inlineSourceSessionId", "desktopMemorySourceSessionId",
             "generatedFromMessageId", "anchorMessageId", "longTermMemoryUpdatedThroughMessageId", "modelId", "imageModelId", "defaultModelId",
             "defaultImageModelId", "visionModelId", "formatRepairModelId", "voiceTagModelId", "aiDesignModelId", "designModelId", "defaultEmbeddingId",
             "formatCardId", "defaultFormatCardId", "worldBookIds", "extraWorldBookIds", "boundWorldBookId", "entryId", "postId", "currentConversationId",

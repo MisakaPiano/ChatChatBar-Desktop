@@ -9,9 +9,41 @@ import java.nio.file.*
 import javax.imageio.ImageIO
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `declared rules and eight alternatives survive real slot export restore duplicate and cold read`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val rule = ActionOptionsFormat("<next>", "</next>", "Next", ActionOptionLabels.LETTERS)
+            val alternatives = (0..7).map { "Synthetic reply $it" }
+            val formats = alternatives.indices.map { if (it % 2 == 0) rule else null }
+            val source = MessageAlternativeVersionPolicy.normalize(f.message.copy(content = alternatives[6],
+                alternatives = alternatives, currentAlternativeIndex = 6, actionOptionsFormat = rule,
+                alternativeActionOptionsFormats = formats))
+            f.chats.updateMessage(source)
+            val service = f.service()
+            val slot = service.create("s", "Rules", SaveSlotImagePolicy.NONE, false)
+            val output = f.root.resolve("rules.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            f.chats.updateMessage(source.copy(actionOptionsFormat = null, alternativeActionOptionsFormats = emptyList()))
+            service.restore(imported.id, "s")
+            val duplicate = service.duplicate("s")
+            val cold = ChatRepository(JsonFileStorage(f.root))
+            for (id in listOf("s", duplicate.id)) {
+                val saved = cold.getMessagesReadOnly(id).single()
+                assertEquals(alternatives, saved.alternatives)
+                assertEquals(formats, saved.alternativeActionOptionsFormats)
+                assertEquals(rule, saved.displayActionOptionsFormat)
+                assertEquals(source.alternativeVersionIds, saved.alternativeVersionIds)
+            }
+        }
+    }
+
     @Test fun `narrative mode survives actual slot export import restore duplicate and repository reopen`() = runBlocking {
         Fixture().use { f ->
             f.seed()
@@ -604,6 +636,284 @@ class DesktopSaveSlotServiceTest {
                 assertFailsWith<IllegalStateException> { service.export(slot.id, output) }
                 assertContentEquals(original, Files.readAllBytes(input))
             }
+        }
+    }
+
+    @Test fun `actual session duplication remaps choice dependencies without changing the indexed meaning`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val menu = ChatMessage.create("s", MessageRole.ASSISTANT, "Synthetic choice source")
+            f.chats.addMessage(menu)
+            val chunk = VectorChunk("choice-index", ChunkSourceType.CHAT_MEMORY, "s", content = "Selected choice only", embedding = listOf(1f, 0f),
+                messageId = f.message.id, metadata = mapOf("sessionId" to "s", "messageIds" to f.message.id,
+                    "actionChoiceSourceIds" to menu.id), createdAt = 1)
+            f.storage.saveEntity("vector_chunks", chunk.id, chunk, VectorChunk.serializer())
+            val copy = f.service().duplicate("s")
+            val copiedMessages = f.chats.getMessages(copy.id)
+            val copiedMenu = copiedMessages.single { it.displayContent == menu.displayContent }
+            val copiedChunk = f.storage.loadAll("vector_chunks", VectorChunk.serializer()).single { it.sourceId == copy.id }
+            assertEquals(copiedMenu.id, copiedChunk.metadata["actionChoiceSourceIds"])
+            assertNotEquals(menu.id, copiedMenu.id)
+            assertEquals(chunk.content, copiedChunk.content)
+            assertEquals(chunk, f.storage.loadEntity("vector_chunks", chunk.id, VectorChunk.serializer()))
+        }
+    }
+
+    @Test fun `inline foreign head only snapshot does not inherit local withheld provenance after library rebinding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "head-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val head = MemoryHead(throughSourceTurnId = "head-turn", location = "Identical old location")
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
+                actionProjection = MemoryHeadActionProjection.WITHHELD)))
+            val incoming = SaveSlot(id = "foreign-inline-head", sessionId = "foreign-original", name = "Foreign head only", createdAt = 1,
+                inlineSourceSessionId = "s",
+                messages = listOf(source.copy(sessionId = "foreign-original")), memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
+            val file = f.root.resolve("foreign-inline-head.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val service = f.service()
+            val local = service.import(file, "s")
+            assertEquals("s", local.sessionId)
+            assertEquals("", local.inlineSourceSessionId, "Conflicting input provenance can deny, never replace, its envelope owner")
+            service.restore(local.id, "s")
+            val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
+            assertNull(state.head.actionProjection, "A rebound inline envelope does not prove the original HEAD owner")
+        }
+    }
+
+    @Test fun `foreign head only raw export and reimport cannot acquire its intermediate library owners withholding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "head-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val head = MemoryHead(throughSourceTurnId = "head-turn", location = "Foreign but identical HEAD")
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
+                actionProjection = MemoryHeadActionProjection.WITHHELD)))
+            val incoming = SaveSlot(id = "raw-foreign", sessionId = "foreign-original", name = "Foreign HEAD", createdAt = 1,
+                messages = listOf(source.copy(sessionId = "foreign-original")), memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
+            val original = f.root.resolve("raw-foreign.cbsave")
+            Files.writeString(original, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val originalBytes = Files.readAllBytes(original)
+            val service = f.service()
+            val first = service.import(original, "s")
+            assertEquals("", first.inlineSourceSessionId)
+            val exported = f.root.resolve("foreign-via-rebound-library.cbsave")
+            service.export(first.id, exported)
+            val second = service.import(exported, "s")
+            assertEquals("", second.inlineSourceSessionId, "Raw export provenance must deny the rebound header")
+            service.restore(second.id, "s")
+            assertNull(MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!.head.actionProjection)
+            assertContentEquals(originalBytes, Files.readAllBytes(original))
+        }
+    }
+
+    @Test fun `old rebound ownerless inline head only export never proves same session custody`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "head-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val head = MemoryHead(throughSourceTurnId = "head-turn", location = "Known unsafe old HEAD")
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head.copy(stale = true,
+                actionProjection = MemoryHeadActionProjection.WITHHELD)))
+            val incoming = SaveSlot(id = "same-inline-head", sessionId = "s", name = "Same owner head only", createdAt = 1,
+                messages = listOf(source),
+                memorySnapshot = MemorySnapshot(state = MemorySessionSnapshot(head = head)))
+            val file = f.root.resolve("same-inline-head.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val originalBytes = Files.readAllBytes(file)
+            assertFalse(f.storage.json.parseToJsonElement(Files.readString(file)).jsonObject.containsKey("inlineSourceSessionId"),
+                "The old rebound export fixture must have no new provenance field")
+            val local = f.service().import(file, "s")
+            val coldSlot = JsonFileStorage(f.root).loadEntity("save_slots", local.id, SaveSlot.serializer())!!
+            assertEquals("", coldSlot.inlineSourceSessionId)
+            f.service().restore(local.id, "s")
+            val state = MemoryRepository(JsonFileStorage(f.root), true).getState("s")!!
+            assertNull(state.head.actionProjection,
+                "An old rebound header with no original graph cannot inherit local withholding")
+            assertEquals(head.location, state.head.location)
+            assertContentEquals(originalBytes, Files.readAllBytes(file))
+        }
+    }
+
+    @Test fun `same session v3 inline restoration retains live withholding after node normalization`() = runBlocking {
+        for (viaOtherSession in listOf(false, true)) for (orphaned in listOf(false, true)) Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "old-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val body = "UNVERIFIED_V3_SUMMARY"
+            val oldNode = MemoryNode(id = "old-episode", sessionId = "s", tier = MemoryTier.EPISODE,
+                sourceTurnIds = listOf("old-turn"), summary = body)
+            val incoming = SaveSlot(id = "local-v3", sessionId = "s", name = "Same owner old v3", createdAt = 1,
+                messages = listOf(source), memorySnapshot = MemorySnapshot(schemaVersion = 3,
+                    nodes = listOf(oldNode), legacyCommit = MemoryCommit(id = "old-commit", sessionId = "s", activeEpisodeNodeIds = listOf(oldNode.id))))
+            val service = f.service()
+            val rule = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS)
+            val unsafe = incoming.copy(id = "initial-unsafe-v3", messages = listOf(source.copy(
+                content = "旧剧情。\n[choices]\nChoices\nA. 打开仓库\nB. 检查地窖\n[/choices]", actionOptionsFormat = rule)))
+            val unsafeFile = f.root.resolve("initial-unsafe-v3.cbsave")
+            Files.writeString(unsafeFile, f.storage.json.encodeToString(SaveSlot.serializer(), unsafe))
+            val initial = service.import(unsafeFile, "s")
+            service.restore(initial.id, "s")
+            // Use the actual normalizer's body/range/origin, not a hand-built presumed migration.
+            f.snapshot = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
+            val retained = f.snapshot!!.nodes.single { it.coverageUnits.any { unit -> unit.sourceId == "legacy:${oldNode.id}" } }
+            assertTrue(retained.actionProjectionWithheld, "The actual unsafe legacy restoration must establish the source exclusion")
+            if (orphaned) {
+                val repository = MemoryRepository(JsonFileStorage(f.root), true)
+                repository.saveState(repository.getState("s")!!.copy(legacyReferenceNodeIds = emptyList()))
+                f.snapshot = repository.snapshot("s")!!
+                assertTrue(f.snapshot!!.nodes.isEmpty())
+                assertTrue(Files.exists(f.root.resolve("entities/memory_nodes/${retained.id}.json")))
+            }
+            val active = f.chats.getMessages("s").single()
+            f.chats.updateMessage(active.copy(content = source.content, actionOptionsFormat = null))
+            val file = f.root.resolve("same-session-v3.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val importFile = if (viaOtherSession) {
+                f.chats.createSession(f.session.copy(id = "intermediate", title = "Intermediate owner"))
+                val retainedSnapshot = f.snapshot
+                f.snapshot = null
+                val intermediate = service.import(file, "intermediate")
+                val exported = f.root.resolve("v3-through-intermediate.cbsave")
+                service.export(intermediate.id, exported)
+                f.snapshot = retainedSnapshot
+                exported
+            } else file
+            val local = service.import(importFile, "s")
+            service.restore(local.id, "s")
+            val cold = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
+            val normalized = cold.nodes.single { it.coverageUnits.any { unit -> unit.sourceId == "legacy:${oldNode.id}" } }
+            assertEquals(retained.body, normalized.body)
+            assertTrue(normalized.actionProjectionWithheld, "V3 normalization must not erase the live legacy origin exclusion")
+        }
+    }
+
+    @Test fun `actual restore retains same ID orphan withholding outside the safety snapshot`() = runBlocking {
+        restoreWithOrphanMemory(corrupt = false)
+    }
+
+    @Test fun `modern v8 restore retains orphan withholding by stable legacy origin across normalizations`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "old-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val oldNode = MemoryNode(id = "old-episode", sessionId = "s", tier = MemoryTier.EPISODE,
+                sourceTurnIds = listOf("old-turn"), summary = "UNCHANGED_V3_SUMMARY")
+            val legacy = SaveSlot(id = "legacy-source", sessionId = "s", name = "Legacy source", createdAt = 1,
+                messages = listOf(source), memorySnapshot = MemorySnapshot(schemaVersion = 3, nodes = listOf(oldNode),
+                    legacyCommit = MemoryCommit(id = "old-commit", sessionId = "s", activeEpisodeNodeIds = listOf(oldNode.id))))
+            val file = f.root.resolve("legacy-source.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), legacy))
+            val service = f.service()
+            service.restore(service.import(file, "s").id, "s")
+            val repository = MemoryRepository(JsonFileStorage(f.root), true)
+            f.snapshot = repository.snapshot("s")!!
+            val first = f.snapshot!!.nodes.single()
+            assertFalse(first.actionProjectionWithheld)
+            val modern = service.create("s", "Earlier modern snapshot", SaveSlotImagePolicy.NONE, false)
+            assertEquals(8, modern.schemaVersion)
+            val modernFile = f.root.resolve("earlier-modern.cbsave")
+            service.export(modern.id, modernFile)
+            val modernBytes = Files.readAllBytes(modernFile)
+
+            val rule = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS)
+            val unsafe = legacy.copy(id = "unsafe-source", messages = listOf(source.copy(
+                content = "旧剧情。\n[choices]\nChoices\nA. 打开仓库\nB. 检查地窖\n[/choices]", actionOptionsFormat = rule)))
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), unsafe))
+            service.restore(service.import(file, "s").id, "s")
+            val second = repository.snapshot("s")!!.nodes.single()
+            assertNotEquals(first.id, second.id)
+            assertTrue(second.actionProjectionWithheld)
+            assertEquals(first.body, second.body)
+            assertEquals(first.sourceTurnIds, second.sourceTurnIds)
+            f.chats.updateMessage(f.chats.getMessages("s").single().copy(content = source.content, actionOptionsFormat = null))
+            repository.saveState(repository.getState("s")!!.copy(legacyReferenceNodeIds = emptyList()))
+            f.snapshot = repository.snapshot("s")!!
+            assertTrue(f.snapshot!!.nodes.isEmpty())
+            assertTrue(Files.exists(f.root.resolve("entities/memory_nodes/${second.id}.json")))
+            service.restore(service.import(modernFile, "s").id, "s")
+            val restored = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!.nodes.single()
+            assertEquals(first.id, restored.id)
+            assertEquals(first.body, restored.body)
+            assertTrue(restored.actionProjectionWithheld, "Modern v8 restoration lost the live stable-origin exclusion")
+            assertContentEquals(modernBytes, Files.readAllBytes(modernFile))
+        }
+    }
+
+    @Test fun `actual restore refuses corrupt same ID live memory before isolated publication`() = runBlocking {
+        restoreWithOrphanMemory(corrupt = true)
+    }
+
+    private suspend fun restoreWithOrphanMemory(corrupt: Boolean) {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList())
+            f.chats.updateMessage(source)
+            val node = MemoryNode(id = "orphan-evidence", sessionId = "s", tier = MemoryTier.LEGACY_REFERENCE,
+                sourceTurnIds = listOfNotNull(source.sourceTurnId), overview = "Retained synthetic summary",
+                coverageUnits = listOf(MemoryCoverageUnit("legacy:original-node", "UNCHANGED_SYNTHETIC_BODY")),
+                author = MemoryAuthor.MIGRATION)
+            val repository = MemoryRepository(JsonFileStorage(f.root), true)
+            repository.saveState(MemorySessionState(sessionId = "s", memoryWasEnabled = false))
+            f.snapshot = repository.snapshot("s")!!
+            assertTrue(f.snapshot!!.nodes.isEmpty())
+            val incoming = SaveSlot(id = "orphan-source", sessionId = "s", name = "Same source old archive", createdAt = 1,
+                messages = listOf(source), memorySnapshot = MemorySnapshot(
+                    state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(node.id)), nodes = listOf(node)))
+            val sourceFile = f.root.resolve("orphan-source.cbsave")
+            Files.writeString(sourceFile, f.storage.json.encodeToString(SaveSlot.serializer(), incoming))
+            val originalSource = Files.readAllBytes(sourceFile)
+            val service = f.service()
+            val slot = service.import(sourceFile, "s")
+            // This node is genuinely on live disk, with no current active/legacy reachability.
+            val local = node.copy(actionProjectionWithheld = true)
+            repository.saveNodes(listOf(local))
+            val path = f.root.resolve("entities/memory_nodes/${node.id}.json")
+            if (corrupt) {
+                val value = f.storage.json.parseToJsonElement(Files.readString(path)).jsonObject
+                Files.writeString(path, JsonObject(value + ("tier" to JsonPrimitive("BROKEN_SYNTHETIC_TIER"))).toString())
+            }
+            val before = Files.readAllBytes(path)
+            val proof = DesktopSessionInventory(f.root).read("s")
+            val outcome = runCatching { service.restore(slot.id, "s") }
+            if (corrupt) {
+                assertTrue(outcome.isFailure, "Corrupt live candidate was overwritten during isolated restoration")
+                assertContentEquals(before, Files.readAllBytes(path))
+                assertEquals(proof, DesktopSessionInventory(f.root).read("s"))
+                assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
+            } else {
+                outcome.getOrThrow()
+                val cold = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!
+                val restored = cold.nodes.single { it.id == node.id }
+                assertEquals(node.body, restored.body)
+                assertEquals(node.sourceTurnIds, restored.sourceTurnIds)
+                assertTrue(restored.actionProjectionWithheld, "Live orphan withholding was lost during isolated restoration")
+            }
+            assertContentEquals(originalSource, Files.readAllBytes(sourceFile))
+        }
+    }
+
+    @Test fun `restoring an older same session slot cannot clear known legacy action withholding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val legacy = MemoryNode(id = "legacy-action", sessionId = "s", tier = MemoryTier.LEGACY_REFERENCE,
+                overview = "Legacy summary", coverageUnits = listOf(MemoryCoverageUnit("legacy:s", "UNVERIFIED_MENU_SUMMARY")),
+                author = MemoryAuthor.MIGRATION)
+            f.snapshot = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(legacy.id)), nodes = listOf(legacy))
+            val service = f.service()
+            val old = service.create("s", "Old unmarked snapshot", SaveSlotImagePolicy.NONE, false)
+            f.snapshot = f.snapshot!!.copy(nodes = listOf(legacy.copy(actionProjectionWithheld = true)))
+            service.restore(old.id, "s")
+            val cold = MemoryRepository(JsonFileStorage(f.root), strictReads = true).snapshot("s")!!
+            assertTrue(cold.nodes.single { it.id == legacy.id }.actionProjectionWithheld,
+                "The isolated replacement must retain the current provenance exclusion")
+            assertEquals(legacy.body, cold.nodes.single { it.id == legacy.id }.body)
         }
     }
 

@@ -238,7 +238,7 @@ internal class DesktopChatVoiceRuntime(
     suspend fun stopForMaintenance() { coordinator.stopPlaybackAndJoin() }
     fun generationSegments(message: ChatMessage, session: ChatSession?, segmented: Boolean): List<CurrentVoiceSegment> =
         if (session == null) emptyList() else VoiceGenerationPolicy.generationSegments(message.displayContent,
-            VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings), segmented)
+            VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings), segmented, message.displayActionOptionsFormat)
 
     suspend fun save(voice: GeneratedVoiceMessage, chatTitle: String) = guarded {
         val destination = withContext(Dispatchers.IO) {

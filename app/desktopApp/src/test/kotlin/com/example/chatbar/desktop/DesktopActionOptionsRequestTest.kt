@@ -85,6 +85,60 @@ class DesktopActionOptionsRequestTest {
         try { f.prepare(exclude, multimodal); withTimeout(25_000) { block(f) } } finally { f.close() }
     }
 
+    @Test fun `actual wire keeps unknown letter references and ordinary English has no invented choice`() = runBlocking {
+        val rule = ActionOptionsFormat("<choices>", "</choices>", "", ActionOptionLabels.LETTERS)
+        val references = listOf(
+            Triple("Let's go with B and wait quietly.", 'A', true),
+            Triple("She suggested A so we will wait quietly.", 'A', true),
+            Triple("She suggested I so we will wait quietly.", 'A', true),
+            Triple("a 然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("a然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("A然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("a　然后静静地等待门口下一轮反应。", 'A', true),
+            Triple("a 然后静静地等待门口下一轮反应。", 'a', true),
+            Triple("我同意B方案，先检查营地周边。", 'A', true),
+            Triple("我同意B并守在营地附近观察四周。", 'A', true),
+            Triple("我赞成B的方案，今天沿着山路向前探索。", 'A', true),
+            Triple("我赞成 B 的方案，今天沿着山路向前探索。", 'A', true),
+            Triple("我赞成C的方案，今天沿着山路向前探索。", 'A', false),
+            Triple("我赞成B的方案，今天沿着山路向前探索。", '1', false),
+            Triple("I'll take the penultimate and wait quietly nearby.", 'A', true),
+            Triple("我沿着C路线前往城外再寻找新的落脚处。", 'A', false),
+            Triple("我在营地里整理工具并等待下一次动静。", 'A', false),
+            Triple("I'll open a window while we're waiting nearby.", 'A', false),
+            Triple("I open a window and wait nearby.", 'A', false),
+            Triple("Maria 然后静静地等待门口下一轮反应。", 'A', false),
+            Triple("a 然后静静地等待门口下一轮反应。", '1', false))
+        for ((reference, start, keepSource) in references) fixture { f ->
+            val count = if ("suggested I" in reference) 9 else 2
+            val numbered = start == '1'
+            val menu = (start until (start.code + count).toChar()).joinToString("\n") {
+                "$it${if (numbered) "." else ")"} SOURCE_OPTION_$it"
+            }
+            f.add(MessageRole.USER, ordinary)
+            val block = if (numbered) "---\n【行动选项】\n$menu\n---" else "<choices>\n$menu\n</choices>"
+            val before = f.add(MessageRole.ASSISTANT, "Story before choices.\n$block")
+            f.chats.updateMessage(before.copy(actionOptionsFormat = if (numbered) null else rule))
+            f.sources[f.sources.lastIndex] = assertNotNull(f.chats.getMessage(before.id, "s"))
+            val (wire, result) = f.wire(reference)
+            assertEquals(1, wire.count { it == reference })
+            assertEquals(keepSource, wire.any { "SOURCE_OPTION_" in it }, reference)
+            assertEquals(reference, result.currentUser.content)
+            f.unchanged()
+        }
+    }
+
+    @Test fun `empty list item code example remains inert and survives actual outgoing history`() = runBlocking {
+        for (marker in listOf("- ", "-", "+")) fixture { f ->
+        val literal = "$marker\n  ```action options\n  1. EXAMPLE_ONE\n  2. EXAMPLE_TWO\n  ```"
+        f.add(MessageRole.USER, ordinary)
+        val source = f.add(MessageRole.ASSISTANT, literal)
+        val wire = f.wire(ordinary).first.joinToString("\n")
+        f.unchanged()
+        assertTrue(literal in wire, "Literal nested code was removed from the actual request as if it were an action menu")
+        assertTrue(desktopActionChoices(source).isEmpty(), "An empty list marker still owns its following indented code")
+    } }
+
     @Test fun `current long caption with image retains earlier choices and exact user multimodal payload`() = runBlocking {
         for (exclude in listOf(false, true)) fixture(exclude, multimodal = true) { f ->
             f.add(MessageRole.USER, ordinary)
@@ -167,7 +221,7 @@ class DesktopActionOptionsRequestTest {
             f.add(MessageRole.USER, ordinary)
             f.add(MessageRole.ASSISTANT, "新剧情\n" + options("NEW_UNSELECTED"))
             val text = f.wire(if (continuation) "" else ordinary).first.joinToString("\n")
-            assertEquals(!excludeStatus, text.contains("OLD_REFERENCE_UNTAKEN"), reference)
+            assertTrue(text.contains("OLD_REFERENCE_UNTAKEN"), reference)
             assertTrue(text.contains(reference)); assertFalse(text.contains("NEW_UNSELECTED_UNTAKEN"), reference)
             f.unchanged()
         }

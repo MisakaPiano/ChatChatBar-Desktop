@@ -53,7 +53,7 @@ import kotlinx.serialization.json.put
  * - 回复节奏模式与历史标记：`narrativeModeSystemPrompt`、`narrativeModeTailSystemPrompt`、`narrativeModeHistoryReply`
  * - 空消息继续生成：`CONTINUE_GENERATION_USER_PROMPT`、`continueGenerationUserPrompt`
  * - user工具请求尾缀：`randomNumberUserToolSuffix`、`appendUserToolSuffixBlock`
- * - 消息格式修复：`MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT`、`messageFormatRepairUserPrompt`
+ * - 消息格式修复：`MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT`、`messageFormatRepairUserPrompt`、`actionOptionsRepairRequirement`
  * - 自动生图资格检查：`AUTOMATIC_CHAT_IMAGE_JUDGE_SYSTEM`、`automaticChatImageJudgeUser`
  * - 回复长度/语言尾部约束：`replyLengthConstraint`、`replyLengthTailSystemPrompt`、
  *   `replyTailSystemPrompt`、`replyLanguageConstraint`
@@ -335,6 +335,9 @@ object PromptTemplates {
         segmentedBubbleFormat: String?,
         message: String
     ): String = FormatRepairPromptAuthority.messageFormatRepairUserPrompt(formatCard, segmentedBubbleFormat, message)
+
+    fun actionOptionsRepairRequirement(format: com.example.chatbar.data.local.entity.ActionOptionsFormat?): String =
+        FormatRepairPromptAuthority.actionOptionsRepairRequirement(format)
 
     fun replyLengthConstraint(replyLength: Int): String =
         MainChatPromptAuthority.replyLengthConstraint(replyLength)

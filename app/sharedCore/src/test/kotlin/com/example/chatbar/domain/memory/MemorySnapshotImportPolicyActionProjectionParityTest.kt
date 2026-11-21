@@ -1,0 +1,185 @@
+package com.example.chatbar.domain.memory
+
+import com.example.chatbar.data.local.entity.MemoryCoverageUnit
+import com.example.chatbar.data.local.entity.MemoryHead
+import com.example.chatbar.data.local.entity.MemoryHeadActionProjection
+import com.example.chatbar.data.local.entity.MemoryNode
+import com.example.chatbar.data.local.entity.MemorySessionSnapshot
+import com.example.chatbar.data.local.entity.MemorySnapshot
+import com.example.chatbar.data.local.entity.MemorySourceRepairState
+import com.example.chatbar.data.local.entity.MemorySourceRepairStatus
+import com.example.chatbar.data.local.entity.MemoryTier
+import com.example.chatbar.data.local.entity.MemoryTimelineEntry
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class MemorySnapshotImportPolicyActionProjectionParityTest {
+    @Test
+    fun sameSessionOlderSnapshotCannotReplaceKnownWithholdingForExactPayloads() {
+        val legacy = MemoryNode(
+            id = "legacy", sessionId = "source", tier = MemoryTier.LEGACY_REFERENCE,
+            sourceTurnIds = listOf("turn-2"), content = "旧档案正文",
+        )
+        val head = MemoryHead(throughSourceTurnId = "turn-2", goals = "旧目标", version = 4)
+        val state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(legacy.id), head = head)
+        val older = MemorySnapshot(state = state, nodes = listOf(legacy))
+        val localNode = legacy.copy(actionProjectionWithheld = true)
+        val localHead = head.copy(
+            stale = true, actionProjection = MemoryHeadActionProjection.WITHHELD,
+            sourceFingerprints = mapOf("turn-2" to "migration-proof"),
+        )
+        fun preserve(snapshot: MemorySnapshot, owner: String? = "source") =
+            MemorySnapshotImportPolicy.preserveKnownActionWithholding(
+                snapshot, "source", owner, mapOf(localNode.id to localNode), localHead,
+            )
+
+        val preserved = preserve(older)
+        assertEquals(localNode, preserved.nodes.single())
+        assertEquals(head.copy(stale = true, actionProjection = MemoryHeadActionProjection.WITHHELD),
+            preserved.state?.head)
+
+        val differentBody = legacy.copy(content = "另一份正文")
+        val differentHead = head.copy(goals = "另一处目标")
+        val changed = older.copy(state = state.copy(head = differentHead), nodes = listOf(differentBody))
+        assertEquals(changed, preserve(changed))
+        val anotherVersion = older.copy(state = state.copy(head = head.copy(version = 5)))
+        assertEquals(anotherVersion.state, preserve(anotherVersion).state)
+        val verified = older.copy(state = state.copy(head = head.copy(actionProjection = MemoryHeadActionProjection.VERIFIED)))
+        assertEquals(verified.state, preserve(verified).state)
+        val foreign = older.copy(nodes = listOf(legacy.copy(sessionId = "foreign")))
+        assertEquals(foreign, preserve(foreign))
+        val headOnly = older.copy(state = state.copy(legacyReferenceNodeIds = emptyList()), nodes = emptyList())
+        assertEquals(headOnly, preserve(headOnly, owner = "foreign"))
+        assertEquals(headOnly, preserve(headOnly, owner = null))
+        assertEquals(MemoryHeadActionProjection.WITHHELD, preserve(headOnly).state?.head?.actionProjection)
+    }
+
+    @Test
+    fun remintedLegacyReferenceKeepsOnlyKnownOriginalPayloadWithholding() {
+        val old = MemoryNode(
+            id = "first-migration", sessionId = "source", tier = MemoryTier.LEGACY_REFERENCE,
+            sourceTurnIds = listOf("turn-4"), coverageUnits = listOf(MemoryCoverageUnit("legacy:source-node", "旧正文")),
+            actionProjectionWithheld = true,
+        )
+        val reminted = old.copy(id = "another-migration", actionProjectionWithheld = false)
+        fun restored(node: MemoryNode, owner: String = "source") = MemorySnapshotImportPolicy.preserveKnownActionWithholding(
+            MemorySnapshot(nodes = listOf(node)), "source", owner, mapOf(old.id to old), MemoryHead(),
+        ).nodes.single()
+
+        assertEquals(reminted.copy(actionProjectionWithheld = true), restored(reminted))
+        assertEquals(reminted, restored(reminted, owner = "other"))
+        val changedRange = reminted.copy(sourceTurnIds = listOf("turn-5"))
+        assertEquals(changedRange, restored(changedRange))
+        val otherOrigin = reminted.copy(coverageUnits = listOf(MemoryCoverageUnit("legacy:different", "旧正文")))
+        assertEquals(otherOrigin, restored(otherOrigin))
+    }
+
+    @Test
+    fun crossSessionImportRekeysWholeTreeAndRecomputesCoverageHashes() {
+        val episode0 = episode("episode-0", "s0")
+        val episode1 = episode("episode-1", "s1")
+        val units = listOf(
+            MemoryCoverageUnit(episode0.id, "覆盖T0"),
+            MemoryCoverageUnit(episode1.id, "覆盖T1")
+        )
+        val arc = MemoryNode(
+            id = "arc",
+            sessionId = "source",
+            tier = MemoryTier.ARC,
+            sourceTurnIds = listOf("s0", "s1"),
+            childIds = listOf(episode0.id, episode1.id),
+            coverageUnits = units,
+            compressionLevel = 1,
+            sourceHashes = episode0.sourceHashes + episode1.sourceHashes,
+            sourceHash = MemoryHashes.text(listOf(episode0, episode1).joinToString("\n") { "${it.id}:${it.sourceHash}" }),
+            coverageHash = MemoryHashes.parentCoverage(listOf(episode0, episode1), units)
+        )
+        val timeline = listOf(
+            MemoryTimelineEntry("s0", 0, 0),
+            MemoryTimelineEntry("s1", 1, 1)
+        )
+        val snapshot = MemorySnapshot(
+            state = MemorySessionSnapshot(
+                arcNodeIds = listOf(arc.id),
+                timeline = timeline,
+                staleSourcesByNodeId = mapOf(arc.id to listOf("s0")),
+                sourceRepair = MemorySourceRepairState(
+                    status = MemorySourceRepairStatus.PAUSED,
+                    pendingRootNodeIds = listOf(arc.id),
+                    totalRootCount = 1
+                )
+            ),
+            nodes = listOf(arc, episode0, episode1)
+        )
+
+        val rebound = MemorySnapshotImportPolicy.rebind(snapshot, "target")
+        val nodes = rebound.nodes.associateBy { it.id }
+        val reboundArcId = rebound.state!!.arcNodeIds.single()
+        val reboundArc = nodes.getValue(reboundArcId)
+
+        assertNotEquals(arc.id, reboundArc.id)
+        assertEquals(setOf("target"), rebound.nodes.map { it.sessionId }.toSet())
+        assertEquals(reboundArc.childIds, reboundArc.coverageUnits.map { it.sourceId })
+        assertEquals(setOf(reboundArc.id), rebound.state!!.staleSourcesByNodeId.keys)
+        assertEquals(listOf(reboundArc.id), rebound.state!!.sourceRepair.pendingRootNodeIds)
+        assertTrue(MemoryContinuityPolicy.validateNode(reboundArc, nodes, timeline).valid)
+    }
+
+    @Test
+    fun crossSessionImportPreservesAggregateEpisodeStructuralCoverage() {
+        val sourceIds = listOf("s0", "s1")
+        val hashes = sourceIds.associateWith { MemoryHashes.text(it) }
+        val content = "两轮剧情直接形成一段Episode。"
+        val episode = MemoryNode(
+            id = "aggregate",
+            sessionId = "source",
+            tier = MemoryTier.EPISODE,
+            sourceTurnIds = sourceIds,
+            content = content,
+            sourceHashes = hashes,
+            sourceHash = MemoryHashes.text("source"),
+            coverageHash = MemoryHashes.episodeCoverage(sourceIds, hashes, content)
+        )
+        val timeline = listOf(
+            MemoryTimelineEntry("s0", 0, 0),
+            MemoryTimelineEntry("s1", 1, 1)
+        )
+        val rebound = MemorySnapshotImportPolicy.rebind(
+            MemorySnapshot(
+                state = MemorySessionSnapshot(
+                    episodeNodeIds = listOf(episode.id),
+                    timeline = timeline
+                ),
+                nodes = listOf(episode)
+            ),
+            "target"
+        )
+        val reboundEpisode = rebound.nodes.single()
+
+        assertTrue(reboundEpisode.coverageUnits.isEmpty())
+        assertEquals(content, reboundEpisode.body)
+        assertTrue(
+            MemoryContinuityPolicy.validateNode(
+                reboundEpisode,
+                mapOf(reboundEpisode.id to reboundEpisode),
+                timeline
+            ).valid
+        )
+    }
+
+    private fun episode(id: String, sourceId: String): MemoryNode {
+        val units = listOf(MemoryCoverageUnit(sourceId, "覆盖$sourceId"))
+        return MemoryNode(
+            id = id,
+            sessionId = "source",
+            tier = MemoryTier.EPISODE,
+            sourceTurnIds = listOf(sourceId),
+            coverageUnits = units,
+            sourceHashes = mapOf(sourceId to MemoryHashes.text(sourceId)),
+            sourceHash = MemoryHashes.text("source:$sourceId"),
+            coverageHash = MemoryHashes.coverageUnits(units)
+        )
+    }
+}

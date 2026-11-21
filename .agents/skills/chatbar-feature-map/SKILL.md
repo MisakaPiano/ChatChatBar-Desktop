@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Declared action blocks, reply-alternative rule snapshots and shared chat/image/voice recognition: read `chatbar-action-options`. This includes format-card declarations and cursor insertion; ordinary code and numeric history references retain separate protection.
+
 Desktop full live-session image overview and exact source navigation: read `chatbar-desktop-session-gallery`. Message images shared by text alternatives and archive-only media retain separate ownership.
 
 Desktop reply alternatives and deletion confirmations: read `chatbar-desktop-reply-versions`. Stable-ID deletion, final-candidate removal and shared media custody are separate from AI format repair or creating a new reply.
