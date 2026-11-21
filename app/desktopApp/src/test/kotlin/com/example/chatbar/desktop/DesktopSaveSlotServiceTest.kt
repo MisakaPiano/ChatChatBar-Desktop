@@ -9,6 +9,7 @@ import java.nio.file.*
 import javax.imageio.ImageIO
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
