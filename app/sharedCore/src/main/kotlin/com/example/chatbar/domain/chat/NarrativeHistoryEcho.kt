@@ -227,7 +227,6 @@ object NarrativeHistoryEcho {
         val nextOpen = text.indexOf('‘', position + 1)
         if (nextClose >= 0) return nextOpen < 0 || nextClose < nextOpen
         if (nextOpen >= 0) return false
-        if (quoteStart < 0 || text[quoteStart] != '‘') return false
         // Require a speech cue before widening a quote with an ambiguous English closing mark.
         if (!chineseSpeechLead.containsMatchIn(text.subSequence(lineStart(text, quoteStart), quoteStart))) return false
         if (!unfinishedPluralPossessor.matches(text.subSequence(quoteStart + 1, position))) return false
