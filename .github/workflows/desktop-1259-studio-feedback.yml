@@ -1,0 +1,81 @@
+name: Desktop 1259 Studio feedback verification
+on:
+  push:
+    branches: [codex/desktop-1259-studio-feedback-20261120]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 32
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run annotation, design history and catalog regressions with synthetic inputs
+        working-directory: app
+        shell: pwsh
+        run: |
+          .\gradlew.bat :sharedCore:test `
+            --tests com.example.chatbar.domain.image.NovelAiPromptTranslationTest `
+            :desktopApp:test `
+            --tests com.example.chatbar.desktop.DesktopStudioImportedAnnotationTest `
+            --tests com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest `
+            --tests com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest `
+            --tests com.example.chatbar.desktop.DesktopCatalogUpdatesTest `
+            --tests com.example.chatbar.desktop.DesktopDesignParityTest `
+            -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+          exit $LASTEXITCODE
+      - name: Preserve original test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-1259-studio-feedback-reports
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/
+          if-no-files-found: warn
+
+      - name: Confirm the real editor regression reaches its assertion on the prior field
+        shell: pwsh
+        env:
+          NEGATIVE_STUDIO_DIR: ${{ runner.temp }}/studio-feedback-negative
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $prior = '3568e71b4ff44398bb1d225fd0d0279729301c57'
+          $field = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioPromptField.kt'
+          git fetch --no-tags --depth=1 origin $prior
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git restore --source $prior --worktree -- $field
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path $env:NEGATIVE_STUDIO_DIR -Force | Out-Null
+          (git rev-parse HEAD), $prior, (git rev-parse "${prior}:${field}") |
+            Set-Content -LiteralPath (Join-Path $env:NEGATIVE_STUDIO_DIR 'source.txt')
+          Push-Location app
+          try {
+            .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopStudioImportedAnnotationTest.editor retries initial and persistent reads at most once without altering the prompt' -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+            $testExit = $LASTEXITCODE
+          } finally {
+            Pop-Location
+            git restore --source HEAD --worktree -- $field
+          }
+          $xmlFile = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopStudioImportedAnnotationTest.xml'
+          if ($testExit -eq 0 -or !(Test-Path -LiteralPath $xmlFile)) { throw 'Expected the editor assertion to fail on the prior field' }
+          Copy-Item -LiteralPath $xmlFile -Destination $env:NEGATIVE_STUDIO_DIR
+          [xml]$report = Get-Content -Raw -LiteralPath $xmlFile
+          if ($report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or
+            $report.testsuite.testcase.failure.message -notlike '*Editor did not retry the same Prompt after its initial read failed*') {
+            throw 'Prior field did not reach the expected editor assertion'
+          }
+      - name: Preserve the prior-field assertion
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-1259-studio-feedback-prior-field
+          path: ${{ runner.temp }}/studio-feedback-negative/
+          if-no-files-found: warn

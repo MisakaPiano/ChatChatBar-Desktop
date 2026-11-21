@@ -43,6 +43,20 @@ class DesktopDesignParityTest {
         try { f.initialize(); block(f, f.container.novelAiStudioController) } finally { f.close() }
     }
 
+    @Test fun `history selection reports missing design without changing current or clearing the composer`(): Unit = runBlocking {
+        fixture { f, controller ->
+            assertTrue(controller.design("First synthetic design"))
+            f.idle()
+            val current = assertNotNull(controller.designRepository.currentConversation())
+            controller.editDesignInput("unsent synthetic draft")
+            val draft = controller.designComposer.value
+            assertFalse(controller.switchDesign("nonexistent-history-row"))
+            assertEquals(current.id, controller.designRepository.currentConversationId.value)
+            assertEquals(draft, controller.designComposer.value)
+            assertTrue(controller.state.value.status.isNotBlank())
+        }
+    }
+
     @Test fun `extra requirement persists in Studio and new Design snapshots it while old context is immutable`() = runBlocking { fixture { f, c ->
         f.container.settingsRepository.updateAppSettings { it.copy(imagePromptToolPreference = "APP_OTHER_OWNER_SENTINEL") }
         val appBefore = f.container.settingsRepository.getAppSettings()

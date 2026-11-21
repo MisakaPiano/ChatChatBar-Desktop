@@ -3,6 +3,7 @@ package com.example.chatbar.domain.image
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 enum class NovelAiPromptTranslationSegmentKind {
@@ -299,12 +300,29 @@ class NovelAiPromptTranslationService(
         val tagSegments = distinct.filter { segment ->
             segment.kind == NovelAiPromptTranslationSegmentKind.TAG
         }
-        val lookupResult = runCatching {
+        var catalogFailure: Exception? = null
+        val catalogTranslations = try {
             tagLookup.exactChineseTranslations(tagSegments.map { it.lookupText })
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            catalogFailure = failure
+            emptyMap()
         }
-        lookupResult.exceptionOrNull()?.let { if (it is CancellationException) throw it }
-        val catalogTranslations = lookupResult.getOrDefault(emptyMap())
+        var dictionaryFailed = false
+        fun lookupWord(word: String): String? {
+            ensureActive()
+            return try {
+                wordDictionary.annotationTranslation(word)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                dictionaryFailed = true
+                null
+            }
+        }
         val resolved = distinct.mapNotNull { segment ->
+            ensureActive()
             val normalizedName = segment.lookupText.normalizedTagQuery().lowercase(Locale.ROOT)
             val catalogTranslation = if (segment.kind == NovelAiPromptTranslationSegmentKind.TAG) {
                 catalogTranslations[normalizedName]
@@ -312,11 +330,14 @@ class NovelAiPromptTranslationService(
             } else {
                 null
             }
-            (catalogTranslation ?: localWordTranslation(segment.lookupText))
+            (catalogTranslation ?: localWordTranslation(segment.lookupText, ::lookupWord))
                 ?.let { segment.cacheKey to it }
         }.toMap()
-        val warning = lookupResult.exceptionOrNull()?.let { error ->
-            "Danbooru 词条库查询失败，已使用内置离线词典：${error.message ?: error::class.java.simpleName}"
+        val warning = when {
+            catalogFailure != null && dictionaryFailed -> "Danbooru 词条库和部分离线词典查询失败，已保留可用注释"
+            dictionaryFailed -> "部分离线词典查询失败，已保留可用注释"
+            catalogFailure != null -> "Danbooru 词条库查询失败，已尝试使用内置离线词典：${catalogFailure.message ?: catalogFailure::class.java.simpleName}"
+            else -> null
         }
         NovelAiPromptTranslationResult(
             annotations = segments.mapNotNull { segment ->
@@ -329,13 +350,13 @@ class NovelAiPromptTranslationService(
         )
     }
 
-    private fun localWordTranslation(source: String): String? {
-        wordDictionary.annotationTranslation(source.replace('_', ' ').trim())
+    private fun localWordTranslation(source: String, lookupWord: (String) -> String?): String? {
+        lookupWord(source.replace('_', ' ').trim())
             ?.takeIf { it.isReliableChineseTranslationOf(source) }
             ?.let { return it }
         val translations = wordDictionary.tokens(source)
             .mapNotNull { token ->
-                wordDictionary.annotationTranslation(token.normalized)
+                lookupWord(token.normalized)
                     ?.let { token.normalized to it }
             }
             .toMap()

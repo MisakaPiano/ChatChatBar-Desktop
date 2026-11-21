@@ -1,6 +1,9 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.example.chatbar.domain.update.DanbooruCatalogCheckFailure
+import com.example.chatbar.domain.update.DanbooruCatalogCheckKind
+import com.example.chatbar.domain.update.DanbooruCatalogCheckStage
 import com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo
 import com.example.chatbar.domain.update.SharedDanbooruCatalogUpdateChecker
 import java.sql.SQLException
@@ -26,7 +29,7 @@ internal class DesktopCatalogUpdates(
     private val installUpdate: suspend (DanbooruCatalogUpdateInfo, (String) -> Unit, () -> Unit) -> Unit,
 ) {
     constructor(scope: CoroutineScope, catalog: DesktopNovelAiTagCatalog) : this(scope,
-        checkLatest = { catalog.withDataAccess { SharedDanbooruCatalogUpdateChecker(catalog, "CCB-Desktop").checkLatestCatalog() } },
+        checkLatest = { catalog.withDataAccess { SharedDanbooruCatalogUpdateChecker(catalog, "CCB-Desktop", retryTransientHttp = true).checkLatestCatalog() } },
         installUpdate = { info, report, publication -> DesktopNovelAiCatalogUpdate(catalog, onPublication = publication).install(info, report) })
 
     private val lock = Any()
@@ -72,7 +75,7 @@ internal class DesktopCatalogUpdates(
                     mutable.update { it.copy(update = if (publication.get()) null else it.update,
                         status = "Danbooru 词库操作未完成",
                         error = if (publication.get()) "词库更新的完成状态尚未确认，请重新检查；原文件保留" else
-                            if (install) "Danbooru 词库更新未完成；原词库保留，可重试" else "Danbooru 词库检查失败；程序更新不受影响，可重试",
+                            if (install) "Danbooru 词库更新未完成；原词库保留，可重试" else catalogCheckFailureText(failure),
                         details = catalogFailureDetails(failure)) }
                 }
             }
@@ -104,10 +107,39 @@ internal class DesktopCatalogUpdates(
     }
 }
 
+private fun catalogCheckFailureText(failure: Exception): String {
+    if (failure !is DanbooruCatalogCheckFailure) return "Danbooru 词库检查失败；程序更新仍可独立检查"
+    val stage = when (failure.stage) {
+        DanbooruCatalogCheckStage.LOCAL_METADATA -> "读取本地版本"
+        DanbooruCatalogCheckStage.COMMITS -> "查询来源提交"
+        DanbooruCatalogCheckStage.CONTENTS -> "读取来源文件信息"
+    }
+    val reason = when (failure.kind) {
+        DanbooruCatalogCheckKind.HTTP -> "HTTP ${failure.httpStatus}" +
+            if (failure.rateLimited) "，请求受限" else ""
+        DanbooruCatalogCheckKind.NETWORK -> "网络请求失败"
+        DanbooruCatalogCheckKind.INVALID_RESPONSE -> "来源响应格式无效"
+        DanbooruCatalogCheckKind.LOCAL -> "本地版本读取失败"
+    }
+    val retry = failure.retryAfterSeconds?.let { "；服务端建议 ${it} 秒后重试" }.orEmpty()
+    return "Danbooru 词库检查失败（$stage · $reason）$retry；原词库保留，程序更新仍可独立检查"
+}
+
 /** Exact exception categories and source frames only; never raw paths, responses or credentials. */
 private fun catalogFailureDetails(error: Exception): String = generateSequence<Throwable>(error) { it.cause }
     .take(8).joinToString("\n") { cause ->
-        cause.javaClass.name + (if (cause is SQLException) " (SQLite code=${cause.errorCode})" else "") +
+        val category = when (cause) {
+            is SQLException -> " (SQLite code=${cause.errorCode})"
+            is DanbooruCatalogCheckFailure -> buildString {
+                append(" (stage=${cause.stage}, kind=${cause.kind}")
+                cause.httpStatus?.let { append(", HTTP $it") }
+                if (cause.rateLimited) append(", rateLimited=true")
+                cause.retryAfterSeconds?.let { append(", retryAfterSeconds=$it") }
+                append(")")
+            }
+            else -> ""
+        }
+        cause.javaClass.name + category +
             cause.stackTrace.filter { it.className.startsWith("com.example.chatbar.") }.take(6)
                 .joinToString("", prefix = "\n") { "${it.className}.${it.methodName}:${it.lineNumber}\n" }
     }

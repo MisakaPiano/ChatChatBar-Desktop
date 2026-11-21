@@ -1,14 +1,72 @@
 package com.example.chatbar.domain.image
 
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class NovelAiPromptTranslationTest {
+    private val tailCatalog = object : NovelAiTagLookup {
+        override suspend fun search(query: String) = NovelAiTagSearchOutcome(query, emptyList())
+        override suspend fun exactChineseTranslations(names: Collection<String>) = mapOf("blue_eyes" to "蓝眼")
+        override suspend fun catalogMetadata() = DanbooruCatalogMetadata("fixture", "", 1)
+    }
+
+    private fun fallbackDictionary(lookup: (String) -> String?) = NovelAiPromptWordDictionary.fromSource(
+        object : NovelAiDictionarySource {
+            override fun lookup(word: String) = lookup.invoke(word)
+            override fun search(query: String) = emptyList<NovelAiTagCandidate>()
+            override suspend fun prepareCompletion() = Unit
+            override suspend fun streamCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit,
+                onWarning: (String) -> Unit) = Unit
+        }
+    )
+
+    @Test
+    fun `known and unfinished final tags behave the same with or without a terminal comma`() = runTest {
+        val service = NovelAiPromptTranslationService(fallbackDictionary { if (it == "fixture stone") "石块" else null }, tailCatalog)
+        for (suffix in listOf("", ",")) {
+            val known = service.resolve(NovelAiPromptTranslationParser.parse("blue eyes, fixture_stone$suffix", false))
+            assertEquals(listOf("蓝眼", "石块"), known.annotations.map { it.translation })
+            assertNull(known.warning)
+            val unfinished = service.resolve(NovelAiPromptTranslationParser.parse("blue eyes, qzxkunknown$suffix", false))
+            assertEquals(listOf("蓝眼"), unfinished.annotations.map { it.translation })
+            assertNull(unfinished.warning)
+        }
+    }
+
+    @Test
+    fun `offline lookup failure keeps catalog and available word annotations around the failing token`() = runTest {
+        val service = NovelAiPromptTranslationService(fallbackDictionary { word ->
+            if (word.contains("qzxkunknown")) throw IOException("SYNTHETIC_WORD_DATABASE_FAILURE")
+            if (word == "fixture") "样本" else null
+        }, tailCatalog)
+        for (suffix in listOf("", ",")) {
+            val source = "blue eyes, qzxkunknown fixture, standing, qzxkunknown$suffix"
+            val result = service.resolve(NovelAiPromptTranslationParser.parse(source, false))
+            assertEquals(listOf("蓝眼", "qzxkunknown 样本", "站立"), result.annotations.map { it.translation })
+            result.annotations.forEach { assertEquals(it.source, source.substring(it.start, it.end)) }
+            assertNotNull(result.warning)
+            assertFalse(result.warning.orEmpty().contains("SYNTHETIC_WORD_DATABASE_FAILURE"))
+        }
+    }
+
+    @Test
+    fun `cancellation from offline lookup still aborts annotation`() {
+        val service = NovelAiPromptTranslationService(fallbackDictionary { throw CancellationException("fixture") }, tailCatalog)
+        assertThrows(CancellationException::class.java) {
+            runBlocking { service.resolve(NovelAiPromptTranslationParser.parse("blue eyes, qzxkunknown", false)) }
+        }
+    }
+
     @Test
     fun `quote only editor drafts produce no translation segments`() {
         for (naturalLanguage in listOf(false, true)) {

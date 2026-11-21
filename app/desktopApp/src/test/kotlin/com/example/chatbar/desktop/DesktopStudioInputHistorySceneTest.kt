@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.SetComposingTextCommand
 import androidx.compose.ui.unit.dp
+import com.example.chatbar.domain.image.NovelAiDesignConversation
 import kotlinx.coroutines.*
 import java.nio.file.Files
 import java.nio.file.Path
@@ -42,6 +43,57 @@ class DesktopStudioInputHistorySceneTest {
     private suspend fun ImageComposeScene.shortcut(key: Key) {
         sendKeyEvent(KeyEvent(key, KeyEventType.KeyDown, isCtrlPressed = true))
         sendKeyEvent(KeyEvent(key, KeyEventType.KeyUp, isCtrlPressed = true)); frames()
+    }
+
+    @Test fun `design history keeps current status and delete confirmation reachable at narrow and wide sizes`(): Unit = runBlocking(edt) {
+        val longTitle = "合成设计".repeat(50)
+        val rows = listOf(
+            NovelAiDesignConversation(id = "active", title = "当前设计"),
+            NovelAiDesignConversation(id = "old", title = longTitle),
+        ) + List(30) { index -> NovelAiDesignConversation(id = "older-$index", title = "历史 $index") }
+        for (width in listOf(330, 980)) {
+            var busy by mutableStateOf(false)
+            val opened = mutableListOf<String>()
+            val deleted = mutableListOf<String>()
+            val scene = ImageComposeScene(width, 340, coroutineContext = edt) {
+                DesktopStudioDesignHistory(rows, "active", busy, Modifier.fillMaxSize(),
+                    onOpen = { opened += it }, onDelete = { deleted += it })
+            }
+            try {
+                fun nodes(): List<SemanticsNode> {
+                    fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+                    return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+                }
+                fun button(label: String) = nodes().single {
+                    it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true
+                }
+                fun click(label: String) = button(label).config[SemanticsActions.OnClick].action!!.invoke()
+                scene.frames()
+                assertTrue(nodes().any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "当前" } == true })
+                assertTrue(nodes().any { it.config.contains(SemanticsActions.ScrollBy) })
+                assertTrue(nodes().none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("删除设计 · 当前设计") == true })
+                val delete = button("删除设计 · $longTitle")
+                assertTrue(delete.boundsInRoot.left >= 0 && delete.boundsInRoot.right <= width)
+                click("打开设计 · $longTitle")
+                click("删除设计 · $longTitle")
+                scene.frames()
+                assertEquals(listOf("old"), opened)
+                assertTrue(deleted.isEmpty())
+                click("取消")
+                scene.frames()
+                assertTrue(deleted.isEmpty())
+                click("删除设计 · $longTitle")
+                busy = true
+                scene.frames()
+                assertTrue(button("确认删除").config.contains(SemanticsProperties.Disabled))
+                busy = false
+                scene.frames()
+                click("确认删除")
+                assertEquals(listOf("old"), deleted)
+            } finally {
+                scene.close()
+            }
+        }
     }
 
     private fun ImageComposeScene.field(label: String): SemanticsNode {
