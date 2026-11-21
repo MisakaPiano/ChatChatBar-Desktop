@@ -142,6 +142,36 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'LIVE_MEMORY_POSITIVE_NOT_RESTORED' }
           }
+      - name: Reproduce modern v8 losing an orphan with the same stable legacy origin
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '8f2c742dadbf9c4034a16f2a0e01c8807567be82'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'MODERN_ORIGIN_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'MODERN_ORIGIN_PRIOR_NOT_RESTORED' }
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest.modern v8 restore retains orphan withholding by stable legacy origin across normalizations' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'MODERN_ORIGIN_PRIOR_ASSERTIONS_NOT_REACHED' }
+            $expected = @('Modern v8 restoration lost the live stable-origin exclusion')
+            foreach ($message in $expected) {
+              if (-not ($report.testsuite.testcase.failure.message | Where-Object { $_ -like "*$message*" })) { throw 'MODERN_ORIGIN_PRIOR_WRONG_FAILURE' }
+            }
+            Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-modern-origin.xml'
+            $prior | Set-Content 'review-action-options/negative-modern-origin-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'MODERN_ORIGIN_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-

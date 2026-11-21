@@ -797,6 +797,55 @@ class DesktopSaveSlotServiceTest {
         restoreWithOrphanMemory(corrupt = false)
     }
 
+    @Test fun `modern v8 restore retains orphan withholding by stable legacy origin across normalizations`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val source = f.message.copy(images = emptyList(), generatedImageMetadata = emptyList(),
+                sourceTurnId = "old-turn", sourceTurnOrder = 0)
+            f.chats.updateMessage(source)
+            val oldNode = MemoryNode(id = "old-episode", sessionId = "s", tier = MemoryTier.EPISODE,
+                sourceTurnIds = listOf("old-turn"), summary = "UNCHANGED_V3_SUMMARY")
+            val legacy = SaveSlot(id = "legacy-source", sessionId = "s", name = "Legacy source", createdAt = 1,
+                messages = listOf(source), memorySnapshot = MemorySnapshot(schemaVersion = 3, nodes = listOf(oldNode),
+                    legacyCommit = MemoryCommit(id = "old-commit", sessionId = "s", activeEpisodeNodeIds = listOf(oldNode.id))))
+            val file = f.root.resolve("legacy-source.cbsave")
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), legacy))
+            val service = f.service()
+            service.restore(service.import(file, "s").id, "s")
+            val repository = MemoryRepository(JsonFileStorage(f.root), true)
+            f.snapshot = repository.snapshot("s")!!
+            val first = f.snapshot!!.nodes.single()
+            assertFalse(first.actionProjectionWithheld)
+            val modern = service.create("s", "Earlier modern snapshot", SaveSlotImagePolicy.NONE, false)
+            assertEquals(8, modern.schemaVersion)
+            val modernFile = f.root.resolve("earlier-modern.cbsave")
+            service.export(modern.id, modernFile)
+            val modernBytes = Files.readAllBytes(modernFile)
+
+            val rule = ActionOptionsFormat("[choices]", "[/choices]", "Choices", ActionOptionLabels.LETTERS)
+            val unsafe = legacy.copy(id = "unsafe-source", messages = listOf(source.copy(
+                content = "旧剧情。\n[choices]\nChoices\nA. 打开仓库\nB. 检查地窖\n[/choices]", actionOptionsFormat = rule)))
+            Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), unsafe))
+            service.restore(service.import(file, "s").id, "s")
+            val second = repository.snapshot("s")!!.nodes.single()
+            assertNotEquals(first.id, second.id)
+            assertTrue(second.actionProjectionWithheld)
+            assertEquals(first.body, second.body)
+            assertEquals(first.sourceTurnIds, second.sourceTurnIds)
+            f.chats.updateMessage(f.chats.getMessages("s").single().copy(content = source.content, actionOptionsFormat = null))
+            repository.saveState(repository.getState("s")!!.copy(legacyReferenceNodeIds = emptyList()))
+            f.snapshot = repository.snapshot("s")!!
+            assertTrue(f.snapshot!!.nodes.isEmpty())
+            assertTrue(Files.exists(f.root.resolve("entities/memory_nodes/${second.id}.json")))
+            service.restore(service.import(modernFile, "s").id, "s")
+            val restored = MemoryRepository(JsonFileStorage(f.root), true).snapshot("s")!!.nodes.single()
+            assertEquals(first.id, restored.id)
+            assertEquals(first.body, restored.body)
+            assertTrue(restored.actionProjectionWithheld, "Modern v8 restoration lost the live stable-origin exclusion")
+            assertContentEquals(modernBytes, Files.readAllBytes(modernFile))
+        }
+    }
+
     @Test fun `actual restore refuses corrupt same ID live memory before isolated publication`() = runBlocking {
         restoreWithOrphanMemory(corrupt = true)
     }

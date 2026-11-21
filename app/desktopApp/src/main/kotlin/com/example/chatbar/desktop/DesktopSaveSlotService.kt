@@ -497,7 +497,10 @@ internal class DesktopSaveSlotService(
 
             val incomingIds = incoming.nodes.mapTo(hashSetOf(), MemoryNode::id)
             // Pre-v4 normalization allocates fresh IDs, but retains this exact old-node origin.
-            val legacyOrigins = if (incoming.state == null) incomingIds.mapTo(hashSetOf()) { "legacy:$it" } else emptySet()
+            val legacyOrigins = incoming.nodes.asSequence().filter { it.tier == MemoryTier.LEGACY_REFERENCE }
+                .mapNotNull { it.coverageUnits.singleOrNull()?.sourceId }
+                .filter { it.startsWith("legacy:") && it.length > "legacy:".length }.toMutableSet()
+            if (incoming.state == null) incomingIds.mapTo(legacyOrigins) { "legacy:$it" }
             val retained = mutableListOf<MemoryNode>()
             var retainedBytes = 0L
             val strictJson = Json(storage.json) { ignoreUnknownKeys = false }
