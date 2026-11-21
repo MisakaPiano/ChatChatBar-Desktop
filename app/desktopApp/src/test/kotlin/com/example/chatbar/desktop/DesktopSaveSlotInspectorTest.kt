@@ -136,7 +136,7 @@ class DesktopSaveSlotInspectorTest {
             slot.copy(memorySnapshot = MemorySnapshot(nodes = listOf(node.copy(childIds = listOf("missing"))))))
         assertEquals(SlotInspectCode.REFERENCE, DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(missing).code)
         val malformed = SyntheticSaveSlotCorpus.legacy(root.resolve("foreign-memory-invalid.cbsave"),
-            slot.copy(memorySnapshot = MemorySnapshot(nodes = listOf(node.copy(sessionId = "../invalid")))))
+            slot.copy(memorySnapshot = MemorySnapshot(nodes = listOf(node.copy(sessionId = "")))))
         assertEquals(SlotInspectCode.IDENTITY, DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(malformed).code)
         assertContentEquals(before, Files.readAllBytes(file))
     } }
