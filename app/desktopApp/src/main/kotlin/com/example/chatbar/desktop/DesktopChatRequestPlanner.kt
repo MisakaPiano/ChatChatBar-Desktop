@@ -21,6 +21,7 @@ import com.example.chatbar.domain.chat.TimelineArchiveBoundaryPolicy
 import com.example.chatbar.domain.chat.MainChatRequestAssembler
 import com.example.chatbar.domain.chat.MainChatRequestAssemblyInput
 import com.example.chatbar.domain.chat.MainChatRequestAssemblyResult
+import com.example.chatbar.domain.chat.NarrativeHistoryEcho
 import com.example.chatbar.domain.chat.PlaceholderRenderer
 import com.example.chatbar.domain.chat.PromptAssembler
 import com.example.chatbar.domain.chat.joinPromptParts
@@ -345,6 +346,7 @@ internal class DesktopChatRequestPlanner(
             worldBook = worldBookPlan,
             worldBookDebugLog = worldBookDebugLog,
             currentUserPersisted = currentUserPersisted,
+            cleanNarrativeEcho = NarrativeHistoryEcho.appliesToRequest(requestNarrativeMode, renderedFormatCardContent),
             knowledgeNotice = knowledge.notice,
             runtimeBudgetSelection = PromptRuntimeBudgetSelection(
                 loadedCandidateMessages = contextCandidates.size,
@@ -402,6 +404,7 @@ internal data class DesktopChatRequestPlan(
     val worldBook: WorldBookRequestPlan,
     val worldBookDebugLog: List<String>,
     val currentUserPersisted: Boolean,
+    val cleanNarrativeEcho: Boolean,
     val knowledgeNotice: String? = null,
     val runtimeBudgetSelection: PromptRuntimeBudgetSelection? = null,
 ) {

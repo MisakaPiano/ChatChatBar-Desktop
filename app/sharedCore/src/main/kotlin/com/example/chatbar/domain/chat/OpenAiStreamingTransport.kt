@@ -29,10 +29,11 @@ data class ProviderCompletionMetadata(
     val refused: Boolean = false,
     val transportFailed: Boolean = false,
     val toolReplyCompleted: Boolean = false,
+    val toolReplyPartLengths: List<Int> = emptyList(),
 )
 
 sealed interface ProviderStreamEvent {
-    data class ContentDelta(val text: String) : ProviderStreamEvent
+    data class ContentDelta(val text: String, val toolReplyPartLengths: List<Int> = emptyList()) : ProviderStreamEvent
     data class ContentPreview(val text: String) : ProviderStreamEvent
     data class ReasoningDelta(val text: String) : ProviderStreamEvent
     data class Usage(val usage: PromptCacheUsage) : ProviderStreamEvent
@@ -230,10 +231,13 @@ class OpenAiStreamingTransport(
                                     !evidence.refused && !evidence.transportFailed && evidence.finishReason != "length")
                                 if (decoded.remainingText.isNotEmpty()) {
                                     diagnostics.onDecodedContent(decoded.remainingText)
-                                    trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText))
+                                    trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText, decoded.partLengths))
                                 }
                                 if (event is ProviderStreamEvent.Completed) {
-                                    finalEvent = ProviderStreamEvent.Completed(evidence.copy(toolReplyCompleted = decoded.toolReplyCompleted))
+                                    finalEvent = ProviderStreamEvent.Completed(evidence.copy(
+                                        toolReplyCompleted = decoded.toolReplyCompleted,
+                                        toolReplyPartLengths = decoded.partLengths,
+                                    ))
                                 }
                             } catch (error: Exception) {
                                 finalEvent = ProviderStreamEvent.Error("实验模式工具回复解析失败", completion.get(), error)

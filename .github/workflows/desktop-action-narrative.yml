@@ -1,0 +1,104 @@
+name: Desktop narrative reply and action rules
+on:
+  push:
+    branches: [codex/desktop-action-narrative-20261119, codex/desktop-narrative-review-proof-20261120]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-action-narrative-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Record exact synthetic test source
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path 'review-action-narrative' | Out-Null
+          git rev-parse HEAD | Set-Content 'review-action-narrative/source.txt'
+      - name: Reproduce missing multipart preview boundaries in the prior runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '25b2c0355f1e4d0532deacc3e74dcff58d8c88a1'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRealChatRuntime.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'NARRATIVE_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.multipart tool reply boundaries clean preview and user Stop before terminal persistence' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'NARRATIVE_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Part boundaries must reach preview before Completed*') { throw 'NARRATIVE_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-narrative/negative-multipart.xml'
+            $prior | Set-Content 'review-action-narrative/negative-multipart-source.txt'
+          } finally { git restore --source=HEAD --worktree -- $file }
+      - name: Reproduce literal English example corruption in the prior parser
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '1305f404dd5f544a659034a4322ea07611f87ddd'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/NarrativeHistoryEcho.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'ENGLISH_QUOTE_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.literal English plural quote example retains its opening in real preview Stop and cold storage' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'ENGLISH_QUOTE_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Literal English example lost its opening history tag*') { throw 'ENGLISH_QUOTE_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-narrative/negative-english-quote.xml'
+            $prior | Set-Content 'review-action-narrative/negative-english-quote-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'ENGLISH_QUOTE_POSITIVE_NOT_RESTORED' }
+          }
+      - name: Verify narrative reply streaming and persistence
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest'
+          --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest'
+          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopNarrativeModePlannerTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - name: Verify shared exact wrapper projection
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.NarrativeHistoryEchoTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModeRequestAssemblyTest'
+          --tests 'com.example.chatbar.domain.chat.NarrativeModePersistenceTest'
+          --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-action-narrative-original-results
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/
+            review-action-narrative/
