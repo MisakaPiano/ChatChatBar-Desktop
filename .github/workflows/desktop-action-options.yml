@@ -59,6 +59,32 @@ jobs:
           if ($report.testsuite.testcase.failure.message -notlike '*Unchosen action menus entered the actual episode request*') { throw 'ACTION_MEMORY_PRIOR_WRONG_FAILURE' }
           Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-memory-request.xml'
           $global:LASTEXITCODE = 0 # The validated expected Gradle failure is successful control evidence.
+      - name: Reproduce mixed historical owners collapsing under real named UPDATE
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '9a2bc6f7f6361d06d0d93a854eb67deb5d1293c7'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeGraphRemapper.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'MIXED_OWNER_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.backup.DesktopMergeRestoreModesTest.named UPDATE cannot collapse selected and unselected historical memory owners into its target' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.backup.DesktopMergeRestoreModesTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'MIXED_OWNER_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Distinct historical owners collapsed*') { throw 'MIXED_OWNER_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-mixed-owner.xml'
+            $prior | Set-Content 'review-action-options/negative-mixed-owner-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'MIXED_OWNER_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-
@@ -98,6 +124,8 @@ jobs:
           --tests 'com.example.chatbar.desktop.DesktopMemoryInjectionTransportTest'
           --tests 'com.example.chatbar.desktop.DesktopMemorySafetyTest'
           --tests 'com.example.chatbar.desktop.DesktopMemoryLifecycleTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeRestoreModesTest'
           --tests 'com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest'
           --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
           --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest.modern backup staging retains format declaration and active reply alternatives'

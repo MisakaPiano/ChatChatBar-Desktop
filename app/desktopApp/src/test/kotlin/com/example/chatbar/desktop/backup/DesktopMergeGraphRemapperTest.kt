@@ -38,6 +38,18 @@ class DesktopMergeGraphRemapperTest {
         assertEquals(chunk.content, rewritten.content)
     }
 
+    @Test fun `mixed history owners that remain distinct still receive ordinary typed remapping`() {
+        val a = leaf("A-node").copy(sessionId = "A")
+        val b = leaf("B-node").copy(sessionId = "B")
+        val slot = SaveSlot(id = "slot", sessionId = "A", name = "Mixed history", createdAt = 1,
+            memorySnapshot = MemorySnapshot(nodes = listOf(a, b)))
+        val source = record("save_slots", backupJson.encodeToJsonElement(SaveSlot.serializer(), slot).jsonObject)
+        val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "A", "new-A") }
+        val mapped = backupJson.decodeFromJsonElement(SaveSlot.serializer(), DesktopMergeGraphRemapper(listOf(source), ids).rewrite(source))
+        assertEquals(setOf("new-A", "B"), mapped.memorySnapshot!!.nodes.map { it.sessionId }.toSet())
+        assertEquals("new-A", mapped.sessionId)
+    }
+
     private fun obj(text: String) = backupJson.parseToJsonElement(text).jsonObject
     private fun record(type: String, value: JsonObject) = DesktopMergeRecord("entities/$type/item.json", value)
     private fun record(node: MemoryNode) = record("memory_nodes", backupJson.encodeToJsonElement(MemoryNode.serializer(), node).jsonObject)

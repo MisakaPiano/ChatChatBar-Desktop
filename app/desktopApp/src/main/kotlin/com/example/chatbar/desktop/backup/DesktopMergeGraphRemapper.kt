@@ -17,6 +17,15 @@ internal class DesktopMergeGraphRemapper(
         val originalValue = record.value
         val scopedProofs = if (record.type == "save_slots")
             DesktopMergeMemoryProofs(listOf(DesktopMergeRecord(record.relative, originalValue)), identity, checkActive) else proofs
+        val snapshot = originalValue["memorySnapshot"] as? JsonObject
+        val memoryOwners = if (record.type == "save_slots") {
+            (snapshot?.get("nodes") as? JsonArray).orEmpty().mapNotNull {
+                (it as? JsonObject)?.get("sessionId")?.jsonPrimitive?.contentOrNull
+            } + listOfNotNull((snapshot?.get("commit") as? JsonObject)?.get("sessionId")?.jsonPrimitive?.contentOrNull)
+        } else emptyList()
+        val distinctOwners = memoryOwners.distinct()
+        val preserveMixedOwners = distinctOwners.size > 1 &&
+            distinctOwners.map { identity.value("chat_sessions", it) }.distinct().size == 1
         fun walk(value: JsonElement, path: List<String>): JsonElement {
             checkActive()
             require(path.size <= 128) { "MERGE_JSON_DEPTH" }
@@ -48,7 +57,9 @@ internal class DesktopMergeGraphRemapper(
                     if (DesktopMergeMemoryProofs.isNode(record, path)) scopedProofs.rewrite(value, mapped) else mapped
                 }
                 is JsonArray -> JsonArray(value.map { walk(it, path) })
-                is JsonPrimitive -> if (value.isString) JsonPrimitive(identity.string(record, value.content, path)) else value
+                is JsonPrimitive -> if (preserveMixedOwners && path in setOf(
+                        listOf("memorySnapshot", "nodes", "sessionId"), listOf("memorySnapshot", "commit", "sessionId"))) value
+                    else if (value.isString) JsonPrimitive(identity.string(record, value.content, path)) else value
             }
         }
         // Resource recognition remains the existing official stream policy; arbitrary text is untouched.

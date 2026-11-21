@@ -66,6 +66,43 @@ class DesktopMergeRestoreModesTest {
         assertEquals(original, source.toString())
     }
 
+    @Test fun `named UPDATE cannot collapse selected and unselected historical memory owners into its target`() = runBlocking {
+        val card = card("c", "Same card")
+        val target = entity("chat_sessions", "B", ChatSession.serializer(), ChatSession("B", "c", "Same chat", createdAt = 1, updatedAt = 1))
+        val source = entity("chat_sessions", "A", ChatSession.serializer(), ChatSession("A", "c", "Same chat", createdAt = 1, updatedAt = 1))
+        val message = ChatMessage("source-message", "A", MessageRole.USER, "Synthetic retained source", createdAt = 1, updatedAt = 1)
+        val first = MemoryNode(id = "old-A", sessionId = "A", tier = MemoryTier.EPISODE, summary = "A original summary")
+        val second = MemoryNode(id = "old-B", sessionId = "B", tier = MemoryTier.EPISODE, summary = "B original summary")
+        val slot = SaveSlot(id = "mixed-slot", sessionId = "A", name = "Historical mixed graph", createdAt = 1,
+            messages = listOf(message), memorySnapshot = MemorySnapshot(schemaVersion = 3, nodes = listOf(first, second),
+                legacyCommit = MemoryCommit(id = "old-commit", sessionId = "B", activeEpisodeNodeIds = listOf(first.id, second.id))))
+        // The backup selected A only. B is a historical owner, not a selected incoming session.
+        val pc = mapOf(card, target)
+        val incoming = mapOf(card, source, entity("chat_messages", "A_${message.id}", ChatMessage.serializer(), message),
+            entity("save_slots", slot.id, SaveSlot.serializer(), slot))
+        val update = preview(pc, incoming).modePlan(DesktopBackupRestoreMode.UPDATE_EXISTING)
+        DesktopMergeDestinationPlan.create(update.selection, emptyMap(), emptyMap()).use { plan ->
+            assertEquals("B", plan.identity.value("chat_sessions", "A"))
+            assertEquals("B", plan.identity.value("chat_sessions", "B"))
+            val mappedId = plan.identity.value("save_slots", slot.id)
+            val value = plan.entities.getValue("entities/save_slots/$mappedId.json")
+            val rebound = backupJson.decodeFromJsonElement(SaveSlot.serializer(), value)
+            assertEquals("B", rebound.sessionId)
+            assertEquals(setOf("A", "B"), rebound.memorySnapshot!!.nodes.map { it.sessionId }.toSet(),
+                "Distinct historical owners collapsed under selected A to target B UPDATE")
+            assertEquals("B", rebound.memorySnapshot!!.legacyCommit!!.sessionId)
+            assertEquals(slot.memorySnapshot!!.nodes.map { it.body }, rebound.memorySnapshot!!.nodes.map { it.body })
+            val root = Files.createTempDirectory("mixed-owner-archive-proof-")
+            try {
+                val file = root.resolve("merged-inline.cbsave")
+                Files.writeString(file, value.toString())
+                com.example.chatbar.desktop.DesktopSaveSlotArchive(root.resolve("work")).prepare(file).let { prepared ->
+                    assertNull(prepared.originalSessionId, "A mixed historical graph must not prove current-owner custody")
+                }
+            } finally { check(root.toFile().deleteRecursively()) }
+        }
+    }
+
     @Test fun `update follows unique normalized card and conversation domains but ambiguity makes an independent named copy`() {
         fun session(id: String, card: String) = entity("chat_sessions", id, ChatSession.serializer(), ChatSession(id, card, "Chat", createdAt = 1, updatedAt = 1))
         val pc = mapOf(card("a", "ＡＢＣ"), session("pc-chat", "a"))
