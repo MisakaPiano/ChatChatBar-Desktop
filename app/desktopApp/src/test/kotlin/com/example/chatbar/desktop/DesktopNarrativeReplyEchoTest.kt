@@ -267,12 +267,13 @@ class DesktopNarrativeReplyEchoTest {
     }
 
     @Test fun `literal English plural quote example retains its opening in real preview Stop and cold storage`() = runBlocking {
-        for (mode in ChatNarrativeMode.entries) for (stop in listOf(true, false)) fixture { app -> coroutineScope {
+        for (mode in ChatNarrativeMode.entries) for (stop in listOf(true, false))
+            for (lead in listOf("I checked whether ‘the visitors’ arrived", "The visitors’ plan")) fixture { app -> coroutineScope {
             MockWebServer().use { server ->
                 server.start()
                 val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
                 val tail = "This first pair is a markup example."
-                val raw = "<历史回复 模式=\"${mode.shortLabel}\">\nI checked whether ‘the visitors’ arrived\n</历史回复>\n$tail"
+                val raw = "<历史回复 模式=\"${mode.shortLabel}\">\n$lead\n</历史回复>\n$tail"
                 server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
                     "data: ${delta(raw)}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
                 val before = app.chatRepository.getMessages(id).map { it.id }.toSet()

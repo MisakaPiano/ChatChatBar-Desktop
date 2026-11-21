@@ -407,8 +407,8 @@ class NarrativeHistoryEchoTest {
             "<历史回复 模式=\"推进\">" to "</历史回复>",
             "<聚焦模式=\"沉浸\">" to "</聚焦模式>",
         )) {
-            for (breakLine in listOf("\n", "\r\n", "\r")) {
-                val lead = "她说‘the visitors’ plan"
+            for (breakLine in listOf("\n", "\r\n", "\r")) for (speech in listOf("她说", "她說：")) {
+                val lead = "${speech}‘the visitors’ plan"
                 val prefix = "$lead$breakLine$closing$breakLine" + "仍在这里。"
                 val incoming = "$opening$breakLine$prefix"
                 assertEquals(prefix, NarrativeHistoryEcho.completedBody(incoming, enabled = true, streaming = true))
@@ -429,6 +429,7 @@ class NarrativeHistoryEchoTest {
         }
     }
 
+
     @Test fun separateParagraphDoesNotReinterpretAnExampleAsAnUnclosedCurlyQuote() {
         val opening = "<历史回复 模式=\"聚焦\">"
         val closing = "</历史回复>"
@@ -443,15 +444,34 @@ class NarrativeHistoryEchoTest {
     }
 
     @Test fun finishedPluralQuoteStillAllowsARealOuterClose() {
-        val opening = "<历史回复 模式=\"推进\">"
-        val closing = "</历史回复>"
-        val body = "她重复‘the visitors’ and walked away."
-        val wrapped = "$opening\n$body\n$closing"
-        val standaloneExample = "$wrapped\n她在解释刚才的示例。"
-        for ((streaming, interrupted) in listOf(true to false, false to true, false to false)) {
-            assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, true, interrupted, streaming = streaming))
-            assertEquals(standaloneExample,
-                NarrativeHistoryEcho.completedBody(standaloneExample, true, interrupted, streaming = streaming))
+        val closedQuotes = listOf(
+            "She titled it ‘Visitors’ before leaving" to "This is a markup example.",
+            "She repeated ‘the visitors’ aloud" to "This is a markup example.",
+            "She repeated ‘the visitors’ yesterday" to "This is a markup example.",
+            "她重复‘the visitors’ and walked away." to "这是一段标签示例。",
+            "I checked whether ‘the visitors’ arrived" to "This first pair is a markup example.",
+            "I checked whether ‘the visitors’ arrived" to "这是一段标签示例。",
+            "她说‘the visitors’ arrived" to "This first pair is a markup example.",
+            "我确认‘the visitors’ arrived" to "这是一段标签示例。",
+        )
+        for (mode in ChatNarrativeMode.entries) for ((body, commentary) in closedQuotes) {
+            val wrapped = MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
+            val standaloneExample = "$wrapped\n$commentary"
+            for ((streaming, interrupted) in listOf(true to false, false to true, false to false)) {
+                assertEquals(body, NarrativeHistoryEcho.completedBody(wrapped, true, interrupted, streaming = streaming))
+                assertEquals(standaloneExample,
+                    NarrativeHistoryEcho.completedBody(standaloneExample, true, interrupted, streaming = streaming))
+            }
+        }
+    }
+
+
+    @Test fun unquotedPluralPossessiveCannotWidenAnAbsentProseQuote() {
+        for (mode in ChatNarrativeMode.entries) {
+            val raw = "<历史回复 模式=\"${mode.shortLabel}\">\nThe visitors’ plan\n</历史回复>\n仍在解释这段标签示例。"
+            assertEquals(raw, NarrativeHistoryEcho.completedBody(raw, enabled = true, streaming = true))
+            assertEquals(raw, NarrativeHistoryEcho.completedBody(raw, enabled = true, interrupted = true))
+            assertEquals(raw, NarrativeHistoryEcho.completedBody(raw, enabled = true))
         }
     }
 
