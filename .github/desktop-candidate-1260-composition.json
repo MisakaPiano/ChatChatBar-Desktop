@@ -1,0 +1,34 @@
+{
+  "kind": "DESKTOP_ISOLATED_CANDIDATE_SOURCE_COMPOSITION",
+  "version": "0.1.0-preview.1260",
+  "publicBaseline": "1b4bc1bb9f96f3cf6e86dc91e79c00710640c807",
+  "verifiedPrHeads": {
+    "5": "711507195e92f1e1079ff0230e89689551d2e02b",
+    "6": "2b1e9f70c0dea1c6d3b404422db41ef1a7ea2d79",
+    "7": "0c863e92f84908fd90409f80b11e18644c5f9fc6",
+    "8": "7afc68c40fb919a5815071c4e498cb0630e3210f"
+  },
+  "retainedApprovedBase": {
+    "pr": 4,
+    "head": "b327b6c23d49411235ad6f0922bbc8fac65bffc4",
+    "scope": [
+      "Character creator, version and tags; read-only extensions and expanded examples",
+      "Alternate greeting order and new-session opening selection"
+    ]
+  },
+  "studioHead": "a1075516edc65f514c8445cced8409eefa9d99be",
+  "studioScope": [
+    "One bounded same-source annotation reread after an initial transient failure",
+    "Bounded design conversation history and confirmed deletion",
+    "Typed Danbooru discovery failure and one eligible transient response retry"
+  ],
+  "compositionCommit": "fbe99c26e3604973d06e38ca35544f9dd026924b",
+  "compositionTree": "16f5aa266ca6493ba17bba5e4a2ba1cecffa15ce",
+  "compositionConflicts": 0,
+  "additionalProductPatches": [],
+  "priorScopedChecksReused": true,
+  "formalPrAcceptance": false,
+  "humanAcceptance": false,
+  "mainBranchMerged": false,
+  "publicRelease": false
+}
