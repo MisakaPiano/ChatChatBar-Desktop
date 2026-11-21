@@ -224,15 +224,15 @@ jobs:
           New-Item -ItemType Directory -Path $approved -Force | Out-Null
           $case = Join-Path $approved 'windows-runtime-nsis-cloud'
           $program = Join-Path $env:CCB_BUILD_BASE 'installed'
-          $baseline = Join-Path $env:CCB_BUILD_BASE 'baseline1225.exe'
-          Invoke-WebRequest 'https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/download/desktop-v0.1.0-preview.1225/ChatChatBar-Desktop-0.1.0-preview.1225-windows-x64.exe' -OutFile $baseline
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $baseline).Hash.ToLowerInvariant() -cne '04a35d64ba9958e305bb247c1f217bbfcd1507fa1753661ee2520e54032a96c0') { throw 'BASELINE_HASH' }
+          $baseline = Join-Path $env:CCB_BUILD_BASE 'baseline1259.exe'
+          Invoke-WebRequest 'https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/download/desktop-v0.1.0-preview.1259/ChatChatBar-Desktop-0.1.0-preview.1259-windows-x64.exe' -OutFile $baseline
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $baseline).Hash.ToLowerInvariant() -cne '481a22bb19ec77ed6392239a1cd38f9bac487a47ba3291b7166769cd0decd8f3') { throw 'BASELINE_HASH' }
           $driver = Join-Path $env:GITHUB_WORKSPACE 'tools\desktop\nsis\native_smoke.py'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1225 --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1259 --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
           if ($LASTEXITCODE -ne 0) { throw 'BASELINE_NATIVE_FAILED' }
           $old = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
           $oldManifest = Get-Content -LiteralPath (Join-Path $program "versions\$old\install-manifest.json") -Raw | ConvertFrom-Json
-          if ($oldManifest.version -cne '0.1.0-preview.1225' -or $oldManifest.commit -cne '54008bc17847a30fc53e403f99e8aaa335521cda') { throw 'BASELINE_IDENTITY' }
+          if ($oldManifest.version -cne '0.1.0-preview.1259' -or $oldManifest.commit -cne '1b4bc1bb9f96f3cf6e86dc91e79c00710640c807') { throw 'BASELINE_IDENTITY' }
           $data = Join-Path $case 'local-appdata\ChatChatBarDesktop'
           $canary = Join-Path $data 'cloud-native-retained-canary.txt'
           Set-Content -LiteralPath $canary -Value 'Synthetic retained upgrade canary' -Encoding utf8 -NoNewline
