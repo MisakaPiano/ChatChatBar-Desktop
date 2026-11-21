@@ -112,6 +112,36 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'OPTIONAL_LEGACY_POSITIVE_NOT_RESTORED' }
           }
+      - name: Reproduce lost live orphan evidence through actual file restore
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '20a63180b0caa105422f08f3d1df313f5da201dc'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'LIVE_MEMORY_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'LIVE_MEMORY_PRIOR_NOT_RESTORED' }
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest.actual restore retains same ID orphan withholding outside the safety snapshot' --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest.actual restore refuses corrupt same ID live memory before isolated publication' --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest.same session v3 inline restoration retains live withholding after node normalization' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '3' -or $report.testsuite.failures -ne '3' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'LIVE_MEMORY_PRIOR_ASSERTIONS_NOT_REACHED' }
+            $expected = @('Live orphan withholding was lost during isolated restoration', 'Corrupt live candidate was overwritten during isolated restoration', 'V3 normalization must not erase the live legacy origin exclusion')
+            foreach ($message in $expected) {
+              if (-not ($report.testsuite.testcase.failure.message | Where-Object { $_ -like "*$message*" })) { throw 'LIVE_MEMORY_PRIOR_WRONG_FAILURE' }
+            }
+            Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-live-memory.xml'
+            $prior | Set-Content 'review-action-options/negative-live-memory-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'LIVE_MEMORY_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-
