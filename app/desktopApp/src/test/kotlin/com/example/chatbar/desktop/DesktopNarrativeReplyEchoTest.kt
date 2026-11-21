@@ -266,6 +266,39 @@ class DesktopNarrativeReplyEchoTest {
         } }
     }
 
+    @Test fun `literal English plural quote example retains its opening in real preview Stop and cold storage`() = runBlocking {
+        for (mode in ChatNarrativeMode.entries) for (stop in listOf(true, false))
+            for (lead in listOf("I checked whether ‘the visitors’ arrived", "The visitors’ plan")) fixture { app -> coroutineScope {
+            MockWebServer().use { server ->
+                server.start()
+                val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
+                val tail = "This first pair is a markup example."
+                val raw = "<历史回复 模式=\"${mode.shortLabel}\">\n$lead\n</历史回复>\n$tail"
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                    "data: ${delta(raw)}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                val before = app.chatRepository.getMessages(id).map { it.id }.toSet()
+                val control = DesktopChatGenerationControl()
+                val fullPreviews = mutableListOf<String>()
+                val operation = async { app.createRealChatRuntime().sendText(id, "Synthetic literal English example",
+                    observer = DesktopRealChatObserver {
+                        if (it.content.endsWith(tail)) {
+                            fullPreviews += it.content
+                            if (stop) control.requestUserStop()
+                        }
+                    }, control = control) }
+                try {
+                    if (stop) assertFailsWith<DesktopUserStoppedChatException> { operation.await() }
+                    else assertEquals(raw, operation.await().assistant.content)
+                    assertTrue(fullPreviews.isNotEmpty())
+                    assertTrue(fullPreviews.all { it == raw }, "Literal English example lost its opening history tag")
+                    val saved = ChatRepository(JsonFileStorage(app.appDataRoot)).getMessages(id)
+                        .single { it.role == MessageRole.ASSISTANT && it.id !in before }
+                    assertEquals(raw, saved.content)
+                } finally { operation.cancelAndJoin() }
+            }
+        } }
+    }
+
     private fun delta(text: String) = """{"choices":[{"delta":{"content":${JsonPrimitive(text)}}}]}"""
 
     private suspend fun prepare(

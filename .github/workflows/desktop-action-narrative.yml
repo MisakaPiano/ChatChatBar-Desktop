@@ -50,6 +50,32 @@ jobs:
             Copy-Item -LiteralPath $path -Destination 'review-action-narrative/negative-multipart.xml'
             $prior | Set-Content 'review-action-narrative/negative-multipart-source.txt'
           } finally { git restore --source=HEAD --worktree -- $file }
+      - name: Reproduce literal English example corruption in the prior parser
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '1305f404dd5f544a659034a4322ea07611f87ddd'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/NarrativeHistoryEcho.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'ENGLISH_QUOTE_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.literal English plural quote example retains its opening in real preview Stop and cold storage' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'ENGLISH_QUOTE_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Literal English example lost its opening history tag*') { throw 'ENGLISH_QUOTE_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-narrative/negative-english-quote.xml'
+            $prior | Set-Content 'review-action-narrative/negative-english-quote-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'ENGLISH_QUOTE_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify narrative reply streaming and persistence
         working-directory: app
         run: >-

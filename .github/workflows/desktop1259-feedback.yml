@@ -44,14 +44,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $proofTests = 'de841a9f42149db202febd45a1fc0ea503608818'
           $file = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRemovedAlternativeVoiceTest.kt'
-          git fetch origin $proofTests
-          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_PRIMARY_TEST_SOURCE_UNAVAILABLE' }
-          python -c "from pathlib import Path; import subprocess; p='$file'; Path('prior-product',p).write_bytes(subprocess.check_output(['git','show','$proofTests'+':'+p]))"
-          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_PRIMARY_TEST_COPY_FAILED' }
+          $fixture = '.github/fixtures/desktop-primary-voice-negative.kt'
+          Copy-Item -LiteralPath $fixture -Destination (Join-Path 'prior-product' $file)
           git -C prior-product rev-parse HEAD | Set-Content '.review1259/negative-product-source.txt'
-          git rev-parse ($proofTests + ':' + $file) | Set-Content '.review1259/negative-primary-test-blob.txt'
+          git hash-object $fixture | Set-Content '.review1259/negative-primary-test-blob.txt'
           Push-Location prior-product/app
           try {
             .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopRemovedAlternativeVoiceTest.same dialogue legacy playback inference never authorizes deletion of its unique audio' --tests 'com.example.chatbar.desktop.DesktopRemovedAlternativeVoiceTest.durable source with failed session summary still refreshes and cleans proven version audio' -PdesktopTestHeadless=true --no-daemon --stacktrace
@@ -63,6 +60,7 @@ jobs:
           if ($report.testsuite.tests -ne '2' -or $report.testsuite.failures -ne '2' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_PRODUCT_TWO_ASSERTION_FAILURES_NOT_CONFIRMED' }
           if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_PRODUCT_FAILURE_NOT_ASSERTION' }
           Copy-Item -LiteralPath $xmlPath -Destination '.review1259/negative-primary-voice.xml'
+          $global:LASTEXITCODE = 0 # The validated expected Gradle failure is successful control evidence.
       - name: Reproduce inactive alternative redo checkpoint loss
         shell: pwsh
         run: |
