@@ -1805,7 +1805,9 @@ class LongTermMemoryService constructor(
                 .filter { it.sessionId == sessionId && it.tier == MemoryTier.LEGACY_REFERENCE && !it.actionProjectionWithheld }
                 .map { it.id }
             val currentLegacy = loaded.state.legacyReferenceNodeIds.mapNotNull(loaded.nodes::get)
-            val localLegacyNodes = (currentLegacy + memoryRepository.getNodes(localLegacyIds) +
+            // Imported IDs are only optional local matches, not roots of the current live graph.
+            // Strict single reads still reject corrupt/present records while allowing absence.
+            val localLegacyNodes = (currentLegacy + localLegacyIds.distinct().mapNotNull { memoryRepository.getNode(it) } +
                 previousSnapshot?.nodes.orEmpty()).associateBy(MemoryNode::id)
             MemorySnapshotImportPolicy.preserveKnownActionWithholding(
                 normalizedSnapshot, sessionId, sourceSessionId, localLegacyNodes, previousSnapshot?.state?.head ?: loaded.state.head

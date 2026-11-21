@@ -132,7 +132,7 @@ class DesktopSaveSlotInspectorTest {
         val historical = DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(file)
         assertEquals(SlotInspectStatus.STRUCTURE_VALID, historical.status)
         assertTrue("HISTORICAL_MEMORY_OWNER_RETAINED_NOT_REBOUND" in historical.limitations)
-        val archive = DesktopSaveSlotArchive(root.resolve("historical-work"))
+        val archive = DesktopSaveSlotArchive(Files.createDirectory(root.resolve("historical-work")))
         assertEquals(SlotInspectFormat.LEGACY_JSON, archive.prepare(file).format)
         val zip = SyntheticSaveSlotCorpus.archive(root.resolve("foreign-memory-v8.cbsave"),
             manifest = SyntheticSaveSlotCorpus.slot().copy(memorySnapshot = slot.memorySnapshot,

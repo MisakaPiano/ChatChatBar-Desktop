@@ -85,6 +85,33 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'MIXED_OWNER_POSITIVE_NOT_RESTORED' }
           }
+      - name: Reproduce strict optional-legacy lookup refusing a legitimate restore
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = 'c68cd2c6e18241899e14ad745b117f5d0d522c2f'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/LongTermMemoryService.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'OPTIONAL_LEGACY_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'OPTIONAL_LEGACY_PRIOR_NOT_RESTORED' }
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopMemoryLifecycleTest.optional legacy lookup accepts missing candidates but still refuses corrupt existing records' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'OPTIONAL_LEGACY_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Missing optional legacy node was refused*') { throw 'OPTIONAL_LEGACY_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-optional-legacy.xml'
+            $prior | Set-Content 'review-action-options/negative-optional-legacy-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'OPTIONAL_LEGACY_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-

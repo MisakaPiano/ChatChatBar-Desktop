@@ -184,6 +184,38 @@ class DesktopMemoryLifecycleTest {
         } finally { f.close() }
     }
 
+    @Test fun `optional legacy lookup accepts missing candidates but still refuses corrupt existing records`() = runBlocking {
+        for (corrupt in listOf(false, true)) {
+            val f = Fixture()
+            try {
+                f.setup()
+                val incoming = MemoryNode(id = "incoming-legacy", sessionId = f.session.id, tier = MemoryTier.LEGACY_REFERENCE,
+                    coverageUnits = listOf(MemoryCoverageUnit("legacy:original", "Retained historical body")))
+                val previous = incoming.copy(id = "previous-legacy", actionProjectionWithheld = true)
+                val snapshot = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(incoming.id)), nodes = listOf(incoming))
+                val prior = MemorySnapshot(state = MemorySessionSnapshot(legacyReferenceNodeIds = listOf(previous.id)), nodes = listOf(previous))
+                val file = f.root.resolve("entities/memory_nodes/${incoming.id}.json")
+                if (corrupt) {
+                    Files.createDirectories(file.parent)
+                    Files.writeString(file, "{invalid synthetic JSON")
+                }
+                val original = if (corrupt) Files.readAllBytes(file) else null
+                val outcome = runCatching { f.service.loadSnapshot(f.session.id, snapshot,
+                    sourceSessionId = f.session.id, previousSnapshot = prior) }
+                if (corrupt) {
+                    assertTrue(outcome.isFailure, "An existing corrupt legacy candidate must remain a visible refusal")
+                    assertContentEquals(original!!, Files.readAllBytes(file))
+                } else {
+                    assertTrue(outcome.isSuccess, "Missing optional legacy node was refused")
+                    val stored = MemoryRepository(JsonFileStorage(f.root), true).getNode(incoming.id)!!
+                    assertTrue(stored.actionProjectionWithheld)
+                    assertEquals(incoming.body, stored.body)
+                }
+                assertEquals(0, f.calls)
+            } finally { f.close() }
+        }
+    }
+
     private class Fixture(private val turns: Int = 4) {
         val root = Files.createTempDirectory("desktop-memory-lifecycle-")
         val gate = DesktopDataOperationCoordinator()

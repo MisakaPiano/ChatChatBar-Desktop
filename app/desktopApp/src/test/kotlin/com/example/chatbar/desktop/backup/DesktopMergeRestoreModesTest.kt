@@ -96,7 +96,7 @@ class DesktopMergeRestoreModesTest {
             try {
                 val file = root.resolve("merged-inline.cbsave")
                 Files.writeString(file, value.toString())
-                com.example.chatbar.desktop.DesktopSaveSlotArchive(root.resolve("work")).prepare(file).let { prepared ->
+                com.example.chatbar.desktop.DesktopSaveSlotArchive(Files.createDirectory(root.resolve("work"))).prepare(file).let { prepared ->
                     assertNull(prepared.originalSessionId, "A mixed historical graph must not prove current-owner custody")
                 }
             } finally { check(root.toFile().deleteRecursively()) }
