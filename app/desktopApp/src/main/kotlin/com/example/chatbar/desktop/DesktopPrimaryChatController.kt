@@ -31,6 +31,10 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +44,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 internal data class DesktopPrimaryChoice(val id: String, val label: String)
+
+/** Explicit UI navigation, separate from continuously captured reading positions. */
+internal data class DesktopMessageRevealRequest(
+    val position: ChatScrollPosition,
+    val requestId: String = UUID.randomUUID().toString(),
+    val pending: Boolean = true,
+)
 
 internal data class DesktopSessionGreetingSelection(
     val cardId: String,
@@ -77,6 +88,7 @@ internal data class DesktopPrimaryChatState(
     val readingPosition: ChatScrollPosition? = null,
     // A same-process return may restore an accepted snapshot whose write is still pending.
     val viewportRestorePosition: ChatScrollPosition? = null,
+    val messageRevealRequest: DesktopMessageRevealRequest? = null,
     val readingPositionError: Boolean = false,
     val messageWindowAnchorId: String? = null,
     val messageWindowRevision: Long = 0,
@@ -160,6 +172,7 @@ internal class DesktopPrimaryChatController(
     private val sessionDeletion: (suspend (String) -> String?)? = null,
     private val sessionDeletionNotice: () -> String? = { null },
     private val createCharacterSession: suspend (String, CharacterGreetingChoice?) -> String = sessionService::createSessionForCharacter,
+    private val alternativeRemoval: (suspend (ChatMessage, ChatMessage?, String) -> String?)? = null,
 ) {
     val canDeleteSessions: Boolean get() = sessionDeletion != null
     private val deletingSessions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
@@ -189,11 +202,23 @@ internal class DesktopPrimaryChatController(
         }
         return deleted
     }
-    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
-        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
-        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
-        memory?.sourceChanged(sessionId)
-        return result
+    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String,
+        retryAlternativeAdmission: Boolean = false, block: suspend () -> T): T {
+        var retries = 0
+        while (true) {
+            val result = try {
+                if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
+                else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+            } catch (busy: DesktopDataOperationRejectedException) {
+                if (!retryAlternativeAdmission || busy.reason != DesktopDataOperationRejectionReason.MAINTENANCE_BUSY ||
+                    retries++ >= 15) throw busy
+                // Both mutation owners have been released. Recheck the original confirmation on retry.
+                delay(20)
+                continue
+            }
+            memory?.sourceChanged(sessionId)
+            return result
+        }
     }
 
     private suspend fun <T> withNormalMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
@@ -271,10 +296,22 @@ internal class DesktopPrimaryChatController(
 
     fun submitReadingPosition(snapshot: ChatScrollPosition): ChatScrollPosition? = synchronized(readingLock) {
         if (snapshot.sessionId in deletingSessions) return@synchronized null
+        // The outgoing list may still report its old viewport while the new page enters composition.
+        // It must not replace the immutable target of an explicit source-message navigation.
+        if (state.value.messageRevealRequest?.let { it.pending && it.position.sessionId == snapshot.sessionId } == true)
+            return@synchronized null
         updateMessageWindowAnchor(snapshot.sessionId, snapshot.anchorMessageId)
         readingPositions.submit(snapshot)?.also { accepted ->
             mutableState.update { if (it.selectedSession?.id == accepted.sessionId)
                 it.copy(viewportRestorePosition = accepted) else it }
+        }
+    }
+
+    fun completeMessageReveal(requestId: String) = synchronized(readingLock) {
+        mutableState.update { current ->
+            val request = current.messageRevealRequest
+            if (request != null && request.requestId == requestId && request.position.sessionId == current.selectedSession?.id)
+                current.copy(messageRevealRequest = request.copy(pending = false)) else current
         }
     }
 
@@ -537,12 +574,16 @@ internal class DesktopPrimaryChatController(
         }
     }
 
-    private fun applyMessageWindow(page: ChatMessagePage, anchor: String?, preserveViewport: Boolean = true) {
+    private fun applyMessageWindow(page: ChatMessagePage, anchor: String?, preserveViewport: Boolean = true,
+        reveal: Boolean = false) {
         mutableState.update { it.copy(messages = page.messages, hasOlderMessages = page.hasOlder,
             hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null,
             viewportRestorePosition = anchor?.let { target -> ChatScrollPosition(it.selectedSession!!.id, target,
                 page.messages.indexOfFirst { message -> message.id == target }.coerceAtLeast(0),
                 if (preserveViewport && it.viewportRestorePosition?.anchorMessageId == target) it.viewportRestorePosition.scrollOffset else 0, 0) },
+            messageRevealRequest = if (reveal && anchor != null) DesktopMessageRevealRequest(ChatScrollPosition(
+                it.selectedSession!!.id, anchor, page.messages.indexOfFirst { message -> message.id == anchor }, 0, 0))
+                else it.messageRevealRequest,
             messageWindowAnchorId = anchor, messageWindowRevision = it.messageWindowRevision + 1) }
     }
 
@@ -559,7 +600,7 @@ internal class DesktopPrimaryChatController(
                 if (message.sessionId != sessionId) return@withLock
                 val page = chats.getInitialMessagePage(sessionId, messageId)
                 if (page.messages.none { it.id == messageId }) return@withLock
-                synchronized(readingLock) { applyMessageWindow(page, messageId, preserveViewport = false) }
+                synchronized(readingLock) { applyMessageWindow(page, messageId, preserveViewport = false, reveal = true) }
                 found = true
             }
         }
@@ -1171,29 +1212,20 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
-            withMessageMutation(session.id, messageId) {
-                val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-                check(expected == null || message == expected) { "消息已变化，请重新打开分段操作" }
-                require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
-                check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
-                require(parseRoleplayTextSegments(message.displayContent).any {
-                    it.start == start && it.endExclusive == endExclusive
-                }) { "Message segment changed; reopen segment actions" }
-                val outcome = editRoleplayMessageSegment(message, start, endExclusive, replacement)
-                val updated = outcome.message
-                if (updated == null) {
-                    val warning = deleteOwnedMessage(session.id, messageId, message)
-                    refreshAfterTerminalTask(session.id)
-                    if (warning != null) mutableState.update { it.copy(status = warning) }
-                    saved = true
-                } else {
-                    check(chats.updateMessageIfUnchanged(message, updated.copy(formatRepairNotice = null))) {
-                        "消息已变化，请重新打开分段操作"
-                    }
-                    refreshAfterTerminalTask(session.id)
-                    saved = true
-                }
+            val message = expected ?: chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+            check(message.id == messageId && message.sessionId == session.id) { "消息已变化，请重新打开分段操作" }
+            require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
+            check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
+            require(parseRoleplayTextSegments(message.displayContent).any {
+                it.start == start && it.endExclusive == endExclusive
+            }) { "Message segment changed; reopen segment actions" }
+            val updated = editRoleplayMessageSegment(message, start, endExclusive, replacement).message?.copy(formatRepairNotice = null)
+            val warning = withMessageMutation(session.id, messageId, retryAlternativeAdmission = replacement.isBlank()) {
+                commitAlternativeChange(message, updated, "消息已变化，请重新打开分段操作")
             }
+            saved = true
+            refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
         }
         return saved
     }
@@ -1204,17 +1236,13 @@ internal class DesktopPrimaryChatController(
             val session = state.value.selectedSession ?: return@guarded
             check(session.id == expected.sessionId && expected.role == MessageRole.ASSISTANT) { "回复不属于当前会话" }
             check(!hasActiveTask(session.id)) { "生成期间不能删除备选" }
-            withMessageMutation(session.id, expected.id) {
-                val replacement = MessageAlternativeVersionPolicy.remove(expected, versionId)
-                val warning = if (replacement == null) deleteOwnedMessage(session.id, expected.id, expected)
-                else {
-                    check(chats.updateMessageIfUnchanged(expected, replacement)) { "消息已变化，请重新确认删除" }
-                    null
-                }
-                refreshAfterTerminalTask(session.id)
-                if (warning != null) mutableState.update { it.copy(status = warning) }
-                deleted = true
+            val replacement = MessageAlternativeVersionPolicy.remove(expected, versionId)
+            val warning = withMessageMutation(session.id, expected.id, retryAlternativeAdmission = true) {
+                commitAlternativeChange(expected, replacement, "消息已变化，请重新确认删除")
             }
+            deleted = true
+            refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
         }
         return deleted
     }
@@ -1224,14 +1252,59 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
-            withMessageMutation(session.id, messageId) {
-                val cleanupWarning = deleteOwnedMessage(session.id, messageId, expected)
-                refreshAfterTerminalTask(session.id)
-                if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
-                deleted = true
+            val source = expected ?: chats.getMessage(messageId, session.id) ?: error("消息已不存在")
+            check(source.id == messageId && source.sessionId == session.id) { "消息已变化，请重新确认删除" }
+            val assistant = source.role == MessageRole.ASSISTANT
+            val warning = withMessageMutation(session.id, messageId, retryAlternativeAdmission = assistant) {
+                if (assistant) commitAlternativeChange(source, null, "消息已变化，请重新确认删除")
+                else deleteOwnedMessage(session.id, messageId, source)
             }
+            deleted = true
+            refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
         }
         return deleted
+    }
+
+    private suspend fun commitAlternativeChange(previous: ChatMessage, replacement: ChatMessage?, staleMessage: String): String? {
+        if (replacement == null) {
+            if (alternativeRemoval == null) return deleteOwnedMessage(previous.sessionId, previous.id, previous)
+            currentCoroutineContext().ensureActive()
+            return withContext(NonCancellable) { alternativeRemoval.invoke(previous, null, staleMessage) }
+        }
+        val retained = MessageAlternativeVersionPolicy.versions(replacement).map { it.id }.toSet()
+        val removesVersion = MessageAlternativeVersionPolicy.versions(previous).any { it.id !in retained }
+        val commit: suspend () -> String? = commit@{
+            var attempted: ChatMessage? = null
+            var writeFailure: Exception? = null
+            val saved = try {
+                checkNotNull(chats.updateMessageIfUnchangedReturningSnapshot(previous, replacement) { attempted = it }) { staleMessage }
+            } catch (failure: Exception) {
+                val proposed = attempted ?: throw failure
+                val observed = chats.readMessageDurable(previous.id, previous.sessionId)
+                if (observed !is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid || observed.value != proposed) throw failure
+                writeFailure = failure
+                proposed
+            }
+            voices?.removeDeletedAlternatives(previous, saved)
+            if (writeFailure != null) {
+                try { chats.reconcileCommittedMessage(saved) }
+                catch (failure: Exception) {
+                    // The source is already committed and voice cleanup finished. Refresh that fact,
+                    // retain a visible warning and let the normal mutation owner notify memory.
+                    return@commit "正文已保存，已清理明确归属录音；会话摘要仍待重新核对"
+                }
+                "正文已保存；首次写入的派生信息发生错误，现已重新核对并完成录音清理"
+            } else null
+        }
+        return if (removesVersion) {
+            // Cancellation before admission keeps the source intact. Once source publication starts,
+            // its exact receipt and version cleanup finish together under the existing mutation owner.
+            currentCoroutineContext().ensureActive()
+            withContext(NonCancellable) {
+                if (alternativeRemoval == null) commit() else alternativeRemoval.invoke(previous, replacement, staleMessage)
+            }
+        } else commit()
     }
 
     private suspend fun deleteOwnedMessage(sessionId: String, messageId: String, expected: ChatMessage? = null): String? {
@@ -1446,6 +1519,7 @@ internal class DesktopPrimaryChatController(
                             hasNewerMessages = page.hasNewer,
                             readingPosition = if (sameSession) current.readingPosition else position,
                             viewportRestorePosition = if (sameSession) current.viewportRestorePosition else restorePosition,
+                            messageRevealRequest = if (sameSession) current.messageRevealRequest else null,
                             readingPositionError = if (sameSession) current.readingPositionError else readingPositions.hasError(id),
                             messageWindowAnchorId = anchor?.takeIf { a -> page.messages.any { it.id == a } }
                                 ?: page.messages.lastOrNull()?.id,

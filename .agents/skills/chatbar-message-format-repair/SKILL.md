@@ -100,3 +100,5 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Do not overwrite text without a durable recovery path.
 - Do not persist partial stream output accidentally.
 - Do not treat character-card rewrite behavior as message format repair behavior.
+
+- Desktop no-change and failed repair attempts preserve an existing recovery checkpoint belonging to another stable alternative version. The active alternative still receives its own task status and error code. Returning to the checkpoint version can redo locally without a provider request.

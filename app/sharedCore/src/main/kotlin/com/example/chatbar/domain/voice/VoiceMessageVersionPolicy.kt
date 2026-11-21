@@ -74,6 +74,16 @@ object VoiceMessageVersionPolicy {
         }
     }
 
+    /** Historical ownership requires an existing anchor with an explicit, scoped version identity. */
+    fun anchoredLegacyVersionId(message: ChatMessage, voice: GeneratedVoiceMessage, state: VoiceAnchorState?): String? {
+        val anchorId = voice.anchorId ?: return null
+        if (state == null || state.messageId != message.id || state.sessionId != message.sessionId ||
+            state.anchors.none { it.id == anchorId }) return null
+        return state.messageVersionId?.takeIf { versionId ->
+            MessageAlternativeVersionPolicy.versions(message).any { it.id == versionId }
+        }
+    }
+
     fun anchorIdForVoice(
         voice: GeneratedVoiceMessage,
         state: VoiceAnchorState

@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import com.example.chatbar.data.local.entity.ChatScrollPosition
 
@@ -161,7 +162,11 @@ internal fun rememberDesktopChatViewport(
     state: DesktopPrimaryChatState, mapping: DesktopChatTimelineMapping,
     controller: DesktopPrimaryChatController, streamRevision: Pair<String?, String?>,
 ): DesktopChatViewportState {
-    val viewport = remember(state.selectedSession?.id) { DesktopChatViewportState(state.selectedSession?.id, mapping) }
+    // Re-enter the existing restoration lifecycle for each explicit navigation, including the same
+    // message twice. Old pagination/follow-bottom effects then belong to the disposed viewport only.
+    val viewport = remember(state.selectedSession?.id, state.messageRevealRequest?.requestId) {
+        DesktopChatViewportState(state.selectedSession?.id, mapping)
+    }
     val latestStreamRevision by rememberUpdatedState(streamRevision)
     SideEffect { viewport.mapping = mapping }
     DisposableEffect(viewport, controller) {
@@ -170,10 +175,25 @@ internal fun rememberDesktopChatViewport(
     LaunchedEffect(viewport) {
         viewport.restoring = true
         try {
-            viewport.awaitLayout()
-            val target = viewport.mapping.initialTarget(state.viewportRestorePosition)
-            if (state.viewportRestorePosition == null) viewport.bottom(animated = false)
-            else target?.let { viewport.list.scrollToItem(it.index, it.offset) }
+            val reveal = state.messageRevealRequest?.takeIf { it.pending && it.position.sessionId == viewport.sessionId }
+            if (reveal != null) {
+                val messageId = requireNotNull(reveal.position.anchorMessageId)
+                // A regenerating reply stays in the durable window while its real row is hidden.
+                viewport.awaitLayout()
+                if (messageId !in viewport.mapping.renderedMessageIds) viewport.ready = true
+                val exact = snapshotFlow {
+                    viewport.mapping.keys.indexOf(messageId).takeIf { it >= 0 && viewport.matches() }
+                }.filterNotNull().first()
+                viewport.list.scrollToItem(exact, reveal.position.scrollOffset)
+                snapshotFlow { viewport.matches() && viewport.items().any { it.key == messageId } }.first { it }
+                controller.completeMessageReveal(reveal.requestId)
+            } else {
+                viewport.awaitLayout()
+                val position = state.viewportRestorePosition
+                val target = viewport.mapping.initialTarget(position)
+                if (position == null) viewport.bottom(animated = false)
+                else target?.let { viewport.list.scrollToItem(it.index, it.offset) }
+            }
             viewport.followingBottom = viewport.atBottom()
             viewport.ready = true
         } finally { viewport.restoring = false }

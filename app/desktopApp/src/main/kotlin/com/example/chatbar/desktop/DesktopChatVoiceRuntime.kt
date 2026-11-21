@@ -162,6 +162,21 @@ internal class DesktopChatVoiceRuntime(
         removed.forEach { releaseIfUnreferenced(it.audioPath) }
     }
 
+    /** Only explicitly removed source versions, after the owning mutation has committed. */
+    suspend fun removeDeletedAlternatives(previous: ChatMessage, replacement: ChatMessage) = withContext(NonCancellable) {
+        if (MessageAlternativeVersionPolicy.versions(previous).none { old ->
+                MessageAlternativeVersionPolicy.versions(replacement).none { it.id == old.id }
+            }) return@withContext
+        gate.withNormalOperation {
+            val observed = chats.readMessageDurable(replacement.id, replacement.sessionId)
+            check(observed is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid && observed.value == replacement) {
+                "备选删除状态未知；录音已保留"
+            }
+            val removed = repository.deleteForRemovedVersions(previous, replacement)
+            removed.map { it.audioPath }.distinct().forEach { releaseIfUnreferenced(it) }
+        }
+    }
+
     /** P11/deletion handoff: caller owns deletion of the session; no recursive directory cleanup. */
     suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = mutation.withLock {
             coordinator.stopPlaybackAndJoin(); coordinator.cancelAndJoinForSession(sessionId); repository.initialize()
