@@ -114,7 +114,7 @@ class AndroidLanSyncInvitationQrTest {
     }
 
     @Test
-    fun narrowGroupPageCopiesExactInvitationAndCanGenerateAFile() = runBlocking {
+    fun narrowGroupPageCopiesExactInvitationAndCanGenerateAFile(): Unit = runBlocking {
         val app = compose.activity.applicationContext
         val root = Files.createTempDirectory(app.cacheDir.canonicalFile.toPath(), "synthetic-android-invite-qr-").toRealPath()
         val data = Files.createDirectory(root.resolve("data"))

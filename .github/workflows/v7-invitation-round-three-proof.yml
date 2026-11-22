@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  android-file:
+  android-qr:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -31,7 +31,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify Android invitation file selection restoration
+      - name: Verify Android QR pixels, clipboard and file fallback
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -42,11 +42,11 @@ jobs:
           script: |
             adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
             adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
-            adb shell am instrument -w -e lanSyncInvitationFileRestoreFixture true -e class 'com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest#restoredPickerSavesTheSameInvitationAndARevokedSelectionCannotWrite' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r04-android-file.txt"
-            cat "$RUNNER_TEMP/v7-r04-android-file.txt"
-            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r04-android-file.txt"
+            adb shell am instrument -w -e lanSyncInvitationQrFixture true -e class com.example.chatbar.lanSync.AndroidLanSyncInvitationQrTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r04-android-qr.txt"
+            cat "$RUNNER_TEMP/v7-r04-android-qr.txt"
+            grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r04-android-qr.txt"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-invitation-r04-android-file
-          path: ${{ runner.temp }}/v7-r04-android-file.txt
+          name: v7-invitation-r04-android-qr
+          path: ${{ runner.temp }}/v7-r04-android-qr.txt
