@@ -203,6 +203,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     else DesktopUiText.SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
             }
         }
+        if (state.saveAsNewFailed) StatusText(t(DesktopUiText.CHARACTER_RESOURCE_FAILED), DesktopBootstrapColors.destructive)
         if (state.resourceCleanupPending && state.problem != CharacterEditorProblem.RESOURCE_FAILED)
             StatusText(t(DesktopUiText.CHARACTER_SAVED_RESOURCE_WARNING), DesktopBootstrapColors.warning)
         if (state.resourceCleanupPending && !presentation.showCommittedCleanupRetry)
@@ -393,7 +394,10 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_NAME), newName) { newName = it }
                 DesktopCharacterTextField(t(DesktopUiText.DOCUMENT_BODY), newBody, true) { newBody = it }
                 BootstrapButton(t(DesktopUiText.NEW_TEXT_DOCUMENT)) {
-                    controller.addTextDocument(newName, newBody); newName = ""; newBody = ""
+                    if (controller.addTextDocument(newName, newBody)) {
+                        newName = ""
+                        newBody = ""
+                    }
                 }
                 card.customDocuments.forEach { doc ->
                     controller.documentIndex?.let { indexing ->
@@ -473,7 +477,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         }
         EditorActions {
             BootstrapButton(t(DesktopUiText.SAVE), enabled = !state.busy && !readOnly) { scope.launch { controller.save() } }
-            BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), enabled = !readOnly) { scope.launch { controller.discard() } }
+            BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), enabled = !state.busy && !readOnly) {
+                scope.launch { controller.discard() }
+            }
             BootstrapButton(t(DesktopUiText.CANCEL)) { controller.requestLeave { controller.closeClean() } }
         }
     } }
