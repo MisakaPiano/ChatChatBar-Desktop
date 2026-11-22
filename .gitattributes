@@ -101,3 +101,7 @@ tools/lan-next-control/candidate86_v6_verify86.kt text eol=lf
 tools/lan-next-control/desktop_lan7_prepared_upgrade_control.py text eol=lf
 tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt text eol=lf
 tools/lan-next-control/test_desktop_lan7_prepared_upgrade_control.py text eol=lf
+
+# Exact V7 Windows live synthetic peer fixture.
+tools/lan-next-control/fixtures/DesktopV7LiveSyntheticHostDraftTest.kt text eol=lf
+tools/lan-next-control/v7_scan_camera_control.py text eol=lf
