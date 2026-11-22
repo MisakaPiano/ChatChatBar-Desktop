@@ -81,6 +81,10 @@ jobs:
             & $adb -s emulator-5554 shell svc power stayon true
             if ($LASTEXITCODE) { throw 'LIVE_EMULATOR_AWAKE' }
             & $adb -s emulator-5554 shell input keyevent 82 | Out-Null
+            & $adb -s emulator-5554 shell wm size 1080x2160
+            if ($LASTEXITCODE) { throw 'LIVE_EMULATOR_SIZE' }
+            & $adb -s emulator-5554 shell wm density 320
+            if ($LASTEXITCODE) { throw 'LIVE_EMULATOR_DENSITY' }
             $priorCcb = & $adb -s emulator-5554 shell pm list packages com.example.chatbar
             if ($LASTEXITCODE -or "$priorCcb".Trim()) { throw 'LIVE_FRESH_PACKAGE_REQUIRED' }
             & $adb -s emulator-5554 install (Join-Path $env:RUNNER_TEMP 'ccb-v7-scan/candidate86.apk')
@@ -93,6 +97,12 @@ jobs:
             $resultDir = (Resolve-Path -LiteralPath 'evidence-live').Path
             foreach ($arg in @('-B','tools/lan-next-control/v7_live_pair_android.py','--adb',$adb,'--serial','emulator-5554','--offer',(Join-Path $root 'live-offer.json'),'--ready',(Join-Path $root 'android-ready.json'),'--readback',(Join-Path $root 'android-readback.json'),'--result',(Join-Path $resultDir 'android-result.json'))) { $info.ArgumentList.Add($arg) }
             $android = [Diagnostics.Process]::Start($info)
+            $ready = Join-Path $root 'android-ready.json'
+            $preflight = [Diagnostics.Stopwatch]::StartNew()
+            while (!$android.HasExited -and !(Test-Path -LiteralPath $ready) -and $preflight.Elapsed.TotalSeconds -lt 140) {
+              Start-Sleep -Seconds 2
+            }
+            if (!(Test-Path -LiteralPath $ready)) { throw 'LIVE_ANDROID_JOIN_FORM_NOT_READY' }
             python -B tools/lan-next-control/v7_windows_live_pair_control.py run --request .github/lan-v7-live-pair-request.json --source ../v7-source --evidence evidence-live
             $desktopExit = $LASTEXITCODE
             if ($desktopExit -and (Test-Path -LiteralPath evidence-live/gradle-original.log)) {

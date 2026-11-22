@@ -12,7 +12,7 @@ import subprocess
 import time
 import uuid
 
-SCAN_SHA='1f94bbca9d2a198d41118555fab8c91375d58a0d28e828506a91575499a65ae6'
+SCAN_SHA='4ea5527a441b06d5fe5d6c4015c3aa4521a6d790c91bc5d798795851a926c568'
 SESSION='ccb-v7-lab-session'
 MESSAGE='ccb-v7-lab-message'
 TEXT='CCB-V7-synthetic-message'
@@ -134,10 +134,39 @@ def reveal(a,ui,target):
         time.sleep(.4)
     raise Refused('JOIN_CONTROL_NOT_VISIBLE')
 
+def labeled_join_field(root,ui):
+    label='加入已有设备组 · 粘贴邀请'
+    if label not in ui.labels(root):
+        return None
+    exposed=editable(root,ui.PACKAGE)
+    if exposed:
+        return exposed
+    rectangles=[]
+    for text in (label,'检查并加入'):
+        candidates={ui.bounds(node) for node in root.iter('node')
+                    if node.get('package')==ui.PACKAGE and text in ui.node_labels(node) and ui.bounds(node)}
+        if len(candidates)!=1:
+            return None
+        rectangles.append(candidates.pop())
+    field_label,button=rectangles
+    if button[1]-field_label[3]<30:
+        return None
+    x,y=(field_label[0]+field_label[2])//2,(field_label[3]+button[1])//2
+    return x-1,y-1,x+1,y+1
+
+def join_field_focused(a,ui):
+    tree=a.ui()
+    if editable(tree,ui.PACKAGE,focused=True):
+        return True
+    if '加入已有设备组 · 粘贴邀请' not in ui.labels(tree):
+        return False
+    ime=a.run('shell','dumpsys','input_method')
+    return bool(re.search(r'\bmInputShown=true\b',ime) and 'packageName='+ui.PACKAGE in ime)
+
 def execute(args,r):
     need(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Windows','WINDOWS_GITHUB_RUNNER_REQUIRED')
     need(os.environ.get('CCB_V7_CLEAN_ANDROID_INSTALL')=='true','FRESH_INSTALL_PATH_REQUIRED')
-    need(5<=args.offer_timeout<=900 and 5<=args.delivery_timeout<=180,'TIMEOUT_RANGE')
+    need(5<=args.offer_timeout<=1200 and 5<=args.delivery_timeout<=180,'TIMEOUT_RANGE')
     owned_private_paths(args);ui=scan_module()
     need(re.fullmatch(r'emulator-[0-9]+',args.serial) is not None,'EMULATOR_SERIAL_REQUIRED')
     a=ui.Adb(args.adb,args.serial);a.package=ui.PACKAGE
@@ -158,18 +187,11 @@ def execute(args,r):
         r['navigationPhase']=nav.get('navigationPhase')
         r['navigationTarget']=nav.get('navigationTarget')
     r['emptyGroupUiObserved']=nav['initialEmptyGroupUiObserved'];r['tutorialSkippedThroughUi']=nav['basicTutorialSkippedThroughUi']
-    files=read_as_app(a,'readlink','-f','files')
-    files_root=files.decode('utf-8').strip()
-    need(files_root in ('/data/user/0/'+ui.PACKAGE+'/files','/data/data/'+ui.PACKAGE+'/files'),'APP_FILES_ROOT_MISMATCH')
-    def join_field(tree):
-        if '加入已有设备组 · 粘贴邀请' in ui.labels(tree):
-            return editable(tree,ui.PACKAGE)
-        return None
     r['phase']='LOCATE_JOIN_INPUT'
-    field=reveal(a,ui,join_field)
+    field=reveal(a,ui,lambda root:labeled_join_field(root,ui))
     a.tap(field)
     deadline=time.monotonic()+12
-    while time.monotonic()<deadline and not editable(a.ui(),ui.PACKAGE,focused=True):
+    while time.monotonic()<deadline and not join_field_focused(a,ui):
         time.sleep(.3)
     need(time.monotonic()<deadline,'JOIN_FIELD_NOT_FOCUSED')
     r['joinFieldFocused']=True
@@ -179,7 +201,7 @@ def execute(args,r):
     while not args.offer.exists() and time.monotonic()<deadline:time.sleep(.5)
     need(args.offer.is_file() and not args.offer.is_symlink(),'OFFER_NOT_OBSERVED')
     v=offer(args.offer.read_bytes());r['offerContractAccepted']=True;r['phase']='INPUT_INVITATION'
-    need(editable(a.ui(),ui.PACKAGE,focused=True),'JOIN_FIELD_LOST_FOCUS')
+    need(join_field_focused(a,ui),'JOIN_FIELD_LOST_FOCUS')
     # Fixed invitation syntax excludes shell metacharacters. Keep it private.
     for offset in range(0,len(v['code']),160):
         a.run('shell','input','text',v['code'][offset:offset+160],timeout=20)
@@ -199,8 +221,11 @@ def execute(args,r):
             continue
         raw=read_as_app(a,'cat',MESSAGE_FILE)
         r['phase']='READ_MESSAGE';m=message(raw);r['exactMessageContentObserved']=True
+        r['phase']='READ_PRIVATE_FILES_ROOT'
+        files_root=read_as_app(a,'toybox','readlink','-f','files').decode('utf-8').strip()
+        need(files_root in ('/data/user/0/'+ui.PACKAGE+'/files','/data/data/'+ui.PACKAGE+'/files'),'APP_FILES_ROOT_MISMATCH')
         image=app_image(m['images'][0],files_root)
-        canonical=read_as_app(a,'readlink','-f',image)
+        canonical=read_as_app(a,'toybox','readlink','-f',image)
         need(canonical is not None,'IMAGE_CANONICAL_PATH_UNAVAILABLE')
         canonical=canonical.decode('utf-8').strip()
         need(canonical.startswith(files_root+'/images/') and canonical==app_image(canonical,files_root),'IMAGE_OUTSIDE_APP_AFTER_RESOLVE')
@@ -218,7 +243,7 @@ def execute(args,r):
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--adb',type=Path,required=True);p.add_argument('--serial',required=True)
     for name in ('offer','ready','readback','result'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--offer-timeout',type=int,default=900);p.add_argument('--delivery-timeout',type=int,default=180);args=p.parse_args(argv)
+    p.add_argument('--offer-timeout',type=int,default=1200);p.add_argument('--delivery-timeout',type=int,default=180);args=p.parse_args(argv)
     r={'kind':'CCB_V7_ANDROID_LIVE_SAFE_RESULT','status':'NOT_RUN','phase':'PRECHECK','errorCode':None,
        'exactApkAndApi26Observed':False,'syntheticMessageAbsentBeforeJoin':False,'emptyGroupUiObserved':False,'tutorialSkippedThroughUi':False,
        'offerContractAccepted':False,'joinButtonPhysicalClicks':0,'joiningUiObserved':False,'readyUiObserved':False,'otherSyncErrorObserved':False,

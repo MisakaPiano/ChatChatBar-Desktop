@@ -2,7 +2,9 @@ name: V7 Windows retained recovery code and rendered QR
 on:
   push:
     branches: ['codex/lan-next-sync-control-*']
-    paths: [.github/workflows/lan-v7-windows-retained-qr.yml]
+    paths:
+      - .github/workflows/lan-v7-windows-retained-qr.yml
+      - tools/lan-next-control/v7_windows_retained_qr_control.py
 permissions:
   contents: read
 jobs:

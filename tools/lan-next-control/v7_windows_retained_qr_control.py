@@ -10,7 +10,7 @@ ACTIONS = ("SEED", "RESUME", "COLD_INVITE")
 
 
 def run():
-    with control.borrowed() as (bridge, modules, _):
+    with control.borrowed() as (bridge, modules, profile), profile.profile():
         desktop = modules["desktop_control"]
         desktop.cloud()
         checkout = Path.cwd().resolve(strict=True)
