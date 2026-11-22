@@ -1,0 +1,59 @@
+name: V7 invitation lifecycle and QR regression
+on:
+  push:
+    branches: ['codex/v7-invitation-repair-proof-20261123']
+permissions:
+  contents: read
+jobs:
+  invitation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Exercise the issued invitation, native TLS proof, and dense QR pixels
+        working-directory: app
+        run: |
+          bash ./gradlew :sharedCore:test \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupInvitationTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupAppTransportTest' \
+            :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopLanSyncGroupInvitationQrTest' \
+            --no-daemon --no-build-cache --console=plain
+      - name: Print the outcome of each scoped suite
+        if: always()
+        working-directory: app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          suites = {
+              "sharedCore": [
+                  "com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest",
+                  "com.example.chatbar.domain.lanSync.LanSyncGroupInvitationTest",
+                  "com.example.chatbar.domain.lanSync.LanSyncGroupAppTransportTest",
+              ],
+              "desktopApp": ["com.example.chatbar.desktop.DesktopLanSyncGroupInvitationQrTest"],
+          }
+          for module, classes in suites.items():
+              for name in classes:
+                  path = Path(module) / "build/test-results/test" / f"TEST-{name}.xml"
+                  if not path.is_file():
+                      print(f"{name}: NOT_EXECUTED")
+                      continue
+                  report = ET.parse(path).getroot()
+                  print(name, {field: report.get(field) for field in ("tests", "failures", "errors", "skipped")})
+                  for result in report.findall("testcase"):
+                      if result.find("failure") is not None or result.find("error") is not None:
+                          print("FAILED_TEST", result.get("name"))
+          PY
