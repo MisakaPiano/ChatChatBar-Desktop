@@ -1,0 +1,94 @@
+name: V7 Windows and Android runner connectivity probe
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/workflows/lan-v7-windows-android-probe.yml]
+permissions:
+  contents: read
+jobs:
+  same-runner:
+    runs-on: windows-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools emulator system-images;android-26;google_apis;x86_64'
+      - name: Boot a fresh API26 emulator and probe a private host socket
+        timeout-minutes: 16
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_OS -ne 'Windows') { throw 'PROBE_WINDOWS_RUNNER_ONLY' }
+          $root = Join-Path $env:RUNNER_TEMP ('ccb-v7-probe-' + [guid]::NewGuid().ToString('n'))
+          $null = New-Item -ItemType Directory -Path $root
+          $env:ANDROID_AVD_HOME = (New-Item -ItemType Directory -Path (Join-Path $root 'avd')).FullName
+          $sdk = $env:ANDROID_HOME
+          if (!$sdk) { $sdk = $env:ANDROID_SDK_ROOT }
+          $emulator = Join-Path $sdk 'emulator\emulator.exe'
+          $adb = Join-Path $sdk 'platform-tools\adb.exe'
+          $env:ANDROID_I_WANT_MY_TCG = 'yes'
+          $result = [ordered]@{kind='CCB_V7_HOST_NETWORK_PROBE';booted=$false;accelerated=$false;privateSocket=$false;privateSource=$false;api=$null}
+          $listener = $null; $vm = $null; $connection = $null
+          try {
+            'no' | avdmanager create avd --name CCBV7Probe --package 'system-images;android-26;google_apis;x86_64'
+            if ($LASTEXITCODE) { throw 'PROBE_AVD_CREATION_FAILED' }
+            $accel = & $emulator -accel-check 2>&1 | Out-String
+            $result.accelerated = ($LASTEXITCODE -eq 0 -and $accel -match 'WHPX.*usable')
+            $mode = if ($result.accelerated) { 'on' } else { 'off' }
+            $argsForProbe = @('-avd','CCBV7Probe','-port','5554','-no-window','-no-audio','-no-snapshot','-no-boot-anim','-accel',$mode,'-gpu','swiftshader_indirect','-memory','1536','-cores','2')
+            $stderr = Join-Path $root 'emulator-stderr.txt'
+            $vm = Start-Process -FilePath $emulator -ArgumentList $argsForProbe -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root 'emulator-stdout.txt') -RedirectStandardError $stderr
+            $clock = [Diagnostics.Stopwatch]::StartNew()
+            while ($clock.Elapsed.TotalSeconds -lt 690) {
+              $vm.Refresh()
+              if ($vm.HasExited) {
+                $raw = Get-Content -LiteralPath $stderr -Raw
+                $result.emulatorExit = $vm.ExitCode
+                $result.accelerationError = [bool]($raw -match 'acceleration|hypervisor|WHPX|TCG')
+                $result.graphicsError = [bool]($raw -match 'Vulkan|OpenGLES|ANGLE|graphics')
+                throw 'PROBE_EMULATOR_EXITED'
+              }
+              $boot = & $adb -s emulator-5554 shell getprop sys.boot_completed 2>$null
+              if ($LASTEXITCODE -eq 0 -and "$boot".Trim() -eq '1') { $result.booted = $true; break }
+              Start-Sleep -Seconds 5
+            }
+            if (!$result.booted) { throw 'PROBE_EMULATOR_BOOT_EXPIRED' }
+            $api = & $adb -s emulator-5554 shell getprop ro.build.version.sdk
+            if ($LASTEXITCODE -or "$api".Trim() -ne '26') { throw 'PROBE_ANDROID_API' }
+            $result.api = 26
+            $address = @(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.AddressState -eq 'Preferred' -and $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' } | Select-Object -First 1 -ExpandProperty IPAddress)[0]
+            if (!$address) { throw 'PROBE_NO_PRIVATE_HOST_ADDRESS' }
+            $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Parse($address), 0)
+            $listener.Start(1)
+            $port = $listener.LocalEndpoint.Port
+            $accept = $listener.AcceptTcpClientAsync()
+            $guest = Start-Process -FilePath $adb -ArgumentList @('-s','emulator-5554','shell','toybox','nc','-w','5',$address,$port) -PassThru -WindowStyle Hidden
+            try {
+              if (!$accept.Wait(10000)) { throw 'PROBE_GUEST_TO_HOST_PRIVATE_SOCKET_TIMEOUT' }
+              $connection = $accept.Result
+              $result.privateSocket = $true
+              $result.privateSource = $connection.Client.RemoteEndPoint.Address.ToString() -match '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)'
+            } finally { if (!$guest.HasExited) { $guest.Kill() } }
+            if (!$result.privateSource) { throw 'PROBE_SOURCE_NOT_ADMITTED_BY_CCB' }
+          } finally {
+            if ($connection) { $connection.Dispose() }
+            if ($listener) { $listener.Stop() }
+            if ($vm) {
+              & $adb -s emulator-5554 emu kill 2>$null | Out-Null
+              if (!$vm.WaitForExit(10000)) { $vm.Kill() }
+            }
+            $result | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'v7-host-network-probe.json') -Encoding utf8
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-windows-android-runner-probe
+          path: v7-host-network-probe.json
+          if-no-files-found: ignore
