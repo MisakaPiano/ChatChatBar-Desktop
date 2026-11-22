@@ -14,7 +14,7 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopLanSyncResourceTest {
-    @Test fun phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply() = runBlocking {
+    @Test fun phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply(): Unit = runBlocking {
         val testRoot = Files.createTempDirectory("desktop-lan-bmp-").toRealPath()
         try {
             val source = Files.createDirectory(testRoot.resolve("phone"))

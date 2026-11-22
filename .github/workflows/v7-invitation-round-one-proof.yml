@@ -37,6 +37,25 @@ jobs:
             :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopLanSyncGroupInvitationQrTest' \
             --tests 'com.example.chatbar.desktop.DesktopLanSyncResourceTest.phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply' \
             --no-daemon --max-workers=1 --no-parallel --console=plain
+      - name: Require the key regression cases in the original JUnit reports
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          expected_cases = (
+              ('desktopApp', 'com.example.chatbar.desktop.DesktopLanSyncResourceTest',
+               'phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply'),
+              ('sharedCore', 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest',
+               'legacyAttemptWithLocallyRetainedSignedApprovalCannotBeShelvedWhileOffline'),
+              ('sharedCore', 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest',
+               'cancellingDuringReplacementDoesNotIssueTheQueuedInvitation'),
+          )
+          for module, suite, expected in expected_cases:
+              report = Path(f'app/{module}/build/test-results/test/TEST-{suite}.xml')
+              cases = [case for case in ElementTree.parse(report).getroot().findall('testcase') if case.get('name') == expected]
+              assert len(cases) == 1 and not list(cases[0]), f'{expected} did not report success'
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
