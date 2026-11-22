@@ -60,7 +60,7 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     }
 
     fun invitation(owner: LanSyncGroupInvitation, onExpired: () -> Unit = {},
-        selectedHost: String? = null,
+        selectedHost: String? = null, forFile: Boolean = false,
         onPeer: (LanSyncGroupInvitedPeer) -> Unit): LanSyncGroupInviteOffer {
         val addresses = invitationAddresses()
         val host = selectedHost ?: addresses.firstOrNull() ?: error("SYNC_GROUP_LAN_ADDRESS_UNAVAILABLE")
@@ -71,7 +71,7 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
             val created = owner.invitationContext().serverSocketFactory.createServerSocket(0, 2) as SSLServerSocket
             try {
                 created.needClientAuth = true
-                val offer = owner.issue(host, created.localPort)
+                val offer = owner.issue(host, created.localPort, forFile)
                 val current = Invitation(owner, created)
                 activeInvitation = current
                 current.timer = scope.launch {

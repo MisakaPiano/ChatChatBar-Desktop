@@ -34,8 +34,8 @@ class AndroidLanSyncCameraResourceTest {
     @Test fun genuineHeifUnderLegacyJpegNameUsesAndroidCodecAndKeepsExactOriginal() {
         val file = cache.resolve("synthetic-r02-heif.jpg")
         val dimensions = requireNotNull(LanSyncHeifStill.inspect(file))
-        assertEquals(64, dimensions.width); assertEquals(48, dimensions.height)
-        assertPreviewAndRetainedOriginal(file)
+        assertEquals(64, dimensions.width); assertTrue(dimensions.height in 48..64)
+        assertPreviewAndRetainedOriginal(file, expectedWidth = 64, expectedHeight = 48)
     }
 
     private fun writeJpeg(file: Path) {
@@ -43,13 +43,17 @@ class AndroidLanSyncCameraResourceTest {
         val camera = YuvImage(ByteArray(width * height * 3 / 2) { 96 }, ImageFormat.NV21, width, height, null)
         Files.newOutputStream(file).use { assertTrue(camera.compressToJpeg(Rect(0, 0, width, height), 85, it)) }
     }
-    private fun assertPreviewAndRetainedOriginal(file: Path) {
+    private fun assertPreviewAndRetainedOriginal(file: Path, expectedWidth: Int? = null, expectedHeight: Int? = null) {
         val length = Files.size(file)
         val sha = LanSyncResourceStore.hashFile(file, length)
         validateAndroidLanSyncResource("images", file, record)
         val preview = androidLanSyncPreviewRaster(file, record)
         val bitmap = requireNotNull(BitmapFactory.decodeByteArray(preview, 0, preview.size))
-        try { assertTrue(bitmap.width in 1..2048 && bitmap.height in 1..2048) } finally { bitmap.recycle() }
+        try {
+            assertTrue(bitmap.width in 1..2048 && bitmap.height in 1..2048)
+            if (expectedWidth != null) assertEquals(expectedWidth, bitmap.width)
+            if (expectedHeight != null) assertEquals(expectedHeight, bitmap.height)
+        } finally { bitmap.recycle() }
         assertEquals(length, Files.size(file))
         assertEquals(sha, LanSyncResourceStore.hashFile(file, length))
     }

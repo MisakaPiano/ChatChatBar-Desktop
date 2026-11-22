@@ -24,7 +24,7 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val joiningDevice: String? = null, val canAbandonJoin: Boolean = false,
     val canRefreshJoinPreparation: Boolean = false, val invitationAddresses: List<String> = emptyList(),
     val canShelveJoin: Boolean = false, val shelvedJoins: List<LanSyncShelvedJoin> = emptyList(),
-    val canArchiveRevokedJoin: Boolean = false) {
+    val canArchiveRevokedJoin: Boolean = false, val invitationFileOnly: Boolean = false) {
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 
@@ -38,13 +38,15 @@ interface LanSyncGroupPanelActions {
     fun lockManagement()
     fun resumeManagementOperation()
     fun beginJoin(code: String)
+    fun beginJoinFromFile(open: () -> java.io.InputStream)
     fun abandonUnprovedJoin()
     fun shelveUnsettledJoin()
     fun archiveRevokedJoin()
     fun restoreShelvedJoin(operation: String)
     fun retryJoin()
     fun refreshJoinPreparation()
-    fun createInvitation(host: String? = null)
+    fun createInvitation(host: String? = null, forFile: Boolean = false)
+    fun saveInvitationFile(offer: LanSyncGroupInviteOffer, open: () -> java.io.OutputStream)
     fun closeInvitation()
     fun acceptPeer(binding: String)
     fun prepareRevocation(device: String)

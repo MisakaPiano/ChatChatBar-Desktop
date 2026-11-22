@@ -106,9 +106,11 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 BootstrapButton("立即检查", secondary = true, enabled = !interactionBlocked) { actions.retry() }
                 BootstrapButton("网盘设置", secondary = true, enabled = !interactionBlocked) { actions.openCloudSettings() }
                 BootstrapButton("邀请设备", enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite) { actions.createInvitation() }
+                if (state.managementUnlocked) BootstrapButton("生成邀请文件", secondary = true,
+                    enabled = !interactionBlocked && state.managementCanInvite) { actions.createInvitation(forFile = true) }
                 if (state.managementUnlocked) BootstrapButton("锁定管理", secondary = true) { actions.lockManagement() }
             }
-            state.invitation?.let { offer ->
+            state.invitation?.takeUnless { state.invitationFileOnly }?.let { offer ->
                 val code = remember(offer) { offer.code() }
                 val matrix = remember(code) { desktopGroupInvitationQrMatrix(code) }
                 if (matrix == null) {
@@ -456,6 +458,7 @@ private fun desktopGroupFrozenStage(stage: LanSyncGroupNativeStage): String = wh
     LanSyncGroupNativeStage.CONFLICT -> "多版本待选择"
     LanSyncGroupNativeStage.AUTHOR_FORK -> "同一设备版本分叉"
     LanSyncGroupNativeStage.WAITING_DEPENDENCY -> "等待正文或附件"
+    LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED -> "本机会话有暂无法处理的图片，原件已保留"
     LanSyncGroupNativeStage.RECORD_REVIEW -> "记录归属待核对"
     LanSyncGroupNativeStage.DEPENDENCY_HELD -> "关联内容暂缓"
     LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"

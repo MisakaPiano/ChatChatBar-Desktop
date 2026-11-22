@@ -7,6 +7,7 @@ import java.net.InetAddress
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -107,6 +108,58 @@ class LanSyncGroupJoiningTest {
             assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, f.owner().profile()?.stage)
             assertEquals(1, attempts.get())
         } finally { coordinator.closeAndDrain(); transport.closeAndDrain() }
+    }
+
+    @Test fun ordinaryMemberCanUseAFileContainingEveryAuthenticatedHeadBeyondV1TextCapacity() = fixture { f ->
+        // This separate daily author has an actual entry and retains many signed forks.
+        f.admit(f.founder.prove())
+        val custody = f.founder.custody()
+        val checkpoint = custody.ledger().current()
+        val key = custody.key(checkpoint.epoch)
+        val work = Files.createDirectory(f.founder.root.resolve("large-invite-evidence"))
+        val outbox = SyncEncryptedOutbox(Files.createDirectory(work.resolve("outbox")), key)
+        val codec = SyncGroupObjectCodec(work)
+        val heads = List(150) {
+            val unsigned = SyncCausalVersion(checkpoint.group, SyncStoreId.random(), checkpoint.reference(),
+                f.founder.joiningIdentity.fingerprint, 1, null, emptySet(), emptyMap(), "unsigned")
+            val signed = unsigned.copy(signature = Base64.getEncoder().encodeToString(
+                f.founder.joiningIdentity.signSyncGroupPayload(unsigned.signingBytes())))
+            val prepared = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, signed.id), key,
+                SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = signed))
+            outbox.upload(prepared.request.operationId, f.backend())
+            signed.reference()
+        }.toSet()
+        val newDevice = LanSyncTlsIdentity.create()
+        val joiner = LanSyncGroupJoining(f.root, f.workspace, f.platform, newDevice, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+        val invitation = f.founder.service.invitation(16384).also(f.founder.invitations::add)
+        val pool = Executors.newSingleThreadExecutor()
+        val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket)
+            .also { it.needClientAuth = true }
+        try {
+            assertEquals("SYNC_GROUP_INVITE_CODE_TOO_LARGE", assertFailsWith<IllegalArgumentException> {
+                invitation.issue("10.0.0.1", listener.localPort)
+            }.message)
+            val offer = invitation.issue("10.0.0.1", listener.localPort, forFile = true)
+            assertEquals(heads, offer.bootstrap!!.dataHeads)
+            val file = Files.write(work.resolve("synthetic.ccbinvite"), invitation.fileBytes(offer))
+            assertFails { LanSyncGroupInviteOffer.parse(Files.readString(file)) }
+            val imported = Files.newInputStream(file).use { LanSyncGroupInviteOffer.readFile(it) }
+            joiner.prepareOffer(imported) {}
+            val server = pool.submit<LanSyncGroupInvitedPeer> { invitation.serve(listener.accept() as SSLSocket) }
+            joiner.prove("合成普通成员") { current ->
+                LanSyncTls.connect(newDevice, current.host, current.port, current.inviter, 5_000) { _, port -> Socket(InetAddress.getLoopbackAddress(), port) }
+            }
+            val peer = server.get(15, TimeUnit.SECONDS)
+            val notApproved = joiner.activate(f.backend())
+            assertNull(notApproved.node)
+            assertFalse(newDevice.fingerprint in f.founder.custody().ledger().current().members)
+            f.admit(invitation to peer)
+            val ready = joiner.activate(f.backend())
+            assertEquals(LanSyncGroupJoinStage.READY, ready.profile.stage)
+            val node = requireNotNull(ready.node)
+            assertEquals(heads, requireNotNull(node.inspect().reconciliation.history).heads())
+            assertTrue(node.sourceOperations().isEmpty())
+        } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
     }
 
     @Test fun explicitPauseDisarmsFirstProofWithoutChangingThePreparedIdentity() = fixture { f ->

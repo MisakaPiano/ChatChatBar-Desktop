@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 enum class LanSyncGroupNativeStage {
     UNCHANGED, READY_CONTENT, READY_DELETION, READY_OBSERVATION,
     LOCAL_PROPOSAL, LOCAL_REDUCTION_REVIEW, CONFLICT, AUTHOR_FORK,
-    WAITING_DEPENDENCY, RECORD_REVIEW, DEPENDENCY_HELD, INVALID_MIXED_GRAPH
+    WAITING_DEPENDENCY, LOCAL_RESOURCE_BLOCKED, RECORD_REVIEW, DEPENDENCY_HELD, INVALID_MIXED_GRAPH
 }
 data class LanSyncGroupNativeUnit(val unit: String, val stage: LanSyncGroupNativeStage,
     val currentHash: String?, val applied: LanSyncGroupAppliedUnit?, val frontiers: Set<SyncUnitFrontier>,
@@ -75,6 +75,10 @@ object LanSyncGroupNativePlanner {
             fun row(stage: LanSyncGroupNativeStage, available: LanSyncGroupAvailableUnit? = null,
                 records: LanSyncGroupRecordGate? = null, code: String? = null) =
                 LanSyncGroupNativeUnit(unit, stage, local, before, Collections.unmodifiableSet(frontier), Collections.unmodifiableMap(incomingViews), available, records, code)
+            if (unit in current.blockedResourceUnits) {
+                rows[unit] = row(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, code = "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED")
+                continue
+            }
             val ownCommittedValue = unit !in freshLocalRevisions && frontier.singleOrNull()?.let { fact ->
                 versions.getValue(fact.version).author == source.deviceId && fact.change.valueHash == local
             } == true

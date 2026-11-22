@@ -81,8 +81,9 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
             require(row.binding == preview.binding) { "SYNC_GROUP_RESOLUTION_OPERATION_CHANGED" }
             return@guarded publicState(complete(state, row))
         }
-        workspace.capture(actor.fingerprint, projection).use { capture ->
+        workspace.captureGroup(actor.fingerprint, projection).use { capture ->
             preview.requireFresh(capture, view(), nativeState().units)
+            require(capture.blockedResourceUnits.intersect(preview.resolvedUnits).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
             val authorState = author.state(); require(authorState.pendingApproved == null) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
             // A new review can supersede a stale decision only as its whole reserved adoption.
             val superseded = state.rows.filter { it.stage != LanSyncGroupResolutionLocalStage.SUPERSEDED &&
@@ -147,18 +148,20 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
         workspace.recover()
         if (!workspace.applied(row.operation)) {
             if (!fresh(data)) return update(state, row.copy(stage = LanSyncGroupResolutionLocalStage.NEEDS_REVIEW))
-            val unchanged = workspace.capture(actor.fingerprint, projection).use { it.sourceFiles == data.beforeFiles && it.snapshot.hashes() == data.before }
+            val unchanged = workspace.captureGroup(actor.fingerprint, projection).use {
+                it.sourceFiles == data.beforeFiles && it.snapshot.hashes() == data.before && it.blockedResourceUnits.intersect(row.resolved).isEmpty()
+            }
             if (!unchanged) return update(state, row.copy(stage = LanSyncGroupResolutionLocalStage.NEEDS_REVIEW))
             val blobs = target.resources.mapValues { (hash, length) -> requireNotNull(workspace.resourceStore.completed(hash, length)) { "SYNC_GROUP_RESOLUTION_RESOURCE_MISSING" } }
             workspace.apply(LanSyncPlan(row.operation, target, data.parents), data.before, actor.fingerprint, blobs, projection,
-                expectedSourceFiles = data.beforeFiles)
+                expectedSourceFiles = data.beforeFiles, isolateLocalImages = true)
         }
         observe("RESOLUTION_LOCAL_DATA_APPLIED")
         val expectedPost = requireNotNull(workspace.appliedSourceFiles(row.operation, data.beforeFiles)) { "SYNC_GROUP_RESOLUTION_WAL_MISSING" }
         val post = root.resolve("post-${row.operation}.json")
         if (!Files.exists(post, NOFOLLOW_LINKS)) LanSyncJsonFiles.write(post, Post.serializer(), Post(expectedPost))
         else require(readJson(post, Post.serializer(), identity(post)).files == expectedPost) { "SYNC_GROUP_RESOLUTION_POST_CHANGED" }
-        val matches = workspace.capture(actor.fingerprint, projection).use { it.sourceFiles == expectedPost && it.snapshot.hashes() == target.hashes() && it.snapshot.coveredTypes == target.coveredTypes }
+        val matches = workspace.captureGroup(actor.fingerprint, projection).use { it.sourceFiles == expectedPost && it.snapshot.hashes() == target.hashes() && it.snapshot.coveredTypes == target.coveredTypes }
         return update(state, row.copy(stage = if (matches && fresh(data)) LanSyncGroupResolutionLocalStage.LOCAL_READY else LanSyncGroupResolutionLocalStage.NEEDS_REVIEW,
             applied = true, post = identity(post), reload = true)).also { observe("RESOLUTION_POST_SOURCE_RETAINED") }
     }
@@ -203,7 +206,7 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
         val data = data(row); require(fresh(data)) { "SYNC_GROUP_RESOLUTION_STALE" }
         val post = readJson(root.resolve("post-$operation.json"), Post.serializer(), requireNotNull(row.post))
         val target = readSnapshot(root.resolve("target-$operation.json"), data.target)
-        workspace.capture(actor.fingerprint, projection).use {
+        workspace.captureGroup(actor.fingerprint, projection).use {
             require(it.sourceFiles == post.files && it.snapshot.hashes() == target.hashes() && it.snapshot.coveredTypes == target.coveredTypes) { "SYNC_GROUP_RESOLUTION_POST_CHANGED" }
         }
         LanSyncGroupResolvedLocalApproval(SyncStoreId.parse(operation.replace("-", "")), operation, row.data.sha256,

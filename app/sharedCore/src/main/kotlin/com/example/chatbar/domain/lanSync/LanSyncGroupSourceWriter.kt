@@ -67,8 +67,11 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             native.heads == resolution.heads && native.expected == resolution.targetHashes && native.sourceFiles == resolution.postFiles &&
             native.appliedBefore == resolution.appliedBefore) { "SYNC_GROUP_RESOLUTION_SOURCE_CHANGED" }
         require(nativeState().units.filterKeys(selected::contains) == native.appliedBefore.filterKeys(selected::contains)) { "SYNC_GROUP_SOURCE_CONTROL_CHANGED" }
-        workspace.capture(identity.fingerprint, projection).use { capture ->
+        workspace.captureGroup(identity.fingerprint, projection).use { capture ->
             require(capture.sourceFiles == native.sourceFiles && capture.snapshot.hashes() == native.expected) { "SYNC_GROUP_SOURCE_CHANGED" }
+            require(selected.none { unit -> native.components.getValue(unit).any(capture.blockedResourceUnits::contains) }) {
+                "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
+            }
             val author = journal.state(); require(author.pendingApproved == null) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
             val history = requireNotNull(currentView().history)
             val authorHead = author.last?.version?.reference()
@@ -210,8 +213,9 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
     }
     private fun sign(source: Source): SyncAuthorJournalEntry = journal.commitApprovedLive(request(source), authority, SyncAuthorCommitAdmission {
         requireView(source.ledger, source.heads, source.coverage); verifyCustody(source)
-        workspace.capture(identity.fingerprint, projection).use { fresh ->
+        workspace.captureGroup(identity.fingerprint, projection).use { fresh ->
             require(fresh.snapshot.hashes() == source.sourceHashes && rawBinding(fresh.sourceFiles) == source.rawSource) { "SYNC_GROUP_SOURCE_CHANGED" }
+            require(fresh.blockedResourceUnits.intersect(source.changes.keys).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
         }
     }, identity::signSyncGroupPayload)
     private fun finish(source: Source, entry: SyncAuthorJournalEntry): LanSyncGroupSourceCommit {

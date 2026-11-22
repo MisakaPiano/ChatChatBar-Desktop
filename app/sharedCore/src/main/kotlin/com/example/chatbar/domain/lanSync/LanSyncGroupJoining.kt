@@ -250,7 +250,10 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             peerNameProtect = protect, peerNameUnprotect = unprotect, candidateRoot = directory("commit-candidates", true))
     }
 
-    suspend fun prepare(code: String, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {
+    suspend fun prepare(code: String, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile =
+        prepareOffer(LanSyncGroupInviteOffer.parse(code, wallTime()), admission)
+
+    internal suspend fun prepareOffer(parsed: LanSyncGroupInviteOffer, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {
         require(!Files.exists(parent.resolve("profile.protected"), NOFOLLOW_LINKS) &&
             !Files.exists(parent.resolve("creation"), NOFOLLOW_LINKS) && !Files.exists(parent.resolve("abandon.protected"), NOFOLLOW_LINKS)) { "SYNC_GROUP_FOUNDER_PROFILE_EXISTS" }
         require(read() == null) { "SYNC_GROUP_JOIN_ALREADY_PREPARED" }
@@ -258,7 +261,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             lanSyncSafe(root, true)
             require(Files.newDirectoryStream(root).use { !it.iterator().hasNext() }) { "SYNC_GROUP_JOIN_EXISTING_EVIDENCE" }
         }
-        val offer = LanSyncGroupInviteOffer.parse(code, wallTime()).let { it.copy(bootstrap = it.bootstrap?.let { value ->
+        parsed.validate(wallTime())
+        val offer = parsed.let { it.copy(bootstrap = it.bootstrap?.let { value ->
             value.copy(dataHeads = Collections.unmodifiableSet(value.dataHeads.toSet()))
         }) }
         requireNotNull(offer.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
@@ -324,12 +328,16 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         write(updated); observe("GROUP_RECOVERY_JOIN_APPROVAL_SOURCE_RETAINED"); profile(updated)
     }
     /** A fresh explicit QR/code changes only the route/capability; never recipient/operation or past pins. */
-    suspend fun refreshInvitation(code: String, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {
+    suspend fun refreshInvitation(code: String, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile =
+        refreshOffer(LanSyncGroupInviteOffer.parse(code, wallTime()), admission)
+
+    internal suspend fun refreshOffer(parsed: LanSyncGroupInviteOffer, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {
         val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
         val offer = requireNotNull(record.offer) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
         require(record.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED,
             LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, LanSyncGroupJoinStage.KEYS_ADMITTED)) { "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" }
-        val replacement = LanSyncGroupInviteOffer.parse(code, wallTime()).let { it.copy(bootstrap = it.bootstrap?.let { value ->
+        parsed.validate(wallTime())
+        val replacement = parsed.let { it.copy(bootstrap = it.bootstrap?.let { value ->
             value.copy(dataHeads = Collections.unmodifiableSet(value.dataHeads.toSet()))
         }) }
         val before = requireNotNull(offer.bootstrap); val after = requireNotNull(replacement.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
@@ -449,7 +457,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
                     record = record.copy(projection = null, reprepareRequested = false); write(record)
                 }
                 LanSyncGroupEnrollmentProgress.IDENTITY_ONLY -> {
-                    platform.exclusive { workspace.capture(identity.fingerprint, previous.projection).use { capture ->
+                    platform.exclusive { workspace.captureGroup(identity.fingerprint, previous.projection).use { capture ->
                         record = pinProjection(record, previous.copy(sourceFiles = capture.sourceFiles,
                             checkpoint = ledger.current().reference(), heads = history.heads()))
                     } }
@@ -481,7 +489,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             }
             var pinned: Projection? = null
             platform.exclusive {
-                workspace.capture(identity.fingerprint).use { capture ->
+                workspace.captureGroup(identity.fingerprint).use { capture ->
                     val value = Projection(LanSyncPresetProjection.propose(presets, capture.snapshot.records), capture.sourceFiles,
                         ledger.current().reference(), history.heads())
                     record = pinProjection(record, value); pinned = value

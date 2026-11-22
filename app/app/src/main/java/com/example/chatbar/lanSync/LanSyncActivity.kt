@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.lanSync.*
+import com.example.chatbar.ui.components.CreateOpenableDocument
 import com.example.chatbar.ui.kit.*
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -79,7 +80,10 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
                 CbButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", coordinator::openCloudRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)
             }
         }
-        if (!legacySelected) LanSyncGroupFileActions(coordinator, state)
+        if (!legacySelected) {
+            LanSyncInvitationFiles(coordinator, state)
+            LanSyncGroupFileActions(coordinator, state)
+        }
         if (!legacyAllowed || backgroundState.phase == AndroidLanSyncBackgroundPhase.PAUSED) LanSyncBackgroundControls(owner, backgroundState)
         Box(Modifier.weight(1f)) {
             if (legacySelected && legacyAllowed) {
@@ -109,6 +113,36 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
         val recoveryState by recovery.state.collectAsState()
         LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
+    }
+}
+
+@Composable
+private fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState) {
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    var exportOffer by remember(coordinator) { mutableStateOf<LanSyncGroupInviteOffer?>(null) }
+    val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) coordinator.beginJoinFromFile { resolver.openInputStream(uri) ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE") }
+    }
+    val saveFile = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
+        val offer = exportOffer
+        exportOffer = null
+        if (uri != null && offer != null) coordinator.saveInvitationFile(offer) {
+            resolver.openOutputStream(uri, "wt") ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
+        }
+    }
+    val canOpen = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING &&
+        !state.recoveryJoining && !state.canArchiveRevokedJoin
+    if (canOpen) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+        CbButton("打开设备组邀请文件", { openFile.launch(arrayOf("*/*")) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+    }
+    val offer = state.invitation?.takeIf { state.invitationFileOnly }
+    if (offer != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        CbButton("保存邀请文件", { exportOffer = offer; saveFile.launch("设备组邀请.ccbinvite") }, enabled = !state.busy && exportOffer == null)
+        CbButton("关闭邀请", coordinator::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
+        state.invitationAddresses.filter { it != offer.host }.forEach { address ->
+            CbButton("用 $address 生成新邀请文件", { coordinator.createInvitation(address, forFile = true) }, enabled = !state.busy,
+                variant = ButtonVariant.Secondary)
+        }
     }
 }
 

@@ -105,8 +105,11 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
         }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) {
-            error = if (failure.message == "SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE") "HEIF 原图已保留，当前缺少预览解码器"
-            else failure.message ?: "图片无法读取"
+            error = when (failure.message) {
+                "SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE" -> "HEIF 原图已保留，当前缺少预览解码器"
+                "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "原图已保留，此图片超出当前安全预览范围"
+                else -> failure.message ?: "图片无法读取"
+            }
         }
     }
     val dimensionsChanged by rememberUpdatedState(onDimensions)

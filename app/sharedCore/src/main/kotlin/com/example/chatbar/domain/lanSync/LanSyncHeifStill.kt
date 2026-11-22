@@ -68,7 +68,7 @@ object LanSyncHeifStill {
             extents(id)
             return dimensions(id)
         }
-        when (items[primary]) {
+        val still = when (items[primary]) {
             "hvc1" -> coded(primary)
             "grid" -> {
                 val extent = requireValue(extents(primary).singleOrNull())
@@ -87,12 +87,15 @@ object LanSyncHeifStill {
                 val tileSizes = tiles.distinct().map(::coded).toSet()
                 val tile = requireValue(tileSizes.singleOrNull())
                 need(result.width.toLong() in ((columns - 1) * tile.width + 1)..(columns * tile.width) &&
-                    result.height.toLong() in ((rows - 1) * tile.height + 1)..(rows * tile.height) &&
-                    columns * tile.width * rows * tile.height <= MAX_PIXELS)
+                    result.height.toLong() in ((rows - 1) * tile.height + 1)..(rows * tile.height))
+                if (columns * tile.width * rows * tile.height > MAX_PIXELS) throw LanSyncLocalImageUnsupported()
                 result
             }
             else -> invalid()
         }
+        if (still.width > 16_384 || still.height > 16_384 || still.width.toLong() * still.height > MAX_PIXELS)
+            throw LanSyncLocalImageUnsupported()
+        still
     }
 
     private data class Box(val type: String, val start: Long, val end: Long) { val length get() = end - start }
@@ -123,12 +126,16 @@ object LanSyncHeifStill {
         val lengths = buffer.u(1).toInt()
         val widths = buffer.u(1).toInt()
         val result = linkedMapOf<Long, Location>()
+        var remainingExtents = 4 * MAX_ITEMS
         repeat(buffer.count(if (version == 2) 4 else 2)) {
             val id = buffer.id(if (version == 2) 1 else 0)
             val method = if (version == 0) 0L else buffer.u(2)
             val reference = buffer.u(2)
             val base = buffer.u(widths ushr 4)
-            val extents = List(buffer.count(2)) {
+            val count = buffer.count(2)
+            need(count in 1..remainingExtents)
+            remainingExtents -= count
+            val extents = List(count) {
                 if (version != 0) buffer.u(widths and 15)
                 Extent(buffer.u(lengths ushr 4), buffer.u(lengths and 15))
             }
@@ -164,8 +171,7 @@ object LanSyncHeifStill {
         val version = buffer.fullVersion()
         val references = buffer.children().filter { it.type == "dimg" }.mapNotNull { child ->
             val owner = child.content.id(version)
-            val targets = List(child.content.count(2)) { child.content.id(version) }
-            targets.takeIf { owner == primary }
+            if (owner != primary) null else List(child.content.count(2)) { child.content.id(version) }
         }
         return requireValue(references.singleOrNull())
     }
@@ -217,7 +223,7 @@ object LanSyncHeifStill {
     private fun ByteBuffer.id(version: Int) = u(if (version == 0) 2 else 4).also { need(it > 0) }
     private fun ByteBuffer.count(bytes: Int) = u(bytes).also { need(it <= MAX_ITEMS) }.toInt()
     private fun size(width: Long, height: Long): Dimensions {
-        need(width in 1L..16_384L && height in 1L..16_384L && width * height <= MAX_PIXELS)
+        need(width in 1L..262_144L && height in 1L..262_144L)
         return Dimensions(width.toInt(), height.toInt())
     }
     private fun List<Box>.onlyBox(type: String) = requireValue(singleOrNull { it.type == type })

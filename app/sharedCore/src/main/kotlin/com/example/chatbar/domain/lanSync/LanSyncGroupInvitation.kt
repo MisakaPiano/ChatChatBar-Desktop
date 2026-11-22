@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
+import java.io.InputStream
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
@@ -53,12 +54,34 @@ import kotlinx.serialization.json.put
         internal const val LIFETIME_MILLIS = 180_000L
         private const val WALL_SKEW_MILLIS = 30_000L
         internal const val MAX_CODE_CHARS = 16 * 1024
+        internal const val MAX_FILE_CHARS = 64 * 1024
         private const val PREFIX = "CCB-GROUP-JOIN1:"
         private val VERSION_PREFIX = Regex("^CCB-GROUP-JOIN[0-9]+:")
         private val HEX = Regex("[a-f0-9]{64}")
-        fun parse(code: String, now: Long = System.currentTimeMillis()): LanSyncGroupInviteOffer {
+        fun parse(code: String, now: Long = System.currentTimeMillis()): LanSyncGroupInviteOffer = parseBounded(code, now, MAX_CODE_CHARS)
+
+        internal fun readFile(input: InputStream, now: Long = System.currentTimeMillis()): LanSyncGroupInviteOffer {
+            val bytes = ByteArray(MAX_FILE_CHARS + 1)
+            try {
+                var length = 0
+                while (length < bytes.size) {
+                    val count = input.read(bytes, length, bytes.size - length)
+                    if (count < 0) break
+                    require(count > 0) { "SYNC_GROUP_INVITE_OFFER" }
+                    length += count
+                }
+                require(length <= MAX_FILE_CHARS) { "SYNC_GROUP_INVITE_FILE_TOO_LARGE" }
+                val document = bytes.copyOf(length)
+                try { return parseBounded(lanSyncUtf8(document), now, MAX_FILE_CHARS) }
+                finally { document.fill(0) }
+            } finally {
+                bytes.fill(0)
+            }
+        }
+
+        private fun parseBounded(code: String, now: Long, maximum: Int): LanSyncGroupInviteOffer {
             val text = code.trim()
-            require(text.length <= MAX_CODE_CHARS) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
+            require(text.length <= maximum) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
             require(text.startsWith(PREFIX) || !VERSION_PREFIX.containsMatchIn(text)) { "SYNC_GROUP_INVITE_VERSION" }
             val offer = try {
                 require(text.startsWith(PREFIX)) { "SYNC_GROUP_INVITE_OFFER" }
@@ -114,16 +137,24 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
     private val lock = Any()
     private var issued: Issued? = null
     private var closed = false
-    fun issue(host: String, port: Int): LanSyncGroupInviteOffer = synchronized(lock) {
+    fun issue(host: String, port: Int, forFile: Boolean = false): LanSyncGroupInviteOffer = synchronized(lock) {
         check(!closed) { "SYNC_GROUP_INVITE_CLOSED" }
         val ledger = ledger()
-        require((bootstrap?.dataHeads?.size ?: 0) <= LanSyncGroupInviteOffer.MAX_CODE_CHARS / 64) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
+        val maximum = if (forFile) LanSyncGroupInviteOffer.MAX_FILE_CHARS else LanSyncGroupInviteOffer.MAX_CODE_CHARS
+        val sizeError = if (forFile) "SYNC_GROUP_INVITE_FILE_TOO_LARGE" else "SYNC_GROUP_INVITE_CODE_TOO_LARGE"
+        require((bootstrap?.dataHeads?.size ?: 0) <= maximum / 64) { sizeError }
         val frozenBootstrap = bootstrap?.let { it.copy(dataHeads = Collections.unmodifiableSet(it.dataHeads.toSet())) }
         val offer = LanSyncGroupInviteOffer(trust.copy(checkpoint = ledger.current().reference()), host, port, identity.fingerprint,
             ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }, wallTime() + LanSyncGroupInviteOffer.LIFETIME_MILLIS, frozenBootstrap)
         offer.validate(wallTime())
-        require(offer.code().length <= LanSyncGroupInviteOffer.MAX_CODE_CHARS) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
+        require(offer.code().length <= maximum) { sizeError }
         issued = Issued(offer, monotonic()); offer
+    }
+    internal fun fileBytes(expected: LanSyncGroupInviteOffer): ByteArray = synchronized(lock) {
+        val current = requireNotNull(issued) { "SYNC_GROUP_INVITE_MISSING" }
+        live(current)
+        require(current.offer === expected && !current.claimed) { "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" }
+        current.offer.code().toByteArray(Charsets.US_ASCII)
     }
     /** Never reuse this context for ordinary group-store or legacy sync commands. */
     fun invitationContext(): SSLContext = identity.context { synchronized(lock) {

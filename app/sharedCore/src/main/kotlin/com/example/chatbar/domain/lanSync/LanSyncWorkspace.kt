@@ -16,7 +16,8 @@ import java.security.MessageDigest
 import java.util.UUID
 
 data class LanSyncCapture(val snapshot: LanSyncSnapshot, val blobs: Map<String, Path>,
-    val sourceFiles: Map<String, String>, private val release: (() -> Unit)? = null) : java.io.Closeable {
+    val sourceFiles: Map<String, String>, private val release: (() -> Unit)? = null,
+    val blockedResourceUnits: Set<String> = emptySet()) : java.io.Closeable {
     override fun close() { release?.invoke() }
 }
 
@@ -66,9 +67,11 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     fun protectBeforeApply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String,
-        projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = capture(deviceId, projection).use { current ->
+        projection: LanSyncProjection = LanSyncProjection(), isolateLocalImages: Boolean = false): LanSyncRecoveryEntry? =
+        capture(deviceId, projection, isolateLocalImages).use { current ->
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
+        requireRetainedUnits(current, plan.snapshot)
         recovery.protect(dataRoot, current, plan, projection)
     }
 
@@ -83,12 +86,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     fun prepareRecovery(transaction: String, unit: String, deviceId: String,
-        projection: LanSyncProjection = LanSyncProjection()): LanSyncRestorePreview {
+        projection: LanSyncProjection = LanSyncProjection(), isolateLocalImages: Boolean = false): LanSyncRestorePreview {
         recover()
         val entry = requireNotNull(recovery.read(transaction)) { "SYNC_RECOVERY_MISSING" }
         requireRecoveryProjection(entry, projection)
-        return capture(deviceId, projection).use { current ->
+        return capture(deviceId, projection, isolateLocalImages).use { current ->
             LanSyncRecoveryRestore.prepare(entry, recovery.snapshot(entry), recovery.affected(entry), current.snapshot, unit)
+                .also { requireRetainedUnits(current, it.plan.snapshot) }
         }
     }
 
@@ -98,7 +102,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     fun applyRecovery(preview: LanSyncRestorePreview, deviceId: String,
-        projection: LanSyncProjection = LanSyncProjection()): LanSyncRestoreRevision {
+        projection: LanSyncProjection = LanSyncProjection(), isolateLocalImages: Boolean = false): LanSyncRestoreRevision {
         recover()
         require(preview.id.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_REVISION" }
         val entry = requireNotNull(recovery.read(preview.sourceTransaction)) { "SYNC_RECOVERY_MISSING" }
@@ -112,15 +116,17 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 it.previewBinding == preview.binding && (it.restoredUnits.isEmpty() || it.restoredUnits == preview.restoredUnits)) { "SYNC_RECOVERY_REVISION" }
             if (applied(it.revision)) return finishRecoveryRevision(path, it)
         }
-        capture(deviceId, projection).use { current ->
+        capture(deviceId, projection, isolateLocalImages).use { current ->
             val fresh = LanSyncRecoveryRestore.prepare(entry, recovery.snapshot(entry), recovery.affected(entry),
                 current.snapshot, preview.unit, preview.id)
             require(fresh.binding == preview.binding && fresh.hasChanges) { "SYNC_RECOVERY_SOURCE_CHANGED" }
+            requireRetainedUnits(current, fresh.plan.snapshot)
             val revision = previous ?: LanSyncRestoreRevision(preview.id, entry.transaction, entry.snapshotHash,
                 preview.unit, deviceId, preview.binding, System.currentTimeMillis(), restoredUnits = preview.restoredUnits)
             if (previous == null) LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), revision)
             val localFields = recovery.restoredLocalFields(entry, fresh.restoredRecords.map { it.key }.toSet(), projection)
-            apply(fresh.plan, fresh.expected, deviceId, current.blobs + recovery.blobs(entry), projection, localFields)
+            apply(fresh.plan, fresh.expected, deviceId, current.blobs + recovery.blobs(entry), projection, localFields,
+                isolateLocalImages = isolateLocalImages)
             return finishRecoveryRevision(path, revision)
         }
     }
@@ -147,7 +153,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             revision.copy(restoredUnits = revision.restoredUnits.ifEmpty { setOf(revision.unit) }.toSet())
         } }
 
-    fun capture(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture {
+    fun captureGroup(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture =
+        capture(deviceId, projection, isolateLocalImages = true)
+
+    fun capture(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture =
+        capture(deviceId, projection, isolateLocalImages = false)
+
+    private fun capture(deviceId: String, projection: LanSyncProjection, isolateLocalImages: Boolean): LanSyncCapture {
         lanSyncSafe(dataRoot, true)
         val scratch = LanSyncScratch(stateRoot, "capture"); val frozen = scratch.directory
         var returned = false
@@ -155,6 +167,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val blobs = linkedMapOf<String, Path>(); val resources = linkedMapOf<String, Long>()
         val records = mutableListOf<LanSyncRecord>(); val sourceFiles = linkedMapOf<String, String>()
         val checkedResources = hashSetOf<Triple<String, String, String>>()
+        val blockedRecords = hashSetOf<String>()
         val excluded = linkedSetOf<String>()
         var indexCost = 0L
         fun chargeIndex(amount: Long) {
@@ -217,7 +230,11 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             LanSyncPostProcess.validateImageHash(original, field, hash)
                             if (checkedResources.add(Triple(kind, hash, original.key))) {
                                 chargeIndex(384 + 4L * original.key.length)
-                                validateResource(kind, requireNotNull(blobs[hash]), original)
+                                try { validateResource(kind, requireNotNull(blobs[hash]), original) }
+                                catch (failure: LanSyncLocalImageUnsupported) {
+                                    if (!isolateLocalImages || kind != "images" || Thread.currentThread().isInterrupted) throw failure
+                                    if (blockedRecords.add(original.key)) chargeIndex(144 + 4L * original.key.length)
+                                }
                             }
                             val suffix = if (kind == "payloads") "utf8" else reference.substringAfterLast('.', "bin").lowercase().takeIf {
                                 it.matches(Regex("[a-z0-9]{1,8}"))
@@ -246,10 +263,15 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 }
             } }
         }
-        val snapshot = LanSyncSnapshot(deviceId = deviceId, records = projection.rewrite(records), resources = resources, excludedTypes = excluded)
+        val projected = projection.rewrite(records)
+        val snapshot = LanSyncSnapshot(deviceId = deviceId, records = projected, resources = resources, excludedTypes = excluded)
         snapshot.validate(); LanSyncScope.validateGraph(snapshot)
+        val blockedUnits = if (blockedRecords.isEmpty()) emptySet() else {
+            val projectedKeys = records.indices.mapNotNull { index -> projected[index].key.takeIf { records[index].key in blockedRecords } }.toSet()
+            snapshot.units().filterValues { unit -> unit.any { it.key in projectedKeys } }.keys.toSet()
+        }
         returned = true
-        return LanSyncCapture(snapshot, blobs, sourceFiles, scratch::close)
+        return LanSyncCapture(snapshot, blobs, sourceFiles, scratch::close, blockedUnits)
         } finally { if (!returned) scratch.close() }
     }
 
@@ -273,7 +295,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     /** Prepares a durable local journal before changing any entity. Media are immutable additions. */
     fun apply(plan: LanSyncPlan, expected: Map<String, String>, deviceId: String, blobs: Map<String, Path>,
         projection: LanSyncProjection = LanSyncProjection(), restoreLocalFields: Map<String, JsonObject> = emptyMap(),
-        expectedSourceFiles: Map<String, String>? = null) {
+        expectedSourceFiles: Map<String, String>? = null, isolateLocalImages: Boolean = false) {
         plan.snapshot.validate(); LanSyncScope.validateGraph(plan.snapshot)
         require(restoreLocalFields.keys.all { key -> plan.snapshot.records.any { it.key == key } }) { "SYNC_RECOVERY_LOCAL_FIELDS" }
         restoreLocalFields.forEach { (key, value) ->
@@ -282,9 +304,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 else LanSyncScope.retainedLocalFields(type)
             require(value.keys.all(allowed::contains)) { "SYNC_RECOVERY_LOCAL_FIELDS" }
         }
-        val current = capture(deviceId, projection)
+        val current = capture(deviceId, projection, isolateLocalImages)
         try {
         require(current.snapshot.hashes() == expected) { "SYNC_LOCAL_CHANGED_REVIEW_AGAIN" }
+        requireRetainedUnits(current, plan.snapshot)
         require(expectedSourceFiles == null || current.sourceFiles == expectedSourceFiles) { "SYNC_GROUP_NATIVE_SOURCE_CHANGED" }
         val transaction = stateRoot.resolve("transaction-${plan.transaction.also { require(it.matches(Regex("[a-f0-9-]{36}"))) }}")
         require(!Files.exists(transaction, LinkOption.NOFOLLOW_LINKS)) { "SYNC_TRANSACTION_ALREADY_PREPARED" }
@@ -390,6 +413,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         observeJournal("AUTHORIZED", -1)
         recoverTransaction(transaction)
         } finally { current.close() }
+    }
+
+    private fun requireRetainedUnits(current: LanSyncCapture, target: LanSyncSnapshot) {
+        if (current.blockedResourceUnits.isEmpty()) return
+        val before = current.snapshot.hashes()
+        val after = target.hashes()
+        require(current.blockedResourceUnits.all { before[it] == after[it] }) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
     }
 
     fun recover() {

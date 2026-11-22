@@ -144,7 +144,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         require(plan.before.deviceId == actor.fingerprint && plan.plan.snapshot.deviceId == actor.fingerprint) { "SYNC_GROUP_NATIVE_DEVICE" }
         requireView(plan)
         requireFreshSource(plan)
-        val preimage = workspace.protectBeforeApply(plan.plan, plan.expected, actor.fingerprint, projection)
+        val preimage = workspace.protectBeforeApply(plan.plan, plan.expected, actor.fingerprint, projection, isolateLocalImages = true)
         val needsPreimage = LanSyncImpactReview.changes(plan.before.records, plan.plan.snapshot.records).any { it.needsProtection }
         require(!needsPreimage || preimage != null) { "SYNC_GROUP_NATIVE_PREIMAGE_MISSING" }
         preimage?.let { workspace.recovery.verify(it) }
@@ -159,9 +159,10 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         observe("NATIVE_INTENT_RETAINED")
         // Authority is live, not the ledger object originally passed to a publication queue.
         requireView(plan); requireFreshSource(plan)
-        workspace.capture(actor.fingerprint, projection).use { fresh ->
+        workspace.captureGroup(actor.fingerprint, projection).use { fresh ->
             val resources = fresh.blobs + plan.units.values.flatMap { it.available?.resources.orEmpty().entries }.associate { it.toPair() }
-            workspace.apply(plan.plan, plan.expected, actor.fingerprint, resources, projection, expectedSourceFiles = plan.sourceFiles)
+            workspace.apply(plan.plan, plan.expected, actor.fingerprint, resources, projection, expectedSourceFiles = plan.sourceFiles,
+                isolateLocalImages = true)
         }
         require(workspace.applied(plan.plan.transaction)) { "SYNC_GROUP_NATIVE_RECEIPT_MISSING" }
         observe("NATIVE_DATA_APPLIED")
@@ -189,9 +190,12 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         complete(intent, status)
         observe(if (status == LanSyncGroupNativeApplyStatus.APPLIED) "NATIVE_RECEIPT_RECOVERED" else "NATIVE_INERT_PREPARATION_RETAINED")
     }
-    private fun requireFreshSource(plan: LanSyncGroupNativePlan) = workspace.capture(actor.fingerprint, projection).use { fresh ->
+    private fun requireFreshSource(plan: LanSyncGroupNativePlan) = workspace.captureGroup(actor.fingerprint, projection).use { fresh ->
         require(fresh.snapshot.coveredTypes == plan.before.coveredTypes && fresh.snapshot.hashes() == plan.expected && fresh.sourceFiles == plan.sourceFiles) {
             "SYNC_GROUP_NATIVE_SOURCE_CHANGED"
+        }
+        require(plan.advances.keys.none { unit -> plan.components.getValue(unit).any(fresh.blockedResourceUnits::contains) }) {
+            "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
         }
     }
     private fun requireAuthority(ledger: SyncDeviceLedger) {

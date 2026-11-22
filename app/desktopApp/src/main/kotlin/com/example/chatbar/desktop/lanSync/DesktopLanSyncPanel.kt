@@ -13,6 +13,10 @@ import com.example.chatbar.domain.lanSync.*
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import java.awt.image.BufferedImage
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.StandardOpenOption.CREATE_NEW
+import java.nio.file.StandardOpenOption.WRITE
 
 /** Navigation owns only page visibility; the application owns the group task lifetime. */
 @Composable
@@ -45,6 +49,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
                     BootstrapButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", secondary = true, enabled = !state.busy) { coordinator.openCloudRecovery() }
                 }
             }
+            if (filePicker != null) DesktopLanSyncInvitationFiles(coordinator, state, filePicker)
             DesktopLanSyncFileActions(coordinator, state, filePicker)
             if (state.invitationRetainedWhileLocked) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
@@ -60,6 +65,32 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
         val recoveryState by recovery.state.collectAsState()
         DesktopLanSyncCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
+    }
+}
+
+@Composable
+private fun DesktopLanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState, filePicker: DesktopFilePicker) {
+    val type = remember { DesktopFileType("设备组邀请文件", listOf("ccbinvite")) }
+    val canOpen = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING &&
+        !state.recoveryJoining && !state.canArchiveRevokedJoin
+    if (canOpen) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+        BootstrapButton("打开设备组邀请文件", secondary = true, enabled = !state.busy) {
+            filePicker.pickOpenFile(type)?.let { path -> coordinator.beginJoinFromFile { Files.newInputStream(path, NOFOLLOW_LINKS) } }
+        }
+    }
+    val offer = state.invitation?.takeIf { state.invitationFileOnly }
+    if (offer != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        BootstrapButton("保存邀请文件", enabled = !state.busy) {
+            filePicker.pickSaveFile(type, "设备组邀请.ccbinvite")?.let { path ->
+                coordinator.saveInvitationFile(offer) { Files.newOutputStream(path, CREATE_NEW, WRITE, NOFOLLOW_LINKS) }
+            }
+        }
+        BootstrapButton("关闭邀请", secondary = true, enabled = !state.invitationApprovalInProgress) { coordinator.closeInvitation() }
+        state.invitationAddresses.filter { it != offer.host }.forEach { address ->
+            BootstrapButton("用 $address 生成新邀请文件", secondary = true, enabled = !state.busy) {
+                coordinator.createInvitation(address, forFile = true)
+            }
+        }
     }
 }
 

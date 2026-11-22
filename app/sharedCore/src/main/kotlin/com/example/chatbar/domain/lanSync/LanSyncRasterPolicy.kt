@@ -8,6 +8,8 @@ import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.util.zip.CRC32
 
+class LanSyncLocalImageUnsupported : IllegalArgumentException("SYNC_GROUP_LOCAL_RESOURCE_BLOCKED")
+
 /** Encoded originals are streamed; raster working limits are independent of encoded length. */
 object LanSyncRasterPolicy {
     fun maximumPixels(record: LanSyncRecord?): Long = record?.let(LanSyncPostProcess::record)?.let {
@@ -20,15 +22,20 @@ object LanSyncRasterPolicy {
         val pixels = width.toLong() * height
         require(width > 0 && height > 0) { "SYNC_IMAGE_INVALID" }
         if (pixels <= maximumPixels(record)) return
-        require(jpeg && record?.let(LanSyncPostProcess::record) == null && width <= 16_384 && height <= 16_384 &&
-            pixels <= 72_000_000L && baselineJpegSize(path) == (width to height)) { "SYNC_IMAGE_INVALID" }
+        require(record?.let(LanSyncPostProcess::record) == null) { "SYNC_IMAGE_INVALID" }
+        if (!jpeg) throw LanSyncLocalImageUnsupported()
+        val frame = requireNotNull(jpegFrame(path)) { "SYNC_IMAGE_INVALID" }
+        require(frame.width == width && frame.height == height) { "SYNC_IMAGE_INVALID" }
+        if (!frame.baseline || width > 16_384 || height > 16_384 || pixels > 72_000_000L) throw LanSyncLocalImageUnsupported()
     }
-    fun needsSampledJpegPreview(path: Path): Boolean = baselineJpegSize(path)?.let { (width, height) ->
-        width.toLong() * height > maximumPixels(null)
+    fun needsSampledJpegPreview(path: Path): Boolean = jpegFrame(path)?.let {
+        it.width.toLong() * it.height > maximumPixels(null)
     } == true
 
+    private data class JpegFrame(val width: Int, val height: Int, val baseline: Boolean)
+
     // Progressive decoding may need full-size coefficient storage despite a sampled output.
-    private fun baselineJpegSize(path: Path): Pair<Int, Int>? {
+    private fun jpegFrame(path: Path): JpegFrame? {
         DataInputStream(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).buffered()).use { input ->
             if (input.read() != 0xff || input.read() != 0xd8) return null
             var budget = 16 * 1024 * 1024
@@ -36,10 +43,10 @@ object LanSyncRasterPolicy {
                 if (input.readUnsignedByte() != 0xff) return null
                 var marker: Int
                 do { marker = input.readUnsignedByte(); budget-- } while (marker == 0xff && budget >= 4)
-                if (marker == 0xc0) {
+                if (marker == 0xc0 || marker == 0xc1 || marker == 0xc2) {
                     if (input.readUnsignedShort() < 8 || input.readUnsignedByte() != 8) return null
                     val height = input.readUnsignedShort()
-                    return input.readUnsignedShort() to height
+                    return JpegFrame(input.readUnsignedShort(), height, marker == 0xc0)
                 }
                 if (marker != 0xc4 && marker !in 0xe0..0xef && marker != 0xdb && marker != 0xdd && marker != 0xfe) return null
                 val length = input.readUnsignedShort()

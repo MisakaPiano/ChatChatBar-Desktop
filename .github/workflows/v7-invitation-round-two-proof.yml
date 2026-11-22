@@ -64,6 +64,8 @@ jobs:
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.admittedDisplayNameSurvivesTheFirstPublicationFailureAndManagementResume' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.unchangedSharedFormatLeavesIndependentConversationReceiptsAndSendsUnblocked' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.realPinnedSocketTimeoutFetchesTheSameSignedMessageImageFromAnotherActiveMember' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.aRealUnsupportedProgressivePhotoHoldsOnlyItsConversationAndRetainsThePublishedBase' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNativePlannerTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupSourceWriterTest.aPendingFormatDeletionHoldsItsSessionSourceWhileAnIndependentCardStillCommits' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupReplicaReaderTest' \

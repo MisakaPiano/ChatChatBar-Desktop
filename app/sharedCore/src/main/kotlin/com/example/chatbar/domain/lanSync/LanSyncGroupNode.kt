@@ -101,7 +101,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     suspend fun initializeNewEnrollment(expectedEnrollmentSource: Map<String, String>? = null) = serialized {
         exclusive {
             expectedEnrollmentSource?.let { expected ->
-                workspace.capture(identity.fingerprint, projection).use {
+                workspace.captureGroup(identity.fingerprint, projection).use {
                     require(it.sourceFiles == expected) { "SYNC_GROUP_ENROLLMENT_LOCAL_CHANGED" }
                 }
             }
@@ -329,7 +329,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 require(retainedIndexCost <= workspace.metadataBudget.maximumIndexCost) { "SYNC_METADATA_INDEX_BUDGET" }
             }
         }
-        val plan = exclusive { workspace.capture(identity.fingerprint, projection).use {
+        val plan = exclusive { workspace.captureGroup(identity.fingerprint, projection).use {
             val known = it.snapshot.units().keys + state.units.keys + history.admittedVersions().flatMap { version -> version.changes.keys } + pendingResolutions
             LanSyncGroupNativePlanner.prepare(it, view, state.units, dependencies, evidence,
                 freshLocalRevisions() + (pendingRestorations.keys + pendingResolutions).filter { unit -> unit in known },
@@ -378,7 +378,10 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
     suspend fun prepareResolution(choices: Map<String, LanSyncGroupResolutionChoice>, operation: String = UUID.randomUUID().toString()): LanSyncGroupResolutionPreview = serialized {
         val view = inspectOwned()
-        exclusive { workspace.capture(identity.fingerprint, projection).use { view.resolution(it, choices, operation) } }
+        exclusive { workspace.captureGroup(identity.fingerprint, projection).use { capture ->
+            require(choices.keys.intersect(capture.blockedResourceUnits).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
+            view.resolution(capture, choices, operation)
+        } }
     }
     /** Approved native adoption, fresh source validation, then one bound causal author operation. */
     suspend fun resolve(candidate: LanSyncGroupResolvedCandidate): LanSyncGroupSourceCommit? = serialized {
@@ -453,13 +456,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     internal fun readFrozenImagePreview(preview: LanSyncImagePreview): ByteArray = workspace.readImagePreview(preview)
 
     suspend fun prepareRecovery(transaction: String, unit: String): LanSyncRestorePreview = serialized {
-        exclusive { workspace.prepareRecovery(transaction, unit, identity.fingerprint, projection) }
+        exclusive { workspace.prepareRecovery(transaction, unit, identity.fingerprint, projection, isolateLocalImages = true) }
     }
     /** Explicit local restore; per-unit sync receipts are preserved and its fresh revision stays pending. */
     suspend fun applyRecovery(preview: LanSyncRestorePreview): LanSyncRestoreRevision = serialized {
         val restored = exclusive {
             author.state(); native.state()
-            workspace.applyRecovery(preview, identity.fingerprint, projection).also {
+            workspace.applyRecovery(preview, identity.fingerprint, projection, isolateLocalImages = true).also {
                 reload(preview.currentRecords.filter { record -> record.type == "chat_sessions" }.mapTo(linkedSetOf()) { record -> record.id })
             }
         }
@@ -533,7 +536,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             resolutions.state().none { it.stage == LanSyncGroupResolutionLocalStage.PREPARED }) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
     }
     private suspend fun reload(previousSessions: Set<String> = emptySet()) {
-        val sessions = workspace.capture(identity.fingerprint, projection).use { capture ->
+        val sessions = workspace.captureGroup(identity.fingerprint, projection).use { capture ->
             capture.snapshot.records.filter { it.type == "chat_sessions" }.mapTo(linkedSetOf()) { it.id }
         }
         platform.reload(previousSessions + sessions)

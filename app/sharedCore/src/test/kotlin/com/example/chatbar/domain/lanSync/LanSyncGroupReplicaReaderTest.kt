@@ -3,13 +3,35 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InterruptedIOException
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CancellationException
 import kotlin.test.*
 
 /** Actual immutable file stores; transport shims inject failures after the remote file verifies. */
 class LanSyncGroupReplicaReaderTest {
+    @Test fun anActualCancellationOrInterruptNeverVisitsAnAlternateRoute() = withRoot { root ->
+        val bytes = ciphertext()
+        val request = request(bytes)
+        val source = FileCiphertextStore(root.resolve("source"))
+        source.put(request, bytes.inputStream())
+        val second = ObservedStore(source)
+        val reader = LanSyncGroupReplicaReader(FileCiphertextStore(root.resolve("local")), root.resolve("reads")) { _, _ ->
+            fail("A cancelled transfer cannot be reported as an endpoint failure")
+        }
+        for (cause in listOf(CancellationException("synthetic cancellation"), InterruptedIOException("synthetic interruption"))) {
+            val first = object : CiphertextStore by source {
+                override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?) = throw cause
+            }
+            reader.routes(listOf(LanSyncGroupReplicaReader.Route("first", first), LanSyncGroupReplicaReader.Route("second", second)))
+            val sink = ByteArrayOutputStream()
+            assertSame(cause, assertFails { reader.readTo(request.key, sink, request.descriptor) })
+            assertEquals(0, sink.size())
+            assertEquals(0, second.reads)
+        }
+    }
     @Test fun verifiedRemoteCiphertextPersistsAndReopensWithoutAnyRoute() = withRoot { root ->
         val bytes = ciphertext()
         val request = request(bytes, CiphertextObjectKind.COMMIT)

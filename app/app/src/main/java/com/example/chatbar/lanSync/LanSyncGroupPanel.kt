@@ -134,6 +134,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbButton("网盘设置", actions::openCloudSettings, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbButton("邀请设备", { actions.createInvitation() }, enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite)
             if (state.managementUnlocked) {
+                CbButton("生成邀请文件", { actions.createInvitation(forFile = true) },
+                    enabled = !interactionBlocked && state.managementCanInvite, variant = ButtonVariant.Secondary)
                 CbButton("锁定管理", actions::lockManagement, variant = ButtonVariant.Secondary)
                 CbText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
                 CbButton("接续已确认的管理操作", actions::resumeManagementOperation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
@@ -154,7 +156,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbText("邀请仍在有效期内。请解锁管理以核对申请设备，或关闭邀请。")
             CbButton("关闭邀请", actions::closeInvitation, variant = ButtonVariant.Secondary)
         }
-        state.invitation?.let { offer ->
+        state.invitation?.takeUnless { state.invitationFileOnly }?.let { offer ->
             val code = remember(offer) { offer.code() }
             val bitmap = remember(code) {
                 try {
@@ -462,6 +464,7 @@ private fun groupFrozenStage(stage: LanSyncGroupNativeStage): String = when (sta
     LanSyncGroupNativeStage.CONFLICT -> "多版本待选择"
     LanSyncGroupNativeStage.AUTHOR_FORK -> "同一设备版本分叉"
     LanSyncGroupNativeStage.WAITING_DEPENDENCY -> "等待正文或附件"
+    LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED -> "本机会话有暂无法处理的图片，原件已保留"
     LanSyncGroupNativeStage.RECORD_REVIEW -> "记录归属待核对"
     LanSyncGroupNativeStage.DEPENDENCY_HELD -> "关联内容暂缓"
     LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"

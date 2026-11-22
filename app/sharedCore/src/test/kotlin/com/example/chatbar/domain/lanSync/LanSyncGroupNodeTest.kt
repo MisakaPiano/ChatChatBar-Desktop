@@ -6,12 +6,24 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.syncStore.*
+import java.awt.image.BufferedImage
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.InetAddress
+import java.net.SocketTimeoutException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import javax.net.ssl.SSLServerSocket
+import javax.net.ssl.SSLSocket
+import javax.imageio.ImageIO
+import javax.imageio.ImageWriteParam
+import javax.imageio.IIOImage
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
@@ -54,8 +66,11 @@ class LanSyncGroupNodeTest {
             val base = Files.createDirectory(root.resolve("node-$index")); val data = Files.createDirectory(base.resolve("data"))
             val runtime = Files.createDirectory(base.resolve("runtime")); val custodyRoot = Files.createDirectory(base.resolve("custody"))
             var journalHook: (String, Int) -> Unit = { _, _ -> }
+            var resourceValidator: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> }
             val workspace = LanSyncWorkspace(data, Files.createDirectory(base.resolve("workspace")), { Path.of(it) },
-                observeJournal = { stage, index -> journalHook(stage, index) })
+                observeJournal = { stage, index -> journalHook(stage, index) }, validateResource = { kind, path, record ->
+                    resourceValidator(kind, path, record)
+                })
             var gated = false; var reloads = 0; var hook: (String) -> Unit = {}
             fun custody() = SyncGroupCustody(custodyRoot, cipher.group, recipients[index], { it.reversedArray() }, { it.reversedArray() })
             fun author() = SyncAuthorJournal(runtime.resolve("author"), trust,
@@ -68,7 +83,9 @@ class LanSyncGroupNodeTest {
                 override suspend fun reload(sessionIds: Set<String>) { check(gated); reloads++ }
             }
             fun open(dependencies: CiphertextStore = backend) = LanSyncGroupNode(runtime, workspace, platform, identities[index], trust, custody(), recipients[index], dependencies,
-                { it.reversedArray() }, { it.reversedArray() }, { emptySet() }, { _, _, _ -> }, observe = { hook(it) })
+                { it.reversedArray() }, { it.reversedArray() }, { emptySet() }, { kind, path, record ->
+                    resourceValidator(kind, path, record)
+                }, observe = { hook(it) })
             suspend fun enroll(): LanSyncGroupNode {
                 val admitted = custody().enroll(trust, listOf(genesis))
                 val capsule = SyncGroupKeyDelivery.create(ledger, cipher, identities[index].fingerprint, SyncStoreId.random(), identities[0]::signSyncGroupPayload)
@@ -151,6 +168,153 @@ class LanSyncGroupNodeTest {
         origin.apply(requireNotNull(source.scan(origin).plan))
         assertEquals("B 的回信", LanSyncJsonFiles.read(source.data.resolve("entities/chat_messages/b_out.json"), ChatMessage.serializer())?.content)
         assertTrue(requireNotNull(source.scan(origin).plan).advances.isEmpty())
+    }
+
+    @Test fun realPinnedSocketTimeoutFetchesTheSameSignedMessageImageFromAnotherActiveMember() = withGroup { group ->
+        val source = group.End(0); val receiver = group.End(1)
+        val origin = source.enroll(); receiver.enroll()
+        val image = Files.createDirectories(source.data.resolve("images")).resolve("test.png")
+        val bytes = LanSyncPreviewSample.image()
+        Files.write(image, bytes)
+        val sessionPath = Files.createDirectories(source.data.resolve("entities/chat_sessions")).resolve("chat.json")
+        val messagePath = Files.createDirectories(source.data.resolve("entities/chat_messages")).resolve("chat_m.json")
+        LanSyncJsonFiles.write(sessionPath, ChatSession.serializer(), ChatSession("chat", "card", "合成", createdAt = 1, updatedAt = 1))
+        LanSyncJsonFiles.write(messagePath, ChatMessage.serializer(), ChatMessage("m", "chat", MessageRole.USER, "带原图的消息",
+            images = listOf(image.toString()), createdAt = 2, updatedAt = 2))
+        val published = origin.commit(origin.inspect().review(setOf("conversation/chat")))
+        source.send(origin, published)
+        val blob = published.publication.blobs.getValue(lanSyncHash(bytes))
+        val block = CountDownLatch(1)
+        val entered = CountDownLatch(1)
+        val bReads = AtomicInteger()
+        fun routeBackend(stalled: Boolean) = object : CiphertextStore by group.backend {
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                if (key == blob.key) {
+                    if (stalled) {
+                        entered.countDown()
+                        check(block.await(20, TimeUnit.SECONDS))
+                    } else bReads.incrementAndGet()
+                }
+                return group.backend.readTo(key, destination, expected)
+            }
+        }
+        val serverWorkers = Executors.newFixedThreadPool(2)
+        val listeners = mutableListOf<SSLServerSocket>()
+        fun openRoute(index: Int, stalled: Boolean): LanSyncGroupRemoteStore {
+            val identity = group.identities[index]
+            val joining = group.identities[1]
+            val listener = (identity.context { it == joining.fingerprint }.serverSocketFactory
+                .createServerSocket(0, 4, InetAddress.getLoopbackAddress()) as SSLServerSocket).apply { needClientAuth = true }
+            listeners += listener
+            val backend = routeBackend(stalled)
+            val server = LanSyncGroupCiphertextServer(group.root.resolve("wire-$index"), { id, local, peer ->
+                check(id == group.trust.group)
+                LanSyncGroupPeerStore(group.trust, local, peer, { group.ledger }, backend) { null }
+            })
+            serverWorkers.submit {
+                while (!listener.isClosed) {
+                    try { server.serve(listener.accept() as SSLSocket) }
+                    catch (_: IOException) { /* The timed-out client's exact socket closes before the source is released. */ }
+                }
+            }
+            return LanSyncGroupRemoteStore(group.trust.group, group.root.resolve("client-$index"), {
+                joining.context { it == identity.fingerprint }.socketFactory.createSocket(InetAddress.getLoopbackAddress(), listener.localPort) as SSLSocket
+            }, readTimeoutMillis = if (stalled) 2_000 else 5_000)
+        }
+        val errors = mutableListOf<Pair<String, Exception>>()
+        try {
+            val reader = LanSyncGroupReplicaReader(FileCiphertextStore(group.root.resolve("received-route-objects")),
+                group.root.resolve("route-work")) { route, reason -> errors += route to reason }
+            reader.routes(listOf(LanSyncGroupReplicaReader.Route("A", openRoute(0, true)), LanSyncGroupReplicaReader.Route("B", openRoute(2, false))))
+            val actual = receiver.open(reader)
+            val incoming = requireNotNull(receiver.scan(actual).plan)
+            assertEquals(0L, entered.count)
+            assertTrue(errors.any { (route, cause) -> route == "A" && cause is SocketTimeoutException })
+            assertEquals(1, bReads.get())
+            assertEquals(setOf("conversation/chat"), incoming.advances.keys)
+            actual.apply(incoming)
+            val restored = requireNotNull(LanSyncJsonFiles.read(receiver.data.resolve("entities/chat_messages/chat_m.json"), ChatMessage.serializer()))
+            assertEquals("带原图的消息", restored.content)
+            assertContentEquals(bytes, Files.readAllBytes(Path.of(restored.images.single())))
+            assertTrue(requireNotNull(receiver.scan(actual).plan).advances.isEmpty())
+            assertEquals(1, bReads.get())
+        } finally {
+            block.countDown()
+            listeners.forEach { it.close() }
+            serverWorkers.shutdown()
+            check(serverWorkers.awaitTermination(25, TimeUnit.SECONDS))
+        }
+    }
+
+    @Test fun aRealUnsupportedProgressivePhotoHoldsOnlyItsConversationAndRetainsThePublishedBase() = withGroup { group ->
+        val publisher = group.End(0); val local = group.End(1)
+        val origin = publisher.enroll(); val receiver = local.enroll()
+        val a = "conversation/a"; val b = "conversation/b"
+        fun session(end: Group.End, id: String) = Files.createDirectories(end.data.resolve("entities/chat_sessions")).resolve("$id.json")
+        fun message(end: Group.End, id: String) = Files.createDirectories(end.data.resolve("entities/chat_messages")).resolve("b_$id.json")
+        val aRecord = ChatSession("a", "card", "已有会话 A", createdAt = 1, updatedAt = 1)
+        LanSyncJsonFiles.write(session(publisher, "a"), ChatSession.serializer(), aRecord)
+        LanSyncJsonFiles.write(session(publisher, "b"), ChatSession.serializer(), ChatSession("b", "card", "独立会话 B", createdAt = 1, updatedAt = 1))
+        publisher.send(origin, origin.commit(origin.inspect().review(setOf(a, b))))
+        receiver.apply(requireNotNull(local.scan(receiver).plan))
+        val previousA = receiver.inspect().nativeState.units.getValue(a)
+
+        val photo = Files.createDirectories(local.data.resolve("images")).resolve("camera.jpg")
+        val raster = BufferedImage(8000, 6000, BufferedImage.TYPE_BYTE_GRAY)
+        val encoder = ImageIO.getImageWritersByFormatName("jpeg").next()
+        try {
+            ImageIO.createImageOutputStream(photo.toFile()).use { output ->
+                encoder.output = output
+                val params = encoder.defaultWriteParam.apply { progressiveMode = ImageWriteParam.MODE_DEFAULT }
+                encoder.write(null, IIOImage(raster, null, null), params)
+            }
+        } finally { encoder.dispose(); raster.flush() }
+        val originalFileHash = LanSyncResourceStore.hashFile(photo, Files.size(photo))
+        val localA = session(local, "a")
+        LanSyncJsonFiles.write(localA, ChatSession.serializer(), aRecord.copy(chatBackground = photo.toString()))
+        val originalRecord = Files.readAllBytes(localA)
+        local.resourceValidator = { kind, file, record ->
+            if (kind == "images") ImageIO.createImageInputStream(file.toFile()).use { input ->
+                val decoder = ImageIO.getImageReaders(input).next()
+                try {
+                    decoder.input = input
+                    assertEquals("JPEG", decoder.formatName.uppercase())
+                    LanSyncRasterPolicy.validateDimensions(file, record, decoder.getWidth(0), decoder.getHeight(0), jpeg = true)
+                } finally { decoder.dispose() }
+            }
+        }
+        assertFailsWith<LanSyncLocalImageUnsupported> { local.workspace.capture(group.identities[1].fingerprint).close() }
+        LanSyncJsonFiles.write(session(publisher, "a"), ChatSession.serializer(), aRecord.copy(title = "不能覆盖 A"))
+        LanSyncJsonFiles.write(message(publisher, "in"), ChatMessage.serializer(),
+            ChatMessage("in", "b", MessageRole.USER, "B 仍然收件", createdAt = 2, updatedAt = 2))
+        publisher.send(origin, origin.commit(origin.inspect().review(setOf(a, b))))
+        val incoming = requireNotNull(local.scan(receiver).plan)
+        assertEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, incoming.units.getValue(a).stage)
+        assertEquals(setOf(b), incoming.advances.keys)
+        assertEquals(originalFileHash, incoming.before.resources.keys.single())
+        receiver.apply(incoming)
+        assertEquals("B 仍然收件", LanSyncJsonFiles.read(message(local, "in"), ChatMessage.serializer())?.content)
+        assertEquals(previousA, receiver.inspect().nativeState.units.getValue(a))
+        assertFailsWith<IllegalArgumentException> { receiver.inspect().review(setOf(a)) }
+        local.workspace.captureGroup(group.identities[1].fingerprint).use { current ->
+            val changed = current.snapshot.copy(records = current.snapshot.records.filterNot { it in current.snapshot.units().getValue(a) },
+                resources = emptyMap())
+            assertEquals("SYNC_GROUP_LOCAL_RESOURCE_BLOCKED", assertFailsWith<IllegalArgumentException> {
+                local.workspace.apply(LanSyncPlan(java.util.UUID.randomUUID().toString(), changed, emptyMap()),
+                    current.snapshot.hashes(), group.identities[1].fingerprint, emptyMap(), isolateLocalImages = true)
+            }.message)
+        }
+        LanSyncJsonFiles.write(message(local, "out"), ChatMessage.serializer(),
+            ChatMessage("out", "b", MessageRole.USER, "B 仍然发送", createdAt = 3, updatedAt = 3))
+        val reply = receiver.commit(receiver.inspect().review(setOf(b)))
+        assertEquals(setOf(b), reply.entry.version.changes.keys)
+        local.send(receiver, reply)
+        origin.apply(requireNotNull(publisher.scan(origin).plan))
+        assertEquals("B 仍然发送", LanSyncJsonFiles.read(message(publisher, "out"), ChatMessage.serializer())?.content)
+        assertEquals(previousA, local.open().inspect().nativeState.units.getValue(a))
+        assertContentEquals(originalRecord, Files.readAllBytes(localA))
+        assertEquals(originalFileHash, LanSyncResourceStore.hashFile(photo, Files.size(photo)))
+        assertTrue(requireNotNull(publisher.scan(origin).plan).advances.isEmpty())
     }
 
     @Test fun coldSourceOnlyRetriesWithOrWithoutMetadataPrefetchReuseTheOriginalLocalReceiptWithoutNativeOrLiveRouteWork() = withGroup { g ->
