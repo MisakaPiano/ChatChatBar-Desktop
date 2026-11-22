@@ -175,6 +175,9 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
     private fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject>,
         published: Set<CiphertextObjectMetadata>?): SyncInboxReconciliation {
         val trust = localCustody { custody.trust() }
+        // Invitations must prove their own served ledger ancestry. Known local keys can open
+        // it, but locally retained ledger rows or outbox versions cannot fill a published gap.
+        val servedLedger = if (published == null) null else SyncDeviceLedger(trust)
         val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
         fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, code: String? = null) {
             statuses[key] = SyncInboxObservation(key.key, stage, code, key.descriptor).also(observe)
@@ -206,7 +209,8 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                             if (notice.context.recipient != recipient.device) status(metadata, SyncInboxStage.NOT_FOR_DEVICE)
                             else {
                                 val verified = notice.open(trust, recipient, metadata.key)
-                                val updated = localCustody { custody.update(verified.records) }
+                                val updated = servedLedger?.also { ledger -> verified.records.forEach(ledger::offer) }
+                                    ?: localCustody { custody.update(verified.records) }
                                 require(updated.current().members[recipient.device]?.active == false) { "SYNC_LEDGER_NOTICE_REVOCATION" }
                                 status(metadata, SyncInboxStage.DEVICE_REVOKED)
                             }
@@ -241,19 +245,21 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             progress = false
             for ((key, hint) in hints) {
                 try {
-                    val cipher = knownKey(hint, true)
+                    val cipher = knownKey(hint, allowTentative = servedLedger == null)
                     if (cipher == null) { status(key, SyncInboxStage.WAITING_FOR_KEY); continue }
                     val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor).also { decoded[key] = it }
                     val row = actual.envelope.deviceLedger ?: continue
                     require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
-                    val before = try { localCustody { custody.ledger().current().reference() } } catch (failure: IllegalArgumentException) {
+                    val before = try { (servedLedger ?: localCustody { custody.ledger() }).current().reference() } catch (failure: IllegalArgumentException) {
                         if (failure.message == "SYNC_GROUP_LEDGER_FORK_OR_MISSING") null else throw failure
                     }
                     // Validate remote signatures/identities before entering the local protected writer.
                     val validation = SyncDeviceLedger(trust)
                     (actual.envelope.ledgerHistory + row).forEach { validation.offer(it) }
-                    val updated = localCustody { custody.update(actual.envelope.ledgerHistory + row) }
-                    if (before != updated.current().reference()) progress = true
+                    val rows = actual.envelope.ledgerHistory + row
+                    val updated = servedLedger?.also { ledger -> rows.forEach(ledger::offer) }
+                        ?: localCustody { custody.update(rows) }
+                    if (servedLedger == null && before != updated.current().reference()) progress = true
                     when (updated.state(row.id)) {
                         SyncVersionState.ADMITTED -> status(key, SyncInboxStage.LEDGER_ADMITTED)
                         SyncVersionState.WAITING_FOR_PARENTS -> status(key, SyncInboxStage.WAITING_FOR_LEDGER)
@@ -270,12 +276,12 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             }
             for ((key, candidate) in tentative) {
                 try {
-                    val admitted = candidate.admit(localCustody { custody.ledger() })
+                    val admitted = candidate.admit(servedLedger ?: localCustody { custody.ledger() })
                     val prior = try { localCustody { custody.key(candidate.context.epoch) } } catch (failure: IllegalArgumentException) {
                         if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") null else throw failure
                     }
-                    if (prior == null) { localCustody { custody.rememberKey(admitted) }; progress = true }
-                    else require(prior.keyCommitment() == admitted.cipher.keyCommitment()) { "SYNC_INBOX_KEY_COMMITMENT" }
+                    if (prior != null) require(prior.keyCommitment() == admitted.cipher.keyCommitment()) { "SYNC_INBOX_KEY_COMMITMENT" }
+                    else if (servedLedger == null) { localCustody { custody.rememberKey(admitted) }; progress = true }
                     status(key, SyncInboxStage.KEY_ADMITTED)
                 } catch (failure: Exception) {
                     val code = code(failure)
@@ -288,8 +294,16 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 }
             }
         } while (progress)
-        val ledger = try { localCustody { custody.ledger() } } catch (failure: Exception) {
+        val ledger = try { servedLedger?.also { it.current() } ?: localCustody { custody.ledger() } } catch (failure: Exception) {
             return SyncInboxReconciliation(statuses.values.toList(), null, emptyList(), true, null, code(failure))
+        }
+        if (servedLedger != null) {
+            // A child may have been listed before the control envelope that completes its chain.
+            for ((key, objectValue) in decoded) {
+                val row = objectValue.envelope.deviceLedger ?: continue
+                if (statuses[key]?.stage in setOf(SyncInboxStage.LEDGER_ADMITTED, SyncInboxStage.WAITING_FOR_LEDGER) &&
+                    ledger.contains(row.reference())) status(key, SyncInboxStage.LEDGER_ADMITTED)
+            }
         }
         // Tentative secrets are permitted only for signed ledger bootstrap, never content admission.
         val versions = mutableListOf<SyncAuthenticatedGroupObject>()

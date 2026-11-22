@@ -2072,7 +2072,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
      * 发送文本及图片
      */
     fun sendMessage(content: String, imagePaths: List<String> = emptyList()): Boolean {
-        if (_sessionMissing.value || _isArchived.value || !_isModelUsable.value || responseJob?.isActive == true ||
+        if (!_draftLoaded.value || _sessionMissing.value || _isArchived.value || !_isModelUsable.value || responseJob?.isActive == true ||
             !_isResponding.compareAndSet(false, true)) return false
         val isBlank = content.isBlank() && imagePaths.isEmpty()
         val effectiveContent = if (isBlank) PromptTemplates.continueGenerationUserPrompt() else content
@@ -2327,10 +2327,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     private suspend fun persistDraft(draft: ComposerDraft) = draftWrite.withLock {
-        if (_composerDraft.value == draft) chatRepository.updateComposerDraft(
-            ChatDraft(sessionId, draft.text, imagePaths = draft.images, submittedMessageId = draft.submittedMessageId)
-        )
+        if (_composerDraft.value == draft) writeDraft(draft)
     }
+
+    private suspend fun writeDraft(draft: ComposerDraft) = chatRepository.updateComposerDraft(
+        ChatDraft(sessionId, draft.text, imagePaths = draft.images, submittedMessageId = draft.submittedMessageId)
+    )
 
     private suspend fun completeDraftSubmission(submission: ComposerDraft, committed: Boolean) {
         val updated = if (committed) ComposerDraft(revision = submission.revision + 1) else submission.copy(submittedMessageId = null)
@@ -2389,7 +2391,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             var protectionLossHandle: DisposableHandle? = null
             val userCommitted = AtomicBoolean(false)
             try {
-            submission?.let { persistDraft(it) }
+                // Persist either this submission marker or the user's newer edits before appending.
+                if (submission != null) draftWrite.withLock { writeDraft(_composerDraft.value) }
             // The storage owner rechecks the same durable parent again at append.
             val currentSession = chatRepository.requireDurableSession(sessionId)
             _session.value = currentSession

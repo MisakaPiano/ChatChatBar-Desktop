@@ -14,7 +14,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlin.test.*
 
 /** Actual founder/joining TLS, HPKE and management vault over independent roots; OS protection is synthetic. */
@@ -30,6 +32,7 @@ class LanSyncGroupManagementRecoveryTest {
         }, founder.joiningIdentity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
         lateinit var node: LanSyncGroupNode
         lateinit var trust: SyncGroupTrust
+        lateinit var admission: LanSyncGroupAdministrationReceipt
         private val replicaStore by lazy {
             LanSyncGroupReplicaReader(FileCiphertextStore(root.resolve("joining/bootstrap/ciphertext-mirror")),
                 root.resolve("joining/received-ciphertext"), root.resolve("joining/commit-candidates")) { _, failure -> throw failure }
@@ -50,7 +53,7 @@ class LanSyncGroupManagementRecoveryTest {
                     }
                 }
                 val preview = founder.service.prepareMember(peer.get(20, TimeUnit.SECONDS), invitation)
-                founder.service.addMember(founder.service.resume(founder.code), preview.acknowledge(preview.request.approvalBinding))
+                admission = founder.service.addMember(founder.service.resume(founder.code), preview.acknowledge(preview.request.approvalBinding))
                 val result = owner.activate(FileCiphertextStore(founder.profile.resolve("local-replica")))
                 assertEquals(LanSyncGroupJoinStage.READY, result.profile.stage)
                 node = requireNotNull(result.node)
@@ -98,42 +101,126 @@ class LanSyncGroupManagementRecoveryTest {
         } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
     }
 
-    @Test fun founderAndRecoveredManagerInviteFromPublishedHistoryWhileADeviceHasUnconfirmedLocalChanges() = fixture { f, joined ->
-        val access = requireNotNull(joined.owner.runtimeAccess())
-        val ownerAccess = requireNotNull(f.service.runtimeAccess())
-        val manager = access.managementRecovery()
-        manager.recover(f.code, access.encryptedManagementBackup().bytes(), joined.replica(), LanSyncManagementRecoveryAdmission {},
-            access.trust.copy(checkpoint = access.ledger().current().reference()))
-        assertTrue(manager.isUnlocked)
-        try {
-            suspend fun assertInvites(node: LanSyncGroupNode, data: Path, published: CiphertextStore, target: SyncDeliveryTarget,
-                invitation: suspend (Int) -> LanSyncGroupInvitation) {
-                val card = Files.createDirectories(data.resolve("entities/character_cards")).resolve("published.json")
-                LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("published", "已发布的原件", createdAt = 1, updatedAt = 1))
-                val unit = "character_cards/published"
-                val commit = node.commit(node.inspect().review(setOf(unit)))
-                node.upload(commit.entry.request.operation, published, target)
-                val knownHead = commit.entry.version.reference()
-                Files.delete(card)
-                val activeBefore = node.inspect()
-                assertEquals(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, activeBefore.plan?.units?.get(unit)?.stage)
-                val operations = node.sourceOperations()
-                val endpoint = 35000
-                for (asFile in listOf(false, true)) {
-                    invitation(endpoint).use { owner ->
-                        val offer = owner.issue("10.0.0.1", 35001, forFile = asFile)
-                        val decoded = if (asFile) LanSyncGroupInviteOffer.readFile(owner.fileBytes(offer).inputStream())
-                        else LanSyncGroupInviteOffer.parse(offer.code())
-                        assertTrue(knownHead in requireNotNull(decoded.bootstrap).dataHeads)
-                    }
-                }
-                assertEquals(operations, node.sourceOperations())
-                assertFalse(Files.exists(card))
-                assertEquals(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, node.inspect().plan?.units?.get(unit)?.stage)
+    @Test fun founderAndRecoveredManagerInviteFromPublishedHistoryWhileADeviceHasUnconfirmedLocalChanges() {
+        for (recovered in listOf(false, true)) for (asFile in listOf(false, true)) {
+            fixture { founder, joined ->
+                assertPublishedInvitationDelivery(founder, joined, recovered, asFile)
             }
-            assertInvites(f.node, f.data, ownerAccess.replica, ownerAccess.localTarget, f.service::invitation)
-            assertInvites(access.node, joined.data, access.replica, access.localTarget, access::invitation)
-        } finally { manager.close() }
+        }
+    }
+
+    private suspend fun assertPublishedInvitationDelivery(founder: LanSyncGroupAdministrationTest.Fixture, joined: Joined,
+        recovered: Boolean, asFile: Boolean) {
+        val access = requireNotNull(if (recovered) joined.owner.runtimeAccess() else founder.service.runtimeAccess())
+        val data = if (recovered) joined.data else founder.data
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = listOf("10.0.0.1")
+            override fun accepts(address: InetAddress) = address.isLoopbackAddress
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer) =
+                LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint, 15_000) { _, port ->
+                    Socket(InetAddress.getLoopbackAddress(), port)
+                }
+        }
+        val transport = LanSyncGroupAppTransport(access, network) { _, _ -> }
+        val manager = if (recovered) access.managementRecovery() else null
+        try {
+            if (manager != null) {
+                manager.recover(founder.code, access.encryptedManagementBackup().bytes(), access.reader,
+                    LanSyncManagementRecoveryAdmission {}, access.trust.copy(checkpoint = access.ledger().current().reference()))
+                assertTrue(manager.isUnlocked)
+            }
+            val original = CharacterCard("published", "已发布的原件", basicSetting = "已同步的合成资料", createdAt = 1, updatedAt = 1)
+            val card = Files.createDirectories(data.resolve("entities/character_cards")).resolve("published.json")
+            LanSyncJsonFiles.write(card, CharacterCard.serializer(), original)
+            val unit = "character_cards/published"
+            val node = access.node
+            val commit = node.commit(node.inspect().review(setOf(unit)))
+            node.upload(commit.entry.request.operation, access.replica, access.localTarget)
+            val expectedHeads = setOf(commit.entry.version.reference())
+            Files.delete(card)
+            assertEquals(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, node.inspect().plan?.units?.get(unit)?.stage)
+            val operations = node.sourceOperations()
+
+            val freshIdentity = LanSyncTlsIdentity.create()
+            val freshData = Files.createDirectory(founder.root.resolve("fresh-data"))
+            val freshWorkspace = LanSyncWorkspace(freshData, Files.createDirectory(founder.root.resolve("fresh-workspace")), { Path.of(it) })
+            val fresh = LanSyncGroupJoining(Files.createDirectory(founder.root.resolve("fresh-profile")), freshWorkspace,
+                object : LanSyncPlatform {
+                    override suspend fun exclusive(work: suspend () -> Unit) = work()
+                    override suspend fun reload(sessionIds: Set<String>) = Unit
+                }, freshIdentity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+            val receivedCard = freshData.resolve("entities/character_cards/published.json")
+            val proof = CompletableDeferred<LanSyncGroupInvitedPeer>()
+            val port = transport.start()
+            val invitation = if (manager == null) founder.service.invitation(port) else access.invitation(port)
+            invitation.use { owner ->
+                val offer = transport.invitation(owner, forFile = asFile) { proof.complete(it) }
+                val decoded = if (asFile) LanSyncGroupInviteOffer.readFile(owner.fileBytes(offer).inputStream())
+                else LanSyncGroupInviteOffer.parse(offer.code())
+                assertEquals(expectedHeads, requireNotNull(decoded.bootstrap).dataHeads)
+                if (asFile) fresh.prepareOffer(decoded) {} else fresh.prepare(offer.code()) {}
+                fresh.proveUsing("合成首次加入设备", network)
+                val peer = withTimeout(20_000) { proof.await() }
+                assertEquals(freshIdentity.fingerprint, peer.device)
+                assertFalse(peer.device in access.ledger().current().members)
+                assertFalse(Files.exists(receivedCard))
+                if (manager == null) {
+                    val preview = founder.service.prepareMember(peer, owner)
+                    founder.service.addMember(founder.service.resume(founder.code), preview.acknowledge(preview.request.approvalBinding))
+                } else {
+                    val preview = manager.prepareMember(peer, owner)
+                    manager.addMember(preview.acknowledge(preview.request.approvalBinding))
+                    manager.publish(access.replica, access.localTarget)
+                    var cursor: CommitCursor? = null
+                    do { cursor = node.discoverLocal(cursor).nextCursor } while (cursor != null)
+                    node.inspectLocal()
+                }
+                assertEquals(peer.member, access.ledger().current().members[peer.device])
+                val receipt = fresh.activate(fresh.bootstrapStore(network))
+                assertEquals(LanSyncGroupJoinStage.READY, receipt.profile.stage, receipt.waitingCode)
+                val receiver = requireNotNull(receipt.node)
+                val view = receiver.inspect()
+                assertEquals(expectedHeads, requireNotNull(view.reconciliation.history).heads())
+                val applied = assertNotNull(receiver.apply(requireNotNull(view.plan)))
+                assertEquals(setOf(unit), applied.advancedUnits)
+                val received = assertNotNull(LanSyncJsonFiles.read(receivedCard, CharacterCard.serializer()))
+                assertEquals(original.id, received.id)
+                assertEquals(original.name, received.name)
+                assertEquals(original.basicSetting, received.basicSetting)
+                assertTrue(receiver.sourceOperations().isEmpty())
+                val reopened = assertNotNull(fresh.open()).inspect()
+                assertEquals(expectedHeads, reopened.nativeState.units.getValue(unit).frontiers)
+                assertEquals(commit.entry.version.changes.getValue(unit).valueHash, reopened.nativeState.units.getValue(unit).valueHash)
+            }
+            assertEquals(operations, node.sourceOperations())
+            assertFalse(Files.exists(card))
+            assertEquals(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, node.inspect().plan?.units?.get(unit)?.stage)
+        } finally { transport.closeAndDrain(); manager?.close() }
+    }
+
+    @Test fun theCurrentSignedCheckpointMustBeServedEvenWhenTheInviterAlreadyHasItInCustody() = fixture { founder, joined ->
+        val access = requireNotNull(founder.service.runtimeAccess())
+        val published = access.replica
+        val current = joined.admission.ledger.reference()
+        val initialListing = published.listCommits(null)
+        assertNull(initialListing.nextCursor)
+        val checkpoint = initialListing.entries.single { it.descriptor == joined.admission.localDelivery.metadata }
+        assertEquals(current, access.node.publishedInvitationHistory(published).first)
+        val protected = founder.profile.resolve("custody/group.protected")
+        val original = Files.readAllBytes(protected)
+        val incomplete = object : CiphertextStore by published {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                val page = published.listCommits(cursor, pageSize)
+                return page.copy(entries = page.entries.filterNot { it == checkpoint })
+            }
+        }
+        assertEquals("SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE", assertFailsWith<IllegalArgumentException> {
+            access.node.publishedInvitationHistory(incomplete)
+        }.message)
+        assertEquals(current, access.ledger().current().reference())
+        assertContentEquals(original, Files.readAllBytes(protected))
+        assertEquals(initialListing.entries, published.listCommits(null).entries)
     }
 
     @Test fun managementLockReturnsWhileImportIoIsBlockedAndNoLateAuthorityCanBePersisted() = fixture { f, joined ->

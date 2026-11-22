@@ -60,6 +60,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.byValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -1098,7 +1099,7 @@ fun ChatScreen(
         val editor = rememberFullscreenTextEditorState(input)
         val keepDraftEdits = remember(viewModel) {
             InputTransformation.byValue { current, edited ->
-                if (current.toString() != edited.toString()) viewModel.updateDraftInput(edited.toString())
+                if (!current.contentEquals(edited)) viewModel.updateDraftInput(edited.toString())
                 edited
             }
         }
@@ -1432,8 +1433,8 @@ fun ChatScreen(
                             viewModel.updateDraftInput(it.text)
                         },
                         responding = isResponding,
-                        enabled = !sessionMissing && !isArchived && isModelUsable,
-                        disabledPlaceholder = if (sessionMissing) "会话已删除" else "本对话已封存",
+                        enabled = draftLoaded && !sessionMissing && !isArchived && isModelUsable,
+                        disabledPlaceholder = if (!draftLoaded) "正在读取本机草稿…" else if (sessionMissing) "会话已删除" else "本对话已封存",
                         onImage = { chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                         onFull = { fullComposer = true },
                         onCancel = viewModel::cancelResponseGeneration,

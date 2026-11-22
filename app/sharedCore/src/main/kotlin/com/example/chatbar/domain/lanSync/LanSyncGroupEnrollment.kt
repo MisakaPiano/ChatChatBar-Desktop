@@ -112,9 +112,12 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     suspend fun runtimeAccess(): LanSyncGroupRuntimeAccess? = guarded {
         requireNoAbandon(); val record = read() ?: return@guarded null
         if (record.stage != LanSyncGroupEnrollmentStage.READY) return@guarded null
+        runtimeAccess(record)
+    }
+    private fun runtimeAccess(record: Record): LanSyncGroupRuntimeAccess {
         val local = directory("local-replica", false)
         require(Files.isRegularFile(local.resolve("store.id"), NOFOLLOW_LINKS)) { "SYNC_GROUP_PROFILE_REPLICA_MISSING" }
-        LanSyncGroupRuntimeAccess(record.trust, record.localReplica, FileCiphertextStore(local), directory("app-runtime", true),
+        return LanSyncGroupRuntimeAccess(record.trust, record.localReplica, FileCiphertextStore(local), directory("app-runtime", true),
             identity, custody(record), { store -> node(record, store) }, record.vault, record.vaultDescriptor,
             peerNameProtect = protect, peerNameUnprotect = unprotect, localManagementAvailable = true)
     }
@@ -123,11 +126,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     suspend fun invitation(storePort: Int? = null): LanSyncGroupInvitation = guarded {
         requireNoAbandon(); val record = readyRecord(); val custody = custody(record)
         if (storePort == null) return@guarded LanSyncGroupInvitation(identity, record.trust, custody::ledger)
-        val published = FileCiphertextStore(directory("local-replica", false))
-        lanSyncReadManagementBackup(published, record.vault, record.vaultDescriptor)
-        val (checkpoint, heads) = node(record).publishedInvitationHistory(published)
-        LanSyncGroupInvitation(identity, record.trust, custody::ledger,
-            bootstrap = LanSyncGroupJoinBootstrap(storePort, record.vault, record.vaultDescriptor, heads), publishedCheckpoint = checkpoint)
+        runtimeAccess(record).invitation(storePort)
     }
     suspend fun prepareMember(peer: LanSyncGroupInvitedPeer, invitation: LanSyncGroupInvitation,
         operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupMemberPreview = guarded {

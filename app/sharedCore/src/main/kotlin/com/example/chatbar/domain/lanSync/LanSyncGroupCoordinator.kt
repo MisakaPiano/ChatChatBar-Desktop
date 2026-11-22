@@ -773,7 +773,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         if (synchronized(lifecycle) { command != invitationCommandGeneration || generation != privacyGeneration }) return
         require(ensureNearbyStarted()) { "SYNC_GROUP_NEARBY_NOT_AVAILABLE" }
-        val owner = if (recovered) requireNotNull(access).invitation(requireNotNull(port)) else founder().invitation(requireNotNull(port))
+        val owner = requireNotNull(access).invitation(requireNotNull(port))
         val live = requireNotNull(transport)
         synchronized(lifecycle) {
             val authorized = if (recovered) recoveredManagement?.isUnlocked == true else draft != null

@@ -160,7 +160,11 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             cursor = page.nextCursor
         } while (cursor != null)
         val verified = reader.reconcilePublished(candidates)
-        require(!verified.trustBlocked) { "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" }
+        val incomplete = setOf(SyncInboxStage.WAITING_FOR_KEY, SyncInboxStage.WAITING_FOR_LEDGER,
+            SyncInboxStage.WAITING_FOR_PARENTS, SyncInboxStage.TRUST_BLOCKED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED)
+        require(!verified.trustBlocked && verified.observations.none { it.stage in incomplete }) {
+            "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE"
+        }
         val ledger = custody.ledger().current()
         require(verified.ledgerCheckpoint == ledger.reference() && ledger.members[identity.fingerprint]?.active == true) {
             "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE"
