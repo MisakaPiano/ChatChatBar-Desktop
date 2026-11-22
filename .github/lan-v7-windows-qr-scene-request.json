@@ -5,7 +5,7 @@
   "sourceSha": "c24a10927539b447a53f181dd6ff0020b03ec849",
   "oldGroupFixtureSha256": "ff93b77a2f3a8caddb629ee6691616bde5dcb34b918804baa48333b99e790dcd",
   "retainedBridgeSha256": "896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1",
-  "fixtureSha256": "3abab7a75a17acf4de7ae5db791200a75c27b92416391a5ea554b8f55f05e3ee",
+  "fixtureSha256": "68584809ea18b3de2f717749ce49d1cb465629da4dbb61a06c5a05f0226d773a",
   "runtime": [
     {
       "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",

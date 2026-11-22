@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
+
 package com.example.chatbar.desktop.lanSync
 
 import androidx.compose.foundation.layout.Box
