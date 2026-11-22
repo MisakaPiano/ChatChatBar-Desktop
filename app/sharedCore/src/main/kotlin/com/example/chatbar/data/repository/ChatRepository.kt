@@ -39,6 +39,10 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
+class ChatSessionUnavailableException(val missing: Boolean, cause: Throwable? = null) : IllegalStateException(
+    if (missing) "会话已删除" else "会话资料暂时无法读取", cause
+)
+
 /**
  * 聊天仓库 - 管理会话和消息
  */
@@ -136,7 +140,7 @@ class ChatRepository internal constructor(
 
     suspend fun updateSession(session: ChatSession, restoreNarrativeMode: Boolean) {
         sessionSettingsMutex.withDataAccess {
-            val latestMode = getSession(session.id)?.narrativeMode
+            val latestMode = requireDurableSession(session.id).narrativeMode
             updateSessionLocked(if (restoreNarrativeMode || latestMode == null) session
                 else session.copy(narrativeMode = latestMode))
         }
@@ -144,7 +148,7 @@ class ChatRepository internal constructor(
 
     suspend fun setNarrativeMode(sessionId: String, mode: ChatNarrativeMode): ChatSession =
         sessionSettingsMutex.withDataAccess {
-            val latest = getSession(sessionId) ?: error("会话已不存在")
+            val latest = requireDurableSession(sessionId)
             latest.copy(narrativeMode = mode).also { updateSessionLocked(it) }
         }
 
@@ -153,7 +157,7 @@ class ChatRepository internal constructor(
         characterCardId: String,
         characterRepository: CharacterRepository
     ) = sessionSettingsMutex.withDataAccess {
-        val latest = getSession(sessionId) ?: error("对话已不存在")
+        val latest = requireDurableSession(sessionId)
         check(characterRepository.getById(latest.characterCardId) == null) {
             "本对话已有角色卡，无需重新关联"
         }
@@ -165,7 +169,7 @@ class ChatRepository internal constructor(
 
     suspend fun saveSessionSettingsDraft(baseline: ChatSession, draft: ChatSession): ChatSession =
         sessionSettingsMutex.withDataAccess {
-            val latest = getSession(baseline.id) ?: error("会话已不存在")
+            val latest = requireDurableSession(baseline.id)
             val merged = mergeSettingsDraft(ChatSession.serializer(), baseline, draft, latest)
             val normalized = if (merged.desktopAutoPauseAbsentPeople) merged else
                 com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.withAutomaticPause(merged, false)
@@ -179,16 +183,18 @@ class ChatRepository internal constructor(
         refreshSessionCache()
     }
 
-    suspend fun getSessionDraft(id: String): String {
-        return storage.loadEntity(DRAFT_TYPE, id, ChatDraft.serializer())?.content.orEmpty()
-    }
+    suspend fun getSessionDraft(id: String): String = getComposerDraft(id).content
+
+    suspend fun getComposerDraft(id: String): ChatDraft =
+        storage.loadEntity(DRAFT_TYPE, id, ChatDraft.serializer()) ?: ChatDraft(id, "")
 
     suspend fun updateSessionDraft(id: String, draft: String) {
-        if (draft.isEmpty()) {
-            deleteSessionDraft(id)
-        } else {
-            storage.saveEntity(DRAFT_TYPE, id, ChatDraft(id, draft), ChatDraft.serializer())
-        }
+        updateComposerDraft(getComposerDraft(id).copy(content = draft, updatedAt = System.currentTimeMillis()))
+    }
+
+    suspend fun updateComposerDraft(draft: ChatDraft) {
+        if (draft.content.isEmpty() && draft.imagePaths.isEmpty()) deleteSessionDraft(draft.sessionId)
+        else storage.saveEntity(DRAFT_TYPE, draft.sessionId, draft, ChatDraft.serializer())
     }
 
     suspend fun deleteSessionDraft(id: String) {
@@ -229,10 +235,12 @@ class ChatRepository internal constructor(
     suspend fun deleteSessionRecord(id: String) = messageAppendMutex.withDataAccess { deleteSessionRecordLocked(id) }
 
     private suspend fun deleteSessionRecordLocked(id: String) {
-        storage.deleteEntity<ChatSession>(SESSION_TYPE, id)
-        deleteSessionDraft(id)
-        deleteScrollPosition(id)
-        _sessions.value = _sessions.value.filterNot { it.id == id }
+        sessionSettingsMutex.withDataAccess {
+            storage.deleteEntity<ChatSession>(SESSION_TYPE, id)
+            deleteSessionDraft(id)
+            deleteScrollPosition(id)
+            _sessions.value = _sessions.value.filterNot { it.id == id }
+        }
     }
 
     suspend fun pinSession(id: String) {
@@ -519,6 +527,15 @@ class ChatRepository internal constructor(
     suspend fun readSessionDurable(sessionId: String) =
         storage.readEntityStrict(SESSION_TYPE, sessionId, ChatSession.serializer())
 
+    /** Never use a cached projection as authorization to write an existing conversation. */
+    suspend fun requireDurableSession(sessionId: String): ChatSession = when (val stored = readSessionDurable(sessionId)) {
+        JsonFileStorage.EntityReadResult.Missing -> throw ChatSessionUnavailableException(missing = true)
+        is JsonFileStorage.EntityReadResult.Valid -> stored.value.takeIf { it.id == sessionId }
+            ?: throw ChatSessionUnavailableException(missing = false)
+        is JsonFileStorage.EntityReadResult.Corrupt -> throw ChatSessionUnavailableException(missing = false, cause = stored.cause)
+        is JsonFileStorage.EntityReadResult.ReadError -> throw ChatSessionUnavailableException(missing = false, cause = stored.cause)
+    }
+
     /** Short local publication only. The callback must not do network work or re-enter message mutations. */
     suspend fun <T> withLockedMessageSnapshot(sessionId: String, messageId: String,
         publish: suspend (ChatMessage) -> T): T = messageAppendMutex.withDataAccess {
@@ -538,9 +555,10 @@ class ChatRepository internal constructor(
         )
     }
 
-    suspend fun addMessage(message: ChatMessage): ChatMessage = messageAppendMutex.withDataAccess {
+    suspend fun addMessage(message: ChatMessage, onCommitted: (ChatMessage) -> Unit = {}): ChatMessage = messageAppendMutex.withDataAccess {
+        requireDurableSession(message.sessionId)
         val assigned = assignSourceTurnForAppend(message)
-        saveMessageRecord(assigned)
+        saveMessageRecord(assigned, onCommitted = onCommitted)
 
         // 更新会话预览
         val latest = latestMessage(assigned.sessionId)
@@ -565,11 +583,10 @@ class ChatRepository internal constructor(
         expectedAnchor: ChatMessage? = null,
         expectedCharacterCardId: String? = null,
     ): ChatMessage = messageAppendMutex.withDataAccess {
+        val parent = requireDurableSession(message.sessionId)
         val anchor = getMessage(anchorMessageId, message.sessionId)
         if (expectedAnchor != null || expectedCharacterCardId != null) {
-            val currentSession = getSession(message.sessionId)
-            check(currentSession != null) { "会话已删除，本批图片未提交" }
-            if (expectedCharacterCardId != null) check(currentSession.characterCardId == expectedCharacterCardId) {
+            if (expectedCharacterCardId != null) check(parent.characterCardId == expectedCharacterCardId) {
                 "会话角色卡绑定已变化，本批图片未提交"
             }
             if (expectedAnchor != null) {
@@ -635,13 +652,14 @@ class ChatRepository internal constructor(
         inserted
     }
 
-    private suspend fun saveMessageRecord(message: ChatMessage, updateIndex: Boolean = true) {
+    private suspend fun saveMessageRecord(message: ChatMessage, updateIndex: Boolean = true, onCommitted: (ChatMessage) -> Unit = {}) {
         val index = if (updateIndex) loadMessageIndex(message.sessionId) else null
         storage.saveEntityUncached(
             MESSAGE_TYPE,
             messageStorageId(message.sessionId, message.id),
             message,
-            ChatMessage.serializer()
+            ChatMessage.serializer(),
+            onCommitted = { onCommitted(message) }
         )
         if (index != null) {
             updateMessageIndex(message.sessionId, index) { entries ->
@@ -671,6 +689,7 @@ class ChatRepository internal constructor(
     }
 
     private suspend fun updateMessageLocked(message: ChatMessage): ChatMessage {
+        requireDurableSession(message.sessionId)
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),

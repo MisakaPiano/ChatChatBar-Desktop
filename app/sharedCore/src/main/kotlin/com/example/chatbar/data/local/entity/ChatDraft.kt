@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class ChatDraft(
     val sessionId: String,
     val content: String,
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val imagePaths: List<String> = emptyList()
 )

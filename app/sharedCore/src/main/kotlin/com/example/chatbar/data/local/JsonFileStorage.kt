@@ -737,11 +737,13 @@ class JsonFileStorage(
         entityType: String,
         id: String,
         entity: T,
-        serializer: KSerializer<T>
+        serializer: KSerializer<T>,
+        onCommitted: () -> Unit = {}
     ) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
             writeJsonFile(entityFile(entityType, id), entity, serializer)
             commitRevision.committed(entityType)
+            onCommitted()
         }
     }
 
