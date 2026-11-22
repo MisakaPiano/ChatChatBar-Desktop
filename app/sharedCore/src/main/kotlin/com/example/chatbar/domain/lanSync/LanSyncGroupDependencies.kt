@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
 import java.io.InterruptedIOException
+import java.net.SocketTimeoutException
 import java.nio.file.Path
 import java.util.Collections
 import java.util.concurrent.CancellationException
@@ -115,8 +116,11 @@ class LanSyncGroupDependencies(private val group: SyncStoreId, private val backe
         }
     }
     private fun failed(failure: Exception): LanSyncGroupDependencyResult {
-        if (failure is CancellationException || failure is InterruptedException || failure is InterruptedIOException) throw failure
+        if (failure is CancellationException || failure is InterruptedException ||
+            failure is InterruptedIOException && failure !is SocketTimeoutException) throw failure
         if (Thread.currentThread().isInterrupted) throw InterruptedIOException("SYNC_GROUP_DEPENDENCY_INTERRUPTED")
+        if (failure is SocketTimeoutException)
+            return LanSyncGroupDependencyResult(LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE, code = "SYNC_GROUP_DEPENDENCY_ROUTE_TIMEOUT")
         val code = failure.message?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]{1,100}")) }
             ?: if (failure is CiphertextStoreException) "SYNC_GROUP_DEPENDENCY_STORE_${failure.failure}" else "SYNC_GROUP_DEPENDENCY_INVALID"
         return LanSyncGroupDependencyResult(when (code) {

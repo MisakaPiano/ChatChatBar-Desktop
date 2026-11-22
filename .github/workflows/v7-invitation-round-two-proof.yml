@@ -1,0 +1,40 @@
+name: V7 invitation second repair checks
+on:
+  push:
+    branches: [codex/v7-invitation-r02-repair-20261123]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check the affected invitation and group data paths
+        working-directory: app
+        run: |
+          bash ./gradlew :sharedCore:test \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNativePlannerTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupSourceWriterTest.aPendingFormatDeletionHoldsItsSessionSourceWhileAnIndependentCardStillCommits' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupReplicaReaderTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCiphertextTransportTest' \
+            :desktopApp:compileKotlin :app:compileLanPreviewKotlin \
+            -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 \
+            --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-invitation-r02-original
+          path: app/sharedCore/build/test-results/test/TEST-*.xml

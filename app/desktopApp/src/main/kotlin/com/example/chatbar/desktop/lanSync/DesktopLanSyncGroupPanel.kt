@@ -30,7 +30,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
     recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
     imageState: LanSyncGroupImageState = LanSyncGroupImageState()) {
     val interactionBlocked = state.busy || (state.paused && state.stage == LanSyncGroupPanelStage.READY)
-    DisposableEffect(actions) { onDispose { actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() } }
+    DisposableEffect(actions) { onDispose { actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() } }
     var joinCode by remember(state.privacyRevision) { mutableStateOf("") }
     var recoveryInput by remember(state.privacyRevision) { mutableStateOf("") }
     var saved by remember(state.setupBinding, state.privacyRevision) { mutableStateOf(false) }

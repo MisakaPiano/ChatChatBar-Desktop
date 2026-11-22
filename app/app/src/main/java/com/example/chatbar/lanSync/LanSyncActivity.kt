@@ -36,14 +36,9 @@ class LanSyncActivity : ComponentActivity() {
         setContent { ChatBarTheme { LanSyncEntry(owner) { finish() } } }
     }
     override fun onStop() {
-        if (isFinishing) owner.lockGroupManagement() else owner.lockGroupManagementOnVisibilityLoss()
+        owner.lockGroupManagementOnVisibilityLoss()
         owner.stopLegacy()
         super.onStop()
-    }
-
-    override fun onDestroy() {
-        if (isFinishing) owner.lockGroupManagement()
-        super.onDestroy()
     }
 }
 

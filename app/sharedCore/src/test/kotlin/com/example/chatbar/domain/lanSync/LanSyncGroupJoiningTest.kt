@@ -9,9 +9,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
@@ -28,6 +32,11 @@ class LanSyncGroupJoiningTest {
         }
         fun owner() = LanSyncGroupJoining(root, workspace, platform, founder.joiningIdentity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }, { hook(it) }, wallTime = { System.currentTimeMillis() + timeShift })
+        fun protectedCoordinator(network: LanSyncNetwork) = LanSyncGroupCoordinator(
+            { Files.isRegularFile(root.resolve("joining/profile.protected")) },
+            { LanSyncGroupEnrollment(root, workspace, platform, founder.joiningIdentity,
+                { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }) },
+            ::owner, network, "合成 Android", initiallyPaused = true)
         fun control() = lanSyncJson.parseToJsonElement(Files.readAllBytes(root.resolve("joining/profile.protected")).reversedArray().toString(Charsets.UTF_8)).jsonObject
         fun projectionPath() = root.resolve("joining").resolve(control().getValue("projectionFile").jsonPrimitive.content)
         fun card(id: String, time: Long = 1) = CharacterCard(id, "合成共同预设", sourcePresetKey = "synthetic-shared-card", sourcePresetVersion = 1,
@@ -65,6 +74,63 @@ class LanSyncGroupJoiningTest {
         val root = Files.createTempDirectory("group-joining-").toRealPath()
         try { LanSyncGroupAdministrationTest.Fixture(root).use { it.seed(); work(Joiner(it)) } }
         finally { check(root.toFile().deleteRecursively()) }
+    }
+    @Test fun firstExplicitJoinAutomaticallySendsOneRealProofWhenProtectionStarts() = fixture { f ->
+        val access = requireNotNull(f.founder.service.runtimeAccess())
+        val attempts = AtomicInteger()
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = listOf("10.0.0.1")
+            override fun accepts(address: InetAddress) = address.isLoopbackAddress
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer) = LanSyncTls.connect(
+                identity, peer.host, peer.port, peer.fingerprint, 5_000) { _, port -> Socket(InetAddress.getLoopbackAddress(), port) }
+            override fun connectInvitationOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit): SSLSocket {
+                attempts.incrementAndGet()
+                return connectOwned(identity, peer, own)
+            }
+        }
+        val proof = CompletableDeferred<LanSyncGroupInvitedPeer>()
+        val transport = LanSyncGroupAppTransport(access, network) { _, _ -> }
+        val coordinator = f.protectedCoordinator(network)
+        try {
+            val invitation = f.founder.service.invitation(transport.start()).also(f.founder.invitations::add)
+            val offer = transport.invitation(invitation) { proof.complete(it) }
+            coordinator.beginJoin(offer.code())
+            val waiting = withTimeout(15_000) { coordinator.state.first { it.canAbandonJoin && !it.busy } }
+            assertEquals("邀请已核对，等待同步服务就绪后发送证明", waiting.status)
+            assertEquals(0, attempts.get())
+            assertEquals(LanSyncGroupJoinStage.PREPARED, f.owner().profile()?.stage)
+            // Android calls this only after its current foreground service has promoted.
+            coordinator.resumeIfConfigured()
+            assertEquals(f.founder.joiningIdentity.fingerprint, withTimeout(15_000) { proof.await() }.device)
+            withTimeout(15_000) { coordinator.state.first { !it.busy && !it.paused && !it.canAbandonJoin } }
+            assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, f.owner().profile()?.stage)
+            assertEquals(1, attempts.get())
+        } finally { coordinator.closeAndDrain(); transport.closeAndDrain() }
+    }
+
+    @Test fun explicitPauseDisarmsFirstProofWithoutChangingThePreparedIdentity() = fixture { f ->
+        val attempts = AtomicInteger()
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = emptyList<String>()
+            override fun accepts(address: InetAddress) = false
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
+                attempts.incrementAndGet(); error("SYNTHETIC_MUST_NOT_DIAL")
+            }
+        }
+        val invitation = f.founder.service.invitation(16384).also(f.founder.invitations::add)
+        val coordinator = f.protectedCoordinator(network)
+        try {
+            coordinator.beginJoin(invitation.issue("10.0.0.1", 44000).code())
+            withTimeout(15_000) { coordinator.state.first { it.canAbandonJoin && !it.busy } }
+            val protected = Files.readAllBytes(f.root.resolve("joining/profile.protected"))
+            coordinator.pauseAndDrain()
+            coordinator.resumeIfConfigured()
+            withTimeout(15_000) { coordinator.state.first { !it.busy && !it.paused && it.canAbandonJoin } }
+            assertEquals(0, attempts.get())
+            assertContentEquals(protected, Files.readAllBytes(f.root.resolve("joining/profile.protected")))
+        } finally { coordinator.closeAndDrain() }
     }
     @Test fun realPeerApprovalBootstrapsProtectedProfileAndUniquePresetProjectionWithoutRewritingPhysicalIdsOrAuthoring() = fixture { f ->
         f.publishedPreset()

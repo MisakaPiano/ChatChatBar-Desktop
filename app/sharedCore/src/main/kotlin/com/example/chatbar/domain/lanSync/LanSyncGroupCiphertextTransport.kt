@@ -211,7 +211,8 @@ class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privat
     private fun <T> exchange(request: GroupStoreRequest, work: (LanSyncWire) -> T): T = connect().use { socket ->
         LanSyncTls.configure(socket)
         if (!authenticatedConnect) socket.startHandshake()
-        if (readTimeoutMillis != null) socket.soTimeout = readTimeoutMillis
+        if (readTimeoutMillis != null || request.command != GroupStoreCommand.PUT)
+            socket.soTimeout = readTimeoutMillis ?: 15_000
         LanSyncWire(socket).use { wire -> GroupStoreWire.send(wire, GroupStoreRequest.serializer(), request); work(wire) }
     }
     override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = exchange(request(GroupStoreCommand.METADATA, key)) { wire ->

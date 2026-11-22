@@ -1,8 +1,10 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
+import java.io.InterruptedIOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -92,7 +94,8 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
         } } }
     }
     private fun failed(route: Route, failure: Exception) {
-        if (failure is CancellationException || failure is InterruptedException || failure is java.io.InterruptedIOException) throw failure
+        if (Thread.currentThread().isInterrupted || failure is CancellationException || failure is InterruptedException ||
+            failure is InterruptedIOException && failure !is SocketTimeoutException) throw failure
         failedRoute(route.id, failure)
     }
     override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? {
@@ -124,7 +127,11 @@ class LanSyncGroupReplicaReader(private val local: CiphertextStore, private val 
             // Strict immutable routes retain their metadata substitution check before payload I/O.
             // Only an explicit quarantine view may offer several unauthenticated descriptors.
             if (!route.store.capabilities.untrustedCandidateVariants) {
-                val advertised = route.store.metadata(key) ?: continue
+                val advertised = try { route.store.metadata(key) } catch (timeout: SocketTimeoutException) {
+                    failed(route, timeout)
+                    last = timeout
+                    continue
+                } ?: continue
                 require(advertised == metadata) { "SYNC_GROUP_REPLICA_OBJECT_CHANGED" }
             }
             val copied = LanSyncScratch(work, "replica-read").use { scratch ->

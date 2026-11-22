@@ -28,7 +28,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
     val cloudRecoveryOwner = remember(coordinator) { coordinator.cloudRecovery }
     var legacySelected by remember(coordinator) { mutableStateOf(false) }
     LaunchedEffect(coordinator) { coordinator.open() }
-    DisposableEffect(coordinator, cloudRecoveryOwner) { onDispose { cloudRecoveryOwner?.hide(); coordinator.lockManagement() } }
+    DisposableEffect(coordinator) { onDispose { coordinator.lockManagementOnVisibilityLoss() } }
     val legacyAllowed = !hasGroupEvidence() && state.stage == LanSyncGroupPanelStage.EMPTY
     Column(Modifier.fillMaxSize()) {
         if (legacySelected && legacyAllowed && legacy != null) {

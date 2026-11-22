@@ -180,7 +180,8 @@ class AndroidLanSync(private val app: ChatBarApp) {
                 root = { root.resolve("cloud-recovery").also { if (!Files.exists(it)) Files.createDirectory(it) } },
                 joining = { groupJoining }, deviceName = android.os.Build.MODEL.take(80),
                 beforeSetup = { if (runtimeOwner.isInitialized()) runtimeOwner.value.closeAndDrain() },
-                dataWork = ::runFileWork, onReady = ready) }, fileWork = ::runFileWork).also { coordinator ->
+                dataWork = ::runFileWork, onReady = ready) }, fileWork = ::runFileWork,
+            joinProofAllowed = { !userPaused }).also { coordinator ->
                 hookObserver = app.applicationScope.launch {
                     coordinator.state.collect {
                         if (hasGroupEvidence()) ensureApplicationHooks()

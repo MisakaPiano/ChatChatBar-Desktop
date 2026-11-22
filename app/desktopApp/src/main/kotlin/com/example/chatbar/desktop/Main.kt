@@ -229,7 +229,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 }
                             }
                             LaunchedEffect(trayState.windowVisible) {
-                                if (!trayState.windowVisible) appContainer.lockLanSyncGroupManagement()
+                                if (!trayState.windowVisible) appContainer.lockLanSyncGroupManagementOnFocusLoss()
                                 else appContainer.onLanSyncForeground()
                             }
                             val systemDark = isSystemInDarkTheme()

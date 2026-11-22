@@ -29,7 +29,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val cloudWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
     private val cloudRecoveryFactory: ((suspend (LanSyncGroupRuntimeAccess) -> Unit) -> LanSyncGroupCloudRecoveryOwner)? = null,
     private val fileRecoveryFactory: ((suspend (LanSyncGroupRuntimeAccess) -> Unit) -> LanSyncGroupFileRecoveryOwner)? = null,
-    private val fileWork: suspend (suspend () -> Boolean) -> Boolean = { it() }) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
+    private val fileWork: suspend (suspend () -> Boolean) -> Boolean = { it() },
+    private val joinProofAllowed: () -> Boolean = { true }) : LanSyncGroupPanelActions, LanSyncGroupCloudSettingsActions {
     /** Actual synthetic transport construction only; production always uses the public constructor. */
     internal constructor(hasExistingEvidence: () -> Boolean, enrollment: () -> LanSyncGroupEnrollment,
         joining: () -> LanSyncGroupJoining, network: LanSyncNetwork, deviceName: String,
@@ -132,6 +133,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         true
     }
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
+    // Guarded by action admission. This is a current UI intent, never a cold-start command.
+    private var pendingJoinProof: Long? = null
     private val mutableState = MutableStateFlow(LanSyncGroupPanelState(paused = initiallyPaused))
     val state = mutableState.asStateFlow()
     private val mutableView = MutableStateFlow<LanSyncGroupNodeView?>(null)
@@ -170,7 +173,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         override fun connectInvitationOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (java.net.Socket) -> Unit): javax.net.ssl.SSLSocket =
             network.connectInvitationOwned(identity, peer) { socket ->
                 synchronized(lifecycle) {
-                    if (closed) { socket.close(); error("SYNC_GROUP_COORDINATOR_CLOSED") }
+                    if (closed || paused || !joinProofAllowed()) { socket.close(); error("SYNC_GROUP_JOIN_PROTECTION_REQUIRED") }
                     pendingSockets += socket
                 }
                 own(socket)
@@ -321,11 +324,21 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 if (closed || generation != actionGeneration.get() || !hasExistingEvidence()) return@withLock
                 paused = false
                 mutableState.update { it.copy(paused = false, status = "正在恢复设备组同步") }
-                open()
+                action("恢复设备组同步") {
+                    openConfiguredProfile()
+                    if (pendingJoinProof == generation) {
+                        pendingJoinProof = null
+                        if (generation == actionGeneration.get() && !paused && joinProofAllowed() &&
+                            state.value.stage == LanSyncGroupPanelStage.JOINING && !state.value.recoveryJoining) attemptJoin()
+                    }
+                }
             }
         }
     }
-    fun open() = action("打开设备组", allowWhilePaused = true) { access?.let { attach(it) } ?: if (hasExistingEvidence()) load() else Unit }
+    fun open() = action("打开设备组", allowWhilePaused = true) { openConfiguredProfile() }
+    private suspend fun openConfiguredProfile() {
+        access?.let { attach(it) } ?: if (hasExistingEvidence()) load() else Unit
+    }
     private fun expirePrivacy(generation: Long) {
         privacyExpiry?.cancel()
         privacyExpiry = scope.launch {
@@ -367,6 +380,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     joiningDevice = joined.device.takeUnless { recovery }, canAbandonJoin = joined.canAbandon,
                     canRefreshJoinPreparation = joined.stage in reprepareJoinStages, canShelveJoin = joined.canShelve,
                     status = if (recovery) "恢复进度已保留，可从网盘或加密文件入口接续"
+                    else if (paused && pendingJoinProof == actionGeneration.get()) "邀请已核对，等待同步服务就绪后发送证明"
                     else if (joined.membershipRevoked) "原组已撤销此设备，已保留本机资料"
                     else if (joined.membershipVerified) "已核对批准，可继续查收接续所需资料"
                     else if (joined.canAbandon) "本机尚未发送加入证明，可重试或放弃本次申请"
@@ -527,27 +541,38 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
     }
     override fun beginJoin(code: String) = action("加入设备组", allowWhilePaused = true) {
+        pendingJoinProof = null
         val normalized = code.trim()
         requireNotNull(LanSyncGroupInviteOffer.parse(normalized).bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
+        val generation = actionGeneration.get()
         beforeSetup()
         val owner = member()
         val profile = if (owner.profile() == null) owner.prepare(normalized) { it.validate() }
         else owner.refreshInvitation(normalized) { it.validate() }
-        showJoining(profile, "邀请已核对，正在验证此设备")
+        val authorized = generation == actionGeneration.get() && joinProofAllowed()
+        pendingJoinProof = generation.takeIf { paused && authorized }
+        showJoining(profile, when {
+            pendingJoinProof != null -> "邀请已核对，等待同步服务就绪后发送证明"
+            !authorized -> "邀请已保留，请恢复同步后手动继续加入"
+            else -> "邀请已核对，正在验证此设备"
+        })
         startLoop()
-        if (!paused) attemptJoin()
+        if (!paused && authorized) attemptJoin()
     }
     override fun abandonUnprovedJoin() = action("放弃未发送的加入申请", allowWhilePaused = true) {
+        pendingJoinProof = null
         val owner = member()
         owner.abandonUnprovedInvitation()
         showEmptyJoin(owner.shelvedInvitations(), "申请已保留到本机归档，可以使用正确的邀请重新加入")
     }
     override fun shelveUnsettledJoin() = action("暂存当前加入申请", allowWhilePaused = true) {
+        pendingJoinProof = null
         val owner = member()
         owner.shelveUnsettledInvitation()
         showEmptyJoin(owner.shelvedInvitations(), "原申请和设备身份已暂存。可以恢复原申请，或使用其他设备组的邀请")
     }
     override fun restoreShelvedJoin(operation: String) = action("恢复原加入申请", allowWhilePaused = true) {
+        pendingJoinProof = null
         val profile = member().restoreShelvedInvitation(operation)
         showJoining(profile, "原申请和原设备身份已恢复，正在检查此前的批准")
         startLoop()
@@ -565,6 +590,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun refreshJoinPreparation() = action("重新核对加入资料") { member().refreshPreparation(); attemptJoin() }
     private suspend fun prove(owner: LanSyncGroupJoining) = owner.proveUsing(deviceName, joiningNetwork)
     private suspend fun attemptJoin() {
+        if (closed || paused || !joinProofAllowed()) return
         val owner = member(); val profile = owner.resumePreparation()
         if (profile.stage == LanSyncGroupJoinStage.READY) { attach(requireNotNull(owner.runtimeAccess())); return }
         if (owner.recoveryAnchor() != null) {
@@ -1408,7 +1434,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             discovery?.close(); transport?.closeAndDrain()
             loop?.cancelAndJoin(); nearbyWorker?.cancelAndJoin(); localWorker?.cancelAndJoin(); cloudWorker?.cancelAndJoin()
             cloudRuntime?.drain()
-            admission.withLock { }
+            admission.withLock { pendingJoinProof = null }
             discovery?.close(); transport?.closeAndDrain()
             discovery = null; transport = null; port = null; nearbyReady = false; nearbyRestartRequested = false
             loop = null; nearbyWorker = null; localWorker = null; cloudWorker = null

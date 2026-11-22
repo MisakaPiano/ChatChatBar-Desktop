@@ -28,7 +28,8 @@ object LanSyncGroupNativePlanner {
     fun prepare(current: LanSyncCapture, reconciled: SyncInboxReconciliation,
         applied: Map<String, LanSyncGroupAppliedUnit>, dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>,
         recordEvidence: LanSyncGroupRecordEvidence, freshLocalRevisions: Set<String> = emptySet(),
-        transaction: String = UUID.randomUUID().toString(), unpublishedLocalUnits: Set<String> = emptySet()): LanSyncGroupNativePlan {
+        transaction: String = UUID.randomUUID().toString(), unpublishedLocalUnits: Set<String> = emptySet(),
+        heldLocalUnits: Set<String> = emptySet()): LanSyncGroupNativePlan {
         val source = current.snapshot.let { it.copy(records = Collections.unmodifiableList(it.records.toList()),
             resources = Collections.unmodifiableMap(it.resources.toMap()), coveredTypes = Collections.unmodifiableSet(it.coveredTypes.toSet()),
             excludedTypes = Collections.unmodifiableSet(it.excludedTypes.toSet())) }
@@ -141,7 +142,9 @@ object LanSyncGroupNativePlanner {
         records.filter { it.second.type == "chat_sessions" }.forEach { (unit, session) ->
             session.text("formatCardId")?.let { format ->
                 val key = "format_cards/$format"
-                link(owners[key].orEmpty() + listOfNotNull(key.takeIf { it in allUnits }) + unit)
+                val stable = rows[key]?.stage == LanSyncGroupNativeStage.UNCHANGED && key !in unpublishedLocalUnits &&
+                    key !in heldLocalUnits && localUnits[key].orEmpty().any { it.key == key }
+                if (!stable) link(owners[key].orEmpty() + listOfNotNull(key.takeIf { it in allUnits }) + unit)
             }
         }
         val mediaOwners = linkedMapOf<String, MutableSet<String>>()

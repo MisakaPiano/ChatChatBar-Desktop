@@ -333,7 +333,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             val known = it.snapshot.units().keys + state.units.keys + history.admittedVersions().flatMap { version -> version.changes.keys } + pendingResolutions
             LanSyncGroupNativePlanner.prepare(it, view, state.units, dependencies, evidence,
                 freshLocalRevisions() + (pendingRestorations.keys + pendingResolutions).filter { unit -> unit in known },
-                unpublishedLocalUnits = pendingResolutions)
+                unpublishedLocalUnits = pendingResolutions, heldLocalUnits = heldResolutions)
         } }
         val restricted = LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)
         val incoming = LanSyncGroupIncomingReview.prepare(restricted)
