@@ -89,6 +89,9 @@ class DesktopAppContainer internal constructor(
     internal val lanSyncGroupJoining get() = lanSyncOwner.value.groupJoining
     internal fun onLanSyncForeground() { if (lanSyncOwner.isInitialized()) lanSyncOwner.value.onForeground() }
     internal fun lockLanSyncGroupManagement() { if (lanSyncOwner.isInitialized()) lanSyncOwner.value.lockGroupManagement() }
+    internal fun lockLanSyncGroupManagementOnFocusLoss() {
+        if (lanSyncOwner.isInitialized()) lanSyncOwner.value.lockGroupManagementOnFocusLoss()
+    }
     internal val imageToolPreferences by lazy { DesktopImageToolPreferences(jsonFileStorage, dataOperationCoordinator) }
     internal val documentRagReader by lazy {
         DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator, maintenance = audioMaintenance)

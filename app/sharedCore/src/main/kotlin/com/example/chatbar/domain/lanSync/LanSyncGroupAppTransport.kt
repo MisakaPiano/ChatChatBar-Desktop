@@ -53,7 +53,8 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     }
 
     /** Separate invitation listener; possession proof never grants ordinary data authority. */
-    fun invitation(owner: LanSyncGroupInvitation, onPeer: (LanSyncGroupInvitedPeer) -> Unit): LanSyncGroupInviteOffer {
+    fun invitation(owner: LanSyncGroupInvitation, onExpired: () -> Unit = {},
+        onPeer: (LanSyncGroupInvitedPeer) -> Unit): LanSyncGroupInviteOffer {
         val host = network.addresses().firstOrNull() ?: error("SYNC_GROUP_LAN_ADDRESS_UNAVAILABLE")
         // Validate through the production numeric-LAN parser even when a platform supplies addresses.
         LanSyncTls.parseAddress(host)
@@ -68,7 +69,11 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
                 activeInvitation = current
                 current.timer = scope.launch {
                     delay(LanSyncGroupInviteOffer.LIFETIME_MILLIS)
-                    synchronized(lock) { if (activeInvitation === current) closeInvitationOwned() }
+                    val expired = synchronized(lock) {
+                        if (activeInvitation !== current) false
+                        else { closeInvitationOwned(); true }
+                    }
+                    if (expired) onExpired()
                 }
                 scope.launch { acceptInvitation(current, onPeer) }
                 offer

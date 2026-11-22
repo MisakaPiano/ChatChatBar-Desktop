@@ -189,7 +189,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     @Volatile private var transport: LanSyncGroupAppTransport? = null
     @Volatile private var discovery: LanSyncGroupDiscovery? = null
     @Volatile private var access: LanSyncGroupRuntimeAccess? = null
-    private var invitation: LanSyncGroupInvitation? = null
+    private class ActiveInvitation(val owner: LanSyncGroupInvitation, val offer: LanSyncGroupInviteOffer) {
+        var proof: LanSyncGroupInvitedPeer? = null
+    }
+    private var invitation: ActiveInvitation? = null
     private var peer: LanSyncGroupMemberPreview? = null
     private var revocation: LanSyncGroupRevocationPreview? = null
     private var loop: Job? = null
@@ -261,6 +264,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_METADATA_STRING_BUDGET", "SYNC_METADATA_DEPTH", "SYNC_FILE_LIMIT" ->
                 "本次设备组操作遇到超出格式或大小限制的同步资料。"
             "SYNC_GROUP_PROFILE_LOCAL_HISTORY_EXISTS" -> "本机已保留原设备组的设置进度。请使用已保存的恢复码继续该组。"
+            "SYNC_GROUP_INVITE_OFFER" -> "邀请码不完整、已过期或设备时间不一致。请重新生成邀请，并复制完整内容或扫码。"
+            "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" -> "邀请已过期或设备组已更新。请重新生成邀请。"
             else -> null
         }
         mutableState.update { current ->
@@ -302,7 +307,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         privacyExpiry?.cancel()
         privacyExpiry = scope.launch {
             delay(300_000)
-            synchronized(lifecycle) { if (generation == privacyGeneration) lockManagement() }
+            synchronized(lifecycle) { if (generation == privacyGeneration) lockManagement(retainInvitation = true) }
         }
     }
     private suspend fun load() {
@@ -417,11 +422,13 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             expirePrivacy(generation)
             mutableState.update { it.copy(managementUnlocked = true, managementCanInvite = !prepared, recoveryCode = if (prepared) opened.recoveryCode() else null,
                 setupBinding = if (prepared) opened.operation.value else null,
+                invitation = invitation?.offer, invitationRetainedWhileLocked = false,
                 canAbandonUnactivated = canAbandon,
                 status = if (prepared) "已找到原设备组，请确认恢复码已保存并完成创建" else it.status,
                 stage = if (prepared) LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE else it.stage) }
             refreshDevices()
         }
+        presentInvitationProof()
     } }
     private suspend fun publishRecoveredManagement() {
         val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
@@ -451,12 +458,19 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 require(owner.isUnlocked) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
                 expirePrivacy(generation)
                 mutableState.update { it.copy(managementUnlocked = true, managementCanInvite = true,
+                    invitation = invitation?.offer, invitationRetainedWhileLocked = false,
                     status = "已用本机加密管理资料恢复原设备组管理权") }
                 refreshDevices()
             }
+            presentInvitationProof()
         }
     }
-    override fun lockManagement() {
+    override fun lockManagement() = lockManagement(retainInvitation = false)
+
+    /** An issued invitation proves device ownership only; locking management still clears its signing session. */
+    fun lockManagementOnDesktopFocusLoss() = lockManagement(retainInvitation = true)
+
+    private fun lockManagement(retainInvitation: Boolean) {
         if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.hide()
         if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.hide()
         if (fileExportOwner.isInitialized()) fileExportOwner.value.hide()
@@ -467,9 +481,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             draft?.close(); draft = null
             founder?.lockManagement()
             recoveredManagement?.lock()
-            transport?.closeInvitation(); invitation?.close(); invitation = null; peer = null; revocation = null
+            if (!retainInvitation) clearInvitationLocked()
+            peer = null; revocation = null
             mutableState.update { it.copy(recoveryCode = null, setupBinding = null, managementUnlocked = false, managementCanInvite = false,
                 invitation = null, peerConfirmation = null, revocation = null, privacyRevision = it.privacyRevision + 1,
+                invitationRetainedWhileLocked = invitation != null,
                 devices = it.devices.map { row -> row.copy(canRevoke = false) },
                 stage = if (it.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE) LanSyncGroupPanelStage.PREPARED_LOCKED else it.stage) }
         }
@@ -477,8 +493,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun beginJoin(code: String) = action("加入设备组", allowWhilePaused = true) {
         beforeSetup()
         val owner = member()
-        if (owner.profile() == null) owner.prepare(code) { it.validate() }
-        else owner.refreshInvitation(code) { it.validate() }
+        val normalized = code.trim()
+        if (owner.profile() == null) owner.prepare(normalized) { it.validate() }
+        else owner.refreshInvitation(normalized) { it.validate() }
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, status = "邀请已核对，正在验证此设备") }
         startLoop()
         if (!paused) attemptJoin()
@@ -510,29 +527,79 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val owner = if (recovered) requireNotNull(access).invitation(requireNotNull(port)) else founder().invitation(requireNotNull(port))
         val live = requireNotNull(transport)
         synchronized(lifecycle) {
-        if (closed || generation != privacyGeneration || (if (recovered) recoveredManagement?.isUnlocked != true else draft == null)) { owner.close(); error("SYNC_GROUP_MANAGEMENT_LOCKED") }
-        val offer = live.invitation(owner) { invited -> action("核对加入设备") {
-            val preview = if (recovered) requireNotNull(recoveredManagement).prepareMember(invited, owner) else founder().prepareMember(invited, owner)
-            try { requireNotNull(access).rememberPeerName(invited) }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { failure("保存设备显示名称（成员核验结果保留）", error) }
-            synchronized(lifecycle) {
-                require(!closed && generation == privacyGeneration && invitation === owner &&
-                    (if (recovered) recoveredManagement?.isUnlocked == true else draft != null)) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+            val authorized = if (recovered) recoveredManagement?.isUnlocked == true else draft != null
+            if (closed || generation != privacyGeneration || !authorized) {
+                owner.close()
+                error("SYNC_GROUP_MANAGEMENT_LOCKED")
+            }
+            clearInvitationLocked()
+            val offer = live.invitation(owner, onExpired = {
+                synchronized(lifecycle) {
+                    if (invitation?.owner === owner) {
+                        clearInvitationLocked()
+                        mutableState.update { it.copy(status = "邀请已过期，请重新生成") }
+                    }
+                }
+            }) { invited ->
+                val present = synchronized(lifecycle) {
+                    val current = invitation
+                    if (closed || current == null || current.owner !== owner) false
+                    else {
+                        current.proof = invited
+                        state.value.managementUnlocked
+                    }
+                }
+                if (present) action("核对加入设备") { presentInvitationProof() }
+            }
+            invitation = ActiveInvitation(owner, offer)
+            mutableState.update { it.copy(invitation = offer, status = "邀请三分钟内有效，请核对新设备指纹后批准") }
+        }
+    } }
+
+    private suspend fun presentInvitationProof() {
+        val (current, invited, generation) = synchronized(lifecycle) {
+            val current = invitation ?: return
+            if (closed || !state.value.managementUnlocked || peer != null) return
+            Triple(current, current.proof ?: return, privacyGeneration)
+        }
+        val preview = try {
+            if (access?.localManagementAvailable == false) requireNotNull(recoveredManagement).prepareMember(invited, current.owner)
+            else founder().prepareMember(invited, current.owner)
+        } catch (failure: Exception) {
+            if (failure is CancellationException) throw failure
+            if (synchronized(lifecycle) { current !== invitation || generation != privacyGeneration }) return
+            throw failure
+        }
+        try { requireNotNull(access).rememberPeerName(invited) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { failure("保存设备显示名称（成员核验结果保留）", error) }
+        synchronized(lifecycle) {
+            if (!closed && generation == privacyGeneration && invitation === current && state.value.managementUnlocked) {
                 peer = preview
                 mutableState.update { it.copy(peerConfirmation = LanSyncGroupPeerConfirmation(preview.request.approvalBinding, preview.name, preview.device)) }
             }
-        } }
-        invitation = owner
-        mutableState.update { it.copy(invitation = offer, status = "邀请三分钟内有效，请核对新设备指纹后批准") }
         }
-    } }
-    override fun closeInvitation() {
-        transport?.closeInvitation(); invitation?.close(); invitation = null; peer = null
-        mutableState.update { it.copy(invitation = null, peerConfirmation = null) }
+    }
+
+    override fun closeInvitation() = synchronized(lifecycle) {
+        if (invitation != null) {
+            clearInvitationLocked()
+            mutableState.update { it.copy(status = "邀请已取消") }
+        }
+    }
+
+    private fun clearInvitationLocked() {
+        transport?.closeInvitation()
+        invitation?.owner?.close()
+        invitation = null
+        peer = null
+        mutableState.update { it.copy(invitation = null, peerConfirmation = null, invitationRetainedWhileLocked = false) }
     }
     override fun acceptPeer(binding: String) = action("批准加入") {
-        val preview = requireNotNull(peer) { "SYNC_GROUP_MEMBER_CONFIRMATION_REQUIRED" }
+        val preview = synchronized(lifecycle) {
+            require(state.value.managementUnlocked) { "SYNC_GROUP_MANAGEMENT_LOCKED" }
+            requireNotNull(peer) { "SYNC_GROUP_MEMBER_CONFIRMATION_REQUIRED" }
+        }
         if (access?.localManagementAvailable == false) {
             requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.addMember(preview.acknowledge(binding))
             publishRecoveredManagement()
@@ -857,9 +924,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 if (discovery === obsolete.first) discovery = null
                 if (transport === obsolete.second) transport = null
                 port = null; nearbyReady = false; nearbyRestartRequested = false
-                invitation?.close(); invitation = null; peer = null
+                clearInvitationLocked()
                 access?.reader?.removeRoutes("nearby")
-                mutableState.update { it.copy(invitation = null, peerConfirmation = null) }
             }
             currentCoroutineContext().ensureActive()
         }

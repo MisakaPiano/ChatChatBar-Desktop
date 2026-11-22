@@ -46,6 +46,12 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
                 }
             }
             DesktopLanSyncFileActions(coordinator, state, filePicker)
+            if (state.invitationRetainedWhileLocked) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
+                    StatusText("邀请仍在有效期内。请重新解锁管理，再核对并确认新设备。")
+                    BootstrapButton("取消邀请", secondary = true) { coordinator.closeInvitation() }
+                }
+            }
             Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState) }
         }
     }

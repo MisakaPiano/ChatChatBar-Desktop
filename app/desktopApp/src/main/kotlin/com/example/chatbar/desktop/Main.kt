@@ -217,7 +217,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 onDispose { dialogOwner.detach(window) }
                             }
                             DisposableEffect(window, appContainer) {
-                                val focus = DesktopLanSyncManagementFocus(window, appContainer::lockLanSyncGroupManagement)
+                                val focus = DesktopLanSyncManagementFocus(window, appContainer::lockLanSyncGroupManagementOnFocusLoss)
                                 val wake = object : java.awt.event.WindowAdapter() {
                                     override fun windowGainedFocus(event: java.awt.event.WindowEvent) { appContainer.onLanSyncForeground() }
                                     override fun windowDeiconified(event: java.awt.event.WindowEvent) { appContainer.onLanSyncForeground() }

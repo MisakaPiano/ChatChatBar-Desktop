@@ -7,11 +7,18 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.lanSync.*
 import com.google.zxing.BarcodeFormat
-import com.google.zxing.MultiFormatWriter
+import com.google.zxing.EncodeHintType
+import com.google.zxing.WriterException
+import com.google.zxing.common.BitMatrix
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import java.awt.image.BufferedImage
 import java.text.DateFormat
 import java.util.Date
@@ -91,6 +98,28 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 BootstrapButton("邀请设备", enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite) { actions.createInvitation() }
                 if (state.managementUnlocked) BootstrapButton("锁定管理", secondary = true) { actions.lockManagement() }
             }
+            state.invitation?.let { offer ->
+                val code = remember(offer) { offer.code() }
+                val matrix = remember(code) { desktopGroupInvitationQrMatrix(code) }
+                if (matrix == null) {
+                    StatusText("此邀请暂无法显示二维码，请复制邀请并在新设备粘贴。")
+                } else BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val density = LocalDensity.current
+                    // Keep the normal preview compact; a dense code may need 330px at 100% DPI.
+                    val preferredPixels = with(density) { 280.dp.roundToPx() }
+                    val maximumPixels = minOf(constraints.maxWidth, maxOf(preferredPixels, matrix.width * 2))
+                    val image = remember(matrix, maximumPixels) {
+                        desktopGroupInvitationQrImage(matrix, maximumPixels)?.toComposeImageBitmap()
+                    }
+                    if (image == null) {
+                        StatusText("窗口过窄，无法清晰显示完整二维码。请加宽窗口，或复制邀请并在新设备粘贴。")
+                    } else Image(image, "新设备扫描此邀请",
+                        Modifier.size(with(density) { image.width.toDp() }),
+                        contentScale = ContentScale.None, filterQuality = FilterQuality.None)
+                }
+                StatusText("邀请有效期为三分钟。切换程序后可返回这里，重新解锁管理并核对新设备。")
+                ActionRow { BootstrapButton("复制邀请", secondary = true) { copy(code) }; BootstrapButton("关闭邀请", secondary = true) { actions.closeInvitation() } }
+            }
             if (state.managementUnlocked) {
                 StatusText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
                 BootstrapButton("接续已确认的管理操作", secondary = true, enabled = !interactionBlocked) { actions.resumeManagementOperation() }
@@ -106,17 +135,6 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         actionReview?.let { review -> DesktopGroupActionReview(review, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
-        state.invitation?.let { offer ->
-            val code = remember(offer) { offer.code() }
-            val image = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
-                BufferedImage(384, 384, BufferedImage.TYPE_INT_RGB).apply {
-                    for (y in 0 until 384) for (x in 0 until 384) setRGB(x, y, if (matrix[x, y]) 0x000000 else 0xffffff)
-                }.toComposeImageBitmap()
-            }
-            Image(image, "新设备扫描此邀请", Modifier.widthIn(max = 280.dp).fillMaxWidth().aspectRatio(1f))
-            StatusText("在新设备打开设备组同步，扫描此邀请。邀请短时有效；随后在这里确认设备身份。")
-            ActionRow { BootstrapButton("复制邀请", secondary = true) { copy(code) }; BootstrapButton("关闭邀请", secondary = true) { actions.closeInvitation() } }
-        }
         state.peerConfirmation?.let { peer ->
             StatusText("允许 ${peer.name} 加入设备组？")
             StatusText("设备身份：${peer.fingerprint}")
@@ -136,6 +154,26 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             previewNote = "冻结静态预览 · 原始图片完整保留", onClose = actions::closeImagePreview)
     }
 
+}
+
+/** Preserve the exact v1 invitation text and four white quiet-zone modules. */
+internal fun desktopGroupInvitationQrMatrix(code: String): BitMatrix? = try {
+    QRCodeWriter().encode(code, BarcodeFormat.QR_CODE, 0, 0, mapOf(
+        EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L,
+        EncodeHintType.MARGIN to 4))
+} catch (_: WriterException) {
+    null // Copy remains available when a valid invitation exceeds QR capacity.
+}
+
+/** Never squeeze modules into fractional pixels or show a one-pixel scan target. */
+internal fun desktopGroupInvitationQrImage(matrix: BitMatrix, maximumPixels: Int): BufferedImage? {
+    val pixelsPerModule = maximumPixels / matrix.width
+    if (pixelsPerModule < 2) return null
+    val side = matrix.width * pixelsPerModule
+    return BufferedImage(side, side, BufferedImage.TYPE_INT_RGB).apply {
+        for (y in 0 until side) for (x in 0 until side)
+            setRGB(x, y, if (matrix[x / pixelsPerModule, y / pixelsPerModule]) 0x000000 else 0xffffff)
+    }
 }
 
 /** A selected inspection stays frozen while the application continues synchronizing. */

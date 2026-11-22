@@ -194,6 +194,10 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
         if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.lockManagement()
         else if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement()
     }
+    fun lockGroupManagementOnFocusLoss() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.lockManagementOnDesktopFocusLoss()
+        else lockGroupManagement()
+    }
     fun recoverBeforeRepositories() = workspace.recover()
     suspend fun closeAndDrain() {
         closeNetworkMonitorAndDrain()

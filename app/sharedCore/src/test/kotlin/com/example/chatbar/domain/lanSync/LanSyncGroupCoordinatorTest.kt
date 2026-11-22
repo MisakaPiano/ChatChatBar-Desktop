@@ -700,6 +700,39 @@ class LanSyncGroupCoordinatorTest {
         return coordinator
     }
 
+    @Test fun issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement() = fixture { f ->
+        val coordinator = readyCoordinator(f)
+        val code = requireNotNull(f.recoveryCode)
+        coordinator.unlockManagement(code)
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation()
+        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        val offer = requireNotNull(coordinator.state.value.invitation)
+
+        coordinator.lockManagementOnDesktopFocusLoss()
+        assertFalse(coordinator.state.value.managementUnlocked)
+        assertTrue(coordinator.state.value.invitationRetainedWhileLocked)
+        assertNull(coordinator.state.value.invitation)
+        assertNull(coordinator.state.value.peerConfirmation)
+        val receiver = LanSyncTlsIdentity.create()
+        val key = SyncDeviceEncryptionKey.create(receiver.fingerprint)
+        val receipt = LanSyncGroupInviteClient.exchange(offer, receiver, key, "synthetic Android",
+            { f.network.connect(receiver, LanSyncPeer(offer.inviter, "synthetic PC", offer.host, offer.port)) })
+        assertEquals(offer.inviter, receipt.inviter)
+        assertFalse(coordinator.state.value.managementUnlocked)
+        assertNull(coordinator.state.value.peerConfirmation)
+        assertFalse(receiver.fingerprint in f.custody(offer.trust).ledger().current().members)
+
+        coordinator.unlockManagement(code)
+        await { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation?.fingerprint == receiver.fingerprint }
+        coordinator.acceptPeer(requireNotNull(coordinator.state.value.peerConfirmation).binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.devices.any { it.id == receiver.fingerprint } }
+        assertEquals(receipt.member, f.custody(offer.trust).ledger().current().members.getValue(receiver.fingerprint))
+        assertFalse(coordinator.state.value.managementUnlocked)
+        assertFalse(coordinator.state.value.invitationRetainedWhileLocked)
+        assertNull(coordinator.state.value.invitation)
+    }
+
     private class ObservedNetwork(private val delegate: LanSyncNetwork) : LanSyncNetwork {
         val calls = AtomicInteger()
         val forbidden = AtomicBoolean(false)
