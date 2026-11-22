@@ -65,6 +65,39 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'POSITIVE_RUNTIME_NOT_RESTORED' }
           }
+      - name: Reproduce legacy recovery rebinding on the prior append policy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = 'ac033e188b112958ac3fe34bcc743ac5b24ec37c'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'LEGACY_CUSTODY_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopRegenerationTest.legacy redo remains bound to A when actual regeneration returns the same original text for B' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'LEGACY_CUSTODY_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Legacy recovery must bind*') { throw 'LEGACY_CUSTODY_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-nov23/negative-legacy-custody.xml'
+            $prior | Set-Content 'review-nov23/negative-legacy-custody-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'LEGACY_CUSTODY_POSITIVE_NOT_RESTORED' }
+          }
+      - name: Verify shared version custody
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
+          --tests 'com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest'
+          --no-daemon --stacktrace
       - name: Verify runtime redo and durable-source RAG selection
         working-directory: app
         run: >-
@@ -82,3 +115,4 @@ jobs:
           path: |
             review-nov23/
             app/desktopApp/build/test-results/test/
+            app/sharedCore/build/test-results/test/

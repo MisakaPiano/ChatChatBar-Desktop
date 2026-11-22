@@ -16,6 +16,39 @@ import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopRegenerationTest {
+    @Test fun `legacy redo remains bound to A when actual regeneration returns the same original text for B`() = runBlocking {
+        fixture { container, server, session, target ->
+            val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(
+                DesktopDataRootOwnership.acquire(container.resolvedRoot)).ownership
+            try {
+                val legacy = container.chatRepository.updateMessageReturningSnapshot(target.copy(
+                    formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED,
+                        "fixed A", "old-answer", restored = true)))
+                assertTrue(desktopCanRedoFormat(legacy))
+                val owner = MessageAlternativeVersionPolicy.activeVersionId(legacy)
+                server.enqueue(success("old-answer"))
+                val result = container.createRealChatRuntime().regenerate(session, target.id)
+                assertNull(result.failureMessage)
+                assertEquals(listOf("old-answer", "old-answer"), result.assistant.alternatives)
+                assertEquals(owner, result.assistant.formatRepairNotice?.versionId,
+                    "Legacy recovery must bind to its old owner before creating identical B")
+                assertFalse(desktopCanRedoFormat(result.assistant))
+                assertFalse(desktopCanRestoreFormat(result.assistant))
+                val selected = container.chatRepository.updateMessageReturningSnapshot(
+                    MessageAlternativeVersionPolicy.select(result.assistant, 0))
+                assertTrue(desktopCanRedoFormat(selected))
+                val repair = container.createMessageFormatRepairController { error("Local redo must not call a model") }
+                val task = repair.redo(session, target.id)
+                withTimeout(8000) { container.taskRuntime.repairTasks.first {
+                    it[task] != null && it[task] != DesktopRepairStatus.RUNNING
+                } }
+                assertEquals(DesktopRepairStatus.APPLIED, repair.states.value[task]?.status)
+                assertEquals(listOf("fixed A", "old-answer"), container.chatRepository.getMessage(target.id, session)?.alternatives)
+                assertEquals(1, server.requestCount)
+            } finally { ownership.close() }
+        }
+    }
+
     @Test fun `actual repair undo regenerate and reselect preserves the original alternative local redo`() = runBlocking {
         fixture { container, server, session, target ->
             val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(
@@ -192,7 +225,8 @@ data: [DONE]
                 assertEquals(target.createdAt, saved.createdAt)
                 assertEquals(target.images, saved.images)
                 assertEquals(target.generatedImageMetadata, saved.generatedImageMetadata)
-                assertEquals(target.formatRepairNotice, saved.formatRepairNotice)
+                assertEquals(target.formatRepairNotice?.copy(
+                    versionId = MessageAlternativeVersionPolicy.activeVersionId(target)), saved.formatRepairNotice)
                 assertFalse(desktopCanRestoreFormat(saved))
                 assertFalse(desktopCanRedoFormat(saved))
                 assertNull(saved.reasoningContent)
