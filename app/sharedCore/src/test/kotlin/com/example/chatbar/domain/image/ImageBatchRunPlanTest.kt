@@ -199,7 +199,7 @@ class ImageBatchRunPlanTest {
         assertTrue(result.isFailure); assertEquals(1, calls)
     }
     @Test fun `old studio draft decodes safe defaults without launching anything`() {
-        val draft = Json { ignoreUnknownKeys = true }.decodeFromString<NovelAiStudioDraft>("""{"continuousModeEnabled":true,"continuousTargetCount":10}""")
+        val draft = Json { ignoreUnknownKeys = true }.decodeFromString<NovelAiStudioDraft>("""{"continuousModeEnabled":true,"continuousTargetCount":10,"updatedAt":1}""")
         assertEquals(ImageBatchPacing(), draft.batchPacing); assertTrue(draft.continuousModeEnabled)
         val copy = Json.decodeFromString<NovelAiStudioDraft>(Json.encodeToString(NovelAiStudioDraft.serializer(), draft))
         assertEquals(draft, copy)
