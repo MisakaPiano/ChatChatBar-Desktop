@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.StreamEvent
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
@@ -12,6 +14,44 @@ import okhttp3.mockwebserver.MockWebServer
 import kotlin.test.*
 
 class DesktopAutomaticFormatRepairTest {
+    @Test fun `automatic changed repair on real regenerated B keeps A local redo after cold reopen`() = runBlocking<Unit> { fixture { f ->
+        MockWebServer().use { server ->
+            prepareHttp(f, server, enabled = true)
+            f.response = { flowOf(StreamEvent.Delta("fixed A"), StreamEvent.Done) }
+            assertEquals(DesktopRepairStatus.APPLIED, f.run().status)
+            assertEquals(DesktopRepairStatus.RESTORED, f.run(restore = true).status)
+            val a = f.saved()
+            val aId = MessageAlternativeVersionPolicy.activeVersionId(a)
+            assertTrue(desktopCanRedoFormat(a))
+            server.enqueue(success("raw B")); server.enqueue(success("fixed B"))
+            val task = f.runtime.launchRegeneration("s", a.id)
+            val done = awaitChat(f, task)
+            assertEquals(DesktopTaskStatus.COMPLETED, done.status, done.message)
+            val b = f.reopened()
+            assertEquals("fixed B", b.displayContent)
+            assertTrue(desktopCanRestoreFormat(b))
+            val aIndex = MessageAlternativeVersionPolicy.versions(b).indexOfFirst { it.id == aId }
+            assertTrue(aIndex >= 0)
+            val coldA = MessageAlternativeVersionPolicy.select(b, aIndex)
+            assertTrue(desktopCanRedoFormat(coldA), "Changed automatic B repair consumed A's durable redo")
+            val primary = f.container.primaryChatController
+            primary.refresh(); primary.selectSession("s")
+            repeat(b.currentAlternativeIndex - aIndex) { primary.selectAssistantAlternative(a.id, -1) }
+            val selected = f.saved()
+            assertEquals(aId, MessageAlternativeVersionPolicy.activeVersionId(selected))
+            val id = assertNotNull(primary.redoMessageFormat(selected))
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(id, f.container.messageFormatRepairController).status)
+            val redone = f.reopened()
+            assertEquals("fixed A", redone.displayContent)
+            assertEquals("fixed B", redone.alternatives.last())
+            val coldB = MessageAlternativeVersionPolicy.select(redone, redone.alternatives.lastIndex)
+            assertTrue(desktopCanRestoreFormat(coldB))
+            assertEquals("raw B", MessageFormatRepairPolicy.recoverableNotice(coldB)?.originalContent)
+            assertEquals(2, server.requestCount, "Returning to A and local redo must not request a model")
+            assertEquals(1, f.requests.get())
+        }
+    } }
+
     private suspend fun fixture(block: suspend (DesktopMessageFormatRepairTest.Fixture) -> Unit) {
         val f = DesktopMessageFormatRepairTest.Fixture()
         var ownership: DesktopDataRootOwnership? = null

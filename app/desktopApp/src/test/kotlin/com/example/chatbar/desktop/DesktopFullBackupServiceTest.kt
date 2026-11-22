@@ -9,6 +9,35 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `modern whole backup inspection retains independent repair points for both reply alternatives`() = runBlocking {
+        Fixture().use { f ->
+            val storage = com.example.chatbar.data.local.JsonFileStorage(f.root, f.gate)
+            val cards = com.example.chatbar.data.repository.CharacterRepository(storage)
+            val chats = com.example.chatbar.data.repository.ChatRepository(storage)
+            val card = CharacterCard.create("Synthetic repair transfer")
+            cards.save(card)
+            chats.createSession(ChatSession.create(card.id, "Synthetic").copy(id = "s", longTermMemoryEnabled = false))
+            val raw = ChatMessage("m", "s", MessageRole.ASSISTANT, "raw A", createdAt = 1, updatedAt = 1,
+                alternatives = listOf("raw A", "raw B"), alternativeVersionIds = listOf("a", "b"),
+                currentAlternativeIndex = 0, currentAlternativeVersionId = "a")
+            val policy = com.example.chatbar.domain.chat.MessageFormatRepairPolicy
+            val versions = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+            val fixedA = policy.replaceCurrentDisplayContent(raw, "fixed A", policy.completedRepairNotice("raw A", "fixed A"))
+            val b = versions.select(requireNotNull(policy.restoreOriginal(fixedA)), 1)
+            val fixedB = policy.replaceCurrentDisplayContent(b, "fixed B", policy.completedRepairNotice("raw B", "fixed B"))
+            chats.addMessage(fixedB)
+            val path = f.base.resolve("repair-points.cbbackup")
+            f.service.exportModern(path, null)
+            DesktopFullBackupStaging.prepare(path, null, Files.createDirectory(f.base.resolve("repair-inspection"))).use { inspected ->
+                val record = inspected.entities.getValue("entities/chat_messages/s_m.json")
+                val cold = backupJson.decodeFromString(ChatMessage.serializer(), record.toString())
+                assertEquals("fixed A", policy.redoRepair(versions.select(cold, 0))?.displayContent)
+                assertEquals("raw B", policy.restoreOriginal(versions.select(cold, 1))?.displayContent)
+                assertEquals(listOf("a", "b"), cold.alternativeVersionIds)
+            }
+        }
+    }
+
     @Test fun `immediate password retry from idle publication cannot resurrect the prior waiting row`() = runBlocking {
         Fixture().use { f ->
             f.service.release(f.seed())

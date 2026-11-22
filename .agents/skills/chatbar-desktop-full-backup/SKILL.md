@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+ChatMessage repair checkpoints include the legacy single slot and optional `otherFormatRepairNotices`. Modern export/staging retains both without rebinding stable alternative IDs; `DesktopFullBackupServiceTest` checks independent A redo/B restore after authenticated inspection. This does not claim older official versions preserve the added optional field.
+
 Generated-voice nonnull `desktopVersionOwnershipUncertain` is Desktop-only custody metadata and participates in the existing Desktop-extension disclosure. Current Entity/SaveSlot serialization retains it; absent/null is omitted even with encodeDefaults, preserving existing voice custody hashes. An older Android rewrite may drop the field; a later Desktop read treats absence as unknown and preserves the recording, never as confirmed deletion authority.
 
 Session and inline SaveSlot `imageBatchPreferences` carry only saved plan fields, with default omission for old records. Shared `SaveSlotSessionPolicy` explicitly projects them both ways. They never serialize runtime tasks, countdowns, payment tickets or current-run approval. `hasDesktopParticipation` marks non-default session/slot plans and Studio batch/pacing settings for the existing compatibility warning; explicit default plans do not create a warning by themselves. `DesktopBatchPreferencesBackupTest` covers independent session settings rebase plus selected authenticated archive/mapped restore/cold read; this extension does not claim that frozen official1.4.12 retains the new batch settings.

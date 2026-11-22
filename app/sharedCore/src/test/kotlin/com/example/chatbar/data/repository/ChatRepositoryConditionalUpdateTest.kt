@@ -113,7 +113,8 @@ class ChatRepositoryConditionalUpdateTest {
         val notice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, legacy.displayContent, errorMessage = "SYNTHETIC")
         val result = assertIs<ConditionalMessageUpdateResult.Success>(
             f.repo.updateMessageFormatRepairNotice("s", "m", legacy, notice))
-        assertEquals(legacy.copy(formatRepairNotice = notice, updatedAt = result.message.updatedAt), result.message)
+        assertEquals(legacy.copy(formatRepairNotice = notice.copy(
+            versionId = MessageAlternativeVersionPolicy.activeVersionId(legacy)), updatedAt = result.message.updatedAt), result.message)
         assertEquals(result.message, ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
         val before = snapshot(f.root)
         assertFalse(assertIs<ConditionalMessageUpdateResult.Success>(
@@ -123,9 +124,11 @@ class ChatRepositoryConditionalUpdateTest {
     }
 
     @Test fun `notice only cancellation at write and index retains bounded uncertain readback evidence`() = runTest {
-        for (call in listOf(4, 6)) {
+        for (withOtherPoint in listOf(false, true)) for (call in listOf(4, 6)) {
             val f = fixture(readbackMillis = 50)
-            f.repo.updateMessage(f.expected.copy(content = "legacy base differs"))
+            val other = if (withOtherPoint) listOf(MessageFormatRepairNotice(
+                MessageFormatRepairNoticeKind.APPLIED, "first", "before first", versionId = "v1")) else emptyList()
+            f.repo.updateMessage(f.expected.copy(content = "legacy base differs", otherFormatRepairNotices = other))
             val expected = assertNotNull(f.repo.getMessage("m", "s"))
             val notice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, expected.displayContent, errorMessage = "INVALID_MODEL")
             val writing = CompletableDeferred<Unit>(); val reading = CompletableDeferred<Unit>()
@@ -150,7 +153,8 @@ class ChatRepositoryConditionalUpdateTest {
             assertTrue(readReleased.isCompleted)
             assertOriginalError(cancellation, result.cause)
             assertEquals(if (call == 4) MessageUpdateStage.WRITE_MESSAGE else MessageUpdateStage.WRITE_INDEX, result.stage)
-            assertEquals(expected.copy(formatRepairNotice = notice, updatedAt = result.attempted.updatedAt), result.attempted)
+            assertEquals(expected.copy(formatRepairNotice = notice.copy(
+                versionId = MessageAlternativeVersionPolicy.activeVersionId(expected)), updatedAt = result.attempted.updatedAt), result.attempted)
             assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(result.durableMessage).cause)
             assertEquals(call + 1, f.gate.count.get())
             assertIndexCacheInvalidated(f)
@@ -161,12 +165,26 @@ class ChatRepositoryConditionalUpdateTest {
         }
     }
 
+    @Test fun `only a changed sibling repair checkpoint conflicts without touching files`() = runTest {
+        val f = fixture()
+        val other = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED,
+            "first", "before first", versionId = "v1")
+        val expected = f.repo.updateMessageReturningSnapshot(f.expected.copy(otherFormatRepairNotices = listOf(other)))
+        // Change only this newly introduced field, preserving timestamp, source body and index.
+        val external = expected.copy(otherFormatRepairNotices = listOf(other.copy(originalContent = "different recovery")))
+        Files.writeString(f.file, f.storage.json.encodeToString(ChatMessage.serializer(), external))
+        val before = snapshot(f.root)
+        assertIs<ConditionalMessageUpdateResult.Conflict>(f.repair(snapshot = expected))
+        assertEquals(before, snapshot(f.root))
+        assertEquals(external, ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
+    }
+
     @Test fun `matching snapshot commits only repair fields and reopens with index and preview`() = runTest {
         val f = fixture()
         val result = assertIs<ConditionalMessageUpdateResult.Success>(f.repair())
         assertTrue(result.changed)
         val expected = f.expected.copy(content = "fixed", alternatives = listOf("first", "fixed", "last"),
-            formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, "fixed", "middle"),
+            formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, "fixed", "middle", versionId = "v2"),
             updatedAt = result.message.updatedAt)
         assertEquals(expected, result.message)
         val storage = JsonFileStorage(f.root)

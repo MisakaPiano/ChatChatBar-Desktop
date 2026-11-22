@@ -161,7 +161,9 @@ class MessageAlternativeVersionPolicyTest {
         val edited = MessageAlternativeVersionPolicy.editCurrentContent(original, "edited", 30)
         val expectedModes = modes.ifEmpty { List(3) { ChatNarrativeMode.FOCUS } }
         assertEquals(original.copy(content = "edited", alternatives = listOf("first", "edited", "last"),
-            alternativeNarrativeModes = expectedModes, updatedAt = 30), edited)
+            alternativeNarrativeModes = expectedModes, formatRepairNotice = null, updatedAt = 30), edited)
+        assertEquals("middle", original.formatRepairNotice?.targetContent)
+        assertEquals(null, MessageFormatRepairPolicy.applicableNotice(edited))
         val other = MessageAlternativeVersionPolicy.select(edited, 2, 31)
         assertEquals(expectedModes[2], other.narrativeMode)
         val returned = MessageAlternativeVersionPolicy.select(other, 1, 32)
