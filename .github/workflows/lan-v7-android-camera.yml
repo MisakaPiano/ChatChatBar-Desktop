@@ -38,6 +38,7 @@ jobs:
           python -B tools/lan-next-control/v7_android_scan_inputs.py
           python -m pip install --disable-pip-version-check 'qrcode==8.2' 'Pillow==11.3.0'
           python -B tools/lan-next-control/v7_make_invalid_qr.py --output "$RUNNER_TEMP/ccb-v7-scan/qr.png"
+          ffmpeg -hide_banner -loglevel error -loop 1 -i "$RUNNER_TEMP/ccb-v7-scan/qr.png" -t 240 -r 15 -c:v libx264 -pix_fmt yuv420p "$RUNNER_TEMP/ccb-v7-scan/qr.mp4"
       - name: Enable cloud emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
@@ -50,7 +51,7 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-front none -camera-back imagefile:${{ runner.temp }}/ccb-v7-scan/qr.png
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-front none -camera-back videofile:${{ runner.temp }}/ccb-v7-scan/qr.mp4
           script: |
             set -euo pipefail
             adb -s emulator-5554 install "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk"

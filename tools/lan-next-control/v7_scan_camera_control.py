@@ -108,6 +108,17 @@ class Adb:
         return p.stdout.decode('utf-8', errors='replace')
 
     def ui(self):
+        # A screen transition can interrupt the accessibility snapshot. Retry
+        # only the read, never the action that caused the transition.
+        for attempt in range(3):
+            try:
+                return self.ui_once()
+            except Refused as error:
+                if str(error) not in ('UI_XML_UNAVAILABLE','UI_XML_INVALID','ADB_COMMAND_FAILED') or attempt == 2:
+                    raise
+                time.sleep(.35)
+
+    def ui_once(self):
         # No PTY or /dev/tty assumption on API26. This unique device-only file is
         # read into memory, then removed before parsing or returning anything.
         path = '/data/local/tmp/ccb-v7-scan-' + uuid.uuid4().hex + '.xml'
@@ -128,6 +139,13 @@ class Adb:
                            '-s','am_create_activity:I','am_resume_activity:I',
                            'wm_create_activity:I','wm_resume_activity:I')
             return set(raw.splitlines())
+        except Refused:
+            return None
+
+    def decoder_events(self):
+        try:
+            raw = self.run('logcat','-d','-b','main','-v','threadtime','-s','DecoderThread:D')
+            return {line for line in raw.splitlines() if re.search(r'Found barcode in [0-9]+ ms',line)}
         except Refused:
             return None
 
@@ -250,6 +268,7 @@ def observe(args, result):
     result['mainLaunchCommandAccepted'] = True
     navigate(a,result,time.monotonic()+45)
     before = a.events()
+    decoder_before = a.decoder_events()
     result['eventSnapshotBeforeAvailable'] = before is not None
     wait_click(a, SCAN, time.monotonic()+20)
     result['physicalScanButtonClicks'] = 1
@@ -289,6 +308,13 @@ def observe(args, result):
             raise Refused('INVITATION_REJECTED_INVALID_OFFER')
         time.sleep(.3)
     observe_capture_activity(a,before,result)
+    decoder_after = a.decoder_events()
+    result['newDecoderSuccessLogObserved'] = (
+        None if decoder_before is None or decoder_after is None else bool(decoder_after - decoder_before))
+    activities = a.run('shell','dumpsys','activity','activities')
+    result['scannerResumedAtTimeout'] = any(
+        CAPTURE in line for line in activities.splitlines()
+        if 'mResumedActivity' in line or 'topResumedActivity' in line)
     raise Refused('SCAN_CALLBACK_NOT_OBSERVED')
 
 def main(argv=None):

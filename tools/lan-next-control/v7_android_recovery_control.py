@@ -53,15 +53,44 @@ def checked_state(root):
     need(len(values)<=1,'SAVE_CHECKBOX_AMBIGUOUS')
     return values[0] if values else None
 
-def secure_input(root):
+def secure_input_node(root):
     found=[]
     for n in root.iter('node'):
         if n.get('package')==PACKAGE and n.get('class')=='android.widget.EditText' and n.get('enabled')=='true' and n.get('password')=='true':
             m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',n.get('bounds',''))
             if m:
                 b=tuple(map(int,m.groups()))
-                if b[2]>b[0] and b[3]>b[1]:found.append(b)
-    need(len(found)==1,'SINGLE_RECOVERY_INPUT_REQUIRED');return found[0]
+                if b[2]>b[0] and b[3]>b[1]:found.append((n,b))
+    need(len(found)==1,'SINGLE_RECOVERY_INPUT_REQUIRED')
+    return found[0]
+
+def secure_input(root):
+    return secure_input_node(root)[1]
+
+def type_recovery_code(a,ui,root,secret,r):
+    a.tap(secure_input(root))
+    focus_deadline=time.monotonic()+12
+    while time.monotonic()<focus_deadline:
+        root=a.ui()
+        field,_=secure_input_node(root)
+        if field.get('focused')=='true':
+            r['coldRecoveryInputFocused']=True
+            break
+        time.sleep(.3)
+    need(r.get('coldRecoveryInputFocused',False),'COLD_RECOVERY_INPUT_NOT_FOCUSED')
+    # Feed the same code to the focused field in small batches. Avoid dismissing
+    # the keyboard with Back while the Activity is restoring its scroll position.
+    for start in range(0,len(secret),48):
+        a.run('shell','input','text',secret[start:start+48].decode('ascii'),timeout=20)
+        time.sleep(.15)
+    r['originalCodeTypedCount']=1
+    root=a.ui()
+    values=ui.labels(root)
+    r['sameGroupPageAfterInput']='设备组同步' in values
+    field,_=secure_input_node(root)
+    r['secureTextLengthMatched']=len(field.get('text',''))==len(secret)
+    r['unlockLabelSeenAfterInput']='解锁管理' in values
+    need(r['sameGroupPageAfterInput'],'GROUP_PAGE_LOST_AFTER_INPUT')
 
 def outer_scroll(root):
     found=[]
@@ -196,9 +225,8 @@ def execute(args,r):
         r['phase']='COLD_REOPEN86';a.run('shell','am','force-stop',PACKAGE);need(pid(a) is None,'FORCE_STOP_NOT_OBSERVED');r['forceStopObserved']=True
         entry(a,ui,r);new=pid(a);need(new is not None and new!=old,'DIFFERENT_COLD_PID_NOT_OBSERVED');r['differentColdPidObserved']=True
         show_target(a,ui,'解锁管理',r,require_enabled=False);root=a.ui();need('恢复码 · 临时解锁管理' in ui.labels(root),'ORIGINAL_GROUP_LOCKED_INPUT_NOT_OBSERVED');r['coldManagementLockedUiObserved']=True
-        r['phase']='UNLOCK_WITH_ORIGINAL85_CODE';a.tap(secure_input(root));a.run('shell','input','text',secret.decode('ascii'),timeout=60);r['originalCodeTypedCount']=1
-        ime=a.run('shell','dumpsys','input_method')
-        if re.search(r'\bmInputShown=true\b|\bmIsInputViewShown=true\b',ime):a.run('shell','input','keyevent','KEYCODE_BACK')
+        r['phase']='UNLOCK_WITH_ORIGINAL85_CODE'
+        type_recovery_code(a,ui,root,secret,r)
         show_target(a,ui,'解锁管理',r);ui.wait_click(a,'解锁管理',time.monotonic()+20);r['unlockButtonClicks']=1
         deadline=time.monotonic()+45
         while time.monotonic()<deadline:
