@@ -17,12 +17,18 @@ private data class StatusStripSegment(
 )
 
 /** 移除状态栏与横线包裹的选项块，保留叙事、对白、心理和人物标记。 */
-fun stripRoleplayStatusSegments(content: String): String {
-    val excludedRanges = excludedRoleplayStatusRanges(content)
+fun stripRoleplayStatusSegments(
+    content: String,
+    preserving: List<IntRange> = emptyList(),
+    removing: List<IntRange> = emptyList(),
+): String {
+    val excludedRanges = historyRemovalRanges(
+        excludedRoleplayStatusRanges(content).map { it.start until it.endExclusive }, preserving, removing,
+    )
     if (excludedRanges.isEmpty()) return content
     return excludedRanges
-        .sortedByDescending(StatusStripRange::start)
-        .fold(content) { text, range -> text.removeRange(range.start, range.endExclusive) }
+        .asReversed()
+        .fold(content) { text, range -> text.removeRange(range.first, range.last + 1) }
         .replace(Regex("[ \t]+\n"), "\n")
         .replace(Regex("\n{3,}"), "\n\n")
         .trim()

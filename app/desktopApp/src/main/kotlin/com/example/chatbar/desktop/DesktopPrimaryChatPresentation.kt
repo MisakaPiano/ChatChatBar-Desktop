@@ -14,6 +14,7 @@ import com.example.chatbar.domain.chat.RoleplaySpeakerIdentity
 import com.example.chatbar.domain.chat.roleplaySpeakerHeaderIndexes
 import com.example.chatbar.domain.chat.SessionDisplayTitlePolicy
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
+import com.example.chatbar.domain.chat.RoleplayActionOptionsPolicy
 import com.example.chatbar.domain.chat.resolveRoleplaySpeakerIdentity
 import com.example.chatbar.domain.chat.stripRoleplaySpeakerMarkers
 import com.example.chatbar.domain.chat.RoleplayTextSegment
@@ -95,6 +96,7 @@ internal fun desktopPresentMessage(
     segmentedAssistant: Boolean,
     roleLabels: DesktopRoleLabels = DesktopRoleLabels(),
     session: ChatSession? = null,
+    inlineActionChoices: Boolean = false,
 ): DesktopPresentedMessage {
     val botName = card?.effectiveBotName ?: session?.title ?: roleLabels.assistant
     val roleLabel = when (message.role) {
@@ -131,8 +133,23 @@ internal fun desktopPresentMessage(
         )
     }
     val visibleText = parsed.joinToString("") { it.text }.trim()
+    val inlineBlocks = if (inlineActionChoices && message.role == MessageRole.ASSISTANT)
+        RoleplayActionOptionsPolicy.blocks(message.displayContent, message.displayActionOptionsFormat).filter { block ->
+            roleplaySegments.none { it.kind == RoleplaySegmentKind.STATUS && it.start == block.range.first &&
+                it.endExclusive == block.range.last + 1 }
+        } else emptyList()
+    val displayed = if (inlineBlocks.isEmpty()) parsed else parsed.map { item ->
+        val source = requireNotNull(item.source)
+        if (inlineBlocks.none { it.range.first < source.endExclusive && it.range.last >= source.start }) item
+        else {
+            val raw = RoleplayActionOptionsPolicy.textOutsideBlocks(message.displayContent, inlineBlocks,
+                source.start, source.endExclusive)
+            item.copy(text = PlaceholderRenderer.render(desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(raw)), playerName, botName),
+                markdownSource = PlaceholderRenderer.render(raw, playerName, botName))
+        }
+    }
     val segmented = message.role == MessageRole.ASSISTANT && segmentedAssistant
-    val presentedSegments = if (segmented) parsed else buildList {
+    val presentedSegments = if (segmented) displayed else buildList {
         val body = StringBuilder()
         val markdownBody = StringBuilder()
         fun flushBody() {
@@ -143,7 +160,7 @@ internal fun desktopPresentMessage(
                 markdownBody.clear()
             }
         }
-        parsed.forEach { segment ->
+        displayed.forEach { segment ->
             if (segment.kind == RoleplaySegmentKind.STATUS) {
                 flushBody()
                 add(segment.copy(speaker = null))

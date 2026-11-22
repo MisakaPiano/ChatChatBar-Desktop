@@ -419,7 +419,8 @@ internal class DesktopSaveSlotService(
             val safety = capture(sessionId, "恢复前自动保全", SaveSlotImagePolicy.ORIGINAL, true, progress)
             val before = libraryAddition(safety.prepared, sessionId)
             val prepared = gate.withNormalOperation { prepareLibrary(slotId) }
-            val plan = planner.prepare(archive, prepared, safety.session)
+            val previousMemory = retainedMemoryEvidence(prepared, safety)
+            val plan = planner.prepare(archive, prepared, safety.session, previousMemorySnapshot = previousMemory)
             completePrepared(safety.prepared, prepared) {
                 publish(sessionId, safety.proof, plan, safety.proof, before.second)
                 plan.session
@@ -484,6 +485,52 @@ internal class DesktopSaveSlotService(
     private data class Capture(val sourceId: String, val session: ChatSession, val draft: String, val messageIds: Set<String>,
         val proof: Map<String, String>, val prepared: DesktopSaveSlotArchive.Prepared)
 
+    /** Orphaned exclusions are local evidence, not roots to publish or part of the portable safety slot. */
+    private suspend fun retainedMemoryEvidence(prepared: DesktopSaveSlotArchive.Prepared, safety: Capture): MemorySnapshot? =
+        gate.withNormalOperation {
+            val previous = safety.prepared.slot.memorySnapshot
+            val incoming = prepared.slot.memorySnapshot ?: return@withNormalOperation previous
+            val sessionId = safety.session.id
+            if (prepared.originalSessionId != sessionId || incoming.nodes.any { it.sessionId != sessionId } ||
+                incoming.legacyCommit?.sessionId?.let { it != sessionId } == true
+            ) return@withNormalOperation previous
+
+            val incomingIds = incoming.nodes.mapTo(hashSetOf(), MemoryNode::id)
+            // Pre-v4 normalization allocates fresh IDs, but retains this exact old-node origin.
+            val legacyOrigins = incoming.nodes.asSequence().filter { it.tier == MemoryTier.LEGACY_REFERENCE }
+                .mapNotNull { it.coverageUnits.singleOrNull()?.sourceId }
+                .filter { it.startsWith("legacy:") && it.length > "legacy:".length }.toMutableSet()
+            if (incoming.state == null) incomingIds.mapTo(legacyOrigins) { "legacy:$it" }
+            val retained = mutableListOf<MemoryNode>()
+            var retainedBytes = 0L
+            val strictJson = Json(storage.json) { ignoreUnknownKeys = false }
+            safety.proof.forEach { (relative, hash) ->
+                if (!relative.startsWith("entities/memory_nodes/")) return@forEach
+                val id = relative.substringAfterLast('/').removeSuffix(".json")
+                if (id !in incomingIds && legacyOrigins.isEmpty()) return@forEach
+                val file = root.resolve(relative)
+                check(DesktopArchiveFiles.hash(file, 8L * 1024 * 1024) == hash) { "恢复前的记忆记录已变化，请重试" }
+                val raw = when (val result = storage.readEntityBoundedStrict("memory_nodes", id, JsonObject.serializer(),
+                    validatePath = { path -> DesktopArchiveFiles.safe(path, Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) })) {
+                    is JsonFileStorage.EntityReadResult.Valid -> result.value
+                    else -> error("恢复前的记忆记录无法安全读取，原数据已保留")
+                }
+                check(DesktopArchiveFiles.hash(file, 8L * 1024 * 1024) == hash) { "恢复前的记忆记录已变化，请重试" }
+                val origin = (raw["coverageUnits"] as? JsonArray)?.singleOrNull()
+                    ?.let { it as? JsonObject }?.get("sourceId") as? JsonPrimitive
+                if (id !in incomingIds && origin?.takeIf { it.isString }?.content !in legacyOrigins) return@forEach
+                val node = try { strictJson.decodeFromJsonElement(MemoryNode.serializer(), raw) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { error("恢复前的记忆记录无法安全读取，原数据已保留") }
+                check(node.id == id && node.sessionId == sessionId) { "恢复前的记忆归属已变化，请重试" }
+                retainedBytes += raw.toString().length.toLong() * 2
+                check(retained.size < 20_000 && retainedBytes <= 64L * 1024 * 1024) { "记忆读取超过预算" }
+                retained += node
+            }
+            if (retained.isEmpty()) previous else (previous ?: MemorySnapshot()).copy(
+                nodes = (retained + previous?.nodes.orEmpty()).associateBy(MemoryNode::id).values.toList())
+        }
+
     private suspend fun capture(sessionId: String, name: String, images: SaveSlotImagePolicy, includeAudio: Boolean,
         progress: (String) -> Unit): Capture = gate.withNormalOperation {
         ensureWorkspace()
@@ -536,6 +583,8 @@ internal class DesktopSaveSlotService(
             files[relative] = work.resolve(relative)
             imported
         } else prepared.slot.copy(id = UUID.randomUUID().toString(), sessionId = sessionId,
+            // A rebound legacy header and input-provided metadata are not ownership evidence.
+            inlineSourceSessionId = prepared.originalSessionId.orEmpty(),
             // Keep source graph identity together; local library ownership differs only at its envelope.
             messages = prepared.slot.messages.map { it.copy(sessionId = sessionId) },
             vectorChunks = prepared.slot.vectorChunks.map { it.copy(sourceId = sessionId,
@@ -555,7 +604,11 @@ internal class DesktopSaveSlotService(
             check(name.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
             root.resolve("save_slot_packages/$name")
         } else root.resolve("entities/save_slots/$slotId.json")
-        return archive.prepare(path)
+        val prepared = archive.prepare(path)
+        return if (prepared.format == SlotInspectFormat.ZIP_V8) prepared else {
+            check(prepared.slot == slot) { "存档库记录已变化，请重新选择" }
+            prepared
+        }
     }
 
     private suspend fun publish(sourceId: String, sourceProof: Map<String, String>, plan: DesktopSaveSlotRestorePlan.Plan?,

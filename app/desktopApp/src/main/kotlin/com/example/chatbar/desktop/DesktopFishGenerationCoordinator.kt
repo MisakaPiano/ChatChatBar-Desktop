@@ -189,6 +189,7 @@ internal class DesktopFishGenerationCoordinator(
             ?: error("语音来源版本已不存在")
         check(retained.content == captured.content) { "语音来源正文已变化" }
         check(retained.narrativeMode == captured.narrativeMode) { "语音来源叙事模式已变化" }
+        check(retained.actionOptionsFormat == captured.actionOptionsFormat) { "语音来源行动选项格式已变化" }
         retained
     }
 
@@ -553,7 +554,7 @@ internal class DesktopFishGenerationCoordinator(
             target.targetId to target.segment.spokenText
         }
         val assistantPromptContext = VoiceAnchorPolicy.promptContextText(
-            context.message.displayContent
+            context.message.displayContent, context.message.displayActionOptionsFormat
         )
         if (!shouldGenerateTags && !translationRequested) {
             updateBatch(batchId) {
@@ -911,7 +912,8 @@ internal class DesktopFishGenerationCoordinator(
         val segments = VoiceGenerationPolicy.generationSegments(
             content = context.message.displayContent,
             audiobookEnabled = context.audiobookEnabled,
-            segmentedBubblesEnabled = context.segmentedBubblesEnabled
+            segmentedBubblesEnabled = context.segmentedBubblesEnabled,
+            actionOptionsFormat = context.message.displayActionOptionsFormat
         )
         if (VoiceGenerationPolicy.requiresNarratorSelection(context.card, segments)) {
             require(

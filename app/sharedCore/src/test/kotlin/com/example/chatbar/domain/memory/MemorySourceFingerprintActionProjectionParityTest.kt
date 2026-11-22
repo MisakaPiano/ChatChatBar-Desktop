@@ -1,0 +1,108 @@
+package com.example.chatbar.domain.memory
+
+import com.example.chatbar.data.local.entity.ActionOptionsFormat
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.MessageRole
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Test
+
+class MemorySourceFingerprintActionProjectionParityTest {
+    private val session = ChatSession.create("card", "title")
+    private val base = listOf(
+        message("u", MessageRole.USER, "hello", 1),
+        message("a", MessageRole.ASSISTANT, "world", 2)
+    )
+
+    @Test fun `metadata not shown to memory model does not change fingerprint`() {
+        val changedMetadata = base.mapIndexed { index, message ->
+            message.copy(
+                id = "replacement-$index",
+                updatedAt = 999L + index,
+                orderKey = (index + 10L) * 1_000_000L,
+                sourceTurnOrder = 99,
+                images = listOf("moved-$index.png")
+            )
+        }
+        assertEquals(fingerprint(base), fingerprint(changedMetadata))
+    }
+
+    @Test fun `content alternative order blank-image presence and deletion change fingerprint`() {
+        assertNotEquals(fingerprint(base), fingerprint(base.map { if (it.id == "a") it.copy(content = "changed") else it }))
+        assertNotEquals(fingerprint(base), fingerprint(base.map { if (it.id == "a") it.copy(alternatives = listOf("alt")) else it }))
+        assertNotEquals(fingerprint(base), fingerprint(listOf(base[1].copy(orderKey = 1), base[0].copy(orderKey = 2))))
+        assertNotEquals(fingerprint(base), fingerprint(base.dropLast(1)))
+
+        val blankAssistant = base.map { if (it.id == "a") it.copy(content = "") else it }
+        val blankWithImage = blankAssistant.map {
+            if (it.id == "a") it.copy(images = listOf("x.png")) else it
+        }
+        assertNotEquals(
+            fingerprint(blankAssistant),
+            fingerprint(blankWithImage)
+        )
+        assertEquals(
+            fingerprint(blankWithImage),
+            fingerprint(blankWithImage.map {
+                if (it.id == "a") it.copy(images = listOf("moved.png", "second.png")) else it
+            })
+        )
+    }
+
+    @Test fun `previous semantic fingerprint remains available for safe migration`() {
+        assertNotEquals(
+            fingerprint(base),
+            MemorySourceFingerprint.previousSemantic("s0", base, session)
+        )
+    }
+
+    @Test fun `summary source proof omits menus and identifies only affected turns for compatibility`() {
+        val user = base[0].copy(content = "用户原文\n[choices]\nChoices\n1. 走向码头\n2. 走向旅店\n[/choices]")
+        val assistant = base[1].copy(
+            content = "桥上起雾。\n[choices]\nChoices\n1. 走向码头\n2. 走向旅店\n[/choices]",
+            actionOptionsFormat = ActionOptionsFormat(opening = "[choices]", closing = "[/choices]", heading = "Choices"),
+        )
+        val projected = listOf(user, assistant)
+        val plain = base[1].copy(sourceTurnId = "different")
+        assertEquals(user.content, MemorySourceFingerprint.modelFacingBody(user))
+        assertEquals("桥上起雾。\n", MemorySourceFingerprint.modelFacingBody(assistant))
+        assertEquals(fingerprint(projected), fingerprint(listOf(user, assistant.copy(content = "桥上起雾。\n"))))
+        assertEquals(setOf("s0"), MemorySourceFingerprint.sourceIdsWithProjectedActions(projected + plain))
+    }
+
+    @Test fun `source proof changes when a confirmed prior menu choice changes`() {
+        val menu = base[1].copy(
+            id = "menu",
+            content = "地图展开。\n[choices]\nChoices\n1. 关闭地图\n2. 交出钥匙\n[/choices]",
+            actionOptionsFormat = ActionOptionsFormat("[choices]", "[/choices]", "Choices"),
+        )
+        val user = base[0].copy(createdAt = 3, updatedAt = 3, orderKey = 3, content = "2", sourceTurnId = "s1", sourceTurnOrder = 1)
+        val original = listOf(menu, user)
+        val amended = listOf(menu.copy(content = menu.content.replace("交出钥匙", "交出地图")), user)
+        assertEquals("2", user.displayContent)
+        assertEquals(setOf("s0", "s1"), MemorySourceFingerprint.sourceIdsWithProjectedActions(original))
+        assertNotEquals(MemorySourceFingerprint.semantic("s1", original, session),
+            MemorySourceFingerprint.semantic("s1", amended, session))
+
+        val afterSourceEdit = listOf(amended.first().copy(updatedAt = 4), user)
+        assertEquals(setOf("s0"), MemorySourceFingerprint.sourceIdsWithProjectedActions(afterSourceEdit))
+        assertEquals(MemorySourceFingerprint.semantic("s1", listOf(user), session),
+            MemorySourceFingerprint.semantic("s1", afterSourceEdit, session))
+    }
+
+    private fun fingerprint(messages: List<ChatMessage>) =
+        MemorySourceFingerprint.semantic("s0", messages, session)
+
+    private fun message(id: String, role: MessageRole, content: String, order: Long) = ChatMessage(
+        id = id,
+        sessionId = session.id,
+        role = role,
+        content = content,
+        createdAt = order,
+        updatedAt = order,
+        orderKey = order,
+        sourceTurnId = "s0",
+        sourceTurnOrder = 0
+    )
+}

@@ -107,6 +107,7 @@ class DesktopRealChatRuntime internal constructor(
     private val modelResolver: EffectiveModelResolver,
     private val requestPlanner: DesktopChatRequestPlanner,
     private val images: DesktopChatImages? = null,
+    private val beforeSourceMutation: suspend (ChatMessage) -> Unit = {},
     private val transportFactory: (Boolean) -> OpenAiStreamingTransport = { allowCleartext ->
         OpenAiStreamingTransport(allowCleartextHttp = { allowCleartext })
     },
@@ -193,6 +194,7 @@ class DesktopRealChatRuntime internal constructor(
                 currentUser = persistedUser,
                 inputs = turn.inputs,
                 readOnlyRepositoryAccess = false,
+                newlyPersistedUser = true,
                 onPreparationStage = observer::onPreparationStage,
             )
         }
@@ -259,7 +261,8 @@ class DesktopRealChatRuntime internal constructor(
             sessionId = sessionId,
             role = MessageRole.ASSISTANT,
             content = "",
-        )).copy(narrativeMode = if (turn.settings.disableNarrativeModes) null else plan.session.narrativeMode)
+        )).copy(narrativeMode = if (turn.settings.disableNarrativeModes) null else plan.session.narrativeMode,
+            actionOptionsFormat = plan.actionOptionsFormat)
         var accumulatedContent = ""
         var previewContent: String? = null
         var receivedToolReplyPartLengths = emptyList<Int>()
@@ -274,9 +277,11 @@ class DesktopRealChatRuntime internal constructor(
         suspend fun persist(message: ChatMessage): ChatMessage {
             if (regenerationTarget == null) return chatRepository.addMessage(message)
             val old = requireNotNull(chatRepository.getMessage(regenerationTarget.id, sessionId)) { "回复不存在" }
+            beforeSourceMutation(old)
             val updated = MessageAlternativeVersionPolicy.append(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
                 narrativeMode = message.narrativeMode,
+                actionOptionsFormat = message.actionOptionsFormat,
             ).copy(reasoningContent = message.reasoningContent)
             return chatRepository.updateMessageReturningSnapshot(updated)
         }

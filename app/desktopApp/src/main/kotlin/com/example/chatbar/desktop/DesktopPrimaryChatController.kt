@@ -205,11 +205,15 @@ internal class DesktopPrimaryChatController(
     }
     private suspend fun <T> withMessageMutation(sessionId: String, messageId: String,
         retryAlternativeAdmission: Boolean = false, block: suspend () -> T): T {
+        val mutation: suspend () -> T = {
+            chats.getMessage(messageId, sessionId)?.let { memory?.service?.preserveActionProjectionBeforeMutation(it) }
+            block()
+        }
         var retries = 0
         while (true) {
             val result = try {
-                if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
-                else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+                if (voices == null) taskRuntime.withMessageMutation(sessionId, mutation)
+                else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, mutation) }
             } catch (busy: DesktopDataOperationRejectedException) {
                 if (!retryAlternativeAdmission || busy.reason != DesktopDataOperationRejectionReason.MAINTENANCE_BUSY ||
                     retries++ >= 15) throw busy
@@ -223,8 +227,12 @@ internal class DesktopPrimaryChatController(
     }
 
     private suspend fun <T> withNormalMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
-        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
-        else voices.mutateNormalMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+        val mutation: suspend () -> T = {
+            chats.getMessage(messageId, sessionId)?.let { memory?.service?.preserveActionProjectionBeforeMutation(it) }
+            block()
+        }
+        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, mutation)
+        else voices.mutateNormalMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, mutation) }
         memory?.sourceChanged(sessionId)
         return result
     }

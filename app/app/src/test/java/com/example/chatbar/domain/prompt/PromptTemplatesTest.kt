@@ -8,6 +8,16 @@ import org.junit.Test
 
 class PromptTemplatesTest {
     @Test
+    fun actionOptionsRepairFacadeUsesSharedAuthority() {
+        val custom = com.example.chatbar.data.local.entity.ActionOptionsFormat("<next>", "</next>", "Next",
+            com.example.chatbar.data.local.entity.ActionOptionLabels.LETTERS)
+        for (format in listOf(null, custom)) {
+            assertEquals(FormatRepairPromptAuthority.actionOptionsRepairRequirement(format),
+                PromptTemplates.actionOptionsRepairRequirement(format))
+        }
+    }
+
+    @Test
     fun auxiliaryFacadeUsesSharedAuthority() {
         assertEquals(AuxiliaryPromptAuthority.GENERAL_SYSTEM_PROMPT, PromptTemplates.GENERAL_SYSTEM_PROMPT)
         assertEquals(AuxiliaryPromptAuthority.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT, PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT)

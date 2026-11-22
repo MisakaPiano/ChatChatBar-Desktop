@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 
 /** One UI value for both presentations; controller remains the only durable String draft owner. */
 internal class DesktopComposerInput(val sessionId: String?, draft: String) {
-    var input by mutableStateOf(TextFieldValue(draft))
+    var input by mutableStateOf(TextFieldValue(draft, selection = TextRange(draft.length)))
         private set
     var expanded by mutableStateOf(false)
         private set
@@ -36,8 +36,11 @@ internal class DesktopComposerInput(val sessionId: String?, draft: String) {
 
     fun echo(draft: String) {
         val next = desktopComposerDraftEcho(input, draft)
-        if (next.text != input.text) { continuationPending = false; choiceEdits.clear() }
-        input = next
+        if (next.text != input.text) {
+            continuationPending = false
+            choiceEdits.clear()
+            input = next.copy(selection = TextRange(next.text.length))
+        } else input = next
     }
     fun open(canLaunch: Boolean) { if (sessionId != null && canLaunch) expanded = true }
     fun close() { if (expanded) { expanded = false; returnFocus++ } }

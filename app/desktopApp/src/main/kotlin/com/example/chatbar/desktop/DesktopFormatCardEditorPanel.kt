@@ -28,6 +28,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
+import com.example.chatbar.data.local.entity.ActionOptionsFormat
+import com.example.chatbar.data.local.entity.ActionOptionLabels
+import com.example.chatbar.data.local.entity.FormatCard
+import com.example.chatbar.domain.chat.RoleplayActionOptionsPolicy
 import com.example.chatbar.domain.card.FormatCardUserToolValidator
 import kotlinx.coroutines.launch
 
@@ -126,6 +130,7 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
             FormatField(t(DesktopUiText.FORMAT_CONTENT), card.content, multiline = true) { value ->
                 controller.edit { it.copy(content = value) }
             }
+            DesktopFormatActionOptions(card, controller)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusText(t(DesktopUiText.FORMAT_DEFAULT_FLAG))
                 BootstrapButton(t(if (card.isDefault) DesktopUiText.ON else DesktopUiText.OFF), secondary = !card.isDefault) {
@@ -219,11 +224,47 @@ private fun toolIssue(type: FormatCardUserToolType, minimum: String?, maximum: S
     else -> DesktopUiText.FORMAT_MAX_INVALID
 }
 
+@Composable
+internal fun DesktopFormatActionOptions(card: FormatCard, controller: DesktopFormatCardEditorController) {
+    val t = LocalDesktopUiStrings.current
+    val rule = card.actionOptionsFormat
+    val effective = rule ?: RoleplayActionOptionsPolicy.defaultFormat
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        StudioToggle(t(DesktopUiText.FORMAT_ACTION_RULE), rule != null) {
+            controller.edit { it.copy(actionOptionsFormat = if (it.actionOptionsFormat == null) ActionOptionsFormat() else null) }
+        }
+        StatusText(t(DesktopUiText.FORMAT_ACTION_RULE_HINT))
+        if (rule != null) {
+            FormatField(t(DesktopUiText.FORMAT_ACTION_OPEN), rule.opening) { text ->
+                controller.edit { it.copy(actionOptionsFormat = rule.copy(opening = text)) }
+            }
+            FormatField(t(DesktopUiText.FORMAT_ACTION_CLOSE), rule.closing) { text ->
+                controller.edit { it.copy(actionOptionsFormat = rule.copy(closing = text)) }
+            }
+            FormatField(t(DesktopUiText.FORMAT_ACTION_HEADING), rule.heading) { text ->
+                controller.edit { it.copy(actionOptionsFormat = rule.copy(heading = text)) }
+            }
+            BootstrapButton(t(if (rule.labels == ActionOptionLabels.NUMBERS) DesktopUiText.FORMAT_ACTION_NUMBERS
+                else DesktopUiText.FORMAT_ACTION_LETTERS), secondary = true) {
+                controller.edit { it.copy(actionOptionsFormat = rule.copy(labels =
+                    if (rule.labels == ActionOptionLabels.NUMBERS) ActionOptionLabels.LETTERS else ActionOptionLabels.NUMBERS)) }
+            }
+            RoleplayActionOptionsPolicy.validationError(rule)?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+        }
+        FormatHeading(t(DesktopUiText.FORMAT_ACTION_PREVIEW))
+        val labels = if (effective.labels == ActionOptionLabels.NUMBERS) listOf("1.", "2.") else listOf("A)", "B)")
+        StatusText(listOfNotNull(effective.opening, effective.heading.takeIf(String::isNotBlank),
+            "${labels[0]} ${t(DesktopUiText.FORMAT_ACTION_EXAMPLE_A)}",
+            "${labels[1]} ${t(DesktopUiText.FORMAT_ACTION_EXAMPLE_B)}", effective.closing).joinToString("\n"))
+    }
+}
+
 private fun FormatEditorProblem.uiText(): DesktopUiText = when (this) {
     FormatEditorProblem.NAME_REQUIRED -> DesktopUiText.FORMAT_NAME_REQUIRED
     FormatEditorProblem.CONTENT_REQUIRED -> DesktopUiText.FORMAT_CONTENT_REQUIRED
     FormatEditorProblem.DUPLICATE_NAME -> DesktopUiText.FORMAT_DUPLICATE_NAME
     FormatEditorProblem.INVALID_TOOL -> DesktopUiText.FORMAT_INVALID_TOOL
+    FormatEditorProblem.INVALID_ACTION_FORMAT -> DesktopUiText.FORMAT_ACTION_INVALID
     FormatEditorProblem.SOURCE_CHANGED -> DesktopUiText.FORMAT_SOURCE_CHANGED
     FormatEditorProblem.SOURCE_DELETED -> DesktopUiText.FORMAT_SOURCE_DELETED
     FormatEditorProblem.NEW_DRAFT_EXISTS -> DesktopUiText.FORMAT_NEW_DRAFT_EXISTS

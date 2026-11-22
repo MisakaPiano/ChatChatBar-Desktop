@@ -84,6 +84,8 @@ Do not modify existing user-facing prompt text, system prompt text, or prompt te
 
 All newly added hardcoded AI prompts, prompt templates, and prompt-builder text must live in `app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt`. Feature code should call `PromptTemplates` constants/functions instead of embedding prompt text inline, so prompts remain easy for the user to review and edit in one place. New prompt text must be written in Chinese by default; use English only for required protocol tokens, JSON field names, model-facing tag formats such as NovelAI/Danbooru tags, or quoted external identifiers.
 
+Desktop 格式修复家族的位置例外（用户于 2026-11-20 明确同意）：仅限已抽取的格式修复提示词及同家族 builder，物理文字继续集中在 `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/FormatRepairPromptAuthority.kt`。本仓库的 Android `PromptTemplates.kt` 保留可搜索的转发入口，Desktop 直接调用共享所有者；不复制两份文字，不让 Desktop 依赖 Android 模块。此例外不扩展到其他提示词家族，不授权修改既有文字，也不改变独立 Android 上游仓库的规则。
+
 ## Fallback Policy
 
 Fallback paths are failure signals, not success paths. When fallback is triggered, first investigate and fix the upstream failure reason, and make the failure visible in status/debug output. Do not optimize fallback behavior to hide broken primary functionality unless the user explicitly asks for graceful degradation.

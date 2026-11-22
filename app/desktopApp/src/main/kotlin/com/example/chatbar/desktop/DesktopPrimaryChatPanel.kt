@@ -957,6 +957,7 @@ internal fun PrimaryMessageBubble(
     val presented = remember(
         message, state.selectedCharacter, state.selectedSession, state.globalPlayerName,
         state.assistantSegmentedBubblesEnabled, t,
+        onActionChoice != null,
     ) {
         desktopPresentMessage(
             message, state.selectedCharacter, state.globalPlayerName,
@@ -964,6 +965,7 @@ internal fun PrimaryMessageBubble(
             DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
                 t(DesktopUiText.SYSTEM_ROLE)),
             session = state.selectedSession,
+            inlineActionChoices = onActionChoice != null,
         )
     }
     val colors = DesktopBootstrapColors
@@ -1076,6 +1078,7 @@ internal fun PrimaryMessageBubble(
         presented.segments.forEachIndexed { index, segment ->
             var segmentBounds by remember { mutableStateOf(Rect.Zero) }
             var segmentWidth by remember(message, segment.blockId) { mutableStateOf(0) }
+            if (segment.text.isNotBlank()) {
             Box(Modifier.onGloballyPositioned { segmentBounds = it.boundsInWindow() }
                 .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
                     if (event.buttons.isSecondaryPressed) {
@@ -1123,9 +1126,17 @@ internal fun PrimaryMessageBubble(
                     }
                 }
             }
+            }
             if (presented.segmented) DesktopVoiceRows(controller.voices, message,
                 voicePlacements.filter { it.segmentIndex != null && it.segmentIndex == segment.index }, state,
-                with(LocalDensity.current) { segmentWidth.toDp().value })
+                if (segmentWidth > 0) with(LocalDensity.current) { segmentWidth.toDp().value } else null)
+        }
+        val foldedActionStarts = presented.segments.filter { it.kind == RoleplaySegmentKind.STATUS && it.text.isNotBlank() }
+            .mapNotNull { it.source?.start }.toSet()
+        actionChoices.filter { it.blockStart !in foldedActionStarts }.groupBy { it.blockStart }.forEach { (start, choices) ->
+            val expansion = remember(message.id, message.currentAlternativeIndex, start) { DesktopPresentationExpansion(false) }
+            DesktopChatDisclosure(t(DesktopUiText.ACTION_CHOICES), expansion, compact = true)
+            if (expansion.expanded) DesktopActionChoiceList(choices, enabled = !sessionRepairBusy) { onActionChoice?.invoke(it) }
         }
         if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state, with(LocalDensity.current) { messageTextWidth.toDp().value })
         }

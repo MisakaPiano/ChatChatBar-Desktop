@@ -23,7 +23,7 @@ import kotlin.test.*
 
 class DesktopFishGenerationTest {
     @Test fun `late whole and segment audio refuse changed deleted or missing source version after network admission`() = runBlocking {
-        for (whole in listOf(false, true)) for (change in listOf("CONTENT", "MESSAGE", "SESSION", "VERSION", "NARRATIVE_MODE")) Fixture().use { f ->
+        for (whole in listOf(false, true)) for (change in listOf("CONTENT", "MESSAGE", "SESSION", "VERSION", "NARRATIVE_MODE", "ACTION_FORMAT")) Fixture().use { f ->
             f.seed(if (whole) "Whole message narration" else "<n=\"Alice\"/>[hello]()")
             if (whole) f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = false) }
             val entered = java.util.concurrent.CountDownLatch(1)
@@ -46,6 +46,7 @@ class DesktopFishGenerationTest {
                     "VERSION" -> f.chats.updateMessage(current.copy(alternatives = emptyList(), alternativeVersionIds = emptyList(),
                         currentAlternativeVersionId = "different-retained-version"))
                     "NARRATIVE_MODE" -> f.chats.updateMessage(current.copy(narrativeMode = ChatNarrativeMode.ADVANCE))
+                    "ACTION_FORMAT" -> f.chats.updateMessage(current.copy(actionOptionsFormat = ActionOptionsFormat("<next>", "</next>", "Next")))
                 }
                 release.countDown(); f.done(batch)
                 assertTrue(f.voices.listForSession(f.session.id).isEmpty(), "whole=$whole change=$change")
