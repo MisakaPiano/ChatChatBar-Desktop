@@ -142,6 +142,8 @@ def type_recovery_code(a,ui,root,secret,r):
     r['sameGroupPageAfterInput']=active_group_page(a,ui,root)
     target=secure_input_node(root,required=False)
     r['secureTextLengthMatched']=target is not None and len(target[0].get('text',''))==len(secret)
+    r['expectedRecoveryLengthCounterObserved']=str(len(secret))+'字' in values
+    r['zeroLengthCounterObserved']='0字' in values
     r['unlockLabelSeenAfterInput']='解锁管理' in values
     need(r['sameGroupPageAfterInput'],'GROUP_PAGE_LOST_AFTER_INPUT')
 
@@ -286,7 +288,10 @@ def execute(args,r):
         show_target(a,ui,'解锁管理',r,require_enabled=False);root=a.ui();need('恢复码 · 临时解锁管理' in ui.labels(root),'ORIGINAL_GROUP_LOCKED_INPUT_NOT_OBSERVED');r['coldManagementLockedUiObserved']=True
         r['phase']='UNLOCK_WITH_ORIGINAL85_CODE'
         type_recovery_code(a,ui,root,secret,r)
-        show_target(a,ui,'解锁管理',r);ui.wait_click(a,'解锁管理',time.monotonic()+20);r['unlockButtonClicks']=1
+        if not r['unlockLabelSeenAfterInput']:
+            show_target(a,ui,'解锁管理',r)
+        ui.wait_click(a,'解锁管理',time.monotonic()+30,result=r,phase='submit-original-recovery-code')
+        r['unlockButtonClicks']=1
         deadline=time.monotonic()+45
         while time.monotonic()<deadline:
             root=a.ui();need(not any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in ui.labels(root)),'ORIGINAL_CODE_UNLOCK_UI_ERROR')
