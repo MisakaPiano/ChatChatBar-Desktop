@@ -1,0 +1,61 @@
+{
+  "kind": "CCB_EXACT_LAN7_LAN8_DESKTOP_PROFILE_UPGRADE_V1",
+  "format": 1,
+  "packages": [
+    {
+      "series": "lan7",
+      "version": "0.1.0-lan.7",
+      "sourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+      "controlSha": "3bd17c5c78c7e1dd3a67e2b082675f292a57cf1d",
+      "runId": 44662039110,
+      "artifactId": 14596173695,
+      "artifactName": "ccb-lan6-lan7-independent-desktop",
+      "outerBytes": 210775355,
+      "outerSha256": "6c1bec0a8ab4db25f81f47d1514f8b823096290b6c9a72aedb42d46a4fd82140",
+      "filename": "CCB-0.1.0-lan.7-independent-windows-x64.zip",
+      "innerBytes": 210660167,
+      "innerSha256": "390b2a0630316140ca3f9703ce92eb5f17091226989701472c33f0ecd3d6c457",
+      "installerVersion": "0.1.40007",
+      "buildNumber": "40007"
+    },
+    {
+      "series": "lan8",
+      "version": "0.1.0-lan.8",
+      "sourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+      "controlSha": "bfd269147b94d2be7d7cad27dfa38b90b379a7d2",
+      "runId": 45071824607,
+      "artifactId": 14773932596,
+      "artifactName": "ccb-lan7-lan8-independent-desktop",
+      "outerBytes": 210848595,
+      "outerSha256": "99badfd5fca51fb069a680aa8cc2dd56cdcf75f5cb565fcce95ee1d0cf8d8229",
+      "filename": "CCB-0.1.0-lan.8-independent-windows-x64.zip",
+      "innerBytes": 210733380,
+      "innerSha256": "da5582e40f1a816ff4c27effaf467b9558452b4297c0b25d5fa6505f342545c5",
+      "installerVersion": "0.1.40008",
+      "buildNumber": "40008"
+    }
+  ],
+  "timestampRule": "OBSERVED_OLD_CONTROL_CAPTURED_AT_ONLY_WITH_IDENTICAL_SOURCE",
+  "timestampSourceBindings": {
+    "baseSourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+    "candidateSourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+    "files": [
+      {
+        "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt",
+        "baseSha256": "b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0",
+        "candidateSha256": "b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0"
+      },
+      {
+        "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt",
+        "baseSha256": "52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3",
+        "candidateSha256": "52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3"
+      },
+      {
+        "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
+        "baseSha256": "d015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388",
+        "candidateSha256": "d015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388"
+      }
+    ]
+  },
+  "allowedStateMigrations": []
+}
