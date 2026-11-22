@@ -13,6 +13,38 @@ import okhttp3.mockwebserver.MockWebServer
 import kotlin.test.*
 
 class DesktopNarrativeReplyEchoTest {
+    @Test fun `HTML comment closing stays literal while actual outer history wrapper is removed from preview Stop and storage`() = runBlocking {
+        for (mode in ChatNarrativeMode.entries) for (stop in listOf(true, false)) for (body in listOf(
+            "他打开门。\n<!-- </历史回复> -->\n他走了进去。",
+            "<!-- </历史回复> -->他打开门。\n他走了进去。",
+            "<!-- note -->`literal\n</历史回复>\nend`\n他走了进去。",
+        )) fixture { app -> coroutineScope {
+            MockWebServer().use { server ->
+                server.start()
+                val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
+                val raw = MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream").setBody(
+                    "data: ${delta(raw)}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                val before = app.chatRepository.getMessages(id).map { it.id }.toSet()
+                val control = DesktopChatGenerationControl()
+                val seen = mutableListOf<String>()
+                val operation = async { app.createRealChatRuntime().sendText(id, "Synthetic HTML comment reply",
+                    observer = DesktopRealChatObserver {
+                        seen += it.content
+                        if (stop && it.content.contains("他走了进去。")) control.requestUserStop()
+                    }, control = control) }
+                try {
+                    if (stop) assertFailsWith<DesktopUserStoppedChatException> { operation.await() }
+                    else assertEquals(body, operation.await().assistant.content)
+                    assertEquals(body, seen.last(), "HTML comment was mistaken for the outer history closing")
+                    val saved = ChatRepository(JsonFileStorage(app.appDataRoot)).getMessages(id)
+                        .single { it.role == MessageRole.ASSISTANT && it.id !in before }
+                    assertEquals(body, saved.content)
+                } finally { operation.cancelAndJoin() }
+            }
+        } }
+    }
+
     @Test fun `escaped and container code closings survive unsegmented streams completion cold read and next request history`() = runBlocking {
         for (mode in ChatNarrativeMode.entries) fixture { app -> MockWebServer().use { server ->
             val id = prepare(app, server.url("/v1").toString().trimEnd('/'), mode, segmented = false)
