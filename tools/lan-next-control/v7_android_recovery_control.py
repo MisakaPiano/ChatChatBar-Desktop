@@ -117,14 +117,20 @@ def type_recovery_code(a,ui,root,secret,r):
         if target and target[0].get('focused')=='true':
             r['coldRecoveryInputFocused']=True
             break
-        if r['coldRecoveryInputLocatedByKnownLayout'] and active_group_page(a,ui,root):
+        if active_group_page(a,ui,root):
             ime=a.run('shell','dumpsys','input_method')
             if re.search(r'\bmInputShown=true\b',ime) and 'packageName='+PACKAGE in ime:
                 r['coldRecoveryInputFocused']=True
                 r['focusConfirmedByGroupIme']=True
                 break
         time.sleep(.3)
-    need(r.get('coldRecoveryInputFocused',False),'COLD_RECOVERY_INPUT_NOT_FOCUSED')
+    if not r.get('coldRecoveryInputFocused',False):
+        # Some views omit focus in the accessibility dump. The normal unlock
+        # button and unlocked controls still must confirm any accepted input.
+        root=a.ui()
+        need(active_group_page(a,ui,root) and '恢复码 · 临时解锁管理' in ui.labels(root),
+             'COLD_RECOVERY_FORM_LOST_AFTER_TAP')
+        r['typedAfterExactTapWithNoFocusReport']=True
     # Feed the same code to the focused field in small batches. Avoid dismissing
     # the keyboard with Back while the Activity is restoring its scroll position.
     for start in range(0,len(secret),48):
