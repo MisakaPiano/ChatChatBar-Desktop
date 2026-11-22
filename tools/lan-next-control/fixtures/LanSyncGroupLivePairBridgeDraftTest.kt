@@ -89,7 +89,7 @@ class LanSyncGroupLivePairBridgeDraftTest {
             val receiver = phone.access()
             val remote = receiver.remote(LanSyncPeer(host.identity.fingerprint, "synthetic host",
                 host.advertised, host.port.get()), phone.network)
-            receiver.reader.routes("draft-explicit-tls", listOf(
+            receiver.reader.routes("explicit", listOf(
                 LanSyncGroupReplicaReader.Route(host.identity.fingerprint, remote)))
             var cursor: CommitCursor? = null
             do { cursor = receiver.node.discover(receiver.reader.discoveryFrom(remote), cursor, 20).nextCursor }

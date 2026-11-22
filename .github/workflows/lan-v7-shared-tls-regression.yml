@@ -39,7 +39,7 @@ jobs:
           src=v7-control/tools/lan-next-control/fixtures/LanSyncGroupLivePairBridgeDraftTest.kt
           target=app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLivePairBridgeDraftTest.kt
           test ! -e "v7-source/$target"
-          echo '18f552c4be83437c63813924a6445fd24e1aa56a21e4008ab70803659b3cb23a  v7-control/tools/lan-next-control/fixtures/LanSyncGroupLivePairBridgeDraftTest.kt' | sha256sum -c -
+          echo 'e44b0ca98da48b7d68b0398bfa74f999528eeb572dacae7002a3f5ca56861b62  v7-control/tools/lan-next-control/fixtures/LanSyncGroupLivePairBridgeDraftTest.kt' | sha256sum -c -
           cp "$src" "v7-source/$target"
           test "$(git -C v7-source status --porcelain --untracked-files=all)" = "?? $target"
           cd v7-source/app
