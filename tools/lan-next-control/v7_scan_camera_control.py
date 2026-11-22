@@ -159,6 +159,19 @@ def navigate(adb, result, deadline):
     while time.monotonic() < deadline:
         root = adb.ui()
         values = labels(root)
+        result['startupSurface'] = {
+            'appNodes': any(node.get('package') == PACKAGE for node in root.iter('node')),
+            'systemUiNodes': any(node.get('package') == 'com.android.systemui' for node in root.iter('node')),
+            'loadingLabel': 'ChatBar' in values,
+            'tutorialTitle': '基础教程' in values,
+            'updateTitle': '发现新版本' in values,
+            'manageLabel': '管理' in values,
+            'groupTitle': '设备组同步' in values,
+        }
+        if '发现新版本' in values and '稍后' in values and not result.get('updateDeferredThroughUi'):
+            wait_click(adb,'稍后',min(deadline,time.monotonic()+12),result=result,phase='defer-update')
+            result['updateDeferredThroughUi'] = True
+            continue
         if '设备组同步' in values or '管理' in values:
             break
         if '基础教程' in values and '选择教程' not in values:
@@ -177,6 +190,12 @@ def navigate(adb, result, deadline):
             continue
         time.sleep(.3)
     else:
+        focus = adb.run('shell','dumpsys','activity','activities')
+        result['mainWasResumedAtDeadline'] = any(MAIN in line for line in focus.splitlines() if 'mResumedActivity' in line or 'topResumedActivity' in line)
+        try:
+            result['appPidPresentAtDeadline'] = bool(adb.run('shell','pidof',PACKAGE).strip())
+        except Refused:
+            result['appPidPresentAtDeadline'] = False
         raise Refused('MAIN_UI_NOT_READY')
     if '设备组同步' not in labels(root):
         if click_target(root, '局域网同步') is None:

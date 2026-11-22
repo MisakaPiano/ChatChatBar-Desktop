@@ -12,6 +12,10 @@ jobs:
   android-camera:
     runs-on: ubuntu-latest
     timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 36]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +46,7 @@ jobs:
       - name: Exercise the real camera invitation action in the delivered APK
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 26
+          api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           disable-animations: true
@@ -50,10 +54,10 @@ jobs:
           script: |
             set -euo pipefail
             adb -s emulator-5554 install "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk"
-            python -B tools/lan-next-control/v7_scan_camera_control.py --adb adb --serial emulator-5554 --expected-api 26 --expect invalid --result "$RUNNER_TEMP/ccb-v7-scan/camera-result.json"
+            python -B tools/lan-next-control/v7_scan_camera_control.py --adb adb --serial emulator-5554 --expected-api ${{ matrix.api }} --expect invalid --result "$RUNNER_TEMP/ccb-v7-scan/camera-result.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-android-camera-safe-result
+          name: v7-android-camera-safe-result-api${{ matrix.api }}
           path: ${{ runner.temp }}/ccb-v7-scan/camera-result.json
           if-no-files-found: ignore
