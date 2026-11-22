@@ -36,9 +36,10 @@ jobs:
         shell: bash
         run: |
           python -B tools/lan-next-control/v7_android_scan_inputs.py
-          python -m pip install --disable-pip-version-check 'qrcode==8.2' 'Pillow==11.3.0'
+          python -m pip install --disable-pip-version-check 'qrcode==8.2' 'Pillow==11.3.0' 'imageio-ffmpeg==0.6.0'
           python -B tools/lan-next-control/v7_make_invalid_qr.py --output "$RUNNER_TEMP/ccb-v7-scan/qr.png"
-          ffmpeg -hide_banner -loglevel error -loop 1 -i "$RUNNER_TEMP/ccb-v7-scan/qr.png" -t 240 -r 15 -c:v libx264 -pix_fmt yuv420p "$RUNNER_TEMP/ccb-v7-scan/qr.mp4"
+          encoder="$(python -B -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          "$encoder" -hide_banner -loglevel error -loop 1 -i "$RUNNER_TEMP/ccb-v7-scan/qr.png" -t 240 -r 15 -c:v libx264 -pix_fmt yuv420p "$RUNNER_TEMP/ccb-v7-scan/qr.mp4"
       - name: Enable cloud emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
