@@ -81,6 +81,57 @@ class LanSyncGroupInvitationTest {
         val replay = t.attempt(offer); assertTrue(replay.first.isFailure && replay.second.isFailure)
     }
 
+    @Test fun validHelloWithoutAnAnswerDoesNotConsumeTheSameUnexpiredOffer() = withFixture { t ->
+        val offer = t.offer()
+        assertTrue(t.malformed(offer, t.recipient.publicKey.encoded).isFailure)
+        val accepted = t.attempt(offer)
+        assertEquals(t.joiner.fingerprint, accepted.first.getOrThrow().device)
+        accepted.second.getOrThrow()
+        assertTrue(t.attempt(offer).second.isFailure)
+    }
+
+    @Test fun receiverClockToleranceNeverExtendsMonotonicOfferLifetimeAndWhitespaceIsAllowed() = withFixture { t ->
+        val offer = t.offer()
+        assertEquals(offer, LanSyncGroupInviteOffer.parse(" \r\n${offer.code()}\t ", t.wall - 20_000))
+        assertEquals(offer, LanSyncGroupInviteOffer.parse(offer.code(), offer.expiresAt + 20_000))
+        assertEquals("SYNC_GROUP_INVITE_CLOCK", assertFailsWith<IllegalArgumentException> {
+            LanSyncGroupInviteOffer.parse(offer.code(), t.wall - 31_000)
+        }.message)
+        assertEquals("SYNC_GROUP_INVITE_EXPIRED", assertFailsWith<IllegalArgumentException> {
+            LanSyncGroupInviteOffer.parse(offer.code(), offer.expiresAt + 31_000)
+        }.message)
+        t.wall += 181_000
+        t.nanos += 181_000_000_000L
+        val result = t.attempt(offer)
+        assertTrue(result.first.isFailure && result.second.isFailure)
+    }
+
+    @Test fun senderAndReceiverShareTheV1TextLimitWithoutDiscardingAnyInitialHeads() = withFixture { t ->
+        val original = t.offer()
+        val trust = original.trust
+        val vault = SyncManagementVaultContext(1, trust.group, SyncStoreId.random(), trust.genesis, t.f.owner.fingerprint, "1".repeat(64))
+        val base = LanSyncGroupJoinBootstrap(if (original.port == 33000) 33001 else 33000, vault,
+            CiphertextDescriptor(100, CiphertextSha256.parse("2".repeat(64))))
+        val heads = List(230) { SyncVersionRef(SyncStoreId.random(), "3".repeat(64)) }
+        fun bootstrap(size: Int) = base.copy(dataHeads = heads.take(size).toSet())
+        val firstOversized = (1..heads.size).first { size ->
+            original.copy(bootstrap = bootstrap(size)).code().length > LanSyncGroupInviteOffer.MAX_CODE_CHARS
+        }
+        fun issuer(size: Int) = LanSyncGroupInvitation(t.f.owner, trust, { t.f.ledger }, { t.wall }, { t.nanos }, bootstrap(size))
+        val fitted = issuer(firstOversized - 1).use { it.issue(original.host, original.port) }
+        assertEquals(bootstrap(firstOversized - 1).dataHeads, LanSyncGroupInviteOffer.parse(fitted.code(), t.wall).bootstrap?.dataHeads)
+        val oversized = original.copy(bootstrap = bootstrap(firstOversized))
+        assertEquals("SYNC_GROUP_INVITE_CODE_TOO_LARGE", assertFailsWith<IllegalArgumentException> {
+            LanSyncGroupInviteOffer.parse(oversized.code(), t.wall)
+        }.message)
+        issuer(firstOversized).use { owner ->
+            assertEquals("SYNC_GROUP_INVITE_CODE_TOO_LARGE", assertFailsWith<IllegalArgumentException> {
+                owner.issue(original.host, original.port)
+            }.message)
+        }
+        assertEquals(firstOversized, oversized.bootstrap!!.dataHeads.size)
+    }
+
     @Test fun anotherRecipientPublicKeyWithoutItsPrivateKeyCannotBecomeAProvedMember() = withFixture { t ->
         val victim = SyncDeviceEncryptionKey.create(LanSyncTlsIdentity.create().fingerprint)
         val result = t.malformed(t.offer(), victim.publicKey.encoded, response = "0".repeat(64))

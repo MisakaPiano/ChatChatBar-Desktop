@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.domain.lanSync.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
@@ -13,6 +14,45 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopLanSyncResourceTest {
+    @Test fun phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply() = runBlocking {
+        val testRoot = Files.createTempDirectory("desktop-lan-bmp-").toRealPath()
+        try {
+            val source = Files.createDirectory(testRoot.resolve("phone"))
+            val target = Files.createDirectory(testRoot.resolve("desktop"))
+            val sourceState = Files.createDirectory(testRoot.resolve("source-state"))
+            val targetState = Files.createDirectory(testRoot.resolve("target-state"))
+            val images = Files.createDirectory(source.resolve("images"))
+            val image = BufferedImage(2, 2, BufferedImage.TYPE_3BYTE_BGR)
+            image.setRGB(0, 0, 0xff336699.toInt())
+            val bytes = ByteArrayOutputStream().use { output ->
+                check(ImageIO.write(image, "bmp", output))
+                output.toByteArray()
+            }
+            Files.write(images.resolve("original.jpg"), bytes)
+            JsonFileStorage(source).saveEntity("character_cards", "card", CharacterCard("card", "合成角色", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+            JsonFileStorage(source).saveEntity("chat_sessions", "session",
+                ChatSession("session", "card", "合成会话", chatBackground = "images/original.jpg"), ChatSession.serializer())
+            fun workspace(root: Path, state: Path) = LanSyncWorkspace(root, state, { root.resolve(it) },
+                resourceReference = { _, path -> desktopLanSyncResourceReference(root, path) },
+                validateResource = ::validateDesktopLanSyncResource)
+            workspace(source, sourceState).capture("phone").use { capture ->
+                val plan = LanSyncPlan(UUID.randomUUID().toString(), capture.snapshot, emptyMap())
+                workspace(target, targetState).apply(plan, emptyMap(), "desktop", capture.blobs)
+                val restored = requireNotNull(JsonFileStorage(target).loadEntity("chat_sessions", "session", ChatSession.serializer()))
+                val path = target.resolve(requireNotNull(restored.chatBackground))
+                val record = capture.snapshot.records.single { it.type == "chat_sessions" }
+                assertContentEquals(bytes, Files.readAllBytes(path))
+                val preview = DesktopLanSyncRaster.preview(path, record)
+                assertEquals(0xff336699.toInt(), ImageIO.read(preview.inputStream()).getRGB(0, 0))
+                workspace(target, targetState).capture("desktop").use { reopened ->
+                    assertEquals(capture.snapshot.hashes(), reopened.snapshot.hashes())
+                }
+                val truncated = Files.write(testRoot.resolve("truncated.jpg"), bytes.copyOf(16))
+                assertFails { DesktopLanSyncRaster.decode(truncated, record, 256) }
+            }
+        } finally { check(testRoot.toFile().deleteRecursively()) }
+    }
+
     @Test fun `actual resource owner reopens synced avatar original cover and equal-byte distinct gallery`() = runBlocking {
         val root = Files.createTempDirectory("lan-desktop-target-").toRealPath()
         val state = Files.createTempDirectory("lan-desktop-state-").toRealPath()

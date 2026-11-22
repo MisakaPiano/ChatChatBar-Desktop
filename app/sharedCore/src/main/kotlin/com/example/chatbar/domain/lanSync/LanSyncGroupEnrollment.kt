@@ -401,7 +401,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         } finally { plain.fill(0) }
     }
     private fun hasOnlyDraftEntries(pending: Abandon?): Boolean {
-        val allowed = draftNames + setOf("profile.lock", "abandoned-drafts", "abandoned-joins") +
+        val allowed = draftNames + setOf("profile.lock", "abandoned-drafts", "abandoned-joins", "shelved-joins") +
             listOfNotNull("abandon.protected".takeIf { pending != null })
         return Files.newDirectoryStream(root).use { entries -> entries.all { it.fileName.toString() in allowed } }
     }

@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
@@ -19,8 +20,10 @@ import kotlinx.serialization.Serializable
 
 enum class LanSyncGroupJoinStage { PREPARING, PREPARED, PROOF_ATTEMPTED, WAITING_FOR_APPROVAL, KEYS_ADMITTED, NATIVE_ENROLLED, READY }
 data class LanSyncGroupJoiningProfile(val stage: LanSyncGroupJoinStage, val trust: SyncGroupTrust,
-    val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false)
+    val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false, val canShelve: Boolean = false)
+data class LanSyncShelvedJoin(val operation: String, val group: String)
 data class LanSyncGroupJoiningResult(val profile: LanSyncGroupJoiningProfile, val node: LanSyncGroupNode?, val waitingCode: String? = null)
+internal class LanSyncJoinRouteFailure(cause: IOException) : IOException("SYNC_GROUP_JOIN_CONNECTION_FAILED", cause)
 
 /** Explicit joining retains its recipient before any proof; normal reopen never recreates origins. */
 class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSyncWorkspace,
@@ -37,6 +40,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     @Serializable private data class Projection(val projection: LanSyncProjection, val sourceFiles: Map<String, String>,
         val checkpoint: SyncVersionRef, val heads: Set<SyncVersionRef>)
     private val root = parent.resolve("joining")
+    private val shelf = parent.resolve("shelved-joins")
     private val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
     private val mutex = LanSyncGroupEnrollment.locks.computeIfAbsent(parent) { kotlinx.coroutines.sync.Mutex() }
     init { lanSyncSafe(parent, true) }
@@ -50,7 +54,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         requireNotNull(offer.bootstrap).let { LanSyncGroupRecoveryAnchor(offer.trust, it.vault, it.vaultDescriptor, it.dataHeads) }
     }
     private fun profile(record: Record) =
-        LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica, canAbandon(record))
+        LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica,
+            canAbandon(record), canShelve(record, root))
 
     private fun canAbandon(record: Record): Boolean {
         if (record.offer == null || record.stage !in setOf(LanSyncGroupJoinStage.PREPARING, LanSyncGroupJoinStage.PREPARED)) return false
@@ -78,6 +83,67 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         observe("UNPROVED_JOIN_ARCHIVED")
         archive
     }
+    private fun canShelve(record: Record, directory: Path): Boolean {
+        if (record.offer == null || record.stage !in setOf(LanSyncGroupJoinStage.PROOF_ATTEMPTED, LanSyncGroupJoinStage.WAITING_FOR_APPROVAL) ||
+            record.projection != null || record.reprepareRequested) return false
+        val allowed = setOf("recipient", "bootstrap", "received-ciphertext", "commit-candidates", "route-cache", "custody")
+        return Files.newDirectoryStream(directory).use { files -> files.all { path ->
+            when (path.fileName.toString()) {
+                "profile.protected" -> Files.isRegularFile(path, NOFOLLOW_LINKS)
+                "custody" -> Files.isDirectory(path, NOFOLLOW_LINKS) && Files.newDirectoryStream(path).use { controls ->
+                    controls.all { it.fileName.toString() == "group.lock" && Files.isRegularFile(it, NOFOLLOW_LINKS) }
+                }
+                in allowed -> Files.isDirectory(path, NOFOLLOW_LINKS)
+                else -> false
+            }
+        } }
+    }
+
+    /** Neither an old pre-dial marker nor a missing reply proves that the inviter rejected this member. */
+    suspend fun shelveUnsettledInvitation(): Unit = guarded {
+        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        require(canShelve(record, root)) { "SYNC_GROUP_JOIN_HAS_LOCAL_ADMISSION" }
+        recipient(record)
+        if (!Files.exists(shelf, NOFOLLOW_LINKS)) Files.createDirectory(shelf)
+        lanSyncSafe(shelf, true)
+        val target = shelf.resolve(record.operation.value)
+        require(!Files.exists(target, NOFOLLOW_LINKS)) { "SYNC_GROUP_JOIN_SHELF_EXISTS" }
+        Files.move(root, target, ATOMIC_MOVE)
+        observe("UNSETTLED_JOIN_SHELVED")
+    }
+
+    private fun shelvedRecords(): List<Record> {
+        if (!Files.exists(shelf, NOFOLLOW_LINKS)) return emptyList()
+        lanSyncSafe(shelf, true)
+        return Files.newDirectoryStream(shelf).use { files -> files.map { path ->
+            val operation = SyncStoreId.parse(path.fileName.toString())
+            lanSyncSafe(path, true)
+            val record = requireNotNull(read(path)) { "SYNC_GROUP_JOIN_SHELF_MISSING" }
+            require(operation == record.operation && canShelve(record, path)) { "SYNC_GROUP_JOIN_SHELF_CHANGED" }
+            record
+        }.sortedBy { it.operation.value } }
+    }
+    suspend fun shelvedInvitations(): List<LanSyncShelvedJoin> = guarded {
+        shelvedRecords().map { LanSyncShelvedJoin(it.operation.value, trust(it).group.value) }
+    }
+    suspend fun restoreShelvedInvitation(operation: String): LanSyncGroupJoiningProfile = guarded {
+        require(!Files.exists(parent.resolve("profile.protected"), NOFOLLOW_LINKS) &&
+            !Files.exists(parent.resolve("creation"), NOFOLLOW_LINKS) && !Files.exists(parent.resolve("abandon.protected"), NOFOLLOW_LINKS) &&
+            read() == null) { "SYNC_GROUP_JOIN_ALREADY_PREPARED" }
+        val id = SyncStoreId.parse(operation)
+        val record = requireNotNull(shelvedRecords().firstOrNull { it.operation == id }) { "SYNC_GROUP_JOIN_SHELF_MISSING" }
+        val source = shelf.resolve(id.value)
+        SyncDeviceKeyCustody(source.resolve("recipient"), identity.fingerprint, protect, unprotect)
+            .open(requireNotNull(record.recipient))
+        if (Files.exists(root, NOFOLLOW_LINKS)) {
+            lanSyncSafe(root, true)
+            require(Files.newDirectoryStream(root).use { !it.iterator().hasNext() }) { "SYNC_GROUP_JOIN_EXISTING_EVIDENCE" }
+            Files.delete(root)
+        }
+        Files.move(source, root, ATOMIC_MOVE)
+        observe("UNSETTLED_JOIN_RESTORED")
+        profile(record)
+    }
     suspend fun profile(): LanSyncGroupJoiningProfile? = guarded { read()?.let(::profile) }
     suspend fun recoveryAnchor(): LanSyncGroupRecoveryAnchor? = guarded { read()?.recoveryAnchor }
     /** Public pins of this retained recovery enrollment, never a replacement or private key. */
@@ -103,9 +169,45 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val offer = requireNotNull(record.offer) { "SYNC_GROUP_JOIN_CLOUD_SOURCE_REQUIRED" }
         val source = requireNotNull(offer.bootstrap)
         val peer = LanSyncPeer(offer.inviter, "邀请设备", offer.host, source.storePort)
-        LanSyncGroupRemoteStore(offer.trust.group, directory("route-cache", true),
-            { network.connect(identity, peer) }, authenticatedConnect = true)
+        val admitted = record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal
+        if (admitted) require(custody(record, false).ledger().current().members[peer.fingerprint]?.active == true) {
+            "SYNC_GROUP_JOIN_ROUTE_NO_LONGER_ACTIVE"
+        }
+        bootstrapStore(record, network, peer)
     }
+
+    /** Each activation freezes one authenticated route and starts its own discovery cursor. */
+    internal suspend fun discoveredBootstrapStore(network: LanSyncNetwork): CiphertextStore? = guarded {
+        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        val offer = requireNotNull(record.offer)
+        val source = requireNotNull(offer.bootstrap)
+        val fingerprints = if (record.stage.ordinal < LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) listOf(offer.inviter)
+        else {
+            val active = custody(record, false).ledger().current().members.filterValues { it.active }.keys
+            val controller = SyncDeviceSignatures.decode(offer.trust.ownerCertificate).fingerprint
+            (listOf(offer.inviter) + active.sorted()).distinct().filter { it in active && it != controller && it != identity.fingerprint }
+        }
+        val peer = fingerprints.take(4).firstNotNullOfOrNull { expected ->
+            network.discoverGroup(offer.trust.group, identity.fingerprint, expected)?.takeIf {
+                it.fingerprint == expected && (it.host != offer.host || it.port != source.storePort || expected != offer.inviter) &&
+                    it.port in 1024..65535 && runCatching { LanSyncTls.parseAddress(it.host) }.isSuccess
+            }
+        } ?: return@guarded null
+        bootstrapStore(record, network, peer)
+    }
+
+    private fun bootstrapStore(record: Record, network: LanSyncNetwork, peer: LanSyncPeer): CiphertextStore =
+        LanSyncGroupRemoteStore(trust(record).group, directory("route-cache", true), {
+            val socket = try { network.connect(identity, peer) }
+            catch (error: IOException) { throw LanSyncJoinRouteFailure(error) }
+            try {
+                require(LanSyncTls.peerFingerprint(socket) == peer.fingerprint) { "SYNC_GROUP_INVITE_TLS_PIN" }
+                socket
+            } catch (failure: Exception) {
+                runCatching { socket.close() }
+                throw failure
+            }
+        }, authenticatedConnect = true)
     suspend fun runtimeAccess(): LanSyncGroupRuntimeAccess? = guarded {
         val record = read() ?: return@guarded null
         if (record.stage != LanSyncGroupJoinStage.READY) return@guarded null
@@ -129,6 +231,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             value.copy(dataHeads = Collections.unmodifiableSet(value.dataHeads.toSet()))
         }) }
         requireNotNull(offer.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
+        require(shelvedRecords().none { trust(it).group == offer.trust.group }) { "SYNC_GROUP_JOIN_RESTORE_SHELVED_FIRST" }
         admission(offer)
         if (!Files.exists(root, NOFOLLOW_LINKS)) Files.createDirectory(root)
         val record = Record(1, SyncStoreId.random(), LanSyncGroupJoinStage.PREPARING, offer, certificate, null,
@@ -152,6 +255,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             require(Files.newDirectoryStream(root).use { !it.iterator().hasNext() }) { "SYNC_GROUP_JOIN_EXISTING_EVIDENCE" }
         }
         val frozen = anchor.copy(dataHeads = Collections.unmodifiableSet(anchor.dataHeads.toSet()))
+        require(shelvedRecords().none { trust(it).group == anchor.trust.group }) { "SYNC_GROUP_JOIN_RESTORE_SHELVED_FIRST" }
         admission(frozen)
         if (!Files.exists(root, NOFOLLOW_LINKS)) Files.createDirectory(root)
         val record = Record(1, SyncStoreId.random(), LanSyncGroupJoinStage.PREPARING, certificate = certificate,
@@ -397,8 +501,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         LanSyncMetadataBudget().validate(file)
         return requireNotNull(LanSyncJsonFiles.read(file, Projection.serializer(), record.projection!!.sha256)).also { it.projection.validate() }
     }
-    private fun read(): Record? {
-        val path = root.resolve("profile.protected")
+    private fun read(directory: Path = root): Record? {
+        val path = directory.resolve("profile.protected")
         if (!Files.exists(path, NOFOLLOW_LINKS)) return null
         require(!Files.exists(parent.resolve("profile.protected"), NOFOLLOW_LINKS)) { "SYNC_GROUP_MULTIPLE_PROFILES" }
         val plain = unprotect(lanSyncRead(path, 256 * 1024))

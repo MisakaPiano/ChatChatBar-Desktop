@@ -27,12 +27,23 @@ import kotlinx.serialization.json.put
 @Serializable data class LanSyncGroupInviteOffer(val trust: SyncGroupTrust, val host: String, val port: Int,
     val inviter: String, val token: String, val expiresAt: Long, val bootstrap: LanSyncGroupJoinBootstrap? = null) {
     fun validate(now: Long = System.currentTimeMillis()) {
+        validateShape()
+        validateTime(now)
+    }
+
+    private fun validateShape() {
         LanSyncTls.parseAddress(host)
-        require(port in 1024..65535 && inviter.matches(HEX) && token.matches(HEX) && expiresAt > now && expiresAt - now <= LIFETIME_MILLIS) {
+        require(port in 1024..65535 && inviter.matches(HEX) && token.matches(HEX) && expiresAt > 0) {
             "SYNC_GROUP_INVITE_OFFER"
         }
         require(SyncDeviceSignatures.decode(trust.ownerCertificate).encoded == trust.ownerCertificate) { "SYNC_GROUP_INVITE_TRUST" }
         bootstrap?.validate(trust, port)
+    }
+    private fun validateTime(now: Long) {
+        require(now >= 0) { "SYNC_GROUP_INVITE_CLOCK" }
+        val remaining = expiresAt - now
+        require(remaining >= -WALL_SKEW_MILLIS) { "SYNC_GROUP_INVITE_EXPIRED" }
+        require(remaining <= LIFETIME_MILLIS + WALL_SKEW_MILLIS) { "SYNC_GROUP_INVITE_CLOCK" }
     }
     fun code(): String = PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(
         lanSyncJson.encodeToString(LanSyncGroupInviteOffer.serializer(), this).toByteArray(Charsets.UTF_8))
@@ -40,14 +51,20 @@ import kotlinx.serialization.json.put
     override fun toString() = "LanSyncGroupInviteOffer(REDACTED)"
     companion object {
         internal const val LIFETIME_MILLIS = 180_000L
+        private const val WALL_SKEW_MILLIS = 30_000L
+        internal const val MAX_CODE_CHARS = 16 * 1024
         private const val PREFIX = "CCB-GROUP-JOIN1:"
         private val HEX = Regex("[a-f0-9]{64}")
         fun parse(code: String, now: Long = System.currentTimeMillis()): LanSyncGroupInviteOffer {
-            try {
-                require(code.length in 1..16 * 1024 && code.startsWith(PREFIX)) { "SYNC_GROUP_INVITE_OFFER" }
-                return InviteWire.json.decodeFromString(LanSyncGroupInviteOffer.serializer(), lanSyncUtf8(Base64.getUrlDecoder().decode(code.removePrefix(PREFIX))))
-                    .also { it.validate(now) }
+            val text = code.trim()
+            require(text.length <= MAX_CODE_CHARS) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
+            val offer = try {
+                require(text.startsWith(PREFIX)) { "SYNC_GROUP_INVITE_OFFER" }
+                InviteWire.json.decodeFromString(LanSyncGroupInviteOffer.serializer(), lanSyncUtf8(Base64.getUrlDecoder().decode(text.removePrefix(PREFIX))))
+                    .also { it.validateShape() }
             } catch (_: Exception) { error("SYNC_GROUP_INVITE_OFFER") }
+            offer.validateTime(now)
+            return offer
         }
     }
 }
@@ -68,9 +85,11 @@ private object InviteWire {
         val bytes = json.encodeToString(serializer, value).toByteArray(Charsets.UTF_8)
         require(bytes.size <= 64 * 1024) { "SYNC_GROUP_INVITE_FRAME" }; wire.send(bytes)
     }
-    fun <T> read(wire: LanSyncWire, serializer: KSerializer<T>): T = try {
-        json.decodeFromString(serializer, wire.text(64 * 1024))
-    } catch (_: Exception) { error("SYNC_GROUP_INVITE_FRAME") }
+    fun <T> read(wire: LanSyncWire, serializer: KSerializer<T>): T {
+        val text = wire.text(64 * 1024)
+        return try { json.decodeFromString(serializer, text) }
+        catch (_: Exception) { error("SYNC_GROUP_INVITE_FRAME") }
+    }
     // HPKE base mode alone authenticates no sender (RFC9180 sections9.1/9.7).
     // Both actual TLS certificates and the externally delivered offer bind this application challenge.
     fun context(offer: LanSyncGroupInviteOffer, device: String, recipient: SyncRecipientPublicKey, name: String): ByteArray {
@@ -96,10 +115,13 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
     fun issue(host: String, port: Int): LanSyncGroupInviteOffer = synchronized(lock) {
         check(!closed) { "SYNC_GROUP_INVITE_CLOSED" }
         val ledger = ledger()
+        require((bootstrap?.dataHeads?.size ?: 0) <= LanSyncGroupInviteOffer.MAX_CODE_CHARS / 64) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
         val frozenBootstrap = bootstrap?.let { it.copy(dataHeads = Collections.unmodifiableSet(it.dataHeads.toSet())) }
         val offer = LanSyncGroupInviteOffer(trust.copy(checkpoint = ledger.current().reference()), host, port, identity.fingerprint,
             ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }, wallTime() + LanSyncGroupInviteOffer.LIFETIME_MILLIS, frozenBootstrap)
-        offer.validate(wallTime()); issued = Issued(offer, monotonic()); offer
+        offer.validate(wallTime())
+        require(offer.code().length <= LanSyncGroupInviteOffer.MAX_CODE_CHARS) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
+        issued = Issued(offer, monotonic()); offer
     }
     /** Never reuse this context for ordinary group-store or legacy sync commands. */
     fun invitationContext(): SSLContext = identity.context { synchronized(lock) {

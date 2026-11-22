@@ -66,7 +66,11 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             CbText(lanSyncGroupDescription)
-            CbButton("创建新设备组", actions::createGroup, enabled = !interactionBlocked)
+            if (state.shelvedJoins.isEmpty()) CbButton("创建新设备组", actions::createGroup, enabled = !interactionBlocked)
+            state.shelvedJoins.forEach { saved ->
+                CbButton("恢复原加入申请 · ${saved.group.take(8)}", { actions.restoreShelvedJoin(saved.operation) },
+                    enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
+            }
         }
         if (!state.recoveryJoining && (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
@@ -115,16 +119,18 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
             if (state.canAbandonJoin)
                 CbButton("放弃未发送的申请", actions::abandonUnprovedJoin, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
+            if (state.canShelveJoin)
+                CbButton("暂存原申请并重新加入", actions::shelveUnsettledJoin, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             if (state.canRefreshJoinPreparation)
                 CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
                 CbText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
-            GroupRoute("本机", state.local, "最近保存"); GroupRoute("附近设备", state.nearby, "最近送达"); GroupRoute("网盘", state.cloud, "最近上传")
+            GroupRoute("本机", state.local, "最近保存"); GroupRoute("附近设备", state.nearby, "最近连接"); GroupRoute("网盘", state.cloud, "最近上传")
             CbButton("立即检查", actions::retry, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbButton("网盘设置", actions::openCloudSettings, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
-            CbButton("邀请设备", actions::createInvitation, enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite)
+            CbButton("邀请设备", { actions.createInvitation() }, enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite)
             if (state.managementUnlocked) {
                 CbButton("锁定管理", actions::lockManagement, variant = ButtonVariant.Secondary)
                 CbText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
@@ -148,15 +154,25 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
-            val bitmap = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
-                Bitmap.createBitmap(384, 384, Bitmap.Config.ARGB_8888).apply {
-                    for (y in 0 until 384) for (x in 0 until 384) setPixel(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
-                }.asImageBitmap()
+            val bitmap = remember(code) {
+                try {
+                    val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
+                    Bitmap.createBitmap(matrix.width, matrix.height, Bitmap.Config.ARGB_8888).apply {
+                        for (y in 0 until matrix.height) for (x in 0 until matrix.width)
+                            setPixel(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                    }.asImageBitmap()
+                } catch (_: com.google.zxing.WriterException) { null }
             }
-            Image(bitmap, "新设备扫描此邀请", Modifier.widthIn(max = 280.dp).fillMaxWidth().aspectRatio(1f))
-            CbText("在新设备打开设备组同步，扫描此邀请。邀请短时有效；随后在这里确认设备身份。")
+            if (bitmap != null) {
+                Image(bitmap, "新设备扫描此邀请", Modifier.widthIn(max = 280.dp).fillMaxWidth().aspectRatio(1f))
+                CbText("在新设备打开设备组同步，扫描此邀请，然后在这里核对设备身份。")
+            } else CbText("此邀请无法显示二维码，请复制后到新设备粘贴。")
             CbButton("复制邀请", { copy(code) }, variant = ButtonVariant.Secondary)
             CbButton("关闭邀请", actions::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
+            state.invitationAddresses.filter { it != offer.host }.forEach { address ->
+                CbButton("用 $address 生成新邀请", { actions.createInvitation(address) },
+                    enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Secondary)
+            }
         }
         state.peerConfirmation?.let { peer ->
             CbText("允许 ${peer.name} 加入设备组？"); CbText("设备身份：${peer.fingerprint}")

@@ -18,7 +18,7 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: platforms;android-36 build-tools;36.0.0
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify invitation proof, archive, and desktop rendering
         working-directory: app
@@ -26,11 +26,13 @@ jobs:
           bash ./gradlew :sharedCore:test \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellingAfterProofRejectsTheStaleApprovalWithoutWritingNamesOrMembership' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellationAfterRootIntentDoesNotReportSuccessOrLoseTheApprovedMember' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupInvitationTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupAppTransportTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupPeerNamesTest' \
             :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopLanSyncGroupInvitationQrTest' \
+            --tests 'com.example.chatbar.desktop.DesktopLanSyncResourceTest.phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply' \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
@@ -52,11 +54,35 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: platforms;android-36 build-tools;36.0.0
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Compile Android preview at the existing package identity
+      - name: Build isolated Android 87 and its synthetic test companion
         working-directory: app
         run: >-
-          bash ./gradlew :app:compileLanPreviewKotlin
-          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=86 -Pkotlin.daemon.jvmargs=-Xmx4g
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
           --no-daemon --max-workers=1 --no-parallel --console=plain
+      - name: Enable acceleration on the cloud runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify the Android bitmap path on an isolated emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
+            adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
+            adb shell am instrument -w -e class com.example.chatbar.lanSync.AndroidLanSyncBmpResourceTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-android-bmp.txt"
+            cat "$RUNNER_TEMP/v7-android-bmp.txt"
+            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-android-bmp.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-invitation-r01-android-bmp
+          path: ${{ runner.temp }}/v7-android-bmp.txt

@@ -11,7 +11,7 @@ import java.net.SocketTimeoutException
 import java.security.SecureRandom
 
 /** Address hints only. Every returned route still requires the real pinned mutual TLS handshake. */
-class LanSyncGroupDiscovery private constructor(private val group: SyncStoreId, private val device: String,
+class LanSyncGroupDiscovery internal constructor(private val group: SyncStoreId, private val device: String,
     private val network: LanSyncNetwork, private val onFailure: (String, Exception) -> Unit) : AutoCloseable {
     constructor(access: LanSyncGroupRuntimeAccess, network: LanSyncNetwork,
         onFailure: (String, Exception) -> Unit) : this(access.trust.group, access.device, network, onFailure)

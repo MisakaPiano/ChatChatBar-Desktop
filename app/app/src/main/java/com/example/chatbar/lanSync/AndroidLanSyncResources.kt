@@ -48,7 +48,8 @@ fun androidLanSyncPreviewRaster(path: Path, record: LanSyncRecord): ByteArray {
     }
     var oriented = bitmap
     try {
-        val orientation = if (bounds.outMimeType == "image/gif") 1 else ImageMetadataStripper.readOrientation(path.toFile())
+        val orientation = if (bounds.outMimeType in setOf("image/gif", "image/bmp", "image/x-ms-bmp")) 1
+            else ImageMetadataStripper.readOrientation(path.toFile())
         val matrix = android.graphics.Matrix().apply {
             when (orientation) {
                 2 -> setScale(-1f, 1f)

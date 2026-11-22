@@ -89,6 +89,28 @@ class LanSyncGroupAppTransportTest {
         }
     }
 
+    @Test fun preferredEligibleAddressAndExplicitAlternativeUseSeparateV1Invitations() = fixture { f ->
+        val network = object : LanSyncNetwork by f.network {
+            override fun addresses() = listOf("10.0.0.1", "192.168.7.2", "127.0.0.1")
+            override fun preferredInvitationAddress(eligible: List<String>) = "192.168.7.2"
+        }
+        val transport = LanSyncGroupAppTransport(f.access, network) { _, _ -> }
+        try {
+            val port = transport.start()
+            assertEquals(listOf("192.168.7.2", "10.0.0.1"), transport.invitationAddresses())
+            val first = transport.invitation(f.enrollment.invitation(port)) { }
+            assertEquals("192.168.7.2", first.host)
+            val second = transport.invitation(f.enrollment.invitation(port), selectedHost = "10.0.0.1") { }
+            assertEquals("10.0.0.1", LanSyncGroupInviteOffer.parse(second.code()).host)
+            assertNotEquals(first.token, second.token)
+            assertFails {
+                val wrong = LanSyncTlsIdentity.create()
+                LanSyncGroupInviteClient.exchange(first, wrong, SyncDeviceEncryptionKey.create(wrong.fingerprint), "synthetic",
+                    { network.connect(wrong, LanSyncPeer(first.inviter, "old", first.host, first.port)) })
+            }
+        } finally { transport.closeAndDrain() }
+    }
+
     /** Opaque transport evidence only: neither candidate is claimed to be an authenticated AEAD envelope. */
     @Test fun sameCommitIdExactDescriptorSurvivesActualTlsPutListGetAndColdTransportReopenWithoutReplacingPrimary() = fixture { f ->
         val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random())

@@ -22,7 +22,8 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val canResumeExternalRecovery: Boolean = false, val canAbandonUnactivated: Boolean = false,
     val invitationRetainedWhileLocked: Boolean = false, val invitationApprovalInProgress: Boolean = false,
     val joiningDevice: String? = null, val canAbandonJoin: Boolean = false,
-    val canRefreshJoinPreparation: Boolean = false) {
+    val canRefreshJoinPreparation: Boolean = false, val invitationAddresses: List<String> = emptyList(),
+    val canShelveJoin: Boolean = false, val shelvedJoins: List<LanSyncShelvedJoin> = emptyList()) {
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 
@@ -37,9 +38,11 @@ interface LanSyncGroupPanelActions {
     fun resumeManagementOperation()
     fun beginJoin(code: String)
     fun abandonUnprovedJoin()
+    fun shelveUnsettledJoin()
+    fun restoreShelvedJoin(operation: String)
     fun retryJoin()
     fun refreshJoinPreparation()
-    fun createInvitation()
+    fun createInvitation(host: String? = null)
     fun closeInvitation()
     fun acceptPeer(binding: String)
     fun prepareRevocation(device: String)

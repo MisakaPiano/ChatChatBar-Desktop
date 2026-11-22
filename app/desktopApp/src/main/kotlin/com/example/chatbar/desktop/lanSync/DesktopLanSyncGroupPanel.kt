@@ -45,7 +45,12 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         if (copyFailed) StatusText("未能复制，请保持此窗口打开后重试。", DesktopBootstrapColors.warning)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             StatusText(lanSyncGroupDescription)
-            BootstrapButton("创建新设备组", enabled = !interactionBlocked) { actions.createGroup() }
+            if (state.shelvedJoins.isEmpty()) BootstrapButton("创建新设备组", enabled = !interactionBlocked) { actions.createGroup() }
+            state.shelvedJoins.forEach { saved ->
+                BootstrapButton("恢复原加入申请 · ${saved.group.take(8)}", secondary = true, enabled = !interactionBlocked) {
+                    actions.restoreShelvedJoin(saved.operation)
+                }
+            }
         }
         if (!state.recoveryJoining && (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
@@ -88,12 +93,13 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             state.joiningDevice?.let { StatusText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
             if (state.canAbandonJoin) BootstrapButton("放弃未发送的申请", secondary = true, enabled = !interactionBlocked) { actions.abandonUnprovedJoin() }
+            if (state.canShelveJoin) BootstrapButton("暂存原申请并重新加入", secondary = true, enabled = !interactionBlocked) { actions.shelveUnsettledJoin() }
             if (state.canRefreshJoinPreparation) BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
                 StatusText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
-            groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近送达"); groupRoute("网盘", state.cloud, "最近上传")
+            groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近连接"); groupRoute("网盘", state.cloud, "最近上传")
             ActionRow {
                 BootstrapButton("立即检查", secondary = true, enabled = !interactionBlocked) { actions.retry() }
                 BootstrapButton("网盘设置", secondary = true, enabled = !interactionBlocked) { actions.openCloudSettings() }
@@ -122,6 +128,11 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 StatusText("邀请有效期为三分钟。切换程序后可返回这里，重新解锁管理并核对新设备。")
                 ActionRow { BootstrapButton("复制邀请", secondary = true) { copy(code) }; BootstrapButton("关闭邀请", secondary = true,
                     enabled = !state.invitationApprovalInProgress) { actions.closeInvitation() } }
+                state.invitationAddresses.filter { it != offer.host }.forEach { address ->
+                    BootstrapButton("用 $address 生成新邀请", secondary = true, enabled = !interactionBlocked && state.managementUnlocked) {
+                        actions.createInvitation(address)
+                    }
+                }
             }
             if (state.managementUnlocked) {
                 StatusText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")

@@ -181,6 +181,102 @@ class LanSyncGroupJoiningTest {
         assertNotEquals(operation, f.control().getValue("operation").jsonPrimitive.content)
         assertContentEquals(recipient, Files.readAllBytes(archive.resolve("recipient/recipient.protected")))
     }
+
+    private fun legacyAttempt(f: Joiner): ByteArray {
+        val path = f.root.resolve("joining/profile.protected")
+        val legacy = JsonObject(f.control() + ("stage" to JsonPrimitive(LanSyncGroupJoinStage.PROOF_ATTEMPTED.name)))
+            .toString().toByteArray(Charsets.UTF_8).reversedArray()
+        Files.write(path, legacy)
+        return legacy
+    }
+
+    @Test fun legacyPreDialAttemptCanBeShelvedWhileASecondGroupIsPreparedThenRestoredExactly() = fixture { f ->
+        val owner = f.owner()
+        val invitation = f.founder.service.invitation(16384).also(f.founder.invitations::add)
+        val offer = invitation.issue("10.0.0.1", 44000)
+        val original = owner.prepare(offer.code()) {}
+        val legacy = legacyAttempt(f)
+        val root = f.root.resolve("joining")
+        val recipient = Files.readAllBytes(root.resolve("recipient/recipient.protected"))
+        assertFalse(owner.profile()!!.canAbandon)
+        assertTrue(owner.profile()!!.canShelve)
+        owner.shelveUnsettledInvitation()
+        assertNull(f.owner().profile())
+        val shelved = f.owner().shelvedInvitations().single()
+        assertEquals(original.trust.group.value, shelved.group)
+        assertFailsWith<IllegalArgumentException> { owner.prepare(offer.code()) {} }
+        val other = SyncStoreId.random()
+        val bootstrap = requireNotNull(offer.bootstrap)
+        val alternative = offer.copy(trust = offer.trust.copy(group = other),
+            bootstrap = bootstrap.copy(vault = bootstrap.vault.copy(group = other)))
+        assertEquals(other, owner.prepare(alternative.code()) {}.trust.group)
+        assertFailsWith<IllegalArgumentException> { owner.restoreShelvedInvitation(shelved.operation) }
+        owner.abandonUnprovedInvitation()
+        val restored = f.owner().restoreShelvedInvitation(shelved.operation)
+        assertEquals(original.device, restored.device)
+        assertContentEquals(legacy, Files.readAllBytes(root.resolve("profile.protected")))
+        assertContentEquals(recipient, Files.readAllBytes(root.resolve("recipient/recipient.protected")))
+        assertTrue(owner.shelvedInvitations().isEmpty())
+    }
+
+    @Test fun possiblyApprovedLegacyAttemptRestoresTheExactRecipientAndCompletesWithoutASecondApproval() = fixture { f ->
+        f.admit(f.prove(f.owner()))
+        val legacy = legacyAttempt(f)
+        val owner = f.owner()
+        val original = owner.profile()!!
+        owner.shelveUnsettledInvitation()
+        val shelved = owner.shelvedInvitations().single()
+        f.owner().restoreShelvedInvitation(shelved.operation)
+        assertContentEquals(legacy, Files.readAllBytes(f.root.resolve("joining/profile.protected")))
+        val joined = f.owner().activate(f.backend())
+        assertEquals(LanSyncGroupJoinStage.READY, joined.profile.stage)
+        assertEquals(original.device, joined.profile.device)
+        assertFalse(joined.profile.canShelve)
+        assertFailsWith<IllegalArgumentException> { f.owner().shelveUnsettledInvitation() }
+        assertEquals(0, requireNotNull(joined.node).sourceOperations().size)
+    }
+
+    @Test fun approvedJoinCanContinueAtAMovedPinnedStoreWithoutChangingItsOfferOrRecipient() = fixture { f ->
+        f.admit(f.prove(f.owner()))
+        val owner = f.owner()
+        val profile = f.control()
+        val originalKey = Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected"))
+        val originalHost = requireNotNull(profile["offer"]).jsonObject.getValue("host").jsonPrimitive.content
+        val inviter = requireNotNull(profile["offer"]).jsonObject.getValue("inviter").jsonPrimitive.content
+        val access = requireNotNull(f.founder.service.runtimeAccess())
+        var servingPort = 0
+        var wrongHint = true
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = listOf("10.0.0.2")
+            override fun accepts(address: InetAddress) = address.isLoopbackAddress
+            override fun discoverGroup(group: SyncStoreId, local: String, fingerprint: String): LanSyncPeer {
+                assertEquals(access.trust.group, group)
+                assertEquals(f.founder.joiningIdentity.fingerprint, local)
+                assertEquals(inviter, fingerprint)
+                return LanSyncPeer(if (wrongHint) "0".repeat(64) else fingerprint, "synthetic", "10.0.0.2", servingPort)
+            }
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
+                if (peer.host == originalHost) throw java.net.ConnectException("synthetic moved endpoint")
+                return LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint, 15_000) { _, port ->
+                    Socket(InetAddress.getLoopbackAddress(), port)
+                }
+            }
+        }
+        val transport = LanSyncGroupAppTransport(access, network) { _, _ -> }
+        try {
+            servingPort = transport.start()
+            assertFailsWith<LanSyncJoinRouteFailure> { owner.activate(owner.bootstrapStore(network)) }
+            assertNull(owner.discoveredBootstrapStore(network))
+            wrongHint = false
+            val active = owner.activate(requireNotNull(owner.discoveredBootstrapStore(network)))
+            assertEquals(LanSyncGroupJoinStage.READY, active.profile.stage)
+            assertEquals(profile.getValue("offer"), f.control().getValue("offer"))
+            assertEquals(profile.getValue("operation"), f.control().getValue("operation"))
+            assertContentEquals(originalKey, Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected")))
+            assertTrue(requireNotNull(active.node).sourceOperations().isEmpty())
+        } finally { transport.closeAndDrain() }
+    }
     @Test fun explicitReprepareAfterAnUnsignedProjectionInterruptionUsesFreshLocalAndRemoteEvidenceWithoutLosingOriginals() = fixture { f ->
         f.publishedPreset(); val local = f.put(f.data, f.card("physical-card"))
         f.admit(f.prove(f.owner()))

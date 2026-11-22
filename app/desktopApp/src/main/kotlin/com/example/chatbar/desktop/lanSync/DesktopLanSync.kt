@@ -64,7 +64,7 @@ internal class DesktopLanSync(private val app: DesktopAppContainer,
                 when (child.fileName.toString()) {
                     "profile.lock" -> !entry.isRegularFile || entry.isSymbolicLink
                     "abandoned-drafts", "abandoned-joins" -> !entry.isDirectory || entry.isSymbolicLink
-                    "joining" -> !entry.isDirectory || entry.isSymbolicLink ||
+                    "joining", "shelved-joins" -> !entry.isDirectory || entry.isSymbolicLink ||
                         Files.newDirectoryStream(child).use { it.iterator().hasNext() }
                     else -> true
                 }

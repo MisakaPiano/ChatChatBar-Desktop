@@ -53,11 +53,18 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     }
 
     /** Separate invitation listener; possession proof never grants ordinary data authority. */
+    internal fun invitationAddresses(): List<String> {
+        val eligible = network.addresses().distinct().filter { runCatching { LanSyncTls.parseAddress(it) }.isSuccess }.sorted()
+        val preferred = network.preferredInvitationAddress(eligible)?.takeIf { it in eligible }
+        return listOfNotNull(preferred) + eligible.filterNot { it == preferred }
+    }
+
     fun invitation(owner: LanSyncGroupInvitation, onExpired: () -> Unit = {},
+        selectedHost: String? = null,
         onPeer: (LanSyncGroupInvitedPeer) -> Unit): LanSyncGroupInviteOffer {
-        val host = network.addresses().firstOrNull() ?: error("SYNC_GROUP_LAN_ADDRESS_UNAVAILABLE")
-        // Validate through the production numeric-LAN parser even when a platform supplies addresses.
-        LanSyncTls.parseAddress(host)
+        val addresses = invitationAddresses()
+        val host = selectedHost ?: addresses.firstOrNull() ?: error("SYNC_GROUP_LAN_ADDRESS_UNAVAILABLE")
+        require(host in addresses) { "SYNC_GROUP_LAN_ADDRESS_CHANGED" }
         return synchronized(lock) {
             check(!closed && listener != null) { "SYNC_GROUP_TRANSPORT_NOT_STARTED" }
             closeInvitationOwned()

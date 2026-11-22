@@ -689,8 +689,9 @@ class LanSyncGroupCoordinatorTest {
         assertFailsWith<IllegalArgumentException> { review.authorize() }
         assertFalse(coordinator.state.value.managementUnlocked)
     }
-    private suspend fun readyCoordinator(f: Fixture, sourceChanges: Flow<Long>? = null): LanSyncGroupCoordinator {
-        val coordinator = f.coordinator(sourceChanges)
+    private suspend fun readyCoordinator(f: Fixture, sourceChanges: Flow<Long>? = null,
+        enrollment: () -> LanSyncGroupEnrollment = f::founder): LanSyncGroupCoordinator {
+        val coordinator = f.coordinator(sourceChanges, enrollment = enrollment)
         coordinator.createGroup()
         await { coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE && !coordinator.state.value.busy }
         f.recoveryCode = requireNotNull(coordinator.state.value.recoveryCode)
@@ -758,6 +759,44 @@ class LanSyncGroupCoordinatorTest {
         assertFalse(Files.exists(access.work.resolve("peer-display.protected")))
         assertFalse(Files.exists(access.work.resolve("peer-display.lock")))
         assertFalse(receiver.fingerprint in access.ledger().current().members)
+    }
+
+    @Test fun cancellationAfterRootIntentDoesNotReportSuccessOrLoseTheApprovedMember() = fixture { f ->
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val holding = AtomicBoolean(false)
+        val founder = f.founder(f.workspace) { stage ->
+            if (holding.get() && stage == "APPROVED_ROOT_INTENT_RETAINED") {
+                entered.countDown()
+                check(release.await(15, TimeUnit.SECONDS))
+            }
+        }
+        val coordinator = readyCoordinator(f, enrollment = { founder })
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation()
+        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        val offer = requireNotNull(coordinator.state.value.invitation)
+        val receiver = LanSyncTlsIdentity.create()
+        val key = SyncDeviceEncryptionKey.create(receiver.fingerprint)
+        LanSyncGroupInviteClient.exchange(offer, receiver, key, "synthetic device", {
+            f.network.connect(receiver, LanSyncPeer(offer.inviter, "synthetic PC", offer.host, offer.port))
+        })
+        await { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation != null }
+        try {
+            holding.set(true)
+            coordinator.acceptPeer(requireNotNull(coordinator.state.value.peerConfirmation).binding)
+            await { entered.count == 0L }
+            coordinator.closeInvitation()
+            assertTrue(coordinator.state.value.invitationApprovalInProgress)
+            assertEquals("正在确认批准结果", coordinator.state.value.status)
+        } finally { release.countDown() }
+        await { !coordinator.state.value.busy && coordinator.state.value.devices.any { it.id == receiver.fingerprint } }
+        val access = requireNotNull(founder.runtimeAccess())
+        val member = access.ledger().current().members.getValue(receiver.fingerprint)
+        assertEquals(key.publicKey.encoded, member.recipientKey)
+        assertEquals("synthetic device", access.peerDisplayName(receiver.fingerprint))
+        assertFalse(coordinator.state.value.invitationApprovalInProgress)
     }
 
     private class ObservedNetwork(private val delegate: LanSyncNetwork) : LanSyncNetwork {
