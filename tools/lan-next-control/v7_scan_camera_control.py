@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""Attach-only V7 real ScanContract observation. Never installs or seeds an app."""
+from __future__ import annotations
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import time
+import uuid
+import xml.etree.ElementTree as ET
+
+PACKAGE = 'com.example.chatbar.lansyncnext'
+MAIN = PACKAGE + '/com.example.chatbar.MainActivity'
+CAPTURE = PACKAGE + '/com.journeyapps.barcodescanner.CaptureActivity'
+APK_SHA = 'ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0'
+INVALID_ERROR = '加入设备组：SYNC_GROUP_INVITE_OFFER'
+SCAN = '扫描设备组邀请'
+JOIN_MARKERS = ('扫描更新邀请', '更新邀请并继续', '继续加入')
+BOUNDS = re.compile(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]')
+
+class Refused(Exception):
+    pass
+
+def need(value, code):
+    if not value:
+        raise Refused(code)
+
+def tree(raw):
+    # uiautomator's informational suffix is ignored; no XML is retained.
+    start, end = raw.find('<hierarchy'), raw.rfind('</hierarchy>')
+    need(start >= 0 and end > start, 'UI_XML_UNAVAILABLE')
+    try:
+        return ET.fromstring(raw[start:end + len('</hierarchy>')])
+    except ET.ParseError:
+        raise Refused('UI_XML_INVALID') from None
+
+def labels(root):
+    return {n.attrib.get(k, '') for n in root.iter('node') for k in ('text', 'content-desc')}
+
+def click_target(root, label, attr=None, packages=(PACKAGE,)):
+    parents = {c:p for p in root.iter() for c in p}
+    candidates = set()
+    for node in root.iter('node'):
+        if node.get('package') not in packages:
+            continue
+        if not (node.get(attr, '') == label if attr else
+                label in (node.get('text', ''), node.get('content-desc', ''))):
+            continue
+        while node is not None:
+            if node.get('enabled') == 'false':
+                break
+            if node.get('clickable') == 'true':
+                m = BOUNDS.fullmatch(node.get('bounds', ''))
+                if node.get('enabled') == 'true' and m:
+                    x1,y1,x2,y2 = map(int,m.groups())
+                    if x2 > x1 and y2 > y1:
+                        candidates.add((x1,y1,x2,y2))
+                break
+            node = parents.get(node)
+    need(len(candidates) <= 1, 'UI_TARGET_AMBIGUOUS')
+    return next(iter(candidates), None)
+
+def state(root):
+    values = labels(root)
+    return {
+        'invalidError': INVALID_ERROR in values,
+        'joining': any(x in values for x in JOIN_MARKERS),
+        'empty': '创建新设备组' in values and SCAN in values,
+        'cameraError': bool(values.intersection({'Camera error', 'Sorry, the Android camera encountered a problem. You may need to restart the device.', '摄像头出现问题。'})),
+        'otherSyncError': any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+', x) and x != INVALID_ERROR for x in values),
+    }
+
+class Adb:
+    def __init__(self, path, serial):
+        self.prefix = [str(path), '-s', serial]
+        self.calls = 0
+
+    def run(self, *args, timeout=20):
+        self.calls += 1
+        try:
+            p = subprocess.run(self.prefix + list(args), capture_output=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise Refused('ADB_TIMEOUT') from None
+        except OSError:
+            raise Refused('ADB_LAUNCH_FAILED') from None
+        need(p.returncode == 0, 'ADB_COMMAND_FAILED')
+        need(len(p.stdout) <= 3*1024*1024 and len(p.stderr) <= 128*1024, 'ADB_OUTPUT_LIMIT')
+        return p.stdout.decode('utf-8', errors='replace')
+
+    def ui(self):
+        # No PTY or /dev/tty assumption on API26. This unique device-only file is
+        # read into memory, then removed before parsing or returning anything.
+        path = '/data/local/tmp/ccb-v7-scan-' + uuid.uuid4().hex + '.xml'
+        try:
+            self.run('shell', 'uiautomator', 'dump', path)
+            raw = self.run('exec-out', 'cat', path)
+        finally:
+            try:
+                self.run('shell', 'rm', '-f', path)
+            except Refused:
+                raise Refused('UI_TEMP_CLEANUP_FAILED') from None
+        return tree(raw)
+
+    def events(self):
+        # Read-only snapshots, never clear the device log. Old entries cannot qualify.
+        try:
+            raw = self.run('logcat','-d','-b','events','-v','threadtime',
+                           '-s','am_create_activity:I','am_resume_activity:I',
+                           'wm_create_activity:I','wm_resume_activity:I')
+            return set(raw.splitlines())
+        except Refused:
+            return None
+
+    def tap(self, bounds):
+        x1,y1,x2,y2 = bounds
+        self.run('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+
+def wait_click(adb, label, deadline, attr=None):
+    previous = None
+    while time.monotonic() < deadline:
+        current = click_target(adb.ui(), label, attr)
+        if current is not None and current == previous:
+            adb.tap(current)
+            return
+        previous = current
+        time.sleep(.35)
+    raise Refused('UI_TARGET_NOT_READY')
+
+def navigate(adb, result, deadline):
+    root = adb.ui()
+    if '设备组同步' not in labels(root):
+        if click_target(root, '局域网同步', 'content-desc') is None:
+            wait_click(adb, '管理', deadline, 'text')
+        wait_click(adb, '局域网同步', deadline, 'content-desc')
+    while time.monotonic() < deadline:
+        root = adb.ui()
+        s = state(root)
+        need(not s['invalidError'] and not s['otherSyncError'], 'PREEXISTING_UI_ERROR')
+        need(not s['joining'], 'PREEXISTING_JOIN_PROGRESS')
+        if s['empty'] and click_target(root, SCAN) is not None:
+            result['initialEmptyGroupUiObserved'] = True
+            return
+        if '邀请设备' in labels(root) or '解锁管理' in labels(root):
+            raise Refused('EXISTING_GROUP_REFUSED')
+        time.sleep(.35)
+    raise Refused('EMPTY_GROUP_UI_NOT_READY')
+
+def observe(args, result):
+    need(re.fullmatch(r'emulator-[0-9]+', args.serial) is not None, 'EMULATOR_SERIAL_REQUIRED')
+    a = Adb(args.adb, args.serial)
+    need(a.run('shell','getprop','ro.kernel.qemu').strip() == '1', 'EMULATOR_REQUIRED')
+    need(a.run('shell','getprop','ro.build.version.sdk').strip() == str(args.expected_api), 'API_MISMATCH')
+    package = a.run('shell','dumpsys','package',PACKAGE)
+    need(re.search(r'\bversionCode=86\b',package) is not None, 'VERSION86_REQUIRED')
+    paths = a.run('shell','pm','path',PACKAGE).splitlines()
+    need(len(paths) == 1 and paths[0].startswith('package:/data/app/') and paths[0].endswith('/base.apk'), 'SINGLE_INSTALLED_BASE_APK_REQUIRED')
+    digest = a.run('shell','toybox','sha256sum',paths[0][8:]).split()
+    need(digest and digest[0] == APK_SHA, 'INSTALLED_V7_APK_HASH_MISMATCH')
+    result['installedExactV7ApkObserved'] = True
+    result['api'] = args.expected_api
+    # Only the normal exported entry is launched. The private LanSyncActivity is reached by UI.
+    a.run('shell','am','start','-W','-n',MAIN,timeout=30)
+    result['mainLaunchCommandAccepted'] = True
+    navigate(a,result,time.monotonic()+45)
+    before = a.events()
+    result['eventSnapshotBeforeAvailable'] = before is not None
+    wait_click(a, SCAN, time.monotonic()+20)
+    result['physicalScanButtonClicks'] = 1
+    permission_clicked = False
+    deadline = time.monotonic()+args.scan_timeout
+    while time.monotonic() < deadline:
+        root = a.ui()
+        values = labels(root)
+        # Permission UI is constrained to an actual system permission package.
+        if not permission_clicked:
+            for label in ('ALLOW','允许','While using the app','使用该应用时'):
+                nodes = [n for n in root.iter('node') if n.get('package') in
+                         ('com.android.packageinstaller','com.google.android.packageinstaller','com.android.permissioncontroller','com.google.android.permissioncontroller') and
+                         label in (n.get('text',''),n.get('content-desc',''))]
+                if nodes:
+                    bounds = click_target(root,label,packages=('com.android.packageinstaller','com.google.android.packageinstaller','com.android.permissioncontroller','com.google.android.permissioncontroller'))
+                    need(bounds is not None,'CAMERA_PERMISSION_NOT_CLICKABLE')
+                    a.tap(bounds);permission_clicked = True
+                    result['cameraPermissionUiAccepted'] = True
+                    break
+        s = state(root)
+        need(not s['cameraError'], 'CAMERA_UI_ERROR')
+        need(not s['otherSyncError'], 'OTHER_SYNC_ERROR_OBSERVED')
+        callback = s['invalidError'] if args.expect == 'invalid' else s['joining']
+        if callback:
+            if args.expect == 'invalid':need(s['empty'] and not s['joining'], 'INVALID_CODE_CREATED_JOIN_PROGRESS')
+            after = a.events()
+            result['eventSnapshotAfterAvailable'] = after is not None
+            observed = None if before is None or after is None else any(CAPTURE in x for x in after-before)
+            result['newCaptureActivityEventObserved'] = observed
+            result['expectedCallbackUiObserved'] = True
+            result['newInvalidOfferErrorObserved'] = s['invalidError']
+            result['newJoiningUiObserved'] = s['joining']
+            result['adbCalls'] = a.calls
+            # Unknown event visibility is preserved; never expanded to a camera proof PASS.
+            result['status'] = ('INVALID_QR_SCAN_CALLBACK_OBSERVED' if args.expect == 'invalid' else
+                                'INVITATION_QR_SCAN_JOINING_UI_OBSERVED') if observed is True else 'CALLBACK_UI_OBSERVED_CAPTURE_EVENT_UNPROVEN'
+            return
+        if args.expect == 'invitation' and s['invalidError']:
+            raise Refused('INVITATION_REJECTED_INVALID_OFFER')
+        time.sleep(.3)
+    raise Refused('SCAN_CALLBACK_NOT_OBSERVED')
+
+def main(argv=None):
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--adb',required=True,type=Path)
+    p.add_argument('--serial',required=True)
+    p.add_argument('--expected-api',type=int,choices=(26,36),default=26)
+    p.add_argument('--expect',choices=('invalid','invitation'),default='invalid')
+    p.add_argument('--scan-timeout',type=int,default=45)
+    p.add_argument('--result',required=True,type=Path)
+    args=p.parse_args(argv)
+    result={'kind':'CCB_V7_REAL_SCANCONTRACT_UI_OBSERVATION_V1','status':'NOT_RUN','errorCode':None,
+            'installedExactV7ApkObserved':False,'mainLaunchCommandAccepted':False,'initialEmptyGroupUiObserved':False,
+            'physicalScanButtonClicks':0,'cameraPermissionUiAccepted':False,'newCaptureActivityEventObserved':None,
+            'eventSnapshotBeforeAvailable':False,'eventSnapshotAfterAvailable':False,'expectedCallbackUiObserved':False,
+            'newInvalidOfferErrorObserved':False,'newJoiningUiObserved':False,'cameraImageLaunchBindingVerifiedHere':False,
+            'windowsPeerIdentityOrApprovalVerified':False,'lanContentDeliveryVerified':False,'humanAcceptance':False,
+            'appInstalledOrClearedHere':False,'directOwnerOrInjectedActivityResultUsed':False}
+    try:
+        need(5 <= args.scan_timeout <= 60,'SCAN_TIMEOUT_RANGE')
+        need(not args.result.exists() and args.result.parent.is_dir(),'NEW_RESULT_PATH_REQUIRED')
+        observe(args,result)
+        rc=0 if result['newCaptureActivityEventObserved'] is True else 3
+    except Refused as e:
+        result.update(status='REFUSED',errorCode=str(e));rc=2
+    except Exception:
+        result.update(status='REFUSED',errorCode='CONTROL_EXCEPTION');rc=2
+    # Public receipt is only closed enums, Boolean/null and bounded counters. No raw UI/log/error.
+    try:
+        with args.result.open('x',encoding='utf-8',newline='\n') as f:
+            json.dump(result,f,ensure_ascii=True,indent=2);f.write('\n')
+    except OSError:
+        print(json.dumps({'status':'REFUSED','errorCode':'RESULT_WRITE_FAILED'}));return 2
+    print(json.dumps(result,ensure_ascii=True,sort_keys=True))
+    return rc
+
+if __name__ == '__main__':
+    raise SystemExit(main())

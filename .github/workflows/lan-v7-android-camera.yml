@@ -1,0 +1,57 @@
+name: V7 signed Android invitation camera path
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/workflows/lan-v7-android-camera.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  android-camera:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Verify the original signed 86 APK and make a synthetic camera frame
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python -B tools/lan-next-control/v7_android_scan_inputs.py
+          python -m pip install --disable-pip-version-check 'qrcode==8.2' 'Pillow==11.3.0'
+          python -B tools/lan-next-control/v7_make_invalid_qr.py --output "$RUNNER_TEMP/ccb-v7-scan/qr.png"
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise the real camera invitation action in the delivered APK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-front none -camera-back imagefile:${{ runner.temp }}/ccb-v7-scan/qr.png
+          script: |
+            set -euo pipefail
+            adb -s emulator-5554 install "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk"
+            python -B tools/lan-next-control/v7_scan_camera_control.py --adb adb --serial emulator-5554 --expected-api 26 --expect invalid --result "$RUNNER_TEMP/ccb-v7-scan/camera-result.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-android-camera-safe-result
+          path: ${{ runner.temp }}/ccb-v7-scan/camera-result.json
+          if-no-files-found: ignore
