@@ -56,6 +56,14 @@ class EditorDraftRepository(
         return _drafts.value
     }
 
+    /** Cleanup must retain assets when any persisted draft cannot be read completely. */
+    suspend fun getAllStrict(): List<EditorDraft> = buildList {
+        storage.visitEntitiesStrict(ENTITY_TYPE, EditorDraft.serializer()) { id, draft ->
+            check(id == draft.id && id == draftId(draft.entityType, draft.targetId)) { "Draft identity mismatch" }
+            add(draft)
+        }
+    }
+
     suspend fun getById(id: String): EditorDraft? {
         initialize()
         return storage.loadEntity(ENTITY_TYPE, id, EditorDraft.serializer())
