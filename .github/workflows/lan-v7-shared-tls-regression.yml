@@ -1,0 +1,55 @@
+name: V7 shared group TLS message and image regression
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/workflows/lan-v7-shared-tls-regression.yml]
+permissions:
+  contents: read
+jobs:
+  shared-tls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: v7-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: f5fc060546eb9479b2566375761903d383c538b1
+          path: v7-source
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Exercise actual pinned mutual TLS and bidirectional synthetic data
+        env:
+          CCB_LAN_LIVE_PAIR_PROOF: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C v7-source rev-parse HEAD)" = 'f5fc060546eb9479b2566375761903d383c538b1'
+          test -z "$(git -C v7-source status --porcelain)"
+          src=v7-control/tools/lan-next-control/fixtures/LanSyncGroupLivePairBridgeDraftTest.kt
+          target=app/sharedCore/src/test/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupLivePairBridgeDraftTest.kt
+          test ! -e "v7-source/$target"
+          echo '18f552c4be83437c63813924a6445fd24e1aa56a21e4008ab70803659b3cb23a  v7-control/tools/lan-next-control/fixtures/LanSyncGroupLivePairBridgeDraftTest.kt' | sha256sum -c -
+          cp "$src" "v7-source/$target"
+          test "$(git -C v7-source status --porcelain --untracked-files=all)" = "?? $target"
+          cd v7-source/app
+          class=com.example.chatbar.domain.lanSync.LanSyncGroupLivePairBridgeDraftTest
+          method=realTlsTwoOwnersExchangeNewConversationsImagesAndLateWriteWithoutEcho
+          bash ./gradlew :sharedCore:test --tests "$class.$method" --no-daemon --no-build-cache --console=plain
+          python -B ../../v7-control/tools/lan-sync-chain/verify_xml.py sharedCore/build/test-results/test "$class" "$method"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-shared-tls-original-test-report
+          path: v7-source/app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.lanSync.LanSyncGroupLivePairBridgeDraftTest.xml
+          if-no-files-found: ignore
