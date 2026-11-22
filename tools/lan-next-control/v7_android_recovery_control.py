@@ -53,7 +53,7 @@ def checked_state(root):
     need(len(values)<=1,'SAVE_CHECKBOX_AMBIGUOUS')
     return values[0] if values else None
 
-def secure_input_node(root):
+def secure_input_node(root, required=True):
     found=[]
     for n in root.iter('node'):
         if n.get('package')==PACKAGE and n.get('class')=='android.widget.EditText' and n.get('enabled')=='true' and n.get('password')=='true':
@@ -61,8 +61,8 @@ def secure_input_node(root):
             if m:
                 b=tuple(map(int,m.groups()))
                 if b[2]>b[0] and b[3]>b[1]:found.append((n,b))
-    need(len(found)==1,'SINGLE_RECOVERY_INPUT_REQUIRED')
-    return found[0]
+    need(len(found)<=1 and (not required or len(found)==1),'SINGLE_RECOVERY_INPUT_REQUIRED')
+    return found[0] if found else None
 
 def secure_input(root):
     return secure_input_node(root)[1]
@@ -72,8 +72,8 @@ def type_recovery_code(a,ui,root,secret,r):
     focus_deadline=time.monotonic()+12
     while time.monotonic()<focus_deadline:
         root=a.ui()
-        field,_=secure_input_node(root)
-        if field.get('focused')=='true':
+        target=secure_input_node(root,required=False)
+        if target and target[0].get('focused')=='true':
             r['coldRecoveryInputFocused']=True
             break
         time.sleep(.3)
@@ -87,8 +87,8 @@ def type_recovery_code(a,ui,root,secret,r):
     root=a.ui()
     values=ui.labels(root)
     r['sameGroupPageAfterInput']='设备组同步' in values
-    field,_=secure_input_node(root)
-    r['secureTextLengthMatched']=len(field.get('text',''))==len(secret)
+    target=secure_input_node(root,required=False)
+    r['secureTextLengthMatched']=target is not None and len(target[0].get('text',''))==len(secret)
     r['unlockLabelSeenAfterInput']='解锁管理' in values
     need(r['sameGroupPageAfterInput'],'GROUP_PAGE_LOST_AFTER_INPUT')
 
@@ -201,6 +201,10 @@ def execute(args,r):
     ui=load_ui(args.ui_helper_sha256);a=ui.Adb(args.adb,args.serial)
     need(a.run('shell','getprop','ro.kernel.qemu').strip()=='1' and a.run('shell','getprop','ro.build.version.sdk').strip()=='26','API26_EMULATOR_REQUIRED')
     need(not a.run('shell','pm','list','packages','com.example.chatbar').strip(),'FRESH_NO_CCB_PACKAGE_REQUIRED')
+    # Keep the ordinary recovery form visible above the keyboard on this owned emulator.
+    a.run('shell','wm','size','1080x2160')
+    a.run('shell','wm','density','320')
+    r['tallEmulatorViewport']=True
     r['phase']='INSTALL_BASE85';need(re.search(r'^Success\s*$',a.run('install',str(args.base_apk),timeout=180),re.M) is not None,'BASE_INSTALL_FAILED');installed(a,85,BASE_SHA);r['exactBase85Installed']=True
     r['phase']='CREATE_GROUP85';entry(a,ui,r);show_target(a,ui,'创建新设备组',r);ui.wait_click(a,'创建新设备组',time.monotonic()+20);r['createButtonClicks']=1
     secret=None
