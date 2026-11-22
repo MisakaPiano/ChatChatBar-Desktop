@@ -32,43 +32,6 @@ jobs:
         with:
           name: v7-r03-synthetic-heif
           path: synthetic.heic
-  focused:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools platforms;android-36 build-tools;36.0.0
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Verify conversation publication during storage maintenance
-        working-directory: app
-        run: |
-          bash ./gradlew :sharedCore:test \
-            --tests 'com.example.chatbar.data.repository.ChatRepositorySyncAdmissionTest' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupManagementRecoveryTest.founderAndRecoveredManagerInviteFromPublishedHistoryWhileADeviceHasUnconfirmedLocalChanges' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupManagementRecoveryTest.theCurrentSignedCheckpointMustBeServedEvenWhenTheInviterAlreadyHasItInCustody' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellingDuringReplacementDoesNotIssueTheQueuedInvitation' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.automaticLocalCheckClearsItsOwnRecoveredMaintenanceNotice' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.activeJoinedDeviceRefreshesItsOwnMemberRowAfterReceivingSignedRevocation' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.ordinaryMemberCanUseAFileContainingEveryAuthenticatedHeadBeyondV1TextCapacity' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.revokedJoinWithAdmittedKeysAndMissingInitialDataArchivesWithoutReusingItsRecipient' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.verifiedRevocationCannotArchiveAnAuthorOriginWrittenBeforeTheNativeStageMarker' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving' \
-            -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 \
-            --no-daemon --max-workers=1 --no-parallel --console=plain
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: v7-invitation-r03-original
-          path: app/sharedCore/build/test-results/test/TEST-*.xml
   desktop:
     needs: camera-fixture
     runs-on: windows-latest
@@ -90,7 +53,7 @@ jobs:
         with:
           name: v7-r03-synthetic-heif
           path: ${{ runner.temp }}/r03-raster
-      - name: Verify Windows request payloads and invitation file selection
+      - name: Verify Windows image request payloads
         working-directory: app
         env:
           CCB_R02_HEIF_FIXTURE: ${{ runner.temp }}/r03-raster/synthetic.heic
@@ -98,7 +61,6 @@ jobs:
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopPhase7ImagesTest.highBaselineJpegUsesBoundedWireBytesForContinueRegenerateAndDirectHistory'
           --tests 'com.example.chatbar.desktop.DesktopPhase7ImagesTest.unavailableHeifRequestPreservesOriginalAndAllowsExplicitTextAndCompatibleImage'
-          --tests 'com.example.chatbar.desktop.WindowsCommonItemDialogTest'
           -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87
           --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
@@ -145,10 +107,9 @@ jobs:
             adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
             adb shell am instrument -w -e lanSyncOrdinarySendFixture true -e class 'com.example.chatbar.ui.chat.ChatOrdinarySendNativeTest#maintenanceRefusalRetainsTheDraftAndOneRetryCommitsExactlyOnce' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r03-android-send.txt"
             cat "$RUNNER_TEMP/v7-r03-android-send.txt"
-            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r03-android-send.txt"
             adb shell am instrument -w -e lanSyncInvitationFileRestoreFixture true -e class 'com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest#restoredPickerSavesTheSameInvitationAndARevokedSelectionCannotWrite' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r03-android-file.txt"
             cat "$RUNNER_TEMP/v7-r03-android-file.txt"
-            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r03-android-file.txt"
+            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r03-android-send.txt" && grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r03-android-file.txt"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

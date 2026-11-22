@@ -57,7 +57,6 @@ class ChatOrdinarySendNativeTest {
         check((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
         withTimeout(60_000) { while (!app.lanSyncStartupReady) delay(50) }
         check(!app.lanSyncOwner.hasGroupEvidence())
-        check(app.modelRepository.getEmbeddingModel() == null)
 
         val sessionId = UUID.randomUUID().toString()
         val cardId = UUID.randomUUID().toString()

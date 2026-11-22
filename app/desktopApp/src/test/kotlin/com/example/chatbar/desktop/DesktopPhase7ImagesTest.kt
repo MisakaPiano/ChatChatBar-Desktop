@@ -361,7 +361,7 @@ class DesktopPhase7ImagesTest {
     }
 
     private suspend fun fixture(block: suspend (DesktopAppContainer, Path) -> Unit) {
-        val root = Files.createTempDirectory("desktop-p7-images-")
+        val root = Files.createTempDirectory("desktop-p7-images-").toRealPath()
         val c = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,
             root.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() })
         try { block(c, root) } finally { c.close(); root.toFile().deleteRecursively() }
