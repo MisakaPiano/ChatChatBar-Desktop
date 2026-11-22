@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/lan-v7-android-recovery.yml
       - tools/lan-next-control/v7_android_recovery_control.py
+      - tools/lan-next-control/synthetic_clipboard/**
 permissions:
   contents: read
   actions: read

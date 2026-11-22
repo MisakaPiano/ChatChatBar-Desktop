@@ -25,6 +25,10 @@ WRITE_SCRIPT='umask 077; mkdir -p files; set -C; cat > files/clipboard-inbox.bin
 FIELD_LABELS={'invitation':'加入已有设备组 · 粘贴邀请',
               'recovery':'恢复码 · 临时解锁管理',
               'prepared-recovery':'为该组保存的恢复码'}
+SUBMIT_LABELS={'invitation':'检查并加入','recovery':'解锁管理','prepared-recovery':'用恢复码继续设置'}
+HARDWARE_PASTE_TARGET_SHAS=frozenset((
+    'cd4434719afbffac6ef22858d6499319600aa8c96f6a80b1781c4574fb1504f7',
+    'ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0'))
 MASK_CHARACTERS=frozenset('*\u2022\u25cf\u25e6\u2219')
 HELPER_ERRORS=frozenset(('FOREGROUND_FOCUS_REQUIRED','OPERATION_ID_INVALID','INBOX_LIMIT','INBOX_FIELDS',
     'OPERATION_MISMATCH','PAYLOAD_SCOPE','INBOX_DELETE_FAILED','FOREGROUND_CLIPBOARD_REQUIRED',
@@ -180,6 +184,68 @@ def paste_target(root):
             n=parents.get(n)
     need(len(found)<=1,'PASTE_MENU_AMBIGUOUS');return next(iter(found),None)
 
+def focused_target_edittext(root,target):
+    x1,y1,x2,y2=target.bounds;found=[]
+    for node in root.iter('node'):
+        b=bounds(node)
+        if (node.get('package')==TARGET and node.get('class')=='android.widget.EditText'
+                and node.get('enabled')=='true' and node.get('focused')=='true' and b
+                and x1<=b[0] and y1<=b[1] and b[2]<=x2 and b[3]<=y2):found.append(b)
+    return len(set(found))==1
+
+def current_ccb_password_ime(raw):
+    """API26 CURRENT client only, never a package from start-input history."""
+    if "Current input method client doesn't match the last focused" in raw:return False
+    headers=list(re.finditer(r'(?m)^Input method client state for [^\n]*:\s*$',raw))
+    if len(headers)!=1:return False
+    service=raw[:headers[0].start()]
+    if re.findall(r'\bmInputShown=(true|false)\b',service)!=['true']:return False
+    body=raw[headers[0].end():]
+    body=re.split(r'(?m)^Input method (?:client|service) state',body,maxsplit=1)[0]
+    if re.search(r'(?m)^\s*mActive=true\b',body) is None:return False
+    if re.search(r'(?m)^\s*mServedConnecting=false\s*$',body) is None:return False
+    if re.search(r'(?m)^\s*mServedInputConnectionWrapper=(?!null\s*$)\S+',body) is None:return False
+    lines=body.splitlines();attributes=[]
+    for i,line in enumerate(lines):
+        if line.strip()!='mCurrentTextBoxAttribute:':continue
+        indent=len(line)-len(line.lstrip());block=[]
+        for following in lines[i+1:]:
+            if not following.strip():continue
+            if len(following)-len(following.lstrip())<=indent:break
+            block.append(following)
+        attributes.append('\n'.join(block))
+    if len(attributes)!=1:return False
+    editor=attributes[0]
+    if re.search(r'\bpackageName='+re.escape(TARGET)+r'(?=\s|$)',editor) is None:return False
+    match=re.search(r'\binputType=0x([0-9a-fA-F]+)\b',editor)
+    if match is None:return False
+    value=int(match[1],16)
+    return value&0xf==1 and value&0xf0 in (0x80,0x90,0xe0)
+
+def submit_disabled_in_context(root,field):
+    parents={child:parent for parent in root.iter() for child in parent};found={}
+    for node in root.iter('node'):
+        if node.get('package')!=TARGET or SUBMIT_LABELS[field] not in (node.get('text',''),node.get('content-desc','')):continue
+        rectangle=bounds(node)
+        if rectangle is None:continue
+        current=node;disabled=False
+        while current is not None and current.get('package')==TARGET:
+            if current.get('enabled')=='false':disabled=True;break
+            if current.get('clickable')=='true' or current.get('class')=='android.widget.Button':break
+            current=parents.get(current)
+        found[rectangle]=disabled
+    return len(found)==1 and next(iter(found.values())) is True
+
+def hardware_empty_evidence(target,root,field,observed_length):
+    need(observed_length is None or type(observed_length) is int and 0<=observed_length<=16384,'UI_LENGTH_READER_INVALID')
+    need(not target.text and target.empty_observed is not False,'HARDWARE_PASTE_FIELD_NOT_EMPTY')
+    if observed_length is not None:
+        need(observed_length==0,'HARDWARE_PASTE_FIELD_NOT_EMPTY')
+        return 'SCOPED_UI_ZERO_LENGTH'
+    if target.empty_observed is True:return 'EMPTY_EDITTEXT_OBSERVED'
+    if submit_disabled_in_context(root,field):return 'EXACT_SUBMIT_DISABLED'
+    return None
+
 def installed_hash(a,package,expected):
     need(package in (HELPER,TARGET) and re.fullmatch(r'[a-f0-9]{64}',expected) is not None,'PACKAGE_PIN_INVALID')
     paths=a.run('shell','-T','pm','path',package).decode('utf-8').splitlines()
@@ -190,6 +256,7 @@ def installed_hash(a,package,expected):
 class Bridge:
     def __init__(self,adb,serial,manifest,expected_api):
         cloud();need(expected_api in (26,36),'API_PROFILE_REQUIRED')
+        self.expected_api=expected_api
         self.a=Adb(adb,serial)
         need(self.a.run('shell','-T','getprop','ro.kernel.qemu').strip()==b'1' and self.a.run('shell','-T','getprop','ro.build.version.sdk').strip()==str(expected_api).encode(),'EXPECTED_EMULATOR_REQUIRED')
         temp=Path(os.environ['RUNNER_TEMP']).resolve(strict=True);p=Path(manifest)
@@ -265,6 +332,40 @@ class Bridge:
             r['targetEmptyTextObserved']=value.empty_observed
             r['unobservableEmptyAllowedByCaller']=value.empty_observed is None and allow_unobservable_empty
         return value
+    def hardware_paste(self,field,target_sha,resolver,length_reader,allow_unobservable_empty,r):
+        # Only the exact V7 signed85/86 lab on a cloud API26 emulator may use it.
+        cloud();need(getattr(self,'expected_api',None)==26 and target_sha in HARDWARE_PASTE_TARGET_SHAS,'HARDWARE_PASTE_API26_V7_ONLY')
+        need(self.a.run('shell','-T','getprop','ro.kernel.qemu').strip()==b'1' and
+             self.a.run('shell','-T','getprop','ro.build.version.sdk').strip()==b'26','HARDWARE_PASTE_API26_V7_ONLY')
+        installed_hash(self.a,TARGET,target_sha);need(self.target_foreground(),'TARGET_CCB_NOT_FOREGROUND')
+        r['phase']='FOCUS_BEFORE_HARDWARE_PASTE'
+        target=self.resolve_field(field,resolver,False,allow_unobservable_empty,r)
+        # Dismiss any unobservable toolbar with a normal tap, then re-resolve
+        # after IME layout changes. Do not press Back or reuse old geometry.
+        self.a.tap(target.bounds);previous=None;ready=None;deadline=time.monotonic()+10
+        while time.monotonic()<deadline:
+            target=self.resolve_field(field,resolver,False,allow_unobservable_empty,r)
+            root=self.a.ui()
+            focus='FOCUSED_EDITTEXT' if focused_target_edittext(root,target) else None
+            if focus is None:
+                ime=self.a.run('shell','-T','dumpsys','input_method').decode('utf-8',errors='replace')
+                if current_ccb_password_ime(ime):focus='CURRENT_CCB_PASSWORD_IME'
+            length=length_reader(self.a,field,target) if length_reader is not None else None
+            empty=hardware_empty_evidence(target,root,field,length)
+            state=(target.bounds,target.mode,focus,empty)
+            if focus is not None and empty is not None and state==previous:
+                ready=(focus,empty);break
+            previous=state;time.sleep(.25)
+        need(ready is not None,'HARDWARE_PASTE_FOCUS_OR_EMPTY_UNPROVED')
+        need(self.target_foreground(),'TARGET_CCB_NOT_FOREGROUND')
+        r['hardwarePasteFocusEvidence'],r['hardwarePasteEmptyEvidence']=ready
+        r['hardwarePasteFocusObserved']=True;r['phase']='ORDINARY_HARDWARE_PASTE'
+        need(r.get('ordinaryPasteHardwareAttempts',0)==0,'HARDWARE_PASTE_ALREADY_ATTEMPTED')
+        # AOSP API26 Input sends exactly one DOWN+UP. Compose1.10.6 maps
+        # Key.Paste(KEYCODE_PASTE=279) to PASTE -> selectionState.paste().
+        r['ordinaryPasteHardwareAttempts']=1;r['ordinaryPasteAction']='KEYCODE_PASTE'
+        self.a.run('shell','-T','input','keyevent','KEYCODE_PASTE')
+        r['hardwarePasteCommandAccepted']=True;r['ordinaryPasteHardwarePairs']=1
     def paste_bytes(self,payload,kind,field,target_sha,r,*,field_resolver=None,length_reader=None,allow_unobservable_empty=False):
         expected=payload_bytes(payload,kind);need((kind=='invitation')==(field=='invitation'),'PAYLOAD_FIELD_MISMATCH')
         installed_hash(self.a,TARGET,target_sha);need(self.target_foreground(),'TARGET_CCB_NOT_FOREGROUND')
@@ -283,7 +384,11 @@ class Bridge:
             current=paste_target(self.a.ui())
             if current is not None and current==previous:self.a.tap(current);r['ordinaryPasteMenuClicks']=1;break
             previous=current;time.sleep(.2)
-        need(r['ordinaryPasteMenuClicks']==1,'ORDINARY_PASTE_MENU_NOT_OBSERVED');r['phase']='VERIFY_WIDGET_TEXT'
+        if r['ordinaryPasteMenuClicks']==1:r['ordinaryPasteAction']='MENU'
+        elif getattr(self,'expected_api',None)==26:
+            self.hardware_paste(field,target_sha,field_resolver,length_reader,allow_unobservable_empty,r)
+        else:raise Refused('ORDINARY_PASTE_MENU_NOT_OBSERVED')
+        r['phase']='VERIFY_WIDGET_TEXT'
         deadline=time.monotonic()+5;seen=None
         while time.monotonic()<deadline:
             target=self.resolve_field(field,field_resolver,False,allow_unobservable_empty,r)
@@ -313,6 +418,9 @@ def safe_result(action):
             'helperInstalled':False,'privateStdinLengthAndHashMatched':False,'helperForegroundRoundTripMatched':False,
             'helperCharactersMatched':False,'privateInputDeletedBeforeClipboardWrite':False,'privateHelperFilesAbsentAfterOperation':False,
             'originalCcbResumed':False,'ordinaryPasteMenuClicks':0,'widgetTextRepresentation':'UNOBSERVED',
+            'ordinaryPasteAction':'UNOBSERVED','ordinaryPasteHardwareAttempts':0,'ordinaryPasteHardwarePairs':0,
+            'hardwarePasteCommandAccepted':None,'hardwarePasteFocusObserved':False,
+            'hardwarePasteFocusEvidence':'UNOBSERVED','hardwarePasteEmptyEvidence':'UNOBSERVED',
             'widgetCharactersMatched':None,'exactWidgetTextMatched':None,'clipboardClearedHere':False,
             'fieldResolverMode':'UNOBSERVED','fieldResolverCalls':0,'targetEmptyTextObserved':None,
             'unobservableEmptyAllowedByCaller':False,'submitObservation':'UNOBSERVED','pairedDeliveryProved':False,

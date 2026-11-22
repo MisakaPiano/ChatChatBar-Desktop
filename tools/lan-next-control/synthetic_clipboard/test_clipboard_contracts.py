@@ -10,6 +10,18 @@ import build_clipboard_helper as b
 
 SECRET=b'CCB-GROUP-JOIN1:'+b'a'*8192
 
+def ime_dump(package=c.TARGET,active=True,connecting=False,shown=True,wrapper='wrapper',input_type='81'):
+    return ('Current Input Method Manager state:\n  mInputShown='+str(shown).lower()+
+        '\n  mStartInputHistory:\n    packageName='+c.TARGET+
+        '\nInput method client state for synthetic:\n  mActive='+str(active).lower()+
+        '\n  mServedConnecting='+str(connecting).lower()+'\n  mCurrentTextBoxAttribute:\n'+
+        '    inputType=0x'+input_type+' imeOptions=0x0\n    packageName='+package+' fieldId=0\n'+
+        '  mServedInputConnectionWrapper='+wrapper+'\nInput method service state:\n')
+
+class Clock:
+    def __init__(self):self.now=0
+    def __call__(self):self.now+=.3;return self.now
+
 def xml(text='',password='true',extra=''):
     return ET.fromstring('<hierarchy><node package="'+c.TARGET+'" text="'+c.FIELD_LABELS['invitation']+'"/><node package="'+c.TARGET+'" class="android.widget.EditText" enabled="true" password="'+password+'" text="'+text+'" bounds="[0,0][100,100]"/>'+extra+'</hierarchy>')
 
@@ -116,5 +128,95 @@ class Contracts(unittest.TestCase):
     def test_submit_observer_context_is_strict(self):
         bridge=object.__new__(c.Bridge);bridge.a=object()
         with self.assertRaisesRegex(c.Refused,'SUBMIT_CONTEXT_MISMATCH'):bridge.observe_product_submission('recovery',lambda *_:'JOINING_UI_OBSERVED',c.safe_result('paste'))
+    def test_current_password_ime_is_positive(self):
+        self.assertTrue(c.current_ccb_password_ime(ime_dump()))
+    def test_history_or_wrong_current_client_does_not_prove_focus(self):
+        self.assertFalse(c.current_ccb_password_ime('mInputShown=true\nmStartInputHistory:\npackageName='+c.TARGET))
+        self.assertFalse(c.current_ccb_password_ime(ime_dump(package='other.app')))
+    def test_inactive_or_stale_ime_is_refused(self):
+        for args in ({'active':False},{'connecting':True},{'shown':False},{'wrapper':'null'},{'input_type':'1'}):
+            self.assertFalse(c.current_ccb_password_ime(ime_dump(**args)))
+        self.assertFalse(c.current_ccb_password_ime(ime_dump()+"Warning: Current input method client doesn't match the last focused window."))
+    def test_ime_history_cannot_override_current_input_hidden(self):
+        self.assertFalse(c.current_ccb_password_ime(ime_dump(shown=False)+'\n  oldService mInputShown=true\n'))
+    def test_focused_edittext_must_be_in_resolved_field(self):
+        root=xml();root[1].set('focused','true')
+        target=c.FieldTarget((0,0,100,100),'EDITTEXT',c.TARGET,True,True,True,'')
+        self.assertTrue(c.focused_target_edittext(root,target))
+        outside=c.FieldTarget((101,101,200,200),'LABEL_BUTTON_RECTANGLES',c.TARGET,True,True,None,None)
+        self.assertFalse(c.focused_target_edittext(root,outside))
+    def test_hardware_paste_never_adds_to_nonempty_field(self):
+        target=c.FieldTarget((0,0,100,100),'EDITTEXT',c.TARGET,True,True,True,'')
+        with self.assertRaisesRegex(c.Refused,'HARDWARE_PASTE_FIELD_NOT_EMPTY'):c.hardware_empty_evidence(target,xml(),'invitation',1)
+        conflict=c.FieldTarget((0,0,100,100),'EDITTEXT',c.TARGET,True,True,False,'existing')
+        with self.assertRaisesRegex(c.Refused,'HARDWARE_PASTE_FIELD_NOT_EMPTY'):c.hardware_empty_evidence(conflict,xml(),'invitation',0)
+    def test_hidden_empty_needs_real_zero_or_disabled_submit(self):
+        target=c.FieldTarget((0,0,100,100),'LABEL_BUTTON_RECTANGLES',c.TARGET,True,True,None,None)
+        self.assertIsNone(c.hardware_empty_evidence(target,xml(),'invitation',None))
+        self.assertEqual(c.hardware_empty_evidence(target,xml(),'invitation',0),'SCOPED_UI_ZERO_LENGTH')
+        disabled='<node package="'+c.TARGET+'" text="检查并加入" enabled="false" clickable="true" bounds="[0,101][100,140]"/>'
+        self.assertEqual(c.hardware_empty_evidence(target,xml(extra=disabled),'invitation',None),'EXACT_SUBMIT_DISABLED')
+    def hardware_bridge(self,mode='EDITTEXT',focus=True):
+        class FakeAdb:
+            def __init__(self):self.commands=[];self.taps=[]
+            def run(self,*args,**kw):
+                self.commands.append(args)
+                if args[-1]=='ro.kernel.qemu':return b'1\n'
+                if args[-1]=='ro.build.version.sdk':return b'26\n'
+                if args[-1]=='input_method':return (ime_dump() if focus else ime_dump(package='other')).encode()
+                return b''
+            def ui(self):
+                root=xml();root[1].set('focused',str(focus and mode=='EDITTEXT').lower());return root
+            def tap(self,rectangle):self.taps.append(rectangle)
+        bridge=object.__new__(c.Bridge);bridge.a=FakeAdb();bridge.expected_api=26;bridge.target_foreground=lambda:True
+        target=c.FieldTarget((0,0,100,100),mode,c.TARGET,True,True,True if mode=='EDITTEXT' else None,'' if mode=='EDITTEXT' else None)
+        return bridge,lambda *_:target
+    def test_dedicated_key_pair_once_for_visible_and_hidden_modes(self):
+        for mode in ('EDITTEXT','LABEL_BUTTON_RECTANGLES'):
+            bridge,resolver=self.hardware_bridge(mode);result=c.safe_result('paste')
+            with patch.dict('os.environ',{'GITHUB_ACTIONS':'true','RUNNER_OS':'Linux'}),patch.object(c,'installed_hash'),patch.object(c.time,'sleep'),patch.object(c.time,'monotonic',Clock()):
+                bridge.hardware_paste('invitation',next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),resolver,lambda *_:0,True,result)
+                with self.assertRaisesRegex(c.Refused,'HARDWARE_PASTE_ALREADY_ATTEMPTED'):
+                    bridge.hardware_paste('invitation',next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),resolver,lambda *_:0,True,result)
+            events=[a for a in bridge.a.commands if 'keyevent' in a]
+            self.assertEqual(events,[('shell','-T','input','keyevent','KEYCODE_PASTE')])
+            self.assertEqual(result['ordinaryPasteMenuClicks'],0);self.assertEqual(result['ordinaryPasteHardwarePairs'],1)
+            self.assertIsNone(result['exactWidgetTextMatched']);self.assertFalse(result['productOperationAccepted'])
+    def test_keyboard_scope_refuses_api36_other_apk_and_local(self):
+        for api,sha,env in ((36,next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),{'GITHUB_ACTIONS':'true','RUNNER_OS':'Linux'}),
+                            (26,'f'*64,{'GITHUB_ACTIONS':'true','RUNNER_OS':'Windows'}),(26,next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),{})):
+            bridge,resolver=self.hardware_bridge();bridge.expected_api=api
+            with patch.dict('os.environ',env,clear=True),patch.object(c,'installed_hash'):
+                with self.assertRaises(c.Refused):bridge.hardware_paste('invitation',sha,resolver,lambda *_:0,True,c.safe_result('paste'))
+            self.assertFalse(any('keyevent' in a for a in bridge.a.commands))
+    def test_keyboard_stale_focus_sends_no_key(self):
+        bridge,resolver=self.hardware_bridge('LABEL_BUTTON_RECTANGLES',focus=False)
+        with patch.dict('os.environ',{'GITHUB_ACTIONS':'true','RUNNER_OS':'Linux'}),patch.object(c,'installed_hash'),patch.object(c.time,'sleep'),patch.object(c.time,'monotonic',Clock()):
+            with self.assertRaisesRegex(c.Refused,'HARDWARE_PASTE_FOCUS_OR_EMPTY_UNPROVED'):bridge.hardware_paste('invitation',next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),resolver,lambda *_:0,True,c.safe_result('paste'))
+        self.assertFalse(any('keyevent' in a for a in bridge.a.commands))
+    def test_key_failure_records_attempt_without_claiming_accepted_pair(self):
+        bridge,resolver=self.hardware_bridge();original=bridge.a.run
+        def failed(*args,**kw):
+            if 'keyevent' in args:raise c.Refused('ADB_COMMAND_FAILED')
+            return original(*args,**kw)
+        bridge.a.run=failed;result=c.safe_result('paste')
+        with patch.dict('os.environ',{'GITHUB_ACTIONS':'true','RUNNER_OS':'Linux'}),patch.object(c,'installed_hash'),patch.object(c.time,'sleep'),patch.object(c.time,'monotonic',Clock()):
+            with self.assertRaisesRegex(c.Refused,'ADB_COMMAND_FAILED'):bridge.hardware_paste('invitation',next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),resolver,lambda *_:0,True,result)
+        self.assertEqual(result['ordinaryPasteHardwareAttempts'],1);self.assertEqual(result['ordinaryPasteHardwarePairs'],0);self.assertIsNone(result['hardwarePasteCommandAccepted'])
+    def test_observable_menu_remains_first_and_does_not_send_key(self):
+        expected=b'CCB-GROUP-JOIN1:synthetic'
+        menu='<node package="'+c.TARGET+'" text="PASTE" clickable="true" enabled="true" bounds="[0,101][100,140]"/>'
+        class FakeAdb:
+            pasted=False
+            def ui(self):return xml(text=expected.decode() if self.pasted else '',extra=menu)
+            def tap(self,rectangle):
+                if rectangle==(0,101,100,140):self.pasted=True
+            def run(self,*args,**kw):return b''
+        bridge=object.__new__(c.Bridge);bridge.a=FakeAdb();bridge.expected_api=26;bridge.target_foreground=lambda:True;bridge.put_bytes=lambda *_:None
+        result=c.safe_result('paste')
+        with patch.object(c,'installed_hash'),patch.object(c.time,'sleep'),patch.object(c.time,'monotonic',Clock()),patch.object(bridge,'hardware_paste') as keyboard:
+            rc=bridge.paste_bytes(expected,'invitation','invitation',next(iter(c.HARDWARE_PASTE_TARGET_SHAS)),result)
+            keyboard.assert_not_called()
+        self.assertEqual(rc,0);self.assertEqual(result['ordinaryPasteAction'],'MENU');self.assertEqual(result['ordinaryPasteMenuClicks'],1);self.assertEqual(result['ordinaryPasteHardwareAttempts'],0)
 
 if __name__=='__main__':unittest.main()
