@@ -146,6 +146,7 @@ import com.example.chatbar.ui.kit.CbText
 import com.example.chatbar.ui.kit.CbTopBar
 import com.example.chatbar.ui.kit.ChatBarTheme
 import com.example.chatbar.ui.kit.FullscreenTextEditor
+import com.example.chatbar.ui.kit.rememberFullscreenTextEditorState
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -181,6 +182,7 @@ fun ChatScreen(
     val session by viewModel.session.collectAsState()
     val characterCard by viewModel.characterCard.collectAsState()
     val isArchived by viewModel.isArchived.collectAsState()
+    val sessionMissing by viewModel.sessionMissing.collectAsState()
     val relinkCards by viewModel.relinkCharacterCards.collectAsState(initial = emptyList())
     var relinkOpen by remember(sessionId) { mutableStateOf(false) }
     var relinkSelectedId by remember(sessionId) { mutableStateOf<String?>(null) }
@@ -212,8 +214,10 @@ fun ChatScreen(
     val voiceGenerationAvailabilityError by
         viewModel.voiceGenerationAvailabilityError.collectAsState()
     val showBatteryOptimizationHint by viewModel.showBatteryOptimizationHint.collectAsState()
-    val draftInput by viewModel.draftInput.collectAsState()
+    val composerDraft by viewModel.composerDraft.collectAsState()
     val draftLoaded by viewModel.draftLoaded.collectAsState()
+    val consumedDraftRevision by viewModel.consumedDraftRevision.collectAsState()
+    val sendFailure by viewModel.sendFailure.collectAsState()
     val longTermMemoryUiState by viewModel.longTermMemoryUiState.collectAsState()
     val appSettings by ChatBarApp.instance.settingsRepository.appSettings.collectAsState(initial = AppSettings())
     val playerSetting by ChatBarApp.instance.settingsRepository.playerSetting.collectAsState(initial = PlayerSetting())
@@ -278,8 +282,7 @@ fun ChatScreen(
     }
 
     var input by remember(sessionId) { mutableStateOf(TextFieldValue("")) }
-    var inputTouched by remember(sessionId) { mutableStateOf(false) }
-    val selectedImages = remember { mutableStateListOf<String>() }
+    val selectedImages = composerDraft.images
     var settingsOpen by remember { mutableStateOf(false) }
     var debugOpen by remember { mutableStateOf(false) }
     var clearConfirm by remember { mutableStateOf(false) }
@@ -439,10 +442,11 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(draftLoaded, draftInput) {
-        if (draftLoaded && !inputTouched && input.text != draftInput) {
-            input = TextFieldValue(draftInput, selection = TextRange(draftInput.length))
+    LaunchedEffect(draftLoaded, composerDraft.revision, composerDraft.text, consumedDraftRevision) {
+        if (draftLoaded && input.text != composerDraft.text) {
+            input = TextFieldValue(composerDraft.text, selection = TextRange(composerDraft.text.length))
         }
+        if (consumedDraftRevision == composerDraft.revision && composerDraft.text.isEmpty() && selectedImages.isEmpty()) fullComposer = false
     }
     
     suspend fun scrollToBottom(animated: Boolean, expectedItemCount: Int = 0) {
@@ -488,7 +492,7 @@ fun ChatScreen(
     }
 
     val chatImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
-        uri?.let { viewModel.copyUriToLocalFile(it) { path -> selectedImages.add(path) } }
+        uri?.let { viewModel.copyUriToLocalFile(it, viewModel::addDraftImage) }
     }
     val editImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         uri?.let { viewModel.copyUriToLocalFile(it) { path -> editingImages.add(path) } }
@@ -1090,21 +1094,23 @@ fun ChatScreen(
         return
     }
     if (fullComposer && !isArchived) {
+        val editor = rememberFullscreenTextEditorState(input)
         FullscreenTextEditor(
+            state = editor,
             title = "撰写消息",
-            value = input,
-            onValueChange = {
+            onDraftValueChange = {
                 input = it
                 viewModel.updateDraftInput(it.text)
             },
             images = selectedImages,
-            onAddImage = { chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-            onRemoveImage = { selectedImages.remove(it) },
+            onAddImage = if (sessionMissing) null else ({ chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }),
+            onRemoveImage = viewModel::removeDraftImage,
             onDismiss = { fullComposer = false },
-            onConfirm = { finalValue ->
-                if (viewModel.sendMessage(finalValue.text, selectedImages.toList())) {
-                    input = TextFieldValue(""); selectedImages.clear(); fullComposer = false
-                }
+            onConfirm = { finalValue -> viewModel.sendMessage(finalValue.text, selectedImages) },
+            confirmEnabled = !sessionMissing && !isResponding && isModelUsable,
+            topContent = {
+                if (sessionMissing) CbText("会话已删除，草稿和图片已保留在本机。")
+                else sendFailure?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
             },
             confirmIcon = AppIcons.Send,
             visible = true
@@ -1332,7 +1338,15 @@ fun ChatScreen(
         }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = ChatContentMaxWidth).fillMaxWidth()) {
-                if (isArchived) {
+                if (sessionMissing) {
+                    CbText("会话已删除，草稿和图片已保留在本机。")
+                    if (composerDraft.text.isNotEmpty()) CbButton("复制草稿", {
+                        clipboardManager.setText(AnnotatedString(composerDraft.text))
+                    }, variant = ButtonVariant.Secondary)
+                    if (selectedImages.isNotEmpty()) CbButton("复制图片位置", {
+                        clipboardManager.setText(AnnotatedString(selectedImages.joinToString("\n")))
+                    }, variant = ButtonVariant.Secondary)
+                } else if (isArchived) {
                     CbSurface(
                         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                         color = ChatBarTheme.colors.muted,
@@ -1402,25 +1416,21 @@ fun ChatScreen(
                             !screenshotHeightMeasuring
                     )
                 } else {
-                    if (selectedImages.isNotEmpty()) ImageStrip(selectedImages, { selectedImages.remove(it) })
+                    sendFailure?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+                    if (selectedImages.isNotEmpty()) ImageStrip(selectedImages, viewModel::removeDraftImage)
                     ChatComposer(
                         input = input,
                         onInput = {
                             input = it
-                            inputTouched = true
                             viewModel.updateDraftInput(it.text)
                         },
                         responding = isResponding,
-                        enabled = !isArchived && isModelUsable,
-                        disabledPlaceholder = "本对话已封存",
+                        enabled = !sessionMissing && !isArchived && isModelUsable,
+                        disabledPlaceholder = if (sessionMissing) "会话已删除" else "本对话已封存",
                         onImage = { chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                         onFull = { fullComposer = true },
                         onCancel = viewModel::cancelResponseGeneration,
-                        onSend = {
-                            if (viewModel.sendMessage(input.text, selectedImages.toList())) {
-                                input = TextFieldValue(""); selectedImages.clear()
-                            }
-                        }
+                        onSend = { viewModel.sendMessage(input.text, selectedImages) }
                     )
                 }
             }

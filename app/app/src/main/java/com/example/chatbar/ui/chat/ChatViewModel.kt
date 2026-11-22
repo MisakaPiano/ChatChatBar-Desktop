@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatbar.ChatBarApp
 import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.data.repository.ChatSessionUnavailableException
 import com.example.chatbar.domain.card.CharacterCardImageTarget
 import com.example.chatbar.domain.card.CharacterCardImagePolicy
 import com.example.chatbar.domain.card.CharacterCardImageUpdater
@@ -91,6 +92,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -106,6 +109,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 
@@ -311,10 +315,19 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     val voiceGenerationAvailabilityError: StateFlow<String?> =
         _voiceGenerationAvailabilityError.asStateFlow()
 
-    private val _draftInput = MutableStateFlow("")
-    val draftInput: StateFlow<String> = _draftInput.asStateFlow()
+    internal data class ComposerDraft(val text: String = "", val images: List<String> = emptyList(), val revision: Long = 0,
+        val submittedMessageId: String? = null)
+    private val _composerDraft = MutableStateFlow(ComposerDraft())
+    internal val composerDraft = _composerDraft.asStateFlow()
     private val _draftLoaded = MutableStateFlow(false)
     val draftLoaded: StateFlow<Boolean> = _draftLoaded.asStateFlow()
+    private val draftWrite = Mutex()
+    private val _consumedDraftRevision = MutableStateFlow<Long?>(null)
+    internal val consumedDraftRevision = _consumedDraftRevision.asStateFlow()
+    private val _sendFailure = MutableStateFlow<String?>(null)
+    internal val sendFailure = _sendFailure.asStateFlow()
+    private val _sessionMissing = MutableStateFlow(false)
+    internal val sessionMissing = _sessionMissing.asStateFlow()
 
     private val _isResponding = MutableStateFlow(false)
     val isResponding: StateFlow<Boolean> = _isResponding.asStateFlow()
@@ -405,10 +418,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     @Volatile
     private var memorySourceRepairProgress: MemorySourceRepairProgress? = null
 
-    private var draftTouched = false
-    private var draftSaveSequence = 0
     private val scrollPositionSaveSequence = AtomicLong(System.currentTimeMillis())
-    private var responseJob: Job? = null
+    @Volatile private var responseJob: Job? = null
     private val hiddenRegenerationMessageId = AtomicReference<String?>(null)
     private var manualFormatRepairJob: Job? = null
     private var activeFormatRepairJob: Job? = null
@@ -617,6 +628,9 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             var first = true
             chatRepository.lanSyncRevision.collect {
                 if (first) first = false else {
+                    val current = checkedSessionForDisplay()
+                    if (current == null) return@collect
+                    _session.value = current
                     refreshMessages(); refreshSaveSlots(); refreshRagMemoryChunks(); refreshLongTermMemory()
                 }
             }
@@ -629,6 +643,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         _session.value?.voiceLanguage != updatedSession.voiceLanguage
                     val previousAudiobookMode = _audiobookModeEnabled.value
                     _session.value = updatedSession
+                    _sessionMissing.value = false
                     updateEffectiveAudiobookMode()
                     if (modelChanged) {
                         refreshModelStatus(updatedSession)
@@ -676,10 +691,11 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
     fun loadSessionData() {
         viewModelScope.launch {
-            val s = chatRepository.getSession(sessionId)
+            val s = checkedSessionForDisplay()
             _session.value = s
-            if (s != null && !draftTouched) {
-                _draftInput.value = chatRepository.getSessionDraft(sessionId)
+            if (!_draftLoaded.value) {
+                val draft = chatRepository.getComposerDraft(sessionId)
+                _composerDraft.update { if (it.revision == 0L) ComposerDraft(draft.content, draft.imagePaths) else it }
             }
             _draftLoaded.value = true
             val settings = settingsRepository.getAppSettings()
@@ -701,6 +717,19 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 replaceMessagesFromRepository(savedAnchor)
             }
         }
+    }
+
+    private fun markSessionMissing() {
+        _sessionMissing.value = true
+        _session.value = null
+    }
+
+    private suspend fun checkedSessionForDisplay(): ChatSession? = try {
+        chatRepository.requireDurableSession(sessionId).also { _sessionMissing.value = false }
+    } catch (error: ChatSessionUnavailableException) {
+        if (error.missing) markSessionMissing()
+        else _sendFailure.value = "暂时无法读取会话。请重试，草稿和图片已保留。"
+        null
     }
 
     fun refreshConfigurations() {
@@ -2026,15 +2055,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
-    private fun startStreamingForegroundWork() {
-        AiBackgroundWorkManager.start(sessionId)
-        checkBatteryOptimization()
-    }
-
-    private fun stopStreamingForegroundWork() {
-        AiBackgroundWorkManager.finish()
-    }
-
     private suspend fun effectiveContextWindowSize(): Int {
         val settings = settingsRepository.getAppSettings()
         val size = settings.defaultContextWindowSize.coerceAtLeast(0)
@@ -2052,15 +2072,25 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
      * 发送文本及图片
      */
     fun sendMessage(content: String, imagePaths: List<String> = emptyList()): Boolean {
-        if (_isArchived.value || !_isModelUsable.value || _isResponding.value) return false
+        if (_sessionMissing.value || _isArchived.value || !_isModelUsable.value || responseJob?.isActive == true ||
+            !_isResponding.compareAndSet(false, true)) return false
         val isBlank = content.isBlank() && imagePaths.isEmpty()
         val effectiveContent = if (isBlank) PromptTemplates.continueGenerationUserPrompt() else content
-        if (!isBlank && _draftInput.value.isNotEmpty()) updateDraftInput("")
+        _sendFailure.value = null
+        val submission = if (isBlank) null else {
+            val messageId = UUID.randomUUID().toString()
+            _composerDraft.updateAndGet { old ->
+                val revision = if (old.text == content && old.images == imagePaths) old.revision else old.revision + 1
+                ComposerDraft(content, imagePaths.toList(), revision, messageId)
+            }
+        }
         sendMessageInternal(
             content = effectiveContent,
             imagePaths = imagePaths,
             persistUserMessage = !isBlank,
-            resumeLatestUser = isBlank
+            resumeLatestUser = isBlank,
+            respondingAlreadyStarted = true,
+            submission = submission
         )
         return true
     }
@@ -2270,16 +2300,45 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     fun updateDraftInput(text: String) {
-        if (_draftInput.value == text) return
-        draftTouched = true
-        _draftInput.value = text
-        val sequence = ++draftSaveSequence
-        ChatBarApp.instance.applicationScope.launch {
-            try {
-                if (sequence == draftSaveSequence) {
-                    chatRepository.updateSessionDraft(sessionId, text)
-                }
-            } catch (_: Exception) {}
+        editComposerDraft { old -> if (old.text == text) old else ComposerDraft(text, old.images, old.revision + 1) }
+    }
+
+    fun addDraftImage(path: String) = editComposerDraft { old ->
+        ComposerDraft(old.text, old.images + path, old.revision + 1)
+    }
+
+    fun removeDraftImage(path: String) = editComposerDraft { old ->
+        if (path !in old.images) old else ComposerDraft(old.text, old.images - path, old.revision + 1)
+    }
+
+    private fun editComposerDraft(edit: (ComposerDraft) -> ComposerDraft) {
+        while (true) {
+            val before = _composerDraft.value
+            val updated = edit(before)
+            if (updated == before) return
+            if (!_composerDraft.compareAndSet(before, updated)) continue
+            ChatBarApp.instance.applicationScope.launch {
+                try { persistDraft(updated) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { _sendFailure.value = "暂时无法保存本机草稿，请保留此页面。" }
+            }
+            return
+        }
+    }
+
+    private suspend fun persistDraft(draft: ComposerDraft) = draftWrite.withLock {
+        if (_composerDraft.value == draft) chatRepository.updateComposerDraft(
+            ChatDraft(sessionId, draft.text, imagePaths = draft.images, submittedMessageId = draft.submittedMessageId)
+        )
+    }
+
+    private suspend fun completeDraftSubmission(submission: ComposerDraft, committed: Boolean) {
+        val updated = if (committed) ComposerDraft(revision = submission.revision + 1) else submission.copy(submittedMessageId = null)
+        if (!_composerDraft.compareAndSet(submission, updated)) return
+        if (committed) _consumedDraftRevision.value = updated.revision
+        try { persistDraft(updated) }
+        catch (_: Exception) {
+            _sendFailure.value = if (committed) "消息已保存。暂时无法更新本机草稿。" else "草稿仍在当前页面，暂时无法保存到本机。"
         }
     }
 
@@ -2316,7 +2375,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         persistUserMessage: Boolean,
         resumeLatestUser: Boolean = false,
         alternativeTargetMessageId: String? = null,
-        respondingAlreadyStarted: Boolean = false
+        respondingAlreadyStarted: Boolean = false,
+        submission: ComposerDraft? = null
     ) {
         if (_isResponding.value && !respondingAlreadyStarted) return
 
@@ -2325,9 +2385,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 _isResponding.value = true
             }
 
-            // 1. 获取全局与会话设定
-            val cachedSession = _session.value ?: return@launch
-            val currentSession = chatRepository.getSession(sessionId) ?: cachedSession
+            var backgroundStarted = false
+            var protectionLossHandle: DisposableHandle? = null
+            val userCommitted = AtomicBoolean(false)
+            try {
+            submission?.let { persistDraft(it) }
+            // The storage owner rechecks the same durable parent again at append.
+            val currentSession = chatRepository.requireDurableSession(sessionId)
             _session.value = currentSession
             val charCard = characterRepository.getById(currentSession.characterCardId)
             if (charCard == null) {
@@ -2345,8 +2409,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             )
             FormatCardUserToolPolicy.firstValidationError(activeFormatCard?.userTools.orEmpty())
                 ?.let { error ->
-                    addSystemMessage("用户工具配置无效：$error")
-                    _isResponding.value = false
+                    _sendFailure.value = "用户工具配置无效：$error"
                     return@launch
                 }
             val playerSettingObj = settingsRepository.getPlayerSetting()
@@ -2363,8 +2426,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             val configurationStatus = modelResolver.status(currentSession.modelId, appSettings)
             val modelConfig = modelResolver.resolveChatModel(currentSession.modelId, appSettings)
                 ?: run {
-                    addSystemMessage("错误：${configurationStatus.errors.firstOrNull() ?: "未找到可用模型配置"}")
-                    _isResponding.value = false
+                    _sendFailure.value = configurationStatus.errors.firstOrNull() ?: "未找到可用模型配置"
                     return@launch
                 }
             if (
@@ -2374,21 +2436,22 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     allowCleartextModelApi = appSettings.allowCleartextModelApi
                 )
             ) {
-                addSystemMessage("错误：${configurationStatus.errors.firstOrNull() ?: "API Key 未配置"}")
-                _isResponding.value = false
+                _sendFailure.value = configurationStatus.errors.firstOrNull() ?: "API Key 未配置"
                 return@launch
             }
 
             // 确定是否要用 Embedding 做 RAG 检索
-            startStreamingForegroundWork()
+            AiBackgroundWorkManager.start(sessionId)
+            backgroundStarted = true
+            checkBatteryOptimization()
             val generationJob = coroutineContext[Job]
             var interruptedReplyDraft: ChatMessage? = null
             var assistantReplyPersisted = false
-            val protectionLossHandle = AiBackgroundWorkManager.observeProtectionLoss { reason ->
+            protectionLossHandle = AiBackgroundWorkManager.observeProtectionLoss { reason ->
                 generationJob?.cancel(BackgroundGenerationProtectionCancellationException(reason))
             }
-            try {
             AiBackgroundWorkManager.awaitForegroundProtection()
+            chatRepository.requireDurableSession(sessionId)
             val embeddingConfig = modelResolver.embeddingModel(appSettings)
 
             // 2. 多模态图片处理 (如果是纯文本模型但附带了图片，则先调用视觉模型生成图片描述)
@@ -2416,6 +2479,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         } else if (!imageUnderstanding.unavailableReason.isNullOrBlank()) {
                             addSystemMessage("${imageUnderstanding.unavailableReason}，将作为无图消息发送。")
                         }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: ChatSessionUnavailableException) {
+                        throw e
                     } catch (e: Exception) {
                         addSystemMessage("图片解析失败: ${e.message}。将作为无图消息发送。")
                     }
@@ -2430,7 +2497,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 images = userMsgImages
             )
             if (persistUserMessage) {
-                val persistedUserMessage = chatRepository.addMessage(userMsg)
+                val pending = submission?.submittedMessageId?.let { userMsg.copy(id = it) } ?: userMsg
+                val persistedUserMessage = try {
+                    chatRepository.addMessage(pending) { userCommitted.set(true) }
+                } finally {
+                    if (submission != null && userCommitted.get()) withContext(NonCancellable) { completeDraftSubmission(submission, committed = true) }
+                }
                 messageWindowAnchorId.set(persistedUserMessage.id)
                 replaceMessagesFromRepository(persistedUserMessage.id)
                 if (currentSession.longTermMemoryEnabled) {
@@ -3120,7 +3192,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
             } catch (e: Exception) {
                 ChatBarApp.instance.streamingStopRequested.value = false
-                if (e is BackgroundGenerationProtectionCancellationException) {
+                if (e is ChatSessionUnavailableException) {
+                    if (e.missing) markSessionMissing()
+                    _sendFailure.value = e.message
+                } else if (e is BackgroundGenerationProtectionCancellationException) {
                     addSystemMessage("后台生成已中止：${e.reason}")
                 } else if (e is UserStoppedResponseGenerationException) {
                     val draft = InterruptedReplyPolicy.persistableDraft(interruptedReplyDraft)
@@ -3173,29 +3248,30 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             }
             } catch (e: Exception) {
                 ChatBarApp.instance.streamingStopRequested.value = false
-                _isResponding.value = false
-                if (e !is CancellationException) {
-                    try {
-                        if (alternativeTargetMessageId == null) {
-                            val errorAssistantMsg = ChatMessage.create(
-                                sessionId = sessionId,
-                                role = MessageRole.ASSISTANT,
-                                content = "閿欒: ${e.message}"
-                            )
-                            chatRepository.addMessage(errorAssistantMsg)
-                            try {
-                                replaceMessagesFromRepository()
-                            } catch (_: Exception) {}
-                        } else {
-                            addSystemMessage("閿欒: ${e.message}")
-                        }
-                    } catch (_: Exception) {}
+                when {
+                    e is ChatSessionUnavailableException -> {
+                        if (e.missing) markSessionMissing()
+                        _sendFailure.value = e.message
+                    }
+                    e is BackgroundGenerationProtectionCancellationException ->
+                        _sendFailure.value = if (userCommitted.get()) "消息已保存，后台保护中断。可继续生成。" else "后台保护中断，草稿和图片已保留。"
+                    e is CancellationException -> throw e
+                    e.message == "SYNC_MAINTENANCE" -> _sendFailure.value = "正在同步资料。草稿和图片已保留，请稍后重试。"
+                    userCommitted.get() -> {
+                        _sendFailure.value = "消息已保存，未能开始回复。可以继续生成。"
+                        runCatching { replaceMessagesFromRepository() }
+                    }
+                    else -> _sendFailure.value = "未能开始发送。请重试，草稿和图片已保留。"
                 }
                 _streamingMessage.value = null
             } finally {
                 protectionLossHandle?.dispose()
+                if (submission != null && !userCommitted.get()) withContext(NonCancellable) {
+                    completeDraftSubmission(submission, committed = false)
+                }
                 ChatBarApp.instance.streamingStopRequested.value = false
-                stopStreamingForegroundWork()
+                if (backgroundStarted) AiBackgroundWorkManager.finish()
+                _isResponding.value = false
                 if (
                     alternativeTargetMessageId != null &&
                     hiddenRegenerationMessageId.compareAndSet(alternativeTargetMessageId, null)

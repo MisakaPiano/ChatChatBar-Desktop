@@ -25,6 +25,7 @@ jobs:
         run: |
           bash ./gradlew :sharedCore:test \
             --tests 'com.example.chatbar.data.repository.ChatRepositorySyncAdmissionTest' \
+            :app:compileLanPreviewKotlin -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()

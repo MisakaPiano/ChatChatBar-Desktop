@@ -79,11 +79,16 @@ class ChatRepositorySyncAdmissionTest {
             LanSyncPlan(UUID.randomUUID().toString(), captured.snapshot.copy(records = emptyList()), emptyMap()) to captured.snapshot.hashes()
         }
         val message = ChatMessage("persisted", "chat", MessageRole.USER, "只写一次", createdAt = 2, updatedAt = 2)
+        repo.updateComposerDraft(ChatDraft("chat", "只写一次", submittedMessageId = message.id))
+        assertEquals("只写一次", repo.getComposerDraft("chat").content)
         var receipt: ChatMessage? = null
         assertFailsWith<java.io.IOException> {
             repo.addMessage(message) { committed -> receipt = committed; throw java.io.IOException("synthetic post-commit interruption") }
         }
         assertEquals(requireNotNull(receipt), assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(repo.readMessageDurable("persisted", "chat")).value)
+        assertEquals("", repo.getComposerDraft("chat").content)
+        repo.updateComposerDraft(ChatDraft("chat", "后续新编辑"))
+        assertEquals("后续新编辑", repo.getComposerDraft("chat").content)
         val failure = assertFailsWith<IllegalArgumentException> {
             gate.exclusive { workspace.apply(deletion.first, deletion.second, "device", emptyMap(), isolateLocalImages = true) }
         }

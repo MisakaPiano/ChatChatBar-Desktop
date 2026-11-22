@@ -185,11 +185,16 @@ class ChatRepository internal constructor(
 
     suspend fun getSessionDraft(id: String): String = getComposerDraft(id).content
 
-    suspend fun getComposerDraft(id: String): ChatDraft =
-        storage.loadEntity(DRAFT_TYPE, id, ChatDraft.serializer()) ?: ChatDraft(id, "")
+    suspend fun getComposerDraft(id: String): ChatDraft {
+        val draft = storage.loadEntity(DRAFT_TYPE, id, ChatDraft.serializer()) ?: return ChatDraft(id, "")
+        val submitted = draft.submittedMessageId ?: return draft
+        val message = readMessageDurable(submitted, id)
+        return if (message is JsonFileStorage.EntityReadResult.Valid && message.value.id == submitted &&
+            message.value.sessionId == id && message.value.role == MessageRole.USER) ChatDraft(id, "") else draft
+    }
 
     suspend fun updateSessionDraft(id: String, draft: String) {
-        updateComposerDraft(getComposerDraft(id).copy(content = draft, updatedAt = System.currentTimeMillis()))
+        updateComposerDraft(getComposerDraft(id).copy(content = draft, updatedAt = System.currentTimeMillis(), submittedMessageId = null))
     }
 
     suspend fun updateComposerDraft(draft: ChatDraft) {

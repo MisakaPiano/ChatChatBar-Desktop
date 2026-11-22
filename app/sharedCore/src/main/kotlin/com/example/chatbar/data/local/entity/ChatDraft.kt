@@ -7,5 +7,6 @@ data class ChatDraft(
     val sessionId: String,
     val content: String,
     val updatedAt: Long = System.currentTimeMillis(),
-    val imagePaths: List<String> = emptyList()
+    val imagePaths: List<String> = emptyList(),
+    val submittedMessageId: String? = null
 )
