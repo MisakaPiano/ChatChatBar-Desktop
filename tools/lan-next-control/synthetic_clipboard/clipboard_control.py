@@ -236,6 +236,82 @@ def submit_disabled_in_context(root,field):
         found[rectangle]=disabled
     return len(found)==1 and next(iter(found.values())) is True
 
+def submit_context(a):
+    """Current Group window plus service IME visibility; never input history."""
+    def read(*args):
+        value=a.run('shell',*args)
+        return value.decode('utf-8',errors='replace') if isinstance(value,bytes) else value
+    component=TARGET+'/com.example.chatbar.lanSync.LanSyncActivity'
+    active=read('dumpsys','activity','activities');window=read('dumpsys','window','windows')
+    need(any(component in line for line in active.splitlines() if 'mResumedActivity' in line or 'topResumedActivity' in line)
+         and any(component in line for line in window.splitlines() if 'mCurrentFocus=' in line),'SUBMIT_CCB_GROUP_WINDOW_NOT_CURRENT')
+    ime=read('dumpsys','input_method')
+    values=re.findall(r'\bmInputShown=(true|false)\b',ime.split('Input method client state for ',1)[0])
+    return (values[0]=='true' if len(values)==1 else None),ime
+
+def ordinary_submit_once(a,ui,field,expected,field_reader,result):
+    """One ordinary tap after positive IME/layout/content checks; no retry."""
+    cloud();need(field in ('invitation','recovery'),'SUBMIT_FIELD_INVALID')
+    need(isinstance(expected,str) and 0<len(expected)<=16384,'SUBMIT_EXPECTED_INPUT_INVALID')
+    need(not result.get('submitControl',{}).get('tapAttempts'),'SUBMIT_ALREADY_ATTEMPTED')
+    state={'imeInitiallyShown':None,'imeBackAttempts':0,'imeHiddenBeforeTap':False,
+           'imeDisposition':'NOT_CHECKED','fieldCharactersMatched':None,'fieldExactTextMatched':None,
+           'fieldRepresentation':'UNAVAILABLE','scopedLengthMatched':None,'freshStableButtonInViewport':False,
+           'tapAttempts':0,'tapCommandAccepted':False,'productConsumed':None,'consumptionEvidence':[]}
+    result['submitControl']=state
+    shown,ime=submit_context(a);state['imeInitiallyShown']=shown
+    need(shown is not None,'SUBMIT_IME_VISIBILITY_UNKNOWN')
+    if shown:
+        state['imeDisposition']='CURRENT_CCB_IME_UNCONFIRMED'
+        need(current_ccb_password_ime(ime),'SUBMIT_CURRENT_CCB_PASSWORD_IME_UNPROVED')
+        time.sleep(.15);again,ime=submit_context(a)
+        need(again is True and current_ccb_password_ime(ime),'SUBMIT_CURRENT_CCB_PASSWORD_IME_UNPROVED')
+        state['imeBackAttempts']=1;a.run('shell','input','keyevent','KEYCODE_BACK')
+        state['imeDisposition']='BACK_SENT_HIDDEN_UNCONFIRMED'
+    else:state['imeDisposition']='ALREADY_HIDDEN'
+    # Reacquire geometry after the real IME hide, not the earlier paste rectangle.
+    deadline=time.monotonic()+5;previous=None;stable=None
+    while time.monotonic()<deadline:
+        shown,_=submit_context(a)
+        if shown is not False:previous=stable=None;time.sleep(.2);continue
+        state['imeHiddenBeforeTap']=True
+        if state['imeBackAttempts']:state['imeDisposition']='HIDDEN_AFTER_CONFIRMED_BACK'
+        root=a.ui();target,count=field_reader(root)
+        target=validate_field_target(target,False,True)
+        observed=length_observation(target.text,count,expected)
+        state.update(fieldCharactersMatched=observed['charactersMatched'],fieldExactTextMatched=observed['exactTextMatched'],
+                     fieldRepresentation=observed['representation'],scopedLengthMatched=count==len(expected) if count is not None else None)
+        need(observed['charactersMatched'] is True and observed['exactTextMatched'] is not False,'SUBMIT_COMPLETE_FIELD_NOT_OBSERVED')
+        labels={value for node in root.iter('node') if node.get('package')==TARGET for value in ui.node_labels(node)}
+        need(not any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',value) for value in labels),'SUBMIT_EXISTING_PRODUCT_ERROR')
+        button=ui.click_target(root,SUBMIT_LABELS[field])
+        need(button is not None,'SUBMIT_ENABLED_BUTTON_NOT_OBSERVED')
+        viewports=[bounds(node) for node in root.iter('node') if node.get('package')==TARGET
+                   and node.get('scrollable')=='true' and node.get('enabled')=='true' and bounds(node)]
+        need(any(b[0]<=button[0]<button[2]<=b[2] and b[1]<=button[1]<button[3]<=b[3] for b in viewports),
+             'SUBMIT_BUTTON_OUTSIDE_VISIBLE_APP_VIEWPORT')
+        stable=(target.bounds,target.mode,button)
+        if stable==previous:break
+        previous=stable;stable=None;time.sleep(.2)
+    need(stable is not None,'SUBMIT_HIDDEN_IME_STABLE_LAYOUT_NOT_OBSERVED')
+    state['freshStableButtonInViewport']=True
+    shown,_=submit_context(a);need(shown is False,'SUBMIT_IME_CHANGED_BEFORE_TAP')
+    state['tapAttempts']=1;a.tap(stable[2]);state['tapCommandAccepted']=True
+
+def note_submit_consumption(result,evidence):
+    need(evidence in ('INPUT_CLEARED','JOINING_UI','READY_UI','MANAGEMENT_UNLOCKED_UI','PRODUCT_ERROR_UI'),'SUBMIT_CONSUMPTION_ENUM_INVALID')
+    state=result.get('submitControl')
+    if state is None:return
+    state['productConsumed']=True
+    if evidence not in state['consumptionEvidence']:state['consumptionEvidence'].append(evidence)
+
+def submit_field_cleared(text,mode,count):
+    # A real nonzero scoped counter outweighs an empty/omitted secure UI text.
+    if count is not None:
+        if count>0:return False
+        return True if text in (None,'') else None
+    return (text=='') if mode=='EDITTEXT' and text is not None else None
+
 def hardware_empty_evidence(target,root,field,observed_length):
     need(observed_length is None or type(observed_length) is int and 0<=observed_length<=16384,'UI_LENGTH_READER_INVALID')
     need(not target.text and target.empty_observed is not False,'HARDWARE_PASTE_FIELD_NOT_EMPTY')

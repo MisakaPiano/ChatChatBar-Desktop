@@ -91,7 +91,7 @@ def checkpoint(args,result):
         'phase','offerContractAccepted','joinFieldFocused','joinButtonPhysicalClicks',
         'joiningUiObserved','readyUiObserved','otherSyncErrorObserved',
         'expectedInvitationCountObserved','androidClipboard','exactMessageContentObserved',
-        'appOwnedImageSha256Matched','readbackPublished')}
+        'appOwnedImageSha256Matched','readbackPublished','submitControl')}
     message['kind']='CCB_V7_ANDROID_LIVE_PROGRESS'
     with temp.open('x',encoding='utf-8',newline='\n') as stream:
         json.dump(message,stream,ensure_ascii=True)
@@ -201,9 +201,9 @@ def scoped_invitation_count(root,ui):
     return next(iter(counts)) if len(counts) == 1 else None
 
 
-def resolve_invitation_target(adb,field,ui):
+def resolve_invitation_target(adb,field,ui,root=None):
     need(field == 'invitation','INVITATION_FIELD_REQUIRED')
-    root = adb.ui()
+    root = adb.ui() if root is None else root
     rectangle = labeled_join_field(root,ui)
     need(rectangle is not None,'INVITATION_FORM_LABELS_NOT_OBSERVED')
     visible = [node for node in root.iter('node')
@@ -306,19 +306,28 @@ def run_pairing(args,r,a,ui,clipboard,clipboard_result):
     r['navigationPhase']='submit-join'
     r['phase']='SUBMIT_INVITATION'
     checkpoint(args,r)
-    a.tap(reveal(a,ui,lambda root:ui.click_target(root,JOIN_SUBMIT_LABEL)))
+    clipboard_control.ordinary_submit_once(a,ui,'invitation',v['code'],
+        lambda root:(resolve_invitation_target(None,'invitation',ui,root),scoped_invitation_count(root,ui)),r)
     r['joinButtonPhysicalClicks']=1;r['phase']='WAIT_JOIN_AND_AUTOMATIC_RECEIVE'
     checkpoint(args,r)
     deadline=time.monotonic()+args.delivery_timeout
     while time.monotonic()<deadline:
         root=a.ui();s=ui.state(root);values=ui.labels(root)
+        if join_form_labels(root,ui) is not None:
+            target=resolve_invitation_target(None,'invitation',ui,root)
+            if clipboard_control.submit_field_cleared(target.text,target.mode,scoped_invitation_count(root,ui)) is True:
+                clipboard_control.note_submit_consumption(r,'INPUT_CLEARED')
         if s['invalidError']:
+            clipboard_control.note_submit_consumption(r,'PRODUCT_ERROR_UI')
             clipboard.observe_product_submission('invitation',lambda adb,field:'PRODUCT_REJECTED_UI_OBSERVED',clipboard_result)
             raise Refused('INVITATION_INVALID_OFFER')
         if s['joining'] and not r['joiningUiObserved']:
+            clipboard_control.note_submit_consumption(r,'JOINING_UI')
             clipboard.observe_product_submission('invitation',lambda adb,field:'JOINING_UI_OBSERVED',clipboard_result)
         updated=s['joining'] and not r['joiningUiObserved'] or s['otherSyncError'] and not r['otherSyncErrorObserved']
         ready={'立即检查','网盘设置'}.issubset(values)
+        if ready:clipboard_control.note_submit_consumption(r,'READY_UI')
+        if s['otherSyncError']:clipboard_control.note_submit_consumption(r,'PRODUCT_ERROR_UI')
         updated=updated or ready and not r['readyUiObserved']
         r['joiningUiObserved']=r['joiningUiObserved'] or s['joining']
         r['otherSyncErrorObserved']=r['otherSyncErrorObserved'] or s['otherSyncError']
@@ -347,6 +356,9 @@ def run_pairing(args,r,a,ui,clipboard,clipboard_result):
         # Publish only after values have been obtained from actual app storage.
         publish(args.readback,{'kind':'CCB_V7_ANDROID_READBACK','session':m['sessionId'],'message':m['id'],'text':m['content'],'imageSha256':actual,'received':True})
         r['readbackPublished']=True;r['phase']='DONE';r['status']='EXPECTED_APP_MESSAGE_AND_IMAGE_OBSERVED';return
+    if r.get('submitControl',{}).get('productConsumed') is not True:
+        r['submitControl']['productConsumed']=False
+        raise Refused('JOIN_SUBMIT_CONSUMPTION_NOT_OBSERVED')
     raise Refused('AUTOMATIC_APP_MESSAGE_NOT_OBSERVED')
 
 

@@ -102,9 +102,10 @@ def recovery_field_region(root,ui):
         node=parents.get(node)
     return None
 
-def resolve_recovery_target(adb,field,ui):
+def resolve_recovery_target(adb,field,ui,root=None):
     need(field=='recovery','RECOVERY_CLIPBOARD_FIELD_REQUIRED')
-    root=adb.ui();region=recovery_field_region(root,ui)
+    root=adb.ui() if root is None else root
+    region=recovery_field_region(root,ui)
     need(region is not None,'COLD_RECOVERY_FIELD_CONTEXT_NOT_VISIBLE')
     target=secure_input_node(root)
     if target:
@@ -310,10 +311,16 @@ def observe_unlocked_management(a,ui,r,clipboard,clipboard_result):
         need(active,'GROUP_PAGE_LOST_POST_SUBMIT')
         values=set().union(*(ui.node_labels(n) for n in root.iter('node') if n.get('package')==PACKAGE))
         if any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in values):
+            clipboard_control.note_submit_consumption(r,'PRODUCT_ERROR_UI')
             clipboard.observe_product_submission('recovery',lambda adb,field:'PRODUCT_REJECTED_UI_OBSERVED',clipboard_result)
             raise Refused('ORIGINAL_CODE_UNLOCK_UI_ERROR')
         lock=management_control(root,ui,'锁定管理');invite=management_control(root,ui,'邀请设备')
         locked_form=visible_label(root,'恢复码 · 临时解锁管理')
+        if locked_form:
+            target=secure_input_node(root);count=scoped_recovery_count(root,ui)
+            if clipboard_control.submit_field_cleared(target[0].get('text') if target else None,
+                    'EDITTEXT' if target else 'LABEL_BUTTON_RECTANGLES',count) is True:
+                clipboard_control.note_submit_consumption(r,'INPUT_CLEARED')
         count=r['postSubmitSampleCount']+1;r['postSubmitSampleCount']=count
         sample={'sample':count,'seconds':min(45,max(0,int(time.monotonic()-start))),
             'afterAction':r['postSubmitLastAction'],'groupActive':active,
@@ -339,6 +346,7 @@ def observe_unlocked_management(a,ui,r,clipboard,clipboard_result):
             r['original85CodeUnlocked86']=True
             r['managementUnlockedObservedBeforeClipboardCleanup']=True
             r['managementUnlockEvidence']='UNIQUE_LOCK_VISIBLE_TWO_FRESH_SAMPLES'
+            clipboard_control.note_submit_consumption(r,'MANAGEMENT_UNLOCKED_UI')
             clipboard.observe_product_submission('recovery',lambda adb,field:'MANAGEMENT_UNLOCKED_UI_OBSERVED',clipboard_result)
         if (r['original85CodeUnlocked86'] and r['lockManagementButtonEnabled'] is True
                 and r['inviteDeviceButtonEnabled'] is True
@@ -380,6 +388,9 @@ def observe_unlocked_management(a,ui,r,clipboard,clipboard_result):
         if r['lockManagementButtonEnabled'] is False:raise Refused('MANAGEMENT_UNLOCKED_LOCK_DISABLED')
         if r['lockManagementButtonEnabled'] is True:raise Refused('MANAGEMENT_UNLOCKED_CONTROLS_NOT_VISIBLE_AT_CONFIRMATION')
         raise Refused('MANAGEMENT_UNLOCKED_LOCK_ENABLED_UNOBSERVED')
+    if r.get('submitControl') is not None and r['submitControl']['productConsumed'] is not True:
+        r['submitControl']['productConsumed']=False
+        raise Refused('RECOVERY_SUBMIT_CONSUMPTION_NOT_OBSERVED')
     raise Refused('MANAGEMENT_UNLOCK_NOT_OBSERVED')
 
 def execute(args,r):
@@ -432,7 +443,9 @@ def execute(args,r):
         paste_recovery_code(a,ui,secret,r,clipboard,clipboard_result)
         if not r['unlockLabelSeenAfterInput']:
             show_target(a,ui,'解锁管理',r)
-        ui.wait_click(a,'解锁管理',time.monotonic()+30,result=r,phase='submit-original-recovery-code')
+        r['navigationPhase']='submit-original-recovery-code'
+        clipboard_control.ordinary_submit_once(a,ui,'recovery',secret.decode('ascii'),
+            lambda root:(resolve_recovery_target(None,'recovery',ui,root),scoped_recovery_count(root,ui)),r)
         r['unlockButtonClicks']=1
         observe_unlocked_management(a,ui,r,clipboard,clipboard_result)
         r['phase']='DONE';r['status']='ORIGINAL85_RECOVERY_CODE_COLD_UNLOCK86_UI_OBSERVED';return
