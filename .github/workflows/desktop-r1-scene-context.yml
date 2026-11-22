@@ -1,0 +1,57 @@
+name: Desktop queued scene context regression
+on:
+  push:
+    branches: [codex/desktop-r1-scene-context-20261123]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-r1-scene-context-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind exact source and canonical synthetic root
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-r1-scene-context'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class SceneContextFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([SceneContextFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'r1-scene-evidence' | Out-Null
+          git rev-parse HEAD | Set-Content 'r1-scene-evidence/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'r1-scene-evidence/tree.txt'
+      - name: Verify actual scene geometry and adjacent coroutine consumers
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopR1LayoutMenuTest'
+          --tests 'com.example.chatbar.desktop.DesktopSafeClipboardTest'
+          --tests 'com.example.chatbar.desktop.DesktopSourceMessageNavigationTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatViewportTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatReadingLifecycleTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest'
+          --tests 'com.example.chatbar.desktop.DesktopSessionImageGalleryTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-r1-scene-context-original-results
+          path: |
+            r1-scene-evidence/
+            app/desktopApp/build/test-results/test/

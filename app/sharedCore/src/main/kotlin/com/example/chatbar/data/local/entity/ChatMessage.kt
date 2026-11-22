@@ -95,7 +95,10 @@ data class ChatMessage(
     /** source turn绝对顺序；不等同于可重排的显示T。 */
     val sourceTurnOrder: Long? = null,
     /** v2草稿兼容字段；v4仅作为旧sourceTurnOrder迁移来源。 */
-    val timelineTurn: Long? = null
+    val timelineTurn: Long? = null,
+    /** 其他备选的修复记录，以稳定版本 ID 关联；旧单槽仍可读取。 */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val otherFormatRepairNotices: List<MessageFormatRepairNotice> = emptyList()
 ) {
     /** 获取当前显示的内容（考虑替代回复） */
     val displayContent: String

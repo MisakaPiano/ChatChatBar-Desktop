@@ -32,7 +32,7 @@ class DesktopR1LayoutMenuTest {
             for (message in c.screenshotTimeline()) {
                 val actions = mutableListOf<DesktopMessageAction>()
                 val shots = mutableListOf<Pair<ChatMessage, String?>>()
-                val scene = ImageComposeScene(600, 700) {
+                val scene = ImageComposeScene(600, 700, coroutineContext = edt) {
                     CompositionLocalProvider(LocalDesktopChatScreenshot provides { m, b -> shots.add(m to b); Unit }) {
                         PrimaryMessageBubble(message, c.state.value, c, DesktopSafeClipboard(LocalClipboard.current),
                             desktopMessageActions(c.state.value.messages, message, null), { actions.add(it) })
@@ -76,7 +76,7 @@ class DesktopR1LayoutMenuTest {
             c.refresh(); c.selectSession("session")
             for (width in listOf(360, 1100)) {
                 val navigation = DesktopCompactChatNavigation().also { it.onSessionEntered("session", c.state.value) }
-                val scene = ImageComposeScene(width, 800) {
+                val scene = ImageComposeScene(width, 800, coroutineContext = edt) {
                     DesktopPrimaryChatPanel(c, if (width == 360) DesktopShellSize.COMPACT else DesktopShellSize.WIDE, DesktopComposerLayoutState(), compactNavigation = navigation)
                 }
                 try {
@@ -116,7 +116,7 @@ class DesktopR1LayoutMenuTest {
         val f = DesktopAssistantImageActionTest.Fixture()
         try {
             f.initialize()
-            val scene = ImageComposeScene(1000, 950) {
+            val scene = ImageComposeScene(1000, 950, coroutineContext = edt) {
                 androidx.compose.foundation.layout.Column(Modifier.background(DesktopBootstrapColors.background)) {
                     DesktopFullBackupPanel(f.c.fullBackupController) {}
                     DesktopUpdatePanel()
@@ -150,7 +150,7 @@ class DesktopR1LayoutMenuTest {
                 val c = f.c.primaryChatController; c.refresh(); c.selectSession("session")
                 val user = c.screenshotTimeline().first { it.role == MessageRole.USER }
                 for (width in listOf(360, 1100)) {
-                    val scene = ImageComposeScene(width, 1200) {
+                    val scene = ImageComposeScene(width, 1200, coroutineContext = edt) {
                         androidx.compose.foundation.layout.Column(Modifier.background(DesktopBootstrapColors.background)) {
                             for (m in listOf(user, f.source)) PrimaryMessageBubble(m, c.state.value, c,
                                 DesktopSafeClipboard(LocalClipboard.current), desktopMessageActions(c.state.value.messages, m, null))

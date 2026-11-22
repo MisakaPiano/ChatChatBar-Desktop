@@ -3,11 +3,39 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
+import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class MessageAlternativeVersionPolicyTest {
+    @Test fun `append binds legacy recovery to an existing owner before adding identical text`() {
+        val legacy = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED,
+            targetContent = "fixed", originalContent = "same", restored = true)
+        val original = message(listOf("same"), listOf("a"), 0, "a").copy(formatRepairNotice = legacy)
+        val appended = MessageAlternativeVersionPolicy.append(original, "same", "b")
+        assertEquals("a", appended.formatRepairNotice?.versionId)
+        assertEquals(null, MessageFormatRepairPolicy.applicableNotice(appended))
+        val a = MessageAlternativeVersionPolicy.select(appended, 0)
+        assertEquals("fixed", MessageFormatRepairPolicy.redoRepair(a)?.displayContent)
+        assertEquals(listOf("fixed", "same"), MessageFormatRepairPolicy.redoRepair(a)?.alternatives)
+    }
+
+    @Test fun `append preserves a uniquely proven inactive legacy recovery and clears only retired or ambiguous owners`() {
+        val legacy = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED,
+            targetContent = "fixed", originalContent = "same", restored = true)
+        val original = message(listOf("other", "same"), listOf("a", "b"), 0, "a").copy(formatRepairNotice = legacy)
+        val appended = MessageAlternativeVersionPolicy.append(original, "same", "c")
+        assertEquals("b", appended.formatRepairNotice?.versionId)
+        assertEquals(null, MessageFormatRepairPolicy.applicableNotice(appended))
+        assertEquals("fixed", MessageFormatRepairPolicy.redoRepair(MessageAlternativeVersionPolicy.select(appended, 1))?.displayContent)
+        assertEquals(null, MessageAlternativeVersionPolicy.append(original, "same", "c", maxVersions = 1).formatRepairNotice)
+        val ambiguous = message(listOf("other", "same", "same"), listOf("a", "b", "c"), 0, "a")
+            .copy(formatRepairNotice = legacy)
+        assertEquals(null, MessageAlternativeVersionPolicy.append(ambiguous, "same", "d").formatRepairNotice)
+    }
+
     @Test fun `default append retains more than five identities with narrative modes`() {
         var source = message(listOf("same"), listOf("v0"), 0, "v0")
         repeat(12) { index ->
@@ -133,7 +161,9 @@ class MessageAlternativeVersionPolicyTest {
         val edited = MessageAlternativeVersionPolicy.editCurrentContent(original, "edited", 30)
         val expectedModes = modes.ifEmpty { List(3) { ChatNarrativeMode.FOCUS } }
         assertEquals(original.copy(content = "edited", alternatives = listOf("first", "edited", "last"),
-            alternativeNarrativeModes = expectedModes, updatedAt = 30), edited)
+            alternativeNarrativeModes = expectedModes, formatRepairNotice = null, updatedAt = 30), edited)
+        assertEquals("middle", original.formatRepairNotice?.targetContent)
+        assertEquals(null, MessageFormatRepairPolicy.applicableNotice(edited))
         val other = MessageAlternativeVersionPolicy.select(edited, 2, 31)
         assertEquals(expectedModes[2], other.narrativeMode)
         val returned = MessageAlternativeVersionPolicy.select(other, 1, 32)

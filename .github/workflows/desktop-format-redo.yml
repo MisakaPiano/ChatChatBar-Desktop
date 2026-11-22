@@ -1,0 +1,81 @@
+name: Desktop format repair redo checkpoint
+on:
+  push:
+    branches: [codex/desktop-1259-feedback-20261119, codex/desktop-1259-review-proof-20261120]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-format-redo-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind native canonical synthetic temporary directory
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb1259-feedback-fixtures'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class FeedbackFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([FeedbackFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path '.review1259' | Out-Null
+          git rev-parse HEAD | Set-Content '.review1259/source.txt'
+      - uses: actions/checkout@v4
+        with:
+          ref: 90bd2ab1719b0a02ada644ac6fb9ed37d0e42161
+          path: prior-redo-product
+          persist-credentials: false
+      - name: Reproduce inactive redo loss in the compatible frozen prior product
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '646831afa55485ad3344475d525004b9c00aeda9'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt'
+          git -C prior-redo-product fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'REDO_PRIOR_UNAVAILABLE' }
+          git -C prior-redo-product restore --source=$prior --worktree -- $file
+          if ($LASTEXITCODE -ne 0) { throw 'REDO_PRIOR_NOT_RESTORED' }
+          git -C prior-redo-product rev-parse HEAD | Set-Content '.review1259/negative-other-version-product-source.txt'
+          $prior | Set-Content '.review1259/negative-other-version-source.txt'
+          Push-Location prior-redo-product/app
+          try {
+            .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.inactive alternative redo checkpoint survives no change unchanged marker and error on another alternative' -PdesktopTestHeadless=true --no-daemon --stacktrace
+            $negativeExit = $LASTEXITCODE
+          } finally { Pop-Location }
+          $path = 'prior-redo-product/app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml'
+          [xml]$report = Get-Content -Raw -LiteralPath $path
+          if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'REDO_PRIOR_ASSERTION_NOT_REACHED' }
+          if ($report.testsuite.testcase.failure.message -notlike '*Repairing B without a replacement erased*') { throw 'REDO_PRIOR_WRONG_FAILURE' }
+          Copy-Item -LiteralPath $path -Destination '.review1259/negative-other-version-redo.xml'
+          $global:LASTEXITCODE = 0
+      - name: Verify real repair controller and source mutation integration
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairInteractionTest'
+          --tests 'com.example.chatbar.desktop.DesktopMessageFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-format-redo-original-results
+          include-hidden-files: true
+          path: |
+            app/desktopApp/build/test-results/test/
+            .review1259/

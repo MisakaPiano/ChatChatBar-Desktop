@@ -103,7 +103,7 @@ object MessageAlternativeVersionPolicy {
                 narrativeMode = narrativeMode
             )
         ).takeLast(maxVersions)
-        return message.copy(
+        val appended = message.copy(
             content = content,
             alternatives = retained.map(MessageVersionSnapshot::content),
             alternativeVersionIds = retained.map(MessageVersionSnapshot::id),
@@ -113,6 +113,7 @@ object MessageAlternativeVersionPolicy {
             alternativeNarrativeModes = retained.map(MessageVersionSnapshot::narrativeMode),
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, appended)
     }
 
     /** Remove one stable identity, retaining shared media and every surviving candidate. */
@@ -126,7 +127,7 @@ object MessageAlternativeVersionPolicy {
         val selectedIndex = retained.indexOfFirst { it.id == activeId }.takeIf { it >= 0 }
             ?: removedIndex.coerceAtMost(retained.lastIndex)
         val selected = retained[selectedIndex]
-        return message.copy(
+        val removed = message.copy(
             content = selected.content,
             alternatives = retained.map(MessageVersionSnapshot::content),
             alternativeVersionIds = retained.map(MessageVersionSnapshot::id),
@@ -134,9 +135,9 @@ object MessageAlternativeVersionPolicy {
             currentAlternativeVersionId = selected.id,
             narrativeMode = selected.narrativeMode,
             alternativeNarrativeModes = retained.map(MessageVersionSnapshot::narrativeMode),
-            formatRepairNotice = message.formatRepairNotice.takeUnless { activeId == versionId || it?.versionId == versionId },
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, removed)
     }
 
     fun select(
@@ -148,7 +149,7 @@ object MessageAlternativeVersionPolicy {
         require(message.alternatives.isNotEmpty()) { "消息没有替代版本" }
         require(alternativeIndex in versions.indices) { "消息版本索引越界" }
         val selected = versions[alternativeIndex]
-        return message.copy(
+        val selectedMessage = message.copy(
             content = selected.content,
             alternativeVersionIds = versions.map(MessageVersionSnapshot::id),
             currentAlternativeIndex = alternativeIndex,
@@ -157,6 +158,7 @@ object MessageAlternativeVersionPolicy {
             alternativeNarrativeModes = versions.map(MessageVersionSnapshot::narrativeMode),
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, selectedMessage)
     }
 
     fun editCurrentContent(
@@ -164,13 +166,14 @@ object MessageAlternativeVersionPolicy {
         content: String,
         updatedAt: Long = System.currentTimeMillis()
     ): ChatMessage {
-        return normalize(message).copy(
+        val edited = normalize(message).copy(
             content = content,
             alternatives = message.alternatives.mapIndexed { index, previous ->
                 if (index == message.currentAlternativeIndex) content else previous
             },
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, edited)
     }
 
     private fun alignedVersionIds(message: ChatMessage): List<String> {

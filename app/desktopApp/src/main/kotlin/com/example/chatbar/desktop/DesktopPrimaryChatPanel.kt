@@ -839,6 +839,7 @@ private fun PrimaryTimeline(
         desktopChatTimelineMapping(state, running)
     }
     val viewport = rememberDesktopChatViewport(state, mapping, controller, activeStream?.content to activeStream?.reasoningContent)
+    val viewportScope = key(viewport) { rememberCoroutineScope() }
     val playbackState = controller.voices?.playback?.state?.collectAsState()?.value
     val batches = controller.voices?.coordinator?.batches?.collectAsState()?.value.orEmpty()
     val deckVisible = batches.any { it.sessionId == state.selectedSession?.id }
@@ -866,7 +867,7 @@ private fun PrimaryTimeline(
         ) {
             if (state.hasOlderMessages) item(key = "older") {
                 BootstrapButton("${t(DesktopUiText.LOAD_OLDER)} · ${state.totalMessageCount} ${t(DesktopUiText.TOTAL)}", secondary = true) {
-                    scope.launch { viewport.loadAdjacent(controller, older = true) }
+                    viewportScope.launch { viewport.loadAdjacent(controller, older = true) }
                 }
             }
             items(visibleMessages, key = ChatMessage::id) { message ->
@@ -899,7 +900,7 @@ private fun PrimaryTimeline(
                     onActionChoice = { onActionChoice(message, it) })
             }
             if (state.hasNewerMessages) item(key = "newer") {
-                BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { scope.launch { viewport.loadAdjacent(controller, older = false) } }
+                BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { viewportScope.launch { viewport.loadAdjacent(controller, older = false) } }
             }
             if (running != null) item(key = "stream:${running.taskId}") {
                 val streamingMessage = remember(running.taskId, activeStream) {
@@ -920,11 +921,11 @@ private fun PrimaryTimeline(
                 mapping.keys.isNotEmpty() && !viewport.atBottom())
             DesktopChatNavigationGroup(groups.earlier, placement.external, !viewport.restoring,
                 Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = if (placement.external) 0.dp else 8.dp)) {
-                scope.launch { viewport.navigate(controller, it) }
+                viewportScope.launch { viewport.navigate(controller, it) }
             }
             DesktopChatNavigationGroup(groups.later, placement.external, !viewport.restoring,
                 Modifier.align(Alignment.BottomEnd).padding(bottom = voiceInset, end = if (placement.external) 0.dp else 8.dp)) {
-                scope.launch { viewport.navigate(controller, it) }
+                viewportScope.launch { viewport.navigate(controller, it) }
             }
         }
     }

@@ -64,7 +64,7 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Restore only the current candidate from notice.originalContent and retain its repair text with restored=true for local redo. New notices bind stable versionId; a different candidate with identical text cannot reuse that recovery point. Legacy absent fields retain the old readable shape. Desktop redo uses the same task/admission/source-safety/conditional commit owner as restore and never enters model resolution or the network stream.
 - A no-change result must not erase an existing applicable recovery point.
 - Keep legacy notice enum values readable. Do not revive the removed length-anomaly gate without a new product decision.
-- Editing, regeneration, candidate switching, or another mutation must clear or hide stale notices according to target-content applicability.
+- Editing and other mutations clear or hide stale notices according to target-content applicability. Regeneration preserves the version policy's surviving notice: appending B must hide A's local redo while B is selected, then restore that redo when selecting A. Before append introduces duplicate text, the shared policy binds an unnumbered legacy notice to its applicable active owner or sole matching existing owner; retired or unverifiable owners cannot become recovery points on B. The real runtime must not clear that result. `DesktopRegenerationTest` covers actual regeneration, identical-text legacy alternatives and local redo without another repair request.
 - Process death during an unfinished stream leaves the pre-repair persisted message intact.
 
 ## Orchestration Invariants
@@ -100,3 +100,6 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Do not overwrite text without a durable recovery path.
 - Do not persist partial stream output accidentally.
 - Do not treat character-card rewrite behavior as message format repair behavior.
+
+- Desktop keeps independent checkpoints in the legacy `formatRepairNotice` slot plus `otherFormatRepairNotices` (empty extra lists are omitted). Shared policy proves each stable version owner and unchanged checkpoint body before retaining it through selection, append, pruning or edits. A changed B repair must preserve A's local redo, not only no-change/error attempts. Repository conditional writes merge only the active checkpoint. SaveSlot duplication/restore and modern whole backup retain the serialized points.
+- Desktop menu repair/restore/redo forwards the displayed full message snapshot; the controller rejects a stale displayed version before model lookup or mutation. Automatic repair retains its admitted parent source gate. Tests: `DesktopAutomaticFormatRepairTest`, `DesktopFormatRepairInteractionTest`, `MessageFormatRepairPolicyTest`, `ChatRepositoryConditionalUpdateTest`, and the repair-point cases in SaveSlot/FullBackup Service tests.

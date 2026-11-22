@@ -16,7 +16,7 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
     private val home = root.resolve("backups/.restore-session.tmp")
     private data class Row(val path: String, val old: String?, val next: String?)
 
-    suspend fun commit(changes: Map<String, Path?>, expected: Map<String, String?>) {
+    suspend fun commit(changes: Map<String, Path?>, expected: Map<String, String?>, discardCompleted: Boolean = false) {
         check(DesktopDataRootOwnership.isHeld(root))
         check(changes.isNotEmpty() && changes.keys == expected.keys && changes.size <= MAX_FILES)
         check(changes.keys.map(String::lowercase).distinct().size == changes.size)
@@ -36,7 +36,38 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
             "磁盘空间不足以同时保留恢复证据与提交文件"
         }
         check(Files.newDirectoryStream(home).use { it.count() } < 4096)
-        val work = Files.createDirectory(home.resolve("active-${UUID.randomUUID()}"))
+        val prefix = if (discardCompleted) REPLY_PREFIX else "active-"
+        val work = Files.createDirectory(home.resolve("$prefix${UUID.randomUUID()}"))
+        val workIdentity = if (discardCompleted) DesktopSaveSlotOwnedWork.identity(work, true) else null
+        val rows = try { stageRows(work, changes, expected) }
+        catch (failure: Throwable) {
+            if (workIdentity != null && !Files.exists(work.resolve("intent.json"), LinkOption.NOFOLLOW_LINKS)) {
+                try { withContext(NonCancellable) { releaseOwnedWork(work, workIdentity) } }
+                catch (cleanup: Exception) { failure.addSuppressed(cleanup) }
+            }
+            throw failure
+        }
+        withContext(NonCancellable) {
+            try {
+                rows.forEachIndexed { index, row ->
+                    check(hashOrNull(live(row.path)) == row.old) { "会话数据在提交前变化" }
+                    install(live(row.path), row.next?.let { work.resolve("$index.next") })
+                    afterWrite(index)
+                }
+                rows.forEach { check(hashOrNull(live(it.path)) == it.next) }
+                writeNew(work.resolve("commit.part"), DesktopArchiveFiles.hash(work.resolve("intent.json"), MAX_INTENT.toLong()).toByteArray())
+                Files.move(work.resolve("commit.part"), work.resolve("committed"), StandardCopyOption.ATOMIC_MOVE)
+                finish(work, rows)
+            } catch (error: Throwable) {
+                if (!Files.exists(work.resolve("committed"), LinkOption.NOFOLLOW_LINKS)) {
+                    try { rollback(work, rows) } catch (recovery: Throwable) { error.addSuppressed(recovery) }
+                }
+                throw error
+            }
+        }
+    }
+
+    private suspend fun stageRows(work: Path, changes: Map<String, Path?>, expected: Map<String, String?>): List<Row> {
         var total = 0L
         val rows = changes.entries.mapIndexed { index, (relative, source) ->
             val target = live(relative)
@@ -64,24 +95,7 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
         check(intent.size <= MAX_INTENT)
         writeNew(work.resolve("intent.part"), intent)
         Files.move(work.resolve("intent.part"), work.resolve("intent.json"), StandardCopyOption.ATOMIC_MOVE)
-        withContext(NonCancellable) {
-            try {
-                rows.forEachIndexed { index, row ->
-                    check(hashOrNull(live(row.path)) == row.old) { "会话数据在提交前变化" }
-                    install(live(row.path), row.next?.let { work.resolve("$index.next") })
-                    afterWrite(index)
-                }
-                rows.forEach { check(hashOrNull(live(it.path)) == it.next) }
-                writeNew(work.resolve("commit.part"), DesktopArchiveFiles.hash(work.resolve("intent.json"), MAX_INTENT.toLong()).toByteArray())
-                Files.move(work.resolve("commit.part"), work.resolve("committed"), StandardCopyOption.ATOMIC_MOVE)
-                finish(work)
-            } catch (error: Throwable) {
-                if (!Files.exists(work.resolve("committed"), LinkOption.NOFOLLOW_LINKS)) {
-                    try { rollback(work, rows) } catch (recovery: Throwable) { error.addSuppressed(recovery) }
-                }
-                throw error
-            }
-        }
+        return rows
     }
 
     suspend fun recover() {
@@ -101,7 +115,7 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
                 DesktopArchiveFiles.safe(committed, false); check(Files.size(committed) == 64L)
                 check(Files.readString(committed) == DesktopArchiveFiles.hash(intent, MAX_INTENT.toLong()))
                 rows.forEach { check(hashOrNull(live(it.path)) == it.next) }
-                finish(work)
+                finish(work, rows)
             } else rollback(work, rows)
         }
     }
@@ -112,9 +126,12 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
     private suspend fun rollback(work: Path, rows: List<Row>) {
         verifyEvidence(work, rows)
         rows.forEach { row -> check(hashOrNull(live(row.path)) in setOf(row.old, row.next)) { "恢复发现未知内容；保留现场" } }
-        rows.forEachIndexed { index, row -> install(live(row.path), row.old?.let { work.resolve("$index.old") }) }
+        rows.forEachIndexed { index, row ->
+            val target = live(row.path)
+            if (hashOrNull(target) != row.old) install(target, row.old?.let { work.resolve("$index.old") })
+        }
         rows.forEach { check(hashOrNull(live(it.path)) == it.old) }
-        finish(work)
+        finish(work, rows)
     }
 
     private suspend fun verifyEvidence(work: Path, rows: List<Row>) {
@@ -183,12 +200,53 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
     private suspend fun install(target: Path, source: Path?) {
         prepareDirectories(target.parent)
         if (source == null) { Files.deleteIfExists(target); return }
-        val part = target.resolveSibling(".${target.fileName}.${UUID.randomUUID()}.part")
-        DesktopArchiveFiles.copyNew(source, part, MAX_FILE)
-        Files.move(part, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        // A hard exit while copying must not leave a partial file in a live entity directory.
+        val part = source.resolveSibling(".${source.fileName}.${UUID.randomUUID()}.install-part")
+        var ownedPart: Any? = null
+        try {
+            DesktopArchiveFiles.copyNew(source, part, MAX_FILE) { ownedPart = DesktopSaveSlotOwnedWork.identity(it, false) }
+            Files.move(part, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } catch (failure: Throwable) {
+            try {
+                if (ownedPart != null && Files.exists(part, LinkOption.NOFOLLOW_LINKS)) {
+                    check(DesktopSaveSlotOwnedWork.identity(part, false) == ownedPart)
+                    Files.delete(part)
+                }
+            } catch (cleanup: Exception) { failure.addSuppressed(cleanup) }
+            throw failure
+        }
     }
-    private fun finish(work: Path) {
-        if (Files.exists(work)) Files.move(work, work.resolveSibling(work.fileName.toString().replaceFirst("active-", "done-")), StandardCopyOption.ATOMIC_MOVE)
+    private suspend fun finish(work: Path, rows: List<Row>) {
+        if (!Files.exists(work)) return
+        val discard = work.fileName.toString().startsWith(REPLY_PREFIX)
+        val key = if (discard) DesktopSaveSlotOwnedWork.identity(work, true) else null
+        val retired = Files.move(work, work.resolveSibling(work.fileName.toString().replaceFirst("active-", "done-")),
+            StandardCopyOption.ATOMIC_MOVE)
+        if (key != null) {
+            try {
+                val known = buildSet {
+                    add("intent.json")
+                    for (marker in listOf("commit.part", "committed")) {
+                        if (Files.isRegularFile(retired.resolve(marker), LinkOption.NOFOLLOW_LINKS)) add(marker)
+                    }
+                    rows.forEachIndexed { index, row ->
+                        if (row.old != null) add("$index.old")
+                        if (row.next != null) add("$index.next")
+                    }
+                }
+                check(Files.newDirectoryStream(retired).use { paths -> paths.map { it.fileName.toString() }.toSet() } == known)
+                releaseOwnedWork(retired, key)
+            } catch (_: Exception) {
+                // Settled transaction. A failed cleanup preserves the retired evidence.
+            }
+        }
+    }
+
+    private suspend fun releaseOwnedWork(work: Path, key: Any) {
+        check(DesktopSaveSlotOwnedWork.identity(work, true) == key)
+        val receipt = DesktopSaveSlotOwnedWork.Receipt.capture(work)
+        check(DesktopSaveSlotOwnedWork.identity(work, true) == key)
+        receipt.release()
     }
     private fun writeNew(path: Path, bytes: ByteArray) {
         FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { file ->
@@ -196,6 +254,7 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
         }
     }
     companion object {
+        private const val REPLY_PREFIX = "active-reply-"
         private const val MAX_FILES = 40000
         private const val MAX_INTENT = 12 * 1024 * 1024
         private const val MAX_FILE = 256L * 1024 * 1024

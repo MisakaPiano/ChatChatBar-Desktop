@@ -93,7 +93,7 @@ class DesktopChatFloatingNavigationTest {
         }
         assertTrue(controls.contains("targetDp = 48) { onNavigate(action) }"))
         assertTrue(timeline.contains("desktopChatNavigationGroups(viewport.canEarlier(), viewport.canLater(state.messageWindowAnchorId)"))
-        assertTrue(timeline.contains("scope.launch { viewport.navigate(controller, it) }"))
+        assertTrue(timeline.contains("viewportScope.launch { viewport.navigate(controller, it) }"))
         assertTrue(timeline.contains("!viewport.atBottom()"))
         assertTrue(timeline.contains("DesktopUiText.LOAD_OLDER"))
         assertTrue(timeline.contains("DesktopUiText.LOAD_NEWER"))

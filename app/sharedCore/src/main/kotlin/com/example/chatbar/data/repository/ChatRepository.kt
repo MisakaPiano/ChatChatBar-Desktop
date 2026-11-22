@@ -20,6 +20,7 @@ import com.example.chatbar.data.local.entity.SpeakerTagMessageRewrite
 import com.example.chatbar.domain.chat.SpeakerTagRewritePlanPolicy
 import com.example.chatbar.data.local.entity.toIndexEntry
 import com.example.chatbar.domain.chat.ChatMessageOrdering
+import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
 import com.example.chatbar.domain.chat.ChatMessageOrderRepairPlan
 import com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicy
 import com.example.chatbar.domain.chat.ChatMessageOrderSnapshot
@@ -427,15 +428,7 @@ class ChatRepository internal constructor(
         sessionId: String,
         entries: List<ChatMessageIndexEntry>
     ): ChatMessageIndex {
-        val index = ChatMessageIndex(
-            sessionId = sessionId,
-            entries = entries.sortedWith(indexComparator),
-            fileCount = entries.size,
-            // App-owned mutations always update this index. 0 表示下次启动只需核对文件数，
-            // 避免每次新增消息都 O(n) 扫描整个长会话。
-            fileFingerprint = 0L,
-            updatedAt = System.currentTimeMillis()
-        )
+        val index = messageIndexSnapshot(sessionId, entries, System.currentTimeMillis())
         storage.saveEntityUncached(
             MESSAGE_INDEX_TYPE,
             sessionId,
@@ -445,6 +438,16 @@ class ChatRepository internal constructor(
         messageIndexes[sessionId] = index
         return index
     }
+
+    private fun messageIndexSnapshot(sessionId: String, entries: List<ChatMessageIndexEntry>, updatedAt: Long) =
+        ChatMessageIndex(
+            sessionId = sessionId,
+            entries = entries.sortedWith(indexComparator),
+            fileCount = entries.size,
+            // App-owned mutations write the source and its updated index under the same ownership.
+            fileFingerprint = 0L,
+            updatedAt = updatedAt
+        )
 
     private suspend fun updateMessageIndex(
         sessionId: String,
@@ -649,23 +652,61 @@ class ChatRepository internal constructor(
     }
 
     /** Confirmation snapshots cannot overwrite a later edit, selection or appended candidate. */
-    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean =
+        updateMessageIfUnchangedReturningSnapshot(expected, replacement) != null
+
+    data class CoordinatedMessageReplacement(val message: ChatMessage?, val index: ChatMessageIndex, val session: ChatSession?)
+
+    /** The platform holds exclusive admission through publication and must reload after it commits. */
+    suspend fun planCoordinatedMessageReplacement(expected: ChatMessage, replacement: ChatMessage?): CoordinatedMessageReplacement? =
+        withLockedMessageSnapshot(expected.sessionId, expected.id) { current ->
+            require(replacement == null || replacement.id == expected.id && replacement.sessionId == expected.sessionId)
+            if (current != expected) return@withLockedMessageSnapshot null
+            val now = System.currentTimeMillis()
+            val updated = replacement?.copy(updatedAt = now, orderKey = current.orderKey)
+            val beforeIndex = loadMessageIndex(current.sessionId)
+            val nextEntries = beforeIndex.entries.filterNot { it.messageId == current.id } + listOfNotNull(updated?.toIndexEntry())
+            val index = messageIndexSnapshot(current.sessionId, nextEntries, now)
+            val latestId = index.entries.lastOrNull()?.messageId
+            val summary = if (updated == null || latestId == current.id) {
+                val read = readSessionDurable(current.sessionId)
+                check(read is JsonFileStorage.EntityReadResult.Valid && read.value.id == current.sessionId)
+                val next = if (updated != null) {
+                    read.value.copy(lastMessagePreview = updated.previewText(), lastMessageTime = updated.createdAt, lastMessageRole = updated.role)
+                } else {
+                    val latest = latestId?.let {
+                        val durable = readMessageDurable(it, current.sessionId)
+                        check(durable is JsonFileStorage.EntityReadResult.Valid)
+                        durable.value
+                    }
+                    sessionAfterMessageDeletion(read.value, current, index.entries, latest)
+                }
+                val stamped = next.copy(updatedAt = now)
+                if (stamped.desktopAutoPauseAbsentPeople) stamped else
+                    com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.withAutomaticPause(stamped, false)
+            } else null
+            CoordinatedMessageReplacement(updated, index, summary)
+        }
+
+    /** Conditional write receipt includes the repository-owned persisted fields under the same lock. */
+    suspend fun updateMessageIfUnchangedReturningSnapshot(expected: ChatMessage, replacement: ChatMessage,
+        onWriteAttempt: (ChatMessage) -> Unit = {}): ChatMessage? = messageAppendMutex.withDataAccess {
         require(expected.id == replacement.id && expected.sessionId == replacement.sessionId)
         val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
-            else -> return@withDataAccess false
+            else -> return@withDataAccess null
         }
-        if (current != expected) return@withDataAccess false
-        updateMessageLocked(replacement)
-        true
+        if (current != expected) return@withDataAccess null
+        updateMessageLocked(replacement, onWriteAttempt)
     }
 
-    private suspend fun updateMessageLocked(message: ChatMessage): ChatMessage {
+    private suspend fun updateMessageLocked(message: ChatMessage, onWriteAttempt: (ChatMessage) -> Unit = {}): ChatMessage {
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),
             orderKey = persisted?.orderKey ?: message.orderKey
         )
+        onWriteAttempt(updated) // Exact proposed fields; this callback alone is not a commit receipt.
         saveMessageRecord(updated)
 
         val latest = latestMessage(updated.sessionId)
@@ -681,6 +722,26 @@ class ChatRepository internal constructor(
             }
         }
         return updated
+    }
+
+    /** Repair only derived metadata after an exact durable source readback, without rewriting text. */
+    suspend fun reconcileCommittedMessage(expected: ChatMessage) = messageAppendMutex.withDataAccess {
+        val observed = readMessageDurable(expected.id, expected.sessionId)
+        check(observed is JsonFileStorage.EntityReadResult.Valid && observed.value == expected) { "消息已变化，不能续接旧写入" }
+        messageIndexes.remove(expected.sessionId)
+        val index = loadMessageIndex(expected.sessionId)
+        updateMessageIndex(expected.sessionId, index) { entries ->
+            entries.filterNot { it.messageId == expected.id } + expected.toIndexEntry()
+        }
+        val latest = latestMessage(expected.sessionId)
+        sessionSettingsMutex.withDataAccess {
+            val session = when (val read = readSessionDurable(expected.sessionId)) {
+                is JsonFileStorage.EntityReadResult.Valid -> read.value
+                else -> error("会话状态未知，摘要待重新核对")
+            }
+            updateSessionLocked(session.copy(lastMessagePreview = latest?.previewText(),
+                lastMessageTime = latest?.createdAt, lastMessageRole = latest?.role))
+        }
     }
 
     /**
@@ -738,17 +799,15 @@ class ChatRepository internal constructor(
                 is JsonFileStorage.EntityReadResult.Corrupt -> return@withDataAccess ConditionalMessageUpdateResult.Corrupt(stage, read.cause)
                 is JsonFileStorage.EntityReadResult.ReadError -> return@withDataAccess ConditionalMessageUpdateResult.StorageFailure(stage, read.cause)
             }
-            if ((replacementContent == null || current.displayContent == replacementContent) && current.formatRepairNotice == notice) {
+            if ((replacementContent == null || current.displayContent == replacementContent) &&
+                (current.formatRepairNotice == notice || MessageFormatRepairPolicy.applicableNotice(current) == notice)) {
                 return@withDataAccess ConditionalMessageUpdateResult.Success(current, changed = false)
             }
-            val updated = current.copy(
-                content = replacementContent ?: current.content,
-                alternatives = current.alternatives.mapIndexed { index, text ->
-                    if (replacementContent != null && index == current.currentAlternativeIndex) replacementContent else text
-                },
-                formatRepairNotice = notice,
-                updatedAt = System.currentTimeMillis(),
-            )
+            val changed = if (replacementContent == null) MessageFormatRepairPolicy.updateCurrentNotice(current, notice)
+                else MessageFormatRepairPolicy.replaceCurrentDisplayContent(current, replacementContent, notice,
+                    updatedAt = current.updatedAt)
+            if (changed == current) return@withDataAccess ConditionalMessageUpdateResult.Success(current, changed = false)
+            val updated = changed.copy(updatedAt = System.currentTimeMillis())
             stage = MessageUpdateStage.PREPARE_INDEX
             val index = loadMessageIndex(sessionId)
             stage = MessageUpdateStage.WRITE_MESSAGE
@@ -923,40 +982,24 @@ class ChatRepository internal constructor(
         updateMessageIndex(sessionId, index) { remainingEntries }
         val latest = remainingEntries.lastOrNull()?.let { getMessage(it.messageId, sessionId) }
         getSession(sessionId)?.let { session ->
-            val removedSourceId = removed?.sourceTurnId
-            val removedSourceOrder = removed?.sourceTurnOrder
-            val sourceTombstones = if (
-                removed?.role != MessageRole.SYSTEM &&
-                removedSourceId != null && removedSourceOrder != null &&
-                remainingEntries.none {
-                    it.role != MessageRole.SYSTEM && it.sourceTurnId == removedSourceId
-                }
-            ) {
-                (session.sourceTurnTombstones + com.example.chatbar.data.local.entity.SourceTurnTombstone(
-                    sourceTurnId = removedSourceId,
-                    sourceOrder = removedSourceOrder
-                )).distinctBy { it.sourceTurnId }
-            } else {
-                session.sourceTurnTombstones
-            }
-            val removedLegacyTurn = removed?.timelineTurn
-            val legacyTombstones = if (
-                removedLegacyTurn != null && remainingEntries.none { it.timelineTurn == removedLegacyTurn }
-            ) {
-                session.timelineTombstones + removedLegacyTurn
-            } else {
-                session.timelineTombstones
-            }
-            saveSessionSettingsDraft(session,
-                session.copy(
-                    lastMessagePreview = latest?.previewText(),
-                    lastMessageTime = latest?.createdAt,
-                    lastMessageRole = latest?.role,
-                    sourceTurnTombstones = sourceTombstones,
-                    timelineTombstones = legacyTombstones
-                )
-            )
+            saveSessionSettingsDraft(session, sessionAfterMessageDeletion(session, removed, remainingEntries, latest))
         }
+    }
+
+    private fun sessionAfterMessageDeletion(session: ChatSession, removed: ChatMessage?,
+        remaining: List<ChatMessageIndexEntry>, latest: ChatMessage?): ChatSession {
+        val removedSourceId = removed?.sourceTurnId
+        val removedSourceOrder = removed?.sourceTurnOrder
+        val sourceTombstones = if (removed?.role != MessageRole.SYSTEM && removedSourceId != null && removedSourceOrder != null &&
+            remaining.none { it.role != MessageRole.SYSTEM && it.sourceTurnId == removedSourceId }) {
+            (session.sourceTurnTombstones + com.example.chatbar.data.local.entity.SourceTurnTombstone(
+                sourceTurnId = removedSourceId, sourceOrder = removedSourceOrder)).distinctBy { it.sourceTurnId }
+        } else session.sourceTurnTombstones
+        val removedLegacyTurn = removed?.timelineTurn
+        val legacyTombstones = if (removedLegacyTurn != null && remaining.none { it.timelineTurn == removedLegacyTurn })
+            session.timelineTombstones + removedLegacyTurn else session.timelineTombstones
+        return session.copy(lastMessagePreview = latest?.previewText(), lastMessageTime = latest?.createdAt,
+            lastMessageRole = latest?.role, sourceTurnTombstones = sourceTombstones, timelineTombstones = legacyTombstones)
     }
 
     suspend fun deleteMessagesForSession(sessionId: String): Int = messageAppendMutex.withDataAccess {
