@@ -105,10 +105,11 @@ object MessageAlternativeVersionPolicy {
         ).takeLast(maxVersions)
         val notice = message.formatRepairNotice?.let { previous ->
             // Resolve legacy custody before the new version can introduce identical text.
+            val activeId = activeVersionId(message)
             val expected = if (previous.restored) previous.originalContent else previous.targetContent
             val matching = existing.filter { it.content == expected }
             val owner = previous.versionId
-                ?: matching.firstOrNull { it.id == activeVersionId(message) }?.id
+                ?: matching.firstOrNull { it.id == activeId }?.id
                 ?: matching.singleOrNull()?.id
             owner?.takeIf { id -> retained.any { it.id == id } }?.let { previous.copy(versionId = it) }
         }
