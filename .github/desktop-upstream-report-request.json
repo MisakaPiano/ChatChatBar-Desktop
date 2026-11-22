@@ -1,0 +1,6 @@
+{
+  "kind": "CCB_DESKTOP_PINNED_UPSTREAM_REPORT_REQUEST",
+  "baselineSha": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "targetSha": "d23e67e0e078547d81d279a0e6a6151b3b915915",
+  "desktopSha": "f5fc060546eb9479b2566375761903d383c538b1"
+}
