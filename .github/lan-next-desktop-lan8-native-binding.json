@@ -1,0 +1,52 @@
+{
+  "kind": "CCB_LAN7_LAN8_NATIVE_BINDING_V1",
+  "baseSourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+  "candidateSourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+  "runtimeFiles": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "baseSha256": "cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a",
+      "candidateSha256": "ae8de8e63fe753a1d735f6e52bf7fc3e8f3b9eb5ef14441e550d1aa1848b5c99"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "baseSha256": "b1e05301d865c278341aa6770b90ceea9cc2d297cbba8368c4b61fc0ee689ddd",
+      "candidateSha256": "96aab8ed11346c38a6b12cbb5190c374cd65ace8e0cef79eeb1724b21af9ee71"
+    },
+    {
+      "path": "tools/desktop/nsis/build_independent_zip.py",
+      "baseSha256": "77accd9b546d83a316848f2db59a4780615cf288b01239a75ffdf720a3a627ac",
+      "candidateSha256": "77accd9b546d83a316848f2db59a4780615cf288b01239a75ffdf720a3a627ac"
+    },
+    {
+      "path": "tools/desktop/nsis/independent_smoke.py",
+      "baseSha256": "9bac7ab644296dcf77c8299e0fcf5921b306c8ce7c30fbc61a53250465a5f12d",
+      "candidateSha256": "9bac7ab644296dcf77c8299e0fcf5921b306c8ce7c30fbc61a53250465a5f12d"
+    }
+  ],
+  "timestampSourceBindings": {
+    "baseSourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+    "candidateSourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+    "files": [
+      {
+        "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt",
+        "baseSha256": "b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0",
+        "candidateSha256": "b30bb8fe2e2c06482cc3b2db6aba3f51a6f51b322473f5263c3c1de34ad0a0a0"
+      },
+      {
+        "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatReadingPositionWriter.kt",
+        "baseSha256": "52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3",
+        "candidateSha256": "52e82ebbfe6a4ad5647a05b210cde71856cc679bd5ea1113015c2f076bfc13d3"
+      },
+      {
+        "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
+        "baseSha256": "d015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388",
+        "candidateSha256": "d015dc6f32b552bc85de11b3698ee61bd6917acf2d7e55f8691d1185adf55388"
+      }
+    ]
+  },
+  "retainedGroupBridgeSha256": "896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1",
+  "originalFixtureSha256": "089834f034fce8f67b94f823c8802392891a30abf77455fc27487fc28cb99a9f",
+  "reboundFixtureSha256": "f2ef48df29f6ec2173b9c1812510a93f426610a0449a21be1cac53c95ef8c414",
+  "emptyObjectProofSha256": "49c24dfaf49bb08a375bd00726b91d455b1e9dd81333150f9b0887a635bf171e"
+}

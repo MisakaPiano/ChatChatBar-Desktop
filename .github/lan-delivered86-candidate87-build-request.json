@@ -1,0 +1,59 @@
+{
+  "kind": "CCB_LAN_DELIVERED86_CANDIDATE87_BUILD_V1",
+  "format": 1,
+  "sourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+  "series": "next",
+  "versions": [
+    86,
+    87
+  ],
+  "package": "com.example.chatbar.lansyncnext",
+  "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+  "deliveredBase": {
+    "sourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+    "versionCode": 86,
+    "runId": 44662039106,
+    "artifactId": 14596631268,
+    "artifactName": "ccb-lan-delivered85-candidate86-v6-inputs",
+    "outerBytes": 221320913,
+    "outerSha256": "9ce28f8084cd2e5f0c159992d4c5cf5708c6956d78743b06d1b8977367ed1136",
+    "controlSha": "3bd17c5c78c7e1dd3a67e2b082675f292a57cf1d",
+    "member": "candidate86-input.apk",
+    "rawBytes": 109666459,
+    "rawSha256": "66ad768651e69bbe08c26f87e83cbcb3986ea604f75f167601aa2137d1a8f1b1",
+    "deliveredBytes": 109663831,
+    "deliveredSha256": "ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0"
+  },
+  "fixtures": {
+    "seed86": {
+      "path": "candidate87_seed86.kt",
+      "sha256": "613609a98651a496da76df2ad15a1d48ecba94fb54b525e32b5f95c05b41bc95"
+    },
+    "verify87": {
+      "path": "candidate87_verify87.kt",
+      "sha256": "cba324592dbb8f72830553e2477fde3c3f7daf377b3ff3b34a03c612720a9fc9"
+    }
+  },
+  "allowedStateMigrations": [],
+  "trustedCandidate87Control": {
+    "format": 1,
+    "files": {
+      "candidate87_control.py": {
+        "bytes": 6565,
+        "sha256": "03123de9d13ee22dbe7a3280d372b16098872058176d4e2d33edfa4bb4ca8eab"
+      },
+      "candidate87_profile.py": {
+        "bytes": 3618,
+        "sha256": "e56b85c18f58c7c17140343363718eb2ac3b4dbfc0e92b50da2f9083d4e4ac65"
+      },
+      "upgrade_series_engine.py": {
+        "bytes": 32375,
+        "sha256": "1ecf6b556d04e40e45b0a424230736e8b6b884278e06b989a28666e6f8baa729"
+      }
+    },
+    "expectedSuccessfulInvocations": 3,
+    "uniqueMethods": 2,
+    "seedExecutions": 1,
+    "verifierExecutions": 2
+  }
+}

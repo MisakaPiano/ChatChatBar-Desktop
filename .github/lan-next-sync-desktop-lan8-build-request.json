@@ -1,0 +1,24 @@
+{
+  "kind": "CCB_LAN7_LAN8_DESKTOP_BUILD_V1",
+  "format": 1,
+  "sourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+  "version": "0.1.0-lan.8",
+  "installerVersion": "0.1.40008",
+  "buildNumber": "40008",
+  "deliveredBase": {
+    "series": "lan7",
+    "version": "0.1.0-lan.7",
+    "sourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+    "controlSha": "3bd17c5c78c7e1dd3a67e2b082675f292a57cf1d",
+    "runId": 44662039110,
+    "artifactId": 14596173695,
+    "artifactName": "ccb-lan6-lan7-independent-desktop",
+    "outerBytes": 210775355,
+    "outerSha256": "6c1bec0a8ab4db25f81f47d1514f8b823096290b6c9a72aedb42d46a4fd82140",
+    "filename": "CCB-0.1.0-lan.7-independent-windows-x64.zip",
+    "innerBytes": 210660167,
+    "innerSha256": "390b2a0630316140ca3f9703ce92eb5f17091226989701472c33f0ecd3d6c457",
+    "installerVersion": "0.1.40007",
+    "buildNumber": "40007"
+  }
+}
