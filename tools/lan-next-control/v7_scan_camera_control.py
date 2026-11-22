@@ -193,6 +193,9 @@ def open_group_page(adb, result, deadline):
         if '发现新版本' in values and '稍后' in values and not result.get('updateDeferredThroughUi'):
             wait_click(adb,'稍后',min(deadline,time.monotonic()+12),result=result,phase='defer-update')
             result['updateDeferredThroughUi'] = True
+            # The dialog may have covered the earlier tutorial tap. Continue
+            # only if a fresh snapshot still shows that exact tutorial.
+            result['basicTutorialExitAttempted'] = False
             continue
         if '设备组同步' in values or '管理' in values:
             break

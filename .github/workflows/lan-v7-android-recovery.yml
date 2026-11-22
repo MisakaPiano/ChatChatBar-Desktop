@@ -45,7 +45,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             set -euo pipefail
-            python -B tools/lan-next-control/v7_android_recovery_control.py --adb adb --serial emulator-5554 --base-apk "$RUNNER_TEMP/ccb-v7-scan/base85.apk" --candidate-apk "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk" --ui-helper-sha256 1f94bbca9d2a198d41118555fab8c91375d58a0d28e828506a91575499a65ae6 --result "$RUNNER_TEMP/ccb-v7-scan/android-recovery-result.json"
+            python -B tools/lan-next-control/v7_android_recovery_control.py --adb adb --serial emulator-5554 --base-apk "$RUNNER_TEMP/ccb-v7-scan/base85.apk" --candidate-apk "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk" --ui-helper-sha256 4ea5527a441b06d5fe5d6c4015c3aa4521a6d790c91bc5d798795851a926c568 --result "$RUNNER_TEMP/ccb-v7-scan/android-recovery-result.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

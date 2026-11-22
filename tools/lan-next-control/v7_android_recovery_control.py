@@ -72,18 +72,44 @@ def secure_input_node(root, required=True):
 def secure_input(root):
     return secure_input_node(root)[1]
 
+def recovery_field_between_labels(root,ui):
+    rectangles={}
+    for label in ('恢复码 · 临时解锁管理','解锁管理'):
+        visible={ui.bounds(node) for node in root.iter('node')
+                 if node.get('package')==PACKAGE and label in ui.node_labels(node) and ui.bounds(node)}
+        if len(visible)!=1:
+            return None
+        rectangles[label]=visible.pop()
+    label=rectangles['恢复码 · 临时解锁管理']
+    button=rectangles['解锁管理']
+    if button[1]-label[3]<30:
+        return None
+    x,y=(label[0]+label[2])//2,(label[3]+button[1])//2
+    return x-1,y-1,x+1,y+1
+
+def active_group_page(a,ui,root):
+    if '设备组同步' in ui.labels(root):
+        return True
+    resumed=a.run('shell','dumpsys','activity','activities')
+    component=PACKAGE+'/com.example.chatbar.lanSync.LanSyncActivity'
+    return any(component in line for line in resumed.splitlines()
+               if 'mResumedActivity' in line or 'topResumedActivity' in line)
+
 def type_recovery_code(a,ui,root,secret,r):
     target=secure_input_node(root,required=False)
+    rectangle=target[1] if target else recovery_field_between_labels(root,ui)
     for _ in range(3):
-        if target:
+        if rectangle:
             break
         scroll_body(a,root,r,backward=True)
         time.sleep(.4)
         root=a.ui()
         target=secure_input_node(root,required=False)
-    need(target is not None,'COLD_RECOVERY_INPUT_NOT_VISIBLE')
+        rectangle=target[1] if target else recovery_field_between_labels(root,ui)
+    need(rectangle is not None,'COLD_RECOVERY_INPUT_NOT_VISIBLE')
     r['coldRecoveryInputLocated']=True
-    a.tap(target[1])
+    r['coldRecoveryInputLocatedByKnownLayout']=target is None
+    a.tap(rectangle)
     focus_deadline=time.monotonic()+12
     while time.monotonic()<focus_deadline:
         root=a.ui()
@@ -91,6 +117,12 @@ def type_recovery_code(a,ui,root,secret,r):
         if target and target[0].get('focused')=='true':
             r['coldRecoveryInputFocused']=True
             break
+        if r['coldRecoveryInputLocatedByKnownLayout'] and active_group_page(a,ui,root):
+            ime=a.run('shell','dumpsys','input_method')
+            if re.search(r'\bmInputShown=true\b',ime) and 'packageName='+PACKAGE in ime:
+                r['coldRecoveryInputFocused']=True
+                r['focusConfirmedByGroupIme']=True
+                break
         time.sleep(.3)
     need(r.get('coldRecoveryInputFocused',False),'COLD_RECOVERY_INPUT_NOT_FOCUSED')
     # Feed the same code to the focused field in small batches. Avoid dismissing
@@ -101,7 +133,7 @@ def type_recovery_code(a,ui,root,secret,r):
     r['originalCodeTypedCount']=1
     root=a.ui()
     values=ui.labels(root)
-    r['sameGroupPageAfterInput']='设备组同步' in values
+    r['sameGroupPageAfterInput']=active_group_page(a,ui,root)
     target=secure_input_node(root,required=False)
     r['secureTextLengthMatched']=target is not None and len(target[0].get('text',''))==len(secret)
     r['unlockLabelSeenAfterInput']='解锁管理' in values
