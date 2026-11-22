@@ -799,7 +799,8 @@ class ChatRepository internal constructor(
                 is JsonFileStorage.EntityReadResult.Corrupt -> return@withDataAccess ConditionalMessageUpdateResult.Corrupt(stage, read.cause)
                 is JsonFileStorage.EntityReadResult.ReadError -> return@withDataAccess ConditionalMessageUpdateResult.StorageFailure(stage, read.cause)
             }
-            if ((replacementContent == null || current.displayContent == replacementContent) && current.formatRepairNotice == notice) {
+            if ((replacementContent == null || current.displayContent == replacementContent) &&
+                (current.formatRepairNotice == notice || MessageFormatRepairPolicy.applicableNotice(current) == notice)) {
                 return@withDataAccess ConditionalMessageUpdateResult.Success(current, changed = false)
             }
             val changed = if (replacementContent == null) MessageFormatRepairPolicy.updateCurrentNotice(current, notice)

@@ -328,7 +328,10 @@ internal class DesktopMessageFormatRepairController(
         notice: MessageFormatRepairNotice?, success: DesktopRepairStatus, code: String? = null,
         gate: DesktopRepairSafetyGate): DesktopRepairState {
         currentCoroutineContext().ensureActive()
-        val boundNotice = notice?.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(snapshot))
+        val boundNotice = notice?.let {
+            if (replacement != null || it != MessageFormatRepairPolicy.applicableNotice(snapshot))
+                it.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(snapshot)) else it
+        }
         val result = gate.submit(session, snapshot) {
             if (replacement == null) chats.updateMessageFormatRepairNotice(session.id, snapshot.id, snapshot, boundNotice)
             else chats.updateMessageForFormatRepair(session.id, snapshot.id, snapshot, replacement, boundNotice)

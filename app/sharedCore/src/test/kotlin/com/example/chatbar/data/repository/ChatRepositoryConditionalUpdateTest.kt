@@ -168,7 +168,7 @@ class ChatRepositoryConditionalUpdateTest {
         val result = assertIs<ConditionalMessageUpdateResult.Success>(f.repair())
         assertTrue(result.changed)
         val expected = f.expected.copy(content = "fixed", alternatives = listOf("first", "fixed", "last"),
-            formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, "fixed", "middle"),
+            formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, "fixed", "middle", versionId = "v2"),
             updatedAt = result.message.updatedAt)
         assertEquals(expected, result.message)
         val storage = JsonFileStorage(f.root)
