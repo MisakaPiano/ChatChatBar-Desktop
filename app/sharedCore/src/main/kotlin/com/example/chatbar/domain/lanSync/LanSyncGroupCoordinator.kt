@@ -16,7 +16,8 @@ import kotlinx.coroutines.sync.withPermit
 
 private val reprepareJoinStages = setOf(LanSyncGroupJoinStage.KEYS_ADMITTED, LanSyncGroupJoinStage.NATIVE_ENROLLED)
 private val resumableJoinRouteWaits = setOf("SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING", "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE",
-    "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING")
+    "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING",
+    "SYNC_GROUP_LEDGER_FORK_OR_MISSING", "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING")
 
 /** One application owner. Screens project state and lock secrets; they never own daily work. */
 class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
@@ -642,7 +643,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 if (firstFailure == null) firstFailure = error
                 return null
             }
-            if (result.waitingCode !in resumableJoinRouteWaits) return result
+            if (result.waitingCode !in resumableJoinRouteWaits ||
+                result.profile.membershipRevoked) return result
             if (pending?.let { it.profile.stage > result.profile.stage } != true) pending = result
             return null
         }

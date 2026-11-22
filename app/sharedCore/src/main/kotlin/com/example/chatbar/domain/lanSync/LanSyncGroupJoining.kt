@@ -49,6 +49,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     private val shelf = parent.resolve("shelved-joins")
     private val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
     private val mutex = LanSyncGroupEnrollment.locks.computeIfAbsent(parent) { kotlinx.coroutines.sync.Mutex() }
+    private var nextRouteMember = 0
     init { lanSyncSafe(parent, true) }
     private fun directory(name: String, create: Boolean): Path = root.resolve(name).also {
         lanSyncSafe(root, true)
@@ -192,9 +193,15 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         else {
             val active = custody(record, false).ledger().current().members.filterValues { it.active }.keys
             val controller = SyncDeviceSignatures.decode(offer.trust.ownerCertificate).fingerprint
-            (listOf(offer.inviter) + active.sorted()).distinct().filter { it in active && it != controller && it != identity.fingerprint }
+            val members = active - setOf(controller, identity.fingerprint)
+            val inviter = listOf(offer.inviter).filter { it in members }
+            val alternatives = (members - offer.inviter).sorted()
+            val count = minOf(4 - inviter.size, alternatives.size)
+            val batch = List(count) { alternatives[(nextRouteMember + it) % alternatives.size] }
+            nextRouteMember = if (alternatives.isEmpty()) 0 else (nextRouteMember + count) % alternatives.size
+            inviter + batch
         }
-        fingerprints.take(4).mapNotNull { expected ->
+        fingerprints.mapNotNull { expected ->
             network.discoverGroup(offer.trust.group, identity.fingerprint, expected)?.takeIf {
                 it.fingerprint == expected && (it.host != offer.host || it.port != source.storePort || expected != offer.inviter) &&
                     it.port in 1024..65535 && runCatching { LanSyncTls.parseAddress(it.host) }.isSuccess
