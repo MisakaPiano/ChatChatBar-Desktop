@@ -16,12 +16,14 @@ import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 enum class LanSyncGroupJoinStage { PREPARING, PREPARED, PROOF_ATTEMPTED, WAITING_FOR_APPROVAL, KEYS_ADMITTED, NATIVE_ENROLLED, READY }
 data class LanSyncGroupJoiningProfile(val stage: LanSyncGroupJoinStage, val trust: SyncGroupTrust,
     val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false, val canShelve: Boolean = false,
-    val membershipVerified: Boolean = false)
+    val membershipVerified: Boolean = false, val membershipRevoked: Boolean = false)
 data class LanSyncShelvedJoin(val operation: String, val group: String)
 data class LanSyncGroupJoiningResult(val profile: LanSyncGroupJoiningProfile, val node: LanSyncGroupNode?, val waitingCode: String? = null)
 internal class LanSyncJoinRouteFailure(cause: IOException) : IOException("SYNC_GROUP_JOIN_CONNECTION_FAILED", cause)
@@ -32,12 +34,15 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     private val protect: (ByteArray) -> ByteArray, private val unprotect: (ByteArray) -> ByteArray,
     private val validateResource: (String, Path, LanSyncRecord) -> Unit, private val observe: (String) -> Unit = {},
     private val wallTime: () -> Long = System::currentTimeMillis) {
+    @OptIn(ExperimentalSerializationApi::class)
     @Serializable private data class Record(val format: Int, val operation: SyncStoreId, val stage: LanSyncGroupJoinStage,
         val offer: LanSyncGroupInviteOffer? = null, val certificate: String, val recipient: String?, val localReplica: SyncDeliveryTarget,
         val replicaIdentity: String? = null, val projection: SyncPlaintextIdentity? = null,
         val projectionFile: String = "projection.json", val reprepareRequested: Boolean = false,
         val requiredCheckpoints: Set<SyncVersionRef> = emptySet(), val requiredHeads: Set<SyncVersionRef> = emptySet(),
-        val recoveryAnchor: LanSyncGroupRecoveryAnchor? = null, val knownMembership: SyncVersionRef? = null)
+        val recoveryAnchor: LanSyncGroupRecoveryAnchor? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val knownMembership: SyncVersionRef? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val membershipRevoked: Boolean = false)
     @Serializable private data class Projection(val projection: LanSyncProjection, val sourceFiles: Map<String, String>,
         val checkpoint: SyncVersionRef, val heads: Set<SyncVersionRef>)
     private val root = parent.resolve("joining")
@@ -57,7 +62,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     private fun profile(record: Record) =
         LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica,
             canAbandon(record), canShelve(record, root),
-            record.knownMembership != null || record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal)
+            record.knownMembership != null || record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal, record.membershipRevoked)
 
     private fun canAbandon(record: Record): Boolean {
         if (record.offer == null || record.stage !in setOf(LanSyncGroupJoinStage.PREPARING, LanSyncGroupJoinStage.PREPARED)) return false
@@ -103,7 +108,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
 
     /** Neither an old pre-dial marker nor a missing reply proves that the inviter rejected this member. */
     suspend fun shelveUnsettledInvitation(): Unit = guarded {
-        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        val record = checkRetainedMembership(requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" })
         require(canShelve(record, root)) { "SYNC_GROUP_JOIN_HAS_LOCAL_ADMISSION" }
         recipient(record)
         if (!Files.exists(shelf, NOFOLLOW_LINKS)) Files.createDirectory(shelf)
@@ -146,7 +151,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         observe("UNSETTLED_JOIN_RESTORED")
         profile(record)
     }
-    suspend fun profile(): LanSyncGroupJoiningProfile? = guarded { read()?.let(::profile) }
+    suspend fun profile(): LanSyncGroupJoiningProfile? = guarded { read()?.let { profile(checkRetainedMembership(it)) } }
     suspend fun recoveryAnchor(): LanSyncGroupRecoveryAnchor? = guarded { read()?.recoveryAnchor }
     /** Public pins of this retained recovery enrollment, never a replacement or private key. */
     suspend fun recoveryMember(): Pair<String, SyncGroupMember>? = guarded {
@@ -243,7 +248,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     }
     suspend fun resumePreparation(): LanSyncGroupJoiningProfile = guarded {
         val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
-        profile(if (record.stage == LanSyncGroupJoinStage.PREPARING) finishPreparation(record) else record)
+        profile(if (record.stage == LanSyncGroupJoinStage.PREPARING) finishPreparation(record) else checkRetainedMembership(record))
     }
     /** Explicit root recovery has no LAN capability; retain a new daily recipient before approval. */
     suspend fun prepareRecovery(anchor: LanSyncGroupRecoveryAnchor,
@@ -378,12 +383,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         }
         var cursor: CommitCursor? = null
         do { cursor = inbox.discover(cursor).nextCursor } while (cursor != null)
-        val inspection = inbox.prepareEnrollment(trust(record))
-        val observed = inspection.membershipCheckpoint
-        if (observed != null && record.knownMembership == null) {
-            record = record.copy(knownMembership = observed, requiredCheckpoints = record.requiredCheckpoints + observed)
-            write(record)
-        }
+        val inspection = inbox.prepareEnrollment(trust(record), record.requiredCheckpoints)
+        record = retainObservedMembership(record, inspection)
         if (inspection.stage != SyncGroupBootstrapStage.READY) return@guarded LanSyncGroupJoiningResult(profile(record), null,
             inspection.code ?: "SYNC_GROUP_JOIN_${inspection.stage}")
         val evidence = requireNotNull(inspection.evidence)
@@ -395,7 +396,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         require(SyncRecipientPublicKey.parse(owner.recipientKey).hash == bootstrap.vault.recipientKey) { "SYNC_GROUP_JOIN_VAULT_CHANGED" }
         val ledger = custody.enrollWithKeys(evidence.trust, evidence.records, evidence.keys)
         if (record.stage.ordinal < LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) {
-            record = record.copy(stage = LanSyncGroupJoinStage.KEYS_ADMITTED); write(record); observe("GROUP_JOIN_KEYS_ADMITTED")
+            record = record.copy(stage = LanSyncGroupJoinStage.KEYS_ADMITTED, knownMembership = null, membershipRevoked = false)
+            write(record); observe("GROUP_JOIN_KEYS_ADMITTED")
         }
         val vault = ByteArrayOutputStream()
         val bounded = object : java.io.OutputStream() {
@@ -517,13 +519,34 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             require(it.format == 1 && it.certificate == certificate && it.localReplica.kind == SyncDeliveryKind.LOCAL_REPLICA &&
                 (it.stage == LanSyncGroupJoinStage.PREPARING || it.recipient != null)) { "SYNC_GROUP_JOIN_PROFILE_CHANGED" }
             require(it.stage.ordinal < LanSyncGroupJoinStage.NATIVE_ENROLLED.ordinal || it.projection != null && it.replicaIdentity != null) { "SYNC_GROUP_JOIN_PROFILE_CHANGED" }
-            require(it.knownMembership == null || it.knownMembership in it.requiredCheckpoints) { "SYNC_GROUP_JOIN_PROFILE_CHANGED" }
+            require((it.knownMembership == null || it.knownMembership in it.requiredCheckpoints) &&
+                (!it.membershipRevoked || it.knownMembership != null)) { "SYNC_GROUP_JOIN_PROFILE_CHANGED" }
             require(it.projectionFile == "projection.json" || it.projection?.let { id -> it.projectionFile == "projection-${id.sha256}.json" } == true ||
                 it.projection == null && it.projectionFile.matches(Regex("projection-[a-f0-9]{64}\\.json"))) { "SYNC_GROUP_JOIN_PROFILE_CHANGED" }
             val offer = it.offer; val recovery = it.recoveryAnchor
             require((offer == null) != (recovery == null)) { "SYNC_GROUP_JOIN_PROFILE_CHANGED" }
             if (offer != null) requireNotNull(offer.bootstrap).validate(offer.trust, offer.port) else requireNotNull(recovery).validate()
         } } finally { plain.fill(0) }
+    }
+    private fun checkRetainedMembership(record: Record): Record {
+        // Old profiles may already contain verified membership material even with the source offline.
+        val expectedReplica = record.replicaIdentity ?: return record
+        if (record.knownMembership != null || !canShelve(record, root)) return record
+        val bootstrapRoot = directory("bootstrap", false)
+        val mirror = bootstrapRoot.resolve("ciphertext-mirror")
+        require(lanSyncUtf8(lanSyncRead(mirror.resolve("store.id"), 32)) == expectedReplica) { "SYNC_GROUP_JOIN_REPLICA_CHANGED" }
+        val inbox = SyncGroupInbox(bootstrapRoot, FileCiphertextStore(mirror), custody(record, false), recipient(record))
+        val inspection = inbox.prepareEnrollment(trust(record), record.requiredCheckpoints)
+        require(inspection.stage != SyncGroupBootstrapStage.TRUST_BLOCKED) { "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" }
+        return retainObservedMembership(record, inspection)
+    }
+    private fun retainObservedMembership(record: Record, inspection: SyncGroupBootstrapInspection): Record {
+        val observed = inspection.membershipCheckpoint ?: return record
+        val revoked = inspection.stage == SyncGroupBootstrapStage.DEVICE_REVOKED
+        if (!revoked && record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) return record
+        if (record.knownMembership != null && (!revoked || record.membershipRevoked)) return record
+        return record.copy(knownMembership = observed, requiredCheckpoints = record.requiredCheckpoints + observed,
+            membershipRevoked = revoked).also(::write)
     }
     private fun write(record: Record) {
         val bytes = lanSyncJson.encodeToString(Record.serializer(), record).toByteArray(Charsets.UTF_8)

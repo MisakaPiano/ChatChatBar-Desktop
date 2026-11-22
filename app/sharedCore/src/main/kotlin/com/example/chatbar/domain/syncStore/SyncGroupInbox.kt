@@ -65,7 +65,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
     }
 
     /** Explicit joining only: external invitation pins trust. This reads no custody and enrolls/writes no keys. */
-    fun prepareEnrollment(trust: SyncGroupTrust): SyncGroupBootstrapInspection {
+    fun prepareEnrollment(trust: SyncGroupTrust, requiredCheckpoints: Set<SyncVersionRef> = emptySet()): SyncGroupBootstrapInspection {
         val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
         fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, failure: String? = null) {
             statuses[key] = SyncInboxObservation(key.key, stage, failure, key.descriptor).also(observe)
@@ -145,6 +145,8 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         }
         if (records.values.any { ledger.state(it.id) == SyncVersionState.WAITING_FOR_PARENTS })
             return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE")
+        if (!requiredCheckpoints.all(ledger::contains))
+            return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING")
         val member = current.members[recipient.device]
         if (member != null && !member.active) return result(SyncGroupBootstrapStage.DEVICE_REVOKED, "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED",
             membershipCheckpoint = current.reference().takeIf { member.recipientKey == recipient.publicKey.encoded })

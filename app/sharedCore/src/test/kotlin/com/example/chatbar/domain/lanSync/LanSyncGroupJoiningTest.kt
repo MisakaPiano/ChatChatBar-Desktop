@@ -282,6 +282,33 @@ class LanSyncGroupJoiningTest {
             assertTrue(requireNotNull(active.node).sourceOperations().isEmpty())
         } finally { transport.closeAndDrain() }
     }
+    @Test fun legacyAttemptWithLocallyRetainedSignedApprovalCannotBeShelvedWhileOffline() = fixture { f ->
+        f.admit(f.prove(f.owner()))
+        val owner = f.owner()
+        val backend = f.backend()
+        val interruptedScan = object : CiphertextStore by backend {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                if (cursor != null) throw IOException("SYNTHETIC_SOURCE_OFFLINE")
+                val page = backend.listCommits(null, pageSize)
+                assertNull(page.nextCursor)
+                return page.copy(nextCursor = CommitCursor("synthetic-next-page"))
+            }
+        }
+        assertFailsWith<IOException> { owner.activate(interruptedScan) }
+        legacyAttempt(f)
+        val root = f.root.resolve("joining")
+        val recipient = Files.readAllBytes(root.resolve("recipient/recipient.protected"))
+        assertFalse(Files.exists(root.resolve("custody/group.protected")))
+        assertEquals("SYNC_GROUP_JOIN_HAS_LOCAL_ADMISSION", assertFailsWith<IllegalArgumentException> {
+            f.owner().shelveUnsettledInvitation()
+        }.message)
+        val retained = requireNotNull(f.owner().profile())
+        assertTrue(retained.membershipVerified)
+        assertFalse(retained.canShelve)
+        assertContentEquals(recipient, Files.readAllBytes(root.resolve("recipient/recipient.protected")))
+        assertFalse(Files.exists(root.resolve("custody/group.protected")))
+        assertEquals(LanSyncGroupJoinStage.READY, f.owner().activate(backend).profile.stage)
+    }
     @Test fun explicitReprepareAfterAnUnsignedProjectionInterruptionUsesFreshLocalAndRemoteEvidenceWithoutLosingOriginals() = fixture { f ->
         f.publishedPreset(); val local = f.put(f.data, f.card("physical-card"))
         f.admit(f.prove(f.owner()))

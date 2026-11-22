@@ -15,6 +15,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 
 private val reprepareJoinStages = setOf(LanSyncGroupJoinStage.KEYS_ADMITTED, LanSyncGroupJoinStage.NATIVE_ENROLLED)
+private val resumableJoinRouteWaits = setOf("SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING", "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE",
+    "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING")
 
 /** One application owner. Screens project state and lock secrets; they never own daily work. */
 class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
@@ -160,6 +162,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val lifecycle = Any()
     private var privacyGeneration = 0L
     private var invitationCommandGeneration = 0L
+    private var pendingInvitationCommand: Long? = null
     private var privacyExpiry: Job? = null
     private val pendingSockets = mutableSetOf<java.net.Socket>()
     private val joiningNetwork = object : LanSyncNetwork by network {
@@ -276,7 +279,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_JOIN_CONNECTION_FAILED" -> "暂时无法连接设备组。请检查两端是否在同一可达网络、邀请地址是否正确。"
             "SYNC_GROUP_INVITE_FRAME", "SYNC_GROUP_INVITE_REQUEST", "SYNC_GROUP_INVITE_REPLY", "SYNC_GROUP_INVITE_CHALLENGE" ->
                 "两端邀请证明格式不匹配，或连接没有发送完整证明。请核对版本后重试。"
-            "SYNC_GROUP_INVITE_VERSION", "SYNC_GROUP_WIRE_PROTOCOL", "SYNC_GROUP_WIRE_GROUP", "SYNC_GROUP_WIRE_CONTROL_FORMAT" ->
+            "SYNC_GROUP_INVITE_VERSION", "SYNC_GROUP_WIRE_PROTOCOL", "SYNC_GROUP_WIRE_GROUP", "SYNC_GROUP_WIRE_CONTROL_FORMAT",
+            "SYNC_GROUP_RUNTIME_TLS_IDENTITY" ->
                 "两端使用的邀请或接续协议不同。请核对版本和设备组。"
             "SYNC_GROUP_PROFILE_PARTIAL_SCOPE_UNSUPPORTED" -> "两端支持的同步资料范围不同，已保留资料和原加入身份。"
             "SYNC_GROUP_JOIN_APPROVAL_MAY_EXIST" -> "原设备身份可能已获得批准。请保留该身份并继续加入。"
@@ -362,6 +366,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     joiningDevice = joined.device.takeUnless { recovery }, canAbandonJoin = joined.canAbandon,
                     canRefreshJoinPreparation = joined.stage in reprepareJoinStages, canShelveJoin = joined.canShelve,
                     status = if (recovery) "恢复进度已保留，可从网盘或加密文件入口接续"
+                    else if (joined.membershipRevoked) "原组已撤销此设备，已保留本机资料"
+                    else if (joined.membershipVerified) "已核对批准，可继续查收接续所需资料"
                     else if (joined.canAbandon) "本机尚未发送加入证明，可重试或放弃本次申请"
                     else "原设备身份已保留，可继续查收批准") }
                 if (!recovery) startLoop()
@@ -505,6 +511,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         synchronized(lifecycle) {
             closeCloudSettings()
             privacyGeneration++
+            pendingInvitationCommand = null
             privacyExpiry?.cancel(); privacyExpiry = null
             draft?.close(); draft = null
             founder?.lockManagement()
@@ -564,14 +571,18 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 status = "恢复进度已保留，可从网盘或加密文件入口接续") }
             return
         }
+        var proofProblem: Exception? = null
         if (profile.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED) && !profile.membershipVerified) {
             try {
                 prove(owner)
                 mutableState.update { it.copy(error = null, status = "加入证明已发送，等待对方核对本机指纹并批准") }
             } catch (error: Exception) {
-                failure("加入证明", joinTransportFailure(error))
+                if (error is CancellationException) throw error
+                val problem = joinTransportFailure(error)
+                proofProblem = problem
                 val retained = requireNotNull(owner.profile())
                 if (retained.stage == LanSyncGroupJoinStage.PREPARED) {
+                    failure("加入证明", problem)
                     mutableState.update { it.copy(canAbandonJoin = retained.canAbandon, status = "加入证明尚未发送") }
                     return
                 }
@@ -579,37 +590,29 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         mutableState.update { it.copy(canAbandonJoin = false) }
         val result = try {
-            try { owner.activate(owner.bootstrapStore(joiningNetwork)) }
-            catch (original: Exception) {
-                if (!isJoinRouteUnavailable(original)) throw original
-                var last = original
-                val alternatives = owner.discoveredBootstrapStores(joiningNetwork).iterator()
-                var recovered: LanSyncGroupJoiningResult? = null
-                while (recovered == null && alternatives.hasNext()) {
-                    try { recovered = owner.activate(alternatives.next()) }
-                    catch (error: Exception) {
-                        if (!isJoinRouteUnavailable(error)) throw error
-                        last = error
-                    }
-                }
-                recovered ?: throw last
-            }
+            activateJoin(owner)
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             val retained = owner.profile()
             val classified = joinTransportFailure(error)
             val waiting = retained?.stage == LanSyncGroupJoinStage.WAITING_FOR_APPROVAL && !retained.membershipVerified
-            val approvalGate = waiting && classified.message in setOf("SYNC_GROUP_INVITE_TLS", "SYNC_GROUP_JOIN_CONNECTION_FAILED")
+            val uncertain = retained?.stage == LanSyncGroupJoinStage.PROOF_ATTEMPTED && !retained.membershipVerified
+            val approvalGate = (waiting || uncertain) && isAmbiguousJoinConnection(classified)
             mutableState.update { it.copy(canRefreshJoinPreparation = retained?.stage in reprepareJoinStages,
                 canShelveJoin = retained?.canShelve == true,
                 error = if (approvalGate) null else it.error,
                 status = when {
+                    retained?.membershipRevoked == true -> "原组已撤销此设备，已保留本机资料"
                     retained?.membershipVerified == true -> "已核对批准，正在等待可达的设备或接续资料"
                     waiting -> "已发送证明，等待对方批准或设备重新连通"
+                    uncertain -> "证明送达结果待核对，已保留设备身份"
                     else -> it.status
                 }) }
             // The normal store deliberately rejects TLS clients until the operator admits them.
-            if (approvalGate) return
+            if (approvalGate) {
+                proofProblem?.takeUnless(::isAmbiguousJoinConnection)?.let { failure("加入证明", it) }
+                return
+            }
             throw classified
         }
         if (result.profile.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(owner.runtimeAccess()))
@@ -628,6 +631,29 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 failure("核验设备组", IllegalStateException(result.waitingCode))
         }
     }
+    private suspend fun activateJoin(owner: LanSyncGroupJoining): LanSyncGroupJoiningResult {
+        var pending: LanSyncGroupJoiningResult? = null
+        var firstFailure: Exception? = null
+        suspend fun attempt(source: suspend () -> CiphertextStore): LanSyncGroupJoiningResult? {
+            val result = try { owner.activate(source()) }
+            catch (error: Exception) {
+                if (!isJoinRouteUnavailable(error) && joinTransportFailure(error).message !in setOf(
+                        "SYNC_GROUP_INVITE_TLS_PIN", "SYNC_GROUP_RUNTIME_TLS_IDENTITY", "SYNC_GROUP_JOIN_VAULT_MISSING")) throw error
+                if (firstFailure == null) firstFailure = error
+                return null
+            }
+            if (result.waitingCode !in resumableJoinRouteWaits) return result
+            if (pending?.let { it.profile.stage > result.profile.stage } != true) pending = result
+            return null
+        }
+        attempt { owner.bootstrapStore(joiningNetwork) }?.let { return it }
+        for (source in owner.discoveredBootstrapStores(joiningNetwork)) {
+            attempt { source }?.let { return it }
+        }
+        return pending ?: throw requireNotNull(firstFailure)
+    }
+    private fun isAmbiguousJoinConnection(error: Exception): Boolean =
+        error.message == "SYNC_GROUP_INVITE_TLS" || error.message == "SYNC_GROUP_JOIN_CONNECTION_FAILED"
     private fun joinTransportFailure(error: Exception): Exception {
         if (error is CancellationException) return error
         val causes = generateSequence<Throwable>(error) { it.cause }.take(8).toList()
@@ -647,15 +673,23 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         error.message == "SYNC_GROUP_JOIN_ROUTE_NO_LONGER_ACTIVE"
 
     override fun createInvitation(host: String?) {
-        if (closed || paused) return
-        val (privacy, command) = synchronized(lifecycle) { privacyGeneration to ++invitationCommandGeneration }
+        val (privacy, command) = synchronized(lifecycle) {
+            if (closed || paused) return
+            val command = ++invitationCommandGeneration
+            pendingInvitationCommand = command
+            privacyGeneration to command
+        }
         action("生成邀请") {
-            if (synchronized(lifecycle) { command != invitationCommandGeneration || privacy != privacyGeneration }) return@action
-            try { issueInvitation(host, privacy, command) }
+            try {
+                if (synchronized(lifecycle) { command != invitationCommandGeneration || privacy != privacyGeneration }) return@action
+                issueInvitation(host, privacy, command)
+            }
             catch (error: Exception) {
                 if (error is CancellationException || synchronized(lifecycle) {
                         command == invitationCommandGeneration && privacy == privacyGeneration
                     }) throw error
+            } finally {
+                synchronized(lifecycle) { if (pendingInvitationCommand == command) pendingInvitationCommand = null }
             }
         }
     }
@@ -730,8 +764,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun closeInvitation() = synchronized(lifecycle) {
         if (approvalInFlight != null) {
             mutableState.update { it.copy(status = "正在确认批准结果") }
-        } else {
+        } else if (invitation != null || pendingInvitationCommand != null) {
             invitationCommandGeneration++
+            pendingInvitationCommand = null
             clearInvitationLocked()
             mutableState.update { it.copy(status = "邀请已取消") }
         }

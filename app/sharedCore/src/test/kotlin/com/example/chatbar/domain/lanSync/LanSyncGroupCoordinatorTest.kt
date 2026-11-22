@@ -777,12 +777,12 @@ class LanSyncGroupCoordinatorTest {
             coordinator.createInvitation(coordinator.state.value.invitation?.host)
             withTimeout(10_000) { entered.await() }
             coordinator.closeInvitation()
+            assertEquals("邀请已取消", coordinator.state.value.status)
         } finally {
             f.beforeExclusive = {}
             release.complete(Unit)
         }
         await { !coordinator.state.value.busy }
-        assertEquals("邀请已取消", coordinator.state.value.status)
         assertNull(coordinator.state.value.invitation)
         assertNull(coordinator.state.value.error)
     }
@@ -823,6 +823,8 @@ class LanSyncGroupCoordinatorTest {
         assertEquals(key.publicKey.encoded, member.recipientKey)
         assertEquals("synthetic device", access.peerDisplayName(receiver.fingerprint))
         assertFalse(coordinator.state.value.invitationApprovalInProgress)
+        coordinator.closeInvitation()
+        assertNotEquals("邀请已取消", coordinator.state.value.status)
     }
 
     private class ObservedNetwork(private val delegate: LanSyncNetwork) : LanSyncNetwork {
