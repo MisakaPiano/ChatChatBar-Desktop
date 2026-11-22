@@ -1,0 +1,37 @@
+name: Windows exact retained-group QR scene
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/lan-v7-windows-qr-scene-request.json
+permissions:
+  contents: read
+jobs:
+  retained-qr-scene:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify retained group and render the production QR scene
+        run: >-
+          python -B tools/lan-next-control/v7_windows_qr_scene_control.py run
+          --request .github/lan-v7-windows-qr-scene-request.json
+          --output v7-qr-scene-safe-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-windows-retained-qr-scene-safe-result
+          if-no-files-found: warn
+          path: v7-qr-scene-safe-evidence/qr-scene-control-result.json
