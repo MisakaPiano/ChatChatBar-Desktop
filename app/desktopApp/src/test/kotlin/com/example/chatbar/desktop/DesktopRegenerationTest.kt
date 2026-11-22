@@ -4,15 +4,59 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import com.example.chatbar.domain.chat.MainChatLogicalMessageSource
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.chat.StreamEvent
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopRegenerationTest {
+    @Test fun `actual repair undo regenerate and reselect preserves the original alternative local redo`() = runBlocking {
+        fixture { container, server, session, target ->
+            val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(
+                DesktopDataRootOwnership.acquire(container.resolvedRoot)).ownership
+            try {
+                container.formatCardRepository.save(FormatCard("repair-format", "Synthetic", "Synthetic rule", createdAt = 1))
+                container.settingsRepository.saveAppSettings(container.settingsRepository.getAppSettings().copy(
+                    defaultFormatCardId = "repair-format"))
+                var repairCalls = 0
+                val repair = container.createMessageFormatRepairController {
+                    repairCalls++
+                    flowOf(StreamEvent.Delta("repaired A"), StreamEvent.Done)
+                }
+                suspend fun awaitRepair(task: String) = withTimeout(8000) {
+                    container.taskRuntime.repairTasks.first { it[task] != null && it[task] != DesktopRepairStatus.RUNNING }
+                    assertNotNull(repair.states.value[task])
+                }
+                assertEquals(DesktopRepairStatus.APPLIED, awaitRepair(repair.repair(session, target.id)).status)
+                assertEquals(DesktopRepairStatus.RESTORED, awaitRepair(repair.restore(session, target.id)).status)
+                val undone = assertNotNull(container.chatRepository.getMessage(target.id, session))
+                assertTrue(desktopCanRedoFormat(undone))
+                server.enqueue(success("new B"))
+                val generated = container.createRealChatRuntime().regenerate(session, target.id)
+                assertNull(generated.failureMessage)
+                assertEquals(listOf("old-answer", "new B"), generated.assistant.alternatives)
+                assertFalse(desktopCanRedoFormat(generated.assistant))
+                assertEquals(undone.formatRepairNotice, generated.assistant.formatRepairNotice,
+                    "Regeneration discarded A's version-bound recovery point")
+                val selected = container.chatRepository.updateMessageReturningSnapshot(
+                    MessageAlternativeVersionPolicy.select(generated.assistant, 0))
+                assertTrue(desktopCanRedoFormat(selected))
+                assertEquals(DesktopRepairStatus.APPLIED, awaitRepair(repair.redo(session, target.id)).status)
+                val redone = assertNotNull(container.chatRepository.getMessage(target.id, session))
+                assertEquals(listOf("repaired A", "new B"), redone.alternatives)
+                assertEquals(1, repairCalls, "Local redo must not call a model")
+                assertEquals(target.images, redone.images)
+                assertEquals(undone.sourceTurnId, redone.sourceTurnId)
+            } finally { ownership.close() }
+        }
+    }
+
     @Test fun `experimental main request freezes saved setting and persists only canonical tool story`() = runBlocking {
         fixture { container, server, session, target ->
             val settings = container.settingsRepository
@@ -148,7 +192,9 @@ data: [DONE]
                 assertEquals(target.createdAt, saved.createdAt)
                 assertEquals(target.images, saved.images)
                 assertEquals(target.generatedImageMetadata, saved.generatedImageMetadata)
-                assertNull(saved.formatRepairNotice)
+                assertEquals(target.formatRepairNotice, saved.formatRepairNotice)
+                assertFalse(desktopCanRestoreFormat(saved))
+                assertFalse(desktopCanRedoFormat(saved))
                 assertNull(saved.reasoningContent)
                 assertEquals(index + 2, saved.alternatives.size)
                 assertEquals("old-answer", saved.alternatives.first())

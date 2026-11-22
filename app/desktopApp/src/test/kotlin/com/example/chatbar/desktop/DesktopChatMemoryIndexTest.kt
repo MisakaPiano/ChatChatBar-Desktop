@@ -11,6 +11,57 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopChatMemoryIndexTest {
+    @Test fun `cancel after actual alternative deletion cannot recall its old raw vector through a cold reader`(): Unit = runBlocking {
+        val f = Fixture(); f.setup()
+        try {
+            val old = assertNotNull(f.app.chatRepository.getMessage("message-2", f.session.id))
+            val target = f.app.chatRepository.updateMessageReturningSnapshot(old.copy(
+                alternatives = listOf(old.displayContent, "另一备选：旅人取消了原定行程。"),
+                alternativeVersionIds = listOf("a", "b"), currentAlternativeVersionId = "a"))
+            assertEquals(2, f.index.rebuild(f.session.id, 1))
+            val embeddingRequests = f.server.requestCount
+            val active = setOf("message-5", "message-6", "message-7", "message-8")
+            val identity = DesktopRagEmbeddingIdentity.from(f.config)
+            val before = f.index.candidates(f.session.id, active, identity)
+            assertEquals(2, before.size)
+            val stale = before.single { it.messageId == target.id }
+            val service = DesktopSaveSlotService(f.app.appDataRoot, f.app.dataOperationCoordinator, f.maintenance,
+                object : DesktopSessionReservation {
+                    override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T = operation()
+                }, f.app.chatRepository, f.app.voiceRepository, { null }, mediaSource = { error("NO_MEDIA") })
+            lateinit var operation: Deferred<Boolean>
+            f.app.characterRepository.save(CharacterCard.create("Synthetic").copy(id = f.session.characterCardId))
+            val primary = DesktopPrimaryChatController(f.app.characterRepository, f.app.chatRepository,
+                f.app.settingsRepository, f.app.effectiveModelResolver, f.app.formatCardRepository,
+                f.app.worldBookRepository, f.app.characterSessionService, f.app.characterResourceStore,
+                taskRuntime = f.app.taskRuntime, alternativeRemoval = { previous, replacement, staleMessage ->
+                    service.commitRemovedAlternatives(previous, replacement, staleMessage).also {
+                        operation.cancel(CancellationException("Synthetic page closes after durable deletion"))
+                    }
+                })
+            try {
+                primary.refresh(); primary.selectSession(f.session.id)
+                operation = async(start = CoroutineStart.LAZY) { primary.deleteAssistantAlternative(target, "a") }
+                operation.start()
+                assertFailsWith<CancellationException> { operation.await() }
+                val coldStorage = com.example.chatbar.data.local.JsonFileStorage(f.app.appDataRoot)
+                val current = assertNotNull(com.example.chatbar.data.repository.ChatRepository(coldStorage)
+                    .getMessage(target.id, f.session.id))
+                assertEquals(listOf("另一备选：旅人取消了原定行程。"), current.alternatives)
+                // Keep the stale persisted vector deliberately: reader safety must not depend on
+                // a page-owned rebuild/cleanup completing after the source transaction.
+                assertEquals(stale, coldStorage.loadEntity("vector_chunks", stale.id, VectorChunk.serializer()))
+                val coldIndex = DesktopChatMemoryIndex(f.app.appDataRoot, coldStorage, f.app.dataOperationCoordinator,
+                    f.maintenance, { f.config }, f.gateway)
+                val after = coldIndex.candidates(f.session.id, active, identity)
+                assertEquals(before.filterNot { it.id == stale.id }, after)
+                assertTrue(after.none { it.id == stale.id })
+                assertEquals(embeddingRequests, f.server.requestCount, "Reading after deletion must not require re-embedding")
+                assertFalse(DesktopSessionCommitJournal(f.app.appDataRoot).hasPending())
+            } finally { primary.closeDraftPersistence() }
+        } finally { f.close() }
+    }
+
     @Test fun `late history stop keeps committed raw turn vectors and reports pending verification without changing messages`(): Unit = runBlocking {
         val f = Fixture(); f.setup()
         val entered = CompletableDeferred<Unit>(); val release = java.util.concurrent.CountDownLatch(1)
