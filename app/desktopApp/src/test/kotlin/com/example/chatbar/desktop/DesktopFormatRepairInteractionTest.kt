@@ -42,6 +42,32 @@ internal class DesktopRepairInteractionFixture(val c: DesktopAppContainer) {
 }
 
 class DesktopFormatRepairInteractionTest {
+    @Test fun `unchanged repair keeps exact durable bytes when its recovery point is in the extra list`() = runBlocking {
+        fixture { f ->
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.repair("A", f.original.id)).status)
+            assertEquals(DesktopRepairStatus.RESTORED, f.await(f.repair.restore("A", f.original.id)).status)
+            f.primary.selectAssistantAlternative(f.original.id, -1)
+            f.response = { flowOf(StreamEvent.Delta("fixed B"), StreamEvent.Done) }
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.repair("A", f.original.id)).status)
+            f.primary.selectAssistantAlternative(f.original.id, 1)
+            val before = f.saved()
+            assertEquals("v1", before.formatRepairNotice?.versionId)
+            assertEquals("v2", before.otherFormatRepairNotices.single().versionId)
+            assertTrue(MessageFormatRepairPolicy.applicableNotice(before)?.restored == true)
+            val file = f.c.appDataRoot.resolve("entities/chat_messages/A_${f.original.id}.json")
+            val bytes = java.nio.file.Files.readAllBytes(file)
+            for (output in listOf(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER, before.displayContent)) {
+                f.response = { flowOf(StreamEvent.Delta(output), StreamEvent.Done) }
+                val task = assertNotNull(f.primary.repairMessageFormat(before))
+                assertEquals(DesktopRepairStatus.UNCHANGED, f.await(task).status)
+                assertEquals(before, f.saved())
+                assertContentEquals(bytes, java.nio.file.Files.readAllBytes(file))
+                assertEquals(before, com.example.chatbar.data.repository.ChatRepository(
+                    com.example.chatbar.data.local.JsonFileStorage(f.c.appDataRoot)).getMessage(f.original.id, "A"))
+            }
+        }
+    }
+
     @Test fun `stale displayed restore and redo actions never mutate a newly selected repaired alternative`() = runBlocking {
         for (redo in listOf(false, true)) fixture { f ->
             assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.repair("A", f.original.id)).status)
