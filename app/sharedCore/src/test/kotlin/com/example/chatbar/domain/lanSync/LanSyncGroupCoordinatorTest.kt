@@ -725,12 +725,39 @@ class LanSyncGroupCoordinatorTest {
 
         coordinator.unlockManagement(code)
         await { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation?.fingerprint == receiver.fingerprint }
+        val access = requireNotNull(f.founder().runtimeAccess())
+        assertFalse(Files.exists(access.work.resolve("peer-display.protected")))
         coordinator.acceptPeer(requireNotNull(coordinator.state.value.peerConfirmation).binding)
         await { !coordinator.state.value.busy && coordinator.state.value.devices.any { it.id == receiver.fingerprint } }
         assertEquals(receipt.member, f.custody(offer.trust).ledger().current().members.getValue(receiver.fingerprint))
+        assertEquals("synthetic Android", access.peerDisplayName(receiver.fingerprint))
         assertFalse(coordinator.state.value.managementUnlocked)
         assertFalse(coordinator.state.value.invitationRetainedWhileLocked)
         assertNull(coordinator.state.value.invitation)
+    }
+
+    @Test fun cancellingAfterProofRejectsTheStaleApprovalWithoutWritingNamesOrMembership() = fixture { f ->
+        val coordinator = readyCoordinator(f)
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation()
+        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        val offer = requireNotNull(coordinator.state.value.invitation)
+        val receiver = LanSyncTlsIdentity.create()
+        val key = SyncDeviceEncryptionKey.create(receiver.fingerprint)
+        LanSyncGroupInviteClient.exchange(offer, receiver, key, "synthetic device", {
+            f.network.connect(receiver, LanSyncPeer(offer.inviter, "synthetic PC", offer.host, offer.port))
+        })
+        await { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation != null }
+        val binding = requireNotNull(coordinator.state.value.peerConfirmation).binding
+        coordinator.closeInvitation()
+        assertEquals("邀请已取消", coordinator.state.value.status)
+        coordinator.acceptPeer(binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.error != null }
+        val access = requireNotNull(f.founder().runtimeAccess())
+        assertFalse(Files.exists(access.work.resolve("peer-display.protected")))
+        assertFalse(Files.exists(access.work.resolve("peer-display.lock")))
+        assertFalse(receiver.fingerprint in access.ledger().current().members)
     }
 
     private class ObservedNetwork(private val delegate: LanSyncNetwork) : LanSyncNetwork {

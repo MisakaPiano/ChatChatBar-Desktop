@@ -124,13 +124,29 @@ class LanSyncGroupJoiningTest {
         assertFails { f.owner().prove("synthetic") { connections++; error("MUST_NOT_CONNECT") } }
         assertEquals(0, connections); assertEquals(LanSyncGroupJoinStage.PREPARED, f.owner().profile()!!.stage)
         f.timeShift = 0
-        val fresh = invitation.issue("10.0.0.2", 44001)
-        f.owner().refreshInvitation(fresh.code()) {}
-        assertEquals(before.getValue("operation"), f.control().getValue("operation"))
-        assertEquals(before.getValue("recipient"), f.control().getValue("recipient")); assertContentEquals(key, Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected")))
-        f.hook = { if (it == "GROUP_JOIN_PROOF_ATTEMPT_RETAINED") throw IOException("SYNTHETIC_UNKNOWN_PROOF_ATTEMPT") }
-        assertFailsWith<IOException> { f.owner().prove("synthetic") { connections++; error("MUST_NOT_CONNECT") } }
+        val pool = Executors.newSingleThreadExecutor()
+        val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket).also { it.needClientAuth = true }
+        try {
+            val fresh = invitation.issue("10.0.0.2", listener.localPort)
+            f.owner().refreshInvitation(fresh.code()) {}
+            assertEquals(before.getValue("operation"), f.control().getValue("operation"))
+            assertEquals(before.getValue("recipient"), f.control().getValue("recipient"))
+            assertContentEquals(key, Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected")))
+            val server = pool.submit<Boolean> { runCatching { invitation.serve(listener.accept() as SSLSocket) }.isFailure }
+            f.hook = { if (it == "GROUP_JOIN_PROOF_ATTEMPT_RETAINED") throw IOException("SYNTHETIC_UNKNOWN_PROOF_ATTEMPT") }
+            assertFailsWith<IOException> {
+                f.owner().prove("synthetic") { current ->
+                    connections++
+                    LanSyncTls.connect(f.founder.joiningIdentity, current.host, current.port, current.inviter, 15_000) { _, _ ->
+                        Socket(InetAddress.getLoopbackAddress(), listener.localPort)
+                    }
+                }
+            }
+            assertTrue(server.get(20, TimeUnit.SECONDS))
+        } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
         f.hook = {}; assertEquals(LanSyncGroupJoinStage.PROOF_ATTEMPTED, f.owner().profile()!!.stage)
+        assertFalse(f.owner().profile()!!.canAbandon)
+        assertFailsWith<IllegalArgumentException> { f.owner().abandonUnprovedInvitation() }
         val next = invitation.issue("10.0.0.3", 44002)
         f.owner().refreshInvitation(next.code()) {}
         assertEquals(LanSyncGroupJoinStage.PROOF_ATTEMPTED, f.owner().profile()!!.stage)
@@ -138,7 +154,32 @@ class LanSyncGroupJoiningTest {
         val alien = next.copy(trust = next.trust.copy(group = alienGroup), bootstrap = next.bootstrap!!.copy(vault = next.bootstrap!!.vault.copy(group = alienGroup)))
         assertFails { f.owner().refreshInvitation(alien.code()) {} }
         assertEquals(before.getValue("operation"), f.control().getValue("operation"))
-        assertContentEquals(key, Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected"))); assertEquals(0, connections)
+        assertContentEquals(key, Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected"))); assertEquals(1, connections)
+    }
+    @Test fun failedDialCanArchiveTheExactUnprovedApplicationAndPrepareAgainAfterColdOpen() = fixture { f ->
+        val invitation = f.founder.service.invitation(16384).also(f.founder.invitations::add)
+        val offer = invitation.issue("10.0.0.1", 44000)
+        val prepared = f.owner().prepare(offer.code()) {}
+        val root = f.root.resolve("joining")
+        val operation = f.control().getValue("operation").jsonPrimitive.content
+        val profile = Files.readAllBytes(root.resolve("profile.protected"))
+        val recipient = Files.readAllBytes(root.resolve("recipient/recipient.protected"))
+        assertFailsWith<IOException> { f.owner().prove("synthetic") { throw IOException("SYNTHETIC_JOIN_DIAL_FAILED") } }
+        assertEquals(prepared, f.owner().profile())
+        assertTrue(prepared.canAbandon)
+        f.hook = { if (it == "UNPROVED_JOIN_ARCHIVED") throw IOException("SYNTHETIC_ARCHIVE_REPLY_LOST") }
+        assertFailsWith<IOException> { f.owner().abandonUnprovedInvitation() }
+        f.hook = {}
+        assertNull(f.owner().profile())
+        assertFalse(Files.exists(root))
+        val archive = f.root.resolve("abandoned-joins").resolve(operation)
+        assertContentEquals(profile, Files.readAllBytes(archive.resolve("profile.protected")))
+        assertContentEquals(recipient, Files.readAllBytes(archive.resolve("recipient/recipient.protected")))
+        val replacement = invitation.issue("10.0.0.2", 44001)
+        val next = f.owner().prepare(replacement.code()) {}
+        assertEquals(prepared.device, next.device)
+        assertNotEquals(operation, f.control().getValue("operation").jsonPrimitive.content)
+        assertContentEquals(recipient, Files.readAllBytes(archive.resolve("recipient/recipient.protected")))
     }
     @Test fun explicitReprepareAfterAnUnsignedProjectionInterruptionUsesFreshLocalAndRemoteEvidenceWithoutLosingOriginals() = fixture { f ->
         f.publishedPreset(); val local = f.put(f.data, f.card("physical-card"))

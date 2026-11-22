@@ -85,8 +85,10 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         if (state.recoveryJoining) {
             StatusText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
         } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
+            state.joiningDevice?.let { StatusText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
-            BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }
+            if (state.canAbandonJoin) BootstrapButton("放弃未发送的申请", secondary = true, enabled = !interactionBlocked) { actions.abandonUnprovedJoin() }
+            if (state.canRefreshJoinPreparation) BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
@@ -118,7 +120,8 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                         contentScale = ContentScale.None, filterQuality = FilterQuality.None)
                 }
                 StatusText("邀请有效期为三分钟。切换程序后可返回这里，重新解锁管理并核对新设备。")
-                ActionRow { BootstrapButton("复制邀请", secondary = true) { copy(code) }; BootstrapButton("关闭邀请", secondary = true) { actions.closeInvitation() } }
+                ActionRow { BootstrapButton("复制邀请", secondary = true) { copy(code) }; BootstrapButton("关闭邀请", secondary = true,
+                    enabled = !state.invitationApprovalInProgress) { actions.closeInvitation() } }
             }
             if (state.managementUnlocked) {
                 StatusText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")

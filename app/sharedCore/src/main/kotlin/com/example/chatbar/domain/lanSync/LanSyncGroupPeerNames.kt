@@ -25,19 +25,19 @@ class LanSyncGroupPeerNames(private val root: Path, private val trust: SyncGroup
     private fun ledger(): SyncDeviceLedger = currentLedger().also {
         require(sameAnchor(trust, it.trustAnchor) && it.contains(trust.checkpoint)) { "SYNC_GROUP_PEER_NAMES_GROUP_CHANGED" }
     }
-    fun remember(peer: LanSyncGroupInvitedPeer) = guarded {
+    fun remember(peer: LanSyncGroupInvitedPeer) {
         val live = ledger()
         require(sameAnchor(peer.trust, trust) && live.contains(peer.trust.checkpoint) &&
             peer.device == SyncDeviceSignatures.decode(peer.member.certificate).fingerprint && peer.member.active &&
             peer.name.isNotBlank() && peer.name.length <= 160 && lanSyncGroupDisplayText(peer.name).isNotBlank() &&
             peer.binding.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_PEER_NAME_PROOF_CHANGED" }
         SyncRecipientPublicKey.parse(peer.member.recipientKey)
-        live.current().members[peer.device]?.let { member ->
-            require(member.certificate == peer.member.certificate && member.recipientKey == peer.member.recipientKey) { "SYNC_GROUP_PEER_NAME_IDENTITY_CHANGED" }
+        require(live.current().members[peer.device] == peer.member) { "SYNC_GROUP_PEER_NAME_IDENTITY_CHANGED" }
+        guarded {
+            val previous = read()
+            val entry = Entry(peer.member.certificate, peer.member.recipientKey, peer.name, peer.trust.checkpoint, peer.binding)
+            if (previous.entries[peer.device] != entry) write(previous.copy(entries = previous.entries + (peer.device to entry)))
         }
-        val previous = read()
-        val entry = Entry(peer.member.certificate, peer.member.recipientKey, peer.name, peer.trust.checkpoint, peer.binding)
-        if (previous.entries[peer.device] != entry) write(previous.copy(entries = previous.entries + (peer.device to entry)))
     }
     fun displayName(device: String): String? = guarded {
         require(device.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_PEER_NAME_DEVICE" }

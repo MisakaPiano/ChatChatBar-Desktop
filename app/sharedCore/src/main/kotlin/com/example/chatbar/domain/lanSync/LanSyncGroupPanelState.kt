@@ -20,7 +20,9 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val cloud: LanSyncGroupRouteStatus = LanSyncGroupRouteStatus("此设备未配置网盘"),
     val privacyRevision: Long = 0, val recoveryJoining: Boolean = false,
     val canResumeExternalRecovery: Boolean = false, val canAbandonUnactivated: Boolean = false,
-    val invitationRetainedWhileLocked: Boolean = false) {
+    val invitationRetainedWhileLocked: Boolean = false, val invitationApprovalInProgress: Boolean = false,
+    val joiningDevice: String? = null, val canAbandonJoin: Boolean = false,
+    val canRefreshJoinPreparation: Boolean = false) {
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 
@@ -34,6 +36,7 @@ interface LanSyncGroupPanelActions {
     fun lockManagement()
     fun resumeManagementOperation()
     fun beginJoin(code: String)
+    fun abandonUnprovedJoin()
     fun retryJoin()
     fun refreshJoinPreparation()
     fun createInvitation()

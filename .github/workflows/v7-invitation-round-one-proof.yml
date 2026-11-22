@@ -1,0 +1,62 @@
+name: V7 invitation first repair checks
+on:
+  push:
+    branches: [codex/v7-invitation-r01-repair-20261123]
+permissions:
+  contents: read
+jobs:
+  invitation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify invitation proof, archive, and desktop rendering
+        working-directory: app
+        run: |
+          bash ./gradlew :sharedCore:test \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellingAfterProofRejectsTheStaleApprovalWithoutWritingNamesOrMembership' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupInvitationTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupAppTransportTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupPeerNamesTest' \
+            :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopLanSyncGroupInvitationQrTest' \
+            --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-invitation-r01-original
+          path: |
+            app/sharedCore/build/test-results/test/TEST-*.xml
+            app/desktopApp/build/test-results/test/TEST-*.xml
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile Android preview at the existing package identity
+        working-directory: app
+        run: >-
+          bash ./gradlew :app:compileLanPreviewKotlin
+          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=86 -Pkotlin.daemon.jvmargs=-Xmx4g
+          --no-daemon --max-workers=1 --no-parallel --console=plain

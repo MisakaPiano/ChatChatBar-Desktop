@@ -8,6 +8,7 @@ import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.util.Base64
 import java.util.Collections
 import javax.net.ssl.SSLSocket
@@ -18,7 +19,7 @@ import kotlinx.serialization.Serializable
 
 enum class LanSyncGroupJoinStage { PREPARING, PREPARED, PROOF_ATTEMPTED, WAITING_FOR_APPROVAL, KEYS_ADMITTED, NATIVE_ENROLLED, READY }
 data class LanSyncGroupJoiningProfile(val stage: LanSyncGroupJoinStage, val trust: SyncGroupTrust,
-    val device: String, val localReplica: SyncDeliveryTarget)
+    val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false)
 data class LanSyncGroupJoiningResult(val profile: LanSyncGroupJoiningProfile, val node: LanSyncGroupNode?, val waitingCode: String? = null)
 
 /** Explicit joining retains its recipient before any proof; normal reopen never recreates origins. */
@@ -48,7 +49,35 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     private fun bootstrap(record: Record): LanSyncGroupRecoveryAnchor = record.recoveryAnchor ?: requireNotNull(record.offer).let { offer ->
         requireNotNull(offer.bootstrap).let { LanSyncGroupRecoveryAnchor(offer.trust, it.vault, it.vaultDescriptor, it.dataHeads) }
     }
-    private fun profile(record: Record) = LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica)
+    private fun profile(record: Record) =
+        LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica, canAbandon(record))
+
+    private fun canAbandon(record: Record): Boolean {
+        if (record.offer == null || record.stage !in setOf(LanSyncGroupJoinStage.PREPARING, LanSyncGroupJoinStage.PREPARED)) return false
+        return Files.newDirectoryStream(root).use { files ->
+            files.all { path ->
+                when (path.fileName.toString()) {
+                    "profile.protected" -> Files.isRegularFile(path, NOFOLLOW_LINKS)
+                    "recipient" -> Files.isDirectory(path, NOFOLLOW_LINKS)
+                    else -> false
+                }
+            }
+        }
+    }
+
+    /** One same-volume rename retains the entire unused application as a private archive. */
+    suspend fun abandonUnprovedInvitation(): Path = guarded {
+        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        require(canAbandon(record)) { "SYNC_GROUP_JOIN_APPROVAL_MAY_EXIST" }
+        val archives = parent.resolve("abandoned-joins")
+        if (!Files.exists(archives, NOFOLLOW_LINKS)) Files.createDirectory(archives)
+        lanSyncSafe(archives, true)
+        val archive = archives.resolve(record.operation.value)
+        require(!Files.exists(archive, NOFOLLOW_LINKS)) { "SYNC_GROUP_JOIN_ARCHIVE_EXISTS" }
+        Files.move(root, archive, ATOMIC_MOVE)
+        observe("UNPROVED_JOIN_ARCHIVED")
+        archive
+    }
     suspend fun profile(): LanSyncGroupJoiningProfile? = guarded { read()?.let(::profile) }
     suspend fun recoveryAnchor(): LanSyncGroupRecoveryAnchor? = guarded { read()?.recoveryAnchor }
     /** Public pins of this retained recovery enrollment, never a replacement or private key. */
@@ -207,11 +236,15 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val offer = requireNotNull(record.offer) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
         require(record.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED)) { "SYNC_GROUP_JOIN_PROOF_ALREADY_SENT" }
         offer.validate(wallTime())
-        // A lost reply may already have led to root approval. Never discard/recreate this recipient.
         val attempted = record.copy(stage = LanSyncGroupJoinStage.PROOF_ATTEMPTED)
-        write(attempted); observe("GROUP_JOIN_PROOF_ATTEMPT_RETAINED")
-        val result = if (connect == null) LanSyncGroupInviteClient.exchange(offer, identity, recipient(record), name)
-            else LanSyncGroupInviteClient.exchange(offer, identity, recipient(record), name, { connect(offer) })
+        val result = LanSyncGroupInviteClient.exchange(offer, identity, recipient(record), name, {
+            if (connect != null) connect(offer)
+            else LanSyncTls.connect(identity, offer.host, offer.port, offer.inviter, handshakeTimeoutMillis = 15_000)
+        }, now = wallTime(), beforeAnswer = {
+            // After an answer leaves, its reply can be lost while the same recipient is approved.
+            write(attempted)
+            observe("GROUP_JOIN_PROOF_ATTEMPT_RETAINED")
+        })
         write(attempted.copy(stage = LanSyncGroupJoinStage.WAITING_FOR_APPROVAL)); observe("GROUP_JOIN_PROOF_SENT")
         result
     }

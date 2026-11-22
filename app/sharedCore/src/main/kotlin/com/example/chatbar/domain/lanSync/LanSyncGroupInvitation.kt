@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
+import java.io.IOException
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
@@ -135,20 +136,27 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
                 require(ledger().current().members.values.none { it.recipientKey == recipient.encoded }) { "SYNC_GROUP_INVITE_RECIPIENT_ALREADY_KNOWN" }
                 current.claimed = true; current
             }
-            val context = InviteWire.context(current.offer, actor.fingerprint, recipient, hello.name)
-            val challenge = ByteArray(32).also(SecureRandom()::nextBytes)
             try {
-                InviteWire.send(wire, InviteChallenge.serializer(), InviteChallenge(InviteWire.PROTOCOL, current.offer.binding(),
-                    Base64.getEncoder().encodeToString(recipient.encrypt(challenge, context))))
-                val answer = InviteWire.read(wire, InviteAnswer.serializer())
-                require(answer.protocol == InviteWire.PROTOCOL && answer.response.matches(Regex("[a-f0-9]{64}")) &&
-                    InviteWire.same(answer.response, InviteWire.answer(context, challenge))) { "SYNC_GROUP_INVITE_KEY_PROOF" }
-                val peer = LanSyncGroupInvitedPeer(current.offer.trust, actor.fingerprint, hello.name,
-                    SyncGroupMember(certificate, recipient.encoded), lanSyncHash(context))
-                synchronized(lock) { live(current); current.accepted = peer }
-                InviteWire.send(wire, InviteDone.serializer(), InviteDone(InviteWire.PROTOCOL, current.offer.binding()))
-                peer
-            } finally { challenge.fill(0) }
+                val context = InviteWire.context(current.offer, actor.fingerprint, recipient, hello.name)
+                val challenge = ByteArray(32).also(SecureRandom()::nextBytes)
+                try {
+                    InviteWire.send(wire, InviteChallenge.serializer(), InviteChallenge(InviteWire.PROTOCOL, current.offer.binding(),
+                        Base64.getEncoder().encodeToString(recipient.encrypt(challenge, context))))
+                    val answer = InviteWire.read(wire, InviteAnswer.serializer())
+                    require(answer.protocol == InviteWire.PROTOCOL && answer.response.matches(Regex("[a-f0-9]{64}")) &&
+                        InviteWire.same(answer.response, InviteWire.answer(context, challenge))) { "SYNC_GROUP_INVITE_KEY_PROOF" }
+                    val peer = LanSyncGroupInvitedPeer(current.offer.trust, actor.fingerprint, hello.name,
+                        SyncGroupMember(certificate, recipient.encoded), lanSyncHash(context))
+                    synchronized(lock) { live(current); current.accepted = peer }
+                    try { InviteWire.send(wire, InviteDone.serializer(), InviteDone(InviteWire.PROTOCOL, current.offer.binding())) }
+                    catch (_: IOException) { /* The verified proof remains available for explicit approval. */ }
+                    peer
+                } finally { challenge.fill(0) }
+            } finally {
+                synchronized(lock) {
+                    if (issued === current && current.accepted == null) current.claimed = false
+                }
+            }
         }
     }
     /** Call inside the explicit root-ledger admission; possession alone does not add a member. */
@@ -166,7 +174,8 @@ object LanSyncGroupInviteClient {
             { LanSyncTls.connect(identity, offer.host, offer.port, offer.inviter, handshakeTimeoutMillis = 15_000) })
     /** The dial returns an authenticated socket from the same LanSyncTls.connect path as production. */
     internal fun exchange(offer: LanSyncGroupInviteOffer, identity: LanSyncTlsIdentity, recipient: SyncDeviceEncryptionKey,
-        name: String, connect: () -> SSLSocket, now: Long = System.currentTimeMillis()): LanSyncGroupInviteReceipt {
+        name: String, connect: () -> SSLSocket, now: Long = System.currentTimeMillis(),
+        beforeAnswer: () -> Unit = {}): LanSyncGroupInviteReceipt {
         offer.validate(now)
         require(recipient.device == identity.fingerprint && name.isNotBlank() && name.length <= 160) { "SYNC_GROUP_INVITE_CLIENT" }
         return connect().use { socket ->
@@ -182,6 +191,7 @@ object LanSyncGroupInviteClient {
                 val plain = try { recipient.decrypt(Base64.getDecoder().decode(challenge.ciphertext), context) } catch (_: Exception) { error("SYNC_GROUP_INVITE_KEY_PROOF") }
                 try {
                     require(plain.size == 32) { "SYNC_GROUP_INVITE_KEY_PROOF" }
+                    beforeAnswer()
                     InviteWire.send(wire, InviteAnswer.serializer(), InviteAnswer(InviteWire.PROTOCOL, InviteWire.answer(context, plain)))
                 } finally { plain.fill(0) }
                 val done = InviteWire.read(wire, InviteDone.serializer())

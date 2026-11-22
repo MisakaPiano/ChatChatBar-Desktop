@@ -93,7 +93,9 @@ class AndroidLanSync(private val app: ChatBarApp) {
                 val entry = Files.readAttributes(child, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
                 when (child.fileName.toString()) {
                     "profile.lock" -> !entry.isRegularFile || entry.isSymbolicLink
-                    "abandoned-drafts" -> !entry.isDirectory || entry.isSymbolicLink
+                    "abandoned-drafts", "abandoned-joins" -> !entry.isDirectory || entry.isSymbolicLink
+                    "joining" -> !entry.isDirectory || entry.isSymbolicLink ||
+                        Files.newDirectoryStream(child).use { it.iterator().hasNext() }
                     else -> true
                 }
             } }
@@ -125,7 +127,7 @@ class AndroidLanSync(private val app: ChatBarApp) {
     /** Install before the first Activity: late setup must still know that an Activity is resumed. */
     fun observeApplicationLifecycle(): Unit = synchronized(hookLock) {
         if (!hooksClosed && applicationHooks == null)
-            applicationHooks = AndroidLanSyncLifecycle(app, ::onForeground, ::lockGroupManagement, ::onNetworkAvailable)
+            applicationHooks = AndroidLanSyncLifecycle(app, ::onForeground, ::lockGroupManagementOnVisibilityLoss, ::onNetworkAvailable)
     }
     private fun ensureApplicationHooks() {
         observeApplicationLifecycle()
@@ -409,6 +411,11 @@ class AndroidLanSync(private val app: ChatBarApp) {
     val groupJoining get() = groupJoiningOwner.value
     fun lockGroupManagement() {
         if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.lockManagement()
+        else if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement()
+    }
+
+    fun lockGroupManagementOnVisibilityLoss() {
+        if (groupCoordinatorOwner.isInitialized()) groupCoordinatorOwner.value.lockManagementOnVisibilityLoss()
         else if (groupEnrollmentOwner.isInitialized()) groupEnrollmentOwner.value.lockManagement()
     }
     suspend fun closeAndDrain() {

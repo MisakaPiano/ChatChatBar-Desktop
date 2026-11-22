@@ -34,22 +34,24 @@ class LanSyncGroupPeerNamesTest {
         } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
     }
 
-    @Test fun authenticatedPendingNameRemainsHiddenUntilApprovalAndSurvivesRootReplyLossAndRuntimeReopen() = fixture { f ->
+    @Test fun pendingNameWritesNothingAndCanBeRetainedAfterRecoveringTheApprovedMember() = fixture { f ->
         val access = requireNotNull(f.service.runtimeAccess())
         val (invitation, peer) = f.prove()
         val preview = f.service.prepareMember(peer, invitation)
-        access.rememberPeerName(peer)
+        assertFailsWith<IllegalArgumentException> { access.rememberPeerName(peer) }
         assertNull(access.peerDisplayName(peer.device))
         val file = access.work.resolve("peer-display.protected")
-        assertTrue(Files.isRegularFile(file))
-        assertFalse(Files.readAllBytes(file).toString(Charsets.UTF_8).contains(peer.name))
+        assertFalse(Files.exists(file))
         var interrupted = false
         f.hook = { if (it == "ROOT_SIGNED_ENTRY_RETAINED" && !interrupted) { interrupted = true; throw IOException("SYNTHETIC_MEMBER_SIGNED_REPLY_LOST") } }
         assertFailsWith<IOException> { f.service.addMember(f.service.resume(f.code), preview.acknowledge(preview.request.approvalBinding)) }
         assertTrue(interrupted); f.hook = { }
         assertNull(access.peerDisplayName(peer.device))
+        assertFalse(Files.exists(file))
         invitation.close()
         f.service.resumeAdministration(f.service.resume(f.code))
+        access.rememberPeerName(peer)
+        assertFalse(Files.readAllBytes(file).toString(Charsets.UTF_8).contains(peer.name))
         assertEquals(peer.name, access.peerDisplayName(peer.device))
         assertEquals(peer.name, requireNotNull(f.service.runtimeAccess()).peerDisplayName(peer.device))
         assertTrue(access.node.sourceOperations().isEmpty())
@@ -58,7 +60,7 @@ class LanSyncGroupPeerNamesTest {
     @Test fun nameIsBoundToTheActualAdmittedRecipientAndCannotBeReplacedByAnOlderDifferentProof() = fixture { f ->
         val access = requireNotNull(f.service.runtimeAccess())
         val (firstInvitation, firstPeer) = f.prove()
-        access.rememberPeerName(firstPeer)
+        assertFailsWith<IllegalArgumentException> { access.rememberPeerName(firstPeer) }
         firstInvitation.close()
         val replacementKey = SyncDeviceEncryptionKey.create(f.joiningIdentity.fingerprint)
         val (secondInvitation, secondPeer) = prove(f, replacementKey, "真正批准的新手机")
@@ -75,8 +77,8 @@ class LanSyncGroupPeerNamesTest {
         val access = requireNotNull(f.service.runtimeAccess())
         val (invitation, peer) = f.prove()
         val preview = f.service.prepareMember(peer, invitation)
-        access.rememberPeerName(peer)
         f.service.addMember(f.service.resume(f.code), preview.acknowledge(preview.request.approvalBinding))
+        access.rememberPeerName(peer)
         val revocation = f.service.prepareRevocation(peer.device)
         f.service.revokeDevice(f.service.resume(f.code), revocation.acknowledge(revocation.request.approvalBinding))
         assertFalse(access.ledger().current().members.getValue(peer.device).active)
@@ -88,8 +90,8 @@ class LanSyncGroupPeerNamesTest {
         val access = requireNotNull(f.service.runtimeAccess())
         val (invitation, peer) = f.prove()
         val preview = f.service.prepareMember(peer, invitation)
-        access.rememberPeerName(peer)
         f.service.addMember(f.service.resume(f.code), preview.acknowledge(preview.request.approvalBinding))
+        access.rememberPeerName(peer)
         val file = access.work.resolve("peer-display.protected")
         val original = Files.readAllBytes(file)
         val wrong = LanSyncGroupPeerNames(access.work, access.trust.copy(group = SyncStoreId.random()), { access.ledger() }, { it.reversedArray() }, { it.reversedArray() })

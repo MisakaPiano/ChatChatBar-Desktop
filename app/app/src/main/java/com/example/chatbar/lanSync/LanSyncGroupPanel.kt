@@ -18,9 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.ui.kit.*
 import com.google.zxing.BarcodeFormat
@@ -36,11 +33,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     imageState: LanSyncGroupImageState = LanSyncGroupImageState(), scanInvitation: () -> Unit) {
     val interactionBlocked = state.busy || (state.paused && state.stage == LanSyncGroupPanelStage.READY)
     val context = LocalContext.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(actions, lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) actions.lockManagement() }
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); actions.lockManagement(); actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() }
+    DisposableEffect(actions) {
+        onDispose { actions.cancelActionReview(); actions.closeRecovery(); actions.closeImagePreview() }
     }
     val secretVisible = state.recoveryCode != null || state.invitation != null
     DisposableEffect(context, secretVisible) {
@@ -117,8 +111,12 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         if (state.recoveryJoining) {
             CbText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
         } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
+            state.joiningDevice?.let { CbText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
-            CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
+            if (state.canAbandonJoin)
+                CbButton("放弃未发送的申请", actions::abandonUnprovedJoin, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
+            if (state.canRefreshJoinPreparation)
+                CbButton("重新核对本机资料并继续", actions::refreshJoinPreparation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
@@ -144,6 +142,10 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         actionReview?.let { review -> GroupActionReview(review, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             GroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
+        if (state.invitationRetainedWhileLocked) {
+            CbText("邀请仍在有效期内。请解锁管理以核对申请设备，或关闭邀请。")
+            CbButton("关闭邀请", actions::closeInvitation, variant = ButtonVariant.Secondary)
+        }
         state.invitation?.let { offer ->
             val code = remember(offer) { offer.code() }
             val bitmap = remember(code) { val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
@@ -154,7 +156,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             Image(bitmap, "新设备扫描此邀请", Modifier.widthIn(max = 280.dp).fillMaxWidth().aspectRatio(1f))
             CbText("在新设备打开设备组同步，扫描此邀请。邀请短时有效；随后在这里确认设备身份。")
             CbButton("复制邀请", { copy(code) }, variant = ButtonVariant.Secondary)
-            CbButton("关闭邀请", actions::closeInvitation, variant = ButtonVariant.Secondary)
+            CbButton("关闭邀请", actions::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
         }
         state.peerConfirmation?.let { peer ->
             CbText("允许 ${peer.name} 加入设备组？"); CbText("设备身份：${peer.fingerprint}")
