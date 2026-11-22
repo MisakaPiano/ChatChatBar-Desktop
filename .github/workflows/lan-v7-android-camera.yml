@@ -2,7 +2,9 @@ name: V7 signed Android invitation camera path
 on:
   push:
     branches: ['codex/lan-next-sync-control-*']
-    paths: [.github/workflows/lan-v7-android-camera.yml]
+    paths:
+      - .github/workflows/lan-v7-android-camera.yml
+      - tools/lan-next-control/v7_scan_camera_control.py
 permissions:
   contents: read
   actions: read

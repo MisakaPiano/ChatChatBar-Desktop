@@ -129,7 +129,19 @@ def wait_click(adb, label, deadline, attr=None):
     raise Refused('UI_TARGET_NOT_READY')
 
 def navigate(adb, result, deadline):
-    root = adb.ui()
+    # A fresh Main starts in the real basic tutorial, not Home. Only its exact
+    # documented Skip action is allowed; no settings or backing files are seeded.
+    while time.monotonic() < deadline:
+        root = adb.ui()
+        if '基础教程' in labels(root):
+            wait_click(adb,'跳过',deadline,'text')
+            result['basicTutorialSkippedThroughUi'] = True
+            continue
+        if '管理' in labels(root) or '设备组同步' in labels(root):
+            break
+        time.sleep(.3)
+    else:
+        raise Refused('MAIN_UI_NOT_READY')
     if '设备组同步' not in labels(root):
         if click_target(root, '局域网同步', 'content-desc') is None:
             wait_click(adb, '管理', deadline, 'text')
@@ -219,6 +231,7 @@ def main(argv=None):
     args=p.parse_args(argv)
     result={'kind':'CCB_V7_REAL_SCANCONTRACT_UI_OBSERVATION_V1','status':'NOT_RUN','errorCode':None,
             'installedExactV7ApkObserved':False,'mainLaunchCommandAccepted':False,'initialEmptyGroupUiObserved':False,
+            'basicTutorialSkippedThroughUi':False,
             'physicalScanButtonClicks':0,'cameraPermissionUiAccepted':False,'newCaptureActivityEventObserved':None,
             'eventSnapshotBeforeAvailable':False,'eventSnapshotAfterAvailable':False,'expectedCallbackUiObserved':False,
             'newInvalidOfferErrorObserved':False,'newJoiningUiObserved':False,'cameraImageLaunchBindingVerifiedHere':False,
