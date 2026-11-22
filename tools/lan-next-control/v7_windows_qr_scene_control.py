@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import os
 import subprocess
+import sys
 from pathlib import Path
 import uuid
 
@@ -30,6 +31,25 @@ PHASES = frozenset((
 ))
 STAGES = frozenset(('EMPTY', 'PREPARED_LOCKED', 'NEEDS_RECOVERY_SAVE', 'JOINING', 'READY'))
 CONTROL = retained.control
+REFUSAL_TYPES = frozenset((
+    'ValueError', 'JSONDecodeError', 'TypeError', 'KeyError', 'UnicodeDecodeError',
+    'FileNotFoundError', 'PermissionError', 'OSError', 'CalledProcessError', 'TimeoutExpired',
+))
+REFUSAL_CODES = frozenset((
+    'WINDOWS_CLOUD_ONLY', 'CLEAN_CLOUD_CONTROL', 'EXACT_CONTROL_SHA', 'ISOLATED_RUNNER',
+    'QR_SCENE_REQUEST_BYTES', 'QR_SCENE_REQUEST_SCHEMA', 'EXACT_QR_SCENE_REQUEST',
+    'SHA_FORMAT', 'EXACT_SOURCE_COMMIT', 'EXACT_RETAINED_GROUP_BRIDGE',
+    'EXACT_BASE_GROUP_FIXTURE', 'EXACT_BRIDGE_IMPORT', 'EXACT_EMPTY_OBJECT_FIXTURE',
+    'EXACT_SYNTHETIC_DATA_SEEDER', 'EXACT_OLD_GROUP_FIXTURE', 'EXACT_QR_SCENE_RECEIPT',
+    'RETAINED_SYNTHETIC_PNG',
+))
+
+
+def safe_refusal(failure):
+    kind = type(failure).__name__
+    code = failure.args[0] if len(failure.args) == 1 and type(failure.args[0]) is str else None
+    return {'type': kind if kind in REFUSAL_TYPES else 'OTHER',
+            'code': code if code in REFUSAL_CODES else 'UNCLASSIFIED'}
 
 
 def make_request(repository, source):
@@ -147,25 +167,39 @@ def run(request_path, output):
                     'CLEAN_CLOUD_CONTROL')
     control_sha = CONTROL.git_bytes(checkout, 'rev-parse', 'HEAD').decode().strip()
     CONTROL.require(control_sha == os.environ['GITHUB_SHA'], 'EXACT_CONTROL_SHA')
-    request = CONTROL.load(request_path)
-    CONTROL.require(request == make_request(checkout, request['sourceSha']), 'EXACT_QR_SCENE_REQUEST')
     runner = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)
     CONTROL.require(not runner.is_relative_to(checkout) and not checkout.is_relative_to(runner)
                     and output.parent.resolve(strict=True) == checkout and not output.exists(), 'ISOLATED_RUNNER')
-    bridge = retained.verify_bridge()
-    private = runner / ('ccb-v7-qr-private-' + uuid.uuid4().hex)
-    profile = runner / ('ccb-v7-qr-profile-' + uuid.uuid4().hex)
-    private.mkdir()
-    for leaf in ('Local/ChatChatBarDesktop', 'Roaming', 'Temp'):
-        (profile / 'UserData' / leaf).mkdir(parents=True)
     output.mkdir()
-    phase = 'SEED_EXACT_OLD_WINDOWS_GROUP'
+    phase = 'READ_QR_SCENE_REQUEST'
+    private = None
     result = {
         'kind': 'CCB_V7_WINDOWS_RETAINED_QR_SCENE_CONTROL_V1', 'controlSha': control_sha,
-        'request': request, 'passed': False, 'packagedMainExercised': False,
+        'passed': False, 'packagedMainExercised': False,
         'physicalCameraExercised': False, 'externalNetworkSettingsChanged': False,
     }
     try:
+        CONTROL.require(request_path.is_file() and not request_path.is_symlink()
+                        and 0 < request_path.stat().st_size <= 16384, 'QR_SCENE_REQUEST_BYTES')
+        request = CONTROL.load(request_path)
+        CONTROL.require(type(request) is dict and type(request.get('format')) is int
+                        and type(request.get('sourceSha')) is str, 'QR_SCENE_REQUEST_SCHEMA')
+        phase = 'VERIFY_QR_SCENE_REQUEST_BINDINGS'
+        expected = make_request(checkout, request['sourceSha'])
+        if request != expected:
+            result['differentBindingFields'] = [key for key in expected if request.get(key) != expected[key]]
+            result['unexpectedBindingFieldsPresent'] = bool(request.keys() - expected.keys())
+            CONTROL.require(False, 'EXACT_QR_SCENE_REQUEST')
+        result['request'] = request
+
+        phase = 'PREPARE_ISOLATED_PROFILE'
+        bridge = retained.verify_bridge()
+        private = runner / ('ccb-v7-qr-private-' + uuid.uuid4().hex)
+        profile = runner / ('ccb-v7-qr-profile-' + uuid.uuid4().hex)
+        private.mkdir()
+        for leaf in ('Local/ChatChatBarDesktop', 'Roaming', 'Temp'):
+            (profile / 'UserData' / leaf).mkdir(parents=True)
+        phase = 'SEED_EXACT_OLD_WINDOWS_GROUP'
         with bridge.private_helpers() as modules:
             native = modules['prove_desktop_lan3_lan4']
             CONTROL.require(bridge.digest(native.LEGACY) == bridge.LEGACY_SHA, 'EXACT_SYNTHETIC_DATA_SEEDER')
@@ -188,12 +222,14 @@ def run(request_path, output):
                       unlockedByOriginalCodeThroughScene=True, liveInvitationRendered=True,
                       actualSceneWholeModulesAndQuietZone=True, decodedEqualToLiveInvitation=True,
                       narrowSceneCopyReadbackAndPrivacyMarker=True)
-    except Exception:
+    except Exception as failure:
         result['failedAt'] = phase
-        try:
-            result['scene'] = read_observation(private / 'qr-scene-observation.json')
-        except Exception:
-            result['scene'] = None
+        result['refusal'] = safe_refusal(failure)
+        if private is not None:
+            try:
+                result['scene'] = read_observation(private / 'qr-scene-observation.json')
+            except Exception:
+                result['scene'] = None
     CONTROL.write_new(output / 'qr-scene-control-result.json', result)
     print('WINDOWS_QR_SCENE_PASS' if result['passed'] else 'WINDOWS_QR_SCENE_FAILED:' + phase)
     return 0 if result['passed'] else 2
@@ -216,7 +252,8 @@ def main():
             return 0
         return run(args.request, args.output)
     except (ValueError, OSError, KeyError, subprocess.SubprocessError) as failure:
-        print('WINDOWS_QR_SCENE_REFUSED:' + type(failure).__name__, file=sys.stderr)
+        refusal = safe_refusal(failure)
+        print('WINDOWS_QR_SCENE_REFUSED:' + refusal['type'] + ':' + refusal['code'], file=sys.stderr)
         return 2
 
 

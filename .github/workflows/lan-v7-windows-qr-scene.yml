@@ -4,6 +4,7 @@ on:
     branches: ['codex/lan-next-sync-control-*']
     paths:
       - .github/lan-v7-windows-qr-scene-request.json
+      - tools/lan-next-control/v7_windows_qr_scene_control.py
 permissions:
   contents: read
 jobs:
