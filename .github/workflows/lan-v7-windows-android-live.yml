@@ -6,6 +6,7 @@ on:
       - .github/lan-v7-live-pair-request.json
       - .github/workflows/lan-v7-windows-android-live.yml
       - tools/lan-next-control/v7_live_pair_android.py
+      - tools/lan-next-control/synthetic_clipboard/**
       - tools/lan-next-control/v7_windows_live_pair_control.py
       - tools/lan-next-control/fixtures/DesktopV7LiveSyntheticHostDraftTest.kt
 permissions:
@@ -36,7 +37,7 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools emulator system-images;android-26;google_apis;x86_64'
+          packages: 'platform-tools emulator system-images;android-26;google_apis;x86_64 platforms;android-36 build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - name: Authenticate the distributed APK and prepare only the fixed Windows test overlay
         env:
@@ -48,6 +49,10 @@ jobs:
           if ($LASTEXITCODE) { throw 'V7_EXACT_APK' }
           python -B tools/lan-next-control/v7_windows_live_pair_control.py prepare --request .github/lan-v7-live-pair-request.json --source ../v7-source --evidence evidence-live
           if ($LASTEXITCODE) { throw 'V7_LIVE_PREPARE' }
+          $sdk = $env:ANDROID_HOME
+          if (!$sdk) { $sdk = $env:ANDROID_SDK_ROOT }
+          python -B tools/lan-next-control/synthetic_clipboard/build_clipboard_helper.py --sdk $sdk --java-home $env:JAVA_HOME --private-root (Join-Path $env:RUNNER_TEMP 'ccb-v7-clipboard') --safe-result (Join-Path (Resolve-Path -LiteralPath evidence-live).Path 'android-clipboard-build.json')
+          if ($LASTEXITCODE) { throw 'V7_CLIPBOARD_HELPER_BUILD' }
       - name: Exercise one real private-network invitation in the fixed Windows runtime and delivered APK
         env:
           CCB_V7_LIVE_SYNTHETIC: 'true'
@@ -95,7 +100,7 @@ jobs:
             $info.CreateNoWindow = $true
             $info.WorkingDirectory = (Get-Location).Path
             $resultDir = (Resolve-Path -LiteralPath 'evidence-live').Path
-            foreach ($arg in @('-B','tools/lan-next-control/v7_live_pair_android.py','--adb',$adb,'--serial','emulator-5554','--offer',(Join-Path $root 'live-offer.json'),'--ready',(Join-Path $root 'android-ready.json'),'--readback',(Join-Path $root 'android-readback.json'),'--result',(Join-Path $resultDir 'android-result.json'))) { $info.ArgumentList.Add($arg) }
+            foreach ($arg in @('-B','tools/lan-next-control/v7_live_pair_android.py','--adb',$adb,'--serial','emulator-5554','--helper-build',(Join-Path $env:RUNNER_TEMP 'ccb-v7-clipboard/helper-build.json'),'--offer',(Join-Path $root 'live-offer.json'),'--ready',(Join-Path $root 'android-ready.json'),'--readback',(Join-Path $root 'android-readback.json'),'--result',(Join-Path $resultDir 'android-result.json'))) { $info.ArgumentList.Add($arg) }
             $android = [Diagnostics.Process]::Start($info)
             $ready = Join-Path $root 'android-ready.json'
             $preflight = [Diagnostics.Stopwatch]::StartNew()
@@ -130,5 +135,6 @@ jobs:
             v7-control/evidence-live/verified.json
             v7-control/evidence-live/windows-result.json
             v7-control/evidence-live/android-result.json
+            v7-control/evidence-live/android-clipboard-build.json
             v7-control/evidence-live/android-progress.json
           if-no-files-found: ignore

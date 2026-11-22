@@ -12,6 +12,8 @@ import subprocess
 import time
 import uuid
 
+from synthetic_clipboard import clipboard_control
+
 SCAN_SHA='4ea5527a441b06d5fe5d6c4015c3aa4521a6d790c91bc5d798795851a926c568'
 SESSION='ccb-v7-lab-session'
 MESSAGE='ccb-v7-lab-message'
@@ -88,7 +90,7 @@ def checkpoint(args,result):
     message={key:result.get(key) for key in (
         'phase','offerContractAccepted','joinFieldFocused','joinButtonPhysicalClicks',
         'joiningUiObserved','readyUiObserved','otherSyncErrorObserved',
-        'expectedInvitationCountObserved','exactMessageContentObserved',
+        'expectedInvitationCountObserved','androidClipboard','exactMessageContentObserved',
         'appOwnedImageSha256Matched','readbackPublished')}
     message['kind']='CCB_V7_ANDROID_LIVE_PROGRESS'
     with temp.open('x',encoding='utf-8',newline='\n') as stream:
@@ -148,25 +150,72 @@ def reveal(a,ui,target):
         time.sleep(.4)
     raise Refused('JOIN_CONTROL_NOT_VISIBLE')
 
-def labeled_join_field(root,ui):
-    label='加入已有设备组 · 粘贴邀请'
-    if label not in ui.labels(root):
-        return None
-    exposed=editable(root,ui.PACKAGE)
-    if exposed:
-        return exposed
-    rectangles=[]
-    for text in (label,'检查并加入'):
-        candidates={ui.bounds(node) for node in root.iter('node')
-                    if node.get('package')==ui.PACKAGE and text in ui.node_labels(node) and ui.bounds(node)}
-        if len(candidates)!=1:
+JOIN_FIELD_LABEL = '加入已有设备组 · 粘贴邀请'
+JOIN_SUBMIT_LABEL = '检查并加入'
+
+
+def join_form_labels(root,ui):
+    rectangles = []
+    for label in (JOIN_FIELD_LABEL, JOIN_SUBMIT_LABEL):
+        candidates = {ui.bounds(node) for node in root.iter('node')
+                      if node.get('package') == ui.PACKAGE and label in ui.node_labels(node)
+                      and ui.bounds(node)}
+        if len(candidates) != 1:
             return None
         rectangles.append(candidates.pop())
-    field_label,button=rectangles
-    if button[1]-field_label[3]<30:
+    field_label, submit_button = rectangles
+    if submit_button[1] - field_label[3] < 30:
         return None
-    x,y=(field_label[0]+field_label[2])//2,(field_label[3]+button[1])//2
-    return x-1,y-1,x+1,y+1
+    return field_label, submit_button
+
+
+def labeled_join_field(root,ui):
+    labels = join_form_labels(root,ui)
+    if labels is None:
+        return None
+    exposed = editable(root,ui.PACKAGE)
+    if exposed:
+        return exposed
+    field_label, submit_button = labels
+    x = (field_label[0] + field_label[2]) // 2
+    y = (field_label[3] + submit_button[1]) // 2
+    return x - 1, y - 1, x + 1, y + 1
+
+
+def scoped_invitation_count(root,ui):
+    labels = join_form_labels(root,ui)
+    if labels is None:
+        return None
+    field_label, submit_button = labels
+    counts = set()
+    for node in root.iter('node'):
+        box = ui.bounds(node)
+        if node.get('package') != ui.PACKAGE or not box:
+            continue
+        if box[1] < field_label[3] or box[3] > submit_button[1]:
+            continue
+        for value in ui.node_labels(node):
+            match = re.fullmatch(r'([0-9]{1,5})字', value)
+            if match:
+                counts.add(int(match[1]))
+    return next(iter(counts)) if len(counts) == 1 else None
+
+
+def resolve_invitation_target(adb,field,ui):
+    need(field == 'invitation','INVITATION_FIELD_REQUIRED')
+    root = adb.ui()
+    rectangle = labeled_join_field(root,ui)
+    need(rectangle is not None,'INVITATION_FORM_LABELS_NOT_OBSERVED')
+    visible = [node for node in root.iter('node')
+               if node.get('package') == ui.PACKAGE and node.get('class') == 'android.widget.EditText'
+               and node.get('password') == 'true' and ui.bounds(node) == rectangle]
+    need(len(visible) <= 1,'INVITATION_EDITTEXT_AMBIGUOUS')
+    text = visible[0].get('text','') if visible else None
+    count = scoped_invitation_count(root,ui)
+    empty = count == 0 if count is not None else not bool(text) if visible else None
+    mode = 'EDITTEXT' if visible else 'LABEL_BUTTON_RECTANGLES'
+    return clipboard_control.FieldTarget(rectangle, mode, ui.PACKAGE, True, True, empty, text)
+
 
 def join_field_focused(a,ui):
     tree=a.ui()
@@ -209,6 +258,28 @@ def execute(args,r):
         time.sleep(.3)
     need(time.monotonic()<deadline,'JOIN_FIELD_NOT_FOCUSED')
     r['joinFieldFocused']=True
+    clipboard = clipboard_control.Bridge(args.adb, args.serial, args.helper_build, 26)
+    clipboard_result = clipboard_control.safe_result('paste')
+    r['androidClipboard'] = clipboard_result
+    r['phase'] = 'INSTALL_CLIPBOARD_HELPER'
+    clipboard.install(clipboard_result)
+    try:
+        run_pairing(args, r, a, ui, clipboard, clipboard_result)
+    finally:
+        if clipboard_result['helperInstalled'] and (clipboard_result['helperForegroundRoundTripMatched']
+                or clipboard_result['phase'] in ('FOREGROUND_HELPER','RETURN_TO_ORIGINAL_CCB','ORDINARY_PASTE_MENU','VERIFY_WIDGET_TEXT')):
+            cleanup = clipboard_control.safe_result('clear')
+            try:
+                clipboard.operation('clear', 'none', b'', cleanup)
+                r['clipboardClearedAfterAttempt'] = cleanup['clipboardClearedHere']
+            except clipboard_control.Refused:
+                r['clipboardClearedAfterAttempt'] = False
+            if r.get('readbackPublished'):
+                need(r['clipboardClearedAfterAttempt'],'SYSTEM_CLIPBOARD_CLEANUP_UNOBSERVED')
+
+
+
+def run_pairing(args,r,a,ui,clipboard,clipboard_result):
     r['phase']='WAIT_OFFER'
     publish(args.ready,{'kind':'CCB_V7_ANDROID_READY','ready':True})
     checkpoint(args,r)
@@ -218,22 +289,33 @@ def execute(args,r):
     v=offer(args.offer.read_bytes());r['offerContractAccepted']=True;r['phase']='INPUT_INVITATION'
     checkpoint(args,r)
     need(join_field_focused(a,ui),'JOIN_FIELD_LOST_FOCUS')
-    # Fixed invitation syntax excludes shell metacharacters. Keep it private.
-    for offset in range(0,len(v['code']),160):
-        a.run('shell','input','text',v['code'][offset:offset+160],timeout=20)
-        time.sleep(.1)
+    need(scoped_invitation_count(a.ui(),ui) in (None,0),'JOIN_FIELD_NOT_EMPTY')
+    payload = bytearray(v['code'], 'ascii')
+    try:
+        paste_status = clipboard.paste_bytes(
+            payload, 'invitation', 'invitation', ui.APK_SHA, clipboard_result,
+            field_resolver=lambda adb,field:resolve_invitation_target(adb,field,ui),
+            length_reader=lambda adb,field,target:scoped_invitation_count(adb.ui(),ui),
+            allow_unobservable_empty=True,
+        )
+    finally:
+        payload[:] = bytes(len(payload))
+    r['expectedInvitationCountObserved'] = clipboard_result['widgetCharactersMatched'] is True
+    need(paste_status in (0,3),'SYSTEM_PASTE_NOT_OBSERVED')
     r['navigationPhase']='submit-join'
     r['phase']='SUBMIT_INVITATION'
-    values=ui.labels(a.ui())
-    r['expectedInvitationCountObserved']=str(len(v['code']))+'字' in values
     checkpoint(args,r)
-    a.tap(reveal(a,ui,lambda root:ui.click_target(root,'检查并加入')))
+    a.tap(reveal(a,ui,lambda root:ui.click_target(root,JOIN_SUBMIT_LABEL)))
     r['joinButtonPhysicalClicks']=1;r['phase']='WAIT_JOIN_AND_AUTOMATIC_RECEIVE'
     checkpoint(args,r)
     deadline=time.monotonic()+args.delivery_timeout
     while time.monotonic()<deadline:
         root=a.ui();s=ui.state(root);values=ui.labels(root)
-        need(not s['invalidError'],'INVITATION_INVALID_OFFER')
+        if s['invalidError']:
+            clipboard.observe_product_submission('invitation',lambda adb,field:'PRODUCT_REJECTED_UI_OBSERVED',clipboard_result)
+            raise Refused('INVITATION_INVALID_OFFER')
+        if s['joining'] and not r['joiningUiObserved']:
+            clipboard.observe_product_submission('invitation',lambda adb,field:'JOINING_UI_OBSERVED',clipboard_result)
         updated=s['joining'] and not r['joiningUiObserved'] or s['otherSyncError'] and not r['otherSyncErrorObserved']
         ready={'立即检查','网盘设置'}.issubset(values)
         updated=updated or ready and not r['readyUiObserved']
@@ -266,9 +348,11 @@ def execute(args,r):
         r['readbackPublished']=True;r['phase']='DONE';r['status']='EXPECTED_APP_MESSAGE_AND_IMAGE_OBSERVED';return
     raise Refused('AUTOMATIC_APP_MESSAGE_NOT_OBSERVED')
 
+
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--adb',type=Path,required=True);p.add_argument('--serial',required=True)
     for name in ('offer','ready','readback','result'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--helper-build',type=Path,required=True)
     p.add_argument('--offer-timeout',type=int,default=1200);p.add_argument('--delivery-timeout',type=int,default=180);args=p.parse_args(argv)
     r={'kind':'CCB_V7_ANDROID_LIVE_SAFE_RESULT','status':'NOT_RUN','phase':'PRECHECK','errorCode':None,
        'exactApkAndApi26Observed':False,'syntheticMessageAbsentBeforeJoin':False,'emptyGroupUiObserved':False,'tutorialSkippedThroughUi':False,
