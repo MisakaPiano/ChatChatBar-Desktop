@@ -8,10 +8,14 @@ import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import com.example.chatbar.data.local.JsonFileStorage.EntityReadResult
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import java.awt.Color
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import java.util.UUID
+import javax.imageio.ImageIO
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -121,15 +125,17 @@ internal class DesktopChatImages(
     }
 
     /** Editing keeps only references from the opening message; additions are fresh owned copies. */
-    suspend fun editMessage(original: ChatMessage, content: String, retained: List<String>, additions: List<DesktopPendingImage>): String? =
+    suspend fun editMessage(original: ChatMessage, content: String, retained: List<String>, additions: List<DesktopPendingImage>,
+        preferAddedImages: Boolean = false): String? =
         editMutex.withLock {
             require(retained.distinct().size == retained.size && retained.all { it in original.images })
             require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty())
+            require(!preferAddedImages || original.role == MessageRole.USER && retained == original.images && additions.isNotEmpty())
             gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
                 check(chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)) { "消息已变化，请重新打开编辑" }
                 val added = additions.map { import(it.bytes) }
                 // An indeterminate update (including partial metadata/index writes) retains all files.
-                val paths = retained + added
+                val paths = if (preferAddedImages) added + retained else retained + added
                 updateMessage(MessageAlternativeVersionPolicy.editCurrentContent(original, content).copy(
                     images = paths, generatedImageMetadata = original.generatedImageMetadata.filter { it.imagePath in paths },
                     formatRepairNotice = null))
@@ -157,21 +163,36 @@ internal class DesktopChatImages(
         catch (failure: Exception) { "已保存；旧图片清理未完成：${failure.message}" }
     }
 
-    fun jpegBase64(reference: String): String = jpegBase64(read(reference))
+    fun jpegBase64(reference: String): String = encodeRequestJpeg(resources.readChatRequestImage(reference, REQUEST_IMAGE_SIDE))
 
-    fun jpegBase64(encoded: ByteArray): String {
-        val original = DesktopImageEditing.decode(encoded, longestSide = 1600)
-        val size = minOf(1.0, 1600.0 / maxOf(original.width, original.height))
-        val rgb = java.awt.image.BufferedImage((original.width * size).toInt().coerceAtLeast(1),
-            (original.height * size).toInt().coerceAtLeast(1), java.awt.image.BufferedImage.TYPE_INT_RGB)
-        rgb.createGraphics().let { g ->
-            try { g.color = java.awt.Color.WHITE; g.fillRect(0, 0, rgb.width, rgb.height)
-                g.drawImage(original, 0, 0, rgb.width, rgb.height, null)
-            } finally { g.dispose() }
+    fun jpegBase64(encoded: ByteArray): String =
+        encodeRequestJpeg(DesktopImageEditing.decode(encoded, longestSide = REQUEST_IMAGE_SIDE))
+
+    private fun encodeRequestJpeg(original: BufferedImage): String = try {
+        val scale = minOf(1.0, REQUEST_IMAGE_SIDE.toDouble() / maxOf(original.width, original.height))
+        val rgb = BufferedImage((original.width * scale).toInt().coerceAtLeast(1),
+            (original.height * scale).toInt().coerceAtLeast(1), BufferedImage.TYPE_INT_RGB)
+        try {
+            val graphics = rgb.createGraphics()
+            try {
+                graphics.color = Color.WHITE
+                graphics.fillRect(0, 0, rgb.width, rgb.height)
+                graphics.drawImage(original, 0, 0, rgb.width, rgb.height, null)
+            } finally {
+                graphics.dispose()
+            }
+            ByteArrayOutputStream().use { output ->
+                check(ImageIO.write(rgb, "jpeg", output))
+                Base64.getEncoder().encodeToString(output.toByteArray())
+            }
+        } finally {
+            rgb.flush()
         }
-        val bytes = java.io.ByteArrayOutputStream().use {
-            check(javax.imageio.ImageIO.write(rgb, "jpeg", it)); it.toByteArray()
-        }
-        return Base64.getEncoder().encodeToString(bytes)
+    } finally {
+        original.flush()
+    }
+
+    private companion object {
+        const val REQUEST_IMAGE_SIDE = 1600
     }
 }

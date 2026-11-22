@@ -98,6 +98,44 @@ class LanSyncGroupManagementRecoveryTest {
         } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
     }
 
+    @Test fun founderAndRecoveredManagerInviteFromPublishedHistoryWhileADeviceHasUnconfirmedLocalChanges() = fixture { f, joined ->
+        val access = requireNotNull(joined.owner.runtimeAccess())
+        val ownerAccess = requireNotNull(f.service.runtimeAccess())
+        val manager = access.managementRecovery()
+        manager.recover(f.code, access.encryptedManagementBackup().bytes(), joined.replica(), LanSyncManagementRecoveryAdmission {},
+            access.trust.copy(checkpoint = access.ledger().current().reference()))
+        assertTrue(manager.isUnlocked)
+        try {
+            suspend fun assertInvites(node: LanSyncGroupNode, data: Path, published: CiphertextStore, target: SyncDeliveryTarget,
+                invitation: suspend (Int) -> LanSyncGroupInvitation) {
+                val card = Files.createDirectories(data.resolve("entities/character_cards")).resolve("published.json")
+                LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("published", "已发布的原件", createdAt = 1, updatedAt = 1))
+                val unit = "character_cards/published"
+                val commit = node.commit(node.inspect().review(setOf(unit)))
+                node.upload(commit.entry.request.operation, published, target)
+                val knownHead = commit.entry.version.reference()
+                Files.delete(card)
+                val activeBefore = node.inspect()
+                assertEquals(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, activeBefore.plan?.units?.get(unit)?.stage)
+                val operations = node.sourceOperations()
+                val endpoint = 35000
+                for (asFile in listOf(false, true)) {
+                    invitation(endpoint).use { owner ->
+                        val offer = owner.issue("10.0.0.1", 35001, forFile = asFile)
+                        val decoded = if (asFile) LanSyncGroupInviteOffer.readFile(owner.fileBytes(offer).inputStream())
+                        else LanSyncGroupInviteOffer.parse(offer.code())
+                        assertTrue(knownHead in requireNotNull(decoded.bootstrap).dataHeads)
+                    }
+                }
+                assertEquals(operations, node.sourceOperations())
+                assertFalse(Files.exists(card))
+                assertEquals(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, node.inspect().plan?.units?.get(unit)?.stage)
+            }
+            assertInvites(f.node, f.data, ownerAccess.replica, ownerAccess.localTarget, f.service::invitation)
+            assertInvites(access.node, joined.data, access.replica, access.localTarget, access::invitation)
+        } finally { manager.close() }
+    }
+
     @Test fun managementLockReturnsWhileImportIoIsBlockedAndNoLateAuthorityCanBePersisted() = fixture { f, joined ->
         val card = joined.data.resolve("entities/character_cards/locked.json"); Files.createDirectories(card.parent)
         LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("locked", "mid-import lock original", createdAt = 1, updatedAt = 1))

@@ -167,13 +167,19 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             ledger.history(), Collections.unmodifiableList(keys.values.toList())), membershipCheckpoint = current.reference())
     }
 
-    fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation {
+    fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation =
+        reconcile(localVersions, null)
+
+    internal fun reconcilePublished(published: Set<CiphertextObjectMetadata>): SyncInboxReconciliation = reconcile(emptyList(), published)
+
+    private fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject>,
+        published: Set<CiphertextObjectMetadata>?): SyncInboxReconciliation {
         val trust = localCustody { custody.trust() }
         val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
         fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, code: String? = null) {
             statuses[key] = SyncInboxObservation(key.key, stage, code, key.descriptor).also(observe)
         }
-        val objects = candidates.entries()
+        val objects = candidates.entries().let { all -> if (published == null) all else all.filter(published::contains) }
         val hints = linkedMapOf<CiphertextObjectMetadata, SyncCiphertextHint>()
         val tentative = linkedMapOf<CiphertextObjectMetadata, SyncTentativeGroupKey>()
         for (metadata in objects) {

@@ -611,6 +611,7 @@ fun FullscreenTextEditor(
     textStyle: TextStyle? = null,
     textOverlay: (@Composable BoxScope.(TextLayoutResult?, Int, String) -> Unit)? = null,
     onDraftValueChange: ((TextFieldValue) -> Unit)? = null,
+    inputTransformation: InputTransformation? = null,
     topContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     if (!visible) return
@@ -642,7 +643,8 @@ fun FullscreenTextEditor(
             focused = focused,
             outputTransformation = outputTransformation,
             textStyle = textStyle,
-            textOverlay = textOverlay
+            textOverlay = textOverlay,
+            inputTransformation = inputTransformation
         )
     }
 }
@@ -657,7 +659,8 @@ private fun CursorAwareFullscreenTextField(
     modifier: Modifier = Modifier,
     outputTransformation: OutputTransformation? = null,
     textStyle: TextStyle? = null,
-    textOverlay: (@Composable BoxScope.(TextLayoutResult?, Int, String) -> Unit)? = null
+    textOverlay: (@Composable BoxScope.(TextLayoutResult?, Int, String) -> Unit)? = null,
+    inputTransformation: InputTransformation? = null
 ) {
     val density = LocalDensity.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -722,6 +725,7 @@ private fun CursorAwareFullscreenTextField(
             textStyle = (textStyle ?: ChatBarTheme.typography.body).copy(color = colors.foreground),
             cursorBrush = SolidColor(colors.primary),
             outputTransformation = outputTransformation,
+            inputTransformation = inputTransformation,
             interactionSource = interactionSource,
             scrollState = scrollState,
             onTextLayout = { getResult -> textLayoutProvider = getResult },

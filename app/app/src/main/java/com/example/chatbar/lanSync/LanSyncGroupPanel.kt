@@ -73,7 +73,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
                     enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             }
         }
-        if (!state.recoveryJoining && (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
+        if (!state.recoveryJoining && !state.joiningLedgerConflict &&
+            (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
             CbButton(if (joining) "扫描更新邀请" else "扫描设备组邀请", scanInvitation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请") {
@@ -118,7 +119,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
             state.joiningDevice?.let { CbText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             if (state.canArchiveRevokedJoin) CbButton("结束并归档已撤销的申请", actions::archiveRevokedJoin, enabled = !interactionBlocked)
-            else CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
+            else CbButton(if (state.joiningLedgerConflict) "重新核对原申请" else "继续加入", actions::retryJoin,
+                enabled = !interactionBlocked && !state.paused)
             if (state.canAbandonJoin)
                 CbButton("放弃未发送的申请", actions::abandonUnprovedJoin, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             if (state.canShelveJoin)

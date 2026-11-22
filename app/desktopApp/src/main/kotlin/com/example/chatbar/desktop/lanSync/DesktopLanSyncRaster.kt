@@ -7,6 +7,8 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.Path
 import javax.imageio.ImageIO
 
+internal class DesktopHeifPreviewUnavailable : IllegalArgumentException("SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE")
+
 /** File-backed sync decoding; no encoded-file byte array or unbounded Skia fallback. */
 internal object DesktopLanSyncRaster {
     fun decode(path: Path, record: LanSyncRecord?, longestSide: Int, renderOrientation: Boolean = true): BufferedImage {
@@ -15,7 +17,8 @@ internal object DesktopLanSyncRaster {
         val heif = LanSyncHeifStill.inspect(path)
         DesktopLanSyncWebPInput.open(path, renderColorMetadata = renderOrientation, maximumPixels = LanSyncRasterPolicy.maximumPixels(record)).use { input ->
             val readers = ImageIO.getImageReaders(input)
-            require(readers.hasNext()) { if (heif == null) "SYNC_IMAGE_CODEC_UNAVAILABLE" else "SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE" }
+            if (heif != null && !readers.hasNext()) throw DesktopHeifPreviewUnavailable()
+            require(readers.hasNext()) { "SYNC_IMAGE_CODEC_UNAVAILABLE" }
             val reader = readers.next()
             try {
                 reader.setInput(input, false, true)

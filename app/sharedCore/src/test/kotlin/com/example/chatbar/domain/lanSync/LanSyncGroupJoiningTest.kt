@@ -70,11 +70,19 @@ class LanSyncGroupJoiningTest {
             val preview = founder.service.prepareMember(pair.second, pair.first)
             founder.service.addMember(founder.service.resume(founder.code), preview.acknowledge(preview.request.approvalBinding))
         }
+        suspend fun revoke() {
+            val preview = founder.service.prepareRevocation(founder.joiningIdentity.fingerprint)
+            founder.service.revokeDevice(founder.service.resume(founder.code), preview.acknowledge(preview.request.approvalBinding))
+        }
     }
     private fun fixture(work: suspend (Joiner) -> Unit) = runBlocking {
         val root = Files.createTempDirectory("group-joining-").toRealPath()
         try { LanSyncGroupAdministrationTest.Fixture(root).use { it.seed(); work(Joiner(it)) } }
         finally { check(root.toFile().deleteRecursively()) }
+    }
+    private fun retainedFiles(root: Path): Map<String, String> = Files.walk(root).use { paths ->
+        paths.filter { Files.isRegularFile(it) }.toList().associate { file -> root.relativize(file).toString() to
+            lanSyncHash(Files.readAllBytes(file)) }
     }
     @Test fun firstExplicitJoinAutomaticallySendsOneRealProofWhenProtectionStarts() = fixture { f ->
         val access = requireNotNull(f.founder.service.runtimeAccess())
@@ -431,8 +439,7 @@ class LanSyncGroupJoiningTest {
     @Test fun verifiedRevocationCanArchiveOnlyAnUnactivatedApplicationAndKeepTheOriginalBytes() = fixture { f ->
         val owner = f.owner()
         f.admit(f.prove(owner))
-        val preview = f.founder.service.prepareRevocation(f.founder.joiningIdentity.fingerprint)
-        f.founder.service.revokeDevice(f.founder.service.resume(f.founder.code), preview.acknowledge(preview.request.approvalBinding))
+        f.revoke()
         assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", owner.activate(f.backend()).waitingCode)
         val cold = f.owner()
         assertTrue(cold.profile()!!.canArchiveRevoked)
@@ -445,6 +452,128 @@ class LanSyncGroupJoiningTest {
         assertNull(f.owner().profile())
         assertContentEquals(record, Files.readAllBytes(archive.resolve("profile.protected")))
         assertContentEquals(recipient, Files.readAllBytes(archive.resolve("recipient/recipient.protected")))
+    }
+
+    @Test fun revokedJoinWithAdmittedKeysAndMissingInitialDataArchivesWithoutReusingItsRecipient() = fixture { f ->
+        val root = f.root.resolve("joining")
+        val backend = f.backend()
+        val initial = backend.listCommits(null).entries.map { it.key }.toSet()
+        f.publishedPreset()
+        val withheld = backend.listCommits(null).entries.map { it.key }.toSet() - initial
+        assertTrue(withheld.isNotEmpty())
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        val incomplete = object : CiphertextStore by backend {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage {
+                val page = backend.listCommits(cursor, pageSize)
+                return page.copy(entries = page.entries.filterNot { it.key in withheld })
+            }
+        }
+        val awaiting = owner.activate(incomplete)
+        assertEquals("SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", awaiting.waitingCode)
+        assertEquals(LanSyncGroupJoinStage.KEYS_ADMITTED, awaiting.profile.stage)
+        assertTrue(awaiting.profile.membershipVerified)
+        assertFalse(awaiting.profile.membershipRevoked)
+        assertFalse(awaiting.profile.canArchiveRevoked)
+        assertFalse(awaiting.profile.canShelve)
+        assertFailsWith<IllegalArgumentException> { owner.archiveRevokedInvitation() }
+        assertTrue(Files.isRegularFile(root.resolve("custody/group.protected")))
+        assertFalse(Files.exists(root.resolve("node")))
+        val originalRecipient = f.control().getValue("recipient")
+
+        f.revoke()
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", owner.activate(incomplete).waitingCode)
+        val cold = f.owner()
+        val revoked = assertNotNull(cold.profile())
+        assertEquals(awaiting.profile.localReplica, revoked.localReplica)
+        assertTrue(revoked.membershipRevoked && revoked.canArchiveRevoked)
+        val retained = retainedFiles(root)
+        val archive = cold.archiveRevokedInvitation()
+        assertEquals(retained, retainedFiles(archive))
+        assertNull(cold.profile())
+
+        LanSyncGroupAdministrationTest.Fixture(Files.createDirectory(f.founder.root.resolve("another-group"))).use { next ->
+            next.seed()
+            next.service.invitation(16384).use { invitation ->
+                val prepared = cold.prepare(invitation.issue("10.0.0.1", 16385).code()) {}
+                assertNotEquals(revoked.trust.group, prepared.trust.group)
+                assertEquals(revoked.device, prepared.device)
+                assertNotEquals(originalRecipient, f.control().getValue("recipient"))
+                assertFalse(Files.exists(root.resolve("custody/group.protected")))
+            }
+        }
+        assertEquals(retained, retainedFiles(archive))
+    }
+
+    @Test fun verifiedRevocationCannotArchiveAnAuthorOriginWrittenBeforeTheNativeStageMarker() = fixture { f ->
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        f.hook = { if (it == "AUTHOR_ORIGIN_RETAINED") throw IOException("SYNTHETIC_JOIN_NATIVE_REPLY_LOST") }
+        assertEquals("SYNTHETIC_JOIN_NATIVE_REPLY_LOST", assertFailsWith<IOException> { owner.activate(f.backend()) }.message)
+        f.hook = {}
+        val root = f.root.resolve("joining")
+        assertTrue(Files.isRegularFile(root.resolve("node/author/origin.protected")))
+        assertEquals(LanSyncGroupJoinStage.KEYS_ADMITTED, owner.profile()?.stage)
+        f.revoke()
+        val stopped = owner.activate(f.backend())
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", stopped.waitingCode)
+        assertTrue(stopped.profile.membershipRevoked)
+        val retained = retainedFiles(root)
+        val cold = f.owner()
+        assertFalse(assertNotNull(cold.profile()).canArchiveRevoked)
+        assertEquals("SYNC_GROUP_JOIN_REVOKED_ARCHIVE_NOT_AVAILABLE", assertFailsWith<IllegalArgumentException> {
+            cold.archiveRevokedInvitation()
+        }.message)
+        assertEquals(retained, retainedFiles(root))
+    }
+
+    @Test fun coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving() = fixture { f ->
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        val pending = assertNotNull(owner.profile())
+        f.revoke()
+        val revokedLedger = f.founder.custody().ledger()
+        val original = revokedLedger.current()
+        val unsigned = original.copy(id = SyncStoreId.random(), signature = "unsigned")
+        f.founder.service.resume(f.founder.code).use { draft ->
+            val sign = draft.session::signRootPayload
+            val sibling = unsigned.copy(signature = Base64.getEncoder().encodeToString(sign(unsigned.signingBytes())))
+            val ledger = SyncDeviceLedger(pending.trust).also { fork ->
+                revokedLedger.history().dropLast(1).forEach { fork.offer(it) }
+                fork.offer(sibling)
+            }
+            assertEquals(sibling.reference(), ledger.current().reference())
+            val notice = SyncLedgerNotice.create(ledger, pending.device, SyncStoreId.random(), sign)
+            val payload = SyncLedgerNoticeCodec.encode(notice)
+            val key = CiphertextObjectKey(CiphertextObjectKind.COMMIT, notice.context.objectId)
+            val descriptor = CiphertextDescriptor(payload.size.toLong(), CiphertextSha256.parse(lanSyncHash(payload)))
+            f.backend().put(CiphertextPutRequest(key, notice.context.objectId, descriptor), payload.inputStream())
+        }
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", owner.activate(f.backend()).waitingCode)
+        val root = f.root.resolve("joining")
+        val retained = retainedFiles(root)
+        val cold = f.owner()
+        val conflicted = assertNotNull(cold.profile())
+        assertEquals(pending.stage, conflicted.stage)
+        assertEquals(pending.trust, conflicted.trust)
+        assertEquals(pending.device, conflicted.device)
+        assertEquals(pending.localReplica, conflicted.localReplica)
+        assertTrue(conflicted.ledgerConflict)
+        assertFalse(conflicted.canAbandon || conflicted.canShelve || conflicted.canArchiveRevoked)
+        assertEquals(conflicted, cold.resumePreparation())
+        assertEquals(retained, retainedFiles(root))
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", assertFailsWith<IllegalArgumentException> {
+            cold.shelveUnsettledInvitation()
+        }.message)
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", assertFailsWith<IllegalArgumentException> {
+            cold.archiveRevokedInvitation()
+        }.message)
+        val retried = cold.activate(f.backend())
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", retried.waitingCode)
+        assertEquals(conflicted, retried.profile)
+        assertNull(retried.node)
+        assertFalse(Files.exists(root.resolve("custody/group.protected")))
+        assertEquals(retained, retainedFiles(root))
     }
     @Test fun explicitReprepareAfterAnUnsignedProjectionInterruptionUsesFreshLocalAndRemoteEvidenceWithoutLosingOriginals() = fixture { f ->
         f.publishedPreset(); val local = f.put(f.data, f.card("physical-card"))

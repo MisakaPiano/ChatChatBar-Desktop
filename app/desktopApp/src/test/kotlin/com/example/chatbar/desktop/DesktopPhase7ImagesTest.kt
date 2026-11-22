@@ -9,12 +9,18 @@ import com.example.chatbar.domain.card.CharacterCardPackage
 import com.example.chatbar.domain.card.CharacterCardExportCompatibility
 import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.card.forExportCompatibility
+import com.example.chatbar.domain.lanSync.LanSyncHeifStill
+import com.example.chatbar.domain.lanSync.LanSyncResourceStore
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Base64
 import java.util.concurrent.TimeUnit
+import javax.imageio.ImageIO
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -149,6 +155,111 @@ class DesktopPhase7ImagesTest {
         }
     } }
 
+    @Test fun highBaselineJpegUsesBoundedWireBytesForContinueRegenerateAndDirectHistory(): Unit = runBlocking { fixture { c, root ->
+        val session = session(c)
+        val original = Files.createDirectories(root.resolve("images")).resolve("camera.jpg")
+        val camera = BufferedImage(8000, 6000, BufferedImage.TYPE_BYTE_GRAY)
+        try { check(ImageIO.write(camera, "jpeg", original.toFile())) } finally { camera.flush() }
+        Files.write(root.resolve("images/other.png"), png(Color.BLUE))
+        val length = Files.size(original)
+        val hash = LanSyncResourceStore.hashFile(original, length)
+        val refs = listOf("images/camera.jpg", "images/other.png")
+        val source = c.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "48MP source").copy(images = refs))
+
+        MockWebServer().use { server ->
+            val vision = wireModel(server, images = true)
+            c.modelRepository.saveModel(vision)
+            c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = vision.id,
+                defaultContextWindowSize = 8, allowCleartextModelApi = true))
+            val runtime = c.createRealChatRuntime()
+
+            server.enqueue(wireReply("continued"))
+            val continued = runtime.sendText(session, "")
+            assertNull(continued.failureMessage)
+            assertWireJpeg(server.wireMessages(), "48MP source", 1600, 1200)
+            assertEquals(listOf(source.id), c.chatRepository.getMessages(session).filter { it.role == MessageRole.USER }.map { it.id })
+
+            server.enqueue(wireReply("regenerated"))
+            val regenerated = runtime.regenerate(session, continued.assistant.id)
+            assertNull(regenerated.failureMessage)
+            assertWireJpeg(server.wireMessages(), "48MP source", 1600, 1200)
+            assertEquals(continued.assistant.id, regenerated.assistant.id)
+            assertEquals(listOf("continued", "regenerated"), regenerated.assistant.alternatives)
+
+            server.enqueue(wireReply("follow-up"))
+            assertNull(runtime.sendText(session, "Next text turn").failureMessage)
+            val requestWithHistory = server.wireMessages()
+            assertWireJpeg(requestWithHistory, "48MP source", 1600, 1200)
+            assertTrue(requestWithHistory.any { it.jsonObject["content"] == JsonPrimitive("Next text turn") })
+            assertEquals(3, server.requestCount)
+        }
+        val exported = root.resolve("compatible.png")
+        c.characterResourceStore.exportImagePng(refs.first(), exported)
+        val png = assertNotNull(ImageIO.read(exported.toFile()))
+        try { assertEquals(2000 to 1500, png.width to png.height) } finally { png.flush() }
+        assertFailsWith<IllegalArgumentException> { c.characterResourceStore.exportImagePng(refs.first(), original) }
+        assertEquals(length, Files.size(original))
+        assertEquals(hash, LanSyncResourceStore.hashFile(original, length))
+        assertEquals(refs, c.chatRepository.getMessage(source.id, session)?.images)
+    } }
+
+    @Test fun unavailableHeifRequestPreservesOriginalAndAllowsExplicitTextAndCompatibleImage(): Unit = runBlocking { fixture { c, root ->
+        val heifFixture = System.getenv("CCB_R02_HEIF_FIXTURE")
+        org.junit.Assume.assumeTrue("requires a genuine synthetic HEIF still", heifFixture != null)
+        val session = session(c)
+        val reference = "images/legacy.jpg"
+        val original = Files.createDirectories(root.resolve("images")).resolve("legacy.jpg")
+        Files.copy(Path.of(requireNotNull(heifFixture)), original)
+        assertNotNull(LanSyncHeifStill.inspect(original))
+        val length = Files.size(original)
+        val hash = LanSyncResourceStore.hashFile(original, length)
+        val source = c.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "HEIF source").copy(images = listOf(reference)))
+
+        MockWebServer().use { server ->
+            val vision = wireModel(server, images = true)
+            val textOnly = wireModel(server, images = false)
+            c.modelRepository.saveModel(vision)
+            c.modelRepository.saveModel(textOnly)
+            c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = vision.id,
+                defaultContextWindowSize = 8, allowCleartextModelApi = true))
+            assertFailsWith<DesktopHeifPreviewUnavailable> { c.characterResourceStore.readDisplayImageBytes(reference) }
+            val failed = c.taskRuntime.awaitTerminal(c.taskRuntime.launchChat(session, ""))
+            assertEquals(DesktopTaskStatus.FAILED, failed.status)
+            assertEquals(source.id, failed.persistedUserMessageId)
+            assertTrue(failed.message.contains("HEIF 原图已保留"))
+            assertTrue(failed.message.contains("纯文字模型"))
+            assertEquals(0, server.requestCount)
+            assertEquals(listOf(reference), c.chatRepository.getMessage(source.id, session)?.images)
+
+            val beforeTextChoice = requireNotNull(c.chatRepository.getSession(session))
+            c.chatRepository.saveSessionSettingsDraft(beforeTextChoice, beforeTextChoice.copy(modelId = textOnly.id))
+            val runtime = c.createRealChatRuntime()
+            server.enqueue(wireReply("text still works"))
+            val continued = runtime.sendText(session, "")
+            assertNull(continued.failureMessage)
+            val textRequest = server.wireMessages()
+            assertTrue(textRequest.any { it.jsonObject["content"] == JsonPrimitive("HEIF source") })
+            assertFalse(textRequest.toString().contains("data:image/"))
+            assertEquals(listOf(source.id), c.chatRepository.getMessages(session).filter { it.role == MessageRole.USER }.map { it.id })
+            assertEquals(listOf(reference), c.chatRepository.getMessage(source.id, session)?.images)
+
+            val beforeVisionChoice = requireNotNull(c.chatRepository.getSession(session))
+            c.chatRepository.saveSessionSettingsDraft(beforeVisionChoice, beforeVisionChoice.copy(modelId = vision.id))
+            val currentSource = requireNotNull(c.chatRepository.getMessage(source.id, session))
+            c.chatImages.editMessage(currentSource, currentSource.content, currentSource.images,
+                listOf(DesktopPendingImage(bytes = png())), preferAddedImages = true)
+            val retained = requireNotNull(c.chatRepository.getMessage(source.id, session)).images
+            assertEquals(2, retained.size)
+            assertEquals(reference, retained.last())
+            server.enqueue(wireReply("compatible image"))
+            assertNull(runtime.regenerate(session, continued.assistant.id).failureMessage)
+            assertWireJpeg(server.wireMessages(), "HEIF source", 40, 20)
+            assertEquals(2, server.requestCount)
+        }
+        assertEquals(length, Files.size(original))
+        assertEquals(hash, LanSyncResourceStore.hashFile(original, length))
+    } }
+
     @Test fun `export replacement changes visible cover without changing package or entity`() = runBlocking { fixture { c, root ->
         val background = c.characterResourceStore.materializeImage(
             com.example.chatbar.domain.card.PackagedImage("original.png", java.util.Base64.getEncoder().encodeToString(png())), 1, "original")
@@ -213,6 +324,40 @@ class DesktopPhase7ImagesTest {
         val card = CharacterCard.create("Inline images")
         c.characterRepository.save(card)
         return c.characterSessionService.createSessionForCharacter(card.id)
+    }
+
+    private fun wireModel(server: MockWebServer, images: Boolean): ModelConfig {
+        val id = if (images) "vision" else "text"
+        return ModelConfig(id = id, displayName = id, baseUrl = server.url("/v1").toString().trimEnd('/'),
+            apiKey = "synthetic-test-key", modelName = id, isMultimodal = images, createdAt = 1)
+    }
+
+    private fun wireReply(text: String) = MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+        "data: {\"choices\":[{\"delta\":{\"content\":\"$text\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
+
+    private fun MockWebServer.wireMessages(): JsonArray {
+        val request = assertNotNull(takeRequest(5, TimeUnit.SECONDS))
+        assertEquals("/v1/chat/completions", request.path)
+        return Json.parseToJsonElement(request.body.readUtf8()).jsonObject.getValue("messages").jsonArray
+    }
+
+    private fun assertWireJpeg(messages: JsonArray, text: String, width: Int, height: Int) {
+        val multimodal = messages.map { it.jsonObject }.single { it["content"] is JsonArray }
+        assertEquals(JsonPrimitive("user"), multimodal["role"])
+        val parts = multimodal.getValue("content").jsonArray.map { it.jsonObject }
+        assertEquals(JsonPrimitive(text), parts.single { it["type"] == JsonPrimitive("text") }["text"])
+        val url = parts.single { it["type"] == JsonPrimitive("image_url") }
+            .getValue("image_url").jsonObject.getValue("url").jsonPrimitive.content
+        val prefix = "data:image/jpeg;base64,"
+        assertTrue(url.startsWith(prefix))
+        val encoded = Base64.getDecoder().decode(url.removePrefix(prefix))
+        assertEquals(listOf(0xff.toByte(), 0xd8.toByte()), encoded.take(2))
+        val raster = assertNotNull(ImageIO.read(encoded.inputStream()))
+        try { assertEquals(width to height, raster.width to raster.height) } finally { raster.flush() }
+    }
+
+    private suspend fun DesktopTaskRuntime.awaitTerminal(id: String): DesktopTaskEntry = withTimeout(10_000) {
+        tasks.first { tasks -> tasks.any { it.taskId == id && it.status != DesktopTaskStatus.RUNNING } }.single { it.taskId == id }
     }
 
     private suspend fun fixture(block: suspend (DesktopAppContainer, Path) -> Unit) {

@@ -1,5 +1,7 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.domain.lanSync.LanSyncLocalImageUnsupported
+
 /** Local lifecycle evidence only; a preparation phase is not a provider request or usage. */
 enum class DesktopChatPreparationStage(val label: String) {
     CONFIGURATION("检查对话与模型配置"),
@@ -17,13 +19,18 @@ internal class DesktopEmbeddingAuthenticationException : IllegalStateException(
 
 internal fun desktopChatPreparationFailure(stage: DesktopChatPreparationStage, failure: Throwable,
     userPersisted: Boolean): String {
-    val action = if (failure is DesktopEmbeddingAuthenticationException)
-        "请在模型设置中检查向量模型的 API 密钥。"
-    else when (stage) {
-        DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL -> "请检查向量模型、网络及索引状态。"
-        DesktopChatPreparationStage.CONFIGURATION -> "请检查当前对话和模型配置。"
-        DesktopChatPreparationStage.USER_PERSISTENCE -> "消息保存未确认，请核对对话后再操作。"
-        else -> "请查看聊天调试日志，核对配置及资料状态后重试。"
+    val action = when (failure) {
+        is DesktopEmbeddingAuthenticationException -> "请在模型设置中检查向量模型的 API 密钥。"
+        is DesktopHeifPreviewUnavailable ->
+            "HEIF 原图已保留。当前缺少解码器，可在会话设置选择纯文字模型继续，或为原消息添加兼容图片并优先使用它。"
+        is LanSyncLocalImageUnsupported ->
+            "原图已保留。图片超出安全解码范围，可在会话设置选择纯文字模型继续，或为原消息添加兼容图片并优先使用它。"
+        else -> when (stage) {
+            DesktopChatPreparationStage.KNOWLEDGE_RETRIEVAL -> "请检查向量模型、网络及索引状态。"
+            DesktopChatPreparationStage.CONFIGURATION -> "请检查当前对话和模型配置。"
+            DesktopChatPreparationStage.USER_PERSISTENCE -> "消息保存未确认，请核对对话后再操作。"
+            else -> "请查看聊天调试日志，核对配置及资料状态后重试。"
+        }
     }
     val retained = if (userPersisted) "本条消息已保存；排除问题后可用空输入的继续生成重试，无需重复发送。"
         else "请先核对消息是否已经保存。"

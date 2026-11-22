@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import java.awt.EventQueue
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -70,6 +71,38 @@ class WindowsCommonItemDialogTest {
             assertEquals(listOf("free-path", "release-item", "release-dialog", "uninit"), fake.events.takeLast(4))
             assertEquals(1, fake.threads.distinct().size)
             assertTrue(fake.threads.singleOrNull()?.startsWith("CCB-native-file-dialog-STA") ?: fake.threads.all { it.startsWith("CCB-native-file-dialog-STA") })
+        }
+    }
+
+    @Test fun `invitation picker asks for a new name and preserves an existing destination`() {
+        val fake = Fake().apply { defaultOptions = 0x8000 or 0x200 or 0x2 }
+        val title = "保存邀请文件 · 请使用新文件名"
+        WindowsCommonItemDialog({ 123L }, fake).use { service ->
+            val picker = WindowsNativeFilePicker(service)
+            val type = DesktopFileType("设备组邀请文件", listOf("ccbinvite"))
+            val selected = assertNotNull(picker.pickNewSaveFile(type, "设备组邀请.ccbinvite", title))
+            assertTrue(selected.fileName.toString().endsWith(".ccbinvite"))
+            assertEquals(0, fake.options and 0x2)
+            assertTrue("title" in fake.events)
+            picker.pickSaveFile(json, "ordinary.json")
+            assertEquals(0x2, fake.options and 0x2)
+        }
+        val dir = Files.createTempDirectory("synthetic-ccb-invite-")
+        val destination = dir.resolve("existing.ccbinvite")
+        val newDestination = dir.resolve("new.ccbinvite")
+        try {
+            val original = "existing private synthetic bytes".toByteArray()
+            val replacement = "new synthetic invitation bytes".toByteArray()
+            Files.write(destination, original)
+            assertEquals("SYNC_GROUP_INVITE_FILE_DESTINATION_CHANGED",
+                assertFailsWith<IllegalStateException> { writeNewDesktopInvitationFile(destination, replacement) }.message)
+            assertContentEquals(original, Files.readAllBytes(destination))
+            writeNewDesktopInvitationFile(newDestination, replacement)
+            assertContentEquals(replacement, Files.readAllBytes(newDestination))
+        } finally {
+            Files.deleteIfExists(newDestination)
+            Files.deleteIfExists(destination)
+            Files.delete(dir)
         }
     }
 
@@ -152,6 +185,7 @@ class WindowsCommonItemDialogTest {
         val failure = IllegalStateException("injected native error")
         var failAt: String? = null
         var showResult = 0
+        var defaultOptions = 0x8000 or 0x200
         var options = 0
         var owner = 0L
         var kind: DesktopDialogKind? = null
@@ -169,7 +203,7 @@ class WindowsCommonItemDialogTest {
         override fun create(kind: DesktopDialogKind): CommonDialogHandle {
             step("create"); this.kind = kind
             return object : CommonDialogHandle {
-                override fun getOptions(): Int { step("options"); return 0x8000 or 0x200 }
+                override fun getOptions(): Int { step("options"); return defaultOptions }
                 override fun setOptions(options: Int) { step("set-options"); this@Fake.options = options }
                 override fun setFilter(description: String, pattern: String) { step("filter"); this@Fake.pattern = pattern }
                 override fun setDefaultExtension(extension: String) { step("extension"); this@Fake.extension = extension }

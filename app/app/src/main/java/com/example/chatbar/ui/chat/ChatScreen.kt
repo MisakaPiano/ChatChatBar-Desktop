@@ -59,6 +59,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -1095,12 +1096,18 @@ fun ChatScreen(
     }
     if (fullComposer && !isArchived) {
         val editor = rememberFullscreenTextEditorState(input)
+        val keepDraftEdits = remember(viewModel) {
+            InputTransformation.byValue { current, edited ->
+                if (current.toString() != edited.toString()) viewModel.updateDraftInput(edited.toString())
+                edited
+            }
+        }
         FullscreenTextEditor(
             state = editor,
             title = "撰写消息",
-            onDraftValueChange = {
-                input = it
-                viewModel.updateDraftInput(it.text)
+            inputTransformation = keepDraftEdits,
+            onDraftValueChange = { edited ->
+                if (edited.text == viewModel.composerDraft.value.text) input = edited
             },
             images = selectedImages,
             onAddImage = if (sessionMissing) null else ({ chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }),

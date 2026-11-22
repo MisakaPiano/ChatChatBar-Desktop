@@ -49,10 +49,14 @@ internal class WindowsNativeFilePicker(private val service: WindowsCommonItemDia
             service.pick(DesktopDialogRequest(DesktopDialogKind.OPEN, type), ::owner)
         override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? =
             service.pick(DesktopDialogRequest(DesktopDialogKind.SAVE, type, suggestedName), ::owner)
+        override fun pickNewSaveFile(type: DesktopFileType, suggestedName: String, title: String): Path? =
+            service.pick(DesktopDialogRequest(DesktopDialogKind.SAVE, type, suggestedName, title, allowOverwrite = false), ::owner)
     }
     override fun pickOpenFile(type: DesktopFileType): Path? = service.pick(DesktopDialogRequest(DesktopDialogKind.OPEN, type))
     override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? =
         service.pick(DesktopDialogRequest(DesktopDialogKind.SAVE, type, suggestedName))
+    override fun pickNewSaveFile(type: DesktopFileType, suggestedName: String, title: String): Path? =
+        service.pick(DesktopDialogRequest(DesktopDialogKind.SAVE, type, suggestedName, title, allowOverwrite = false))
 }
 
 internal class WindowsNativeDirectoryPicker(private val service: WindowsCommonItemDialog) : DesktopDirectoryPicker {

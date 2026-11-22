@@ -15,6 +15,7 @@ internal data class DesktopDialogRequest(
     val type: DesktopFileType? = null,
     val suggestedName: String? = null,
     val title: String? = null,
+    val allowOverwrite: Boolean = true,
 ) {
     private fun extension(value: String): String = value.trim().removePrefix("*.").removePrefix(".")
         .lowercase(Locale.ROOT).also { require(it.matches(Regex("[a-z0-9]+"))) { "Invalid file extension" } }
@@ -26,7 +27,7 @@ internal data class DesktopDialogRequest(
     }
     val requiredOptions: Int get() = 0x40 or 0x800 or when (kind) {
         DesktopDialogKind.OPEN -> 0x1000
-        DesktopDialogKind.SAVE -> 0x2
+        DesktopDialogKind.SAVE -> if (allowOverwrite) 0x2 else 0
         DesktopDialogKind.FOLDER -> 0x20
     }
     fun resultPath(raw: String): Path {
@@ -92,11 +93,13 @@ internal class WindowsCommonItemDialog(
         backend.initializeSta().use {
             backend.create(request.kind).use { dialog ->
                 // Preserve OS defaults but explicitly prohibit multiple selection.
-                dialog.setOptions((dialog.getOptions() or request.requiredOptions) and 0x200.inv())
+                val deniedOptions = 0x200 or (if (request.kind == DesktopDialogKind.SAVE && !request.allowOverwrite) 0x2 else 0)
+                dialog.setOptions((dialog.getOptions() or request.requiredOptions) and deniedOptions.inv())
                 if (request.kind == DesktopDialogKind.FOLDER) {
                     dialog.setTitle(request.title ?: "Choose a new ChatChatBar data directory")
                 } else {
                     dialog.setFilter(requireNotNull(request.type).description, request.pattern)
+                    request.title?.let(dialog::setTitle)
                     if (request.kind == DesktopDialogKind.SAVE) {
                         dialog.setDefaultExtension(requireNotNull(request.defaultExtension))
                         request.suggestedName?.let(dialog::setFileName)

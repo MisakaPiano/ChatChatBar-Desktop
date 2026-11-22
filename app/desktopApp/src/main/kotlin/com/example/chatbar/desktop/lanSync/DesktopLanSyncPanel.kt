@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.dp
@@ -15,8 +16,6 @@ import com.google.zxing.MultiFormatWriter
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
-import java.nio.file.StandardOpenOption.CREATE_NEW
-import java.nio.file.StandardOpenOption.WRITE
 
 /** Navigation owns only page visibility; the application owns the group task lifetime. */
 @Composable
@@ -72,17 +71,19 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
 private fun DesktopLanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState, filePicker: DesktopFilePicker) {
     val type = remember { DesktopFileType("设备组邀请文件", listOf("ccbinvite")) }
     val canOpen = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING &&
-        !state.recoveryJoining && !state.canArchiveRevokedJoin
+        !state.recoveryJoining && !state.canArchiveRevokedJoin && !state.joiningLedgerConflict
     if (canOpen) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
         BootstrapButton("打开设备组邀请文件", secondary = true, enabled = !state.busy) {
             filePicker.pickOpenFile(type)?.let { path -> coordinator.beginJoinFromFile { Files.newInputStream(path, NOFOLLOW_LINKS) } }
         }
     }
     val offer = state.invitation?.takeIf { state.invitationFileOnly }
-    if (offer != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val binding = state.invitationFileBinding
+    if (offer != null && binding != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        StatusText("请使用新文件名保存邀请。已有文件会保留。")
         BootstrapButton("保存邀请文件", enabled = !state.busy) {
-            filePicker.pickSaveFile(type, "设备组邀请.ccbinvite")?.let { path ->
-                coordinator.saveInvitationFile(offer) { Files.newOutputStream(path, CREATE_NEW, WRITE, NOFOLLOW_LINKS) }
+            filePicker.pickNewSaveFile(type, "设备组邀请.ccbinvite", "保存邀请文件 · 请使用新文件名")?.let { path ->
+                coordinator.saveInvitationFile(binding) { writeNewDesktopInvitationFile(path, it) }
             }
         }
         BootstrapButton("关闭邀请", secondary = true, enabled = !state.invitationApprovalInProgress) { coordinator.closeInvitation() }

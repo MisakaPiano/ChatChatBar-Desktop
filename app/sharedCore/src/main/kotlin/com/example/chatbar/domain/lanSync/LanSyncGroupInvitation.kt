@@ -130,7 +130,8 @@ private object InviteWire {
 /** Dedicated invitation-only TLS role. App owns bounded listener/socket lifetime; ordinary PeerStore stays closed. */
 class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private val trust: SyncGroupTrust,
     private val authority: () -> SyncDeviceLedger, private val wallTime: () -> Long = System::currentTimeMillis,
-    private val monotonic: () -> Long = System::nanoTime, private val bootstrap: LanSyncGroupJoinBootstrap? = null) : AutoCloseable {
+    private val monotonic: () -> Long = System::nanoTime, private val bootstrap: LanSyncGroupJoinBootstrap? = null,
+    private val publishedCheckpoint: SyncVersionRef? = null) : AutoCloseable {
     private class Issued(val offer: LanSyncGroupInviteOffer, val started: Long) {
         var claimed = false; var accepted: LanSyncGroupInvitedPeer? = null
     }
@@ -140,6 +141,7 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
     fun issue(host: String, port: Int, forFile: Boolean = false): LanSyncGroupInviteOffer = synchronized(lock) {
         check(!closed) { "SYNC_GROUP_INVITE_CLOSED" }
         val ledger = ledger()
+        require(publishedCheckpoint == null || ledger.current().reference() == publishedCheckpoint) { "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" }
         val maximum = if (forFile) LanSyncGroupInviteOffer.MAX_FILE_CHARS else LanSyncGroupInviteOffer.MAX_CODE_CHARS
         val sizeError = if (forFile) "SYNC_GROUP_INVITE_FILE_TOO_LARGE" else "SYNC_GROUP_INVITE_CODE_TOO_LARGE"
         require((bootstrap?.dataHeads?.size ?: 0) <= maximum / 64) { sizeError }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -117,27 +118,35 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
 }
 
 @Composable
-private fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState) {
+internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState) {
     val resolver = LocalContext.current.applicationContext.contentResolver
-    var exportOffer by remember(coordinator) { mutableStateOf<LanSyncGroupInviteOffer?>(null) }
+    var exportBinding by rememberSaveable { mutableStateOf<String?>(null) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) coordinator.beginJoinFromFile { resolver.openInputStream(uri) ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE") }
     }
     val saveFile = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
-        val offer = exportOffer
-        exportOffer = null
-        if (uri != null && offer != null) coordinator.saveInvitationFile(offer) {
-            resolver.openOutputStream(uri, "wt") ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
+        val binding = exportBinding
+        exportBinding = null
+        if (uri != null) coordinator.saveInvitationFile(binding) { bytes ->
+            try {
+                val stream = resolver.openOutputStream(uri, "wt") ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
+                stream.use { it.write(bytes) }
+            } catch (_: java.io.IOException) {
+                error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
+            } catch (_: SecurityException) {
+                error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
+            }
         }
     }
     val canOpen = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING &&
-        !state.recoveryJoining && !state.canArchiveRevokedJoin
+        !state.recoveryJoining && !state.canArchiveRevokedJoin && !state.joiningLedgerConflict
     if (canOpen) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
         CbButton("打开设备组邀请文件", { openFile.launch(arrayOf("*/*")) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
     }
     val offer = state.invitation?.takeIf { state.invitationFileOnly }
-    if (offer != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        CbButton("保存邀请文件", { exportOffer = offer; saveFile.launch("设备组邀请.ccbinvite") }, enabled = !state.busy && exportOffer == null)
+    val binding = state.invitationFileBinding
+    if (offer != null && binding != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        CbButton("保存邀请文件", { exportBinding = binding; saveFile.launch("设备组邀请.ccbinvite") }, enabled = !state.busy && exportBinding == null)
         CbButton("关闭邀请", coordinator::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
         state.invitationAddresses.filter { it != offer.host }.forEach { address ->
             CbButton("用 $address 生成新邀请文件", { coordinator.createInvitation(address, forFile = true) }, enabled = !state.busy,

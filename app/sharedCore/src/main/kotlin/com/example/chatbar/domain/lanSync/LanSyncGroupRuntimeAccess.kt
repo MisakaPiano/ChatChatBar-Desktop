@@ -54,12 +54,11 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
         receive: (LanSyncGroupEncryptedFilePackage.Prepared) -> Unit) =
         node.prepareEncryptedFile(directory, vault, vaultDescriptor, checkActive, receive)
     suspend fun invitation(storePort: Int): LanSyncGroupInvitation {
-        val inspected = node.inspect(); val plan = requireNotNull(inspected.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
-        require(plan.before.hashes().all { (unit, hash) -> inspected.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }
-        val current = ledger().current()
-        val anchor = trust.copy(checkpoint = current.reference())
-        return LanSyncGroupInvitation(identity, anchor, custody::ledger, bootstrap = LanSyncGroupJoinBootstrap(storePort,
-            vault, vaultDescriptor, requireNotNull(inspected.reconciliation.history).heads()))
+        val published = reader.cachedOnly()
+        lanSyncReadManagementBackup(published, vault, vaultDescriptor)
+        val (checkpoint, heads) = node.publishedInvitationHistory(published)
+        return LanSyncGroupInvitation(identity, trust, custody::ledger,
+            bootstrap = LanSyncGroupJoinBootstrap(storePort, vault, vaultDescriptor, heads), publishedCheckpoint = checkpoint)
     }
     fun tlsContext(): SSLContext = identity.context { peer ->
         val current = ledger().current()

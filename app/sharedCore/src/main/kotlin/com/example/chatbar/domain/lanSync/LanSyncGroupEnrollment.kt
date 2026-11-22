@@ -122,16 +122,12 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     /** Produces an invitation-only transport owner; it neither unlocks admin authority nor joins a member. */
     suspend fun invitation(storePort: Int? = null): LanSyncGroupInvitation = guarded {
         requireNoAbandon(); val record = readyRecord(); val custody = custody(record)
-        val bootstrap = storePort?.let { port ->
-            val node = node(record)
-            var cursor: CommitCursor? = null
-            do { cursor = node.discover(FileCiphertextStore(directory("local-replica", false)), cursor).nextCursor } while (cursor != null)
-            val view = node.inspect(); val plan = requireNotNull(view.plan) { "SYNC_GROUP_INVITE_DATA_NOT_READY" }
-            require(plan.before.hashes().all { (unit, hash) -> view.nativeState.units[unit]?.valueHash == hash }) { "SYNC_GROUP_INVITE_PUBLISH_LOCAL_FIRST" }
-            LanSyncGroupJoinBootstrap(port, record.vault, record.vaultDescriptor, requireNotNull(view.reconciliation.history).heads())
-        }
+        if (storePort == null) return@guarded LanSyncGroupInvitation(identity, record.trust, custody::ledger)
+        val published = FileCiphertextStore(directory("local-replica", false))
+        lanSyncReadManagementBackup(published, record.vault, record.vaultDescriptor)
+        val (checkpoint, heads) = node(record).publishedInvitationHistory(published)
         LanSyncGroupInvitation(identity, record.trust, custody::ledger,
-            bootstrap = bootstrap)
+            bootstrap = LanSyncGroupJoinBootstrap(storePort, record.vault, record.vaultDescriptor, heads), publishedCheckpoint = checkpoint)
     }
     suspend fun prepareMember(peer: LanSyncGroupInvitedPeer, invitation: LanSyncGroupInvitation,
         operation: SyncStoreId = SyncStoreId.random()): LanSyncGroupMemberPreview = guarded {

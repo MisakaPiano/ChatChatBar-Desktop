@@ -693,6 +693,9 @@ internal fun DesktopPrimaryChatPanel(
         editingMessage?.let { message ->
             var retainedImages by remember(message.id) { mutableStateOf(message.images) }
             var addedImages by remember(message.id) { mutableStateOf(emptyList<DesktopPendingImage>()) }
+            var preferAddedImages by remember(message.id) { mutableStateOf(false) }
+            val canPreferAddedImages = message.role == MessageRole.USER && message.images.isNotEmpty() &&
+                retainedImages == message.images && addedImages.isNotEmpty()
             PrimaryModal(t(DesktopUiText.EDIT_MESSAGE)) {
                 PrimaryField(t(DesktopUiText.MESSAGE), editingText) { editingText = it }
                 StudioActions { retainedImages.forEach { reference -> Column {
@@ -701,11 +704,17 @@ internal fun DesktopPrimaryChatPanel(
                 } } }
                 DesktopPendingImageStrip(addedImages, true, onRemove = { id -> addedImages = addedImages.filterNot { it.id == id } },
                     onPick = { scope.launch { controller.pickMessageEditImage()?.let { addedImages = addedImages + it } } })
+                if (canPreferAddedImages) {
+                    StudioToggle("优先将新图片用于模型请求，保留原图", preferAddedImages) { preferAddedImages = !preferAddedImages }
+                }
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { editingMessage = null }
                     BootstrapButton(t(DesktopUiText.SAVE), enabled = editingText.isNotBlank() || retainedImages.isNotEmpty() || addedImages.isNotEmpty()) {
-                        scope.launch { if (controller.editMessage(message.id, editingText, retainedImages, addedImages, message)) editingMessage = null }
+                        scope.launch {
+                            if (controller.editMessage(message.id, editingText, retainedImages, addedImages, message,
+                                    preferAddedImages = canPreferAddedImages && preferAddedImages)) editingMessage = null
+                        }
                     }
                 }
             }

@@ -738,6 +738,63 @@ class LanSyncGroupCoordinatorTest {
         assertNull(coordinator.state.value.invitation)
     }
 
+    @Test fun fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation() = fixture { f ->
+        val coordinator = readyCoordinator(f)
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation(forFile = true)
+        await { !coordinator.state.value.busy && coordinator.state.value.invitationFileBinding != null }
+        val binding = requireNotNull(coordinator.state.value.invitationFileBinding)
+        val offer = requireNotNull(coordinator.state.value.invitation)
+        coordinator.lockManagementOnVisibilityLoss()
+        assertNull(coordinator.state.value.invitation)
+        assertNull(coordinator.state.value.invitationFileBinding)
+        val file = ByteArrayOutputStream()
+        coordinator.saveInvitationFile(binding) { file.write(it) }
+        await { !coordinator.state.value.busy && coordinator.state.value.status.contains("邀请文件已保存") }
+        assertEquals(offer.inviter, LanSyncGroupInviteOffer.readFile(file.toByteArray().inputStream()).inviter)
+
+        coordinator.closeInvitation()
+        coordinator.saveInvitationFile(binding) { fail("A cancelled picker must not call the writer") }
+        await { !coordinator.state.value.busy &&
+            coordinator.state.value.error.orEmpty().contains("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED") }
+        assertTrue(file.size() > 0)
+    }
+
+    @Test fun automaticLocalCheckClearsItsOwnRecoveredMaintenanceNotice() = fixture { f ->
+        val revisions = kotlinx.coroutines.channels.Channel<Long>(kotlinx.coroutines.channels.Channel.UNLIMITED)
+        val coordinator = readyCoordinator(f, kotlinx.coroutines.flow.flow {
+            for (revision in revisions) emit(revision)
+        })
+        f.beforeExclusive = { error("SYNC_BACKGROUND_WORK_BUSY") }
+        f.writeCard("draft stays local while maintenance is busy")
+        revisions.send(1)
+        await { coordinator.state.value.error.orEmpty().contains("SYNC_BACKGROUND_WORK_BUSY") }
+        assertTrue(Files.exists(f.card))
+        f.beforeExclusive = {}
+        revisions.send(2)
+        await {
+            coordinator.state.value.error == null &&
+                coordinator.view.value?.plan?.units?.get("character_cards/card")?.stage == LanSyncGroupNativeStage.UNCHANGED
+        }
+        assertTrue(coordinator.state.value.status.contains("同步检查完成"))
+
+        f.beforeExclusive = { error("SYNC_ORPHAN_SESSION") }
+        revisions.send(3)
+        await { coordinator.state.value.error.orEmpty().contains("原资料已保留") }
+        val orphanNotice = requireNotNull(coordinator.state.value.error)
+        f.beforeExclusive = {}
+        f.writeCard("later safe local edit")
+        revisions.send(4)
+        await {
+            val plan = coordinator.view.value?.plan
+            plan?.units?.get("character_cards/card")?.stage == LanSyncGroupNativeStage.UNCHANGED &&
+                plan.before.records.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "later safe local edit"
+        }
+        assertEquals(orphanNotice, coordinator.state.value.error)
+        revisions.close()
+    }
+
     @Test fun cancellingAfterProofRejectsTheStaleApprovalWithoutWritingNamesOrMembership() = fixture { f ->
         val coordinator = readyCoordinator(f)
         coordinator.unlockManagement(requireNotNull(f.recoveryCode))
@@ -763,24 +820,28 @@ class LanSyncGroupCoordinatorTest {
     }
 
     @Test fun cancellingDuringReplacementDoesNotIssueTheQueuedInvitation() = fixture { f ->
-        val coordinator = readyCoordinator(f)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val holding = AtomicBoolean(false)
+        val founder = f.founder(f.workspace) { stage ->
+            if (stage == "INVITATION_PUBLISHED_HISTORY_CHECKED" && holding.compareAndSet(true, false)) {
+                entered.countDown()
+                check(release.await(15, TimeUnit.SECONDS))
+            }
+        }
+        val coordinator = readyCoordinator(f, enrollment = { founder })
         coordinator.unlockManagement(requireNotNull(f.recoveryCode))
         await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
         coordinator.createInvitation()
         await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
-        val entered = CompletableDeferred<Unit>()
-        val release = CompletableDeferred<Unit>()
-        f.beforeExclusive = {
-            if (coordinator.state.value.status == "正在保全本机资料并准备邀请" && entered.complete(Unit)) release.await()
-        }
         try {
+            holding.set(true)
             coordinator.createInvitation(coordinator.state.value.invitation?.host)
-            withTimeout(10_000) { entered.await() }
+            await { entered.count == 0L }
             coordinator.closeInvitation()
             assertEquals("邀请已取消", coordinator.state.value.status)
         } finally {
-            f.beforeExclusive = {}
-            release.complete(Unit)
+            release.countDown()
         }
         await { !coordinator.state.value.busy }
         assertNull(coordinator.state.value.invitation)

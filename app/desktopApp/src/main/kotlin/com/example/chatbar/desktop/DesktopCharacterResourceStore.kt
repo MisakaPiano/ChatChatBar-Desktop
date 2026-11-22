@@ -10,6 +10,7 @@ import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.card.decodeCharacterPackagedImage
 import com.example.chatbar.domain.lanSync.LanSyncHeifStill
 import com.example.chatbar.domain.lanSync.LanSyncRasterPolicy
+import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -49,9 +50,33 @@ internal class DesktopCharacterResourceStore(
     internal fun readDisplayImageBytes(reference: String): ByteArray {
         if (reference.startsWith(ASSET_PREFIX)) return readAsset(reference)
         val path = requireReadableOwnedFile(reference)
-        return if (LanSyncRasterPolicy.needsSampledJpegPreview(path) || LanSyncHeifStill.inspect(path) != null) DesktopLanSyncRaster.preview(path)
+        return if (needsCompatibleRaster(path)) DesktopLanSyncRaster.preview(path)
         else Files.readAllBytes(path)
     }
+
+    internal fun readChatRequestImage(reference: String, longestSide: Int): BufferedImage {
+        if (reference.startsWith(ASSET_PREFIX)) return DesktopImageEditing.decode(readAsset(reference), longestSide)
+        val path = requireReadableOwnedFile(reference)
+        return if (needsCompatibleRaster(path)) DesktopLanSyncRaster.decode(path, null, longestSide)
+        else DesktopImageEditing.decode(Files.readAllBytes(path), longestSide)
+    }
+
+    internal fun exportImagePng(reference: String, target: Path) {
+        if (!reference.startsWith(ASSET_PREFIX) && Files.exists(target)) {
+            require(!Files.isSameFile(requireReadableOwnedFile(reference), target)) { "请选择另存位置，保留原图" }
+        }
+        val bytes = readDisplayImageBytes(reference)
+        val png = bytes.size >= 8 && bytes[0] == 0x89.toByte()
+        val output = if (png) bytes else {
+            DesktopImageEditing.requireStatic(bytes)
+            val raster = DesktopImageEditing.decode(bytes)
+            try { DesktopImageEditing.png(raster) } finally { raster.flush() }
+        }
+        DesktopExternalFileWriter.writeBytes(target, output)
+    }
+
+    private fun needsCompatibleRaster(path: Path): Boolean =
+        LanSyncRasterPolicy.needsSampledJpegPreview(path) || LanSyncHeifStill.inspect(path) != null
 
     /** Screenshot reads reject oversized owned inputs before allocating their full contents. */
     internal fun readScreenshotImageBytes(reference: String, maximumBytes: Int = 32 * 1024 * 1024): ByteArray {

@@ -53,7 +53,8 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 }
             }
         }
-        if (!state.recoveryJoining && (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
+        if (!state.recoveryJoining && !state.joiningLedgerConflict &&
+            (state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING)) {
             val joining = state.stage == LanSyncGroupPanelStage.JOINING
             key(state.privacyRevision) { LabeledField(if (joining) "更新邀请 · 粘贴新邀请" else "加入已有设备组 · 粘贴邀请",
                 joinCode, secret = true, enabled = !interactionBlocked, onChange = { joinCode = it }) }
@@ -93,7 +94,8 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
             state.joiningDevice?.let { StatusText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             if (state.canArchiveRevokedJoin) BootstrapButton("结束并归档已撤销的申请", enabled = !interactionBlocked) { actions.archiveRevokedJoin() }
-            else BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
+            else BootstrapButton(if (state.joiningLedgerConflict) "重新核对原申请" else "继续加入",
+                enabled = !interactionBlocked && !state.paused) { actions.retryJoin() }
             if (state.canAbandonJoin) BootstrapButton("放弃未发送的申请", secondary = true, enabled = !interactionBlocked) { actions.abandonUnprovedJoin() }
             if (state.canShelveJoin) BootstrapButton("暂存原申请并重新加入", secondary = true, enabled = !interactionBlocked) { actions.shelveUnsettledJoin() }
             if (state.canRefreshJoinPreparation) BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }

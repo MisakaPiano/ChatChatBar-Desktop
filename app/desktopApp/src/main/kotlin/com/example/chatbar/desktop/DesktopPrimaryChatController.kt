@@ -1023,7 +1023,7 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun editMessage(messageId: String, content: String, retainedImages: List<String>? = null,
-        additions: List<DesktopPendingImage> = emptyList(), expected: ChatMessage? = null): Boolean {
+        additions: List<DesktopPendingImage> = emptyList(), expected: ChatMessage? = null, preferAddedImages: Boolean = false): Boolean {
         var saved = false
         guarded {
             val session = state.value.selectedSession ?: return@guarded
@@ -1033,7 +1033,8 @@ internal class DesktopPrimaryChatController(
                 check(expected == null || message == expected) { "Message changed; reopen editing" }
                 val retained = retainedImages ?: message.images
                 require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty()) { "Message cannot be empty" }
-                val warning = if (retainedImages != null || additions.isNotEmpty()) requireNotNull(imageStore).editMessage(message, content, retained, additions)
+                val warning = if (retainedImages != null || additions.isNotEmpty())
+                    requireNotNull(imageStore).editMessage(message, content, retained, additions, preferAddedImages)
                 else { chats.updateMessage(
                     MessageAlternativeVersionPolicy.editCurrentContent(message, content)
                         .copy(formatRepairNotice = null),

@@ -2462,6 +2462,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             var finalUserContent = resumedUserMessage?.displayContent ?: content
             val userMsgImages = mutableListOf<String>()
             userMsgImages.addAll(resumedUserMessage?.images.orEmpty())
+            val attachmentNotices = mutableListOf<String>()
 
             if (imagePaths.isNotEmpty()) {
                 userMsgImages.addAll(imagePaths)
@@ -2472,19 +2473,19 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             imageBase64s = listOf(encodeImageToBase64(imagePaths.first())),
                             generationModel = modelConfig,
                             requireUnderstanding = false,
-                            onStatus = { addSystemMessage(it) }
+                            onStatus = { attachmentNotices.add(it) }
                         )
                         if (imageUnderstanding.descriptions.isNotEmpty()) {
                             finalUserContent = com.example.chatbar.domain.prompt.AuxiliaryPromptAuthority.appendUserImageDescriptions(finalUserContent, imageUnderstanding.descriptions)
                         } else if (!imageUnderstanding.unavailableReason.isNullOrBlank()) {
-                            addSystemMessage("${imageUnderstanding.unavailableReason}，将作为无图消息发送。")
+                            attachmentNotices.add("${imageUnderstanding.unavailableReason}，将作为无图消息发送。")
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: ChatSessionUnavailableException) {
                         throw e
                     } catch (e: Exception) {
-                        addSystemMessage("图片解析失败: ${e.message}。将作为无图消息发送。")
+                        attachmentNotices.add("图片解析失败: ${e.message}。将作为无图消息发送。")
                     }
                 }
             }
@@ -2495,11 +2496,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 role = MessageRole.USER,
                 content = finalUserContent,
                 images = userMsgImages
-            )
+            ).let { message -> submission?.submittedMessageId?.let { message.copy(id = it) } ?: message }
             if (persistUserMessage) {
-                val pending = submission?.submittedMessageId?.let { userMsg.copy(id = it) } ?: userMsg
                 val persistedUserMessage = try {
-                    chatRepository.addMessage(pending) { userCommitted.set(true) }
+                    chatRepository.addMessage(userMsg) { userCommitted.set(true) }
                 } finally {
                     if (submission != null && userCommitted.get()) withContext(NonCancellable) { completeDraftSubmission(submission, committed = true) }
                 }
@@ -2512,6 +2512,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     )
                 }
             }
+            attachmentNotices.forEach { addSystemMessage(it) }
 
             val effectiveContextWindowSize = effectiveContextWindowSize(currentSession, appSettings)
             val boundaryView = if (currentSession.longTermMemoryEnabled) {

@@ -146,6 +146,30 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         inbox().reconcile(localVersions.values.toList())
     }
 
+    /** Inspect the actual published replica without reading or authoring the local workspace. */
+    internal suspend fun publishedInvitationHistory(published: CiphertextStore): Pair<SyncVersionRef, Set<SyncVersionRef>> = serialized {
+        val reader = inbox(published)
+        val candidates = linkedSetOf<CiphertextObjectMetadata>()
+        var cursor: CommitCursor? = null
+        do {
+            val page = reader.discover(cursor)
+            page.observations.forEach { observation ->
+                require(observation.stage == SyncInboxStage.MIRRORED) { "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" }
+                candidates += CiphertextObjectMetadata(observation.key, requireNotNull(observation.descriptor))
+            }
+            cursor = page.nextCursor
+        } while (cursor != null)
+        val verified = reader.reconcilePublished(candidates)
+        require(!verified.trustBlocked) { "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" }
+        val ledger = custody.ledger().current()
+        require(verified.ledgerCheckpoint == ledger.reference() && ledger.members[identity.fingerprint]?.active == true) {
+            "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE"
+        }
+        val heads = requireNotNull(verified.history) { "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" }.heads()
+        observe("INVITATION_PUBLISHED_HISTORY_CHECKED")
+        ledger.reference() to heads
+    }
+
     /** Freeze admission only; potentially long ciphertext/resource preparation stays outside this mutex. */
     internal suspend fun targetPublication(directory: Path, target: SyncDeliveryTarget,
         vault: SyncManagementVaultContext, vaultDescriptor: CiphertextDescriptor,

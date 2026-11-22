@@ -19,6 +19,7 @@ internal interface DesktopFilePicker {
     fun pickOpenFile(type: DesktopFileType): Path?
     fun pickOpenFiles(type: DesktopFileType): List<Path> = listOfNotNull(pickOpenFile(type))
     fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path?
+    fun pickNewSaveFile(type: DesktopFileType, suggestedName: String, title: String): Path? = pickSaveFile(type, suggestedName)
 }
 
 internal class SwingDesktopFilePicker(private val parent: Component? = null) : DesktopFilePicker {

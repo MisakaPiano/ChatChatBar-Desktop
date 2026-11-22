@@ -195,7 +195,12 @@ private fun DesktopImageViewerBody(selection: DesktopViewerSelection,
         scope.launch {
             try { withContext(Dispatchers.IO) { action() }; status = "完成" }
             catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (error: Exception) { status = error.message ?: "操作失败" }
+            catch (error: Exception) {
+                status = when (error) {
+                    is DesktopHeifPreviewUnavailable -> "HEIF 原图已保留，当前缺少用于另存 PNG 的解码器"
+                    else -> error.message ?: "操作失败"
+                }
+            }
         }
     }
     tools?.let { DesktopImageToolsDialog(it, picker, { tools = null }) }
@@ -209,12 +214,9 @@ private fun DesktopImageViewerBody(selection: DesktopViewerSelection,
             status?.let { StatusText(it) }
             DesktopImageViewerToolbar(zoom, selection) {
                 ViewerToolbarSeparator()
-                DesktopChatIconAction("保存 PNG", DesktopAppIcons.SaveImage) { act {
+                DesktopChatIconAction("另存 PNG（保留原图）", DesktopAppIcons.SaveImage) { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
-                    val bytes = resources.readBytes(reference)
-                    val png = bytes.size >= 8 && bytes[0] == 0x89.toByte()
-                    if (!png) DesktopImageEditing.requireStatic(bytes)
-                    DesktopExternalFileWriter.writeBytes(target, if (png) bytes else DesktopImageEditing.png(DesktopImageEditing.decode(bytes)))
+                    resources.exportImagePng(reference, target)
                 } }
                 DesktopChatIconAction("复制图片", DesktopAppIcons.Copy) { act {
                     val bytes = resources.readBytes(reference)
