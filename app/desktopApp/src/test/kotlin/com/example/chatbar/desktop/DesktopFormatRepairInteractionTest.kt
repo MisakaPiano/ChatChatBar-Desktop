@@ -58,7 +58,7 @@ class DesktopFormatRepairInteractionTest {
             val bytes = java.nio.file.Files.readAllBytes(file)
             for (output in listOf(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER, before.displayContent)) {
                 f.response = { flowOf(StreamEvent.Delta(output), StreamEvent.Done) }
-                val task = assertNotNull(f.primary.repairMessageFormat(before))
+                val task = assertNotNull(f.primary.checkMessageFormat(before))
                 assertEquals(DesktopRepairStatus.UNCHANGED, f.await(task).status)
                 assertEquals(before, f.saved())
                 assertContentEquals(bytes, java.nio.file.Files.readAllBytes(file))
