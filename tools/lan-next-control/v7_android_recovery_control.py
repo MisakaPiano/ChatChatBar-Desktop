@@ -11,6 +11,8 @@ import re
 import subprocess
 import time
 
+from synthetic_clipboard import clipboard_control
+
 PACKAGE='com.example.chatbar.lansyncnext'
 BASE_SHA='cd4434719afbffac6ef22858d6499319600aa8c96f6a80b1781c4574fb1504f7'
 CANDIDATE_SHA='ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0'
@@ -53,7 +55,7 @@ def checked_state(root):
     need(len(values)<=1,'SAVE_CHECKBOX_AMBIGUOUS')
     return values[0] if values else None
 
-def secure_input_node(root, required=True):
+def secure_input_node(root):
     found={}
     for n in root.iter('node'):
         if n.get('package')==PACKAGE and n.get('class')=='android.widget.EditText' and n.get('enabled')=='true' and n.get('password')=='true':
@@ -63,29 +65,11 @@ def secure_input_node(root, required=True):
                 if b[2]>b[0] and b[3]>b[1]:
                     if b not in found or n.get('focused')=='true':
                         found[b]=n
-    need(len(found)<=1 and (not required or len(found)==1),'SINGLE_RECOVERY_INPUT_REQUIRED')
+    need(len(found)<=1,'SINGLE_RECOVERY_INPUT_REQUIRED')
     if not found:
         return None
     rectangle, node=next(iter(found.items()))
     return node, rectangle
-
-def secure_input(root):
-    return secure_input_node(root)[1]
-
-def recovery_field_between_labels(root,ui):
-    rectangles={}
-    for label in ('恢复码 · 临时解锁管理','解锁管理'):
-        visible={ui.bounds(node) for node in root.iter('node')
-                 if node.get('package')==PACKAGE and label in ui.node_labels(node) and ui.bounds(node)}
-        if len(visible)!=1:
-            return None
-        rectangles[label]=visible.pop()
-    label=rectangles['恢复码 · 临时解锁管理']
-    button=rectangles['解锁管理']
-    if button[1]-label[3]<30:
-        return None
-    x,y=(label[0]+label[2])//2,(label[3]+button[1])//2
-    return x-1,y-1,x+1,y+1
 
 def active_group_page(a,ui,root):
     if '设备组同步' in ui.labels(root):
@@ -95,56 +79,64 @@ def active_group_page(a,ui,root):
     return any(component in line for line in resumed.splitlines()
                if 'mResumedActivity' in line or 'topResumedActivity' in line)
 
-def type_recovery_code(a,ui,root,secret,r):
-    target=secure_input_node(root,required=False)
-    rectangle=target[1] if target else recovery_field_between_labels(root,ui)
-    for _ in range(3):
-        if rectangle:
-            break
-        scroll_body(a,root,r,backward=True)
-        time.sleep(.4)
-        root=a.ui()
-        target=secure_input_node(root,required=False)
-        rectangle=target[1] if target else recovery_field_between_labels(root,ui)
-    need(rectangle is not None,'COLD_RECOVERY_INPUT_NOT_VISIBLE')
+def recovery_field_region(root,ui):
+    rectangles={}
+    nodes={}
+    for label in ('恢复码 · 临时解锁管理','解锁管理'):
+        found={ui.bounds(node):node for node in root.iter('node')
+               if node.get('package')==PACKAGE and label in ui.node_labels(node) and ui.bounds(node)}
+        if len(found)!=1:return None
+        rectangles[label],nodes[label]=next(iter(found.items()))
+    label,button=rectangles['恢复码 · 临时解锁管理'],rectangles['解锁管理']
+    if button[1]-label[3]<30:return None
+    # The ordinary input fills this one app column between its exact
+    # label and submit button. Its own N字 is at the right edge, not the tap point.
+    parents={child:parent for parent in root.iter() for child in parent}
+    button_ancestors=set();node=nodes['解锁管理']
+    while node is not None:button_ancestors.add(node);node=parents.get(node)
+    node=nodes['恢复码 · 临时解锁管理']
+    while node is not None:
+        viewport=ui.bounds(node) if node.get('package')==PACKAGE else None
+        if node in button_ancestors and viewport and viewport[1]<=label[3]<button[1]<=viewport[3]:
+            return viewport[0],label[3],viewport[2],button[1]
+        node=parents.get(node)
+    return None
+
+def resolve_recovery_target(adb,field,ui):
+    need(field=='recovery','RECOVERY_CLIPBOARD_FIELD_REQUIRED')
+    root=adb.ui();region=recovery_field_region(root,ui)
+    need(region is not None,'COLD_RECOVERY_FIELD_CONTEXT_NOT_VISIBLE')
+    target=secure_input_node(root)
+    if target:
+        node,rectangle=target;text=node.get('text','')
+        return clipboard_control.FieldTarget(rectangle,'EDITTEXT',PACKAGE,True,True,not bool(text),text)
+    # The caller's exact cold READY/fresh privacy cycle is already proved.
+    # Hidden text remains unknown, never a fabricated empty/length value.
+    return clipboard_control.FieldTarget(region,'LABEL_BUTTON_RECTANGLES',PACKAGE,True,True,None,None)
+
+def scoped_recovery_count(root,ui):
+    region=recovery_field_region(root,ui)
+    return clipboard_control.length_in_target(root,region) if region else None
+
+def paste_recovery_code(a,ui,secret,r,clipboard,clipboard_result):
+    paste_status=clipboard.paste_bytes(
+        secret,'recovery','recovery',CANDIDATE_SHA,clipboard_result,
+        field_resolver=lambda adb,field:resolve_recovery_target(adb,field,ui),
+        length_reader=lambda adb,field,target:scoped_recovery_count(adb.ui(),ui),
+        allow_unobservable_empty=True,
+    )
+    need(paste_status in (0,3),'SYSTEM_RECOVERY_PASTE_NOT_OBSERVED')
+    r['originalCodePastedCount']=1
+    r['codeWrittenToSystemClipboard']=clipboard_result['helperForegroundRoundTripMatched']
     r['coldRecoveryInputLocated']=True
-    r['coldRecoveryInputLocatedByKnownLayout']=target is None
-    a.tap(rectangle)
-    focus_deadline=time.monotonic()+12
-    while time.monotonic()<focus_deadline:
-        root=a.ui()
-        target=secure_input_node(root,required=False)
-        if target and target[0].get('focused')=='true':
-            r['coldRecoveryInputFocused']=True
-            break
-        if active_group_page(a,ui,root):
-            ime=a.run('shell','dumpsys','input_method')
-            if re.search(r'\bmInputShown=true\b',ime) and 'packageName='+PACKAGE in ime:
-                r['coldRecoveryInputFocused']=True
-                r['focusConfirmedByGroupIme']=True
-                break
-        time.sleep(.3)
-    if not r.get('coldRecoveryInputFocused',False):
-        # Some views omit focus in the accessibility dump. The normal unlock
-        # button and unlocked controls still must confirm any accepted input.
-        root=a.ui()
-        need(active_group_page(a,ui,root) and '恢复码 · 临时解锁管理' in ui.labels(root),
-             'COLD_RECOVERY_FORM_LOST_AFTER_TAP')
-        r['typedAfterExactTapWithNoFocusReport']=True
-    # Feed the same code to the focused field in small batches. Avoid dismissing
-    # the keyboard with Back while the Activity is restoring its scroll position.
-    for start in range(0,len(secret),48):
-        a.run('shell','input','text',secret[start:start+48].decode('ascii'),timeout=20)
-        time.sleep(.15)
-    r['originalCodeTypedCount']=1
-    root=a.ui()
-    values=ui.labels(root)
+    r['coldRecoveryInputLocatedByKnownLayout']=clipboard_result['fieldResolverMode']=='LABEL_BUTTON_RECTANGLES'
+    r['recoveryWidgetCharactersMatched']=clipboard_result['widgetCharactersMatched']
+    r['recoveryLengthObservation']=clipboard_result['widgetTextRepresentation']
+    root=a.ui();count=scoped_recovery_count(root,ui)
+    r['expectedRecoveryLengthCounterObserved']=count==len(secret) if count is not None else None
+    r['zeroLengthCounterObserved']=count==0 if count is not None else None
+    r['unlockLabelSeenAfterInput']='解锁管理' in ui.labels(root)
     r['sameGroupPageAfterInput']=active_group_page(a,ui,root)
-    target=secure_input_node(root,required=False)
-    r['secureTextLengthMatched']=target is not None and len(target[0].get('text',''))==len(secret)
-    r['expectedRecoveryLengthCounterObserved']=str(len(secret))+'字' in values
-    r['zeroLengthCounterObserved']='0字' in values
-    r['unlockLabelSeenAfterInput']='解锁管理' in values
     need(r['sameGroupPageAfterInput'],'GROUP_PAGE_LOST_AFTER_INPUT')
 
 def outer_scroll(root):
@@ -168,13 +160,12 @@ def visible_label(root,label):
                 if x2>x1 and y2>y1:return True
     return False
 
-def scroll_body(a,root,r,backward=False):
+def scroll_body(a,root,r):
     x1,y1,x2,y2=outer_scroll(root)
     x=(x1+x2)//2
     height=y2-y1
     lower, upper=y1+height*3//4,y1+height//4
-    start, finish=(upper,lower) if backward else (lower,upper)
-    a.run('shell','input','swipe',str(x),str(start),str(x),str(finish),'300')
+    a.run('shell','input','swipe',str(x),str(lower),str(x),str(upper),'300')
     r['boundedBodySwipes']+=1
 
 def show_target(a,ui,label,r,require_enabled=True):
@@ -265,6 +256,8 @@ def execute(args,r):
     r['phase']='INSTALL_BASE85';need(re.search(r'^Success\s*$',a.run('install',str(args.base_apk),timeout=180),re.M) is not None,'BASE_INSTALL_FAILED');installed(a,85,BASE_SHA);r['exactBase85Installed']=True
     r['phase']='CREATE_GROUP85';entry(a,ui,r);show_target(a,ui,'创建新设备组',r);ui.wait_click(a,'创建新设备组',time.monotonic()+20);r['createButtonClicks']=1
     secret=None
+    clipboard=None
+    clipboard_result=None
     try:
         deadline=time.monotonic()+90
         while time.monotonic()<deadline:
@@ -286,28 +279,67 @@ def execute(args,r):
         r['phase']='COLD_REOPEN86';a.run('shell','am','force-stop',PACKAGE);need(pid(a) is None,'FORCE_STOP_NOT_OBSERVED');r['forceStopObserved']=True
         entry(a,ui,r);new=pid(a);need(new is not None and new!=old,'DIFFERENT_COLD_PID_NOT_OBSERVED');r['differentColdPidObserved']=True
         show_target(a,ui,'解锁管理',r,require_enabled=False);root=a.ui();need('恢复码 · 临时解锁管理' in ui.labels(root),'ORIGINAL_GROUP_LOCKED_INPUT_NOT_OBSERVED');r['coldManagementLockedUiObserved']=True
+        r['phase']='INSTALL_CLIPBOARD_HELPER'
+        clipboard=clipboard_control.Bridge(args.adb,args.serial,args.helper_build,26)
+        clipboard_result=clipboard_control.safe_result('paste')
+        r['androidClipboard']=clipboard_result
+        clipboard.install(clipboard_result)
         r['phase']='UNLOCK_WITH_ORIGINAL85_CODE'
-        type_recovery_code(a,ui,root,secret,r)
+        paste_recovery_code(a,ui,secret,r,clipboard,clipboard_result)
         if not r['unlockLabelSeenAfterInput']:
             show_target(a,ui,'解锁管理',r)
         ui.wait_click(a,'解锁管理',time.monotonic()+30,result=r,phase='submit-original-recovery-code')
         r['unlockButtonClicks']=1
         deadline=time.monotonic()+45
         while time.monotonic()<deadline:
-            root=a.ui();need(not any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in ui.labels(root)),'ORIGINAL_CODE_UNLOCK_UI_ERROR')
+            root=a.ui()
+            if any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in ui.labels(root)):
+                clipboard.observe_product_submission('recovery',lambda adb,field:'PRODUCT_REJECTED_UI_OBSERVED',clipboard_result)
+                raise Refused('ORIGINAL_CODE_UNLOCK_UI_ERROR')
             if ui.click_target(root,'锁定管理') is not None and ui.click_target(root,'邀请设备') is not None:
-                r['lockManagementButtonEnabled']=True;r['inviteDeviceButtonEnabled']=True;r['original85CodeUnlocked86']=True;r['phase']='DONE';r['status']='ORIGINAL85_RECOVERY_CODE_COLD_UNLOCK86_UI_OBSERVED';return
+                clipboard.observe_product_submission('recovery',lambda adb,field:'MANAGEMENT_UNLOCKED_UI_OBSERVED',clipboard_result)
+                r['lockManagementButtonEnabled']=True;r['inviteDeviceButtonEnabled']=True;r['original85CodeUnlocked86']=True
+                r['managementControlsObservedBeforeClipboardCleanup']=True
+                r['phase']='DONE';r['status']='ORIGINAL85_RECOVERY_CODE_COLD_UNLOCK86_UI_OBSERVED';return
             time.sleep(.4)
         raise Refused('UNLOCKED_MANAGEMENT_CONTROLS_NOT_OBSERVED')
     finally:
-        if secret is not None:secret[:]=b'\x00'*len(secret)
-        secret=None
+        try:
+            if clipboard is not None and clipboard_result is not None and clipboard_result['helperInstalled']:
+                r['codeWrittenToSystemClipboard']=(True if clipboard_result['helperForegroundRoundTripMatched'] else
+                    None if clipboard_result['phase'] in ('FOREGROUND_HELPER','RETURN_TO_ORIGINAL_CCB','ORDINARY_PASTE_MENU','VERIFY_WIDGET_TEXT') else False)
+                cleanup=clipboard_control.safe_result('clear')
+                r['androidClipboardCleanup']=cleanup
+                try:
+                    # Clear only AFTER actual unlock observations, or after the attempt failed.
+                    # Bringing the helper foreground normally locks CCB management again.
+                    clipboard.operation('clear','none',b'',cleanup)
+                    r['clipboardClearedAfterAttempt']=cleanup['clipboardClearedHere']
+                    r['helperPrivateFilesAbsentAfterCleanup']=cleanup['privateHelperFilesAbsentAfterOperation']
+                except Exception:
+                    r['clipboardClearedAfterAttempt']=False
+                    r['clipboardCleanupErrorCode']='CLIPBOARD_CLEANUP_UNOBSERVED'
+                if r['original85CodeUnlocked86']:
+                    need(r['clipboardClearedAfterAttempt'] and r['helperPrivateFilesAbsentAfterCleanup'],
+                         'SYSTEM_CLIPBOARD_CLEANUP_UNOBSERVED')
+        finally:
+            if secret is not None:secret[:]=b'\x00'*len(secret)
+            secret=None
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
-    for name in ('adb','base-apk','candidate-apk','result'):p.add_argument('--'+name,type=Path,required=True)
+    for name in ('adb','base-apk','candidate-apk','helper-build','result'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--serial',required=True);p.add_argument('--ui-helper-sha256',required=True);args=p.parse_args(argv)
-    r={'kind':'CCB_ORIGINAL85_TO86_RECOVERY_CODE_UI_SAFE_RESULT','status':'NOT_RUN','phase':'PRECHECK','navigationPhase':None,'errorCode':None,'exactBase85Installed':False,'exactCandidate86InstalledWithR':False,'tutorialSkippedThroughUi':False,'knownUpdateDeferredThroughUi':False,'createButtonClicks':0,'original85CodeCapturedFromUiInMemory':False,'saveCheckboxOffObserved':False,'saveCheckboxClicks':0,'saveCheckboxOnObserved':False,'completeCreateClicks':0,'normal85CreationCompletedUi':False,'forceStopObserved':False,'differentColdPidObserved':False,'coldManagementLockedUiObserved':False,'originalCodeTypedCount':0,'unlockButtonClicks':0,'original85CodeUnlocked86':False,'lockManagementButtonEnabled':False,'inviteDeviceButtonEnabled':False,'boundedBodySwipes':0,'codeWrittenToFileClipboardOrOutput':False,'new86CodeCreatedOrReadInstead':False,'directOwnerOrCompanionUsed':False,'uninstallOrClearDataUsed':False,'inviteActuallyCreated':False,'humanAcceptance':False}
+    r={'kind':'CCB_ORIGINAL85_TO86_RECOVERY_CODE_UI_SAFE_RESULT','status':'NOT_RUN','phase':'PRECHECK','navigationPhase':None,'errorCode':None,
+       'exactBase85Installed':False,'exactCandidate86InstalledWithR':False,'tutorialSkippedThroughUi':False,'knownUpdateDeferredThroughUi':False,
+       'createButtonClicks':0,'original85CodeCapturedFromUiInMemory':False,'saveCheckboxOffObserved':False,'saveCheckboxClicks':0,
+       'saveCheckboxOnObserved':False,'completeCreateClicks':0,'normal85CreationCompletedUi':False,'forceStopObserved':False,
+       'differentColdPidObserved':False,'coldManagementLockedUiObserved':False,'originalCodeTypedCount':0,'originalCodePastedCount':0,
+       'unlockButtonClicks':0,'original85CodeUnlocked86':False,'lockManagementButtonEnabled':False,'inviteDeviceButtonEnabled':False,
+       'managementControlsObservedBeforeClipboardCleanup':False,'boundedBodySwipes':0,'codeWrittenToHostFileOrOutput':False,
+       'codeWrittenToSystemClipboard':False,'clipboardClearedAfterAttempt':None,'helperPrivateFilesAbsentAfterCleanup':None,
+       'clipboardCleanupErrorCode':None,'new86CodeCreatedOrReadInstead':False,'directOwnerOrCompanionUsed':False,
+       'uninstallOrClearDataUsed':False,'inviteActuallyCreated':False,'humanAcceptance':False}
     try:execute(args,r);rc=0
     except Exception as e:
         known=isinstance(e,Refused) or (type(e).__name__=='Refused' and re.fullmatch(r'[A-Z0-9_]{1,100}',str(e)) is not None)

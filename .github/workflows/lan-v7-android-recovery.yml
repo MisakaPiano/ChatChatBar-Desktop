@@ -25,17 +25,20 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
       - name: Authenticate the two delivered APKs
         env:
           GH_TOKEN: ${{ github.token }}
         run: python -B tools/lan-next-control/v7_android_scan_inputs.py --with-base85
+      - name: Build the independently signed test-only clipboard helper
+        run: |
+          python -B tools/lan-next-control/synthetic_clipboard/build_clipboard_helper.py --sdk "$ANDROID_HOME" --java-home "$JAVA_HOME" --private-root "$RUNNER_TEMP/ccb-v7-clipboard" --safe-result "$RUNNER_TEMP/ccb-v7-scan/android-recovery-clipboard-build.json"
       - name: Enable cloud emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Save the original synthetic code in memory, upgrade in place, and unlock
+      - name: Capture the original85 UI code, upgrade in place, and unlock through normal system Paste
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 26
@@ -45,10 +48,12 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             set -euo pipefail
-            python -B tools/lan-next-control/v7_android_recovery_control.py --adb adb --serial emulator-5554 --base-apk "$RUNNER_TEMP/ccb-v7-scan/base85.apk" --candidate-apk "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk" --ui-helper-sha256 4ea5527a441b06d5fe5d6c4015c3aa4521a6d790c91bc5d798795851a926c568 --result "$RUNNER_TEMP/ccb-v7-scan/android-recovery-result.json"
+            python -B tools/lan-next-control/v7_android_recovery_control.py --adb adb --serial emulator-5554 --base-apk "$RUNNER_TEMP/ccb-v7-scan/base85.apk" --candidate-apk "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk" --helper-build "$RUNNER_TEMP/ccb-v7-clipboard/helper-build.json" --ui-helper-sha256 4ea5527a441b06d5fe5d6c4015c3aa4521a6d790c91bc5d798795851a926c568 --result "$RUNNER_TEMP/ccb-v7-scan/android-recovery-result.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: v7-android-recovery-safe-result
-          path: ${{ runner.temp }}/ccb-v7-scan/android-recovery-result.json
+          path: |
+            ${{ runner.temp }}/ccb-v7-scan/android-recovery-result.json
+            ${{ runner.temp }}/ccb-v7-scan/android-recovery-clipboard-build.json
           if-no-files-found: ignore
