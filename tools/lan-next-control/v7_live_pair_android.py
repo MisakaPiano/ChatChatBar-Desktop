@@ -297,6 +297,7 @@ def run_pairing(args,r,a,ui,clipboard,clipboard_result):
             field_resolver=lambda adb,field:resolve_invitation_target(adb,field,ui),
             length_reader=lambda adb,field,target:scoped_invitation_count(adb.ui(),ui),
             allow_unobservable_empty=True,
+            use_paste_key=True,
         )
     finally:
         payload[:] = bytes(len(payload))

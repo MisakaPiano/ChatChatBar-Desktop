@@ -2,7 +2,7 @@
 from pathlib import Path
 import desktop_group_ui_control as control
 
-SOURCE = "f5fc060546eb9479b2566375761903d383c538b1"
+SOURCE = "9340d10306b06051833e33a03d47ab6d69c4c5b3"
 CLASS = "com.example.chatbar.desktop.lanSync.DesktopV7LiveSyntheticHostDraftTest"
 METHOD = "liveProductionLanInvitesActualAndroidAndRetainsSyntheticMessageAndImage"
 TARGET = "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/lanSync/DesktopV7LiveSyntheticHostDraftTest.kt"

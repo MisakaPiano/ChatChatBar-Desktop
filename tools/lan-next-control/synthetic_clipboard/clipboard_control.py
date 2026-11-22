@@ -366,7 +366,7 @@ class Bridge:
         r['ordinaryPasteHardwareAttempts']=1;r['ordinaryPasteAction']='KEYCODE_PASTE'
         self.a.run('shell','-T','input','keyevent','KEYCODE_PASTE')
         r['hardwarePasteCommandAccepted']=True;r['ordinaryPasteHardwarePairs']=1
-    def paste_bytes(self,payload,kind,field,target_sha,r,*,field_resolver=None,length_reader=None,allow_unobservable_empty=False):
+    def paste_bytes(self,payload,kind,field,target_sha,r,*,field_resolver=None,length_reader=None,allow_unobservable_empty=False,use_paste_key=False):
         expected=payload_bytes(payload,kind);need((kind=='invitation')==(field=='invitation'),'PAYLOAD_FIELD_MISMATCH')
         installed_hash(self.a,TARGET,target_sha);need(self.target_foreground(),'TARGET_CCB_NOT_FOREGROUND')
         self.resolve_field(field,field_resolver,True,allow_unobservable_empty,r)
@@ -376,18 +376,21 @@ class Bridge:
         time.sleep(.2)
         second=self.resolve_field(field,field_resolver,True,allow_unobservable_empty,r)
         need(first.bounds==second.bounds and first.mode==second.mode,'RETURNED_FIELD_NOT_STABLE')
-        b=second.bounds
-        self.a.tap(b);x=(b[0]+b[2])//2;y=(b[1]+b[3])//2;r['phase']='ORDINARY_PASTE_MENU'
-        self.a.run('shell','-T','input','swipe',str(x),str(y),str(x),str(y),'850')
-        deadline=time.monotonic()+8;previous=None
-        while time.monotonic()<deadline:
-            current=paste_target(self.a.ui())
-            if current is not None and current==previous:self.a.tap(current);r['ordinaryPasteMenuClicks']=1;break
-            previous=current;time.sleep(.2)
-        if r['ordinaryPasteMenuClicks']==1:r['ordinaryPasteAction']='MENU'
-        elif getattr(self,'expected_api',None)==26:
+        if use_paste_key:
             self.hardware_paste(field,target_sha,field_resolver,length_reader,allow_unobservable_empty,r)
-        else:raise Refused('ORDINARY_PASTE_MENU_NOT_OBSERVED')
+        else:
+            b=second.bounds
+            self.a.tap(b);x=(b[0]+b[2])//2;y=(b[1]+b[3])//2;r['phase']='ORDINARY_PASTE_MENU'
+            self.a.run('shell','-T','input','swipe',str(x),str(y),str(x),str(y),'850')
+            deadline=time.monotonic()+8;previous=None
+            while time.monotonic()<deadline:
+                current=paste_target(self.a.ui())
+                if current is not None and current==previous:self.a.tap(current);r['ordinaryPasteMenuClicks']=1;break
+                previous=current;time.sleep(.2)
+            if r['ordinaryPasteMenuClicks']==1:r['ordinaryPasteAction']='MENU'
+            elif getattr(self,'expected_api',None)==26:
+                self.hardware_paste(field,target_sha,field_resolver,length_reader,allow_unobservable_empty,r)
+            else:raise Refused('ORDINARY_PASTE_MENU_NOT_OBSERVED')
         r['phase']='VERIFY_WIDGET_TEXT'
         deadline=time.monotonic()+5;seen=None
         while time.monotonic()<deadline:

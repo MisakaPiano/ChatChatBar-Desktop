@@ -26,7 +26,7 @@ import kotlin.test.Test
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
-/** Test-only f5fc overlay, source reviewed only: no local native execution.
+/** Test-only frozen candidate overlay, source reviewed only: no local native execution.
  * Actual DesktopAppContainer, Windows DPAPI, ordinary repositories and default production Local LAN.
  * No Compose UI/packagedMain, custom Network, UDP success claim, APK installation or Android mutation.
  * Android UI/controller must independently attest its actual read-only message/image observations. */
@@ -252,7 +252,7 @@ class DesktopV7LiveSyntheticHostDraftTest {
         } }
     }
     companion object {
-        private const val SOURCE = "f5fc060546eb9479b2566375761903d383c538b1"
+        private const val SOURCE = "9340d10306b06051833e33a03d47ab6d69c4c5b3"
         private const val CARD = "ccb-v7-lab-card"
         private const val SESSION = "ccb-v7-lab-session"
         private const val MESSAGE = "ccb-v7-lab-message"

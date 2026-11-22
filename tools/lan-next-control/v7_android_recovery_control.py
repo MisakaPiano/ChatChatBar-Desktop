@@ -160,12 +160,13 @@ def visible_label(root,label):
                 if x2>x1 and y2>y1:return True
     return False
 
-def scroll_body(a,root,r):
+def scroll_body(a,root,r,backward=False):
     x1,y1,x2,y2=outer_scroll(root)
     x=(x1+x2)//2
     height=y2-y1
     lower, upper=y1+height*3//4,y1+height//4
-    a.run('shell','input','swipe',str(x),str(lower),str(x),str(upper),'300')
+    start,finish=(upper,lower) if backward else (lower,upper)
+    a.run('shell','input','swipe',str(x),str(start),str(x),str(finish),'300')
     r['boundedBodySwipes']+=1
 
 def show_target(a,ui,label,r,require_enabled=True):
@@ -238,6 +239,149 @@ def wait_ready(a,ui,r):
         time.sleep(.4)
     raise Refused('READY_UI_NOT_OBSERVED')
 
+def management_control(root,ui,label):
+    parents={child:parent for parent in root.iter() for child in parent}
+    identities=set();explicit_disabled=False
+    for node in root.iter('node'):
+        if node.get('package')!=PACKAGE or label not in ui.node_labels(node) or not ui.bounds(node):continue
+        anchor=node;current=node
+        while current is not None and current.get('package')==PACKAGE:
+            explicit_disabled=explicit_disabled or current.get('enabled')=='false'
+            if current.get('clickable')=='true' or current.get('class')=='android.widget.Button':
+                anchor=current;break
+            current=parents.get(current)
+        if ui.bounds(anchor):identities.add(ui.bounds(anchor))
+    if not identities:return {'visible':False,'enabled':None,'unique':False}
+    need(len(identities)==1,'POST_SUBMIT_MANAGEMENT_CONTROL_AMBIGUOUS')
+    positive=ui.click_target(root,label) is not None
+    enabled=None if positive and explicit_disabled else True if positive else False if explicit_disabled else None
+    return {'visible':True,'enabled':enabled,'unique':True}
+
+def group_resumed(a):
+    component=PACKAGE+'/com.example.chatbar.lanSync.LanSyncActivity'
+    raw=a.run('shell','dumpsys','activity','activities')
+    return any(component in line for line in raw.splitlines() if 'mResumedActivity' in line or 'topResumedActivity' in line)
+
+def current_group_window(a):
+    component=PACKAGE+'/com.example.chatbar.lanSync.LanSyncActivity'
+    raw=a.run('shell','dumpsys','window','windows')
+    return any(component in line for line in raw.splitlines() if 'mCurrentFocus=' in line)
+
+def ime_service_shown(raw):
+    prefix=raw.split('Input method client state for ',1)[0]
+    values=re.findall(r'\bmInputShown=(true|false)\b',prefix)
+    return values[0]=='true' if len(values)==1 else None
+
+def dismiss_current_group_ime(a,r):
+    # Only two fresh positive current-client/window checks permit ONE Back.
+    # Missing/stale IME information never permits a navigation Back.
+    r['postSubmitImeDismissDisposition']='NOT_CURRENT_CCB_IME'
+    for sample in range(2):
+        raw=a.run('shell','dumpsys','input_method')
+        if not (ime_service_shown(raw) is True and clipboard_control.current_ccb_password_ime(raw)):
+            return False
+        if not group_resumed(a) or not current_group_window(a):
+            r['postSubmitImeDismissDisposition']='GROUP_WINDOW_UNCONFIRMED';return False
+        if sample==0:time.sleep(.15)
+    r['postSubmitImeShownInCurrentCcb']=True
+    r['postSubmitImeDismissAttempts']=1
+    a.run('shell','input','keyevent','KEYCODE_BACK')
+    time.sleep(.25)
+    need(group_resumed(a),'GROUP_PAGE_LOST_DURING_IME_DISMISSAL')
+    after=ime_service_shown(a.run('shell','dumpsys','input_method'))
+    r['postSubmitImeDismissed']=not after if after is not None else None
+    r['postSubmitImeDismissDisposition']='HIDDEN_OBSERVED' if after is False else 'REQUESTED_HIDDEN_UNCONFIRMED'
+    return True
+
+def observe_unlocked_management(a,ui,r,clipboard,clipboard_result):
+    # Same existing45s window; no re-input, second submit, retry, Owner call or invite click.
+    start=time.monotonic();deadline=start+45;next_scroll=start+1.5
+    down=up=lock_samples=0;ime_checked=False
+    r.update(phase='OBSERVE_POST_SUBMIT_MANAGEMENT',postSubmitSampleCount=0,postSubmitObservations=[],
+        lockManagementButtonVisible=False,inviteDeviceButtonVisible=False,
+        lockManagementButtonVisibleEverObserved=False,inviteDeviceButtonVisibleEverObserved=False,
+        lockManagementButtonEnabled=None,inviteDeviceButtonEnabled=None,postSubmitRelockObserved=False,
+        lockManagementButtonEnabledEverObserved=False,inviteDeviceButtonEnabledEverObserved=False,
+        postSubmitDownSwipes=0,postSubmitUpSwipes=0,postSubmitLastAction='OBSERVE',
+        postSubmitImeDismissAttempts=0,postSubmitImeDismissed=None,postSubmitImeShownInCurrentCcb=False,
+        postSubmitImeDismissDisposition='NOT_CHECKED',managementUnlockEvidence='UNOBSERVED')
+    while time.monotonic()<deadline:
+        root=a.ui();active=group_resumed(a)
+        need(active,'GROUP_PAGE_LOST_POST_SUBMIT')
+        values=set().union(*(ui.node_labels(n) for n in root.iter('node') if n.get('package')==PACKAGE))
+        if any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in values):
+            clipboard.observe_product_submission('recovery',lambda adb,field:'PRODUCT_REJECTED_UI_OBSERVED',clipboard_result)
+            raise Refused('ORIGINAL_CODE_UNLOCK_UI_ERROR')
+        lock=management_control(root,ui,'锁定管理');invite=management_control(root,ui,'邀请设备')
+        locked_form=visible_label(root,'恢复码 · 临时解锁管理')
+        count=r['postSubmitSampleCount']+1;r['postSubmitSampleCount']=count
+        sample={'sample':count,'seconds':min(45,max(0,int(time.monotonic()-start))),
+            'afterAction':r['postSubmitLastAction'],'groupActive':active,
+            'lockVisible':lock['visible'],'lockEnabled':lock['enabled'],
+            'inviteVisible':invite['visible'],'inviteEnabled':invite['enabled'],
+            'lockedFormVisible':locked_form,'nearbyLabelVisible':any(x.startswith('附近设备 · ') for x in values),
+            'cloudLabelVisible':any(x.startswith('网盘 · ') for x in values)}
+        r['postSubmitLastControls']=sample
+        history=r['postSubmitObservations'];history.append(sample)
+        if len(history)>16:del history[4] # first4 + last12, safe projections only
+        for prefix,observation in (('lockManagementButton',lock),('inviteDeviceButton',invite)):
+            r[prefix+'Visible']=observation['visible']
+            r[prefix+'VisibleEverObserved']=r[prefix+'VisibleEverObserved'] or observation['visible']
+            if observation['visible']:r[prefix+'Enabled']=observation['enabled']
+            r[prefix+'EnabledEverObserved']=r[prefix+'EnabledEverObserved'] or observation['enabled'] is True
+        if r['original85CodeUnlocked86'] and locked_form:
+            r['postSubmitRelockObserved']=True
+            raise Refused('MANAGEMENT_RELOCKED_DURING_OBSERVATION')
+        need(not (locked_form and lock['visible']),'POST_SUBMIT_MANAGEMENT_UI_INCONSISTENT')
+        lock_samples=lock_samples+1 if lock['visible'] and lock['unique'] else 0
+        if lock_samples>=2 and not r['original85CodeUnlocked86']:
+            # Fixed f5fc panel renders this unique control only when managementUnlocked.
+            r['original85CodeUnlocked86']=True
+            r['managementUnlockedObservedBeforeClipboardCleanup']=True
+            r['managementUnlockEvidence']='UNIQUE_LOCK_VISIBLE_TWO_FRESH_SAMPLES'
+            clipboard.observe_product_submission('recovery',lambda adb,field:'MANAGEMENT_UNLOCKED_UI_OBSERVED',clipboard_result)
+        if (r['original85CodeUnlocked86'] and r['lockManagementButtonEnabled'] is True
+                and r['inviteDeviceButtonEnabled'] is True
+                and (lock['enabled'] is True or invite['enabled'] is True)):
+            # Visibility may differ across ordinary scrolls in the same active group.
+            r['managementControlsObservedBeforeClipboardCleanup']=True
+            r['controlsEnabledInSameSample']=lock['enabled'] is True and invite['enabled'] is True
+            r['controlsObservedAcrossOrdinaryScroll']=not r['controlsEnabledInSameSample']
+            return
+        if not ime_checked:
+            ime_checked=True
+            if lock['visible'] or invite['enabled'] is True:
+                r['postSubmitImeDismissDisposition']='UNLOCK_CONTROL_ALREADY_VISIBLE'
+            elif dismiss_current_group_ime(a,r):
+                r['postSubmitLastAction']='DISMISS_CONFIRMED_IME';continue # new geometry required
+        # Hold a newly visible lock for its independent second fresh sample.
+        if lock_samples==1:time.sleep(.4);continue
+        if time.monotonic()>=next_scroll and down+up<6:
+            backward=lock['visible'] and not invite['visible'] or down>=4
+            if backward and up>=2:backward=False
+            if not backward and down>=4:
+                next_scroll=deadline
+            else:
+                try:
+                    scroll_body(a,root,r,backward=backward)
+                    if backward:up+=1
+                    else:down+=1
+                    r['postSubmitDownSwipes']=down;r['postSubmitUpSwipes']=up
+                    r['postSubmitLastAction']='SCROLL_UP' if backward else 'SCROLL_DOWN'
+                except Refused as error:
+                    if str(error) not in ('VISIBLE_SCROLL_VIEW_REQUIRED','SCROLL_VIEW_AMBIGUOUS'):raise
+                    r['postSubmitLastAction']='SCROLL_BODY_UNAVAILABLE';next_scroll=deadline
+                next_scroll=max(next_scroll,time.monotonic()+1.0)
+        time.sleep(.4)
+    if r['original85CodeUnlocked86']:
+        if not r['inviteDeviceButtonVisibleEverObserved']:raise Refused('MANAGEMENT_UNLOCKED_INVITE_NOT_VISIBLE')
+        if r['inviteDeviceButtonEnabled'] is False:raise Refused('MANAGEMENT_UNLOCKED_INVITE_DISABLED')
+        if r['inviteDeviceButtonEnabled'] is not True:raise Refused('MANAGEMENT_UNLOCKED_INVITE_ENABLED_UNOBSERVED')
+        if r['lockManagementButtonEnabled'] is False:raise Refused('MANAGEMENT_UNLOCKED_LOCK_DISABLED')
+        if r['lockManagementButtonEnabled'] is True:raise Refused('MANAGEMENT_UNLOCKED_CONTROLS_NOT_VISIBLE_AT_CONFIRMATION')
+        raise Refused('MANAGEMENT_UNLOCKED_LOCK_ENABLED_UNOBSERVED')
+    raise Refused('MANAGEMENT_UNLOCK_NOT_OBSERVED')
+
 def execute(args,r):
     need(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS') in ('Windows','Linux'),'GITHUB_WINDOWS_OR_LINUX_ONLY')
     need(re.fullmatch(r'emulator-[0-9]+',args.serial) is not None,'EMULATOR_SERIAL_REQUIRED')
@@ -290,19 +434,8 @@ def execute(args,r):
             show_target(a,ui,'解锁管理',r)
         ui.wait_click(a,'解锁管理',time.monotonic()+30,result=r,phase='submit-original-recovery-code')
         r['unlockButtonClicks']=1
-        deadline=time.monotonic()+45
-        while time.monotonic()<deadline:
-            root=a.ui()
-            if any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in ui.labels(root)):
-                clipboard.observe_product_submission('recovery',lambda adb,field:'PRODUCT_REJECTED_UI_OBSERVED',clipboard_result)
-                raise Refused('ORIGINAL_CODE_UNLOCK_UI_ERROR')
-            if ui.click_target(root,'锁定管理') is not None and ui.click_target(root,'邀请设备') is not None:
-                clipboard.observe_product_submission('recovery',lambda adb,field:'MANAGEMENT_UNLOCKED_UI_OBSERVED',clipboard_result)
-                r['lockManagementButtonEnabled']=True;r['inviteDeviceButtonEnabled']=True;r['original85CodeUnlocked86']=True
-                r['managementControlsObservedBeforeClipboardCleanup']=True
-                r['phase']='DONE';r['status']='ORIGINAL85_RECOVERY_CODE_COLD_UNLOCK86_UI_OBSERVED';return
-            time.sleep(.4)
-        raise Refused('UNLOCKED_MANAGEMENT_CONTROLS_NOT_OBSERVED')
+        observe_unlocked_management(a,ui,r,clipboard,clipboard_result)
+        r['phase']='DONE';r['status']='ORIGINAL85_RECOVERY_CODE_COLD_UNLOCK86_UI_OBSERVED';return
     finally:
         try:
             if clipboard is not None and clipboard_result is not None and clipboard_result['helperInstalled']:
@@ -319,7 +452,7 @@ def execute(args,r):
                 except Exception:
                     r['clipboardClearedAfterAttempt']=False
                     r['clipboardCleanupErrorCode']='CLIPBOARD_CLEANUP_UNOBSERVED'
-                if r['original85CodeUnlocked86']:
+                if r['status']=='ORIGINAL85_RECOVERY_CODE_COLD_UNLOCK86_UI_OBSERVED':
                     need(r['clipboardClearedAfterAttempt'] and r['helperPrivateFilesAbsentAfterCleanup'],
                          'SYSTEM_CLIPBOARD_CLEANUP_UNOBSERVED')
         finally:
