@@ -38,15 +38,14 @@ object MarkdownCodeFences {
 
     fun blocks(content: String): List<Block> = blocks(content, null)
 
-    internal fun blocks(content: String, onLazyQuoteLine: ((Int) -> Unit)?,
-        onIndentedCodeLine: ((IntRange) -> Unit)? = null): List<Block> =
-        findBlocks(content, onLazyQuoteLine, onIndentedCodeLine) {}
+    internal fun findBlocks(content: String, onContainerLine: (Int) -> Unit): List<Block> =
+        blocks(content, onLazyQuoteLine = null, onContainerLine = onContainerLine)
 
-    internal fun findBlocks(
+    internal fun blocks(
         content: String,
-        onLazyQuoteLine: ((Int) -> Unit)? = null,
+        onLazyQuoteLine: ((Int) -> Unit)?,
         onIndentedCodeLine: ((IntRange) -> Unit)? = null,
-        onContainerLine: (Int) -> Unit,
+        onContainerLine: ((Int) -> Unit)? = null,
     ): List<Block> = buildList {
         val containers = mutableListOf<Container>()
         var offset = 0
@@ -98,14 +97,16 @@ object MarkdownCodeFences {
                 }
             }
 
-            if (containers.isNotEmpty()) onContainerLine(start)
+            if (containers.isNotEmpty()) onContainerLine?.invoke(start)
             val remainder = line.substring(cursor).removeSuffix("\r")
             val match = fenceLine.matchEntire(remainder)
             val existing = open
             if (match == null) {
                 if (existing == null) {
                     val startsIndentedCode = !paragraph && dedentedParagraph.isEmpty() && remainder.startsWith("    ")
-                    if (startsIndentedCode) onIndentedCodeLine?.invoke(start until start + rawLine.length)
+                    if (startsIndentedCode && remainder.isNotBlank()) {
+                        onIndentedCodeLine?.invoke(start until start + rawLine.length)
+                    }
                     val endsSetextHeading = paragraph && setextUnderline.matches(remainder)
                     paragraph = !startsIndentedCode && remainder.isNotBlank() && !thematicBreak.matches(remainder) &&
                         !endsSetextHeading && !heading.containsMatchIn(remainder)

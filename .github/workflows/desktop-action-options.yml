@@ -172,6 +172,32 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'MODERN_ORIGIN_POSITIVE_NOT_RESTORED' }
           }
+      - name: Reproduce prefixed Chinese letter choice loss on the exact prior classifier
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '7afc68c40fb919a5815071c4e498cb0630e3210f'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ChatHistoryActionProjection.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PREFIX_CHOICE_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopActionOptionsRequestTest.actual wire retains a prefixed Chinese B choice but ordinary B station prose remains independent' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopActionOptionsRequestTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PREFIX_CHOICE_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Prefixed choice source admission differs*') { throw 'PREFIX_CHOICE_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-options/negative-prefix-choice.xml'
+            $prior | Set-Content 'review-action-options/negative-prefix-choice-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'PREFIX_CHOICE_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify shared declared rule transport and projections
         working-directory: app
         run: >-

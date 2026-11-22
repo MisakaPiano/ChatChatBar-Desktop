@@ -15,6 +15,30 @@ import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopActionOptionsRequestTest {
+    @Test fun `actual wire retains a prefixed Chinese B choice but ordinary B station prose remains independent`() = runBlocking {
+        val rule = ActionOptionsFormat("<choices>", "</choices>", "", ActionOptionLabels.LETTERS)
+        for ((reference, retain) in listOf(
+            "那就B保持安静并贴着墙走" to true,
+            "那我就b　保持安静并贴着墙走。" to true,
+            "「那么我们就B保持安静并贴着墙走。」" to true,
+            "那就B站大厅门口见面吧。" to false,
+            "我在B站看完讲解以后继续整理行李。" to false,
+            "那就C保持安静并贴着墙走" to false,
+        )) fixture { f ->
+            f.add(MessageRole.USER, ordinary)
+            val source = f.add(MessageRole.ASSISTANT,
+                "Story before choices.\n<choices>\nA) SOURCE_OPTION_A\nB) SOURCE_OPTION_B\n</choices>")
+            f.chats.updateMessage(source.copy(actionOptionsFormat = rule))
+            f.sources[f.sources.lastIndex] = assertNotNull(f.chats.getMessage(source.id, "s"))
+            val (wire, result) = f.wire(reference)
+            assertEquals(retain, wire.any { "SOURCE_OPTION_B" in it },
+                "Prefixed choice source admission differs for $reference")
+            assertEquals(1, wire.count { it == reference })
+            assertEquals(reference, result.currentUser.content)
+            f.unchanged()
+        }
+    }
+
     private fun options(tag: String) = "————————\n【行动选项】\n1. ${tag}_UNTAKEN_LEFT\n2. ${tag}_UNTAKEN_RIGHT\n————————"
     private val ordinary = "我推开木门，走到窗边观察街上的雨。"
     private val imageCaption = "依照图示去做会更合适，请直接推进后续剧情。"
