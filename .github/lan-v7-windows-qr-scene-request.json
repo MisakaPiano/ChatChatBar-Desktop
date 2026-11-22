@@ -1,0 +1,35 @@
+{
+  "kind": "CCB_V7_WINDOWS_RETAINED_QR_SCENE_REQUEST_V1",
+  "format": 1,
+  "oldSourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+  "sourceSha": "c24a10927539b447a53f181dd6ff0020b03ec849",
+  "oldGroupFixtureSha256": "ff93b77a2f3a8caddb629ee6691616bde5dcb34b918804baa48333b99e790dcd",
+  "retainedBridgeSha256": "896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1",
+  "fixtureSha256": "3abab7a75a17acf4de7ae5db791200a75c27b92416391a5ea554b8f55f05e3ee",
+  "runtime": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "sha256": "96aab8ed11346c38a6b12cbb5190c374cd65ace8e0cef79eeb1724b21af9ee71"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/DesktopLanSyncPanel.kt",
+      "sha256": "6bcc6df86c9f2f6f591a8218f12f1ffc721ea7bab42f2f058c2d20da9c3a39d8"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/DesktopLanSyncGroupPanel.kt",
+      "sha256": "cd54aee5e87131fe37f78888ef5f6e82fbf6c51a2e0f8645e896a016ec01eadd"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/DesktopLanSyncSensitiveClipboard.kt",
+      "sha256": "e87238d96bd2e3f49d0a16c7574c2cf6908d246912a4b0270ee9b1d025f210d8"
+    },
+    {
+      "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt",
+      "sha256": "626a9803f18e6eee5dd219ab11667ece9477c5e106ce8957de3a0f925170ed08"
+    }
+  ]
+}

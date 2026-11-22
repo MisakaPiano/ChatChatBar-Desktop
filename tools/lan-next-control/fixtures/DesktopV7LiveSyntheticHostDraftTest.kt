@@ -252,7 +252,7 @@ class DesktopV7LiveSyntheticHostDraftTest {
         } }
     }
     companion object {
-        private const val SOURCE = "9340d10306b06051833e33a03d47ab6d69c4c5b3"
+        private const val SOURCE = "c24a10927539b447a53f181dd6ff0020b03ec849"
         private const val CARD = "ccb-v7-lab-card"
         private const val SESSION = "ccb-v7-lab-session"
         private const val MESSAGE = "ccb-v7-lab-message"

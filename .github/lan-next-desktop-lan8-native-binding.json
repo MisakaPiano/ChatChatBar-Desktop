@@ -1,12 +1,12 @@
 {
   "kind": "CCB_LAN7_LAN8_NATIVE_BINDING_V1",
   "baseSourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
-  "candidateSourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+  "candidateSourceSha": "c24a10927539b447a53f181dd6ff0020b03ec849",
   "runtimeFiles": [
     {
       "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
       "baseSha256": "cadabb582ffd45d3e393ffa1cc7cd5013ce12bb758cc29f8a90461efcda2e75a",
-      "candidateSha256": "ae8de8e63fe753a1d735f6e52bf7fc3e8f3b9eb5ef14441e550d1aa1848b5c99"
+      "candidateSha256": "11c4fd24715132b447cfc21e6afdb9c0ead7dc13c0d8caf6ff4dfc66ee14dc37"
     },
     {
       "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
@@ -26,7 +26,7 @@
   ],
   "timestampSourceBindings": {
     "baseSourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
-    "candidateSourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+    "candidateSourceSha": "c24a10927539b447a53f181dd6ff0020b03ec849",
     "files": [
       {
         "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatScrollPosition.kt",
@@ -47,6 +47,6 @@
   },
   "retainedGroupBridgeSha256": "896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1",
   "originalFixtureSha256": "089834f034fce8f67b94f823c8802392891a30abf77455fc27487fc28cb99a9f",
-  "reboundFixtureSha256": "f2ef48df29f6ec2173b9c1812510a93f426610a0449a21be1cac53c95ef8c414",
+  "reboundFixtureSha256": "ff93b77a2f3a8caddb629ee6691616bde5dcb34b918804baa48333b99e790dcd",
   "emptyObjectProofSha256": "49c24dfaf49bb08a375bd00726b91d455b1e9dd81333150f9b0887a635bf171e"
 }
