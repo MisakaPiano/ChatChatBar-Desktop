@@ -26,6 +26,7 @@ jobs:
           bash ./gradlew :sharedCore:test \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellingAfterProofRejectsTheStaleApprovalWithoutWritingNamesOrMembership' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellingDuringReplacementDoesNotIssueTheQueuedInvitation' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellationAfterRootIntentDoesNotReportSuccessOrLoseTheApprovedMember' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupInvitationTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest' \

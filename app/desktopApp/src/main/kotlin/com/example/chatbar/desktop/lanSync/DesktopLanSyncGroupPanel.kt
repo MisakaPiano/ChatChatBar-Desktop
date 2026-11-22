@@ -46,6 +46,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             StatusText(lanSyncGroupDescription)
             if (state.shelvedJoins.isEmpty()) BootstrapButton("创建新设备组", enabled = !interactionBlocked) { actions.createGroup() }
+            else StatusText("加入其他设备组后，需先处理当前组，才能恢复暂存申请。")
             state.shelvedJoins.forEach { saved ->
                 BootstrapButton("恢复原加入申请 · ${saved.group.take(8)}", secondary = true, enabled = !interactionBlocked) {
                     actions.restoreShelvedJoin(saved.operation)

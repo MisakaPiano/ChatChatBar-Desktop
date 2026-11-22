@@ -171,6 +171,9 @@ class LanSyncGroupInvitationTest {
         generateSequence(failure) { it.cause }.forEach { assertFalse(it.message.orEmpty().contains(marker)) }
         val bad = "CCB-GROUP-JOIN1:" + Base64.getUrlEncoder().withoutPadding().encodeToString(("{\"token\":\"" + marker).toByteArray())
         val decode = assertFailsWith<IllegalStateException> { LanSyncGroupInviteOffer.parse(bad, t.wall) }
+        assertEquals("SYNC_GROUP_INVITE_VERSION", assertFailsWith<IllegalArgumentException> {
+            LanSyncGroupInviteOffer.parse("CCB-GROUP-JOIN2:QUJD", t.wall)
+        }.message)
         assertEquals("SYNC_GROUP_INVITE_OFFER", decode.message); assertNull(decode.cause)
     }
 

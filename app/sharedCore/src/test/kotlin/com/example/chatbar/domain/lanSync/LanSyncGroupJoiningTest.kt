@@ -237,7 +237,7 @@ class LanSyncGroupJoiningTest {
     }
 
     @Test fun approvedJoinCanContinueAtAMovedPinnedStoreWithoutChangingItsOfferOrRecipient() = fixture { f ->
-        f.admit(f.prove(f.owner()))
+        val proof = f.prove(f.owner())
         val owner = f.owner()
         val profile = f.control()
         val originalKey = Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected"))
@@ -267,9 +267,14 @@ class LanSyncGroupJoiningTest {
         try {
             servingPort = transport.start()
             assertFailsWith<LanSyncJoinRouteFailure> { owner.activate(owner.bootstrapStore(network)) }
-            assertNull(owner.discoveredBootstrapStore(network))
+            assertTrue(owner.discoveredBootstrapStores(network).isEmpty())
             wrongHint = false
-            val active = owner.activate(requireNotNull(owner.discoveredBootstrapStore(network)))
+            // The ordinary authenticated store rejects the still-unapproved client at this same address.
+            assertFailsWith<IOException> { owner.activate(owner.discoveredBootstrapStores(network).single()) }
+            assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, owner.profile()?.stage)
+            assertFalse(requireNotNull(owner.profile()).membershipVerified)
+            f.admit(proof)
+            val active = owner.activate(owner.discoveredBootstrapStores(network).single())
             assertEquals(LanSyncGroupJoinStage.READY, active.profile.stage)
             assertEquals(profile.getValue("offer"), f.control().getValue("offer"))
             assertEquals(profile.getValue("operation"), f.control().getValue("operation"))

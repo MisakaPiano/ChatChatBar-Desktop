@@ -201,7 +201,7 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
 /** Already encrypted objects only. connect must enforce LAN address policy, pinning and client TLS identity. */
 class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privateRoot: Path,
     private val connect: () -> SSLSocket, private val observe: (String, Long) -> Unit = { _, _ -> },
-    private val authenticatedConnect: Boolean = false) : CiphertextStore {
+    private val authenticatedConnect: Boolean = false, private val readTimeoutMillis: Int? = null) : CiphertextStore {
     private val cache = LanSyncResourceStore(privateRoot.resolve("ciphertext-cache"))
     override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED,
         resumableByteUpload = true, untrustedCandidateVariants = true)
@@ -209,7 +209,9 @@ class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privat
         descriptor: CiphertextDescriptor? = null, cursor: String? = null, pageSize: Int = 100, offset: Long = 0) =
         GroupStoreRequest(GroupStoreWire.PROTOCOL, group, command, key, operation, descriptor, cursor, pageSize, offset)
     private fun <T> exchange(request: GroupStoreRequest, work: (LanSyncWire) -> T): T = connect().use { socket ->
-        LanSyncTls.configure(socket); if (!authenticatedConnect) socket.startHandshake()
+        LanSyncTls.configure(socket)
+        if (!authenticatedConnect) socket.startHandshake()
+        if (readTimeoutMillis != null) socket.soTimeout = readTimeoutMillis
         LanSyncWire(socket).use { wire -> GroupStoreWire.send(wire, GroupStoreRequest.serializer(), request); work(wire) }
     }
     override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = exchange(request(GroupStoreCommand.METADATA, key)) { wire ->

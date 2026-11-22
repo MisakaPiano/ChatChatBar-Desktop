@@ -54,10 +54,12 @@ import kotlinx.serialization.json.put
         private const val WALL_SKEW_MILLIS = 30_000L
         internal const val MAX_CODE_CHARS = 16 * 1024
         private const val PREFIX = "CCB-GROUP-JOIN1:"
+        private val VERSION_PREFIX = Regex("^CCB-GROUP-JOIN[0-9]+:")
         private val HEX = Regex("[a-f0-9]{64}")
         fun parse(code: String, now: Long = System.currentTimeMillis()): LanSyncGroupInviteOffer {
             val text = code.trim()
             require(text.length <= MAX_CODE_CHARS) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
+            require(text.startsWith(PREFIX) || !VERSION_PREFIX.containsMatchIn(text)) { "SYNC_GROUP_INVITE_VERSION" }
             val offer = try {
                 require(text.startsWith(PREFIX)) { "SYNC_GROUP_INVITE_OFFER" }
                 InviteWire.json.decodeFromString(LanSyncGroupInviteOffer.serializer(), lanSyncUtf8(Base64.getUrlDecoder().decode(text.removePrefix(PREFIX))))
@@ -140,7 +142,12 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
             ledger().current().reference() == current.offer.trust.checkpoint) { "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" }
     }
     /** The TLS session supplies the signing certificate; the request supplies no claimed device ID/certificate. */
-    fun serve(socket: SSLSocket): LanSyncGroupInvitedPeer = socket.use {
+    fun serve(socket: SSLSocket): LanSyncGroupInvitedPeer {
+        var verified: LanSyncGroupInvitedPeer? = null
+        return try { exchange(socket) { verified = it } }
+        catch (error: IOException) { verified ?: throw error }
+    }
+    private fun exchange(socket: SSLSocket, onVerified: (LanSyncGroupInvitedPeer) -> Unit): LanSyncGroupInvitedPeer = socket.use {
         LanSyncTls.configure(socket); socket.soTimeout = 15_000; socket.startHandshake()
         require(socket.session.localCertificates?.single()?.encoded?.let { lanSyncHash(it) } == identity.fingerprint) { "SYNC_GROUP_INVITE_LOCAL_TLS" }
         val certificate = Base64.getEncoder().encodeToString(socket.session.peerCertificates.single().encoded)
@@ -170,8 +177,9 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
                     val peer = LanSyncGroupInvitedPeer(current.offer.trust, actor.fingerprint, hello.name,
                         SyncGroupMember(certificate, recipient.encoded), lanSyncHash(context))
                     synchronized(lock) { live(current); current.accepted = peer }
-                    try { InviteWire.send(wire, InviteDone.serializer(), InviteDone(InviteWire.PROTOCOL, current.offer.binding())) }
-                    catch (_: IOException) { /* The verified proof remains available for explicit approval. */ }
+                    // Confirmation or socket cleanup may fail after the single verified proof was retained.
+                    onVerified(peer)
+                    InviteWire.send(wire, InviteDone.serializer(), InviteDone(InviteWire.PROTOCOL, current.offer.binding()))
                     peer
                 } finally { challenge.fill(0) }
             } finally {

@@ -262,7 +262,12 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
     /** No data version is signed or app data modified by preparing the first group. */
     suspend fun prepare(request: SyncRootGroupCreateRequest, admission: SyncRootGroupCreateAdmission): LanSyncGroupEnrollmentDraft = guarded {
         requireNoAbandon()
-        require(!Files.exists(root.resolve("joining"), NOFOLLOW_LINKS)) { "SYNC_GROUP_JOINING_PROFILE_EXISTS" }
+        val joining = root.resolve("joining")
+        if (Files.exists(joining, NOFOLLOW_LINKS)) {
+            lanSyncSafe(joining, true)
+            require(Files.newDirectoryStream(joining).use { !it.iterator().hasNext() }) { "SYNC_GROUP_JOINING_PROFILE_EXISTS" }
+            Files.delete(joining)
+        }
         require(read() == null) { "SYNC_GROUP_PROFILE_ALREADY_PREPARED" }
         require(!Files.exists(root.resolve("creation"), NOFOLLOW_LINKS) && !Files.exists(root.resolve("management-vault.bin"), NOFOLLOW_LINKS)) {
             "SYNC_GROUP_UNFINISHED_CREATION_REQUIRES_RECOVERY"

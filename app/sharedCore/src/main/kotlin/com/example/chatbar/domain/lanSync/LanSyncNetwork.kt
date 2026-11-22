@@ -22,6 +22,8 @@ interface LanSyncNetwork {
     }
     fun connectInvitationOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit): SSLSocket =
         connectOwned(identity, peer, own)
+    fun connectBootstrapOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit): SSLSocket =
+        connectOwned(identity, peer, own)
     fun accepts(address: InetAddress): Boolean
     fun listening(fingerprint: String, port: Int) {}
     fun discover(fingerprint: String): Pair<String, Int>? = LanSyncDiscovery.find(fingerprint)
@@ -41,6 +43,8 @@ interface LanSyncNetwork {
         override fun connectOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit) =
             LanSyncTls.connectOwned(identity, peer.host, peer.port, peer.fingerprint, own = own)
         override fun connectInvitationOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit) =
+            LanSyncTls.connectOwned(identity, peer.host, peer.port, peer.fingerprint, handshakeTimeoutMillis = 15_000, own = own)
+        override fun connectBootstrapOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit) =
             LanSyncTls.connectOwned(identity, peer.host, peer.port, peer.fingerprint, handshakeTimeoutMillis = 15_000, own = own)
         override fun accepts(address: InetAddress) = address.isSiteLocalAddress && !address.isLoopbackAddress
         override val discoveryEnabled = true

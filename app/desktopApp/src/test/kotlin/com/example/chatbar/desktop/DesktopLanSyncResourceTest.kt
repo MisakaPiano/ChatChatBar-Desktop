@@ -31,7 +31,8 @@ class DesktopLanSyncResourceTest {
             Files.write(images.resolve("original.jpg"), bytes)
             JsonFileStorage(source).saveEntity("character_cards", "card", CharacterCard("card", "合成角色", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
             JsonFileStorage(source).saveEntity("chat_sessions", "session",
-                ChatSession("session", "card", "合成会话", chatBackground = "images/original.jpg"), ChatSession.serializer())
+                ChatSession("session", "card", "合成会话", chatBackground = "images/original.jpg", createdAt = 1, updatedAt = 1),
+                ChatSession.serializer())
             fun workspace(root: Path, state: Path) = LanSyncWorkspace(root, state, { root.resolve(it) },
                 resourceReference = { _, path -> desktopLanSyncResourceReference(root, path) },
                 validateResource = ::validateDesktopLanSyncResource)

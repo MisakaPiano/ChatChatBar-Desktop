@@ -67,6 +67,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
             CbText(lanSyncGroupDescription)
             if (state.shelvedJoins.isEmpty()) CbButton("创建新设备组", actions::createGroup, enabled = !interactionBlocked)
+            else CbText("加入其他设备组后，需先处理当前组，才能恢复暂存申请。")
             state.shelvedJoins.forEach { saved ->
                 CbButton("恢复原加入申请 · ${saved.group.take(8)}", { actions.restoreShelvedJoin(saved.operation) },
                     enabled = !interactionBlocked, variant = ButtonVariant.Secondary)

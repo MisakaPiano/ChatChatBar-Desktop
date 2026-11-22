@@ -246,8 +246,9 @@ class LanSyncGroupCoordinatorTest {
         var setupCalls = 0
         var recoveryCode: String? = null
         val reloads = AtomicInteger()
+        @Volatile var beforeExclusive: suspend () -> Unit = {}
         val platform = object : LanSyncPlatform {
-            override suspend fun exclusive(work: suspend () -> Unit) = work()
+            override suspend fun exclusive(work: suspend () -> Unit) { beforeExclusive(); work() }
             override suspend fun reload(sessionIds: Set<String>) { reloads.incrementAndGet() }
         }
         fun founder() = founder(workspace)
@@ -759,6 +760,31 @@ class LanSyncGroupCoordinatorTest {
         assertFalse(Files.exists(access.work.resolve("peer-display.protected")))
         assertFalse(Files.exists(access.work.resolve("peer-display.lock")))
         assertFalse(receiver.fingerprint in access.ledger().current().members)
+    }
+
+    @Test fun cancellingDuringReplacementDoesNotIssueTheQueuedInvitation() = fixture { f ->
+        val coordinator = readyCoordinator(f)
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation()
+        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        f.beforeExclusive = {
+            if (coordinator.state.value.status == "正在保全本机资料并准备邀请" && entered.complete(Unit)) release.await()
+        }
+        try {
+            coordinator.createInvitation(coordinator.state.value.invitation?.host)
+            withTimeout(10_000) { entered.await() }
+            coordinator.closeInvitation()
+        } finally {
+            f.beforeExclusive = {}
+            release.complete(Unit)
+        }
+        await { !coordinator.state.value.busy }
+        assertEquals("邀请已取消", coordinator.state.value.status)
+        assertNull(coordinator.state.value.invitation)
+        assertNull(coordinator.state.value.error)
     }
 
     @Test fun cancellationAfterRootIntentDoesNotReportSuccessOrLoseTheApprovedMember() = fixture { f ->

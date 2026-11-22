@@ -29,7 +29,8 @@ enum class SyncGroupBootstrapStage { WAITING_FOR_LEDGER, WAITING_FOR_KEYS, READY
 class SyncGroupBootstrapEvidence internal constructor(val trust: SyncGroupTrust, val records: List<SyncDeviceLedgerRecord>,
     internal val keys: List<SyncAdmittedGroupKey>)
 data class SyncGroupBootstrapInspection(val stage: SyncGroupBootstrapStage, val evidence: SyncGroupBootstrapEvidence?,
-    val observations: List<SyncInboxObservation>, val code: String? = null)
+    val observations: List<SyncInboxObservation>, val code: String? = null,
+    val membershipCheckpoint: SyncVersionRef? = null)
 
 /**
  * Discovery and causal metadata admission only. Encrypted evidence survives process restart.
@@ -69,8 +70,9 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, failure: String? = null) {
             statuses[key] = SyncInboxObservation(key.key, stage, failure, key.descriptor).also(observe)
         }
-        fun result(stage: SyncGroupBootstrapStage, failure: String? = null, evidence: SyncGroupBootstrapEvidence? = null) =
-            SyncGroupBootstrapInspection(stage, evidence, statuses.values.toList(), failure)
+        fun result(stage: SyncGroupBootstrapStage, failure: String? = null, evidence: SyncGroupBootstrapEvidence? = null,
+            membershipCheckpoint: SyncVersionRef? = null) =
+            SyncGroupBootstrapInspection(stage, evidence, statuses.values.toList(), failure, membershipCheckpoint)
         val ledger = SyncDeviceLedger(trust)
         val records = linkedMapOf<SyncStoreId, SyncDeviceLedgerRecord>()
         var collision = false
@@ -144,7 +146,8 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         if (records.values.any { ledger.state(it.id) == SyncVersionState.WAITING_FOR_PARENTS })
             return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE")
         val member = current.members[recipient.device]
-        if (member != null && !member.active) return result(SyncGroupBootstrapStage.DEVICE_REVOKED, "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED")
+        if (member != null && !member.active) return result(SyncGroupBootstrapStage.DEVICE_REVOKED, "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED",
+            membershipCheckpoint = current.reference().takeIf { member.recipientKey == recipient.publicKey.encoded })
         if (member?.recipientKey != recipient.publicKey.encoded)
             return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING")
         val keys = linkedMapOf<SyncStoreId, SyncAdmittedGroupKey>()
@@ -155,9 +158,10 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                 keys.putIfAbsent(candidate.context.epoch, admitted); status(key, SyncInboxStage.ENROLLMENT_KEY_VERIFIED)
             } catch (failure: Exception) { status(key, SyncInboxStage.REJECTED, code(failure)) }
         }
-        if (ledger.history().any { it.epoch !in keys }) return result(SyncGroupBootstrapStage.WAITING_FOR_KEYS, "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING")
+        if (ledger.history().any { it.epoch !in keys }) return result(SyncGroupBootstrapStage.WAITING_FOR_KEYS,
+            "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", membershipCheckpoint = current.reference())
         return result(SyncGroupBootstrapStage.READY, evidence = SyncGroupBootstrapEvidence(trust,
-            ledger.history(), Collections.unmodifiableList(keys.values.toList())))
+            ledger.history(), Collections.unmodifiableList(keys.values.toList())), membershipCheckpoint = current.reference())
     }
 
     fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject> = emptyList()): SyncInboxReconciliation {
