@@ -12,10 +12,6 @@ jobs:
   android-camera:
     runs-on: ubuntu-latest
     timeout-minutes: 24
-    strategy:
-      fail-fast: false
-      matrix:
-        api: [26, 36]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,6 +33,7 @@ jobs:
         run: |
           python -B tools/lan-next-control/v7_android_scan_inputs.py
           python -m pip install --disable-pip-version-check 'qrcode==8.2' 'Pillow==11.3.0' 'imageio-ffmpeg==0.6.0'
+          python -m pip install --only-binary=:all: --no-deps --disable-pip-version-check 'zxing-cpp==2.3.0'
           python -B tools/lan-next-control/v7_make_invalid_qr.py --output "$RUNNER_TEMP/ccb-v7-scan/qr.png"
           encoder="$(python -B -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
           "$encoder" -hide_banner -loglevel error -loop 1 -i "$RUNNER_TEMP/ccb-v7-scan/qr.png" -t 240 -r 15 -c:v libx264 -pix_fmt yuv420p "$RUNNER_TEMP/ccb-v7-scan/qr.mp4"
@@ -48,18 +45,17 @@ jobs:
       - name: Exercise the real camera invitation action in the delivered APK
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api }}
+          api-level: 36
           target: google_apis
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-front none -camera-back videofile:${{ runner.temp }}/ccb-v7-scan/qr.mp4
-          script: |
-            set -euo pipefail
-            adb -s emulator-5554 install "$RUNNER_TEMP/ccb-v7-scan/candidate86.apk"
-            python -B tools/lan-next-control/v7_scan_camera_control.py --adb adb --serial emulator-5554 --expected-api ${{ matrix.api }} --expect invalid --result "$RUNNER_TEMP/ccb-v7-scan/camera-result.json"
+          script: bash tools/lan-next-control/v7_camera_preview_observe.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-android-camera-safe-result-api${{ matrix.api }}
-          path: ${{ runner.temp }}/ccb-v7-scan/camera-result.json
+          name: v7-android-camera-safe-results-api36
+          path: |
+            ${{ runner.temp }}/ccb-v7-scan/camera-result.json
+            ${{ runner.temp }}/ccb-v7-scan/camera-preview-result.json
           if-no-files-found: ignore

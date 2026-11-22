@@ -54,21 +54,36 @@ def checked_state(root):
     return values[0] if values else None
 
 def secure_input_node(root, required=True):
-    found=[]
+    found={}
     for n in root.iter('node'):
         if n.get('package')==PACKAGE and n.get('class')=='android.widget.EditText' and n.get('enabled')=='true' and n.get('password')=='true':
             m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',n.get('bounds',''))
             if m:
                 b=tuple(map(int,m.groups()))
-                if b[2]>b[0] and b[3]>b[1]:found.append((n,b))
+                if b[2]>b[0] and b[3]>b[1]:
+                    if b not in found or n.get('focused')=='true':
+                        found[b]=n
     need(len(found)<=1 and (not required or len(found)==1),'SINGLE_RECOVERY_INPUT_REQUIRED')
-    return found[0] if found else None
+    if not found:
+        return None
+    rectangle, node=next(iter(found.items()))
+    return node, rectangle
 
 def secure_input(root):
     return secure_input_node(root)[1]
 
 def type_recovery_code(a,ui,root,secret,r):
-    a.tap(secure_input(root))
+    target=secure_input_node(root,required=False)
+    for _ in range(3):
+        if target:
+            break
+        scroll_body(a,root,r,backward=True)
+        time.sleep(.4)
+        root=a.ui()
+        target=secure_input_node(root,required=False)
+    need(target is not None,'COLD_RECOVERY_INPUT_NOT_VISIBLE')
+    r['coldRecoveryInputLocated']=True
+    a.tap(target[1])
     focus_deadline=time.monotonic()+12
     while time.monotonic()<focus_deadline:
         root=a.ui()
@@ -113,11 +128,13 @@ def visible_label(root,label):
                 if x2>x1 and y2>y1:return True
     return False
 
-def scroll_body(a,root,r):
+def scroll_body(a,root,r,backward=False):
     x1,y1,x2,y2=outer_scroll(root)
     x=(x1+x2)//2
     height=y2-y1
-    a.run('shell','input','swipe',str(x),str(y1+height*3//4),str(x),str(y1+height//4),'300')
+    lower, upper=y1+height*3//4,y1+height//4
+    start, finish=(upper,lower) if backward else (lower,upper)
+    a.run('shell','input','swipe',str(x),str(start),str(x),str(finish),'300')
     r['boundedBodySwipes']+=1
 
 def show_target(a,ui,label,r,require_enabled=True):
