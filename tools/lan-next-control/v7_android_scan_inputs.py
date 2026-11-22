@@ -1,4 +1,5 @@
-"""Authenticate the exact delivered V7 APK for the synthetic scan check."""
+"""Authenticate the delivered APKs used in the V7 Android regressions."""
+import argparse
 from pathlib import Path
 import hashlib
 import os
@@ -16,6 +17,8 @@ OUTER_BYTES = 221311422
 OUTER_SHA = "1b126a8e56ea93e69220b7f57af321e79615b7903877e559f2c79ef8781708c8"
 APK_BYTES = 109663831
 APK_SHA = "ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0"
+BASE85_BYTES = 109631063
+BASE85_SHA = "cd4434719afbffac6ef22858d6499319600aa8c96f6a80b1781c4574fb1504f7"
 
 
 def verify(path, size, digest):
@@ -25,6 +28,9 @@ def verify(path, size, digest):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--with-base85", action="store_true")
+    args = parser.parse_args()
     require(os.environ.get("GITHUB_ACTIONS") == "true"
             and os.environ.get("GITHUB_REPOSITORY") == REPOSITORY, "CI_ONLY")
     root = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True) / "ccb-v7-scan"
@@ -44,11 +50,15 @@ def main():
     with ZipFile(archive) as original:
         require(set(original.namelist()) == {"base85.apk", "seed85.apk", "candidate86.apk", "verify86.apk"}
                 and len(original.namelist()) == 4, "EXACT_SIGNED_MEMBERS")
-        apk = root / "candidate86.apk"
-        require(original.getinfo("candidate86.apk").file_size == APK_BYTES, "EXACT_CANDIDATE_MEMBER")
-        with original.open("candidate86.apk") as source, apk.open("xb") as output:
-            shutil.copyfileobj(source, output, 1024 * 1024)
-    verify(apk, APK_BYTES, APK_SHA)
+        selected = [("candidate86.apk", APK_BYTES, APK_SHA)]
+        if args.with_base85:
+            selected.append(("base85.apk", BASE85_BYTES, BASE85_SHA))
+        for name, size, digest in selected:
+            require(original.getinfo(name).file_size == size, "EXACT_APK_MEMBER")
+            apk = root / name
+            with original.open(name) as source, apk.open("xb") as output:
+                shutil.copyfileobj(source, output, 1024 * 1024)
+            verify(apk, size, digest)
 
 
 if __name__ == "__main__":

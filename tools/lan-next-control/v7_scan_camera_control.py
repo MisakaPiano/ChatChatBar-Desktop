@@ -154,7 +154,7 @@ def wait_click(adb, label, deadline, attr=None, *, result=None, phase=None):
         time.sleep(.35)
     raise Refused('UI_TARGET_NOT_READY')
 
-def navigate(adb, result, deadline):
+def open_group_page(adb, result, deadline):
     result['navigationPhase'] = 'wait-main'
     while time.monotonic() < deadline:
         root = adb.ui()
@@ -174,17 +174,18 @@ def navigate(adb, result, deadline):
             continue
         if '设备组同步' in values or '管理' in values:
             break
-        if '基础教程' in values and '选择教程' not in values:
+        if '基础教程' in values and '选择教程' not in values and not result.get('basicTutorialExitAttempted'):
             result['basicTutorialObserved'] = True
-            try:
-                wait_click(adb,'跳过',min(deadline,time.monotonic()+9),result=result,phase='tutorial-skip')
+            result['basicTutorialExitAttempted'] = True
+            result['navigationPhase'] = 'tutorial-exit'
+            skip = click_target(root, '跳过')
+            result['navigationTarget'] = target_state(root, '跳过')
+            if skip:
+                adb.tap(skip)
                 result['basicTutorialSkippedThroughUi'] = True
-            except Refused as error:
-                if str(error) != 'UI_TARGET_NOT_READY':
-                    raise
-                # The actual first tutorial route handles BACK as the same onExit action.
-                if result.get('basicTutorialBackUsed') or '基础教程' not in labels(adb.ui()):
-                    raise
+            else:
+                # Compose on this first tutorial page handles BACK as onExit.
+                # Use the same snapshot that proved the tutorial was foreground.
                 adb.run('shell','input','keyevent','KEYCODE_BACK')
                 result['basicTutorialBackUsed'] = True
             continue
@@ -201,6 +202,9 @@ def navigate(adb, result, deadline):
         if click_target(root, '局域网同步') is None:
             wait_click(adb, '管理', deadline, result=result, phase='manage-tab')
         wait_click(adb, '局域网同步', deadline, result=result, phase='open-sync')
+
+def navigate(adb, result, deadline):
+    open_group_page(adb, result, deadline)
     result['navigationPhase'] = 'wait-empty-group'
     while time.monotonic() < deadline:
         root = adb.ui()
