@@ -95,9 +95,15 @@ class AndroidLanSyncInvitationFileRestorationTest {
 
             suspend fun issueFile() {
                 coordinator.unlockManagement(code)
-                await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+                await { coordinator.state.value.let { !it.busy && it.managementUnlocked && it.managementCanInvite } }
+                val priorBinding = coordinator.state.value.invitationFileBinding
                 coordinator.createInvitation(forFile = true)
-                await { !coordinator.state.value.busy && coordinator.state.value.invitationFileBinding != null }
+                await {
+                    coordinator.state.value.let {
+                        !it.busy && it.managementUnlocked && it.invitationFileOnly &&
+                            it.invitationFileBinding != null && it.invitationFileBinding != priorBinding
+                    }
+                }
             }
             issueFile()
             val originalCode = requireNotNull(coordinator.state.value.invitation).code()
