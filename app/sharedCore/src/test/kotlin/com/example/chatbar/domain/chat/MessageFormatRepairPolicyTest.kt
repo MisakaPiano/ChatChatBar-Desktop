@@ -10,8 +10,56 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.Test
+import kotlinx.serialization.json.Json
 
 class MessageFormatRepairPolicyTest {
+    private fun twoVersionRepairPoints(): ChatMessage {
+        val original = message().copy(content = "raw A", alternatives = listOf("raw A", "raw B"),
+            alternativeVersionIds = listOf("a", "b"), currentAlternativeIndex = 0, currentAlternativeVersionId = "a")
+        val a = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "fixed A",
+            MessageFormatRepairPolicy.completedRepairNotice("raw A", "fixed A"))
+        val undoneA = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(a))
+        val b = MessageAlternativeVersionPolicy.select(undoneA, 1)
+        return MessageFormatRepairPolicy.replaceCurrentDisplayContent(b, "fixed B",
+            MessageFormatRepairPolicy.completedRepairNotice("raw B", "fixed B"))
+    }
+
+    @Test fun multipleVersionRecoveryPointsSurviveSerializationAndIndependentRestore() {
+        val source = twoVersionRepairPoints()
+        val encoded = Json.encodeToString(ChatMessage.serializer(), source)
+        val cold = Json.decodeFromString(ChatMessage.serializer(), encoded)
+        val a = MessageAlternativeVersionPolicy.select(cold, 0)
+        assertTrue(MessageFormatRepairPolicy.applicableNotice(a)?.restored == true)
+        val redoneA = requireNotNull(MessageFormatRepairPolicy.redoRepair(a))
+        assertEquals(listOf("fixed A", "fixed B"), redoneA.alternatives)
+        val b = MessageAlternativeVersionPolicy.select(redoneA, 1)
+        val restoredB = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(b))
+        assertEquals(listOf("fixed A", "raw B"), restoredB.alternatives)
+        assertTrue(MessageFormatRepairPolicy.recoverableNotice(MessageAlternativeVersionPolicy.select(restoredB, 0)) != null)
+    }
+
+    @Test fun editsDeletionAndPruningKeepOnlyUnchangedSurvivingRecoveryOwners() {
+        val source = twoVersionRepairPoints()
+        val editedB = MessageFormatRepairPolicy.clearCurrentNotice(
+            MessageAlternativeVersionPolicy.editCurrentContent(source, "manually edited B"))
+        assertNull(MessageFormatRepairPolicy.applicableNotice(editedB))
+        assertTrue(MessageFormatRepairPolicy.applicableNotice(MessageAlternativeVersionPolicy.select(editedB, 0))?.restored == true)
+        val removedB = requireNotNull(MessageAlternativeVersionPolicy.remove(source, "b"))
+        assertTrue(MessageFormatRepairPolicy.applicableNotice(removedB)?.restored == true)
+        val pruned = MessageAlternativeVersionPolicy.append(source, "new C", "c", maxVersions = 1)
+        assertNull(pruned.formatRepairNotice)
+        assertTrue(pruned.otherFormatRepairNotices.isEmpty())
+    }
+
+    @Test fun oldSingleSlotStillDecodesAndEmptyExtraSlotsDoNotChangeLegacyWireShape() {
+        val legacy = """{"id":"m","sessionId":"s","role":"ASSISTANT","content":"raw","createdAt":1,"updatedAt":1,"formatRepairNotice":{"kind":"APPLIED","targetContent":"fixed","originalContent":"raw","restored":true}}"""
+        val message = Json.decodeFromString(ChatMessage.serializer(), legacy)
+        assertTrue(message.otherFormatRepairNotices.isEmpty())
+        assertEquals("fixed", MessageFormatRepairPolicy.redoRepair(message)?.displayContent)
+        val encoded = Json { encodeDefaults = true }.encodeToString(ChatMessage.serializer(), message)
+        assertFalse(encoded.contains("otherFormatRepairNotices"))
+    }
+
     @Test
     fun progressiveOverlay_replacesByUnicodeCodePoint() {
         assertEquals("修😀尾", MessageFormatRepairPolicy.progressiveOverlay("原😀尾", "修😀"))

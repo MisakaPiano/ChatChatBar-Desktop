@@ -99,7 +99,10 @@ data class ChatMessage(
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val actionOptionsFormat: ActionOptionsFormat? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val alternativeActionOptionsFormats: List<ActionOptionsFormat?> = emptyList()
+    val alternativeActionOptionsFormats: List<ActionOptionsFormat?> = emptyList(),
+    /** 其他备选的修复记录，以稳定版本 ID 关联；旧单槽仍可读取。 */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val otherFormatRepairNotices: List<MessageFormatRepairNotice> = emptyList()
 ) {
     /** 获取当前显示的内容（考虑替代回复） */
     val displayContent: String

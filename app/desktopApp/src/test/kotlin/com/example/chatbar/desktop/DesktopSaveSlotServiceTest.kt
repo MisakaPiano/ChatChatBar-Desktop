@@ -15,6 +15,39 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `per version repair points survive actual slot export import restore duplication and cold reads`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val raw = f.message.copy(content = "raw A", alternatives = listOf("raw A", "raw B"),
+                alternativeVersionIds = listOf("a", "b"), currentAlternativeIndex = 0, currentAlternativeVersionId = "a",
+                images = emptyList(), generatedImageMetadata = emptyList(), alternativeNarrativeModes = emptyList())
+            val a = MessageFormatRepairPolicy.replaceCurrentDisplayContent(raw, "fixed A",
+                MessageFormatRepairPolicy.completedRepairNotice("raw A", "fixed A"))
+            val undoneA = requireNotNull(MessageFormatRepairPolicy.restoreOriginal(a))
+            val b = MessageAlternativeVersionPolicy.select(undoneA, 1)
+            val repairedB = MessageFormatRepairPolicy.replaceCurrentDisplayContent(b, "fixed B",
+                MessageFormatRepairPolicy.completedRepairNotice("raw B", "fixed B"))
+            f.chats.updateMessage(repairedB)
+            val service = f.service()
+            val slot = service.create("s", "Synthetic repair points", SaveSlotImagePolicy.NONE, false)
+            val file = f.root.resolve("repair-points.cbsave")
+            service.export(slot.id, file)
+            val imported = service.import(file, "s")
+            f.chats.updateMessage(repairedB.copy(formatRepairNotice = null, otherFormatRepairNotices = emptyList()))
+            service.restore(imported.id, "s")
+            val duplicate = service.duplicate("s")
+            val cold = ChatRepository(JsonFileStorage(f.root))
+            for (session in listOf("s", duplicate.id)) {
+                val message = cold.getMessagesReadOnly(session).single()
+                val restoredA = MessageAlternativeVersionPolicy.select(message, 0)
+                assertEquals("fixed A", MessageFormatRepairPolicy.redoRepair(restoredA)?.displayContent)
+                val fixedB = MessageAlternativeVersionPolicy.select(message, 1)
+                assertEquals("raw B", MessageFormatRepairPolicy.restoreOriginal(fixedB)?.displayContent)
+                assertEquals(listOf("a", "b"), message.alternativeVersionIds)
+            }
+        }
+    }
+
     @Test fun `declared rules and eight alternatives survive real slot export restore duplicate and cold read`() = runBlocking {
         Fixture().use { f ->
             f.seed()

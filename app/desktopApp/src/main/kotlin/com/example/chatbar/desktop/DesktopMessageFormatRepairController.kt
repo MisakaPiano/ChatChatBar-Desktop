@@ -90,9 +90,12 @@ internal class DesktopMessageFormatRepairController(
     private val sources = mutableMapOf<String, ChatMessage>()
     val states: StateFlow<Map<String, DesktopRepairState>> = mutableStates.asStateFlow()
 
-    fun repair(sessionId: String, messageId: String): String = launch(sessionId, messageId, DesktopRepairAction.REPAIR)
-    fun restore(sessionId: String, messageId: String): String = launch(sessionId, messageId, DesktopRepairAction.RESTORE)
-    fun redo(sessionId: String, messageId: String): String = launch(sessionId, messageId, DesktopRepairAction.REDO)
+    fun repair(sessionId: String, messageId: String, expected: ChatMessage? = null): String =
+        launch(sessionId, messageId, DesktopRepairAction.REPAIR, expected)
+    fun restore(sessionId: String, messageId: String, expected: ChatMessage? = null): String =
+        launch(sessionId, messageId, DesktopRepairAction.RESTORE, expected)
+    fun redo(sessionId: String, messageId: String, expected: ChatMessage? = null): String =
+        launch(sessionId, messageId, DesktopRepairAction.REDO, expected)
 
     /** Explicit user reconciliation only. Ordinary refresh/readback evidence is not acknowledgement. */
     suspend fun confirmCommitReload(message: ChatMessage): Boolean {
@@ -116,14 +119,14 @@ internal class DesktopMessageFormatRepairController(
         }
     }
 
-    private fun launch(sessionId: String, messageId: String, action: DesktopRepairAction): String =
+    private fun launch(sessionId: String, messageId: String, action: DesktopRepairAction, expected: ChatMessage?): String =
         synchronized(stateLock) {
             val latest = mutableStates.value.values.lastOrNull { it.identity?.sessionId == sessionId && it.identity.messageId == messageId }
             check(latest?.status != DesktopRepairStatus.COMMIT_UNCERTAIN || latest.confirmedMessage != null) {
                 "提交结果未确认，请重新加载并核对消息"
             }
             runtime.launchFormatRepair(sessionId, messageId) { id, control ->
-                executePublished(id, control, sessionId, messageId, action, safety)
+                executePublished(id, control, sessionId, messageId, action, safety, expected)
             }
         }
 
@@ -144,10 +147,11 @@ internal class DesktopMessageFormatRepairController(
     }
 
     private suspend fun executePublished(id: String, control: DesktopRepairControl, sessionId: String,
-        messageId: String, action: DesktopRepairAction, gate: DesktopRepairSafetyGate): DesktopRepairStatus {
+        messageId: String, action: DesktopRepairAction, gate: DesktopRepairSafetyGate,
+        expected: ChatMessage? = null): DesktopRepairStatus {
         publish(id, DesktopRepairState(DesktopRepairStatus.RUNNING))
         return try {
-            execute(id, control, sessionId, messageId, action, gate).also { publish(id, it) }.status
+            execute(id, control, sessionId, messageId, action, gate, expected).also { publish(id, it) }.status
         } catch (cancelled: CancellationException) {
             control.complete(DesktopRepairTerminalKind.CANCELLED)
             publish(id, DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "LIFECYCLE_CANCELLED"))
@@ -174,7 +178,7 @@ internal class DesktopMessageFormatRepairController(
     }
 
     private suspend fun execute(id: String, control: DesktopRepairControl, sessionId: String, messageId: String,
-        action: DesktopRepairAction, gate: DesktopRepairSafetyGate): DesktopRepairState {
+        action: DesktopRepairAction, gate: DesktopRepairSafetyGate, expected: ChatMessage?): DesktopRepairState {
         val snapshot = when (val read = chats.readMessageDurable(messageId, sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
             JsonFileStorage.EntityReadResult.Missing -> return DesktopRepairState(DesktopRepairStatus.MISSING)
@@ -183,6 +187,8 @@ internal class DesktopMessageFormatRepairController(
         }
         if (snapshot.sessionId != sessionId || snapshot.id != messageId || snapshot.role != MessageRole.ASSISTANT)
             return rejected("INVALID_TARGET")
+        if (expected != null && snapshot != expected)
+            return DesktopRepairState(DesktopRepairStatus.CONFLICT, code = "DISPLAYED_MESSAGE_CHANGED")
         synchronized(stateLock) { sources[id] = snapshot }
         val session = when (val read = chats.readSessionDurable(sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
@@ -308,7 +314,7 @@ internal class DesktopMessageFormatRepairController(
         if (candidate != repairInput && actionItems(candidate) != originalActions)
             return recordFailure(session, snapshot, "ACTION_OPTIONS_CHANGED", gate)
         if (candidate == original)
-            return commit(session, snapshot, null, MessageFormatRepairPolicy.applicableNotice(snapshot) ?: otherVersionRecoveryPoint(snapshot), DesktopRepairStatus.UNCHANGED, gate = gate)
+            return commit(session, snapshot, null, MessageFormatRepairPolicy.applicableNotice(snapshot)?.takeIf { it.originalContent != null }, DesktopRepairStatus.UNCHANGED, gate = gate)
         return commit(session, snapshot, candidate, MessageFormatRepairPolicy.completedRepairNotice(original, candidate), DesktopRepairStatus.APPLIED, gate = gate)
     }
 
@@ -323,16 +329,9 @@ internal class DesktopMessageFormatRepairController(
         val old = MessageFormatRepairPolicy.applicableNotice(snapshot)?.takeIf {
             it.kind == MessageFormatRepairNoticeKind.APPLIED || it.kind == MessageFormatRepairNoticeKind.STOPPED
         }
-        val notice = old ?: otherVersionRecoveryPoint(snapshot) ?: MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, snapshot.displayContent, errorMessage = code)
+        val notice = old ?: MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, snapshot.displayContent, errorMessage = code)
         return commit(session, snapshot, null, notice, DesktopRepairStatus.ERROR, code, gate)
     }
-
-    /** A no-op/error on the active alternative does not consume another alternative's local recovery. */
-    private fun otherVersionRecoveryPoint(snapshot: ChatMessage): MessageFormatRepairNotice? =
-        snapshot.formatRepairNotice?.takeIf {
-            it.originalContent != null && it.versionId != null &&
-                it.versionId != MessageAlternativeVersionPolicy.activeVersionId(snapshot)
-        }
 
     private fun failureCode(error: Throwable?): String = when (error) {
         is AuxiliaryProtocolException -> error.failure.name
@@ -345,7 +344,7 @@ internal class DesktopMessageFormatRepairController(
         gate: DesktopRepairSafetyGate): DesktopRepairState {
         currentCoroutineContext().ensureActive()
         val boundNotice = notice?.let {
-            if (replacement != null || it != snapshot.formatRepairNotice)
+            if (replacement != null || it != MessageFormatRepairPolicy.applicableNotice(snapshot))
                 it.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(snapshot)) else it
         }
         val result = gate.submit(session, snapshot) {

@@ -15,6 +15,8 @@ The A/a-to-Chinese script check uses Unicode code points, not ICU regex property
 
 Tests: shared `ActionOptionsFormatTest`, `ActionOptionsDeclaredFenceCompatibilityTest`; Desktop `DesktopActionOptionsFormatIntegrationTest`, existing `DesktopActionChoicesTest` and `DesktopActionOptionsRequestTest`. Use actual source coordinates and reply alternatives when testing presentation or voice; a string-only parser result does not cover those owners.
 
+Declared-menu repair keeps the independent stable-version recovery points owned by `MessageFormatRepairPolicy`. The integration suite covers A redo after B repair, an unchanged check while A lives in the extra list, and refusal of changed option text without consuming either checkpoint.
+
 Automatic retrieval always strips recognized menus and carries only provable selections. Fresh sends and resumed users have distinct proof rules; direct chat history remains conservative. Named choice dependencies travel as `actionChoiceSourceIds` through raw-turn indexes, session copies and merge ID mapping.
 
 For an actual earlier letter menu, a leading Chinese confirmation (那就／那么我们就／我就, with horizontal spacing) may introduce a matching letter before Han continuation. `B站` immediately after that confirmation remains ordinary prose; unoffered letters never invent a choice. The separate conservative rule for short or unknown replies remains. `DesktopActionOptionsRequestTest` checks the actual request and unchanged source messages.

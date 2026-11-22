@@ -1,0 +1,103 @@
+name: Desktop independent version repair points
+on:
+  push:
+    branches: [codex/desktop-pr5-version-repair-r02-20261123]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-version-repair-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind exact source and canonical synthetic root
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-repair-version-points'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class RepairFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([RepairFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'repair-version-evidence' | Out-Null
+          git rev-parse HEAD | Set-Content 'repair-version-evidence/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'repair-version-evidence/tree.txt'
+      - name: Verify exact old writer and old displayed-action negative controls
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '90bd2ab1719b0a02ada644ac6fb9ed37d0e42161'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'OLD_SOURCE_UNAVAILABLE' }
+          $cases = @(
+            @{ Name='writer'; File='app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt'; Class='DesktopAutomaticFormatRepairTest'; Method='automatic changed repair on real regenerated B keeps A local redo after cold reopen'; Assertion='*Changed automatic B repair consumed*' },
+            @{ Name='displayed-action'; File='app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt'; Class='DesktopFormatRepairInteractionTest'; Method='stale displayed restore and redo actions never mutate a newly selected repaired alternative'; Assertion='*Stale displayed repair action was not fenced*' }
+          )
+          foreach ($case in $cases) {
+            try {
+              git restore --source=$prior --worktree -- $case.File
+              if ($LASTEXITCODE -ne 0) { throw 'OLD_COMPONENT_NOT_RESTORED' }
+              Push-Location app
+              try {
+                .\gradlew.bat :desktopApp:test --tests "com.example.chatbar.desktop.$($case.Class).$($case.Method)" -PdesktopTestHeadless=true --no-daemon --stacktrace
+                $negativeExit = $LASTEXITCODE
+              } finally { Pop-Location }
+              $path = "app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.$($case.Class).xml"
+              [xml]$report = Get-Content -Raw -LiteralPath $path
+              if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw "OLD_COMPONENT_ASSERTION_NOT_REACHED:$($case.Name)" }
+              if ($report.testsuite.testcase.failure.type -notmatch 'Assertion|ComparisonFailure' -or $report.testsuite.testcase.failure.message -notlike $case.Assertion) { throw "OLD_COMPONENT_WRONG_FAILURE:$($case.Name)" }
+              Copy-Item -LiteralPath $path -Destination "repair-version-evidence/negative-$($case.Name).xml"
+              $prior | Set-Content "repair-version-evidence/negative-$($case.Name)-source.txt"
+            } finally {
+              git restore --source=HEAD --worktree -- $case.File
+              git diff --exit-code -- $case.File
+              if ($LASTEXITCODE -ne 0) { throw 'CURRENT_COMPONENT_NOT_RESTORED' }
+            }
+          }
+      - name: Verify shared custody serialization and conditional writes
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest'
+          --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
+          --tests 'com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest'
+          --tests 'com.example.chatbar.data.repository.ChatMessageSerializationTest'
+          --no-daemon --stacktrace
+      - name: Verify actual runtime navigation and archive transfer
+        if: ${{ !cancelled() }}
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopAutomaticFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopMessageFormatRepairTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairInteractionTest'
+          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopReplyDeletionTest'
+          --tests 'com.example.chatbar.desktop.DesktopAlternativeUnlinkRecoveryTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatMemoryIndexTest'
+          --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-version-repair-original-results
+          path: |
+            repair-version-evidence/
+            app/desktopApp/build/test-results/test/
+            app/sharedCore/build/test-results/test/

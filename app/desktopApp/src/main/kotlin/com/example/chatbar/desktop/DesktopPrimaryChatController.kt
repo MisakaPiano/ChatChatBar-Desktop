@@ -21,6 +21,7 @@ import com.example.chatbar.domain.card.CharacterGreetingChoice
 import com.example.chatbar.domain.card.CharacterGreetingPolicy
 import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
 import com.example.chatbar.domain.chat.editRoleplayMessageSegment
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import com.example.chatbar.domain.model.EffectiveModelResolver
@@ -1099,7 +1100,7 @@ internal class DesktopPrimaryChatController(
             check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
                 "提交结果未确认，请重新加载并核对消息"
             }
-            task = requireNotNull(formatRepair).repair(message.sessionId, message.id)
+            task = requireNotNull(formatRepair).repair(message.sessionId, message.id, message)
         }
         return task
     }
@@ -1111,7 +1112,7 @@ internal class DesktopPrimaryChatController(
             check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
                 "提交结果未确认，请重新加载并核对消息"
             }
-            task = requireNotNull(formatRepair).restore(message.sessionId, message.id)
+            task = requireNotNull(formatRepair).restore(message.sessionId, message.id, message)
         }
         return task
     }
@@ -1132,7 +1133,7 @@ internal class DesktopPrimaryChatController(
             check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
                 "提交结果未确认，请重新加载并核对消息"
             }
-            task = requireNotNull(formatRepair).redo(message.sessionId, message.id)
+            task = requireNotNull(formatRepair).redo(message.sessionId, message.id, message)
         }
         return task
     }
@@ -1189,8 +1190,8 @@ internal class DesktopPrimaryChatController(
                 require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty()) { "Message cannot be empty" }
                 val warning = if (retainedImages != null || additions.isNotEmpty()) requireNotNull(imageStore).editMessage(message, content, retained, additions)
                 else { chats.updateMessage(
-                    MessageAlternativeVersionPolicy.editCurrentContent(message, content)
-                        .copy(formatRepairNotice = null),
+                    MessageFormatRepairPolicy.clearCurrentNotice(
+                        MessageAlternativeVersionPolicy.editCurrentContent(message, content)),
                 ); null }
                 refreshAfterTerminalTask(session.id)
                 if (warning != null) mutableState.update { it.copy(status = warning) }
@@ -1227,7 +1228,10 @@ internal class DesktopPrimaryChatController(
             require(parseRoleplayTextSegments(message.displayContent).any {
                 it.start == start && it.endExclusive == endExclusive
             }) { "Message segment changed; reopen segment actions" }
-            val updated = editRoleplayMessageSegment(message, start, endExclusive, replacement).message?.copy(formatRepairNotice = null)
+            val updated = editRoleplayMessageSegment(message, start, endExclusive, replacement).message?.let {
+                if (MessageAlternativeVersionPolicy.activeVersionId(it) == MessageAlternativeVersionPolicy.activeVersionId(message))
+                    MessageFormatRepairPolicy.clearCurrentNotice(it) else it
+            }
             val warning = withMessageMutation(session.id, messageId, retryAlternativeAdmission = replacement.isBlank()) {
                 commitAlternativeChange(message, updated, "消息已变化，请重新打开分段操作")
             }

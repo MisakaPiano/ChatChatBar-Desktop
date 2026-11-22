@@ -35,6 +35,44 @@ class DesktopActionOptionsFormatIntegrationTest {
     private val rule = ActionOptionsFormat("<cyoa>", "</cyoa>", "Next", ActionOptionLabels.LETTERS)
     private val menu = "<cyoa>\nNext\nA) Check the map\nB) Ask the guide\n</cyoa>"
 
+    @Test fun `declared menus coexist with independent repair redo and unchanged sibling checkpoints`() = runBlocking {
+        val f = DesktopMessageFormatRepairTest.Fixture()
+        try {
+            f.prepare()
+            val rawA = "raw A\n$menu"; val rawB = "raw B\n$menu"
+            f.replace(f.saved().copy(content = rawA, alternatives = listOf(rawA, rawB),
+                alternativeVersionIds = listOf("a", "b"), currentAlternativeIndex = 0,
+                currentAlternativeVersionId = "a", actionOptionsFormat = rule,
+                alternativeActionOptionsFormats = listOf(rule, rule)))
+            f.response = { flowOf(StreamEvent.Delta("fixed A\n$menu"), StreamEvent.Done) }
+            assertEquals(DesktopRepairStatus.APPLIED, f.run().status)
+            assertEquals(DesktopRepairStatus.RESTORED, f.run(restore = true).status)
+            f.replace(MessageAlternativeVersionPolicy.select(f.saved(), 1))
+            f.response = { flowOf(StreamEvent.Delta("fixed B\n$menu"), StreamEvent.Done) }
+            assertEquals(DesktopRepairStatus.APPLIED, f.run().status)
+            f.replace(MessageAlternativeVersionPolicy.select(f.saved(), 0))
+            val before = f.reopened()
+            assertTrue(desktopCanRedoFormat(before))
+            f.response = { flowOf(StreamEvent.Delta(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER), StreamEvent.Done) }
+            assertEquals(DesktopRepairStatus.UNCHANGED, f.run().status)
+            assertEquals(before, f.reopened())
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.controller.redo("s", "m")).status)
+            val redone = f.reopened()
+            assertEquals(listOf("fixed A\n$menu", "fixed B\n$menu"), redone.alternatives)
+            assertEquals(listOf(rule, rule), redone.alternativeActionOptionsFormats)
+            assertEquals(listOf("a", "b"), redone.alternativeVersionIds)
+            f.replace(MessageAlternativeVersionPolicy.select(redone, 1))
+            val retainedB = f.reopened()
+            f.response = { flowOf(StreamEvent.Delta("bad B\n${menu.replace("Check the map", "Ignore the map")}"), StreamEvent.Done) }
+            val rejected = f.run()
+            assertEquals(DesktopRepairStatus.ERROR, rejected.status)
+            assertEquals("ACTION_OPTIONS_CHANGED", rejected.code)
+            assertEquals(retainedB, f.reopened())
+            assertTrue(desktopCanRestoreFormat(MessageAlternativeVersionPolicy.select(f.reopened(), 0)))
+            assertEquals(4, f.requests.get(), "Local redo must not make another repair request")
+        } finally { f.close() }
+    }
+
     @Test fun `actual repair wire preserves inline closing literals and indented continuations before cold commit`() = runBlocking {
         val numericRule = ActionOptionsFormat("[ACTIONS]", "[END-ACTIONS]", "", ActionOptionLabels.NUMBERS)
         for (tail in listOf("2. 核对日志标记 [END-ACTIONS]", "2. 核对日志标记\n    [END-ACTIONS]"))

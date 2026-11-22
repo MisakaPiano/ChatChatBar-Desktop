@@ -112,17 +112,7 @@ object MessageAlternativeVersionPolicy {
                 actionOptionsFormat = actionOptionsFormat
             )
         ).takeLast(maxVersions)
-        val notice = message.formatRepairNotice?.let { previous ->
-            // Resolve legacy custody before the new version can introduce identical text.
-            val activeId = activeVersionId(message)
-            val expected = if (previous.restored) previous.originalContent else previous.targetContent
-            val matching = existing.filter { it.content == expected }
-            val owner = previous.versionId
-                ?: matching.firstOrNull { it.id == activeId }?.id
-                ?: matching.singleOrNull()?.id
-            owner?.takeIf { id -> retained.any { it.id == id } }?.let { previous.copy(versionId = it) }
-        }
-        return message.copy(
+        val appended = message.copy(
             content = content,
             alternatives = retained.map(MessageVersionSnapshot::content),
             alternativeVersionIds = retained.map(MessageVersionSnapshot::id),
@@ -132,9 +122,9 @@ object MessageAlternativeVersionPolicy {
             actionOptionsFormat = actionOptionsFormat,
             alternativeActionOptionsFormats = retained.retainedActionFormats(),
             alternativeNarrativeModes = retained.map(MessageVersionSnapshot::narrativeMode),
-            formatRepairNotice = notice,
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, appended)
     }
 
     /** Remove one stable identity, retaining shared media and every surviving candidate. */
@@ -148,7 +138,7 @@ object MessageAlternativeVersionPolicy {
         val selectedIndex = retained.indexOfFirst { it.id == activeId }.takeIf { it >= 0 }
             ?: removedIndex.coerceAtMost(retained.lastIndex)
         val selected = retained[selectedIndex]
-        return message.copy(
+        val removed = message.copy(
             content = selected.content,
             alternatives = retained.map(MessageVersionSnapshot::content),
             alternativeVersionIds = retained.map(MessageVersionSnapshot::id),
@@ -158,9 +148,9 @@ object MessageAlternativeVersionPolicy {
             actionOptionsFormat = selected.actionOptionsFormat,
             alternativeActionOptionsFormats = retained.retainedActionFormats(),
             alternativeNarrativeModes = retained.map(MessageVersionSnapshot::narrativeMode),
-            formatRepairNotice = message.formatRepairNotice.takeUnless { activeId == versionId || it?.versionId == versionId },
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, removed)
     }
 
     fun select(
@@ -172,7 +162,7 @@ object MessageAlternativeVersionPolicy {
         require(message.alternatives.isNotEmpty()) { "消息没有替代版本" }
         require(alternativeIndex in versions.indices) { "消息版本索引越界" }
         val selected = versions[alternativeIndex]
-        return message.copy(
+        val selectedMessage = message.copy(
             content = selected.content,
             alternativeVersionIds = versions.map(MessageVersionSnapshot::id),
             currentAlternativeIndex = alternativeIndex,
@@ -183,6 +173,7 @@ object MessageAlternativeVersionPolicy {
             alternativeNarrativeModes = versions.map(MessageVersionSnapshot::narrativeMode),
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, selectedMessage)
     }
 
     fun editCurrentContent(
@@ -190,13 +181,14 @@ object MessageAlternativeVersionPolicy {
         content: String,
         updatedAt: Long = System.currentTimeMillis()
     ): ChatMessage {
-        return normalize(message).copy(
+        val edited = normalize(message).copy(
             content = content,
             alternatives = message.alternatives.mapIndexed { index, previous ->
                 if (index == message.currentAlternativeIndex) content else previous
             },
             updatedAt = updatedAt
         )
+        return MessageFormatRepairPolicy.retainVersionNotices(message, edited)
     }
 
     private fun List<MessageVersionSnapshot>.retainedActionFormats(hasAlternatives: Boolean = true): List<ActionOptionsFormat?> =
