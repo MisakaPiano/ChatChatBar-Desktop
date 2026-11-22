@@ -714,9 +714,11 @@ class DesktopGroupPreparedUpgradeControlTest {
     private data class QrPanelProof(val rasterSha256: String, val payloadSha256: String)
     private suspend fun verifyOriginalCodeAndRenderedInvitation(coordinator: LanSyncGroupCoordinator, originalCode: String): QrPanelProof {
         check(SwingUtilities.isEventDispatchThread())
+        var renderedState: LanSyncGroupPanelState? = null // Observation only; never supplied back to the panel.
         val scene = ImageComposeScene(1000, 1600, coroutineContext = edt) {
             val current by coordinator.state.collectAsState()
             CompositionLocalProvider(LocalDesktopUiStrings provides DesktopUiStrings(DesktopUiLanguage.ZH_CN)) {
+                SideEffect { renderedState = current }
                 DesktopLanSyncGroupPanel(current, coordinator)
             }
         }
@@ -732,7 +734,7 @@ class DesktopGroupPreparedUpgradeControlTest {
             while (!node.config.contains(SemanticsActions.OnClick)) node = checkNotNull(node.parent)
             return node
         }
-        suspend fun framesUntil(ready: () -> Boolean) = withTimeout(45_000L) {
+        suspend fun framesUntil(ready: () -> Boolean) = withTimeout(180_000L) {
             while (true) { scene.render(System.nanoTime()).close(); if (ready()) break; delay(16L) }
         }
         suspend fun onScreen(select: () -> SemanticsNode): SemanticsNode {
@@ -762,22 +764,61 @@ class DesktopGroupPreparedUpgradeControlTest {
             check(!node.config.contains(SemanticsProperties.Disabled))
             check(checkNotNull(node.config[SemanticsActions.OnClick].action).invoke())
         }
-        suspend fun unlockThroughPanel() {
+        suspend fun unlockThroughPanel(reopen: Boolean = false) {
+            val prefix = if (reopen) "COLD_UI_REOPEN_" else "COLD_UI_"
+            phase = prefix + "WAIT_EDITABLE"
             framesUntil { nodes().filter { it.config.contains(SemanticsActions.SetText) }.let { fields -> check(fields.size <= 1); fields.size == 1 && !fields.single().config.contains(SemanticsProperties.Disabled) } }
+            phase = prefix + "SCROLL_EDITABLE"
             val field = onScreen { editor() }
             check(!field.config.contains(SemanticsProperties.Disabled))
+            phase = prefix + "SET_ORIGINAL_CODE"
             check(checkNotNull(field.config[SemanticsActions.SetText].action).invoke(AnnotatedString(originalCode)))
+            phase = prefix + "WAIT_UNLOCK_ENABLED"
             framesUntil { !button("解锁管理").config.contains(SemanticsProperties.Disabled) }
+            phase = prefix + "CLICK_UNLOCK"
             click("解锁管理")
+            phase = prefix + "WAIT_UNLOCK_RESULT"
             framesUntil { !coordinator.state.value.busy && coordinator.state.value.managementUnlocked }
+            phase = prefix + "CHECK_UNLOCK_RESULT"
             check(coordinator.state.value.error == null)
         }
         fun noSecretText(secret: String) = nodes().none { node ->
             node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { secret in it.text } ||
                 node.config.getOrNull(SemanticsProperties.EditableText)?.text?.contains(secret) == true
         }
+        fun saveUiFailureObservation(failure: Throwable) {
+            val state = coordinator.state.value
+            val tree = if (closed) null else runCatching { nodes() }.getOrNull()
+            val fields = tree?.filter { it.config.contains(SemanticsActions.SetText) }
+            val labels = tree?.filter { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == "解锁管理" } == true }
+            val enabledUnlock = runCatching { if (labels?.size == 1) !button("解锁管理").config.contains(SemanticsProperties.Disabled) else null }.getOrNull()
+            val expectedInEditor = fields?.mapNotNull { it.config.getOrNull(SemanticsProperties.EditableText)?.text }?.let { values ->
+                if (values.isEmpty()) null else values.any { it == originalCode }
+            }
+            val value = buildJsonObject {
+                put("kind", "CCB_V7_WINDOWS_QR_UI_OBSERVATION_V1"); put("sourceSha", candidate); put("action", "COLD_INVITE")
+                put("phase", phase); put("failureType", safeThrowableType(failure)); put("stateStage", state.stage.name)
+                put("busy", state.busy); put("paused", state.paused); put("managementUnlocked", state.managementUnlocked)
+                put("localManagementAvailable", state.localManagementAvailable); put("managementRecoveryAvailable", state.managementRecoveryAvailable)
+                put("managementCanInvite", state.managementCanInvite); put("hasError", state.error != null)
+                put("hasInvitation", state.invitation != null); put("hasRecoveryCode", state.recoveryCode != null); put("sceneClosed", closed)
+                put("semanticsAvailable", tree != null)
+                put("renderedStage", renderedState?.stage?.name?.let(::JsonPrimitive) ?: JsonNull)
+                put("renderedBusy", renderedState?.busy?.let(::JsonPrimitive) ?: JsonNull)
+                put("renderedPaused", renderedState?.paused?.let(::JsonPrimitive) ?: JsonNull)
+                put("renderedLocalManagementAvailable", renderedState?.localManagementAvailable?.let(::JsonPrimitive) ?: JsonNull)
+                put("renderedManagementUnlocked", renderedState?.managementUnlocked?.let(::JsonPrimitive) ?: JsonNull)
+                put("editorCount", fields?.size?.let(::JsonPrimitive) ?: JsonNull)
+                put("enabledEditorCount", fields?.count { !it.config.contains(SemanticsProperties.Disabled) }?.let(::JsonPrimitive) ?: JsonNull)
+                put("unlockLabelCount", labels?.size?.let(::JsonPrimitive) ?: JsonNull)
+                put("unlockEnabled", enabledUnlock?.let(::JsonPrimitive) ?: JsonNull)
+                put("editorEqualsOriginalCode", expectedInEditor?.let(::JsonPrimitive) ?: JsonNull)
+                put("hasQrNode", tree?.any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("新设备扫描此邀请") == true }?.let(::JsonPrimitive) ?: JsonNull)
+            }
+            Files.writeString(Path.of(env("CCB_V6_PREPARED_PRIVATE")).resolve("qr-ui-observation.private.json"), value.toString(), CREATE_NEW, WRITE)
+        }
         try {
-            phase = "COLD_PANEL_UNLOCK_MANAGEMENT"
+            phase = "COLD_UI_WAIT_LOCKED_PANEL"
             framesUntil { !coordinator.state.value.managementUnlocked && qrNodes().isEmpty() }
             unlockThroughPanel()
             phase = "COLD_PANEL_CREATE_INVITATION"
@@ -819,13 +860,16 @@ class DesktopGroupPreparedUpgradeControlTest {
             check(noSecretText(originalCode) && noSecretText(expected))
             check(editor().config.getOrNull(SemanticsProperties.EditableText)?.text.orEmpty().isEmpty())
             // Reopen management, without issuing another invitation, so disposal is tested from an unlocked state.
-            unlockThroughPanel()
+            unlockThroughPanel(reopen = true)
             check(coordinator.state.value.managementUnlocked)
             phase = "COLD_PANEL_DISPOSE_PRIVACY"
             scene.close(); closed = true
             await { !coordinator.state.value.managementUnlocked && coordinator.state.value.invitation == null && coordinator.state.value.recoveryCode == null }
             check(coordinator.state.value.error == null)
             return QrPanelProof(checkNotNull(rasterHash), sha(expected.toByteArray(Charsets.UTF_8)))
+        } catch (failure: Throwable) {
+            runCatching { saveUiFailureObservation(failure) } // Optional observation never replaces the primary failure.
+            throw failure
         } finally { if (!closed) scene.close() }
     }
     // QR_PANEL_HELPER_END

@@ -24,7 +24,7 @@ EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '
 BRIDGE_SHA = '896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1'
 PROFILE_SHA = '56f1260d9f1fa222f108518b9b5d5a1821c4e094c070ad283e97e2095ad69ffd'
 FIXTURE = HERE / 'fixtures/DesktopGroupPreparedUpgradeControlTest.kt'
-FIXTURE_SHA = 'c2f1b2e942fd10edae1d04ccc3ea2e874254811030dcb3e5d5bb88790cc935a2'
+FIXTURE_SHA = 'ddeea033a725617f9ab7cf48763e78aefe6f4c092b59a15b0668ee02090eb447'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupPreparedUpgradeControlTest'
 METHODS = {
     'SEED': 'seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi',
@@ -55,6 +55,8 @@ SAFE_PHASES = frozenset({'GUARD','READ_BASE_ORACLE','OWNERSHIP','VERIFY_RETAINED
  'COLD_OPEN_COMPLETED_ARCHIVE','CAPTURE_AUTHENTICATED_COLD_BASELINE','CLOSE_REAL_APP_CALL','VERIFY_CLOSE_NOTICE',
  'COLD_PANEL_UNLOCK_MANAGEMENT','COLD_PANEL_CREATE_INVITATION','COLD_PANEL_DECODE_RENDERED_QR','COLD_PANEL_LOCK_PRIVACY','COLD_PANEL_DISPOSE_PRIVACY'})
 SAFE_JVM_TYPES = frozenset({'AssertionError','IllegalStateException','IllegalArgumentException','IOException','SecurityException','CancellationException','TimeoutCancellationException','OutOfMemoryError','DesktopLanSyncFinalFlushIncompleteException','DesktopLanSyncFinalFlushTimeoutException','UNKNOWN'})
+QR_UI_SUBPHASES = frozenset(['COLD_UI_WAIT_LOCKED_PANEL', 'COLD_UI_WAIT_EDITABLE', 'COLD_UI_SCROLL_EDITABLE', 'COLD_UI_SET_ORIGINAL_CODE', 'COLD_UI_WAIT_UNLOCK_ENABLED', 'COLD_UI_CLICK_UNLOCK', 'COLD_UI_WAIT_UNLOCK_RESULT', 'COLD_UI_CHECK_UNLOCK_RESULT', 'COLD_UI_REOPEN_WAIT_EDITABLE', 'COLD_UI_REOPEN_SCROLL_EDITABLE', 'COLD_UI_REOPEN_SET_ORIGINAL_CODE', 'COLD_UI_REOPEN_WAIT_UNLOCK_ENABLED', 'COLD_UI_REOPEN_CLICK_UNLOCK', 'COLD_UI_REOPEN_WAIT_UNLOCK_RESULT', 'COLD_UI_REOPEN_CHECK_UNLOCK_RESULT'])
+SAFE_PHASES = SAFE_PHASES | QR_UI_SUBPHASES
 _phase = 'GUARD'
 
 def require(value, code):
@@ -262,6 +264,31 @@ def close_sampling_projection(path, diagnostic):
     except Exception:
         return {'status':'REJECTED_OR_UNAVAILABLE'} # No arbitrary parser/IO text can replace the first close failure.
 
+def qr_ui_observation_projection(path, diagnostic):
+    # Observation is optional: missing/rejected data cannot create or change the original native result.
+    try:
+        if not path.exists() and not path.is_symlink(): return {'status':'NOT_OBSERVED'}
+        value=small(path)
+        booleans={'busy','paused','managementUnlocked','localManagementAvailable','managementRecoveryAvailable','managementCanInvite','hasError','hasInvitation','hasRecoveryCode','sceneClosed','semanticsAvailable'}
+        counts={'editorCount','enabledEditorCount','unlockLabelCount'}
+        tree_booleans={'unlockEnabled','editorEqualsOriginalCode','hasQrNode'}
+        nullable_booleans=tree_booleans | {'renderedBusy','renderedPaused','renderedLocalManagementAvailable','renderedManagementUnlocked'}
+        fields={'kind','sourceSha','action','phase','failureType','stateStage','renderedStage'} | booleans | counts | nullable_booleans
+        require(type(value) is dict and set(value)==fields, 'QR_UI_OBSERVATION_FIELDS')
+        require(value['kind']=='CCB_V7_WINDOWS_QR_UI_OBSERVATION_V1' and value['sourceSha']==NEW and value['action']=='COLD_INVITE', 'QR_UI_OBSERVATION_IDENTITY')
+        require(value['phase'] in SAFE_PHASES and value['failureType'] in SAFE_JVM_TYPES and value['stateStage'] in ('EMPTY','NEEDS_RECOVERY_SAVE','PREPARED_LOCKED','JOINING','READY'), 'QR_UI_OBSERVATION_ENUMS')
+        require(value['renderedStage'] is None or value['renderedStage'] in ('EMPTY','NEEDS_RECOVERY_SAVE','PREPARED_LOCKED','JOINING','READY'), 'QR_UI_RENDERED_STAGE')
+        require(all(type(value[k]) is bool for k in booleans), 'QR_UI_OBSERVATION_BOOLEANS')
+        require(all(value[k] is None or type(value[k]) is int and 0<=value[k]<=64 for k in counts), 'QR_UI_OBSERVATION_COUNTS')
+        require(all(value[k] is None or type(value[k]) is bool for k in nullable_booleans), 'QR_UI_OBSERVATION_NULLABLE_BOOLEANS')
+        if value['semanticsAvailable'] is False:
+            require(all(value[k] is None for k in counts | tree_booleans), 'QR_UI_OBSERVATION_UNKNOWN_NOT_ZERO')
+        if not (diagnostic.get('status')=='ONE_ORIGINAL_CASE_OBSERVED' and diagnostic.get('counts')=={'tests':'1','failures':'1','errors':'0','skipped':'0'} and diagnostic.get('safePrimaryPhase')==value['phase']):
+            return {'status':'UNAVAILABLE_PRIMARY_PHASE_MISMATCH'}
+        return {'status':'VALIDATED','observation':value}
+    except Exception:
+        return {'status':'REJECTED_OR_UNAVAILABLE'}
+
 class Companion:
     def __init__(self, bridge, modules, sources, private, output):
         self.bridge, self.ui, self.sources, self.private, self.output = bridge, modules['desktop_group_ui_control'], sources, private, output
@@ -304,6 +331,7 @@ class Companion:
         except Exception:
             self.failure = failure_projection(evidence,self.ui,self.bridge,source)
             if action == 'RESUME': self.failure['closeSampling'] = close_sampling_projection(self.private/'close-samples-resume.private.json',self.failure)
+            if action == 'COLD_INVITE': self.failure['qrUiObservation'] = qr_ui_observation_projection(self.private/'qr-ui-observation.private.json',self.failure)
             raise
         finally:
             self.ui.isolated_environment, self.ui.native_command, self.ui.METHOD = prior_env, prior_cmd, prior_method

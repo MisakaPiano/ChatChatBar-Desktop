@@ -4,7 +4,6 @@ on:
     branches: ['codex/lan-next-sync-control-*']
     paths:
       - .github/lan-next-desktop-lan7-prepared-upgrade-request.json
-      - .github/workflows/lan-next-desktop-lan7-prepared-upgrade.yml
 permissions:
   contents: read
   actions: read
@@ -29,7 +28,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = (Get-FileHash -LiteralPath 'tools/lan-next-control/desktop_lan7_prepared_upgrade_control.py' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne '3beadf24b835b9f45d2ccd02071bb74aba7cb264e200289d0a600eafc8370d15') { throw 'LAN7_PREPARED_CONTROL_BINDING' }
+          if ($actual -ne 'c42a166368276187a4c1ef699337074da97cc1e50589baa57f706315e5634e2a') { throw 'LAN7_PREPARED_CONTROL_BINDING' }
       - name: Authenticate full originals, run ordinary Main and separate DPAPI components
         env:
           GH_TOKEN: ${{ github.token }}

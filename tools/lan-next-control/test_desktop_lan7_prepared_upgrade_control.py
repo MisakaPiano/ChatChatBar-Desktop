@@ -338,8 +338,43 @@ class PreparedTests(unittest.TestCase):
   block=actual.split('// QR_PANEL_HELPER_BEGIN',1)[1].split('// QR_PANEL_HELPER_END',1)[0]
   for required in ['DesktopLanSyncGroupPanel(current, coordinator)','coordinator.state.collectAsState()','SemanticsActions.SetText','click("解锁管理")','click("邀请设备")','click("锁定管理")','ImageIO.read','captured.getRGB','RGBLuminanceSource(width, height, pixels)','QRCodeReader().decode','decoded.text == expected','scene.close(); closed = true','node.positionInRoot','node.size','bounds.width - size.width']:
    self.assertIn(required,block)
-  for forbidden in ['MultiFormatWriter','QRCodeWriter','ImageIO.write','Files.write','Files.copy','println(','printToLog','assertEquals(','Thread.sleep','coordinator.unlockManagement(','coordinator.createInvitation(','coordinator.lockManagement(']:
+  for forbidden in ['MultiFormatWriter','QRCodeWriter','ImageIO.write','Files.copy','println(','printToLog','assertEquals(','Thread.sleep','coordinator.unlockManagement(','coordinator.createInvitation(','coordinator.lockManagement(']:
    self.assertNotIn(forbidden,block)
   self.assertIn('QR_PRIVATE_PROCESS_HANDOFF_SLOT',block);self.assertNotIn('ProcessBuilder',block)
+  self.assertEqual(block.count('Files.write'),1)
+  self.assertIn('resolve("qr-ui-observation.private.json"), value.toString(), CREATE_NEW, WRITE)',block)
+  for forbidden in ('failure.message','failure.cause','put("code",','put("qrText",','put("message",','stackTrace'):
+   self.assertNotIn(forbidden,block)
+
+
+ def test_ui_wait_reuses_original_180s_budget_and_has_exact_unlock_subphases(self):
+  fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
+  block=fixture.split('// QR_PANEL_HELPER_BEGIN',1)[1].split('// QR_PANEL_HELPER_END',1)[0]
+  self.assertIn('framesUntil(ready: () -> Boolean) = withTimeout(180_000L)',block);self.assertNotIn('withTimeout(45_000L)',block)
+  self.assertIn('private suspend fun await(predicate: () -> Boolean) = withTimeout(180_000)',fixture)
+  self.assertIn('withTimeout(60_000)',fixture)
+  for prefix in ('COLD_UI_','COLD_UI_REOPEN_'):
+   for suffix in ('WAIT_EDITABLE','SCROLL_EDITABLE','SET_ORIGINAL_CODE','WAIT_UNLOCK_ENABLED','CLICK_UNLOCK','WAIT_UNLOCK_RESULT','CHECK_UNLOCK_RESULT'):
+    self.assertIn(prefix+suffix,d.SAFE_PHASES)
+  self.assertIn('runCatching { saveUiFailureObservation(failure) }',block)
+  self.assertIn('throw failure',block)
+ def test_optional_ui_observation_is_closed_private_and_never_replaces_original_failure(self):
+  value={'kind':'CCB_V7_WINDOWS_QR_UI_OBSERVATION_V1','sourceSha':d.NEW,'action':'COLD_INVITE','phase':'COLD_UI_WAIT_EDITABLE','failureType':'TimeoutCancellationException','stateStage':'READY',
+   'busy':True,'paused':False,'managementUnlocked':False,'localManagementAvailable':True,'managementRecoveryAvailable':False,'managementCanInvite':False,'hasError':False,'hasInvitation':False,'hasRecoveryCode':False,'sceneClosed':False,'semanticsAvailable':True,
+   'editorCount':1,'enabledEditorCount':0,'unlockLabelCount':1,'unlockEnabled':False,'editorEqualsOriginalCode':False,'hasQrNode':False,'renderedStage':'READY','renderedBusy':True,'renderedPaused':False,'renderedLocalManagementAvailable':True,'renderedManagementUnlocked':False}
+  diagnostic={'status':'ONE_ORIGINAL_CASE_OBSERVED','counts':{'tests':'1','failures':'1','errors':'0','skipped':'0'},'safePrimaryPhase':'COLD_UI_WAIT_EDITABLE','safePhase':'CLOSE_REAL_APP_CALL','safeCaughtType':'TimeoutCancellationException'}
+  with tempfile.TemporaryDirectory() as td:
+   path=pathlib.Path(td)/'qr-ui-observation.private.json'
+   self.assertEqual(d.qr_ui_observation_projection(path,diagnostic),{'status':'NOT_OBSERVED'})
+   d.write_new(path,value);self.assertEqual(d.qr_ui_observation_projection(path,diagnostic)['status'],'VALIDATED')
+   self.assertEqual(d.qr_ui_observation_projection(path,{}),{'status':'UNAVAILABLE_PRIMARY_PHASE_MISMATCH'})
+   for key,invalid in [('sourceSha','0'*40),('phase','PRIVATE_SECRET'),('stateStage','PRIVATE_SECRET'),('editorCount',True),('code','PRIVATE_SECRET'),('unlockEnabled','false')]:
+    bad=copy.deepcopy(value);bad[key]=invalid;path.write_text(json.dumps(bad))
+    answer=d.qr_ui_observation_projection(path,diagnostic);self.assertEqual(answer,{'status':'REJECTED_OR_UNAVAILABLE'});self.assertNotIn('PRIVATE_SECRET',json.dumps(answer))
+   unknown=copy.deepcopy(value);unknown['semanticsAvailable']=False
+   for key in ('editorCount','enabledEditorCount','unlockLabelCount','unlockEnabled','editorEqualsOriginalCode','hasQrNode'):unknown[key]=None
+   path.write_text(json.dumps(unknown));self.assertEqual(d.qr_ui_observation_projection(path,diagnostic)['status'],'VALIDATED')
+   unknown['editorCount']=0;path.write_text(json.dumps(unknown));self.assertEqual(d.qr_ui_observation_projection(path,diagnostic),{'status':'REJECTED_OR_UNAVAILABLE'})
+   path.write_text('{"kind":1,"kind":2}');self.assertEqual(d.qr_ui_observation_projection(path,diagnostic),{'status':'REJECTED_OR_UNAVAILABLE'})
 
 if __name__=='__main__':unittest.main()
