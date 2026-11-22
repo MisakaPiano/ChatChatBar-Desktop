@@ -19,7 +19,7 @@ class ChatHistoryActionProjectionTest {
         for ((text, keepsMenu) in inputs) {
             val user = message("u", MessageRole.USER, text, 2)
             val projection = known(listOf(assistant, user), setOf(assistant.id, user.id))
-            assertEquals(text, if (keepsMenu) letters else "旁白\n", projection.project(assistant, letters))
+            assertEquals(if (keepsMenu) letters else "旁白\n", projection.project(assistant, letters), text)
             assertEquals(text, projection.project(user, text))
         }
     }
