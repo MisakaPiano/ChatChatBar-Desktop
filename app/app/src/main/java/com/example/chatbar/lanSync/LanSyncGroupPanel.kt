@@ -8,20 +8,32 @@ import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.os.PersistableBundle
 import android.view.WindowManager
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.lanSync.*
 import com.example.chatbar.ui.kit.*
 import com.google.zxing.BarcodeFormat
-import com.google.zxing.MultiFormatWriter
+import com.google.zxing.EncodeHintType
+import com.google.zxing.WriterException
+import com.google.zxing.common.BitMatrix
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import java.text.DateFormat
 import java.util.Date
 
@@ -160,19 +172,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         state.invitation?.takeUnless { state.invitationFileOnly }?.let { offer ->
             val code = remember(offer) { offer.code() }
-            val bitmap = remember(code) {
-                try {
-                    val matrix = MultiFormatWriter().encode(code, BarcodeFormat.QR_CODE, 384, 384)
-                    Bitmap.createBitmap(matrix.width, matrix.height, Bitmap.Config.ARGB_8888).apply {
-                        for (y in 0 until matrix.height) for (x in 0 until matrix.width)
-                            setPixel(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
-                    }.asImageBitmap()
-                } catch (_: com.google.zxing.WriterException) { null }
-            }
-            if (bitmap != null) {
-                Image(bitmap, "新设备扫描此邀请", Modifier.widthIn(max = 280.dp).fillMaxWidth().aspectRatio(1f))
-                CbText("在新设备打开设备组同步，扫描此邀请，然后在这里核对设备身份。")
-            } else CbText("此邀请无法显示二维码，请复制后到新设备粘贴。")
+            LanSyncGroupInvitationQr(code)
             CbButton("复制邀请", { copy(code) }, variant = ButtonVariant.Secondary)
             CbButton("关闭邀请", actions::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
             state.invitationAddresses.filter { it != offer.host }.forEach { address ->
@@ -194,6 +194,64 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     }
     imageState.preview?.let { preview -> LanSyncFrozenImageDialog(preview, actions::closeImagePreview) }
 
+}
+
+private const val GROUP_INVITATION_QR_MAX_PIXELS = 1024
+private const val GROUP_INVITATION_QR_MIN_MODULE_PIXELS = 2
+
+@Composable
+internal fun LanSyncGroupInvitationQr(code: String) {
+    val matrix = remember(code) { androidGroupInvitationQrMatrix(code) }
+    if (matrix == null) {
+        CbText("此邀请无法显示二维码。请复制邀请，或生成邀请文件。")
+        return
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val preferredPixels = with(density) { 280.dp.roundToPx() }
+        val minimumPixels = matrix.width * GROUP_INVITATION_QR_MIN_MODULE_PIXELS
+        val availablePixels = minOf(constraints.maxWidth, constraints.maxHeight,
+            maxOf(preferredPixels, minimumPixels), GROUP_INVITATION_QR_MAX_PIXELS)
+        val modulePixels = availablePixels / matrix.width
+        if (modulePixels < GROUP_INVITATION_QR_MIN_MODULE_PIXELS) {
+            CbText("可用宽度不足，无法清晰显示完整二维码。请复制邀请，或生成邀请文件。")
+        } else {
+            val image = remember(matrix, modulePixels) { androidGroupInvitationQrImage(matrix, modulePixels) }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Canvas(Modifier.size(with(density) { image.width.toDp() }).semantics {
+                    contentDescription = "新设备扫描此邀请"
+                    role = Role.Image
+                }) {
+                    drawImage(image, dstSize = IntSize(image.width, image.height), filterQuality = FilterQuality.None)
+                }
+                CbText("在新设备打开设备组同步，扫描此邀请，然后在这里核对设备身份。")
+            }
+        }
+    }
+}
+
+/** Keep the exact v1 text and four white quiet-zone modules. */
+internal fun androidGroupInvitationQrMatrix(code: String): BitMatrix? = try {
+    QRCodeWriter().encode(code, BarcodeFormat.QR_CODE, 0, 0, mapOf(
+        EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L,
+        EncodeHintType.MARGIN to 4))
+} catch (_: WriterException) {
+    null
+}
+
+private fun androidGroupInvitationQrImage(matrix: BitMatrix, modulePixels: Int): ImageBitmap {
+    val side = matrix.width * modulePixels
+    val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+    val row = IntArray(side)
+    for (moduleY in 0 until matrix.height) {
+        for (moduleX in 0 until matrix.width) {
+            val color = if (matrix[moduleX, moduleY]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+            row.fill(color, moduleX * modulePixels, (moduleX + 1) * modulePixels)
+        }
+        val rowStart = moduleY * modulePixels
+        for (y in rowStart until rowStart + modulePixels) bitmap.setPixels(row, 0, side, 0, y, side, 1)
+    }
+    return bitmap.asImageBitmap()
 }
 
 /** A selected inspection stays frozen while the application continues synchronizing. */
