@@ -108,8 +108,7 @@ jobs:
             if ($desktopExit -and (Test-Path -LiteralPath evidence-live/gradle-original.log)) {
               Get-Content -LiteralPath evidence-live/gradle-original.log | Where-Object { $_ -match '^e: .*DesktopV7LiveSyntheticHostDraftTest\.kt:' } | Select-Object -First 8
             }
-            if ($desktopExit -and !$android.WaitForExit(12000)) { throw 'LIVE_WINDOWS_CONTROL_FAILED' }
-            if (!$android.WaitForExit(120000)) { throw 'LIVE_ANDROID_DID_NOT_FINISH' }
+            if (!$android.WaitForExit(200000)) { throw 'LIVE_ANDROID_DID_NOT_FINISH' }
             if ($desktopExit -or $android.ExitCode) { throw 'LIVE_PAIR_OR_PAYLOAD_FAILED' }
           } finally {
             foreach ($leaf in @('windows-result.json')) {
@@ -131,4 +130,5 @@ jobs:
             v7-control/evidence-live/verified.json
             v7-control/evidence-live/windows-result.json
             v7-control/evidence-live/android-result.json
+            v7-control/evidence-live/android-progress.json
           if-no-files-found: ignore

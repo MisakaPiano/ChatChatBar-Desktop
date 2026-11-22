@@ -82,6 +82,20 @@ def publish(path,value):
     need(not path.exists(),'PROTOCOL_FILE_ALREADY_EXISTS')
     os.replace(temp,path)
 
+def checkpoint(args,result):
+    path=args.result.with_name('android-progress.json')
+    temp=path.with_name(path.name+'.'+uuid.uuid4().hex+'.tmp')
+    message={key:result.get(key) for key in (
+        'phase','offerContractAccepted','joinFieldFocused','joinButtonPhysicalClicks',
+        'joiningUiObserved','readyUiObserved','otherSyncErrorObserved',
+        'expectedInvitationCountObserved','exactMessageContentObserved',
+        'appOwnedImageSha256Matched','readbackPublished')}
+    message['kind']='CCB_V7_ANDROID_LIVE_PROGRESS'
+    with temp.open('x',encoding='utf-8',newline='\n') as stream:
+        json.dump(message,stream,ensure_ascii=True)
+        stream.write('\n')
+    os.replace(temp,path)
+
 def scan_module():
     p=Path(__file__).resolve().with_name('v7_scan_camera_control.py')
     need(p.is_file() and not p.is_symlink() and hashlib.sha256(p.read_bytes()).hexdigest()==SCAN_SHA,'FROZEN_SCAN_HELPER_REQUIRED')
@@ -197,25 +211,37 @@ def execute(args,r):
     r['joinFieldFocused']=True
     r['phase']='WAIT_OFFER'
     publish(args.ready,{'kind':'CCB_V7_ANDROID_READY','ready':True})
+    checkpoint(args,r)
     deadline=time.monotonic()+args.offer_timeout
     while not args.offer.exists() and time.monotonic()<deadline:time.sleep(.5)
     need(args.offer.is_file() and not args.offer.is_symlink(),'OFFER_NOT_OBSERVED')
     v=offer(args.offer.read_bytes());r['offerContractAccepted']=True;r['phase']='INPUT_INVITATION'
+    checkpoint(args,r)
     need(join_field_focused(a,ui),'JOIN_FIELD_LOST_FOCUS')
     # Fixed invitation syntax excludes shell metacharacters. Keep it private.
     for offset in range(0,len(v['code']),160):
         a.run('shell','input','text',v['code'][offset:offset+160],timeout=20)
         time.sleep(.1)
     r['navigationPhase']='submit-join'
+    r['phase']='SUBMIT_INVITATION'
+    values=ui.labels(a.ui())
+    r['expectedInvitationCountObserved']=str(len(v['code']))+'字' in values
+    checkpoint(args,r)
     a.tap(reveal(a,ui,lambda root:ui.click_target(root,'检查并加入')))
     r['joinButtonPhysicalClicks']=1;r['phase']='WAIT_JOIN_AND_AUTOMATIC_RECEIVE'
+    checkpoint(args,r)
     deadline=time.monotonic()+args.delivery_timeout
     while time.monotonic()<deadline:
         root=a.ui();s=ui.state(root);values=ui.labels(root)
         need(not s['invalidError'],'INVITATION_INVALID_OFFER')
+        updated=s['joining'] and not r['joiningUiObserved'] or s['otherSyncError'] and not r['otherSyncErrorObserved']
+        ready={'立即检查','网盘设置'}.issubset(values)
+        updated=updated or ready and not r['readyUiObserved']
         r['joiningUiObserved']=r['joiningUiObserved'] or s['joining']
         r['otherSyncErrorObserved']=r['otherSyncErrorObserved'] or s['otherSyncError']
-        r['readyUiObserved']=r['readyUiObserved'] or {'立即检查','网盘设置'}.issubset(values)
+        r['readyUiObserved']=r['readyUiObserved'] or ready
+        if updated:
+            checkpoint(args,r)
         if read_as_app(a,'toybox','stat','-c','%s',MESSAGE_FILE,missing_ok=True) is None:
             time.sleep(1)
             continue

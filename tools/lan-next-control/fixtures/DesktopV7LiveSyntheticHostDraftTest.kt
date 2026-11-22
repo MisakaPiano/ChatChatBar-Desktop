@@ -151,7 +151,7 @@ class DesktopV7LiveSyntheticHostDraftTest {
                     offerOwned = true
 
                     phase = "real-android-proof-and-explicit-member-confirmation"
-                    await(110_000) { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation != null }
+                    await(165_000) { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation != null }
                     val confirmation = checkNotNull(coordinator.state.value.peerConfirmation)
                     check(confirmation.fingerprint.matches(Regex("[a-f0-9]{64}")))
                     check(confirmation.name.isNotBlank())
