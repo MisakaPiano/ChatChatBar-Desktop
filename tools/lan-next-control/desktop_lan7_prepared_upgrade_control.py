@@ -24,7 +24,7 @@ EXPECTED_CANDIDATE = {'series': 'lan7', 'version': '0.1.0-lan.7', 'sourceSha': '
 BRIDGE_SHA = '896abd01777e01084fe83d363c288eab3fa4d5135016ebec8b722452d9f293f1'
 PROFILE_SHA = '56f1260d9f1fa222f108518b9b5d5a1821c4e094c070ad283e97e2095ad69ffd'
 FIXTURE = HERE / 'fixtures/DesktopGroupPreparedUpgradeControlTest.kt'
-FIXTURE_SHA = '9cf9e155a66e0aeddac18dc4f2010f4a01c52a0a39bbeacef17464b62232b2fc'
+FIXTURE_SHA = 'c2f1b2e942fd10edae1d04ccc3ea2e874254811030dcb3e5d5bb88790cc935a2'
 CLASS = 'com.example.chatbar.desktop.lanSync.DesktopGroupPreparedUpgradeControlTest'
 METHODS = {
     'SEED': 'seedOrResumeTheSamePreparedDesktopGroupWithRealDpapi',
@@ -52,7 +52,8 @@ SAFE_PHASES = frozenset({'GUARD','READ_BASE_ORACLE','OWNERSHIP','VERIFY_RETAINED
  'OPEN_PREPARED_ON_CANDIDATE','UNLOCK_SAME_DPAPI_CODE','COMPLETE_SAME_SETUP','VERIFY_REAL_LOCAL_SOURCE_AND_PUBLISH_OFFLINE',
  'CLOSE_REAL_APP','POST_CLOSE_EVIDENCE','COLD_OPEN_READY','RESUME_READY_FOR_INVITATION','UNLOCK_READY_WITH_ORIGINAL_DPAPI_CODE',
  'ISSUE_REAL_COORDINATOR_INVITATION','CREATE_UNUSED_SYNTHETIC_SETUP','EXPLICIT_ARCHIVE_UNUSED_SETUP','READ_ARCHIVE_DPAPI_ORACLE',
- 'COLD_OPEN_COMPLETED_ARCHIVE','CAPTURE_AUTHENTICATED_COLD_BASELINE','CLOSE_REAL_APP_CALL','VERIFY_CLOSE_NOTICE'})
+ 'COLD_OPEN_COMPLETED_ARCHIVE','CAPTURE_AUTHENTICATED_COLD_BASELINE','CLOSE_REAL_APP_CALL','VERIFY_CLOSE_NOTICE',
+ 'COLD_PANEL_UNLOCK_MANAGEMENT','COLD_PANEL_CREATE_INVITATION','COLD_PANEL_DECODE_RENDERED_QR','COLD_PANEL_LOCK_PRIVACY','COLD_PANEL_DISPOSE_PRIVACY'})
 SAFE_JVM_TYPES = frozenset({'AssertionError','IllegalStateException','IllegalArgumentException','IOException','SecurityException','CancellationException','TimeoutCancellationException','OutOfMemoryError','DesktopLanSyncFinalFlushIncompleteException','DesktopLanSyncFinalFlushTimeoutException','UNKNOWN'})
 _phase = 'GUARD'
 
@@ -163,10 +164,13 @@ def report(value, action):
         require(value['visibleUiExercised'] is False, 'NO_PACKAGED_UI_CLAIM')
         details = value['details']; require(type(details) is dict, 'COMPONENT_DETAILS')
         if action == 'COLD_INVITE':
+            hashes = {'profileSha256','renderedQrRasterSha256','invitationPayloadSha256'}
             keys = {'coldReady','sameGroupAndDailyIdentity','originalDpapiRecoveryCodeUsed','coordinatorInvitationIssued',
-                    'managementLockedAfterward','immutableProtectedOriginsRetained','originalSyntheticEntitiesUnchanged','originalAuthenticatedDeliveryObjectsRetained','profileSha256'}
-            require(set(details) == keys and all(type(details[k]) is bool and details[k] for k in keys-{'profileSha256'}), 'COLD_INVITE_DETAILS')
-            require(re.fullmatch('[a-f0-9]{64}', details['profileSha256']) is not None, 'PROFILE_DIGEST')
+                    'managementLockedAfterward','immutableProtectedOriginsRetained','originalSyntheticEntitiesUnchanged','originalAuthenticatedDeliveryObjectsRetained',
+                    'originalRecoveryCodeEnteredInPanel','managementUnlockedThroughPanel','invitationCreatedThroughPanel',
+                    'renderedQrDecodedMatchesLiveOffer','lockedPanelSecretsAbsent','sceneDisposalLocksManagement'} | hashes
+            require(set(details) == keys and all(type(details[k]) is bool and details[k] for k in keys-hashes), 'COLD_INVITE_DETAILS')
+            require(all(type(details[k]) is str and re.fullmatch('[a-f0-9]{64}', details[k]) is not None for k in hashes), 'PROFILE_AND_QR_DIGEST')
         else:
             require(set(details) == {'unusedSetupOnly','explicitArchiveAction','completedArchiveRetained','liveEntitiesUnchanged','coldEmptyStateVerified','archiveSha256'}, 'ARCHIVE_DETAILS')
             for key in ('unusedSetupOnly','completedArchiveRetained','liveEntitiesUnchanged'):

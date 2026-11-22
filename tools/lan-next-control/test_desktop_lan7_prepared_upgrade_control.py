@@ -3,6 +3,14 @@ from unittest.mock import patch
 import desktop_lan7_prepared_upgrade_control as d
 ORIGINAL_CLOSE_BLOCK = b'                        var notices = 0\n                        withContext(NonCancellable) {\n                            withTimeout(60_000) {\n                                closeDesktopWithLanSyncCompletionNotice(close = { app.close() }, showNotice = { notices++ })\n                            }\n                        }\n                        // Hold the root ownership until AppContainer teardown is confirmed.\n                        canRelease = true\n                        check(notices == 0)\n'
 ROOT=pathlib.Path(__file__).resolve().parents[2]
+ORIGINAL_V7_COLD_ACTIONS = b'                phase = "UNLOCK_READY_WITH_ORIGINAL_DPAPI_CODE"\n                coordinator.unlockManagement(code)\n                await { !coordinator.state.value.busy && coordinator.state.value.managementUnlocked }\n                check(coordinator.state.value.error == null)\n                phase = "ISSUE_REAL_COORDINATOR_INVITATION"\n                coordinator.createInvitation()\n                await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }\n                check(coordinator.state.value.error == null)\n                coordinator.lockManagement()\n                coordinator.pauseAndDrain()\n                check(!coordinator.state.value.managementUnlocked && coordinator.state.value.invitation == null && coordinator.state.value.recoveryCode == null)\n'
+def without_qr_visual(value):
+ for marker in ('FILE_OPTIN','IMPORTS','PROOF_VAR','REPORT','HELPER'):
+  value,count=re.subn(rb'[ ]*// QR_PANEL_'+marker.encode()+rb'_BEGIN[^\n]*\n.*?[ ]*// QR_PANEL_'+marker.encode()+rb'_END\n',b'',value,count=1,flags=re.S)
+  if count!=1:raise AssertionError('EXACT_QR_DIAGNOSTIC_BLOCK_REQUIRED')
+ value,count=re.subn(rb'                // QR_PANEL_COLD_ACTIONS_BEGIN\n.*?                // QR_PANEL_COLD_ACTIONS_END\n',lambda _:ORIGINAL_V7_COLD_ACTIONS,value,count=1,flags=re.S)
+ if count!=1:raise AssertionError('EXACT_ORIGINAL_ACTION_BLOCK_REQUIRED')
+ return value
 REQUEST=json.loads((ROOT/d.REQUEST).read_bytes())
 def first(action='SEED'):
  v={'kind':'CCB_V6_PREPARED_DPAPI_COMPONENT_V1','sourceSha':d.OLD if action=='SEED' else d.NEW,'action':action,
@@ -14,7 +22,10 @@ def first(action='SEED'):
  return v
 def additional(action):
  details={'coldReady':True,'sameGroupAndDailyIdentity':True,'originalDpapiRecoveryCodeUsed':True,'coordinatorInvitationIssued':True,
- 'managementLockedAfterward':True,'immutableProtectedOriginsRetained':True,'originalSyntheticEntitiesUnchanged':True,'originalAuthenticatedDeliveryObjectsRetained':True,'profileSha256':'2'*64} if action=='COLD_INVITE' else {
+ 'managementLockedAfterward':True,'immutableProtectedOriginsRetained':True,'originalSyntheticEntitiesUnchanged':True,'originalAuthenticatedDeliveryObjectsRetained':True,'profileSha256':'2'*64,
+ 'originalRecoveryCodeEnteredInPanel':True,'managementUnlockedThroughPanel':True,'invitationCreatedThroughPanel':True,
+ 'renderedQrDecodedMatchesLiveOffer':True,'lockedPanelSecretsAbsent':True,'sceneDisposalLocksManagement':True,
+ 'renderedQrRasterSha256':'5'*64,'invitationPayloadSha256':'6'*64} if action=='COLD_INVITE' else {
  'unusedSetupOnly':True,'explicitArchiveAction':action=='ARCHIVE','completedArchiveRetained':True,'liveEntitiesUnchanged':True,'coldEmptyStateVerified':action=='ARCHIVE_COLD','archiveSha256':'4'*64}
  return {'kind':'CCB_LAN6_LAN7_ADDITIONAL_DPAPI_COMPONENT_V1','sourceSha':d.NEW,'action':action,'passed':True,'realDpapi':True,
  'realAppContainer':True,'packagedMainExercised':False,'visibleUiExercised':False,'networkDeliveryExercised':False,'closeReturned':True,'closeNoticeKnown':True,'closeNoticeCount':0,'closeOutcome':'RETURNED_WITHOUT_NOTICE','details':details}
@@ -89,6 +100,7 @@ class PreparedTests(unittest.TestCase):
    with self.assertRaises(ValueError):d.environment_for(root,private,d.OLD,'UNKNOWN',private/'report.json')
  def test_original_compiled_fixture_body_and_helpers_unchanged(self):
   fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_bytes()
+  fixture=without_qr_visual(fixture)
   candidate_line=('    private val candidate = "'+d.NEW+'"\n').encode('ascii')
   self.assertEqual(fixture.count(candidate_line),1)
   fixture=fixture.replace(candidate_line,b'    private val candidate = "49b7edf434178611c72d31f599b7300a3a3225f2"\n',1)
@@ -249,6 +261,7 @@ class PreparedTests(unittest.TestCase):
 
  def test_close_sampling_normalizes_to_exact_v3_fixture_and_preserves_direct_close(self):
   fixture=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
+  fixture=without_qr_visual(fixture.encode('utf8')).decode('utf8')
   candidate_line='    private val candidate = "'+d.NEW+'"\n'
   self.assertEqual(fixture.count(candidate_line),1)
   fixture=fixture.replace(candidate_line,'    private val candidate = "8b4e88553243a910bc5682da48e72cd8e25220c3"\n',1)
@@ -302,5 +315,31 @@ class PreparedTests(unittest.TestCase):
    self.assertEqual((ui.isolated_environment,ui.native_command,ui.METHOD),old)
    self.assertEqual(comp.failure['closeSampling'],{'status':'REJECTED_OR_UNAVAILABLE'});self.assertNotIn('PRIVATE_SECRET',json.dumps(comp.failure))
 
+
+
+ def test_qr_visual_overlay_restores_exact_v7_fixture_and_preserves_source_and_native_guards(self):
+  actual=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_bytes()
+  self.assertEqual(hashlib.sha256(without_qr_visual(actual)).hexdigest(),'9cf9e155a66e0aeddac18dc4f2010f4a01c52a0a39bbeacef17464b62232b2fc')
+  self.assertEqual(len(d.ACTIONS),5);self.assertEqual(len(set(d.METHODS.values())),3);self.assertEqual(len(d.OUTPUTS),10)
+ def test_qr_proof_requires_true_ui_pixel_privacy_fields_and_rejects_codes(self):
+  good=additional('COLD_INVITE');d.report(good,'COLD_INVITE')
+  fields=['originalRecoveryCodeEnteredInPanel','managementUnlockedThroughPanel','invitationCreatedThroughPanel','renderedQrDecodedMatchesLiveOffer','lockedPanelSecretsAbsent','sceneDisposalLocksManagement']
+  for key in fields:
+   for invalid in (False,1,'true'):
+    bad=copy.deepcopy(good);bad['details'][key]=invalid
+    with self.subTest(key=key,invalid=invalid),self.assertRaises(ValueError):d.report(bad,'COLD_INVITE')
+  for key in ['renderedQrRasterSha256','invitationPayloadSha256']:
+   bad=copy.deepcopy(good);bad['details'][key]='PRIVATE_CAPABILITY'
+   with self.assertRaises(ValueError):d.report(bad,'COLD_INVITE')
+  bad=copy.deepcopy(good);bad['details']['qrText']='PRIVATE_CAPABILITY'
+  with self.assertRaises(ValueError):d.report(bad,'COLD_INVITE')
+ def test_qr_decoder_reads_real_panel_pixels_and_never_reencodes_expected_or_exports_screenshot(self):
+  actual=(ROOT/'tools/lan-next-control/fixtures/DesktopGroupPreparedUpgradeControlTest.kt').read_text(encoding='utf8')
+  block=actual.split('// QR_PANEL_HELPER_BEGIN',1)[1].split('// QR_PANEL_HELPER_END',1)[0]
+  for required in ['DesktopLanSyncGroupPanel(current, coordinator)','coordinator.state.collectAsState()','SemanticsActions.SetText','click("解锁管理")','click("邀请设备")','click("锁定管理")','ImageIO.read','captured.getRGB','RGBLuminanceSource(width, height, pixels)','QRCodeReader().decode','decoded.text == expected','scene.close(); closed = true','node.positionInRoot','node.size','bounds.width - size.width']:
+   self.assertIn(required,block)
+  for forbidden in ['MultiFormatWriter','QRCodeWriter','ImageIO.write','Files.write','Files.copy','println(','printToLog','assertEquals(','Thread.sleep','coordinator.unlockManagement(','coordinator.createInvitation(','coordinator.lockManagement(']:
+   self.assertNotIn(forbidden,block)
+  self.assertIn('QR_PRIVATE_PROCESS_HANDOFF_SLOT',block);self.assertNotIn('ProcessBuilder',block)
 
 if __name__=='__main__':unittest.main()

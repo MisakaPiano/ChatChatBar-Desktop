@@ -1,5 +1,21 @@
+// QR_PANEL_FILE_OPTIN_BEGIN
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
+// QR_PANEL_FILE_OPTIN_END
 package com.example.chatbar.desktop.lanSync
 
+// QR_PANEL_IMPORTS_BEGIN
+import androidx.compose.runtime.*
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.AnnotatedString
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.DecodeHintType
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
+import org.jetbrains.skia.EncodedImageFormat
+// QR_PANEL_IMPORTS_END
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.CharacterCard
@@ -298,6 +314,9 @@ class DesktopGroupPreparedUpgradeControlTest {
             }
             check(immutable.isNotEmpty() && immutable.all { before[it.key] == it.value })
             val code = readProtected(protector, privateRoot.resolve("recovery.private.dpapi")) { it.toString(Charsets.UTF_8) }
+            // QR_PANEL_PROOF_VAR_BEGIN
+            var qrProof: QrPanelProof? = null
+            // QR_PANEL_PROOF_VAR_END
             withCandidateApp(data) { app, coordinator ->
                 phase = "COLD_OPEN_READY"
                 coordinator.open()
@@ -309,17 +328,12 @@ class DesktopGroupPreparedUpgradeControlTest {
                 phase = "RESUME_READY_FOR_INVITATION"
                 coordinator.resumeIfConfigured()
                 await { !coordinator.state.value.busy && !coordinator.state.value.paused && coordinator.state.value.stage == LanSyncGroupPanelStage.READY }
-                phase = "UNLOCK_READY_WITH_ORIGINAL_DPAPI_CODE"
-                coordinator.unlockManagement(code)
-                await { !coordinator.state.value.busy && coordinator.state.value.managementUnlocked }
-                check(coordinator.state.value.error == null)
-                phase = "ISSUE_REAL_COORDINATOR_INVITATION"
-                coordinator.createInvitation()
-                await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
-                check(coordinator.state.value.error == null)
-                coordinator.lockManagement()
+                // QR_PANEL_COLD_ACTIONS_BEGIN
+                qrProof = verifyOriginalCodeAndRenderedInvitation(coordinator, code)
                 coordinator.pauseAndDrain()
                 check(!coordinator.state.value.managementUnlocked && coordinator.state.value.invitation == null && coordinator.state.value.recoveryCode == null)
+                phase = "ISSUE_REAL_COORDINATOR_INVITATION"
+                // QR_PANEL_COLD_ACTIONS_END
                 check(rawInventory(data, LanSyncMetadataBudget().maximumDecodedCost).first == raw)
                 check(immutable.all { protectedInventory(sync)[it.key] == it.value })
             }
@@ -334,6 +348,13 @@ class DesktopGroupPreparedUpgradeControlTest {
                 put("immutableProtectedOriginsRetained", true); put("originalSyntheticEntitiesUnchanged", true)
                 put("originalAuthenticatedDeliveryObjectsRetained", true)
                 put("profileSha256", oracle.getValue("profilePin").jsonPrimitive.content)
+                // QR_PANEL_REPORT_BEGIN
+                val pixels = checkNotNull(qrProof)
+                put("originalRecoveryCodeEnteredInPanel", true); put("managementUnlockedThroughPanel", true)
+                put("invitationCreatedThroughPanel", true); put("renderedQrDecodedMatchesLiveOffer", true)
+                put("lockedPanelSecretsAbsent", true); put("sceneDisposalLocksManagement", true)
+                put("renderedQrRasterSha256", pixels.rasterSha256); put("invitationPayloadSha256", pixels.payloadSha256)
+                // QR_PANEL_REPORT_END
             })
         }
     }
@@ -689,6 +710,125 @@ class DesktopGroupPreparedUpgradeControlTest {
             "SecurityException", "CancellationException", "TimeoutCancellationException", "OutOfMemoryError",
             "DesktopLanSyncFinalFlushIncompleteException", "DesktopLanSyncFinalFlushTimeoutException")) name else "UNKNOWN"
     }
+    // QR_PANEL_HELPER_BEGIN
+    private data class QrPanelProof(val rasterSha256: String, val payloadSha256: String)
+    private suspend fun verifyOriginalCodeAndRenderedInvitation(coordinator: LanSyncGroupCoordinator, originalCode: String): QrPanelProof {
+        check(SwingUtilities.isEventDispatchThread())
+        val scene = ImageComposeScene(1000, 1600, coroutineContext = edt) {
+            val current by coordinator.state.collectAsState()
+            CompositionLocalProvider(LocalDesktopUiStrings provides DesktopUiStrings(DesktopUiLanguage.ZH_CN)) {
+                DesktopLanSyncGroupPanel(current, coordinator)
+            }
+        }
+        var closed = false
+        fun nodes(): List<SemanticsNode> {
+            fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+            return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+        }
+        fun qrNodes() = nodes().filter { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("新设备扫描此邀请") == true }
+        fun editor() = nodes().filter { it.config.contains(SemanticsActions.SetText) }.single()
+        fun button(label: String): SemanticsNode {
+            var node = nodes().filter { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == label } == true }.single()
+            while (!node.config.contains(SemanticsActions.OnClick)) node = checkNotNull(node.parent)
+            return node
+        }
+        suspend fun framesUntil(ready: () -> Boolean) = withTimeout(45_000L) {
+            while (true) { scene.render(System.nanoTime()).close(); if (ready()) break; delay(16L) }
+        }
+        suspend fun onScreen(select: () -> SemanticsNode): SemanticsNode {
+            repeat(16) {
+                scene.render(System.nanoTime()).close()
+                val node = select(); val bounds = node.boundsInRoot
+                val position = node.positionInRoot; val size = node.size
+                val rawRight = position.x + size.width; val rawBottom = position.y + size.height
+                if (size.width > 0 && size.height > 0 && position.x >= 0f && position.y >= 0f && rawRight <= 1000f && rawBottom <= 1600f &&
+                    kotlin.math.abs(bounds.left - position.x) < 0.5f && kotlin.math.abs(bounds.top - position.y) < 0.5f &&
+                    kotlin.math.abs(bounds.width - size.width) < 0.5f && kotlin.math.abs(bounds.height - size.height) < 0.5f) return node
+                var scroll: SemanticsNode? = node
+                while (scroll != null && !scroll.config.contains(SemanticsActions.ScrollBy)) scroll = scroll.parent
+                val dy = if (position.y < 0f) position.y - 24f else rawBottom - 1600f + 24f
+                check(checkNotNull(scroll).config[SemanticsActions.ScrollBy].action!!.invoke(0f, dy.coerceIn(-1200f, 1200f)))
+                delay(16L)
+            }
+            error("QR_PANEL_TARGET_NOT_VISIBLE")
+        }
+        suspend fun click(label: String) {
+            framesUntil {
+                val labels = nodes().filter { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == label } == true }
+                check(labels.size <= 1)
+                labels.size == 1 && !button(label).config.contains(SemanticsProperties.Disabled)
+            }
+            val node = onScreen { button(label) }
+            check(!node.config.contains(SemanticsProperties.Disabled))
+            check(checkNotNull(node.config[SemanticsActions.OnClick].action).invoke())
+        }
+        suspend fun unlockThroughPanel() {
+            framesUntil { nodes().filter { it.config.contains(SemanticsActions.SetText) }.let { fields -> check(fields.size <= 1); fields.size == 1 && !fields.single().config.contains(SemanticsProperties.Disabled) } }
+            val field = onScreen { editor() }
+            check(!field.config.contains(SemanticsProperties.Disabled))
+            check(checkNotNull(field.config[SemanticsActions.SetText].action).invoke(AnnotatedString(originalCode)))
+            framesUntil { !button("解锁管理").config.contains(SemanticsProperties.Disabled) }
+            click("解锁管理")
+            framesUntil { !coordinator.state.value.busy && coordinator.state.value.managementUnlocked }
+            check(coordinator.state.value.error == null)
+        }
+        fun noSecretText(secret: String) = nodes().none { node ->
+            node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { secret in it.text } ||
+                node.config.getOrNull(SemanticsProperties.EditableText)?.text?.contains(secret) == true
+        }
+        try {
+            phase = "COLD_PANEL_UNLOCK_MANAGEMENT"
+            framesUntil { !coordinator.state.value.managementUnlocked && qrNodes().isEmpty() }
+            unlockThroughPanel()
+            phase = "COLD_PANEL_CREATE_INVITATION"
+            click("邀请设备")
+            framesUntil { !coordinator.state.value.busy && coordinator.state.value.invitation != null && qrNodes().size == 1 }
+            check(coordinator.state.value.error == null)
+            val liveOffer = checkNotNull(coordinator.state.value.invitation)
+            val expected = liveOffer.code()
+            phase = "COLD_PANEL_DECODE_RENDERED_QR"
+            onScreen { qrNodes().single() }
+            scene.render(System.nanoTime()).close()
+            val bounds = qrNodes().single().boundsInRoot
+            val left = kotlin.math.floor(bounds.left.toDouble()).toInt(); val top = kotlin.math.floor(bounds.top.toDouble()).toInt()
+            val right = kotlin.math.ceil(bounds.right.toDouble()).toInt(); val bottom = kotlin.math.ceil(bounds.bottom.toDouble()).toInt()
+            check(left >= 0 && top >= 0 && right <= 1000 && bottom <= 1600 && right > left && bottom > top)
+            val png = scene.render(System.nanoTime()).use { image -> checkNotNull(image.encodeToData(EncodedImageFormat.PNG)).use { it.bytes } }
+            var rasterHash: String? = null
+            try {
+                val captured = checkNotNull(javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(png)))
+                try {
+                    check(captured.width == 1000 && captured.height == 1600)
+                    val width = right - left; val height = bottom - top
+                    val pixels = captured.getRGB(left, top, width, height, null, 0, width)
+                    try {
+                        val source = RGBLuminanceSource(width, height, pixels)
+                        val decoded = QRCodeReader().decode(BinaryBitmap(HybridBinarizer(source)), mapOf(DecodeHintType.TRY_HARDER to true))
+                        // Do not use assertEquals here: mismatch diagnostics must never print either capability.
+                        check(decoded.barcodeFormat == BarcodeFormat.QR_CODE && decoded.text == expected)
+                        val raw = ByteBuffer.allocate(pixels.size * 4).apply { pixels.forEach { putInt(it) } }.array()
+                        try { rasterHash = sha(raw) } finally { raw.fill(0) }
+                    } finally { pixels.fill(0) }
+                } finally { captured.flush() }
+            } finally { png.fill(0) }
+            check(coordinator.state.value.invitation == liveOffer)
+            // QR_PRIVATE_PROCESS_HANDOFF_SLOT: suggestion only; no file/process/wait or Android action is enabled.
+            phase = "COLD_PANEL_LOCK_PRIVACY"
+            click("锁定管理")
+            framesUntil { !coordinator.state.value.managementUnlocked && coordinator.state.value.invitation == null && coordinator.state.value.recoveryCode == null && qrNodes().isEmpty() }
+            check(noSecretText(originalCode) && noSecretText(expected))
+            check(editor().config.getOrNull(SemanticsProperties.EditableText)?.text.orEmpty().isEmpty())
+            // Reopen management, without issuing another invitation, so disposal is tested from an unlocked state.
+            unlockThroughPanel()
+            check(coordinator.state.value.managementUnlocked)
+            phase = "COLD_PANEL_DISPOSE_PRIVACY"
+            scene.close(); closed = true
+            await { !coordinator.state.value.managementUnlocked && coordinator.state.value.invitation == null && coordinator.state.value.recoveryCode == null }
+            check(coordinator.state.value.error == null)
+            return QrPanelProof(checkNotNull(rasterHash), sha(expected.toByteArray(Charsets.UTF_8)))
+        } finally { if (!closed) scene.close() }
+    }
+    // QR_PANEL_HELPER_END
     private fun messageId(index: Int) = "v6-message-" + index.toString().padStart(3, '0')
     private fun text(index: Int) = "合成第 $index 段：" + "合成内容😀".repeat(16_384)
 
