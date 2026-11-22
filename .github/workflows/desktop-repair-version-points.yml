@@ -78,6 +78,7 @@ jobs:
           --tests 'com.example.chatbar.data.repository.ChatMessageSerializationTest'
           --no-daemon --stacktrace
       - name: Verify actual runtime navigation and archive transfer
+        if: ${{ !cancelled() }}
         working-directory: app
         run: >-
           .\gradlew.bat :desktopApp:test
