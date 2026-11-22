@@ -74,6 +74,32 @@ jobs:
             --tests 'com.example.chatbar.desktop.DesktopLanSyncResourceTest.heifWithoutDesktopCodecKeepsExactBytesAndLeavesTextUsable' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 \
             --no-daemon --max-workers=1 --no-parallel --console=plain
+      - name: Require the named regression cases in the actual JUnit reports
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          wanted = {
+              'firstExplicitJoinAutomaticallySendsOneRealProofWhenProtectionStarts',
+              'explicitPauseDisarmsFirstProofWithoutChangingThePreparedIdentity',
+              'verifiedRevocationCanArchiveOnlyAnUnactivatedApplicationAndKeepTheOriginalBytes',
+              'admittedDisplayNameSurvivesTheFirstPublicationFailureAndManagementResume',
+              'unchangedSharedFormatLeavesIndependentConversationReceiptsAndSendsUnblocked',
+              'realPinnedSocketTimeoutFetchesTheSameSignedMessageImageFromAnotherActiveMember',
+              'anActualCancellationOrInterruptNeverVisitsAnAlternateRoute',
+              'aRealUnsupportedProgressivePhotoHoldsOnlyItsConversationAndRetainsThePublishedBase',
+              'ordinaryMemberCanUseAFileContainingEveryAuthenticatedHeadBeyondV1TextCapacity',
+              'ordinary48MpJpegPreservesTheOriginalAndDoesNotBlockAnotherConversation',
+              'heifWithoutDesktopCodecKeepsExactBytesAndLeavesTextUsable',
+          }
+          for module in ('sharedCore', 'desktopApp'):
+              for report in Path(f'app/{module}/build/test-results/test').glob('TEST-*.xml'):
+                  for case in ElementTree.parse(report).getroot().findall('testcase'):
+                      if not list(case):
+                          wanted.discard(case.get('name'))
+          assert not wanted, f'Missing successful regression cases: {sorted(wanted)}'
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:

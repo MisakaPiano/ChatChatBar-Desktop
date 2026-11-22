@@ -17,7 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AndroidLanSyncCameraResourceTest {
-    private val cache get() = InstrumentationRegistry.getInstrumentation().targetContext.cacheDir.toPath()
+    private val cache get() = InstrumentationRegistry.getInstrumentation().targetContext.cacheDir.canonicalFile.toPath()
     private val record = LanSyncRecord("chat_sessions", "synthetic", buildJsonObject { put("id", "synthetic") })
 
     @Test fun camera48MpJpegRendersSampledAndKeepsExactOriginal() {
