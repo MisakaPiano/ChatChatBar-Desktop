@@ -250,16 +250,20 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                     val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor).also { decoded[key] = it }
                     val row = actual.envelope.deviceLedger ?: continue
                     require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
-                    val before = try { (servedLedger ?: localCustody { custody.ledger() }).current().reference() } catch (failure: IllegalArgumentException) {
-                        if (failure.message == "SYNC_GROUP_LEDGER_FORK_OR_MISSING") null else throw failure
-                    }
                     // Validate remote signatures/identities before entering the local protected writer.
                     val validation = SyncDeviceLedger(trust)
                     (actual.envelope.ledgerHistory + row).forEach { validation.offer(it) }
                     val rows = actual.envelope.ledgerHistory + row
-                    val updated = servedLedger?.also { ledger -> rows.forEach(ledger::offer) }
-                        ?: localCustody { custody.update(rows) }
-                    if (servedLedger == null && before != updated.current().reference()) progress = true
+                    val updated = if (servedLedger != null) {
+                        rows.forEach(servedLedger::offer)
+                        servedLedger
+                    } else {
+                        val before = try { localCustody { custody.ledger().current().reference() } }
+                        catch (failure: IllegalArgumentException) {
+                            if (failure.message == "SYNC_GROUP_LEDGER_FORK_OR_MISSING") null else throw failure
+                        }
+                        localCustody { custody.update(rows) }.also { if (before != it.current().reference()) progress = true }
+                    }
                     when (updated.state(row.id)) {
                         SyncVersionState.ADMITTED -> status(key, SyncInboxStage.LEDGER_ADMITTED)
                         SyncVersionState.WAITING_FOR_PARENTS -> status(key, SyncInboxStage.WAITING_FOR_LEDGER)
