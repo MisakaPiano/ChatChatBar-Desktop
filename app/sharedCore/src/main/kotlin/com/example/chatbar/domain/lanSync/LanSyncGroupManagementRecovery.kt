@@ -499,7 +499,8 @@ class LanSyncGroupManagementRecovery(private val root: Path,
     }
 
     /** Approve only the real daily inviter's still-current TLS/HPKE proof, with exact frozen acknowledgment. */
-    suspend fun addMember(approval: LanSyncGroupMemberApproval): LanSyncGroupAdministrationReceipt = guarded {
+    suspend fun addMember(approval: LanSyncGroupMemberApproval,
+        onAdmitted: (LanSyncGroupInvitedPeer, SyncDeviceLedger) -> Unit = { _, _ -> }): LanSyncGroupAdministrationReceipt = guarded {
         val value = requireActive(); val record = ready(value)
         value.session.withRecipient { recipient ->
             val custody = custody(value, record, recipient, false); val journal = journal(value, record, false)
@@ -520,6 +521,7 @@ class LanSyncGroupManagementRecovery(private val root: Path,
                 }
             }, { sign(value, it, custody.ledger()) })
             journal.applyToCustody(commit, custody)
+            onAdmitted(preview.peer, custody.ledger())
             LanSyncGroupAdministrationReceipt(custody.ledger().current(), publish(value, record, custody, local(record, false), record.localReplica))
         }
     }

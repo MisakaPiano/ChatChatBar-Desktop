@@ -193,7 +193,8 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
         LanSyncGroupAdministrationReceipt(custody.ledger().current(), receipt)
     }
     /** Exact UI acknowledgment plus current real peer proof gate the new root intent. */
-    suspend fun addMember(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupMemberApproval): LanSyncGroupAdministrationReceipt = guarded {
+    suspend fun addMember(draft: LanSyncGroupEnrollmentDraft, approval: LanSyncGroupMemberApproval,
+        onAdmitted: (LanSyncGroupInvitedPeer, SyncDeviceLedger) -> Unit = { _, _ -> }): LanSyncGroupAdministrationReceipt = guarded {
         requireNoAbandon(); val record = readyRecord(); val session = management(record, draft); val custody = custody(record)
         val preview = approval.preview; val journal = rootJournal(record, session)
         journal.observeAdmitted(custody.ledger())
@@ -209,6 +210,7 @@ class LanSyncGroupEnrollment(private val root: Path, private val workspace: LanS
             }
         }, session::signRootPayload)
         journal.applyToCustody(commit, custody)
+        onAdmitted(preview.peer, custody.ledger())
         val receipt = finishRootDelivery(record, session, custody)
         releaseSession(session); observe("GROUP_MEMBER_LOCALLY_ADMITTED")
         LanSyncGroupAdministrationReceipt(custody.ledger().current(), receipt)

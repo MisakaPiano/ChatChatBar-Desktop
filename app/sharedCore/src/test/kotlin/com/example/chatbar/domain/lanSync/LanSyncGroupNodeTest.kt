@@ -1,6 +1,10 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.FormatCard
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
 import java.io.InputStream
@@ -104,6 +108,49 @@ class LanSyncGroupNodeTest {
         val after = retainedFiles(root)
         assertEquals(before.keys, after.keys)
         before.forEach { (name, bytes) -> assertContentEquals(bytes, after.getValue(name), name) }
+    }
+
+    @Test fun unchangedSharedFormatLeavesIndependentConversationReceiptsAndSendsUnblocked() = withGroup { group ->
+        val source = group.End(0); val target = group.End(1)
+        val origin = source.enroll(); val receiver = target.enroll()
+        val formatUnit = "format_cards/f"
+        val a = "conversation/a"; val b = "conversation/b"
+        val format = source.data.resolve("entities/format_cards/f.json")
+        Files.createDirectories(format.parent)
+        LanSyncJsonFiles.write(format, FormatCard.serializer(), FormatCard("f", "合成格式", "合成模板", createdAt = 1))
+        fun session(end: Group.End, id: String, title: String) {
+            val path = end.data.resolve("entities/chat_sessions/$id.json")
+            Files.createDirectories(path.parent)
+            LanSyncJsonFiles.write(path, ChatSession.serializer(), ChatSession(id, "card", title, formatCardId = "f", createdAt = 1, updatedAt = 1))
+        }
+        fun message(end: Group.End, id: String, text: String): Path {
+            val path = end.data.resolve("entities/chat_messages/b_$id.json")
+            Files.createDirectories(path.parent)
+            LanSyncJsonFiles.write(path, ChatMessage.serializer(), ChatMessage(id, "b", MessageRole.USER, text, createdAt = 7, updatedAt = 7))
+            return path
+        }
+        session(source, "a", "合成 A"); session(source, "b", "合成 B")
+        source.send(origin, origin.commit(origin.inspect().review(setOf(formatUnit, a, b))))
+        receiver.apply(requireNotNull(target.scan(receiver).plan))
+        session(target, "a", "接收端保留 A"); session(source, "a", "来源端 A")
+        message(source, "in", "B 的来信")
+        source.send(origin, origin.commit(origin.inspect().review(setOf(a, b))))
+        val incoming = requireNotNull(target.scan(receiver).plan)
+        assertEquals(LanSyncGroupNativeStage.CONFLICT, incoming.units.getValue(a).stage)
+        assertEquals(LanSyncGroupNativeStage.UNCHANGED, incoming.units.getValue(formatUnit).stage)
+        assertEquals(setOf(b), incoming.advances.keys)
+        receiver.apply(incoming)
+        val localA = target.data.resolve("entities/chat_sessions/a.json")
+        assertEquals("接收端保留 A", LanSyncJsonFiles.read(localA, ChatSession.serializer())?.title)
+        assertEquals("B 的来信", LanSyncJsonFiles.read(target.data.resolve("entities/chat_messages/b_in.json"), ChatMessage.serializer())?.content)
+        assertTrue(requireNotNull(target.scan(receiver).plan).advances.isEmpty())
+        message(target, "out", "B 的回信")
+        val isolated = receiver.inspect().review(setOf(b))
+        assertTrue(isolated.requiredBindings.isEmpty())
+        target.send(receiver, receiver.commit(isolated))
+        origin.apply(requireNotNull(source.scan(origin).plan))
+        assertEquals("B 的回信", LanSyncJsonFiles.read(source.data.resolve("entities/chat_messages/b_out.json"), ChatMessage.serializer())?.content)
+        assertTrue(requireNotNull(source.scan(origin).plan).advances.isEmpty())
     }
 
     @Test fun coldSourceOnlyRetriesWithOrWithoutMetadataPrefetchReuseTheOriginalLocalReceiptWithoutNativeOrLiveRouteWork() = withGroup { g ->

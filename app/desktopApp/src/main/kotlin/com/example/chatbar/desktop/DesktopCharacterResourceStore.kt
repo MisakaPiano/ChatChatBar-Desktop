@@ -8,6 +8,8 @@ import com.example.chatbar.domain.card.PackagedImage
 import com.example.chatbar.domain.card.OriginalCharacterCover
 import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.card.decodeCharacterPackagedImage
+import com.example.chatbar.domain.lanSync.LanSyncHeifStill
+import com.example.chatbar.domain.lanSync.LanSyncRasterPolicy
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -43,6 +45,13 @@ internal class DesktopCharacterResourceStore(
         } else {
             Files.readAllBytes(requireReadableOwnedFile(reference))
         }
+
+    internal fun readDisplayImageBytes(reference: String): ByteArray {
+        if (reference.startsWith(ASSET_PREFIX)) return readAsset(reference)
+        val path = requireReadableOwnedFile(reference)
+        return if (LanSyncRasterPolicy.needsSampledJpegPreview(path) || LanSyncHeifStill.inspect(path) != null) DesktopLanSyncRaster.preview(path)
+        else Files.readAllBytes(path)
+    }
 
     /** Screenshot reads reject oversized owned inputs before allocating their full contents. */
     internal fun readScreenshotImageBytes(reference: String, maximumBytes: Int = 32 * 1024 * 1024): ByteArray {

@@ -375,6 +375,24 @@ class LanSyncGroupJoiningTest {
         assertFalse(Files.exists(root.resolve("custody/group.protected")))
         assertEquals(LanSyncGroupJoinStage.READY, f.owner().activate(backend).profile.stage)
     }
+    @Test fun verifiedRevocationCanArchiveOnlyAnUnactivatedApplicationAndKeepTheOriginalBytes() = fixture { f ->
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        val preview = f.founder.service.prepareRevocation(f.founder.joiningIdentity.fingerprint)
+        f.founder.service.revokeDevice(f.founder.service.resume(f.founder.code), preview.acknowledge(preview.request.approvalBinding))
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", owner.activate(f.backend()).waitingCode)
+        val cold = f.owner()
+        assertTrue(cold.profile()!!.canArchiveRevoked)
+        assertFalse(cold.profile()!!.canShelve)
+        val root = f.root.resolve("joining")
+        assertFalse(Files.exists(root.resolve("custody/group.protected")))
+        val record = Files.readAllBytes(root.resolve("profile.protected"))
+        val recipient = Files.readAllBytes(root.resolve("recipient/recipient.protected"))
+        val archive = cold.archiveRevokedInvitation()
+        assertNull(f.owner().profile())
+        assertContentEquals(record, Files.readAllBytes(archive.resolve("profile.protected")))
+        assertContentEquals(recipient, Files.readAllBytes(archive.resolve("recipient/recipient.protected")))
+    }
     @Test fun explicitReprepareAfterAnUnsignedProjectionInterruptionUsesFreshLocalAndRemoteEvidenceWithoutLosingOriginals() = fixture { f ->
         f.publishedPreset(); val local = f.put(f.data, f.card("physical-card"))
         f.admit(f.prove(f.owner()))

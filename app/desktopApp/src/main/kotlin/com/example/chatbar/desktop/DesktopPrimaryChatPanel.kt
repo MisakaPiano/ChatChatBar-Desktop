@@ -696,7 +696,7 @@ internal fun DesktopPrimaryChatPanel(
             PrimaryModal(t(DesktopUiText.EDIT_MESSAGE)) {
                 PrimaryField(t(DesktopUiText.MESSAGE), editingText) { editingText = it }
                 StudioActions { retainedImages.forEach { reference -> Column {
-                    DesktopOwnedImage(reference, controller.characterResources::readBytes, Modifier.size(80.dp))
+                    DesktopOwnedImage(reference, controller.characterResources::readDisplayImageBytes, Modifier.size(80.dp))
                     BootstrapButton("移除此图片") { retainedImages = retainedImages - reference }
                 } } }
                 DesktopPendingImageStrip(addedImages, true, onRemove = { id -> addedImages = addedImages.filterNot { it.id == id } },
@@ -844,7 +844,7 @@ private fun PrimaryTimeline(
             value = if (card == null) null else if (library == null) card.chatBackground else library.currentDefault(card.id, card.chatBackground)
         }
         val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, cardDefault).first
-        if (!background.isNullOrBlank()) DesktopOwnedImage(background, controller.characterResources::readBytes,
+        if (!background.isNullOrBlank()) DesktopOwnedImage(background, controller.characterResources::readDisplayImageBytes,
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(state.backgroundOpacity), crop = true)
         LazyColumn(
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)

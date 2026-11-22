@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 enum class LanSyncGroupJoinStage { PREPARING, PREPARED, PROOF_ATTEMPTED, WAITING_FOR_APPROVAL, KEYS_ADMITTED, NATIVE_ENROLLED, READY }
 data class LanSyncGroupJoiningProfile(val stage: LanSyncGroupJoinStage, val trust: SyncGroupTrust,
     val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false, val canShelve: Boolean = false,
-    val membershipVerified: Boolean = false, val membershipRevoked: Boolean = false)
+    val membershipVerified: Boolean = false, val membershipRevoked: Boolean = false, val canArchiveRevoked: Boolean = false)
 data class LanSyncShelvedJoin(val operation: String, val group: String)
 data class LanSyncGroupJoiningResult(val profile: LanSyncGroupJoiningProfile, val node: LanSyncGroupNode?, val waitingCode: String? = null)
 internal class LanSyncJoinRouteFailure(cause: IOException) : IOException("SYNC_GROUP_JOIN_CONNECTION_FAILED", cause)
@@ -63,7 +63,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     private fun profile(record: Record) =
         LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica,
             canAbandon(record), canShelve(record, root),
-            record.knownMembership != null || record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal, record.membershipRevoked)
+            record.knownMembership != null || record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal,
+            record.membershipRevoked, canArchiveRevoked(record))
 
     private fun canAbandon(record: Record): Boolean {
         if (record.offer == null || record.stage !in setOf(LanSyncGroupJoinStage.PREPARING, LanSyncGroupJoinStage.PREPARED)) return false
@@ -82,18 +83,34 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     suspend fun abandonUnprovedInvitation(): Path = guarded {
         val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
         require(canAbandon(record)) { "SYNC_GROUP_JOIN_APPROVAL_MAY_EXIST" }
+        archive(record, "UNPROVED_JOIN_ARCHIVED")
+    }
+
+    suspend fun archiveRevokedInvitation(): Path = guarded {
+        val record = checkRetainedMembership(requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" })
+        require(canArchiveRevoked(record)) { "SYNC_GROUP_JOIN_REVOKED_ARCHIVE_NOT_AVAILABLE" }
+        recipient(record)
+        archive(record, "REVOKED_JOIN_ARCHIVED")
+    }
+
+    private fun archive(record: Record, event: String): Path {
         val archives = parent.resolve("abandoned-joins")
         if (!Files.exists(archives, NOFOLLOW_LINKS)) Files.createDirectory(archives)
         lanSyncSafe(archives, true)
         val archive = archives.resolve(record.operation.value)
         require(!Files.exists(archive, NOFOLLOW_LINKS)) { "SYNC_GROUP_JOIN_ARCHIVE_EXISTS" }
         Files.move(root, archive, ATOMIC_MOVE)
-        observe("UNPROVED_JOIN_ARCHIVED")
-        archive
+        observe(event)
+        return archive
     }
-    private fun canShelve(record: Record, directory: Path): Boolean {
+    private fun canShelve(record: Record, directory: Path): Boolean =
+        record.knownMembership == null && inactiveApplication(record, directory)
+    private fun canArchiveRevoked(record: Record): Boolean =
+        record.membershipRevoked && inactiveApplication(record, root)
+
+    private fun inactiveApplication(record: Record, directory: Path): Boolean {
         if (record.offer == null || record.stage !in setOf(LanSyncGroupJoinStage.PROOF_ATTEMPTED, LanSyncGroupJoinStage.WAITING_FOR_APPROVAL) ||
-            record.projection != null || record.reprepareRequested || record.knownMembership != null) return false
+            record.projection != null || record.reprepareRequested) return false
         val allowed = setOf("recipient", "bootstrap", "received-ciphertext", "commit-candidates", "route-cache", "custody")
         return Files.newDirectoryStream(directory).use { files -> files.all { path ->
             when (path.fileName.toString()) {

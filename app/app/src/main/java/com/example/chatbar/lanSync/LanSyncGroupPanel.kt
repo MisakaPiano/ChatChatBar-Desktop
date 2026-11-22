@@ -117,7 +117,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             CbText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
         } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
             state.joiningDevice?.let { CbText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
-            CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
+            if (state.canArchiveRevokedJoin) CbButton("结束并归档已撤销的申请", actions::archiveRevokedJoin, enabled = !interactionBlocked)
+            else CbButton("继续加入", actions::retryJoin, enabled = !interactionBlocked)
             if (state.canAbandonJoin)
                 CbButton("放弃未发送的申请", actions::abandonUnprovedJoin, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             if (state.canShelveJoin)

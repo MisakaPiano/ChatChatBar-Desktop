@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.lanSync.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
@@ -14,6 +16,78 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopLanSyncResourceTest {
+    @Test fun ordinary48MpJpegPreservesTheOriginalAndDoesNotBlockAnotherConversation(): Unit = runBlocking {
+        val root = Files.createTempDirectory("lan-48mp-").toRealPath()
+        try {
+            val source = Files.createDirectory(root.resolve("phone"))
+            val target = Files.createDirectory(root.resolve("desktop"))
+            val image = Files.createDirectory(source.resolve("images")).resolve("camera.jpg")
+            val raster = BufferedImage(8000, 6000, BufferedImage.TYPE_BYTE_GRAY)
+            try { check(ImageIO.write(raster, "jpeg", image.toFile())) } finally { raster.flush() }
+            val bytes = Files.size(image)
+            val expectedHash = LanSyncResourceStore.hashFile(image, bytes)
+            val sourceStorage = JsonFileStorage(source)
+            sourceStorage.saveEntity("chat_sessions", "photo",
+                ChatSession("photo", "card", "合成相片会话", chatBackground = "images/camera.jpg", createdAt = 1, updatedAt = 1), ChatSession.serializer())
+            sourceStorage.saveEntity("chat_sessions", "text",
+                ChatSession("text", "card", "合成独立会话", createdAt = 2, updatedAt = 2), ChatSession.serializer())
+            sourceStorage.saveEntity("chat_messages", "text_m", ChatMessage("m", "text", MessageRole.USER, "独立文字",
+                createdAt = 3, updatedAt = 3), ChatMessage.serializer())
+            fun workspace(data: Path, state: String) = LanSyncWorkspace(data, Files.createDirectories(root.resolve(state)),
+                DesktopCharacterResourceStore(data)::resolveOwnedReference,
+                resourceReference = { _, path -> desktopLanSyncResourceReference(data, path) }, validateResource = ::validateDesktopLanSyncResource)
+            workspace(source, "source").capture("phone").use { captured ->
+                workspace(target, "target").apply(LanSyncPlan(UUID.randomUUID().toString(), captured.snapshot, emptyMap()),
+                    emptyMap(), "pc", captured.blobs)
+                val storage = JsonFileStorage(target)
+                assertEquals("独立文字", storage.loadEntity("chat_messages", "text_m", ChatMessage.serializer())?.content)
+                val resource = DesktopCharacterResourceStore(target)
+                val reference = requireNotNull(storage.loadEntity("chat_sessions", "photo", ChatSession.serializer())?.chatBackground)
+                val installed = resource.resolveOwnedReference(reference)
+                assertEquals(bytes, Files.size(installed))
+                assertEquals(expectedHash, LanSyncResourceStore.hashFile(installed, bytes))
+                val preview = ImageIO.read(resource.readDisplayImageBytes(reference).inputStream())
+                assertTrue(preview.width in 1..2048 && preview.height in 1..2048)
+                workspace(target, "target").capture("pc").use { assertEquals(captured.snapshot.hashes(), it.snapshot.hashes()) }
+            }
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test fun heifWithoutDesktopCodecKeepsExactBytesAndLeavesTextUsable(): Unit = runBlocking {
+        val fixture = System.getenv("CCB_R02_HEIF_FIXTURE")
+        org.junit.Assume.assumeTrue("requires a generated positive HEIF fixture", fixture != null)
+        val root = Files.createTempDirectory("lan-heif-").toRealPath()
+        try {
+            val target = Files.createDirectory(root.resolve("desktop"))
+            val source = Files.createDirectory(root.resolve("phone"))
+            val original = Files.createDirectory(source.resolve("images")).resolve("legacy.jpg")
+            Files.copy(Path.of(requireNotNull(fixture)), original)
+            val dimensions = requireNotNull(LanSyncHeifStill.inspect(original))
+            assertEquals(64, dimensions.width); assertEquals(48, dimensions.height)
+            val sha = LanSyncResourceStore.hashFile(original, Files.size(original))
+            val storage = JsonFileStorage(source)
+            storage.saveEntity("chat_sessions", "session", ChatSession("session", "card", "合成 HEIF", chatBackground = "images/legacy.jpg",
+                createdAt = 1, updatedAt = 1), ChatSession.serializer())
+            val message = ChatMessage("m", "session", MessageRole.USER, "同会话文字", createdAt = 2, updatedAt = 2)
+            storage.saveEntity("chat_messages", "session_m", message, ChatMessage.serializer())
+            fun workspace(data: Path, state: String) = LanSyncWorkspace(data, Files.createDirectories(root.resolve(state)),
+                DesktopCharacterResourceStore(data)::resolveOwnedReference,
+                resourceReference = { _, path -> desktopLanSyncResourceReference(data, path) }, validateResource = ::validateDesktopLanSyncResource)
+            workspace(source, "source").capture("phone").use { captured ->
+                workspace(target, "target").apply(LanSyncPlan(UUID.randomUUID().toString(), captured.snapshot, emptyMap()),
+                    emptyMap(), "pc", captured.blobs)
+                val destination = JsonFileStorage(target)
+                assertEquals(message.content, destination.loadEntity("chat_messages", "session_m", ChatMessage.serializer())?.content)
+                val ref = requireNotNull(destination.loadEntity("chat_sessions", "session", ChatSession.serializer())?.chatBackground)
+                val resources = DesktopCharacterResourceStore(target)
+                val retained = resources.resolveOwnedReference(ref)
+                assertEquals(sha, LanSyncResourceStore.hashFile(retained, Files.size(retained)))
+                assertEquals("SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE", assertFails { resources.readDisplayImageBytes(ref) }.message)
+                workspace(target, "target").capture("pc").use { assertEquals(captured.snapshot.hashes(), it.snapshot.hashes()) }
+            }
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
     @Test fun phoneBmpSessionBackgroundRetainsOriginalBytesAndPreviewsAfterColdApply(): Unit = runBlocking {
         val testRoot = Files.createTempDirectory("desktop-lan-bmp-").toRealPath()
         try {

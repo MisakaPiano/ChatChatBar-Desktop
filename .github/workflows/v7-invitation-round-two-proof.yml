@@ -5,7 +5,37 @@ on:
 permissions:
   contents: read
 jobs:
+  camera-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Encode a genuine synthetic still HEIF
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libheif-examples libheif-plugin-x265
+          python3 - <<'PY'
+          import pathlib
+          import struct
+          import zlib
+
+          def chunk(kind, content):
+              return struct.pack('>I', len(content)) + kind + content + struct.pack('>I', zlib.crc32(kind + content))
+
+          header = struct.pack('>IIBBBBB', 64, 48, 8, 2, 0, 0, 0)
+          pixels = (bytes([0]) + bytes([28, 136, 192]) * 64) * 48
+          data = bytes.fromhex('89504e470d0a1a0a') + chunk(b'IHDR', header)
+          data += chunk(b'IDAT', zlib.compress(pixels)) + chunk(b'IEND', b'')
+          pathlib.Path('synthetic.png').write_bytes(data)
+          PY
+          heif-enc -q 75 -o synthetic.heic synthetic.png 2>encoder.log || { cat encoder.log; exit 1; }
+          heif-info synthetic.heic
+          sha256sum synthetic.heic
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v7-r02-synthetic-heif
+          path: synthetic.heic
   focused:
+    needs: camera-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 32
     steps:
@@ -20,21 +50,84 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v7-r02-synthetic-heif
+          path: ${{ runner.temp }}/r02-raster
       - name: Check the affected invitation and group data paths
         working-directory: app
+        env:
+          CCB_R02_HEIF_FIXTURE: ${{ runner.temp }}/r02-raster/synthetic.heic
         run: |
           bash ./gradlew :sharedCore:test \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.issuedInviteCanReachApprovalAfterDesktopFocusLocksManagement' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.admittedDisplayNameSurvivesTheFirstPublicationFailureAndManagementResume' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.unchangedSharedFormatLeavesIndependentConversationReceiptsAndSendsUnblocked' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNativePlannerTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupSourceWriterTest.aPendingFormatDeletionHoldsItsSessionSourceWhileAnIndependentCardStillCommits' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupReplicaReaderTest' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCiphertextTransportTest' \
-            :desktopApp:compileKotlin :app:compileLanPreviewKotlin \
+            :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopLanSyncResourceTest.ordinary48MpJpegPreservesTheOriginalAndDoesNotBlockAnotherConversation' \
+            --tests 'com.example.chatbar.desktop.DesktopLanSyncResourceTest.heifWithoutDesktopCodecKeepsExactBytesAndLeavesTextUsable' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: v7-invitation-r02-original
-          path: app/sharedCore/build/test-results/test/TEST-*.xml
+          path: |
+            app/sharedCore/build/test-results/test/TEST-*.xml
+            app/desktopApp/build/test-results/test/TEST-*.xml
+  android-camera:
+    needs: camera-fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v7-r02-synthetic-heif
+          path: ${{ runner.temp }}/r02-raster
+      - name: Build the isolated Android camera regression companion
+        working-directory: app
+        run: >-
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - name: Enable acceleration on the cloud runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Observe actual Android camera format paths
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
+            adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
+            adb shell run-as com.example.chatbar.lansyncnext mkdir -p cache
+            adb shell -T "run-as com.example.chatbar.lansyncnext sh -c 'cat > cache/synthetic-r02-heif.jpg'" < "$RUNNER_TEMP/r02-raster/synthetic.heic"
+            adb shell am instrument -w -e class com.example.chatbar.lanSync.AndroidLanSyncCameraResourceTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r02-android-camera.txt"
+            cat "$RUNNER_TEMP/v7-r02-android-camera.txt"
+            grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r02-android-camera.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-invitation-r02-android-camera
+          path: ${{ runner.temp }}/v7-r02-android-camera.txt

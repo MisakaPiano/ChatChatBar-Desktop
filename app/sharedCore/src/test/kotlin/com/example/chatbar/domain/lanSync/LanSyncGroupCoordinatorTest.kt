@@ -827,6 +827,36 @@ class LanSyncGroupCoordinatorTest {
         assertNotEquals("邀请已取消", coordinator.state.value.status)
     }
 
+    @Test fun admittedDisplayNameSurvivesTheFirstPublicationFailureAndManagementResume() = fixture { f ->
+        val interruption = AtomicBoolean(false)
+        val founder = f.founder(f.workspace) { stage ->
+            if (stage == "ROOT_DELIVERY_SPEC_RETAINED" && interruption.compareAndSet(true, false))
+                throw java.io.IOException("SYNC_SYNTHETIC_PUBLICATION_INTERRUPTED")
+        }
+        val coordinator = readyCoordinator(f, enrollment = { founder })
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation()
+        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        val offer = requireNotNull(coordinator.state.value.invitation)
+        val receiver = LanSyncTlsIdentity.create()
+        val key = SyncDeviceEncryptionKey.create(receiver.fingerprint)
+        LanSyncGroupInviteClient.exchange(offer, receiver, key, "合成已批准设备", {
+            f.network.connect(receiver, LanSyncPeer(offer.inviter, "synthetic PC", offer.host, offer.port))
+        })
+        await { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation != null }
+        val access = requireNotNull(founder.runtimeAccess())
+        assertFalse(Files.exists(access.work.resolve("peer-display.protected")))
+        interruption.set(true)
+        coordinator.acceptPeer(requireNotNull(coordinator.state.value.peerConfirmation).binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_SYNTHETIC_PUBLICATION_INTERRUPTED") == true }
+        assertEquals(key.publicKey.encoded, access.ledger().current().members.getValue(receiver.fingerprint).recipientKey)
+        assertEquals("合成已批准设备", requireNotNull(founder.runtimeAccess()).peerDisplayName(receiver.fingerprint))
+        coordinator.resumeManagementOperation()
+        await { !coordinator.state.value.busy && coordinator.state.value.error == null && !coordinator.state.value.managementUnlocked }
+        assertEquals("合成已批准设备", requireNotNull(founder.runtimeAccess()).peerDisplayName(receiver.fingerprint))
+    }
+
     private class ObservedNetwork(private val delegate: LanSyncNetwork) : LanSyncNetwork {
         val calls = AtomicInteger()
         val forbidden = AtomicBoolean(false)

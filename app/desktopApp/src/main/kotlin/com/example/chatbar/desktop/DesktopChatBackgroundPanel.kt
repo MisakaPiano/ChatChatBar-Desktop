@@ -76,7 +76,7 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
                 BootstrapButton("清除角色卡默认背景", enabled = !busy && card != null && library != null) { action { library!!.setDefault(card!!.id, null) } }
             }
             entries.images.forEach { path ->
-                DesktopOwnedImage(path, controller.characterResources::readBytes, Modifier.fillMaxWidth().height(150.dp)
+                DesktopOwnedImage(path, controller.characterResources::readDisplayImageBytes, Modifier.fillMaxWidth().height(150.dp)
                     .desktopViewerEntry(onClick = { preview = entries.images.toList() to entries.images.indexOf(path) }))
                 StudioActions {
                     BootstrapButton("用于本会话", enabled = !busy) { action { controller.selectSessionBackground(path) } }

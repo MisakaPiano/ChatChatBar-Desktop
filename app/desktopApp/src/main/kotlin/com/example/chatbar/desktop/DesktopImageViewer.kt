@@ -104,7 +104,10 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
             }
         }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-        catch (failure: Exception) { error = failure.message ?: "图片无法读取" }
+        catch (failure: Exception) {
+            error = if (failure.message == "SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE") "HEIF 原图已保留，当前缺少预览解码器"
+            else failure.message ?: "图片无法读取"
+        }
     }
     val dimensionsChanged by rememberUpdatedState(onDimensions)
     LaunchedEffect(reference, displayed?.sourceDimensions) {
@@ -198,7 +201,7 @@ private fun DesktopImageViewerBody(selection: DesktopViewerSelection,
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background),
             verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DesktopViewerImageRegion(index, count, selection::previous, selection::next, Modifier.weight(1f).fillMaxWidth()) {
-                DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision, zoomState = zoom)
+                DesktopImageZoomSurface(reference, resources::readDisplayImageBytes, Modifier.fillMaxSize(), resetRevision, zoomState = zoom)
             }
             status?.let { StatusText(it) }
             DesktopImageViewerToolbar(zoom, selection) {
@@ -388,7 +391,7 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     }
     message.images.forEachIndexed { imageIndex, reference ->
         if (reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX)) return@forEachIndexed
-        DesktopMessageImageItem(reference, controller.characterResources::readBytes,
+        DesktopMessageImageItem(reference, controller.characterResources::readDisplayImageBytes,
             message.generatedImageMetadata.firstOrNull { it.imagePath == reference },
             controller.imageRegeneration != null, running,
             { preview = desktopChatViewerEntry(state.messages, message.id, imageIndex, it) },

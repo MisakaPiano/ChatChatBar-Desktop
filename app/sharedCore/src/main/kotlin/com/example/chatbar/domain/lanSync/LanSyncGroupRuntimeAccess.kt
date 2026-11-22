@@ -31,6 +31,7 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     }
     fun cloudRoutes(): LanSyncGroupCloudRoutes = cloudRouteCatalog
     fun rememberPeerName(peer: LanSyncGroupInvitedPeer) = peerNames.remember(peer)
+    internal fun rememberAdmittedPeerName(peer: LanSyncGroupInvitedPeer, admitted: SyncDeviceLedger) = peerNames.rememberAdmitted(peer, admitted)
     fun peerDisplayName(device: String): String? = peerNames.displayName(device)
     private val managementRoot get() = work.resolve("recovered-management")
     fun hasManagementRecoveryProfile() = Files.exists(managementRoot.resolve("profile.protected"), java.nio.file.LinkOption.NOFOLLOW_LINKS)

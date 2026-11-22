@@ -22,11 +22,12 @@ class LanSyncGroupPeerNames(private val root: Path, private val trust: SyncGroup
     private val file = root.resolve("peer-display.protected")
     init { lanSyncSafe(root, true) }
     private fun sameAnchor(a: SyncGroupTrust, b: SyncGroupTrust) = a.group == b.group && a.genesis == b.genesis && a.ownerCertificate == b.ownerCertificate
-    private fun ledger(): SyncDeviceLedger = currentLedger().also {
+    private fun ledger(value: SyncDeviceLedger = currentLedger()): SyncDeviceLedger = value.also {
         require(sameAnchor(trust, it.trustAnchor) && it.contains(trust.checkpoint)) { "SYNC_GROUP_PEER_NAMES_GROUP_CHANGED" }
     }
-    fun remember(peer: LanSyncGroupInvitedPeer) {
-        val live = ledger()
+    fun remember(peer: LanSyncGroupInvitedPeer) = rememberAdmitted(peer, currentLedger())
+    internal fun rememberAdmitted(peer: LanSyncGroupInvitedPeer, admitted: SyncDeviceLedger) {
+        val live = ledger(admitted)
         require(sameAnchor(peer.trust, trust) && live.contains(peer.trust.checkpoint) &&
             peer.device == SyncDeviceSignatures.decode(peer.member.certificate).fingerprint && peer.member.active &&
             peer.name.isNotBlank() && peer.name.length <= 160 && lanSyncGroupDisplayText(peer.name).isNotBlank() &&

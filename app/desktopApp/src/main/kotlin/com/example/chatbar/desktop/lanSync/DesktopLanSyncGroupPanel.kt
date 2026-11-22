@@ -92,7 +92,8 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             StatusText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
         } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
             state.joiningDevice?.let { StatusText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
-            BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
+            if (state.canArchiveRevokedJoin) BootstrapButton("结束并归档已撤销的申请", enabled = !interactionBlocked) { actions.archiveRevokedJoin() }
+            else BootstrapButton("继续加入", enabled = !interactionBlocked) { actions.retryJoin() }
             if (state.canAbandonJoin) BootstrapButton("放弃未发送的申请", secondary = true, enabled = !interactionBlocked) { actions.abandonUnprovedJoin() }
             if (state.canShelveJoin) BootstrapButton("暂存原申请并重新加入", secondary = true, enabled = !interactionBlocked) { actions.shelveUnsettledJoin() }
             if (state.canRefreshJoinPreparation) BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }

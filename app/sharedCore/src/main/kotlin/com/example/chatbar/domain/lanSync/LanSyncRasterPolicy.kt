@@ -10,10 +10,45 @@ import java.util.zip.CRC32
 
 /** Encoded originals are streamed; raster working limits are independent of encoded length. */
 object LanSyncRasterPolicy {
-    fun maximumPixels(record: LanSyncRecord): Long = LanSyncPostProcess.record(record)?.let {
+    fun maximumPixels(record: LanSyncRecord?): Long = record?.let(LanSyncPostProcess::record)?.let {
         it.validateMetadata()
         NovelAiPostProcessPolicy.MAX_PIXELS.toLong() * if (it.operation == NovelAiPostProcessTab.UPSCALE.name) 4 else 1
     } ?: 32_000_000L
+
+    /** Camera JPEG can be admitted and sampled above the ordinary bitmap limit. */
+    fun validateDimensions(path: Path, record: LanSyncRecord?, width: Int, height: Int, jpeg: Boolean) {
+        val pixels = width.toLong() * height
+        require(width > 0 && height > 0) { "SYNC_IMAGE_INVALID" }
+        if (pixels <= maximumPixels(record)) return
+        require(jpeg && record?.let(LanSyncPostProcess::record) == null && width <= 16_384 && height <= 16_384 &&
+            pixels <= 72_000_000L && baselineJpegSize(path) == (width to height)) { "SYNC_IMAGE_INVALID" }
+    }
+    fun needsSampledJpegPreview(path: Path): Boolean = baselineJpegSize(path)?.let { (width, height) ->
+        width.toLong() * height > maximumPixels(null)
+    } == true
+
+    // Progressive decoding may need full-size coefficient storage despite a sampled output.
+    private fun baselineJpegSize(path: Path): Pair<Int, Int>? {
+        DataInputStream(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).buffered()).use { input ->
+            if (input.read() != 0xff || input.read() != 0xd8) return null
+            var budget = 16 * 1024 * 1024
+            while (budget >= 4) {
+                if (input.readUnsignedByte() != 0xff) return null
+                var marker: Int
+                do { marker = input.readUnsignedByte(); budget-- } while (marker == 0xff && budget >= 4)
+                if (marker == 0xc0) {
+                    if (input.readUnsignedShort() < 8 || input.readUnsignedByte() != 8) return null
+                    val height = input.readUnsignedShort()
+                    return input.readUnsignedShort() to height
+                }
+                if (marker != 0xc4 && marker !in 0xe0..0xef && marker != 0xdb && marker != 0xdd && marker != 0xfe) return null
+                val length = input.readUnsignedShort()
+                if (length < 2 || length + 1 > budget || input.skipBytes(length - 2) != length - 2) return null
+                budget -= length + 1
+            }
+            return null
+        }
+    }
 
     /** Walk PNG without retaining ancillary payloads. Native decoders still verify the raster. */
     fun checkPng(path: Path, staticPngRequired: Boolean) {
