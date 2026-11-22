@@ -113,7 +113,8 @@ class ChatRepositoryConditionalUpdateTest {
         val notice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, legacy.displayContent, errorMessage = "SYNTHETIC")
         val result = assertIs<ConditionalMessageUpdateResult.Success>(
             f.repo.updateMessageFormatRepairNotice("s", "m", legacy, notice))
-        assertEquals(legacy.copy(formatRepairNotice = notice, updatedAt = result.message.updatedAt), result.message)
+        assertEquals(legacy.copy(formatRepairNotice = notice.copy(
+            versionId = MessageAlternativeVersionPolicy.activeVersionId(legacy)), updatedAt = result.message.updatedAt), result.message)
         assertEquals(result.message, ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
         val before = snapshot(f.root)
         assertFalse(assertIs<ConditionalMessageUpdateResult.Success>(
@@ -150,7 +151,8 @@ class ChatRepositoryConditionalUpdateTest {
             assertTrue(readReleased.isCompleted)
             assertOriginalError(cancellation, result.cause)
             assertEquals(if (call == 4) MessageUpdateStage.WRITE_MESSAGE else MessageUpdateStage.WRITE_INDEX, result.stage)
-            assertEquals(expected.copy(formatRepairNotice = notice, updatedAt = result.attempted.updatedAt), result.attempted)
+            assertEquals(expected.copy(formatRepairNotice = notice.copy(
+                versionId = MessageAlternativeVersionPolicy.activeVersionId(expected)), updatedAt = result.attempted.updatedAt), result.attempted)
             assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(result.durableMessage).cause)
             assertEquals(call + 1, f.gate.count.get())
             assertIndexCacheInvalidated(f)

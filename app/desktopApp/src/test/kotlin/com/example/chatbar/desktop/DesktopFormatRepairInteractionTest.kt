@@ -42,6 +42,25 @@ internal class DesktopRepairInteractionFixture(val c: DesktopAppContainer) {
 }
 
 class DesktopFormatRepairInteractionTest {
+    @Test fun `stale displayed restore and redo actions never mutate a newly selected repaired alternative`() = runBlocking {
+        for (redo in listOf(false, true)) fixture { f ->
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.repair("A", f.original.id)).status)
+            if (redo) assertEquals(DesktopRepairStatus.RESTORED, f.await(f.repair.restore("A", f.original.id)).status)
+            val displayedA = f.saved()
+            f.primary.selectAssistantAlternative(f.original.id, -1)
+            f.response = { flowOf(StreamEvent.Delta("fixed B"), StreamEvent.Done) }
+            assertEquals(DesktopRepairStatus.APPLIED, f.await(f.repair.repair("A", f.original.id)).status)
+            if (redo) assertEquals(DesktopRepairStatus.RESTORED, f.await(f.repair.restore("A", f.original.id)).status)
+            val currentB = f.saved()
+            val calls = f.requests.size
+            val task = assertNotNull(if (redo) f.primary.redoMessageFormat(displayedA) else f.primary.restoreMessageFormat(displayedA))
+            assertEquals(DesktopRepairStatus.CONFLICT, f.await(task).status,
+                "Stale displayed repair action was not fenced")
+            assertEquals(currentB, f.saved())
+            assertEquals(calls, f.requests.size)
+        }
+    }
+
     private suspend fun fixture(block: suspend (DesktopRepairInteractionFixture) -> Unit) = fishFixture { _, c ->
         val f = DesktopRepairInteractionFixture(c)
         try { f.prepare(); block(f) } finally { f.close() }
@@ -174,7 +193,9 @@ class DesktopFormatRepairInteractionTest {
             assertEquals(if (outcome == "error") DesktopRepairStatus.ERROR else DesktopRepairStatus.UNCHANGED, state.status)
             if (outcome == "error") assertNotNull(state.code)
             val cold = com.example.chatbar.data.repository.ChatRepository(com.example.chatbar.data.local.JsonFileStorage(f.c.appDataRoot))
-            assertEquals(checkpoint, cold.getMessage(f.original.id, "A")!!.formatRepairNotice,
+            val current = assertNotNull(cold.getMessage(f.original.id, "A"))
+            val originalOwner = MessageAlternativeVersionPolicy.select(current, 1)
+            assertEquals(checkpoint, MessageFormatRepairPolicy.applicableNotice(originalOwner),
                 "Repairing B without a replacement erased A's durable redo checkpoint")
             f.primary.selectAssistantAlternative(f.original.id, 1)
             assertTrue(desktopCanRedoFormat(f.saved()))

@@ -20,6 +20,7 @@ import com.example.chatbar.data.local.entity.SpeakerTagMessageRewrite
 import com.example.chatbar.domain.chat.SpeakerTagRewritePlanPolicy
 import com.example.chatbar.data.local.entity.toIndexEntry
 import com.example.chatbar.domain.chat.ChatMessageOrdering
+import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
 import com.example.chatbar.domain.chat.ChatMessageOrderRepairPlan
 import com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicy
 import com.example.chatbar.domain.chat.ChatMessageOrderSnapshot
@@ -801,14 +802,11 @@ class ChatRepository internal constructor(
             if ((replacementContent == null || current.displayContent == replacementContent) && current.formatRepairNotice == notice) {
                 return@withDataAccess ConditionalMessageUpdateResult.Success(current, changed = false)
             }
-            val updated = current.copy(
-                content = replacementContent ?: current.content,
-                alternatives = current.alternatives.mapIndexed { index, text ->
-                    if (replacementContent != null && index == current.currentAlternativeIndex) replacementContent else text
-                },
-                formatRepairNotice = notice,
-                updatedAt = System.currentTimeMillis(),
-            )
+            val changed = if (replacementContent == null) MessageFormatRepairPolicy.updateCurrentNotice(current, notice)
+                else MessageFormatRepairPolicy.replaceCurrentDisplayContent(current, replacementContent, notice,
+                    updatedAt = current.updatedAt)
+            if (changed == current) return@withDataAccess ConditionalMessageUpdateResult.Success(current, changed = false)
+            val updated = changed.copy(updatedAt = System.currentTimeMillis())
             stage = MessageUpdateStage.PREPARE_INDEX
             val index = loadMessageIndex(sessionId)
             stage = MessageUpdateStage.WRITE_MESSAGE

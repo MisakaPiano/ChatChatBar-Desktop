@@ -29,7 +29,7 @@ object MessageFormatRepairPolicy {
     fun replaceCurrentDisplayContent(
         message: ChatMessage,
         replacement: String,
-        notice: MessageFormatRepairNotice? = message.formatRepairNotice,
+        notice: MessageFormatRepairNotice? = applicableNotice(message),
         updatedAt: Long = System.currentTimeMillis()
     ): ChatMessage {
         val alternatives = message.alternatives
@@ -40,19 +40,69 @@ object MessageFormatRepairPolicy {
         } else {
             alternatives
         }
-        return message.copy(
+        val updated = message.copy(
             content = replacement,
             alternatives = updatedAlternatives,
-            formatRepairNotice = notice?.copy(versionId = MessageAlternativeVersionPolicy.activeVersionId(message)),
             updatedAt = updatedAt
         )
+        return updateNotice(message, updated, notice)
     }
 
-    fun applicableNotice(message: ChatMessage): MessageFormatRepairNotice? =
-        message.formatRepairNotice?.takeIf {
-            (it.versionId == null || it.versionId == MessageAlternativeVersionPolicy.activeVersionId(message)) &&
-                (if (it.restored) it.originalContent else it.targetContent) == message.displayContent
+    fun applicableNotice(message: ChatMessage): MessageFormatRepairNotice? {
+        val notices = message.repairNotices()
+        if (notices.isEmpty()) return null
+        val owners = NoticeOwners(message)
+        return notices.firstOrNull { owners.owner(it)?.id == owners.activeId }
+    }
+
+    internal fun retainVersionNotices(previous: ChatMessage, updated: ChatMessage): ChatMessage =
+        updated.withNotices(validNoticesAfterChange(previous, updated))
+
+    internal fun updateCurrentNotice(message: ChatMessage, notice: MessageFormatRepairNotice?): ChatMessage =
+        updateNotice(message, message, notice)
+
+    /** A manual edit invalidates only that candidate's recovery, keeping every other owner. */
+    fun clearCurrentNotice(message: ChatMessage): ChatMessage = updateCurrentNotice(message, null)
+
+    private fun updateNotice(previous: ChatMessage, updated: ChatMessage,
+        notice: MessageFormatRepairNotice?): ChatMessage {
+        val activeId = MessageAlternativeVersionPolicy.activeVersionId(updated)
+        val others = validNoticesAfterChange(previous, updated).filterNot { it.versionId == activeId }
+        return updated.withNotices(listOfNotNull(notice?.copy(versionId = activeId)) + others)
+    }
+
+    private fun validNoticesAfterChange(previous: ChatMessage, updated: ChatMessage): List<MessageFormatRepairNotice> {
+        val notices = previous.repairNotices()
+        if (notices.isEmpty()) return emptyList()
+        val owners = NoticeOwners(previous)
+        val retained = MessageAlternativeVersionPolicy.versions(updated).associateBy { it.id }
+        return notices.mapNotNull { notice ->
+            val owner = owners.owner(notice) ?: return@mapNotNull null
+            notice.copy(versionId = owner.id).takeIf { retained[owner.id]?.content == owner.content }
+        }.distinctBy { it.versionId }
+    }
+
+    private fun ChatMessage.repairNotices(): List<MessageFormatRepairNotice> =
+        listOfNotNull(formatRepairNotice) + otherFormatRepairNotices
+
+    private fun ChatMessage.withNotices(notices: List<MessageFormatRepairNotice>): ChatMessage =
+        copy(formatRepairNotice = notices.firstOrNull(), otherFormatRepairNotices = notices.drop(1))
+
+    /** Build the identity/content indexes once, including for old records without version IDs. */
+    private class NoticeOwners(message: ChatMessage) {
+        private val versions = MessageAlternativeVersionPolicy.versions(message)
+        private val byId = versions.associateBy { it.id }
+        private val byContent = versions.groupBy { it.content }
+        val activeId = MessageAlternativeVersionPolicy.activeVersionId(message)
+
+        fun owner(notice: MessageFormatRepairNotice): MessageVersionSnapshot? {
+            val checkpoint = if (notice.restored) notice.originalContent else notice.targetContent
+            if (checkpoint == null) return null
+            notice.versionId?.let { return byId[it]?.takeIf { version -> version.content == checkpoint } }
+            val matches = byContent[checkpoint].orEmpty()
+            return byId[activeId]?.takeIf { it.content == checkpoint } ?: matches.singleOrNull()
         }
+    }
 
     fun recoverableNotice(message: ChatMessage): MessageFormatRepairNotice? =
         applicableNotice(message)?.takeIf { it.originalContent != null && !it.restored }

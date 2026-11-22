@@ -130,9 +130,9 @@ internal class DesktopChatImages(
                 val added = additions.map { import(it.bytes) }
                 // An indeterminate update (including partial metadata/index writes) retains all files.
                 val paths = retained + added
-                updateMessage(MessageAlternativeVersionPolicy.editCurrentContent(original, content).copy(
-                    images = paths, generatedImageMetadata = original.generatedImageMetadata.filter { it.imagePath in paths },
-                    formatRepairNotice = null))
+                updateMessage(com.example.chatbar.domain.chat.MessageFormatRepairPolicy.clearCurrentNotice(
+                    MessageAlternativeVersionPolicy.editCurrentContent(original, content).copy(
+                        images = paths, generatedImageMetadata = original.generatedImageMetadata.filter { it.imagePath in paths })))
             } }
             cleanupRemoved(original.images.filterNot(retained::contains))
         }
