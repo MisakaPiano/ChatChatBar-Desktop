@@ -19,6 +19,10 @@ INVALID_ERROR = '加入设备组：SYNC_GROUP_INVITE_OFFER'
 SCAN = '扫描设备组邀请'
 JOIN_MARKERS = ('扫描更新邀请', '更新邀请并继续', '继续加入')
 BOUNDS = re.compile(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]')
+PERMISSION_PACKAGES = ('com.android.packageinstaller','com.google.android.packageinstaller',
+                       'com.android.permissioncontroller','com.google.android.permissioncontroller')
+PERMISSION_LABELS = ('ALLOW','Allow','允许','While using the app','Allow only while using the app',
+                     '使用该应用时','仅在使用该应用时')
 
 class Refused(Exception):
     pass
@@ -220,6 +224,14 @@ def navigate(adb, result, deadline):
         time.sleep(.35)
     raise Refused('EMPTY_GROUP_UI_NOT_READY')
 
+def observe_capture_activity(adb, before, result):
+    after = adb.events()
+    result['eventSnapshotAfterAvailable'] = after is not None
+    observed = None if before is None or after is None else any(
+        PACKAGE in event and CAPTURE.split('/')[-1] in event for event in after-before)
+    result['newCaptureActivityEventObserved'] = observed
+    return observed
+
 def observe(args, result):
     need(re.fullmatch(r'emulator-[0-9]+', args.serial) is not None, 'EMULATOR_SERIAL_REQUIRED')
     a = Adb(args.adb, args.serial)
@@ -248,26 +260,23 @@ def observe(args, result):
         values = labels(root)
         # Permission UI is constrained to an actual system permission package.
         if not permission_clicked:
-            for label in ('ALLOW','允许','While using the app','使用该应用时'):
-                nodes = [n for n in root.iter('node') if n.get('package') in
-                         ('com.android.packageinstaller','com.google.android.packageinstaller','com.android.permissioncontroller','com.google.android.permissioncontroller') and
-                         label in (n.get('text',''),n.get('content-desc',''))]
+            for label in PERMISSION_LABELS:
+                nodes = [n for n in root.iter('node') if n.get('package') in PERMISSION_PACKAGES and
+                         label in node_labels(n)]
                 if nodes:
-                    bounds = click_target(root,label,packages=('com.android.packageinstaller','com.google.android.packageinstaller','com.android.permissioncontroller','com.google.android.permissioncontroller'))
-                    need(bounds is not None,'CAMERA_PERMISSION_NOT_CLICKABLE')
-                    a.tap(bounds);permission_clicked = True
+                    target = click_target(root,label,packages=PERMISSION_PACKAGES)
+                    need(target is not None,'CAMERA_PERMISSION_NOT_CLICKABLE')
+                    a.tap(target);permission_clicked = True
                     result['cameraPermissionUiAccepted'] = True
                     break
+        result['scannerPromptObserved'] = result.get('scannerPromptObserved',False) or '扫描设备组邀请二维码' in values
         s = state(root)
         need(not s['cameraError'], 'CAMERA_UI_ERROR')
         need(not s['otherSyncError'], 'OTHER_SYNC_ERROR_OBSERVED')
         callback = s['invalidError'] if args.expect == 'invalid' else s['joining']
         if callback:
             if args.expect == 'invalid':need(s['empty'] and not s['joining'], 'INVALID_CODE_CREATED_JOIN_PROGRESS')
-            after = a.events()
-            result['eventSnapshotAfterAvailable'] = after is not None
-            observed = None if before is None or after is None else any(CAPTURE in x for x in after-before)
-            result['newCaptureActivityEventObserved'] = observed
+            observed = observe_capture_activity(a,before,result)
             result['expectedCallbackUiObserved'] = True
             result['newInvalidOfferErrorObserved'] = s['invalidError']
             result['newJoiningUiObserved'] = s['joining']
@@ -279,6 +288,7 @@ def observe(args, result):
         if args.expect == 'invitation' and s['invalidError']:
             raise Refused('INVITATION_REJECTED_INVALID_OFFER')
         time.sleep(.3)
+    observe_capture_activity(a,before,result)
     raise Refused('SCAN_CALLBACK_NOT_OBSERVED')
 
 def main(argv=None):

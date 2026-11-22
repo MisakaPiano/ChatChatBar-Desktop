@@ -84,6 +84,13 @@ def visible_label(root,label):
                 if x2>x1 and y2>y1:return True
     return False
 
+def scroll_body(a,root,r):
+    x1,y1,x2,y2=outer_scroll(root)
+    x=(x1+x2)//2
+    height=y2-y1
+    a.run('shell','input','swipe',str(x),str(y1+height*3//4),str(x),str(y1+height//4),'300')
+    r['boundedBodySwipes']+=1
+
 def show_target(a,ui,label,r,require_enabled=True):
     # Four bounded normal swipes in the largest visible app scroll viewport.
     for i in range(5):
@@ -91,9 +98,8 @@ def show_target(a,ui,label,r,require_enabled=True):
         ready=(ui.click_target(root,label) is not None) if require_enabled else visible_label(root,label)
         if ready:return root
         if i==4:break
-        x1,y1,x2,y2=outer_scroll(root);x=(x1+x2)//2;h=y2-y1
-        a.run('shell','input','swipe',str(x),str(y1+h*3//4),str(x),str(y1+h//4),'300')
-        r['boundedBodySwipes']+=1;time.sleep(.4)
+        scroll_body(a,root,r)
+        time.sleep(.4)
     raise Refused('UI_TARGET_NOT_DISPLAYED')
 
 def entry(a,ui,r):
@@ -132,10 +138,26 @@ def pid(a):
 
 def wait_ready(a,ui,r):
     deadline=time.monotonic()+90
+    next_scroll=time.monotonic()+5
+    scrolls=0
     while time.monotonic()<deadline:
         root=a.ui();v=ui.labels(root)
         need(not any(re.search(r'(?:SYNC|STORE)_[A-Z0-9_]+',x) for x in v),'GROUP_UI_ERROR_OBSERVED')
-        if '网盘设置' in v and '立即检查' in v:return
+        r['lastCreateUi']={
+            'completeButton': '完成创建' in v,
+            'lockedReadyLabel': '恢复码 · 临时解锁管理' in v,
+            'cloudSettingsButton': '网盘设置' in v,
+            'checkNowButton': '立即检查' in v,
+            'groupTitle': '设备组同步' in v,
+        }
+        if {'恢复码 · 临时解锁管理','解锁管理'}.issubset(v) or {'网盘设置','立即检查'}.issubset(v):
+            return
+        if scrolls<4 and time.monotonic()>=next_scroll and any(
+            n.get('package')==PACKAGE and n.get('scrollable')=='true' for n in root.iter('node')
+        ):
+            scroll_body(a,root,r)
+            scrolls+=1
+            next_scroll=time.monotonic()+3
         time.sleep(.4)
     raise Refused('READY_UI_NOT_OBSERVED')
 
