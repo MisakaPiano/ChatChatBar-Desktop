@@ -1,0 +1,141 @@
+{
+  "kind": "CCB_LAN_DELIVERED86_CANDIDATE87_PUBLIC_SIGNING_V1",
+  "format": 1,
+  "buildRequest": {
+    "kind": "CCB_LAN_DELIVERED86_CANDIDATE87_BUILD_V1",
+    "format": 1,
+    "sourceSha": "9340d10306b06051833e33a03d47ab6d69c4c5b3",
+    "series": "next",
+    "versions": [
+      86,
+      87
+    ],
+    "package": "com.example.chatbar.lansyncnext",
+    "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+    "deliveredBase": {
+      "sourceSha": "f5fc060546eb9479b2566375761903d383c538b1",
+      "versionCode": 86,
+      "runId": 44662039106,
+      "artifactId": 14596631268,
+      "artifactName": "ccb-lan-delivered85-candidate86-v6-inputs",
+      "outerBytes": 221320913,
+      "outerSha256": "9ce28f8084cd2e5f0c159992d4c5cf5708c6956d78743b06d1b8977367ed1136",
+      "controlSha": "3bd17c5c78c7e1dd3a67e2b082675f292a57cf1d",
+      "member": "candidate86-input.apk",
+      "rawBytes": 109666459,
+      "rawSha256": "66ad768651e69bbe08c26f87e83cbcb3986ea604f75f167601aa2137d1a8f1b1",
+      "deliveredBytes": 109663831,
+      "deliveredSha256": "ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0"
+    },
+    "fixtures": {
+      "seed86": {
+        "path": "candidate87_seed86.kt",
+        "sha256": "613609a98651a496da76df2ad15a1d48ecba94fb54b525e32b5f95c05b41bc95"
+      },
+      "verify87": {
+        "path": "candidate87_verify87.kt",
+        "sha256": "cba324592dbb8f72830553e2477fde3c3f7daf377b3ff3b34a03c612720a9fc9"
+      }
+    },
+    "allowedStateMigrations": [],
+    "trustedCandidate87Control": {
+      "format": 1,
+      "files": {
+        "candidate87_control.py": {
+          "bytes": 6565,
+          "sha256": "03123de9d13ee22dbe7a3280d372b16098872058176d4e2d33edfa4bb4ca8eab"
+        },
+        "candidate87_profile.py": {
+          "bytes": 3618,
+          "sha256": "e56b85c18f58c7c17140343363718eb2ac3b4dbfc0e92b50da2f9083d4e4ac65"
+        },
+        "upgrade_series_engine.py": {
+          "bytes": 32375,
+          "sha256": "1ecf6b556d04e40e45b0a424230736e8b6b884278e06b989a28666e6f8baa729"
+        }
+      },
+      "expectedSuccessfulInvocations": 3,
+      "uniqueMethods": 2,
+      "seedExecutions": 1,
+      "verifierExecutions": 2
+    }
+  },
+  "originalArtifact": {
+    "id": 14773249240,
+    "runId": 45071824623,
+    "name": "ccb-lan-delivered86-candidate87-inputs",
+    "bytes": 221352411,
+    "outerSha256": "61268728dba31e4911e8f311d5873afdcdbd17714fab9babdebcef4257f5e8e2",
+    "controlSha": "bfd269147b94d2be7d7cad27dfa38b90b379a7d2"
+  },
+  "rawManifest": {
+    "bytes": 5287,
+    "sha256": "0ed36bd4c94e931d258f94d44e2c494b64dc12aa14ba79833e1739ab0390bc30"
+  },
+  "entries": {
+    "base86": {
+      "filename": "base86-input.apk",
+      "publicSigning": {
+        "format": 1,
+        "purpose": "ISOLATED_LAN_NEXT_PREVIEW",
+        "sourceSha256": "66ad768651e69bbe08c26f87e83cbcb3986ea604f75f167601aa2137d1a8f1b1",
+        "outputSha256": "ac8e1b84c6cc0327eb7c2dd5ccb4c2cab594298040939b68966d0379632ad7e0",
+        "bytes": 109663831,
+        "entries": 260,
+        "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+        "blockBase64": "tAUAAAAAAACUBQAAAAAAABqHCXGMBQAAiAUAAEoDAAAsAAAAKAAAAAMBAAAgAAAA9fD3nSgvAHSdpwf5a5L1tXgVf4/38HlSZ7b17bCyg2oSAwAADgMAADCCAwowggHyoAMCAQICFFcbG0yWrEkOV8IlWmgMgpfdIqH0MA0GCSqGSIb3DQEBCwUAMD8xPTA7BgNVBAMMNENDQiBMQU4gUHJldmlldyBOZXh0IHBlcnNpc3RlbnQgZGV2ZWxvcG1lbnQgaWRlbnRpdHkwHhcNMjYxMTExMjMyMDMwWhcNMzYxMTA5MjMyMDMwWjA/MT0wOwYDVQQDDDRDQ0IgTEFOIFByZXZpZXcgTmV4dCBwZXJzaXN0ZW50IGRldmVsb3BtZW50IGlkZW50aXR5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+ZVwuMHQFvCaJj5L+Ui4LTAnZX8t06KQTOdjRuV4oc5bYL6T7kQbKFn/DU/9KrwjGN2h/s8OoCEI7hrQmRKM4eMkT5CKGtNLFUpBRh/vgTISgermj+e1MLwkd4SGtkcdNNrJzR77OgcR/BsYMDzHKw63e8vfXcy/QIDpwjjoauuSOrOjAo7nnfD003LrOtbf/I0/V9p/uEfNbdYHDeAcPLT5i7sLFPvkVqcsIV6PWEtDN32XwGr9OTJEbE8ceX3aCk+le6Od/2LXk68tJ3yDUmcBrXPj4SrUk2mvVeaJYcHf7xW8iVlqRgKlaH9BR7X73OhydpN9xKv0Yy/3mr4cQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAe9juv7Qn2TXUcjkJKeNb6uY0f0hhAyBjuWBJ3TwPTzw1Mwwup09GUQYUGVic5UIiNfTXoUaRe0WuyKTP7jDYvnGGe4ImjwioJeu9eObbA9X1+RyyW8+KsH97HYKPOfvZQLJLq0nR5FFUi3k9UsdzUp5I5uYPHg9H/krE02r8NZJy3PRi2VZ0xVwTAxhhb+iWlq4M0yfttc+DviWOX8sA1xzPwGa6fs63TlBMFOkYTY5Bz1SSPXim0UiBJrWpuFJbN2j7YoMo8UVZHuC77Zztpv3WjbReG9Cdc66UHinNnDLOghmP+FQyJGbAD0/ECNdVG2RlZaGZOS0OZ8lxo+chDAAAAAAwBAAAIAQAAAwEAAAABAABjYxVUG/8d0tc/GOZmXNK4Vetzdvkjv3gIlyeEmT31VIJZR721m9S/Q01yDCKm+YDoZBomdMym13kEPfkS1Y9sBcWHArgsSvfZam4zDsmkRb6f88viFGAC7Tr5u4s/DXgp2HScLHUHWhYYzhkVzindjM+tnLppa6y8vE9u98AMZWcgjuXQ799RXXeDfzUVzK5xqUtryQbhTCs9p+5tI5etKawNViXdny6g4/NyvKfG+IsxG/suPstXbAskRGnqwCKlAJBD2dvJh+3uoSeRrG+ZL9hWsTnb+TmBaKqYtuqlOSzc212BA24x2PQ96cAsG2qa19V6VRc9BK3wf70pgtosJgEAADCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALfmVcLjB0BbwmiY+S/lIuC0wJ2V/LdOikEznY0bleKHOW2C+k+5EGyhZ/w1P/Sq8Ixjdof7PDqAhCO4a0JkSjOHjJE+QihrTSxVKQUYf74EyEoHq5o/ntTC8JHeEhrZHHTTayc0e+zoHEfwbGDA8xysOt3vL313Mv0CA6cI46GrrkjqzowKO553w9NNy6zrW3/yNP1faf7hHzW3WBw3gHDy0+Yu7CxT75FanLCFej1hLQzd9l8Bq/TkyRGxPHHl92gpPpXujnf9i15OvLSd8g1JnAa1z4+Eq1JNpr1XmiWHB3+8VvIlZakYCpWh/QUe1+9zocnaTfcSr9GMv95q+HECAwEAAbQFAAAAAAAAQVBLIFNpZyBCbG9jayA0Mg==",
+        "scheme": "v2",
+        "algorithm": "RSA-2048-PKCS1-SHA256",
+        "officialVerifierPassed": false
+      }
+    },
+    "seed86": {
+      "filename": "seed86-tests-input.apk",
+      "publicSigning": {
+        "format": 1,
+        "purpose": "ISOLATED_LAN_NEXT_PREVIEW",
+        "sourceSha256": "e6c891005052dd1ac8564c587893631ee7319960bbc448a185e3eb93be360adf",
+        "outputSha256": "e7cd70e801c983f7acf5f4306c4023d1ff6d2119dc1e8465e6243d1abf8ed13b",
+        "bytes": 1954418,
+        "entries": 80,
+        "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+        "blockBase64": "tAUAAAAAAACUBQAAAAAAABqHCXGMBQAAiAUAAEoDAAAsAAAAKAAAAAMBAAAgAAAAVc7hA4Gx9EvMs8KOKmDmvgKYSiDI38jeORWvDANS59sSAwAADgMAADCCAwowggHyoAMCAQICFFcbG0yWrEkOV8IlWmgMgpfdIqH0MA0GCSqGSIb3DQEBCwUAMD8xPTA7BgNVBAMMNENDQiBMQU4gUHJldmlldyBOZXh0IHBlcnNpc3RlbnQgZGV2ZWxvcG1lbnQgaWRlbnRpdHkwHhcNMjYxMTExMjMyMDMwWhcNMzYxMTA5MjMyMDMwWjA/MT0wOwYDVQQDDDRDQ0IgTEFOIFByZXZpZXcgTmV4dCBwZXJzaXN0ZW50IGRldmVsb3BtZW50IGlkZW50aXR5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+ZVwuMHQFvCaJj5L+Ui4LTAnZX8t06KQTOdjRuV4oc5bYL6T7kQbKFn/DU/9KrwjGN2h/s8OoCEI7hrQmRKM4eMkT5CKGtNLFUpBRh/vgTISgermj+e1MLwkd4SGtkcdNNrJzR77OgcR/BsYMDzHKw63e8vfXcy/QIDpwjjoauuSOrOjAo7nnfD003LrOtbf/I0/V9p/uEfNbdYHDeAcPLT5i7sLFPvkVqcsIV6PWEtDN32XwGr9OTJEbE8ceX3aCk+le6Od/2LXk68tJ3yDUmcBrXPj4SrUk2mvVeaJYcHf7xW8iVlqRgKlaH9BR7X73OhydpN9xKv0Yy/3mr4cQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAe9juv7Qn2TXUcjkJKeNb6uY0f0hhAyBjuWBJ3TwPTzw1Mwwup09GUQYUGVic5UIiNfTXoUaRe0WuyKTP7jDYvnGGe4ImjwioJeu9eObbA9X1+RyyW8+KsH97HYKPOfvZQLJLq0nR5FFUi3k9UsdzUp5I5uYPHg9H/krE02r8NZJy3PRi2VZ0xVwTAxhhb+iWlq4M0yfttc+DviWOX8sA1xzPwGa6fs63TlBMFOkYTY5Bz1SSPXim0UiBJrWpuFJbN2j7YoMo8UVZHuC77Zztpv3WjbReG9Cdc66UHinNnDLOghmP+FQyJGbAD0/ECNdVG2RlZaGZOS0OZ8lxo+chDAAAAAAwBAAAIAQAAAwEAAAABAAAnIoCdrQ9XeZ/M2vfoQaXpLTE1PoIJi3VPdtYiFpXA3CMVwAJNkB82y+MiT1CGKJTUpn2c1uYK5LcQvIigRTHj+K+X/j7Qrk9ZH5cKabtOFPYIcE8HtdUhAKZs1r2k9w4lbjDFvlOPDq003Y1SRhBXjaFbbp6UMZvCOGe+NsQsjWI+LnDk0hSmzv10OL6382RJnN5nZugJMahxTqdFzQTqRBTAlQFwcjVdHPAdiYFgAcGO3vL32rVkHUHStOI1lKttOiR8qplqQ29RYeCHQ9KmxABh0gNaNOBpWcKYREhkGlYbA8T7mXcqlnvt3sYRlVVJpRK1lToXq18VjDXYmd8LJgEAADCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALfmVcLjB0BbwmiY+S/lIuC0wJ2V/LdOikEznY0bleKHOW2C+k+5EGyhZ/w1P/Sq8Ixjdof7PDqAhCO4a0JkSjOHjJE+QihrTSxVKQUYf74EyEoHq5o/ntTC8JHeEhrZHHTTayc0e+zoHEfwbGDA8xysOt3vL313Mv0CA6cI46GrrkjqzowKO553w9NNy6zrW3/yNP1faf7hHzW3WBw3gHDy0+Yu7CxT75FanLCFej1hLQzd9l8Bq/TkyRGxPHHl92gpPpXujnf9i15OvLSd8g1JnAa1z4+Eq1JNpr1XmiWHB3+8VvIlZakYCpWh/QUe1+9zocnaTfcSr9GMv95q+HECAwEAAbQFAAAAAAAAQVBLIFNpZyBCbG9jayA0Mg==",
+        "scheme": "v2",
+        "algorithm": "RSA-2048-PKCS1-SHA256",
+        "officialVerifierPassed": false
+      }
+    },
+    "candidate87": {
+      "filename": "candidate87-input.apk",
+      "publicSigning": {
+        "format": 1,
+        "purpose": "ISOLATED_LAN_NEXT_PREVIEW",
+        "sourceSha256": "1ae79f1b690ab666b8b12062921970d3bdaeaf6f179bc1fdbf99213e7a293cae",
+        "outputSha256": "5bc37cf9e4463ead8235d64c6c8404155a2b20c2dbecae6b936e4f4386906c8e",
+        "bytes": 109696595,
+        "entries": 260,
+        "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+        "blockBase64": "tAUAAAAAAACUBQAAAAAAABqHCXGMBQAAiAUAAEoDAAAsAAAAKAAAAAMBAAAgAAAAqE4eD2IPU37aHgzXdk3YWa8yBgt3uoagbI+m1bGqSjUSAwAADgMAADCCAwowggHyoAMCAQICFFcbG0yWrEkOV8IlWmgMgpfdIqH0MA0GCSqGSIb3DQEBCwUAMD8xPTA7BgNVBAMMNENDQiBMQU4gUHJldmlldyBOZXh0IHBlcnNpc3RlbnQgZGV2ZWxvcG1lbnQgaWRlbnRpdHkwHhcNMjYxMTExMjMyMDMwWhcNMzYxMTA5MjMyMDMwWjA/MT0wOwYDVQQDDDRDQ0IgTEFOIFByZXZpZXcgTmV4dCBwZXJzaXN0ZW50IGRldmVsb3BtZW50IGlkZW50aXR5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+ZVwuMHQFvCaJj5L+Ui4LTAnZX8t06KQTOdjRuV4oc5bYL6T7kQbKFn/DU/9KrwjGN2h/s8OoCEI7hrQmRKM4eMkT5CKGtNLFUpBRh/vgTISgermj+e1MLwkd4SGtkcdNNrJzR77OgcR/BsYMDzHKw63e8vfXcy/QIDpwjjoauuSOrOjAo7nnfD003LrOtbf/I0/V9p/uEfNbdYHDeAcPLT5i7sLFPvkVqcsIV6PWEtDN32XwGr9OTJEbE8ceX3aCk+le6Od/2LXk68tJ3yDUmcBrXPj4SrUk2mvVeaJYcHf7xW8iVlqRgKlaH9BR7X73OhydpN9xKv0Yy/3mr4cQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAe9juv7Qn2TXUcjkJKeNb6uY0f0hhAyBjuWBJ3TwPTzw1Mwwup09GUQYUGVic5UIiNfTXoUaRe0WuyKTP7jDYvnGGe4ImjwioJeu9eObbA9X1+RyyW8+KsH97HYKPOfvZQLJLq0nR5FFUi3k9UsdzUp5I5uYPHg9H/krE02r8NZJy3PRi2VZ0xVwTAxhhb+iWlq4M0yfttc+DviWOX8sA1xzPwGa6fs63TlBMFOkYTY5Bz1SSPXim0UiBJrWpuFJbN2j7YoMo8UVZHuC77Zztpv3WjbReG9Cdc66UHinNnDLOghmP+FQyJGbAD0/ECNdVG2RlZaGZOS0OZ8lxo+chDAAAAAAwBAAAIAQAAAwEAAAABAACMDJ+mR40dAN+qOlAvw/0Bu5b9roon9KJV/mdJClTo0BjdOT3NTsak467wZEA0jbOu9OdXfyJDjrpHoj0TkTztkq0MOBh8DOjwT2bjjxLGIxSOCTu4VQLtW+s3NzkNONDzs2EgAIA84ZBCaBmfNCtXuX8MaoBCEiWGITto+oa3URBgh9eLAZ0q3jFG2JEMlBDzfI5FzHAQ17o0B6ohYsgx5v6bHq6LRbxlLSTLs2dfCnm3iGdExpyeKCu0DNf6ZlaM1cIsKW60E8Qvj8Puas0uB/z6g1TrimlQx9UF9v/QQLRN3zrYTxMDCPmDrRGv6EH/72g3SMz94escXVnEa6K+JgEAADCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALfmVcLjB0BbwmiY+S/lIuC0wJ2V/LdOikEznY0bleKHOW2C+k+5EGyhZ/w1P/Sq8Ixjdof7PDqAhCO4a0JkSjOHjJE+QihrTSxVKQUYf74EyEoHq5o/ntTC8JHeEhrZHHTTayc0e+zoHEfwbGDA8xysOt3vL313Mv0CA6cI46GrrkjqzowKO553w9NNy6zrW3/yNP1faf7hHzW3WBw3gHDy0+Yu7CxT75FanLCFej1hLQzd9l8Bq/TkyRGxPHHl92gpPpXujnf9i15OvLSd8g1JnAa1z4+Eq1JNpr1XmiWHB3+8VvIlZakYCpWh/QUe1+9zocnaTfcSr9GMv95q+HECAwEAAbQFAAAAAAAAQVBLIFNpZyBCbG9jayA0Mg==",
+        "scheme": "v2",
+        "algorithm": "RSA-2048-PKCS1-SHA256",
+        "officialVerifierPassed": false
+      }
+    },
+    "verify87": {
+      "filename": "verify87-tests-input.apk",
+      "publicSigning": {
+        "format": 1,
+        "purpose": "ISOLATED_LAN_NEXT_PREVIEW",
+        "sourceSha256": "14e463d4b8e9906774e5b2d927c614152a8389525dd93fb9c88c536c5000914a",
+        "outputSha256": "49e06a0ae8daf86462ea3c00e98f78c5328703c3e9208de2e55cb6fc3b7a12eb",
+        "bytes": 1955986,
+        "entries": 80,
+        "certificateSha256": "801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7",
+        "blockBase64": "tAUAAAAAAACUBQAAAAAAABqHCXGMBQAAiAUAAEoDAAAsAAAAKAAAAAMBAAAgAAAA3VaWqn7GvigJ+NO7Yz9pJqVLth6i4WSBwzBqTgggXjwSAwAADgMAADCCAwowggHyoAMCAQICFFcbG0yWrEkOV8IlWmgMgpfdIqH0MA0GCSqGSIb3DQEBCwUAMD8xPTA7BgNVBAMMNENDQiBMQU4gUHJldmlldyBOZXh0IHBlcnNpc3RlbnQgZGV2ZWxvcG1lbnQgaWRlbnRpdHkwHhcNMjYxMTExMjMyMDMwWhcNMzYxMTA5MjMyMDMwWjA/MT0wOwYDVQQDDDRDQ0IgTEFOIFByZXZpZXcgTmV4dCBwZXJzaXN0ZW50IGRldmVsb3BtZW50IGlkZW50aXR5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+ZVwuMHQFvCaJj5L+Ui4LTAnZX8t06KQTOdjRuV4oc5bYL6T7kQbKFn/DU/9KrwjGN2h/s8OoCEI7hrQmRKM4eMkT5CKGtNLFUpBRh/vgTISgermj+e1MLwkd4SGtkcdNNrJzR77OgcR/BsYMDzHKw63e8vfXcy/QIDpwjjoauuSOrOjAo7nnfD003LrOtbf/I0/V9p/uEfNbdYHDeAcPLT5i7sLFPvkVqcsIV6PWEtDN32XwGr9OTJEbE8ceX3aCk+le6Od/2LXk68tJ3yDUmcBrXPj4SrUk2mvVeaJYcHf7xW8iVlqRgKlaH9BR7X73OhydpN9xKv0Yy/3mr4cQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAe9juv7Qn2TXUcjkJKeNb6uY0f0hhAyBjuWBJ3TwPTzw1Mwwup09GUQYUGVic5UIiNfTXoUaRe0WuyKTP7jDYvnGGe4ImjwioJeu9eObbA9X1+RyyW8+KsH97HYKPOfvZQLJLq0nR5FFUi3k9UsdzUp5I5uYPHg9H/krE02r8NZJy3PRi2VZ0xVwTAxhhb+iWlq4M0yfttc+DviWOX8sA1xzPwGa6fs63TlBMFOkYTY5Bz1SSPXim0UiBJrWpuFJbN2j7YoMo8UVZHuC77Zztpv3WjbReG9Cdc66UHinNnDLOghmP+FQyJGbAD0/ECNdVG2RlZaGZOS0OZ8lxo+chDAAAAAAwBAAAIAQAAAwEAAAABAAB6nANtwX0nNtutfLmH9+EWulJpeEvliU5vcBtI1HUhgxWSgAZ29JCvCnhSGawXs0Yc5+9peDHEw0FhaW0JnR9HmswK+hKhz/NNdsoGw8yQAdHy7H0CdiB6fT2xbUXYlcaKHMmiLOtEllqGeUccd0FVDbpe3hLES1fKHVTsxdnPEkGyFIO3u2pYS8Ouqobib/GOSQOljrG3FaOy+ifC3a1a/KVmvyN1iIlUQjJXY4poyxDT4xWrOI0u73VNpMOnX3hWqdSAjCWLmYh6b/gCEkxwXrM89BJpTEYlthWQFwA8DN6hPfCrjUkgGVNySCE09MuCRqt7ra4uXdI8aapKpbr7JgEAADCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALfmVcLjB0BbwmiY+S/lIuC0wJ2V/LdOikEznY0bleKHOW2C+k+5EGyhZ/w1P/Sq8Ixjdof7PDqAhCO4a0JkSjOHjJE+QihrTSxVKQUYf74EyEoHq5o/ntTC8JHeEhrZHHTTayc0e+zoHEfwbGDA8xysOt3vL313Mv0CA6cI46GrrkjqzowKO553w9NNy6zrW3/yNP1faf7hHzW3WBw3gHDy0+Yu7CxT75FanLCFej1hLQzd9l8Bq/TkyRGxPHHl92gpPpXujnf9i15OvLSd8g1JnAa1z4+Eq1JNpr1XmiWHB3+8VvIlZakYCpWh/QUe1+9zocnaTfcSr9GMv95q+HECAwEAAbQFAAAAAAAAQVBLIFNpZyBCbG9jayA0Mg==",
+        "scheme": "v2",
+        "algorithm": "RSA-2048-PKCS1-SHA256",
+        "officialVerifierPassed": false
+      }
+    }
+  }
+}
