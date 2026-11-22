@@ -118,6 +118,45 @@ def read_as_app(a,*args,missing_ok=False):
     need(p.returncode==0 and not p.stderr.strip(),'RUN_AS_READ_FAILED')
     return p.stdout
 
+def read_image_proof(a,ui,path,r):
+    # run-as already enters this package's private cwd. API26 cannot necessarily
+    # canonicalize its protected ancestors, so never readlink -f an absolute path.
+    r['phase']='READ_PRIVATE_FILES_ROOT'
+    raw=read_as_app(a,'pwd')
+    roots=('/data/user/0/'+ui.PACKAGE,'/data/data/'+ui.PACKAGE)
+    try:app_root=raw.decode('ascii').strip()
+    except UnicodeError:raise Refused('APP_PRIVATE_CWD_INVALID') from None
+    need(app_root in roots,'APP_PRIVATE_CWD_MISMATCH')
+    r['privateAppCwdObserved']=True
+    files_root=app_root+'/files'
+    image=app_image(path,files_root)
+    relative=image[len(app_root)+1:]
+    parts=PurePosixPath(relative).parts
+    need(3<=len(parts)<=16 and parts[:2]==('files','images') and
+         str(PurePosixPath(relative))==relative and all(x not in ('.','..') for x in parts),'IMAGE_RELATIVE_PATH_INVALID')
+    prefixes=['.']+['/'.join(parts[:i]) for i in range(1,len(parts)+1)]
+    def inspect():
+        identities=[]
+        for i,prefix in enumerate(prefixes):
+            # API26 Toybox stat defaults to lstat; -L is deliberately absent.
+            value=read_as_app(a,'toybox','stat','-c','%f/%s/%d/%i',prefix)
+            match=re.fullmatch(rb'([a-fA-F0-9]{1,8})/([0-9]{1,20})/([0-9]{1,20})/([0-9]{1,20})\s*',value)
+            need(match is not None,'IMAGE_LSTAT_METADATA_INVALID')
+            mode=int(match[1],16);size,device,inode=(int(match[j]) for j in (2,3,4))
+            need(mode&0xf000==(0x8000 if i==len(prefixes)-1 else 0x4000),'IMAGE_PATH_SYMLINK_OR_WRONG_TYPE')
+            need(inode>0,'IMAGE_LSTAT_IDENTITY_INVALID')
+            identities.append((mode,size if i==len(prefixes)-1 else None,device,inode))
+        need(0<identities[-1][1]<=4*1024*1024,'SMALL_IMAGE_SIZE_LIMIT')
+        return identities
+    before=inspect();r['imagePathComponentsVerified']=len(parts);r['imageNoSymlinkPathObserved']=True
+    r['phase']='READ_IMAGE'
+    digest=read_as_app(a,'toybox','sha256sum',relative)
+    match=re.fullmatch(rb'([a-f0-9]{64})  '+re.escape(relative.encode('ascii'))+rb'\r?\n?',digest)
+    need(match is not None,'IMAGE_HASH_OUTPUT_INVALID')
+    after=inspect();need(before==after,'IMAGE_PATH_CHANGED_DURING_READ')
+    r['imageReadIdentityStable']=True
+    return match[1].decode('ascii'),before[-1][1]
+
 def editable(root,package,focused=False):
     found=[]
     for n in root.iter('node'):
@@ -339,19 +378,8 @@ def run_pairing(args,r,a,ui,clipboard,clipboard_result):
             continue
         raw=read_as_app(a,'cat',MESSAGE_FILE)
         r['phase']='READ_MESSAGE';m=message(raw);r['exactMessageContentObserved']=True
-        r['phase']='READ_PRIVATE_FILES_ROOT'
-        files_root=read_as_app(a,'toybox','readlink','-f','files').decode('utf-8').strip()
-        need(files_root in ('/data/user/0/'+ui.PACKAGE+'/files','/data/data/'+ui.PACKAGE+'/files'),'APP_FILES_ROOT_MISMATCH')
-        image=app_image(m['images'][0],files_root)
-        canonical=read_as_app(a,'toybox','readlink','-f',image)
-        need(canonical is not None,'IMAGE_CANONICAL_PATH_UNAVAILABLE')
-        canonical=canonical.decode('utf-8').strip()
-        need(canonical.startswith(files_root+'/images/') and canonical==app_image(canonical,files_root),'IMAGE_OUTSIDE_APP_AFTER_RESOLVE')
-        r['phase']='READ_IMAGE'
-        digest=read_as_app(a,'toybox','sha256sum',canonical);need(digest is not None,'IMAGE_HASH_UNAVAILABLE')
-        actual=digest.decode('ascii').split()[0];need(actual==v['imageSha256'],'IMAGE_HASH_MISMATCH')
-        size=read_as_app(a,'toybox','stat','-c','%s',canonical);need(size is not None and re.fullmatch(rb'[0-9]+\s*',size) is not None,'IMAGE_SIZE_UNAVAILABLE')
-        n=int(size);need(0<n<=4*1024*1024,'SMALL_IMAGE_SIZE_LIMIT')
+        actual,n=read_image_proof(a,ui,m['images'][0],r)
+        need(actual==v['imageSha256'],'IMAGE_HASH_MISMATCH')
         r['appOwnedImageSha256Matched']=True;r['imageBytes']=n
         # Publish only after values have been obtained from actual app storage.
         publish(args.readback,{'kind':'CCB_V7_ANDROID_READBACK','session':m['sessionId'],'message':m['id'],'text':m['content'],'imageSha256':actual,'received':True})
