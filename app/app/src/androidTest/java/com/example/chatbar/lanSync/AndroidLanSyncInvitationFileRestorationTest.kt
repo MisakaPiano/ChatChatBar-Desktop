@@ -5,15 +5,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.net.Uri
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -42,17 +44,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
+import org.junit.runners.model.Statement
 
 /** Real invitation owner and Compose result callback, with a controlled document-picker response. */
 class AndroidLanSyncInvitationFileRestorationTest {
-    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    private val compose = createAndroidComposeRule<LanSyncActivity>()
+    @get:Rule val isolatedRule: RuleChain = RuleChain.outerRule(TestRule { base, _ ->
+        object : Statement() {
+            override fun evaluate() {
+                requireIsolatedApplication()
+                base.evaluate()
+            }
+        }
+    }).around(compose)
 
     @Test
     fun restoredPickerSavesTheSameInvitationAndARevokedSelectionCannotWrite() = runBlocking {
-        assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncInvitationFileRestoreFixture") == "true")
-        val app = ApplicationProvider.getApplicationContext<Context>()
-        check(app.packageName in setOf("com.example.chatbar.lansync", "com.example.chatbar.lansyncnext"))
-        check((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+        val app = compose.activity.applicationContext
         val root = Files.createTempDirectory(app.cacheDir.canonicalFile.toPath(), "synthetic-invitation-picker-").toRealPath()
         val data = Files.createDirectory(root.resolve("data"))
         val profile = Files.createDirectory(root.resolve("profile"))
@@ -97,7 +107,12 @@ class AndroidLanSyncInvitationFileRestorationTest {
             val registryOwner = object : ActivityResultRegistryOwner {
                 override val activityResultRegistry = picker
             }
-            val restoration = StateRestorationTester(compose)
+            val restoration = StateRestorationTester(object : ComposeContentTestRule by compose {
+                override fun setContent(composable: @Composable () -> Unit) {
+                    // Use the registered Activity's existing Compose host for the tester's saveable state wrapper.
+                    compose.runOnUiThread { compose.activity.setContent(content = composable) }
+                }
+            })
             restoration.setContent {
                 CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner) {
                     val state by coordinator.state.collectAsState()
@@ -131,6 +146,13 @@ class AndroidLanSyncInvitationFileRestorationTest {
             coordinator.closeAndDrain()
             check(root.toFile().deleteRecursively())
         }
+    }
+
+    private fun requireIsolatedApplication() {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncInvitationFileRestoreFixture") == "true")
+        val app = ApplicationProvider.getApplicationContext<Context>()
+        check(app.packageName in setOf("com.example.chatbar.lansync", "com.example.chatbar.lansyncnext"))
+        check((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
     }
 
     private suspend fun await(condition: () -> Boolean) = withTimeout(30_000) {
