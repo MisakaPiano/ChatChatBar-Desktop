@@ -66,7 +66,7 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Restore only the current candidate from notice.originalContent and retain its repair text with restored=true for local redo. New notices bind stable versionId; a different candidate with identical text cannot reuse that recovery point. Legacy absent fields retain the old readable shape. Desktop redo uses the same task/admission/source-safety/conditional commit owner as restore and never enters model resolution or the network stream.
 - A no-change result must not erase an existing applicable recovery point.
 - Keep legacy notice enum values readable. Do not revive the removed length-anomaly gate without a new product decision.
-- Editing, regeneration, candidate switching, or another mutation must clear or hide stale notices according to target-content applicability.
+- Editing and other mutations clear or hide stale notices according to target-content applicability. Regeneration preserves the version policy's surviving notice: appending B must hide A's local redo while B is selected, then restore that redo when selecting A. Before append introduces duplicate text, the shared policy binds an unnumbered legacy notice to its applicable active owner or sole matching existing owner; retired or unverifiable owners cannot become recovery points on B. The real runtime must not clear that result. `DesktopRegenerationTest` covers actual regeneration, identical-text legacy alternatives and local redo without another repair request.
 - Process death during an unfinished stream leaves the pre-repair persisted message intact.
 
 ## Orchestration Invariants

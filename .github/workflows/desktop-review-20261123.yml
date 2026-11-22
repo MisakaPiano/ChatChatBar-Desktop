@@ -1,0 +1,118 @@
+name: Desktop November 23 review regressions
+on:
+  push:
+    branches: [codex/desktop-1259-feedback-20261119]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-review-20261123-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical synthetic directory and exact source
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-review-20261123'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class ReviewFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([ReviewFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'review-nov23' | Out-Null
+          git rev-parse HEAD | Set-Content 'review-nov23/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'review-nov23/tree.txt'
+      - name: Reproduce lost local redo with the exact prior runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '711507195e92f1e1079ff0230e89689551d2e02b'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRealChatRuntime.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_RUNTIME_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'PRIOR_RUNTIME_NOT_RESTORED' }
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopRegenerationTest.actual repair undo regenerate and reselect preserves the original alternative local redo' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            if ($negativeExit -ne 1) { throw 'PRIOR_REDO_NEGATIVE_EXIT_NOT_CONFIRMED' }
+            $reportPath = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $reportPath
+            if ($report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_REDO_ASSERTION_NOT_CONFIRMED' }
+            if (@($report.testsuite.testcase.failure | Where-Object type -NotMatch 'Assertion').Count -ne 0) { throw 'PRIOR_REDO_FAILURE_NOT_ASSERTION' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Regeneration discarded*') { throw 'PRIOR_REDO_WRONG_ASSERTION' }
+            Copy-Item -LiteralPath $reportPath -Destination 'review-nov23/negative-redo.xml'
+            $prior | Set-Content 'review-nov23/negative-product-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'POSITIVE_RUNTIME_NOT_RESTORED' }
+          }
+      - name: Reproduce legacy recovery rebinding on the prior append policy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = 'ac033e188b112958ac3fe34bcc743ac5b24ec37c'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'LEGACY_CUSTODY_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopRegenerationTest.legacy redo remains bound to A when actual regeneration returns the same original text for B' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'LEGACY_CUSTODY_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*Legacy recovery must bind*') { throw 'LEGACY_CUSTODY_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-nov23/negative-legacy-custody.xml'
+            $prior | Set-Content 'review-nov23/negative-legacy-custody-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'LEGACY_CUSTODY_POSITIVE_NOT_RESTORED' }
+          }
+      - name: Verify shared version custody
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest'
+          --tests 'com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest'
+          --no-daemon --stacktrace
+      - name: Verify runtime redo and durable-source RAG selection
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopRegenerationTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatMemoryIndexTest'
+          --tests 'com.example.chatbar.desktop.DesktopFormatRepairInteractionTest'
+          --tests 'com.example.chatbar.desktop.DesktopRemovedAlternativeVoiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopAlternativeUnlinkRecoveryTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-review-nov23-original-results
+          path: |
+            review-nov23/
+            app/desktopApp/build/test-results/test/
+            app/sharedCore/build/test-results/test/

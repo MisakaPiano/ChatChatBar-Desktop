@@ -282,7 +282,7 @@ class DesktopRealChatRuntime internal constructor(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
                 narrativeMode = message.narrativeMode,
                 actionOptionsFormat = message.actionOptionsFormat,
-            ).copy(reasoningContent = message.reasoningContent, formatRepairNotice = null)
+            ).copy(reasoningContent = message.reasoningContent)
             return chatRepository.updateMessageReturningSnapshot(updated)
         }
 

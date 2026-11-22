@@ -76,6 +76,32 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'ENGLISH_QUOTE_POSITIVE_NOT_RESTORED' }
           }
+      - name: Reproduce HTML comment pairing on the exact prior parser
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '0c863e92f84908fd90409f80b11e18644c5f9fc6'
+          $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/NarrativeHistoryEcho.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'HTML_COMMENT_PRIOR_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.HTML comment closing stays literal while actual outer history wrapper is removed from preview Stop and storage' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopNarrativeReplyEchoTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'HTML_COMMENT_PRIOR_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.message -notlike '*HTML comment was mistaken*') { throw 'HTML_COMMENT_PRIOR_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'review-action-narrative/negative-html-comment.xml'
+            $prior | Set-Content 'review-action-narrative/negative-html-comment-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'HTML_COMMENT_POSITIVE_NOT_RESTORED' }
+          }
       - name: Verify narrative reply streaming and persistence
         working-directory: app
         run: >-
@@ -93,6 +119,8 @@ jobs:
           --tests 'com.example.chatbar.domain.chat.NarrativeHistoryEchoTest'
           --tests 'com.example.chatbar.domain.chat.NarrativeModeRequestAssemblyTest'
           --tests 'com.example.chatbar.domain.chat.NarrativeModePersistenceTest'
+          --tests 'com.example.chatbar.domain.chat.RoleplayActionOptionsPolicyTest'
+          --tests 'com.example.chatbar.domain.chat.RoleplayContentSegmentsTest'
           --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()

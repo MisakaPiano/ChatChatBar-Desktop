@@ -4,15 +4,92 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import com.example.chatbar.domain.chat.MainChatLogicalMessageSource
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.chat.StreamEvent
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopRegenerationTest {
+    @Test fun `legacy redo remains bound to A when actual regeneration returns the same original text for B`() = runBlocking {
+        fixture { container, server, session, target ->
+            val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(
+                DesktopDataRootOwnership.acquire(container.resolvedRoot)).ownership
+            try {
+                val legacy = container.chatRepository.updateMessageReturningSnapshot(target.copy(
+                    formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED,
+                        "fixed A", "old-answer", restored = true)))
+                assertTrue(desktopCanRedoFormat(legacy))
+                val owner = MessageAlternativeVersionPolicy.activeVersionId(legacy)
+                server.enqueue(success("old-answer"))
+                val result = container.createRealChatRuntime().regenerate(session, target.id)
+                assertNull(result.failureMessage)
+                assertEquals(listOf("old-answer", "old-answer"), result.assistant.alternatives)
+                assertEquals(owner, result.assistant.formatRepairNotice?.versionId,
+                    "Legacy recovery must bind to its old owner before creating identical B")
+                assertFalse(desktopCanRedoFormat(result.assistant))
+                assertFalse(desktopCanRestoreFormat(result.assistant))
+                val selected = container.chatRepository.updateMessageReturningSnapshot(
+                    MessageAlternativeVersionPolicy.select(result.assistant, 0))
+                assertTrue(desktopCanRedoFormat(selected))
+                val repair = container.createMessageFormatRepairController { error("Local redo must not call a model") }
+                val task = repair.redo(session, target.id)
+                withTimeout(8000) { container.taskRuntime.repairTasks.first {
+                    it[task] != null && it[task] != DesktopRepairStatus.RUNNING
+                } }
+                assertEquals(DesktopRepairStatus.APPLIED, repair.states.value[task]?.status)
+                assertEquals(listOf("fixed A", "old-answer"), container.chatRepository.getMessage(target.id, session)?.alternatives)
+                assertEquals(1, server.requestCount)
+            } finally { ownership.close() }
+        }
+    }
+
+    @Test fun `actual repair undo regenerate and reselect preserves the original alternative local redo`() = runBlocking {
+        fixture { container, server, session, target ->
+            val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(
+                DesktopDataRootOwnership.acquire(container.resolvedRoot)).ownership
+            try {
+                container.formatCardRepository.save(FormatCard("repair-format", "Synthetic", "Synthetic rule", createdAt = 1))
+                container.settingsRepository.saveAppSettings(container.settingsRepository.getAppSettings().copy(
+                    defaultFormatCardId = "repair-format"))
+                var repairCalls = 0
+                val repair = container.createMessageFormatRepairController {
+                    repairCalls++
+                    flowOf(StreamEvent.Delta("repaired A"), StreamEvent.Done)
+                }
+                suspend fun awaitRepair(task: String) = withTimeout(8000) {
+                    container.taskRuntime.repairTasks.first { it[task] != null && it[task] != DesktopRepairStatus.RUNNING }
+                    assertNotNull(repair.states.value[task])
+                }
+                assertEquals(DesktopRepairStatus.APPLIED, awaitRepair(repair.repair(session, target.id)).status)
+                assertEquals(DesktopRepairStatus.RESTORED, awaitRepair(repair.restore(session, target.id)).status)
+                val undone = assertNotNull(container.chatRepository.getMessage(target.id, session))
+                assertTrue(desktopCanRedoFormat(undone))
+                server.enqueue(success("new B"))
+                val generated = container.createRealChatRuntime().regenerate(session, target.id)
+                assertNull(generated.failureMessage)
+                assertEquals(listOf("old-answer", "new B"), generated.assistant.alternatives)
+                assertFalse(desktopCanRedoFormat(generated.assistant))
+                assertEquals(undone.formatRepairNotice, generated.assistant.formatRepairNotice,
+                    "Regeneration discarded A's version-bound recovery point")
+                val selected = container.chatRepository.updateMessageReturningSnapshot(
+                    MessageAlternativeVersionPolicy.select(generated.assistant, 0))
+                assertTrue(desktopCanRedoFormat(selected))
+                assertEquals(DesktopRepairStatus.APPLIED, awaitRepair(repair.redo(session, target.id)).status)
+                val redone = assertNotNull(container.chatRepository.getMessage(target.id, session))
+                assertEquals(listOf("repaired A", "new B"), redone.alternatives)
+                assertEquals(1, repairCalls, "Local redo must not call a model")
+                assertEquals(target.images, redone.images)
+                assertEquals(undone.sourceTurnId, redone.sourceTurnId)
+            } finally { ownership.close() }
+        }
+    }
+
     @Test fun `experimental main request freezes saved setting and persists only canonical tool story`() = runBlocking {
         fixture { container, server, session, target ->
             val settings = container.settingsRepository
@@ -148,7 +225,10 @@ data: [DONE]
                 assertEquals(target.createdAt, saved.createdAt)
                 assertEquals(target.images, saved.images)
                 assertEquals(target.generatedImageMetadata, saved.generatedImageMetadata)
-                assertNull(saved.formatRepairNotice)
+                assertEquals(target.formatRepairNotice?.copy(
+                    versionId = MessageAlternativeVersionPolicy.activeVersionId(target)), saved.formatRepairNotice)
+                assertFalse(desktopCanRestoreFormat(saved))
+                assertFalse(desktopCanRedoFormat(saved))
                 assertNull(saved.reasoningContent)
                 assertEquals(index + 2, saved.alternatives.size)
                 assertEquals("old-answer", saved.alternatives.first())
