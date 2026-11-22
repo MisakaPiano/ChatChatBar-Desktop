@@ -78,9 +78,14 @@ jobs:
               Start-Sleep -Seconds 4
             }
             if (!$booted) { throw 'LIVE_EMULATOR_BOOT_EXPIRED' }
+            & $adb -s emulator-5554 shell svc power stayon true
+            if ($LASTEXITCODE) { throw 'LIVE_EMULATOR_AWAKE' }
             & $adb -s emulator-5554 shell input keyevent 82 | Out-Null
+            $priorCcb = & $adb -s emulator-5554 shell pm list packages com.example.chatbar
+            if ($LASTEXITCODE -or "$priorCcb".Trim()) { throw 'LIVE_FRESH_PACKAGE_REQUIRED' }
             & $adb -s emulator-5554 install (Join-Path $env:RUNNER_TEMP 'ccb-v7-scan/candidate86.apk')
             if ($LASTEXITCODE) { throw 'LIVE_APK_INSTALL' }
+            $env:CCB_V7_CLEAN_ANDROID_INSTALL = 'true'
             $info = [Diagnostics.ProcessStartInfo]::new((Get-Command python).Source)
             $info.UseShellExecute = $false
             $info.CreateNoWindow = $true

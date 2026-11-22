@@ -8,12 +8,11 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
-import shlex
 import subprocess
 import time
 import uuid
 
-SCAN_SHA='3a0e25b1e988fd115c5935416b26794af5190396bb96fd6ca74dfa05418aebc2'
+SCAN_SHA='1f94bbca9d2a198d41118555fab8c91375d58a0d28e828506a91575499a65ae6'
 SESSION='ccb-v7-lab-session'
 MESSAGE='ccb-v7-lab-message'
 TEXT='CCB-V7-synthetic-message'
@@ -89,30 +88,55 @@ def scan_module():
     spec=importlib.util.spec_from_file_location('v7_live_scan_dependency',p);mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
     return mod
 
-def read_as_app(a,script):
-    # Only internally constructed fixed read commands reach this shell. No offer is used here.
+def read_as_app(a,*args,missing_ok=False):
+    # Pass each fixed command and known app path directly. A missing file is
+    # distinct from a failed or unexpectedly populated remote command.
+    need(all(re.fullmatch(r'[A-Za-z0-9_./%-]+', arg) for arg in args),'RUN_AS_ARGUMENT')
     try:
-        p=subprocess.run(a.prefix+['exec-out','run-as',a.package,'sh','-c',shlex.quote(script)],capture_output=True,timeout=15)
+        p=subprocess.run(a.prefix+['shell','-T','run-as',a.package,*args],capture_output=True,timeout=15)
     except subprocess.TimeoutExpired:raise Refused('RUN_AS_TIMEOUT') from None
     except OSError:raise Refused('RUN_AS_LAUNCH_FAILED') from None
     need(len(p.stdout)<=65536 and len(p.stderr)<=4096,'RUN_AS_OUTPUT_LIMIT')
-    if p.returncode==1 and not p.stdout and not p.stderr:return None
+    if missing_ok and p.returncode==1 and not p.stdout and p.stderr.startswith(b'stat:') and b'No such file or directory' in p.stderr:
+        return None
     need(p.returncode==0 and not p.stderr.strip(),'RUN_AS_READ_FAILED')
     return p.stdout
 
-def editable(root,package):
+def editable(root,package,focused=False):
     found=[]
     for n in root.iter('node'):
         if n.get('package')==package and n.get('class')=='android.widget.EditText' and n.get('enabled')=='true' and n.get('password')=='true':
+            if focused and n.get('focused')!='true':
+                continue
             m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',n.get('bounds',''))
             if m:
                 b=tuple(map(int,m.groups()))
                 if b[2]>b[0] and b[3]>b[1]:found.append(b)
-    need(len(found)==1,'SINGLE_SECURE_JOIN_INPUT_REQUIRED')
-    return found[0]
+    need(len(found)<=1,'SINGLE_SECURE_JOIN_INPUT_REQUIRED')
+    return found[0] if found else None
+
+def reveal(a,ui,target):
+    for attempt in range(4):
+        root=a.ui()
+        candidate=target(root)
+        if candidate:
+            return candidate
+        if attempt==3:
+            break
+        viewports=[ui.bounds(node) for node in root.iter('node')
+                   if node.get('package')==a.package and node.get('scrollable')=='true']
+        viewports=[b for b in viewports if b and b[3]-b[1]>=200]
+        need(viewports,'GROUP_SCROLL_VIEW_REQUIRED')
+        x1,y1,x2,y2=max(viewports,key=lambda b:(b[2]-b[0])*(b[3]-b[1]))
+        x=(x1+x2)//2
+        h=y2-y1
+        a.run('shell','input','swipe',str(x),str(y1+h*3//4),str(x),str(y1+h//4),'300')
+        time.sleep(.4)
+    raise Refused('JOIN_CONTROL_NOT_VISIBLE')
 
 def execute(args,r):
     need(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Windows','WINDOWS_GITHUB_RUNNER_REQUIRED')
+    need(os.environ.get('CCB_V7_CLEAN_ANDROID_INSTALL')=='true','FRESH_INSTALL_PATH_REQUIRED')
     need(5<=args.offer_timeout<=900 and 5<=args.delivery_timeout<=180,'TIMEOUT_RANGE')
     owned_private_paths(args);ui=scan_module()
     need(re.fullmatch(r'emulator-[0-9]+',args.serial) is not None,'EMULATOR_SERIAL_REQUIRED')
@@ -124,33 +148,44 @@ def execute(args,r):
     need(len(paths)==1 and paths[0].startswith('package:/data/app/') and paths[0].endswith('/base.apk'),'SINGLE_INSTALLED_APK_REQUIRED')
     need(a.run('shell','toybox','sha256sum',paths[0][8:]).split()[0]==ui.APK_SHA,'INSTALLED_V7_APK_HASH_MISMATCH')
     r['exactApkAndApi26Observed']=True
-    fresh=read_as_app(a,'if [ -d files/entities/chat_messages ]; then find files/entities/chat_messages -type f -print | head -n 1; fi; if [ -d no_backup/lan-sync-v1/group-profile ]; then find no_backup/lan-sync-v1/group-profile -type f -print | head -n 1; fi')
-    need(fresh is not None and not fresh.strip(),'FRESH_APP_REQUIRED')
-    r['freshAppNoMessagesOrGroupFilesObserved']=True
+    need(read_as_app(a,'toybox','stat','-c','%s',MESSAGE_FILE,missing_ok=True) is None,'SYNTHETIC_MESSAGE_ALREADY_EXISTS')
+    r['syntheticMessageAbsentBeforeJoin']=True
     a.run('shell','am','start','-W','-n',ui.MAIN,timeout=30)
     nav={'initialEmptyGroupUiObserved':False,'basicTutorialSkippedThroughUi':False}
     try:
-        ui.navigate(a,nav,time.monotonic()+45)
+        ui.navigate(a,nav,time.monotonic()+65)
     finally:
         r['navigationPhase']=nav.get('navigationPhase')
         r['navigationTarget']=nav.get('navigationTarget')
     r['emptyGroupUiObserved']=nav['initialEmptyGroupUiObserved'];r['tutorialSkippedThroughUi']=nav['basicTutorialSkippedThroughUi']
-    files=read_as_app(a,'readlink -f files');need(files is not None,'APP_FILES_ROOT_UNAVAILABLE')
+    files=read_as_app(a,'readlink','-f','files')
     files_root=files.decode('utf-8').strip()
     need(files_root in ('/data/user/0/'+ui.PACKAGE+'/files','/data/data/'+ui.PACKAGE+'/files'),'APP_FILES_ROOT_MISMATCH')
-    r['phase']='WAIT_OFFER';publish(args.ready,{'kind':'CCB_V7_ANDROID_READY','ready':True})
+    def join_field(tree):
+        if '加入已有设备组 · 粘贴邀请' in ui.labels(tree):
+            return editable(tree,ui.PACKAGE)
+        return None
+    r['phase']='LOCATE_JOIN_INPUT'
+    field=reveal(a,ui,join_field)
+    a.tap(field)
+    deadline=time.monotonic()+12
+    while time.monotonic()<deadline and not editable(a.ui(),ui.PACKAGE,focused=True):
+        time.sleep(.3)
+    need(time.monotonic()<deadline,'JOIN_FIELD_NOT_FOCUSED')
+    r['joinFieldFocused']=True
+    r['phase']='WAIT_OFFER'
+    publish(args.ready,{'kind':'CCB_V7_ANDROID_READY','ready':True})
     deadline=time.monotonic()+args.offer_timeout
     while not args.offer.exists() and time.monotonic()<deadline:time.sleep(.5)
     need(args.offer.is_file() and not args.offer.is_symlink(),'OFFER_NOT_OBSERVED')
     v=offer(args.offer.read_bytes());r['offerContractAccepted']=True;r['phase']='INPUT_INVITATION'
-    root=a.ui();need('加入已有设备组 · 粘贴邀请' in ui.labels(root),'JOIN_FIELD_LABEL_NOT_OBSERVED')
-    a.tap(editable(root,ui.PACKAGE))
-    # The parser above allows ASCII base64url + one fixed colon prefix only.
-    # No code appears in output, exception messages, a file or the result receipt.
-    a.run('shell','input','text',v['code'],timeout=60)
-    ime=a.run('shell','dumpsys','input_method')
-    if re.search(r'\bmInputShown=true\b|\bmIsInputViewShown=true\b',ime):a.run('shell','input','keyevent','KEYCODE_BACK')
-    ui.wait_click(a,'检查并加入',time.monotonic()+20,result=r,phase='submit-join')
+    need(editable(a.ui(),ui.PACKAGE,focused=True),'JOIN_FIELD_LOST_FOCUS')
+    # Fixed invitation syntax excludes shell metacharacters. Keep it private.
+    for offset in range(0,len(v['code']),160):
+        a.run('shell','input','text',v['code'][offset:offset+160],timeout=20)
+        time.sleep(.1)
+    r['navigationPhase']='submit-join'
+    a.tap(reveal(a,ui,lambda root:ui.click_target(root,'检查并加入')))
     r['joinButtonPhysicalClicks']=1;r['phase']='WAIT_JOIN_AND_AUTOMATIC_RECEIVE'
     deadline=time.monotonic()+args.delivery_timeout
     while time.monotonic()<deadline:
@@ -159,18 +194,20 @@ def execute(args,r):
         r['joiningUiObserved']=r['joiningUiObserved'] or s['joining']
         r['otherSyncErrorObserved']=r['otherSyncErrorObserved'] or s['otherSyncError']
         r['readyUiObserved']=r['readyUiObserved'] or {'立即检查','网盘设置'}.issubset(values)
-        raw=read_as_app(a,'test -f '+MESSAGE_FILE+' && cat '+MESSAGE_FILE)
-        if raw is None:time.sleep(1);continue
+        if read_as_app(a,'toybox','stat','-c','%s',MESSAGE_FILE,missing_ok=True) is None:
+            time.sleep(1)
+            continue
+        raw=read_as_app(a,'cat',MESSAGE_FILE)
         r['phase']='READ_MESSAGE';m=message(raw);r['exactMessageContentObserved']=True
         image=app_image(m['images'][0],files_root)
-        canonical=read_as_app(a,'readlink -f '+shlex.quote(image))
+        canonical=read_as_app(a,'readlink','-f',image)
         need(canonical is not None,'IMAGE_CANONICAL_PATH_UNAVAILABLE')
         canonical=canonical.decode('utf-8').strip()
         need(canonical.startswith(files_root+'/images/') and canonical==app_image(canonical,files_root),'IMAGE_OUTSIDE_APP_AFTER_RESOLVE')
         r['phase']='READ_IMAGE'
-        digest=read_as_app(a,'toybox sha256sum '+shlex.quote(canonical));need(digest is not None,'IMAGE_HASH_UNAVAILABLE')
+        digest=read_as_app(a,'toybox','sha256sum',canonical);need(digest is not None,'IMAGE_HASH_UNAVAILABLE')
         actual=digest.decode('ascii').split()[0];need(actual==v['imageSha256'],'IMAGE_HASH_MISMATCH')
-        size=read_as_app(a,'toybox stat -c %s '+shlex.quote(canonical));need(size is not None and re.fullmatch(rb'[0-9]+\s*',size) is not None,'IMAGE_SIZE_UNAVAILABLE')
+        size=read_as_app(a,'toybox','stat','-c','%s',canonical);need(size is not None and re.fullmatch(rb'[0-9]+\s*',size) is not None,'IMAGE_SIZE_UNAVAILABLE')
         n=int(size);need(0<n<=4*1024*1024,'SMALL_IMAGE_SIZE_LIMIT')
         r['appOwnedImageSha256Matched']=True;r['imageBytes']=n
         # Publish only after values have been obtained from actual app storage.
@@ -183,7 +220,7 @@ def main(argv=None):
     for name in ('offer','ready','readback','result'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--offer-timeout',type=int,default=900);p.add_argument('--delivery-timeout',type=int,default=180);args=p.parse_args(argv)
     r={'kind':'CCB_V7_ANDROID_LIVE_SAFE_RESULT','status':'NOT_RUN','phase':'PRECHECK','errorCode':None,
-       'exactApkAndApi26Observed':False,'freshAppNoMessagesOrGroupFilesObserved':False,'emptyGroupUiObserved':False,'tutorialSkippedThroughUi':False,
+       'exactApkAndApi26Observed':False,'syntheticMessageAbsentBeforeJoin':False,'emptyGroupUiObserved':False,'tutorialSkippedThroughUi':False,
        'offerContractAccepted':False,'joinButtonPhysicalClicks':0,'joiningUiObserved':False,'readyUiObserved':False,'otherSyncErrorObserved':False,
        'exactMessageContentObserved':False,'appOwnedImageSha256Matched':False,'readbackPublished':False,'imageBytes':None,
        'scannerCameraPathTestedHere':False,'manualSyncOrOwnerProbeUsed':False,'directAppStorageWriteOrReseedByController':False,'humanAcceptance':False}
