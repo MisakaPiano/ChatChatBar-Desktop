@@ -1,0 +1,80 @@
+name: Signed Android 86 to 87 retained upgrade and cold reopen
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-delivered86-candidate87-sign-request.json]
+permissions:
+  contents: read
+  actions: read
+env:
+  CONTROL: tools/lan-next-control/candidate87_control.py
+  SIGN_REQUEST: .github/lan-delivered86-candidate87-sign-request.json
+jobs:
+  sign-and-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate the public request against the original signer and frozen source
+        shell: bash
+        run: |
+          python3 -B "$CONTROL" validate-sign --request "$SIGN_REQUEST"
+          work=$(mktemp -d "$RUNNER_TEMP/ccb-android87-upgrade.XXXXXX")
+          echo "CCB_ANDROID87_WORK=$work" >> "$GITHUB_ENV"
+      - name: Authenticate the complete four-input raw artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 -B "$CONTROL" fetch-raw --request "$SIGN_REQUEST" --archive "$CCB_ANDROID87_WORK/raw.zip"
+          --destination "$CCB_ANDROID87_WORK/raw" --evidence "$CCB_ANDROID87_WORK/original-evidence"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;36.0.0
+      - name: Assemble public signing blocks and verify SDK identity, alignment and tamper rejection
+        run: >-
+          python3 -B "$CONTROL" verify --raw-dir "$CCB_ANDROID87_WORK/raw" --request "$SIGN_REQUEST"
+          --output "$CCB_ANDROID87_WORK/signed" --build-tools "$ANDROID_HOME/build-tools/36.0.0" --control-sha "$GITHUB_SHA"
+      - name: Enable cloud emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise the old recovery code after install -r and again after cold reopen
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          CCB_LAN_SYNTHETIC_UPGRADE_CLOUD: 'true'
+        with:
+          api-level: 26
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            python3 -B "$CONTROL" upgrade --signed-dir "$CCB_ANDROID87_WORK/signed"
+            python3 -B "$CONTROL" ui --signed-dir "$CCB_ANDROID87_WORK/signed"
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && env.CCB_ANDROID87_WORK != '' }}
+        with:
+          name: ccb-lan-delivered86-candidate87-evidence
+          path: |
+            ${{ env.CCB_ANDROID87_WORK }}/original-evidence/*.json
+            ${{ env.CCB_ANDROID87_WORK }}/signed/*.json
+            ${{ env.CCB_ANDROID87_WORK }}/signed/*.txt
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ccb-lan-delivered86-candidate87-verified-apks
+          path: |
+            ${{ env.CCB_ANDROID87_WORK }}/signed/base86.apk
+            ${{ env.CCB_ANDROID87_WORK }}/signed/seed86.apk
+            ${{ env.CCB_ANDROID87_WORK }}/signed/candidate87.apk
+            ${{ env.CCB_ANDROID87_WORK }}/signed/verify87.apk
+          if-no-files-found: error

@@ -1,0 +1,70 @@
+name: Delivered Android 86 to candidate 87 four-input build
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths: [.github/lan-delivered86-candidate87-build-request.json]
+permissions:
+  contents: read
+  actions: read
+env:
+  CONTROL: tools/lan-next-control/candidate87_control.py
+  BUILD_REQUEST: .github/lan-delivered86-candidate87-build-request.json
+jobs:
+  four-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bind the frozen source and overlay only the two test companions
+        shell: bash
+        run: |
+          candidate=$(python3 -B "$CONTROL" validate-build --request "$BUILD_REQUEST")
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          work=$(mktemp -d "$RUNNER_TEMP/ccb-android87-build.XXXXXX")
+          seed="$work/seed86"
+          next="$work/candidate87"
+          git worktree add --detach "$seed" f5fc060546eb9479b2566375761903d383c538b1
+          git worktree add --detach "$next" "$candidate"
+          python3 -B "$CONTROL" prepare-build --request "$BUILD_REQUEST" --seed-dir "$seed" --candidate-dir "$next" --output "$work/raw-inputs"
+          {
+            echo "CCB_ANDROID87_WORK=$work"
+            echo "CCB_ANDROID87_SEED=$seed"
+            echo "CCB_ANDROID87_CANDIDATE=$next"
+          } >> "$GITHUB_ENV"
+      - name: Authenticate original Android 86 raw artifact and all four old APKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B "$CONTROL" fetch-base --archive "$CCB_ANDROID87_WORK/original86.zip" --output "$CCB_ANDROID87_WORK/original86"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build the seed companion against delivered f5fc Android 86
+        working-directory: ${{ env.CCB_ANDROID87_SEED }}/app
+        run: >-
+          bash ./gradlew :app:assembleLanPreviewAndroidTest
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=86
+          -Pkotlin.daemon.jvmargs=-Xmx4g --no-daemon --max-workers=1 --no-parallel --stacktrace
+      - name: Build the frozen Android 87 app and verifier
+        working-directory: ${{ env.CCB_ANDROID87_CANDIDATE }}/app
+        run: >-
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87
+          -Pkotlin.daemon.jvmargs=-Xmx4g --no-daemon --max-workers=1 --no-parallel --stacktrace
+      - name: Collect and validate the four exact raw inputs
+        run: >-
+          python3 -B "$CONTROL" collect-build --request "$BUILD_REQUEST" --seed-dir "$CCB_ANDROID87_SEED"
+          --candidate-dir "$CCB_ANDROID87_CANDIDATE" --original-dir "$CCB_ANDROID87_WORK/original86"
+          --output "$CCB_ANDROID87_WORK/raw-inputs" --control-sha "$GITHUB_SHA" --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ccb-lan-delivered86-candidate87-inputs
+          path: ${{ env.CCB_ANDROID87_WORK }}/raw-inputs/
+          if-no-files-found: error

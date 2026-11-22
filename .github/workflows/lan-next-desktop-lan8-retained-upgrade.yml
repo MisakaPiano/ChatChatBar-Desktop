@@ -1,0 +1,47 @@
+name: Exact delivered LAN7 to LAN8 Desktop Program-only retained upgrade
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/lan-next-desktop-lan8-retained-upgrade-request.json
+permissions:
+  contents: read
+  actions: read
+jobs:
+  retained-upgrade:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Authenticate exact packages and run the ordinary launcher and DPAPI companions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python -B tools/lan-next-control/desktop_lan8_control.py retained
+          --request .github/lan-next-desktop-lan8-retained-upgrade-request.json
+          --binding .github/lan-next-desktop-lan8-native-binding.json
+          --build .github/lan-next-sync-desktop-lan8-build-request.json
+          --output desktop-lan8-retained-evidence
+      - name: Audit bounded synthetic evidence
+        id: audit
+        if: always()
+        run: >-
+          python -B tools/lan-next-control/desktop_lan8_control.py audit-output
+          --output desktop-lan8-retained-evidence
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.audit.outcome == 'success'
+        with:
+          name: lan7-lan8-desktop-retained-upgrade-small
+          if-no-files-found: error
+          path: desktop-lan8-retained-evidence/*.json
