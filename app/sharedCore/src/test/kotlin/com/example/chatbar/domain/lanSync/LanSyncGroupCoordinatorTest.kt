@@ -738,6 +738,63 @@ class LanSyncGroupCoordinatorTest {
         assertNull(coordinator.state.value.invitation)
     }
 
+    @Test fun activeJoinedDeviceRefreshesItsOwnMemberRowAfterReceivingSignedRevocation() = fixture { f ->
+        val founder = readyCoordinator(f)
+        val code = requireNotNull(f.recoveryCode)
+        founder.unlockManagement(code)
+        await { !founder.state.value.busy && founder.state.value.managementCanInvite }
+        founder.createInvitation()
+        await { !founder.state.value.busy && founder.state.value.invitation != null }
+        val offer = requireNotNull(founder.state.value.invitation)
+        val root = Files.createDirectory(f.root.resolve("revoked-profile"))
+        val data = Files.createDirectory(f.root.resolve("revoked-data"))
+        val workspace = LanSyncWorkspace(data, Files.createDirectory(f.root.resolve("revoked-workspace")), { Path.of(it) })
+        val identity = LanSyncTlsIdentity.create()
+        val joining = LanSyncGroupJoining(root, workspace, f.platform, identity,
+            { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+        joining.prepare(offer.code()) { it.validate() }
+        joining.proveUsing("synthetic joined device", f.network)
+        await { !founder.state.value.busy && founder.state.value.peerConfirmation?.fingerprint == identity.fingerprint }
+        founder.acceptPeer(requireNotNull(founder.state.value.peerConfirmation).binding)
+        await { !founder.state.value.busy && founder.state.value.devices.any { it.id == identity.fingerprint && it.status == "已加入" } }
+        assertEquals(LanSyncGroupJoinStage.READY, joining.activate(joining.bootstrapStore(f.network)).profile.stage)
+
+        val recipient = LanSyncGroupCoordinator(
+            { Files.isRegularFile(root.resolve("joining/profile.protected")) },
+            { LanSyncGroupEnrollment(root, workspace, f.platform, identity,
+                { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }) },
+            { joining }, f.network, "synthetic joined device")
+        try {
+            recipient.open()
+            await { !recipient.state.value.busy && recipient.view.value?.stage == LanSyncGroupNodeStage.READY }
+            val before = recipient.state.value.devices.single { it.thisDevice }
+            assertEquals(identity.fingerprint, before.id)
+            assertEquals("已加入", before.status)
+
+            founder.unlockManagement(code)
+            await { !founder.state.value.busy && founder.state.value.managementCanInvite }
+            founder.prepareRevocation(identity.fingerprint)
+            await { !founder.state.value.busy && founder.state.value.revocation != null }
+            founder.confirmRevocation(requireNotNull(founder.state.value.revocation).binding)
+            await { !founder.state.value.busy && founder.state.value.devices.any { it.id == identity.fingerprint && it.status == "已撤销" } }
+
+            val receiver = requireNotNull(joining.runtimeAccess())
+            val delivery = receiver.node.discover(joining.bootstrapStore(f.network))
+            assertNull(delivery.nextCursor)
+            val notice = delivery.observations.single()
+            assertEquals(SyncInboxStage.MIRRORED, notice.stage)
+            recipient.onForeground()
+            await { recipient.view.value?.stage == LanSyncGroupNodeStage.DEVICE_REVOKED &&
+                recipient.state.value.status == "此设备已撤销，保留原件和待传队列" }
+            assertTrue(requireNotNull(recipient.view.value).reconciliation.observations.any {
+                it.key == notice.key && it.stage == SyncInboxStage.DEVICE_REVOKED
+            })
+            assertEquals(before.copy(status = "已撤销"), recipient.state.value.devices.single { it.thisDevice })
+            assertEquals(LanSyncGroupPanelStage.READY, recipient.state.value.stage)
+            assertFalse(recipient.state.value.canArchiveRevokedJoin)
+        } finally { recipient.closeAndDrain() }
+    }
+
     @Test fun fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation() = fixture { f ->
         val coordinator = readyCoordinator(f)
         coordinator.unlockManagement(requireNotNull(f.recoveryCode))

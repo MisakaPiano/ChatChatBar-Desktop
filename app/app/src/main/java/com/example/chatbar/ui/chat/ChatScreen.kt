@@ -445,10 +445,11 @@ fun ChatScreen(
     }
 
     LaunchedEffect(draftLoaded, composerDraft.revision, composerDraft.text, consumedDraftRevision) {
-        if (draftLoaded && input.text != composerDraft.text) {
-            input = TextFieldValue(composerDraft.text, selection = TextRange(composerDraft.text.length))
+        val current = viewModel.composerDraft.value
+        if (draftLoaded && input.text != current.text) {
+            input = TextFieldValue(current.text, selection = TextRange(current.text.length))
         }
-        if (consumedDraftRevision == composerDraft.revision && composerDraft.text.isEmpty() && selectedImages.isEmpty()) fullComposer = false
+        if (consumedDraftRevision == current.revision && current.text.isEmpty() && current.images.isEmpty()) fullComposer = false
     }
     
     suspend fun scrollToBottom(animated: Boolean, expectedItemCount: Int = 0) {
@@ -1096,7 +1097,10 @@ fun ChatScreen(
         return
     }
     if (fullComposer && !isArchived) {
-        val editor = rememberFullscreenTextEditorState(input)
+        val liveText = viewModel.composerDraft.value.text
+        val editor = rememberFullscreenTextEditorState(
+            if (input.text == liveText) input else TextFieldValue(liveText, selection = TextRange(liveText.length))
+        )
         val keepDraftEdits = remember(viewModel) {
             InputTransformation.byValue { current, edited ->
                 if (!current.contentEquals(edited)) viewModel.updateDraftInput(edited.toString())
@@ -1114,7 +1118,7 @@ fun ChatScreen(
             onAddImage = if (sessionMissing) null else ({ chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }),
             onRemoveImage = viewModel::removeDraftImage,
             onDismiss = { fullComposer = false },
-            onConfirm = { finalValue -> viewModel.sendMessage(finalValue.text, selectedImages) },
+            onConfirm = { finalValue -> viewModel.sendMessage(finalValue.text, viewModel.composerDraft.value.images) },
             confirmEnabled = !sessionMissing && !isResponding && isModelUsable,
             topContent = {
                 if (sessionMissing) CbText("会话已删除，草稿和图片已保留在本机。")
@@ -1438,7 +1442,10 @@ fun ChatScreen(
                         onImage = { chatImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                         onFull = { fullComposer = true },
                         onCancel = viewModel::cancelResponseGeneration,
-                        onSend = { viewModel.sendMessage(input.text, selectedImages) }
+                        onSend = {
+                            val current = viewModel.composerDraft.value
+                            viewModel.sendMessage(current.text, current.images)
+                        }
                     )
                 }
             }

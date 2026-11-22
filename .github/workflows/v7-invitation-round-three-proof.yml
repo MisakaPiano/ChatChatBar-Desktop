@@ -57,6 +57,7 @@ jobs:
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.cancellingDuringReplacementDoesNotIssueTheQueuedInvitation' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.automaticLocalCheckClearsItsOwnRecoveredMaintenanceNotice' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.activeJoinedDeviceRefreshesItsOwnMemberRowAfterReceivingSignedRevocation' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.ordinaryMemberCanUseAFileContainingEveryAuthenticatedHeadBeyondV1TextCapacity' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.revokedJoinWithAdmittedKeysAndMissingInitialDataArchivesWithoutReusingItsRecipient' \
             --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.verifiedRevocationCannotArchiveAnAuthorOriginWrittenBeforeTheNativeStageMarker' \
