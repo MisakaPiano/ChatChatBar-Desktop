@@ -36,8 +36,25 @@ def tree(raw):
     except ET.ParseError:
         raise Refused('UI_XML_INVALID') from None
 
+def node_labels(node, attr=None):
+    fields = (attr,) if attr else ('text', 'content-desc')
+    values = set()
+    for field in fields:
+        value = node.get(field, '').strip()
+        values.add(value)
+        values.update(part.strip() for part in value.split(', '))
+    return values
+
 def labels(root):
-    return {n.attrib.get(k, '') for n in root.iter('node') for k in ('text', 'content-desc')}
+    return set().union(*(node_labels(node) for node in root.iter('node')))
+
+def bounds(node):
+    match = BOUNDS.fullmatch(node.get('bounds', ''))
+    if match:
+        x1,y1,x2,y2 = map(int,match.groups())
+        if x2 > x1 and y2 > y1:
+            return x1,y1,x2,y2
+    return None
 
 def click_target(root, label, attr=None, packages=(PACKAGE,)):
     parents = {c:p for p in root.iter() for c in p}
@@ -45,18 +62,15 @@ def click_target(root, label, attr=None, packages=(PACKAGE,)):
     for node in root.iter('node'):
         if node.get('package') not in packages:
             continue
-        if not (node.get(attr, '') == label if attr else
-                label in (node.get('text', ''), node.get('content-desc', ''))):
+        if label not in node_labels(node, attr):
             continue
         while node is not None:
             if node.get('enabled') == 'false':
                 break
             if node.get('clickable') == 'true':
-                m = BOUNDS.fullmatch(node.get('bounds', ''))
-                if node.get('enabled') == 'true' and m:
-                    x1,y1,x2,y2 = map(int,m.groups())
-                    if x2 > x1 and y2 > y1:
-                        candidates.add((x1,y1,x2,y2))
+                rectangle = bounds(node)
+                if node.get('enabled') == 'true' and rectangle:
+                    candidates.add(rectangle)
                 break
             node = parents.get(node)
     need(len(candidates) <= 1, 'UI_TARGET_AMBIGUOUS')
@@ -117,11 +131,23 @@ class Adb:
         x1,y1,x2,y2 = bounds
         self.run('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
 
-def wait_click(adb, label, deadline, attr=None):
+def target_state(root, label):
+    known = [node for node in root.iter('node') if label in node_labels(node)]
+    return dict(labelSeen=bool(known),
+                appLabelSeen=any(node.get('package') == PACKAGE for node in known),
+                enabledAppLabelSeen=any(node.get('package') == PACKAGE and node.get('enabled') == 'true' for node in known),
+                appLabelBoundsSeen=any(node.get('package') == PACKAGE and bounds(node) for node in known))
+
+def wait_click(adb, label, deadline, attr=None, *, result=None, phase=None):
+    if result is not None and phase:
+        result['navigationPhase'] = phase
     previous = None
     while time.monotonic() < deadline:
-        current = click_target(adb.ui(), label, attr)
-        if current is not None and current == previous:
+        root = adb.ui()
+        current = click_target(root, label, attr)
+        if result is not None and phase:
+            result['navigationTarget'] = target_state(root,label)
+        if current is not None and previous is not None and all(abs(a-b) <= 5 for a,b in zip(current,previous)):
             adb.tap(current)
             return
         previous = current
@@ -129,23 +155,34 @@ def wait_click(adb, label, deadline, attr=None):
     raise Refused('UI_TARGET_NOT_READY')
 
 def navigate(adb, result, deadline):
-    # A fresh Main starts in the real basic tutorial, not Home. Only its exact
-    # documented Skip action is allowed; no settings or backing files are seeded.
+    result['navigationPhase'] = 'wait-main'
     while time.monotonic() < deadline:
         root = adb.ui()
-        if '基础教程' in labels(root):
-            wait_click(adb,'跳过',deadline,'text')
-            result['basicTutorialSkippedThroughUi'] = True
-            continue
-        if '管理' in labels(root) or '设备组同步' in labels(root):
+        values = labels(root)
+        if '设备组同步' in values or '管理' in values:
             break
+        if '基础教程' in values and '选择教程' not in values:
+            result['basicTutorialObserved'] = True
+            try:
+                wait_click(adb,'跳过',min(deadline,time.monotonic()+9),result=result,phase='tutorial-skip')
+                result['basicTutorialSkippedThroughUi'] = True
+            except Refused as error:
+                if str(error) != 'UI_TARGET_NOT_READY':
+                    raise
+                # The actual first tutorial route handles BACK as the same onExit action.
+                if result.get('basicTutorialBackUsed') or '基础教程' not in labels(adb.ui()):
+                    raise
+                adb.run('shell','input','keyevent','KEYCODE_BACK')
+                result['basicTutorialBackUsed'] = True
+            continue
         time.sleep(.3)
     else:
         raise Refused('MAIN_UI_NOT_READY')
     if '设备组同步' not in labels(root):
-        if click_target(root, '局域网同步', 'content-desc') is None:
-            wait_click(adb, '管理', deadline, 'text')
-        wait_click(adb, '局域网同步', deadline, 'content-desc')
+        if click_target(root, '局域网同步') is None:
+            wait_click(adb, '管理', deadline, result=result, phase='manage-tab')
+        wait_click(adb, '局域网同步', deadline, result=result, phase='open-sync')
+    result['navigationPhase'] = 'wait-empty-group'
     while time.monotonic() < deadline:
         root = adb.ui()
         s = state(root)
@@ -153,6 +190,7 @@ def navigate(adb, result, deadline):
         need(not s['joining'], 'PREEXISTING_JOIN_PROGRESS')
         if s['empty'] and click_target(root, SCAN) is not None:
             result['initialEmptyGroupUiObserved'] = True
+            result['navigationPhase'] = 'empty-group-ready'
             return
         if '邀请设备' in labels(root) or '解锁管理' in labels(root):
             raise Refused('EXISTING_GROUP_REFUSED')
