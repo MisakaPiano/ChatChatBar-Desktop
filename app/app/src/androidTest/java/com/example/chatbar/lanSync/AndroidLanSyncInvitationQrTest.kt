@@ -8,24 +8,32 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -48,6 +56,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import java.net.InetAddress
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -82,15 +91,50 @@ class AndroidLanSyncInvitationQrTest {
         assertEquals(165, matrix.width)
         assertEquals(165, matrix.height)
         val widthPx = mutableIntStateOf(330)
+        val measuredHost = AtomicReference(IntSize.Zero)
+        val hostTag = "InvitationQrMeasuredHost"
 
         // Render the same production QR element with synthetic text, outside the protected group page.
         setContent {
-            val width = with(LocalDensity.current) { widthPx.intValue.toDp() }
-            ChatBarTheme { Box(Modifier.width(width)) { LanSyncGroupInvitationQr(code) } }
+            ChatBarTheme {
+                Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
+                    Layout(
+                        content = { LanSyncGroupInvitationQr(code) },
+                        modifier = Modifier.testTag(hostTag).onSizeChanged(measuredHost::set)
+                    ) { measurables, constraints ->
+                        val width = widthPx.intValue
+                        check(constraints.maxWidth >= width && constraints.maxHeight >= 330) {
+                            "QR proof viewport cannot fit the fixture: $constraints"
+                        }
+                        val child = measurables.single().measure(constraints.copy(minWidth = width, maxWidth = width))
+                        layout(child.width, child.height) { child.placeRelative(0, 0) }
+                    }
+                }
+            }
         }
 
-        val qr = compose.onNodeWithContentDescription("新设备扫描此邀请")
-        val image = qr.assertIsDisplayed().captureToImage()
+        val host = compose.onNodeWithTag(hostTag, useUnmergedTree = true)
+        val qr = compose.onNodeWithContentDescription("新设备扫描此邀请", useUnmergedTree = true)
+        val narrowFallback = compose.onNodeWithText("请复制邀请，或生成邀请文件。", substring = true)
+        fun awaitHostWidth(width: Int) {
+            compose.waitUntil(10_000) { measuredHost.get().width == width }
+            val bounds = host.fetchSemanticsNode().boundsInRoot
+            assertEquals("Measured visible host width at $width px: $bounds", width.toFloat(), bounds.width, 0f)
+        }
+        awaitHostWidth(330)
+        val image = try {
+            qr.assertIsDisplayed().captureToImage()
+        } catch (failure: AssertionError) {
+            val display = compose.activity.resources.displayMetrics
+            val qrBounds = runCatching { qr.fetchSemanticsNode().boundsInRoot }.getOrNull()
+            val fallbackBounds = runCatching { narrowFallback.fetchSemanticsNode().boundsInRoot }.getOrNull()
+            throw AssertionError(
+                "QR at exact width $measuredHost; host=${host.fetchSemanticsNode().boundsInRoot}; " +
+                    "QR=$qrBounds; fallback=$fallbackBounds; " +
+                    "display=${display.widthPixels}x${display.heightPixels} at ${display.densityDpi} dpi",
+                failure
+            )
+        }
         assertEquals(330, image.width)
         assertEquals(330, image.height)
         val pixelMap = image.toPixelMap()
@@ -109,8 +153,9 @@ class AndroidLanSyncInvitationQrTest {
         assertTrue("The decoded QR payload differs from the unwrapped invitation text", decoded == code)
 
         compose.runOnIdle { widthPx.intValue = 329 }
+        awaitHostWidth(329)
         qr.assertDoesNotExist()
-        compose.onNodeWithText("请复制邀请，或生成邀请文件。", substring = true).assertIsDisplayed()
+        narrowFallback.assertIsDisplayed()
     }
 
     @Test
