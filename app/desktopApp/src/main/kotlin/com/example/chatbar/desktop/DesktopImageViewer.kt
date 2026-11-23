@@ -164,9 +164,9 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 @Composable
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
-    extraActions: @Composable RowScope.(String) -> Unit = {}, onClose: () -> Unit) {
+    extraActions: @Composable RowScope.(String) -> Unit = {}, messageImages: Boolean = false, onClose: () -> Unit) {
     val selection = remember { DesktopViewerSelection(references, initialIndex) }
-    DesktopImageViewerBody(selection, resources, picker, extraActions, null, onClose)
+    DesktopImageViewerBody(selection, resources, picker, extraActions, messageImages, null, onClose)
 }
 
 @Composable
@@ -174,7 +174,7 @@ internal fun DesktopSessionImageViewer(request: DesktopSessionImageOpenRequest,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
     onSource: (DesktopSessionImageOccurrence) -> Unit, onClose: () -> Unit) {
     DesktopSessionImageOpening(request) { opening ->
-        DesktopImageViewerBody(opening.selection, resources, picker, {},
+        DesktopImageViewerBody(opening.selection, resources, picker, {}, true,
             { index -> opening.snapshot.occurrences.getOrNull(index)?.let(onSource) }, onClose)
     }
 }
@@ -182,10 +182,11 @@ internal fun DesktopSessionImageViewer(request: DesktopSessionImageOpenRequest,
 @Composable
 private fun DesktopImageViewerBody(selection: DesktopViewerSelection,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
-    extraActions: @Composable RowScope.(String) -> Unit, onSource: ((Int) -> Unit)?, onClose: () -> Unit) {
+    extraActions: @Composable RowScope.(String) -> Unit, messageImages: Boolean, onSource: ((Int) -> Unit)?, onClose: () -> Unit) {
     val reference = selection.reference ?: return
     val index = selection.index
     val count = selection.references.size
+    val ownedMessageImage = messageImages && !reference.startsWith("asset:")
     var resetRevision by remember(reference) { mutableStateOf(0) }
     val zoom = remember(reference) { DesktopImageZoomState() }
     var status by remember { mutableStateOf<String?>(null) }
@@ -212,16 +213,23 @@ private fun DesktopImageViewerBody(selection: DesktopViewerSelection,
                 DesktopImageZoomSurface(reference, resources::readDisplayImageBytes, Modifier.fillMaxSize(), resetRevision, zoomState = zoom)
             }
             status?.let { StatusText(it) }
-            DesktopImageViewerToolbar(zoom, selection) {
+            if (ownedMessageImage) key(reference) {
+                val owner = LocalDesktopFishParentWindow.current
+                val ownedPicker = remember(owner, picker) { owner?.let(picker::withWindowOwner) ?: picker }
+                DesktopMessageImageFileActions(reference, resources, ownedPicker)
+            }
+            DesktopImageViewerToolbar(zoom, selection, sizeLabel = if (ownedMessageImage) "预览 · " else "") {
                 ViewerToolbarSeparator()
-                DesktopChatIconAction("另存 PNG（保留原图）", DesktopAppIcons.SaveImage) { act {
-                    val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
-                    resources.exportImagePng(reference, target)
-                } }
-                DesktopChatIconAction("复制图片", DesktopAppIcons.Copy) { act {
-                    val bytes = resources.readBytes(reference)
-                    copyDesktopImage(bytes, if (reference.startsWith("asset:")) null else resources.resolveOwnedReference(reference))
-                } }
+                if (!ownedMessageImage) {
+                    DesktopChatIconAction("另存 PNG（保留原图）", DesktopAppIcons.SaveImage) { act {
+                        val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
+                        resources.exportImagePng(reference, target)
+                    } }
+                    DesktopChatIconAction("复制图片", DesktopAppIcons.Copy) { act {
+                        val bytes = resources.readBytes(reference)
+                        copyDesktopImage(bytes, if (reference.startsWith("asset:")) null else resources.resolveOwnedReference(reference))
+                    } }
+                }
                 DesktopChatIconAction("在文件夹中显示", DesktopAppIcons.Folder, enabled = !reference.startsWith("asset:")) { act {
                     resources.readBytes(reference) // Validate regular owned file before handing it to Explorer.
                     val path = resources.resolveOwnedReference(reference)
@@ -392,7 +400,8 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
         } }
     } }
     preview?.let { (references, index) ->
-        DesktopImageViewer(references, index, controller.characterResources, controller.imagePicker) { preview = null }
+        DesktopImageViewer(references, index, controller.characterResources, controller.imagePicker,
+            messageImages = true) { preview = null }
     }
     message.images.forEachIndexed { imageIndex, reference ->
         if (reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX)) return@forEachIndexed
@@ -413,6 +422,10 @@ internal fun desktopImageTransferable(bytes: ByteArray, file: java.nio.file.Path
     postProcessOutput: Boolean = false): java.awt.datatransfer.Transferable {
     val bitmap = if (postProcessOutput) DesktopPostProcessRaster.decode(bytes, com.example.chatbar.domain.image.NovelAiPostProcessTab.UPSCALE)
         else if (runCatching { DesktopImageEditing.requireStatic(bytes) }.isSuccess) DesktopImageEditing.decode(bytes) else null
+    return desktopImageFileTransferable(bitmap, file)
+}
+
+internal fun desktopImageFileTransferable(bitmap: java.awt.image.BufferedImage?, file: java.nio.file.Path?): java.awt.datatransfer.Transferable {
     require(bitmap != null || file != null) { "动画请先保存原始文件" }
     val imageFlavor = java.awt.datatransfer.DataFlavor.imageFlavor
     val fileFlavor = java.awt.datatransfer.DataFlavor.javaFileListFlavor

@@ -63,7 +63,7 @@
                 android:resource="@xml/qq_voice_accessibility_service" />
         </service>
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name=".domain.image.AndroidSharedFileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">

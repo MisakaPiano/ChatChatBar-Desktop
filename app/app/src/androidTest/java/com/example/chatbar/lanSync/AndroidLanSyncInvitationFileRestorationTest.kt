@@ -48,6 +48,7 @@ import com.example.chatbar.domain.lanSync.LanSyncPlatform
 import com.example.chatbar.domain.lanSync.LanSyncTlsIdentity
 import com.example.chatbar.domain.lanSync.LanSyncWorkspace
 import com.example.chatbar.ui.kit.ChatBarTheme
+import com.journeyapps.barcodescanner.ScanOptions
 import java.net.InetAddress
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
@@ -90,15 +91,18 @@ class AndroidLanSyncInvitationFileRestorationTest {
         val picker = Picker(allowInput = true)
         val registry = object : ActivityResultRegistryOwner { override val activityResultRegistry = picker }
         try {
-            compose.runOnUiThread {
-                compose.activity.setContent {
-                    val state by coordinator.state.collectAsState()
-                    ChatBarTheme {
-                        CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry) {
-                            LanSyncGroupPanel(state, coordinator, pageControls = {
-                                LanSyncInvitationFiles(coordinator, state)
-                            }, scanInvitation = {})
-                        }
+            val restoration = StateRestorationTester(object : ComposeContentTestRule by compose {
+                override fun setContent(composable: @Composable () -> Unit) {
+                    compose.runOnUiThread { compose.activity.setContent(content = composable) }
+                }
+            })
+            restoration.setContent {
+                val state by coordinator.state.collectAsState()
+                ChatBarTheme {
+                    CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry) {
+                        LanSyncGroupPanel(state, coordinator, pageControls = {
+                            LanSyncInvitationFiles(coordinator, state)
+                        }, scanInvitation = {})
                     }
                 }
             }
@@ -109,6 +113,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             assertNull(coordinator.state.value.error)
 
             openPicker()
+            restoration.emulateSavedInstanceStateRestore()
             compose.runOnIdle { picker.deliver(Uri.fromFile(root.resolve("missing.ccbinvite").toFile())) }
             compose.waitUntil(10_000) {
                 !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE") == true
@@ -126,6 +131,76 @@ class AndroidLanSyncInvitationFileRestorationTest {
             assertTrue(calls.get() == 0)
             assertTrue(coordinator.state.value.stage == LanSyncGroupPanelStage.EMPTY)
         } finally { coordinator.closeAndDrain(); check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test
+    fun delayedFileAndScanResultsAreIgnoredAfterTheGroupBecomesReady(): Unit = runBlocking {
+        val root = Files.createTempDirectory(compose.activity.cacheDir.canonicalFile.toPath(), "synthetic-invitation-stale-").toRealPath()
+        val profile = Files.createDirectory(root.resolve("profile"))
+        val data = Files.createDirectory(root.resolve("data"))
+        val work = Files.createDirectory(root.resolve("workspace"))
+        val workspace = LanSyncWorkspace(data, work, { data.resolve(it) })
+        val platform = object : LanSyncPlatform {
+            override suspend fun exclusive(work: suspend () -> Unit) = work()
+            override suspend fun reload(sessionIds: Set<String>) = Unit
+        }
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = listOf("10.0.0.1")
+            override fun accepts(address: InetAddress) = address.isLoopbackAddress
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket = error("Unexpected synthetic connection")
+        }
+        val joiningCalls = AtomicInteger()
+        val founder = LanSyncGroupEnrollment(profile, workspace, platform, LanSyncTlsIdentity.create(),
+            { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+        val coordinator = LanSyncGroupCoordinator({ Files.isRegularFile(profile.resolve("profile.protected")) }, { founder },
+            { joiningCalls.incrementAndGet(); error("Unexpected synthetic joining profile") }, network, "synthetic invitation tester")
+        val picker = InvitationInputResults()
+        val registry = object : ActivityResultRegistryOwner { override val activityResultRegistry = picker }
+        try {
+            val restoration = StateRestorationTester(object : ComposeContentTestRule by compose {
+                override fun setContent(composable: @Composable () -> Unit) {
+                    compose.runOnUiThread { compose.activity.setContent(content = composable) }
+                }
+            })
+            restoration.setContent {
+                val state by coordinator.state.collectAsState()
+                ChatBarTheme {
+                    CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry) {
+                        val scan = rememberLaunchLanSyncInvitationScanner(coordinator)
+                        LanSyncGroupPanel(state, coordinator, pageControls = { LanSyncInvitationFiles(coordinator, state) },
+                            scanInvitation = scan)
+                    }
+                }
+            }
+            fun launchScan() = compose.onNodeWithText("扫描设备组邀请").performScrollTo().assertIsEnabled().performClick()
+            launchScan()
+            restoration.emulateSavedInstanceStateRestore()
+            compose.runOnIdle { picker.deliverScan("synthetic invalid invitation") }
+            await { !coordinator.state.value.busy && coordinator.state.value.error != null }
+
+            launchScan()
+            compose.onNodeWithText("打开设备组邀请文件").performScrollTo().assertIsEnabled().performClick()
+            restoration.emulateSavedInstanceStateRestore()
+            coordinator.createGroup()
+            await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+            coordinator.recoverySaved(requireNotNull(coordinator.state.value.setupBinding))
+            await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.READY }
+            assertNull(coordinator.state.value.error)
+            compose.runOnIdle {
+                picker.deliverScan("synthetic late invalid invitation")
+                picker.deliverFile(Uri.fromFile(root.resolve("missing.ccbinvite").toFile()))
+            }
+            compose.waitForIdle()
+            delay(300)
+            assertNull(coordinator.state.value.error)
+            assertFalse(coordinator.state.value.busy)
+            assertTrue(coordinator.state.value.stage == LanSyncGroupPanelStage.READY)
+            assertTrue(joiningCalls.get() == 0)
+        } finally {
+            coordinator.closeAndDrain()
+            check(root.toFile().deleteRecursively())
+        }
     }
 
     @Test
@@ -403,6 +478,33 @@ class AndroidLanSyncInvitationFileRestorationTest {
 
     private suspend fun await(condition: () -> Boolean) = withTimeout(30_000) {
         while (!condition()) delay(25)
+    }
+
+    private class InvitationInputResults : ActivityResultRegistry() {
+        private var scan: Int? = null
+        private var file: Int? = null
+
+        override fun <I, O> onLaunch(
+            requestCode: Int, contract: ActivityResultContract<I, O>, input: I, options: ActivityOptionsCompat?
+        ) {
+            when (input) {
+                is ScanOptions -> { check(scan == null); scan = requestCode }
+                is Array<*> -> { check(file == null && input.contentEquals(arrayOf("*/*"))); file = requestCode }
+                else -> error("Unexpected invitation input contract")
+            }
+        }
+
+        fun deliverScan(code: String) {
+            val request = requireNotNull(scan)
+            scan = null
+            check(dispatchResult(request, Activity.RESULT_OK, Intent().putExtra("SCAN_RESULT", code)))
+        }
+
+        fun deliverFile(uri: Uri) {
+            val request = requireNotNull(file)
+            file = null
+            check(dispatchResult(request, Activity.RESULT_OK, Intent().setData(uri)))
+        }
     }
 
     private class Picker(private val filename: String = "设备组邀请.ccbinvite", private val allowInput: Boolean = false) : ActivityResultRegistry() {

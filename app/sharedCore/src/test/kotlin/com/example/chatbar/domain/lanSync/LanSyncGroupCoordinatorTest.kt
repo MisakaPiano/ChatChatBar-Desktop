@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
@@ -970,8 +971,10 @@ class LanSyncGroupCoordinatorTest {
                 assertNull(reopenedInviter.state.value.peerConfirmation)
                 clockOffset.set(0)
                 val replacement = issue(reopenedInviter)
-                reopenedMember.beginJoin(replacement.code())
+                val binding = requireNotNull(reopenedMember.invitationInputBinding())
+                reopenedMember.beginJoinFromFile(binding) { ByteArrayInputStream(replacement.code().toByteArray(Charsets.US_ASCII)) }
                 await { !reopenedMember.state.value.busy && reopenedInviter.state.value.peerConfirmation?.fingerprint == identity.fingerprint }
+                assertEquals(binding, reopenedMember.invitationInputBinding())
                 assertEquals(original.getValue("operation"), control().getValue("operation"))
                 assertEquals(original.getValue("recipient"), control().getValue("recipient"))
                 assertContentEquals(originalKey, Files.readAllBytes(keyFile))
@@ -1489,6 +1492,48 @@ class LanSyncGroupCoordinatorTest {
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
     }
 
+    @Test fun aColdRegisteredProfileStartsItsAuthenticatedListenerWhileTheFirstCheckWaits() {
+        val listening = CompletableDeferred<Int>()
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) { listening.complete(port) }
+        }
+        fixture(network) { f ->
+            val founder = f.founder()
+            val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+            val draft = founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) })
+            founder.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+            val access = requireNotNull(founder.runtimeAccess())
+            val coordinator = f.coordinator()
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val firstReadyInspection = AtomicBoolean(true)
+            f.beforeExclusive = {
+                if (coordinator.state.value.stage == LanSyncGroupPanelStage.READY && firstReadyInspection.compareAndSet(true, false)) {
+                    entered.complete(Unit)
+                    withTimeout(45_000) { release.await() }
+                }
+            }
+            try {
+                assertFalse(listening.isCompleted)
+                coordinator.open()
+                withTimeout(15_000) { entered.await() }
+                assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
+                assertNull(coordinator.state.value.membershipConflict)
+                assertNull(coordinator.view.value)
+                val earlyPort = withTimeoutOrNull(8_000) { listening.await() }
+                if (earlyPort == null) release.complete(Unit)
+                val port = earlyPort ?: withTimeout(15_000) { listening.await() }
+                val peer = LanSyncPeer(f.identity.fingerprint, "synthetic enrolled device", "10.0.0.1", port)
+                assertEquals(requireNotNull(access.replica.metadata(access.vault.key)), access.remote(peer, network).metadata(access.vault.key))
+                assertNotNull(earlyPort, "The cold listener only accepted pinned mTLS after the first local check was released")
+                assertFalse(release.isCompleted)
+            } finally {
+                release.complete(Unit)
+                f.beforeExclusive = {}
+            }
+        }
+    }
+
     @Test fun manualCheckWakesAnIdleEnabledCloudRouteButStillValidatesItsConfiguration() = fixture { f ->
         val founder = f.founder()
         val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
@@ -1502,6 +1547,8 @@ class LanSyncGroupCoordinatorTest {
         val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(20, TimeUnit.SECONDS).build()
         val completed = AtomicInteger()
         val busy = AtomicInteger()
+        val attempts = AtomicInteger()
+        val permitted = AtomicBoolean(true)
         f.writeCard("synthetic published selection")
         try {
             WeakFixture(Files.createDirectory(f.root.resolve("manual-check-cloud-provider"))).use { provider ->
@@ -1516,8 +1563,9 @@ class LanSyncGroupCoordinatorTest {
                     cloudRuntimeFactory = { current, allowed, wake, report ->
                         LanSyncGroupCloudRuntime(current, allowed, wake, report, catalog, client,
                             WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, schedule = schedule)
-                    }, cloudWork = { work ->
+                    }, cloudWorkAllowed = permitted::get, cloudWork = { work ->
                         busy.incrementAndGet()
+                        attempts.incrementAndGet()
                         try { work().also { if (it) completed.incrementAndGet() } } finally { busy.decrementAndGet() }
                     })
                 val configuration = catalogRoot.resolve("cloud-routes.protected")
@@ -1532,14 +1580,41 @@ class LanSyncGroupCoordinatorTest {
                     assertTrue(requireNotNull(schedule.state(route)).waitMillis >= 60_000)
                     val before = provider.server.requestCount
                     assertTrue(before > 0)
-                    coordinator.retry()
-                    withTimeout(15_000) {
-                        while (completed.get() <= quiet || busy.get() != 0) delay(10)
+                    val inspectEntered = CompletableDeferred<Unit>()
+                    val release = CompletableDeferred<Unit>()
+                    val armed = AtomicBoolean(true)
+                    val attemptsBefore = attempts.get()
+                    f.beforeExclusive = {
+                        if (coordinator.state.value.busy && armed.compareAndSet(true, false)) {
+                            inspectEntered.complete(Unit)
+                            withTimeout(15_000) { release.await() }
+                            error("SYNC_DISK_SPACE")
+                        }
                     }
+                    try {
+                        coordinator.retry()
+                        withTimeout(10_000) { inspectEntered.await() }
+                        await { attempts.get() > attemptsBefore }
+                        assertFalse(release.isCompleted)
+                    } finally {
+                        release.complete(Unit)
+                        f.beforeExclusive = {}
+                    }
+                    await { coordinator.state.value.error.orEmpty().contains("SYNC_DISK_SPACE") &&
+                        completed.get() > quiet && busy.get() == 0 }
                     assertTrue(provider.server.requestCount > before)
-                    assertNull(coordinator.state.value.error)
                     val prior = requireNotNull(coordinator.cloudSettings.value.progress[route])
                     assertNotNull(prior.lastObservedAt)
+
+                    val permittedRequests = provider.server.requestCount
+                    val permittedBatches = completed.get()
+                    val permitsBefore = attempts.get()
+                    permitted.set(false)
+                    coordinator.retry()
+                    await { attempts.get() > permitsBefore && busy.get() == 0 && !coordinator.state.value.busy }
+                    assertEquals(permittedRequests, provider.server.requestCount)
+                    assertEquals(permittedBatches, completed.get())
+                    permitted.set(true)
 
                     val invalid = byteArrayOf(7, 2, 9, 4, 1)
                     Files.write(configuration, invalid)

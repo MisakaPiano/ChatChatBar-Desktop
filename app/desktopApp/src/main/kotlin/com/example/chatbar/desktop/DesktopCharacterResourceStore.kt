@@ -61,6 +61,12 @@ internal class DesktopCharacterResourceStore(
         else DesktopImageEditing.decode(Files.readAllBytes(path), longestSide)
     }
 
+    internal fun openMessageImageFile(reference: String): DesktopMessageImageFile {
+        val path = requireReadableOwnedFile(reference)
+        require(path.startsWith(root.resolve(IMAGES_DIRECTORY))) { "仅支持会话图片文件" }
+        return DesktopMessageImageFile.open(path, root)
+    }
+
     internal fun exportImagePng(reference: String, target: Path) {
         if (!reference.startsWith(ASSET_PREFIX) && Files.exists(target)) {
             require(!Files.isSameFile(requireReadableOwnedFile(reference), target)) { "请选择另存位置，保留原图" }

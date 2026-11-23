@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatbar.ChatBarApp
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.ChatSessionUnavailableException
 import com.example.chatbar.domain.card.CharacterCardImageTarget
@@ -17,6 +18,9 @@ import com.example.chatbar.domain.card.CharacterCardImageUpdater
 import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
+import com.example.chatbar.domain.chat.AndroidMessageEditResult
+import com.example.chatbar.domain.chat.retireUnreferencedAndroidChatImages
+import com.example.chatbar.domain.chat.saveAndroidMessageEdit
 import com.example.chatbar.domain.chat.restoreVoices
 import com.example.chatbar.domain.chat.cleanupCreatedFiles
 import com.example.chatbar.domain.chat.ChatContextGroupPolicy
@@ -38,6 +42,7 @@ import com.example.chatbar.domain.image.NovelAiImageEvent
 import com.example.chatbar.domain.image.NovelAiGenerationSettings
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.ImageFileEncoder
+import com.example.chatbar.domain.image.copyAndroidChatImage
 import com.example.chatbar.domain.image.GlobalImageGenerationConcurrencyGate
 import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.domain.image.NovelAiImageSize
@@ -3349,32 +3354,40 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             deletedMessage
                 ?.images
                 ?.forEach { deleteDisposableChatImage(it) }
-            val deletedVoices = voiceMessageRepository.deleteForMessage(messageId)
-            if (deletedVoices.any { it.id == voicePlaybackState.value.currentVoiceId }) {
-                fishAudioCoordinator.stopPlayback()
-            }
-            deletedVoices.forEach { voice ->
-                ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
-            }
-            _messages.value = _messages.value.filter { it.id != messageId }
+            deleteVoicesForRemovedMessage(messageId)
+            _messages.value = _messages.value.filterNot { it.id == messageId }
             chatRepository.deleteMessage(messageId, sessionId)
-            refreshMessages()
-            enqueueLongTermMemoryAfterMessageDeletion()
+            finishMessageDeletion(messageId, deletedMessage)
+        }
+    }
 
-            if (deletedMessage == null || ChatMemoryIndexPolicy.contributesToIndex(deletedMessage)) {
-                _isDeletingMemory.value = true
-                yield()
-                try {
-                    ragMemoryMutationMutex.withLock {
-                        if (deletedMessage == null) {
-                            ragManager.deleteMemoryForMessage(messageId)
-                        } else {
-                            refreshMemoryAfterMessageDeletion(deletedMessage)
-                        }
+    private suspend fun deleteVoicesForRemovedMessage(messageId: String) {
+        val deletedVoices = voiceMessageRepository.deleteForMessage(messageId)
+        if (deletedVoices.any { it.id == voicePlaybackState.value.currentVoiceId }) {
+            fishAudioCoordinator.stopPlayback()
+        }
+        deletedVoices.forEach { voice ->
+            ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
+        }
+    }
+
+    private suspend fun finishMessageDeletion(messageId: String, deletedMessage: ChatMessage?) {
+        refreshMessages()
+        enqueueLongTermMemoryAfterMessageDeletion()
+
+        if (deletedMessage == null || ChatMemoryIndexPolicy.contributesToIndex(deletedMessage)) {
+            _isDeletingMemory.value = true
+            yield()
+            try {
+                ragMemoryMutationMutex.withLock {
+                    if (deletedMessage == null) {
+                        ragManager.deleteMemoryForMessage(messageId)
+                    } else {
+                        refreshMemoryAfterMessageDeletion(deletedMessage)
                     }
-                } finally {
-                    _isDeletingMemory.value = false
                 }
+            } finally {
+                _isDeletingMemory.value = false
             }
         }
     }
@@ -3452,81 +3465,87 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
-    /**
-     */
-    fun editMessage(messageId: String, content: String, imagePaths: List<String>) {
-        viewModelScope.launch {
-            val oldMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
-            if (content.isBlank() && imagePaths.isEmpty()) return@launch
-
-            applyMessageEdit(
-                oldMessage = oldMessage,
-                content = content,
-                imagePaths = imagePaths,
-                deleteRemovedImages = true
-            )
+    internal suspend fun readMessageForEdit(messageId: String): ChatMessage? {
+        val stored = chatRepository.readMessageDurable(messageId, sessionId)
+        if (stored !is JsonFileStorage.EntityReadResult.Valid) return null
+        return stored.value.takeIf {
+            it.id == messageId && it.sessionId == sessionId
         }
     }
 
-    fun editMessageSegment(
-        messageId: String,
+    internal suspend fun editMessage(expected: ChatMessage, content: String, imagePaths: List<String>): AndroidMessageEditResult {
+        if (expected.sessionId != sessionId) return AndroidMessageEditResult.Stale
+        if (content.isBlank() && imagePaths.isEmpty()) return AndroidMessageEditResult.Empty
+        val replacement = MessageAlternativeVersionPolicy.editCurrentContent(expected, content).copy(
+            images = imagePaths.toList(),
+            generatedImageMetadata = expected.generatedImageMetadata.filter { it.imagePath in imagePaths },
+            formatRepairNotice = null
+        )
+        return applyMessageEdit(expected, replacement)
+    }
+
+    internal suspend fun editMessageSegment(
+        expected: ChatMessage,
         start: Int,
         endExclusive: Int,
         replacement: String
-    ) {
-        viewModelScope.launch {
-            val oldMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
-            val editOutcome = editRoleplayMessageSegment(
-                message = oldMessage,
-                start = start,
-                endExclusive = endExclusive,
-                replacement = replacement
-            )
-            val updatedMessage = editOutcome.message
-            if (updatedMessage == null) {
-                deleteMessage(messageId)
-                return@launch
-            }
+    ): AndroidMessageEditResult {
+        if (expected.sessionId != sessionId) return AndroidMessageEditResult.Stale
+        val outcome = editRoleplayMessageSegment(expected, start, endExclusive, replacement)
+        val updated = outcome.message ?: return deleteEmptyEditedMessage(expected)
+        return applyMessageEdit(expected, updated.copy(formatRepairNotice = null), outcome.deleteMemoryForMessage)
+    }
 
-            applyMessageEdit(
-                oldMessage = oldMessage,
-                content = updatedMessage.content,
-                imagePaths = updatedMessage.images,
-                deleteRemovedImages = false,
-                deleteMemoryWhenTextBlank = editOutcome.deleteMemoryForMessage
-            )
+    private suspend fun deleteEmptyEditedMessage(expected: ChatMessage): AndroidMessageEditResult {
+        return try {
+            fishAudioCoordinator.cancelAndJoinForMessage(sessionId, expected.id)
+            selectNeighborWindowAnchor(expected.id)
+            if (!chatRepository.deleteMessageIfUnchanged(expected)) return AndroidMessageEditResult.Stale
+            viewModelScope.launch {
+                deleteVoicesForRemovedMessage(expected.id)
+                _messages.value = _messages.value.filterNot { it.id == expected.id }
+                finishMessageDeletion(expected.id, expected)
+            }
+            AndroidMessageEditResult.Deleted
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Exception) {
+            AndroidMessageEditResult.Failed
         }
     }
 
     private suspend fun applyMessageEdit(
-        oldMessage: ChatMessage,
-        content: String,
-        imagePaths: List<String>,
-        deleteRemovedImages: Boolean,
+        expected: ChatMessage,
+        replacement: ChatMessage,
         deleteMemoryWhenTextBlank: Boolean = false
-    ) {
-        val updatedMessage = MessageAlternativeVersionPolicy.editCurrentContent(
-            message = oldMessage,
-            content = content
-        ).copy(
-            images = imagePaths,
-            generatedImageMetadata = oldMessage.generatedImageMetadata
-                .filter { it.imagePath in imagePaths },
-            formatRepairNotice = null
-        )
-
-        if (deleteRemovedImages) {
-            oldMessage.images.filterNot(imagePaths::contains).forEach { deleteDisposableChatImage(it) }
+    ): AndroidMessageEditResult {
+        val result = saveAndroidMessageEdit(chatRepository, expected, replacement)
+        if (result !is AndroidMessageEditResult.Saved) return result
+        if (!result.refreshPending) {
+            val removed = expected.images.filterNot(result.message.images::contains)
+            if (removed.isNotEmpty()) viewModelScope.launch(Dispatchers.IO) {
+                val app = ChatBarApp.instance
+                try {
+                    retireUnreferencedAndroidChatImages(app.filesDir.toPath(), app.lanSyncOwner.gate, removed)
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (failure: Exception) {
+                    Log.w(CHAT_VIEW_MODEL_TAG, "Replaced chat images retained: ${failure.javaClass.simpleName}")
+                }
+            }
         }
-
-        chatRepository.updateMessage(updatedMessage)
-        refreshMessages()
-
-        if (deleteMemoryWhenTextBlank) {
-            ragManager.deleteMemoryForMessage(oldMessage.id)
+        viewModelScope.launch {
+            try {
+                refreshMessages()
+                if (deleteMemoryWhenTextBlank) ragManager.deleteMemoryForMessage(expected.id)
+                refreshMemoryAfterMessageEdit(result.message)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                Log.w(CHAT_VIEW_MODEL_TAG, "Saved chat edit follow-up pending: ${failure.javaClass.simpleName}")
+            }
         }
-
-        refreshMemoryAfterMessageEdit(updatedMessage)
+        return result
     }
 
     private suspend fun refreshMemoryAfterMessageEdit(updatedMessage: ChatMessage) {
@@ -4432,44 +4451,17 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     fun copyUriToLocalFile(uri: Uri, onSuccess: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                val context = ChatBarApp.instance
-                val contentResolver = context.contentResolver
-                val filesDir = context.filesDir
-                val imagesDir = File(filesDir, "images")
-                if (!imagesDir.exists()) imagesDir.mkdirs()
-                
-                val mimeType = contentResolver.getType(uri)
-                val extension = when (mimeType) {
-                    "image/png" -> "png"
-                    "image/gif" -> "gif"
-                    "image/webp" -> "webp"
-                    else -> "jpg"
-                }
-                
-                val localFile = withContext(Dispatchers.IO) {
-                    var copy: File? = null
-                    var complete = false
-                    try {
-                        val source = requireNotNull(contentResolver.openInputStream(uri)) { "无法打开所选图片" }
-                        source.use { input ->
-                            val output = File.createTempFile("chat_img_", ".$extension", imagesDir)
-                            copy = output
-                            val bytes = output.outputStream().use { input.copyTo(it) }
-                            require(bytes > 0L) { "所选图片为空，请重新选择" }
-                        }
-                        currentCoroutineContext().ensureActive()
-                        requireNotNull(copy).also { complete = true }
-                    } finally {
-                        if (!complete) copy?.delete()
-                    }
-                }
-                onSuccess(localFile.absolutePath)
+                onSuccess(copySelectedChatImage(uri))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 addSystemMessage("拷贝图片文件失败: ${e.message}")
             }
         }
+    }
+
+    internal suspend fun copySelectedChatImage(uri: Uri): String = withContext(Dispatchers.IO) {
+        copyAndroidChatImage(ChatBarApp.instance, uri).absolutePath
     }
 
     private suspend fun encodeImageToBase64(path: String): String = withContext(Dispatchers.IO) {

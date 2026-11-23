@@ -694,25 +694,29 @@ class ChatRepository internal constructor(
     }
 
     /** Confirmation snapshots cannot overwrite a later edit, selection or appended candidate. */
-    suspend fun updateMessageIfUnchanged(expected: ChatMessage, replacement: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+    suspend fun updateMessageIfUnchanged(
+        expected: ChatMessage,
+        replacement: ChatMessage,
+        onCommitted: (ChatMessage) -> Unit = {}
+    ): Boolean = messageAppendMutex.withDataAccess {
         require(expected.id == replacement.id && expected.sessionId == replacement.sessionId)
         val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
             else -> return@withDataAccess false
         }
         if (current != expected) return@withDataAccess false
-        updateMessageLocked(replacement)
+        updateMessageLocked(replacement, onCommitted)
         true
     }
 
-    private suspend fun updateMessageLocked(message: ChatMessage): ChatMessage {
+    private suspend fun updateMessageLocked(message: ChatMessage, onCommitted: (ChatMessage) -> Unit = {}): ChatMessage {
         requireDurableSession(message.sessionId)
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),
             orderKey = persisted?.orderKey ?: message.orderKey
         )
-        saveMessageRecord(updated)
+        saveMessageRecord(updated, onCommitted = onCommitted)
 
         val latest = latestMessage(updated.sessionId)
         if (latest?.id == updated.id) {

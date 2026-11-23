@@ -137,6 +137,15 @@ class DesktopLanSyncResourceTest {
                 val retained = resources.resolveOwnedReference(ref)
                 assertEquals(sha, LanSyncResourceStore.hashFile(retained, Files.size(retained)))
                 assertEquals("SYNC_IMAGE_HEIF_PREVIEW_UNAVAILABLE", assertFails { resources.readDisplayImageBytes(ref) }.message)
+                val still = requireNotNull(LanSyncHeifStill.inspectForNaming(retained))
+                val image = resources.openMessageImageFile(ref)
+                assertEquals(still.mediaType.extension, image.originalType.defaultExtension)
+                assertTrue(image.suggestedOriginalName.endsWith(".${still.mediaType.extension}"))
+                assertNull(image.pngSize)
+                val exported = root.resolve("exported.${still.mediaType.extension}")
+                image.saveOriginal(exported)
+                assertEquals(sha, LanSyncResourceStore.hashFile(exported, Files.size(exported)))
+                assertEquals(sha, LanSyncResourceStore.hashFile(retained, Files.size(retained)))
                 workspace(target, "target").capture("pc").use { assertEquals(captured.snapshot.hashes(), it.snapshot.hashes()) }
             }
         } finally { check(root.toFile().deleteRecursively()) }

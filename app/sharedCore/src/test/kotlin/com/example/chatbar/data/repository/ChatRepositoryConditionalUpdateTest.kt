@@ -95,6 +95,20 @@ class ChatRepositoryConditionalUpdateTest {
         assertEquals("new selected body", f.repo.getSession("s")!!.lastMessagePreview)
     }
 
+    @Test fun `ordinary conditional edit observes only committed exact records`() = runTest {
+        val f = fixture()
+        val replacement = MessageAlternativeVersionPolicy.editCurrentContent(f.expected, "manual new body")
+        var committed: ChatMessage? = null
+        assertFalse(f.repo.updateMessageIfUnchanged(f.expected.copy(images = emptyList()), replacement) { committed = it })
+        assertNull(committed)
+        assertEquals(f.expected, ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
+
+        // Fail after the physical message save returns, before the derived index write.
+        f.gate.arm { n, after -> if (n == 5 && after) throw IOException("SYNTHETIC_OBSERVED_MESSAGE_RENAME") }
+        assertFailsWith<IOException> { f.repo.updateMessageIfUnchanged(f.expected, replacement) { committed = it } }
+        assertEquals(assertNotNull(committed), ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
+    }
+
     @Test fun `notice only preserves divergent base content candidates and metadata with no-op and stale protection`() = runTest {
         val f = fixture()
         f.repo.updateMessage(f.expected.copy(content = "base distinct from selected candidate"))

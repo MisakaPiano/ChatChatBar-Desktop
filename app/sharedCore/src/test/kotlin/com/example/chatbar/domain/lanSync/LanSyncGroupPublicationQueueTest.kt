@@ -48,7 +48,10 @@ class LanSyncGroupPublicationQueueTest {
             val card = data.resolve("entities/character_cards/card.json"); Files.createDirectories(card.parent)
             LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("card", "合成角色", avatar = image.toString(), createdAt = 1, updatedAt = 1))
             val workspace = LanSyncWorkspace(data, state, { Path.of(it) })
-            return workspace.capture(sender.fingerprint).use { capture -> LanSyncGroupUnitCodec(unitRoot).prepare(capture, "character_cards/card").use { unit ->
+            return workspace.capture(sender.fingerprint).use { capture -> prepare(capture, "character_cards/card") }
+        }
+        fun prepare(capture: LanSyncCapture, unitName: String): Prepared =
+            LanSyncGroupUnitCodec(unitRoot).prepare(capture, unitName).use { unit ->
                 val bindings = linkedMapOf<String, SyncEnvelopeBlobBinding>(); val operations = linkedMapOf<String, SyncStoreId>()
                 fun prepareBlob(path: Path, identity: SyncPlaintextIdentity) {
                     val operation = SyncStoreId.random(); val key = CiphertextObjectKey(CiphertextObjectKind.BLOB, SyncStoreId.random())
@@ -64,8 +67,7 @@ class LanSyncGroupPublicationQueueTest {
                 val metadata = codec.enqueue(outbox, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()), cipher,
                     SyncGroupEnvelope(2, SyncGroupObjectKind.VERSION, version = version, blobs = bindings))
                 Prepared(metadata, unit.decoded, operations)
-            } }
-        }
+            }
     }
 
     @Test fun allActualNativeDependenciesPrecedeMetadataAndLostResponsesResumeWithoutOriginalSources() = withRoot { root ->

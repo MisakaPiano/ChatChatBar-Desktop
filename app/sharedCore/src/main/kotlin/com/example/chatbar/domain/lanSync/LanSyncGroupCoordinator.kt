@@ -392,7 +392,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (automaticLocalCheck || code == "SYNC_GROUP_NATIVE_RELOAD_PENDING") lastLocalCheckError = displayed.error
         if (code == "SYNC_GROUP_NATIVE_RELOAD_PENDING" && !automaticLocalCheck) requestLocalCheck()
     }
-    private fun action(label: String, allowWhilePaused: Boolean = false, onFinished: (() -> Unit)? = null, work: suspend () -> Unit) {
+    private fun action(label: String, allowWhilePaused: Boolean = false, onFinished: (() -> Unit)? = null,
+        admit: (() -> Boolean)? = null, work: suspend () -> Unit) {
         if (closed || paused && !allowWhilePaused) {
             onFinished?.invoke()
             return
@@ -400,7 +401,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val generation = actionGeneration.get()
         val job = scope.launch {
             admission.withLock {
-                if (closed || paused && !allowWhilePaused || generation != actionGeneration.get()) return@withLock
+                if (closed || paused && !allowWhilePaused || generation != actionGeneration.get() || admit?.invoke() == false) return@withLock
                 mutableState.update { it.copy(busy = true, error = null) }
                 try { work() } catch (error: Exception) { failure(label, error) }
                 finally {
@@ -470,6 +471,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             lockManagement()
             mutableState.update { current -> LanSyncGroupPanelState(stage = LanSyncGroupPanelStage.PREPARED_LOCKED,
                 paused = paused, busy = current.busy, privacyRevision = current.privacyRevision, canAbandonUnactivated = true,
+                invitationInputEpoch = current.invitationInputEpoch,
                 status = "可以放弃未完成的设置，原进度会保留在本机归档。") }
         } else {
             val joined = member().profile()
@@ -544,7 +546,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private fun clearSetup() {
         lockManagement()
         mutableState.update { current -> LanSyncGroupPanelState(paused = paused, busy = current.busy,
-            privacyRevision = current.privacyRevision) }
+            privacyRevision = current.privacyRevision, invitationInputEpoch = current.invitationInputEpoch + 1) }
     }
     private suspend fun refreshAfterSetupFailure(error: Exception): Nothing {
         if (error is CancellationException) throw error
@@ -743,9 +745,25 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             requestCloudCheck(dirty = true)
         } else presentMembershipConflict(current)
     }
+    private val invitationInputOwner = UUID.randomUUID().toString()
+
+    fun invitationInputBinding(): String? = state.value.takeUnless { closed || it.busy }?.let(::invitationInputBinding)
+
+    private fun invitationInputBinding(current: LanSyncGroupPanelState): String? {
+        if (!current.canEnterInvitation) return null
+        val scope = if (current.stage == LanSyncGroupPanelStage.EMPTY) "empty" else current.fileRecoveryJoinScope ?: return null
+        return "$invitationInputOwner:${current.invitationInputEpoch}:$scope"
+    }
+
     override fun beginJoin(code: String) = enterJoin { LanSyncGroupInviteOffer.parse(code) }
 
-    override fun beginJoinFromFile(open: () -> InputStream?) = enterJoin(openInvitationFileAction) {
+    fun beginJoinFromScanner(binding: String, code: String) = enterJoin(binding = binding) { LanSyncGroupInviteOffer.parse(code) }
+
+    override fun beginJoinFromFile(open: () -> InputStream?) = readInvitationFile(null, open)
+
+    fun beginJoinFromFile(binding: String, open: () -> InputStream?) = readInvitationFile(binding, open)
+
+    private fun readInvitationFile(binding: String?, open: () -> InputStream?) = enterJoin(openInvitationFileAction, binding) {
         try {
             val stream = checkNotNull(open()) { "SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE" }
             stream.use { LanSyncGroupInviteOffer.readFile(it) }
@@ -757,30 +775,32 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
     }
 
-    private fun enterJoin(label: String = "加入设备组", readOffer: () -> LanSyncGroupInviteOffer) = action(label, allowWhilePaused = true) {
-        val current = state.value
-        require(!current.joiningLedgerConflict) { "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" }
-        require(!current.joiningMembershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
-        if (current.stage == LanSyncGroupPanelStage.JOINING) {
-            require(!current.recoveryJoining) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
+    private fun enterJoin(label: String = "加入设备组", binding: String? = null, readOffer: () -> LanSyncGroupInviteOffer) {
+        val admit = binding?.let { captured -> { invitationInputBinding(state.value) == captured } }
+        if (admit?.invoke() == false) return
+        action(label, allowWhilePaused = true, admit = admit) {
+            val current = state.value
+            require(!current.joiningLedgerConflict) { "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" }
+            require(!current.joiningMembershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
+            require(current.stage != LanSyncGroupPanelStage.JOINING || !current.recoveryJoining) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
             require(current.canEnterInvitation) { "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" }
+            val offer = readOffer()
+            requireNotNull(offer.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
+            val generation = actionGeneration.get()
+            beforeSetup()
+            val owner = member()
+            val profile = if (owner.profile() == null) owner.prepareOffer(offer) { it.validate() }
+            else owner.refreshOffer(offer) { it.validate() }
+            val authorized = generation == actionGeneration.get() && joinProofAllowed()
+            pendingJoinProof = generation.takeIf { paused && authorized }
+            showJoining(profile, when {
+                pendingJoinProof != null -> "邀请已核对，等待同步服务就绪后发送证明"
+                !authorized -> "邀请已保留，请恢复同步后手动继续加入"
+                else -> "邀请已核对，正在验证此设备"
+            })
+            startLoop()
+            if (!paused && authorized) attemptJoin()
         }
-        val offer = readOffer()
-        requireNotNull(offer.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
-        val generation = actionGeneration.get()
-        beforeSetup()
-        val owner = member()
-        val profile = if (owner.profile() == null) owner.prepareOffer(offer) { it.validate() }
-        else owner.refreshOffer(offer) { it.validate() }
-        val authorized = generation == actionGeneration.get() && joinProofAllowed()
-        pendingJoinProof = generation.takeIf { paused && authorized }
-        showJoining(profile, when {
-            pendingJoinProof != null -> "邀请已核对，等待同步服务就绪后发送证明"
-            !authorized -> "邀请已保留，请恢复同步后手动继续加入"
-            else -> "邀请已核对，正在验证此设备"
-        })
-        startLoop()
-        if (!paused && authorized) attemptJoin()
     }
     override fun abandonUnprovedJoin() = action("放弃未发送的加入申请", allowWhilePaused = true) {
         pendingJoinProof = null
@@ -808,8 +828,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (!paused) attemptJoin()
     }
     private fun showEmptyJoin(shelved: List<LanSyncShelvedJoin>, status: String) = mutableState.update {
+        val inputEpoch = if (it.stage == LanSyncGroupPanelStage.EMPTY) it.invitationInputEpoch else it.invitationInputEpoch + 1
         LanSyncGroupPanelState(busy = it.busy, paused = paused, privacyRevision = it.privacyRevision + 1,
-            shelvedJoins = shelved, status = status)
+            shelvedJoins = shelved, status = status, invitationInputEpoch = inputEpoch)
     }
     private fun LanSyncGroupJoiningProfile.canRefreshPreparation(): Boolean =
         !ledgerConflict && !membershipRevoked && stage in reprepareJoinStages
@@ -1214,11 +1235,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     override fun cancelRevocation() { revocation = null; mutableState.update { it.copy(revocation = null) } }
     override fun retry() = action("重新检查同步") {
-        access?.let { attach(it) } ?: load()
-        if (!closed && !paused) {
-            nearbyWake.trySend(Unit)
-            requestCloudCheck()
-        }
+        access?.let { attach(it, checkCloud = state.value.stage == LanSyncGroupPanelStage.READY) } ?: load()
+        if (!closed && !paused) nearbyWake.trySend(Unit)
     }
     override fun openCloudSettings() {
         synchronized(lifecycle) {
@@ -1453,7 +1471,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             synchronized(reviewGeneration) { if (generation == reviewGeneration.get()) mutableActionReview.value = prepared }
         }
     }
-    private suspend fun attach(opened: LanSyncGroupRuntimeAccess) {
+    private suspend fun attach(opened: LanSyncGroupRuntimeAccess, checkCloud: Boolean = false) {
         val newlyAttached = synchronized(lifecycle) {
             check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
             if (access != null) false else {
@@ -1476,10 +1494,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             paused = paused, status = if (paused) "设备组同步尚未恢复，原件与待传队列已保留" else "设备组已就绪，应用正在检查同步") }
         val localActive = refreshDevices()
-        if (newlyAttached && localActive) synchronized(lifecycle) {
-            // An existing join ticker can be waiting in this very attachment until the local check finishes.
-            if (!closed && !paused && access === opened && state.value.membershipConflict == null &&
-                nearbyWorker?.isActive == true) nearbyWake.trySend(Unit)
+        if (localActive && (newlyAttached || checkCloud) && !startLoop()) synchronized(lifecycle) {
+            // The join ticker or manual check can be waiting here until the local check finishes.
+            if (!closed && !paused && access === opened && state.value.membershipConflict == null) {
+                if (newlyAttached && nearbyWorker?.isActive == true) nearbyWake.trySend(Unit)
+                if (checkCloud) requestCloudCheck()
+            }
         }
         if (!paused) try { cycle(force = true) } finally { if (!paused && !closed) startLoop() }
     }
@@ -1680,8 +1700,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         requireNotNull(failure).let { nearbyFailure("START", it) }
         false
     }
-    private fun startLoop() = synchronized(lifecycle) {
-        if (loop?.isActive == true || closed || paused || state.value.membershipConflict != null) return
+    private fun startLoop(): Boolean = synchronized(lifecycle) {
+        if (loop?.isActive == true || closed || paused || state.value.membershipConflict != null) return@synchronized false
         localWorker = scope.launch {
             for (ignored in localWake) {
                 delay(250)
@@ -1768,6 +1788,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
         }
         localWake.trySend(Unit); nearbyWake.trySend(Unit); requestCloudCheck()
+        true
     }
     private fun cloudProgress(progress: Map<SyncStoreId, LanSyncGroupCloudRouteProgress>) {
         mutableCloudSettings.update { it.copy(progress = progress) }

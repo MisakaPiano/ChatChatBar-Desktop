@@ -67,7 +67,8 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     internal val fileRecoveryJoinScope: String? = null,
     val joiningMembershipRevoked: Boolean = false,
     val canRefreshInvitation: Boolean = false,
-    val invitationFileWriteBinding: String? = null) {
+    val invitationFileWriteBinding: String? = null,
+    internal val invitationInputEpoch: Long = 0) {
     val canCloseInvitation: Boolean
         get() = !invitationApprovalInProgress && invitationFileWriteBinding == null
     val canEnterInvitation: Boolean

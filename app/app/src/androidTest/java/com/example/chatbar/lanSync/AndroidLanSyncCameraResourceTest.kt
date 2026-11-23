@@ -1,27 +1,41 @@
 package com.example.chatbar.lanSync
 
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.os.Build
+import android.provider.MediaStore
+import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.domain.image.copyAndroidChatImage
 import com.example.chatbar.domain.lanSync.LanSyncHeifStill
+import com.example.chatbar.domain.lanSync.LanSyncPlan
 import com.example.chatbar.domain.lanSync.LanSyncRecord
 import com.example.chatbar.domain.lanSync.LanSyncResourceStore
 import com.example.chatbar.domain.lanSync.LanSyncWorkspace
 import com.example.chatbar.interop.LanSyncMalformedHeifFixture
+import com.example.chatbar.ui.components.createImageShareIntent
+import com.example.chatbar.ui.components.writeGalleryImage
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class AndroidLanSyncCameraResourceTest {
@@ -44,6 +58,94 @@ class AndroidLanSyncCameraResourceTest {
         val dimensions = requireNotNull(LanSyncHeifStill.inspect(file))
         assertEquals(64, dimensions.width); assertTrue(dimensions.height in 48..64)
         assertPreviewAndRetainedOriginal(file, expectedWidth = 64, expectedHeight = 48)
+    }
+
+    @Test fun ordinarySelectionAndLegacyExportsUseVerifiedHeifIdentityWithoutChangingOriginalBytes(): Unit =
+        runBlocking(Dispatchers.IO) {
+            assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            val bytes = Files.readAllBytes(cache.resolve("synthetic-r02-heif.jpg"))
+            assertEquals("heic", String(bytes, 8, 4, Charsets.US_ASCII))
+            val genericHeif = bytes.copyOf().apply { "mif1".toByteArray(Charsets.US_ASCII).copyInto(this, 8) }
+            assertOrdinaryHeifSelectionAndExports(bytes, LanSyncHeifStill.MediaType.HEIC)
+            assertOrdinaryHeifSelectionAndExports(genericHeif, LanSyncHeifStill.MediaType.HEIF)
+        }
+
+    private suspend fun assertOrdinaryHeifSelectionAndExports(bytes: ByteArray, type: LanSyncHeifStill.MediaType) {
+        val app = InstrumentationRegistry.getInstrumentation().targetContext
+        val resolver = app.contentResolver
+        val images = Files.createDirectories(app.filesDir.toPath().resolve("images"))
+        val old = Files.createTempFile(images, "legacy-heif-", ".jpg").toFile()
+        val authority = "${app.packageName}.fileprovider"
+        var selected: File? = null
+        try {
+            old.writeBytes(bytes)
+            val oldUri = FileProvider.getUriForFile(app, authority, old)
+            assertEquals("image/jpeg", resolver.getType(oldUri))
+            val copied = withContext(Dispatchers.IO) { copyAndroidChatImage(app, oldUri) }
+            selected = copied
+            assertEquals(type.extension, copied.extension)
+            assertTrue(copied.readBytes().contentEquals(bytes))
+            assertSelectedHeifSyncsWithItsNewSuffix(copied, old)
+
+            val share = createImageShareIntent(app, old)
+            val shared = requireNotNull(share.clipData?.getItemAt(0)?.uri)
+            val fileName = "${old.nameWithoutExtension}.${type.extension}"
+            assertEquals(Intent.ACTION_SEND, share.action)
+            assertEquals(type.mimeType, share.type)
+            assertEquals(type.mimeType, resolver.getType(shared))
+            assertTrue(share.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+            resolver.query(shared, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                assertTrue(it.moveToFirst())
+                assertEquals(fileName, it.getString(0))
+            } ?: error("Missing FileProvider metadata")
+            assertTrue(requireNotNull(resolver.openInputStream(shared)).use { it.readBytes().contentEquals(bytes) })
+
+            val gallery = requireNotNull(writeGalleryImage(app, old))
+            try {
+                val columns = arrayOf(MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.MIME_TYPE)
+                resolver.query(gallery, columns, null, null, null)?.use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals(fileName, it.getString(0))
+                    assertEquals(type.mimeType, it.getString(1))
+                } ?: error("Missing MediaStore metadata")
+                assertTrue(requireNotNull(resolver.openInputStream(gallery)).use { it.readBytes().contentEquals(bytes) })
+            } finally { resolver.delete(gallery, null, null) }
+            assertEquals("jpg", old.extension)
+            assertTrue(old.readBytes().contentEquals(bytes))
+            assertEquals("image/jpeg", resolver.getType(oldUri))
+        } finally {
+            selected?.delete()
+            old.delete()
+        }
+    }
+
+    private suspend fun assertSelectedHeifSyncsWithItsNewSuffix(selected: File, legacy: File) {
+        val root = Files.createTempDirectory(cache, "synthetic-heif-transfer-").toRealPath()
+        try {
+            val source = Files.createDirectory(root.resolve("source"))
+            val target = Files.createDirectory(root.resolve("target"))
+            val sourceImages = Files.createDirectory(source.resolve("images"))
+            val local = listOf(selected, legacy).map { Files.copy(it.toPath(), sourceImages.resolve(it.name)) }
+            val message = ChatMessage("photo", "chat", MessageRole.USER, "合成图片",
+                images = local.map { "images/${it.fileName}" }, createdAt = 2, updatedAt = 2)
+            JsonFileStorage(source).apply {
+                saveEntity("chat_sessions", "chat", ChatSession("chat", "card", "合成会话", createdAt = 1, updatedAt = 1),
+                    ChatSession.serializer())
+                saveEntity("chat_messages", "chat_photo", message, ChatMessage.serializer())
+            }
+            val sourceWorkspace = LanSyncWorkspace(source, Files.createDirectory(root.resolve("source-state")), source::resolve,
+                validateResource = ::validateAndroidLanSyncResource)
+            val targetWorkspace = LanSyncWorkspace(target, Files.createDirectory(root.resolve("target-state")), target::resolve,
+                validateResource = ::validateAndroidLanSyncResource)
+            sourceWorkspace.capture("android").use { capture ->
+                val plan = LanSyncPlan(UUID.randomUUID().toString(), capture.snapshot, emptyMap())
+                targetWorkspace.apply(plan, emptyMap(), "target", capture.blobs)
+            }
+            val received = requireNotNull(JsonFileStorage(target).loadEntity("chat_messages", "chat_photo", ChatMessage.serializer()))
+            val originals = received.images.map { target.resolve(it) }
+            assertEquals(listOf(selected.extension, "jpg"), originals.map { it.toFile().extension })
+            assertTrue(originals.all { Files.readAllBytes(it).contentEquals(selected.readBytes()) })
+        } finally { check(root.toFile().deleteRecursively()) }
     }
 
     @Test fun incompleteRecognizedHeifHoldsOnlyItsOwningChat(): Unit = runBlocking {

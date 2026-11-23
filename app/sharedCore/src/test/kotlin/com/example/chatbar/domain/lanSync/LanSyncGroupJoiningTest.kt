@@ -10,6 +10,7 @@ import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -342,8 +343,17 @@ class LanSyncGroupJoiningTest {
         val bound = CompletableDeferred<Int>()
         val enteredInspection = CompletableDeferred<Unit>()
         val releaseInspection = CompletableDeferred<Unit>()
+        val enrollmentReady = CompletableDeferred<Unit>()
+        val beginAttachment = CountDownLatch(1)
+        val staleOpens = AtomicInteger()
         val afterDurableReady = AtomicBoolean()
-        f.hook = { event -> if (event == "GROUP_JOIN_READY") afterDurableReady.set(true) }
+        f.hook = { event ->
+            if (event == "GROUP_JOIN_READY") {
+                afterDurableReady.set(true)
+                enrollmentReady.complete(Unit)
+                check(beginAttachment.await(15, TimeUnit.SECONDS))
+            }
+        }
         f.beforeExclusive = {
             if (afterDurableReady.compareAndSet(true, false)) {
                 enteredInspection.complete(Unit)
@@ -372,7 +382,8 @@ class LanSyncGroupJoiningTest {
             val invitation = f.founder.service.invitation(source.start()).also(f.founder.invitations::add)
             val offer = source.invitation(invitation) { proof.complete(it) }
             val bootstrap = requireNotNull(offer.bootstrap)
-            coordinator.beginJoin(offer.code())
+            val firstInput = requireNotNull(coordinator.invitationInputBinding())
+            coordinator.beginJoinFromScanner(firstInput, offer.code())
             withTimeout(15_000) { coordinator.state.first { it.canAbandonJoin && !it.busy } }
             coordinator.resumeIfConfigured()
             val verified = withTimeout(15_000) { proof.await() }
@@ -388,9 +399,19 @@ class LanSyncGroupJoiningTest {
             }
             assertNull(observedField("access"))
             assertFalse(bound.isCompleted)
+            val oldInput = requireNotNull(coordinator.invitationInputBinding())
+            assertNotEquals(firstInput, oldInput)
 
             f.admit(invitation to verified)
-            withTimeout(35_000) { enteredInspection.await() }
+            withTimeout(35_000) { enrollmentReady.await() }
+            assertEquals(oldInput, coordinator.invitationInputBinding())
+            coordinator.beginJoinFromFile(oldInput) {
+                staleOpens.incrementAndGet()
+                error("A queued invitation cannot read a file after the same application becomes ready")
+            }
+            coordinator.beginJoinFromScanner(oldInput, "synthetic stale scan")
+            beginAttachment.countDown()
+            withTimeout(10_000) { enteredInspection.await() }
             val ready = coordinator.state.value
             assertEquals(LanSyncGroupPanelStage.READY, ready.stage)
             assertFalse(ready.busy, "No user action should be running during automatic activation")
@@ -410,7 +431,19 @@ class LanSyncGroupJoiningTest {
             val peer = LanSyncPeer(f.identity.fingerprint, "synthetic recipient", offer.host, port)
             assertEquals(bootstrap.vaultDescriptor, access.remote(peer, network).metadata(bootstrap.vault.key)?.descriptor)
             assertNotNull(boundWhileHeld, "READY for 30 seconds with the first local inspection held. The real listener bound only after release, then accepted pinned mTLS and returned the exact vault descriptor.")
+            assertNull(coordinator.invitationInputBinding())
+            coordinator.beginJoinFromFile(oldInput) {
+                staleOpens.incrementAndGet()
+                error("A completed application cannot read a stale picker")
+            }
+            coordinator.beginJoinFromScanner(oldInput, "synthetic older scan")
+            releaseInspection.complete(Unit)
+            withTimeout(10_000) { while (coordinator.view.value == null || runningAdmission.isLocked) delay(10) }
+            assertEquals(0, staleOpens.get())
+            assertNull(coordinator.state.value.error)
+            assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
         } finally {
+            beginAttachment.countDown()
             releaseInspection.complete(Unit)
             coordinator.closeAndDrain()
             source.closeAndDrain()

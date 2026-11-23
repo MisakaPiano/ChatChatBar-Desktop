@@ -71,7 +71,15 @@ class LanSyncGroupDependencies(private val group: SyncStoreId, private val backe
                         if (parts[1] == "packages") {
                             val ref = requireNotNull(record.body["packageRef"]).jsonObject
                             val library = JsonObject(record.body + ("packageRef" to JsonObject(ref + ("fileName" to JsonPrimitive("${record.id}.cbsave")))))
-                            LanSyncSlotPackages.validate(path, library)
+                            try {
+                                LanSyncSlotPackages.validate(path, library)
+                            } catch (failure: java.util.zip.ZipException) {
+                                checking = null
+                                val length = decoded.payload.resources.getValue(parts[3])
+                                require(LanSyncResourceStore.hashFile(path, length) == parts[3]) { "SYNC_GROUP_DEPENDENCY_CACHE_CHANGED" }
+                                checking = LanSyncGroupDependencyPart.ATTACHMENT
+                                throw IllegalArgumentException("SYNC_SLOT_PACKAGE_ZIP_FORMAT", failure)
+                            }
                         }
                         validateResource(parts[1], path, record)
                     }

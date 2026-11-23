@@ -100,6 +100,7 @@ import com.example.chatbar.data.local.entity.MemoryDecisionTier
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.PlayerSetting
 import com.example.chatbar.domain.chat.ChatContextGroupPolicy
+import com.example.chatbar.domain.chat.AndroidMessageEditResult
 import com.example.chatbar.domain.chat.ChatScrollPositionPolicy
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import com.example.chatbar.domain.chat.PlaceholderRenderer
@@ -157,6 +158,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private val ChatContentMaxWidth = 840.dp
+
+private data class ChatSegmentEditTarget(val message: ChatMessage, val segment: ChatBubbleSegmentAction)
 
 private data class PendingVoiceGeneration(
     val messageId: String,
@@ -310,13 +313,56 @@ fun ChatScreen(
     var imageRegenerationError by remember(sessionId) { mutableStateOf<String?>(null) }
     var imageRegenerationBatchSizeInput by remember(sessionId) { mutableStateOf("1") }
     var deleteImageTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var deleteSegmentTarget by remember { mutableStateOf<ChatBubbleSegmentAction?>(null) }
+    var deleteSegmentTarget by remember { mutableStateOf<ChatSegmentEditTarget?>(null) }
     var deleteMessageTargetId by remember { mutableStateOf<String?>(null) }
     var editingMessage by remember { mutableStateOf<ChatMessage?>(null) }
     var editingText by remember { mutableStateOf(TextFieldValue("")) }
     val editingImages = remember { mutableStateListOf<String>() }
     var editingSegment by remember { mutableStateOf<ChatBubbleSegmentAction?>(null) }
-    var editingSegmentText by remember { mutableStateOf(TextFieldValue("")) }
+    var actionSegmentMessage by remember { mutableStateOf<ChatMessage?>(null) }
+    var editOwner by remember { mutableStateOf<Any?>(null) }
+    var editImagePending by remember { mutableStateOf<Any?>(null) }
+    var editingSaving by remember { mutableStateOf(false) }
+    var editStale by remember { mutableStateOf(false) }
+    var editStatus by remember { mutableStateOf<String?>(null) }
+    var editReview by remember { mutableStateOf<ChatMessage?>(null) }
+
+    fun closeMessageEditor() {
+        if (editingSaving) return
+        editOwner = null
+        editingMessage = null
+        editingSegment = null
+        editingImages.clear()
+        editStatus = null
+        editStale = false
+        editReview = null
+    }
+
+    fun openMessageEditor(shown: ChatMessage, segment: ChatBubbleSegmentAction? = null) {
+        if (editOwner != null) return
+        val request = Any()
+        editOwner = request
+        scope.launch {
+            val snapshot = viewModel.readMessageForEdit(shown.id)
+            if (editOwner !== request) return@launch
+            val segmentChanged = segment != null && snapshot?.let {
+                it.displayContent != shown.displayContent ||
+                    MessageAlternativeVersionPolicy.activeVersionId(it) != MessageAlternativeVersionPolicy.activeVersionId(shown) ||
+                    segment.start < 0 || segment.endExclusive > it.displayContent.length || segment.endExclusive < segment.start
+            } != false
+            if (snapshot == null || segmentChanged) {
+                closeMessageEditor()
+                Toast.makeText(context, "消息已更新或无法读取，请重新打开后核对。", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val initialText = segment?.rawText ?: snapshot.displayContent
+            editingText = TextFieldValue(initialText, selection = TextRange(initialText.length))
+            editingImages.clear()
+            if (segment == null) editingImages.addAll(snapshot.images)
+            editingSegment = segment
+            editingMessage = snapshot
+        }
+    }
     var viewportAnchor by remember { mutableStateOf(0 to 0) }
     var restoringViewport by remember { mutableStateOf(false) }
     var initialScrollDone by remember(sessionId) { mutableStateOf(false) }
@@ -498,7 +544,21 @@ fun ChatScreen(
         uri?.let { viewModel.copyUriToLocalFile(it, viewModel::addDraftImage) }
     }
     val editImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
-        uri?.let { viewModel.copyUriToLocalFile(it) { path -> editingImages.add(path) } }
+        val request = editImagePending
+        if (uri == null || request == null || editOwner !== request) {
+            editImagePending = null
+        } else scope.launch {
+            try {
+                val path = viewModel.copySelectedChatImage(uri)
+                if (editOwner === request) editingImages.add(path)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                if (editOwner === request) editStatus = "无法读取所选图片，请重新选择。"
+            } finally {
+                if (editImagePending === request) editImagePending = null
+            }
+        }
     }
     val legacyStoragePermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -590,8 +650,7 @@ fun ChatScreen(
         qqVoiceTransferTarget = null
     }
 
-    BackHandler(enabled = editingMessage != null) { editingMessage = null; editingImages.clear() }
-    BackHandler(enabled = editingSegment != null) { editingSegment = null }
+    BackHandler(enabled = editOwner != null) { closeMessageEditor() }
     BackHandler(enabled = qqVoiceTransferTarget != null) { qqVoiceTransferTarget = null }
     BackHandler(enabled = fullComposer) { fullComposer = false }
     BackHandler(enabled = screenshotPreviewPath != null) {
@@ -1055,45 +1114,115 @@ fun ChatScreen(
         }
     }
 
-    if (editingMessage != null) {
-        FullscreenTextEditor(
-            title = "编辑消息",
-            value = editingText,
-            onValueChange = { editingText = it },
-            images = editingImages,
-            onAddImage = { editImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-            onRemoveImage = { editingImages.remove(it) },
-            onDismiss = { editingMessage = null; editingImages.clear() },
-            onConfirm = { finalValue ->
-                editingMessage?.let { viewModel.editMessage(it.id, finalValue.text, editingImages.toList()) }
-                editingMessage = null; editingImages.clear()
-            },
-            confirmIcon = AppIcons.Save,
-            visible = true
-        )
-        return
-    }
-    if (editingSegment != null) {
-        FullscreenTextEditor(
-            title = "编辑片段",
-            value = editingSegmentText,
-            onValueChange = { editingSegmentText = it },
-            images = emptyList(),
-            onDismiss = { editingSegment = null },
-            onConfirm = { finalValue ->
-                editingSegment?.let {
-                    viewModel.editMessageSegment(
-                        messageId = it.messageId,
-                        start = it.start,
-                        endExclusive = it.endExclusive,
-                        replacement = finalValue.text
-                    )
+    editingMessage?.let { expected ->
+        val segment = editingSegment
+        val owner = checkNotNull(editOwner)
+        key(owner) {
+            val editor = rememberFullscreenTextEditorState(editingText)
+            val holdDuringWrite = remember(owner) {
+                InputTransformation.byValue { current, proposed -> if (editingSaving) current else proposed }
+            }
+            FullscreenTextEditor(
+                state = editor,
+                title = if (segment == null) "编辑消息" else "编辑片段",
+                images = editingImages,
+                onAddImage = if (segment != null || editingSaving || editImagePending != null) null else ({
+                    editImagePending = owner
+                    try {
+                        editImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    } catch (_: Exception) {
+                        editImagePending = null
+                        editStatus = "无法打开图片选择器，请重试。"
+                    }
+                }),
+                onRemoveImage = { if (!editingSaving) editingImages.remove(it) },
+                onDismiss = ::closeMessageEditor,
+                onConfirm = { finalValue ->
+                    if (!editingSaving && !editStale && editImagePending !== owner) {
+                        editingSaving = true
+                        editStatus = null
+                        val images = editingImages.toList()
+                        scope.launch {
+                            try {
+                                val outcome = if (segment == null) viewModel.editMessage(expected, finalValue.text, images)
+                                else viewModel.editMessageSegment(expected, segment.start, segment.endExclusive, finalValue.text)
+                                editingSaving = false
+                                when (outcome) {
+                                    is AndroidMessageEditResult.Saved -> {
+                                        closeMessageEditor()
+                                        if (outcome.refreshPending) Toast.makeText(context, "消息已保存，列表刷新待完成。", Toast.LENGTH_LONG).show()
+                                    }
+                                    AndroidMessageEditResult.Deleted -> closeMessageEditor()
+                                    AndroidMessageEditResult.Stale -> {
+                                        editStale = true
+                                        editStatus = "此消息在编辑期间已更新或移除。编辑内容和新选图片仍在。"
+                                    }
+                                    AndroidMessageEditResult.Failed -> editStatus = "未能确认保存。编辑内容和图片仍在，请检查后重试。"
+                                    AndroidMessageEditResult.Empty -> editStatus = "请保留文字或至少一张图片。"
+                                }
+                            } finally {
+                                editingSaving = false
+                            }
+                        }
+                    }
+                },
+                confirmIcon = AppIcons.Save,
+                confirmEnabled = !editingSaving && !editStale && editImagePending !== owner,
+                inputTransformation = holdDuringWrite,
+                visible = true,
+                topContent = {
+                    if (editingSaving) CbText("正在保存…")
+                    editStatus?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+                    if (editStale) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CbButton("查看最新消息", {
+                                scope.launch {
+                                    val latest = viewModel.readMessageForEdit(expected.id)
+                                    if (editOwner === owner && editingMessage == expected) {
+                                        editReview = latest
+                                        if (latest == null) editStatus = "最新消息已移除或无法读取。编辑内容和新选图片仍在。"
+                                    }
+                                }
+                            }, variant = ButtonVariant.Outline)
+                            CbButton("复制编辑文字", {
+                                clipboardManager.setText(AnnotatedString(editor.value.text))
+                            }, variant = ButtonVariant.Ghost)
+                        }
+                    }
                 }
-                editingSegment = null
-            },
-            confirmIcon = AppIcons.Save,
-            visible = true
-        )
+            )
+            editReview?.let { latest ->
+                val canContinue = segment == null &&
+                    MessageAlternativeVersionPolicy.activeVersionId(expected) == MessageAlternativeVersionPolicy.activeVersionId(latest)
+                CbDialog(
+                    onDismissRequest = { editReview = null },
+                    title = "最新消息",
+                    dismiss = { CbButton("返回编辑", { editReview = null }, variant = ButtonVariant.Ghost) },
+                    confirm = if (!canContinue) null else ({
+                        CbButton("核对后继续编辑", {
+                            val images = editingImages.filter { it !in expected.images || it in latest.images } +
+                                latest.images.filterNot(expected.images::contains)
+                            editingImages.clear()
+                            editingImages.addAll(images.distinct())
+                            editingMessage = latest
+                            editReview = null
+                            editStale = false
+                            editStatus = "新收到的图片会一并保留。保存会用当前编辑文字替换刚核对的正文。"
+                        })
+                    })
+                ) {
+                    Column(Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CbText(latest.displayContent.ifBlank { "（无文字）" })
+                        if (latest.images.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState())) {
+                            latest.images.forEach { path ->
+                                AsyncImage(File(path), "最新消息图片", Modifier.size(64.dp), contentScale = ContentScale.Crop)
+                            }
+                        }
+                        if (!canContinue) CbText("请先复制编辑文字，再从最新消息重新打开对应版本或片段。")
+                    }
+                }
+            }
+        }
         return
     }
     if (fullComposer && !isArchived) {
@@ -1227,7 +1356,10 @@ fun ChatScreen(
                             voiceActionTarget = voice
                         }),
                         onLongPress = { if (!isResponding && !screenshotSelectionMode) actionMessageId = message.id },
-                        onSegmentLongPress = if (!isResponding && !screenshotSelectionMode) ({ segment -> actionSegment = segment }) else null,
+                        onSegmentLongPress = if (!isResponding && !screenshotSelectionMode) ({ segment ->
+                            actionSegmentMessage = displayedMessage
+                            actionSegment = segment
+                        }) else null,
                         onImageClick = if (screenshotSelectionMode) null else ({ path ->
                             expandedImageIndex = previewImages.indexOfFirst {
                                 it.messageId == message.id && it.path == path
@@ -1716,7 +1848,7 @@ fun ChatScreen(
             CbText("确定删除这张图片？此操作不可撤销。", color = ChatBarTheme.colors.mutedForeground)
         }
     }
-    deleteSegmentTarget?.let { segment ->
+    deleteSegmentTarget?.let { target ->
         CbDialog(
             onDismissRequest = { deleteSegmentTarget = null },
             title = "删除此段",
@@ -1727,12 +1859,13 @@ fun ChatScreen(
                 CbButton(
                     "删除",
                     {
-                        viewModel.editMessageSegment(
-                            messageId = segment.messageId,
-                            start = segment.start,
-                            endExclusive = segment.endExclusive,
-                            replacement = ""
-                        )
+                        val segment = target.segment
+                        scope.launch {
+                            val result = viewModel.editMessageSegment(target.message, segment.start, segment.endExclusive, "")
+                            if (result == AndroidMessageEditResult.Stale || result == AndroidMessageEditResult.Failed) {
+                                Toast.makeText(context, "未能确认删除，请重新打开消息核对。", Toast.LENGTH_LONG).show()
+                            }
+                        }
                         deleteSegmentTarget = null
                     },
                     variant = ButtonVariant.Destructive
@@ -1773,8 +1906,7 @@ fun ChatScreen(
                 actionSegment = null
             }),
             SegmentMenuAction("编辑", "编辑本段", AppIcons.Edit, onClick = {
-                editingSegment = segment
-                editingSegmentText = TextFieldValue(segment.rawText, selection = TextRange(segment.rawText.length))
+                actionSegmentMessage?.let { openMessageEditor(it, segment) }
                 actionSegment = null
             }),
             SegmentMenuAction("截图", "本段加入长截图", AppIcons.PhotoCamera, onClick = {
@@ -1782,7 +1914,7 @@ fun ChatScreen(
                 actionSegment = null
             }),
             SegmentMenuAction("删除", "删除本段", AppIcons.Delete, destructive = true, onClick = {
-                deleteSegmentTarget = segment
+                deleteSegmentTarget = actionSegmentMessage?.let { ChatSegmentEditTarget(it, segment) }
                 actionSegment = null
             })
         )
@@ -1795,12 +1927,7 @@ fun ChatScreen(
                 actionSegment = null
             }),
             SegmentMenuAction("编辑", "编辑整条消息", AppIcons.Edit, enabled = target != null, onClick = {
-                target?.let {
-                    editingMessage = it
-                    editingText = TextFieldValue(it.displayContent)
-                    editingImages.clear()
-                    editingImages.addAll(it.images)
-                }
+                target?.let { openMessageEditor(it) }
                 actionSegment = null
             }),
             SegmentMenuAction("截图", "整条消息加入长截图", AppIcons.PhotoCamera,
@@ -1877,7 +2004,7 @@ fun ChatScreen(
         ) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 CbButton("编辑", {
-                    target?.let { editingMessage = it; editingText = TextFieldValue(it.displayContent); editingImages.clear(); editingImages.addAll(it.images) }
+                    target?.let { openMessageEditor(it) }
                     actionMessageId = null
                 }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
                 target?.takeIf { it.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) }?.let {

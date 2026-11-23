@@ -1,5 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.SaveSlot
+import com.example.chatbar.data.local.entity.SaveSlotPackageRef
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
 import java.io.OutputStream
@@ -11,6 +14,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.test.*
 
 class LanSyncGroupDependenciesTest {
@@ -18,9 +22,9 @@ class LanSyncGroupDependenciesTest {
         val root = Files.createTempDirectory("synthetic-group-dependencies-").toRealPath()
         try { work(root) } finally { check(root.toFile().deleteRecursively()) }
     }
-    private class Fixture(root: Path, imageBytes: ByteArray = LanSyncPreviewSample.image()) {
+    private class Fixture(root: Path, prepare: (LanSyncGroupPublicationQueueTest.Fixture) -> LanSyncGroupPublicationQueueTest.Prepared = { it.prepare() }) {
         val source = LanSyncGroupPublicationQueueTest.Fixture(Files.createDirectory(root.resolve("source")))
-        val prepared = source.prepare(imageBytes)
+        val prepared = prepare(source)
         val target = Files.createDirectory(root.resolve("target")); val state = Files.createDirectory(root.resolve("target-state"))
         val workspace = LanSyncWorkspace(target, state, { Path.of(it) })
         val custodyRoot = Files.createDirectory(root.resolve("group-custody"))
@@ -116,7 +120,7 @@ class LanSyncGroupDependenciesTest {
 
     @Test fun authenticatedInvalidAttachmentKeepsItsFrozenReasonAndCanBeLeftForLater() = withRoot { root ->
         val damaged = LanSyncPreviewSample.image().copyOf(12)
-        val f = Fixture(root, damaged)
+        val f = Fixture(root) { it.prepare(damaged) }
         val source = f.source
         val unit = f.prepared.unit.payload.unit
         f.prepared.operations.values.forEach { source.outbox.upload(it, source.backend) }
@@ -157,6 +161,53 @@ class LanSyncGroupDependenciesTest {
         val image = f.prepared.unit.dependencies.single()
         assertContentEquals(damaged, Files.readAllBytes(requireNotNull(f.workspace.resourceStore.completed(image.sha256, image.length))))
         assertContentEquals(damaged, Files.readAllBytes(source.data.resolve("images/image.png")))
+    }
+
+    @Test fun verifiedMalformedSaveSlotIsAnAttachmentFailureButLocalInputIoIsNot() = withRoot { root ->
+        val bytes = byteArrayOf(0x50, 0x4b, 0x03, 0x04, 0x00)
+        val length = bytes.size.toLong()
+        val hash = lanSyncHash(bytes)
+        val f = Fixture(root) { source ->
+            val blob = Files.write(source.data.resolve("synthetic.cbsave"), bytes)
+            val reference = "ccb-lan-v1/packages/${UUID.randomUUID()}/$hash/cbsave"
+            val session = ChatSession("session", "card", "合成会话", createdAt = 1, updatedAt = 1)
+            val slot = SaveSlot(schemaVersion = 8, id = "slot", sessionId = session.id, name = "合成存档", createdAt = 2,
+                packageRef = SaveSlotPackageRef(reference, byteLength = length))
+            val records = listOf(
+                LanSyncRecord("chat_sessions", session.id, LanSyncScope.normalize("chat_sessions",
+                    lanSyncJson.encodeToJsonElement(ChatSession.serializer(), session).jsonObject)),
+                LanSyncRecord("save_slots", slot.id, LanSyncScope.normalize("save_slots",
+                    lanSyncJson.encodeToJsonElement(SaveSlot.serializer(), slot).jsonObject))
+            )
+            val snapshot = LanSyncSnapshot(deviceId = source.sender.fingerprint, records = records, resources = mapOf(hash to length))
+            LanSyncCapture(snapshot, mapOf(hash to blob), emptyMap()).use { source.prepare(it, "conversation/session") }
+        }
+        val source = f.source
+        f.prepared.operations.values.forEach { source.outbox.upload(it, source.backend) }
+        val (reconciled, metadata) = f.received()
+        val unit = f.prepared.unit.payload.unit
+        val version = requireNotNull(metadata.envelope.version).reference()
+        val packageKey = metadata.envelope.blobs.getValue(hash).key
+        val unreadable = object : CiphertextStore by source.backend {
+            override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
+                if (key == packageKey) Files.newInputStream(root.resolve("unavailable-local-source.cbsave")).use { it.copyTo(destination) }
+                return source.backend.readTo(key, destination, expected)
+            }
+        }
+        val readFailure = f.service(unreadable).inspect(reconciled, metadata, unit)
+        assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, readFailure.stage)
+        assertNull(readFailure.rejectedPart)
+        assertContains(requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(f.plan(reconciled, metadata, readFailure)
+            .units.getValue(unit), version)), "本机存储")
+
+        val rejected = f.service().inspect(reconciled, metadata, unit)
+        assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, rejected.stage)
+        assertEquals(LanSyncGroupDependencyPart.ATTACHMENT, rejected.rejectedPart)
+        assertEquals("SYNC_SLOT_PACKAGE_ZIP_FORMAT", rejected.code)
+        val row = f.plan(reconciled, metadata, rejected).units.getValue(unit)
+        assertEquals("已取得的附件未通过验证", LanSyncGroupDisplay.nativeStageLabel(row))
+        assertNull(rejected.available)
+        assertContentEquals(bytes, Files.readAllBytes(requireNotNull(f.workspace.resourceStore.completed(hash, length))))
     }
 
     @Test fun missingBindingsWrongNativeBusinessHashAndChangedCheckpointCannotProduceAvailableContent() = withRoot { root ->

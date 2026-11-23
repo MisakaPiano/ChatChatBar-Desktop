@@ -59,9 +59,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
     val backgroundState by owner.backgroundState.collectAsState()
     var legacySelected by remember(owner) { mutableStateOf(false) }
     LaunchedEffect(owner) { owner.openGroupPage() }
-    val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
-        result.contents?.let(coordinator::beginJoin)
-    }
+    val scanInvitation = rememberLaunchLanSyncInvitationScanner(coordinator)
     val legacyAllowed = !owner.hasGroupEvidence() && state.stage == LanSyncGroupPanelStage.EMPTY
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(cloudRecoveryOwner, lifecycle) {
@@ -104,16 +102,30 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
                     LanSyncBackgroundControls(backgroundState, { owner.pauseBackground(); Unit }, owner::resumeBackground,
                         owner::onForeground)
                 }
-            }) {
-            scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
-        }
+            }, scanInvitation = scanInvitation)
     }
     LanSyncGroupCloudSettings(cloudSettings, coordinator)
     cloudRecoveryOwner?.let { recovery ->
         val recoveryState by recovery.state.collectAsState()
         LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
+    }
+}
+
+@Composable
+internal fun rememberLaunchLanSyncInvitationScanner(coordinator: LanSyncGroupCoordinator): () -> Unit {
+    var inputBinding by rememberSaveable { mutableStateOf<String?>(null) }
+    val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val binding = inputBinding
+        inputBinding = null
+        if (binding != null) result.contents?.let { coordinator.beginJoinFromScanner(binding, it) }
+    }
+    return {
+        if (inputBinding == null) coordinator.invitationInputBinding()?.let { binding ->
+            inputBinding = binding
+            scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
+        }
     }
 }
 
@@ -200,9 +212,12 @@ private fun LanSyncMembershipRecoveryFiles(coordinator: LanSyncGroupCoordinator,
 @Composable
 internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState) {
     val resolver = LocalContext.current.applicationContext.contentResolver
+    var inputBinding by rememberSaveable { mutableStateOf<String?>(null) }
     var exportBinding by rememberSaveable { mutableStateOf<String?>(null) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) coordinator.beginJoinFromFile { resolver.openInputStream(uri) }
+        val binding = inputBinding
+        inputBinding = null
+        if (binding != null && uri != null) coordinator.beginJoinFromFile(binding) { resolver.openInputStream(uri) }
     }
     val saveFile = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
         val binding = exportBinding
@@ -222,7 +237,12 @@ internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state:
         }
     }
     if (state.canEnterInvitation) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
-        CbButton("打开设备组邀请文件", { openFile.launch(arrayOf("*/*")) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
+        CbButton("打开设备组邀请文件", {
+            coordinator.invitationInputBinding()?.let { binding ->
+                inputBinding = binding
+                openFile.launch(arrayOf("*/*"))
+            }
+        }, enabled = !state.busy && inputBinding == null, variant = ButtonVariant.Secondary)
     }
     val offer = state.invitation?.takeIf { state.invitationFileOnly }
     val binding = state.invitationFileBinding

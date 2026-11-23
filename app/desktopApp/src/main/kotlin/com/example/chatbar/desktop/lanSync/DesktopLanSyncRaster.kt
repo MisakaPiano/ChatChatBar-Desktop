@@ -31,13 +31,21 @@ internal object DesktopLanSyncRaster {
                 LanSyncRasterPolicy.validateDimensions(path, record, width, height, format == "jpeg" || format == "jpg")
                 val orientation = if (!renderOrientation || format == "gif" || format == "bmp" || heif != null) 1
                     else ImageMetadataStripper.readOrientation(path.toFile())
-                val sample = ((maxOf(width, height).toLong() + longestSide - 1) / longestSide).toInt().coerceAtLeast(1)
+                val sample = sample(width, height, longestSide)
                 val params = reader.defaultReadParam.apply { setSourceSubsampling(sample, sample, 0, 0) }
                 val raster = reader.read(0, params) ?: throw LanSyncInvalidImage()
                 return DesktopImageEditing.orient(raster, orientation)
             } finally { reader.dispose() }
         }
     }
+
+    fun sampledDimensions(width: Int, height: Int, longestSide: Int): Pair<Int, Int> {
+        val sample = sample(width, height, longestSide)
+        return ((width - 1) / sample + 1) to ((height - 1) / sample + 1)
+    }
+
+    private fun sample(width: Int, height: Int, longestSide: Int) =
+        ((maxOf(width, height).toLong() + longestSide - 1) / longestSide).toInt().coerceAtLeast(1)
 
     fun preview(path: Path, record: LanSyncRecord? = null): ByteArray = decode(path, record, 2048).let { raster ->
         try { ByteArrayOutputStream().use { output ->

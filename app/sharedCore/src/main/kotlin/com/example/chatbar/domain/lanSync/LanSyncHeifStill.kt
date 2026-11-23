@@ -10,7 +10,19 @@ import java.nio.file.StandardOpenOption.READ
 object LanSyncHeifStill {
     data class Dimensions(val width: Int, val height: Int)
 
-    fun inspect(path: Path): Dimensions? = FileChannel.open(path, READ, NOFOLLOW_LINKS).use { file ->
+    enum class MediaType(val extension: String, val mimeType: String) {
+        HEIC("heic", "image/heic"),
+        HEIF("heif", "image/heif")
+    }
+
+    data class VerifiedStill(val dimensions: Dimensions, val mediaType: MediaType)
+
+    fun inspect(path: Path): Dimensions? = inspectVerified(path, namingOnly = false)?.dimensions
+
+    /** Checks the bounded still structure for byte-for-byte copies that never allocate decoded pixels. */
+    fun inspectForNaming(path: Path): VerifiedStill? = inspectVerified(path, namingOnly = true)
+
+    private fun inspectVerified(path: Path, namingOnly: Boolean): VerifiedStill? = FileChannel.open(path, READ, NOFOLLOW_LINKS).use { file ->
         val size = file.size()
         if (size < 8) return null
         val signature = file.bytes(0, 8)
@@ -32,6 +44,7 @@ object LanSyncHeifStill {
             if (hasHeicBrandInAvailableFileType()) throw LanSyncInvalidImage()
             return null
         }
+        if (namingOnly && !hasHeicBrandInAvailableFileType()) return null
         val brand = try {
             file.box(0, size).also {
                 requireSupported(it.length <= MAX_FILE_TYPE)
@@ -41,23 +54,28 @@ object LanSyncHeifStill {
             if (hasHeicBrandInAvailableFileType()) throw LanSyncInvalidImage(failure)
             throw failure
         }
-        if (!file.bytes(brand.start, brand.length.toInt()).hasHeicBrand()) return null
+        val mediaType = file.bytes(brand.start, brand.length.toInt()).stillMediaType() ?: return null
         try {
-            inspectStill(file, size, brand.end)
+            VerifiedStill(inspectStill(file, size, brand.end, enforceDecodeBudget = !namingOnly), mediaType)
         } catch (failure: MalformedStructure) {
             throw LanSyncInvalidImage(failure)
         }
     }
 
-    private fun ByteBuffer.hasHeicBrand(): Boolean {
-        if (remaining() < 4) return false
-        if (type() in heicBrands) return true
-        if (remaining() < 4) return false
-        u(4) // Skip the minor version.
-        return (0 until remaining() / 4).any { type() in heicBrands }
+    private fun ByteBuffer.hasHeicBrand(): Boolean = stillMediaType() != null
+
+    private fun ByteBuffer.stillMediaType(): MediaType? {
+        if (remaining() < 4) return null
+        val major = type()
+        val compatible = if (remaining() < 4) emptyList() else {
+            u(4) // Skip the minor version.
+            List(remaining() / 4) { type() }
+        }
+        if (major !in heicBrands && compatible.none { it in heicBrands }) return null
+        return if (major == "mif1" && "mif1" in compatible) MediaType.HEIF else MediaType.HEIC
     }
 
-    private fun inspectStill(file: FileChannel, size: Long, start: Long): Dimensions {
+    private fun inspectStill(file: FileChannel, size: Long, start: Long, enforceDecodeBudget: Boolean): Dimensions {
         val boxes = mutableListOf<Box>()
         var position = start
         while (position < size) {
@@ -128,12 +146,13 @@ object LanSyncHeifStill {
                 val tile = requireValue(tileSizes.singleOrNull())
                 need(result.width.toLong() in ((columns - 1) * tile.width + 1)..(columns * tile.width) &&
                     result.height.toLong() in ((rows - 1) * tile.height + 1)..(rows * tile.height))
-                if (columns * tile.width * rows * tile.height > MAX_PIXELS) throw LanSyncLocalImageUnsupported()
+                if (enforceDecodeBudget && columns * tile.width * rows * tile.height > MAX_PIXELS)
+                    throw LanSyncLocalImageUnsupported()
                 result
             }
             else -> throw LanSyncImageFormatUnsupported("SYNC_IMAGE_HEIF_INVALID")
         }
-        if (still.width > 16_384 || still.height > 16_384 || still.width.toLong() * still.height > MAX_PIXELS)
+        if (enforceDecodeBudget && (still.width > 16_384 || still.height > 16_384 || still.width.toLong() * still.height > MAX_PIXELS))
             throw LanSyncLocalImageUnsupported()
         return still
     }

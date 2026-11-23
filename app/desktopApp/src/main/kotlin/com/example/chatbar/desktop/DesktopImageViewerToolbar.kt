@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 /** One compact, scrollable command strip; the image keeps the remaining window height. */
 @Composable
 internal fun DesktopImageViewerToolbar(zoom: DesktopImageZoomState, selection: DesktopViewerSelection? = null,
+    sizeLabel: String = "",
     actions: @Composable RowScope.() -> Unit = {}) {
     Column(Modifier.fillMaxWidth().testTag("image-viewer-toolbar").background(DesktopBootstrapColors.card)) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
@@ -36,7 +37,7 @@ internal fun DesktopImageViewerToolbar(zoom: DesktopImageZoomState, selection: D
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp)) {
             val size = zoom.sourceSize
-            StatusText(if (size.width > 0) "${size.width} × ${size.height} px · 滚轮缩放 · 拖动平移 · 双击切换原大" else "滚轮缩放 · 拖动平移")
+            StatusText(if (size.width > 0) "$sizeLabel${size.width} × ${size.height} px · 滚轮缩放 · 拖动平移 · 双击切换原大" else "滚轮缩放 · 拖动平移")
         }
     }
 }

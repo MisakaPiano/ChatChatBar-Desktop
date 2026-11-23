@@ -433,7 +433,7 @@ class ChatSyncDeletedSessionNativeTest {
         while (!condition()) delay(25)
     }
 
-    private class SignedGroup(private val root: Path, private val app: ChatBarApp) {
+    internal class SignedGroup(private val root: Path, private val app: ChatBarApp) {
         private val identities = List(2) { LanSyncTlsIdentity.create() }
         private val recipients = identities.map { SyncDeviceEncryptionKey.create(it.fingerprint) }
         private val cipher = SyncStreamingCipher.create()

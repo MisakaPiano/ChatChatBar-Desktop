@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.Clipboard
 import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.Transferable
 import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
@@ -41,6 +42,16 @@ internal class DesktopImageClipboardFiles(
             bytes.size >= 12 && String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" -> "webp"
             else -> error("Unsupported file-copy image")
         }
+        publish(bytes, extension, clipboard) { desktopImageTransferable(bytes, it) }
+    }
+
+    @Synchronized
+    fun copyOriginal(bytes: ByteArray, extension: String, clipboard: Clipboard) {
+        require(bytes.size.toLong() in 1..ApngDisguiseCodec.MAX_OUTPUT_BYTES && extension in fileExtensions)
+        publish(bytes, extension, clipboard) { desktopImageFileTransferable(null, it) }
+    }
+
+    private fun publish(bytes: ByteArray, extension: String, clipboard: Clipboard, transfer: (Path) -> Transferable) {
         Files.createDirectories(root)
         check(plainDirectory(root))
         FileChannel.open(root.resolve(".lock"), CREATE, WRITE, NOFOLLOW_LINKS).use { channel ->
@@ -83,7 +94,7 @@ internal class DesktopImageClipboardFiles(
                 Files.write(file, bytes, CREATE_NEW, WRITE)
                 Files.writeString(directory.resolve("owner.txt"), "CCB-clipboard-v1\n$time\n$extension\n${hash(bytes)}", CREATE_NEW, WRITE)
                 // Even a publication failure can be indeterminate: retain the staged file, with quota.
-                clipboard.setContents(desktopImageTransferable(bytes, file), null)
+                clipboard.setContents(transfer(file), null)
             }
         }
     }
@@ -94,7 +105,7 @@ internal class DesktopImageClipboardFiles(
         check(plainFile(record) && Files.size(record) <= 256)
         val fields = Files.readString(record).split('\n')
         check(((fields.size == 4 && fields[0] == "CCB-clipboard-v1") ||
-            (fields.size == 5 && fields[0] == "CCB-clipboard-v2")) && fields[2] in listOf("png", "gif", "webp"))
+            (fields.size == 5 && fields[0] == "CCB-clipboard-v2")) && fields[2] in fileExtensions)
         val created = fields[1].toLong()
         val file = directory.resolve("image.${fields[2]}")
         check(Files.list(directory).use { it.limit(3).count() } == 2L && plainFile(file))
@@ -134,10 +145,13 @@ internal class DesktopImageClipboardFiles(
 
     private fun hash(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
-    companion object { const val RETENTION_MILLIS = 7L * 24 * 60 * 60 * 1000 }
+    companion object {
+        const val RETENTION_MILLIS = 7L * 24 * 60 * 60 * 1000
+        private val fileExtensions = setOf("png", "gif", "webp", "jpg", "heic", "heif", "bmp")
+    }
 }
 
-private val desktopClipboardFiles by lazy {
+internal val desktopClipboardFiles by lazy {
     DesktopImageClipboardFiles(Path.of(System.getProperty("java.io.tmpdir"), "ccb-image-clipboard-v1"))
 }
 
