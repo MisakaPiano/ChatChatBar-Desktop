@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.syncStore.*
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.InetAddress
 import java.net.Socket
@@ -26,7 +27,7 @@ class LanSyncGroupJoiningTest {
         val data = Files.createDirectory(founder.root.resolve("join-data"))
         val workspace = LanSyncWorkspace(data, Files.createDirectory(founder.root.resolve("join-workspace")), { Path.of(it) })
         var hook: (String) -> Unit = {}; var gated = false
-        var timeShift = 0L
+        @Volatile var timeShift = 0L
         val platform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) { check(!gated); gated = true; try { work() } finally { gated = false } }
             override suspend fun reload(sessionIds: Set<String>) { check(gated) }
@@ -249,13 +250,16 @@ class LanSyncGroupJoiningTest {
         val before = f.control(); val key = Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected"))
         var connections = 0; f.timeShift = 240_000
         assertFails { f.owner().prove("synthetic") { connections++; error("MUST_NOT_CONNECT") } }
-        assertEquals(0, connections); assertEquals(LanSyncGroupJoinStage.PREPARED, f.owner().profile()!!.stage)
+        assertEquals(0, connections)
+        val expired = assertNotNull(f.owner().profile())
+        assertEquals(LanSyncGroupJoinStage.PREPARED, expired.stage)
+        assertTrue(expired.invitationExpired)
         f.timeShift = 0
         val pool = Executors.newSingleThreadExecutor()
         val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket).also { it.needClientAuth = true }
         try {
             val fresh = invitation.issue("10.0.0.2", listener.localPort)
-            f.owner().refreshInvitation(fresh.code()) {}
+            assertFalse(f.owner().refreshInvitation(fresh.code()) {}.invitationExpired)
             assertEquals(before.getValue("operation"), f.control().getValue("operation"))
             assertEquals(before.getValue("recipient"), f.control().getValue("recipient"))
             assertContentEquals(key, Files.readAllBytes(f.root.resolve("joining/recipient/recipient.protected")))
@@ -505,6 +509,44 @@ class LanSyncGroupJoiningTest {
         assertEquals(retained, retainedFiles(archive))
     }
 
+    @Test fun revokedJoinWithOnlyNodePreparationArchivesAfterALocalEditInterruptedEnrollment() = fixture { f ->
+        val originalCard = f.card("physical-card")
+        val card = f.put(f.data, originalCard)
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        f.hook = { event ->
+            if (event == "GROUP_JOIN_PROJECTION_RETAINED") f.put(f.data, originalCard.copy(name = "准备启用时的本机编辑"))
+        }
+        assertEquals("SYNC_GROUP_ENROLLMENT_LOCAL_CHANGED", assertFailsWith<IllegalArgumentException> {
+            owner.activate(f.backend())
+        }.message)
+        f.hook = {}
+        val root = f.root.resolve("joining")
+        assertTrue(Files.isRegularFile(root.resolve("node/inbox/ciphertext-mirror/store.id")))
+        assertFalse(Files.exists(root.resolve("node/author/origin.protected")))
+        assertFalse(Files.exists(root.resolve("node/native/origin.protected")))
+        val localEdit = Files.readAllBytes(card)
+        assertEquals(LanSyncGroupJoinStage.KEYS_ADMITTED, owner.profile()?.stage)
+        f.revoke()
+        assertEquals("SYNC_KEY_DELIVERY_RECIPIENT_REVOKED", owner.activate(f.backend()).waitingCode)
+        val uncertain = root.resolve("node/author/unrecognized-evidence")
+        Files.writeString(uncertain, "synthetic unclassified writer evidence")
+        assertFalse(assertNotNull(f.owner().profile()).canArchiveRevoked)
+        assertEquals("SYNC_GROUP_JOIN_REVOKED_ARCHIVE_NOT_AVAILABLE", assertFailsWith<IllegalArgumentException> {
+            f.owner().archiveRevokedInvitation()
+        }.message)
+        Files.delete(uncertain)
+
+        val cold = f.owner()
+        val revoked = assertNotNull(cold.profile())
+        assertTrue(revoked.membershipRevoked && revoked.canArchiveRevoked)
+        val originals = retainedFiles(root)
+        val archive = cold.archiveRevokedInvitation()
+        assertEquals(originals, retainedFiles(archive))
+        assertContentEquals(localEdit, Files.readAllBytes(card))
+        assertNull(cold.profile())
+    }
+
     @Test fun verifiedRevocationCannotArchiveAnAuthorOriginWrittenBeforeTheNativeStageMarker() = fixture { f ->
         val owner = f.owner()
         f.admit(f.prove(owner))
@@ -527,10 +569,7 @@ class LanSyncGroupJoiningTest {
         assertEquals(retained, retainedFiles(root))
     }
 
-    @Test fun coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving() = fixture { f ->
-        val owner = f.owner()
-        f.admit(f.prove(owner))
-        val pending = assertNotNull(owner.profile())
+    private suspend fun publishRevocationSibling(f: Joiner, pending: LanSyncGroupJoiningProfile) {
         f.revoke()
         val revokedLedger = f.founder.custody().ledger()
         val original = revokedLedger.current()
@@ -549,6 +588,13 @@ class LanSyncGroupJoiningTest {
             val descriptor = CiphertextDescriptor(payload.size.toLong(), CiphertextSha256.parse(lanSyncHash(payload)))
             f.backend().put(CiphertextPutRequest(key, notice.context.objectId, descriptor), payload.inputStream())
         }
+    }
+
+    @Test fun coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving() = fixture { f ->
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        val pending = assertNotNull(owner.profile())
+        publishRevocationSibling(f, pending)
         assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", owner.activate(f.backend()).waitingCode)
         val root = f.root.resolve("joining")
         val retained = retainedFiles(root)
@@ -575,6 +621,82 @@ class LanSyncGroupJoiningTest {
         assertFalse(Files.exists(root.resolve("custody/group.protected")))
         assertEquals(retained, retainedFiles(root))
     }
+    @Test fun aLegacyAttemptWithVerifiedMembershipButMissingHistoricalKeysShowsTheSignedForkWhenReopened() = fixture { f ->
+        f.founder.rotateBeforeJoin()
+        val historicalEpoch = f.founder.custody().ledger().history().first().epoch
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        val backend = f.backend()
+        val withheld = backend.listCommits(null).entries.filter { metadata ->
+            val output = ByteArrayOutputStream()
+            assertNotNull(backend.readTo(metadata.key, output, metadata.descriptor))
+            val bytes = output.toByteArray()
+            if (!SyncKeyDeliveryCodec.hasPrefix(bytes)) false else SyncKeyDeliveryCodec.decode(bytes).context.let { context ->
+                context.epoch == historicalEpoch && context.recipient == f.founder.joiningIdentity.fingerprint
+            }
+        }.map { it.key }.toSet()
+        assertTrue(withheld.isNotEmpty())
+        val incomplete = object : CiphertextStore by backend {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage =
+                backend.listCommits(cursor, pageSize).let { page -> page.copy(entries = page.entries.filterNot { it.key in withheld }) }
+        }
+        val awaiting = owner.activate(incomplete)
+        assertEquals("SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", awaiting.waitingCode)
+        assertTrue(awaiting.profile.membershipVerified)
+        legacyAttempt(f)
+        val pending = assertNotNull(f.owner().profile())
+        assertEquals(LanSyncGroupJoinStage.PROOF_ATTEMPTED, pending.stage)
+        assertTrue(pending.membershipVerified)
+        assertRetainedForkAfterApproval(f, pending, incomplete)
+        assertFalse(Files.exists(f.root.resolve("joining/custody/group.protected")))
+    }
+
+    @Test fun aJoinWithAdmittedKeysShowsTheSignedForkWhenReopenedBeforeNativeEnrollment() = fixture { f ->
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        f.hook = { if (it == "GROUP_JOIN_KEYS_ADMITTED") throw IOException("SYNTHETIC_PAUSE_BEFORE_NATIVE_ENROLLMENT") }
+        assertEquals("SYNTHETIC_PAUSE_BEFORE_NATIVE_ENROLLMENT", assertFailsWith<IOException> { owner.activate(f.backend()) }.message)
+        f.hook = {}
+        val pending = assertNotNull(f.owner().profile())
+        val custody = f.root.resolve("joining/custody/group.protected")
+        val admittedBytes = Files.readAllBytes(custody)
+        assertEquals(LanSyncGroupJoinStage.KEYS_ADMITTED, pending.stage)
+        assertTrue(pending.membershipVerified)
+        assertRetainedForkAfterApproval(f, pending, f.backend())
+        assertContentEquals(admittedBytes, Files.readAllBytes(custody))
+    }
+
+    private suspend fun assertRetainedForkAfterApproval(f: Joiner, pending: LanSyncGroupJoiningProfile, source: CiphertextStore) {
+        val offline = object : CiphertextStore by source {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = throw IOException("SYNTHETIC_SOURCE_OFFLINE")
+        }
+        val owner = f.owner()
+        val root = f.root.resolve("joining")
+        val control = f.control()
+        val recipient = Files.readAllBytes(root.resolve("recipient/recipient.protected"))
+        assertFailsWith<IOException> { owner.activate(offline) }
+        assertEquals(pending, f.owner().profile())
+        publishRevocationSibling(f, pending)
+        val result = owner.activate(source)
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", result.waitingCode)
+        assertNull(result.node)
+
+        val evidence = retainedFiles(root)
+        val cold = f.owner()
+        val conflict = assertNotNull(cold.profile())
+        assertEquals(pending.copy(ledgerConflict = true, membershipVerified = false), conflict)
+        assertEquals(conflict, cold.resumePreparation())
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", assertFailsWith<IllegalArgumentException> {
+            cold.archiveRevokedInvitation()
+        }.message)
+        assertFailsWith<IOException> { cold.activate(offline) }
+        assertEquals(conflict, f.owner().profile())
+        assertEquals(control, f.control())
+        assertContentEquals(recipient, Files.readAllBytes(root.resolve("recipient/recipient.protected")))
+        assertEquals(evidence, retainedFiles(root))
+        assertFalse(Files.exists(root.resolve("node")))
+    }
+
     @Test fun explicitReprepareAfterAnUnsignedProjectionInterruptionUsesFreshLocalAndRemoteEvidenceWithoutLosingOriginals() = fixture { f ->
         f.publishedPreset(); val local = f.put(f.data, f.card("physical-card"))
         f.admit(f.prove(f.owner()))

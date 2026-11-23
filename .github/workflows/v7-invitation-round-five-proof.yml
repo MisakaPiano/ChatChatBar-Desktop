@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  identity:
+  joining-custody:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -20,16 +20,19 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Verify that same-named devices still have distinct revocation identities
+      - name: Verify retained signed forks and safe revoked application archival
         working-directory: app
         run: |
           bash ./gradlew :sharedCore:test \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.sameNamedComputersAndPhonesKeepDistinctRevocationIdentitiesAfterColdOpen' \
-            :desktopApp:compileKotlin :app:compileLanPreviewKotlin \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.aLegacyAttemptWithVerifiedMembershipButMissingHistoricalKeysShowsTheSignedForkWhenReopened' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.aJoinWithAdmittedKeysShowsTheSignedForkWhenReopenedBeforeNativeEnrollment' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.revokedJoinWithOnlyNodePreparationArchivesAfterALocalEditInterruptedEnrollment' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.verifiedRevocationCannotArchiveAnAuthorOriginWrittenBeforeTheNativeStageMarker' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupJoiningTest.expiredUnusedInviteAndAnUncertainAttemptRefreshTheCapabilityWithoutChangingRecipientOrOperation' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-r05-device-identity
+          name: v7-r05-joining-custody
           path: app/sharedCore/build/test-results/test/TEST-*.xml

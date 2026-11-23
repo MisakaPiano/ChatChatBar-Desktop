@@ -3,6 +3,7 @@ package com.example.chatbar.domain.lanSync
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.UncheckedIOException
 import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
@@ -24,7 +25,7 @@ enum class LanSyncGroupJoinStage { PREPARING, PREPARED, PROOF_ATTEMPTED, WAITING
 data class LanSyncGroupJoiningProfile(val stage: LanSyncGroupJoinStage, val trust: SyncGroupTrust,
     val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false, val canShelve: Boolean = false,
     val membershipVerified: Boolean = false, val membershipRevoked: Boolean = false, val canArchiveRevoked: Boolean = false,
-    val ledgerConflict: Boolean = false)
+    val ledgerConflict: Boolean = false, val invitationExpired: Boolean = false)
 data class LanSyncShelvedJoin(val operation: String, val group: String)
 data class LanSyncGroupJoiningResult(val profile: LanSyncGroupJoiningProfile, val node: LanSyncGroupNode?, val waitingCode: String? = null)
 internal class LanSyncJoinRouteFailure(cause: IOException) : IOException("SYNC_GROUP_JOIN_CONNECTION_FAILED", cause)
@@ -68,7 +69,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             canAbandon = !ledgerConflict && canAbandon(record), canShelve = !ledgerConflict && canShelve(record, root),
             membershipVerified = !ledgerConflict && (record.knownMembership != null || record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal),
             membershipRevoked = !ledgerConflict && record.membershipRevoked,
-            canArchiveRevoked = !ledgerConflict && canArchiveRevoked(record), ledgerConflict = ledgerConflict)
+            canArchiveRevoked = !ledgerConflict && canArchiveRevoked(record), ledgerConflict = ledgerConflict,
+            invitationExpired = record.offer?.let { wallTime() >= it.expiresAt } == true)
 
     private fun retainedProfile(record: Record): LanSyncGroupJoiningProfile = try {
         profile(checkRetainedMembership(record))
@@ -139,11 +141,43 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
                     }
                 }
                 "projection-work" -> retainAdmittedKeys && Files.isDirectory(path, NOFOLLOW_LINKS)
+                "node" -> retainAdmittedKeys && hasOnlyNodePreparation(path)
                 record.projectionFile -> retainAdmittedKeys && record.projection != null && Files.isRegularFile(path, NOFOLLOW_LINKS)
                 in allowed -> Files.isDirectory(path, NOFOLLOW_LINKS)
                 else -> false
             }
         } }
+    }
+
+    /** The node constructor can finish before the exclusive source check and either origin write. */
+    private fun hasOnlyNodePreparation(directory: Path): Boolean {
+        val emptyLayout = setOf("", "author", "native", "resolutions", "preparations", "prefetch-preparations", "queues",
+            "source", "source/preparations", "source/publications", "inbox", "inbox/preparations",
+            "inbox/ciphertext-candidates", "inbox/ciphertext-candidates/preparations", "inbox/ciphertext-mirror",
+            "inbox/ciphertext-mirror/objects", "inbox/ciphertext-mirror/commits", "inbox/ciphertext-mirror/operations",
+            "inbox/ciphertext-mirror/staging")
+        return try {
+            lanSyncSafe(directory, true)
+            Files.walk(directory).use { paths -> paths.allMatch { path ->
+                when (directory.relativize(path).joinToString("/")) {
+                    in emptyLayout -> { lanSyncSafe(path, true); true }
+                    "author/author.lock", "native/native.lock", "inbox/ciphertext-mirror/store.lock" -> {
+                        lanSyncSafe(path)
+                        Files.size(path) == 0L
+                    }
+                    "inbox/ciphertext-mirror/store.id" -> {
+                        SyncStoreId.parse(lanSyncUtf8(lanSyncRead(path, 32)))
+                        true
+                    }
+                    else -> false
+                }
+            } }
+        } catch (failure: Exception) {
+            when (failure) {
+                is IOException, is UncheckedIOException, is IllegalArgumentException, is SecurityException -> false
+                else -> throw failure
+            }
+        }
     }
 
     /** Neither an old pre-dial marker nor a missing reply proves that the inviter rejected this member. */
@@ -584,8 +618,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         } } finally { plain.fill(0) }
     }
     private fun checkRetainedMembership(record: Record): Record {
-        // Old profiles may already contain verified membership material even with the source offline.
-        if (record.replicaIdentity == null || record.knownMembership != null || !canShelve(record, root)) return record
+        // The bound inbox can retain a later signed fork even after approval or key admission.
+        if (record.replicaIdentity == null || record.stage == LanSyncGroupJoinStage.READY) return record
         val inspection = inspectRetainedMembership(record)
         if (inspection.stage == SyncGroupBootstrapStage.TRUST_BLOCKED) throw RetainedLedgerConflict()
         return retainObservedMembership(record, inspection)
