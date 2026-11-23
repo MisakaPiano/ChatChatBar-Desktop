@@ -397,7 +397,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
 
                     val sharedPhoto = if (continueAuthor) png("already-accepted.png", 0xff24a45a.toInt()) else null
                     val oldApproved = sharedPhoto?.let { photo ->
-                        writeChat(joined.data, "accepted", "original", "原组已经批准的合成正文", listOf(photo))
+                        writeChat(joined.data, "accepted", "earlier", "原组已经批准的合成正文", listOf(photo))
                         val approved = b.node.commit(b.node.inspect().review(setOf("conversation/accepted")))
                         b.node.upload(approved.entry.request.operation, b.replica, b.localTarget)
                         val serving = transport(b); val caller = transport(a)
