@@ -63,8 +63,8 @@ jobs:
           proof.TARGET = "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/WindowsInvitationSaveDialogProofTest.kt"
           kt_name = "WindowsInvitationSaveDialogProofTest.kt"
           ps_name = "invoke-owned-invitation-save.ps1"
-          kt_sha = "bf9d143e15fe1616182b56a3726413b0bff8630553022a26d07cc009685b7191"
-          ps_sha = "1551e2733f6569579c323843a8bb7aa3b740386e5be5f5f6a32353774e9ae12e"
+          kt_sha = "961fdfd74320399ff2b6dd218e153f8ef399b64c42cfd5a9f9b4edc9f3ad664d"
+          ps_sha = "fa8c8604237341218eee645f9a529dd69b02f01022b06031dbc58a5bdde21285"
           source_sha = os.environ["CCB_INVITE_DIALOG_SOURCE_SHA"]
           control_sha = os.environ["GITHUB_SHA"]
           runner = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
@@ -72,7 +72,7 @@ jobs:
           request = {"sourceSha": source_sha, "fixtureSha256": kt_sha}
           receipt = {
               "kind": "CCB_WINDOWS_INVITATION_SAVE_DIALOG_V1",
-              "scope": "PRODUCT_WINDOWS_PICKER_AND_CREATE_NEW",
+              "scope": "PRODUCT_WINDOWS_PICKER_PREFILLED_TARGET_AND_CREATE_NEW",
               "passed": False,
               "phase": "SOURCE_AND_FIXTURES",
               "sourceSha": source_sha,
@@ -141,8 +141,8 @@ jobs:
                       "INVITE_DIALOG_ENVIRONMENT_SCOPE", "INVITE_DIALOG_SCRIPT_SCOPE", "INVITE_DIALOG_DIRECTORY_SCOPE",
                       "INVITE_DIALOG_GRAPHICAL_CLOUD_REQUIRED", "INVITE_DIALOG_OWNER_MISMATCH", "INVITE_DIALOG_ENUMERATION_FAILED",
                       "INVITE_DIALOG_AMBIGUOUS", "INVITE_DIALOG_NOT_OBSERVED", "INVITE_DIALOG_TARGET_CHANGED",
-                      "INVITE_DIALOG_CLEANUP_REFUSED", "INVITE_DIALOG_FILENAME_CONTROL_NOT_UNIQUE", "INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE",
-                      "INVITE_DIALOG_SELECTION_CHANGED", "INVITE_DIALOG_AUTOMATION_FAILED", "INVITE_DIALOG_AUTOMATION_TIMEOUT",
+                      "INVITE_DIALOG_CLEANUP_REFUSED", "INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE",
+                      "INVITE_DIALOG_RESULT_PATH_MISMATCH", "INVITE_DIALOG_AUTOMATION_FAILED", "INVITE_DIALOG_AUTOMATION_TIMEOUT",
                   }
                   receipt["failureCodes"] = sorted(set(re.findall(r"\bINVITE_DIALOG_[A-Z_]+\b", detail)) & codes)
                   receipt["fixtureLines"] = [int(line) for line in re.findall(r"WindowsInvitationSaveDialogProofTest\.kt:([0-9]{1,3})", detail)[:6]]

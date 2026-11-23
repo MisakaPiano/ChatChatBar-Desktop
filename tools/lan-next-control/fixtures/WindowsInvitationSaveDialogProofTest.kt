@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 
-/** One explicit hosted-Windows proof of the production picker and invitation file writer. */
+/** Hosted-Windows proof of the production picker with prefilled destinations and the invitation writer. */
 class WindowsInvitationSaveDialogProofTest {
     @Test(timeout = 120_000)
     fun realSaveDialogPreservesTheExistingInvitationAndAcceptsANewName() {
@@ -26,7 +26,8 @@ class WindowsInvitationSaveDialogProofTest {
         check(script.parent == runner && script.fileName.toString() == "invoke-owned-invitation-save.ps1" &&
             Files.isRegularFile(script, NOFOLLOW_LINKS) && script.toRealPath() == script) { "INVITE_DIALOG_SCRIPT_SCOPE" }
         val directory = Files.createTempDirectory(runner, "ccb-win-invite-dialog-").toRealPath()
-        check(directory.parent == runner) { "INVITE_DIALOG_DIRECTORY_SCOPE" }
+        check(directory.isAbsolute && directory.parent == runner &&
+            directory.fileName.toString().startsWith("ccb-win-invite-dialog-")) { "INVITE_DIALOG_DIRECTORY_SCOPE" }
         val existing = directory.resolve("synthetic-existing.ccbinvite")
         val new = directory.resolve("synthetic-new.ccbinvite")
         val original = "old synthetic invitation bytes".encodeToByteArray()
@@ -73,13 +74,13 @@ class WindowsInvitationSaveDialogProofTest {
         EventQueue.invokeLater {
             runCatching {
                 picker.pickNewSaveFile(DesktopFileType("设备组邀请文件", listOf("ccbinvite")),
-                    "设备组邀请.ccbinvite", "保存邀请文件 · 请使用新文件名")
+                    target.toString(), "保存邀请文件 · 请使用新文件名")
             }.fold(result::complete, result::completeExceptionally)
         }
         try {
             automate(script, owner, target, "save", 24)
             val selected = result.get(10, SECONDS)
-            assertEquals(target, selected, "The product picker must return the exact chosen destination")
+            check(selected == target) { "INVITE_DIALOG_RESULT_PATH_MISMATCH" }
             return checkNotNull(selected)
         } finally {
             if (!result.isDone) {

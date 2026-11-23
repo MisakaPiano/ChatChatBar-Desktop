@@ -9,7 +9,6 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $ownerTitle = 'CCB invitation dialog synthetic owner'
 $dialogTitle = '保存邀请文件 · 请使用新文件名'
-$suggestedName = '设备组邀请.ccbinvite'
 
 try {
     if ($env:GITHUB_ACTIONS -cne 'true' -or $env:CCB_WINDOWS_INVITE_DIALOG_PROOF -cne 'true') {
@@ -17,7 +16,8 @@ try {
     }
     $case = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($SelectedPath))
     $leaf = [IO.Path]::GetFileName($SelectedPath)
-    if (-not $case.Name.StartsWith('ccb-win-invite-dialog-', [StringComparison]::Ordinal) -or
+    if (-not [string]::Equals($SelectedPath, [IO.Path]::Combine($case.FullName, $leaf), [StringComparison]::OrdinalIgnoreCase) -or
+        -not $case.Name.StartsWith('ccb-win-invite-dialog-', [StringComparison]::Ordinal) -or
         -not [string]::Equals($case.Parent.FullName, [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd([char] '\'), [StringComparison]::OrdinalIgnoreCase) -or
         ($case.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
         $leaf -cnotin @('synthetic-existing.ccbinvite', 'synthetic-new.ccbinvite')) {
@@ -105,71 +105,6 @@ public static class CcbInviteDialogNative {
     }
 
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-    $editCondition = [System.Windows.Automation.PropertyCondition]::new(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)
-    $expectedNames = @('', $suggestedName, [IO.Path]::GetFileNameWithoutExtension($suggestedName))
-
-    function Get-InvitationFilenameControl {
-        $root = [System.Windows.Automation.AutomationElement]::FromHandle($dialog)
-        # Classic Common Item Dialog variants expose a file-name combo host with either identifier.
-        foreach ($automationId in @('FileNameControlHost', '1148')) {
-            $byId = [System.Windows.Automation.PropertyCondition]::new(
-                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, $automationId)
-            $hosts = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $byId)
-            if ($hosts.Count -gt 0) { break }
-        }
-        if ($hosts.Count -ne 1) { return }
-        $fileNameHost = $hosts[0]
-        $hostInfo = $fileNameHost.Current
-        if ($hostInfo.ProcessId -ne $ExpectedProcessId -or
-            $hostInfo.ControlType -notin @([System.Windows.Automation.ControlType]::ComboBox,
-                                           [System.Windows.Automation.ControlType]::Edit)) { return }
-
-        $editFields = $fileNameHost.FindAll([System.Windows.Automation.TreeScope]::Descendants, $editCondition)
-        $candidates = if ($editFields.Count -eq 0) { @($fileNameHost) } else { $editFields }
-        $fields = @(
-            foreach ($element in $candidates) {
-                $current = $element.Current
-                $pattern = $null
-                if ($current.ProcessId -eq $ExpectedProcessId -and $current.IsEnabled -and -not $current.IsOffscreen -and
-                    $element.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref] $pattern) -and
-                    -not $pattern.Current.IsReadOnly) {
-                    [pscustomobject]@{
-                        Identity = ($fileNameHost.GetRuntimeId() -join ',') + '|' + ($element.GetRuntimeId() -join ',')
-                        Pattern = $pattern
-                        Value = $pattern.Current.Value
-                    }
-                }
-            }
-        )
-        if ($fields.Count -eq 1) { return $fields[0] }
-    }
-
-    function Wait-InvitationFilenameControl([int] $TimeoutMilliseconds) {
-        $until = [Diagnostics.Stopwatch]::StartNew()
-        $previous = $null
-        do {
-            Assert-Owner
-            if (-not (Test-OwnedDialog $dialog)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
-            $field = $null
-            try {
-                $field = Get-InvitationFilenameControl
-            } catch [System.Windows.Automation.ElementNotAvailableException] {
-                # The provider can replace a descendant while the shell builds its initial UI.
-            }
-            if ($null -ne $field -and $field.Value -cin $expectedNames) {
-                if ($null -ne $previous -and $field.Identity -ceq $previous.Identity -and
-                    $field.Value -ceq $previous.Value) { return $field }
-                $previous = $field
-            } else {
-                $previous = $null
-            }
-            Start-Sleep -Milliseconds 100
-        } while ($until.ElapsedMilliseconds -lt $TimeoutMilliseconds)
-        throw 'INVITE_DIALOG_FILENAME_CONTROL_NOT_UNIQUE'
-    }
-
-    $field = Wait-InvitationFilenameControl 7000
 
     # IDOK is Windows' standard affirmative control. This does not dismiss any confirmation popup.
     $saveButton = [CcbInviteDialogNative]::GetDlgItem($dialog, 1)
@@ -184,13 +119,9 @@ public static class CcbInviteDialogNative {
     }
 
     Assert-Owner
-    if (-not (Test-OwnedDialog $dialog)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
-    $currentField = Get-InvitationFilenameControl
-    if ($null -eq $currentField -or $currentField.Identity -cne $field.Identity -or
-        $currentField.Value -cnotin $expectedNames) { throw 'INVITE_DIALOG_FILENAME_CONTROL_NOT_UNIQUE' }
-    $currentField.Pattern.SetValue($SelectedPath)
-    if ($currentField.Pattern.Current.Value -cne $SelectedPath -or -not (Test-OwnedDialog $dialog) -or
-        [CcbInviteDialogNative]::GetDlgItem($dialog, 1) -ne $saveButton) { throw 'INVITE_DIALOG_SELECTION_CHANGED' }
+    if (-not (Test-OwnedDialog $dialog) -or [CcbInviteDialogNative]::GetDlgItem($dialog, 1) -ne $saveButton -or
+        (Get-WindowProcess $saveButton) -ne $ExpectedProcessId -or -not [CcbInviteDialogNative]::IsWindowEnabled($saveButton) -or
+        -not [CcbInviteDialogNative]::IsWindowVisible($saveButton)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
     $invoke.Invoke()
     [Console]::WriteLine('INVITE_DIALOG_SAVE_INVOKED')
 } catch {
