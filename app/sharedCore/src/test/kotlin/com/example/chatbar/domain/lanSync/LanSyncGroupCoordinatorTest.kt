@@ -1088,9 +1088,10 @@ class LanSyncGroupCoordinatorTest {
             return requireNotNull(coordinator.state.value.invitationFileBinding) to requireNotNull(coordinator.state.value.invitation)
         }
 
+        val (binding, offer) = issue()
         for (invalidate in listOf(false, true)) {
-            val (binding, offer) = issue()
             assertTrue(coordinator.state.value.canCloseInvitation)
+            if (invalidate) assertTrue(coordinator.state.value.status.contains("邀请文件已保存"))
             val actionEntered = CompletableDeferred<Unit>()
             val releaseAction = CompletableDeferred<Unit>()
             val holdNextExclusive = AtomicBoolean(true)
@@ -1098,25 +1099,30 @@ class LanSyncGroupCoordinatorTest {
             val release = CountDownLatch(1)
             val written = ByteArrayOutputStream()
             val unexpected = AtomicInteger()
-            f.beforeExclusive = {
-                if (coordinator.state.value.busy && holdNextExclusive.compareAndSet(true, false)) {
-                    actionEntered.complete(Unit)
-                    releaseAction.await()
+            if (!invalidate) {
+                f.beforeExclusive = {
+                    if (coordinator.state.value.busy && holdNextExclusive.compareAndSet(true, false)) {
+                        actionEntered.complete(Unit)
+                        withTimeout(10_000) { releaseAction.await() }
+                    }
                 }
+                coordinator.retry()
             }
-            coordinator.retry()
             try {
-                withTimeout(5_000) { actionEntered.await() }
+                if (!invalidate) withTimeout(5_000) { actionEntered.await() }
                 coordinator.saveInvitationFile(binding) { bytes ->
                     entered.complete(Unit)
                     check(release.await(15, TimeUnit.SECONDS))
                     written.write(bytes)
                 }
-                coordinator.saveInvitationFile(binding) { unexpected.incrementAndGet() }
-                assertNull(coordinator.state.value.invitationFileWriteBinding)
-                assertTrue(coordinator.state.value.canCloseInvitation)
-                releaseAction.complete(Unit)
+                if (!invalidate) {
+                    coordinator.saveInvitationFile(binding) { unexpected.incrementAndGet() }
+                    assertNull(coordinator.state.value.invitationFileWriteBinding)
+                    assertTrue(coordinator.state.value.canCloseInvitation)
+                    releaseAction.complete(Unit)
+                }
                 withTimeout(5_000) { entered.await() }
+                assertFalse(coordinator.state.value.status.contains("邀请文件已保存"))
                 assertEquals(binding, coordinator.state.value.invitationFileWriteBinding)
                 assertFalse(coordinator.state.value.canCloseInvitation)
                 coroutineScope {
@@ -1151,9 +1157,9 @@ class LanSyncGroupCoordinatorTest {
                 assertTrue(coordinator.state.value.status.contains("邀请文件已保存"))
             }
             assertTrue(coordinator.state.value.canCloseInvitation)
-            coordinator.closeInvitation()
-            assertEquals("邀请已取消", coordinator.state.value.status)
         }
+        coordinator.closeInvitation()
+        assertEquals("邀请已取消", coordinator.state.value.status)
     }
 
     @Test fun noUsableLanAddressAndDisappearingSelectionOfferDifferentRecoverySteps() {
@@ -1191,37 +1197,45 @@ class LanSyncGroupCoordinatorTest {
         }
     }
 
-    @Test fun automaticLocalCheckClearsItsOwnRecoveredMaintenanceNotice() = fixture { f ->
+    @Test fun automaticLocalCheckClearsOnlyItsRecoveredError() = fixture { f ->
         val revisions = kotlinx.coroutines.channels.Channel<Long>(kotlinx.coroutines.channels.Channel.UNLIMITED)
         val coordinator = readyCoordinator(f, kotlinx.coroutines.flow.flow {
             for (revision in revisions) emit(revision)
         })
-        f.beforeExclusive = { error("SYNC_BACKGROUND_WORK_BUSY") }
-        f.writeCard("draft stays local while maintenance is busy")
-        revisions.send(1)
-        await { coordinator.state.value.error.orEmpty().contains("SYNC_BACKGROUND_WORK_BUSY") }
-        assertTrue(Files.exists(f.card))
-        f.beforeExclusive = {}
-        revisions.send(2)
-        await {
-            coordinator.state.value.error == null &&
-                coordinator.view.value?.plan?.units?.get("character_cards/card")?.stage == LanSyncGroupNativeStage.UNCHANGED
-        }
-        assertTrue(coordinator.state.value.status.contains("同步检查完成"))
 
-        f.beforeExclusive = { error("SYNC_ORPHAN_SESSION") }
-        revisions.send(3)
-        await { coordinator.state.value.error.orEmpty().contains("原资料已保留") }
-        val orphanNotice = requireNotNull(coordinator.state.value.error)
-        f.beforeExclusive = {}
-        f.writeCard("later safe local edit")
-        revisions.send(4)
-        await {
-            val plan = coordinator.view.value?.plan
-            plan?.units?.get("character_cards/card")?.stage == LanSyncGroupNativeStage.UNCHANGED &&
-                plan.before.records.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == "later safe local edit"
+        suspend fun failLocalCheck(revision: Long, code: String) {
+            f.beforeExclusive = { error(code) }
+            revisions.send(revision)
+            await { coordinator.state.value.error.orEmpty().contains(code) }
         }
-        assertEquals(orphanNotice, coordinator.state.value.error)
+
+        suspend fun recoverLocalCheck(revision: Long, name: String) {
+            f.beforeExclusive = {}
+            f.writeCard(name)
+            revisions.send(revision)
+            await {
+                val plan = coordinator.view.value?.plan
+                plan?.units?.get("character_cards/card")?.stage == LanSyncGroupNativeStage.UNCHANGED &&
+                    plan.before.records.singleOrNull()?.body?.get("name")?.jsonPrimitive?.content == name &&
+                    coordinator.state.value.status.contains("同步检查完成")
+            }
+        }
+
+        failLocalCheck(1, "SYNC_BACKGROUND_WORK_BUSY")
+        recoverLocalCheck(2, "synthetic safe edit after maintenance")
+        await { coordinator.state.value.error == null }
+        failLocalCheck(3, "SYNC_DISK_SPACE")
+        assertTrue(Files.exists(f.card))
+        recoverLocalCheck(4, "synthetic safe edit after freeing space")
+        await { coordinator.state.value.error == null }
+
+        failLocalCheck(5, "SYNC_ORPHAN_SESSION")
+        assertTrue(coordinator.state.value.error.orEmpty().contains("原资料已保留"))
+        coordinator.saveInvitationFile("synthetic obsolete picker") { fail("An obsolete picker cannot write") }
+        val newerError = requireNotNull(coordinator.state.value.error)
+        assertTrue(newerError.contains("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"))
+        recoverLocalCheck(6, "synthetic later safe edit")
+        assertEquals(newerError, coordinator.state.value.error)
         revisions.close()
     }
 
@@ -1453,6 +1467,82 @@ class LanSyncGroupCoordinatorTest {
                 } finally { coordinator.closeAndDrain() }
             }
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
+
+    @Test fun manualCheckWakesAnIdleEnabledCloudRouteButStillValidatesItsConfiguration() = fixture { f ->
+        val founder = f.founder()
+        val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+        founder.activate(founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) }),
+            LanSyncGroupRecoverySavedAdmission {})
+        val access = requireNotNull(founder.runtimeAccess())
+        val catalogRoot = Files.createDirectory(f.root.resolve("manual-check-cloud-catalog"))
+        val catalog = LanSyncGroupCloudRoutes(catalogRoot, access.trust, access.device,
+            { it.reversedArray() }, { it.reversedArray() }, WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP)
+        val schedule = LanSyncGroupCloudSchedule(clockMillis = { 0L }, jitter = { 0L })
+        val client = OkHttpClient.Builder().proxy(Proxy.NO_PROXY).readTimeout(20, TimeUnit.SECONDS).build()
+        val completed = AtomicInteger()
+        val busy = AtomicInteger()
+        f.writeCard("synthetic published selection")
+        try {
+            WeakFixture(Files.createDirectory(f.root.resolve("manual-check-cloud-provider"))).use { provider ->
+                val password = "synthetic credential for manual check".toByteArray()
+                val route = try {
+                    catalog.add(LanSyncGroupCloudDraft("synthetic manual drive",
+                        provider.server.url("/sync/").newBuilder().host("127.0.0.1").build().toString(),
+                        "synthetic user", password, enabled = true))
+                } finally { password.fill(0) }
+                val coordinator = LanSyncGroupCoordinator({ Files.isRegularFile(f.profile.resolve("profile.protected")) },
+                    { founder }, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, f.network, "synthetic manual check PC",
+                    cloudRuntimeFactory = { current, allowed, wake, report ->
+                        LanSyncGroupCloudRuntime(current, allowed, wake, report, catalog, client,
+                            WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, schedule = schedule)
+                    }, cloudWork = { work ->
+                        busy.incrementAndGet()
+                        try { work().also { if (it) completed.incrementAndGet() } } finally { busy.decrementAndGet() }
+                    })
+                val configuration = catalogRoot.resolve("cloud-routes.protected")
+                val valid = Files.readAllBytes(configuration)
+                try {
+                    coordinator.open()
+                    withTimeout(45_000) {
+                        while (coordinator.state.value.busy || completed.get() == 0 || busy.get() != 0 ||
+                            coordinator.cloudSettings.value.progress[route]?.selectionObserved != true) delay(10)
+                    }
+                    val quiet = completed.get()
+                    assertTrue(requireNotNull(schedule.state(route)).waitMillis >= 60_000)
+                    val before = provider.server.requestCount
+                    assertTrue(before > 0)
+                    coordinator.retry()
+                    withTimeout(15_000) {
+                        while (completed.get() <= quiet || busy.get() != 0) delay(10)
+                    }
+                    assertTrue(provider.server.requestCount > before)
+                    assertNull(coordinator.state.value.error)
+                    val prior = requireNotNull(coordinator.cloudSettings.value.progress[route])
+                    assertNotNull(prior.lastObservedAt)
+
+                    val invalid = byteArrayOf(7, 2, 9, 4, 1)
+                    Files.write(configuration, invalid)
+                    val stopped = provider.server.requestCount
+                    val batches = completed.get()
+                    coordinator.retry()
+                    await { coordinator.state.value.cloud.text.contains("网盘连接设置暂时无法读取") }
+                    val held = requireNotNull(coordinator.cloudSettings.value.progress[route])
+                    assertEquals(prior.lastObservedAt, held.lastObservedAt)
+                    assertFalse(held.selectionObserved)
+                    assertEquals(batches, completed.get())
+                    assertEquals(stopped, provider.server.requestCount)
+                    assertContentEquals(invalid, Files.readAllBytes(configuration))
+                } finally {
+                    Files.write(configuration, valid)
+                    valid.fill(0)
+                    coordinator.closeAndDrain()
+                }
+            }
+        } finally {
+            client.dispatcher.executorService.shutdownNow()
+            client.connectionPool.evictAll()
+        }
     }
 
     @Test fun coldCoordinatorReopensSameSavedTargetAndUploadsANormalCommittedEditWithoutExplicitSync() = fixture { f ->

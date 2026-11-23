@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -19,10 +20,11 @@ import kotlinx.coroutines.sync.withPermit
 private val reprepareJoinStages = setOf(LanSyncGroupJoinStage.KEYS_ADMITTED, LanSyncGroupJoinStage.NATIVE_ENROLLED)
 private const val joiningLedgerConflictText = "原设备组的签名账本存在冲突。已保留本机身份和资料。请让邀请设备核对原组，再重新核对此申请。"
 private const val refreshJoiningInvitationText = "请对方生成同组新邀请，再选择「更新邀请并继续」。"
+private const val invitationFileSavedStatus = "邀请文件已保存，可在有效期内用新设备打开。"
+private const val invitationFileSavePendingStatus = "正在核对本次邀请文件的保存请求"
 private const val openInvitationFileAction = "打开设备组邀请文件"
 private const val invalidInvitationFileText = "无法识别该邀请文件。请重新选择完整的设备组邀请文件，或请邀请方重新发送。"
 private const val enrolledJoinContinuationText = "本机已完成登记。请继续原申请，或选择「重新核对本机资料并继续」。"
-private val localMaintenanceCodes = setOf("SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE")
 private val resumableJoinRouteWaits = setOf("SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING", "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE",
     "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING",
     "SYNC_GROUP_LEDGER_FORK_OR_MISSING", "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING")
@@ -170,7 +172,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
     // Guarded by action admission. This is a current UI intent, never a cold-start command.
     private var pendingJoinProof: Long? = null
-    private var automaticLocalBusyNotice: String? = null
+    private var lastLocalCheckError: String? = null
     private val mutableState = MutableStateFlow(LanSyncGroupPanelState(paused = initiallyPaused))
     val state = mutableState.asStateFlow()
     private val mutableView = MutableStateFlow<LanSyncGroupNodeView?>(null)
@@ -380,15 +382,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机正在生成或处理资料。完成后将继续检查同步。"
             else -> null
         }
-        mutableState.update { current ->
+        val displayed = mutableState.updateAndGet { current ->
             val canResumeSetup = current.stage in setOf(LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE, LanSyncGroupPanelStage.PREPARED_LOCKED) &&
                 current.localManagementAvailable && (code.startsWith("SYNC_METADATA_") || code == "SYNC_FILE_LIMIT")
             val resume = if (canResumeSetup) "设置进度已保留，可以用之前保存的恢复码继续原设备组。" else ""
-            current.copy(error = "$stage：${explanation?.let { "$it$resume（$code）" } ?: code}")
+            val message = "$stage：${explanation?.let { "$it$resume（$code）" } ?: code}"
+            current.copy(error = current.error?.takeIf { it == message } ?: message)
         }
-        if (code == "SYNC_GROUP_NATIVE_RELOAD_PENDING" || automaticLocalCheck && code in localMaintenanceCodes) {
-            automaticLocalBusyNotice = "$stage：$explanation（$code）"
-        }
+        if (automaticLocalCheck || code == "SYNC_GROUP_NATIVE_RELOAD_PENDING") lastLocalCheckError = displayed.error
         if (code == "SYNC_GROUP_NATIVE_RELOAD_PENDING" && !automaticLocalCheck) requestLocalCheck()
     }
     private fun action(label: String, allowWhilePaused: Boolean = false, onFinished: (() -> Unit)? = null, work: suspend () -> Unit) {
@@ -1050,11 +1051,19 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             if (active.fileWriteRequest != null) return
             val request = Any()
             active.fileWriteRequest = request
+            mutableState.update {
+                if (it.status == invitationFileSavedStatus) it.copy(status = invitationFileSavePendingStatus) else it
+            }
             active to request
         }
         val finish = {
             synchronized(lifecycle) {
-                if (current.fileWriteRequest === request) current.fileWriteRequest = null
+                if (current.fileWriteRequest === request) {
+                    current.fileWriteRequest = null
+                    if (invitation === current || invitation == null) mutableState.update {
+                        if (it.status == invitationFileSavePendingStatus) it.copy(status = "本次邀请文件保存未完成确认") else it
+                    }
+                }
             }
         }
         action("保存邀请文件", allowWhilePaused = true, onFinished = finish) {
@@ -1087,7 +1096,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     try {
                         current.owner.whileFileOfferOpen(current.offer) {
                             invitationFileWrite = null
-                            mutableState.update { it.copy(invitationFileWriteBinding = null, status = "邀请文件已保存，可在有效期内用新设备打开。") }
+                            mutableState.update { it.copy(invitationFileWriteBinding = null, status = invitationFileSavedStatus) }
                         }
                     } catch (_: IllegalArgumentException) { error("SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE") }
                 }
@@ -1200,7 +1209,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun cancelRevocation() { revocation = null; mutableState.update { it.copy(revocation = null) } }
     override fun retry() = action("重新检查同步") {
         access?.let { attach(it) } ?: load()
-        if (!closed && !paused) nearbyWake.trySend(Unit)
+        if (!closed && !paused) {
+            nearbyWake.trySend(Unit)
+            requestCloudCheck()
+        }
     }
     override fun openCloudSettings() {
         synchronized(lifecycle) {
@@ -1436,14 +1448,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
     }
     private suspend fun attach(opened: LanSyncGroupRuntimeAccess) {
-        synchronized(lifecycle) {
-        check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
-        if (access == null) {
-            opened.routeFailure = ::nearbyReadFailure
-            access = opened
-            cloudRuntime = makeCloudRuntime(opened, cloudWorkAllowed, ::requestLocalCheck, ::cloudProgress)
-            metadataStamp = null
-        }
+        val newlyAttached = synchronized(lifecycle) {
+            check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
+            if (access != null) false else {
+                opened.routeFailure = ::nearbyReadFailure
+                access = opened
+                cloudRuntime = makeCloudRuntime(opened, cloudWorkAllowed, ::requestLocalCheck, ::cloudProgress)
+                metadataStamp = null
+                true
+            }
         }
         if (presentMembershipConflict(opened)) return
         opened.membershipRecovery.publishInstalledCheckpoint()
@@ -1456,7 +1469,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             localManagementAvailable = requireNotNull(access).localManagementAvailable,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             paused = paused, status = if (paused) "设备组同步尚未恢复，原件与待传队列已保留" else "设备组已就绪，应用正在检查同步") }
-        refreshDevices()
+        val localActive = refreshDevices()
+        if (newlyAttached && localActive) synchronized(lifecycle) {
+            // An existing join ticker can be waiting in this very attachment until the local check finishes.
+            if (!closed && !paused && access === opened && state.value.membershipConflict == null &&
+                nearbyWorker?.isActive == true) nearbyWake.trySend(Unit)
+        }
         if (!paused) try { cycle(force = true) } finally { if (!paused && !closed) startLoop() }
     }
 
@@ -1496,9 +1514,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         return true
     }
-    private fun refreshDevices() {
-        val current = access ?: return
+    private fun refreshDevices(): Boolean {
+        val current = access ?: return false
         val ledger = current.ledger().current()
+        val localActive = ledger.members[current.device]?.active == true
         val manager = SyncDeviceSignatures.decode(current.trust.ownerCertificate).fingerprint
         var hintFailure: Exception? = null
         val rows = ledger.members.map { (id, member) ->
@@ -1510,7 +1529,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             }
             LanSyncGroupDeviceRow(id, name, if (member.active) "已加入" else "已撤销",
                 id == current.device, id == manager, false, nearby = if (
-                    member.active && ledger.members[current.device]?.active == true && id != current.device && id != manager
+                    member.active && localActive && id != current.device && id != manager
                 ) LanSyncGroupDeviceNearby() else null)
         }
         mutableState.update { state ->
@@ -1520,6 +1539,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 nearby = row.nearby?.let { previous[row.id]?.nearby ?: it }) })
         }
         hintFailure?.let { failure("读取设备显示名称（原文件已保留）", it) }
+        return localActive
     }
     private fun nearbyReadFailure(route: String, failure: Exception) {
         if (failure is CancellationException) throw failure
@@ -1663,11 +1683,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 admission.withLock {
                     if (closed || paused || access == null) return@withLock
                     try {
-                        if (cycle(force = true)) {
-                            automaticLocalBusyNotice?.let { notice ->
-                                mutableState.update { if (it.error == notice) it.copy(error = null) else it }
-                            }
-                            automaticLocalBusyNotice = null
+                        val previousError = lastLocalCheckError
+                        if (cycle(force = true) && previousError != null) {
+                            // Clear only the error actually shown by the earlier local check or reload.
+                            mutableState.update { if (it.error === previousError) it.copy(error = null) else it }
+                            if (lastLocalCheckError === previousError) lastLocalCheckError = null
                         }
                     } catch (error: Exception) { failure("本机同步准备", error, automaticLocalCheck = true) }
                 }
