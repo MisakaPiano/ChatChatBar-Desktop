@@ -47,6 +47,9 @@ class DesktopV7ReverseSyntheticHostDraftTest {
         var imageHash: String? = null
         var peerApproved = false
         var controllerReadbackMatched = false
+        var reverseDiagnostics: JsonObject? = null
+        var reverseStep = "NOT_REACHED"
+        val reverseObservations = mutableListOf<JsonObject>()
         val owned = mutableListOf<Path>()
         try {
             val safe = guardedRoots(); roots = safe
@@ -166,9 +169,54 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                     peerApproved = true
 
                     phase = "ordinary-reverse-repository-message-and-png"
+                    reverseStep = "WAIT_ORACLE_AND_MESSAGE"
                     val oraclePath = directory.resolve("reverse-expected.json")
-                    await(180_000) { Files.isRegularFile(oraclePath, NOFOLLOW_LINKS) &&
-                        current.chatRepository.getMessages(SESSION).any { it.id == REVERSE_MESSAGE } }
+                    val reverseStarted = System.nanoTime()
+                    var lastReverseSample = 0L
+                    var oracleEver = false
+                    var ordinaryReverseEver = false
+                    var readOnlyReverseEver = false
+                    await(180_000) {
+                        val oraclePresent = Files.isRegularFile(oraclePath, NOFOLLOW_LINKS)
+                        val sessionPresent = current.chatRepository.getSession(SESSION) != null
+                        val ordinary = current.chatRepository.getMessages(SESSION)
+                        val readOnly = try { current.chatRepository.getMessagesReadOnly(SESSION) }
+                            catch (cancelled: CancellationException) { throw cancelled }
+                            catch (_: Exception) { null }
+                        val ordinaryCount = ordinary.count { it.id == REVERSE_MESSAGE }
+                        val readOnlyCount = readOnly?.count { it.id == REVERSE_MESSAGE }
+                        oracleEver = oracleEver || oraclePresent
+                        ordinaryReverseEver = ordinaryReverseEver || ordinaryCount > 0
+                        readOnlyReverseEver = readOnlyReverseEver || (readOnlyCount ?: 0) > 0
+                        val observed = buildJsonObject {
+                            put("seconds", ((System.nanoTime() - reverseStarted) / 1_000_000_000L).coerceIn(0, 180))
+                            put("oraclePresent", oraclePresent); put("oracleEverPresent", oracleEver)
+                            put("repositorySessionPresent", sessionPresent)
+                            put("ordinaryMessageCount", ordinary.size.coerceAtMost(100)); put("ordinaryCountCapped", ordinary.size > 100)
+                            put("ordinaryReverseIdCount", ordinaryCount.coerceAtMost(100)); put("ordinaryReverseEverPresent", ordinaryReverseEver)
+                            put("readOnlyStatus", if (readOnly == null) "READ_ERROR" else "READABLE")
+                            put("readOnlyMessageCount", readOnly?.size?.coerceAtMost(100))
+                            put("readOnlyCountCapped", readOnly?.let { it.size > 100 })
+                            put("readOnlyReverseIdCount", readOnlyCount?.coerceAtMost(100)); put("readOnlyReverseEverPresent", readOnlyReverseEver)
+                            put("groupBusy", coordinator.state.value.busy); put("groupPaused", coordinator.state.value.paused)
+                            put("groupErrorPresent", coordinator.state.value.error != null)
+                            put("nearbyLastSuccessPresent", coordinator.state.value.nearby.lastSuccessAt != null)
+                            put("waitState", when {
+                                oraclePresent && ordinaryCount > 0 -> "BOTH_PRESENT"
+                                oraclePresent -> "ORACLE_ONLY"
+                                ordinaryCount > 0 -> "MESSAGE_ONLY"
+                                else -> "MISSING_BOTH"
+                            })
+                        }
+                        reverseDiagnostics = observed
+                        if (System.nanoTime() - lastReverseSample >= 1_000_000_000L) {
+                            lastReverseSample = System.nanoTime(); reverseObservations += observed
+                            if (reverseObservations.size > 8) reverseObservations.removeAt(0)
+                        }
+                        // Preserve the original two-gate acceptance, deadline and ordinary path.
+                        oraclePresent && ordinaryCount > 0
+                    }
+                    reverseStep = "ORACLE_VALIDATE"
                     check(Files.size(oraclePath) in 1L..16_384L)
                     val oracle = Json.parseToJsonElement(Files.readString(oraclePath, Charsets.UTF_8)).jsonObject
                     check(oracle.keys == setOf("kind", "sourceSha", "session", "message", "text", "imageSha256", "imageBytes", "width", "height"))
@@ -182,11 +230,13 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                     val reverseBytes = checkNotNull(oracle["imageBytes"]?.jsonPrimitive?.longOrNull)
                     check(reverseBytes in 1L..4_194_304L)
                     check(oracle["width"]?.jsonPrimitive?.intOrNull == 8 && oracle["height"]?.jsonPrimitive?.intOrNull == 8)
+                    reverseStep = "REPOSITORY_VALIDATE"
                     val received = current.chatRepository.getMessages(SESSION)
                     check(received.size == 2 && received.map { it.id }.toSet() == setOf(MESSAGE, REVERSE_MESSAGE))
                     check(received.single { it.id == MESSAGE }.content == TEXT)
                     val reverse = received.single { it.id == REVERSE_MESSAGE }
                     check(reverse.content == REVERSE_TEXT && reverse.role == MessageRole.USER && reverse.images.size == 1)
+                    reverseStep = "PNG_VALIDATE"
                     val actualImage = Path.of(reverse.images.single()).toAbsolutePath().normalize()
                     val imageRoot = data.resolve("images").toRealPath()
                     check(actualImage.startsWith(imageRoot) && Files.isRegularFile(actualImage, NOFOLLOW_LINKS))
@@ -200,9 +250,11 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                     check(coordinator.cloudSettings.value.rows.isEmpty())
                     check(coordinator.state.value.cloud.lastSuccessAt == null)
                     controllerReadbackMatched = true
+                    reverseStep = "ACK_WRITE"
                     writePrivateNew(directory.resolve("windows-reverse-received.json"), buildJsonObject {
                         put("kind", "CCB_V7_WINDOWS_REVERSE_RECEIVED"); put("received", true)
                     })
+                    reverseStep = "COMPLETED"
                     phase = "normal-app-close"
                     withTimeout(60_000) { current.close() }; app = null
                 } catch (_: Throwable) { failedPhase = phase }
@@ -222,6 +274,9 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                 put("kind", "CCB_V7_WINDOWS_REVERSE_SYNTHETIC_RESULT"); put("sourceSha", SOURCE)
                 put("passed", failedPhase == null); put("phase", failedPhase ?: "complete")
                 put("peerApproved", peerApproved); put("reverseMessageAndPngMatched", controllerReadbackMatched)
+                put("reverseDiagnostics", reverseDiagnostics ?: JsonNull)
+                put("reverseObservations", JsonArray(reverseObservations))
+                put("reverseStep", reverseStep)
                 put("session", SESSION); put("message", REVERSE_MESSAGE)
                 imageHash?.let { put("forwardContextImageSha256", it) }
                 put("productionNetworkLocal", true); put("udpDiscoveryProved", false)

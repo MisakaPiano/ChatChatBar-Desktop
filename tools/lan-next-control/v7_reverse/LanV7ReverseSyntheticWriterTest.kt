@@ -14,6 +14,9 @@ import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
 import org.json.JSONObject
 import org.junit.Test
@@ -26,6 +29,58 @@ class LanV7ReverseSyntheticWriterTest {
         var phase = "opt-in"
         var failed: String? = null
         var page: ActivityScenario<LanSyncActivity>? = null
+        var progressRoot: java.nio.file.Path? = null
+        var lastProgress = 0L
+        var progressSequence = 0
+        var initialSessionPresent: Boolean? = null
+        var initialMessageExact: Boolean? = null
+        var initialImageMatched: Boolean? = null
+        var initialMessageCount: Int? = null
+        var initialMessageCountCapped: Boolean? = null
+        var appendAttempted = false
+        var durableSessionVerified = false
+        val appendCommitted = AtomicBoolean(false)
+        var appendReturned = false
+        var localReverseCount: Int? = null
+        var oracleWritten = false
+        var groupStage: String? = null
+        var groupBusy: Boolean? = null
+        var groupPaused: Boolean? = null
+        var groupErrorPresent: Boolean? = null
+        var diagnosticWriteFailed = false
+        var progressJob: Job? = null
+        var readGroup: (() -> LanSyncGroupPanelState)? = null
+        val progressLock = Any()
+        fun report(force: Boolean = false) {
+          synchronized(progressLock) {
+            val root = progressRoot ?: return
+            val now = System.nanoTime()
+            if (!force && now - lastProgress < 1_000_000_000L) return
+            lastProgress = now
+            readGroup?.invoke()?.let { state ->
+                groupStage = state.stage.name; groupBusy = state.busy; groupPaused = state.paused; groupErrorPresent = state.error != null
+            }
+            progressSequence = (progressSequence + 1).coerceAtMost(10_000)
+            val value = JSONObject().put("kind", "CCB_V7_ANDROID_REVERSE_PROGRESS").put("phase", phase)
+                .put("sequence", progressSequence).put("firstFailurePhase", failed ?: JSONObject.NULL)
+                .put("initialSessionPresent", initialSessionPresent ?: JSONObject.NULL)
+                .put("initialMessageExact", initialMessageExact ?: JSONObject.NULL)
+                .put("initialImageMatched", initialImageMatched ?: JSONObject.NULL)
+                .put("initialMessageCount", initialMessageCount ?: JSONObject.NULL)
+                .put("initialMessageCountCapped", initialMessageCountCapped ?: JSONObject.NULL)
+                .put("appendAttempted", appendAttempted).put("appendCommitted", appendCommitted.get())
+                .put("durableSessionVerified", durableSessionVerified)
+                .put("appendReturned", appendReturned).put("localReverseCount", localReverseCount ?: JSONObject.NULL)
+                .put("oracleWritten", oracleWritten).put("groupStage", groupStage ?: JSONObject.NULL)
+                .put("groupBusy", groupBusy ?: JSONObject.NULL).put("groupPaused", groupPaused ?: JSONObject.NULL)
+                .put("groupErrorPresent", groupErrorPresent ?: JSONObject.NULL).put("diagnosticWriteFailed", diagnosticWriteFailed)
+            try {
+                val temporary = root.resolve("progress.tmp")
+                Files.write(temporary, value.toString().toByteArray(Charsets.UTF_8))
+                Files.move(temporary, root.resolve("progress.json"), ATOMIC_MOVE, REPLACE_EXISTING)
+            } catch (_: Exception) { diagnosticWriteFailed = true }
+          }
+        }
         try {
             val args = InstrumentationRegistry.getArguments()
             check(args.getString("v7ReverseSynthetic") == "true" && args.getString("sourceSha") == SOURCE)
@@ -39,39 +94,71 @@ class LanV7ReverseSyntheticWriterTest {
             val files = app.filesDir.canonicalFile.toPath()
             val lab = Files.createDirectory(files.resolve("v7-reverse-lab"))
             check(lab.toRealPath().parent == files)
+            progressRoot = lab; report(true)
             page = ActivityScenario.launch(LanSyncActivity::class.java)
             val coordinator = app.lanSyncOwner.groupCoordinator
-            await(90_000) { coordinator.state.value.stage == LanSyncGroupPanelStage.EMPTY && !coordinator.state.value.busy }
+            readGroup = { coordinator.state.value }
+            // A commit callback is still observable if later repository work stalls.
+            // This task reads atomics/projections and writes only the private safe progress file.
+            progressJob = launch(Dispatchers.IO) { while (isActive) { report(); delay(1_000) } }
+            fun observeGroup() { report() }
+            await(90_000) { observeGroup(); coordinator.state.value.stage == LanSyncGroupPanelStage.EMPTY && !coordinator.state.value.busy }
             Files.write(lab.resolve("ready.json"), "{\"kind\":\"CCB_V7_ANDROID_READY\",\"ready\":true}".toByteArray(), CREATE_NEW, WRITE)
             phase = "private-synthetic-offer"
+            report(true)
             val request = lab.resolve("offer.json")
-            await(900_000) { Files.isRegularFile(request, NOFOLLOW_LINKS) }
+            await(900_000) { report(); Files.isRegularFile(request, NOFOLLOW_LINKS) }
             check(Files.size(request) in 1L..20_000L)
             val raw = Files.readAllBytes(request)
             var code: String? = null
+            var expectedInitialImageHash: String? = null
             try {
                 val offer = JSONObject(raw.toString(Charsets.UTF_8))
                 check(offer.keys().asSequence().toSet() == setOf("kind", "code", "session", "message", "text", "imageSha256"))
                 check(offer.getString("kind") == "CCB_V7_LIVE_SYNTHETIC_OFFER")
                 check(offer.getString("session") == SESSION && offer.getString("message") == "ccb-v7-lab-message")
                 check(offer.getString("text") == "CCB-V7-synthetic-message")
+                expectedInitialImageHash = offer.getString("imageSha256")
+                check(expectedInitialImageHash!!.matches(Regex("[a-f0-9]{64}")))
                 code = offer.getString("code")
                 check(code!!.matches(Regex("CCB-GROUP-JOIN1:[A-Za-z0-9_-]{1,16384}")))
             } finally { raw.fill(0); Files.delete(request) }
             phase = "real-production-lan-join"
+            report(true)
             coordinator.beginJoin(checkNotNull(code)); code = null
             await(180_000) {
+                observeGroup()
                 check(coordinator.state.value.error == null)
                 coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy &&
                     !coordinator.state.value.paused && coordinator.state.value.devices.any { !it.thisDevice }
             }
             // This existing forward seed is pairing context, not another old86 acceptance.
-            await(120_000) { app.chatRepository.getMessagesReadOnly(SESSION).any { it.id == "ccb-v7-lab-message" } }
+            phase = "initial-repository-receive"; report(true)
+            await(120_000) {
+                observeGroup()
+                initialSessionPresent = app.chatRepository.getSession(SESSION) != null
+                val messages = app.chatRepository.getMessagesReadOnly(SESSION)
+                initialMessageCount = messages.size.coerceAtMost(100)
+                initialMessageCountCapped = messages.size > 100
+                val incoming = messages.singleOrNull { it.id == "ccb-v7-lab-message" }
+                initialMessageExact = incoming?.let { it.content == "CCB-V7-synthetic-message" && it.role == MessageRole.USER && it.images.size == 1 } ?: false
+                val initialImage = incoming?.images?.singleOrNull()
+                initialImageMatched = if (initialImage != null) try {
+                    val image = java.nio.file.Paths.get(initialImage).toAbsolutePath().normalize()
+                    if (!image.startsWith(files.resolve("images"))) null else Files.isRegularFile(image, NOFOLLOW_LINKS) &&
+                        Files.size(image) in 1L..4_194_304L && lanSyncHash(Files.readAllBytes(image)) == expectedInitialImageHash
+                } catch (_: Exception) { null } else null
+                report()
+                incoming != null
+            }
             check(app.chatRepository.getMessagesReadOnly(SESSION).none { it.id == MESSAGE })
             phase = "durable-imported-session"
+            report(true)
             val durable = app.chatRepository.requireDurableSession(SESSION)
             check(durable.id == SESSION && durable.characterCardId == "ccb-v7-lab-card")
+            durableSessionVerified = true
             phase = "ordinary-repository-append"
+            report(true)
             val image = files.resolve("images/ccb-v7-reverse.png")
             Files.createDirectories(image.parent)
             val bitmap = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
@@ -82,26 +169,36 @@ class LanV7ReverseSyntheticWriterTest {
                 }
             } finally { bitmap.recycle() }
             Files.write(image, png, CREATE_NEW, WRITE)
+            appendAttempted = true; report(true)
             val added = app.chatRepository.addMessage(ChatMessage(MESSAGE, SESSION, MessageRole.USER, TEXT,
-                images = listOf(image.toString()), createdAt = 31L, updatedAt = 31L))
+                images = listOf(image.toString()), createdAt = 31L, updatedAt = 31L), onCommitted = { appendCommitted.set(true) })
+            appendReturned = true; report(true)
             check(added.id == MESSAGE && added.sessionId == SESSION && added.content == TEXT && added.images == listOf(image.toString()))
-            check(app.chatRepository.getMessagesReadOnly(SESSION).count { it.id == MESSAGE } == 1)
+            localReverseCount = app.chatRepository.getMessagesReadOnly(SESSION).count { it.id == MESSAGE }.coerceAtMost(100)
+            report(true); check(localReverseCount == 1)
             check(Files.readAllBytes(image).contentEquals(png))
             val oracle = JSONObject().put("kind", "CCB_V7_ANDROID_REVERSE_ORACLE").put("sourceSha", SOURCE)
                 .put("session", SESSION).put("message", MESSAGE).put("text", TEXT)
                 .put("imageSha256", lanSyncHash(png)).put("imageBytes", png.size).put("width", 8).put("height", 8)
             Files.write(lab.resolve("oracle.json"), oracle.toString().toByteArray(Charsets.UTF_8), CREATE_NEW, WRITE)
+            oracleWritten = true; report(true)
             phase = "normal-runtime-reverse-receipt"
+            report(true)
             val ack = lab.resolve("windows-received.json")
-            await(180_000) { Files.isRegularFile(ack, NOFOLLOW_LINKS) }
+            await(180_000) { observeGroup(); Files.isRegularFile(ack, NOFOLLOW_LINKS) }
             check(Files.size(ack) in 1L..512L)
             val response = JSONObject(Files.readAllBytes(ack).toString(Charsets.UTF_8))
             check(response.keys().asSequence().toSet() == setOf("kind", "received"))
             check(response.getString("kind") == "CCB_V7_WINDOWS_REVERSE_RECEIVED" && response.getBoolean("received"))
             check(app.chatRepository.getMessagesReadOnly(SESSION).count { it.id == MESSAGE && it.content == TEXT } == 1)
             check(Files.readAllBytes(image).contentEquals(png))
-        } catch (_: Throwable) { failed = phase }
-        finally { try { page?.close() } catch (_: Throwable) { if (failed == null) failed = "activity-close" } }
+        } catch (_: Throwable) { if (failed == null) failed = phase }
+        finally {
+            report(true)
+            withContext(NonCancellable) { progressJob?.cancelAndJoin() }
+            try { page?.close() } catch (_: Throwable) { if (failed == null) failed = "activity-close" }
+            report(true)
+        }
         failed?.let { throw AssertionError("V7_REVERSE_ANDROID_PHASE_FAILED:$it") }
     }
 

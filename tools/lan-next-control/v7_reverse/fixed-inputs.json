@@ -35,28 +35,28 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/DesktopV7ReverseSyntheticHostDraftTest.kt",
-      "bytes": 19701,
-      "sha256": "6732aba5bb1cc2831ad307f833555c566e63ab79514b1b8794342ab2d0840f33"
+      "bytes": 23717,
+      "sha256": "58287f0960a105cd3abb29e1c4386e928f9c2b3390060e8ef648992747923eaf"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/LanV7ReverseSyntheticWriterTest.kt",
-      "bytes": 7454,
-      "sha256": "d91cc49650bcdfbe2eb88392e666dabf1852e8f6e10a7e9d6b8114f556bb9e3f"
+      "bytes": 13227,
+      "sha256": "ea2920b884781499ac441983c68ac323c1b84e1323b9dfaa3d791a61e04fd2f7"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/README.md",
-      "bytes": 4345,
-      "sha256": "42f9433aae572958060e0774f9433b9657e00f02db969432b16841829fd1c628"
+      "bytes": 5906,
+      "sha256": "c5ec30a8d22e5ca558091b74ecbd673f9aa8f64a433afc387fd6df08f6a87fd7"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/run_reverse_cloud.py",
-      "bytes": 14873,
-      "sha256": "35dea6a6e41d1459348b367b791262d9dd1223015c704682b2e911f97fc4c098"
+      "bytes": 17937,
+      "sha256": "37051135e86a8fa47c6800c04abe8124208b6f7788bc51455a7698accf3c4b2a"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_reverse_android_control.py",
-      "bytes": 9411,
-      "sha256": "328db0d58a53d4eb0062d0eb82e1502deb322d7c93cd8a878ebee4a0fdf16b17"
+      "bytes": 12329,
+      "sha256": "bfe6a9b0944aad260812fe2aee554d13d949d4c254f0d2351179c1a48aba80c0"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_windows_reverse_control.py",
@@ -147,7 +147,8 @@
     "invitationWaitSeconds": 900,
     "joinSeconds": 180,
     "reverseAckSeconds": 180,
-    "emulatorBootSeconds": 310
+    "emulatorBootSeconds": 310,
+    "androidControllerDiagnosticDrainSeconds": 45
   },
   "environment": {
     "runner": "windows-latest",
@@ -170,5 +171,15 @@
     "windows-junit.json"
   ],
   "originalReports": "strictly parsed privately; original body not uploaded",
-  "productionEquivalentPredecessor": "d737dc354efc9d2c19895de2b7e0618399924455"
+  "productionEquivalentPredecessor": "d737dc354efc9d2c19895de2b7e0618399924455",
+  "diagnosticRevision": 2,
+  "diagnostics": {
+    "nativeProgressMaximumBytes": 4096,
+    "counterCap": 100,
+    "windowsLastSamples": 8,
+    "unknownIsNull": true,
+    "callbackIsNotDelivery": true,
+    "androidResultMayBeNonterminalCheckpoint": true,
+    "firstObservedControlFailurePreserved": true
+  }
 }

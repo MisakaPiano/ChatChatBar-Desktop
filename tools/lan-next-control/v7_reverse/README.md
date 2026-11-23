@@ -19,3 +19,7 @@ Android仅构建 `:app:assembleLanPreview :app:assembleLanPreviewAndroidTest`，
 控制仅输出五个固定小 JSON：`run.json`、`debug-build.json`、`android.json`、`windows.json`、`windows-junit.json`。Android实际原始输出与 Windows 原始XML在私有 job 根由固定 parser严格核验并绑定 SHA，但不上传原始全文；这是明确的独立重放范围限制。APK、keystore、私有 offer/oracle/ACK、图正文、UI树和原日志从不进入 artifact。`run.json` 分开记录两端实际结果、唯一目标启动尝试、总体结果及清理状况。
 
 整个原生树外层1500s先于借用 Windows runner1800s截止；只终止本次 Popen 取得的 owned PID树。模拟器先正常 `emu kill`，超时才结束其 owned PID树。最后仅删本 job 新私有根内的 debug key，保留其他私有中间件至 runner退役；固定上传路径与其分离。清理失败如实单独记，不能伪造目标结果。没有本机执行、源写入、交付或新人工 Gate。
+
+45088228317 的三个小原件只证明实际配对/批准及 Windows 到达反向等待，未区分 oracle 和消息两门。已确认控制缺陷是父控制在 Windows 失败后立即 taskkill Android 控制树，导致 Android finally 结果缺失；没有据此确认产品反向失败原因。诊断增量保持同40981/原180s/全部正文、唯一性和PNG断言：Android app每秒由独立诊断协程原子写入仅阶段闭集、nullable布尔与有界计数的私有 progress，记录初始会话/消息/图片、durable会话、append尝试/提交回调/返回、本地新ID和oracle写出；callback只设AtomicBoolean，不进行文件或业务调用；诊断协程只读该原子值和现成StateFlow，故repo提交后的停滞仍可观察，结束时cancelAndJoin。Python控制定期原子更新同一个安全 android.json，terminal=false明确不是最终原生成功，未知不补零。对端失败先以私有固定stop请求给Android控制最多45s收尾，再按原边界强制终止；父控制保留最先失败，不用后续停止原因覆盖。
+
+Windows仍以原 `oracle存在 && 普通repository含新ID` 为唯一等待条件，诊断另读普通会话、普通与只读消息计数、新ID计数及两门状态，最后8个样本只含闭集/布尔/有界数；不调用reload/Sync/inspect。`reverseStep`区分等待、oracle核验、仓库核验、PNG核验、ACK写出。读失败为nullable/READ_ERROR，不能当空仓库。所有观测均不能代替实际两方法通过、真实接收断言或严格原件解析。

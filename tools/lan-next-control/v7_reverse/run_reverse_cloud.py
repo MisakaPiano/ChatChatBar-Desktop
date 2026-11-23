@@ -10,8 +10,34 @@ import sys
 import time
 
 from verify_reverse_inputs import HERE,SOURCE,need,verify,prepare_android,android_overlay,Refused
+from v7_reverse_android_control import publish as publish_stop
 
 CERT_801F='801f54622926f9ca6710086ac2732854a31b546f8ec2fd38cd0c6c11837a1aa7'
+def safe_windows_diagnostics(value):
+    if value is None:return
+    flags={'oraclePresent','oracleEverPresent','repositorySessionPresent','ordinaryCountCapped','ordinaryReverseEverPresent',
+        'readOnlyCountCapped','readOnlyReverseEverPresent','groupBusy','groupPaused','groupErrorPresent','nearbyLastSuccessPresent'}
+    counts={'ordinaryMessageCount','ordinaryReverseIdCount','readOnlyMessageCount','readOnlyReverseIdCount'}
+    need(set(value)==flags|counts|{'seconds','readOnlyStatus','waitState'},'WINDOWS_DIAGNOSTIC_FIELDS')
+    need(all(value[x] is None or type(value[x]) is bool for x in flags) and
+         all(value[x] is None or type(value[x]) is int and 0<=value[x]<=100 for x in counts),'WINDOWS_DIAGNOSTIC_VALUES')
+    need(type(value['seconds']) is int and 0<=value['seconds']<=180 and value['readOnlyStatus'] in {'READ_ERROR','READABLE'} and
+         value['waitState'] in {'BOTH_PRESENT','ORACLE_ONLY','MESSAGE_ONLY','MISSING_BOTH'},'WINDOWS_DIAGNOSTIC_ENUM')
+def safe_windows_result(value):
+    allowed={'kind','sourceSha','passed','phase','peerApproved','reverseMessageAndPngMatched','session','message',
+        'forwardContextImageSha256','productionNetworkLocal','udpDiscoveryProved','packagedMainTested','humanAcceptance',
+        'reverseDiagnostics','reverseObservations','reverseStep'}
+    phases={'native-guard','isolated-app-root','new-synthetic-group','ordinary-repository-message-and-real-png',
+        'automatic-authenticated-source-and-exact-local-receipt','wait-for-real-android-preflight','production-local-invitation',
+        'real-android-proof-and-explicit-member-confirmation','ordinary-reverse-repository-message-and-png','normal-app-close',
+        'app-close-cleanup','private-offer-cleanup','synthetic-root-cleanup','safe-result-write','complete'}
+    need(set(value)<=allowed and value.get('sourceSha')==SOURCE and value.get('phase') in phases,'WINDOWS_SAFE_RESULT_FIELDS')
+    need(value.get('reverseStep','NOT_REACHED') in {'NOT_REACHED','WAIT_ORACLE_AND_MESSAGE','ORACLE_VALIDATE',
+         'REPOSITORY_VALIDATE','PNG_VALIDATE','ACK_WRITE','COMPLETED'},'WINDOWS_REVERSE_STEP_ENUM')
+    safe_windows_diagnostics(value.get('reverseDiagnostics'))
+    rows=value.get('reverseObservations',[]);need(isinstance(rows,list) and len(rows)<=8,'WINDOWS_DIAGNOSTIC_HISTORY_LIMIT')
+    for row in rows:safe_windows_diagnostics(row)
+    return value
 def write(path,value):
     with path.open('x',encoding='utf-8',newline='\n') as out:json.dump(value,out,indent=2);out.write('\n')
 def main():
@@ -22,7 +48,7 @@ def main():
         'nonDeliveryDebugOnly':True,'nativeTargetStartAttempts':{'android':0,'windows':0},'androidPassed':False,'windowsPassed':False,
         'ordinaryAndroidJoinUiProved':False,'packagedWindowsMainProved':False,'rawOriginalReportsUploaded':False,
         'ownedProcessAndKeyCleanupComplete':False,'privateWorkspaceRetainedUntilRunnerDisposal':True,'humanAcceptance':False}
-    children=[];handles=[];vm=None;adb=None;lab=None;key=None;env=dict(os.environ);evidence=args.evidence.resolve()
+    children=[];handles=[];vm=None;phone=None;adb=None;lab=None;key=None;env=dict(os.environ);evidence=args.evidence.resolve()
     try:
         need(env.get('GITHUB_ACTIONS')=='true' and env.get('RUNNER_OS')=='Windows' and os.name=='nt','WINDOWS_GITHUB_ONLY')
         need(not evidence.exists() and evidence.parent.is_dir(),'NEW_SAFE_EVIDENCE_REQUIRED');evidence.mkdir()
@@ -119,9 +145,10 @@ def main():
         need(phone.returncode==desktop.returncode==0,'TWO_TARGET_NATIVE_FAILURE')
         android_result=json.loads((evidence/'android.json').read_bytes())
         need(android_result['sourceSha']==SOURCE and android_result['status']=='REVERSE_DEBUG_CASE_PASSED' and
-             android_result['oneNativeMethodPassed'] is True and android_result['windowsReceived'] is True,'ANDROID_STRICT_METHOD_NOT_PASSED')
+             android_result.get('terminal') is True and android_result['oneNativeMethodPassed'] is True and
+             android_result['windowsReceived'] is True,'ANDROID_STRICT_METHOD_NOT_PASSED')
         raw=(lab/'windows-result.json').read_bytes();need(len(raw)<=16384,'WINDOWS_SAFE_RESULT_LIMIT')
-        windows_result=json.loads(raw)
+        windows_result=safe_windows_result(json.loads(raw))
         need(windows_result['kind']=='CCB_V7_WINDOWS_REVERSE_SYNTHETIC_RESULT' and windows_result['sourceSha']==SOURCE and
              windows_result['passed'] is True and windows_result['reverseMessageAndPngMatched'] is True and
              windows_result['peerApproved'] is True and windows_result['productionNetworkLocal'] is True,'WINDOWS_ACTUAL_REVERSE_NOT_PASSED')
@@ -134,8 +161,20 @@ def main():
         state.update(status='REFUSED',errorCode=str(error) if isinstance(error,Refused) else type(error).__name__)
     finally:
         cleanup=True
+        # Keep the first peer/control error. Give the Android controller a bounded
+        # diagnostic/finally drain before its owned tree is forcibly terminated.
+        if phone is not None and phone.poll() is None and lab is not None:
+            state['androidDiagnosticDrainRequested']=True
+            try:
+                stop=lab/'android-stop-requested.json'
+                if not stop.exists():publish_stop(stop,{'kind':'CCB_V7_REVERSE_STOP','reason':'PEER_OR_CONTROL_FAILED'})
+                until=time.monotonic()+45
+                while phone.poll() is None and time.monotonic()<until:time.sleep(.25)
+                state['androidControllerReturnedDuringDrain']=phone.poll() is not None
+            except Exception:state['androidControllerReturnedDuringDrain']=False
         for child in children:
             if child.poll() is None:
+                if child is phone:state['androidControllerForcedStop']=True
                 try:subprocess.run(['taskkill.exe','/PID',str(child.pid),'/T','/F'],capture_output=True,timeout=20,creationflags=subprocess.CREATE_NO_WINDOW);child.wait(timeout=10)
                 except Exception:cleanup=False
         if vm is not None and vm.poll() is None:
@@ -161,12 +200,10 @@ def main():
                 phone_result=json.loads((evidence/'android.json').read_bytes())
                 need(phone_result['sourceSha']==SOURCE,'ANDROID_RESULT_SOURCE')
                 state['androidPassed']=phone_result.get('oneNativeMethodPassed') is True
+                state['androidControllerTerminal']=phone_result.get('terminal') is True
             if lab is not None and (lab/'windows-result.json').is_file() and not (evidence/'windows.json').exists():
                 raw=(lab/'windows-result.json').read_bytes();need(len(raw)<=16384,'WINDOWS_RESULT_LIMIT')
-                value=json.loads(raw);need(value.get('sourceSha')==SOURCE,'WINDOWS_RESULT_SOURCE')
-                allowed={'kind','sourceSha','passed','phase','peerApproved','reverseMessageAndPngMatched','session','message',
-                         'forwardContextImageSha256','productionNetworkLocal','udpDiscoveryProved','packagedMainTested','humanAcceptance'}
-                need(set(value)<=allowed and re.fullmatch(r'[a-z-]{1,100}',value['phase']),'WINDOWS_SAFE_RESULT_FIELDS')
+                value=safe_windows_result(json.loads(raw))
                 write(evidence/'windows.json',value)
             proof=evidence/'windows-work/verified.json'
             if proof.is_file() and not (evidence/'windows-junit.json').exists():
