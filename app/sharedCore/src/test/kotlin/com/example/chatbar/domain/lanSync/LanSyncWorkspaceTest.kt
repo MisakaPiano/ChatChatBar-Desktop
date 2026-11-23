@@ -94,6 +94,45 @@ class LanSyncWorkspaceTest {
         })
         assertEquals("SYNC_SOURCE_CHANGED", assertFailsWith<IllegalArgumentException> { changing.captureGroup("synthetic").close() }.message)
     }
+
+    @Test fun onlyStableOwnedEmptyMessageImagesAreIsolatedWithoutBypassingStorageGuards() {
+        val root = root()
+        try {
+            val images = Files.createDirectory(root.resolve("images"))
+            val empty = Files.createFile(images.resolve("empty.png"))
+            val other = Files.writeString(images.resolve("other.png"), "synthetic nonempty content")
+            val outside = Files.createFile(root.resolve("outside-images.png"))
+            val sessions = Files.createDirectories(root.resolve("entities/chat_sessions"))
+            val messages = Files.createDirectories(root.resolve("entities/chat_messages"))
+            LanSyncJsonFiles.write(sessions.resolve("s.json"), ChatSession.serializer(), ChatSession("s", "card", "图像", createdAt = 1, updatedAt = 1))
+            fun attach(vararg paths: Path) = LanSyncJsonFiles.write(messages.resolve("s_m.json"), ChatMessage.serializer(),
+                ChatMessage("m", "s", MessageRole.USER, "图像", images = paths.map(Path::toString), createdAt = 2, updatedAt = 2))
+            val ws = workspace(root, root.resolve("workspace"))
+            attach(empty)
+            ws.captureGroup("synthetic").use {
+                assertEquals(setOf("conversation/s"), it.blockedResourceUnits)
+                assertTrue(it.missingImageUnits.isEmpty())
+                assertTrue(it.blobs.isEmpty() && it.snapshot.resources.isEmpty())
+                assertFailsWith<IllegalArgumentException> { LanSyncScope.validateGraph(it.snapshot) }
+            }
+            assertEquals(0L, Files.size(empty))
+            val noSpace = LanSyncWorkspace(root, root.resolve("no-space"), { Path.of(it) },
+                budget = LanSyncResourceBudget(minimumFreeBytes = Long.MAX_VALUE))
+            assertEquals("SYNC_DISK_SPACE", assertFailsWith<IllegalArgumentException> { noSpace.captureGroup("synthetic").close() }.message)
+            attach(outside)
+            assertEquals("SYNC_RESOURCE_BUDGET", assertFailsWith<IllegalArgumentException> { ws.captureGroup("synthetic").close() }.message)
+            if (root.fileSystem.separator == "/") {
+                val link = Files.createSymbolicLink(images.resolve("link.png"), empty)
+                attach(link)
+                assertEquals("SYNC_UNSAFE_PATH", assertFailsWith<IllegalArgumentException> { ws.captureGroup("synthetic").close() }.message)
+            }
+            attach(empty, other)
+            val changing = LanSyncWorkspace(root, root.resolve("racing"), { Path.of(it) },
+                validateResource = { _, _, _ -> Files.writeString(empty, "now nonempty") })
+            assertEquals("SYNC_SOURCE_CHANGED", assertFailsWith<IllegalArgumentException> { changing.captureGroup("synthetic").close() }.message)
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
     @Test fun actualApplyReopenRepeatAndDeletionPreserveUncoveredStores() {
         val root = root(); val state = root().resolve("workspace")
         val ws = workspace(root, state)

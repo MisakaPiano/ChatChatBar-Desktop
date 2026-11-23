@@ -4446,15 +4446,26 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     else -> "jpg"
                 }
                 
-                val localFile = File(imagesDir, "chat_img_${System.currentTimeMillis()}.$extension")
-                withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)?.use { inputStream ->
-                        localFile.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
+                val localFile = withContext(Dispatchers.IO) {
+                    var copy: File? = null
+                    var complete = false
+                    try {
+                        val source = requireNotNull(contentResolver.openInputStream(uri)) { "无法打开所选图片" }
+                        source.use { input ->
+                            val output = File.createTempFile("chat_img_", ".$extension", imagesDir)
+                            copy = output
+                            val bytes = output.outputStream().use { input.copyTo(it) }
+                            require(bytes > 0L) { "所选图片为空，请重新选择" }
                         }
+                        currentCoroutineContext().ensureActive()
+                        requireNotNull(copy).also { complete = true }
+                    } finally {
+                        if (!complete) copy?.delete()
                     }
                 }
                 onSuccess(localFile.absolutePath)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 addSystemMessage("拷贝图片文件失败: ${e.message}")
             }

@@ -47,9 +47,14 @@ class DesktopLanSyncResourceTest {
             val malformed = listOf(original.copyOf(16), LanSyncMalformedHeifFixture.withoutMeta(),
                 LanSyncMalformedHeifFixture.withoutPrimaryItem(), LanSyncMalformedHeifFixture.truncatedMetadata(),
                 LanSyncMalformedHeifFixture.truncatedFileType(), LanSyncMalformedHeifFixture.truncatedFileTypeWithHeicCompatibility())
-            for (broken in malformed) {
+            val unavailable = malformed.map { it to "SYNC_IMAGE_INVALID" } + listOf(
+                byteArrayOf() to "SYNC_RESOURCE_BUDGET",
+                LanSyncMalformedHeifFixture.unsupportedMetaVersion() to "SYNC_IMAGE_HEIF_INVALID",
+                "synthetic bytes with no registered image format".toByteArray() to "SYNC_IMAGE_CODEC_UNAVAILABLE"
+            )
+            for ((broken, strictCode) in unavailable) {
                 Files.write(image, broken)
-                assertFailsWith<LanSyncInvalidImage> { workspace.capture("desktop").close() }
+                assertEquals(strictCode, assertFailsWith<IllegalArgumentException> { workspace.capture("desktop").close() }.message)
                 workspace.captureGroup("desktop").use { capture ->
                     assertEquals(setOf("conversation/has_image"), capture.blockedResourceUnits)
                     assertEquals(originalHashes["conversation/text_only"], capture.snapshot.hashes()["conversation/text_only"])

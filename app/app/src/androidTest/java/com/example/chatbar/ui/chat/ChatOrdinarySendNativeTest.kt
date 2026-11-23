@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -24,6 +25,8 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -48,6 +51,62 @@ import org.junit.Test
 
 /** The ordinary composer entry against actual Android foreground and storage owners. */
 class ChatOrdinarySendNativeTest {
+    @Test
+    fun anEmptyOrdinaryImageUriLeavesThePreviouslySelectedAttachmentIntact(): Unit = runBlocking {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncOrdinarySendFixture") == "true")
+        val app = ApplicationProvider.getApplicationContext<ChatBarApp>()
+        check(app.packageName in setOf("com.example.chatbar.lansync", "com.example.chatbar.lansyncnext"))
+        check((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+        withTimeout(60_000) { while (!app.lanSyncStartupReady) delay(50) }
+        check(!app.lanSyncOwner.hasGroupEvidence())
+        val sessionId = UUID.randomUUID().toString()
+        val cardId = UUID.randomUUID().toString()
+        val sourceRoot = Files.createTempDirectory(app.cacheDir.toPath(), "synthetic-chat-image-source-")
+        val valid = sourceRoot.resolve("selected.png")
+        val empty = Files.createFile(sourceRoot.resolve("empty.png"))
+        var selected: Path? = null
+        try {
+            val bitmap = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888)
+            try { Files.newOutputStream(valid).use { check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) } }
+            finally { bitmap.recycle() }
+            val original = Files.readAllBytes(valid)
+            app.characterRepository.save(CharacterCard(cardId, "Synthetic image selection", createdAt = 1, updatedAt = 1))
+            app.chatRepository.createSession(ChatSession(sessionId, cardId, "Synthetic image selection", createdAt = 1, updatedAt = 1))
+            ActivityScenario.launch<LanSyncActivity>(Intent(app, LanSyncActivity::class.java)).use { scenario ->
+                lateinit var owner: ChatViewModel
+                scenario.onActivity { owner = ViewModelProvider(it, ChatViewModelFactory(sessionId))[ChatViewModel::class.java] }
+                await { owner.draftLoaded.value }
+                val copied = CompletableDeferred<String>()
+                withContext(Dispatchers.Main) {
+                    owner.copyUriToLocalFile(Uri.fromFile(valid.toFile())) { path ->
+                        owner.addDraftImage(path)
+                        copied.complete(path)
+                    }
+                }
+                val selectedPath = Paths.get(withTimeout(30_000) { copied.await() })
+                selected = selectedPath
+                fun entries() = Files.newDirectoryStream(selectedPath.parent, "chat_img_*").use { it.toSet() }
+                val before = entries()
+                val wrongSuccess = CompletableDeferred<String>()
+                withContext(Dispatchers.Main) {
+                    owner.copyUriToLocalFile(Uri.fromFile(empty.toFile())) { wrongSuccess.complete(it) }
+                }
+                await { app.chatRepository.getMessagesReadOnly(sessionId).any { it.content.contains("所选图片为空") } }
+                assertFalse(wrongSuccess.isCompleted)
+                assertEquals(before, entries())
+                assertEquals(listOf(selectedPath.toString()), owner.composerDraft.value.images)
+                assertTrue(original.contentEquals(Files.readAllBytes(selectedPath)))
+                assertTrue(original.contentEquals(Files.readAllBytes(valid)))
+                assertEquals(0L, Files.size(empty))
+            }
+        } finally {
+            app.chatRepository.deleteSession(sessionId)
+            app.characterRepository.delete(cardId)
+            selected?.let { Files.deleteIfExists(it) }
+            check(sourceRoot.toFile().deleteRecursively())
+        }
+    }
+
     @Test
     fun maintenanceRefusalRetainsTheDraftAndOneRetryCommitsExactlyOnce() = runBlocking {
         val arguments = InstrumentationRegistry.getArguments()

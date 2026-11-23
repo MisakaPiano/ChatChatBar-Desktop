@@ -9,17 +9,20 @@ import kotlinx.serialization.json.contentOrNull
 internal object LanSyncMissingImage {
     const val CODE = "SYNC_GROUP_LOCAL_IMAGE_MISSING"
     private const val PREFIX = "ccb-lan-missing-image/"
-    private val marker = Regex("${PREFIX}([a-f0-9-]{36})/[a-f0-9]{64}")
+    private const val EMPTY_PREFIX = "ccb-lan-empty-image/"
+    private val marker = Regex("(?:$PREFIX|$EMPTY_PREFIX)([a-f0-9-]{36})/[a-f0-9]{64}")
 
     private val attachmentPath = listOf("images")
     private val generatedPath = listOf("generatedImageMetadata", "imagePath")
 
     fun allows(type: String, path: List<String>) = type == "chat_messages" && (path == attachmentPath || path == generatedPath)
 
-    fun reference(mediaId: String, relativePath: String): String =
-        "$PREFIX$mediaId/${lanSyncHash("ccb-lan-missing-image-path/$relativePath".toByteArray(Charsets.UTF_8))}"
+    fun reference(mediaId: String, relativePath: String, empty: Boolean = false): String {
+        val prefix = if (empty) EMPTY_PREFIX else PREFIX
+        return "$prefix$mediaId/${lanSyncHash("ccb-lan-missing-image-path/$relativePath".toByteArray(Charsets.UTF_8))}"
+    }
 
-    fun isMarker(reference: String) = reference.startsWith(PREFIX)
+    fun isMarker(reference: String) = reference.startsWith(PREFIX) || reference.startsWith(EMPTY_PREFIX)
 
     fun mediaId(reference: String): String? = if (isMarker(reference)) marker.matchEntire(reference)?.groupValues?.get(1) else null
 
@@ -35,7 +38,10 @@ internal object LanSyncMissingImage {
 
     fun units(snapshot: LanSyncSnapshot): Set<String> = records(snapshot).map(LanSyncRecord::unit).toSet()
 
-    /** A missing image reserves its real media identity across the entire local component. */
+    fun missingUnits(snapshot: LanSyncSnapshot): Set<String> = snapshot.records.asSequence()
+        .filter { record -> references(record).any { it.startsWith(PREFIX) } }.map(LanSyncRecord::unit).toSet()
+
+    /** An unavailable image reserves its real media identity across the entire local component. */
     fun requireRetained(current: LanSyncSnapshot, target: LanSyncSnapshot) {
         val before = records(current).associateBy(LanSyncRecord::key)
         require(records(target).associateBy(LanSyncRecord::key) == before) { CODE }

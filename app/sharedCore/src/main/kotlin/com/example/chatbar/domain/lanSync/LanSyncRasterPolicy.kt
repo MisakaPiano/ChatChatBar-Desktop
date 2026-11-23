@@ -10,7 +10,9 @@ import java.nio.file.Path
 import java.util.zip.CRC32
 
 class LanSyncLocalImageUnsupported : IllegalArgumentException("SYNC_GROUP_LOCAL_RESOURCE_BLOCKED")
-class LanSyncInvalidImage(cause: Throwable? = null) : IllegalArgumentException("SYNC_IMAGE_INVALID", cause)
+sealed class LanSyncImageContentFailure(message: String, cause: Throwable? = null) : IllegalArgumentException(message, cause)
+class LanSyncInvalidImage(cause: Throwable? = null) : LanSyncImageContentFailure("SYNC_IMAGE_INVALID", cause)
+class LanSyncImageFormatUnsupported(code: String) : LanSyncImageContentFailure(code)
 
 /** Encoded originals are streamed; raster working limits are independent of encoded length. */
 object LanSyncRasterPolicy {

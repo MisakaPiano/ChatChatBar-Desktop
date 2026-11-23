@@ -17,8 +17,10 @@ internal object DesktopLanSyncRaster {
         val heif = LanSyncHeifStill.inspect(path)
         DesktopLanSyncWebPInput.open(path, renderColorMetadata = renderOrientation, maximumPixels = LanSyncRasterPolicy.maximumPixels(record)).use { input ->
             val readers = ImageIO.getImageReaders(input)
-            if (heif != null && !readers.hasNext()) throw DesktopHeifPreviewUnavailable()
-            require(readers.hasNext()) { "SYNC_IMAGE_CODEC_UNAVAILABLE" }
+            if (!readers.hasNext()) {
+                if (heif != null) throw DesktopHeifPreviewUnavailable()
+                throw LanSyncImageFormatUnsupported("SYNC_IMAGE_CODEC_UNAVAILABLE")
+            }
             val reader = readers.next()
             try {
                 reader.setInput(input, false, true)

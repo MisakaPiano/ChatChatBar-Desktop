@@ -12,6 +12,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
 import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.FileTime
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -179,7 +181,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         val records = mutableListOf<LanSyncRecord>(); val sourceFiles = linkedMapOf<String, String>()
         val checkedResources = hashSetOf<Triple<String, String, String>>()
         val blockedRecords = hashSetOf<String>()
-        val imageAvailability = hashMapOf<Path, Boolean>()
+        val imageAvailability = hashMapOf<Path, OwnedImageAvailability>()
         val excluded = linkedSetOf<String>()
         var indexCost = 0L
         fun chargeIndex(amount: Long) {
@@ -235,14 +237,17 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             val ownedMessageImage = isolateLocalImages && LanSyncMissingImage.allows(type, path) &&
                                 !reference.startsWith("asset:") && resource.startsWith(imageRoot) && resource.normalize() == resource
                             if (ownedMessageImage) {
-                                val missing = missingOwnedImage(resource)
-                                val previous = imageAvailability.putIfAbsent(resource, missing)
-                                require(previous == null || previous == missing) { "SYNC_SOURCE_CHANGED" }
+                                val availability = ownedImageAvailability(resource)
+                                val previous = imageAvailability.putIfAbsent(resource, availability)
+                                require(previous == null || previous == availability) { "SYNC_SOURCE_CHANGED" }
                                 if (previous == null) chargeIndex(192 + 4L * resource.toString().length)
-                                if (missing) {
+                                if (availability != OwnedImageAvailability.Present) {
+                                    val empty = availability is OwnedImageAvailability.Empty
+                                    if (empty && previous == null) budget.requireSpace(frozen, 0)
                                     blockRecord()
                                     val relativeImage = relativeResource(resource)
-                                    return@resource LanSyncMissingImage.reference(fileMediaId(resource) ?: derivedMediaId(relativeImage), relativeImage)
+                                    return@resource LanSyncMissingImage.reference(fileMediaId(resource) ?: derivedMediaId(relativeImage),
+                                        relativeImage, empty = empty)
                                 }
                             }
                             if (field == "packageFile") LanSyncSlotPackages.validate(resource, body, budget)
@@ -262,7 +267,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                                 catch (failure: LanSyncLocalImageUnsupported) {
                                     if (!isolateLocalImages || kind != "images" || Thread.currentThread().isInterrupted) throw failure
                                     blockRecord()
-                                } catch (failure: LanSyncInvalidImage) {
+                                } catch (failure: LanSyncImageContentFailure) {
                                     if (!ownedMessageImage || Thread.currentThread().isInterrupted) throw failure
                                     blockRecord()
                                 }
@@ -290,7 +295,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 }
             } }
         }
-        imageAvailability.forEach { (resource, missing) -> if (missing) require(missingOwnedImage(resource)) { "SYNC_SOURCE_CHANGED" } }
+        imageAvailability.forEach { (resource, availability) ->
+            if (availability != OwnedImageAvailability.Present)
+                require(ownedImageAvailability(resource) == availability) { "SYNC_SOURCE_CHANGED" }
+        }
         val projected = projection.rewrite(records)
         val snapshot = LanSyncSnapshot(deviceId = deviceId, records = projected, resources = resources, excludedTypes = excluded)
         snapshot.validate(); LanSyncScope.validateGraph(snapshot, allowLocalMissingImages = isolateLocalImages)
@@ -300,7 +308,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         }
         returned = true
         return LanSyncCapture(snapshot, blobs, sourceFiles, scratch::close, blockedUnits,
-            if (blockedUnits.isEmpty()) emptySet() else LanSyncMissingImage.units(snapshot))
+            if (blockedUnits.isEmpty()) emptySet() else LanSyncMissingImage.missingUnits(snapshot))
         } finally { if (!returned) scratch.close() }
     }
 
@@ -310,23 +318,36 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
 
     private fun derivedMediaId(identity: String) = UUID.nameUUIDFromBytes(identity.toByteArray(Charsets.UTF_8)).toString()
 
-    /** Only an absent entry beneath a checked, application-owned image directory is eligible. */
-    private fun missingOwnedImage(source: Path): Boolean {
+    private sealed interface OwnedImageAvailability {
+        data object Present : OwnedImageAvailability
+        data object Missing : OwnedImageAvailability
+        data class Empty(val fileKey: Any?, val modifiedAt: FileTime, val createdAt: FileTime) : OwnedImageAvailability
+    }
+
+    private fun ownedImageAvailability(source: Path): OwnedImageAvailability {
         if (!source.isAbsolute || source.normalize() != source || source == imageRoot || !source.startsWith(imageRoot) ||
-            Thread.currentThread().isInterrupted) return false
-        fun absent(path: Path): Boolean = try {
-            Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-            false
-        } catch (_: NoSuchFileException) { true }
-        if (!absent(source)) return false
+            Thread.currentThread().isInterrupted) return OwnedImageAvailability.Present
+        fun attributes(path: Path): BasicFileAttributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        fun absent(path: Path): Boolean = try { attributes(path); false } catch (_: NoSuchFileException) { true }
+        val before = try { attributes(source) } catch (_: NoSuchFileException) { null }
+        if (before != null) {
+            if (!before.isRegularFile || before.size() != 0L) return OwnedImageAvailability.Present
+            lanSyncSafe(source)
+            Files.newInputStream(source, LinkOption.NOFOLLOW_LINKS).use { require(it.read() == -1) { "SYNC_SOURCE_CHANGED" } }
+            val after = attributes(source)
+            fun stamp(attrs: BasicFileAttributes) = OwnedImageAvailability.Empty(attrs.fileKey(), attrs.lastModifiedTime(), attrs.creationTime())
+            require(after.isRegularFile && after.size() == 0L && stamp(before) == stamp(after) &&
+                !Thread.currentThread().isInterrupted) { "SYNC_SOURCE_CHANGED" }
+            return stamp(after)
+        }
         // An absent leaf alone cannot distinguish a real missing file from a link or a wrong parent.
         var path = dataRoot
         dataRoot.relativize(source).forEach { name ->
             path = path.resolve(name)
-            if (absent(path)) return !Thread.currentThread().isInterrupted
+            if (absent(path)) return if (Thread.currentThread().isInterrupted) OwnedImageAvailability.Present else OwnedImageAvailability.Missing
             lanSyncSafe(path, directory = path != source)
         }
-        return false
+        return OwnedImageAvailability.Present
     }
 
     private fun freeze(source: Path, frozen: Path, blobs: MutableMap<String, Path>, resources: MutableMap<String, Long>, scratch: LanSyncScratch,

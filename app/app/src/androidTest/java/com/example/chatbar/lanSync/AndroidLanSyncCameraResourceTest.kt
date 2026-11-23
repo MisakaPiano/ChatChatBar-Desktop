@@ -11,7 +11,6 @@ import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.lanSync.LanSyncHeifStill
-import com.example.chatbar.domain.lanSync.LanSyncInvalidImage
 import com.example.chatbar.domain.lanSync.LanSyncRecord
 import com.example.chatbar.domain.lanSync.LanSyncResourceStore
 import com.example.chatbar.domain.lanSync.LanSyncWorkspace
@@ -70,11 +69,18 @@ class AndroidLanSyncCameraResourceTest {
             val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("state")), { data.resolve(it) },
                 validateResource = ::validateAndroidLanSyncResource)
             val good = workspace.captureGroup("phone").use { it.snapshot.hashes() }
-            for (broken in listOf(LanSyncMalformedHeifFixture.withoutMeta(), LanSyncMalformedHeifFixture.withoutPrimaryItem(),
+            val malformed = listOf(LanSyncMalformedHeifFixture.withoutMeta(), LanSyncMalformedHeifFixture.withoutPrimaryItem(),
                 LanSyncMalformedHeifFixture.truncatedMetadata(), LanSyncMalformedHeifFixture.truncatedFileType(),
-                LanSyncMalformedHeifFixture.truncatedFileTypeWithHeicCompatibility())) {
+                LanSyncMalformedHeifFixture.truncatedFileTypeWithHeicCompatibility())
+            val unavailable = malformed.map { it to "SYNC_IMAGE_INVALID" } + listOf(
+                byteArrayOf() to "SYNC_RESOURCE_BUDGET",
+                LanSyncMalformedHeifFixture.unsupportedMetaVersion() to "SYNC_IMAGE_HEIF_INVALID"
+            )
+            for ((broken, strictCode) in unavailable) {
                 Files.write(image, broken)
-                assertTrue(runCatching { workspace.capture("phone").close() }.exceptionOrNull() is LanSyncInvalidImage)
+                val strictFailure = runCatching { workspace.capture("phone").close() }.exceptionOrNull()
+                assertTrue(strictFailure is IllegalArgumentException)
+                assertEquals(strictCode, strictFailure?.message)
                 workspace.captureGroup("phone").use {
                     assertEquals(setOf("conversation/photo"), it.blockedResourceUnits)
                     assertEquals(good["conversation/text"], it.snapshot.hashes()["conversation/text"])

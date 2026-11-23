@@ -327,7 +327,13 @@ class LanSyncGroupNodeTest {
         assertTrue(requireNotNull(publisher.scan(origin).plan).advances.isEmpty())
     }
 
-    @Test fun aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen() = withGroup { group ->
+    @Test fun aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen() =
+        checkUnavailableOwnedMessagePhoto(empty = false)
+
+    @Test fun anEmptyOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen() =
+        checkUnavailableOwnedMessagePhoto(empty = true)
+
+    private fun checkUnavailableOwnedMessagePhoto(empty: Boolean) = withGroup { group ->
         val publisher = group.End(0); val local = group.End(1)
         val origin = publisher.enroll(); val receiver = local.enroll()
         val a = "conversation/a"; val b = "conversation/b"; val c = "conversation/c"
@@ -360,7 +366,17 @@ class LanSyncGroupNodeTest {
         val localImage = Path.of(localMessage.images.single())
         assertEquals(localImage.toString(), localMessage.generatedImageMetadata.single().imagePath)
         assertContentEquals(bytes, Files.readAllBytes(localImage))
-        Files.delete(localImage)
+        fun withholdLocalImage() {
+            if (empty) Files.write(localImage, byteArrayOf()) else Files.delete(localImage)
+        }
+        fun assertLocalImageWithheld() {
+            if (empty) assertContentEquals(byteArrayOf(), Files.readAllBytes(localImage)) else assertFalse(Files.exists(localImage))
+        }
+        val blockedCode = if (empty) "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" else LanSyncMissingImage.CODE
+        withholdLocalImage()
+        if (empty) assertEquals("SYNC_RESOURCE_BUDGET", assertFailsWith<IllegalArgumentException> {
+            local.workspace.capture(group.identities[1].fingerprint).close()
+        }.message)
 
         session("a", "远端尝试更新 A")
         session("c")
@@ -369,7 +385,7 @@ class LanSyncGroupNodeTest {
         send(setOf(a, b, c))
         val view = local.scan(receiver); val plan = requireNotNull(view.plan)
         assertEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, plan.units.getValue(a).stage)
-        assertEquals(LanSyncMissingImage.CODE, plan.units.getValue(a).code)
+        assertEquals(blockedCode, plan.units.getValue(a).code)
         assertEquals(setOf(a, c), plan.components.getValue(a))
         assertEquals(setOf(b), plan.components.getValue(b))
         assertEquals(LanSyncGroupNativeStage.DEPENDENCY_HELD, plan.units.getValue(c).stage)
@@ -401,7 +417,7 @@ class LanSyncGroupNodeTest {
         assertEquals("B 收到独立附件", received.content)
         assertContentEquals(bytes, Files.readAllBytes(Path.of(received.images.single())))
         assertContentEquals(rawA, Files.readAllBytes(recordA))
-        assertFalse(Files.exists(localImage))
+        assertLocalImageWithheld()
         assertEquals(oldReceipt, receiver.inspect().nativeState.units.getValue(a))
 
         Files.delete(path(publisher, "chat_messages", "a_old")); Files.delete(path(publisher, "chat_sessions", "a"))
@@ -416,6 +432,12 @@ class LanSyncGroupNodeTest {
         local.send(receiver, reply)
         origin.apply(requireNotNull(publisher.scan(origin).plan))
         assertEquals("B 仍可发送", LanSyncJsonFiles.read(path(publisher, "chat_messages", "b_out"), ChatMessage.serializer())?.content)
+        if (empty) {
+            val independentMember = group.End(2); val subscriber = independentMember.enroll()
+            subscriber.apply(requireNotNull(independentMember.scan(subscriber).plan))
+            val delivered = LanSyncJsonFiles.read(path(independentMember, "chat_messages", "b_out"), ChatMessage.serializer())
+            assertEquals("B 仍可发送", delivered?.content)
+        }
 
         val reopenedWorkspace = local.openWorkspace()
         val cold = local.open(workspaceOwner = reopenedWorkspace)
@@ -432,13 +454,13 @@ class LanSyncGroupNodeTest {
         assertTrue(retainedLater.resolvedUnits.isEmpty())
         assertFalse(retainedLater.applied)
         assertEquals(oldReceipt, coldView.nativeState.units.getValue(a))
-        assertEquals(LanSyncMissingImage.CODE, requireNotNull(coldView.plan).units.getValue(a).code)
+        assertEquals(blockedCode, requireNotNull(coldView.plan).units.getValue(a).code)
         assertContentEquals(rawA, Files.readAllBytes(recordA))
-        assertFalse(Files.exists(localImage))
+        assertLocalImageWithheld()
         local.workspace.captureGroup(group.identities[1].fingerprint).use { capture ->
-            assertEquals(setOf(a), capture.missingImageUnits)
+            assertEquals(if (empty) emptySet() else setOf(a), capture.missingImageUnits)
             assertFailsWith<IllegalArgumentException> { LanSyncScope.validateGraph(capture.snapshot) }
-            assertEquals(LanSyncMissingImage.CODE, assertFailsWith<IllegalArgumentException> {
+            assertEquals(blockedCode, assertFailsWith<IllegalArgumentException> {
                 LanSyncGroupUnitCodec(local.base).prepare(capture, a).close()
             }.message)
             val dropped = capture.snapshot.copy(records = capture.snapshot.records.filter { it.unit != a })
@@ -464,11 +486,11 @@ class LanSyncGroupNodeTest {
         assertTrue(a in prepared.resolvedUnits)
         val candidate = prepared.acknowledge(prepared.binding, prepared.requiredBindings, prepared.requiredRestorations)
         val authorBeforeConfirmation = local.author().state().last?.version?.reference()
-        Files.delete(localImage)
+        withholdLocalImage()
         assertEquals("SYNC_GROUP_LOCAL_RESOURCE_BLOCKED", assertFailsWith<IllegalArgumentException> { cold.resolve(candidate) }.message)
         assertEquals(authorBeforeConfirmation, local.author().state().last?.version?.reference())
         assertContentEquals(rawA, Files.readAllBytes(recordA))
-        assertFalse(Files.exists(localImage))
+        assertLocalImageWithheld()
         Files.write(localImage, bytes)
         val rechecked = cold.prepareResolution(repairedChoices)
         val recheckedCandidate = rechecked.acknowledge(rechecked.binding, rechecked.requiredBindings, rechecked.requiredRestorations)
@@ -495,7 +517,10 @@ class LanSyncGroupNodeTest {
         checkOwnedBadImageIsolation { LanSyncMalformedHeifFixture.truncatedFileTypeWithHeicCompatibility() }
     }
 
-    @Test fun unsupportedHeifMetadataAndMetadataAboveTheBudgetRemainStrictErrors() {
+    @Test fun aRecognizedHeifWithAnUnsupportedMetaVersionOnlyHoldsTheOwningChat() =
+        checkOwnedBadImageIsolation("SYNC_IMAGE_HEIF_INVALID") { LanSyncMalformedHeifFixture.unsupportedMetaVersion() }
+
+    @Test fun heifFormatRecognitionFencesAndMetadataLimitsRemainStrictErrors() {
         val file = Files.createTempFile("synthetic-heif-limits-", ".heic")
         try {
             val otherBrand = LanSyncMalformedHeifFixture.truncatedFileType().also {
@@ -512,10 +537,9 @@ class LanSyncGroupNodeTest {
                 assertEquals("SYNC_IMAGE_HEIF_INVALID", unrecognized.message)
             }
 
-            val unsupported = LanSyncMalformedHeifFixture.withoutPrimaryItem().also { it[it.size - 4] = 1 }
+            val unsupported = LanSyncMalformedHeifFixture.unsupportedMetaVersion()
             Files.write(file, unsupported)
-            val version = assertFailsWith<IllegalArgumentException> { LanSyncHeifStill.inspect(file) }
-            assertFalse(version is LanSyncInvalidImage)
+            val version = assertFailsWith<LanSyncImageFormatUnsupported> { LanSyncHeifStill.inspect(file) }
             assertEquals("SYNC_IMAGE_HEIF_INVALID", version.message)
 
             val metaLength = 4 * 1024 * 1024 + 9
@@ -523,12 +547,12 @@ class LanSyncGroupNodeTest {
                 .put("meta".toByteArray(Charsets.US_ASCII)).array()
             Files.write(file, LanSyncMalformedHeifFixture.withoutMeta() + oversized)
             val budget = assertFailsWith<IllegalArgumentException> { LanSyncHeifStill.inspect(file) }
-            assertFalse(budget is LanSyncInvalidImage)
+            assertFalse(budget is LanSyncImageContentFailure)
             assertEquals("SYNC_IMAGE_HEIF_INVALID", budget.message)
         } finally { Files.deleteIfExists(file) }
     }
 
-    private fun checkOwnedBadImageIsolation(breakImage: (ByteArray) -> ByteArray) = withGroup { group ->
+    private fun checkOwnedBadImageIsolation(strictCode: String = "SYNC_IMAGE_INVALID", breakImage: (ByteArray) -> ByteArray) = withGroup { group ->
         val local = group.End(0); val peer = group.End(1)
         local.resourceValidator = { kind, file, _ -> if (kind == "images") {
             LanSyncRasterPolicy.checkPng(file, false)
@@ -556,7 +580,7 @@ class LanSyncGroupNodeTest {
         val recordBytes = Files.readAllBytes(record)
         val truncated = breakImage(original)
         Files.write(image, truncated)
-        assertEquals("SYNC_IMAGE_INVALID", assertFailsWith<IllegalArgumentException> {
+        assertEquals(strictCode, assertFailsWith<IllegalArgumentException> {
             local.workspace.capture(group.identities[0].fingerprint).close()
         }.message)
 
