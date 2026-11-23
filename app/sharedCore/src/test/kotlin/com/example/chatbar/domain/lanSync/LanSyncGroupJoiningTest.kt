@@ -12,14 +12,19 @@ import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
@@ -30,9 +35,14 @@ class LanSyncGroupJoiningTest {
         val data = Files.createDirectory(founder.root.resolve("$directoryPrefix-data"))
         val workspace = LanSyncWorkspace(data, Files.createDirectory(founder.root.resolve("$directoryPrefix-workspace")), { Path.of(it) })
         var hook: (String) -> Unit = {}; var gated = false
+        var beforeExclusive: suspend () -> Unit = {}
         @Volatile var timeShift = 0L
         val platform = object : LanSyncPlatform {
-            override suspend fun exclusive(work: suspend () -> Unit) { check(!gated); gated = true; try { work() } finally { gated = false } }
+            override suspend fun exclusive(work: suspend () -> Unit) {
+                check(!gated)
+                gated = true
+                try { beforeExclusive(); work() } finally { gated = false }
+            }
             override suspend fun reload(sessionIds: Set<String>) { check(gated) }
         }
         fun owner() = LanSyncGroupJoining(root, workspace, platform, identity,
@@ -323,6 +333,88 @@ class LanSyncGroupJoiningTest {
             assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, f.owner().profile()?.stage)
             assertEquals(1, attempts.get())
         } finally { coordinator.closeAndDrain(); transport.closeAndDrain() }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun automaticSignedJoinCanBindNearbyWhileItsFirstReadyInspectionIsBlocked() = fixture { f ->
+        val access = requireNotNull(f.founder.service.runtimeAccess())
+        val proof = CompletableDeferred<LanSyncGroupInvitedPeer>()
+        val bound = CompletableDeferred<Int>()
+        val enteredInspection = CompletableDeferred<Unit>()
+        val releaseInspection = CompletableDeferred<Unit>()
+        val afterDurableReady = AtomicBoolean()
+        f.hook = { event -> if (event == "GROUP_JOIN_READY") afterDurableReady.set(true) }
+        f.beforeExclusive = {
+            if (afterDurableReady.compareAndSet(true, false)) {
+                enteredInspection.complete(Unit)
+                withTimeout(75_000) { releaseInspection.await() }
+            }
+        }
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = listOf("10.0.0.1")
+            override fun accepts(address: InetAddress) = address.isLoopbackAddress
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer) =
+                LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint, 5_000) { _, port ->
+                    Socket(InetAddress.getLoopbackAddress(), port)
+                }
+            override fun listening(fingerprint: String, port: Int) {
+                if (fingerprint == f.identity.fingerprint) bound.complete(port)
+            }
+        }
+        val source = LanSyncGroupAppTransport(access, network) { _, _ -> }
+        val coordinator = f.protectedCoordinator(network)
+        fun observedField(name: String): Any? = LanSyncGroupCoordinator::class.java.getDeclaredField(name).let {
+            it.isAccessible = true
+            it.get(coordinator)
+        }
+        try {
+            val invitation = f.founder.service.invitation(source.start()).also(f.founder.invitations::add)
+            val offer = source.invitation(invitation) { proof.complete(it) }
+            val bootstrap = requireNotNull(offer.bootstrap)
+            coordinator.beginJoin(offer.code())
+            withTimeout(15_000) { coordinator.state.first { it.canAbandonJoin && !it.busy } }
+            coordinator.resumeIfConfigured()
+            val verified = withTimeout(15_000) { proof.await() }
+            assertEquals(f.identity.fingerprint, verified.device)
+            withTimeout(15_000) {
+                coordinator.state.first { !it.busy && !it.paused && it.stage == LanSyncGroupPanelStage.JOINING && !it.canAbandonJoin }
+            }
+            assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, f.owner().profile()?.stage)
+            val initialWake = observedField("nearbyWake") as ReceiveChannel<*>
+            withTimeout(5_000) {
+                while ((observedField("loop") as? Job)?.isActive != true ||
+                    (observedField("nearbyWorker") as? Job)?.isActive != true || !initialWake.isEmpty) delay(10)
+            }
+            assertNull(observedField("access"))
+            assertFalse(bound.isCompleted)
+
+            f.admit(invitation to verified)
+            withTimeout(35_000) { enteredInspection.await() }
+            val ready = coordinator.state.value
+            assertEquals(LanSyncGroupPanelStage.READY, ready.stage)
+            assertFalse(ready.busy, "No user action should be running during automatic activation")
+            assertFalse(ready.paused)
+            assertNull(ready.membershipConflict)
+            assertNull(coordinator.view.value)
+            val runningAdmission = observedField("admission") as kotlinx.coroutines.sync.Mutex
+            assertTrue(runningAdmission.isLocked, "The original automatic join still owns its coordinator admission")
+            val boundWhileHeld = withTimeoutOrNull(30_000) { bound.await() }
+            if (boundWhileHeld == null) {
+                assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
+                assertNull(coordinator.view.value)
+                assertTrue(runningAdmission.isLocked)
+                releaseInspection.complete(Unit)
+            }
+            val port = boundWhileHeld ?: withTimeout(25_000) { bound.await() }
+            val peer = LanSyncPeer(f.identity.fingerprint, "synthetic recipient", offer.host, port)
+            assertEquals(bootstrap.vaultDescriptor, access.remote(peer, network).metadata(bootstrap.vault.key)?.descriptor)
+            assertNotNull(boundWhileHeld, "READY for 30 seconds with the first local inspection held. The real listener bound only after release, then accepted pinned mTLS and returned the exact vault descriptor.")
+        } finally {
+            releaseInspection.complete(Unit)
+            coordinator.closeAndDrain()
+            source.closeAndDrain()
+        }
     }
 
     @Test fun ordinaryMemberCanUseAFileContainingEveryAuthenticatedHeadBeyondV1TextCapacity() = fixture { f ->
