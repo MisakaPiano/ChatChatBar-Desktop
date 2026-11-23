@@ -177,6 +177,7 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
                         CbText("新设备身份：${review.device}")
                     } }
                     CbText("确认后会在原设备组中登记此设备并恢复资料。冲突、删除和缺失依赖仍按实际状态处理；文件核验不代表网盘或其他设备已收到资料。")
+                    CbText("有分歧的预设会保留两边的版本。登记后可在同步页比较并决定如何处理。本机独立副本需要另行确认才会发布。")
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         CbCheckbox(confirmed, { confirmed = it }, enabled = !recoveryState.busy && canRecover,
                             contentDescription = "已核对原设备组与新设备身份，并同意登记此设备")

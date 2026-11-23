@@ -86,6 +86,7 @@ internal fun DesktopLanSyncFileActions(coordinator: LanSyncGroupCoordinator, sta
                     StatusText("新设备身份：${review.device}")
                 } }
                 StatusText("确认后会在原设备组中登记此设备并恢复资料。冲突、删除和缺失依赖仍按实际状态处理；文件核验不代表网盘或其他设备已收到资料。")
+                StatusText("有分歧的预设会保留两边的版本。登记后可在同步页比较并决定如何处理。本机独立副本需要另行确认才会发布。")
                 Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                     .toggleable(confirmed, enabled = !recoveryState.busy && canRecover, role = Role.Checkbox, onValueChange = { confirmed = it })
                     .padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

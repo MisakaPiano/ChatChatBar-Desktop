@@ -6,6 +6,8 @@ data class LanSyncGroupDisplayLabel(val title: String, val kind: String, val ide
 
 /** Presentation from frozen records only. Names never replace protocol identities or review bindings. */
 object LanSyncGroupDisplay {
+    fun localPresetReviewNotice(code: String?): String? =
+        if (code == LanSyncGroupNativePlanner.LOCAL_PRESET_REVIEW) "本机预设以独立副本保留。只有核对并确认发布后，其他设备才会收到这个副本。" else null
     fun missingLocalImageNotice(code: String?): String? =
         if (code == LanSyncMissingImage.CODE) "本机会话的图片文件缺失。会话记录和附件引用已保留，其他会话可继续同步。" else null
 

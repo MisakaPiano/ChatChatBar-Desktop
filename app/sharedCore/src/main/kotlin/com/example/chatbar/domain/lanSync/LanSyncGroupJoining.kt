@@ -48,7 +48,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         @EncodeDefault(EncodeDefault.Mode.NEVER) val knownMembership: SyncVersionRef? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER) val membershipRevoked: Boolean = false)
     @Serializable private data class Projection(val projection: LanSyncProjection, val sourceFiles: Map<String, String>,
-        val checkpoint: SyncVersionRef, val heads: Set<SyncVersionRef>)
+        val checkpoint: SyncVersionRef, val heads: Set<SyncVersionRef>,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val localPresetsRequiringReview: Set<String> = emptySet())
     private val root = parent.resolve("joining")
     private val shelf = parent.resolve("shelved-joins")
     private val certificate = Base64.getEncoder().encodeToString(identity.certificate.encoded)
@@ -312,7 +313,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         require(lanSyncUtf8(lanSyncRead(path.resolve("store.id"), 32)) == record.replicaIdentity) { "SYNC_GROUP_JOIN_REPLICA_CHANGED" }
         val projection = readProjection(record)
         LanSyncGroupRuntimeAccess(trust(record), record.localReplica, FileCiphertextStore(path), directory("app-runtime", true),
-            identity, custody(record, false), { store -> node(record, projection.projection, store) }, source.vault, source.vaultDescriptor,
+            identity, custody(record, false), { store -> node(record, projection, store) }, source.vault, source.vaultDescriptor,
             peerNameProtect = protect, peerNameUnprotect = unprotect, candidateRoot = directory("commit-candidates", true))
     }
 
@@ -459,9 +460,15 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     }
 
     /** Backend is a runtime-owned route, never credentials serialized into invitations/profile. */
-    suspend fun activate(backend: CiphertextStore): LanSyncGroupJoiningResult = guarded {
+    suspend fun activate(backend: CiphertextStore): LanSyncGroupJoiningResult = activate(backend, preserveFilePresetConflicts = false)
+
+    internal suspend fun activateFromVerifiedFile(backend: CiphertextStore): LanSyncGroupJoiningResult =
+        activate(backend, preserveFilePresetConflicts = true)
+
+    private suspend fun activate(backend: CiphertextStore, preserveFilePresetConflicts: Boolean): LanSyncGroupJoiningResult = guarded {
         var record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
         if (record.stage == LanSyncGroupJoinStage.READY) return@guarded LanSyncGroupJoiningResult(profile(record), openOwned(record))
+        require(!preserveFilePresetConflicts || record.recoveryAnchor != null) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
         require(record.stage !in setOf(LanSyncGroupJoinStage.PREPARING, LanSyncGroupJoinStage.PREPARED)) { "SYNC_GROUP_JOIN_PROOF_REQUIRED" }
         val bootstrap = bootstrap(record)
         val bootstrapRoot = directory("bootstrap", record.replicaIdentity == null)
@@ -512,7 +519,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         if ((bootstrap.dataHeads + record.requiredHeads).any { !history.contains(it) }) return@guarded LanSyncGroupJoiningResult(profile(record), null, "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING")
         if (record.projection != null && record.reprepareRequested) {
             val previous = readProjection(record)
-            val node = node(record, previous.projection, reader)
+            val node = node(record, previous, reader)
             if (record.stage == LanSyncGroupJoinStage.NATIVE_ENROLLED) {
                 node.inspect()
                 record = record.copy(reprepareRequested = false); write(record)
@@ -535,27 +542,36 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val projection = if (record.projection != null) readProjection(record) else {
             val service = LanSyncGroupDependencies(trust(record).group, reader, custody, directory("projection-work", true), workspace.resourceStore, validateResource)
             val presets = mutableListOf<LanSyncRecord>()
+            val disputed = mutableListOf<LanSyncRecord>()
+            val disputedUnits = linkedSetOf<String>()
             val versions = reconciled.authenticatedVersions.groupBy { requireNotNull(it.envelope.version).reference() }
             val units = history.admittedVersions().flatMap { it.changes.keys }.filter {
                 it.startsWith("character_cards/") || it.startsWith("format_cards/") || it.startsWith("world_books/")
             }.toSortedSet()
             for (unit in units) {
                 val frontiers = history.frontier(unit)
-                if (frontiers.size != 1) return@guarded LanSyncGroupJoiningResult(profile(record), null, "SYNC_GROUP_JOIN_PRESET_REVIEW_REQUIRED")
-                val frontier = frontiers.single()
-                if (frontier.change.content == null) continue
-                val candidates = requireNotNull(versions[frontier.version]) { "SYNC_GROUP_JOIN_PRESET_EVIDENCE_MISSING" }
-                val metadata = candidates.firstOrNull { it.context.epoch == ledger.current().epoch } ?: candidates.first()
-                val result = service.inspect(reconciled, metadata, unit)
-                if (result.stage != LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE) return@guarded LanSyncGroupJoiningResult(profile(record), null,
-                    result.code ?: "SYNC_GROUP_JOIN_PRESET_${result.stage}")
-                presets += requireNotNull(result.available).decoded.payload.records
+                if (frontiers.isEmpty() || frontiers.size > 1 && !preserveFilePresetConflicts)
+                    return@guarded LanSyncGroupJoiningResult(profile(record), null, "SYNC_GROUP_JOIN_PRESET_REVIEW_REQUIRED")
+                val destination = if (frontiers.size > 1) {
+                    disputedUnits += unit
+                    disputed
+                } else presets
+                for (frontier in frontiers) {
+                    if (frontier.change.content == null) continue
+                    val candidates = requireNotNull(versions[frontier.version]) { "SYNC_GROUP_JOIN_PRESET_EVIDENCE_MISSING" }
+                    val metadata = candidates.firstOrNull { it.context.epoch == ledger.current().epoch } ?: candidates.first()
+                    val result = service.inspect(reconciled, metadata, unit)
+                    if (result.stage != LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE) return@guarded LanSyncGroupJoiningResult(profile(record), null,
+                        result.code ?: "SYNC_GROUP_JOIN_PRESET_${result.stage}")
+                    destination += requireNotNull(result.available).decoded.payload.records
+                }
             }
             var pinned: Projection? = null
             platform.exclusive {
                 workspace.captureGroup(identity.fingerprint).use { capture ->
-                    val value = Projection(LanSyncPresetProjection.propose(presets, capture.snapshot.records), capture.sourceFiles,
-                        ledger.current().reference(), history.heads())
+                    val mapping = LanSyncPresetProjection.forFileRecovery(presets, capture.snapshot.records, disputedUnits, disputed)
+                    val value = Projection(mapping.projection, capture.sourceFiles, ledger.current().reference(), history.heads(),
+                        mapping.localPresetsRequiringReview)
                     record = pinProjection(record, value); pinned = value
                 }
             }
@@ -564,11 +580,11 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         }
         if (record.stage.ordinal < LanSyncGroupJoinStage.NATIVE_ENROLLED.ordinal) {
             require(projection.checkpoint == custody.ledger().current().reference() && projection.heads == history.heads()) { "SYNC_GROUP_JOIN_PROJECTION_VIEW_CHANGED" }
-            val node = node(record, projection.projection, reader)
+            val node = node(record, projection, reader)
             node.initializeNewEnrollment(projection.sourceFiles)
             record = record.copy(stage = LanSyncGroupJoinStage.NATIVE_ENROLLED); write(record); observe("GROUP_JOIN_NATIVE_ENROLLED")
         }
-        val node = node(record, projection.projection, reader)
+        val node = node(record, projection, reader)
         cursor = null
         do { cursor = node.discover(reader, cursor).nextCursor } while (cursor != null)
         node.inspect()
@@ -586,10 +602,11 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val projection = readProjection(record)
         val reader = LanSyncGroupReplicaReader(FileCiphertextStore(path), directory("received-ciphertext", true),
             directory("commit-candidates", true)) { _, failure -> throw failure }
-        return node(record, projection.projection, reader).also { it.inspect() }
+        return node(record, projection, reader).also { it.inspect() }
     }
-    private fun node(record: Record, projection: LanSyncProjection, backend: CiphertextStore) = LanSyncGroupNode(directory("node", true), workspace,
-        platform, identity, trust(record), custody(record, false), recipient(record), backend, protect, unprotect, { emptySet() }, validateResource, projection, observe)
+    private fun node(record: Record, projection: Projection, backend: CiphertextStore) = LanSyncGroupNode(directory("node", true), workspace,
+        platform, identity, trust(record), custody(record, false), recipient(record), backend, protect, unprotect, { emptySet() }, validateResource,
+        projection.projection, projection.localPresetsRequiringReview, observe)
     private fun identity(path: Path) = SyncPlaintextIdentity(Files.size(path), LanSyncResourceStore.hashFile(path, Files.size(path)))
     private fun pinProjection(record: Record, value: Projection): Record = LanSyncScratch(root, "join-projection").use { scratch ->
         val file = scratch.directory.resolve("projection.json")

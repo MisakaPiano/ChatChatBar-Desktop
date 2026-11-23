@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.FormatCard
+import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -52,6 +54,8 @@ class FileRecoveryOwnerTest {
         lateinit var originalBytes: ByteArray
         lateinit var packageDescriptor: CiphertextDescriptor
         lateinit var originalSnapshot: Map<String, ByteArray>
+        var contestedVersions: Set<SyncVersionRef> = emptySet()
+        val contestedUnits = setOf("character_cards/original", "format_cards/group-format", "world_books/group-world")
         val offlineOriginal get() = root.resolve("original-offline")
         fun identity(): LanSyncTlsIdentity {
             if (!Files.exists(identityFile)) {
@@ -71,7 +75,7 @@ class FileRecoveryOwnerTest {
             LanSyncGroupFileRecoveryOwner(root = { roots.incrementAndGet(); Files.createDirectories(recoveryRoot) },
                 joining = ::joining, deviceName = "synthetic file restored daily", beforeSetup = {}, dataWork = dataWork,
                 onReady = { lastAccess.set(it); readyCalls.incrementAndGet() }, clockMillis = clock, observe = observe).also(owners::add)
-        suspend fun seed() {
+        suspend fun seed(contested: Boolean) {
             original.seed()
             original.rotateBeforeJoin()
             val access = requireNotNull(original.service.runtimeAccess())
@@ -79,16 +83,17 @@ class FileRecoveryOwnerTest {
             Files.createDirectories(card.parent)
             LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("original", "inline original card",
                 basicSetting = "exact original business body", createdAt = 1, updatedAt = 1))
+            if (contested) writePresets(original.data, "共同祖先")
             originalBytes = Files.readAllBytes(card)
-            source = access.node.commit(access.node.inspect().review(setOf("character_cards/original")))
+            source = access.node.commit(access.node.inspect().review(if (contested) contestedUnits else setOf("character_cards/original")))
             access.node.upload(source.entry.request.operation, access.replica, access.localTarget)
-            var cursor: CommitCursor? = null
-            do { cursor = access.node.discover(access.replica, cursor).nextCursor } while (cursor != null)
+            scan(access.node, access.replica)
+            if (contested) publishDivergentPresets(access)
             assertTrue(requireNotNull(access.node.reconcileForPrefetch().history).contains(source.entry.version.reference()))
             val publication = access.targetPublication(Files.createDirectory(root.resolve("target-plan")),
                 SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random()), prepare = false)
             val plan = publication.prepare()
-            assertEquals(setOf(source.entry.version.reference()), plan.versions)
+            assertEquals(contestedVersions + source.entry.version.reference(), plan.versions)
             assertTrue(plan.objects.any { it.role == LanSyncGroupTargetObjectRole.VERSION })
             val target = FileCiphertextStore(root.resolve("strict-target"))
             publication.upload(target)
@@ -102,6 +107,52 @@ class FileRecoveryOwnerTest {
             Files.move(original.root, offlineOriginal)
             // The recovery caller receives no original profile, target store or exporter object.
             Files.move(root.resolve("strict-target"), root.resolve("strict-target-offline"))
+        }
+        private suspend fun scan(node: LanSyncGroupNode, store: CiphertextStore) {
+            var cursor: CommitCursor? = null
+            do { cursor = node.discover(store, cursor, 1).nextCursor } while (cursor != null)
+        }
+        private fun writePresets(data: Path, value: String) {
+            fun path(type: String, id: String) = Files.createDirectories(data.resolve("entities/$type")).resolve("$id.json")
+            LanSyncJsonFiles.write(path("character_cards", "original"), CharacterCard.serializer(),
+                CharacterCard("original", "角色 · $value", basicSetting = value, createdAt = 1, updatedAt = 1))
+            LanSyncJsonFiles.write(path("format_cards", "group-format"), FormatCard.serializer(),
+                FormatCard("group-format", "格式 · $value", value, sourcePresetKey = "synthetic-format", sourcePresetVersion = 1, createdAt = 1))
+            LanSyncJsonFiles.write(path("world_books", "group-world"), WorldBook.serializer(),
+                WorldBook("group-world", "世界书 · $value", description = value, createdAt = 1))
+        }
+        private suspend fun publishDivergentPresets(access: LanSyncGroupRuntimeAccess) {
+            val (invitation, peer) = original.prove()
+            val approval = original.service.prepareMember(peer, invitation)
+            original.service.addMember(original.service.resume(original.code), approval.acknowledge(approval.request.approvalBinding))
+            val other = Files.createDirectory(original.root.resolve("offline-peer"))
+            val custody = SyncGroupCustody(Files.createDirectory(other.resolve("custody")), access.trust.group,
+                original.joiningKey, { it.reversedArray() }, { it.reversedArray() })
+            val inbox = SyncGroupInbox(Files.createDirectory(other.resolve("bootstrap")), access.replica, custody, original.joiningKey)
+            var cursor: CommitCursor? = null
+            do { cursor = inbox.discover(cursor, 1).nextCursor } while (cursor != null)
+            val bootstrap = inbox.prepareEnrollment(peer.trust)
+            assertEquals(SyncGroupBootstrapStage.READY, bootstrap.stage, bootstrap.code)
+            val evidence = requireNotNull(bootstrap.evidence)
+            custody.enrollWithKeys(evidence.trust, evidence.records, evidence.keys)
+            val data = Files.createDirectory(other.resolve("data"))
+            val second = LanSyncGroupNode(Files.createDirectory(other.resolve("node")),
+                LanSyncWorkspace(data, Files.createDirectory(other.resolve("workspace")), { Path.of(it) }), platform,
+                original.joiningIdentity, evidence.trust, custody, original.joiningKey, access.replica,
+                { it.reversedArray() }, { it.reversedArray() }, { emptySet() }, { _, _, _ -> })
+            second.initializeNewEnrollment(); scan(second, access.replica)
+            second.apply(requireNotNull(second.inspect().plan))
+            scan(access.node, access.replica)
+            writePresets(original.data, "设备甲版本"); writePresets(data, "设备乙版本")
+            val left = access.node.commit(access.node.inspect().review(contestedUnits))
+            val right = second.commit(second.inspect().review(contestedUnits))
+            contestedVersions = setOf(left.entry.version.reference(), right.entry.version.reference())
+            assertEquals(left.entry.version.parents, right.entry.version.parents)
+            access.node.upload(left.entry.request.operation, access.replica, access.localTarget)
+            second.upload(right.entry.request.operation, access.replica, SyncDeliveryTarget(SyncDeliveryKind.LOCAL_REPLICA, SyncStoreId.random()))
+            scan(access.node, access.replica)
+            val history = requireNotNull(access.node.reconcileForPrefetch().history)
+            contestedUnits.forEach { unit -> assertEquals(contestedVersions, history.frontier(unit).map { it.version }.toSet()) }
         }
         suspend fun rootState(): SyncRootLedgerState {
             val bytes = Files.readAllBytes(recoveryRoot.resolve("management/management-vault.bin"))
@@ -132,10 +183,10 @@ class FileRecoveryOwnerTest {
         fun originalUnchanged() = unchanged(originalSnapshot, offlineOriginal)
         suspend fun close() { owners.forEach { it.closeAndDrain() }; original.close() }
     }
-    private fun fixture(work: suspend (Fixture) -> Unit) = runBlocking {
+    private fun fixture(contested: Boolean = false, work: suspend (Fixture) -> Unit) = runBlocking {
         val root = Files.createTempDirectory("file-recovery-inline-").toRealPath()
         val f = Fixture(root)
-        try { f.seed(); work(f) } finally { f.close(); check(root.toFile().deleteRecursively()) }
+        try { f.seed(contested); work(f) } finally { f.close(); check(root.toFile().deleteRecursively()) }
     }
     private suspend fun review(f: Fixture, owner: LanSyncGroupFileRecoveryOwner,
         input: () -> InputStream = { Files.newInputStream(f.packageFile) }): LanSyncGroupFileRecoveryReview {
@@ -206,6 +257,60 @@ class FileRecoveryOwnerTest {
         assertFalse(synchronized(events) { "FILE_RECOVERY_INVENTORY_VERIFIED" in events })
         assertEquals(f.originalLedger, f.managerLedger()); assertEquals(0L, f.rootState().completedSequence)
         assertNull(f.rootState().pendingOperation); f.noNative(); assertEquals(0, f.readyCalls.get())
+        Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
+        f.originalUnchanged()
+    }
+
+    @Test fun aVerifiedOfflineFileRetainsBothPresetVersionsUntilOneExplicitResolutionAfterColdOpen() = fixture(contested = true) { f ->
+        val alias = "format_cards/local-format"
+        val aliasFile = Files.createDirectories(f.dailyData.resolve("entities/format_cards")).resolve("local-format.json")
+        LanSyncJsonFiles.write(aliasFile, FormatCard.serializer(), FormatCard("local-format", "本机另存格式", "必须保留本机原文",
+            sourcePresetKey = "synthetic-format", sourcePresetVersion = 1, createdAt = 1))
+        val originalAlias = Files.readAllBytes(aliasFile)
+        Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
+        val owner = f.owner(); val initial = review(f, owner)
+        assertContentEquals(originalAlias, Files.readAllBytes(aliasFile))
+        assertEquals(0L, f.rootState().completedSequence)
+        owner.confirm(initial.binding)
+        assertTrue(completed(owner).pending)
+        val enrolled = requireNotNull(f.lastAccess.get())
+        assertEquals(initial.device, enrolled.device)
+        assertEquals(1L, f.rootState().completedSequence)
+        owner.closeAndDrain()
+
+        val cold = requireNotNull(f.joining().runtimeAccess())
+        assertEquals(enrolled.device, cold.device)
+        assertEquals(enrolled.ledger().current().reference(), cold.ledger().current().reference())
+        val before = cold.node.inspectLocal()
+        val rows = requireNotNull(before.plan).units
+        val selected = linkedMapOf<String, LanSyncGroupResolutionChoice>()
+        f.contestedUnits.forEach { unit ->
+            val row = rows.getValue(unit)
+            assertEquals(LanSyncGroupNativeStage.CONFLICT, row.stage)
+            assertEquals(f.contestedVersions, row.incoming.keys)
+            assertEquals(null, row.applied)
+            assertFalse(Files.exists(f.dailyData.resolve("entities/$unit.json")))
+            val version = row.incoming.entries.single { (_, incoming) -> incoming.decoded.payload.records.single().text("name")?.endsWith("设备甲版本") == true }
+            assertTrue(row.incoming.values.any { it.decoded.payload.records.single().text("name")?.endsWith("设备乙版本") == true })
+            selected[unit] = LanSyncGroupResolutionChoice.Keep(LanSyncGroupResolutionSource.Version(version.key))
+        }
+        val independent = before.review(setOf(alias))
+        assertEquals(setOf(alias), independent.requiredBindings.keys)
+        assertFailsWith<IllegalArgumentException> { cold.node.commit(independent) }
+        val decision = cold.node.prepareResolution(selected)
+        assertTrue(cold.node.sourceOperations().isEmpty())
+        assertContentEquals(originalAlias, Files.readAllBytes(aliasFile))
+        val accepted = cold.node.resolve(decision.acknowledge(decision.binding, decision.requiredBindings, decision.requiredRestorations))
+        val version = requireNotNull(accepted).entry.version
+        assertEquals(f.contestedUnits, version.changes.keys)
+        assertTrue(version.changes.values.all { it.previous == f.contestedVersions })
+        f.contestedUnits.forEach { assertTrue(Files.exists(f.dailyData.resolve("entities/$it.json"))) }
+        assertContentEquals(originalAlias, Files.readAllBytes(aliasFile))
+        assertEquals(1L, f.author(cold).state().committedSequence)
+        val again = requireNotNull(f.joining().runtimeAccess()).node.inspectLocal()
+        assertTrue(f.contestedVersions.all { requireNotNull(again.reconciliation.history).contains(it) })
+        assertEquals(1L, f.rootState().completedSequence)
+        assertEquals(1L, f.author(cold).state().committedSequence)
         Files.newInputStream(f.packageFile).use { LanSyncGroupEncryptedFilePackage.verifyReadback(it, f.packageDescriptor) }
         f.originalUnchanged()
     }

@@ -49,16 +49,30 @@ data class LanSyncProjectionOffer(val projection: LanSyncProjection = LanSyncPro
 /** Only unique provenance plus complete semantic equivalence admits an initial identity projection. */
 internal object LanSyncPresetProjection {
     private val roots = setOf("character_cards", "format_cards", "world_books")
+    internal data class FileRecoveryProjection(val projection: LanSyncProjection, val localPresetsRequiringReview: Set<String>)
     fun presets(records: List<LanSyncRecord>) = records.filter { it.type in roots && !it.text("sourcePresetKey").isNullOrBlank() }
     private fun declarations(record: LanSyncRecord) = LanSyncIdentity().declarations(record.copy(body = ordered(record.body).jsonObject))
         .groupBy({ it.first }, { it.second })
-    fun propose(computer: List<LanSyncRecord>, phone: List<LanSyncRecord>): LanSyncProjection {
-        fun key(record: LanSyncRecord) = record.type to record.text("sourcePresetKey")
+    private fun key(record: LanSyncRecord) = record.type to record.text("sourcePresetKey")
+
+    fun forFileRecovery(wire: List<LanSyncRecord>, local: List<LanSyncRecord>, disputedUnits: Set<String>,
+        disputed: List<LanSyncRecord>): FileRecoveryProjection {
+        if (disputedUnits.isEmpty()) return FileRecoveryProjection(propose(wire, local), emptySet())
+        val provenance = presets(disputed).mapTo(hashSetOf(), ::key)
+        val declarations = disputed.flatMapTo(hashSetOf()) { LanSyncIdentity().declarations(it) }
+        fun related(record: LanSyncRecord): Boolean = record.type in roots && (record.key in disputedUnits ||
+            key(record) in provenance || LanSyncIdentity().declarations(record).any(declarations::contains))
+        val aliases = local.filter(::related).filterNot { it.key in disputedUnits }.mapTo(sortedSetOf(), LanSyncRecord::key)
+        return FileRecoveryProjection(propose(wire, local) { incoming, current -> !related(incoming) && !related(current) }, aliases)
+    }
+
+    fun propose(computer: List<LanSyncRecord>, phone: List<LanSyncRecord>,
+        eligible: (LanSyncRecord, LanSyncRecord) -> Boolean = { _, _ -> true }): LanSyncProjection {
         val left = presets(computer).groupBy(::key)
         val right = presets(phone).groupBy(::key)
         var candidates = left.keys.intersect(right.keys).sortedWith(compareBy({ it.first }, { it.second })).mapNotNull { key ->
             val a = left.getValue(key).singleOrNull(); val b = right.getValue(key).singleOrNull()
-            if (a == null || b == null || a.body["sourcePresetVersion"] != b.body["sourcePresetVersion"]) null else {
+            if (a == null || b == null || !eligible(a, b) || a.body["sourcePresetVersion"] != b.body["sourcePresetVersion"]) null else {
                 val aIds = declarations(a); val bIds = declarations(b)
                 if (aIds.keys == bIds.keys && aIds.all { (type, ids) -> ids.size == bIds.getValue(type).size }) a to b else null
             }

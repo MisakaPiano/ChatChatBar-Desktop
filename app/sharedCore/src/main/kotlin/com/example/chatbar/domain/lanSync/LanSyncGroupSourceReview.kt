@@ -70,7 +70,8 @@ class LanSyncGroupSourceReview private constructor(private val native: LanSyncGr
                 val related = native.components.getValue(unit).filterTo(linkedSetOf()) {
                     it !in selected && native.units.getValue(it).stage != LanSyncGroupNativeStage.UNCHANGED
                 }
-                val needsConfirmation = conflict || related.isNotEmpty() || gate.removals.isNotEmpty() || missing.isNotEmpty() ||
+                val needsConfirmation = row.code == LanSyncGroupNativePlanner.LOCAL_PRESET_REVIEW ||
+                    conflict || related.isNotEmpty() || gate.removals.isNotEmpty() || missing.isNotEmpty() ||
                     impacts.values.flatten().any { it.needsConfirmation }
                 val unitBinding = lanSyncHash(buildJsonObject {
                     put("unit", unit); put("current", row.currentHash?.let(::JsonPrimitive) ?: JsonNull)

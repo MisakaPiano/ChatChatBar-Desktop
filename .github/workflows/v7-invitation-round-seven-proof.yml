@@ -40,6 +40,8 @@ jobs:
             --tests '*LanSyncGroupNativeApplyOwnerTest.retainedMembershipForkAllowsOnlyVerifiedAppliedReceiptRepairWithoutReplayingNativeData' \
             --tests '*LanSyncGroupNodeTest.aCommittedLocalRestoreRetriesOnlyRepositoryRefreshAfterColdOpen' \
             --tests '*LanSyncGroupNodeTest.signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown' \
+            --tests '*FileRecoveryOwnerTest.aVerifiedOfflineFileRetainsBothPresetVersionsUntilOneExplicitResolutionAfterColdOpen' \
+            --tests '*FileRecoveryOwnerTest.anOfflineFileRecoversTheSameRootAndActualNativeBodyAndColdReadyRetryStillRequiresReview' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4

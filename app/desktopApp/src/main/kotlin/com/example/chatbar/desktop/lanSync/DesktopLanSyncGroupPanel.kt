@@ -367,6 +367,7 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
     StatusText("已冻结：${display.kind} · ${display.title}")
     StatusText(display.identifier)
     LanSyncGroupDisplay.missingLocalImageNotice(row.code)?.let { StatusText(it) }
+    LanSyncGroupDisplay.localPresetReviewNotice(row.code)?.let { StatusText(it) }
     StatusText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。图片从本次冻结内容对应的本机缓存中读取。")
     DesktopGroupReviewButton("关闭冻结详情", { actions.closeImagePreview(); selected = null })
     if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,

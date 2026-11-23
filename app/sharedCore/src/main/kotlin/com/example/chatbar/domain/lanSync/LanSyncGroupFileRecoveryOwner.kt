@@ -352,7 +352,7 @@ class LanSyncGroupFileRecoveryOwner internal constructor(private val root: () ->
                 require(access.ledger().current().members[access.device]?.active == true) { "SYNC_GROUP_FILE_RECOVERY_DAILY_KEYS_CHANGED" }
                 return@withControl finishNative(value, access, backend)
             }
-            val joined = daily.activate(backend); checkSession(value)
+            val joined = daily.activateFromVerifiedFile(backend); checkSession(value)
             if (joined.profile.stage != LanSyncGroupJoinStage.READY || joined.node == null) Result.Waiting
             else finishNative(value, requireNotNull(daily.runtimeAccess()), backend)
         }

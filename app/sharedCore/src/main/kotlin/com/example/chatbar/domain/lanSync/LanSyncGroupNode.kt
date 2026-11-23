@@ -50,7 +50,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private val recipient: SyncDeviceEncryptionKey, private val dependencyStore: CiphertextStore,
     protect: (ByteArray) -> ByteArray, unprotect: (ByteArray) -> ByteArray,
     private val freshLocalRevisions: () -> Set<String>, private val validateResource: (String, Path, LanSyncRecord) -> Unit,
-    private val projection: LanSyncProjection = LanSyncProjection(), private val observe: (String) -> Unit = {}) {
+    private val projection: LanSyncProjection = LanSyncProjection(), private val localPresetsRequiringReview: Set<String> = emptySet(),
+    private val observe: (String) -> Unit = {}) {
     private val operation = Mutex()
     private val discoveryOperation = Mutex()
     private var current: SyncInboxReconciliation? = null
@@ -401,7 +402,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             val known = it.snapshot.units().keys + state.units.keys + history.admittedVersions().flatMap { version -> version.changes.keys } + pendingResolutions
             LanSyncGroupNativePlanner.prepare(it, view, state.units, dependencies, evidence,
                 freshLocalRevisions() + (pendingRestorations.keys + pendingResolutions).filter { unit -> unit in known },
-                unpublishedLocalUnits = pendingResolutions, heldLocalUnits = heldResolutions)
+                unpublishedLocalUnits = pendingResolutions, heldLocalUnits = heldResolutions,
+                localPresetsRequiringReview = localPresetsRequiringReview)
         } }
         val restricted = LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)
         val incoming = LanSyncGroupIncomingReview.prepare(restricted)

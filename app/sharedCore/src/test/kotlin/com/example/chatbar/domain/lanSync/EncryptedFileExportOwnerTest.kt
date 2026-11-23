@@ -44,9 +44,9 @@ class EncryptedFileExportOwnerTest {
         fixture { f ->
             val authorized = AtomicBoolean(true)
             val owner = LanSyncGroupEncryptedFileExportOwner(prepare = { active ->
-                LanSyncGroupEncryptedFilePackage.prepare(f.plan, f.store, f.trust, f.cipher, f.work) {
+                LanSyncGroupEncryptedFilePackage.prepare(f.plan, f.store, f.trust, f.cipher, f.work, checkActive = {
                     active(); check(authorized.get()) { "SYNTHETIC_EXPORT_AUTHORITY_WITHDRAWN" }
-                }
+                })
             })
             try {
                 val binding = prepared(owner)

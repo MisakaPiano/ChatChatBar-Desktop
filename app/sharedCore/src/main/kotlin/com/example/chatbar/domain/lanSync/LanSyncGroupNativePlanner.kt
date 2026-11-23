@@ -28,6 +28,7 @@ class LanSyncGroupNativePlan internal constructor(val before: LanSyncSnapshot, v
 /** Frozen native planning only. Source proposals stay unsigned; OS admission/custody/WAL still own mutation. */
 object LanSyncGroupNativePlanner {
     internal const val RECOVERY_HELD = "SYNC_GROUP_APPLIED_RECOVERY_HELD"
+    internal const val LOCAL_PRESET_REVIEW = "SYNC_GROUP_RECOVERED_LOCAL_PRESET_REVIEW"
 
     internal fun wasHeldByRecovery(reconciled: SyncInboxReconciliation, unit: String, state: LanSyncGroupAppliedUnit,
         reference: SyncVersionRef): Boolean = reconciled.recoveryHeldVersions[reference]?.changes?.get(unit)?.let {
@@ -38,7 +39,7 @@ object LanSyncGroupNativePlanner {
         applied: Map<String, LanSyncGroupAppliedUnit>, dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>,
         recordEvidence: LanSyncGroupRecordEvidence, freshLocalRevisions: Set<String> = emptySet(),
         transaction: String = UUID.randomUUID().toString(), unpublishedLocalUnits: Set<String> = emptySet(),
-        heldLocalUnits: Set<String> = emptySet()): LanSyncGroupNativePlan {
+        heldLocalUnits: Set<String> = emptySet(), localPresetsRequiringReview: Set<String> = emptySet()): LanSyncGroupNativePlan {
         val source = current.snapshot.let { it.copy(records = Collections.unmodifiableList(it.records.toList()),
             resources = Collections.unmodifiableMap(it.resources.toMap()), coveredTypes = Collections.unmodifiableSet(it.coveredTypes.toSet()),
             excludedTypes = Collections.unmodifiableSet(it.excludedTypes.toSet())) }
@@ -112,7 +113,8 @@ object LanSyncGroupNativePlanner {
                     !gate.permitsContent -> row(LanSyncGroupNativeStage.RECORD_REVIEW, records = gate, code = "SYNC_GROUP_SOURCE_RECORD_REVIEW")
                     local == null && before?.valueHash != null -> row(LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW, code = "SYNC_GROUP_UNSIGNED_LOCAL_DELETION")
                     frontier.isNotEmpty() && references != before?.frontiers -> row(LanSyncGroupNativeStage.CONFLICT, code = "SYNC_GROUP_LOCAL_AND_INCOMING_CHANGED")
-                    else -> row(LanSyncGroupNativeStage.LOCAL_PROPOSAL, code = "SYNC_GROUP_UNSIGNED_LOCAL_CHANGE")
+                    else -> row(LanSyncGroupNativeStage.LOCAL_PROPOSAL, code =
+                        if (before == null && unit in localPresetsRequiringReview) LOCAL_PRESET_REVIEW else "SYNC_GROUP_UNSIGNED_LOCAL_CHANGE")
                 }
                 continue
             }

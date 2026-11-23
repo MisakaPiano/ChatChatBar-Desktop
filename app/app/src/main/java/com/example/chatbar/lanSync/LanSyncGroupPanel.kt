@@ -424,6 +424,7 @@ private fun GroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: Boolean,
     CbText("已冻结：${display.kind} · ${display.title}")
     CbText(display.identifier)
     LanSyncGroupDisplay.missingLocalImageNotice(row.code)?.let { CbText(it, color = ChatBarTheme.colors.warning) }
+    LanSyncGroupDisplay.localPresetReviewNotice(row.code)?.let { CbText(it) }
     CbText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。图片从本次冻结内容对应的本机缓存中读取。")
     CbButton("关闭冻结详情", { actions.closeImagePreview(); selected = null }, variant = ButtonVariant.Secondary)
     if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
