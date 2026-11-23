@@ -15,6 +15,7 @@ import java.io.IOException
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.FileTime
 import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -128,6 +129,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
 
     @Test fun membersContinueOverNearbyAfterMissingAnApprovalFromTheSameInstalledRecovery() =
         actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, relayAfterRecovery = true)
+
+    @Test fun anotherAdministratorCanProvideSignedRecoveryWhileNativeApplyIsPartiallyWritten() =
+        actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, externalRecoveryBeforeApply = true)
 
     @Test fun twoOfflineManagersRevokeDifferentMembersAndBothRevocationsSurviveExplicitRecovery() = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-revocation-fork-").toRealPath()
@@ -298,7 +302,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
     }
 
     private suspend fun applySignedRecovery(coordinator: LanSyncGroupCoordinator, founder: LanSyncGroupAdministrationTest.Fixture,
-        signed: SignedRecovery, parent: SyncDeviceLedgerRecord) {
+        signed: SignedRecovery, parent: SyncDeviceLedgerRecord, afterInstalling: () -> Unit = {}) {
         val groupFile = founder.profile.resolve("custody/group.protected")
         val originals = Files.readAllBytes(groupFile)
         coordinator.prepareMembershipRecoveryImport { signed.bytes.inputStream() }
@@ -326,6 +330,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         assertEquals(signed.proof.records.toSet(), ledger.ancestry().toSet())
         assertContentEquals(signed.bytes, exportPackage(coordinator, review.binding))
         assertTrue(coordinator.state.value.paused)
+        afterInstalling()
         coordinator.resumeIfConfigured()
         awaitRecovery(coordinator, "normal sync resume after explicit import") {
             !it.paused && !it.busy && it.stage == LanSyncGroupPanelStage.READY &&
@@ -557,8 +562,58 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         } finally { discovery.close(); coldB.closeAndDrain(); coldC.close() }
     }
 
+    private data class InterruptedFounderApply(val transaction: String, val receipt: Path, val written: Path,
+        val missing: Path, val bytes: ByteArray, val modified: FileTime) {
+        fun verifyPending(workspace: LanSyncWorkspace) {
+            assertTrue(workspace.authorized(transaction))
+            assertFalse(workspace.verifiedApplied(transaction))
+            assertFalse(Files.exists(receipt))
+            assertFalse(Files.exists(missing))
+            assertContentEquals(bytes, Files.readAllBytes(written))
+            assertEquals(modified, Files.getLastModifiedTime(written))
+        }
+    }
+
+    private suspend fun interruptAuthorizedFounderApply(founder: LanSyncGroupAdministrationTest.Fixture, joined: Joined,
+        a: LanSyncGroupRuntimeAccess, b: LanSyncGroupRuntimeAccess): InterruptedFounderApply {
+        val id = "partial-recovery"
+        val unit = "conversation/$id"
+        writeChat(joined.data, id, "message", "合成已授权部分写入")
+        val sent = b.node.commit(b.node.inspect().review(setOf(unit)))
+        b.node.upload(sent.entry.request.operation, b.replica, b.localTarget)
+        val source = LanSyncGroupAppTransport(b, network) { _, _ -> }
+        val recipient = LanSyncGroupAppTransport(a, network) { _, _ -> }
+        try {
+            val port = source.start()
+            val route = recipient.remote(LanSyncPeer(b.device, "synthetic approved sender", "10.0.0.1", port))
+            a.reader.routes("partialnative", listOf(LanSyncGroupReplicaReader.Route("partial-native-tls", route)))
+            receiveFrom(a, route)
+            val incoming = a.node.inspect()
+            val plan = requireNotNull(incoming.plan)
+            assertEquals(setOf(unit), plan.advances.keys)
+            founder.journalObserver = { point, index ->
+                if (point == "ENTRY" && index == 0) throw IOException("SYNTHETIC_PARTIAL_FOUNDER_APPLY")
+            }
+            assertEquals("SYNTHETIC_PARTIAL_FOUNDER_APPLY", assertFailsWith<IOException> { a.node.apply(plan) }.message)
+            val paths = listOf(founder.data.resolve("entities/chat_sessions/$id.json"),
+                founder.data.resolve("entities/chat_messages/${id}_message.json"))
+            val present = paths.single(Files::isRegularFile)
+            val missing = paths.single { it != present }
+            Files.setLastModifiedTime(present, FileTime.fromMillis(1_700_000_000_000))
+            val sequence = (incoming.nativeState.completedSequence + 1).toString().padStart(19, '0')
+            return InterruptedFounderApply(plan.plan.transaction, founder.profile.resolve("node/native/receipt-$sequence.protected"),
+                present, missing, Files.readAllBytes(present), Files.getLastModifiedTime(present)).also { it.verifyPending(founder.workspace) }
+        } finally {
+            founder.journalObserver = { _, _ -> }
+            a.reader.removeRoutes("partialnative")
+            recipient.closeAndDrain()
+            source.closeAndDrain()
+        }
+    }
+
     private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false,
-        continueAuthor: Boolean = false, nativeReceiptBeforeFork: Boolean = false, relayAfterRecovery: Boolean = false) = runBlocking {
+        continueAuthor: Boolean = false, nativeReceiptBeforeFork: Boolean = false, relayAfterRecovery: Boolean = false,
+        externalRecoveryBeforeApply: Boolean = false) = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-administrators-").toRealPath()
         try {
             LanSyncGroupAdministrationTest.Fixture(root).use { founder ->
@@ -625,6 +680,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         } finally { caller.closeAndDrain(); serving.closeAndDrain() }
                         approved
                     }
+                    val founderPending = if (externalRecoveryBeforeApply) interruptAuthorizedFounderApply(founder, joined, a, b) else null
                     val retainedReceipt = if (nativeReceiptBeforeFork) {
                         writeChat(founder.data, "prepare-receipt", "retained", "成员分叉前已经应用的消息")
                         val sent = a.node.commit(a.node.inspect().review(setOf("conversation/prepare-receipt")))
@@ -744,9 +800,14 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         assertFalse(live.state.value.managementCanInvite)
                         assertNull(live.state.value.invitation)
                         assertNull(live.actionsReview.value)
-                        val blocked = runCatching { a.node.inspectLocal() }
-                        if (blocked.isSuccess) assertEquals(LanSyncGroupNodeStage.TRUST_BLOCKED, blocked.getOrThrow().stage)
-                        else assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", blocked.exceptionOrNull()?.message)
+                        if (founderPending != null) {
+                            assertTrue(a.node.reconcileForPrefetch().trustBlocked)
+                            founderPending.verifyPending(founder.workspace)
+                        } else {
+                            val blocked = runCatching { a.node.inspectLocal() }
+                            if (blocked.isSuccess) assertEquals(LanSyncGroupNodeStage.TRUST_BLOCKED, blocked.getOrThrow().stage)
+                            else assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", blocked.exceptionOrNull()?.message)
+                        }
                         val originalFork = assertNotNull(founder.custody().verifiedFork())
                         assertEquals(setOf(cRow, dRow), originalFork.branches.toSet())
                         assertEquals(cRow.reference(), founder.custody().trust().checkpoint)
@@ -819,7 +880,14 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             assertFalse(aCold.state.value.managementCanInvite)
                             if (signed != null) {
                                 aCold.pauseAndDrain()
-                                applySignedRecovery(aCold, founder, signed, parent)
+                                applySignedRecovery(aCold, founder, signed, parent) { founderPending?.verifyPending(founder.workspace) }
+                                founderPending?.let { pending ->
+                                    assertTrue(founder.workspace.verifiedApplied(pending.transaction))
+                                    assertTrue(Files.isRegularFile(pending.receipt))
+                                    assertTrue(Files.isRegularFile(pending.missing))
+                                    assertEquals(pending.modified, Files.getLastModifiedTime(pending.written))
+                                    assertContentEquals(pending.bytes, Files.readAllBytes(pending.written))
+                                }
                             }
                         } finally { aCold.closeAndDrain() }
                         if (held != null && signed != null) founderOwner().use { reopened ->

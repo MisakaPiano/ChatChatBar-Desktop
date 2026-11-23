@@ -91,6 +91,7 @@ jobs:
         run: |
           bash ./gradlew :sharedCore:test \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.membersContinueOverNearbyAfterMissingAnApprovalFromTheSameInstalledRecovery' \
+            --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.anotherAdministratorCanProvideSignedRecoveryWhileNativeApplyIsPartiallyWritten' \
             --tests '*LanSyncGroupLedgerCatchUpTest' \
             --tests '*LanSyncGroupCiphertextTransportTest.recoveredAuthorityRejectsLegacyStoreAndLedgerCommandsBeforeOpeningTheBackend' \
             --tests '*LanSyncGroupJoiningTest.revokedJoinWithAdmittedKeysAndMissingInitialDataArchivesWithoutReusingItsRecipient' \

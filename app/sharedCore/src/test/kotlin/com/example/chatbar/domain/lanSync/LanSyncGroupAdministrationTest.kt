@@ -19,7 +19,9 @@ import kotlin.test.*
 class LanSyncGroupAdministrationTest {
     internal class Fixture(val root: Path) : AutoCloseable {
         val profile = Files.createDirectory(root.resolve("profile")); val data = Files.createDirectory(root.resolve("data"))
-        val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("workspace")), { Path.of(it) })
+        var journalObserver: (String, Int) -> Unit = { _, _ -> }
+        val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("workspace")), { Path.of(it) },
+            observeJournal = { point, index -> journalObserver(point, index) })
         val identity = LanSyncTlsIdentity.create(); var hook: (String) -> Unit = {}; var gated = false
         val service = LanSyncGroupEnrollment(profile, workspace, object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) { check(!gated); gated = true; try { work() } finally { gated = false } }
