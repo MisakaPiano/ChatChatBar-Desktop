@@ -341,6 +341,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_JOIN_HAS_LOCAL_ADMISSION" -> "本机已保留获准的组资料。请从原申请继续加入。"
             "SYNC_GROUP_JOIN_RESTORE_SHELVED_FIRST" -> "该设备组已有暂存申请。请恢复原申请以沿用原设备身份。"
             "SYNC_GROUP_JOIN_ROUTE_NO_LONGER_ACTIVE", "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" -> "原连接身份已停用，请通过同组仍有效的设备核对。"
+            "SYNC_GROUP_JOIN_INVITATION_REVOKED" -> "原申请已撤销。若可归档，请先结束旧申请，再使用新邀请。"
             "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" -> "邀请已过期或设备组已更新。请重新生成邀请。"
             "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" -> "暂时无法校验已发布的设备组历史。请重新检查同步。"
             "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "本机会话有无法读取或处理的图片。其他会话仍可同步。补回可读的原图，或保留原件并换用兼容副本。"
@@ -453,8 +454,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = recovery,
                     fileRecoveryJoinScope = joined.localReplica.id.value.takeUnless { joined.membershipRevoked },
                     joiningDevice = joined.device.takeUnless { recovery }, canAbandonJoin = joined.canAbandon,
-                    canRefreshJoinPreparation = !joined.ledgerConflict && joined.stage in reprepareJoinStages, canShelveJoin = joined.canShelve,
+                    canRefreshJoinPreparation = joined.canRefreshPreparation(), canShelveJoin = joined.canShelve,
                     canArchiveRevokedJoin = joined.canArchiveRevoked, joiningLedgerConflict = joined.ledgerConflict,
+                    joiningMembershipRevoked = joined.membershipRevoked,
                     status = if (joined.ledgerConflict) joiningLedgerConflictText
                     else if (recovery) "恢复进度已保留，可从网盘或加密文件入口接续"
                     else if (joined.membershipRevoked) "原组已撤销此设备，已保留本机资料"
@@ -720,6 +722,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
 
     private fun enterJoin(readOffer: () -> LanSyncGroupInviteOffer) = action("加入设备组", allowWhilePaused = true) {
         require(!state.value.joiningLedgerConflict) { "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" }
+        require(!state.value.joiningMembershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
         pendingJoinProof = null
         val offer = readOffer()
         requireNotNull(offer.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
@@ -767,12 +770,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         LanSyncGroupPanelState(busy = it.busy, paused = paused, privacyRevision = it.privacyRevision + 1,
             shelvedJoins = shelved, status = status)
     }
+    private fun LanSyncGroupJoiningProfile.canRefreshPreparation(): Boolean =
+        !ledgerConflict && !membershipRevoked && stage in reprepareJoinStages
+
     private fun showJoining(profile: LanSyncGroupJoiningProfile, status: String) = mutableState.update {
         it.copy(stage = LanSyncGroupPanelStage.JOINING, joiningDevice = profile.device, canAbandonJoin = profile.canAbandon,
             fileRecoveryJoinScope = profile.localReplica.id.value.takeUnless { profile.membershipRevoked },
             canShelveJoin = profile.canShelve, canArchiveRevokedJoin = profile.canArchiveRevoked,
-            canRefreshJoinPreparation = !profile.ledgerConflict && profile.stage in reprepareJoinStages,
-            joiningLedgerConflict = profile.ledgerConflict, status = if (profile.ledgerConflict) joiningLedgerConflictText else status)
+            canRefreshJoinPreparation = profile.canRefreshPreparation(), joiningLedgerConflict = profile.ledgerConflict,
+            joiningMembershipRevoked = profile.membershipRevoked, status = if (profile.ledgerConflict) joiningLedgerConflictText else status)
     }
     private fun unverifiedJoinStatus(profile: LanSyncGroupJoiningProfile): String = when {
         profile.invitationExpired -> {
@@ -834,9 +840,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val uncertain = retained?.stage == LanSyncGroupJoinStage.PROOF_ATTEMPTED && !retained.membershipVerified
             val approvalGate = (waiting || uncertain) && isAmbiguousJoinConnection(classified)
             val offlineConflict = retained?.ledgerConflict == true && isAmbiguousJoinConnection(classified)
-            mutableState.update { it.copy(canRefreshJoinPreparation = retained?.ledgerConflict != true && retained?.stage in reprepareJoinStages,
+            mutableState.update { it.copy(canRefreshJoinPreparation = retained?.canRefreshPreparation() == true,
                 canShelveJoin = retained?.canShelve == true, canArchiveRevokedJoin = retained?.canArchiveRevoked == true,
-                joiningLedgerConflict = retained?.ledgerConflict == true,
+                joiningLedgerConflict = retained?.ledgerConflict == true, joiningMembershipRevoked = retained?.membershipRevoked == true,
                 error = if (approvalGate || offlineConflict) null else it.error,
                 status = when {
                     retained?.ledgerConflict == true -> joiningLedgerConflictText
@@ -868,7 +874,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     else unverifiedJoinStatus(result.profile)
             }
             mutableState.update { it.copy(error = null, status = status, joiningLedgerConflict = result.profile.ledgerConflict,
-                canRefreshJoinPreparation = !result.profile.ledgerConflict && result.profile.stage in reprepareJoinStages,
+                canRefreshJoinPreparation = result.profile.canRefreshPreparation(),
+                joiningMembershipRevoked = result.profile.membershipRevoked,
                 canShelveJoin = result.profile.canShelve, canArchiveRevokedJoin = result.profile.canArchiveRevoked) }
         }
     }
@@ -1342,7 +1349,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         opened.membershipRecovery.publishInstalledCheckpoint()
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, recoveryJoining = false, canAbandonUnactivated = false,
             joiningDevice = null, canAbandonJoin = false, canRefreshJoinPreparation = false, canShelveJoin = false, shelvedJoins = emptyList(),
-            canArchiveRevokedJoin = false, joiningLedgerConflict = false, membershipConflict = null,
+            canArchiveRevokedJoin = false, joiningLedgerConflict = false, joiningMembershipRevoked = false, membershipConflict = null,
             membershipRecoveryPackageImportAllowed = true, membershipRecoveryExportBinding = opened.membershipRecovery.exportBinding(),
             error = if (it.stage == LanSyncGroupPanelStage.JOINING) null else it.error,
             localManagementAvailable = requireNotNull(access).localManagementAvailable,

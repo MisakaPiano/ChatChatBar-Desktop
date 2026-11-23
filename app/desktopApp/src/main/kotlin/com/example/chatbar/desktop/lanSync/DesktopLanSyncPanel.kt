@@ -101,9 +101,7 @@ private fun DesktopLanSyncMembershipRecoveryFiles(coordinator: LanSyncGroupCoord
 @Composable
 private fun DesktopLanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState, filePicker: DesktopFilePicker) {
     val type = remember { DesktopFileType("设备组邀请文件", listOf("ccbinvite")) }
-    val canOpen = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING &&
-        !state.recoveryJoining && !state.canArchiveRevokedJoin && !state.joiningLedgerConflict
-    if (canOpen) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+    if (state.canEnterInvitation) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
         BootstrapButton("打开设备组邀请文件", secondary = true, enabled = !state.busy) {
             filePicker.pickOpenFile(type)?.let { path -> coordinator.beginJoinFromFile { Files.newInputStream(path, NOFOLLOW_LINKS) } }
         }

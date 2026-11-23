@@ -64,7 +64,12 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val membershipRecoveryPackageImportAllowed: Boolean = false,
     val membershipRecoveryExportBinding: String? = null,
     val membershipRecoveryImport: LanSyncMembershipRecoveryImportReview? = null,
-    internal val fileRecoveryJoinScope: String? = null) {
+    internal val fileRecoveryJoinScope: String? = null,
+    val joiningMembershipRevoked: Boolean = false) {
+    val canEnterInvitation: Boolean
+        get() = stage == LanSyncGroupPanelStage.EMPTY ||
+            stage == LanSyncGroupPanelStage.JOINING && !recoveryJoining && !joiningLedgerConflict && !joiningMembershipRevoked
+
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 

@@ -751,21 +751,47 @@ class LanSyncGroupJoiningTest {
         assertEquals(awaiting.profile.localReplica, revoked.localReplica)
         assertTrue(revoked.membershipRevoked && revoked.canArchiveRevoked)
         val retained = retainedFiles(root)
-        val archive = cold.archiveRevokedInvitation()
-        assertEquals(retained, retainedFiles(archive))
-        assertNull(cold.profile())
-
         LanSyncGroupAdministrationTest.Fixture(Files.createDirectory(f.founder.root.resolve("another-group"))).use { next ->
             next.seed()
+            val coordinator = f.protectedCoordinator(object : LanSyncNetwork {
+                override val discoveryEnabled = false
+                override fun addresses() = emptyList<String>()
+                override fun accepts(address: InetAddress) = false
+                override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket =
+                    error("A paused revoked request must not dial")
+            })
             next.service.invitation(16384).use { invitation ->
-                val prepared = cold.prepare(invitation.issue("10.0.0.1", 16385).code()) {}
-                assertNotEquals(revoked.trust.group, prepared.trust.group)
-                assertEquals(revoked.device, prepared.device)
-                assertNotEquals(originalRecipient, f.control().getValue("recipient"))
-                assertFalse(Files.exists(root.resolve("custody/group.protected")))
+                val offer = invitation.issue("10.0.0.1", 16385)
+                try {
+                    coordinator.open()
+                    val panel = withTimeout(15_000) { coordinator.state.first { !it.busy && it.canArchiveRevokedJoin } }
+                    assertFalse(panel.canEnterInvitation)
+                    assertFalse(panel.canRefreshJoinPreparation)
+                    val reads = AtomicInteger()
+                    coordinator.beginJoinFromFile { reads.incrementAndGet(); error("Revoked request must not read a file") }
+                    withTimeout(15_000) { coordinator.state.first { !it.busy && it.error?.contains("请先结束旧申请") == true } }
+                    assertEquals(0, reads.get())
+                    assertEquals("SYNC_GROUP_JOIN_INVITATION_REVOKED", assertFailsWith<IllegalArgumentException> {
+                        cold.refreshInvitation(offer.code()) { fail("Revoked request must not admit a new offer") }
+                    }.message)
+                    assertEquals(retained, retainedFiles(root))
+                } finally { coordinator.closeAndDrain() }
             }
+            val archive = cold.archiveRevokedInvitation()
+            assertEquals(retained, retainedFiles(archive))
+            assertNull(cold.profile())
+
+            val nextGroup = Joiner(next, f.identity)
+            val proof = nextGroup.prove(cold)
+            val prepared = assertNotNull(cold.profile())
+            assertNotEquals(revoked.trust.group, prepared.trust.group)
+            assertEquals(revoked.device, prepared.device)
+            assertNotEquals(originalRecipient, f.control().getValue("recipient"))
+            assertFalse(Files.exists(root.resolve("custody/group.protected")))
+            nextGroup.admit(proof)
+            assertEquals(LanSyncGroupJoinStage.READY, cold.activate(nextGroup.backend()).profile.stage)
+            assertEquals(retained, retainedFiles(archive))
         }
-        assertEquals(retained, retainedFiles(archive))
     }
 
     @Test fun revokedJoinWithOnlyNodePreparationArchivesAfterALocalEditInterruptedEnrollment() = fixture { f ->

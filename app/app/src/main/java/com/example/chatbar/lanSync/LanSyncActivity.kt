@@ -202,9 +202,7 @@ internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state:
             }
         }
     }
-    val canOpen = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING &&
-        !state.recoveryJoining && !state.canArchiveRevokedJoin && !state.joiningLedgerConflict
-    if (canOpen) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+    if (state.canEnterInvitation) Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
         CbButton("打开设备组邀请文件", { openFile.launch(arrayOf("*/*")) }, enabled = !state.busy, variant = ButtonVariant.Secondary)
     }
     val offer = state.invitation?.takeIf { state.invitationFileOnly }

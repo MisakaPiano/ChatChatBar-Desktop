@@ -399,7 +399,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         refreshOffer(LanSyncGroupInviteOffer.parse(code, wallTime()), admission)
 
     internal suspend fun refreshOffer(parsed: LanSyncGroupInviteOffer, admission: (LanSyncGroupInviteOffer) -> Unit): LanSyncGroupJoiningProfile = guarded {
-        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        val record = checkRetainedMembership(requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" })
+        require(!record.membershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
         val offer = requireNotNull(record.offer) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
         require(record.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED,
             LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, LanSyncGroupJoinStage.KEYS_ADMITTED)) { "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" }
@@ -420,7 +421,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     }
     /** Re-review is explicit and durable; activation decides from actual retained native progress. */
     suspend fun refreshPreparation(): LanSyncGroupJoiningProfile = guarded {
-        val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
+        val record = checkRetainedMembership(requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" })
+        require(!record.membershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
         require(record.stage in setOf(LanSyncGroupJoinStage.KEYS_ADMITTED, LanSyncGroupJoinStage.NATIVE_ENROLLED)) { "SYNC_GROUP_JOIN_REPREPARE_NOT_AVAILABLE" }
         val updated = record.copy(reprepareRequested = true)
         write(updated); profile(updated)
