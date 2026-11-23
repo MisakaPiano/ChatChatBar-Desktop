@@ -10,6 +10,8 @@ import subprocess
 import sys
 import time
 
+from adb_observation import AdbFailure, observation, interpret, instrumentation_summary
+
 SOURCE='40981ae4045114d1d2a076a82b02b7c7f5275cc7'
 PACKAGE='com.example.chatbar.lansyncnext'
 CLASS='com.example.chatbar.lanSync.LanV7ReverseSyntheticWriterTest'
@@ -64,26 +66,45 @@ def main():
         'status':'NOT_RUN','phase':'PRECHECK','errorCode':None,'nonDeliveryDebugOnly':True,
         'ordinaryAndroidPasteUiProved':False,'readyObserved':False,'oracleCopied':False,
         'windowsReceived':False,'oneNativeMethodPassed':False,'privateProtocolCleaned':False,'humanAcceptance':False,
-        'terminal':False,'nativeProgressAvailability':'UNREAD','lastNativeProgress':None,'checkpointWriteFailed':False}
+        'terminal':False,'nativeProgressAvailability':'UNREAD','lastNativeProgress':None,'checkpointWriteFailed':False,
+        'firstFatalAdb':None,'lastAdbOperation':None,'lastProgressAdbFailure':None,'instrumentationAtFailure':None,
+        'shellV2Observed':False,'runAsRootObserved':False}
     proc=None;logs=[];prefix=[str(args.adb),'-s',args.serial];result_owned=False;last_progress=0;forward=None
     def checkpoint():
         if result_owned:
             try:publish(args.result,r,replace=True)
             except Exception:r['checkpointWriteFailed']=True
-    def call(*command,stdin=None,missing=False):
-        q=subprocess.run(prefix+list(command),input=stdin,capture_output=True,timeout=20)
-        need(len(q.stdout)<=65536 and len(q.stderr)<=4096,'ADB_OUTPUT_LIMIT')
-        if missing and q.returncode==1 and not q.stdout and b'No such file or directory' in q.stderr:return None
-        need(q.returncode==0 and not q.stderr.strip(),'ADB_COMMAND_FAILED');return q.stdout
+    def call(operation,*command,stdin=None,missing=False):
+        r['lastAdbOperation']=operation;checkpoint()
+        try:q=subprocess.run(prefix+list(command),input=stdin,capture_output=True,timeout=20)
+        except subprocess.TimeoutExpired as failure:
+            raise AdbFailure(observation(operation,None,failure.stdout or b'',failure.stderr or b'',
+                             transport='TIMEOUT'),'ADB_TRANSPORT_TIMEOUT') from None
+        except OSError:
+            raise AdbFailure(observation(operation,None,b'',b'',transport='SPAWN_ERROR'),'ADB_SPAWN_FAILED') from None
+        evidence=observation(operation,q.returncode,q.stdout,q.stderr)
+        return interpret(evidence,q.stdout,missing=missing)
+    def native_snapshot():
+        try:
+            paths=(args.private_root/'android-reverse-stdout.txt',args.private_root/'android-reverse-stderr.txt')
+            if not all(path.is_file() for path in paths):return {'availability':'MISSING','passClaimed':False}
+            data=[]
+            for path in paths:
+                with path.open('rb') as stream:data.append(stream.read(131073))
+            return instrumentation_summary(*data,proc is not None and proc.poll() is not None,CLASS,METHOD,NATIVE_PHASES)
+        except Exception:return {'availability':'READ_ERROR','passClaimed':False}
     def private_read(name):
         need(name in ('ready.json','oracle.json','progress.json','route.json'),'PRIVATE_READ_ENUM')
-        if call('shell','-T','run-as',PACKAGE,'toybox','stat','-c','%s',APP_LAB+name,missing=True) is None:return None
-        return call('shell','-T','run-as',PACKAGE,'cat',APP_LAB+name)
+        key={'ready.json':'READY','oracle.json':'ORACLE','progress.json':'PROGRESS','route.json':'ROUTE'}[name]
+        if call('PRIVATE_'+key+'_STAT','shell','-T','run-as',PACKAGE,'toybox','stat','-c','%s',APP_LAB+name,missing=True) is None:return None
+        return call('PRIVATE_'+key+'_CAT','shell','-T','run-as',PACKAGE,'cat',APP_LAB+name)
     def observe_progress(force=False):
         nonlocal last_progress
         if not logs or not force and time.monotonic()-last_progress<1:return
         last_progress=time.monotonic()
         try:raw=private_read('progress.json')
+        except AdbFailure as error:
+            r['nativeProgressAvailability']='UNAVAILABLE';r['lastProgressAdbFailure']=error.evidence
         except Exception:r['nativeProgressAvailability']='UNAVAILABLE'
         else:
             if raw is None:r['nativeProgressAvailability']='MISSING'
@@ -94,7 +115,8 @@ def main():
     def private_write(name,raw):
         need(name in ('offer.json','windows-received.json') and len(raw)<=20000,'PRIVATE_WRITE_ENUM_OR_LIMIT')
         script='umask 077; set -C; cat > '+APP_LAB+name
-        call('shell','-T','run-as',PACKAGE,'sh','-c',shlex.quote(script),stdin=raw)
+        call('PRIVATE_OFFER_WRITE' if name=='offer.json' else 'PRIVATE_ACK_WRITE',
+             'shell','-T','run-as',PACKAGE,'sh','-c',shlex.quote(script),stdin=raw)
     def wait(read,seconds):
         until=time.monotonic()+seconds
         while time.monotonic()<until:
@@ -122,14 +144,19 @@ def main():
         result_owned=True;r['status']='IN_PROGRESS';checkpoint()
         sys.path.insert(0,str(args.control_tools.resolve(strict=True)))
         import instrumentation_report
-        need(call('shell','getprop','ro.kernel.qemu').strip()==b'1' and call('shell','getprop','ro.build.version.sdk').strip()==b'26','API26_EMULATOR_REQUIRED')
-        package=call('shell','dumpsys','package',PACKAGE)
+        need(call('GET_EMULATOR_FLAG','shell','getprop','ro.kernel.qemu').strip()==b'1' and call('GET_API_LEVEL','shell','getprop','ro.build.version.sdk').strip()==b'26','API26_EMULATOR_REQUIRED')
+        package=call('GET_PACKAGE_DESCRIPTOR','shell','dumpsys','package',PACKAGE)
         need(re.search(rb'\bversionCode=87\b',package) and b'DEBUGGABLE' in package,'DEBUG_CANDIDATE87_REQUIRED')
         for package,sha in ((PACKAGE,args.candidate_sha256),(PACKAGE+'.test',args.test_sha256)):
             need(re.fullmatch(r'[a-f0-9]{64}',sha),'APK_HASH_PIN_REQUIRED')
-            paths=call('shell','pm','path',package).decode('ascii').splitlines()
+            paths=call('GET_APK_PATH','shell','pm','path',package).decode('ascii').splitlines()
             need(len(paths)==1 and paths[0].startswith('package:/data/app/') and paths[0].endswith('/base.apk'),'SINGLE_INSTALLED_APK_REQUIRED')
-            need(call('shell','toybox','sha256sum',paths[0][8:]).split()[0].decode('ascii')==sha,'INSTALLED_DEBUG_APK_HASH_MISMATCH')
+            need(call('GET_APK_HASH','shell','toybox','sha256sum',paths[0][8:]).split()[0].decode('ascii')==sha,'INSTALLED_DEBUG_APK_HASH_MISMATCH')
+        features=call('VERIFY_SHELL_FEATURES','features').decode('ascii').strip().split(',')
+        need('shell_v2' in features,'SHELL_V2_REQUIRED');r['shellV2Observed']=True
+        app_root=call('VERIFY_RUN_AS_ROOT','shell','-T','run-as',PACKAGE,'pwd').strip()
+        need(app_root in (('/data/user/0/'+PACKAGE).encode(),('/data/data/'+PACKAGE).encode()),'APP_RUN_AS_ROOT_NOT_EXPECTED')
+        r['runAsRootObserved']=True
         r['phase']='ONE_INSTRUMENTATION'
         checkpoint()
         logs=[(lab/'android-reverse-stdout.txt').open('xb'),(lab/'android-reverse-stderr.txt').open('xb')]
@@ -147,10 +174,10 @@ def main():
         private_write('offer.json',offer);offer=value=None
         r['phase']='ISOLATED_REVERSE_ROUTE';checkpoint()
         route=isolated_route(wait(lambda:private_read('route.json'),180))
-        allocated=call('forward','--no-rebind','tcp:0','tcp:'+str(route['relayPort'])).strip()
+        allocated=call('FORWARD_CREATE','forward','--no-rebind','tcp:0','tcp:'+str(route['relayPort'])).strip()
         need(re.fullmatch(rb'[0-9]{4,5}',allocated),'FORWARD_ALLOCATED_PORT')
         forward=int(allocated);need(1024<=forward<=65535,'FORWARD_PORT_RANGE')
-        rows=call('forward','--list').decode('ascii')
+        rows=call('FORWARD_LIST','forward','--list').decode('ascii')
         need(owned_forward(rows,args.serial,forward,route['relayPort']),'OWNED_FORWARD_BINDING')
         publish(lab/'android-isolated-route.json',{'kind':'CCB_V7_HOST_ISOLATED_ROUTE','sourceSha':SOURCE,
                 'group':route['group'],'device':route['device'],'forwardPort':forward})
@@ -173,7 +200,10 @@ def main():
         execution=instrumentation_report.execution(report.decode('utf-8'),CLASS,METHOD)
         r.update(oneNativeMethodPassed=True,execution=execution,reportSha256=hashlib.sha256(report).hexdigest(),status='REVERSE_DEBUG_CASE_PASSED',phase='DONE')
     except Exception as error:
-        r.update(status='REFUSED',errorCode=str(error) if isinstance(error,Refused) else 'CONTROL_EXCEPTION')
+        r.update(status='REFUSED',errorCode=str(error) if isinstance(error,(Refused,AdbFailure)) else 'CONTROL_EXCEPTION')
+        if isinstance(error,AdbFailure):r['firstFatalAdb']=error.evidence
+        if logs:r['instrumentationAtFailure']=native_snapshot()
+        checkpoint() # Freeze the first failure before progress/cleanup commands can run.
     finally:
         if proc is not None and proc.poll() is None:
             proc.terminate()
@@ -191,13 +221,13 @@ def main():
         observe_progress(force=True)
         if forward is not None:
             try:
-                need(owned_forward(call('forward','--list').decode('ascii'),args.serial,forward,route['relayPort']),
+                need(owned_forward(call('FORWARD_LIST','forward','--list').decode('ascii'),args.serial,forward,route['relayPort']),
                      'FORWARD_OWNERSHIP_CHANGED')
-                call('forward','--remove','tcp:'+str(forward));r['isolatedForwardRemoved']=True
+                call('FORWARD_REMOVE','forward','--remove','tcp:'+str(forward));r['isolatedForwardRemoved']=True
             except Exception:r['isolatedForwardRemoved']=False
         if proc is not None:
             try:
-                call('shell','-T','run-as',PACKAGE,'rm','-f',*(APP_LAB+x for x in ('ready.json','offer.json','oracle.json','windows-received.json','progress.json','progress.tmp','route.json')))
+                call('PRIVATE_PROTOCOL_CLEANUP','shell','-T','run-as',PACKAGE,'rm','-f',*(APP_LAB+x for x in ('ready.json','offer.json','oracle.json','windows-received.json','progress.json','progress.tmp','route.json')))
                 r['privateProtocolCleaned']=True
             except Exception:pass
     r['terminal']=True

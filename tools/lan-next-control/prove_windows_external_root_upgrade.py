@@ -7,7 +7,6 @@ import importlib.util
 import inspect
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -28,9 +27,49 @@ if ($sid.ReturnValue -ne 0 -or $sid.Sid -cne [Security.Principal.WindowsIdentity
 """
 
 
+class ProofFailure(ValueError):
+    def __init__(self, code, probe_exit=None):
+        super().__init__(code)
+        self.probe_exit = probe_exit
+
+
 def require(condition, code):
     if not condition:
-        raise ValueError(code)
+        raise ProofFailure(code)
+
+
+NATIVE_CODES = frozenset({
+    "ENUM_PROCESSES", "ROOT_LOCK_NOT_EMPTY", "ROOT_LOCK_UNEXPECTED_ERROR",
+    "PRIOR_PROCESS_OR_ROOT_LOCK", "LAUNCHER_FAILED", "WINDOW_AND_ACTUAL_ROOT_LOCK_REQUIRED",
+    "NATIVE_WINDOW_OR_ROOT_LOST", "NORMAL_CLOSE_FAILED", "PROCESS_OR_LOCK_NOT_RELEASED",
+    "CARD_OR_ABSOLUTE_REFERENCE_CHANGED", "SESSION_CHANGED", "MESSAGE_OR_MEDIA_CHANGED",
+    "PLAYER_CHANGED", "STUDIO_DRAFT_CHANGED", "STUDIO_UNDO_CHANGED", "STUDIO_JOURNAL_CHANGED",
+})
+ERROR_TYPES = frozenset({
+    "ProofFailure", "RuntimeError", "ValueError", "KeyError", "TypeError", "AttributeError",
+    "AssertionError", "TimeoutExpired", "OSError", "PermissionError", "FileNotFoundError",
+    "FileExistsError", "NotADirectoryError", "IsADirectoryError", "ProcessLookupError",
+    "UnicodeError", "UnicodeDecodeError", "JSONDecodeError", "CalledProcessError",
+})
+
+
+def failure_fields(error, stage, subphase):
+    kind = type(error).__name__
+    code = str(error) if type(error) is ProofFailure or str(error) in NATIVE_CODES else "CONTROL_FAILED"
+    fields = {"stage": stage, "subphase": subphase, "code": code,
+              "errorType": kind if kind in ERROR_TYPES else "OtherException"}
+    if type(error) is ProofFailure and type(error.probe_exit) is int and 0 < error.probe_exit <= 255:
+        fields["probeExitCode"] = error.probe_exit
+    current = error
+    for _ in range(4):
+        if current is None:
+            break
+        for attribute, limit in (("winerror", 0xFFFFFFFF), ("errno", 4095)):
+            value = getattr(current, attribute, None)
+            if type(value) is int and 0 <= value <= limit:
+                fields.setdefault(attribute, value)
+        current = current.__cause__ or current.__context__
+    return fields
 
 
 def load_controls(root):
@@ -47,10 +86,21 @@ def load_controls(root):
 
 
 def bind_native_launch(legacy):
-    # Change the expected lock only. Reuse the frozen exact launcher, HWND, lock and close logic.
-    original = textwrap.dedent(inspect.getsource(legacy.Native.launch))
-    require(original.count(LOCK_EXPR) == 1, "NATIVE_LOCK_ANCHOR_CHANGED")
-    bound = original.replace(LOCK_EXPR, "self.custom_root / '.ccb-desktop.lock'")
+    # Keep the frozen launch and close checks. Adapt the lock location and mark the actual boundaries.
+    bound = textwrap.dedent(inspect.getsource(legacy.Native.launch))
+    edits = (
+        (LOCK_EXPR, "self.custom_root / '.ccb-desktop.lock'"),
+        ("    def held():\n", '    def held():\n        self.mark("ROOT_LOCK")\n'),
+        ("    require(not self.owned() and not held(), 'PRIOR_PROCESS_OR_ROOT_LOCK')",
+         '    self.mark("WINDOW_OWNERSHIP")\n'
+         "    require(not self.owned() and not held(), 'PRIOR_PROCESS_OR_ROOT_LOCK')"),
+        ("    p = subprocess.run(", '    self.mark("LAUNCHER")\n    p = subprocess.run('),
+        ("    require(self.user.PostMessageW(", '    self.mark("CLOSE_AND_DRAIN")\n'
+         "    require(self.user.PostMessageW("),
+    )
+    for anchor, replacement in edits:
+        require(bound.count(anchor) == 1, "NATIVE_HELPER_ANCHOR_CHANGED")
+        bound = bound.replace(anchor, replacement)
     scope = dict(vars(legacy))
     exec(compile(bound, str(legacy.__file__), "exec"), scope)
     return scope["launch"]
@@ -59,34 +109,41 @@ def bind_native_launch(legacy):
 def verify_process_identity(pid, executable):
     env = {name: value for name, value in os.environ.items() if name.upper() not in {"GH_TOKEN", "GITHUB_TOKEN"}}
     env.update(CCB_PROOF_PID=str(pid), CCB_PROOF_EXE=str(executable))
-    powershell = Path(env["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+    # Windows os.environ normalizes keys to uppercase. The copy here is a case-sensitive dict.
+    powershell = Path(env["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     checked = subprocess.run(
         [str(powershell), "-NoProfile", "-NonInteractive", "-Command", MAIN_OWNER],
         env=env, creationflags=subprocess.CREATE_NO_WINDOW, timeout=24,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
     )
-    require(checked.returncode == 0, "EXACT_MAIN_IMAGE_OR_RUNNER_ACCOUNT_CHANGED")
+    if checked.returncode != 0:
+        raise ProofFailure("EXACT_MAIN_IMAGE_OR_RUNNER_ACCOUNT_CHANGED", checked.returncode)
 
 
-def native_for(legacy, root, custom_root, require_bypass_unchanged):
+def native_for(legacy, root, custom_root, require_bypass_unchanged, mark):
     class ExternalRootNative(legacy.Native):
         launch = bind_native_launch(legacy)
 
         def windows(self):
+            self.mark("WINDOW_OWNERSHIP")
             windows = super().windows()
             if len(windows) == 1:
                 pid = legacy.W.DWORD()
-                self.user.GetWindowThreadProcessId(windows[0], legacy.C.byref(pid))
+                if not self.user.GetWindowThreadProcessId(windows[0], legacy.C.byref(pid)):
+                    raise legacy.C.WinError(legacy.C.get_last_error())
                 require(pid.value in self.owned(), "MAIN_WINDOW_PROCESS_CHANGED")
                 if self.observed_pid is None:
+                    self.mark("CIM_IDENTITY")
                     verify_process_identity(pid.value, root / "Program/ChatChatBarDesktop.exe")
                     self.observed_pid = pid.value
                 require(pid.value == self.observed_pid, "MAIN_WINDOW_PROCESS_CHANGED")
+                self.mark("VERIFY_FIXTURE")
                 require_bypass_unchanged()
             return windows
 
     native = ExternalRootNative(root)
     native.custom_root = custom_root
+    native.mark = mark
     return native
 
 
@@ -136,7 +193,7 @@ def run(lan8, legacy, request, root, output):
     default = bootstrap.parent / "ChatChatBarDesktop"
     rows = request["packages"]
     result = {
-        "kind": "EXACT_WINDOWS_CUSTOM_ROOT_PROGRAM_ONLY_UPGRADE_V1",
+        "kind": "EXACT_WINDOWS_CUSTOM_ROOT_PROGRAM_ONLY_UPGRADE_V2",
         "passed": False,
         "controlSha": control_sha,
         "packages": rows,
@@ -149,9 +206,16 @@ def run(lan8, legacy, request, root, output):
     }
     output.mkdir()
     phase = "ORIGINAL_PACKAGES"
+    subphase = "AUTHENTICATE_ORIGINALS"
+
+    def mark(value):
+        nonlocal subphase
+        subphase = value
+
     try:
         control.fetch_originals(request, case / "original-evidence")
         counts = [legacy.package(row, path) for row, path in zip(rows, (old_root, new_root))]
+        result["programFilesVerified"] = counts
         old_tree = snapshot(old_root / "Program", legacy, control.file_hash)
         new_tree = snapshot(new_root / "Program", legacy, control.file_hash)
         launcher = (old_root / LAUNCHER).read_bytes()
@@ -159,6 +223,7 @@ def run(lan8, legacy, request, root, output):
                 not (new_root / "Program/portable.flag").exists(), "PORTABLE_INPUT_REFUSED")
 
         phase = "SYNTHETIC_CUSTOM_PROFILE"
+        mark("SEED_FIXTURE")
         custom.mkdir()
         expected_bootstrap = bootstrap_values(custom)
         control.write_new(bootstrap, expected_bootstrap)
@@ -182,11 +247,13 @@ def run(lan8, legacy, request, root, output):
                     "CUSTOM_BOOTSTRAP_CHANGED")
             require(snapshot(outside, legacy, control.file_hash) == outside_before, "OUTSIDE_PROFILE_WRITTEN")
 
-        native = native_for(legacy, old_root, custom, require_bypass_unchanged)
+        mark("WINDOW_OWNERSHIP")
+        native = native_for(legacy, old_root, custom, require_bypass_unchanged, mark)
         for stage in ("lan7-custom-existing", "lan8-custom-cold-reopen"):
             phase = stage
             native.observed_pid = None
             observation = native.launch(stage, environment)
+            mark("VERIFY_FIXTURE")
             require(native.observed_pid is not None, "EXACT_MAIN_IDENTITY_NOT_OBSERVED")
             require_bypass_unchanged()
             require((old_root / LAUNCHER).read_bytes() == launcher, "ORIGINAL_ROOT_LAUNCHER_CHANGED")
@@ -200,6 +267,7 @@ def run(lan8, legacy, request, root, output):
                 require(snapshot(old_root / "Program", legacy, control.file_hash) == old_tree,
                         "OLD_PROGRAM_CHANGED_BEFORE_SWAP")
                 phase = "PROGRAM_ONLY_SWAP"
+                mark("SWAP_PROGRAM")
                 saved_program = case / "preserved-old-program"
                 (old_root / "Program").rename(saved_program)
                 (new_root / "Program").rename(old_root / "Program")
@@ -214,7 +282,6 @@ def run(lan8, legacy, request, root, output):
 
         result.update(
             passed=True,
-            programFilesVerified=counts,
             originalProgramTreesVerified=True,
             rootLauncherSha256=hashlib.sha256(launcher).hexdigest(),
             customBootstrapSha256=hashlib.sha256(raw_bootstrap).hexdigest(),
@@ -226,8 +293,7 @@ def run(lan8, legacy, request, root, output):
             outsideProfileUnchanged=True,
         )
     except Exception as error:
-        code = str(error)
-        result["failure"] = {"stage": phase, "code": code if re.fullmatch("[A-Z][A-Z0-9_]{0,95}", code) else "CONTROL_FAILED"}
+        result["failure"] = failure_fields(error, phase, subphase)
     control.write_new(output / RESULT, result)
     require(result["passed"], "EXTERNAL_ROOT_UPGRADE_FAILED")
 
@@ -271,6 +337,5 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as error:
-        message = str(error)
-        print(message if re.fullmatch("[A-Z][A-Z0-9_]{0,95}", message) else "EXTERNAL_ROOT_CONTROL_FAILED", file=sys.stderr)
+        print(failure_fields(error, "ENTRY", "SETUP")["code"], file=sys.stderr)
         sys.exit(1)
