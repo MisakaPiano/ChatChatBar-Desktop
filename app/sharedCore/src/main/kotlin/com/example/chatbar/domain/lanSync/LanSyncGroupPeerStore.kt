@@ -13,20 +13,28 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     private val currentLedger: () -> SyncDeviceLedger, private val backend: CiphertextStore,
     private val recoveredReads: ((SyncVersionRef) -> Map<CiphertextObjectKey, Set<CiphertextDescriptor>>)?,
     private val verifyRecoveredBlob: ((SyncVersionRef, CiphertextObjectMetadata) -> Boolean)?,
+    private val recoveredProtocol: Boolean?,
     private val revocationNotice: (String) -> SyncLedgerNoticeEntry?) : CiphertextStore {
     constructor(trust: SyncGroupTrust, localCertificate: String, peerCertificate: String, currentLedger: () -> SyncDeviceLedger,
         backend: CiphertextStore, revocationNotice: (String) -> SyncLedgerNoticeEntry?) :
-        this(trust, localCertificate, peerCertificate, currentLedger, backend, null, null, revocationNotice)
+        this(trust, localCertificate, peerCertificate, currentLedger, backend, null, null, null, revocationNotice)
     private val local = SyncDeviceSignatures.decode(localCertificate)
     private val peer = SyncDeviceSignatures.decode(peerCertificate)
     val group: SyncStoreId get() = trust.group
     @Volatile private var checkedNotice: Pair<SyncVersionRef, CiphertextObjectMetadata>? = null
+    @Volatile private var checkedProtocolCheckpoint: SyncVersionRef? = null
     override val capabilities get() = backend.capabilities
 
     private fun ledger(): SyncDeviceLedger = currentLedger().also { ledger ->
         require(ledger.trustAnchor.group == trust.group && ledger.trustAnchor.genesis == trust.genesis &&
             ledger.trustAnchor.ownerCertificate == trust.ownerCertificate && ledger.contains(trust.checkpoint)) { "SYNC_GROUP_PEER_TRUST_CHANGED" }
-        val members = ledger.current().members
+        val current = ledger.current()
+        val checkpoint = current.reference()
+        if (recoveredProtocol != null && checkedProtocolCheckpoint != checkpoint) {
+            if (ledger.authorityHistory(checkpoint).any { it.recovery != null } != recoveredProtocol) denied()
+            checkedProtocolCheckpoint = checkpoint
+        }
+        val members = current.members
         if (members[local.fingerprint]?.let { it.active && it.certificate == local.encoded } != true ||
             members[peer.fingerprint]?.certificate != peer.encoded) denied()
     }

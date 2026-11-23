@@ -155,9 +155,10 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     }
     fun peerStore(group: SyncStoreId, localCertificate: String, peerCertificate: String): LanSyncGroupPeerStore {
         require(group == trust.group && localCertificate == certificate) { "SYNC_GROUP_RUNTIME_TLS_IDENTITY" }
-        if (!requiresRecoveryProtocol(group)) return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader, ::notice)
+        if (!requiresRecoveryProtocol(group)) return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader,
+            null, null, false, ::notice)
         return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader,
-            { checkpoint -> recoveredReadScope(checkpoint).objects }, ::verifyPeerBlob, ::notice)
+            { checkpoint -> recoveredReadScope(checkpoint).objects }, ::verifyPeerBlob, true, ::notice)
     }
     @Synchronized private fun notice(device: String): SyncLedgerNoticeEntry? {
         val checkpoint = ledger().current().reference()
