@@ -3420,49 +3420,24 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
     }
 
-    fun deleteImage(messageId: String, imagePath: String) {
-        viewModelScope.launch {
-            val message = chatRepository.getMessage(messageId, sessionId) ?: return@launch
-            if (imagePath !in message.images) return@launch
-            val remaining = message.images.filterNot { it == imagePath }
-            if (remaining.isEmpty() && message.content.isBlank()) {
-                selectNeighborWindowAnchor(messageId)
-                chatRepository.deleteMessage(messageId, sessionId)
-                _messages.value = _messages.value.filterNot { it.id == messageId }
-                refreshMessages()
-                enqueueLongTermMemoryAfterMessageDeletion()
-
-                val deletedVoices = voiceMessageRepository.deleteForMessage(messageId)
-                if (deletedVoices.any { it.id == voicePlaybackState.value.currentVoiceId }) {
-                    fishAudioCoordinator.stopPlayback()
-                }
-                deletedVoices.forEach { voice ->
-                    ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
-                }
-                withContext(Dispatchers.IO) {
-                    deleteDisposableChatImage(imagePath)
-                }
-                if (ChatMemoryIndexPolicy.contributesToIndex(message)) {
-                    ragMemoryMutationMutex.withLock {
-                        refreshMemoryAfterMessageDeletion(message)
-                    }
-                }
-            } else {
-                val updatedMessage = message.copy(
-                    images = remaining,
-                    generatedImageMetadata = message.generatedImageMetadata
-                        .filter { it.imagePath in remaining }
-                )
-                chatRepository.updateMessage(updatedMessage)
-                _messages.value = _messages.value.map { current ->
-                    if (current.id == messageId) updatedMessage else current
-                }
-                refreshMessages()
-                withContext(Dispatchers.IO) {
-                    deleteDisposableChatImage(imagePath)
-                }
-            }
+    internal suspend fun deleteImage(expected: ChatMessage, imagePath: String): AndroidMessageEditResult {
+        if (expected.sessionId != sessionId || imagePath !in expected.images) return AndroidMessageEditResult.Stale
+        val remaining = expected.images.filterNot { it == imagePath }
+        if (remaining.isEmpty() && expected.content.isBlank() && expected.alternatives.all(String::isBlank)) {
+            val result = deleteEmptyEditedMessage(expected)
+            if (result == AndroidMessageEditResult.Deleted) retireEditedMessageImages(listOf(imagePath))
+            return result
         }
+        val replacement = expected.copy(
+            images = remaining,
+            generatedImageMetadata = expected.generatedImageMetadata.filter { it.imagePath in remaining }
+        )
+        val result = saveAndroidMessageEdit(chatRepository, expected, replacement)
+        if (result is AndroidMessageEditResult.Saved) {
+            if (!result.refreshPending) retireEditedMessageImages(listOf(imagePath))
+            refreshAfterCommittedEdit(result)
+        }
+        return result
     }
 
     internal suspend fun readMessageForEdit(messageId: String): ChatMessage? {
@@ -3497,21 +3472,30 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     private suspend fun deleteEmptyEditedMessage(expected: ChatMessage): AndroidMessageEditResult {
-        return try {
-            fishAudioCoordinator.cancelAndJoinForMessage(sessionId, expected.id)
-            selectNeighborWindowAnchor(expected.id)
-            if (!chatRepository.deleteMessageIfUnchanged(expected)) return AndroidMessageEditResult.Stale
-            viewModelScope.launch {
-                deleteVoicesForRemovedMessage(expected.id)
-                _messages.value = _messages.value.filterNot { it.id == expected.id }
-                finishMessageDeletion(expected.id, expected)
-            }
+        var committed = false
+        val result = try {
+            if (!chatRepository.deleteMessageIfUnchanged(expected) { committed = true }) return AndroidMessageEditResult.Stale
             AndroidMessageEditResult.Deleted
         } catch (failure: CancellationException) {
             throw failure
         } catch (_: Exception) {
-            AndroidMessageEditResult.Failed
+            if (!committed) return AndroidMessageEditResult.Failed
+            AndroidMessageEditResult.DeletedWithRefreshPending
         }
+        selectNeighborWindowAnchor(expected.id)
+        viewModelScope.launch {
+            try {
+                fishAudioCoordinator.cancelAndJoinForMessage(sessionId, expected.id)
+                deleteVoicesForRemovedMessage(expected.id)
+                _messages.value = _messages.value.filterNot { it.id == expected.id }
+                finishMessageDeletion(expected.id, expected)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                Log.w(CHAT_VIEW_MODEL_TAG, "Deleted chat message follow-up pending: ${failure.javaClass.simpleName}")
+            }
+        }
+        return result
     }
 
     private suspend fun applyMessageEdit(
@@ -3522,30 +3506,42 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val result = saveAndroidMessageEdit(chatRepository, expected, replacement)
         if (result !is AndroidMessageEditResult.Saved) return result
         if (!result.refreshPending) {
-            val removed = expected.images.filterNot(result.message.images::contains)
-            if (removed.isNotEmpty()) viewModelScope.launch(Dispatchers.IO) {
-                val app = ChatBarApp.instance
-                try {
-                    retireUnreferencedAndroidChatImages(app.filesDir.toPath(), app.lanSyncOwner.gate, removed)
-                } catch (failure: CancellationException) {
-                    throw failure
-                } catch (failure: Exception) {
-                    Log.w(CHAT_VIEW_MODEL_TAG, "Replaced chat images retained: ${failure.javaClass.simpleName}")
-                }
+            retireEditedMessageImages(expected.images.filterNot(result.message.images::contains))
+        }
+        refreshAfterCommittedEdit(result, refreshMemory = true, deleteMemoryWhenTextBlank = deleteMemoryWhenTextBlank)
+        return result
+    }
+
+    private fun retireEditedMessageImages(removed: List<String>) {
+        if (removed.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val app = ChatBarApp.instance
+            try {
+                retireUnreferencedAndroidChatImages(app.filesDir.toPath(), app.lanSyncOwner.gate, removed)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                Log.w(CHAT_VIEW_MODEL_TAG, "Removed chat images retained: ${failure.javaClass.simpleName}")
             }
         }
+    }
+
+    private fun refreshAfterCommittedEdit(
+        result: AndroidMessageEditResult.Saved,
+        refreshMemory: Boolean = false,
+        deleteMemoryWhenTextBlank: Boolean = false
+    ) {
         viewModelScope.launch {
             try {
                 refreshMessages()
-                if (deleteMemoryWhenTextBlank) ragManager.deleteMemoryForMessage(expected.id)
-                refreshMemoryAfterMessageEdit(result.message)
+                if (deleteMemoryWhenTextBlank) ragManager.deleteMemoryForMessage(result.message.id)
+                if (refreshMemory) refreshMemoryAfterMessageEdit(result.message)
             } catch (failure: CancellationException) {
                 throw failure
             } catch (failure: Exception) {
                 Log.w(CHAT_VIEW_MODEL_TAG, "Saved chat edit follow-up pending: ${failure.javaClass.simpleName}")
             }
         }
-        return result
     }
 
     private suspend fun refreshMemoryAfterMessageEdit(updatedMessage: ChatMessage) {

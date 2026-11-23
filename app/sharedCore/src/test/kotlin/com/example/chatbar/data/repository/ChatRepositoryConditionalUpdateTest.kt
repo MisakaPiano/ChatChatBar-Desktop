@@ -109,6 +109,25 @@ class ChatRepositoryConditionalUpdateTest {
         assertEquals(assertNotNull(committed), ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
     }
 
+    @Test fun `conditional deletion observes the exact unlink before derived writes`() = runTest {
+        val f = fixture()
+        val imageOnly = f.repo.updateMessageReturningSnapshot(ChatMessage.create("s", MessageRole.USER, "", f.expected.images).copy(id = "m"))
+        var committed = false
+        assertFalse(f.repo.deleteMessageIfUnchanged(imageOnly.copy(images = emptyList())) { committed = true })
+        assertFalse(committed)
+
+        f.gate.arm { n, after -> if (n == 4 && !after) throw IOException("SYNTHETIC_BEFORE_MESSAGE_UNLINK") }
+        assertFailsWith<IOException> { f.repo.deleteMessageIfUnchanged(imageOnly) { committed = true } }
+        assertFalse(committed)
+        assertEquals(imageOnly, ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
+
+        f.gate.arm { n, after -> if (n == 5 && !after) throw IOException("SYNTHETIC_AFTER_MESSAGE_UNLINK") }
+        assertFailsWith<IOException> { f.repo.deleteMessageIfUnchanged(imageOnly) { committed = true } }
+        assertTrue(committed)
+        assertEquals(JsonFileStorage.EntityReadResult.Missing, ChatRepository(JsonFileStorage(f.root)).readMessageDurable("m", "s"))
+        assertTrue(Files.exists(Path.of(imageOnly.images.single())))
+    }
+
     @Test fun `notice only preserves divergent base content candidates and metadata with no-op and stale protection`() = runTest {
         val f = fixture()
         f.repo.updateMessage(f.expected.copy(content = "base distinct from selected candidate"))

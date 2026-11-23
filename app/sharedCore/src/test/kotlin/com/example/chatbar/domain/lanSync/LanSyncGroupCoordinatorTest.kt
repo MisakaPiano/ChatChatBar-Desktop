@@ -974,7 +974,10 @@ class LanSyncGroupCoordinatorTest {
                 val binding = requireNotNull(reopenedMember.invitationInputBinding())
                 reopenedMember.beginJoinFromFile(binding) { ByteArrayInputStream(replacement.code().toByteArray(Charsets.US_ASCII)) }
                 await { !reopenedMember.state.value.busy && reopenedInviter.state.value.peerConfirmation?.fingerprint == identity.fingerprint }
-                assertEquals(binding, reopenedMember.invitationInputBinding())
+                val updatedBinding = requireNotNull(reopenedMember.invitationInputBinding())
+                assertNotEquals(binding, updatedBinding)
+                reopenedMember.beginJoinFromScanner(binding, "synthetic stale result for the previous invitation")
+                assertEquals(updatedBinding, reopenedMember.invitationInputBinding())
                 assertEquals(original.getValue("operation"), control().getValue("operation"))
                 assertEquals(original.getValue("recipient"), control().getValue("recipient"))
                 assertContentEquals(originalKey, Files.readAllBytes(keyFile))
@@ -1561,9 +1564,9 @@ class LanSyncGroupCoordinatorTest {
                 val coordinator = LanSyncGroupCoordinator({ Files.isRegularFile(f.profile.resolve("profile.protected")) },
                     { founder }, { error("SYNTHETIC_FOUNDER_MUST_NOT_OPEN_JOINING") }, f.network, "synthetic manual check PC",
                     cloudRuntimeFactory = { current, allowed, wake, report ->
-                        LanSyncGroupCloudRuntime(current, allowed, wake, report, catalog, client,
+                        LanSyncGroupCloudRuntime(current, { allowed() && permitted.get() }, wake, report, catalog, client,
                             WebDavEndpointPolicy.SYNTHETIC_LOOPBACK_HTTP, schedule = schedule)
-                    }, cloudWorkAllowed = permitted::get, cloudWork = { work ->
+                    }, cloudWork = { work ->
                         busy.incrementAndGet()
                         attempts.incrementAndGet()
                         try { work().also { if (it) completed.incrementAndGet() } } finally { busy.decrementAndGet() }

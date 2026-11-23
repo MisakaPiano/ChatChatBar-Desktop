@@ -130,7 +130,11 @@ class ChatMessageEditNativeTest {
         val images = Files.createDirectories(app.filesDir.toPath().resolve("images"))
         val old = png(Files.createTempFile(images, "chat_img_old-", ".png"), Color.BLUE)
         val shared = png(Files.createTempFile(images, "chat_img_shared-", ".png"), Color.RED)
-        val originals = listOf(old, shared).associateWith(Files::readAllBytes)
+        val generatedDir = Files.createTempDirectory(Files.createDirectories(images.resolve("generated")), "synthetic-")
+        val archiveDir = Files.createTempDirectory(Files.createDirectories(images.resolve("save_slots")), "synthetic-")
+        val generated = png(generatedDir.resolve("original.png"), Color.BLACK)
+        val archived = png(archiveDir.resolve("original.png"), Color.WHITE)
+        val originals = listOf(old, shared, generated, archived).associateWith(Files::readAllBytes)
         val root = Files.createTempDirectory(app.cacheDir.toPath(), "synthetic-failed-replacement-")
         val localSelection = png(root.resolve("another.png"), Color.GREEN)
         val rows = app.filesDir.toPath().resolve("entities/chat_messages").toFile()
@@ -141,7 +145,7 @@ class ChatMessageEditNativeTest {
             app.chatRepository.createSession(session)
             app.chatRepository.createSession(other)
             val message = app.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "Synthetic old photo message",
-                images = listOf(old.toString(), shared.toString())))
+                images = originals.keys.map(Path::toString)))
             app.chatRepository.addMessage(ChatMessage.create(other.id, MessageRole.ASSISTANT, "Synthetic metadata reference",
                 generatedImageMetadata = listOf(GeneratedImageMetadata(shared.toString(), "synthetic", negativePrompt = "",
                     sizePreset = "synthetic", width = 3, height = 3))))
@@ -150,7 +154,7 @@ class ChatMessageEditNativeTest {
             openChat(app, session.id, picker).use { scenario ->
                 ui.openEditor(message.content)
                 ui.editText(draft)
-                repeat(2) { ui.tap("删除图片") }
+                repeat(originals.size) { ui.tap("删除图片") }
                 selected = pick(app, scenario, picker, ui, localSelection)
                 check(rows.isDirectory && rows.setWritable(false, true))
                 try {
@@ -171,14 +175,18 @@ class ChatMessageEditNativeTest {
                 }
                 val persisted = durable(ChatRepository(JsonFileStorage(app.filesDir.toPath())), message)
                 assertEquals(listOf(selected.toString()), persisted.images)
-                assertArrayEquals(originals.getValue(shared), Files.readAllBytes(shared))
+                listOf(shared, generated, archived).forEach { path ->
+                    assertArrayEquals(originals.getValue(path), Files.readAllBytes(path))
+                }
                 assertArrayEquals(Files.readAllBytes(localSelection), Files.readAllBytes(selected!!))
             }
         } finally {
             app.chatRepository.deleteSession(session.id)
             app.chatRepository.deleteSession(other.id)
             app.characterRepository.delete(card.id)
-            listOfNotNull(old, shared, selected).forEach(Files::deleteIfExists)
+            listOfNotNull(old, shared, generated, archived, selected).forEach(Files::deleteIfExists)
+            Files.deleteIfExists(generatedDir)
+            Files.deleteIfExists(archiveDir)
             check(root.toFile().deleteRecursively())
         }
     }

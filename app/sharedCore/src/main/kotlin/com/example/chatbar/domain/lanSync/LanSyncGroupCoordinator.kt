@@ -797,7 +797,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 pendingJoinProof != null -> "邀请已核对，等待同步服务就绪后发送证明"
                 !authorized -> "邀请已保留，请恢复同步后手动继续加入"
                 else -> "邀请已核对，正在验证此设备"
-            })
+            }, replacesOffer = true)
             startLoop()
             if (!paused && authorized) attemptJoin()
         }
@@ -835,9 +835,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private fun LanSyncGroupJoiningProfile.canRefreshPreparation(): Boolean =
         !ledgerConflict && !membershipRevoked && stage in reprepareJoinStages
 
-    private fun showJoining(profile: LanSyncGroupJoiningProfile, status: String) = mutableState.update {
+    private fun showJoining(profile: LanSyncGroupJoiningProfile, status: String, replacesOffer: Boolean = false) = mutableState.update {
         it.copy(stage = LanSyncGroupPanelStage.JOINING, joiningDevice = profile.device, canAbandonJoin = profile.canAbandon,
             fileRecoveryJoinScope = profile.localReplica.id.value.takeUnless { profile.membershipRevoked },
+            invitationInputEpoch = if (replacesOffer) it.invitationInputEpoch + 1 else it.invitationInputEpoch,
             canShelveJoin = profile.canShelve, canArchiveRevokedJoin = profile.canArchiveRevoked,
             canRefreshJoinPreparation = profile.canRefreshPreparation(), joiningLedgerConflict = profile.ledgerConflict,
             joiningMembershipRevoked = profile.membershipRevoked, canRefreshInvitation = profile.canRefreshInvitation,

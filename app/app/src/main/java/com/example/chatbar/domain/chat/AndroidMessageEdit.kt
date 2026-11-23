@@ -8,6 +8,7 @@ import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.Paths
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -25,6 +26,7 @@ internal sealed interface AndroidMessageEditResult {
     data object Failed : AndroidMessageEditResult
     data object Empty : AndroidMessageEditResult
     data object Deleted : AndroidMessageEditResult
+    data object DeletedWithRefreshPending : AndroidMessageEditResult
 }
 
 internal suspend fun saveAndroidMessageEdit(
@@ -53,7 +55,7 @@ internal suspend fun retireUnreferencedAndroidChatImages(root: Path, gate: LanSy
             val canonicalRoot = root.toRealPath()
             val images = canonicalRoot.resolve("images")
             val files = removedPaths.mapNotNull { raw ->
-                val path = Path.of(raw)
+                val path = Paths.get(raw)
                 if (!path.isAbsolute || path != path.normalize()) return@mapNotNull null
                 val relative = when {
                     path.startsWith(canonicalRoot) -> canonicalRoot.relativize(path)
@@ -61,8 +63,8 @@ internal suspend fun retireUnreferencedAndroidChatImages(root: Path, gate: LanSy
                     else -> return@mapNotNull null
                 }
                 val file = canonicalRoot.resolve(relative)
-                val owned = file.parent == images && file.fileName.toString().startsWith("chat_img_") ||
-                    file.parent?.parent == images.resolve("generated") || file.parent?.parent == images.resolve("save_slots")
+                // This inventory authorizes only images copied by the ordinary chat picker.
+                val owned = file.parent == images && file.fileName.toString().startsWith("chat_img_")
                 if (!owned) return@mapNotNull null
                 try {
                     val real = file.toRealPath()

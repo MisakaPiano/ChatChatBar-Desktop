@@ -955,20 +955,24 @@ class ChatRepository internal constructor(
         deleteMessageLocked(messageId, sessionId)
     }
 
-    suspend fun deleteMessageIfUnchanged(expected: ChatMessage): Boolean = messageAppendMutex.withDataAccess {
+    suspend fun deleteMessageIfUnchanged(expected: ChatMessage, onCommitted: (() -> Unit)? = null): Boolean = messageAppendMutex.withDataAccess {
         val current = when (val read = readMessageDurable(expected.id, expected.sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
             else -> return@withDataAccess false
         }
         if (current != expected) return@withDataAccess false
-        deleteMessageLocked(expected.id, expected.sessionId)
+        deleteMessageLocked(expected.id, expected.sessionId, onCommitted)
         true
     }
 
-    private suspend fun deleteMessageLocked(messageId: String, sessionId: String) {
+    private suspend fun deleteMessageLocked(messageId: String, sessionId: String, onCommitted: (() -> Unit)? = null) {
         val removed = getMessage(messageId, sessionId)
         val index = loadMessageIndex(sessionId)
-        storage.deleteEntityUncached(MESSAGE_TYPE, messageStorageId(sessionId, messageId))
+        val removedDurably = storage.deleteEntityUncached(MESSAGE_TYPE, messageStorageId(sessionId, messageId))
+        if (onCommitted != null) {
+            check(removedDurably) { "Could not delete the confirmed message record" }
+            onCommitted()
+        }
         val remainingEntries = index.entries.filterNot { it.messageId == messageId }
         updateMessageIndex(sessionId, index) { remainingEntries }
         val latest = remainingEntries.lastOrNull()?.let { getMessage(it.messageId, sessionId) }

@@ -160,6 +160,7 @@ import kotlinx.coroutines.launch
 private val ChatContentMaxWidth = 840.dp
 
 private data class ChatSegmentEditTarget(val message: ChatMessage, val segment: ChatBubbleSegmentAction)
+private data class ChatImageDeleteTarget(val message: ChatMessage, val path: String)
 
 private data class PendingVoiceGeneration(
     val messageId: String,
@@ -312,7 +313,8 @@ fun ChatScreen(
     var imageRegenerationLoading by remember(sessionId) { mutableStateOf(false) }
     var imageRegenerationError by remember(sessionId) { mutableStateOf<String?>(null) }
     var imageRegenerationBatchSizeInput by remember(sessionId) { mutableStateOf("1") }
-    var deleteImageTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var deleteImageTarget by remember { mutableStateOf<ChatImageDeleteTarget?>(null) }
+    var deletingImage by remember { mutableStateOf(false) }
     var deleteSegmentTarget by remember { mutableStateOf<ChatSegmentEditTarget?>(null) }
     var deleteMessageTargetId by remember { mutableStateOf<String?>(null) }
     var editingMessage by remember { mutableStateOf<ChatMessage?>(null) }
@@ -1153,6 +1155,10 @@ fun ChatScreen(
                                         if (outcome.refreshPending) Toast.makeText(context, "消息已保存，列表刷新待完成。", Toast.LENGTH_LONG).show()
                                     }
                                     AndroidMessageEditResult.Deleted -> closeMessageEditor()
+                                    AndroidMessageEditResult.DeletedWithRefreshPending -> {
+                                        closeMessageEditor()
+                                        Toast.makeText(context, "消息已删除，列表刷新待完成。", Toast.LENGTH_LONG).show()
+                                    }
                                     AndroidMessageEditResult.Stale -> {
                                         editStale = true
                                         editStatus = "此消息在编辑期间已更新或移除。编辑内容和新选图片仍在。"
@@ -1372,7 +1378,7 @@ fun ChatScreen(
                                 if (reusable) {
                                     imageActionTarget = message.id to path
                                 } else {
-                                    deleteImageTarget = message.id to path
+                                    deleteImageTarget = ChatImageDeleteTarget(message, path)
                                 }
                             }
                         },
@@ -1823,24 +1829,44 @@ fun ChatScreen(
             },
             onDeleteImage = {
                 imageActionTarget = null
-                deleteImageTarget = messageId to path
+                val message = messages.find { it.id == messageId && path in it.images }
+                if (message != null) deleteImageTarget = ChatImageDeleteTarget(message, path)
+                else Toast.makeText(context, "消息或图片已变化，请重新打开后核对。", Toast.LENGTH_LONG).show()
             }
         )
     }
-    deleteImageTarget?.let { (messageId, path) ->
+    deleteImageTarget?.let { (message, path) ->
         CbDialog(
-            onDismissRequest = { deleteImageTarget = null },
+            onDismissRequest = { if (!deletingImage) deleteImageTarget = null },
             title = "删除图片",
             dismiss = {
-                CbButton("取消", { deleteImageTarget = null }, variant = ButtonVariant.Ghost)
+                CbButton("取消", { if (!deletingImage) deleteImageTarget = null }, enabled = !deletingImage, variant = ButtonVariant.Ghost)
             },
             confirm = {
                 CbButton(
                     "删除",
                     {
-                        viewModel.deleteImage(messageId, path)
-                        deleteImageTarget = null
+                        if (!deletingImage) {
+                            deletingImage = true
+                            scope.launch {
+                                try {
+                                    val result = viewModel.deleteImage(message, path)
+                                    val feedback = when (result) {
+                                        AndroidMessageEditResult.Stale -> "消息或图片已变化，请重新打开后核对。"
+                                        AndroidMessageEditResult.Failed -> "未能确认删除，请检查消息后重试。"
+                                        AndroidMessageEditResult.DeletedWithRefreshPending -> "消息已删除，列表刷新待完成。"
+                                        is AndroidMessageEditResult.Saved -> "图片已从消息移除，列表刷新待完成。".takeIf { result.refreshPending }
+                                        else -> null
+                                    }
+                                    deleteImageTarget = null
+                                    feedback?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                } finally {
+                                    deletingImage = false
+                                }
+                            }
+                        }
                     },
+                    enabled = !deletingImage,
                     variant = ButtonVariant.Destructive
                 )
             }
