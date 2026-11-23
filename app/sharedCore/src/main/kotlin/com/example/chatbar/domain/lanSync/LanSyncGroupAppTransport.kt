@@ -114,9 +114,11 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
                     try { server.serve(socket) }
                     catch (failure: Exception) {
                         if (!closed) {
-                            val pending = synchronized(lock) { activeInvitation?.claimedDevice }
-                            val refusedPending = pending != null && generateSequence<Throwable>(failure) { it.cause }
-                                .take(8).filterIsInstance<LanSyncUntrustedDevice>().any { it.fingerprint == pending }
+                            val rejected = generateSequence<Throwable>(failure) { it.cause }
+                                .take(8).filterIsInstance<LanSyncUntrustedDevice>().firstOrNull()
+                            val refusedPending = rejected != null && synchronized(lock) {
+                                activeInvitation?.owner?.verifiedPendingDevice() == rejected.fingerprint
+                            }
                             onFailure(if (refusedPending) "NEARBY_PENDING_APPROVAL" else "NEARBY_SERVER", failure)
                         }
                     }

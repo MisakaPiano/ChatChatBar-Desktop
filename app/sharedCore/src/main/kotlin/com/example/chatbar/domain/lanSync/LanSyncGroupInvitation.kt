@@ -227,6 +227,14 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
         val current = requireNotNull(issued) { "SYNC_GROUP_INVITE_MISSING" }; live(current)
         require(current.accepted === peer && peer.trust == current.offer.trust) { "SYNC_GROUP_INVITE_PROOF_CHANGED" }
     }
+
+    /** The verified proof is available before the acknowledgement can be received by the joiner. */
+    internal fun verifiedPendingDevice(): String? = synchronized(lock) {
+        val current = issued ?: return@synchronized null
+        val peer = current.accepted ?: return@synchronized null
+        if (runCatching { live(current) }.isSuccess) peer.device else null
+    }
+
     override fun close() = synchronized(lock) { closed = true; issued = null }
 }
 

@@ -9,7 +9,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -87,6 +91,52 @@ class LanSyncGroupAppTransportTest {
                 assertFails { Socket("127.0.0.1", offer.port).close() }
             }
         }
+    }
+
+    @Test fun proofAcknowledgementBeforePromptDeliveryStillClassifiesOnlyTheVerifiedApplicant() = fixture { f ->
+        val port = f.transport.start()
+        val invitation = f.enrollment.invitation(port)
+        val presentations = AtomicInteger()
+        val offer = f.transport.invitation(invitation) { presentations.incrementAndGet() }
+        val applicant = LanSyncTlsIdentity.create()
+        val recipient = SyncDeviceEncryptionKey.create(applicant.fingerprint)
+        val endpoint = LanSyncPeer(f.identity.fingerprint, "synthetic inviter", offer.host, port)
+        val candidateStore = LanSyncGroupRemoteStore(offer.trust.group, Files.createDirectory(f.root.resolve("candidate")),
+            connect = { f.network.connect(applicant, endpoint) }, authenticatedConnect = true)
+        val healthyStore = f.transport.remote(endpoint)
+
+        assertFails { candidateStore.listCommits(null) }
+        withTimeout(5_000) { while (f.errors.size < 1) delay(10) }
+        assertEquals(listOf("NEARBY_SERVER"), f.errors.toList())
+
+        // Keep app prompt delivery explicitly outside this interleaving. The same issued
+        // invitation owner performs the actual wire proof and sends the real acknowledgement.
+        val proofServer = invitation.invitationContext().serverSocketFactory
+            .createServerSocket(0, 1, InetAddress.getLoopbackAddress()) as SSLServerSocket
+        proofServer.use { listener ->
+            listener.needClientAuth = true
+            listener.soTimeout = 15_000
+            coroutineScope {
+                val proof = async(Dispatchers.IO) { invitation.serve(listener.accept() as SSLSocket) }
+                val receipt = LanSyncGroupInviteClient.exchange(offer, applicant, recipient, "synthetic verified applicant", {
+                    LanSyncTls.connect(applicant, offer.host, offer.port, offer.inviter, 15_000) { _, _ ->
+                        Socket(InetAddress.getLoopbackAddress(), listener.localPort)
+                    }
+                })
+                assertEquals(applicant.fingerprint, proof.await().device)
+                assertEquals(offer.trust, receipt.trust)
+            }
+        }
+
+        assertEquals(0, presentations.get())
+        assertFails { candidateStore.listCommits(null) }
+        withTimeout(5_000) { while (f.errors.size < 2) delay(10) }
+        assertEquals(listOf("NEARBY_SERVER", "NEARBY_PENDING_APPROVAL"), f.errors.toList())
+        val original = requireNotNull(f.access.replica.metadata(f.access.vault.key))
+        val received = ByteArrayOutputStream()
+        assertEquals(original, healthyStore.readTo(original.key, received, original.descriptor))
+        assertEquals(original.descriptor.length, received.size().toLong())
+        assertFalse(applicant.fingerprint in f.access.ledger().current().members)
     }
 
     @Test fun preferredEligibleAddressAndExplicitAlternativeUseSeparateV1Invitations() = fixture { f ->
