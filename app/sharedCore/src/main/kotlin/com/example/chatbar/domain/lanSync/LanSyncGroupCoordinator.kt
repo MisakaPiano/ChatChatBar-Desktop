@@ -1147,11 +1147,17 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
 
     private fun clearInvitationLocked() {
         transport?.closeInvitation()
-        invitation?.owner?.close()
+        val retired = invitation
+        retired?.owner?.close()
         invitation = null
         peer = null
-        mutableState.update { it.copy(invitation = null, peerConfirmation = null, invitationRetainedWhileLocked = false, invitationFileOnly = false,
-            invitationAddresses = emptyList(), invitationFileBinding = null) }
+        mutableState.update { state ->
+            val status = if (retired?.fileBinding != null &&
+                (state.status == invitationFileSavedStatus || state.status == invitationFileSavePendingStatus))
+                "原邀请已关闭。如需保存，请重新生成邀请。" else state.status
+            state.copy(invitation = null, peerConfirmation = null, invitationRetainedWhileLocked = false, invitationFileOnly = false,
+                invitationAddresses = emptyList(), invitationFileBinding = null, status = status)
+        }
     }
     override fun acceptPeer(binding: String) = action("批准加入") {
         val approval = synchronized(lifecycle) {

@@ -65,6 +65,7 @@ jobs:
             --tests '*LanSyncGroupCoordinatorTest.manualCheckWakesAnIdleEnabledCloudRouteButStillValidatesItsConfiguration' \
             --tests '*LanSyncGroupCoordinatorTest.anActualInvitationFileWriteBlocksActiveCloseAndRejectsAResultAfterVisibilityLoss' \
             --tests '*LanSyncGroupCoordinatorTest.fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation' \
+            --tests '*LanSyncGroupCoordinatorTest.retiredFileOfferClearsItsSavedStatusBeforeAStalePickerReturns' \
             --tests '*LanSyncGroupCoordinatorTest.pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints' \
             --tests '*LanSyncGroupCloudRuntimeTest.aPreviouslyObservedCatalogIsRecheckedBeforeAnotherPlatformLeaseAndRetainsItsHistoricalProgressWhenDamaged' \
             --tests '*LanSyncGroupJoiningTest.automaticSignedJoinCanBindNearbyWhileItsFirstReadyInspectionIsBlocked' \

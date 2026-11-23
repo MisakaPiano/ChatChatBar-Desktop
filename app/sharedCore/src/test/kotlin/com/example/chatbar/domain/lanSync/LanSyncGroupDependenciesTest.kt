@@ -126,6 +126,7 @@ class LanSyncGroupDependenciesTest {
         val row = plan.units.getValue(unit)
         assertTrue(plan.advances.isEmpty())
         assertEquals("已取得的附件未通过验证", LanSyncGroupDisplay.nativeStageLabel(row))
+        assertTrue(LanSyncGroupDisplay.componentHasRejectedVersion(plan, unit))
         val notice = requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(row, reference))
         assertContains(notice, "来源设备核对并保留原件")
         assertContains(notice, "SYNC_IMAGE_INVALID")
@@ -137,10 +138,13 @@ class LanSyncGroupDependenciesTest {
                 mapOf(unit to LanSyncGroupResolutionChoice.Later), UUID.randomUUID().toString())
             assertEquals(setOf(unit), later.heldUnits)
             assertTrue(later.resolvedUnits.isEmpty())
-            assertEquals("SYNC_GROUP_RESOLUTION_BODY_MISSING", assertFailsWith<IllegalArgumentException> {
-                LanSyncGroupResolution.prepare(plan, capture, reconciled, dependencies, evidence,
-                    mapOf(unit to LanSyncGroupResolutionChoice.Keep(LanSyncGroupResolutionSource.Version(reference))), UUID.randomUUID().toString())
-            }.message)
+            val choices = listOf(LanSyncGroupResolutionSource.Local, LanSyncGroupResolutionSource.Version(reference))
+            for (choice in choices) {
+                assertEquals("SYNC_GROUP_RESOLUTION_BODY_MISSING", assertFailsWith<IllegalArgumentException> {
+                    LanSyncGroupResolution.prepare(plan, capture, reconciled, dependencies, evidence,
+                        mapOf(unit to LanSyncGroupResolutionChoice.Keep(choice)), UUID.randomUUID().toString())
+                }.message)
+            }
             assertTrue(capture.snapshot.records.isEmpty())
         }
         val image = f.prepared.unit.dependencies.single()

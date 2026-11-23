@@ -1078,6 +1078,26 @@ class LanSyncGroupCoordinatorTest {
         assertTrue(file.size() > 0)
     }
 
+    @Test fun retiredFileOfferClearsItsSavedStatusBeforeAStalePickerReturns() = fixture { f ->
+        val coordinator = readyCoordinator(f)
+        coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation(forFile = true)
+        await { !coordinator.state.value.busy && coordinator.state.value.invitationFileBinding != null }
+        val binding = requireNotNull(coordinator.state.value.invitationFileBinding)
+        val stored = ByteArrayOutputStream()
+        coordinator.saveInvitationFile(binding) { stored.write(it) }
+        await { !coordinator.state.value.busy && coordinator.state.value.status.contains("邀请文件已保存") }
+
+        coordinator.lockManagement()
+        assertNull(coordinator.state.value.invitationFileBinding)
+        assertTrue(coordinator.state.value.status.contains("原邀请已关闭"))
+        coordinator.saveInvitationFile(binding) { fail("The retired offer cannot open a writer") }
+        assertTrue(coordinator.state.value.error.orEmpty().contains("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"))
+        assertFalse(coordinator.state.value.status.contains("邀请文件已保存"))
+        assertTrue(stored.size() > 0)
+    }
+
     @Test fun anActualInvitationFileWriteBlocksActiveCloseAndRejectsAResultAfterVisibilityLoss() = fixture { f ->
         val coordinator = readyCoordinator(f)
         suspend fun issue(): Pair<String, LanSyncGroupInviteOffer> {

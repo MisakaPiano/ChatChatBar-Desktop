@@ -20,7 +20,9 @@ internal fun DesktopLanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, se
     val authorFork = units.any { plan.units.getValue(it).stage == LanSyncGroupNativeStage.AUTHOR_FORK }
     StatusText("关联内容需要一起处理，请分别为每组选定来源。准备目标后仍会显示完整正文和影响，最后由你确认。")
     val resourceBlocked = plan.componentHasBlockedResource(selectedUnit)
-    val canKeep = !busy && !authorFork && !resourceBlocked
+    val rejectedVersion = LanSyncGroupDisplay.componentHasRejectedVersion(plan, selectedUnit)
+    val canKeep = !busy && !authorFork && !resourceBlocked && !rejectedVersion
+    if (rejectedVersion) StatusText("关联组中有已取得的签名版本未通过资料检查。可以先暂缓，并按下方提示核对。", color = DesktopBootstrapColors.warning)
     if (authorFork) StatusText("存在同一设备的版本分叉，当前不能采用或复制；可以先暂缓处理。", color = DesktopBootstrapColors.warning)
     if (resourceBlocked) StatusText(LanSyncGroupDisplay.blockedResolutionImageNotice, color = DesktopBootstrapColors.warning)
     StatusText("保留两份时，每组需另选一份非空正文；全局设定与删除标记不能复制。")

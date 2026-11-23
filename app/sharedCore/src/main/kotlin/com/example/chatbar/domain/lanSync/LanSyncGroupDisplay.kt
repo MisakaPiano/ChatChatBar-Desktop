@@ -31,6 +31,13 @@ object LanSyncGroupDisplay {
         LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"
     }
 
+    fun componentHasRejectedVersion(plan: LanSyncGroupNativePlan, unit: String): Boolean =
+        plan.components[unit].orEmpty().any { related ->
+            val row = plan.units.getValue(related)
+            row.stage != LanSyncGroupNativeStage.UNCHANGED &&
+                row.dependencyStatuses.values.any { it.stage == LanSyncGroupDependencyStage.INVALID_CONTENT }
+        }
+
     /** The details follow the exact signed frontier selected in this inspection. */
     fun versionDependencyNotice(row: LanSyncGroupNativeUnit, version: SyncVersionRef): String? {
         if (version in row.incoming || row.frontiers.none { it.version == version && it.change.content != null }) return null
