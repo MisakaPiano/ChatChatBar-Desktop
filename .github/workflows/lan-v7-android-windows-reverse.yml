@@ -1,0 +1,72 @@
+name: V7 frozen40981 Android87 to Windows synthetic reverse
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/workflows/lan-v7-android-windows-reverse.yml
+      - .github/lan-v7-reverse-request.json
+      - tools/lan-next-control/v7_reverse/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reverse-debug:
+    runs-on: windows-latest
+    timeout-minutes: 70
+    steps:
+      - name: Configure only the disposable cloud checkout
+        shell: pwsh
+        run: |
+          git config --global core.longpaths true
+          git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+        with:
+          path: reverse-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: 40981ae4045114d1d2a076a82b02b7c7f5275cc7
+          path: reverse-android
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: 40981ae4045114d1d2a076a82b02b7c7f5275cc7
+          path: reverse-windows
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools emulator system-images;android-26;google_apis;x86_64 platforms;android-36 build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run exactly two native targets with a new disposable debug identity
+        working-directory: reverse-control
+        timeout-minutes: 65
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: >-
+          python -B tools/lan-next-control/v7_reverse/run_reverse_cloud.py
+          --request .github/lan-v7-reverse-request.json
+          --android-source ../reverse-android
+          --windows-source ../reverse-windows
+          --evidence evidence-reverse
+          --fixed-sha256 2f0a1ef3501b83bd11d92e2bd9efedd499ee2b79e41fa6d938bf2eec7d5f266c
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-android87-windows-reverse-safe-results
+          path: |
+            reverse-control/evidence-reverse/run.json
+            reverse-control/evidence-reverse/debug-build.json
+            reverse-control/evidence-reverse/android.json
+            reverse-control/evidence-reverse/windows.json
+            reverse-control/evidence-reverse/windows-junit.json
+          if-no-files-found: error
+          retention-days: 5

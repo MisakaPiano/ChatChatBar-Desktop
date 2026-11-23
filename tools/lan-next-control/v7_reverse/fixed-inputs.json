@@ -1,0 +1,174 @@
+{
+  "format": 1,
+  "kind": "CCB_V7_FROZEN_REVERSE_EXACT_INPUTS",
+  "sourceSha": "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
+  "controlReadBaseline": "ea5982912061fcae3c47b6f4171578a499098a64",
+  "api": 26,
+  "versionCode": 87,
+  "package": "com.example.chatbar.lansyncnext",
+  "nonDeliveryDebugOnly": true,
+  "files": [
+    {
+      "path": "tools/lan-next-control/desktop_group_ui_control.py",
+      "bytes": 9401,
+      "sha256": "1b0c56542824dad1f7462c77aee66614eda4f037958239c4f7d2d0e201c75b66"
+    },
+    {
+      "path": "tools/lan-next-control/group_ui_control.py",
+      "bytes": 11943,
+      "sha256": "c2f4dc2ffb7f42933abb1286982e7e990d5f292fa25fa2066d66300958a0c77b"
+    },
+    {
+      "path": "tools/lan-next-control/instrumentation_report.py",
+      "bytes": 6482,
+      "sha256": "af65a1a275fa5d4b80c7c46d1f09bb03bb9c19e5c822bad928974f6f67f22158"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/.gitattributes",
+      "bytes": 14,
+      "sha256": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/cloud-debug-signing.init.gradle",
+      "bytes": 636,
+      "sha256": "d767df4ec6a2b6dc82fb3c7426ff32c8664c03b6cf0075614b767d9e3da64d56"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/DesktopV7ReverseSyntheticHostDraftTest.kt",
+      "bytes": 19701,
+      "sha256": "6732aba5bb1cc2831ad307f833555c566e63ab79514b1b8794342ab2d0840f33"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/LanV7ReverseSyntheticWriterTest.kt",
+      "bytes": 7454,
+      "sha256": "d91cc49650bcdfbe2eb88392e666dabf1852e8f6e10a7e9d6b8114f556bb9e3f"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/README.md",
+      "bytes": 4345,
+      "sha256": "42f9433aae572958060e0774f9433b9657e00f02db969432b16841829fd1c628"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/run_reverse_cloud.py",
+      "bytes": 14873,
+      "sha256": "35dea6a6e41d1459348b367b791262d9dd1223015c704682b2e911f97fc4c098"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/v7_reverse_android_control.py",
+      "bytes": 9411,
+      "sha256": "328db0d58a53d4eb0062d0eb82e1502deb322d7c93cd8a878ebee4a0fdf16b17"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/v7_windows_reverse_control.py",
+      "bytes": 848,
+      "sha256": "bb9c8f7a82e01205cf67b4dd0c76eea6f6477ee0a6f096b7966125b50341666f"
+    },
+    {
+      "path": "tools/lan-next-control/v7_reverse/verify_reverse_inputs.py",
+      "bytes": 3280,
+      "sha256": "01fdd7d6d4e266b6f28b06ea60d580975e15feacb5a96fd9ee7ec9e350f1a970"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "app/app/build.gradle.kts",
+      "bytes": 10432,
+      "sha256": "ec39cfd2a1dbce8c86e9a59d555ca09a33d5053de93dce170be0592ddd874977"
+    },
+    {
+      "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
+      "bytes": 66511,
+      "sha256": "e21d94bd74c1eb3dd5b06deb64e5c6a0226ba535f74b5607404fbc3e75795ffd"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSync.kt",
+      "bytes": 24689,
+      "sha256": "a6de32442fd198023823b27323541a28197671d721b5ad5337157cbe3da56ad1"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
+      "bytes": 26811,
+      "sha256": "90bcdb1bec181fabc14af47f072569f6f560955bfa2971bae7127d92d66dbc0d"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/lanSync/LanSyncActivity.kt",
+      "bytes": 25544,
+      "sha256": "c7a01fe4926cfb89d6af9d32049e44add13044023961c18c8b1a9cc84dae74d8"
+    }
+  ],
+  "targets": {
+    "android": {
+      "class": "com.example.chatbar.lanSync.LanV7ReverseSyntheticWriterTest",
+      "method": "appendOneMessageAndPngAfterProductionLanJoin",
+      "command": [
+        "adb",
+        "-s",
+        "emulator-5554",
+        "shell",
+        "-T",
+        "am",
+        "instrument",
+        "-w",
+        "-r",
+        "-e",
+        "v7ReverseSynthetic",
+        "true",
+        "-e",
+        "sourceSha",
+        "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
+        "-e",
+        "class",
+        "com.example.chatbar.lanSync.LanV7ReverseSyntheticWriterTest#appendOneMessageAndPngAfterProductionLanJoin",
+        "com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner"
+      ]
+    },
+    "windows": {
+      "class": "com.example.chatbar.desktop.lanSync.DesktopV7ReverseSyntheticHostDraftTest",
+      "method": "productionLanReceivesActualAndroidReverseMessageAndPng",
+      "command": [
+        "cmd.exe",
+        "/d",
+        "/c",
+        "<windows-source>/app/gradlew.bat",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.lanSync.DesktopV7ReverseSyntheticHostDraftTest",
+        "-PdesktopTestHeadless=false",
+        "--no-daemon",
+        "--no-build-cache",
+        "--rerun-tasks",
+        "--stacktrace"
+      ]
+    }
+  },
+  "bounds": {
+    "outerTwoTargetSeconds": 1500,
+    "borrowedWindowsRunnerSeconds": 1800,
+    "invitationWaitSeconds": 900,
+    "joinSeconds": 180,
+    "reverseAckSeconds": 180,
+    "emulatorBootSeconds": 310
+  },
+  "environment": {
+    "runner": "windows-latest",
+    "GITHUB_ACTIONS": "true",
+    "RUNNER_OS": "Windows",
+    "CCB_V7_SOURCE_SHA": "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
+    "CCB_V7_LIVE_SYNTHETIC": "true",
+    "CCB_V7_REVERSE_SYNTHETIC": "true",
+    "androidAvd": "new-private-CCBV7Reverse",
+    "androidAbi": "google_apis;x86_64",
+    "jdk": 17,
+    "compileSdk": 36,
+    "buildTools": "36.0.0"
+  },
+  "uploadAllowlist": [
+    "run.json",
+    "debug-build.json",
+    "android.json",
+    "windows.json",
+    "windows-junit.json"
+  ],
+  "originalReports": "strictly parsed privately; original body not uploaded",
+  "productionEquivalentPredecessor": "d737dc354efc9d2c19895de2b7e0618399924455"
+}

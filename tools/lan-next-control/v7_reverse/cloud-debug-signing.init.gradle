@@ -1,0 +1,12 @@
+// Cloud-only, new temporary lab key. Never use delivered/protected signing material.
+gradle.beforeProject { project ->
+    project.plugins.withId('com.android.application') {
+        def key = System.getenv('CCB_REVERSE_DEBUG_KEYSTORE')
+        if (!key || System.getenv('GITHUB_ACTIONS') != 'true') throw new GradleException('REVERSE_CLOUD_DEBUG_KEY_REQUIRED')
+        def signing = project.extensions.getByName('android').signingConfigs.getByName('debug')
+        signing.storeFile = new File(key)
+        signing.storePassword = 'android'
+        signing.keyAlias = 'androiddebugkey'
+        signing.keyPassword = 'android'
+    }
+}
