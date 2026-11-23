@@ -48,6 +48,7 @@ object LanSyncGroupEncryptedFilePackage {
         val descriptor: CiphertextDescriptor, private val checkActive: () -> Unit) : AutoCloseable {
         @Volatile private var closed = false
         private fun active() { check(!closed) { "SYNC_GROUP_FILE_CLOSED" }; guard(checkActive); PrivateSyncFile.checked(file.path) }
+        internal fun requireWritable() = active()
         /** Borrowed destination; a failed sink is propagated once and is never retried. */
         fun writeTo(destination: OutputStream): CiphertextDescriptor {
             active()

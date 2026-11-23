@@ -40,6 +40,33 @@ class EncryptedFileExportOwnerTest {
         files.map { it.fileName.toString() }.toList().toSet()
     }
 
+    @Test fun aPreparedBindingAfterAuthorityChangesDoesNotOpenOrTruncateTheSelectedDestination() = runBlocking {
+        fixture { f ->
+            val authorized = AtomicBoolean(true)
+            val owner = LanSyncGroupEncryptedFileExportOwner(prepare = { active ->
+                LanSyncGroupEncryptedFilePackage.prepare(f.plan, f.store, f.trust, f.cipher, f.work) {
+                    active(); check(authorized.get()) { "SYNTHETIC_EXPORT_AUTHORITY_WITHDRAWN" }
+                }
+            })
+            try {
+                val binding = prepared(owner)
+                val original = "合成原文件".toByteArray()
+                val target = Files.write(f.work.resolve("already-selected.cbgroup"), original)
+                authorized.set(false)
+                val streams = AtomicInteger()
+                owner.write(binding, writer = { body ->
+                    streams.incrementAndGet(); Files.newOutputStream(target).use(body)
+                }, readback = { streams.incrementAndGet(); Files.newInputStream(target) })
+                withTimeout(10_000) { owner.drain() }
+                assertEquals(0, streams.get())
+                assertContentEquals(original, Files.readAllBytes(target))
+                assertFalse(owner.state.value.writeCompleted)
+                assertFalse(owner.state.value.readbackVerified)
+                assertNotNull(owner.state.value.error)
+            } finally { owner.closeAndDrain() }
+        }
+    }
+
     @Test fun preparationIsExplicitAndActualExternalReadbackOwnsOnlyItsInput() = runBlocking {
         fixture { f ->
             val preparations = AtomicInteger()

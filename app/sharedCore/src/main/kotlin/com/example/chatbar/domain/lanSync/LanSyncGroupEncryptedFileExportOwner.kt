@@ -154,6 +154,7 @@ class LanSyncGroupEncryptedFileExportOwner internal constructor(
                     var calls = 0
                     var completed = false
                     try {
+                        prepared.requireWritable()
                         writer { output ->
                             synchronized(borrowed) {
                                 calls++

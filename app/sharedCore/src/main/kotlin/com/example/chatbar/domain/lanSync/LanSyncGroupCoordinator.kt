@@ -88,7 +88,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     lanSyncSafe(it, true)
                 }
             }
-            current.prepareEncryptedFile(directory, checkActive, receive)
+            current.prepareEncryptedFile(directory, {
+                checkActive()
+                check(!closed && access === current) { "SYNC_GROUP_FILE_EXPORT_DEVICE_CHANGED" }
+            }, receive)
         }, fileWork)
     }
     val fileExport: LanSyncGroupEncryptedFileExportOwner? get() = synchronized(lifecycle) {
@@ -128,12 +131,37 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         requireNotNull(cloudRecoveryOwner.value).prepare(draft, code)
         true
     }
-    fun prepareFileRecovery(file: () -> java.io.InputStream, code: String): Boolean = synchronized(lifecycle) {
+    private val fileRecoveryPickerOwner = UUID.randomUUID().toString()
+
+    /** A rotation retains this selection scope only while this root and enrollment are current. */
+    fun fileRecoveryPickerBinding(): String? = synchronized(lifecycle) {
+        val current = mutableState.value
+        if (closed || !externalRecoveryAllowed() || current.membershipConflict != null) return@synchronized null
+        val context = when (current.stage) {
+            LanSyncGroupPanelStage.EMPTY -> "empty"
+            LanSyncGroupPanelStage.JOINING -> current.fileRecoveryJoinScope ?: return@synchronized null
+            LanSyncGroupPanelStage.READY -> access?.let { "${it.trust.genesis}:${it.device}" } ?: return@synchronized null
+            else -> return@synchronized null
+        }
+        "$fileRecoveryPickerOwner:${current.stage}:$context"
+    }
+
+    fun prepareFileRecovery(file: () -> java.io.InputStream, code: String, pickerBinding: String? = null): Boolean = synchronized(lifecycle) {
         if (closed || !externalRecoveryAllowed() || fileRecoveryOwner.value == null) return@synchronized false
+        if (pickerBinding != null && fileRecoveryPickerBinding() != pickerBinding) return@synchronized false
         if (fileRecoveryOwner.value?.state?.value?.busy == true ||
             cloudRecoveryOwner.isInitialized() && cloudRecoveryOwner.value?.state?.value?.busy == true) return@synchronized false
         if (cloudRecoveryOwner.isInitialized()) cloudRecoveryOwner.value?.lock()
-        requireNotNull(fileRecoveryOwner.value).prepare(file, code)
+        requireNotNull(fileRecoveryOwner.value).prepare({
+            if (pickerBinding != null) {
+                check(fileRecoveryPickerBinding() == pickerBinding) { "SYNC_GROUP_FILE_RECOVERY_PICKER_STALE" }
+                val current = access
+                require(current == null || current.ledger().current().members[current.device]?.active == true) {
+                    "SYNC_GROUP_FILE_RECOVERY_DAILY_KEYS_CHANGED"
+                }
+            }
+            file()
+        }, code)
         true
     }
     private val actionGeneration = java.util.concurrent.atomic.AtomicLong()
@@ -423,6 +451,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()))
             else if (joined != null) {
                 mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = recovery,
+                    fileRecoveryJoinScope = joined.localReplica.id.value.takeUnless { joined.membershipRevoked },
                     joiningDevice = joined.device.takeUnless { recovery }, canAbandonJoin = joined.canAbandon,
                     canRefreshJoinPreparation = !joined.ledgerConflict && joined.stage in reprepareJoinStages, canShelveJoin = joined.canShelve,
                     canArchiveRevokedJoin = joined.canArchiveRevoked, joiningLedgerConflict = joined.ledgerConflict,
@@ -740,6 +769,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private fun showJoining(profile: LanSyncGroupJoiningProfile, status: String) = mutableState.update {
         it.copy(stage = LanSyncGroupPanelStage.JOINING, joiningDevice = profile.device, canAbandonJoin = profile.canAbandon,
+            fileRecoveryJoinScope = profile.localReplica.id.value.takeUnless { profile.membershipRevoked },
             canShelveJoin = profile.canShelve, canArchiveRevokedJoin = profile.canArchiveRevoked,
             canRefreshJoinPreparation = !profile.ledgerConflict && profile.stage in reprepareJoinStages,
             joiningLedgerConflict = profile.ledgerConflict, status = if (profile.ledgerConflict) joiningLedgerConflictText else status)

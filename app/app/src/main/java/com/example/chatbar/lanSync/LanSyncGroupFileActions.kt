@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -46,10 +47,14 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var resumed by remember(lifecycle) { mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
     // These must remain outside visible-modal branches: SAF normally stops the Activity.
-    var selectedFile by remember(coordinator) { mutableStateOf<Uri?>(null) }
-    var inputPickerPending by remember(coordinator) { mutableStateOf(false) }
-    var outputBinding by remember(coordinator) { mutableStateOf<String?>(null) }
-    var outputFile by remember(coordinator) { mutableStateOf<Uri?>(null) }
+    var selectedFile by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var inputBinding by rememberSaveable { mutableStateOf<String?>(null) }
+    var inputPickerPending by rememberSaveable { mutableStateOf(false) }
+    var inputReturned by rememberSaveable { mutableStateOf(false) }
+    var inputFile by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var outputBinding by rememberSaveable { mutableStateOf<String?>(null) }
+    var outputReturned by rememberSaveable { mutableStateOf(false) }
+    var outputFile by rememberSaveable { mutableStateOf<Uri?>(null) }
     var pickerNotice by remember(coordinator) { mutableStateOf<String?>(null) }
     var code by remember(coordinator, state.privacyRevision) { mutableStateOf("") }
     var secretRevision by remember(coordinator) { mutableStateOf(0) }
@@ -57,23 +62,17 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
     fun clearSecrets() { code = ""; confirmed = false; secretRevision++ }
     val clearCurrentSecrets by rememberUpdatedState(::clearSecrets)
     val canRecover = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING || state.canResumeExternalRecovery
+    val choosingInput = inputPickerPending || inputReturned
 
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (inputPickerPending) {
             inputPickerPending = false; clearSecrets()
-            if (canRecover) {
-                if (uri != null) selectedFile = uri
-                pickerNotice = if (uri == null) "未选择文件" else null
-                coordinator.openFileRecovery()
-            } else pickerNotice = "此设备已加入设备组，未开始文件恢复"
+            inputFile = uri; inputReturned = true
         }
     }
     val saveFile = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
         if (outputBinding != null) {
-            if (uri == null) {
-                outputBinding = null; outputFile = null; pickerNotice = "未选择保存位置"
-                coordinator.openFileExport()
-            } else outputFile = uri
+            outputFile = uri; outputReturned = true
         }
     }
 
@@ -94,22 +93,38 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
     }
     DisposableEffect(coordinator) {
         onDispose {
-            clearCurrentSecrets(); selectedFile = null; inputPickerPending = false; outputBinding = null; outputFile = null
+            clearCurrentSecrets()
             recovery?.hide(); exporter?.hide()
         }
     }
     LaunchedEffect(recoveryState.visible, recoveryState.review?.binding) { clearSecrets() }
-    LaunchedEffect(outputFile, outputBinding, resumed, exporter) {
-        val uri = outputFile ?: return@LaunchedEffect
+    LaunchedEffect(inputReturned, resumed, state.busy, coordinator) {
+        if (!inputReturned || !resumed || state.busy) return@LaunchedEffect
+        val uri = inputFile
+        inputFile = null; inputReturned = false
+        val binding = inputBinding
+        if (binding == null || binding != coordinator.fileRecoveryPickerBinding()) {
+            inputBinding = null; selectedFile = null
+            pickerNotice = "这次文件选择已失效，请从当前设备组重新选择。"
+            return@LaunchedEffect
+        }
+        if (uri != null) selectedFile = uri
+        pickerNotice = if (uri == null) "未选择文件" else null
+        coordinator.openFileRecovery()
+    }
+    LaunchedEffect(outputReturned, outputBinding, resumed, state.busy, exporter) {
+        if (!outputReturned || !resumed || state.busy) return@LaunchedEffect
+        val uri = outputFile
         val binding = outputBinding ?: return@LaunchedEffect
-        if (!resumed) return@LaunchedEffect
-        outputFile = null; outputBinding = null
+        outputFile = null; outputBinding = null; outputReturned = false
         val owner = exporter
         if (state.stage != LanSyncGroupPanelStage.READY || owner == null || owner.state.value.preparedBinding != binding || owner.state.value.busy) {
             pickerNotice = "这次文件选择已失效，请重新准备或选择保存位置"
             return@LaunchedEffect
         }
-        pickerNotice = null; coordinator.openFileExport()
+        pickerNotice = if (uri == null) "未选择保存位置" else null
+        coordinator.openFileExport()
+        if (uri == null) return@LaunchedEffect
         owner.write(binding, writer = { streamer ->
             val output = resolver.openOutputStream(uri, "wt") ?: throw IOException("SYNC_GROUP_FILE_OUTPUT_UNAVAILABLE")
             output.use { streamer(it) }
@@ -121,7 +136,7 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (canRecover) CbButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续加密文件恢复" else "从加密文件恢复设备组", {
             pickerNotice = null; clearSecrets(); coordinator.openFileRecovery()
-        }, enabled = recovery != null && !state.busy && !cloudBusy && !exportState.busy && !inputPickerPending,
+        }, enabled = recovery != null && !state.busy && !cloudBusy && !exportState.busy && !choosingInput,
             variant = ButtonVariant.Secondary)
         if (state.stage == LanSyncGroupPanelStage.READY) CbButton("导出加密同步文件", {
             pickerNotice = null; coordinator.openFileExport()
@@ -138,7 +153,8 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
             onDispose { if (!alreadySecure) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
         }
         fun closeRecovery() {
-            clearSecrets(); selectedFile = null; inputPickerPending = false; pickerNotice = null
+            clearSecrets(); selectedFile = null; inputBinding = null
+            inputPickerPending = false; inputFile = null; inputReturned = false; pickerNotice = null
             recovery.lock(); coordinator.open()
         }
         CbDialog(onDismissRequest = ::closeRecovery, title = "从加密文件恢复设备组", dismissOnClickOutside = false,
@@ -172,19 +188,31 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
                 } else if (!recoveryState.complete) {
                     CbText(if (selectedFile == null) "尚未选择加密同步文件" else "已选择加密同步文件；返回应用后请重新输入恢复码")
                     CbButton("选择加密同步文件", {
+                        val binding = coordinator.fileRecoveryPickerBinding()
+                        if (binding == null) {
+                            pickerNotice = "当前设备组未就绪，请重新检查后选择文件。"
+                            return@CbButton
+                        }
+                        if (inputBinding != binding) selectedFile = null
+                        inputBinding = binding
                         clearSecrets(); pickerNotice = null; inputPickerPending = true; recovery.hide()
                         try { openFile.launch(arrayOf("*/*")) } catch (_: Exception) {
                             inputPickerPending = false; pickerNotice = "无法打开文件选择器，请重试"; coordinator.openFileRecovery()
                         }
-                    }, enabled = !recoveryState.busy && !inputPickerPending && canRecover && !cloudBusy, variant = ButtonVariant.Secondary)
+                    }, enabled = !recoveryState.busy && !choosingInput && canRecover && !cloudBusy, variant = ButtonVariant.Secondary)
                     key(secretRevision, state.privacyRevision) {
                         CbField("设备组恢复码") { FileRecoveryCodeInput(code, { code = it }, !recoveryState.busy && canRecover) }
                     }
                     CbButton("读取并核对设备组", {
                         val uri = selectedFile ?: return@CbButton
+                        val binding = inputBinding ?: return@CbButton
                         val captured = code; clearSecrets(); pickerNotice = null
-                        if (!coordinator.prepareFileRecovery({ resolver.openInputStream(uri) ?: throw IOException("SYNC_GROUP_FILE_INPUT_UNAVAILABLE") }, captured))
-                            pickerNotice = "另一恢复正在进行，请先继续或停止当前恢复"
+                        if (coordinator.fileRecoveryPickerBinding() != binding) {
+                            selectedFile = null; inputBinding = null
+                            pickerNotice = "这次文件选择已失效，请从当前设备组重新选择。"
+                        } else if (!coordinator.prepareFileRecovery({
+                            resolver.openInputStream(uri) ?: throw IOException("SYNC_GROUP_FILE_INPUT_UNAVAILABLE")
+                        }, captured, binding)) pickerNotice = "当前无法开始恢复，请检查设备组或停止正在进行的恢复。"
                     }, enabled = !recoveryState.busy && !cloudBusy && selectedFile != null && code.isNotBlank() && canRecover)
                 }
             }
@@ -205,13 +233,13 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
                 CbButton("准备加密同步文件", { pickerNotice = null; exporter.prepare() },
                     enabled = !exportState.busy && outputBinding == null && state.stage == LanSyncGroupPanelStage.READY)
                 exportState.preparedBinding?.let { binding -> CbButton("选择保存位置并写出", {
-                    pickerNotice = null; outputBinding = binding; outputFile = null; exporter.hide()
+                    pickerNotice = null; outputBinding = binding; outputFile = null; outputReturned = false; exporter.hide()
                     try { saveFile.launch("ChatBar.cbgroup") } catch (_: Exception) {
                         outputBinding = null; pickerNotice = "无法打开保存位置，请重试"; exporter.open()
                     }
                 }, enabled = !exportState.busy && outputBinding == null, variant = ButtonVariant.Secondary) }
                 if (exportState.busy || exportState.preparedBinding != null) CbButton("取消本次导出", {
-                    outputBinding = null; outputFile = null; exporter.lock()
+                    outputBinding = null; outputFile = null; outputReturned = false; exporter.lock()
                 }, variant = ButtonVariant.Secondary)
             }
         }

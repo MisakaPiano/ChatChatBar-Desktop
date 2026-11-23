@@ -14,17 +14,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator
 import com.example.chatbar.domain.lanSync.LanSyncGroupEnrollment
+import com.example.chatbar.domain.lanSync.LanSyncGroupFileRecoveryOwner
+import com.example.chatbar.domain.lanSync.LanSyncGroupJoining
 import com.example.chatbar.domain.lanSync.LanSyncGroupPanelStage
 import com.example.chatbar.domain.lanSync.LanSyncNetwork
 import com.example.chatbar.domain.lanSync.LanSyncPeer
@@ -154,6 +162,105 @@ class AndroidLanSyncInvitationFileRestorationTest {
         }
     }
 
+    @Test
+    fun restoredEncryptedFilePickersVerifyExportAndRequireFreshRecoveryCode() = runBlocking {
+        val app = compose.activity.applicationContext
+        val root = Files.createTempDirectory(app.cacheDir.canonicalFile.toPath(), "synthetic-group-file-picker-").toRealPath()
+        fun coordinator(path: java.nio.file.Path): LanSyncGroupCoordinator {
+            val profile = Files.createDirectory(path.resolve("profile"))
+            val joining = Files.createDirectory(path.resolve("joining"))
+            val data = Files.createDirectory(path.resolve("data"))
+            val work = Files.createDirectory(path.resolve("workspace"))
+            val workspace = LanSyncWorkspace(data, work, { data.resolve(it) })
+            val identity = LanSyncTlsIdentity.create()
+            val platform = object : LanSyncPlatform {
+                override suspend fun exclusive(work: suspend () -> Unit) = work()
+                override suspend fun reload(sessionIds: Set<String>) = Unit
+            }
+            val network = object : LanSyncNetwork {
+                override fun addresses() = listOf("10.0.0.17")
+                override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket =
+                    error("SYNTHETIC_GROUP_FILE_PICKER_UNEXPECTED_NETWORK")
+                override fun accepts(address: InetAddress) = address.isLoopbackAddress
+                override val discoveryEnabled = false
+            }
+            val founder = LanSyncGroupEnrollment(profile, workspace, platform, identity,
+                { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+            fun joiner() = LanSyncGroupJoining(joining, workspace, platform, identity,
+                { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+            return LanSyncGroupCoordinator(hasExistingEvidence = { Files.exists(profile.resolve("profile.protected")) ||
+                Files.exists(joining.resolve("profile.protected")) }, enrollment = { founder }, joining = ::joiner,
+                network = network, deviceName = "Synthetic encrypted file picker",
+                fileRecoveryFactory = { ready ->
+                    LanSyncGroupFileRecoveryOwner({ Files.createDirectories(path.resolve("recovery")) }, ::joiner,
+                        "Synthetic restored device", onReady = ready)
+                })
+        }
+        val source = coordinator(Files.createDirectory(root.resolve("source")))
+        val receiver = coordinator(Files.createDirectory(root.resolve("receiver")))
+        try {
+            source.createGroup()
+            await { !source.state.value.busy && source.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+            val code = requireNotNull(source.state.value.recoveryCode)
+            source.recoverySaved(requireNotNull(source.state.value.setupBinding))
+            await { !source.state.value.busy && source.state.value.stage == LanSyncGroupPanelStage.READY }
+            val exporter = requireNotNull(source.fileExport)
+            val recovery = requireNotNull(receiver.fileRecovery)
+            val picker = Picker("ChatBar.cbgroup", allowInput = true)
+            val registryOwner = object : ActivityResultRegistryOwner { override val activityResultRegistry = picker }
+            var shown by mutableStateOf(source)
+            val restoration = StateRestorationTester(object : ComposeContentTestRule by compose {
+                override fun setContent(composable: @Composable () -> Unit) {
+                    compose.runOnUiThread { compose.activity.setContent(content = composable) }
+                }
+            })
+            restoration.setContent {
+                val current = shown
+                key(current) { CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner) {
+                    val state by current.state.collectAsState()
+                    ChatBarTheme { LanSyncGroupFileActions(current, state) }
+                } }
+            }
+            compose.onNodeWithText("导出加密同步文件").performClick()
+            compose.onNodeWithText("准备加密同步文件").performScrollTo().performClick()
+            await { !exporter.state.value.busy && exporter.state.value.preparedBinding != null }
+            val target = root.resolve("verified.cbgroup")
+            compose.onNodeWithText("选择保存位置并写出").performScrollTo().performClick()
+            restoration.emulateSavedInstanceStateRestore()
+            source.lockManagementOnVisibilityLoss()
+            compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            await { !exporter.state.value.busy && exporter.state.value.readbackVerified }
+            val bytes = Files.readAllBytes(target)
+            assertTrue(bytes.isNotEmpty())
+
+            compose.onNodeWithText("选择保存位置并写出").performScrollTo().performClick()
+            restoration.emulateSavedInstanceStateRestore()
+            exporter.lock()
+            compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            compose.onNodeWithText("这次文件选择已失效，请重新准备或选择保存位置").assertExists()
+            assertTrue(bytes.contentEquals(Files.readAllBytes(target)))
+
+            compose.runOnIdle { shown = receiver }
+            compose.onNodeWithText("从加密文件恢复设备组").performClick()
+            compose.onNode(hasSetTextAction()).performTextInput(code)
+            compose.onNodeWithText("选择加密同步文件").performScrollTo().performClick()
+            restoration.emulateSavedInstanceStateRestore()
+            receiver.lockManagementOnVisibilityLoss()
+            compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            compose.onNodeWithText("已选择加密同步文件；返回应用后请重新输入恢复码").assertExists()
+            compose.onNodeWithText("读取并核对设备组").assertIsNotEnabled()
+            assertNull(recovery.state.value.review)
+            compose.onNode(hasSetTextAction()).performTextInput(code)
+            compose.onNodeWithText("读取并核对设备组").performScrollTo().performClick()
+            await { !recovery.state.value.busy && recovery.state.value.review != null }
+            assertNull(recovery.state.value.error)
+            assertTrue(bytes.contentEquals(Files.readAllBytes(target)))
+        } finally {
+            receiver.closeAndDrain(); source.closeAndDrain()
+            check(root.toFile().deleteRecursively())
+        }
+    }
+
     private fun requireIsolatedApplication() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncInvitationFileRestoreFixture") == "true")
         val app = ApplicationProvider.getApplicationContext<Context>()
@@ -165,14 +272,14 @@ class AndroidLanSyncInvitationFileRestorationTest {
         while (!condition()) delay(25)
     }
 
-    private class Picker : ActivityResultRegistry() {
+    private class Picker(private val filename: String = "设备组邀请.ccbinvite", private val allowInput: Boolean = false) : ActivityResultRegistry() {
         private var pending: Int? = null
 
         override fun <I, O> onLaunch(
             requestCode: Int, contract: ActivityResultContract<I, O>, input: I, options: ActivityOptionsCompat?
         ) {
             check(pending == null)
-            check(input == "设备组邀请.ccbinvite")
+            check(input == filename || allowInput && input is Array<*> && input.contentEquals(arrayOf("*/*")))
             pending = requestCode
         }
 
