@@ -188,7 +188,13 @@ internal class LanSyncGroupMembershipRecovery(
         val directory = root.resolve("signed-controls")
         if (!Files.exists(directory, NOFOLLOW_LINKS)) Files.createDirectory(directory)
         lanSyncSafe(directory, true)
-        val outbox = SyncEncryptedOutbox(directory, cipher)
+        val preparations = directory.resolve("preparations")
+        if (!Files.exists(preparations, NOFOLLOW_LINKS)) Files.createDirectory(preparations)
+        lanSyncSafe(preparations, true)
+        val encrypted = directory.resolve("outbox-${current.epoch.value}")
+        if (!Files.exists(encrypted, NOFOLLOW_LINKS)) Files.createDirectory(encrypted)
+        lanSyncSafe(encrypted, true)
+        val outbox = SyncEncryptedOutbox(encrypted, cipher)
         val exact = current.reference().bodyHash
         val salt = access.device
         val operation = SyncStoreId.parse(lanSyncHash("CCB-MEMBERSHIP-RECOVERY-OP/1:$exact:$salt".toByteArray()).take(32))
@@ -196,7 +202,7 @@ internal class LanSyncGroupMembershipRecovery(
             SyncStoreId.parse(lanSyncHash("CCB-MEMBERSHIP-RECOVERY-OBJECT/1:$exact:$salt".toByteArray()).take(32)))
         val envelope = SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = current,
             ledgerHistory = ledger.ancestry().dropLast(1))
-        SyncGroupObjectCodec(directory).enqueue(outbox, operation, key, cipher, envelope)
+        SyncGroupObjectCodec(preparations).enqueue(outbox, operation, key, cipher, envelope)
         outbox.upload(operation, access.replica)
     }
 
