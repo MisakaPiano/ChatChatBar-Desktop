@@ -486,6 +486,7 @@ class ChatSyncDeletedSessionNativeTest {
                 }
                 app.characterRepository.refreshFromStorage()
                 app.chatRepository.reloadAfterLanSync()
+                app.voiceMessageRepository.reload()
             }
         }
 

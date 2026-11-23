@@ -122,18 +122,25 @@ jobs:
             adb shell wm density 320
             adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
             adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
-            adb shell run-as com.example.chatbar.lansyncnext mkdir -p cache
-            adb shell -T "run-as com.example.chatbar.lansyncnext sh -c 'cat > cache/synthetic-r02-heif.jpg'" < "$RUNNER_TEMP/r12-heif/synthetic.heic"
             adb shell am instrument -w -e lanSyncInvitationFileRestoreFixture true -e class 'com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest#missingOrEmptyInvitationShowsInputGuidanceAndPickerCancellationIsQuiet,com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest#delayedFileAndScanResultsAreIgnoredAfterTheGroupBecomesReady' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r12-android-invites.txt"
             cat "$RUNNER_TEMP/v7-r12-android-invites.txt"
-            adb shell am instrument -w -e lanSyncMessageEditFixture true -e class 'com.example.chatbar.ui.chat.ChatMessageEditNativeTest' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r12-android-edit.txt"
-            cat "$RUNNER_TEMP/v7-r12-android-edit.txt"
+            adb shell pm clear --user 0 com.example.chatbar.lansyncnext
+            adb shell am instrument -w -e lanSyncMessageEditFixture true -e class 'com.example.chatbar.ui.chat.ChatMessageEditNativeTest#selectedVersionEditRetainsDraftAndNewPhotoAfterSignedSameVersionUpdate' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r12-android-signed-edit.txt"
+            cat "$RUNNER_TEMP/v7-r12-android-signed-edit.txt"
+            adb shell pm clear --user 0 com.example.chatbar.lansyncnext
+            adb shell am instrument -w -e lanSyncMessageEditFixture true -e class 'com.example.chatbar.ui.chat.ChatMessageEditNativeTest#failedPhotoReplacementPreservesOldBytesAndDraftThenRetiresOnlyUnreferencedFiles' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r12-android-photo-edit.txt"
+            cat "$RUNNER_TEMP/v7-r12-android-photo-edit.txt"
+            adb shell pm clear --user 0 com.example.chatbar.lansyncnext
             adb shell am instrument -w -e lanSyncDeletedChatFixture true -e class 'com.example.chatbar.ui.chat.ChatSyncDeletedSessionNativeTest#confirmedIncomingDeletionKeepsOpenAndReopenedComposerDraft' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r12-android-delete.txt"
             cat "$RUNNER_TEMP/v7-r12-android-delete.txt"
+            adb shell pm clear --user 0 com.example.chatbar.lansyncnext
+            adb shell run-as com.example.chatbar.lansyncnext mkdir -p cache
+            adb shell -T "run-as com.example.chatbar.lansyncnext sh -c 'cat > cache/synthetic-r02-heif.jpg'" < "$RUNNER_TEMP/r12-heif/synthetic.heic"
             adb shell am instrument -w -e class 'com.example.chatbar.lanSync.AndroidLanSyncCameraResourceTest#ordinarySelectionAndLegacyExportsUseVerifiedHeifIdentityWithoutChangingOriginalBytes,com.example.chatbar.lanSync.AndroidLanSyncCameraResourceTest#genuineHeifUnderLegacyJpegNameUsesAndroidCodecAndKeepsExactOriginal' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r12-android-heif.txt"
             cat "$RUNNER_TEMP/v7-r12-android-heif.txt"
             grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r12-android-invites.txt"
-            grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r12-android-edit.txt"
+            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r12-android-signed-edit.txt"
+            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r12-android-photo-edit.txt"
             grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r12-android-delete.txt"
             grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r12-android-heif.txt"
       - uses: actions/upload-artifact@v4

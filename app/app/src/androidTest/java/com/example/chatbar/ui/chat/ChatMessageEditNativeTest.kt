@@ -26,6 +26,7 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.data.repository.VoiceMessageRepository
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import com.example.chatbar.domain.lanSync.LanSyncGroupNativeApplyStatus
 import com.example.chatbar.lanSync.LanSyncActivity
@@ -66,6 +67,9 @@ class ChatMessageEditNativeTest {
             val message = signed.sourceChat.addMessage(ChatMessage(UUID.randomUUID().toString(), session.id, MessageRole.ASSISTANT,
                 original, alternatives = listOf("Synthetic other version", original), alternativeVersionIds = listOf("other-v", "active-v"),
                 currentAlternativeIndex = 1, currentAlternativeVersionId = "active-v", createdAt = 2, updatedAt = 2))
+            val sourceVoices = VoiceMessageRepository(signed.sourceStorage)
+            // The original author already opened this assistant version and published its voice-placement state.
+            sourceVoices.ensureAnchors(message)
             signed.publish(source, setOf(conversation, "character_cards/${card.id}"))
             val first = requireNotNull(signed.receive(target).plan)
             assertEquals(LanSyncGroupNativeApplyStatus.APPLIED, target.apply(first)?.status)
@@ -81,10 +85,24 @@ class ChatMessageEditNativeTest {
                 val replacement = MessageAlternativeVersionPolicy.editCurrentContent(message, incoming)
                     .copy(images = listOf(sourceImage.toString()))
                 assertTrue(signed.sourceChat.updateMessageIfUnchanged(message, replacement))
+                sourceVoices.ensureAnchors(durable(signed.sourceChat, message))
                 signed.publish(source, setOf(conversation))
                 val remote = signed.receive(target)
-                assertTrue(remote.incomingReview?.reductions.orEmpty().isEmpty())
-                assertEquals(LanSyncGroupNativeApplyStatus.APPLIED, target.apply(requireNotNull(remote.plan))?.status)
+                val plan = requireNotNull(remote.plan)
+                val row = plan.units.getValue(conversation)
+                val previous = first.plan.snapshot.units().getValue(conversation).associateBy { it.key }
+                val current = plan.before.units().getValue(conversation).associateBy { it.key }
+                val updatedFields = (previous.keys + current.keys).distinct().associateWith { key ->
+                    val beforeFields = previous[key]?.body.orEmpty()
+                    val afterFields = current[key]?.body.orEmpty()
+                    (beforeFields.keys + afterFields.keys).distinct().filter { beforeFields[it] != afterFields[it] }
+                }.filterValues { it.isNotEmpty() }
+                val diagnostic = "Signed text and photo stage=${row.stage}, code=${row.code}, localChanges=$updatedFields, " +
+                    "dependencies=${row.dependencyStatuses.values.map { it.stage to it.code }}, " +
+                    "advances=${plan.advances.keys}, review=${remote.incomingReview?.reductions?.keys}"
+                assertTrue(diagnostic, remote.incomingReview?.reductions.orEmpty().isEmpty())
+                assertTrue(diagnostic, conversation in plan.advances)
+                assertEquals(diagnostic, LanSyncGroupNativeApplyStatus.APPLIED, target.apply(plan)?.status)
                 val applied = durable(app.chatRepository, message)
                 assertEquals(incoming, applied.displayContent)
                 assertEquals(listOf("other-v", "active-v"), applied.alternativeVersionIds)
@@ -113,6 +131,7 @@ class ChatMessageEditNativeTest {
                 assertArrayEquals(Files.readAllBytes(sourceImage), Files.readAllBytes(received!!))
             }
         } finally {
+            app.voiceMessageRepository.deleteForSession(session.id)
             app.chatRepository.deleteSession(session.id)
             app.characterRepository.delete(card.id)
             selected?.let(Files::deleteIfExists)
@@ -154,7 +173,10 @@ class ChatMessageEditNativeTest {
             openChat(app, session.id, picker).use { scenario ->
                 ui.openEditor(message.content)
                 ui.editText(draft)
-                repeat(originals.size) { ui.tap("删除图片") }
+                for (remaining in originals.size - 1 downTo 0) {
+                    ui.tap("删除图片")
+                    ui.labelCount("删除图片", remaining)
+                }
                 selected = pick(app, scenario, picker, ui, localSelection)
                 check(rows.isDirectory && rows.setWritable(false, true))
                 try {
@@ -237,8 +259,14 @@ class ChatMessageEditNativeTest {
         ui.tap("插入图片")
         await("Android visual media picker opened") { picker.request != null }
         scenario.onActivity { picker.returnImage(Uri.fromFile(source.toFile())) }
-        ui.label("删除图片")
-        return (entries() - before).single()
+        var added: Path? = null
+        val original = Files.readAllBytes(source)
+        await("photo picker retained exactly one new, complete file") {
+            added = (entries() - before).singleOrNull()?.takeIf { Files.readAllBytes(it).contentEquals(original) }
+            added != null
+        }
+        ui.labelCount("删除图片", 1)
+        return checkNotNull(added)
     }
 
     private suspend fun await(phase: String, condition: suspend () -> Boolean) {
@@ -276,6 +304,10 @@ class ChatMessageEditNativeTest {
             node.text?.toString() == value || node.contentDescription?.toString() == value
 
         suspend fun label(label: String) = await("visible edit control: $label") { nodes().any { matches(it, label) } }
+
+        suspend fun labelCount(label: String, count: Int) = await("$count visible edit controls: $label") {
+            nodes().count { matches(it, label) } == count
+        }
 
         suspend fun openEditor(message: String, allowSegmentMenu: Boolean = false) {
             action(message, AccessibilityNodeInfo.ACTION_LONG_CLICK)
