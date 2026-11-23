@@ -4,17 +4,13 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Rect
+import android.os.Bundle
+import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.compose.setContent
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.click
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.performTouchInput
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
@@ -67,6 +63,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -75,19 +72,17 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
-import org.junit.Rule
 import org.junit.Test
 
 /** Real Android composer and incoming reduction admission, using synthetic keys and local ciphertext transport. */
 class ChatSyncDeletedSessionNativeTest {
-    @get:Rule val compose = createEmptyComposeRule()
-
     @Test
     fun confirmedIncomingDeletionKeepsOpenAndReopenedComposerDraft() = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncDeletedChatFixture") == "true")
         val app = ApplicationProvider.getApplicationContext<ChatBarApp>()
         check(app.packageName in setOf("com.example.chatbar.lansync", "com.example.chatbar.lansyncnext"))
         check((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+        val ui = ChatWindow(app.packageName)
         await { app.lanSyncStartupReady }
         check(!app.lanSyncOwner.hasGroupEvidence())
 
@@ -145,11 +140,11 @@ class ChatSyncDeletedSessionNativeTest {
             openChat(app, sessionId).use { scenario ->
                 oldOwner = owner(scenario, sessionId)
                 await { oldOwner.draftLoaded.value && oldOwner.isModelUsable.value && !oldOwner.isArchived.value }
-                compose.onNodeWithText(sessionTitle).assertIsDisplayed()
-                compose.onNodeWithContentDescription("发送").assertIsEnabled()
-                compose.onNode(hasSetTextAction()).performTextReplacement(draftText)
-                compose.runOnIdle { oldOwner.addDraftImage(images.single()) }
-                compose.onNodeWithContentDescription("待发图片").assertIsDisplayed()
+                ui.label(sessionTitle)
+                ui.sendButton(enabled = true)
+                ui.replaceDraftText(draftText)
+                withContext(Dispatchers.Main) { oldOwner.addDraftImage(images.single()) }
+                ui.label("待发图片")
                 await { app.chatRepository.getComposerDraft(sessionId).let { it.content == draftText && it.imagePaths == images } }
 
                 scenario.moveToState(Lifecycle.State.STARTED)
@@ -179,8 +174,8 @@ class ChatSyncDeletedSessionNativeTest {
 
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 await { oldOwner.sessionMissing.value }
-                assertRemovedScreen()
-                compose.onNodeWithContentDescription("发送").performTouchInput { click() }
+                assertRemovedScreen(ui)
+                ui.tapDisabledSend()
                 assertEquals(draftText, oldOwner.composerDraft.value.text)
                 assertEquals(images, oldOwner.composerDraft.value.images)
                 assertFalse(withContext(Dispatchers.Main) { oldOwner.sendMessage(draftText, images) })
@@ -192,7 +187,7 @@ class ChatSyncDeletedSessionNativeTest {
                 val cold = owner(reopened, sessionId)
                 assertNotSame(oldOwner, cold)
                 await { cold.draftLoaded.value && cold.sessionMissing.value }
-                assertRemovedScreen()
+                assertRemovedScreen(ui)
                 assertEquals(draftText, cold.composerDraft.value.text)
                 assertEquals(images, cold.composerDraft.value.images)
                 val reopenedRepository = ChatRepository(JsonFileStorage(data, app.lanSyncOwner.gate))
@@ -249,12 +244,75 @@ class ChatSyncDeletedSessionNativeTest {
             fields.takeIf { it.isNotEmpty() }?.let { "$type:$it" }
         }
 
-    private fun assertRemovedScreen() {
-        compose.onNodeWithText("会话已删除，草稿和图片已保留在本机。").assertIsDisplayed()
-        compose.onNodeWithText("复制草稿").assertIsDisplayed()
-        compose.onNodeWithText("复制图片位置").assertIsDisplayed()
-        compose.onNodeWithContentDescription("待发图片").assertIsDisplayed()
-        compose.onNodeWithContentDescription("发送").assertIsNotEnabled()
+    private suspend fun assertRemovedScreen(ui: ChatWindow) {
+        ui.label("会话已删除，草稿和图片已保留在本机。")
+        ui.label("复制草稿")
+        ui.label("复制图片位置")
+        ui.label("待发图片")
+        ui.sendButton(enabled = false)
+    }
+
+    /** Observe the Android accessibility tree without replacing the production window recomposer. */
+    private class ChatWindow(private val packageName: String) {
+        private val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+
+        suspend fun label(value: String) = awaitNode(value) {
+            it.text?.toString() == value || it.contentDescription?.toString() == value
+        }
+
+        suspend fun sendButton(enabled: Boolean) = awaitNode("send button enabled=$enabled") {
+            it.contentDescription?.toString() == "发送" && it.isEnabled == enabled
+        }
+
+        suspend fun replaceDraftText(value: String) {
+            val field = awaitNode("enabled chat composer") {
+                it.isEnabled && it.isEditable &&
+                    AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_TEXT in it.actionList
+            }
+            val input = Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
+            }
+            assertTrue("The real composer must accept the replacement text",
+                field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, input))
+        }
+
+        suspend fun tapDisabledSend() {
+            val bounds = Rect()
+            sendButton(enabled = false).getBoundsInScreen(bounds)
+            assertFalse("Disabled send must have visible screen bounds", bounds.isEmpty)
+            val downTime = SystemClock.uptimeMillis()
+            for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+                val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action,
+                    bounds.exactCenterX(), bounds.exactCenterY(), 0).apply {
+                    source = InputDevice.SOURCE_TOUCHSCREEN
+                }
+                try { assertTrue("Android must deliver the synthetic touch", automation.injectInputEvent(event, true)) }
+                finally { event.recycle() }
+            }
+        }
+
+        private suspend fun awaitNode(description: String, matches: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
+            val found = withTimeoutOrNull(15_000) {
+                var node = findNode(matches)
+                while (node == null) {
+                    delay(50)
+                    node = findNode(matches)
+                }
+                node
+            }
+            return checkNotNull(found) { "Visible Android chat control unavailable: $description" }
+        }
+
+        private fun findNode(matches: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+            val pending = ArrayDeque<AccessibilityNodeInfo>()
+            automation.rootInActiveWindow?.let(pending::addLast)
+            while (pending.isNotEmpty()) {
+                val node = pending.removeFirst()
+                if (node.packageName?.toString() == packageName && node.isVisibleToUser && matches(node)) return node
+                for (index in 0 until node.childCount) node.getChild(index)?.let(pending::addLast)
+            }
+            return null
+        }
     }
 
     private suspend fun assertDurableRemoval(app: ChatBarApp, sessionId: String, oldMessageId: String) {
