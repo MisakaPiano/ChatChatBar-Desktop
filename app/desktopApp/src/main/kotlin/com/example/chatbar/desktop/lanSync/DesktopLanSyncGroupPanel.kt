@@ -350,7 +350,7 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
             val row = view?.plan?.units?.get(unit)
             val display = view?.let { LanSyncGroupDisplay.unit(it, unit) } ?: LanSyncGroupDisplay.unit(unit, emptyList())
             StatusText(display.identifier)
-            DesktopGroupReviewButton("查看 ${display.kind} · ${display.title} · ${row?.let(::desktopGroupFrozenStage).orEmpty()}",
+            DesktopGroupReviewButton("查看 ${display.kind} · ${display.title} · ${row?.let(LanSyncGroupDisplay::nativeStageLabel).orEmpty()}",
                 { view?.let { actions.closeImagePreview(); selected = it to unit } })
         }
         if (units.size > 10) ActionRow {
@@ -390,7 +390,7 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
                 when {
                     frontier.change.content == null -> StatusText("此版本为删除标记，没有正文记录。")
                     incoming != null -> DesktopGroupFrozenRecords("已取得并验证的传入版本", unit, incoming.decoded.payload.records, imageContext, actions)
-                    else -> StatusText("此版本的正文或附件尚未完整取得，暂不能显示完整内容。")
+                    else -> LanSyncGroupDisplay.versionDependencyNotice(row, frontier.version)?.let { StatusText(it) }
                 }
             }
         }
@@ -588,23 +588,6 @@ internal fun DesktopGroupFrozenRecords(label: String, unit: String, records: Lis
         StatusText("${bodyPage + 1}/${body.second}")
         DesktopGroupReviewButton("下一页字段正文", { bodyPage++ }, enabled = bodyPage + 1 < body.second)
     }
-}
-
-private fun desktopGroupFrozenStage(row: LanSyncGroupNativeUnit): String = when (row.stage) {
-    LanSyncGroupNativeStage.UNCHANGED -> "无变化"
-    LanSyncGroupNativeStage.READY_CONTENT -> "传入内容已就绪"
-    LanSyncGroupNativeStage.READY_DELETION -> "传入删除"
-    LanSyncGroupNativeStage.READY_OBSERVATION -> "内容一致"
-    LanSyncGroupNativeStage.LOCAL_PROPOSAL -> "本机修改"
-    LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW -> "本机删除或覆盖待核对"
-    LanSyncGroupNativeStage.CONFLICT -> "多版本待选择"
-    LanSyncGroupNativeStage.AUTHOR_FORK -> "同一设备版本分叉"
-    LanSyncGroupNativeStage.WAITING_DEPENDENCY -> "等待正文或附件"
-    LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED ->
-        if (LanSyncGroupDisplay.missingLocalImageNotice(row.code) != null) "本机图片文件缺失" else "本会话图片暂缓处理"
-    LanSyncGroupNativeStage.RECORD_REVIEW -> "记录归属待核对"
-    LanSyncGroupNativeStage.DEPENDENCY_HELD -> "关联内容暂缓"
-    LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"
 }
 
 @Composable

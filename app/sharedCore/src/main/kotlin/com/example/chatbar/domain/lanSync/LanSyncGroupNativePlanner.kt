@@ -17,7 +17,8 @@ enum class LanSyncGroupNativeStage {
 data class LanSyncGroupNativeUnit(val unit: String, val stage: LanSyncGroupNativeStage,
     val currentHash: String?, val applied: LanSyncGroupAppliedUnit?, val frontiers: Set<SyncUnitFrontier>,
     val incoming: Map<SyncVersionRef, LanSyncGroupAvailableUnit>, val available: LanSyncGroupAvailableUnit? = null,
-    val records: LanSyncGroupRecordGate? = null, val code: String? = null)
+    val records: LanSyncGroupRecordGate? = null, val code: String? = null,
+    val dependencyStatuses: Map<SyncVersionRef, LanSyncGroupDependencyStatus> = emptyMap())
 class LanSyncGroupNativePlan internal constructor(val before: LanSyncSnapshot, val plan: LanSyncPlan, val checkpoint: SyncVersionRef,
     val heads: Set<SyncVersionRef>, val expected: Map<String, String>, val sourceFiles: Map<String, String>,
     val units: Map<String, LanSyncGroupNativeUnit>, val appliedBefore: Map<String, LanSyncGroupAppliedUnit>,
@@ -85,10 +86,14 @@ object LanSyncGroupNativePlanner {
         for (unit in allUnits) {
             val before = applied[unit]; val local = hashes[unit]; val frontier = history.frontier(unit)
             val references = frontier.map { it.version }.toSet()
+            val dependencyStatuses = linkedMapOf<SyncVersionRef, LanSyncGroupDependencyStatus>()
             val incomingViews = frontier.mapNotNull { item ->
                 val result = dependencies[LanSyncGroupMembershipRequest(item.version, unit)]
                 val available = result?.available
-                if (result?.stage != LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE || available == null) null else {
+                if (result?.stage != LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE || available == null) {
+                    if (item.change.content != null && result != null) dependencyStatuses[item.version] = result.status()
+                    null
+                } else {
                     require(available.checkpoint == checkpoint && available.version == item.version && available.decoded.payload.unit == unit &&
                         available.decoded.plaintext == item.change.content && available.decoded.valueHash == item.change.valueHash &&
                         available.decoded.payload.coveredTypes == source.coveredTypes) { "SYNC_GROUP_NATIVE_DEPENDENCY_VIEW" }
@@ -97,7 +102,8 @@ object LanSyncGroupNativePlanner {
             }.toMap()
             fun row(stage: LanSyncGroupNativeStage, available: LanSyncGroupAvailableUnit? = null,
                 records: LanSyncGroupRecordGate? = null, code: String? = null) =
-                LanSyncGroupNativeUnit(unit, stage, local, before, Collections.unmodifiableSet(frontier), Collections.unmodifiableMap(incomingViews), available, records, code)
+                LanSyncGroupNativeUnit(unit, stage, local, before, Collections.unmodifiableSet(frontier), Collections.unmodifiableMap(incomingViews),
+                    available, records, code, Collections.unmodifiableMap(dependencyStatuses))
             if (unit in recoveryHeld) {
                 rows[unit] = row(LanSyncGroupNativeStage.DEPENDENCY_HELD, code = RECOVERY_HELD)
                 continue

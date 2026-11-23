@@ -41,7 +41,7 @@ internal fun DesktopLanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, se
                     val label = if (reference == null) "本机内容" else if (fact?.change?.content == null) "已签名版本 $index · 删除标记"
                         else "已签名版本 $index · ${LanSyncGroupDisplay.unit(unit, records).title}"
                     reference?.let { StatusText("版本身份：${it.id.value} · ${it.bodyHash}") }
-                    if (!available) StatusText("此版本正文或附件尚未补齐。")
+                    if (reference != null) LanSyncGroupDisplay.versionDependencyNotice(row, reference)?.let { StatusText(it) }
                     DesktopGroupReviewButton((if (primary[unit] == source) "✓ " else "") + "作为采用目标 · $label",
                         { primary[unit] = source }, enabled = canKeep && available)
                     DesktopGroupReviewButton((if (copies[unit] == source) "✓ " else "") + "作为第二份 · $label",

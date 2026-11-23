@@ -43,8 +43,8 @@ class LanSyncGroupPublicationQueueTest {
                 SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = current, ledgerHistory = ledger.history().dropLast(1)))
             return metadata to operations
         }
-        fun prepare(): Prepared {
-            val image = data.resolve("images/image.png"); Files.createDirectories(image.parent); Files.write(image, LanSyncPreviewSample.image())
+        fun prepare(imageBytes: ByteArray = LanSyncPreviewSample.image()): Prepared {
+            val image = data.resolve("images/image.png"); Files.createDirectories(image.parent); Files.write(image, imageBytes)
             val card = data.resolve("entities/character_cards/card.json"); Files.createDirectories(card.parent)
             LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("card", "合成角色", avatar = image.toString(), createdAt = 1, updatedAt = 1))
             val workspace = LanSyncWorkspace(data, state, { Path.of(it) })

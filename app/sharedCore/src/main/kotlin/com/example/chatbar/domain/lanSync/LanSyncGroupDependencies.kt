@@ -14,8 +14,14 @@ enum class LanSyncGroupDependencyStage {
 }
 class LanSyncGroupAvailableUnit internal constructor(val version: SyncVersionRef, val checkpoint: SyncVersionRef,
     val decoded: LanSyncDecodedGroupUnit, val resources: Map<String, Path>)
+enum class LanSyncGroupDependencyPart { BODY, MEMBERSHIP, ATTACHMENT }
+data class LanSyncGroupDependencyStatus(val stage: LanSyncGroupDependencyStage, val code: String?,
+    val rejectedPart: LanSyncGroupDependencyPart?)
 data class LanSyncGroupDependencyResult(val stage: LanSyncGroupDependencyStage, val available: LanSyncGroupAvailableUnit? = null,
-    val code: String? = null, val membership: LanSyncGroupMembershipEvidence? = null)
+    val code: String? = null, val membership: LanSyncGroupMembershipEvidence? = null,
+    val rejectedPart: LanSyncGroupDependencyPart? = null) {
+    internal fun status() = LanSyncGroupDependencyStatus(stage, code, rejectedPart)
+}
 class LanSyncGroupMembershipEvidence internal constructor(val version: SyncVersionRef, val checkpoint: SyncVersionRef, val unit: String,
     val identity: SyncPlaintextIdentity, val path: Path, val validatedAgainstNativePayload: Boolean)
 
@@ -25,6 +31,7 @@ class LanSyncGroupDependencies(private val group: SyncStoreId, private val backe
     private val validateResource: (String, Path, LanSyncRecord) -> Unit,
     private val metadataBudget: LanSyncMetadataBudget = LanSyncMetadataBudget()) {
     fun inspect(reconciled: SyncInboxReconciliation, metadata: SyncAuthenticatedGroupObject, unit: String): LanSyncGroupDependencyResult {
+        var checking: LanSyncGroupDependencyPart? = null
         try {
             val ledger = localCustody { custody.ledger() }; val latest = ledger.current(); val checkpoint = latest.reference()
             if (reconciled.trustBlocked || reconciled.ledgerCheckpoint != checkpoint) return LanSyncGroupDependencyResult(LanSyncGroupDependencyStage.RECONCILE_AGAIN)
@@ -40,14 +47,19 @@ class LanSyncGroupDependencies(private val group: SyncStoreId, private val backe
             val scope = requireNotNull(ledger.record(version.deviceLedger)) { "SYNC_GROUP_LEDGER_MISSING" }.coveredTypes
             if (!LanSyncScope.schemas.keys.containsAll(scope)) return LanSyncGroupDependencyResult(LanSyncGroupDependencyStage.UNSUPPORTED_SCOPE)
             fetch(metadata, change.content)
+            checking = LanSyncGroupDependencyPart.BODY
             val decoded = LanSyncGroupUnitCodec(privateDirectory, scope, metadataBudget).readCached(cache, unit, change)
+            checking = null
             change.membership?.let { identity ->
                 val path = fetch(metadata, identity)
+                checking = LanSyncGroupDependencyPart.MEMBERSHIP
                 val keys = decoded.payload.records.map { it.key }.toSet(); var count = 0L
                 LanSyncGroupMembership.visit(path, identity) { key -> require(key in keys) { "SYNC_GROUP_MEMBERSHIP_CHANGED" }; count++ }
                 require(count == keys.size.toLong()) { "SYNC_GROUP_MEMBERSHIP_CHANGED" }
+                checking = null
             }
             val resources = decoded.dependencies.associate { it.sha256 to fetch(metadata, it) }
+            checking = LanSyncGroupDependencyPart.ATTACHMENT
             val checked = hashSetOf<Triple<String, String, String>>()
             decoded.payload.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
                 if (reference.startsWith("ccb-lan-v1/")) {
@@ -66,10 +78,15 @@ class LanSyncGroupDependencies(private val group: SyncStoreId, private val backe
                 }
                 reference
             } }
+            checking = null
             if (localCustody { custody.ledger().current().reference() } != checkpoint) return LanSyncGroupDependencyResult(LanSyncGroupDependencyStage.RECONCILE_AGAIN)
             return LanSyncGroupDependencyResult(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE,
                 LanSyncGroupAvailableUnit(version.reference(), checkpoint, decoded, Collections.unmodifiableMap(resources)))
-        } catch (failure: Exception) { return failed(failure) }
+        } catch (failure: Exception) {
+            val result = failed(failure)
+            return if (result.stage == LanSyncGroupDependencyStage.INVALID_CONTENT && failure is IllegalArgumentException)
+                result.copy(rejectedPart = checking) else result
+        }
     }
     /** Signed membership can be read without historical text/media; it is not native content readiness. */
     fun membership(reconciled: SyncInboxReconciliation, metadata: SyncAuthenticatedGroupObject, unit: String): LanSyncGroupDependencyResult {

@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.lanSync
 
+import com.example.chatbar.domain.syncStore.SyncVersionRef
 import kotlinx.serialization.json.JsonPrimitive
 
 data class LanSyncGroupDisplayLabel(val title: String, val kind: String, val identifier: String)
@@ -12,6 +13,58 @@ object LanSyncGroupDisplay {
         if (code == LanSyncMissingImage.CODE) "本机会话的图片文件缺失。会话记录和附件引用已保留，其他会话可继续同步。" else null
 
     const val blockedResolutionImageNotice = "这组内容有本机图片缺失或无法处理。可以先暂缓。请补回可读的原图。如果需要替换，请先另存仍有的原件，再从原会话的编辑消息入口移除旧图片并添加兼容图片。完成后在设备组点「立即检查」并重新打开详情。"
+
+    fun nativeStageLabel(row: LanSyncGroupNativeUnit): String = when (row.stage) {
+        LanSyncGroupNativeStage.UNCHANGED -> "无变化"
+        LanSyncGroupNativeStage.READY_CONTENT -> "传入内容已就绪"
+        LanSyncGroupNativeStage.READY_DELETION -> "传入删除"
+        LanSyncGroupNativeStage.READY_OBSERVATION -> "内容一致"
+        LanSyncGroupNativeStage.LOCAL_PROPOSAL -> "本机修改"
+        LanSyncGroupNativeStage.LOCAL_REDUCTION_REVIEW -> "本机删除或覆盖待核对"
+        LanSyncGroupNativeStage.CONFLICT -> "多版本待选择"
+        LanSyncGroupNativeStage.AUTHOR_FORK -> "同一设备版本分叉"
+        LanSyncGroupNativeStage.WAITING_DEPENDENCY -> dependencyLabel(row.dependencyStatuses.values.singleOrNull())
+        LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED ->
+            if (missingLocalImageNotice(row.code) != null) "本机图片文件缺失" else "本会话图片暂缓处理"
+        LanSyncGroupNativeStage.RECORD_REVIEW -> "记录归属待核对"
+        LanSyncGroupNativeStage.DEPENDENCY_HELD -> "关联内容暂缓"
+        LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"
+    }
+
+    /** The details follow the exact signed frontier selected in this inspection. */
+    fun versionDependencyNotice(row: LanSyncGroupNativeUnit, version: SyncVersionRef): String? {
+        if (version in row.incoming || row.frontiers.none { it.version == version && it.change.content != null }) return null
+        val status = row.dependencyStatuses[version]
+        val label = dependencyLabel(status)
+        val next = when (status?.stage) {
+            LanSyncGroupDependencyStage.INVALID_CONTENT -> if (status.rejectedPart != null) {
+                "已取得的资料无效、超出处理上限或暂不支持。请在来源设备核对并保留原件，修正后同步本机可读的新版本。"
+            } else {
+                "请核对同步来源和本机存储，保留原件后再点「立即检查」。"
+            }
+            LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE -> "请连接持有该版本的设备，或检查已配置的网盘，然后点「立即检查」。"
+            LanSyncGroupDependencyStage.UNSUPPORTED_SCOPE -> "请核对两台设备的应用版本，原版本仍可留待处理。"
+            LanSyncGroupDependencyStage.WAITING_FOR_KEY -> "请连接能提供该版本的组内设备，然后点「立即检查」。"
+            LanSyncGroupDependencyStage.AUTHOR_FORK -> "请在来源设备核对版本分叉。"
+            else -> "请查看设备组状态，再重新打开详情。"
+        }
+        return "$label。$next" + status?.code?.takeIf { it.matches(Regex("SYNC_[A-Z0-9_]{1,100}")) }?.let { "（$it）" }.orEmpty()
+    }
+
+    private fun dependencyLabel(status: LanSyncGroupDependencyStatus?): String = when (status?.stage) {
+        LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE -> "等待正文或附件"
+        LanSyncGroupDependencyStage.WAITING_FOR_KEY -> "等待此版本的密钥"
+        LanSyncGroupDependencyStage.UNSUPPORTED_SCOPE -> "暂不支持此版本的资料范围"
+        LanSyncGroupDependencyStage.INVALID_CONTENT -> when (status.rejectedPart) {
+            LanSyncGroupDependencyPart.BODY -> "已取得的正文未通过验证"
+            LanSyncGroupDependencyPart.MEMBERSHIP -> "已取得的记录清单未通过验证"
+            LanSyncGroupDependencyPart.ATTACHMENT -> "已取得的附件未通过验证"
+            null -> "此版本未能通过资料检查"
+        }
+        LanSyncGroupDependencyStage.LOCAL_CUSTODY_BLOCKED -> "本机同步凭据无法读取"
+        LanSyncGroupDependencyStage.AUTHOR_FORK -> "此设备的版本已分叉"
+        else -> "正文或附件尚未核实"
+    }
 
     /** Presentation eligibility only; the resolution owner still validates the complete copied graph. */
     fun canOfferCopy(records: List<LanSyncRecord>): Boolean = records.isNotEmpty() && records.none { it.singleton }

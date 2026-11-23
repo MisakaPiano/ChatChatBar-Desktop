@@ -18,9 +18,9 @@ class LanSyncGroupDependenciesTest {
         val root = Files.createTempDirectory("synthetic-group-dependencies-").toRealPath()
         try { work(root) } finally { check(root.toFile().deleteRecursively()) }
     }
-    private class Fixture(root: Path) {
+    private class Fixture(root: Path, imageBytes: ByteArray = LanSyncPreviewSample.image()) {
         val source = LanSyncGroupPublicationQueueTest.Fixture(Files.createDirectory(root.resolve("source")))
-        val prepared = source.prepare()
+        val prepared = source.prepare(imageBytes)
         val target = Files.createDirectory(root.resolve("target")); val state = Files.createDirectory(root.resolve("target-state"))
         val workspace = LanSyncWorkspace(target, state, { Path.of(it) })
         val custodyRoot = Files.createDirectory(root.resolve("group-custody"))
@@ -43,6 +43,17 @@ class LanSyncGroupDependenciesTest {
         fun service(backend: CiphertextStore = source.backend, budget: LanSyncMetadataBudget = LanSyncMetadataBudget(),
             validator: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> }) =
             LanSyncGroupDependencies(source.cipher.group, backend, custody(), source.work, workspace.resourceStore, validator, budget)
+
+        fun recordEvidence(reconciled: SyncInboxReconciliation, metadata: SyncAuthenticatedGroupObject): LanSyncGroupRecordEvidence =
+            LanSyncGroupRecordEvidence(requireNotNull(reconciled.history), requireNotNull(reconciled.ledgerCheckpoint)).also { evidence ->
+                service().membership(reconciled, metadata, prepared.unit.payload.unit).membership?.let(evidence::offer)
+            }
+
+        fun plan(reconciled: SyncInboxReconciliation, metadata: SyncAuthenticatedGroupObject, result: LanSyncGroupDependencyResult) =
+            workspace.capture(source.owner.fingerprint).use { capture ->
+                val request = LanSyncGroupMembershipRequest(requireNotNull(metadata.envelope.version).reference(), prepared.unit.payload.unit)
+                LanSyncGroupNativePlanner.prepare(capture, reconciled, emptyMap(), mapOf(request to result), recordEvidence(reconciled, metadata))
+            }
     }
 
     @Test fun missingImageWaitsThenVerifiedUnitAppliesAndReopensWithoutRedownloadingCachedContent() = withRoot { root ->
@@ -50,16 +61,29 @@ class LanSyncGroupDependenciesTest {
         source.outbox.upload(f.prepared.operations.getValue(f.prepared.unit.plaintext.sha256), source.backend)
         source.outbox.upload(f.prepared.operations.getValue(f.prepared.unit.membership.sha256), source.backend)
         val (reconciled, metadata) = f.received(); val unit = f.prepared.unit.payload.unit
+        val reference = requireNotNull(metadata.envelope.version).reference()
         val before = f.service().inspect(reconciled, metadata, unit)
         assertEquals(LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE, before.stage); assertNull(before.available)
+        val waitingPlan = f.plan(reconciled, metadata, before)
+        val frozenWaiting = waitingPlan.units.getValue(unit)
+        assertTrue(waitingPlan.advances.isEmpty())
+        assertEquals("等待正文或附件", LanSyncGroupDisplay.nativeStageLabel(frozenWaiting))
+        assertContains(requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(frozenWaiting, reference)), "连接持有该版本的设备")
         val image = f.prepared.unit.dependencies.single()
         source.outbox.upload(f.prepared.operations.getValue(image.sha256), source.backend)
         var validations = 0
         val ready = f.service { kind, path, owner ->
             assertEquals("images", kind); assertEquals("character_cards/card", owner.key)
+            LanSyncRasterPolicy.checkPng(path, staticPngRequired = false)
             assertContentEquals(LanSyncPreviewSample.image(), Files.readAllBytes(path)); validations++
         }.inspect(reconciled, metadata, unit)
         assertEquals(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE, ready.stage); assertTrue(validations > 0)
+        val readyPlan = f.plan(reconciled, metadata, ready)
+        assertEquals(setOf(unit), readyPlan.advances.keys)
+        val frozenReady = readyPlan.units.getValue(unit)
+        assertEquals("传入内容已就绪", LanSyncGroupDisplay.nativeStageLabel(frozenReady))
+        assertNull(LanSyncGroupDisplay.versionDependencyNotice(frozenReady, reference))
+        assertEquals("等待正文或附件", LanSyncGroupDisplay.nativeStageLabel(frozenWaiting))
         val available = requireNotNull(ready.available)
         val snapshot = LanSyncSnapshot(deviceId = source.owner.fingerprint, records = available.decoded.payload.records,
             resources = available.decoded.payload.resources, coveredTypes = available.decoded.payload.coveredTypes)
@@ -77,6 +101,51 @@ class LanSyncGroupDependenciesTest {
         Files.write(available.resources.getValue(image.sha256), byteArrayOf(9, 8, 7))
         val damaged = f.service().inspect(reconciled, metadata, unit)
         assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, damaged.stage); assertNull(damaged.available)
+        assertNull(damaged.rejectedPart)
+        val unavailableRow = f.plan(reconciled, metadata, damaged).units.getValue(unit)
+        assertEquals("此版本未能通过资料检查", LanSyncGroupDisplay.nativeStageLabel(unavailableRow))
+        assertContains(requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(unavailableRow, reference)), "本机存储")
+    }
+
+    @Test fun authenticatedInvalidAttachmentKeepsItsFrozenReasonAndCanBeLeftForLater() = withRoot { root ->
+        val damaged = LanSyncPreviewSample.image().copyOf(12)
+        val f = Fixture(root, damaged)
+        val source = f.source
+        val unit = f.prepared.unit.payload.unit
+        f.prepared.operations.values.forEach { source.outbox.upload(it, source.backend) }
+        val (reconciled, metadata) = f.received()
+        val reference = requireNotNull(metadata.envelope.version).reference()
+        val result = f.service { kind, path, _ ->
+            assertEquals("images", kind)
+            LanSyncRasterPolicy.checkPng(path, staticPngRequired = false)
+        }.inspect(reconciled, metadata, unit)
+        assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, result.stage)
+        assertEquals(LanSyncGroupDependencyPart.ATTACHMENT, result.rejectedPart)
+        assertNull(result.available)
+        val plan = f.plan(reconciled, metadata, result)
+        val row = plan.units.getValue(unit)
+        assertTrue(plan.advances.isEmpty())
+        assertEquals("已取得的附件未通过验证", LanSyncGroupDisplay.nativeStageLabel(row))
+        val notice = requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(row, reference))
+        assertContains(notice, "来源设备核对并保留原件")
+        assertContains(notice, "SYNC_IMAGE_INVALID")
+
+        f.workspace.capture(source.owner.fingerprint).use { capture ->
+            val evidence = f.recordEvidence(reconciled, metadata)
+            val dependencies = mapOf(LanSyncGroupMembershipRequest(reference, unit) to result)
+            val later = LanSyncGroupResolution.prepare(plan, capture, reconciled, dependencies, evidence,
+                mapOf(unit to LanSyncGroupResolutionChoice.Later), UUID.randomUUID().toString())
+            assertEquals(setOf(unit), later.heldUnits)
+            assertTrue(later.resolvedUnits.isEmpty())
+            assertEquals("SYNC_GROUP_RESOLUTION_BODY_MISSING", assertFailsWith<IllegalArgumentException> {
+                LanSyncGroupResolution.prepare(plan, capture, reconciled, dependencies, evidence,
+                    mapOf(unit to LanSyncGroupResolutionChoice.Keep(LanSyncGroupResolutionSource.Version(reference))), UUID.randomUUID().toString())
+            }.message)
+            assertTrue(capture.snapshot.records.isEmpty())
+        }
+        val image = f.prepared.unit.dependencies.single()
+        assertContentEquals(damaged, Files.readAllBytes(requireNotNull(f.workspace.resourceStore.completed(image.sha256, image.length))))
+        assertContentEquals(damaged, Files.readAllBytes(source.data.resolve("images/image.png")))
     }
 
     @Test fun missingBindingsWrongNativeBusinessHashAndChangedCheckpointCannotProduceAvailableContent() = withRoot { root ->
@@ -141,7 +210,13 @@ class LanSyncGroupDependenciesTest {
         val invalidRecord = JsonObject(record + ("body" to JsonArray(emptyList())))
         val invalidPayload = JsonObject(payload + ("records" to JsonArray(listOf(invalidRecord))))
         val (badShape, badShapeObject) = receivedWithContent(invalidPayload.toString().encodeToByteArray())
-        assertRejected(f.service().inspect(badShape, badShapeObject, unit), "SYNC_METADATA_STRUCTURE")
+        val rejectedBody = f.service().inspect(badShape, badShapeObject, unit)
+        assertRejected(rejectedBody, "SYNC_METADATA_STRUCTURE")
+        assertEquals(LanSyncGroupDependencyPart.BODY, rejectedBody.rejectedPart)
+        val badShapeRow = f.plan(badShape, badShapeObject, rejectedBody).units.getValue(unit)
+        assertEquals("已取得的正文未通过验证", LanSyncGroupDisplay.nativeStageLabel(badShapeRow))
+        assertContains(requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(badShapeRow,
+            requireNotNull(badShapeObject.envelope.version).reference())), "SYNC_METADATA_STRUCTURE")
 
         val badUtf8 = payload.toString().encodeToByteArray()
         val startOfNonAsciiText = badUtf8.indexOfFirst { it < 0 }
