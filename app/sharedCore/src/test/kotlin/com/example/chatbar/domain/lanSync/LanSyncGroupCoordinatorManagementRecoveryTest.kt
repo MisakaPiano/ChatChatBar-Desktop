@@ -488,6 +488,11 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
             val row = reopened.addMember(reopened.resume(founder.code), preview.acknowledge(preview.request.approvalBinding)).ledger
             assertTrue(row.isApprovalAfter(signed.proof.recovery))
             assertEquals(row.reference(), a.ledger().current().reference())
+            // The live coordinator performs this check after approval. The fixture owns A's
+            // transport directly, so reconcile that same runtime's published controls here.
+            var cursor: CommitCursor? = null
+            do { cursor = a.node.discoverLocal(cursor).nextCursor } while (cursor != null)
+            assertEquals(row.reference(), a.node.inspectLocal().reconciliation.ledgerCheckpoint)
             val result = c.joining.activate(c.joining.bootstrapStore(lan))
             assertEquals(LanSyncGroupJoinStage.READY, result.profile.stage, result.waitingCode)
             row.reference()

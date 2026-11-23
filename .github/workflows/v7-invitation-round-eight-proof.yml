@@ -8,7 +8,10 @@ on:
       - app/app/src/main/java/com/example/chatbar/lanSync/**
       - app/app/src/androidTest/java/com/example/chatbar/lanSync/**
       - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/**
-      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/nativeui/**
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatImages.kt
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopImageEditing.kt
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopImageViewer.kt
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
       - app/desktopApp/src/test/**
 permissions:
   contents: read
@@ -58,8 +61,11 @@ jobs:
             cat "$RUNNER_TEMP/v7-r08-android-viewport.txt"
             adb shell am instrument -w -e lanSyncInvitationFileRestoreFixture true -e class com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r08-android-files.txt"
             cat "$RUNNER_TEMP/v7-r08-android-files.txt"
+            adb shell am instrument -w -e class 'com.example.chatbar.lanSync.AndroidLanSyncCameraResourceTest#incompleteRecognizedHeifHoldsOnlyItsOwningChat' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r08-android-image.txt"
+            cat "$RUNNER_TEMP/v7-r08-android-image.txt"
             grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r08-android-viewport.txt"
             grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r08-android-files.txt"
+            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r08-android-image.txt"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -89,6 +95,10 @@ jobs:
             --tests '*LanSyncGroupCiphertextTransportTest.recoveredAuthorityRejectsLegacyStoreAndLedgerCommandsBeforeOpeningTheBackend' \
             --tests '*LanSyncGroupJoiningTest.revokedJoinWithAdmittedKeysAndMissingInitialDataArchivesWithoutReusingItsRecipient' \
             --tests '*LanSyncGroupJoiningTest.firstExplicitJoinAutomaticallySendsOneRealProofWhenProtectionStarts' \
+            --tests '*LanSyncGroupJoiningTest.coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving' \
+            --tests '*LanSyncGroupNodeTest.anIncompleteRecognizedHeifRetainsTheImageAndLetsBothConversationsPublish' \
+            --tests '*LanSyncGroupNativeApplyOwnerTest.signedForkFinishesOnlyThePreviouslyAuthorizedNativeTransactionAndPreservesLaterEdits' \
+            --tests '*LanSyncGroupNativeApplyOwnerTest.retainedMembershipForkAllowsOnlyVerifiedAppliedReceiptRepairWithoutReplayingNativeData' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
@@ -96,3 +106,30 @@ jobs:
         with:
           name: v7-r08-nearby-and-join
           path: app/sharedCore/build/test-results/test/TEST-*.xml
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test the selected image, edit, and exact request on Windows
+        working-directory: app
+        run: >-
+          ./gradlew.bat :desktopApp:test
+          --tests '*DesktopPhase7ImagesTest.localCameraJpegCanBePickedForComposerAndEditWithoutReencodingTheOriginal'
+          --tests '*DesktopPhase7ImagesTest.highBaselineJpegUsesBoundedWireBytesForContinueRegenerateAndDirectHistory'
+          --tests '*DesktopLanSyncResourceTest.malformedKnownWebpAndHeifAreHeldOnlyInTheOwningConversation'
+          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 '-Pkotlin.daemon.jvmargs=-Xmx4g'
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r08-windows-camera-and-malformed-images
+          path: app/desktopApp/build/test-results/test/TEST-*.xml

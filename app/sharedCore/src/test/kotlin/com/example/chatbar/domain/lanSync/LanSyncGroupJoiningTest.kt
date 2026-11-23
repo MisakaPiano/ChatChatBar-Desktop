@@ -901,6 +901,20 @@ class LanSyncGroupJoiningTest {
         assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", assertFailsWith<IllegalArgumentException> {
             cold.archiveRevokedInvitation()
         }.message)
+        val coordinator = f.protectedCoordinator(object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = emptyList<String>()
+            override fun accepts(address: InetAddress) = false
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket =
+                error("A cold conflicted request must not dial")
+        })
+        try {
+            coordinator.open()
+            val panel = withTimeout(15_000) { coordinator.state.first { !it.busy && it.joiningLedgerConflict } }
+            assertEquals(LanSyncGroupPanelStage.JOINING, panel.stage)
+            assertFalse(panel.canEnterInvitation || panel.canEnterExternalRecovery || panel.canArchiveRevokedJoin)
+            assertNull(coordinator.fileRecoveryPickerBinding())
+        } finally { coordinator.closeAndDrain() }
         val retried = cold.activate(f.backend())
         assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", retried.waitingCode)
         assertEquals(conflicted, retried.profile)

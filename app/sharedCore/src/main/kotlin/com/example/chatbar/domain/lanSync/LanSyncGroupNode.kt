@@ -132,7 +132,11 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         val histories = branches.associate { branch ->
             branch.current().reference() to inbox.reviewRecoveryBranch(branch, keys, localVersions.values.toList())
         }
-        val alreadyApplied = exclusive { native.recoveryFrontiers() }
+        val alreadyApplied = exclusive {
+            val (frontiers, reload) = native.recoveryFrontiers()
+            reloadNative(reload)
+            frontiers
+        }
         require((tips.flatMap { it.acceptedHeads } + alreadyApplied).all { required -> histories.values.any { it.contains(required) } }) {
             "SYNC_GROUP_RECOVERY_CAUSAL_HISTORY"
         }

@@ -530,6 +530,16 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         return Files.exists(stateRoot.resolve("transaction-$transaction/authorized"), LinkOption.NOFOLLOW_LINKS)
     }
 
+    /** The caller already authenticated the native intent and owns exclusive data admission. */
+    internal fun finishAuthorizedApply(transactionId: String): Boolean {
+        if (verifiedApplied(transactionId)) return true
+        if (!authorized(transactionId)) return false
+        val transaction = stateRoot.resolve("transaction-$transactionId")
+        lanSyncSafe(transaction, true)
+        recoverTransaction(transaction)
+        return verifiedApplied(transactionId)
+    }
+
     /** Exact post-apply raw manifest, derived from authorized WAL rather than a later mutable capture. */
     internal fun appliedSourceFiles(transactionId: String, before: Map<String, String>): Map<String, String>? {
         require(transactionId.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }

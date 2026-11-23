@@ -348,6 +348,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_MEMBERSHIP_CONFLICT" -> "成员变更冲突。签名分支和本机资料已保留。"
             "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" -> "已验证的分支或待处理文件发生变化，请重新核对。"
             "SYNC_GROUP_MEMBERSHIP_RECOVERY_PENDING_INTENT" -> "已保留先前确认的恢复操作。请核对原授权和主分支后继续。"
+            "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING" -> "本机还有未完成的资料操作，已保留相关记录。可请仍获授权的其他管理员核对成员分支并提供签名恢复文件。"
+            "SYNC_FOREIGN_CHANGE_RECOVERY_REFUSED" -> "本机资料在上次写入中断后发生变化，相关文件和记录已保留。可请其他授权管理员提供成员恢复文件，本机资料仍需另行核对。"
             "SYNC_GROUP_RECOVERY_HISTORICAL_KEYS_MISSING" -> "还缺少分支的原历史密钥。可继续保留当前分支，请向持有原件的设备核对。"
             "SYNC_GROUP_RECOVERY_CAUSAL_HISTORY" -> "还缺少签名分支已确认的资料历史，请补齐原件后重新核对。"
             "SYNC_GROUP_LEDGER_RECOVERY_FILE_RECIPIENT_REVOKED", "SYNC_GROUP_MEMBERSHIP_RECOVERY_DEVICE_REVOKED" ->

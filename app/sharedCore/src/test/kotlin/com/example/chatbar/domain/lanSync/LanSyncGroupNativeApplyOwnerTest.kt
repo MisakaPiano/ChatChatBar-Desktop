@@ -1,10 +1,12 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatDraft
 import com.example.chatbar.domain.syncStore.*
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.FileTime
 import java.util.Base64
 import kotlin.test.*
 
@@ -22,9 +24,9 @@ class LanSyncGroupNativeApplyOwnerTest {
             CharacterCard.serializer(), CharacterCard(id, name, createdAt = 1, updatedAt = updatedAt))
         fun readCard(id: String) = requireNotNull(LanSyncJsonFiles.read(f.target.resolve("entities/character_cards/$id.json"), CharacterCard.serializer()))
     }
-    private fun withNode(work: (Node) -> Unit) {
+    private fun withNode(observeJournal: (String, Int) -> Unit = { _, _ -> }, work: (Node) -> Unit) {
         val root = Files.createTempDirectory("synthetic-native-group-control-").toRealPath()
-        try { work(Node(root)) } finally { check(root.toFile().deleteRecursively()) }
+        try { work(Node(root, observeJournal)) } finally { check(root.toFile().deleteRecursively()) }
     }
     @Test fun restrictedTargetsKeepHeldDataAndReceiptsWhileIndependentIncomingContentReallyApplies() = withNode { n ->
         val a = "character_cards/a"; val b = "character_cards/b"; val f = n.f
@@ -121,13 +123,89 @@ class LanSyncGroupNativeApplyOwnerTest {
         val marker = n.control.resolve("receipt-0000000000000000002.protected")
         assertFalse(Files.exists(marker))
 
-        assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers())
+        assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers().first)
         val originalReceipt = Files.readAllBytes(marker)
-        assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers())
+        assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers().first)
         assertContentEquals(originalReceipt, Files.readAllBytes(marker))
         assertEquals("已应用后本机再次编辑", n.readCard("a").name)
         assertEquals(setOf(left.reference(), right.reference()), f.custody().recoveryGraph().admittedTips())
         assertNull(n.owner().state().pendingTransaction)
+    }
+
+    @Test fun signedForkFinishesOnlyThePreviouslyAuthorizedNativeTransactionAndPreservesLaterEdits() {
+        for (point in listOf("AUTHORIZED", "ENTRY")) {
+            verifyInterruptedAuthorizedApply(point, foreignEdit = false)
+        }
+        verifyInterruptedAuthorizedApply("ENTRY", foreignEdit = true)
+    }
+
+    private fun verifyInterruptedAuthorizedApply(stopAt: String, foreignEdit: Boolean) {
+        var stop = false
+        withNode(observeJournal = { point, index ->
+            if (stop && point == stopAt && (index == -1 || index == 0)) throw IOException("SYNTHETIC_AUTHORIZED_APPLY_INTERRUPTED")
+        }) { n ->
+            val f = n.f
+            val units = setOf("character_cards/a", "character_cards/b")
+            f.card("a", "原角色甲"); f.card("b", "原角色乙")
+            f.publish(units)
+            assertNotNull(n.owner().apply(n.plan()))
+            f.card("a", "已批准更改甲"); f.card("b", "已批准更改乙")
+            val version = f.publish(units)
+            val plan = n.plan()
+            assertEquals(units, plan.advances.keys)
+            stop = true
+            try {
+                assertEquals("SYNTHETIC_AUTHORIZED_APPLY_INTERRUPTED", assertFailsWith<IOException> {
+                    n.owner().apply(plan)
+                }.message)
+            } finally { stop = false }
+            val transaction = plan.plan.transaction
+            assertTrue(f.workspace.authorized(transaction))
+            assertFalse(f.workspace.verifiedApplied(transaction))
+            assertEquals(transaction, n.owner().state().pendingTransaction)
+            val changed = listOf("a", "b").filter { n.readCard(it).name.startsWith("已批准更改") }
+            assertEquals(if (stopAt == "ENTRY") 1 else 0, changed.size)
+
+            val parent = f.custody().ledger().current()
+            val left = f.source.sign(parent.copy(id = SyncStoreId.random(), parent = parent.reference(), sequence = parent.sequence + 1))
+            val right = f.source.sign(left.copy(id = SyncStoreId.random()))
+            val heads = setOf(left.reference(), right.reference())
+            assertFailsWith<IllegalArgumentException> { f.custody().update(listOf(left, right)) }
+            assertEquals(heads, f.custody().recoveryGraph().admittedTips())
+            val marker = n.control.resolve("receipt-0000000000000000002.protected")
+            assertFalse(Files.exists(marker))
+
+            val draft = Files.createDirectories(f.target.resolve("entities/chat_drafts")).resolve("local-draft.json")
+            LanSyncJsonFiles.write(draft, ChatDraft.serializer(), ChatDraft("local-draft", "合成未发草稿", updatedAt = 1))
+            val text = Files.readAllBytes(draft)
+            val alreadyWritten = changed.singleOrNull()?.let { f.target.resolve("entities/character_cards/$it.json") }
+            val retainedTime = alreadyWritten?.let {
+                Files.setLastModifiedTime(it, FileTime.fromMillis(1_700_000_000_000))
+                Files.getLastModifiedTime(it)
+            }
+            val later = listOf("a", "b").first { it !in changed }
+            if (foreignEdit) {
+                n.localCard(later, "中断之后再次编辑")
+                assertEquals("SYNC_FOREIGN_CHANGE_RECOVERY_REFUSED", assertFailsWith<IllegalArgumentException> {
+                    n.owner().recoveryFrontiers()
+                }.message)
+                assertEquals("中断之后再次编辑", n.readCard(later).name)
+                assertFalse(f.workspace.verifiedApplied(transaction))
+                assertFalse(Files.exists(marker))
+            } else {
+                assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers().first)
+                assertTrue(f.workspace.verifiedApplied(transaction))
+                assertEquals("已批准更改甲", n.readCard("a").name)
+                assertEquals("已批准更改乙", n.readCard("b").name)
+                val receipt = Files.readAllBytes(marker)
+                assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers().first)
+                assertContentEquals(receipt, Files.readAllBytes(marker))
+                assertNull(n.owner().state().pendingTransaction)
+            }
+            alreadyWritten?.let { assertEquals(retainedTime, Files.getLastModifiedTime(it)) }
+            assertContentEquals(text, Files.readAllBytes(draft))
+            assertEquals(heads, f.custody().recoveryGraph().admittedTips())
+        }
     }
 
     @Test fun rawOnlySourceChangesAndLiveLedgerRotationRefuseAStaleFrozenPlan() = withNode { n ->

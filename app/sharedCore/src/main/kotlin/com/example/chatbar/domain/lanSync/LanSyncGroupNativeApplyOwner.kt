@@ -86,17 +86,15 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         publicState(load())
     }
     fun state(): LanSyncGroupNativeState = guarded { publicState(load()) }
-    internal fun recoveryFrontiers(): Set<SyncVersionRef> = guarded {
-        var retained = load(advanceHead = false)
+    internal fun recoveryFrontiers(): Pair<Set<SyncVersionRef>, ReloadWork?> = guarded {
+        var retained = load(advanceHead = false, trackReload = true)
         retained.pending?.let { intent ->
             val frozen = payload(intent)
-            require(frozen.sourceOperation == null && workspace.verifiedApplied(intent.transaction)) {
-                "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING"
-            }
-            recoverAppliedReceipt(retained, intent, frozen)
-            retained = load(advanceHead = false)
+            require(frozen.sourceOperation == null) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING" }
+            recoverAppliedReceipt(retained, intent, frozen, finishAuthorized = true)
+            retained = load(advanceHead = false, trackReload = true)
         }
-        retained.units.values.flatMapTo(linkedSetOf()) { it.frontiers }
+        retained.units.values.flatMapTo(linkedSetOf()) { it.frontiers } to retained.reload
     }
     fun recover(): LanSyncGroupNativeState = guarded { publicState(recovered()) }
 
@@ -236,9 +234,12 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
             observe("NATIVE_INERT_PREPARATION_RETAINED")
         }
     }
-    private fun recoverAppliedReceipt(loaded: Loaded, intent: Intent, frozen: Payload) {
+    private fun recoverAppliedReceipt(loaded: Loaded, intent: Intent, frozen: Payload, finishAuthorized: Boolean = false) {
         require(frozen.appliedBefore == stateBinding(loaded.units)) { "SYNC_GROUP_NATIVE_CONTROL_CHANGED" }
         verifyPreimage(intent, frozen)
+        if (finishAuthorized) require(workspace.finishAuthorizedApply(intent.transaction)) {
+            "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING"
+        }
         complete(intent, LanSyncGroupNativeApplyStatus.APPLIED)
         observe("NATIVE_RECEIPT_RECOVERED")
     }
