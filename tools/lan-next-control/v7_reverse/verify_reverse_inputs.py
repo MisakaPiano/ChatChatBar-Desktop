@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 HERE=Path(__file__).resolve().parent
-SOURCE='40981ae4045114d1d2a076a82b02b7c7f5275cc7'
+SOURCE='c1a59880b42e4d6097801d4d641dde9fdaa2a8e9'
 ANDROID_TARGET='app/app/src/androidTest/java/com/example/chatbar/lanSync/LanV7ReverseSyntheticWriterTest.kt'
 class Refused(ValueError):pass
 def need(value,code):

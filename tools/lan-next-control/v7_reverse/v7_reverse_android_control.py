@@ -12,7 +12,7 @@ import time
 
 from adb_observation import AdbFailure, observation, interpret, instrumentation_summary
 
-SOURCE='40981ae4045114d1d2a076a82b02b7c7f5275cc7'
+SOURCE='c1a59880b42e4d6097801d4d641dde9fdaa2a8e9'
 PACKAGE='com.example.chatbar.lansyncnext'
 CLASS='com.example.chatbar.lanSync.LanV7ReverseSyntheticWriterTest'
 METHOD='appendOneMessageAndPngAfterProductionLanJoin'

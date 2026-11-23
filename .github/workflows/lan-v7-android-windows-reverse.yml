@@ -1,4 +1,4 @@
-name: V7 frozen40981 Android87 to Windows synthetic reverse
+name: V7 sourcec1a59880b42e Android87 to Windows synthetic reverse
 on:
   push:
     branches: ['codex/lan-next-sync-control-*']
@@ -27,13 +27,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: MisakaPiano/ChatChatBar-Desktop
-          ref: 40981ae4045114d1d2a076a82b02b7c7f5275cc7
+          ref: c1a59880b42e4d6097801d4d641dde9fdaa2a8e9
           path: reverse-android
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: MisakaPiano/ChatChatBar-Desktop
-          ref: 40981ae4045114d1d2a076a82b02b7c7f5275cc7
+          ref: c1a59880b42e4d6097801d4d641dde9fdaa2a8e9
           path: reverse-windows
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -58,7 +58,7 @@ jobs:
           --android-source ../reverse-android
           --windows-source ../reverse-windows
           --evidence evidence-reverse
-          --fixed-sha256 cb2688ce1501485bf9a557dc258b6d46abc5b919f22495fffab0bdf4eaa519b0
+          --fixed-sha256 dfe79e8a108c94b036d17285760b177aba5bcae0c1802cb593932f5e6a5c7e2f
       - uses: actions/upload-artifact@v4
         if: always()
         with:

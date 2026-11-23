@@ -446,7 +446,7 @@ class LanV7ReverseSyntheticWriterTest {
         }
     }
     companion object {
-        private const val SOURCE = "40981ae4045114d1d2a076a82b02b7c7f5275cc7"
+        private const val SOURCE = "c1a59880b42e4d6097801d4d641dde9fdaa2a8e9"
         private const val PACKAGE = "com.example.chatbar.lansyncnext"
         private const val SESSION = "ccb-v7-lab-session"
         private const val MESSAGE = "ccb-v7-reverse-message"

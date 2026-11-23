@@ -1,8 +1,8 @@
 {
   "format": 1,
   "kind": "CCB_V7_FROZEN_REVERSE_EXACT_INPUTS",
-  "sourceSha": "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
-  "controlReadBaseline": "e92d3cf40ff4148c52e9e77487c163f8e592a1c5",
+  "sourceSha": "c1a59880b42e4d6097801d4d641dde9fdaa2a8e9",
+  "controlReadBaseline": "6ba752e3cb0e66042cbbf0b5efda0d3423585235",
   "api": 26,
   "versionCode": 87,
   "package": "com.example.chatbar.lansyncnext",
@@ -36,12 +36,12 @@
     {
       "path": "tools/lan-next-control/v7_reverse/DesktopV7ReverseSyntheticHostDraftTest.kt",
       "bytes": 34035,
-      "sha256": "56722e010e5ea0194f1b0788c11a42a72e84df757fcd86fd6e795d717994e5e1"
+      "sha256": "ac97d6daf6ea939736ea7eec3cef7ba27dc89640b93fda311465519e360ab2f3"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/LanV7ReverseSyntheticWriterTest.kt",
       "bytes": 35396,
-      "sha256": "c53a88fd49d9717efb0e35b6e34eb6882def940a763bef57a58eb453345ab45e"
+      "sha256": "573ffc9082542dc0f74f1be1face344da3df0ecd6f6c97fb0d288ea4975015ca"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/README.md",
@@ -56,17 +56,17 @@
     {
       "path": "tools/lan-next-control/v7_reverse/v7_reverse_android_control.py",
       "bytes": 25139,
-      "sha256": "332157abe488ab70f50768cf78cfc870aaa90c0f90adf164911776da53562664"
+      "sha256": "248ff270dd585847169f6df951c544041d2728caad0a4a3a7b5d3fca25d10d38"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_windows_reverse_control.py",
       "bytes": 848,
-      "sha256": "bb9c8f7a82e01205cf67b4dd0c76eea6f6477ee0a6f096b7966125b50341666f"
+      "sha256": "f11ef16d567c87120d8b1e60c99dccabc002ca5ca08048fb9d86ed6a21f4918a"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/verify_reverse_inputs.py",
       "bytes": 3280,
-      "sha256": "01fdd7d6d4e266b6f28b06ea60d580975e15feacb5a96fd9ee7ec9e350f1a970"
+      "sha256": "798c4d84e2f443ed811088fd244ac09406ec31b96872e504aaf36f89c5997633"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/test_reverse_isolated_route.py",
@@ -92,8 +92,8 @@
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
-      "bytes": 66511,
-      "sha256": "e21d94bd74c1eb3dd5b06deb64e5c6a0226ba535f74b5607404fbc3e75795ffd"
+      "bytes": 67035,
+      "sha256": "1ca61eef192cbe72a96a4333cb40a6c19ca833f7efe708612b1707450e5ad20e"
     },
     {
       "path": "app/app/src/main/java/com/example/chatbar/lanSync/AndroidLanSync.kt",
@@ -107,43 +107,43 @@
     },
     {
       "path": "app/app/src/main/java/com/example/chatbar/lanSync/LanSyncActivity.kt",
-      "bytes": 25544,
-      "sha256": "c7a01fe4926cfb89d6af9d32049e44add13044023961c18c8b1a9cc84dae74d8"
+      "bytes": 29996,
+      "sha256": "203a157288adaa9e0bce0dbcbdc1b02df0fab7b38feacb7b286e5167ec325dd3"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupCoordinator.kt",
-      "bytes": 99645,
-      "sha256": "5b23b5388af1f3fdcd6551a5a8ef543395bc6a87cde9e5ed0fcaab3d88a7d27b"
+      "bytes": 130705,
+      "sha256": "59d12968ce604f85767c7ca4004d6ccbd01519baa11ccb5369e0b7b051d4ade1"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupAppTransport.kt",
-      "bytes": 11270,
-      "sha256": "ffb802500ab5729433bfebe4d3eda2ec8d9aec314de50720030d33af574a1fc2"
+      "bytes": 13165,
+      "sha256": "f024b2af94cff1782bddff3b4268de16a984bb769a72b00270cfeb859d9ca1ce"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupDiscovery.kt",
-      "bytes": 9301,
-      "sha256": "0e9ee1ad8cc5ed19d216ece8d13634e7bba4ed94f0e10bdb50aa3f3d85a1f011"
+      "bytes": 12937,
+      "sha256": "d4767e3344a031baccf5badfd2ca93291b76b416490eb7ae91f63922229e6eb5"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncNetwork.kt",
-      "bytes": 3278,
-      "sha256": "0ab8ef8e3696b840c33630885a76e7de3a8a1e2d0c8cd99a202759ed19d2e439"
+      "bytes": 3923,
+      "sha256": "a4c2dc725dfe8d885b2a8253d9b31fc2a07b43a85834ed643f8919da73de4f82"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncTls.kt",
-      "bytes": 11616,
-      "sha256": "471ab1a90d4502dae0685e38a90f3349973c62e7181428d2de963ae2bd7bc06e"
+      "bytes": 11839,
+      "sha256": "870c724b91f05136613a9669873f0c088a944b1f03b80ba26cb100d97d2c49de"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNode.kt",
-      "bytes": 37934,
-      "sha256": "5e2e18c440a828b5400369f1d10dc7214f55a8a8d314cba867a7b76e9f5f6c63"
+      "bytes": 45193,
+      "sha256": "563f3303dda46603fe3d480f3d518b40dfa93d80c07b010fe9002524b85d5e6d"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupSourceWriter.kt",
-      "bytes": 30421,
-      "sha256": "785b684c3e2bd92cc235bb4d016d808de37302f90af7ef782b1fe019282a888e"
+      "bytes": 31880,
+      "sha256": "8bb10a58ede82c211a830f43e0dfad41d6877dd9d13c635baf37e4d6fc6efb68"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupPublicationQueue.kt",
@@ -152,18 +152,18 @@
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupNativePlanner.kt",
-      "bytes": 16998,
-      "sha256": "340f511653d2832070a43617ac898e11433cffc9ddbdcccd6893d3bb9848aebe"
+      "bytes": 20103,
+      "sha256": "c337c31976a982eab6ab03471cb5b80eec64f7cabf7011090e8362197d4116e2"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupRuntimeAccess.kt",
-      "bytes": 8358,
-      "sha256": "39001df44704ae612e49569bc5a3da323dbbab48e3824c029cf91b3cce041cd9"
+      "bytes": 14862,
+      "sha256": "e22ca852888b667cc5a73261e00f783af753818a7e90f59c145630225730cb8a"
     },
     {
       "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/lanSync/LanSyncGroupJoining.kt",
-      "bytes": 44883,
-      "sha256": "ac4da0a6812d4043dcbc29eaad1bd195e69a467f52030aa7366f0658547a5cea"
+      "bytes": 50095,
+      "sha256": "2c1b8ce208459481460df2f64df83ddf7fb8ce4d82a02b507ce5b71daef7934c"
     }
   ],
   "targets": {
@@ -185,7 +185,7 @@
         "true",
         "-e",
         "sourceSha",
-        "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
+        "c1a59880b42e4d6097801d4d641dde9fdaa2a8e9",
         "-e",
         "class",
         "com.example.chatbar.lanSync.LanV7ReverseSyntheticWriterTest#appendOneMessageAndPngAfterProductionLanJoin",
@@ -224,7 +224,7 @@
     "runner": "windows-latest",
     "GITHUB_ACTIONS": "true",
     "RUNNER_OS": "Windows",
-    "CCB_V7_SOURCE_SHA": "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
+    "CCB_V7_SOURCE_SHA": "c1a59880b42e4d6097801d4d641dde9fdaa2a8e9",
     "CCB_V7_LIVE_SYNTHETIC": "true",
     "CCB_V7_REVERSE_SYNTHETIC": "true",
     "androidAvd": "new-private-CCBV7Reverse",
@@ -241,7 +241,6 @@
     "windows-junit.json"
   ],
   "originalReports": "strictly parsed privately; original body not uploaded",
-  "productionEquivalentPredecessor": "d737dc354efc9d2c19895de2b7e0618399924455",
   "diagnosticRevision": 2,
   "diagnostics": {
     "nativeProgressMaximumBytes": 4096,
@@ -251,5 +250,13 @@
     "callbackIsNotDelivery": true,
     "androidResultMayBeNonterminalCheckpoint": true,
     "firstObservedControlFailurePreserved": true
+  },
+  "sourceRebind": {
+    "previousSourceSha": "40981ae4045114d1d2a076a82b02b7c7f5275cc7",
+    "previousControlSha": "6ba752e3cb0e66042cbbf0b5efda0d3423585235",
+    "previousFixedInputsSha256": "cb2688ce1501485bf9a557dc258b6d46abc5b919f22495fffab0bdf4eaa519b0",
+    "previousProductionEquivalentPredecessor": "d737dc354efc9d2c19895de2b7e0618399924455",
+    "previousControlReadBaseline": "e92d3cf40ff4148c52e9e77487c163f8e592a1c5",
+    "productionEquivalenceClaimed": false
   }
 }

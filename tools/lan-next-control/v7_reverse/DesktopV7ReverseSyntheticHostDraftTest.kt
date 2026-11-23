@@ -372,7 +372,7 @@ class DesktopV7ReverseSyntheticHostDraftTest {
         } }
     }
     companion object {
-        private const val SOURCE = "40981ae4045114d1d2a076a82b02b7c7f5275cc7"
+        private const val SOURCE = "c1a59880b42e4d6097801d4d641dde9fdaa2a8e9"
         private const val REVERSE_MESSAGE = "ccb-v7-reverse-message"
         private const val REVERSE_TEXT = "CCB-V7-synthetic-android-reverse"
         private const val CARD = "ccb-v7-lab-card"
