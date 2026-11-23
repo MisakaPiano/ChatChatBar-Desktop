@@ -76,6 +76,50 @@ class SyncGroupBootstrapTest {
         assertFalse(Files.exists(g.root.resolve("joining-custody/group.protected")))
     }
 
+    @Test fun missingLaterJoinPinAfterRecoveredMembershipWaitsButAnActualLateBranchBlocks() = withGroup { g, custody, inbox ->
+        val left = g.sign(g.genesis.copy(id = SyncStoreId.random(), parent = g.genesis.reference(), sequence = 2))
+        val right = g.sign(left.copy(id = SyncStoreId.random()))
+        val fresh = SyncStreamingCipher.create(g.trust.group)
+        g.keys[fresh.epoch] = fresh
+        val recovered = g.sign(left.copy(id = SyncStoreId.random(), parent = null, sequence = 3, epoch = fresh.epoch,
+            keyCommitment = fresh.keyCommitment(), recovery = SyncGroupLedgerRecovery(setOf(left.reference(), right.reference()), left.reference())))
+        listOf(left, right, recovered).forEach { assertEquals(SyncVersionState.ADMITTED, g.ledger.offer(it)) }
+        g.publishLedger(); scan(inbox)
+
+        val later = g.sign(recovered.copy(id = SyncStoreId.random(), parent = recovered.reference(), sequence = 4, recovery = null))
+        val pinned = g.trust.copy(checkpoint = later.reference())
+        val checkpoints = setOf(recovered.reference(), later.reference())
+        val cold = SyncGroupInbox(g.root.resolve("joining-inbox"), g.backend, custody, g.recipient)
+        listOf(inbox, cold).forEach { owner ->
+            val waiting = owner.prepareEnrollment(pinned, checkpoints)
+            assertEquals(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, waiting.stage)
+            assertEquals("SYNC_GROUP_KNOWN_CHECKPOINT_MISSING", waiting.code)
+            assertNull(waiting.evidence)
+        }
+        assertFalse(Files.exists(g.root.resolve("joining-custody/group.protected")))
+
+        assertEquals(SyncVersionState.ADMITTED, g.ledger.offer(later))
+        g.publishLedger(); scan(cold)
+        val ready = cold.prepareEnrollment(pinned, checkpoints)
+        assertEquals(SyncGroupBootstrapStage.READY, ready.stage, ready.code)
+        val proof = requireNotNull(ready.evidence)
+        val verified = SyncDeviceLedger(proof.trust).also { ledger -> proof.records.forEach { ledger.offer(it) } }
+        assertEquals(later.reference(), verified.current().reference())
+        assertTrue(proof.records.any { it.reference() == recovered.reference() })
+
+        val late = g.sign(left.copy(id = SyncStoreId.random(), parent = left.reference(), sequence = 3))
+        val queue = g.outbox(g.initialKey)
+        val candidate = g.codec.enqueue(queue, SyncStoreId.random(), CiphertextObjectKey(CiphertextObjectKind.COMMIT, SyncStoreId.random()),
+            g.initialKey, SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = late, ledgerHistory = listOf(g.genesis, left)))
+        queue.upload(candidate.request.operationId, g.backend)
+        scan(cold)
+        val fork = cold.prepareEnrollment(pinned, checkpoints)
+        assertEquals(SyncGroupBootstrapStage.TRUST_BLOCKED, fork.stage)
+        assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", fork.code)
+        assertNull(fork.evidence)
+        assertFalse(Files.exists(g.root.resolve("joining-custody/group.protected")))
+    }
+
     @Test fun aVerifiedRecipientRevocationNoticeOverridesPreviouslyAvailableOldKeyCapsules() = withGroup { g, _, inbox ->
         g.publishLedger()
         val key = SyncStreamingCipher.create(g.trust.group); g.keys[key.epoch] = key

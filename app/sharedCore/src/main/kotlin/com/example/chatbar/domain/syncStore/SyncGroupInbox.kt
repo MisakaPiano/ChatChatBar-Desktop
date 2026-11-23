@@ -143,10 +143,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         if (collision || records.values.any { ledger.state(it.id) == SyncVersionState.REJECTED })
             return result(SyncGroupBootstrapStage.TRUST_BLOCKED, "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT")
         val current = try { ledger.current() } catch (failure: Exception) {
-            val admitted = records.values.filter { ledger.state(it.id) == SyncVersionState.ADMITTED }
-            val parents = admitted.mapNotNull { it.parent?.id }.toSet()
-            val fork = admitted.count { it.id !in parents } > 1
-            return if (fork) result(SyncGroupBootstrapStage.TRUST_BLOCKED, "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT")
+            return if (ledger.admittedTips().size > 1) result(SyncGroupBootstrapStage.TRUST_BLOCKED, "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT")
             else result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, code(failure))
         }
         if (records.values.any { ledger.state(it.id) == SyncVersionState.WAITING_FOR_PARENTS })
