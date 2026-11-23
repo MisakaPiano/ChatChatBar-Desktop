@@ -223,10 +223,16 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         assertEquals(signed.proof.recovery, ledger.current())
         assertEquals(signed.proof.records.toSet(), ledger.ancestry().toSet())
         assertContentEquals(signed.bytes, exportPackage(coordinator, review.binding))
+        assertTrue(coordinator.state.value.paused)
+        coordinator.resumeIfConfigured()
+        awaitRecovery(coordinator, "normal sync resume after explicit import") {
+            !it.paused && !it.busy && it.stage == LanSyncGroupPanelStage.READY &&
+                coordinator.view.value?.stage == LanSyncGroupNodeStage.READY
+        }
         coordinator.unlockManagement(founder.code)
-        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        awaitRecovery(coordinator, "normal management unlock after explicit import") { !it.busy && it.managementCanInvite }
         coordinator.createInvitation()
-        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        awaitRecovery(coordinator, "new invitation after explicit import") { !it.busy && it.invitation != null }
         val offer = requireNotNull(coordinator.state.value.invitation)
         assertTrue(offer.code().startsWith("CCB-GROUP-JOIN2:"))
         assertEquals(ledger.current().reference(), offer.trust.checkpoint)
