@@ -72,6 +72,13 @@ class SyncVerifiedLedgerNotice internal constructor(val recipient: String, val r
         /** First revocation only: later notices must not disclose future roster changes to removed devices. */
         fun revocations(ledger: SyncDeviceLedger): Map<String, SyncVersionRef> {
             val result = linkedMapOf<String, SyncVersionRef>(); val history = ledger.history()
+            if (history.any { it.recovery != null }) {
+                ledger.current().members.filterValues { !it.active }.keys.sorted().forEach { device ->
+                    val cut = ledger.revocationCuts(device, ledger.current().reference()).firstOrNull()
+                    if (cut != null) result[device] = cut.reference()
+                }
+                return result
+            }
             history.zipWithNext().forEach { (before, after) -> after.members.forEach { (device, member) ->
                 if (!member.active && before.members[device]?.active == true) result.putIfAbsent(device, after.reference())
             } }

@@ -34,6 +34,7 @@ import kotlinx.serialization.Serializable
 
 private object GroupStoreWire {
     const val PROTOCOL = "CCB_GROUP_STORE_2"
+    const val RECOVERY_PROTOCOL = "CCB_GROUP_STORE_3"
     const val CONTROL_BYTES = 512 * 1024
     const val CHUNK_BYTES = 1024 * 1024
     fun <T> send(wire: LanSyncWire, serializer: KSerializer<T>, value: T) {
@@ -115,6 +116,9 @@ internal fun receiveGroupLedger(socket: SSLSocket, group: SyncStoreId, checkpoin
         LanSyncMetadataBudget(maximumDepth = 16, maximumStringCharacters = 32 * 1024L).validate(text.reader())
         return lanSyncJson.decodeFromString(SyncGroupEnvelope.serializer(), text).also {
             require(it.kind == SyncGroupObjectKind.DEVICE_LEDGER && it.group == group) { "SYNC_GROUP_LEDGER_RELAY_CONTEXT" }
+            require(it.deviceLedger?.recovery == null && it.ledgerHistory.none { row -> row.recovery != null }) {
+                "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED"
+            }
         }
     }
 }
@@ -126,7 +130,8 @@ internal fun receiveGroupLedger(socket: SSLSocket, group: SyncStoreId, checkpoin
 class LanSyncGroupCiphertextServer(private val privateRoot: Path,
     private val resolve: (SyncStoreId, String, String) -> LanSyncGroupPeerStore,
     private val observe: (String, Long) -> Unit = { _, _ -> },
-    private val configureAccepted: (SSLSocket) -> Unit = {}) {
+    private val configureAccepted: (SSLSocket) -> Unit = {},
+    private val requiresRecoveryProtocol: (SyncStoreId) -> Boolean = { false }) {
     private val cache = LanSyncResourceStore(privateRoot.resolve("ciphertext-cache"))
     fun serve(socket: SSLSocket) {
         socket.use {
@@ -135,24 +140,29 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
             LanSyncWire(socket).use { wire ->
                 try {
                     val request = GroupStoreWire.read(wire, GroupStoreRequest.serializer())
-                    require(request.protocol == GroupStoreWire.PROTOCOL) { "SYNC_GROUP_WIRE_PROTOCOL" }
+                    val checkProtocol = { requireProtocol(request) }
+                    checkProtocol()
                     val local = requireNotNull(socket.session.localCertificates).single().encoded
                     val peer = socket.session.peerCertificates.single().encoded
                     val store = resolve(request.group, Base64.getEncoder().encodeToString(local), Base64.getEncoder().encodeToString(peer))
                     require(store.group == request.group) { "SYNC_GROUP_WIRE_GROUP" }
                     when (request.command) {
-                        GroupStoreCommand.METADATA -> GroupStoreWire.reply(wire, GroupStoreReply(item =
-                            store.metadataExact(requireNotNull(request.key), request.descriptor)?.let(GroupStoreWire::objectOf)))
+                        GroupStoreCommand.METADATA -> {
+                            val item = store.metadataExact(requireNotNull(request.key), request.descriptor)
+                            checkProtocol()
+                            GroupStoreWire.reply(wire, GroupStoreReply(item = item?.let(GroupStoreWire::objectOf)))
+                        }
                         GroupStoreCommand.LIST -> {
                             require(request.pageSize in 1..100) { "SYNC_GROUP_WIRE_PAGE_SIZE" }
                             val page = store.listCommits(request.cursor?.let(::CommitCursor), request.pageSize)
+                            checkProtocol()
                             GroupStoreWire.reply(wire, GroupStoreReply(entries = page.entries.map(GroupStoreWire::objectOf), cursor = page.nextCursor?.token))
                         }
-                        GroupStoreCommand.GET -> download(wire, request, store)
-                        GroupStoreCommand.PUT -> upload(wire, request, store)
+                        GroupStoreCommand.GET -> download(wire, request, store, checkProtocol)
+                        GroupStoreCommand.PUT -> upload(wire, request, store, checkProtocol)
                         GroupStoreCommand.LEDGER -> {
                             socket.soTimeout = GROUP_LEDGER_RELAY_TIMEOUT
-                            sendLedger(wire, request, store)
+                            sendLedger(wire, request, store, checkProtocol)
                         }
                     }
                 } catch (failure: Exception) {
@@ -162,13 +172,30 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
             }
         }
     }
-    private fun sendLedger(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore) {
+    private fun requireProtocol(request: GroupStoreRequest) {
+        require(request.protocol == GroupStoreWire.PROTOCOL || request.protocol == GroupStoreWire.RECOVERY_PROTOCOL) {
+            "SYNC_GROUP_WIRE_PROTOCOL"
+        }
+        val recovered = requiresRecoveryProtocol(request.group)
+        if (request.command == GroupStoreCommand.LEDGER) {
+            require(!recovered && request.protocol == GroupStoreWire.PROTOCOL) { "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED" }
+            return
+        }
+        if (recovered) require(request.protocol == GroupStoreWire.RECOVERY_PROTOCOL) { "SYNC_GROUP_STORE_UPGRADE_REQUIRED" }
+        else require(request.protocol == GroupStoreWire.PROTOCOL) { "SYNC_GROUP_STORE_RECOVERY_NOT_INSTALLED" }
+    }
+
+    private fun sendLedger(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore, checkProtocol: () -> Unit) {
         val checkpoint = SyncVersionRef(requireNotNull(request.operation), requireNotNull(request.cursor))
         require(request == groupLedgerRequest(store.group, checkpoint)) { "SYNC_GROUP_LEDGER_RELAY_REQUEST" }
         val envelope = store.membershipLedger(checkpoint)
+        checkProtocol()
         if (envelope == null) {
             GroupStoreWire.reply(wire, GroupStoreReply(done = true))
             return
+        }
+        require(envelope.deviceLedger?.recovery == null && envelope.ledgerHistory.none { it.recovery != null }) {
+            "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED"
         }
         val reference = envelope.reference()
         val bytes = lanSyncJson.encodeToString(SyncGroupEnvelope.serializer(), envelope).toByteArray(Charsets.UTF_8)
@@ -177,22 +204,25 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
         GroupStoreWire.reply(wire, GroupStoreReply(length = bytes.size))
         var offset = 0
         while (offset < bytes.size) {
+            checkProtocol()
             store.requireLedgerReadAllowed(reference)
             val end = minOf(offset + GROUP_LEDGER_RELAY_CHUNK_BYTES, bytes.size)
             wire.send(bytes.copyOfRange(offset, end))
             offset = end
         }
+        checkProtocol()
         store.requireLedgerReadAllowed(reference)
         GroupStoreWire.reply(wire, GroupStoreReply(done = true))
     }
 
-    private fun upload(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore) {
+    private fun upload(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore, checkProtocol: () -> Unit) {
         val key = requireNotNull(request.key); val descriptor = requireNotNull(request.descriptor)
         val put = CiphertextPutRequest(key, requireNotNull(request.operation), descriptor)
         store.requireWriteAllowed(key)
         if (descriptor.length == 0L) {
             GroupStoreWire.reply(wire, GroupStoreReply())
             val done = GroupStoreWire.read(wire, GroupStoreChunk.serializer()); require(done.done && done.offset == 0L) { "SYNC_GROUP_WIRE_DONE" }
+            checkProtocol()
             val result = store.put(put, byteArrayOf().inputStream())
             GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(result.metadata), done = true, disposition = result.disposition)); return
         }
@@ -203,7 +233,9 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
                 require(!chunk.done && chunk.offset == partial.offset && chunk.length.toLong() ==
                     minOf(GroupStoreWire.CHUNK_BYTES.toLong(), descriptor.length - partial.offset)) { "SYNC_GROUP_WIRE_CHUNK" }
                 store.requireWriteAllowed(key)
+                checkProtocol()
                 val bytes = GroupStoreWire.bytes(wire, chunk.length, chunk.hash)
+                checkProtocol()
                 store.requireWriteAllowed(key); partial.append(chunk.offset, bytes, requireNotNull(chunk.hash))
                 GroupStoreWire.reply(wire, GroupStoreReply(offset = partial.offset)); observe("CIPHERTEXT_CHUNK_RETAINED", partial.offset)
             }
@@ -211,13 +243,15 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
             require(done.done && done.offset == descriptor.length) { "SYNC_GROUP_WIRE_DONE" }
             store.requireWriteAllowed(key)
             val path = partial.finish()
+            checkProtocol()
             val result = Files.newInputStream(path, NOFOLLOW_LINKS).use { store.put(put, it) }
             GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(result.metadata), done = true, disposition = result.disposition))
         }
     }
-    private fun download(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore) {
+    private fun download(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore, checkProtocol: () -> Unit) {
         val key = requireNotNull(request.key); val expected = requireNotNull(request.descriptor)
         val metadata = store.metadataExact(key, expected)
+        checkProtocol()
         if (metadata == null) { GroupStoreWire.reply(wire, GroupStoreReply(done = true)); return }
         require(metadata.descriptor == expected && request.offset in 0..expected.length &&
             (request.offset == expected.length || request.offset % GroupStoreWire.CHUNK_BYTES == 0L)) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" }
@@ -225,6 +259,7 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
         if (expected.length == 0L) { GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), done = true)); return }
         val path = cached(store, metadata)
         observe("CIPHERTEXT_DOWNLOAD_RESUME", request.offset)
+        checkProtocol()
         store.requireReadAllowed(key, expected)
         GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), offset = request.offset))
         FileChannel.open(path, READ, NOFOLLOW_LINKS).use { channel ->
@@ -233,11 +268,13 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
                 store.requireReadAllowed(key, expected)
                 val bytes = ByteArray(minOf(GroupStoreWire.CHUNK_BYTES.toLong(), expected.length - offset).toInt())
                 val block = ByteBuffer.wrap(bytes); while (block.hasRemaining()) require(channel.read(block) > 0) { "SYNC_GROUP_WIRE_CACHE_CHANGED" }
+                checkProtocol()
                 store.requireReadAllowed(key, expected)
                 GroupStoreWire.chunk(wire, offset, bytes); offset += bytes.size
                 observe("CIPHERTEXT_CHUNK_SENT", offset)
             }
         }
+        checkProtocol()
         store.requireReadAllowed(key, expected)
         GroupStoreWire.reply(wire, GroupStoreReply(item = GroupStoreWire.objectOf(metadata), offset = expected.length, done = true))
     }
@@ -266,13 +303,15 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
 /** Already encrypted objects only. connect must enforce LAN address policy, pinning and client TLS identity. */
 class LanSyncGroupRemoteStore(private val group: SyncStoreId, private val privateRoot: Path,
     private val connect: () -> SSLSocket, private val observe: (String, Long) -> Unit = { _, _ -> },
-    private val authenticatedConnect: Boolean = false, private val readTimeoutMillis: Int? = null) : CiphertextStore {
+    private val authenticatedConnect: Boolean = false, private val readTimeoutMillis: Int? = null,
+    private val requiresRecoveryProtocol: () -> Boolean = { false }) : CiphertextStore {
     private val cache = LanSyncResourceStore(privateRoot.resolve("ciphertext-cache"))
     override val capabilities = CiphertextStoreCapabilities(CommitListingSemantics.KEYSET_RESCAN_REQUIRED,
         resumableByteUpload = true, untrustedCandidateVariants = true)
     private fun request(command: GroupStoreCommand, key: CiphertextObjectKey? = null, operation: SyncStoreId? = null,
         descriptor: CiphertextDescriptor? = null, cursor: String? = null, pageSize: Int = 100, offset: Long = 0) =
-        GroupStoreRequest(GroupStoreWire.PROTOCOL, group, command, key, operation, descriptor, cursor, pageSize, offset)
+        GroupStoreRequest(if (requiresRecoveryProtocol()) GroupStoreWire.RECOVERY_PROTOCOL else GroupStoreWire.PROTOCOL,
+            group, command, key, operation, descriptor, cursor, pageSize, offset)
     private fun <T> exchange(request: GroupStoreRequest, work: (LanSyncWire) -> T): T = connect().use { socket ->
         LanSyncTls.configure(socket)
         if (!authenticatedConnect) socket.startHandshake()

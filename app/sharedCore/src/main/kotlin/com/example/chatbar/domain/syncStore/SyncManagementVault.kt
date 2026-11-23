@@ -62,7 +62,9 @@ class SyncManagementSession private constructor(private var identity: LanSyncTls
         require(payload.size <= 128) { "SYNC_MANAGEMENT_SIGNATURE_DOMAIN" }
         val frozen = payload.copyOf()
         require(String(frozen, Charsets.US_ASCII).matches(
-            Regex("CCB-SYNC-(DEVICE-LEDGER|KEY-DELIVERY|LEDGER-NOTICE)-SIGNATURE/1\n[a-f0-9]{64}"))) { "SYNC_MANAGEMENT_SIGNATURE_DOMAIN" }
+            Regex("CCB-SYNC-(?:(?:DEVICE-LEDGER|KEY-DELIVERY|LEDGER-NOTICE)-SIGNATURE/1|(?:DEVICE-LEDGER|KEY-DELIVERY)-SIGNATURE/2)\n[a-f0-9]{64}"))) {
+            "SYNC_MANAGEMENT_SIGNATURE_DOMAIN"
+        }
         requireNotNull(identity).signSyncGroupPayload(frozen)
     }
 

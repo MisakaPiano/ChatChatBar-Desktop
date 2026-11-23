@@ -9,6 +9,8 @@ import java.util.Base64
 import java.util.Collections
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -16,8 +18,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /** A short-lived out-of-band capability. It grants only a key-possession exchange, never data access. */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable data class LanSyncGroupJoinBootstrap(val storePort: Int, val vault: SyncManagementVaultContext,
-    val vaultDescriptor: CiphertextDescriptor, val dataHeads: Set<SyncVersionRef> = emptySet()) {
+    val vaultDescriptor: CiphertextDescriptor, val dataHeads: Set<SyncVersionRef> = emptySet(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val requiresRecoveryProtocol: Boolean = false) {
     fun validate(trust: SyncGroupTrust, invitationPort: Int) {
         require(storePort in 1024..65535 && storePort != invitationPort && vault.group == trust.group &&
             vault.genesis == trust.genesis && vault.owner == SyncDeviceSignatures.decode(trust.ownerCertificate).fingerprint &&
@@ -46,8 +50,9 @@ import kotlinx.serialization.json.put
         require(remaining >= -WALL_SKEW_MILLIS) { "SYNC_GROUP_INVITE_EXPIRED" }
         require(remaining <= LIFETIME_MILLIS + WALL_SKEW_MILLIS) { "SYNC_GROUP_INVITE_CLOCK" }
     }
-    fun code(): String = PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(
-        lanSyncJson.encodeToString(LanSyncGroupInviteOffer.serializer(), this).toByteArray(Charsets.UTF_8))
+    fun code(): String = (if (bootstrap?.requiresRecoveryProtocol == true) RECOVERY_PREFIX else PREFIX) +
+        Base64.getUrlEncoder().withoutPadding().encodeToString(
+            lanSyncJson.encodeToString(LanSyncGroupInviteOffer.serializer(), this).toByteArray(Charsets.UTF_8))
     internal fun binding() = lanSyncHash(code().toByteArray(Charsets.UTF_8))
     override fun toString() = "LanSyncGroupInviteOffer(REDACTED)"
     companion object {
@@ -56,6 +61,7 @@ import kotlinx.serialization.json.put
         internal const val MAX_CODE_CHARS = 16 * 1024
         internal const val MAX_FILE_CHARS = 64 * 1024
         private const val PREFIX = "CCB-GROUP-JOIN1:"
+        private const val RECOVERY_PREFIX = "CCB-GROUP-JOIN2:"
         private val VERSION_PREFIX = Regex("^CCB-GROUP-JOIN[0-9]+:")
         private val HEX = Regex("[a-f0-9]{64}")
         fun parse(code: String, now: Long = System.currentTimeMillis()): LanSyncGroupInviteOffer = parseBounded(code, now, MAX_CODE_CHARS)
@@ -82,12 +88,17 @@ import kotlinx.serialization.json.put
         private fun parseBounded(code: String, now: Long, maximum: Int): LanSyncGroupInviteOffer {
             val text = code.trim()
             require(text.length <= maximum) { "SYNC_GROUP_INVITE_CODE_TOO_LARGE" }
-            require(text.startsWith(PREFIX) || !VERSION_PREFIX.containsMatchIn(text)) { "SYNC_GROUP_INVITE_VERSION" }
+            val prefix = when {
+                text.startsWith(PREFIX) -> PREFIX
+                text.startsWith(RECOVERY_PREFIX) -> RECOVERY_PREFIX
+                VERSION_PREFIX.containsMatchIn(text) -> error("SYNC_GROUP_INVITE_VERSION")
+                else -> error("SYNC_GROUP_INVITE_OFFER")
+            }
             val offer = try {
-                require(text.startsWith(PREFIX)) { "SYNC_GROUP_INVITE_OFFER" }
-                InviteWire.json.decodeFromString(LanSyncGroupInviteOffer.serializer(), lanSyncUtf8(Base64.getUrlDecoder().decode(text.removePrefix(PREFIX))))
-                    .also { it.validateShape() }
+                InviteWire.json.decodeFromString(LanSyncGroupInviteOffer.serializer(),
+                    lanSyncUtf8(Base64.getUrlDecoder().decode(text.removePrefix(prefix)))).also { it.validateShape() }
             } catch (_: Exception) { error("SYNC_GROUP_INVITE_OFFER") }
+            require((prefix == RECOVERY_PREFIX) == (offer.bootstrap?.requiresRecoveryProtocol == true)) { "SYNC_GROUP_INVITE_VERSION" }
             offer.validateTime(now)
             return offer
         }
@@ -145,7 +156,11 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
         val maximum = if (forFile) LanSyncGroupInviteOffer.MAX_FILE_CHARS else LanSyncGroupInviteOffer.MAX_CODE_CHARS
         val sizeError = if (forFile) "SYNC_GROUP_INVITE_FILE_TOO_LARGE" else "SYNC_GROUP_INVITE_CODE_TOO_LARGE"
         require((bootstrap?.dataHeads?.size ?: 0) <= maximum / 64) { sizeError }
-        val frozenBootstrap = bootstrap?.let { it.copy(dataHeads = Collections.unmodifiableSet(it.dataHeads.toSet())) }
+        val recovered = ledger.ancestry().any { it.recovery != null }
+        require(!recovered || bootstrap != null) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
+        val frozenBootstrap = bootstrap?.let {
+            it.copy(dataHeads = Collections.unmodifiableSet(it.dataHeads.toSet()), requiresRecoveryProtocol = recovered)
+        }
         val offer = LanSyncGroupInviteOffer(trust.copy(checkpoint = ledger.current().reference()), host, port, identity.fingerprint,
             ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }, wallTime() + LanSyncGroupInviteOffer.LIFETIME_MILLIS, frozenBootstrap)
         offer.validate(wallTime())

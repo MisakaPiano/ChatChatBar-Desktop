@@ -68,20 +68,78 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
     /** Read preserved conflict evidence without advancing the protected checkpoint. */
     internal fun verifiedFork(): SyncVerifiedLedgerFork? = guarded { build(read()).verifiedFork() }
 
+    internal fun recoveryGraph(): SyncDeviceLedger = guarded { build(read()) }
+
+    internal fun inspectRecoveryFile(bytes: ByteArray): SyncVerifiedLedgerRecoveryFile = guarded {
+        val trust = read().trust
+        // A same-root package can provide independently signed fork evidence even when it does not cover our pin.
+        SyncLedgerRecoveryFileCodec.read(bytes.inputStream(), trust.copy(checkpoint = trust.genesis), recipient, allowRevokedNotice = true)
+    }
+    internal fun inspectRetainedRecoveryFile(bytes: ByteArray): SyncVerifiedLedgerRecoveryFile = guarded {
+        val trust = read().trust
+        SyncLedgerRecoveryFileCodec.read(bytes.inputStream(), trust.copy(checkpoint = trust.genesis), recipient, allowRevokedNotice = true)
+    }
+
+    /** The confirmation is compared to current retained evidence under the same custody lock as installation. */
+    internal fun commitMembershipRecovery(expected: Set<SyncVersionRef>, authoring: Boolean,
+        prepare: () -> ByteArray, retain: (ByteArray, SyncVerifiedLedgerRecoveryFile) -> Unit): Boolean = guarded {
+        val state = read()
+        val graph = build(state)
+        require(graph.admittedTips() == expected) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+        val bytes = prepare()
+        val proofTrust = if (authoring) state.trust else state.trust.copy(checkpoint = state.trust.genesis)
+        val verified = SyncLedgerRecoveryFileCodec.read(bytes.inputStream(), proofTrust, recipient, allowRevokedNotice = !authoring)
+        val recovery = verified.recovery
+        if (authoring) require(recovery.recovery?.parents == expected) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+        val merged = graph.verifiedCopy()
+        verified.records.forEach(merged::offer)
+        require(merged.contains(recovery.reference())) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_SIGNATURE" }
+        val tips = merged.admittedTips()
+        if (tips.size == 1) {
+            require(merged.isAncestorOrSelf(state.trust.checkpoint, tips.single())) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
+        }
+        if (tips.size == 1 && tips.single() != recovery.reference()) {
+            require(merged.ancestry().any { it.reference() == recovery.reference() }) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+            return@guarded true // An already installed checkpoint can be replayed without moving the pin.
+        }
+        retain(bytes, verified)
+        if (tips.size != 1 || verified.recipientRevoked) {
+            val rows = (state.ledgers + verified.records).distinctBy { it.id }
+                .sortedWith(compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value }).map(::freeze)
+            val checkpoint = if (tips.size == 1) recovery.reference() else state.trust.checkpoint
+            val preserved = state.copy(ledgers = rows, trust = state.trust.copy(checkpoint = checkpoint))
+            if (preserved != state) {
+                write(preserved)
+                observe("GROUP_LEDGER_EVIDENCE_RETAINED")
+                if (checkpoint != state.trust.checkpoint) observe("GROUP_CHECKPOINT_RETAINED")
+            }
+            return@guarded tips.size == 1
+        }
+        updateWithKeysOwned(state, verified.records, verified.keys, recovery.reference())
+        true
+    }
+
     /** Signed waiting/rejected/fork evidence persists before trying to select a new current head. */
     fun update(records: Collection<SyncDeviceLedgerRecord>): SyncDeviceLedger = guarded {
         val state = read(); val ledger = build(state)
+        val retainedRecovery = state.ledgers.asSequence().filter { it.recovery != null }.map { it.reference() }.toSet()
+        val admissible = records.filter { it.recovery == null || it.reference() in retainedRecovery }
         val rows = state.ledgers.associateByTo(linkedMapOf()) { it.id }
         var changed = false
-        records.map(::freeze).forEach { row ->
+        admissible.map(::freeze).forEach { row ->
             ledger.offer(row)
             rows[row.id]?.let { require(it.reference() == row.reference()) { "SYNC_GROUP_LEDGER_ID_COLLISION" } }
             if (rows.putIfAbsent(row.id, row) == null) changed = true
         }
-        if (!changed) { advance(state, ledger); return@guarded build(read()).also { it.current() } }
+        if (!changed) {
+            require(admissible.size == records.size) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_EXPLICIT_REQUIRED" }
+            advance(state, ledger)
+            return@guarded build(read()).also { it.current() }
+        }
         val retained = state.copy(ledgers = rows.values.sortedWith(compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value }))
         write(retained)
         observe("GROUP_LEDGER_EVIDENCE_RETAINED")
+        require(admissible.size == records.size) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_EXPLICIT_REQUIRED" }
         advance(retained, ledger)
         build(read()).also { it.current() }
     }
@@ -228,7 +286,8 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         val advanced = state.copy(trust = state.trust.copy(checkpoint = current.reference()))
         write(advanced); observe("GROUP_CHECKPOINT_RETAINED"); return advanced
     }
-    private fun freeze(row: SyncDeviceLedgerRecord) = row.copy(members = row.members.toMap(), coveredTypes = row.coveredTypes.toSet(), acceptedHeads = row.acceptedHeads.toSet())
+    private fun freeze(row: SyncDeviceLedgerRecord) = row.copy(members = row.members.toMap(), coveredTypes = row.coveredTypes.toSet(),
+        acceptedHeads = row.acceptedHeads.toSet(), recovery = row.recovery?.let { it.copy(parents = it.parents.toSet()) })
     private fun sameAnchor(a: SyncGroupTrust, b: SyncGroupTrust) = a.group == b.group && a.genesis == b.genesis && a.ownerCertificate == b.ownerCertificate
     private fun read(): SyncGroupCustodyState {
         require(Files.exists(file, NOFOLLOW_LINKS)) { "SYNC_GROUP_CUSTODY_MISSING" }

@@ -340,6 +340,64 @@ class LanSyncGroupJoiningTest {
             assertContentEquals(protected, Files.readAllBytes(f.root.resolve("joining/profile.protected")))
         } finally { coordinator.closeAndDrain() }
     }
+    @Test fun aRetainedV1InvitationCannotAdmitRecoveredLedgerUntilAnExplicitFreshJoin2() = fixture { f ->
+        val owner = f.owner()
+        f.admit(f.prove(owner))
+        val old = f.control()
+        val originalOffer = lanSyncJson.decodeFromJsonElement(LanSyncGroupInviteOffer.serializer(), old.getValue("offer"))
+        assertTrue(originalOffer.code().startsWith("CCB-GROUP-JOIN1:"))
+        val recipientPath = f.root.resolve("joining/recipient/recipient.protected")
+        val recipient = Files.readAllBytes(recipientPath)
+        val sourceCustody = f.founder.custody()
+        val baseline = sourceCustody.ledger()
+        val parent = baseline.current()
+        val fresh = SyncStreamingCipher.create(parent.group)
+        val graph = f.founder.service.resume(f.founder.code).use { draft ->
+            fun sign(row: SyncDeviceLedgerRecord): SyncDeviceLedgerRecord =
+                row.copy(signature = Base64.getEncoder().encodeToString(draft.session.signRootPayload(row.signingBytes())))
+            val left = sign(parent.copy(id = SyncStoreId.random(), parent = parent.reference(), sequence = parent.sequence + 1))
+            val right = sign(left.copy(id = SyncStoreId.random()))
+            val recovery = sign(left.copy(id = SyncStoreId.random(), parent = null, sequence = left.sequence + 1,
+                epoch = fresh.epoch, keyCommitment = fresh.keyCommitment(),
+                recovery = SyncGroupLedgerRecovery(setOf(left.reference(), right.reference()), left.reference())))
+            val recovered = SyncDeviceLedger(baseline.trustAnchor)
+            (baseline.ancestry() + listOf(left, right, recovery)).forEach {
+                assertEquals(SyncVersionState.ADMITTED, recovered.offer(it))
+            }
+            val publicationRoot = Files.createDirectory(f.founder.root.resolve("recovered-join-publication"))
+            val outboxes = Files.createDirectory(f.founder.root.resolve("recovered-join-outboxes"))
+            fun cipher(epoch: SyncStoreId): SyncStreamingCipher = if (epoch == fresh.epoch) fresh else sourceCustody.key(epoch)
+            val publication = LanSyncGroupRootPublication(publicationRoot, draft.session.ownerCertificate,
+                draft.session::signRootPayload, { recovered }, ::cipher, { epoch ->
+                    SyncEncryptedOutbox(Files.createDirectories(outboxes.resolve(epoch.value)), cipher(epoch))
+                })
+            publication.upload(f.backend(), requireNotNull(f.founder.service.profile()).localReplica)
+            recovered
+        }
+
+        val waiting = owner.activate(f.backend())
+        assertEquals("SYNC_GROUP_JOIN_RECOVERY_INVITATION_REQUIRED", waiting.waitingCode)
+        assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, waiting.profile.stage)
+        assertFalse(waiting.profile.membershipVerified)
+        assertNull(waiting.node)
+        assertFalse(Files.exists(f.root.resolve("joining/custody/group.protected")))
+        assertFalse(assertNotNull(f.owner().profile()).membershipVerified)
+        assertEquals(old.getValue("offer"), f.control().getValue("offer"))
+        assertContentEquals(recipient, Files.readAllBytes(recipientPath))
+
+        val refreshed = LanSyncGroupInvitation(f.founder.identity, graph.trustAnchor, { graph },
+            bootstrap = requireNotNull(originalOffer.bootstrap)).use { invitation ->
+            invitation.issue(originalOffer.host, originalOffer.port)
+        }
+        assertTrue(refreshed.code().startsWith("CCB-GROUP-JOIN2:"))
+        owner.refreshInvitation(refreshed.code()) {}
+        val joined = owner.activate(f.backend())
+        assertEquals(LanSyncGroupJoinStage.READY, joined.profile.stage, joined.waitingCode)
+        assertEquals(graph.current().reference(), requireNotNull(owner.runtimeAccess()).ledger().current().reference())
+        assertEquals(old.getValue("operation"), f.control().getValue("operation"))
+        assertContentEquals(recipient, Files.readAllBytes(recipientPath))
+    }
+
     @Test fun realPeerApprovalBootstrapsProtectedProfileAndUniquePresetProjectionWithoutRewritingPhysicalIdsOrAuthoring() = fixture { f ->
         f.publishedPreset()
         val local = f.put(f.data, f.card("physical-card", 987654321)); val bytes = Files.readAllBytes(local)

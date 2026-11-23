@@ -11,10 +11,10 @@ import kotlinx.serialization.Serializable
     val recipient: String, val recipientKeyHash: String) {
     init {
         val hex = Regex("[a-f0-9]{64}")
-        require(format == 1 && keyCommitment.matches(hex) && recipient.matches(hex) && recipientKeyHash.matches(hex)) { "SYNC_KEY_DELIVERY_CONTEXT" }
+        require(format in 1..2 && keyCommitment.matches(hex) && recipient.matches(hex) && recipientKeyHash.matches(hex)) { "SYNC_KEY_DELIVERY_CONTEXT" }
     }
     fun bytes(): ByteArray = ByteArrayOutputStream().also { bytes -> DataOutputStream(bytes).use { out ->
-        out.writeUTF("CCB-SYNC-KEY-DELIVERY/1"); out.writeUTF(objectId.value); out.writeUTF(group.value); out.writeUTF(epoch.value)
+        out.writeUTF("CCB-SYNC-KEY-DELIVERY/$format"); out.writeUTF(objectId.value); out.writeUTF(group.value); out.writeUTF(epoch.value)
         out.writeUTF(keyCommitment); out.writeUTF(authorizingLedger.id.value); out.writeUTF(authorizingLedger.bodyHash)
         out.writeUTF(recipient); out.writeUTF(recipientKeyHash)
     } }.toByteArray()
@@ -29,7 +29,7 @@ import kotlinx.serialization.Serializable
     fun signingBytes(): ByteArray {
         val wrapped = wrappedBytes()
         val digest = MessageDigest.getInstance("SHA-256").apply { update(context.bytes()); update(wrapped) }.digest()
-        return ("CCB-SYNC-KEY-DELIVERY-SIGNATURE/1\n" + digest.joinToString("") { "%02x".format(it) }).toByteArray(Charsets.US_ASCII)
+        return ("CCB-SYNC-KEY-DELIVERY-SIGNATURE/${context.format}\n" + digest.joinToString("") { "%02x".format(it) }).toByteArray(Charsets.US_ASCII)
     }
     private fun wrappedBytes() = Base64.getDecoder().decode(wrappedKey).also {
         require(it.size in 1..64 * 1024) { "SYNC_KEY_DELIVERY_BUDGET" }
@@ -54,7 +54,8 @@ import kotlinx.serialization.Serializable
             require(cipher.group == current.group && ledger.hasKey(cipher.epoch, cipher.keyCommitment())) { "SYNC_KEY_DELIVERY_KEY_NOT_ADMITTED" }
             val member = requireNotNull(current.members[recipient]?.takeIf { it.active }) { "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" }
             val public = SyncRecipientPublicKey.parse(member.recipientKey)
-            val context = SyncKeyDeliveryContext(1, objectId, current.group, cipher.epoch, cipher.keyCommitment(), current.reference(), recipient, public.hash)
+            val format = if (ledger.ancestry().any { it.recovery != null }) 2 else 1
+            val context = SyncKeyDeliveryContext(format, objectId, current.group, cipher.epoch, cipher.keyCommitment(), current.reference(), recipient, public.hash)
             val wrapped = cipher.protectedKeyset { public.encrypt(it, context.bytes()) }
             val unsigned = SyncGroupKeyDelivery(context, Base64.getEncoder().encodeToString(wrapped), "unsigned")
             val signed = unsigned.copy(signature = Base64.getEncoder().encodeToString(sign(unsigned.signingBytes())))
@@ -74,6 +75,8 @@ class SyncTentativeGroupKey internal constructor(val context: SyncKeyDeliveryCon
         val authorizing = ledger.record(context.authorizingLedger)
         require(current.group == context.group && authorizing != null &&
             ledger.hasKey(context.epoch, context.keyCommitment, context.authorizingLedger)) { "SYNC_KEY_DELIVERY_LEDGER_MISSING" }
+        val expectedFormat = if (ledger.ancestry(context.authorizingLedger).any { it.recovery != null }) 2 else 1
+        require(context.format == expectedFormat) { "SYNC_KEY_DELIVERY_CONTEXT" }
         require(authorizing.members[context.recipient]?.let { it.active &&
             SyncRecipientPublicKey.parse(it.recipientKey).hash == context.recipientKeyHash } == true) { "SYNC_KEY_DELIVERY_RECIPIENT" }
         val member = requireNotNull(current.members[context.recipient]?.takeIf { it.active }) { "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" }

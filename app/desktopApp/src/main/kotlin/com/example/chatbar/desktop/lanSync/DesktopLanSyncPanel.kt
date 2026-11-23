@@ -16,6 +16,8 @@ import com.google.zxing.MultiFormatWriter
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.StandardOpenOption.CREATE_NEW
+import java.nio.file.StandardOpenOption.WRITE
 
 /** Navigation owns only page visibility; the application owns the group task lifetime. */
 @Composable
@@ -48,7 +50,10 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
                     BootstrapButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", secondary = true, enabled = !state.busy) { coordinator.openCloudRecovery() }
                 }
             }
-            if (filePicker != null) DesktopLanSyncInvitationFiles(coordinator, state, filePicker)
+            if (filePicker != null) {
+                DesktopLanSyncInvitationFiles(coordinator, state, filePicker)
+                DesktopLanSyncMembershipRecoveryFiles(coordinator, state, filePicker)
+            }
             DesktopLanSyncFileActions(coordinator, state, filePicker)
             if (state.invitationRetainedWhileLocked) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
@@ -64,6 +69,32 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
         val recoveryState by recovery.state.collectAsState()
         DesktopLanSyncCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
+    }
+}
+
+@Composable
+private fun DesktopLanSyncMembershipRecoveryFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState,
+    filePicker: DesktopFilePicker) {
+    val type = remember { DesktopFileType("签名成员恢复包", listOf("ccbgroupfix")) }
+    if (state.membershipRecoveryImport == null && (state.membershipRecoveryPackageImportAllowed || state.membershipRecoveryExportBinding != null)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (state.membershipRecoveryPackageImportAllowed) BootstrapButton("打开签名成员恢复包", secondary = true, enabled = !state.busy) {
+                filePicker.pickOpenFile(type)?.let { path ->
+                    coordinator.prepareMembershipRecoveryImport { Files.newInputStream(path, NOFOLLOW_LINKS) }
+                }
+            }
+            state.membershipRecoveryExportBinding?.let { binding ->
+                BootstrapButton("保存签名成员恢复包", secondary = true, enabled = !state.busy) {
+                    filePicker.pickNewSaveFile(type, "设备组成员恢复.ccbgroupfix", "保存签名成员恢复包 · 请使用新文件名")?.let { path ->
+                        coordinator.saveMembershipRecoveryPackage(binding) { bytes ->
+                            try { Files.write(path, bytes, CREATE_NEW, WRITE) }
+                            catch (_: java.nio.file.FileAlreadyExistsException) { error("SYNC_GROUP_MEMBERSHIP_RECOVERY_OUTPUT_NOT_NEW") }
+                            catch (_: java.io.IOException) { error("SYNC_GROUP_MEMBERSHIP_RECOVERY_OUTPUT_UNAVAILABLE") }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

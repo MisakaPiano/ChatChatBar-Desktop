@@ -3,6 +3,7 @@ package com.example.chatbar.lanSync
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -84,6 +85,7 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
         if (!legacySelected) {
             LanSyncInvitationFiles(coordinator, state)
             LanSyncGroupFileActions(coordinator, state)
+            LanSyncMembershipRecoveryFiles(coordinator, state)
         }
         if (!legacyAllowed || backgroundState.phase == AndroidLanSyncBackgroundPhase.PAUSED) LanSyncBackgroundControls(owner, backgroundState)
         Box(Modifier.weight(1f)) {
@@ -114,6 +116,68 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
         val recoveryState by recovery.state.collectAsState()
         LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
+    }
+}
+
+@Composable
+private fun LanSyncMembershipRecoveryFiles(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState) {
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var resumed by remember(lifecycle) { mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
+    var choosingInput by rememberSaveable { mutableStateOf(false) }
+    var input by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var outputBinding by rememberSaveable { mutableStateOf<String?>(null) }
+    var output by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (choosingInput) {
+            choosingInput = false
+            input = uri
+        }
+    }
+    val saveFile = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
+        if (outputBinding != null) {
+            if (uri == null) outputBinding = null
+            output = uri
+        }
+    }
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, _ -> resumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
+        lifecycle.addObserver(observer)
+        resumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(input, resumed, state.membershipRecoveryPackageImportAllowed) {
+        val uri = input ?: return@LaunchedEffect
+        if (!resumed) return@LaunchedEffect
+        input = null
+        if (state.membershipRecoveryPackageImportAllowed) coordinator.prepareMembershipRecoveryImport {
+            resolver.openInputStream(uri) ?: error("SYNC_GROUP_MEMBERSHIP_RECOVERY_INPUT_UNAVAILABLE")
+        }
+    }
+    LaunchedEffect(output, outputBinding, resumed) {
+        val uri = output ?: return@LaunchedEffect
+        val binding = outputBinding ?: return@LaunchedEffect
+        if (!resumed) return@LaunchedEffect
+        output = null
+        outputBinding = null
+        coordinator.saveMembershipRecoveryPackage(binding) { bytes ->
+            val empty = resolver.openInputStream(uri)?.use { it.read() == -1 } == true
+            require(empty) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_OUTPUT_NOT_NEW" }
+            val stream = resolver.openOutputStream(uri, "wt") ?: error("SYNC_GROUP_MEMBERSHIP_RECOVERY_OUTPUT_UNAVAILABLE")
+            stream.use { it.write(bytes) }
+        }
+    }
+    if (state.membershipRecoveryImport == null && (state.membershipRecoveryPackageImportAllowed || state.membershipRecoveryExportBinding != null)) {
+        val pickerInUse = choosingInput || input != null || outputBinding != null
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (state.membershipRecoveryPackageImportAllowed) CbButton("打开签名成员恢复包",
+                { choosingInput = true; openFile.launch(arrayOf("*/*")) },
+                enabled = !state.busy && !pickerInUse, variant = ButtonVariant.Secondary)
+            state.membershipRecoveryExportBinding?.let { binding ->
+                CbButton("保存签名成员恢复包", { outputBinding = binding; saveFile.launch("设备组成员恢复.ccbgroupfix") },
+                    enabled = !state.busy && !pickerInUse, variant = ButtonVariant.Secondary)
+            }
+        }
     }
 }
 

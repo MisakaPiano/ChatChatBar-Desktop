@@ -68,7 +68,8 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
     }
 
     /** Explicit joining only: external invitation pins trust. This reads no custody and enrolls/writes no keys. */
-    fun prepareEnrollment(trust: SyncGroupTrust, requiredCheckpoints: Set<SyncVersionRef> = emptySet()): SyncGroupBootstrapInspection {
+    fun prepareEnrollment(trust: SyncGroupTrust, requiredCheckpoints: Set<SyncVersionRef> = emptySet(),
+        checkLedger: (SyncDeviceLedger) -> String? = { null }): SyncGroupBootstrapInspection {
         val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
         fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, failure: String? = null) {
             statuses[key] = SyncInboxObservation(key.key, stage, failure, key.descriptor).also(observe)
@@ -151,6 +152,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
             return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE")
         if (!requiredCheckpoints.all(ledger::contains))
             return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING")
+        checkLedger(ledger)?.let { return result(SyncGroupBootstrapStage.WAITING_FOR_LEDGER, it) }
         val member = current.members[recipient.device]
         if (member != null && !member.active) return result(SyncGroupBootstrapStage.DEVICE_REVOKED, "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED",
             membership = current.takeIf { member.recipientKey == recipient.publicKey.encoded })
@@ -175,12 +177,58 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
 
     internal fun reconcilePublished(published: Set<CiphertextObjectMetadata>): SyncInboxReconciliation = reconcile(emptyList(), published)
 
+    private data class RecoveryAuthority(val ledger: SyncDeviceLedger, val keys: Map<SyncStoreId, SyncStreamingCipher>)
+
+    /** A prior branch can prove causal history for a recovery review without changing live custody. */
+    internal fun reviewRecoveryBranch(ledger: SyncDeviceLedger, keys: Map<SyncStoreId, SyncStreamingCipher>,
+        localVersions: Collection<SyncAuthenticatedGroupObject>): SyncCausalHistory =
+        requireNotNull(reconcile(localVersions, null, RecoveryAuthority(ledger, keys)).history) { "SYNC_GROUP_RECOVERY_CAUSAL_HISTORY" }
+
+    internal fun recoveryHistoricalKeys(branches: List<SyncDeviceLedger>, manager: SyncDeviceEncryptionKey,
+        retainedRecoveryKeys: Map<SyncStoreId, SyncStreamingCipher>): Map<SyncStoreId, SyncStreamingCipher> {
+        val trust = branches.first().trustAnchor
+        val epochs = branches.flatMap { it.ancestry() }.groupBy { it.epoch }
+        val keys = linkedMapOf<SyncStoreId, SyncStreamingCipher>()
+        epochs.forEach { (id, rows) ->
+            require(rows.map { it.keyCommitment }.distinct().size == 1) { "SYNC_GROUP_RECOVERY_EPOCH_BINDING" }
+            val retained = try { custody.key(id) } catch (failure: IllegalArgumentException) {
+                if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") null else throw failure
+            }
+            val candidate = retained ?: retainedRecoveryKeys[id]
+            if (candidate != null) {
+                require(candidate.group == trust.group && candidate.keyCommitment() == rows.first().keyCommitment) {
+                    "SYNC_GROUP_RECOVERY_EPOCH_BINDING"
+                }
+                keys[id] = candidate
+            }
+        }
+        for (metadata in candidates.entries()) {
+            if (keys.size == epochs.size) break
+            if (metadata.descriptor.length > SyncKeyDeliveryCodec.MAX_BYTES) continue
+            try {
+                spool(candidates.exact(metadata), metadata) { path ->
+                    if (!SyncKeyDeliveryCodec.hasPrefix(prefix(path))) return@spool
+                    val delivery = Files.newInputStream(path, NOFOLLOW_LINKS).use { SyncKeyDeliveryCodec.decode(SyncKeyDeliveryCodec.read(it)) }
+                    val entry = delivery.context
+                    if (entry.recipient != manager.device || entry.epoch !in epochs || entry.epoch in keys) return@spool
+                    val authorized = branches.firstOrNull { it.contains(entry.authorizingLedger) } ?: return@spool
+                    val admitted = delivery.openTentative(trust, manager, metadata.key).admit(authorized)
+                    keys[entry.epoch] = admitted.cipher
+                }
+            } catch (failure: Exception) {
+                code(failure) // Invalid or unavailable candidate bytes prove no historical key.
+            }
+        }
+        require(keys.keys == epochs.keys) { "SYNC_GROUP_RECOVERY_HISTORICAL_KEYS_MISSING" }
+        return keys.toMap()
+    }
+
     private fun reconcile(localVersions: Collection<SyncAuthenticatedGroupObject>,
-        published: Set<CiphertextObjectMetadata>?): SyncInboxReconciliation {
-        val trust = localCustody { custody.trust() }
+        published: Set<CiphertextObjectMetadata>?, recovery: RecoveryAuthority? = null): SyncInboxReconciliation {
+        val trust = recovery?.ledger?.trustAnchor ?: localCustody { custody.trust() }
         // Invitations must prove their own served ledger ancestry. Known local keys can open
         // it, but locally retained ledger rows or outbox versions cannot fill a published gap.
-        val servedLedger = if (published == null) null else SyncDeviceLedger(trust)
+        val servedLedger = recovery?.ledger ?: if (published == null) null else SyncDeviceLedger(trust)
         val statuses = linkedMapOf<CiphertextObjectMetadata, SyncInboxObservation>()
         fun status(key: CiphertextObjectMetadata, stage: SyncInboxStage, code: String? = null) {
             statuses[key] = SyncInboxObservation(key.key, stage, code, key.descriptor).also(observe)
@@ -199,6 +247,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                             hints[metadata] = hint
                         }
                         SyncKeyDeliveryCodec.hasPrefix(prefix) -> {
+                            if (recovery != null) return@spool
                             require(metadata.descriptor.length <= SyncKeyDeliveryCodec.MAX_BYTES) { "SYNC_KEY_DELIVERY_BUDGET" }
                             val delivery = SyncKeyDeliveryCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncKeyDeliveryCodec::read))
                             delivery.verifyOwner(trust, metadata.key)
@@ -206,6 +255,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                             else tentative[metadata] = delivery.openTentative(trust, recipient, metadata.key)
                         }
                         SyncLedgerNoticeCodec.hasPrefix(prefix) -> {
+                            if (recovery != null) return@spool
                             require(metadata.descriptor.length <= SyncLedgerNoticeCodec.MAX_BYTES) { "SYNC_LEDGER_NOTICE_BUDGET" }
                             val notice = SyncLedgerNoticeCodec.decode(Files.newInputStream(path, NOFOLLOW_LINKS).use(SyncLedgerNoticeCodec::read))
                             notice.verifyOwner(trust, metadata.key)
@@ -233,6 +283,9 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         val codec = SyncGroupObjectCodec(work)
         val decoded = linkedMapOf<CiphertextObjectMetadata, SyncAuthenticatedGroupObject>()
         fun knownKey(hint: SyncCiphertextHint, allowTentative: Boolean): SyncStreamingCipher? {
+            if (recovery != null) return recovery.keys[hint.context.epoch]?.also {
+                require(it.keyCommitment() == hint.keyCommitment) { "SYNC_INBOX_KEY_COMMITMENT" }
+            }
             val key = try { localCustody { custody.key(hint.context.epoch) } } catch (failure: IllegalArgumentException) {
                 if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") null else throw failure
             }
@@ -253,6 +306,7 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
                     val actual = decoded[key] ?: codec.read(candidates.exact(key), cipher, hint.context, key.descriptor).also { decoded[key] = it }
                     val row = actual.envelope.deviceLedger ?: continue
                     require(row.epoch == hint.context.epoch && row.keyCommitment == actual.keyCommitment) { "SYNC_INBOX_LEDGER_KEY_MISMATCH" }
+                    if (recovery != null) continue
                     // Validate remote signatures/identities before entering the local protected writer.
                     val validation = SyncDeviceLedger(trust)
                     (actual.envelope.ledgerHistory + row).forEach { validation.offer(it) }

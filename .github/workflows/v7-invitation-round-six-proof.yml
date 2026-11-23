@@ -24,12 +24,20 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Verify retained membership branches, linear approval and pending reload
+      - name: Verify explicit signed recovery and its compatibility boundaries
         working-directory: app
         run: |
           bash ./gradlew :sharedCore:test \
+            --tests '*SyncGroupLedgerRecoveryTest' \
+            --tests '*SyncLedgerRecoveryFileCodecTest' \
+            --tests '*SyncDeviceLedgerTest' \
+            --tests '*SyncGroupKeyDeliveryTest' \
+            --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.signedMembershipRecoveryRetainsBothBranchesAndRequiresExplicitImportAfterColdOpen' \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.independentManagersRetainBothSignedMembershipBranchesAndCannotResumeOrdinaryWorkAfterColdOpen' \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.recoveredManagerThatSeesFirstApprovalSignsTheNextMemberFromItsNewParent' \
+            --tests '*LanSyncGroupCiphertextTransportTest.recoveredAuthorityRejectsLegacyStoreAndLedgerCommandsBeforeOpeningTheBackend' \
+            --tests '*LanSyncGroupInvitationTest.onlyRecoveryBootstrapUsesV2AndItsCapabilityCannotBeRelabeledAsV1' \
+            --tests '*LanSyncGroupJoiningTest.aRetainedV1InvitationCannotAdmitRecoveredLedgerUntilAnExplicitFreshJoin2' \
             --tests '*LanSyncGroupNearbyStatusTest.mixedSameNameMembersKeepBothObservationsAndColdStartDoesNotInventReachability' \
             --tests '*LanSyncGroupNodeTest.signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown' \
             --tests '*LanSyncGroupNodeTest.olderAppliedHistoryWithoutARefreshMarkerSurvivesCancelledReloadAndIgnoresSourceOnlyReceipts' \

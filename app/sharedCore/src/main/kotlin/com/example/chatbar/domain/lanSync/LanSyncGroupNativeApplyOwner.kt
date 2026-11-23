@@ -86,6 +86,11 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         publicState(load())
     }
     fun state(): LanSyncGroupNativeState = guarded { publicState(load()) }
+    internal fun recoveryFrontiers(): Set<SyncVersionRef> = guarded {
+        val retained = load(advanceHead = false)
+        require(retained.pending == null) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING" }
+        retained.units.values.flatMapTo(linkedSetOf()) { it.frontiers }
+    }
     fun recover(): LanSyncGroupNativeState = guarded { publicState(recovered()) }
 
     internal fun recoverForReload(): Pair<LanSyncGroupNativeState, ReloadWork?> = guarded {
@@ -322,7 +327,8 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         require(receipt != null && receipt.sequence == checkpoint.sequence && receipt.status == LanSyncGroupNativeApplyStatus.APPLIED &&
             binding(Receipt.serializer(), receipt) == checkpoint.receipt) { "SYNC_GROUP_NATIVE_RELOAD_CHANGED" }
     }
-    private fun load(match: String? = null, source: SyncAuthorJournalEntry? = null, trackReload: Boolean = false): Loaded {
+    private fun load(match: String? = null, source: SyncAuthorJournalEntry? = null, trackReload: Boolean = false,
+        advanceHead: Boolean = true): Loaded {
         val origin = readOrigin()
         val head = requireNotNull(read(root.resolve("head.protected"), "HEAD", Head.serializer())) { "SYNC_GROUP_NATIVE_HEAD_MISSING" }
         val intents = inventory("intent"); val receipts = inventory("receipt")
@@ -367,7 +373,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
                 }
             }
         }
-        if (head.sequence < receipts) write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(receipts, previous), true)
+        if (advanceHead && head.sequence < receipts) write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(receipts, previous), true)
         val reload = reloadThrough?.let { ReloadWork(origin.incarnation, it.sequence, it.receipt, reloadSessions.toSet()) }
         return Loaded(Collections.unmodifiableMap(units), receipts, previous, pending, matched, matchedReceipt, matchedSourceReceipt, reload)
     }

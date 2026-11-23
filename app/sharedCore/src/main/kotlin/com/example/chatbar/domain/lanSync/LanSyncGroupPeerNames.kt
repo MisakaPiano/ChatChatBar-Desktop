@@ -49,6 +49,19 @@ class LanSyncGroupPeerNames(private val root: Path, private val trust: SyncGroup
         // Revocation changes authority/status, not the already verified display identity.
         lanSyncGroupDisplayText(entry.name)
     }
+
+    /** A fork review may reuse a saved name only for an exact identity on its verified branches. */
+    internal fun recoveryNames(graph: SyncDeviceLedger, tips: List<SyncDeviceLedgerRecord>): Map<String, String> = guarded {
+        val verified = ledger(graph)
+        require(tips.all { verified.contains(it.reference()) }) { "SYNC_GROUP_PEER_NAMES_GROUP_CHANGED" }
+        val candidates = tips.flatMap { it.members.entries }.groupBy({ it.key }, { it.value })
+        read().entries.mapNotNull { (id, entry) ->
+            val members = candidates[id].orEmpty()
+            val exact = verified.contains(entry.checkpoint) && members.isNotEmpty() &&
+                members.all { it.certificate == entry.certificate && it.recipientKey == entry.recipient }
+            if (exact) id to lanSyncGroupDisplayText(entry.name) else null
+        }.toMap()
+    }
     private fun read(): State {
         if (!Files.exists(file, NOFOLLOW_LINKS)) return State(1, trust, emptyMap())
         val borrowed = lanSyncRead(file, MAX_BYTES + 1024 * 1024)

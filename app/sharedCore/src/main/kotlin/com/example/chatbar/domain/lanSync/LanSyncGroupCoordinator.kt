@@ -210,6 +210,9 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private var invitation: ActiveInvitation? = null
     private var approvalInFlight: ActiveInvitation? = null
+    private var membershipRecoveryGeneration = 0L
+    @Volatile private var membershipReview: LanSyncGroupMembershipRecovery.OpenReview? = null
+    @Volatile private var membershipPackageReview: LanSyncGroupMembershipRecovery.ImportReview? = null
     private var peer: LanSyncGroupMemberPreview? = null
     private var revocation: LanSyncGroupRevocationPreview? = null
     private var loop: Job? = null
@@ -316,6 +319,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             LanSyncMissingImage.CODE -> LanSyncGroupDisplay.missingLocalImageNotice(code)
             "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" -> joiningLedgerConflictText
             "SYNC_GROUP_MEMBERSHIP_CONFLICT" -> "成员变更冲突。签名分支和本机资料已保留。"
+            "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" -> "已验证的分支或待处理文件发生变化，请重新核对。"
+            "SYNC_GROUP_MEMBERSHIP_RECOVERY_PENDING_INTENT" -> "已保留先前确认的恢复操作。请核对原授权和主分支后继续。"
+            "SYNC_GROUP_RECOVERY_HISTORICAL_KEYS_MISSING" -> "还缺少分支的原历史密钥。可继续保留当前分支，请向持有原件的设备核对。"
+            "SYNC_GROUP_RECOVERY_CAUSAL_HISTORY" -> "还缺少签名分支已确认的资料历史，请补齐原件后重新核对。"
+            "SYNC_GROUP_LEDGER_RECOVERY_FILE_RECIPIENT_REVOKED", "SYNC_GROUP_MEMBERSHIP_RECOVERY_DEVICE_REVOKED" ->
+                "此设备已撤销，已保留本机资料。请由仍获授权的设备继续恢复。"
+            "SYNC_GROUP_MEMBERSHIP_RECOVERY_EXPLICIT_REQUIRED" -> "请核对并导入设备组的恢复控制文件。"
+            "SYNC_GROUP_JOIN_RECOVERY_INVITATION_REQUIRED" -> "设备组已使用新版恢复授权。请向仍获授权的设备获取新的邀请。"
+            "SYNC_GROUP_STORE_UPGRADE_REQUIRED" -> "该设备组使用新版恢复授权，请先升级并核对恢复控制文件。"
             "SYNC_GROUP_NATIVE_RELOAD_PENDING" -> "同步资料已保存，界面会在后续检查时重新加载。"
             "SYNC_ORPHAN_SESSION" -> "发现找不到原会话的本机消息，原资料已保留。请恢复对应会话后重新检查同步。"
             "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机正在生成或处理资料。完成后将继续检查同步。"
@@ -564,6 +576,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (fileRecoveryOwner.isInitialized()) fileRecoveryOwner.value?.hide()
         if (fileExportOwner.isInitialized()) fileExportOwner.value.hide()
         synchronized(lifecycle) {
+            lockMembershipRecovery()
+            cancelMembershipRecoveryImport()
             closeCloudSettings()
             privacyGeneration++
             pendingInvitationCommand = null
@@ -579,6 +593,97 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 devices = it.devices.map { row -> row.copy(canRevoke = false) },
                 stage = if (it.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE) LanSyncGroupPanelStage.PREPARED_LOCKED else it.stage) }
         }
+    }
+
+    override fun prepareMembershipRecovery(code: String) {
+        val generation = synchronized(lifecycle) { membershipRecoveryGeneration }
+        action("核对成员变更冲突", allowWhilePaused = true) {
+            check(state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_NO_FORK" }
+            val owner = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.membershipRecovery
+            val prepared = owner.prepare(code)
+            synchronized(lifecycle) {
+                if (closed || generation != membershipRecoveryGeneration) {
+                    prepared.close()
+                    error("SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED")
+                }
+                membershipReview?.close()
+                membershipReview = prepared
+                membershipPackageReview = null
+                mutableState.update { it.copy(membershipRecovery = prepared.projection, membershipRecoveryImport = null) }
+            }
+        }
+    }
+
+    override fun confirmMembershipRecovery(binding: String, primaryHeadId: String, activeDevices: Set<String>) {
+        val selected = activeDevices.toSet()
+        action("确认签名恢复授权", allowWhilePaused = true) {
+            val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+            val review = synchronized(lifecycle) { requireNotNull(membershipReview) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" } }
+            val installed = current.membershipRecovery.confirm(review, binding, primaryHeadId, selected) {
+                check(!closed && membershipReview === review && review.session.isUnlocked) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+            }
+            lockMembershipRecovery()
+            appliedMembershipRecovery(current, installed)
+        }
+    }
+
+    override fun lockMembershipRecovery() = synchronized(lifecycle) {
+        membershipRecoveryGeneration++
+        membershipReview?.close()
+        membershipReview = null
+        mutableState.update { it.copy(membershipRecovery = null) }
+    }
+
+    override fun prepareMembershipRecoveryImport(open: () -> java.io.InputStream) {
+        val generation = synchronized(lifecycle) { membershipRecoveryGeneration }
+        action("核对恢复控制文件", allowWhilePaused = true) {
+            check(state.value.membershipRecoveryPackageImportAllowed) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_INPUT_UNAVAILABLE" }
+            val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+            val imported = current.membershipRecovery.prepareImport(open)
+            synchronized(lifecycle) {
+                check(!closed && generation == membershipRecoveryGeneration) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+                membershipPackageReview = imported
+                mutableState.update { it.copy(membershipRecoveryImport = imported.projection) }
+            }
+        }
+    }
+
+    override fun cancelMembershipRecoveryImport() = synchronized(lifecycle) {
+        membershipPackageReview = null
+        mutableState.update { it.copy(membershipRecoveryImport = null) }
+    }
+
+    override fun confirmMembershipRecoveryImport(binding: String) = action("确认导入恢复授权", allowWhilePaused = true) {
+        val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+        val review = synchronized(lifecycle) {
+            requireNotNull(membershipPackageReview) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+        }
+        val installed = current.membershipRecovery.confirmImport(review, binding) {
+            check(!closed && membershipPackageReview === review) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+        }
+        cancelMembershipRecoveryImport()
+        lockMembershipRecovery()
+        appliedMembershipRecovery(current, installed)
+    }
+
+    override fun saveMembershipRecoveryPackage(binding: String?, write: (ByteArray) -> Unit) =
+        action("保存设备组恢复控制文件", allowWhilePaused = true) {
+            val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
+            val requested = requireNotNull(binding) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+            check(state.value.membershipRecoveryExportBinding == requested) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED" }
+            write(current.membershipRecovery.export(requested))
+        }
+
+    private suspend fun appliedMembershipRecovery(current: LanSyncGroupRuntimeAccess, installed: Boolean) {
+        val binding = current.membershipRecovery.exportBinding()
+        mutableState.update { it.copy(membershipRecoveryExportBinding = binding) }
+        if (installed) {
+            // New transports and normal work are admitted only after custody has the exact new epoch.
+            attach(current)
+            requestLocalCheck()
+            nearbyWake.trySend(Unit)
+            requestCloudCheck(dirty = true)
+        } else presentMembershipConflict(current)
     }
     override fun beginJoin(code: String) = enterJoin { LanSyncGroupInviteOffer.parse(code) }
 
@@ -1199,9 +1304,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         }
         if (presentMembershipConflict(opened)) return
+        opened.membershipRecovery.publishInstalledCheckpoint()
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, recoveryJoining = false, canAbandonUnactivated = false,
             joiningDevice = null, canAbandonJoin = false, canRefreshJoinPreparation = false, canShelveJoin = false, shelvedJoins = emptyList(),
             canArchiveRevokedJoin = false, joiningLedgerConflict = false, membershipConflict = null,
+            membershipRecoveryPackageImportAllowed = true, membershipRecoveryExportBinding = opened.membershipRecovery.exportBinding(),
             error = if (it.stage == LanSyncGroupPanelStage.JOINING) null else it.error,
             localManagementAvailable = requireNotNull(access).localManagementAvailable,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
@@ -1212,16 +1319,17 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
 
     private suspend fun presentMembershipConflict(opened: LanSyncGroupRuntimeAccess): Boolean {
         val fork = opened.verifiedLedgerFork() ?: return false
-        if (state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) return true
         val originalMembers = fork.common.members
         val summary = LanSyncGroupLedgerConflict(fork.common.sequence, fork.headCount, fork.branches.map { signed ->
             LanSyncGroupLedgerConflictBranch(signed.id.value,
                 (signed.members.keys - originalMembers.keys).sorted(),
                 originalMembers.keys.filter { originalMembers.getValue(it).active && signed.members[it]?.active == false }.sorted())
         })
+        if (state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT && state.value.membershipConflict == summary) return true
         lockManagement()
         cancelActionReview()
         mutableView.value = null
+        val storedPackage = opened.membershipRecovery.exportBinding()
         val nearbyToClose = synchronized(lifecycle) {
             val sockets = discovery to transport
             discovery = null
@@ -1232,6 +1340,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             nearbyRestartRequested = false
             opened.reader.removeRoutes("nearby")
             mutableState.update { it.copy(stage = LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT, membershipConflict = summary,
+                membershipRecoveryPackageImportAllowed = true, membershipRecoveryExportBinding = storedPackage,
                 status = "成员变更冲突。已保留签名分支、原件和待传队列，设备组同步和成员操作已暂停。",
                 error = null, devices = emptyList(), nearbyNotice = null,
                 nearby = LanSyncGroupRouteStatus("成员变更冲突，附近同步已暂停", it.nearby.lastSuccessAt),

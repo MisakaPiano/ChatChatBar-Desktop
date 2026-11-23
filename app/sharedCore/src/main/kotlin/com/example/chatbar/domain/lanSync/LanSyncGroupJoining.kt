@@ -300,7 +300,11 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
                 runCatching { socket.close() }
                 throw failure
             }
-        }, authenticatedConnect = true, readTimeoutMillis = 15_000)
+        }, authenticatedConnect = true, readTimeoutMillis = 15_000, requiresRecoveryProtocol = {
+            record.offer?.bootstrap?.requiresRecoveryProtocol == true ||
+                record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal &&
+                custody(record, false).ledger().ancestry().any { it.recovery != null }
+        })
     suspend fun runtimeAccess(): LanSyncGroupRuntimeAccess? = guarded {
         val record = read() ?: return@guarded null
         if (record.stage != LanSyncGroupJoinStage.READY) return@guarded null
@@ -477,7 +481,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         }
         var cursor: CommitCursor? = null
         do { cursor = inbox.discover(cursor).nextCursor } while (cursor != null)
-        val inspection = inbox.prepareEnrollment(trust(record), record.requiredCheckpoints)
+        val inspection = prepareEnrollment(record, inbox)
         record = retainObservedMembership(record, inspection)
         if (inspection.stage != SyncGroupBootstrapStage.READY) return@guarded LanSyncGroupJoiningResult(
             profile(record, ledgerConflict = inspection.stage == SyncGroupBootstrapStage.TRUST_BLOCKED), null,
@@ -632,8 +636,19 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val mirror = bootstrapRoot.resolve("ciphertext-mirror")
         require(lanSyncUtf8(lanSyncRead(mirror.resolve("store.id"), 32)) == record.replicaIdentity) { "SYNC_GROUP_JOIN_REPLICA_CHANGED" }
         val inbox = SyncGroupInbox(bootstrapRoot, FileCiphertextStore(mirror), custody(record, false), recipient(record))
-        return inbox.prepareEnrollment(trust(record), record.requiredCheckpoints)
+        return prepareEnrollment(record, inbox)
     }
+    private fun prepareEnrollment(record: Record, inbox: SyncGroupInbox): SyncGroupBootstrapInspection =
+        inbox.prepareEnrollment(trust(record), record.requiredCheckpoints) { graph ->
+            val offer = record.offer ?: return@prepareEnrollment null
+            val activeRecoveries = graph.ancestry().filter { it.recovery != null }.mapTo(hashSetOf()) { it.reference() }
+            val invitedRecoveries = if (offer.bootstrap?.requiresRecoveryProtocol == true)
+                graph.ancestry(offer.trust.checkpoint).filter { it.recovery != null }.mapTo(hashSetOf()) { it.reference() }
+                else emptySet()
+            val versionValid = (offer.bootstrap?.requiresRecoveryProtocol == true) == activeRecoveries.isNotEmpty()
+            if (versionValid && activeRecoveries == invitedRecoveries) null else "SYNC_GROUP_JOIN_RECOVERY_INVITATION_REQUIRED"
+        }
+
     private fun requireBootstrapMembership(membership: SyncDeviceLedgerRecord, vault: SyncManagementVaultContext) {
         require(membership.coveredTypes == LanSyncScope.schemas.keys) { "SYNC_GROUP_PROFILE_PARTIAL_SCOPE_UNSUPPORTED" }
         require(membership.members[identity.fingerprint]?.certificate == certificate) { "SYNC_GROUP_JOIN_CERTIFICATE_CHANGED" }

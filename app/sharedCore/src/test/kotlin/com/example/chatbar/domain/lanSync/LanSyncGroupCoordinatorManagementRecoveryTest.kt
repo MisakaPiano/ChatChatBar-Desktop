@@ -1,6 +1,10 @@
 package com.example.chatbar.domain.lanSync
 
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatDraft
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.domain.syncStore.*
 import java.net.InetAddress
 import java.net.Socket
@@ -90,7 +94,114 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
     @Test fun recoveredManagerThatSeesFirstApprovalSignsTheNextMemberFromItsNewParent() =
         actualAdministrators(receiveBeforeSecondApproval = true)
 
-    private fun actualAdministrators(receiveBeforeSecondApproval: Boolean) = runBlocking {
+    @Test fun signedMembershipRecoveryRetainsBothBranchesAndRequiresExplicitImportAfterColdOpen() =
+        actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true)
+
+    private data class SignedRecovery(val bytes: ByteArray, val proof: SyncVerifiedLedgerRecoveryFile)
+
+    private suspend fun issueRecovery(coordinator: LanSyncGroupCoordinator, joined: Joined,
+        access: LanSyncGroupRuntimeAccess, parent: SyncDeviceLedgerRecord, primary: SyncDeviceLedgerRecord,
+        other: SyncDeviceLedgerRecord, kept: String, excludedKey: SyncDeviceEncryptionKey): SignedRecovery {
+        val groupFile = joined.root.resolve("joining/custody/group.protected")
+        val originals = Files.readAllBytes(groupFile)
+        val recoveryRoot = access.work.resolve("membership-recovery")
+        val selected = parent.members.filterValues { it.active }.keys + kept
+        val checkpoints = setOf(primary.reference(), other.reference())
+        coordinator.prepareMembershipRecovery(joined.f.code)
+        await { !coordinator.state.value.busy && coordinator.state.value.membershipRecovery != null }
+        val review = requireNotNull(coordinator.state.value.membershipRecovery)
+        assertEquals(checkpoints.map { it.id.value to it.bodyHash }.toSet(), review.heads.map { it.id to it.bodyHash }.toSet())
+        val rows = review.members.associateBy { it.fingerprint }
+        assertEquals(primary.members.keys + other.members.keys, rows.keys)
+        assertEquals(listOf(primary.id.value), rows.getValue(kept).activeAtHeads)
+        assertEquals(listOf(other.id.value), rows.getValue(excludedKey.device).activeAtHeads)
+        assertEquals(LanSyncMembershipRecoveryAuthority.CHOICE, rows.getValue(excludedKey.device).authority)
+        assertEquals(LanSyncMembershipRecoveryAuthority.REQUIRED_ACTIVE, rows.getValue(access.device).authority)
+        assertContentEquals(originals, Files.readAllBytes(groupFile))
+        assertFalse(Files.exists(recoveryRoot))
+        coordinator.confirmMembershipRecovery("stale-${review.binding}", primary.id.value, selected)
+        await { !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED") == true }
+        assertEquals(LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT, coordinator.state.value.stage)
+        assertNull(coordinator.state.value.membershipRecoveryExportBinding)
+        assertFalse(Files.exists(recoveryRoot))
+        assertContentEquals(originals, Files.readAllBytes(groupFile))
+
+        coordinator.confirmMembershipRecovery(review.binding, primary.id.value, selected)
+        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.READY &&
+            coordinator.state.value.membershipRecoveryExportBinding != null }
+        assertNull(coordinator.state.value.membershipRecovery)
+        val binding = requireNotNull(coordinator.state.value.membershipRecoveryExportBinding)
+        val interrupted = CompletableDeferred<ByteArray>()
+        coordinator.saveMembershipRecoveryPackage(binding) {
+            interrupted.complete(it.copyOf())
+            error("SYNC_GROUP_MEMBERSHIP_RECOVERY_OUTPUT_UNAVAILABLE")
+        }
+        val original = withTimeout(15_000) { interrupted.await() }
+        await { !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_MEMBERSHIP_RECOVERY_OUTPUT_UNAVAILABLE") == true }
+        val retry = exportPackage(coordinator, binding)
+        assertContentEquals(original, retry)
+        Files.newDirectoryStream(recoveryRoot, "package-*.ccbgroupfix").use { files ->
+            assertContentEquals(retry, Files.readAllBytes(files.single()))
+        }
+        val signed = SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust, joined.f.joiningKey)
+        assertEquals(binding, signed.binding)
+        assertEquals(primary.reference(), signed.primary)
+        assertEquals(checkpoints, signed.recovery.recovery?.parents)
+        assertEquals(selected, signed.recovery.members.filterValues { it.active }.keys)
+        assertTrue(signed.recovery.epoch !in signed.records.filter { it.recovery == null }.map { it.epoch })
+        assertEquals(maxOf(primary.sequence, other.sequence) + 1, signed.recovery.sequence)
+        assertTrue(signed.keys.any { it.cipher.epoch == signed.recovery.epoch && it.recipient == access.device })
+        assertTrue(signed.records.containsAll(listOf(parent, primary, other)))
+        assertEquals(access.trust.genesis, signed.records.single { it.sequence == 1L }.reference())
+        assertEquals(signed.recovery, access.ledger().current())
+        assertNull(access.verifiedLedgerFork())
+        assertEquals("SYNC_GROUP_LEDGER_RECOVERY_FILE_RECIPIENT_REVOKED", assertFailsWith<IllegalArgumentException> {
+            SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust, excludedKey)
+        }.message)
+        assertFailsWith<IllegalArgumentException> {
+            SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust.copy(group = SyncStoreId.random()), joined.f.joiningKey)
+        }
+        return SignedRecovery(retry, signed)
+    }
+
+    private suspend fun exportPackage(coordinator: LanSyncGroupCoordinator, binding: String): ByteArray {
+        val result = CompletableDeferred<ByteArray>()
+        coordinator.saveMembershipRecoveryPackage(binding) { result.complete(it.copyOf()) }
+        val bytes = withTimeout(15_000) { result.await() }
+        await { !coordinator.state.value.busy }
+        assertNull(coordinator.state.value.error)
+        return bytes
+    }
+
+    private suspend fun applySignedRecovery(coordinator: LanSyncGroupCoordinator, founder: LanSyncGroupAdministrationTest.Fixture,
+        signed: SignedRecovery, parent: SyncDeviceLedgerRecord) {
+        val groupFile = founder.profile.resolve("custody/group.protected")
+        val originals = Files.readAllBytes(groupFile)
+        coordinator.prepareMembershipRecoveryImport { signed.bytes.inputStream() }
+        await { !coordinator.state.value.busy && coordinator.state.value.membershipRecoveryImport != null }
+        val review = requireNotNull(coordinator.state.value.membershipRecoveryImport)
+        assertEquals(signed.proof.binding, review.binding)
+        assertEquals(parent.sequence, review.commonSequence)
+        assertEquals(signed.proof.primary.id.value, review.primaryHeadId)
+        assertEquals(signed.proof.recovery.recovery?.parents, review.heads.map { SyncVersionRef(SyncStoreId.parse(it.id), it.bodyHash) }.toSet())
+        assertEquals(signed.proof.recovery.members.filterValues { it.active }.keys, review.activeDevices)
+        assertFalse(review.remainingFork)
+        assertContentEquals(originals, Files.readAllBytes(groupFile))
+        assertEquals(LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT, coordinator.state.value.stage)
+        coordinator.confirmMembershipRecoveryImport("stale-${review.binding}")
+        await { !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_MEMBERSHIP_RECOVERY_REVIEW_CHANGED") == true }
+        assertContentEquals(originals, Files.readAllBytes(groupFile))
+        assertEquals(LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT, coordinator.state.value.stage)
+        coordinator.confirmMembershipRecoveryImport(review.binding)
+        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.READY }
+        assertNull(coordinator.state.value.membershipRecoveryImport)
+        val ledger = founder.custody().ledger()
+        assertEquals(signed.proof.recovery, ledger.current())
+        assertEquals(signed.proof.records.toSet(), ledger.ancestry().toSet())
+        assertContentEquals(signed.bytes, exportPackage(coordinator, review.binding))
+    }
+
+    private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false) = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-administrators-").toRealPath()
         try {
             LanSyncGroupAdministrationTest.Fixture(root).use { founder ->
@@ -103,20 +214,29 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                     val b = requireNotNull(joined.joining.runtimeAccess())
                     val parent = a.ledger().current()
                     assertEquals(parent.reference(), b.ledger().current().reference())
-                    val originals = mapOf(founder.data to "founder-original", joined.data to "other-manager-original")
-                        .map { (data, id) ->
+                    val originals = buildMap {
+                        for ((data, id) in mapOf(founder.data to "founder-original", joined.data to "other-manager-original")) {
                             val path = Files.createDirectories(data.resolve("entities/character_cards")).resolve("$id.json")
                             LanSyncJsonFiles.write(path, CharacterCard.serializer(),
                                 CharacterCard(id, "synthetic private original", createdAt = 1, updatedAt = 1))
-                            path to Files.readAllBytes(path)
-                        }.toMap()
+                            put(path, Files.readAllBytes(path))
+                            if (recoverFork) {
+                                val chat = ChatRepository(JsonFileStorage(data))
+                                val session = "draft-$id"
+                                chat.createSession(ChatSession(session, id, "Synthetic private conversation", createdAt = 1, updatedAt = 1))
+                                chat.updateComposerDraft(ChatDraft(session, "Unsent draft for $id", updatedAt = 2))
+                                val draft = data.resolve("entities/chat_drafts/$session.json")
+                                put(draft, Files.readAllBytes(draft))
+                            }
+                        }
+                    }
                     fun transport(runtime: LanSyncGroupRuntimeAccess) =
                         LanSyncGroupAppTransport(runtime, network) { _, _ -> }.also(endpoints::add)
                     suspend fun proveThrough(transport: LanSyncGroupAppTransport, invitation: LanSyncGroupInvitation,
-                        identity: LanSyncTlsIdentity): LanSyncGroupInvitedPeer {
+                        identity: LanSyncTlsIdentity, key: SyncDeviceEncryptionKey = SyncDeviceEncryptionKey.create(identity.fingerprint)): LanSyncGroupInvitedPeer {
                         val recognized = CompletableDeferred<LanSyncGroupInvitedPeer>()
                         val offer = transport.invitation(invitation) { recognized.complete(it) }
-                        prove(offer, identity, SyncDeviceEncryptionKey.create(identity.fingerprint))
+                        prove(offer, identity, key)
                         val peer = withTimeout(15_000) { recognized.await() }
                         assertEquals(identity.fingerprint, peer.device)
                         return peer
@@ -137,6 +257,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                     if (!receiveBeforeSecondApproval) recoverManager(parent.reference())
                     val recipientC = LanSyncTlsIdentity.create()
                     val recipientD = LanSyncTlsIdentity.create()
+                    val recipientDKey = SyncDeviceEncryptionKey.create(recipientD.fingerprint)
                     val originalTransport = transport(a)
                     val initialPort = originalTransport.start()
                     val initialInvite = founder.service.invitation(initialPort)
@@ -161,7 +282,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         assertEquals(if (receiveBeforeSecondApproval) cRow.reference() else parent.reference(), known)
                         if (receiveBeforeSecondApproval) recoverManager(known)
                         val secondInvite = b.invitation(secondaryPort)
-                        val d = proveThrough(secondary, secondInvite, recipientD)
+                        val d = proveThrough(secondary, secondInvite, recipientD, recipientDKey)
                         val dPreview = manager.prepareMember(d, secondInvite)
                         val result = manager.addMember(dPreview.acknowledge(dPreview.request.approvalBinding)).ledger
                         manager.publish(b.replica, b.localTarget)
@@ -208,7 +329,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         endpoints.forEach { it.closeAndDrain() }
                         live.closeAndDrain()
                         val cold = joined.newCoordinator()
-                        try {
+                        val signed = try {
                             cold.startIfConfigured()
                             await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
                             assertEquals(warm, cold.state.value.membershipConflict)
@@ -220,24 +341,58 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             cold.recoverManagement(founder.code)
                             await { cold.state.value.error?.contains("SYNC_GROUP_MEMBERSHIP_CONFLICT") == true }
                             assertFalse(cold.state.value.managementUnlocked)
+                            if (recoverFork) {
+                                cold.pauseAndDrain()
+                                issueRecovery(cold, joined, b, parent, cRow, dRow, recipientC.fingerprint, recipientDKey)
+                            } else null
                         } finally { cold.closeAndDrain() }
-                        assertEquals(setOf(cRow, dRow), requireNotNull(b.verifiedLedgerFork()).branches.toSet())
+                        if (signed == null) {
+                            assertEquals(setOf(cRow, dRow), requireNotNull(b.verifiedLedgerFork()).branches.toSet())
+                        } else {
+                            val coldSigner = joined.newCoordinator()
+                            try {
+                                coldSigner.startIfConfigured()
+                                await { !coldSigner.state.value.busy && coldSigner.state.value.stage == LanSyncGroupPanelStage.READY }
+                                assertContentEquals(signed.bytes, exportPackage(coldSigner, signed.proof.binding))
+                                assertEquals(signed.proof.recovery, b.ledger().current())
+                            } finally { coldSigner.closeAndDrain() }
+                        }
 
                         founder.service.close()
                         val founderPlatform = object : LanSyncPlatform {
                             override suspend fun exclusive(work: suspend () -> Unit) = work()
-                            override suspend fun reload(sessionIds: Set<String>) = fail("Conflicted root must stay offline")
+                            override suspend fun reload(sessionIds: Set<String>) {
+                                if (!recoverFork) fail("Conflicted root must stay offline")
+                            }
                         }
-                        val reopenedFounder = LanSyncGroupEnrollment(founder.profile, founder.workspace, founderPlatform,
-                            founder.identity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
-                        val aCold = LanSyncGroupCoordinator({ true }, { reopenedFounder }, { fail("Unexpected join owner") },
-                            network, "synthetic original founder")
+                        fun coldFounder(): LanSyncGroupCoordinator {
+                            val reopened = LanSyncGroupEnrollment(founder.profile, founder.workspace, founderPlatform,
+                                founder.identity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+                            return LanSyncGroupCoordinator({ true }, { reopened }, { fail("Unexpected join owner") },
+                                network, "synthetic original founder")
+                        }
+                        val aCold = coldFounder()
                         try {
                             aCold.startIfConfigured()
                             await { !aCold.state.value.busy && aCold.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
                             assertEquals(warm, aCold.state.value.membershipConflict)
                             assertFalse(aCold.state.value.managementCanInvite)
+                            if (signed != null) {
+                                aCold.pauseAndDrain()
+                                applySignedRecovery(aCold, founder, signed, parent)
+                            }
                         } finally { aCold.closeAndDrain() }
+                        if (signed != null) {
+                            val reopened = coldFounder()
+                            try {
+                                reopened.startIfConfigured()
+                                await { !reopened.state.value.busy && reopened.state.value.stage == LanSyncGroupPanelStage.READY &&
+                                    reopened.view.value?.stage == LanSyncGroupNodeStage.READY }
+                                assertEquals(signed.proof.recovery, founder.custody().ledger().current())
+                                assertNull(reopened.state.value.membershipConflict)
+                                assertContentEquals(signed.bytes, exportPackage(reopened, signed.proof.binding))
+                            } finally { reopened.closeAndDrain() }
+                        }
                     }
                     originals.forEach { (file, raw) -> assertContentEquals(raw, Files.readAllBytes(file)) }
                 } finally { endpoints.forEach { it.closeAndDrain() }; joined.close() }

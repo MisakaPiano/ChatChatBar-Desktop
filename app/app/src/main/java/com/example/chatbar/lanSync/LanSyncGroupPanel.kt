@@ -74,6 +74,10 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         CbText("设备组同步", style = ChatBarTheme.typography.title)
         CbText(state.status)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+        state.membershipRecoveryImport?.let { review ->
+            GroupMembershipRecoveryImport(review, state.busy, actions)
+            return@Column
+        }
         if (state.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) {
             CbText("同步和成员变更已暂停，本机资料与签名记录均已保留。请由设备组管理员核对这些分支及各自的签发设备。")
             state.membershipConflict?.let { conflict ->
@@ -89,6 +93,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
                 }
                 if (conflict.branches.size < conflict.totalHeads) CbText("此处显示 ${conflict.branches.size} 个分支，其余签名记录仍保留。")
             }
+            GroupMembershipRecovery(state, actions)
             return@Column
         }
         imageState.error?.let { CbText(it, color = ChatBarTheme.colors.warning) }
@@ -219,6 +224,113 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     }
     imageState.preview?.let { preview -> LanSyncFrozenImageDialog(preview, actions::closeImagePreview) }
 
+}
+
+@Composable
+private fun GroupMembershipRecovery(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions) {
+    val review = state.membershipRecovery
+    if (review == null) {
+        var code by remember(state.privacyRevision) { mutableStateOf("") }
+        CbField("原设备组恢复码") { CbInput(code, { code = it }, secure = true, enabled = !state.busy) }
+        CbButton("核对成员恢复方案", {
+            val submitted = code
+            code = ""
+            actions.prepareMembershipRecovery(submitted)
+        }, enabled = !state.busy && code.isNotBlank(), variant = ButtonVariant.Secondary)
+        return
+    }
+    var primaryHeadId by remember(review.binding, state.privacyRevision) { mutableStateOf<String?>(null) }
+    val choices = remember(review.binding, state.privacyRevision) { mutableStateMapOf<String, Boolean>() }
+    val selectable = review.members.filter { it.authority == LanSyncMembershipRecoveryAuthority.CHOICE }
+    CbText("选择一个已核实的分支作为同步权限基准。另一分支尚未获共同认可的聊天仍留在原设备，可回到本机会话查看。")
+    review.retainedPrimaryHeadId?.let { CbText("待续办的原权限基准为 ${it.take(12)}。请核对先前授权后继续。") }
+    review.heads.forEach { head ->
+        key(head.id) {
+            GroupMembershipRecoveryHead(head)
+            CbButton(
+                if (primaryHeadId == head.id) "已选为权限基准" else "选为权限基准 · ${head.id.take(12)}",
+                { primaryHeadId = head.id }, enabled = !state.busy && primaryHeadId != head.id,
+                variant = ButtonVariant.Secondary,
+            )
+        }
+    }
+    CbText("明确核对每台设备的权限。曾被有效撤销的身份无法恢复。")
+    review.members.forEach { member ->
+        key(member.fingerprint) {
+            GroupMembershipRecoveryMember(member, review.heads)
+            when (member.authority) {
+                LanSyncMembershipRecoveryAuthority.REQUIRED_ACTIVE -> CbText("保留此身份的权限")
+                LanSyncMembershipRecoveryAuthority.REVOKED -> CbText("保留撤销记录，不发放新同步密钥")
+                LanSyncMembershipRecoveryAuthority.CHOICE -> {
+                    val choice = choices[member.fingerprint]
+                    CbText(when (choice) {
+                        true -> "已选继续同步"
+                        false -> "已选撤销权限"
+                        null -> "请选择恢复后的权限"
+                    })
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CbButton("继续同步", { choices[member.fingerprint] = true }, enabled = !state.busy && choice != true,
+                            variant = ButtonVariant.Secondary)
+                        CbButton("撤销权限", { choices[member.fingerprint] = false }, enabled = !state.busy && choice != false,
+                            variant = ButtonVariant.Secondary)
+                    }
+                }
+            }
+        }
+    }
+    CbText("签发会轮换同步密钥。恢复后有权限的设备可获得新密钥，已撤销的设备仍保留原本机副本。")
+    CbButton("确认权限并签发恢复包", {
+        val active = review.members.filter { member ->
+            member.authority == LanSyncMembershipRecoveryAuthority.REQUIRED_ACTIVE || choices[member.fingerprint] == true
+        }.mapTo(linkedSetOf()) { it.fingerprint }
+        actions.confirmMembershipRecovery(review.binding, requireNotNull(primaryHeadId), active)
+    }, enabled = !state.busy && primaryHeadId != null && selectable.all { it.fingerprint in choices })
+    CbButton("锁定恢复审阅", actions::lockMembershipRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)
+}
+
+@Composable
+private fun GroupMembershipRecoveryImport(review: LanSyncMembershipRecoveryImportReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+    CbText("核对已验证的签名恢复包", style = ChatBarTheme.typography.title)
+    CbText("共同账本记录为第 ${review.commonSequence} 条。")
+    review.heads.forEach { head ->
+        GroupMembershipRecoveryHead(head)
+        if (head.id == review.primaryHeadId) CbText("签名指定的权限基准")
+    }
+    review.members.forEach { member ->
+        GroupMembershipRecoveryMember(member, review.heads)
+        CbText(if (member.fingerprint in review.activeDevices) "恢复后保留权限" else "恢复后没有同步权限")
+    }
+    CbText("已签明新的同步密钥。原资料和所有签名历史会保留。")
+    if (review.remainingFork) CbText("本机还有此包未覆盖的签名分支。保留此包后，同步仍将暂停。")
+    CbButton(if (review.remainingFork) "确认保留恢复包" else "确认应用签名恢复包",
+        { actions.confirmMembershipRecoveryImport(review.binding) }, enabled = !busy)
+    CbButton("取消导入", actions::cancelMembershipRecoveryImport, enabled = !busy, variant = ButtonVariant.Secondary)
+}
+
+@Composable
+private fun GroupMembershipRecoveryHead(head: LanSyncMembershipRecoveryHead) {
+    SelectionContainer {
+        Column {
+            CbText("分支末端序号 ${head.sequence} · ${head.id}")
+            CbText("签名记录摘要 ${head.bodyHash}")
+        }
+    }
+}
+
+@Composable
+private fun GroupMembershipRecoveryMember(member: LanSyncMembershipRecoveryMember, heads: List<LanSyncMembershipRecoveryHead>) {
+    CbText(member.displayName + if (member.thisDevice) " · 本机" else "")
+    SelectionContainer { CbText("设备指纹 ${member.fingerprint}") }
+    CbText(if (member.activeAtCommon) "原共同记录允许此身份同步" else "原共同记录无此身份的同步权限")
+    heads.forEach { head ->
+        val authorization = when (head.id) {
+            in member.revokedAtHeads -> "已撤销"
+            in member.activeAtHeads -> "有权限"
+            else -> "没有此身份"
+        }
+        CbText("分支 ${head.id.take(12)} · $authorization")
+    }
+    member.defaultActive?.let { CbText(if (it) "建议选择继续同步" else "建议选择撤销权限") }
 }
 
 private const val GROUP_INVITATION_QR_MAX_PIXELS = 1024

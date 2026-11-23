@@ -36,7 +36,8 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     @Volatile private var closed = false
     private val server by lazy {
         LanSyncGroupCiphertextServer(access.work.resolve("server"), access::peerStore,
-            configureAccepted = { socket -> socket.soTimeout = 15_000 })
+            configureAccepted = { socket -> socket.soTimeout = 15_000 },
+            requiresRecoveryProtocol = access::requiresRecoveryProtocol)
     }
 
     /** Ordinary TLS admits only ledger-known certificates. A revoked peer gets its own notice only. */

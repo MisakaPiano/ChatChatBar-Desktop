@@ -74,6 +74,27 @@ class LanSyncGroupInvitationTest {
         assertFailsWith<IllegalArgumentException> { t.owner.requireCurrent(forged) }
     }
 
+    @Test fun onlyRecoveryBootstrapUsesV2AndItsCapabilityCannotBeRelabeledAsV1() = withFixture { t ->
+        val basic = t.offer()
+        val trust = basic.trust
+        val vault = SyncManagementVaultContext(1, trust.group, SyncStoreId.random(), trust.genesis, t.f.owner.fingerprint, "1".repeat(64))
+        val descriptor = CiphertextDescriptor(1, CiphertextSha256.parse("2".repeat(64)))
+        val bootstrap = LanSyncGroupJoinBootstrap(if (basic.port == 16555) 16556 else 16555, vault, descriptor)
+        val v1 = basic.copy(bootstrap = bootstrap).code()
+        val v2 = basic.copy(bootstrap = bootstrap.copy(requiresRecoveryProtocol = true)).code()
+        assertTrue(v1.startsWith("CCB-GROUP-JOIN1:"))
+        assertTrue(v2.startsWith("CCB-GROUP-JOIN2:"))
+        assertFalse("requiresRecoveryProtocol" in Base64.getUrlDecoder().decode(v1.substringAfter(':')).toString(Charsets.UTF_8))
+        assertEquals(bootstrap, LanSyncGroupInviteOffer.parse(v1, t.wall).bootstrap)
+        assertTrue(requireNotNull(LanSyncGroupInviteOffer.parse(v2, t.wall).bootstrap).requiresRecoveryProtocol)
+        assertEquals(v2, LanSyncGroupInviteOffer.readFile(v2.toByteArray().inputStream(), t.wall).code())
+        for (relabeled in listOf(v1.replace("JOIN1:", "JOIN2:"), v2.replace("JOIN2:", "JOIN1:"))) {
+            assertEquals("SYNC_GROUP_INVITE_VERSION", assertFailsWith<IllegalArgumentException> {
+                LanSyncGroupInviteOffer.parse(relabeled, t.wall)
+            }.message)
+        }
+    }
+
     @Test fun aWrongCapabilityCannotConsumeTheCorrectOfferAndSuccessfulCapabilityCannotReplay() = withFixture { t ->
         val offer = t.offer(); val wrong = offer.copy(token = if (offer.token.startsWith('0')) "1".repeat(64) else "0".repeat(64))
         val failed = t.attempt(wrong); assertTrue(failed.first.isFailure && failed.second.isFailure)
@@ -172,7 +193,7 @@ class LanSyncGroupInvitationTest {
         val bad = "CCB-GROUP-JOIN1:" + Base64.getUrlEncoder().withoutPadding().encodeToString(("{\"token\":\"" + marker).toByteArray())
         val decode = assertFailsWith<IllegalStateException> { LanSyncGroupInviteOffer.parse(bad, t.wall) }
         assertEquals("SYNC_GROUP_INVITE_VERSION", assertFailsWith<IllegalArgumentException> {
-            LanSyncGroupInviteOffer.parse("CCB-GROUP-JOIN2:QUJD", t.wall)
+            LanSyncGroupInviteOffer.parse("CCB-GROUP-JOIN3:QUJD", t.wall)
         }.message)
         assertEquals("SYNC_GROUP_INVITE_OFFER", decode.message); assertNull(decode.cause)
     }

@@ -3,6 +3,27 @@ package com.example.chatbar.domain.lanSync
 enum class LanSyncGroupPanelStage { EMPTY, NEEDS_RECOVERY_SAVE, PREPARED_LOCKED, JOINING, READY, MEMBERSHIP_CONFLICT }
 data class LanSyncGroupLedgerConflictBranch(val id: String, val added: List<String>, val revoked: List<String>)
 data class LanSyncGroupLedgerConflict(val commonSequence: Long, val totalHeads: Int, val branches: List<LanSyncGroupLedgerConflictBranch>)
+data class LanSyncMembershipRecoveryHead(val id: String, val bodyHash: String, val sequence: Long)
+enum class LanSyncMembershipRecoveryAuthority { REQUIRED_ACTIVE, CHOICE, REVOKED }
+data class LanSyncMembershipRecoveryMember(
+    val fingerprint: String,
+    val displayName: String,
+    val authority: LanSyncMembershipRecoveryAuthority,
+    val activeAtCommon: Boolean,
+    val activeAtHeads: List<String>,
+    val revokedAtHeads: List<String>,
+    val defaultActive: Boolean? = null,
+    val thisDevice: Boolean = false,
+)
+data class LanSyncMembershipRecoveryReview(val binding: String, val heads: List<LanSyncMembershipRecoveryHead>,
+    val members: List<LanSyncMembershipRecoveryMember>, val retainedPrimaryHeadId: String? = null) {
+    override fun toString() = "LanSyncMembershipRecoveryReview(REDACTED)"
+}
+data class LanSyncMembershipRecoveryImportReview(val binding: String, val commonSequence: Long,
+    val heads: List<LanSyncMembershipRecoveryHead>, val primaryHeadId: String, val members: List<LanSyncMembershipRecoveryMember>,
+    val activeDevices: Set<String>, val remainingFork: Boolean) {
+    override fun toString() = "LanSyncMembershipRecoveryImportReview(REDACTED)"
+}
 data class LanSyncGroupRouteStatus(val text: String, val lastSuccessAt: Long? = null)
 enum class LanSyncGroupNearbyStage(val label: String) {
     UNOBSERVED("尚未核对附近连接"),
@@ -38,7 +59,11 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val canShelveJoin: Boolean = false, val shelvedJoins: List<LanSyncShelvedJoin> = emptyList(),
     val canArchiveRevokedJoin: Boolean = false, val invitationFileOnly: Boolean = false,
     val invitationFileBinding: String? = null, val joiningLedgerConflict: Boolean = false,
-    val nearbyNotice: String? = null, val membershipConflict: LanSyncGroupLedgerConflict? = null) {
+    val nearbyNotice: String? = null, val membershipConflict: LanSyncGroupLedgerConflict? = null,
+    val membershipRecovery: LanSyncMembershipRecoveryReview? = null,
+    val membershipRecoveryPackageImportAllowed: Boolean = false,
+    val membershipRecoveryExportBinding: String? = null,
+    val membershipRecoveryImport: LanSyncMembershipRecoveryImportReview? = null) {
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 
@@ -51,6 +76,13 @@ interface LanSyncGroupPanelActions {
     fun recoverManagement(code: String)
     fun lockManagement()
     fun resumeManagementOperation()
+    fun prepareMembershipRecovery(code: String)
+    fun confirmMembershipRecovery(binding: String, primaryHeadId: String, activeDevices: Set<String>)
+    fun lockMembershipRecovery()
+    fun prepareMembershipRecoveryImport(open: () -> java.io.InputStream)
+    fun confirmMembershipRecoveryImport(binding: String)
+    fun cancelMembershipRecoveryImport()
+    fun saveMembershipRecoveryPackage(binding: String?, write: (ByteArray) -> Unit)
     fun beginJoin(code: String)
     fun beginJoinFromFile(open: () -> java.io.InputStream)
     fun abandonUnprovedJoin()

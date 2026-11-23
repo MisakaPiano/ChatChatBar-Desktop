@@ -79,6 +79,31 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private fun currentView() = requireNotNull(current) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
 
+    internal class MembershipRecoveryContent(val keys: Map<SyncStoreId, SyncStreamingCipher>,
+        val cuts: Map<SyncVersionRef, Set<SyncVersionRef>>)
+
+    internal suspend fun membershipRecoveryContent(graph: SyncDeviceLedger, session: SyncManagementSession,
+        retainedRecoveryKeys: Map<SyncStoreId, SyncStreamingCipher>):
+        MembershipRecoveryContent = serialized {
+        val tips = graph.admittedTips().map { requireNotNull(graph.record(it)) }
+        val branches = tips.map { tip ->
+            SyncDeviceLedger(graph.trustAnchor.copy(checkpoint = tip.reference())).also { branch ->
+                graph.ancestry(tip.reference()).forEach(branch::offer)
+                check(branch.current().reference() == tip.reference()) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_SIGNATURE" }
+            }
+        }
+        val inbox = inbox(localDependencies())
+        val keys = session.withRecipient { inbox.recoveryHistoricalKeys(branches, it, retainedRecoveryKeys) }
+        val histories = branches.associate { branch ->
+            branch.current().reference() to inbox.reviewRecoveryBranch(branch, keys, localVersions.values.toList())
+        }
+        val alreadyApplied = exclusive { native.recoveryFrontiers() }
+        require((tips.flatMap { it.acceptedHeads } + alreadyApplied).all { required -> histories.values.any { it.contains(required) } }) {
+            "SYNC_GROUP_RECOVERY_CAUSAL_HISTORY"
+        }
+        MembershipRecoveryContent(keys, histories.mapValues { (_, history) -> history.heads() })
+    }
+
     /** Explicit pending-profile review only; preserves every retained origin and incarnation. */
     internal suspend fun enrollmentProgress(): LanSyncGroupEnrollmentProgress = serialized { exclusive {
         val authorExists = Files.exists(authorRoot.resolve("origin.protected"), NOFOLLOW_LINKS)

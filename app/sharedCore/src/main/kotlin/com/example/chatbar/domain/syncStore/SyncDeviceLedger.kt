@@ -5,6 +5,8 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.Collections
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable data class SyncGroupMember(val certificate: String, val recipientKey: String, val active: Boolean = true) {
@@ -22,24 +24,41 @@ internal data class SyncVerifiedLedgerFork(
     val branches: List<SyncDeviceLedgerRecord>,
     val headCount: Int,
 )
+@Serializable data class SyncGroupLedgerRecovery(val parents: Set<SyncVersionRef>, val primary: SyncVersionRef) {
+    init {
+        require(parents.size >= 2 && primary in parents && parents.map { it.id }.toSet().size == parents.size &&
+            parents.all { it.bodyHash.matches(Regex("[a-f0-9]{64}")) }) { "SYNC_GROUP_RECOVERY_PARENTS" }
+    }
+}
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable data class SyncDeviceLedgerRecord(val group: SyncStoreId, val id: SyncStoreId, val parent: SyncVersionRef?,
     val sequence: Long, val epoch: SyncStoreId, val keyCommitment: String, val coveredTypes: Set<String>, val members: Map<String, SyncGroupMember>,
-    val acceptedHeads: Set<SyncVersionRef>, val signature: String) {
+    val acceptedHeads: Set<SyncVersionRef>, val signature: String,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val recovery: SyncGroupLedgerRecovery? = null) {
     init {
-        require(sequence > 0 && parent?.id != id && signature.length in 1..256 && keyCommitment.matches(Regex("[a-f0-9]{64}")) &&
+        require(sequence > 0 && parent?.id != id && (recovery == null || parent == null && recovery.parents.none { it.id == id }) &&
+            signature.length in 1..256 && keyCommitment.matches(Regex("[a-f0-9]{64}")) &&
             coveredTypes.isNotEmpty() && coveredTypes.all { it.matches(Regex("[a-z_]{1,80}")) } &&
             members.isNotEmpty() && members.all { (id, member) -> id.matches(Regex("[a-f0-9]{64}")) && member.certificate.length in 1..8192 } &&
             acceptedHeads.map { it.id }.toSet().size == acceptedHeads.size) { "SYNC_GROUP_LEDGER" }
     }
+    val parents: Set<SyncVersionRef> get() = recovery?.parents ?: setOfNotNull(parent)
     fun reference() = SyncVersionRef(id, bodyHash())
-    fun signingBytes() = ("CCB-SYNC-DEVICE-LEDGER-SIGNATURE/1\n" + bodyHash()).toByteArray(Charsets.US_ASCII)
+    fun signingBytes() = ("CCB-SYNC-DEVICE-LEDGER-SIGNATURE/${if (recovery == null) 1 else 2}\n" + bodyHash()).toByteArray(Charsets.US_ASCII)
     fun bodyHash(): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val sink = object : OutputStream() { override fun write(value: Int) {}; override fun write(bytes: ByteArray, offset: Int, length: Int) {} }
         DataOutputStream(DigestOutputStream(sink, digest)).use { out ->
-            out.writeUTF("CCB-SYNC-DEVICE-LEDGER/3"); out.writeUTF(group.value); out.writeUTF(id.value)
+            out.writeUTF(if (recovery == null) "CCB-SYNC-DEVICE-LEDGER/3" else "CCB-SYNC-DEVICE-LEDGER/4")
+            out.writeUTF(group.value); out.writeUTF(id.value)
             fun ref(value: SyncVersionRef) { out.writeUTF(value.id.value); out.writeUTF(value.bodyHash) }
-            out.writeBoolean(parent != null); parent?.let(::ref); out.writeLong(sequence); out.writeUTF(epoch.value); out.writeUTF(keyCommitment)
+            if (recovery == null) { out.writeBoolean(parent != null); parent?.let(::ref) }
+            else {
+                out.writeInt(recovery.parents.size)
+                recovery.parents.sortedBy { it.id.value }.forEach(::ref)
+                ref(recovery.primary)
+            }
+            out.writeLong(sequence); out.writeUTF(epoch.value); out.writeUTF(keyCommitment)
             out.writeInt(coveredTypes.size); coveredTypes.sorted().forEach(out::writeUTF)
             out.writeInt(members.size)
             members.toSortedMap().forEach { (id, member) -> out.writeUTF(id); out.writeUTF(member.certificate); out.writeUTF(member.recipientKey); out.writeBoolean(member.active) }
@@ -70,16 +89,13 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
     @Synchronized fun offer(input: SyncDeviceLedgerRecord): SyncVersionState {
         val record = input.copy(members = Collections.unmodifiableMap(input.members.toMap()),
             coveredTypes = Collections.unmodifiableSet(input.coveredTypes.toSet()),
-            acceptedHeads = Collections.unmodifiableSet(input.acceptedHeads.toSet()))
+            acceptedHeads = Collections.unmodifiableSet(input.acceptedHeads.toSet()),
+            recovery = input.recovery?.let { it.copy(parents = Collections.unmodifiableSet(it.parents.toSet())) })
         require(record.group == trust.group && record.sequence > 0 && record.signature.length in 1..256 &&
-            record.parent?.bodyHash?.matches(HEX) != false && record.parent?.id != record.id &&
+            record.parents.all { it.id != record.id && it.bodyHash.matches(HEX) } &&
             record.acceptedHeads.all { it.bodyHash.matches(HEX) } &&
             record.acceptedHeads.map { it.id }.toSet().size == record.acceptedHeads.size) { "SYNC_GROUP_LEDGER" }
-        record.members.forEach { (id, member) ->
-            val certificate = SyncDeviceSignatures.decode(member.certificate)
-            require(certificate.fingerprint == id && certificate.encoded == member.certificate) { "SYNC_GROUP_MEMBER" }
-            require(SyncRecipientPublicKey.parse(member.recipientKey).encoded == member.recipientKey) { "SYNC_GROUP_RECIPIENT_KEY" }
-        }
+        validateMembers(record)
         require(record.members[owner.fingerprint]?.let { it.certificate == owner.encoded && it.active } == true &&
             owner.verifies(record.signingBytes(), record.signature)) { "SYNC_GROUP_OWNER_SIGNATURE" }
         records[record.id]?.let {
@@ -91,13 +107,17 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
             var progress = false
             for (row in records.values.toList()) {
                 if (row.id in admitted || row.id in rejected) continue
-                val parent = row.parent?.let { records[it.id] }
+                val parents = row.parents
                 val code = when {
-                    row.parent == null -> if (row.reference() == trust.genesis && row.sequence == 1L && row.acceptedHeads.isEmpty()) null else "SYNC_GROUP_GENESIS_PIN"
-                    parent != null && parent.reference() != row.parent -> "SYNC_GROUP_PARENT_BINDING"
-                    row.parent.id in rejected -> "SYNC_GROUP_REJECTED_PARENT"
-                    row.parent.id !in admitted -> continue
-                    else -> try { validateChild(row, requireNotNull(parent)); null } catch (failure: IllegalArgumentException) {
+                    parents.isEmpty() -> if (row.reference() == trust.genesis && row.sequence == 1L && row.acceptedHeads.isEmpty()) null else "SYNC_GROUP_GENESIS_PIN"
+                    parents.any { parent -> records[parent.id]?.reference()?.let { it != parent } == true } -> "SYNC_GROUP_PARENT_BINDING"
+                    parents.any { it.id in rejected } -> "SYNC_GROUP_REJECTED_PARENT"
+                    parents.any { it.id !in admitted } -> continue
+                    else -> try {
+                        if (row.recovery == null) validateChild(row, records.getValue(parents.single().id))
+                        else validateRecovery(row)
+                        null
+                    } catch (failure: IllegalArgumentException) {
                         requireNotNull(failure.message?.takeIf { it.matches(Regex("SYNC_GROUP_[A-Z_]+")) })
                     }
                 }
@@ -114,61 +134,114 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
     @Synchronized fun failure(id: SyncStoreId) = rejected[id]
     @Synchronized fun contains(reference: SyncVersionRef) = reference.id in admitted && records[reference.id]?.reference() == reference
     @Synchronized fun record(reference: SyncVersionRef): SyncDeviceLedgerRecord? = records[reference.id]?.takeIf { contains(reference) }
-    @Synchronized fun history(reference: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> {
+    private fun ancestorIds(id: SyncStoreId): Set<SyncStoreId> {
+        val pending = ArrayDeque<SyncStoreId>(); pending.add(id)
+        val ids = linkedSetOf<SyncStoreId>()
+        while (pending.isNotEmpty()) {
+            val next = pending.removeLast()
+            if (ids.add(next)) records.getValue(next).parents.forEach { pending.add(it.id) }
+        }
+        return ids
+    }
+    @Synchronized internal fun isAncestorOrSelf(ancestor: SyncVersionRef, descendant: SyncVersionRef): Boolean =
+        contains(ancestor) && contains(descendant) && ancestor.id in ancestorIds(descendant.id)
+
+    /** Genesis-to-tip order is unchanged for legacy linear histories. */
+    @Synchronized fun history(reference: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> = ancestry(reference)
+    @Synchronized internal fun ancestry(reference: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> {
+        require(contains(reference)) { "SYNC_GROUP_LEDGER_MISSING" }
+        return Collections.unmodifiableList(ancestorIds(reference.id).map(records::getValue).sortedWith(ancestryOrder))
+    }
+    /** Only the parent explicitly selected by each signed recovery remains on this authority spine. */
+    @Synchronized internal fun authorityHistory(reference: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> {
         var row = requireNotNull(record(reference)) { "SYNC_GROUP_LEDGER_MISSING" }
         val result = mutableListOf<SyncDeviceLedgerRecord>()
         while (true) {
             result += row
-            row = row.parent?.let { requireNotNull(record(it)) { "SYNC_GROUP_LEDGER_MISSING" } } ?: break
+            val primary = row.recovery?.primary ?: row.parent ?: break
+            row = records.getValue(primary.id)
         }
         return Collections.unmodifiableList(result.asReversed())
     }
     @Synchronized fun hasKey(epoch: SyncStoreId, commitment: String, at: SyncVersionRef = current().reference()): Boolean {
-        var row = record(at)
-        while (row != null) {
-            if (row.epoch == epoch && row.keyCommitment == commitment) return true
-            row = row.parent?.let(::record)
-        }
-        return false
+        return contains(at) && ancestorIds(at.id).any { records.getValue(it).let { row -> row.epoch == epoch && row.keyCommitment == commitment } }
     }
-    private fun admittedHeads(): List<SyncStoreId> {
-        val parents = admitted.mapNotNull { records.getValue(it).parent?.id }.toSet()
-        return admitted.filterNot(parents::contains)
+    private fun headsOf(rows: Collection<SyncStoreId>): List<SyncStoreId> {
+        val parents = rows.flatMap { records.getValue(it).parents.map(SyncVersionRef::id) }.toSet()
+        return rows.filterNot(parents::contains)
     }
+    private fun admittedHeads(): List<SyncStoreId> = headsOf(admitted)
+    @Synchronized internal fun admittedTips(): Set<SyncVersionRef> = Collections.unmodifiableSet(
+        admittedHeads().sortedBy { it.value }.mapTo(linkedSetOf()) { records.getValue(it).reference() })
+
+    private fun sharedAncestors(tips: List<SyncStoreId>): Set<SyncStoreId> =
+        tips.map(::ancestorIds).reduce { common, next -> common.intersect(next) }
 
     /** Only fully admitted, root-signed records participate in this diagnostic view. */
     @Synchronized internal fun verifiedFork(): SyncVerifiedLedgerFork? {
         val heads = admittedHeads()
         if (heads.size < 2) return null
-        val children = admitted.map(records::getValue).groupBy { it.parent }
-        var common = requireNotNull(record(trust.genesis)) { "SYNC_GROUP_LEDGER_MISSING" }
-        while (true) {
-            val next = children[common.reference()].orEmpty()
-            if (next.size > 1) return SyncVerifiedLedgerFork(common, next.sortedBy { it.id.value }, heads.size)
-            common = next.single()
-        }
+        val commonIds = sharedAncestors(heads)
+        var commonTips = headsOf(commonIds)
+        // Concurrent recoveries may share multiple incomparable tips. Use their shared baseline.
+        while (commonTips.size > 1) commonTips = headsOf(sharedAncestors(commonTips))
+        val common = records.getValue(commonTips.single())
+        val branches = admitted.filterNot(commonIds::contains).map(records::getValue)
+            .filter { row -> row.parents.all { it.id in commonIds } }.sortedBy { it.id.value }
+        return SyncVerifiedLedgerFork(common, branches, heads.size)
     }
 
     @Synchronized fun current(): SyncDeviceLedgerRecord {
         val heads = admittedHeads()
         require(heads.size == 1) { "SYNC_GROUP_LEDGER_FORK_OR_MISSING" }
         val head = records.getValue(heads.single())
-        var cursor: SyncDeviceLedgerRecord? = head
-        while (cursor != null && cursor.reference() != trust.checkpoint) cursor = cursor.parent?.let { records.getValue(it.id) }
-        require(cursor != null) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
+        require(contains(trust.checkpoint) && trust.checkpoint.id in ancestorIds(head.id)) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
         return head
     }
     /** Root preparation validation only. This never admits an unsigned record or changes authority. */
     @Synchronized fun validateProposedChild(row: SyncDeviceLedgerRecord) {
         val parent = current()
-        require(row.group == trust.group && row.parent == parent.reference() && row.id !in records &&
+        require(row.recovery == null && row.group == trust.group && row.parent == parent.reference() && row.id !in records &&
             row.members[owner.fingerprint]?.let { it.active && it.certificate == owner.encoded } == true) { "SYNC_GROUP_LEDGER_PROPOSAL" }
+        validateMembers(row, "SYNC_GROUP_MEMBER")
+        validateChild(row, parent)
+    }
+    @Synchronized internal fun validateProposedRecovery(row: SyncDeviceLedgerRecord) {
+        require(row.recovery != null && row.group == trust.group && row.id !in records && row.parents == admittedTips() &&
+            row.members[owner.fingerprint]?.let { it.active && it.certificate == owner.encoded } == true) { "SYNC_GROUP_RECOVERY_PROPOSAL" }
+        require(contains(trust.checkpoint)) { "SYNC_GROUP_KNOWN_CHECKPOINT_MISSING" }
+        require(statesAreClosed()) { "SYNC_GROUP_RECOVERY_PARENTS" }
+        validateMembers(row)
+        validateRecovery(row)
+    }
+    private fun statesAreClosed() = records.keys.all { it in admitted || it in rejected }
+    private fun validateMembers(row: SyncDeviceLedgerRecord, recipientError: String = "SYNC_GROUP_RECIPIENT_KEY") {
         row.members.forEach { (id, member) ->
             val certificate = SyncDeviceSignatures.decode(member.certificate)
-            require(certificate.fingerprint == id && certificate.encoded == member.certificate &&
-                SyncRecipientPublicKey.parse(member.recipientKey).encoded == member.recipientKey) { "SYNC_GROUP_MEMBER" }
+            require(certificate.fingerprint == id && certificate.encoded == member.certificate) { "SYNC_GROUP_MEMBER" }
+            require(SyncRecipientPublicKey.parse(member.recipientKey).encoded == member.recipientKey) { recipientError }
         }
-        validateChild(row, parent)
+    }
+    private fun validateRecovery(row: SyncDeviceLedgerRecord) {
+        val parents = row.parents.map { records.getValue(it.id) }
+        val ancestorSets = parents.associate { it.id to ancestorIds(it.id) }
+        require(parents.all { parent -> parents.none { it.id != parent.id && it.id in ancestorSets.getValue(parent.id) } }) { "SYNC_GROUP_RECOVERY_PARENTS" }
+        val maxSequence = parents.maxOf { it.sequence }
+        require(maxSequence < Long.MAX_VALUE && row.sequence == maxSequence + 1) { "SYNC_GROUP_LEDGER_SEQUENCE" }
+        val recoveryAncestors = ancestorSets.values.flatten().toSet()
+        val ancestorRows = recoveryAncestors.map(records::getValue)
+        require(ancestorRows.none { it.epoch == row.epoch || it.keyCommitment == row.keyCommitment }) { "SYNC_GROUP_EPOCH_REUSED" }
+        require(ancestorRows.groupBy { it.epoch }.values.all { rows -> rows.all { it.keyCommitment == rows.first().keyCommitment } }) { "SYNC_GROUP_RECOVERY_EPOCH_CONFLICT" }
+        require(parents.all { row.coveredTypes.containsAll(it.coveredTypes) }) { "SYNC_GROUP_SCOPE_SHRINK" }
+        require(parents.all { row.acceptedHeads.containsAll(it.acceptedHeads) }) { "SYNC_GROUP_FENCE_LOST" }
+        require(row.acceptedHeads.none { it.id in recoveryAncestors && contains(it) }) { "SYNC_GROUP_RECOVERY_CONTENT_FENCE" }
+        require(row.members.keys == parents.flatMap { it.members.keys }.toSet()) { "SYNC_GROUP_RECOVERY_MEMBERS" }
+        require(row.members.values.map { it.recipientKey }.toSet().size == row.members.size) { "SYNC_GROUP_RECOVERY_MEMBER_KEY_CONFLICT" }
+        for (parent in parents) parent.members.forEach { (id, old) ->
+            val next = row.members.getValue(id)
+            require(next.certificate == old.certificate && next.recipientKey == old.recipientKey) { "SYNC_GROUP_RECOVERY_MEMBER_KEY_CONFLICT" }
+            require(old.active || !next.active) { "SYNC_GROUP_MEMBER_REACTIVATION" }
+        }
     }
     private fun validateChild(row: SyncDeviceLedgerRecord, parent: SyncDeviceLedgerRecord) {
         require(parent.sequence < Long.MAX_VALUE && row.sequence == parent.sequence + 1 &&
@@ -185,12 +258,18 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
         }
         else {
             require(row.acceptedHeads.containsAll(parent.acceptedHeads)) { "SYNC_GROUP_FENCE_LOST" }
-            var old: SyncDeviceLedgerRecord? = parent
-            while (old != null) {
-                require(row.epoch != old.epoch) { "SYNC_GROUP_EPOCH_REUSED" }
-                old = old.parent?.let { records.getValue(it.id) }
-            }
+            require(ancestorIds(parent.id).none { records.getValue(it).epoch == row.epoch }) { "SYNC_GROUP_EPOCH_REUSED" }
         }
+    }
+
+    /** Preserve every independent first-revocation edge in the authenticated ancestry. */
+    @Synchronized internal fun revocationCuts(device: String, reference: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> =
+        ancestry(reference).filter { startsRevocation(it, device) }
+
+    private fun startsRevocation(row: SyncDeviceLedgerRecord, device: String): Boolean {
+        if (row.members[device]?.active != false) return false
+        val parentStates = row.parents.mapNotNull { records.getValue(it.id).members[device]?.active }
+        return true in parentStates && false !in parentStates
     }
 
     /** New immutable authorization view after every membership update/discovery rescan. */
@@ -199,6 +278,24 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
         val latest = current()
         val ledgers = admitted.associate { id -> val row = records.getValue(id); row.reference() to row }
         val certificates = latest.members.mapValues { SyncDeviceSignatures.decode(it.value.certificate) }
+        val recovered = ledgers.values.any { it.recovery != null }
+        val fullAncestry = if (recovered) ancestry(latest.reference()) else emptyList()
+        val revocationFences = if (recovered) latest.members.filterValues { !it.active }.keys.associateWith { device ->
+            fullAncestry.filter { startsRevocation(it, device) }.map { it.acceptedHeads }.distinct()
+        } else emptyMap()
+        val evidenceFences = if (recovered) {
+            val authority = authorityHistory(latest.reference()).mapTo(hashSetOf()) { it.id }
+            val fences = mutableMapOf<SyncStoreId, MutableSet<Set<SyncVersionRef>>>()
+            fullAncestry.forEach { row -> row.recovery?.let { recovery ->
+                val primaryAncestry = ancestorIds(recovery.primary.id)
+                ancestorIds(row.id).forEach { id ->
+                    if (id != row.id && id !in primaryAncestry && id !in authority) {
+                        fences.getOrPut(id) { linkedSetOf() }.add(row.acceptedHeads)
+                    }
+                }
+            } }
+            fences
+        } else emptyMap()
         // Supplied only by complete AEAD envelope authentication; no claimed epoch from JSON is proof.
         val epochs = authenticatedObjects.filter { it.context.group == trust.group && it.envelope.version != null && it.keyCommitment == latest.keyCommitment }
             .groupBy { requireNotNull(it.envelope.version).reference() }.mapValues { (_, objects) -> objects.map { it.context.epoch }.toSet() }
@@ -206,8 +303,8 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
             val frozen = version.copy(parents = version.parents.toSet(), changes = version.changes.mapValues { it.value.copy(previous = it.value.previous.toSet()) })
             frozen.reference() to frozen.parents
         }
-        fun fenced(candidate: SyncVersionRef): Boolean {
-            val queue = java.util.ArrayDeque<SyncVersionRef>(latest.acceptedHeads); val seen = hashSetOf<SyncVersionRef>()
+        fun fenced(candidate: SyncVersionRef, acceptedHeads: Set<SyncVersionRef>): Boolean {
+            val queue = java.util.ArrayDeque<SyncVersionRef>(acceptedHeads); val seen = hashSetOf<SyncVersionRef>()
             var missing = false
             while (queue.isNotEmpty()) {
                 val reference = queue.removeFirst()
@@ -226,10 +323,16 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
             val certificate = requireNotNull(certificates[version.author]) { "SYNC_GROUP_AUTHOR_NOT_ADMITTED" }
             require(certificate.verifies(version.signingBytes(), version.signature)) { "SYNC_GROUP_VERSION_SIGNATURE" }
             val active = latest.members[version.author]?.active == true
-            if (!active || latest.epoch !in epochs[version.reference()].orEmpty()) {
-                require(fenced(version.reference())) { if (active) "SYNC_GROUP_CURRENT_EPOCH_REQUIRED" else "SYNC_GROUP_REVOKED_VERSION" }
+            val reference = version.reference()
+            if (!active || latest.epoch !in epochs[reference].orEmpty()) {
+                require(fenced(reference, latest.acceptedHeads)) { if (active) "SYNC_GROUP_CURRENT_EPOCH_REQUIRED" else "SYNC_GROUP_REVOKED_VERSION" }
             }
+            require(revocationFences[version.author].orEmpty().all { fenced(reference, it) }) { "SYNC_GROUP_REVOKED_VERSION" }
+            require(evidenceFences[version.deviceLedger.id].orEmpty().all { fenced(reference, it) }) { "SYNC_GROUP_RECOVERY_VERSION_NOT_REVIEWED" }
         }
     }
-    companion object { private val HEX = Regex("[a-f0-9]{64}") }
+    companion object {
+        private val HEX = Regex("[a-f0-9]{64}")
+        private val ancestryOrder = compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value }
+    }
 }

@@ -23,12 +23,20 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
     fun ledger() = custody.ledger()
+    internal fun requiresRecoveryProtocol(group: SyncStoreId): Boolean {
+        require(group == trust.group) { "SYNC_GROUP_WIRE_GROUP" }
+        return ledger().ancestry().any { it.recovery != null }
+    }
     internal fun canOfferLedgerTo(peer: String): Boolean {
-        val members = ledger().current().members
+        val graph = ledger()
+        if (graph.ancestry().any { it.recovery != null }) return false
+        val members = graph.current().members
         return members[device]?.active == true && members[peer]?.active == true
     }
     internal fun catchUpLedger(peer: LanSyncPeer, connect: (LanSyncTlsIdentity, LanSyncPeer) -> SSLSocket): Boolean {
-        val current = ledger().current()
+        val graph = ledger()
+        if (graph.ancestry().any { it.recovery != null }) return false
+        val current = graph.current()
         if (current.members[device]?.active != true || peer.fingerprint in current.members) return false
         val checkpoint = current.reference()
         val (actualPeer, envelope) = connect(identity, peer).use { socket ->
@@ -40,6 +48,7 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
             val received = receiveGroupLedger(socket, trust.group, checkpoint) ?: return false
             actualPeer to received
         }
+        if (requiresRecoveryProtocol(trust.group)) return false
         return custody.extendFromPeer(checkpoint, envelope, certificate, actualPeer)
     }
     private val peerNames by lazy { LanSyncGroupPeerNames(work, trust, custody::ledger, peerNameProtect, peerNameUnprotect) }
@@ -53,7 +62,9 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     fun rememberPeerName(peer: LanSyncGroupInvitedPeer) = peerNames.remember(peer)
     internal fun rememberAdmittedPeerName(peer: LanSyncGroupInvitedPeer, admitted: SyncDeviceLedger) = peerNames.rememberAdmitted(peer, admitted)
     fun peerDisplayName(device: String): String? = peerNames.displayName(device)
+    internal fun recoveryNames(graph: SyncDeviceLedger, tips: List<SyncDeviceLedgerRecord>) = peerNames.recoveryNames(graph, tips)
     internal fun verifiedLedgerFork() = custody.verifiedFork()
+    internal val membershipRecovery by lazy { LanSyncGroupMembershipRecovery(this, custody, peerNameProtect, peerNameUnprotect) }
     private val managementRoot get() = work.resolve("recovered-management")
     fun hasManagementRecoveryProfile() = Files.exists(managementRoot.resolve("profile.protected"), java.nio.file.LinkOption.NOFOLLOW_LINKS)
     fun managementRecovery(): LanSyncGroupManagementRecovery {
@@ -143,7 +154,7 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
                 "SYNC_GROUP_RUNTIME_PEER_NOT_ACTIVE"
             }
             network.connect(identity, peer).also { it.soTimeout = 120_000 }
-        }, authenticatedConnect = true)
+        }, authenticatedConnect = true, requiresRecoveryProtocol = { requiresRecoveryProtocol(trust.group) })
     }
     override fun toString() = "LanSyncGroupRuntimeAccess(REDACTED)"
 }
