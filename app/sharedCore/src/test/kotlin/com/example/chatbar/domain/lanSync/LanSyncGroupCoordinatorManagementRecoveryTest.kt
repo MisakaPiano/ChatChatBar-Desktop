@@ -335,6 +335,129 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         coordinator.closeInvitation()
     }
 
+    private suspend fun receiveFrom(runtime: LanSyncGroupRuntimeAccess, from: CiphertextStore) {
+        val route = runtime.reader.discoveryFrom(from, "synthetic-management-peer")
+        var cursor: CommitCursor? = null
+        do { cursor = runtime.node.discover(route, cursor).nextCursor } while (cursor != null)
+    }
+
+    private fun writeChat(data: Path, session: String, message: String, body: String, images: List<Path> = emptyList()): Path {
+        val chat = Files.createDirectories(data.resolve("entities/chat_sessions")).resolve("$session.json")
+        if (!Files.exists(chat)) LanSyncJsonFiles.write(chat, ChatSession.serializer(),
+            ChatSession(session, "separate-card-$session", session, createdAt = 1, updatedAt = 1))
+        val record = Files.createDirectories(data.resolve("entities/chat_messages")).resolve("${session}_$message.json")
+        LanSyncJsonFiles.write(record, ChatMessage.serializer(), ChatMessage(message, session, MessageRole.USER, body,
+            images = images.map(Path::toString), createdAt = 2, updatedAt = 2))
+        return record
+    }
+
+    private suspend fun verifyRetainedAuthorContinuation(founder: LanSyncGroupAdministrationTest.Fixture, joined: Joined,
+        reopened: LanSyncGroupEnrollment, recovery: SyncDeviceLedgerRecord, dRow: SyncDeviceLedgerRecord,
+        held: LanSyncGroupSourceCommit, oldApproved: LanSyncGroupSourceCommit, sharedPhoto: Path, heldBytes: ByteArray) {
+        val firstA = requireNotNull(reopened.runtimeAccess()); val firstB = requireNotNull(joined.joining.runtimeAccess())
+        val old = held.entry.version
+        assertTrue(old.reference() !in recovery.acceptedHeads)
+        assertFalse(requireNotNull(firstA.node.inspectLocal().reconciliation.history).contains(old.reference()))
+        assertFalse(Files.exists(founder.data.resolve("entities/chat_messages/discarded_original.json")))
+        val authorOrigin = joined.root.resolve("joining/node/author/origin.protected")
+        val oldOrigin = Files.readAllBytes(authorOrigin)
+        val oldIntent = joined.root.resolve("joining/node/author/intent-${old.authorSequence.toString().padStart(19, '0')}.protected")
+        val oldFact = Files.readAllBytes(oldIntent)
+        val firstView = firstB.node.inspectLocal()
+        assertTrue("conversation/discarded" in requireNotNull(firstView.plan).recoveryHeldUnits)
+        assertTrue(held.entry.request.operation !in firstB.node.sourceOperations(eligibleForDelivery = true))
+        assertEquals(LanSyncGroupNativePlanner.RECOVERY_HELD, assertFailsWith<IllegalArgumentException> {
+            firstB.node.upload(held.entry.request.operation, firstB.replica, firstB.localTarget)
+        }.message)
+        val firstOperation = SyncStoreId.random()
+        writeChat(joined.data, "independent", "first", "恢复后第一则独立消息")
+        joined.observe = { point ->
+            if (point == "SIGNED_AUTHOR_ENTRY_RETAINED") throw IOException("SYNTHETIC_STOP_BEFORE_RECOVERED_AUTHOR_HEAD")
+        }
+        val nextView = firstB.node.inspectLocal()
+        assertEquals("SYNTHETIC_STOP_BEFORE_RECOVERED_AUTHOR_HEAD", assertFailsWith<IOException> {
+            firstB.node.commit(nextView.review(setOf("conversation/independent")), operation = firstOperation)
+        }.message)
+        joined.observe = {}
+        val secondB = requireNotNull(joined.joining.runtimeAccess())
+        secondB.node.inspectLocal()
+        val author = SyncAuthorJournal(authorOrigin.parent, secondB.trust, secondB.certificate,
+            { it.reversedArray() }, { it.reversedArray() })
+        val first = requireNotNull(author.entry(firstOperation)).version
+        assertEquals(old.authorSequence + 1, first.authorSequence)
+        assertEquals(recovery.reference(), first.authorRecovery)
+        assertNull(first.previousByAuthor)
+        assertTrue(old.reference() !in first.parents)
+        assertEquals(old.author, first.author)
+        val wrongAnchor = first.copy(id = SyncStoreId.random(), authorRecovery = dRow.reference(), signature = "unsigned").let {
+            it.copy(signature = Base64.getEncoder().encodeToString(founder.joiningIdentity.signSyncGroupPayload(it.signingBytes())))
+        }
+        assertEquals("SYNC_GROUP_AUTHOR_RECOVERY_AUTHORITY", assertFailsWith<IllegalArgumentException> {
+            firstA.ledger().admission(emptyList(), emptyList()).requireAuthorized(wrongAnchor)
+        }.message)
+        secondB.node.upload(firstOperation, secondB.replica, secondB.localTarget)
+        secondB.node.inspectLocal()
+
+        suspend fun receiveIndependent(aReceiver: LanSyncGroupRuntimeAccess, bSource: LanSyncGroupRuntimeAccess, id: String, body: String) {
+            val bTransport = LanSyncGroupAppTransport(bSource, network) { _, _ -> }
+            val aTransport = LanSyncGroupAppTransport(aReceiver, network) { _, _ -> }
+            val route = aTransport.remote(LanSyncPeer(bSource.device, "synthetic author", "10.0.0.1", bTransport.start()))
+            aReceiver.reader.routes("authorproof", listOf(LanSyncGroupReplicaReader.Route("author-proof-tls", route)))
+            try {
+                var cursor: CommitCursor? = null
+                do {
+                    val page = route.listCommits(cursor, 1)
+                    assertFalse(page.entries.any { it.key == held.metadata.metadata.key })
+                    cursor = page.nextCursor
+                } while (cursor != null)
+                val accepted = oldApproved
+                val sharedBinding = accepted.metadata.envelope.blobs.getValue(lanSyncHash(Files.readAllBytes(sharedPhoto)))
+                val sharedMeta = CiphertextObjectMetadata(sharedBinding.key, sharedBinding.descriptor)
+                val allHeld = listOf(held.metadata.metadata) + held.metadata.envelope.blobs.values.map {
+                    CiphertextObjectMetadata(it.key, it.descriptor)
+                }
+                assertTrue(sharedMeta in allHeld, "Both originals use the same exact verified old ciphertext")
+                assertEquals(sharedMeta, route.metadata(sharedMeta.key))
+                val png = ByteArrayOutputStream()
+                assertEquals(sharedMeta, route.readTo(sharedMeta.key, png, sharedMeta.descriptor))
+                assertEquals(sharedMeta.descriptor.length, png.size().toLong())
+                val retainedObjects = allHeld - sharedMeta
+                retainedObjects.forEach { original ->
+                    assertEquals(original, bSource.replica.metadata(original.key))
+                    assertNull(route.metadata(original.key))
+                    val output = ByteArrayOutputStream()
+                    assertNull(route.readTo(original.key, output, original.descriptor))
+                    assertEquals(0, output.size())
+                }
+                receiveFrom(aReceiver, route)
+                val incoming = requireNotNull(aReceiver.node.inspect().plan)
+                aReceiver.node.apply(incoming)
+                val record = founder.data.resolve("entities/chat_messages/independent_$id.json")
+                assertEquals(body, LanSyncJsonFiles.read(record, ChatMessage.serializer())?.content)
+                assertFalse(Files.exists(founder.data.resolve("entities/chat_messages/discarded_original.json")))
+                assertFalse(requireNotNull(aReceiver.node.inspectLocal().reconciliation.history).contains(old.reference()))
+            } finally {
+                aReceiver.reader.removeRoutes("authorproof")
+                aTransport.closeAndDrain(); bTransport.closeAndDrain()
+            }
+        }
+        receiveIndependent(firstA, secondB, "first", "恢复后第一则独立消息")
+        val thirdB = requireNotNull(joined.joining.runtimeAccess())
+        writeChat(joined.data, "independent", "second", "双方冷开后续发")
+        val next = thirdB.node.commit(thirdB.node.inspectLocal().review(setOf("conversation/independent")))
+        assertEquals(first.reference(), next.entry.version.previousByAuthor)
+        assertNull(next.entry.version.authorRecovery)
+        assertEquals(first.authorSequence + 1, next.entry.version.authorSequence)
+        thirdB.node.upload(next.entry.request.operation, thirdB.replica, thirdB.localTarget)
+        thirdB.node.inspectLocal()
+        receiveIndependent(requireNotNull(reopened.runtimeAccess()), thirdB, "second", "双方冷开后续发")
+        val history = requireNotNull(firstA.node.inspectLocal().reconciliation.history)
+        assertFalse(history.contains(old.reference()))
+        assertContentEquals(oldOrigin, Files.readAllBytes(authorOrigin))
+        assertContentEquals(oldFact, Files.readAllBytes(oldIntent))
+        assertContentEquals(heldBytes, Files.readAllBytes(joined.data.resolve("entities/chat_messages/discarded_original.json")))
+    }
+
     private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false,
         continueAuthor: Boolean = false, nativeReceiptBeforeFork: Boolean = false) = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-administrators-").toRealPath()
@@ -376,22 +499,8 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         assertEquals(identity.fingerprint, peer.device)
                         return peer
                     }
-                    suspend fun receiveFrom(runtime: LanSyncGroupRuntimeAccess, from: CiphertextStore) {
-                        val route = runtime.reader.discoveryFrom(from, "synthetic-management-peer")
-                        var cursor: CommitCursor? = null
-                        do { cursor = runtime.node.discover(route, cursor).nextCursor } while (cursor != null)
-                    }
                     fun remote(caller: LanSyncGroupAppTransport, host: LanSyncGroupRuntimeAccess, port: Int) =
                         caller.remote(LanSyncPeer(host.device, "synthetic previously approved member", "10.0.0.1", port))
-                    fun writeChat(data: Path, session: String, message: String, body: String, images: List<Path> = emptyList()): Path {
-                        val chat = Files.createDirectories(data.resolve("entities/chat_sessions")).resolve("$session.json")
-                        if (!Files.exists(chat)) LanSyncJsonFiles.write(chat, ChatSession.serializer(),
-                            ChatSession(session, "separate-card-$session", session, createdAt = 1, updatedAt = 1))
-                        val record = Files.createDirectories(data.resolve("entities/chat_messages")).resolve("${session}_$message.json")
-                        LanSyncJsonFiles.write(record, ChatMessage.serializer(), ChatMessage(message, session, MessageRole.USER, body,
-                            images = images.map(Path::toString), createdAt = 2, updatedAt = 2))
-                        return record
-                    }
                     fun png(name: String, color: Int): Path {
                         val original = Files.createDirectories(joined.data.resolve("images")).resolve(name)
                         Files.newOutputStream(original).use { PrivacyPngEncoder.write(it, 8, 8) { _, row -> row.fill(color) } }
@@ -603,107 +712,8 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             }
                         } finally { aCold.closeAndDrain() }
                         if (held != null && signed != null) founderOwner().use { reopened ->
-                            val firstA = requireNotNull(reopened.runtimeAccess()); val firstB = requireNotNull(joined.joining.runtimeAccess())
-                            val old = held.entry.version
-                            assertTrue(old.reference() !in signed.proof.recovery.acceptedHeads)
-                            assertFalse(requireNotNull(firstA.node.inspectLocal().reconciliation.history).contains(old.reference()))
-                            assertFalse(Files.exists(founder.data.resolve("entities/chat_messages/discarded_original.json")))
-                            val authorOrigin = joined.root.resolve("joining/node/author/origin.protected")
-                            val oldOrigin = Files.readAllBytes(authorOrigin)
-                            val oldIntent = joined.root.resolve("joining/node/author/intent-${old.authorSequence.toString().padStart(19, '0')}.protected")
-                            val oldFact = Files.readAllBytes(oldIntent)
-                            val firstView = firstB.node.inspectLocal()
-                            assertTrue("conversation/discarded" in requireNotNull(firstView.plan).recoveryHeldUnits)
-                            assertTrue(held.entry.request.operation !in firstB.node.sourceOperations(eligibleForDelivery = true))
-                            assertEquals(LanSyncGroupNativePlanner.RECOVERY_HELD, assertFailsWith<IllegalArgumentException> {
-                                firstB.node.upload(held.entry.request.operation, firstB.replica, firstB.localTarget)
-                            }.message)
-                            val firstOperation = SyncStoreId.random()
-                            writeChat(joined.data, "independent", "first", "恢复后第一则独立消息")
-                            joined.observe = { point ->
-                                if (point == "SIGNED_AUTHOR_ENTRY_RETAINED") throw IOException("SYNTHETIC_STOP_BEFORE_RECOVERED_AUTHOR_HEAD")
-                            }
-                            val nextView = firstB.node.inspectLocal()
-                            assertEquals("SYNTHETIC_STOP_BEFORE_RECOVERED_AUTHOR_HEAD", assertFailsWith<IOException> {
-                                firstB.node.commit(nextView.review(setOf("conversation/independent")), operation = firstOperation)
-                            }.message)
-                            joined.observe = {}
-                            val secondB = requireNotNull(joined.joining.runtimeAccess())
-                            secondB.node.inspectLocal()
-                            val author = SyncAuthorJournal(authorOrigin.parent, secondB.trust, secondB.certificate,
-                                { it.reversedArray() }, { it.reversedArray() })
-                            val first = requireNotNull(author.entry(firstOperation)).version
-                            assertEquals(old.authorSequence + 1, first.authorSequence)
-                            assertEquals(signed.proof.recovery.reference(), first.authorRecovery)
-                            assertNull(first.previousByAuthor)
-                            assertTrue(old.reference() !in first.parents)
-                            assertEquals(old.author, first.author)
-                            val wrongAnchor = first.copy(id = SyncStoreId.random(), authorRecovery = dRow.reference(), signature = "unsigned").let {
-                                it.copy(signature = Base64.getEncoder().encodeToString(founder.joiningIdentity.signSyncGroupPayload(it.signingBytes())))
-                            }
-                            assertEquals("SYNC_GROUP_AUTHOR_RECOVERY_AUTHORITY", assertFailsWith<IllegalArgumentException> {
-                                firstA.ledger().admission(emptyList(), emptyList()).requireAuthorized(wrongAnchor)
-                            }.message)
-                            secondB.node.upload(firstOperation, secondB.replica, secondB.localTarget)
-                            secondB.node.inspectLocal()
-
-                            suspend fun receiveIndependent(aReceiver: LanSyncGroupRuntimeAccess, bSource: LanSyncGroupRuntimeAccess, id: String, body: String) {
-                                val bTransport = transport(bSource); val aTransport = transport(aReceiver)
-                                val route = remote(aTransport, bSource, bTransport.start())
-                                aReceiver.reader.routes("authorproof", listOf(LanSyncGroupReplicaReader.Route("author-proof-tls", route)))
-                                try {
-                                    var cursor: CommitCursor? = null
-                                    do {
-                                        val page = route.listCommits(cursor, 1)
-                                        assertFalse(page.entries.any { it.key == held.metadata.metadata.key })
-                                        cursor = page.nextCursor
-                                    } while (cursor != null)
-                                    val accepted = requireNotNull(oldApproved)
-                                    val sharedBinding = accepted.metadata.envelope.blobs.getValue(lanSyncHash(Files.readAllBytes(requireNotNull(sharedPhoto))))
-                                    val sharedMeta = CiphertextObjectMetadata(sharedBinding.key, sharedBinding.descriptor)
-                                    val allHeld = listOf(held.metadata.metadata) + held.metadata.envelope.blobs.values.map {
-                                        CiphertextObjectMetadata(it.key, it.descriptor)
-                                    }
-                                    assertTrue(sharedMeta in allHeld, "Both originals use the same exact verified old ciphertext")
-                                    assertEquals(sharedMeta, route.metadata(sharedMeta.key))
-                                    val png = ByteArrayOutputStream()
-                                    assertEquals(sharedMeta, route.readTo(sharedMeta.key, png, sharedMeta.descriptor))
-                                    assertEquals(sharedMeta.descriptor.length, png.size().toLong())
-                                    val retainedObjects = allHeld - sharedMeta
-                                    retainedObjects.forEach { original ->
-                                        assertEquals(original, bSource.replica.metadata(original.key))
-                                        assertNull(route.metadata(original.key))
-                                        val output = ByteArrayOutputStream()
-                                        assertNull(route.readTo(original.key, output, original.descriptor))
-                                        assertEquals(0, output.size())
-                                    }
-                                    receiveFrom(aReceiver, route)
-                                    val incoming = requireNotNull(aReceiver.node.inspect().plan)
-                                    aReceiver.node.apply(incoming)
-                                    val record = founder.data.resolve("entities/chat_messages/independent_$id.json")
-                                    assertEquals(body, LanSyncJsonFiles.read(record, ChatMessage.serializer())?.content)
-                                    assertFalse(Files.exists(founder.data.resolve("entities/chat_messages/discarded_original.json")))
-                                    assertFalse(requireNotNull(aReceiver.node.inspectLocal().reconciliation.history).contains(old.reference()))
-                                } finally {
-                                    aReceiver.reader.removeRoutes("authorproof")
-                                    aTransport.closeAndDrain(); bTransport.closeAndDrain()
-                                }
-                            }
-                            receiveIndependent(firstA, secondB, "first", "恢复后第一则独立消息")
-                            val thirdB = requireNotNull(joined.joining.runtimeAccess())
-                            writeChat(joined.data, "independent", "second", "双方冷开后续发")
-                            val next = thirdB.node.commit(thirdB.node.inspectLocal().review(setOf("conversation/independent")))
-                            assertEquals(first.reference(), next.entry.version.previousByAuthor)
-                            assertNull(next.entry.version.authorRecovery)
-                            assertEquals(first.authorSequence + 1, next.entry.version.authorSequence)
-                            thirdB.node.upload(next.entry.request.operation, thirdB.replica, thirdB.localTarget)
-                            thirdB.node.inspectLocal()
-                            receiveIndependent(requireNotNull(reopened.runtimeAccess()), thirdB, "second", "双方冷开后续发")
-                            val history = requireNotNull(firstA.node.inspectLocal().reconciliation.history)
-                            assertFalse(history.contains(old.reference()))
-                            assertContentEquals(oldOrigin, Files.readAllBytes(authorOrigin))
-                            assertContentEquals(oldFact, Files.readAllBytes(oldIntent))
-                            assertContentEquals(requireNotNull(heldBytes), Files.readAllBytes(heldFile))
+                            verifyRetainedAuthorContinuation(founder, joined, reopened, signed.proof.recovery, dRow,
+                                held, requireNotNull(oldApproved), requireNotNull(sharedPhoto), requireNotNull(heldBytes))
                         }
                         if (signed != null) {
                             val reopened = coldFounder()
