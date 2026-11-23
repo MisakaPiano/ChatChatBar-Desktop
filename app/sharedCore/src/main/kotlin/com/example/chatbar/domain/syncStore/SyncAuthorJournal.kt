@@ -85,7 +85,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
 
     internal fun supersededOperations(): Set<SyncStoreId> = guarded {
         recover()
-        readSuperseded().mapTo(linkedSetOf()) { it.entry.request.operation }
+        buildSet { forEachSuperseded { add(it.entry.request.operation) } }
     }
     fun entry(operation: SyncStoreId): SyncAuthorJournalEntry? = guarded {
         val state = recover()
@@ -169,7 +169,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         require(origin.format == 1 && sameAnchor(origin.trust, trust) && origin.certificate == actorCertificate) { "SYNC_AUTHOR_ORIGIN_CHANGED" }
         var head = read(root.resolve("head.protected"), "HEAD", Head.serializer())
         require(head == null || head.sequence > 0) { "SYNC_AUTHOR_HEAD" }
-        readSuperseded().forEach { completeSuperseded(it, head?.sequence ?: 0) }
+        forEachSuperseded { completeSuperseded(it, head?.sequence ?: 0) }
         var last = head?.let {
             val intent = requireIntent(it.sequence)
             requireNotNull(read(signedPath(it.sequence), "SIGNED", SyncAuthorJournalEntry.serializer())).also { entry ->
@@ -202,15 +202,15 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         requireIndexes(intents)
         return SyncAuthorJournalState(head?.sequence ?: 0, last, null)
     }
-    private fun readSuperseded(): List<Superseded> = Files.newDirectoryStream(root, "superseded-*.protected").use { files ->
-        files.map { path ->
+    private fun forEachSuperseded(use: (Superseded) -> Unit) = Files.newDirectoryStream(root, "superseded-*.protected").use { files ->
+        files.forEach { path ->
             val value = requireNotNull(read(path, "SUPERSEDED", Superseded.serializer())) { "SYNC_AUTHOR_SUPERSEDED_CHANGED" }
             val entry = value.entry
             require(path == supersededPath(entry.request.operation) && entry.version.group == group &&
                 entry.version.author == actor.fingerprint && entry.version.signature == "unsigned" &&
                 entry.version.authorRecovery == entry.request.authorRecovery && entry.version.authorRecovery != null &&
                 entry.version.authorRecovery != value.recovery) { "SYNC_AUTHOR_SUPERSEDED_CHANGED" }
-            value
+            use(value)
         }
     }
     private fun completeSuperseded(retired: Superseded, committed: Long) {
@@ -278,16 +278,18 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     private fun supersededPath(operation: SyncStoreId) = root.resolve("superseded-${operation.value}.protected")
     private fun <T> read(path: Path, kind: String, serializer: KSerializer<T>): T? {
         if (!Files.exists(path, NOFOLLOW_LINKS)) return null
-        PrivateSyncFile.checked(path); require(Files.size(path) in 1..MAX_PROTECTED_BYTES.toLong()) { "SYNC_AUTHOR_WORKING_BUDGET" }
+        val overhead = if (kind == "SUPERSEDED") SUPERSESSION_OVERHEAD else 0
+        val protectedLimit = MAX_PROTECTED_BYTES + overhead
+        PrivateSyncFile.checked(path); require(Files.size(path) in 1..protectedLimit.toLong()) { "SYNC_AUTHOR_WORKING_BUDGET" }
         val protected = Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
             val output = java.io.ByteArrayOutputStream(); val buffer = ByteArray(8192)
             while (true) { val count = input.read(buffer); if (count < 0) break
-                require(output.size() <= MAX_PROTECTED_BYTES - count) { "SYNC_AUTHOR_WORKING_BUDGET" }; output.write(buffer, 0, count) }
+                require(output.size() <= protectedLimit - count) { "SYNC_AUTHOR_WORKING_BUDGET" }; output.write(buffer, 0, count) }
             output.toByteArray()
         }
         val borrowed = protected.copyOf(); val plain = try { unprotect(borrowed) } catch (failure: Throwable) { borrowed.fill(0); throw failure }
         try {
-            require(plain.size in 1..MAX_PLAIN_BYTES) { "SYNC_AUTHOR_WORKING_BUDGET" }
+            require(plain.size in 1..(MAX_PLAIN_BYTES + overhead)) { "SYNC_AUTHOR_WORKING_BUDGET" }
             val text = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
                 .decode(ByteBuffer.wrap(plain)).toString()
             var depth = 0; var quoted = false; var escaped = false
@@ -312,9 +314,10 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         val owner = if (kind == "ORIGIN") (value as Origin).incarnation else requireNotNull(incarnation) { "SYNC_AUTHOR_ORIGIN_MISSING" }
         val plain = lanSyncJson.encodeToString(ProtectedFrame.serializer(), ProtectedFrame(DOMAIN, group, actor.fingerprint, owner, kind,
             lanSyncJson.encodeToJsonElement(serializer, value))).toByteArray(Charsets.UTF_8)
-        require(plain.size in 1..MAX_PLAIN_BYTES) { "SYNC_AUTHOR_WORKING_BUDGET" }
+        val overhead = if (kind == "SUPERSEDED") SUPERSESSION_OVERHEAD else 0
+        require(plain.size in 1..(MAX_PLAIN_BYTES + overhead)) { "SYNC_AUTHOR_WORKING_BUDGET" }
         val protected = try { protect(plain).copyOf() } finally { plain.fill(0) }
-        require(protected.size in 1..MAX_PROTECTED_BYTES) { "SYNC_AUTHOR_WORKING_BUDGET" }
+        require(protected.size in 1..(MAX_PROTECTED_BYTES + overhead)) { "SYNC_AUTHOR_WORKING_BUDGET" }
         PrivateSyncFile.create(root).use { file ->
             FileChannel.open(file.path, WRITE, NOFOLLOW_LINKS).use { channel -> val bytes = ByteBuffer.wrap(protected)
                 while (bytes.hasRemaining()) channel.write(bytes); channel.force(true) }
@@ -333,6 +336,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         private const val DOMAIN = "CCB-SYNC-AUTHOR-JOURNAL/1"
         private const val MAX_PLAIN_BYTES = 1024 * 1024
         private const val MAX_PROTECTED_BYTES = MAX_PLAIN_BYTES + 1024 * 1024
+        private const val SUPERSESSION_OVERHEAD = 1024
         private val locks = ConcurrentHashMap<Path, ReentrantLock>()
     }
 }

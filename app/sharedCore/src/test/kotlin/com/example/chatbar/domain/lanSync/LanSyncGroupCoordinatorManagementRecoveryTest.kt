@@ -174,13 +174,15 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                     } finally { bManager.close() }
                     assertEquals(parent.reference(), left.parent); assertEquals(parent.reference(), right.parent)
                     assertEquals(3, setOf(parent.epoch, left.epoch, right.epoch).size)
+                    readMetadata(b, b.replica)
+                    assertEquals(right.reference(), b.ledger().current().reference())
                     val crosses = left.reference() to right.reference()
                     readMetadata(b, a.replica); readMetadata(a, b.replica)
                     assertEquals(setOf(crosses.first, crosses.second), requireNotNull(b.verifiedLedgerFork()).branches.map { it.reference() }.toSet())
                     assertEquals(setOf(crosses.first, crosses.second), requireNotNull(a.verifiedLedgerFork()).branches.map { it.reference() }.toSet())
                     val cold = joined.newCoordinator(initiallyPaused = true)
                     try {
-                        cold.startIfConfigured()
+                        cold.open()
                         awaitRecovery(cold, "two revocations retained") { !it.busy && it.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
                         cold.prepareMembershipRecovery(founder.code)
                         awaitRecovery(cold, "two revocations reviewed") { !it.busy && it.membershipRecovery != null }
@@ -401,11 +403,17 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         writeChat(joined.data, "accepted", "earlier", "原组已经批准的合成正文", listOf(photo))
                         val approved = b.node.commit(b.node.inspect().review(setOf("conversation/accepted")))
                         b.node.upload(approved.entry.request.operation, b.replica, b.localTarget)
+                        writeChat(joined.data, "accepted", "earlier", "已批准会话后续正文，不再使用旧图")
+                        val reviewed = b.node.inspect().review(setOf("conversation/accepted"))
+                        val replacement = b.node.commit(reviewed, reviewed.requiredBindings)
+                        b.node.upload(replacement.entry.request.operation, b.replica, b.localTarget)
                         val serving = transport(b); val caller = transport(a)
                         val route = remote(caller, b, serving.start())
                         try {
                             receiveFrom(a, route)
-                            assertTrue(requireNotNull(a.node.inspectLocal().reconciliation.history).contains(approved.entry.version.reference()))
+                            val history = requireNotNull(a.node.inspectLocal().reconciliation.history)
+                            assertTrue(history.contains(approved.entry.version.reference()))
+                            assertEquals(setOf(replacement.entry.version.reference()), history.frontier("conversation/accepted").map { it.version }.toSet())
                         } finally { caller.closeAndDrain(); serving.closeAndDrain() }
                         approved
                     }
@@ -562,7 +570,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         } else {
                             val coldSigner = joined.newCoordinator(initiallyPaused = continueAuthor)
                             try {
-                                coldSigner.startIfConfigured()
+                                if (continueAuthor) coldSigner.open() else coldSigner.startIfConfigured()
                                 await { !coldSigner.state.value.busy && coldSigner.state.value.stage == LanSyncGroupPanelStage.READY }
                                 assertContentEquals(signed.bytes, exportPackage(coldSigner, signed.proof.binding))
                                 assertEquals(signed.proof.recovery, b.ledger().current())
