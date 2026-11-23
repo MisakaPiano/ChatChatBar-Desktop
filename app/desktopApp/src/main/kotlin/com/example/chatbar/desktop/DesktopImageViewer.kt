@@ -271,7 +271,7 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
                         }
                     }) { change, amount -> if (enabled && onReorder != null) { change.consume(); distance += amount.x } }
                 }) {
-                DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.fillMaxSize()
+                DesktopOwnedImage(pending.id, { pending.displayBytes }, Modifier.fillMaxSize()
                     .semantics { contentDescription = "预览图片附件" }.onFocusChanged { focused = it.hasFocus }
                     .clickable { if (onPreview == null) preview = pending else onPreview(pending) })
                 if (hovered || focused) Box(Modifier.align(Alignment.TopEnd).background(DesktopBootstrapColors.card)) {
@@ -282,7 +282,7 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
         } }
         if (showPicker) StudioAction("图片附件", icon = DesktopAppIcons.Add, enabled = enabled, onClick = onPick)
     }
-    preview?.let { pending -> DesktopTransientImagePreview(pending.id, { pending.bytes }) { preview = null } }
+    preview?.let { pending -> DesktopTransientImagePreview(pending.id, { pending.displayBytes }) { preview = null } }
 }
 
 /** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */

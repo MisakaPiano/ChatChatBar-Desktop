@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.image.NovelAiPostProcessPolicy
 import com.example.chatbar.domain.image.NovelAiPostProcessTab
+import java.io.ByteArrayInputStream
 import java.io.DataInputStream
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -19,43 +20,54 @@ object LanSyncRasterPolicy {
     } ?: 32_000_000L
 
     /** Camera JPEG can be admitted and sampled above the ordinary bitmap limit. */
-    fun validateDimensions(path: Path, record: LanSyncRecord?, width: Int, height: Int, jpeg: Boolean) {
+    fun validateDimensions(path: Path, record: LanSyncRecord?, width: Int, height: Int, jpeg: Boolean) =
+        validateDimensions(record, width, height, jpeg) { jpegFrame(path) }
+
+    fun validateCameraJpeg(bytes: ByteArray, width: Int, height: Int) =
+        validateDimensions(null, width, height, jpeg = true) { jpegFrame(bytes) }
+
+    private fun validateDimensions(record: LanSyncRecord?, width: Int, height: Int, jpeg: Boolean, inspectJpeg: () -> JpegFrame?) {
         val pixels = width.toLong() * height
         requireValidImage(width > 0 && height > 0)
         if (pixels <= maximumPixels(record)) return
         requireValidImage(record?.let(LanSyncPostProcess::record) == null)
         if (!jpeg) throw LanSyncLocalImageUnsupported()
-        val frame = jpegFrame(path) ?: throw LanSyncInvalidImage()
+        val frame = inspectJpeg() ?: throw LanSyncInvalidImage()
         requireValidImage(frame.width == width && frame.height == height)
         if (!frame.baseline || width > 16_384 || height > 16_384 || pixels > 72_000_000L) throw LanSyncLocalImageUnsupported()
     }
-    fun needsSampledJpegPreview(path: Path): Boolean = jpegFrame(path)?.let {
+    fun needsSampledJpegPreview(path: Path): Boolean = needsSampledJpegPreview(jpegFrame(path))
+    fun needsSampledJpegPreview(bytes: ByteArray): Boolean = needsSampledJpegPreview(jpegFrame(bytes))
+    private fun needsSampledJpegPreview(frame: JpegFrame?): Boolean = frame?.let {
         it.width.toLong() * it.height > maximumPixels(null)
     } == true
 
     private data class JpegFrame(val width: Int, val height: Int, val baseline: Boolean)
 
     // Progressive decoding may need full-size coefficient storage despite a sampled output.
-    private fun jpegFrame(path: Path): JpegFrame? {
-        DataInputStream(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).buffered()).use { input ->
-            if (input.read() != 0xff || input.read() != 0xd8) return null
-            var budget = 16 * 1024 * 1024
-            while (budget >= 4) {
-                if (input.readUnsignedByte() != 0xff) return null
-                var marker: Int
-                do { marker = input.readUnsignedByte(); budget-- } while (marker == 0xff && budget >= 4)
-                if (marker == 0xc0 || marker == 0xc1 || marker == 0xc2) {
-                    if (input.readUnsignedShort() < 8 || input.readUnsignedByte() != 8) return null
-                    val height = input.readUnsignedShort()
-                    return JpegFrame(input.readUnsignedShort(), height, marker == 0xc0)
-                }
-                if (marker != 0xc4 && marker !in 0xe0..0xef && marker != 0xdb && marker != 0xdd && marker != 0xfe) return null
-                val length = input.readUnsignedShort()
-                if (length < 2 || length + 1 > budget || input.skipBytes(length - 2) != length - 2) return null
-                budget -= length + 1
+    private fun jpegFrame(path: Path): JpegFrame? =
+        DataInputStream(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).buffered()).use(::jpegFrame)
+    private fun jpegFrame(bytes: ByteArray): JpegFrame? =
+        DataInputStream(ByteArrayInputStream(bytes)).use(::jpegFrame)
+
+    private fun jpegFrame(input: DataInputStream): JpegFrame? {
+        if (input.read() != 0xff || input.read() != 0xd8) return null
+        var budget = 16 * 1024 * 1024
+        while (budget >= 4) {
+            if (input.readUnsignedByte() != 0xff) return null
+            var marker: Int
+            do { marker = input.readUnsignedByte(); budget-- } while (marker == 0xff && budget >= 4)
+            if (marker == 0xc0 || marker == 0xc1 || marker == 0xc2) {
+                if (input.readUnsignedShort() < 8 || input.readUnsignedByte() != 8) return null
+                val height = input.readUnsignedShort()
+                return JpegFrame(input.readUnsignedShort(), height, marker == 0xc0)
             }
-            return null
+            if (marker != 0xc4 && marker !in 0xe0..0xef && marker != 0xdb && marker != 0xdd && marker != 0xfe) return null
+            val length = input.readUnsignedShort()
+            if (length < 2 || length + 1 > budget || input.skipBytes(length - 2) != length - 2) return null
+            budget -= length + 1
         }
+        return null
     }
 
     /** Walk PNG without retaining ancillary payloads. Native decoders still verify the raster. */

@@ -203,6 +203,71 @@ class DesktopPhase7ImagesTest {
         assertEquals(refs, c.chatRepository.getMessage(source.id, session)?.images)
     } }
 
+    @Test fun localCameraJpegCanBePickedForComposerAndEditWithoutReencodingTheOriginal(): Unit = runBlocking {
+        var selected: Path? = null
+        val picker = object : DesktopFilePicker {
+            override fun pickOpenFile(type: DesktopFileType): Path? = selected
+            override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+        }
+        fixture(picker) { c, root ->
+            val session = session(c)
+            val original = root.resolve("picked-camera.jpg")
+            val camera = BufferedImage(8000, 6000, BufferedImage.TYPE_BYTE_GRAY)
+            try { check(ImageIO.write(camera, "jpeg", original.toFile())) } finally { camera.flush() }
+            val bytes = Files.readAllBytes(original)
+            val length = Files.size(original)
+            val digest = LanSyncResourceStore.hashFile(original, length)
+            val controller = c.primaryChatController
+            controller.refresh()
+            controller.selectSession(session)
+            val truncated = root.resolve("truncated-camera.jpg")
+            Files.write(truncated, bytes.copyOf(bytes.size / 2))
+            selected = truncated
+            controller.pickImage()
+            assertNotNull(controller.state.value.error)
+            assertTrue(controller.state.value.pendingImages.isEmpty())
+
+            selected = original
+            controller.pickImage()
+            val pending = controller.state.value.pendingImages.single()
+            assertContentEquals(bytes, pending.bytes)
+            verifyCameraPreview(pending)
+
+            MockWebServer().use { server ->
+                val vision = wireModel(server, images = true)
+                c.modelRepository.saveModel(vision)
+                c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = vision.id,
+                    defaultContextWindowSize = 8, allowCleartextModelApi = true))
+                controller.editComposer("picked 48 MP camera")
+                server.enqueue(wireReply("first response"))
+                val sent = c.taskRuntime.awaitTerminal(assertNotNull(controller.send()))
+                val messageId = assertNotNull(sent.persistedUserMessageId)
+                assertWireJpeg(server.wireMessages(), "picked 48 MP camera", 1600, 1200)
+                val stored = assertNotNull(c.chatRepository.getMessage(messageId, session))
+                assertContentEquals(bytes, c.characterResourceStore.readBytes(stored.images.single()))
+
+                val edit = assertNotNull(controller.pickMessageEditImage())
+                verifyCameraPreview(edit)
+                assertContentEquals(bytes, edit.bytes)
+                assertTrue(controller.editMessage(messageId, "edited 48 MP camera", retainedImages = emptyList(), additions = listOf(edit)))
+                val edited = assertNotNull(c.chatRepository.getMessage(messageId, session))
+                assertNotEquals(stored.images, edited.images)
+                assertContentEquals(bytes, c.characterResourceStore.readBytes(edited.images.single()))
+
+                server.enqueue(wireReply("after edit"))
+                assertNull(c.createRealChatRuntime().sendText(session, "").failureMessage)
+                assertWireJpeg(server.wireMessages(), "edited 48 MP camera", 1600, 1200)
+            }
+            assertEquals(length, Files.size(original))
+            assertEquals(digest, LanSyncResourceStore.hashFile(original, length))
+        }
+    }
+
+    private fun verifyCameraPreview(image: DesktopPendingImage) {
+        val raster = assertNotNull(ImageIO.read(image.displayBytes.inputStream()))
+        try { assertEquals(2000 to 1500, raster.width to raster.height) } finally { raster.flush() }
+    }
+
     @Test fun unavailableHeifRequestPreservesOriginalAndAllowsExplicitTextAndCompatibleImage(): Unit = runBlocking { fixture { c, root ->
         val heifFixture = System.getenv("CCB_R02_HEIF_FIXTURE")
         org.junit.Assume.assumeTrue("requires a genuine synthetic HEIF still", heifFixture != null)
@@ -360,10 +425,10 @@ class DesktopPhase7ImagesTest {
         tasks.first { tasks -> tasks.any { it.taskId == id && it.status != DesktopTaskStatus.RUNNING } }.single { it.taskId == id }
     }
 
-    private suspend fun fixture(block: suspend (DesktopAppContainer, Path) -> Unit) {
+    private suspend fun fixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker, block: suspend (DesktopAppContainer, Path) -> Unit) {
         val root = Files.createTempDirectory("desktop-p7-images-").toRealPath()
         val c = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,
-            root.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() })
+            root.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() }, filePicker = filePicker)
         try { block(c, root) } finally { c.close(); root.toFile().deleteRecursively() }
     }
 

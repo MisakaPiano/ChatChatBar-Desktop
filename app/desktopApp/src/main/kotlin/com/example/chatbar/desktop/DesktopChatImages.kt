@@ -8,6 +8,7 @@ import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import com.example.chatbar.data.local.JsonFileStorage.EntityReadResult
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.lanSync.LanSyncRasterPolicy
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -22,7 +23,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-data class DesktopPendingImage(val id: String = UUID.randomUUID().toString(), val bytes: ByteArray, val restoredDisguise: Boolean = false)
+data class DesktopPendingImage(val id: String = UUID.randomUUID().toString(), val bytes: ByteArray,
+    val restoredDisguise: Boolean = false, private val sampledPreview: ByteArray? = null) {
+    internal val displayBytes: ByteArray get() = sampledPreview ?: bytes
+}
 
 /** Immutable deep copies. Only this transaction's newly created paths may be rolled back. */
 internal class DesktopChatImages(
@@ -36,26 +40,30 @@ internal class DesktopChatImages(
     private val editMutex = Mutex()
     fun read(reference: String): ByteArray = resources.readBytes(reference)
 
-    suspend fun prepare(path: Path): DesktopPendingImage {
+    suspend fun prepare(path: Path, chatAttachment: Boolean = false): DesktopPendingImage {
         require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
-        val bytes = Files.readAllBytes(path)
-        return prepareBytes(bytes)
+        val bytes = Files.newInputStream(path).use { it.readNBytes(DesktopImageEditing.MAX_BYTES + 1) }
+        return prepareBytes(bytes, chatAttachment)
     }
 
-    suspend fun prepareBytes(bytes: ByteArray): DesktopPendingImage {
-        require(bytes.size <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
+    suspend fun prepareBytes(bytes: ByteArray, chatAttachment: Boolean = false): DesktopPendingImage {
+        require(bytes.size in 1..DesktopImageEditing.MAX_BYTES) { "图片为空或超过 32 MB" }
         val temporary = Files.createTempFile("ccb-attachment-inspect-", ".png")
         val canonical = try {
             Files.write(temporary, bytes)
             com.example.chatbar.domain.image.ApngDisguiseCodec.inspectDisguise(temporary.toFile()) != null
         } finally { Files.deleteIfExists(temporary) }
         val prepared = if (canonical) DesktopImageTools.restore(bytes) else bytes.copyOf()
-        DesktopImageEditing.decode(prepared)
-        return DesktopPendingImage(bytes = prepared, restoredDisguise = canonical)
+        val raster = if (chatAttachment) DesktopImageEditing.decodeChatAttachment(prepared) else DesktopImageEditing.decode(prepared)
+        val preview = try {
+            if (chatAttachment && LanSyncRasterPolicy.needsSampledJpegPreview(prepared)) DesktopImageEditing.png(raster) else null
+        } finally { raster.flush() }
+        return DesktopPendingImage(bytes = prepared, restoredDisguise = canonical, sampledPreview = preview)
     }
 
-    private fun import(bytes: ByteArray): String {
-        DesktopImageEditing.decode(bytes)
+    private fun import(bytes: ByteArray, chatAttachment: Boolean = false): String {
+        val raster = if (chatAttachment) DesktopImageEditing.decodeChatAttachment(bytes) else DesktopImageEditing.decode(bytes)
+        raster.flush()
         val extension = desktopImageResourceExtension(bytes)
         // Copy the encoded source intact, including embedded generation metadata. Raster edits
         // deliberately create a separate PNG; merely attaching a file must not rewrite it.
@@ -69,7 +77,7 @@ internal class DesktopChatImages(
                 val created = mutableListOf<String>()
                 val messageId = UUID.randomUUID().toString()
                 try {
-                    attachments.forEach { created += import(it.bytes) }
+                    attachments.forEach { created += import(it.bytes, chatAttachment = true) }
                     persistMessage(ChatMessage.create(sessionId, MessageRole.USER, text, images = created.toList())
                         .copy(id = messageId))
                 } catch (failure: Throwable) {
@@ -97,7 +105,7 @@ internal class DesktopChatImages(
         val previous = gate.withNormalOperation {
             withContext(NonCancellable + Dispatchers.IO) {
                 val session = requireNotNull(chats.getSession(sessionId)) { "会话不存在" }
-                val newReference = bytes?.let(::import)
+                val newReference = bytes?.let { import(it) }
                 try {
                     chats.saveSessionSettingsDraft(session, session.copy(chatBackground = newReference))
                 } catch (failure: Throwable) {
@@ -116,7 +124,7 @@ internal class DesktopChatImages(
     suspend fun replacePlayerAvatar(sessionId: String, bytes: ByteArray?): String? {
         val previous = gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
             val session = requireNotNull(chats.getSession(sessionId)) { "会话不存在" }
-            val reference = bytes?.let(::import)
+            val reference = bytes?.let { import(it) }
             // A failed/uncertain save keeps the candidate, as it may already be durably referenced.
             chats.saveSessionSettingsDraft(session, session.copy(desktopPlayerAvatar = reference))
             session.desktopPlayerAvatar
@@ -133,7 +141,7 @@ internal class DesktopChatImages(
             require(!preferAddedImages || original.role == MessageRole.USER && retained == original.images && additions.isNotEmpty())
             gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
                 check(chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)) { "消息已变化，请重新打开编辑" }
-                val added = additions.map { import(it.bytes) }
+                val added = additions.map { import(it.bytes, chatAttachment = true) }
                 // An indeterminate update (including partial metadata/index writes) retains all files.
                 val paths = if (preferAddedImages) added + retained else retained + added
                 updateMessage(MessageAlternativeVersionPolicy.editCurrentContent(original, content).copy(
@@ -166,7 +174,7 @@ internal class DesktopChatImages(
     fun jpegBase64(reference: String): String = encodeRequestJpeg(resources.readChatRequestImage(reference, REQUEST_IMAGE_SIDE))
 
     fun jpegBase64(encoded: ByteArray): String =
-        encodeRequestJpeg(DesktopImageEditing.decode(encoded, longestSide = REQUEST_IMAGE_SIDE))
+        encodeRequestJpeg(DesktopImageEditing.decodeChatAttachment(encoded, longestSide = REQUEST_IMAGE_SIDE))
 
     private fun encodeRequestJpeg(original: BufferedImage): String = try {
         val scale = minOf(1.0, REQUEST_IMAGE_SIDE.toDouble() / maxOf(original.width, original.height))

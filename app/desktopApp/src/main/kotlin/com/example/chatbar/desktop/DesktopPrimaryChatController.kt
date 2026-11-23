@@ -790,7 +790,8 @@ internal class DesktopPrimaryChatController(
     private suspend fun receiveImagesForSession(input: DesktopImageIngress, sessionId: String) {
         val store = requireNotNull(imageStore)
         val prepared = kotlinx.coroutines.withContext(Dispatchers.IO) {
-            input.paths.map { store.prepare(it) } + listOfNotNull(input.raster?.let { store.prepareBytes(it) })
+            input.paths.map { store.prepare(it, chatAttachment = true) } +
+                listOfNotNull(input.raster?.let { store.prepareBytes(it, chatAttachment = true) })
         }
         stateLock.withLock {
             val pending = pendingBySession[sessionId].orEmpty()
@@ -1017,7 +1018,7 @@ internal class DesktopPrimaryChatController(
         var prepared: DesktopPendingImage? = null
         guarded {
             val path = imagePicker.pickOpenFile(DesktopFileType("图片", listOf("png", "apng", "jpg", "jpeg", "webp", "gif"))) ?: return@guarded
-            prepared = withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path) }
+            prepared = withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path, chatAttachment = true) }
         }
         return prepared
     }

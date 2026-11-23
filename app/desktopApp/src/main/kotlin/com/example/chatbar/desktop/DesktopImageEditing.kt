@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.image.ImageMetadataStripper
+import com.example.chatbar.domain.lanSync.LanSyncRasterPolicy
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
@@ -49,10 +50,22 @@ internal object DesktopImageEditing {
     const val MAX_BYTES = 32 * 1024 * 1024
     const val MAX_PIXELS = 32_000_000L
 
+    fun decodeChatAttachment(bytes: ByteArray, longestSide: Int? = null): BufferedImage {
+        require(longestSide == null || longestSide in 1..2048)
+        return decodeImage(bytes, longestSide, null, null, MAX_BYTES, MAX_PIXELS, null,
+            allowSampledCameraJpeg = true)
+    }
+
     fun decode(bytes: ByteArray, longestSide: Int? = null, minimumDisplayWidth: Int? = null,
         onSourceDimensions: ((Int, Int) -> Unit)? = null,
         maximumBytes: Int = MAX_BYTES, maximumPixels: Long = MAX_PIXELS,
-        displayTargetForSource: ((Int, Int) -> Pair<Int, Int>)? = null): BufferedImage {
+        displayTargetForSource: ((Int, Int) -> Pair<Int, Int>)? = null): BufferedImage =
+        decodeImage(bytes, longestSide, minimumDisplayWidth, onSourceDimensions, maximumBytes, maximumPixels,
+            displayTargetForSource, allowSampledCameraJpeg = false)
+
+    private fun decodeImage(bytes: ByteArray, longestSide: Int?, minimumDisplayWidth: Int?,
+        onSourceDimensions: ((Int, Int) -> Unit)?, maximumBytes: Int, maximumPixels: Long,
+        displayTargetForSource: ((Int, Int) -> Pair<Int, Int>)?, allowSampledCameraJpeg: Boolean): BufferedImage {
         require(maximumBytes in 1..100 * 1024 * 1024 && maximumPixels in 1..MAX_PIXELS)
         require(bytes.size in 1..maximumBytes) { "图片超过当前操作大小限制" }
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
@@ -65,7 +78,14 @@ internal object DesktopImageEditing {
                     reader.input = input
                     val sourceWidth = reader.getWidth(0)
                     val sourceHeight = reader.getHeight(0)
-                    require(sourceWidth > 0 && sourceHeight > 0 && sourceWidth.toLong() * sourceHeight <= maximumPixels) { "图片像素过大" }
+                    require(sourceWidth > 0 && sourceHeight > 0) { "图像尺寸无效" }
+                    val oversized = sourceWidth.toLong() * sourceHeight > maximumPixels
+                    if (oversized) {
+                        require(allowSampledCameraJpeg && reader.formatName.equals("JPEG", ignoreCase = true)) { "图片像素过大" }
+                        LanSyncRasterPolicy.validateCameraJpeg(bytes, sourceWidth, sourceHeight)
+                        // The JDK reader may return a raster for a clipped JPEG while reporting a warning.
+                        reader.addIIOReadWarningListener { _, _ -> throw IllegalArgumentException("无法解码完整照片") }
+                    }
                     val orientation = if (bytes.size >= 8 && bytes[0] == 0x89.toByte() &&
                         bytes[1] == 0x50.toByte() && bytes[2] == 0x4e.toByte() && bytes[3] == 0x47.toByte())
                         ImageMetadataStripper.readPngOrientation(bytes) else jpegOrientation(bytes)
@@ -73,7 +93,8 @@ internal object DesktopImageEditing {
                     val orientedHeight = if (orientation >= 5) sourceWidth else sourceHeight
                     val displayTarget = displayTargetForSource?.invoke(orientedWidth, orientedHeight)
                     val params = reader.defaultReadParam
-                    longestSide?.let { bound ->
+                    val samplingBound = longestSide ?: 2048.takeIf { oversized }
+                    samplingBound?.let { bound ->
                         require(bound > 0)
                         val targetBound = displayTarget?.let { maxOf(it.first, it.second).coerceAtLeast(1) }
                             ?.coerceAtMost(bound) ?: bound
