@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
@@ -1487,6 +1488,48 @@ class LanSyncGroupCoordinatorTest {
                 } finally { coordinator.closeAndDrain() }
             }
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
+
+    @Test fun aColdRegisteredProfileStartsItsAuthenticatedListenerWhileTheFirstCheckWaits() {
+        val listening = CompletableDeferred<Int>()
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun listening(fingerprint: String, port: Int) { listening.complete(port) }
+        }
+        fixture(network) { f ->
+            val founder = f.founder()
+            val request = SyncRootGroupCreateRequest(SyncStoreId.random(), LanSyncScope.schemas.keys.toSet(), "a".repeat(64))
+            val draft = founder.prepare(request, SyncRootGroupCreateAdmission { require(it == request) })
+            founder.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+            val access = requireNotNull(founder.runtimeAccess())
+            val coordinator = f.coordinator()
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val firstReadyInspection = AtomicBoolean(true)
+            f.beforeExclusive = {
+                if (coordinator.state.value.stage == LanSyncGroupPanelStage.READY && firstReadyInspection.compareAndSet(true, false)) {
+                    entered.complete(Unit)
+                    withTimeout(45_000) { release.await() }
+                }
+            }
+            try {
+                assertFalse(listening.isCompleted)
+                coordinator.open()
+                withTimeout(15_000) { entered.await() }
+                assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
+                assertNull(coordinator.state.value.membershipConflict)
+                assertNull(coordinator.view.value)
+                val earlyPort = withTimeoutOrNull(8_000) { listening.await() }
+                if (earlyPort == null) release.complete(Unit)
+                val port = earlyPort ?: withTimeout(15_000) { listening.await() }
+                val peer = LanSyncPeer(f.identity.fingerprint, "synthetic enrolled device", "10.0.0.1", port)
+                assertEquals(requireNotNull(access.replica.metadata(access.vault.key)), access.remote(peer, network).metadata(access.vault.key))
+                assertNotNull(earlyPort, "The cold listener only accepted pinned mTLS after the first local check was released")
+                assertFalse(release.isCompleted)
+            } finally {
+                release.complete(Unit)
+                f.beforeExclusive = {}
+            }
+        }
     }
 
     @Test fun manualCheckWakesAnIdleEnabledCloudRouteButStillValidatesItsConfiguration() = fixture { f ->
