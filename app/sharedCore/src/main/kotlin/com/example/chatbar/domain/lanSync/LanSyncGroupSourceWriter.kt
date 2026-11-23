@@ -12,6 +12,8 @@ import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
@@ -29,13 +31,15 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
     private val resolutionReservations: () -> Set<String> = { emptySet() }) {
     @Serializable private data class Blob(val operation: SyncStoreId, val key: CiphertextObjectKey, val plaintext: SyncPlaintextIdentity)
     @Serializable private data class Resolution(val revision: String, val binding: String)
-    @Serializable private data class Source(val format: Int, val operation: SyncStoreId, val device: String, val group: SyncStoreId,
+    @Serializable @OptIn(ExperimentalSerializationApi::class)
+    private data class Source(val format: Int, val operation: SyncStoreId, val device: String, val group: SyncStoreId,
         val ledger: SyncVersionRef, val heads: Set<SyncVersionRef>, val parents: Set<SyncVersionRef>, val authorHead: SyncVersionRef?, val coverage: Set<String>,
         val changes: Map<String, SyncUnitChange>, val review: String, val checkpoint: String, val checkpointHash: String?,
         val rawSource: String, val sourceHashes: Map<String, String>, val projection: String,
         val applied: Map<String, LanSyncGroupAppliedUnit?>, val epoch: SyncStoreId, val commitment: String, val blobs: Map<String, Blob>,
         val restorations: Map<String, Set<String>> = emptyMap(), val resolution: Resolution? = null,
-        val blobReuseOwner: SyncStoreId? = null)
+        val blobReuseOwner: SyncStoreId? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val authorRecovery: SyncVersionRef? = null)
     @Serializable private data class Delivery(val source: String, val version: SyncVersionRef, val epoch: SyncStoreId, val commitment: String,
         val metadataOperation: SyncStoreId, val metadataKey: CiphertextObjectKey, val blobs: Map<String, Blob>,
         val blobReuseOwner: SyncStoreId? = null)
@@ -74,9 +78,17 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             }
             val author = journal.state(); require(author.pendingApproved == null) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }
             val history = requireNotNull(currentView().history)
-            val authorHead = author.last?.version?.reference()
+            val prior = author.last?.version
+            val authorHead = prior?.reference()
             require(resolution == null || resolution.authorHead == authorHead) { "SYNC_GROUP_RESOLUTION_AUTHOR_CHANGED" }
-            require(authorHead == null || history.contains(authorHead)) { "SYNC_GROUP_SOURCE_LOCAL_HISTORY_MISSING" }
+            val authorRecovery = if (prior != null && !history.contains(prior.reference())) {
+                val ledger = authority()
+                val recovery = ledger.authorRecoveryAt(native.checkpoint, identity.fingerprint)
+                require(recovery != null && ledger.isExcludedSource(prior, history) && history.admittedVersions().none {
+                    it.author == identity.fingerprint && it.authorRecovery == recovery
+                }) { "SYNC_GROUP_SOURCE_LOCAL_HISTORY_MISSING" }
+                recovery
+            } else null
             val key = currentKey(); val queue = outbox(key.epoch)
             val reuse by lazy { blobReuse(key) }
             val prepared = mutableListOf<LanSyncPreparedGroupUnit>()
@@ -92,7 +104,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
                     paths[unit.decoded.membership.sha256] = unit.decoded.membership to unit.membershipPath
                     unit.decoded.dependencies.forEach { paths[it.sha256] = it to capture.blobs.getValue(it.sha256) }
                 }
-                val parents = native.heads + listOfNotNull(authorHead)
+                val parents = native.heads + listOfNotNull(authorHead.takeIf { authorRecovery == null })
                 val changes = selected.associateWith { unit ->
                     val previous = history.frontier(unit, parents).map { it.version }.toSet(); val proof = unitProofs[unit]?.decoded
                     SyncUnitChange(proof?.valueHash, proof?.plaintext, previous, proof?.membership)
@@ -109,13 +121,14 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
                             Blob(slot.operation, slot.key, slot.plaintext)
                         },
                         restorationRevisions().filterKeys(selected::contains).mapValues { it.value.toSortedSet() },
-                        resolution?.let { Resolution(it.revision, it.binding) }, reuse.first.owner).also {
+                        resolution?.let { Resolution(it.revision, it.binding) }, reuse.first.owner, authorRecovery).also {
                         require(it.restorations.values.all { revisions -> revisions.isNotEmpty() &&
                             revisions.all { id -> id.matches(Regex("[a-f0-9-]{36}")) } }) { "SYNC_GROUP_SOURCE_RESTORATIONS" }
                         LanSyncJsonFiles.write(sourcePath(operation), Source.serializer(), it); observe("SOURCE_PREPARATION_RETAINED")
                     }
                 }
-                require(source.changes == changes && source.authorHead == authorHead && source.parents == parents && source.epoch == key.epoch &&
+                require(source.changes == changes && source.authorHead == authorHead && source.authorRecovery == authorRecovery &&
+                    source.parents == parents && source.epoch == key.epoch &&
                     source.commitment == key.keyCommitment() && source.rawSource == rawBinding(capture.sourceFiles) &&
                     source.sourceHashes == capture.snapshot.hashes() && source.blobs.mapValues { it.value.plaintext } == paths.mapValues { it.value.first }) { "SYNC_GROUP_SOURCE_PREPARATION_CHANGED" }
                 verifyCustody(source)
@@ -211,13 +224,21 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
             delivery.epoch == current.epoch && delivery.commitment == current.keyCommitment) { "SYNC_GROUP_SOURCE_DELIVERY_CHANGED" }
         publisher(current.epoch).receipt(delivery.metadataOperation, target)
     }
-    private fun sign(source: Source): SyncAuthorJournalEntry = journal.commitApprovedLive(request(source), authority, SyncAuthorCommitAdmission {
-        requireView(source.ledger, source.heads, source.coverage); verifyCustody(source)
-        workspace.captureGroup(identity.fingerprint, projection).use { fresh ->
-            require(fresh.snapshot.hashes() == source.sourceHashes && rawBinding(fresh.sourceFiles) == source.rawSource) { "SYNC_GROUP_SOURCE_CHANGED" }
-            require(fresh.blockedResourceUnits.intersect(source.changes.keys).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
+    private fun sign(source: Source): SyncAuthorJournalEntry {
+        source.authorRecovery?.let { recovery ->
+            val prior = requireNotNull(journal.state().last?.version)
+            val history = requireNotNull(currentView().history)
+            require(prior.reference() == source.authorHead && authority().isExcludedSource(prior, history) &&
+                history.admittedVersions().none { it.author == source.device && it.authorRecovery == recovery }) { "SYNC_GROUP_SOURCE_LOCAL_HISTORY_MISSING" }
         }
-    }, identity::signSyncGroupPayload)
+        return journal.commitApprovedLive(request(source), authority, SyncAuthorCommitAdmission {
+            requireView(source.ledger, source.heads, source.coverage); verifyCustody(source)
+            workspace.captureGroup(identity.fingerprint, projection).use { fresh ->
+                require(fresh.snapshot.hashes() == source.sourceHashes && rawBinding(fresh.sourceFiles) == source.rawSource) { "SYNC_GROUP_SOURCE_CHANGED" }
+                require(fresh.blockedResourceUnits.intersect(source.changes.keys).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
+            }
+        }, identity::signSyncGroupPayload)
+    }
     private fun finish(source: Source, entry: SyncAuthorJournalEntry): LanSyncGroupSourceCommit {
         require(entry.request == request(source) && entry.version.author == identity.fingerprint) { "SYNC_GROUP_SOURCE_SIGNED_ENTRY_CHANGED" }
         verifyCustody(source)
@@ -274,7 +295,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
     }
     private fun request(source: Source) = SyncAuthorCommitRequest(source.operation, source.ledger, source.parents, source.changes,
         source.checkpoint, source.rawSource, lanSyncHash(buildJsonObject { put("review", source.review); put("preparation", hash(source)) }),
-        SyncAuthorHeadExpectation(source.authorHead))
+        SyncAuthorHeadExpectation(source.authorHead), source.authorRecovery)
     private fun verifyCustody(source: Source) {
         val entry = workspace.recovery.read(source.checkpoint)
         if (entry == null) require(source.checkpointHash == null && source.sourceHashes.isEmpty() && source.rawSource == rawBinding(emptyMap())) { "SYNC_GROUP_SOURCE_ORIGINALS_MISSING" }
@@ -294,6 +315,7 @@ class LanSyncGroupSourceWriter(private val root: Path, private val workspace: La
         return requireNotNull(LanSyncJsonFiles.read(path, Source.serializer())).also {
             require(it.format == 1 && it.operation == operation && it.device == identity.fingerprint && it.group == authority().trustAnchor.group &&
                 it.projection == projection.digest() && it.blobs.all { (hash, slot) -> hash == slot.plaintext.sha256 && slot.key.kind == CiphertextObjectKind.BLOB } &&
+                (it.authorRecovery == null || it.authorHead?.let { head -> head !in it.parents } == true) &&
                 it.restorations.all { (unit, revisions) -> unit in it.changes && revisions.isNotEmpty() &&
                     revisions.all { revision -> revision.matches(Regex("[a-f0-9-]{36}")) } } &&
                 (it.resolution?.let { revision -> revision.revision.matches(Regex("[a-f0-9-]{36}")) &&

@@ -25,15 +25,30 @@ class SyncCausalHistoryTest {
             }) { "SYNC_TEST_SIGNATURE" }
         }
         fun history() = SyncCausalHistory(id, admission)
-        fun version(device: Int, parents: Set<SyncVersionRef>, changes: Map<String, SyncUnitChange>, previous: SyncCausalVersion? = null): SyncCausalVersion {
+        fun version(device: Int, parents: Set<SyncVersionRef>, changes: Map<String, SyncUnitChange>, previous: SyncCausalVersion? = null,
+            recovery: SyncVersionRef? = null, sequence: Long = previous?.authorSequence?.plus(1) ?: 1L): SyncCausalVersion {
             val actor = devices[device]
             val unsigned = SyncCausalVersion(id, SyncStoreId.random(), ledger, actor.id,
-                previous?.authorSequence?.plus(1) ?: 1L, previous?.reference(), parents, changes, "unsigned")
+                sequence, previous?.reference(), parents, changes, "unsigned", recovery)
             val signed = Signature.getInstance("SHA256withECDSA").run { initSign(actor.keys.private); update(unsigned.signingBytes()); sign() }
             return unsigned.copy(signature = Base64.getEncoder().encodeToString(signed))
         }
         fun value(text: String, previous: Set<SyncVersionRef> = emptySet()) = SyncUnitChange(hash(text),
             SyncVersionContent(117, hash("synthetic unit plaintext $text")), previous)
+    }
+
+    @Test fun competingAuthorStartsAtTheSameMembershipRecoveryStayAForkEvenWithDifferentCounters() {
+        val group = Group()
+        val recovery = SyncVersionRef(SyncStoreId.random(), hash("synthetic recovery authority"))
+        val first = group.version(0, emptySet(), mapOf("one" to group.value("first")), recovery = recovery, sequence = 7)
+        val next = group.version(0, setOf(first.reference()), mapOf("two" to group.value("next")), previous = first)
+        val competing = group.version(0, emptySet(), mapOf("three" to group.value("competing")), recovery = recovery, sequence = 13)
+        for (rows in listOf(listOf(first, next, competing), listOf(competing, next, first))) {
+            val graph = group.history()
+            rows.forEach(graph::offer)
+            assertEquals(setOf(first.author), graph.authorForks())
+            assertEquals(setOf(next.reference(), competing.reference()), graph.heads())
+        }
     }
 
     @Test fun fourDevicesConvergeOutOfOrderWithoutResurrectingADeletedUnitFromAnOfflineUnrelatedBranch() {

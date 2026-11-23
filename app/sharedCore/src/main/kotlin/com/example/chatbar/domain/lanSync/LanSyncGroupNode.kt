@@ -425,16 +425,27 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             active.forEachIndexed { index, entry -> require(entry.version.authorSequence == index.toLong() + 1) { "SYNC_GROUP_NODE_SOURCE_HISTORY_MISSING" } }
             active to (operations.toSet() - active.map { it.request.operation }.toSet())
         }
+        val locallyHeld = linkedMapOf<SyncVersionRef, SyncCausalVersion>()
         for (entry in entries.first) {
-            if (entry.version.reference() in currentView().recoveryHeldVersions) continue
+            if (sourceHeld(entry.version, currentView())) {
+                if (entry.version.signature != "unsigned") locallyHeld[entry.version.reference()] = entry.version
+                continue
+            }
             val commit = exclusive { writer.resume(entry.request.operation) }
             remember(commit)
             if (commit.entry.version.reference() in currentView().recoveryHeldVersions) continue
             exclusive { native.recordSource(commit, recoverNative) }
         }
+        if (locallyHeld.isNotEmpty()) current = currentView().let { view ->
+            view.copy(recoveryHeldVersions = Collections.unmodifiableMap(view.recoveryHeldVersions + locallyHeld))
+        }
         observe("LOCAL_SOURCE_HISTORY_RECOVERED")
         return entries.second
     }
+
+    private fun sourceHeld(version: SyncCausalVersion, view: SyncInboxReconciliation): Boolean =
+        version.reference() in view.recoveryHeldVersions || version.signature != "unsigned" &&
+            view.history?.takeUnless { it.contains(version.reference()) }?.let { custody.ledger().isExcludedSource(version, it) } == true
 
     /** Frozen review authorization remains exact; this never confirms a held reduction implicitly. */
     suspend fun commit(review: LanSyncGroupSourceReview, confirmations: Map<String, String> = emptyMap(),
@@ -581,14 +592,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         // Re-key/preparation and source control are gated; slow immutable delivery is outside the gate.
         val commit = exclusive {
             if (!recoverNative) requireSourceOnlyReady()
-            val withheld = currentView().recoveryHeldVersions
-            if (withheld.isNotEmpty()) require(author.entry(operation)?.version?.reference()?.let { it !in withheld } != false) {
+            require(author.entry(operation)?.version?.let { !sourceHeld(it, currentView()) } != false) {
                 LanSyncGroupNativePlanner.RECOVERY_HELD
             }
             writer.resume(operation)
         }
         remember(commit)
-        require(commit.entry.version.reference() !in currentView().recoveryHeldVersions) { LanSyncGroupNativePlanner.RECOVERY_HELD }
+        require(!sourceHeld(commit.entry.version, currentView())) { LanSyncGroupNativePlanner.RECOVERY_HELD }
         exclusive { native.recordSource(commit, recoverNative) }
         writer.uploadPrepared(commit, store, target)
     }
@@ -604,8 +614,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 (state.pendingApproved == null || state.pendingApproved.request.operation in operations)) { "SYNC_GROUP_NODE_SOURCE_HISTORY_MISSING" }
             val entries = (signed + listOfNotNull(state.pendingApproved)).sortedBy { it.version.authorSequence }
             entries.forEachIndexed { index, entry -> require(entry.version.authorSequence == index.toLong() + 1) { "SYNC_GROUP_NODE_SOURCE_HISTORY_MISSING" } }
-            val withheld = if (eligibleForDelivery) current?.recoveryHeldVersions.orEmpty() else emptyMap()
-            entries.filterNot { it.version.reference() in withheld }.map { it.request.operation }
+            val observed = current.takeIf { eligibleForDelivery }
+            entries.filterNot { entry -> observed?.let { sourceHeld(entry.version, it) } == true }.map { it.request.operation }
         }
     }
 

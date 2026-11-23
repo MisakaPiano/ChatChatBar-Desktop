@@ -5,6 +5,8 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.Collections
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable data class SyncVersionRef(val id: SyncStoreId, val bodyHash: String) {
@@ -22,16 +24,19 @@ typealias SyncVersionContent = SyncPlaintextIdentity
 }
 
 /** References and hashes are inside the encrypted version envelope, never remote filenames. */
-@Serializable data class SyncCausalVersion(val group: SyncStoreId, val id: SyncStoreId, val deviceLedger: SyncVersionRef,
+@Serializable @OptIn(ExperimentalSerializationApi::class)
+data class SyncCausalVersion(val group: SyncStoreId, val id: SyncStoreId, val deviceLedger: SyncVersionRef,
     val author: String, val authorSequence: Long, val previousByAuthor: SyncVersionRef?,
-    val parents: Set<SyncVersionRef>, val changes: Map<String, SyncUnitChange>, val signature: String) {
+    val parents: Set<SyncVersionRef>, val changes: Map<String, SyncUnitChange>, val signature: String,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val authorRecovery: SyncVersionRef? = null) {
     init {
         require(author.matches(Regex("[a-f0-9]{64}")) && authorSequence > 0 && signature.length in 1..1024) { "SYNC_VERSION_IDENTITY" }
         require(parents.none { it.id == id } && parents.map { it.id }.toSet().size == parents.size) { "SYNC_VERSION_PARENT_BINDING" }
         require(changes.keys.all { it.length in 1..600 && it.none { char -> char.code < 32 } }) { "SYNC_VERSION_UNIT" }
+        require(authorRecovery == null || authorSequence > 1 && previousByAuthor == null) { "SYNC_VERSION_AUTHOR_CHAIN" }
     }
     fun reference() = SyncVersionRef(id, bodyHash())
-    fun signingBytes() = ("CCB-SYNC-VERSION-SIGNATURE/1\n" + bodyHash()).toByteArray(Charsets.US_ASCII)
+    fun signingBytes() = ("CCB-SYNC-VERSION-SIGNATURE/${if (authorRecovery == null) 1 else 2}\n" + bodyHash()).toByteArray(Charsets.US_ASCII)
     fun bodyHash(): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val sink = object : OutputStream() {
@@ -39,13 +44,18 @@ typealias SyncVersionContent = SyncPlaintextIdentity
             override fun write(bytes: ByteArray, offset: Int, length: Int) {}
         }
         DataOutputStream(DigestOutputStream(sink, digest)).use { output ->
-            val format = if (changes.values.any { it.membership != null }) 3 else 2
+            val format = when {
+                authorRecovery != null -> 4
+                changes.values.any { it.membership != null } -> 3
+                else -> 2
+            }
             output.writeUTF("CCB-SYNC-VERSION/$format"); output.writeUTF(group.value); output.writeUTF(id.value)
             fun ref(value: SyncVersionRef) { output.writeUTF(value.id.value); output.writeUTF(value.bodyHash) }
             fun refs(values: Set<SyncVersionRef>) {
                 output.writeInt(values.size); values.sortedBy { it.id.value }.forEach(::ref)
             }
             ref(deviceLedger); output.writeUTF(author); output.writeLong(authorSequence)
+            authorRecovery?.let(::ref)
             output.writeBoolean(previousByAuthor != null); previousByAuthor?.let(::ref); refs(parents)
             output.writeInt(changes.size)
             changes.toSortedMap().forEach { (unit, change) ->
@@ -130,8 +140,13 @@ class SyncCausalHistory(private val group: SyncStoreId, private val admission: S
             val version = versions.getValue(id); SyncUnitFrontier(version.reference(), version.changes.getValue(unit))
         }.toSet()
     }
-    @Synchronized fun authorForks(): Set<String> = admitted.map { versions.getValue(it) }
-        .groupBy { it.author to it.authorSequence }.filterValues { it.size > 1 }.keys.map { it.first }.toSet()
+    @Synchronized fun authorForks(): Set<String> {
+        val rows = admitted.map { versions.getValue(it) }
+        val duplicateSequences = rows.groupBy { it.author to it.authorSequence }.filterValues { it.size > 1 }.keys
+        val duplicateStarts = rows.filter { it.authorRecovery != null }.groupBy { it.author to it.authorRecovery }
+            .filterValues { it.size > 1 }.keys
+        return (duplicateSequences.map { it.first } + duplicateStarts.map { it.first }).toSet()
+    }
 
     private fun drain() {
         do {
@@ -156,7 +171,11 @@ class SyncCausalHistory(private val group: SyncStoreId, private val admission: S
     private fun validateCausality(version: SyncCausalVersion) {
         val ancestors = closure(version.parents)
         val previous = version.previousByAuthor
-        if (previous == null) require(version.authorSequence == 1L) { "SYNC_VERSION_AUTHOR_CHAIN" }
+        if (version.authorRecovery != null) {
+            require(previous == null && version.authorSequence > 1 && ancestors.none { id ->
+                versions.getValue(id).let { it.author == version.author && it.authorRecovery == version.authorRecovery }
+            }) { "SYNC_VERSION_AUTHOR_CHAIN" }
+        } else if (previous == null) require(version.authorSequence == 1L) { "SYNC_VERSION_AUTHOR_CHAIN" }
         else {
             val predecessor = requireNotNull(versions[previous.id]) { "SYNC_VERSION_AUTHOR_CHAIN" }
             require(previous.id in ancestors && predecessor.reference() == previous && predecessor.author == version.author &&

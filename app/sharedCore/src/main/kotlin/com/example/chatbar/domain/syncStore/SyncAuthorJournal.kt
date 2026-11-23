@@ -15,17 +15,22 @@ import java.util.Base64
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 @Serializable data class SyncAuthorHeadExpectation(val reference: SyncVersionRef?)
-@Serializable data class SyncAuthorCommitRequest(val operation: SyncStoreId, val deviceLedger: SyncVersionRef,
+@Serializable @OptIn(ExperimentalSerializationApi::class)
+data class SyncAuthorCommitRequest(val operation: SyncStoreId, val deviceLedger: SyncVersionRef,
     val parents: Set<SyncVersionRef>, val changes: Map<String, SyncUnitChange>, val sourceCheckpoint: String,
-    val sourceRawBinding: String, val approvalBinding: String, val expectedAuthorHead: SyncAuthorHeadExpectation? = null) {
+    val sourceRawBinding: String, val approvalBinding: String, val expectedAuthorHead: SyncAuthorHeadExpectation? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val authorRecovery: SyncVersionRef? = null) {
     init {
         require(sourceCheckpoint.matches(Regex("[a-f0-9-]{36}")) && sourceRawBinding.matches(Regex("[a-f0-9]{64}")) &&
             approvalBinding.matches(Regex("[a-f0-9]{64}")) && changes.isNotEmpty()) { "SYNC_AUTHOR_REQUEST" }
+        require(authorRecovery == null || expectedAuthorHead?.reference?.let { it !in parents } == true) { "SYNC_AUTHOR_RECOVERY_PARENT" }
     }
 }
 /** Mandatory native owner: approved frozen selection, fresh source CAS, dependency graph and sealed originals. */
@@ -92,9 +97,15 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         requireActive(ledger())
         require(ledger().current().reference() == input.deviceLedger) { "SYNC_AUTHOR_LEDGER_CHANGED" }
         require(state.committedSequence < Long.MAX_VALUE) { "SYNC_AUTHOR_SEQUENCE_EXHAUSTED" }
-        val previous = state.last?.version?.reference()
+        val prior = state.last?.version
+        input.authorRecovery?.let { recovery ->
+            val authority = ledger()
+            require(prior != null && authority.authorRecoveryAt(input.deviceLedger, actor.fingerprint) == recovery &&
+                authority.excludedLedgerCuts(prior.deviceLedger, input.deviceLedger).isNotEmpty()) { "SYNC_AUTHOR_RECOVERY_PARENT" }
+        }
+        val previous = prior?.reference().takeIf { input.authorRecovery == null }
         val version = SyncCausalVersion(group, SyncStoreId.random(), input.deviceLedger, actor.fingerprint, state.committedSequence + 1,
-            previous, Collections.unmodifiableSet(input.parents + listOfNotNull(previous)), input.changes, "unsigned")
+            previous, Collections.unmodifiableSet(input.parents + listOfNotNull(previous)), input.changes, "unsigned", input.authorRecovery)
         val intent = SyncAuthorJournalEntry(input, version)
         write(intentPath(version.authorSequence), "INTENT", SyncAuthorJournalEntry.serializer(), intent)
         observe("APPROVED_AUTHOR_INTENT_RETAINED")
@@ -103,8 +114,12 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     }
 
     private fun signAndRetain(intent: SyncAuthorJournalEntry, ledger: () -> SyncDeviceLedger, sign: (ByteArray) -> ByteArray): SyncAuthorJournalEntry {
-        requireActive(ledger())
-        require(ledger().record(intent.version.deviceLedger)?.members?.get(actor.fingerprint)?.active == true) { "SYNC_AUTHOR_LEDGER_MISSING" }
+        val signingLedger = ledger()
+        requireActive(signingLedger)
+        require(signingLedger.record(intent.version.deviceLedger)?.members?.get(actor.fingerprint)?.active == true) { "SYNC_AUTHOR_LEDGER_MISSING" }
+        intent.version.authorRecovery?.let { recovery ->
+            require(signingLedger.authorRecoveryAt(intent.version.deviceLedger, actor.fingerprint) == recovery) { "SYNC_AUTHOR_RECOVERY_PARENT" }
+        }
         val version = intent.version.copy(signature = Base64.getEncoder().encodeToString(sign(intent.version.signingBytes())))
         requireActive(ledger())
         val entry = intent.copy(version = version); validateSigned(entry, intent)
@@ -141,7 +156,8 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
             val sequence = (head?.sequence ?: 0) + 1
             if (sequence > intents) break
             val intent = requireIntent(sequence)
-            require(intent.version.previousByAuthor == last?.version?.reference()) { "SYNC_AUTHOR_PARENT_CHANGED" }
+            val previous = if (intent.version.authorRecovery == null) intent.version.previousByAuthor else intent.request.expectedAuthorHead?.reference
+            require(previous == last?.version?.reference()) { "SYNC_AUTHOR_PARENT_CHANGED" }
             ensureIndex(intent)
             val signed = read(signedPath(sequence), "SIGNED", SyncAuthorJournalEntry.serializer())
             if (signed == null) {
@@ -179,6 +195,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     }.also {
         require(it.version.group == group && it.version.author == actor.fingerprint && it.version.authorSequence == sequence &&
             it.version.signature == "unsigned" && it.version.deviceLedger == it.request.deviceLedger && it.version.changes == it.request.changes &&
+            it.version.authorRecovery == it.request.authorRecovery &&
             it.version.parents == it.request.parents + listOfNotNull(it.version.previousByAuthor)) { "SYNC_AUTHOR_INTENT_CHANGED" }
     }
     private fun validateSigned(entry: SyncAuthorJournalEntry, intent: SyncAuthorJournalEntry) {

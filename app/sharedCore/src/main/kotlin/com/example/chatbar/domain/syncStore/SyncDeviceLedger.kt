@@ -272,6 +272,32 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
         return true in parentStates && false !in parentStates
     }
 
+    /** A discarded membership path remains evidence; it cannot grant business ancestry. */
+    @Synchronized internal fun excludedLedgerCuts(ledger: SyncVersionRef, through: SyncVersionRef = current().reference()): List<SyncDeviceLedgerRecord> {
+        if (!contains(ledger)) return emptyList()
+        val authority = authorityHistory(through)
+        if (authority.any { it.reference() == ledger }) return emptyList()
+        return authority.filter { row -> row.recovery?.let { recovery ->
+            ledger.id in ancestorIds(row.id) && ledger.id !in ancestorIds(recovery.primary.id)
+        } == true }
+    }
+
+    internal fun isExcludedSource(version: SyncCausalVersion, history: SyncCausalHistory): Boolean =
+        !history.contains(version.reference()) && excludedLedgerCuts(version.deviceLedger).any { cut ->
+            cut.acceptedHeads.all(history::contains)
+        }
+
+    /** The start is scoped to the last root-signed recovery at the version's own signing checkpoint. */
+    @Synchronized internal fun authorRecoveryAt(through: SyncVersionRef, author: String): SyncVersionRef? =
+        record(through)?.let { authorizingRecovery(it, author, ::record) }?.reference()
+
+    private fun authorizingRecovery(at: SyncDeviceLedgerRecord, author: String,
+        recordAt: (SyncVersionRef) -> SyncDeviceLedgerRecord?): SyncDeviceLedgerRecord? {
+        val member = at.members[author]?.takeIf { it.active } ?: return null
+        val recovery = generateSequence(at) { row -> row.parent?.let(recordAt) }.firstOrNull { it.recovery != null }
+        return recovery?.takeIf { it.members[author]?.let { retained -> retained.active && retained.certificate == member.certificate } == true }
+    }
+
     /** New immutable authorization view after every membership update/discovery rescan. */
     @Synchronized fun admission(knownVersions: Collection<SyncCausalVersion>,
         authenticatedObjects: Collection<SyncAuthenticatedGroupObject>): SyncVersionAdmission {
@@ -322,6 +348,11 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
             require(ledger.members[version.author]?.active == true) { "SYNC_GROUP_AUTHOR_NOT_ADMITTED" }
             val certificate = requireNotNull(certificates[version.author]) { "SYNC_GROUP_AUTHOR_NOT_ADMITTED" }
             require(certificate.verifies(version.signingBytes(), version.signature)) { "SYNC_GROUP_VERSION_SIGNATURE" }
+            version.authorRecovery?.let { recovery ->
+                require(authorizingRecovery(ledger, version.author, ledgers::get)?.reference() == recovery) {
+                    "SYNC_GROUP_AUTHOR_RECOVERY_AUTHORITY"
+                }
+            }
             val active = latest.members[version.author]?.active == true
             val reference = version.reference()
             if (!active || latest.epoch !in epochs[reference].orEmpty()) {
