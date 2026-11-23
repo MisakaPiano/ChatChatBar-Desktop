@@ -4,9 +4,12 @@ import com.example.chatbar.domain.lanSync.LanSyncTlsIdentity
 import com.example.chatbar.domain.lanSync.lanSyncJson
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.nio.file.Files
 import java.util.Base64
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
@@ -115,6 +118,50 @@ class SyncLedgerRecoveryFileCodecTest {
         }
     }
 
+    @Test fun approvedPackageAndLocallyPinnedThirdBranchBothSurviveBeforeAnotherExplicitRecovery() {
+        val f = Fixture()
+        val directory = Files.createTempDirectory("synthetic-membership-recovery-extra-tip").toRealPath()
+        try {
+            fun cold() = SyncGroupCustody(directory, f.trust.group, f.leftRecipient, { it.reversedArray() }, { it.reversedArray() })
+            val third = f.sign(f.right.copy(id = SyncStoreId.random(), signature = "unsigned"))
+            val custody = cold()
+            val oldAuthority = custody.enroll(f.trust, listOf(f.genesis, third))
+            val old = SyncKeyDeliveryCodec.decode(f.staleAuthorityCapsule())
+            custody.rememberKey(old.openTentative(f.trust, f.leftRecipient,
+                CiphertextObjectKey(CiphertextObjectKind.COMMIT, old.context.objectId)).admit(oldAuthority))
+            val retained = directory.resolve("group.protected")
+            val before = Files.readAllBytes(retained)
+            val firstPackage = f.write()
+            val preview = custody.inspectRecoveryFile(firstPackage)
+            assertEquals(f.recovered.reference(), preview.recovery.reference())
+            assertContentEquals(before, Files.readAllBytes(retained))
+            assertFails {
+                custody.commitMembershipRecovery(setOf(f.genesis.reference()), authoring = false, prepare = { firstPackage },
+                    retain = { _, _ -> error("Stale review must not retain any new evidence") })
+            }
+            assertFalse(custody.commitMembershipRecovery(setOf(third.reference()), authoring = false, prepare = { firstPackage },
+                retain = { bytes, proof -> assertContentEquals(firstPackage, bytes); assertEquals(preview.binding, proof.binding) }))
+            val reopened = cold()
+            assertEquals(third.reference(), reopened.trust().checkpoint)
+            val reviewHeads = setOf(third.reference(), f.recovered.reference())
+            assertEquals(reviewHeads, reopened.recoveryGraph().admittedTips())
+            assertFails { reopened.key(f.newEpoch.epoch) }
+            assertFails { reopened.ledger() }
+            assertEquals(f.oldEpoch.keyCommitment(), reopened.key(f.oldEpoch.epoch).keyCommitment())
+
+            val successorEpoch = SyncStreamingCipher.create(f.trust.group)
+            val final = f.sign(f.recovered.copy(id = SyncStoreId.random(), sequence = 4L, epoch = successorEpoch.epoch,
+                keyCommitment = successorEpoch.keyCommitment(), recovery = SyncGroupLedgerRecovery(reviewHeads, f.recovered.reference())))
+            val second = f.writeAnother(f.rows.dropLast(1) + third + f.recovered + final, successorEpoch)
+            assertTrue(reopened.commitMembershipRecovery(reviewHeads, authoring = false, prepare = { second }, retain = { _, _ -> }))
+            val ready = cold()
+            assertEquals(final, ready.ledger().current())
+            assertEquals(successorEpoch.keyCommitment(), ready.key(successorEpoch.epoch).keyCommitment())
+            assertEquals(f.newEpoch.keyCommitment(), ready.key(f.newEpoch.epoch).keyCommitment())
+            assertEquals(f.rows.toSet() + third + final, ready.ledger().ancestry().toSet())
+        } finally { check(directory.toFile().deleteRecursively()) }
+    }
+
     private class Fixture {
         private val owner = LanSyncTlsIdentity.create()
         private val identities = listOf(owner, LanSyncTlsIdentity.create(), LanSyncTlsIdentity.create(), LanSyncTlsIdentity.create())
@@ -158,6 +205,18 @@ class SyncLedgerRecoveryFileCodecTest {
         fun write(keys: List<ByteArray> = capsules): ByteArray = ByteArrayOutputStream().also {
             SyncLedgerRecoveryFileCodec.write(it, trust, rows, keys)
         }.toByteArray()
+
+        fun writeAnother(records: List<SyncDeviceLedgerRecord>, fresh: SyncStreamingCipher): ByteArray {
+            val graph = SyncDeviceLedger(trust).also { ledger -> records.forEach(ledger::offer) }
+            val envelopes = (epochs + fresh).flatMap { epoch ->
+                graph.current().members.filterValues { it.active }.keys.sorted().map { id ->
+                    SyncKeyDeliveryCodec.encode(SyncGroupKeyDelivery.create(graph, epoch, id, SyncStoreId.random(), owner::signSyncGroupPayload))
+                }
+            }
+            return ByteArrayOutputStream().also {
+                SyncLedgerRecoveryFileCodec.write(it, trust, graph.ancestry(), envelopes)
+            }.toByteArray()
+        }
 
         // Independent framing for negative cases that the exporter must also refuse.
         fun raw(rows: List<SyncDeviceLedgerRecord> = this.rows, capsules: List<ByteArray> = this.capsules): ByteArray =

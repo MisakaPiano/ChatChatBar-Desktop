@@ -94,7 +94,7 @@ class SyncKeyDeliveryQueue(private val root: Path, private val trust: SyncGroupT
         val state = checkedLedger(); val current = state.current()
         require(cipher.group == trust.group && state.hasKey(cipher.epoch, cipher.keyCommitment())) { "SYNC_KEY_DELIVERY_KEY_NOT_ADMITTED" }
         val member = requireNotNull(current.members[recipient]?.takeIf { it.active }) { "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" }
-        val expected = SyncKeyDeliveryContext(1, operation, trust.group, cipher.epoch, cipher.keyCommitment(), current.reference(),
+        val expected = SyncKeyDeliveryContext(state.keyDeliveryFormat(current.reference()), operation, trust.group, cipher.epoch, cipher.keyCommitment(), current.reference(),
             recipient, SyncRecipientPublicKey.parse(member.recipientKey).hash)
         read(operation)?.let {
             require(it.delivery.context == expected) { "SYNC_KEY_QUEUE_OPERATION_CHANGED" }; return@guarded it

@@ -23,7 +23,8 @@ data class SyncInboxObservation(val key: CiphertextObjectKey, val stage: SyncInb
 data class SyncInboxDiscovery(val nextCursor: CommitCursor?, val observations: List<SyncInboxObservation>)
 data class SyncInboxReconciliation(val observations: List<SyncInboxObservation>, val history: SyncCausalHistory?,
     val authenticatedVersions: List<SyncAuthenticatedGroupObject>, val trustBlocked: Boolean, val ledgerCheckpoint: SyncVersionRef?,
-    val trustFailureCode: String? = null)
+    val trustFailureCode: String? = null,
+    internal val recoveryHeldVersions: Map<SyncVersionRef, SyncCausalVersion> = emptyMap())
 
 enum class SyncGroupBootstrapStage { WAITING_FOR_LEDGER, WAITING_FOR_KEYS, READY, TRUST_BLOCKED, DEVICE_REVOKED }
 class SyncGroupBootstrapEvidence internal constructor(val trust: SyncGroupTrust, val records: List<SyncDeviceLedgerRecord>,
@@ -394,10 +395,17 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         }
         val logical = versions.map { requireNotNull(it.envelope.version) }
         val history = SyncCausalHistory(trust.group, ledger.admission(logical, versions))
+        val recoveredAuthority by lazy(LazyThreadSafetyMode.NONE) { servedLedger == null && ledger.ancestry().any { it.recovery != null } }
+        val recoveryHeld = linkedMapOf<SyncVersionRef, SyncCausalVersion>()
         for (actual in versions) {
             val version = requireNotNull(actual.envelope.version)
             try { history.offer(version) } catch (failure: Exception) {
                 val code = code(failure)
+                // These policy codes follow the original membership and author signature checks.
+                if (code in setOf("SYNC_GROUP_RECOVERY_VERSION_NOT_REVIEWED", "SYNC_GROUP_CURRENT_EPOCH_REQUIRED",
+                    "SYNC_GROUP_REVOKED_VERSION") && recoveredAuthority) {
+                    recoveryHeld.putIfAbsent(version.reference(), version)
+                }
                 status(actual.metadata, when (code) {
                     "SYNC_GROUP_LEDGER_MISSING", "SYNC_GROUP_FENCE_CONTENT_MISSING" -> SyncInboxStage.WAITING_FOR_LEDGER
                     "SYNC_GROUP_CURRENT_EPOCH_REQUIRED" -> SyncInboxStage.WAITING_FOR_CURRENT_EPOCH
@@ -417,7 +425,8 @@ class SyncGroupInbox(private val root: Path, private val backend: CiphertextStor
         } }
         val usable = versions.filter { statuses[it.metadata]?.stage !in setOf(SyncInboxStage.INVALID_OBJECT,
             SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED) }
-        return SyncInboxReconciliation(statuses.values.toList(), history, usable, false, ledger.current().reference())
+        return SyncInboxReconciliation(statuses.values.toList(), history, usable, false, ledger.current().reference(),
+            recoveryHeldVersions = Collections.unmodifiableMap(recoveryHeld.filterKeys { !history.contains(it) }))
     }
 
     private fun prefix(path: Path): ByteArray = Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->

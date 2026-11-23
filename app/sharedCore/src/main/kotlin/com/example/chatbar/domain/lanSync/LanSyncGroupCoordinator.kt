@@ -1785,7 +1785,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (safe.isNotEmpty()) current.node.commit(inspected.review(safe), recoverNative = !shutdown)
         // Cold operations may span old epochs. upload resumes/rekeys EACH existing operation itself.
         var outgoingChanged = safe.isNotEmpty()
-        for (operation in current.node.sourceOperations()) {
+        for (operation in current.node.sourceOperations(eligibleForDelivery = true)) {
             val before = current.node.receipt(operation, current.localTarget)
             // The fresh inspection has already verified the signed source and recorded its native proof.
             if (finalSeal && before != null) continue
@@ -1798,16 +1798,26 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (!finalSeal || outgoingChanged) {
             mutableView.value = current.node.inspectLocal(recoverNative = !shutdown)
         }
-        val invalid = mutableView.value?.reconciliation?.observations.orEmpty().count {
-            it.stage in setOf(SyncInboxStage.INVALID_OBJECT, SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED)
+        val checked = mutableView.value
+        val heldRecoveryCodes = if (checked?.reconciliation?.recoveryHeldVersions.orEmpty().isNotEmpty())
+            setOf("SYNC_GROUP_RECOVERY_VERSION_NOT_REVIEWED", "SYNC_GROUP_REVOKED_VERSION", "SYNC_GROUP_CURRENT_EPOCH_REQUIRED")
+        else emptySet()
+        val invalid = checked?.reconciliation?.observations.orEmpty().count {
+            it.stage in setOf(SyncInboxStage.INVALID_OBJECT, SyncInboxStage.REJECTED, SyncInboxStage.LOCAL_CUSTODY_BLOCKED) &&
+                it.code !in heldRecoveryCodes
         }
         if (invalid > 0) mutableState.update { it.copy(error = "已隔离 $invalid 个未通过验证的密文候选，原始证据已保留；正确副本可继续同步。") }
         metadataStamp = stamp; lastSourceScan = now
         handledSourceRevision = revision; handledLocalRequest = request
         refreshDevices()
-        val held = mutableView.value?.plan?.units?.values?.count { it.stage !in setOf(LanSyncGroupNativeStage.UNCHANGED, LanSyncGroupNativeStage.READY_OBSERVATION) } ?: 0
+        val held = checked?.plan?.units?.values?.count { it.stage !in setOf(LanSyncGroupNativeStage.UNCHANGED, LanSyncGroupNativeStage.READY_OBSERVATION) } ?: 0
+        val heldByRecovery = checked?.plan?.recoveryHeldUnits?.size ?: 0
         mutableState.update { it.copy(
-            status = if (held > 0) "同步检查完成，$held 项需要审阅或补齐依赖" else "同步检查完成",
+            status = when {
+                heldByRecovery > 0 -> "$heldByRecovery 项历史资料仍保留在本机，等待关联签名记录核对。"
+                held > 0 -> "同步检查完成，$held 项需要审阅或补齐依赖"
+                else -> "同步检查完成"
+            },
             local = if (it.local.lastSuccessAt == null) LanSyncGroupRouteStatus("本机加密副本已检查；历史回执时间未知") else it.local) }
         if (!shutdown && outgoingChanged) requestCloudCheck(dirty = true)
         return true

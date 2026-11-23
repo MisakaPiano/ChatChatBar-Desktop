@@ -21,6 +21,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.test.*
 
 /** Actual joined daily profile, coordinator callbacks, invitation/store TLS and root management.
@@ -34,6 +35,15 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
             LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint, 15_000) { _, port -> Socket("127.0.0.1", port) }
     }
     private suspend fun await(condition: () -> Boolean) = withTimeout(25_000) { while (!condition()) delay(10) }
+    private suspend fun awaitRecovery(coordinator: LanSyncGroupCoordinator, action: String,
+        condition: (LanSyncGroupPanelState) -> Boolean) {
+        val completed = withTimeoutOrNull(25_000) {
+            while (!condition(coordinator.state.value)) delay(10)
+            true
+        } == true
+        val state = coordinator.state.value
+        assertTrue(completed, "$action: stage=${state.stage}, busy=${state.busy}, error=${state.error}, hasExport=${state.membershipRecoveryExportBinding != null}")
+    }
     private class Joined(val f: LanSyncGroupAdministrationTest.Fixture, private val network: LanSyncNetwork) {
         val root = Files.createDirectory(f.root.resolve("joined-profile"))
         val data = Files.createDirectory(f.root.resolve("joined-data"))
@@ -127,8 +137,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         assertContentEquals(originals, Files.readAllBytes(groupFile))
 
         coordinator.confirmMembershipRecovery(review.binding, primary.id.value, selected)
-        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.READY &&
-            coordinator.state.value.membershipRecoveryExportBinding != null }
+        awaitRecovery(coordinator, "signed recovery issuance") {
+            !it.busy && it.stage == LanSyncGroupPanelStage.READY && it.membershipRecoveryExportBinding != null
+        }
         assertNull(coordinator.state.value.membershipRecovery)
         val binding = requireNotNull(coordinator.state.value.membershipRecoveryExportBinding)
         val interrupted = CompletableDeferred<ByteArray>()
@@ -193,12 +204,22 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         assertContentEquals(originals, Files.readAllBytes(groupFile))
         assertEquals(LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT, coordinator.state.value.stage)
         coordinator.confirmMembershipRecoveryImport(review.binding)
-        await { !coordinator.state.value.busy && coordinator.state.value.stage == LanSyncGroupPanelStage.READY }
+        awaitRecovery(coordinator, "explicit recovery import") {
+            !it.busy && it.stage == LanSyncGroupPanelStage.READY
+        }
         assertNull(coordinator.state.value.membershipRecoveryImport)
         val ledger = founder.custody().ledger()
         assertEquals(signed.proof.recovery, ledger.current())
         assertEquals(signed.proof.records.toSet(), ledger.ancestry().toSet())
         assertContentEquals(signed.bytes, exportPackage(coordinator, review.binding))
+        coordinator.unlockManagement(founder.code)
+        await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+        coordinator.createInvitation()
+        await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+        val offer = requireNotNull(coordinator.state.value.invitation)
+        assertTrue(offer.code().startsWith("CCB-GROUP-JOIN2:"))
+        assertEquals(ledger.current().reference(), offer.trust.checkpoint)
+        coordinator.closeInvitation()
     }
 
     private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false) = runBlocking {

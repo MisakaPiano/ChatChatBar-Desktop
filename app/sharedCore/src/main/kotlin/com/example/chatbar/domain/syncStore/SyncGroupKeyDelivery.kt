@@ -6,6 +6,9 @@ import java.security.MessageDigest
 import java.util.Base64
 import kotlinx.serialization.Serializable
 
+internal fun SyncDeviceLedger.keyDeliveryFormat(at: SyncVersionRef = current().reference()): Int =
+    if (ancestry(at).any { it.recovery != null }) 2 else 1
+
 @Serializable data class SyncKeyDeliveryContext(val format: Int, val objectId: SyncStoreId, val group: SyncStoreId,
     val epoch: SyncStoreId, val keyCommitment: String, val authorizingLedger: SyncVersionRef,
     val recipient: String, val recipientKeyHash: String) {
@@ -54,7 +57,7 @@ import kotlinx.serialization.Serializable
             require(cipher.group == current.group && ledger.hasKey(cipher.epoch, cipher.keyCommitment())) { "SYNC_KEY_DELIVERY_KEY_NOT_ADMITTED" }
             val member = requireNotNull(current.members[recipient]?.takeIf { it.active }) { "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" }
             val public = SyncRecipientPublicKey.parse(member.recipientKey)
-            val format = if (ledger.ancestry().any { it.recovery != null }) 2 else 1
+            val format = ledger.keyDeliveryFormat(current.reference())
             val context = SyncKeyDeliveryContext(format, objectId, current.group, cipher.epoch, cipher.keyCommitment(), current.reference(), recipient, public.hash)
             val wrapped = cipher.protectedKeyset { public.encrypt(it, context.bytes()) }
             val unsigned = SyncGroupKeyDelivery(context, Base64.getEncoder().encodeToString(wrapped), "unsigned")
@@ -75,7 +78,7 @@ class SyncTentativeGroupKey internal constructor(val context: SyncKeyDeliveryCon
         val authorizing = ledger.record(context.authorizingLedger)
         require(current.group == context.group && authorizing != null &&
             ledger.hasKey(context.epoch, context.keyCommitment, context.authorizingLedger)) { "SYNC_KEY_DELIVERY_LEDGER_MISSING" }
-        val expectedFormat = if (ledger.ancestry(context.authorizingLedger).any { it.recovery != null }) 2 else 1
+        val expectedFormat = ledger.keyDeliveryFormat(context.authorizingLedger)
         require(context.format == expectedFormat) { "SYNC_KEY_DELIVERY_CONTEXT" }
         require(authorizing.members[context.recipient]?.let { it.active &&
             SyncRecipientPublicKey.parse(it.recipientKey).hash == context.recipientKeyHash } == true) { "SYNC_KEY_DELIVERY_RECIPIENT" }

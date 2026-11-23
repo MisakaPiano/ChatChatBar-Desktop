@@ -21,10 +21,19 @@ data class LanSyncGroupNativeUnit(val unit: String, val stage: LanSyncGroupNativ
 class LanSyncGroupNativePlan internal constructor(val before: LanSyncSnapshot, val plan: LanSyncPlan, val checkpoint: SyncVersionRef,
     val heads: Set<SyncVersionRef>, val expected: Map<String, String>, val sourceFiles: Map<String, String>,
     val units: Map<String, LanSyncGroupNativeUnit>, val appliedBefore: Map<String, LanSyncGroupAppliedUnit>,
-    val advances: Map<String, LanSyncGroupAppliedUnit>, val components: Map<String, Set<String>>)
+    val advances: Map<String, LanSyncGroupAppliedUnit>, val components: Map<String, Set<String>>) {
+    internal val recoveryHeldUnits: Set<String> get() = units.values.filter { it.code == LanSyncGroupNativePlanner.RECOVERY_HELD }.mapTo(linkedSetOf()) { it.unit }
+}
 
 /** Frozen native planning only. Source proposals stay unsigned; OS admission/custody/WAL still own mutation. */
 object LanSyncGroupNativePlanner {
+    internal const val RECOVERY_HELD = "SYNC_GROUP_APPLIED_RECOVERY_HELD"
+
+    internal fun wasHeldByRecovery(reconciled: SyncInboxReconciliation, unit: String, state: LanSyncGroupAppliedUnit,
+        reference: SyncVersionRef): Boolean = reconciled.recoveryHeldVersions[reference]?.changes?.get(unit)?.let {
+        it.valueHash == state.valueHash
+    } == true
+
     fun prepare(current: LanSyncCapture, reconciled: SyncInboxReconciliation,
         applied: Map<String, LanSyncGroupAppliedUnit>, dependencies: Map<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>,
         recordEvidence: LanSyncGroupRecordEvidence, freshLocalRevisions: Set<String> = emptySet(),
@@ -51,10 +60,12 @@ object LanSyncGroupNativePlanner {
             if (allUnits.add(unit)) chargeIndex(768 + 4L * unit.length)
         }
         require(freshLocalRevisions.all { it in allUnits }) { "SYNC_GROUP_LOCAL_REVISION_UNIT" }
+        val recoveryHeld = linkedSetOf<String>()
         applied.forEach { (unit, state) ->
             require(unit.length in 1..600 && state.frontiers.all { reference ->
                 val change = versions[reference]?.changes?.get(unit)
-                change != null && change.valueHash == state.valueHash
+                if (change != null) change.valueHash == state.valueHash
+                else wasHeldByRecovery(reconciled, unit, state, reference).also { if (it) recoveryHeld += unit }
             }) { "SYNC_GROUP_APPLIED_EVIDENCE_MISSING" }
         }
         val rows = linkedMapOf<String, LanSyncGroupNativeUnit>()
@@ -75,6 +86,10 @@ object LanSyncGroupNativePlanner {
             fun row(stage: LanSyncGroupNativeStage, available: LanSyncGroupAvailableUnit? = null,
                 records: LanSyncGroupRecordGate? = null, code: String? = null) =
                 LanSyncGroupNativeUnit(unit, stage, local, before, Collections.unmodifiableSet(frontier), Collections.unmodifiableMap(incomingViews), available, records, code)
+            if (unit in recoveryHeld) {
+                rows[unit] = row(LanSyncGroupNativeStage.DEPENDENCY_HELD, code = RECOVERY_HELD)
+                continue
+            }
             if (unit in current.blockedResourceUnits) {
                 val code = if (unit in current.missingImageUnits) LanSyncMissingImage.CODE else "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
                 rows[unit] = row(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, code = code)
@@ -174,6 +189,10 @@ object LanSyncGroupNativePlanner {
             }
             remaining.removeAll(component)
             val frozen = Collections.unmodifiableSet(component.toSet()); component.forEach { components[it] = frozen }
+            if (component.any { it in recoveryHeld }) {
+                component.forEach { unit -> rows[unit] = rows.getValue(unit).copy(stage = LanSyncGroupNativeStage.DEPENDENCY_HELD, code = RECOVERY_HELD) }
+                continue
+            }
             val ready = component.filter { rows.getValue(it).stage in readyStages }.toSet()
             if (ready.isEmpty()) continue
             if (component.any { rows.getValue(it).stage !in readyStages + LanSyncGroupNativeStage.UNCHANGED }) {
@@ -213,6 +232,7 @@ object LanSyncGroupNativePlanner {
             (native.before.resources + native.plan.snapshot.resources).filterKeys(references::contains)))
         snapshot.validate(); LanSyncScope.validateGraph(snapshot, allowLocalMissingImages = true)
         val units = native.units.mapValues { (unit, row) -> if (unit in blocked &&
+            row.code != RECOVERY_HELD &&
             row.stage != LanSyncGroupNativeStage.UNCHANGED && row.stage != LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED)
             row.copy(stage = LanSyncGroupNativeStage.DEPENDENCY_HELD, code = "SYNC_GROUP_RESOLUTION_HELD") else row }
         return LanSyncGroupNativePlan(native.before, native.plan.copy(snapshot = snapshot), native.checkpoint, native.heads,

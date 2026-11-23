@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.domain.syncStore.*
 import java.nio.file.Files
 import java.nio.file.Path
@@ -68,8 +70,10 @@ class LanSyncGroupNativePlannerTest {
             assertTrue(requireNotNull(view().history).contains(version.reference()))
             return version
         }
-        fun plan(applied: Map<String, LanSyncGroupAppliedUnit>, blocked: Set<String> = emptySet(), fresh: Set<String> = emptySet()): LanSyncGroupNativePlan {
-            val view = view(); val evidence = LanSyncGroupRecordEvidence(requireNotNull(view.history), requireNotNull(view.ledgerCheckpoint))
+        fun plan(applied: Map<String, LanSyncGroupAppliedUnit>, blocked: Set<String> = emptySet(), fresh: Set<String> = emptySet(),
+            supplied: SyncInboxReconciliation = view()): LanSyncGroupNativePlan {
+            val view = supplied
+            val evidence = LanSyncGroupRecordEvidence(requireNotNull(view.history), requireNotNull(view.ledgerCheckpoint))
             val dependencies = linkedMapOf<LanSyncGroupMembershipRequest, LanSyncGroupDependencyResult>()
             val service = LanSyncGroupDependencies(source.cipher.group, source.backend, custody(), source.work, workspace.resourceStore, { _, _, _ -> })
             view.authenticatedVersions.forEach { metadata ->
@@ -90,6 +94,45 @@ class LanSyncGroupNativePlannerTest {
     private fun withFixture(work: (Fixture) -> Unit) {
         val root = Files.createTempDirectory("synthetic-native-group-plan-").toRealPath()
         try { work(Fixture(root)) } finally { check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test fun priorRecoveryHeldReceiptPreservesItsLinkedChatAndAllowsAnIndependentIncomingUnit() = withFixture { f ->
+        val format = "format_cards/stable"
+        val linked = "conversation/linked"
+        val independent = "character_cards/independent"
+        val sourceFormat = f.source.data.resolve("entities/$format.json")
+        Files.createDirectories(sourceFormat.parent)
+        LanSyncJsonFiles.write(sourceFormat, FormatCard.serializer(), FormatCard("stable", "original rule", "format", createdAt = 1))
+        val first = f.publish(setOf(format))
+        val applied = f.apply(f.plan(emptyMap()))
+        val localChat = f.target.resolve("entities/chat_sessions/linked.json")
+        Files.createDirectories(localChat.parent)
+        LanSyncJsonFiles.write(localChat, ChatSession.serializer(),
+            ChatSession("linked", "card", "local unsent edit", formatCardId = "stable", createdAt = 2, updatedAt = 2))
+        val localFormat = f.target.resolve("entities/$format.json")
+        val originalFormat = Files.readAllBytes(localFormat)
+        val originalChat = Files.readAllBytes(localChat)
+        f.card("independent", "incoming after recovery")
+        val next = f.publish(setOf(independent), author = 1, parents = emptySet())
+        val full = f.view()
+        val usable = full.authenticatedVersions.filter { it.envelope.reference() == next.reference() }
+        val history = SyncCausalHistory(f.source.cipher.group, f.custody().ledger().admission(listOf(next), usable))
+        assertEquals(SyncVersionState.ADMITTED, history.offer(next))
+        val recovered = full.copy(history = history, authenticatedVersions = usable, recoveryHeldVersions = mapOf(first.reference() to first))
+
+        val plan = f.plan(applied, supplied = recovered)
+        assertEquals(setOf(format, linked), plan.recoveryHeldUnits)
+        assertEquals(setOf(format, linked), plan.components.getValue(linked))
+        assertEquals(setOf(independent), plan.advances.keys)
+        val result = f.apply(plan)
+        assertEquals(applied.getValue(format), result.getValue(format))
+        assertContentEquals(originalFormat, Files.readAllBytes(localFormat))
+        assertContentEquals(originalChat, Files.readAllBytes(localChat))
+        assertEquals("incoming after recovery", LanSyncJsonFiles.read(f.target.resolve("entities/$independent.json"), CharacterCard.serializer())?.name)
+        for (wrong in listOf(applied + (format to applied.getValue(format).copy(valueHash = "0".repeat(64))), applied)) {
+            val evidence = if (wrong == applied) recovered.copy(recoveryHeldVersions = emptyMap()) else recovered
+            assertEquals("SYNC_GROUP_APPLIED_EVIDENCE_MISSING", assertFailsWith<IllegalArgumentException> { f.plan(wrong, supplied = evidence) }.message)
+        }
     }
 
     @Test fun initiallyEqualForeignContentStillNeedsActualDependenciesAndAnExplicitFreshRestoreIsNotObservedAway() = withFixture { f ->

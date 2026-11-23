@@ -41,6 +41,7 @@ jobs:
             --tests '*LanSyncGroupNearbyStatusTest.mixedSameNameMembersKeepBothObservationsAndColdStartDoesNotInventReachability' \
             --tests '*LanSyncGroupNodeTest.signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown' \
             --tests '*LanSyncGroupNodeTest.olderAppliedHistoryWithoutARefreshMarkerSurvivesCancelledReloadAndIgnoresSourceOnlyReceipts' \
+            --tests '*LanSyncGroupNativePlannerTest.priorRecoveryHeldReceiptPreservesItsLinkedChatAndAllowsAnIndependentIncomingUnit' \
             --tests '*LanSyncGroupNativeApplyOwnerTest.aLostControlReceiptAfterNativeApplyAdvancesExactUnitsWithoutOverwritingLaterLocalEdits' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
