@@ -40,6 +40,9 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
+            adb shell wm size 1080x2160
+            adb shell wm size > "$RUNNER_TEMP/v7-r04-android-qr-display.txt"
+            adb shell wm density >> "$RUNNER_TEMP/v7-r04-android-qr-display.txt"
             adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
             adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
             adb shell am instrument -w -e lanSyncInvitationQrFixture true -e class 'com.example.chatbar.lanSync.AndroidLanSyncInvitationQrTest#denseCodeFitsAt330PixelsAndFallsBackAt329' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r04-android-qr-pixels.txt"
@@ -49,4 +52,4 @@ jobs:
         if: always()
         with:
           name: v7-invitation-r04-android-qr-pixels
-          path: ${{ runner.temp }}/v7-r04-android-qr-pixels.txt
+          path: ${{ runner.temp }}/v7-r04-android-qr-*.txt
