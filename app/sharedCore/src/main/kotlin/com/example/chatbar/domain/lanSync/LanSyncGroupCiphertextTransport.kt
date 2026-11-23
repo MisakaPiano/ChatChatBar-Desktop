@@ -16,13 +16,15 @@ import java.security.MessageDigest
 import java.util.Base64
 import java.util.concurrent.CancellationException
 import javax.net.ssl.SSLSocket
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 
 @Serializable private enum class GroupStoreCommand { METADATA, LIST, GET, PUT, LEDGER }
 @Serializable private data class GroupStoreRequest(val protocol: String, val group: SyncStoreId, val command: GroupStoreCommand,
     val key: CiphertextObjectKey? = null, val operation: SyncStoreId? = null, val descriptor: CiphertextDescriptor? = null,
-    val cursor: String? = null, val pageSize: Int = 100, val offset: Long = 0)
+    val cursor: String? = null, val pageSize: Int = 100, val offset: Long = 0,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val recoveryCheckpoint: SyncVersionRef? = null)
 @Serializable private data class GroupStoreObject(val key: CiphertextObjectKey, val descriptor: CiphertextDescriptor) {
     fun metadata() = CiphertextObjectMetadata(key, descriptor)
 }
@@ -84,19 +86,20 @@ private object GroupStoreWire {
 }
 
 // Reuse the existing request fields to leave every ordinary request byte-compatible with older readers.
-private fun groupLedgerRequest(group: SyncStoreId, checkpoint: SyncVersionRef) =
-    GroupStoreRequest(GroupStoreWire.PROTOCOL, group, GroupStoreCommand.LEDGER, operation = checkpoint.id,
-        cursor = checkpoint.bodyHash)
+private fun groupLedgerRequest(group: SyncStoreId, checkpoint: SyncVersionRef, recovery: SyncVersionRef?) =
+    GroupStoreRequest(if (recovery == null) GroupStoreWire.PROTOCOL else GroupStoreWire.RECOVERY_PROTOCOL,
+        group, GroupStoreCommand.LEDGER, operation = checkpoint.id, cursor = checkpoint.bodyHash, recoveryCheckpoint = recovery)
 
 private const val GROUP_LEDGER_RELAY_BYTES = 16 * 1024 * 1024
 private const val GROUP_LEDGER_RELAY_CHUNK_BYTES = 1024 * 1024
 internal const val GROUP_LEDGER_RELAY_TIMEOUT = 4_000
 
 /** This role can request exactly one signed membership envelope and exposes no store operations. */
-internal fun receiveGroupLedger(socket: SSLSocket, group: SyncStoreId, checkpoint: SyncVersionRef): SyncGroupEnvelope? {
+internal fun receiveGroupLedger(socket: SSLSocket, group: SyncStoreId, checkpoint: SyncVersionRef,
+    recovery: SyncVersionRef? = null): SyncGroupEnvelope? {
     socket.soTimeout = GROUP_LEDGER_RELAY_TIMEOUT
     LanSyncWire(socket).use { wire ->
-        GroupStoreWire.send(wire, GroupStoreRequest.serializer(), groupLedgerRequest(group, checkpoint))
+        GroupStoreWire.send(wire, GroupStoreRequest.serializer(), groupLedgerRequest(group, checkpoint, recovery))
         val reply = GroupStoreWire.reply(wire)
         if (reply == GroupStoreReply(done = true)) return null
         require(reply.length in 1..GROUP_LEDGER_RELAY_BYTES && reply == GroupStoreReply(length = reply.length)) {
@@ -178,17 +181,22 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
         }
         val recovered = requiresRecoveryProtocol(request.group)
         if (request.command == GroupStoreCommand.LEDGER) {
-            require(!recovered && request.protocol == GroupStoreWire.PROTOCOL) { "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED" }
+            val expected = if (recovered) GroupStoreWire.RECOVERY_PROTOCOL else GroupStoreWire.PROTOCOL
+            require(request.protocol == expected && (request.recoveryCheckpoint != null) == recovered) {
+                "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED"
+            }
             return
         }
+        require(request.recoveryCheckpoint == null) { "SYNC_GROUP_LEDGER_RELAY_REQUEST" }
         if (recovered) require(request.protocol == GroupStoreWire.RECOVERY_PROTOCOL) { "SYNC_GROUP_STORE_UPGRADE_REQUIRED" }
         else require(request.protocol == GroupStoreWire.PROTOCOL) { "SYNC_GROUP_STORE_RECOVERY_NOT_INSTALLED" }
     }
 
     private fun sendLedger(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore, checkProtocol: () -> Unit) {
         val checkpoint = SyncVersionRef(requireNotNull(request.operation), requireNotNull(request.cursor))
-        require(request == groupLedgerRequest(store.group, checkpoint)) { "SYNC_GROUP_LEDGER_RELAY_REQUEST" }
-        val envelope = store.membershipLedger(checkpoint)
+        val recovery = request.recoveryCheckpoint
+        require(request == groupLedgerRequest(store.group, checkpoint, recovery)) { "SYNC_GROUP_LEDGER_RELAY_REQUEST" }
+        val envelope = store.membershipLedger(checkpoint, recovery)
         checkProtocol()
         if (envelope == null) {
             GroupStoreWire.reply(wire, GroupStoreReply(done = true))

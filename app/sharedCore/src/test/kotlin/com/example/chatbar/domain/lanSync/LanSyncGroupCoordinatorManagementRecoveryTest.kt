@@ -66,8 +66,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         private val founders = mutableListOf<LanSyncGroupEnrollment>()
         private fun founderAtJoinedProfile() = LanSyncGroupEnrollment(root, workspace, platform, f.joiningIdentity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(founders::add)
-        fun newCoordinator(initiallyPaused: Boolean = false) = LanSyncGroupCoordinator({ Files.isRegularFile(root.resolve("joining/profile.protected")) },
-            ::founderAtJoinedProfile, { joining }, network, "synthetic surviving phone", initiallyPaused = initiallyPaused)
+        fun newCoordinator(initiallyPaused: Boolean = false, lan: LanSyncNetwork = network) =
+            LanSyncGroupCoordinator({ Files.isRegularFile(root.resolve("joining/profile.protected")) },
+                ::founderAtJoinedProfile, { joining }, lan, "synthetic surviving phone", initiallyPaused = initiallyPaused)
         val coordinator = newCoordinator()
         lateinit var node: LanSyncGroupNode
         lateinit var trust: SyncGroupTrust
@@ -124,6 +125,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
 
     @Test fun retainedDailyAuthorContinuesAfterRecoveryWithoutExportingDiscardedContentOrItsReference() =
         actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, continueAuthor = true)
+
+    @Test fun membersContinueOverNearbyAfterMissingAnApprovalFromTheSameInstalledRecovery() =
+        actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, relayAfterRecovery = true)
 
     @Test fun twoOfflineManagersRevokeDifferentMembersAndBothRevocationsSurviveExplicitRecovery() = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-revocation-fork-").toRealPath()
@@ -460,8 +464,96 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         assertContentEquals(heldBytes, Files.readAllBytes(joined.data.resolve("entities/chat_messages/discarded_original.json")))
     }
 
+    private suspend fun verifyNearbyApprovalAfterRecovery(founder: LanSyncGroupAdministrationTest.Fixture, joined: Joined,
+        reopened: LanSyncGroupEnrollment, signed: SignedRecovery, excluded: LanSyncTlsIdentity) {
+        val lan = LanSyncGroupLedgerCatchUpTest.LoopbackLan()
+        val newRoot = founder.root.resolve("nearby-after-recovery")
+        val newIdentity = LanSyncTlsIdentity.create()
+        val c = LanSyncGroupLedgerCatchUpTest.Member(newRoot, newIdentity, lan)
+        val b = requireNotNull(joined.joining.runtimeAccess())
+        val recovered = signed.proof.recovery.reference()
+        val a = requireNotNull(reopened.runtimeAccess())
+        assertEquals(recovered, a.ledger().current().reference())
+        assertEquals(recovered, b.ledger().current().reference())
+        val founderTransport = LanSyncGroupAppTransport(a, lan) { _, _ -> }
+        val founderPort = founderTransport.start()
+        val admitted = try {
+            val invitation = reopened.invitation(founderPort)
+            val proof = CompletableDeferred<LanSyncGroupInvitedPeer>()
+            val offer = founderTransport.invitation(invitation) { proof.complete(it) }
+            assertTrue(offer.code().startsWith("CCB-GROUP-JOIN2:"))
+            c.joining.prepare(offer.code()) {}
+            c.joining.proveUsing("synthetic post-recovery member", lan)
+            val preview = reopened.prepareMember(withTimeout(15_000) { proof.await() }, invitation)
+            val row = reopened.addMember(reopened.resume(founder.code), preview.acknowledge(preview.request.approvalBinding)).ledger
+            assertTrue(row.isApprovalAfter(signed.proof.recovery))
+            assertEquals(row.reference(), a.ledger().current().reference())
+            val result = c.joining.activate(c.joining.bootstrapStore(lan))
+            assertEquals(LanSyncGroupJoinStage.READY, result.profile.stage, result.waitingCode)
+            row.reference()
+        } finally { founderTransport.closeAndDrain(); c.close() }
+        assertFails { Socket(InetAddress.getLoopbackAddress(), founderPort).close() }
+        assertEquals(recovered, b.ledger().current().reference())
+        assertFalse(newIdentity.fingerprint in b.ledger().current().members)
+        val coldC = LanSyncGroupLedgerCatchUpTest.Member(newRoot, newIdentity, lan)
+        val cAccess = coldC.access()
+        val group = cAccess.trust.group
+        val knownB = LanSyncGroupAppTransport(b, lan) { _, _ -> }
+        val knownC = LanSyncGroupAppTransport(cAccess, lan) { _, _ -> }
+        val groupFile = joined.root.resolve("joining/custody/group.protected")
+        val before = Files.readAllBytes(groupFile)
+        val identityB = founder.joiningIdentity
+        try {
+            val peerB = lan.peer(b.device, knownB.start())
+            val peerC = lan.peer(cAccess.device, knownC.start())
+            assertFails { knownC.remote(peerB).listCommits(null) }
+            assertFails { knownB.remote(peerC).listCommits(null) }
+            fun read(checkpoint: SyncVersionRef, recovery: SyncVersionRef?, requester: LanSyncTlsIdentity = identityB) =
+                lan.connect(requester, peerC).use { receiveGroupLedger(it, group, checkpoint, recovery) }
+            assertFails { read(recovered, null) }
+            assertFails { read(signed.proof.primary, recovered) }
+            assertFails { read(recovered, recovered.copy(bodyHash = "0".repeat(64))) }
+            assertFails { read(recovered, recovered, excluded) }
+            assertFails { read(recovered, recovered, LanSyncTlsIdentity.create()) }
+            assertContentEquals(before, Files.readAllBytes(groupFile))
+        } finally { knownC.closeAndDrain(); knownB.closeAndDrain() }
+
+        val coldB = joined.newCoordinator(lan = lan)
+        val discovery = LanSyncGroupDiscovery(cAccess, object : LanSyncNetwork by lan {
+            override val discoveryEnabled = true
+        }) { _, failure -> throw failure }
+        try {
+            coldC.coordinator.startIfConfigured()
+            await { lan.discoverGroup(group, b.device, cAccess.device) != null }
+            discovery.start(requireNotNull(lan.discoverGroup(group, b.device, cAccess.device)).port)
+            lan.probeMember = b.device
+            coldB.startIfConfigured()
+            awaitRecovery(coldB, "same recovery nearby approval") { it.devices.any { row -> row.id == cAccess.device } }
+            assertEquals(admitted, requireNotNull(joined.joining.runtimeAccess()).ledger().current().reference())
+            assertEquals(1, lan.controlDials.get())
+            val bImage = Files.createDirectories(joined.data.resolve("images")).resolve("new-after-recovery.png")
+            Files.newOutputStream(bImage).use { PrivacyPngEncoder.write(it, 4, 4) { _, row -> row.fill(0xff193f92.toInt()) } }
+            val bPng = Files.readAllBytes(bImage)
+            writeChat(joined.data, "after-recovery-b", "after-recovery-b-message", "synthetic body after-recovery-b", listOf(bImage))
+            val cPng = coldC.addConversation("after-recovery-c", 0xffcc33)
+            coldB.retry()
+            withTimeout(45_000) {
+                while (coldC.chats.getMessages("after-recovery-b").size != 1 ||
+                    !Files.isRegularFile(joined.data.resolve("entities/chat_messages/after-recovery-c_after-recovery-c-message.json"))) delay(40)
+            }
+            coldC.verifyConversation("after-recovery-b", bPng)
+            val received = ChatRepository(JsonFileStorage(joined.data)).getMessages("after-recovery-c").single()
+            assertEquals("synthetic body after-recovery-c", received.content)
+            assertContentEquals(cPng, Files.readAllBytes(Path.of(received.images.single())))
+            coldB.closeAndDrain()
+            val reopenedB = requireNotNull(joined.joining.runtimeAccess())
+            assertEquals(admitted, reopenedB.ledger().current().reference())
+            assertEquals(recovered, reopenedB.ledger().latestRecovery())
+        } finally { discovery.close(); coldB.closeAndDrain(); coldC.close() }
+    }
+
     private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false,
-        continueAuthor: Boolean = false, nativeReceiptBeforeFork: Boolean = false) = runBlocking {
+        continueAuthor: Boolean = false, nativeReceiptBeforeFork: Boolean = false, relayAfterRecovery: Boolean = false) = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-administrators-").toRealPath()
         try {
             LanSyncGroupAdministrationTest.Fixture(root).use { founder ->
@@ -739,6 +831,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                                 assertNull(reopened.state.value.membershipConflict)
                                 assertContentEquals(signed.bytes, exportPackage(reopened, signed.proof.binding))
                             } finally { reopened.closeAndDrain() }
+                        }
+                        if (relayAfterRecovery) founderOwner().use { reopened ->
+                            verifyNearbyApprovalAfterRecovery(founder, joined, reopened, requireNotNull(signed), recipientD)
                         }
                     }
                     originals.forEach { (file, raw) -> assertContentEquals(raw, Files.readAllBytes(file)) }

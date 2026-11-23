@@ -88,28 +88,25 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
         return ledger().ancestry().any { it.recovery != null }
     }
     internal fun canOfferLedgerTo(peer: String): Boolean {
-        val graph = ledger()
-        if (graph.ancestry().any { it.recovery != null }) return false
-        val members = graph.current().members
+        val members = ledger().current().members
         return members[device]?.active == true && members[peer]?.active == true
     }
     internal fun catchUpLedger(peer: LanSyncPeer, connect: (LanSyncTlsIdentity, LanSyncPeer) -> SSLSocket): Boolean {
         val graph = ledger()
-        if (graph.ancestry().any { it.recovery != null }) return false
         val current = graph.current()
         if (current.members[device]?.active != true || peer.fingerprint in current.members) return false
         val checkpoint = current.reference()
+        val recovery = graph.latestRecovery(checkpoint)
         val (actualPeer, envelope) = connect(identity, peer).use { socket ->
             val chain = socket.session.peerCertificates
             require(chain.size == 1 && lanSyncHash(chain.single().encoded) == peer.fingerprint) {
                 "SYNC_GROUP_LEDGER_RELAY_TLS"
             }
             val actualPeer = Base64.getEncoder().encodeToString(chain.single().encoded)
-            val received = receiveGroupLedger(socket, trust.group, checkpoint) ?: return false
+            val received = receiveGroupLedger(socket, trust.group, checkpoint, recovery) ?: return false
             actualPeer to received
         }
-        if (requiresRecoveryProtocol(trust.group)) return false
-        return custody.extendFromPeer(checkpoint, envelope, certificate, actualPeer)
+        return custody.extendFromPeer(checkpoint, envelope, certificate, actualPeer, recovery)
     }
     private val peerNames by lazy { LanSyncGroupPeerNames(work, trust, custody::ledger, peerNameProtect, peerNameUnprotect) }
     private val cloudRouteCatalog by lazy {

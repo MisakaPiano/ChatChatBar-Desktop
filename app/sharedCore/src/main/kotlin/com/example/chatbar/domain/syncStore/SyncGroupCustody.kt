@@ -146,7 +146,7 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
 
     /** A provisional LAN peer can only extend the exact retained checkpoint with owner-signed membership. */
     internal fun extendFromPeer(expected: SyncVersionRef, envelope: SyncGroupEnvelope,
-        localCertificate: String, peerCertificate: String): Boolean = guarded {
+        localCertificate: String, peerCertificate: String, recovery: SyncVersionRef? = null): Boolean = guarded {
         require(envelope.group == group && envelope.kind == SyncGroupObjectKind.DEVICE_LEDGER) {
             "SYNC_GROUP_LEDGER_RELAY_CONTEXT"
         }
@@ -155,18 +155,20 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         val before = ledger.current()
         val peer = SyncDeviceSignatures.decode(peerCertificate)
         if (before.reference() != expected || peer.fingerprint in before.members) return@guarded false
+        require(ledger.latestRecovery(expected) == recovery) { "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED" }
         val local = before.members[recipient.device]
         require(local?.let { it.active && it.certificate == localCertificate &&
             it.recipientKey == recipient.publicKey.encoded } == true) { "SYNC_GROUP_LEDGER_RELAY_LOCAL" }
 
         val tip = requireNotNull(envelope.deviceLedger)
         val suffix = envelope.ledgerHistory + tip
-        var parent = expected
+        var parent = before
         for (row in suffix) {
-            require(row.parent == parent && ledger.offer(row) == SyncVersionState.ADMITTED) {
+            require(row.parent == parent.reference() && row.recovery == null &&
+                (recovery == null || row.isApprovalAfter(parent)) && ledger.offer(row) == SyncVersionState.ADMITTED) {
                 "SYNC_GROUP_LEDGER_RELAY_ANCESTRY"
             }
-            parent = row.reference()
+            parent = row
         }
         val latest = ledger.current()
         require(latest.reference() == tip.reference()) { "SYNC_GROUP_LEDGER_RELAY_TIP" }

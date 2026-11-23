@@ -73,13 +73,25 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     fun requireWriteAllowed(key: CiphertextObjectKey) = authorize(key, true)
 
     /** The caller's real TLS identity still needs ordinary active membership. */
-    internal fun membershipLedger(after: SyncVersionRef): SyncGroupEnvelope? {
+    internal fun membershipLedger(after: SyncVersionRef, recovery: SyncVersionRef?): SyncGroupEnvelope? {
         val ledger = ledger()
         if (!active(ledger)) denied()
         val tip = ledger.current()
-        val history = ledger.history(tip.reference())
+        val history = ledger.authorityHistory(tip.reference())
         val anchor = history.indexOfFirst { it.reference() == after }
         require(anchor >= 0) { "SYNC_GROUP_LEDGER_RELAY_ANCESTRY" }
+        val lastRecovery = history.indexOfLast { it.recovery != null }
+        require(history.getOrNull(lastRecovery)?.reference() == recovery && anchor >= lastRecovery) {
+            "SYNC_GROUP_LEDGER_RELAY_RECOVERY_REQUIRED"
+        }
+        if (recovery != null) {
+            require(history[anchor].members[peer.fingerprint] == tip.members[peer.fingerprint]) {
+                "SYNC_GROUP_LEDGER_RELAY_PEER"
+            }
+            for (index in anchor until history.lastIndex) {
+                require(history[index + 1].isApprovalAfter(history[index])) { "SYNC_GROUP_LEDGER_RELAY_ANCESTRY" }
+            }
+        }
         if (anchor == history.lastIndex) return null
         return SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = tip,
             ledgerHistory = history.subList(anchor + 1, history.lastIndex))

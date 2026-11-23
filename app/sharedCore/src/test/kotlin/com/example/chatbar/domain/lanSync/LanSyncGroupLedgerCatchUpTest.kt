@@ -29,7 +29,7 @@ import kotlin.test.*
 
 /** Real UDP responder and mutual TLS, with loopback dials and synthetic protected profiles. */
 class LanSyncGroupLedgerCatchUpTest {
-    private class LoopbackLan : LanSyncNetwork {
+    internal class LoopbackLan : LanSyncNetwork {
         private val ports = ConcurrentHashMap<String, Int>()
         val hints = AtomicInteger()
         val controlDials = AtomicInteger()
@@ -75,7 +75,7 @@ class LanSyncGroupLedgerCatchUpTest {
         }
     }
 
-    private class Member(val root: Path, val identity: LanSyncTlsIdentity, network: LoopbackLan) {
+    internal class Member(val root: Path, val identity: LanSyncTlsIdentity, network: LoopbackLan) {
         val profile = Files.createDirectories(root.resolve("profile"))
         private val data = Files.createDirectories(root.resolve("data"))
         private val gate = LanSyncOperationGate()

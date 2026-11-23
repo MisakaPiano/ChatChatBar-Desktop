@@ -163,6 +163,9 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
         }
         return Collections.unmodifiableList(result.asReversed())
     }
+
+    @Synchronized internal fun latestRecovery(reference: SyncVersionRef = current().reference()): SyncVersionRef? =
+        authorityHistory(reference).lastOrNull { it.recovery != null }?.reference()
     @Synchronized fun hasKey(epoch: SyncStoreId, commitment: String, at: SyncVersionRef = current().reference()): Boolean {
         return contains(at) && ancestorIds(at.id).any { records.getValue(it).let { row -> row.epoch == epoch && row.keyCommitment == commitment } }
     }
@@ -368,3 +371,11 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
         private val ancestryOrder = compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value }
     }
 }
+
+/** Nearby relay after explicit recovery may extend an epoch only with an ordinary single-device approval. */
+internal fun SyncDeviceLedgerRecord.isApprovalAfter(previous: SyncDeviceLedgerRecord): Boolean =
+    recovery == null && parent == previous.reference() && epoch == previous.epoch &&
+        keyCommitment == previous.keyCommitment && acceptedHeads == previous.acceptedHeads &&
+        coveredTypes == previous.coveredTypes && members.size == previous.members.size + 1 &&
+        previous.members.all { (id, row) -> members[id] == row } &&
+        members.filterKeys { it !in previous.members }.values.single().active
