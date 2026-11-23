@@ -1,0 +1,149 @@
+name: Windows original invitation save dialog
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/workflows/lan-v7-windows-invitation-save-dialog.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  CCB_INVITE_DIALOG_SOURCE_SHA: 40981ae4045114d1d2a076a82b02b7c7f5275cc7
+jobs:
+  native-invitation-save:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Preserve exact bytes in the disposable checkout
+        shell: pwsh
+        run: |
+          git config --global core.longpaths true
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          if ($LASTEXITCODE -ne 0) { throw 'INVITE_DIALOG_GIT_CONFIG' }
+      - uses: actions/checkout@v4
+        with:
+          path: invite-dialog-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: MisakaPiano/ChatChatBar-Desktop
+          ref: ${{ env.CCB_INVITE_DIALOG_SOURCE_SHA }}
+          path: invite-dialog-source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run the real Windows picker and verify one original JUnit result
+        working-directory: invite-dialog-control
+        shell: pwsh
+        run: |
+          @'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+          import tempfile
+
+          helpers = Path.cwd() / "tools/lan-next-control"
+          sys.path.insert(0, str(helpers))
+          import desktop_group_ui_control as proof
+
+          proof.CLASS = "com.example.chatbar.desktop.WindowsInvitationSaveDialogProofTest"
+          proof.METHOD = "realSaveDialogPreservesTheExistingInvitationAndAcceptsANewName"
+          proof.TARGET = "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/WindowsInvitationSaveDialogProofTest.kt"
+          kt_name = "WindowsInvitationSaveDialogProofTest.kt"
+          ps_name = "invoke-owned-invitation-save.ps1"
+          kt_sha = "bf9d143e15fe1616182b56a3726413b0bff8630553022a26d07cc009685b7191"
+          ps_sha = "e4c7943d4dc64ad4301f165d3736cf786541be2053f4a33e2355b6f5caffe537"
+          source_sha = os.environ["CCB_INVITE_DIALOG_SOURCE_SHA"]
+          control_sha = os.environ["GITHUB_SHA"]
+          runner = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+          report = runner / "v7-invitation-save-evidence.json"
+          request = {"sourceSha": source_sha, "fixtureSha256": kt_sha}
+          receipt = {
+              "kind": "CCB_WINDOWS_INVITATION_SAVE_DIALOG_V1",
+              "scope": "PRODUCT_WINDOWS_PICKER_AND_CREATE_NEW",
+              "passed": False,
+              "phase": "SOURCE_AND_FIXTURES",
+              "sourceSha": source_sha,
+              "controlSha": control_sha,
+              "fixtureSha256": kt_sha,
+              "automationSha256": ps_sha,
+          }
+          proof.cloud_windows(os.environ)
+          proof.require(all(re.fullmatch(r"[0-9a-f]{40}", sha) for sha in (source_sha, control_sha)),
+                        "EXACT_INVITE_DIALOG_GIT_IDENTITIES")
+
+          try:
+              source = (Path.cwd().parent / "invite-dialog-source").resolve(strict=True)
+              proof.require(proof.git(Path.cwd(), "rev-parse", "HEAD") == control_sha, "EXACT_INVITE_DIALOG_CONTROL")
+              proof.require(proof.git(source, "rev-parse", "HEAD") == source_sha, "EXACT_INVITE_DIALOG_SOURCE")
+              for checkout in (Path.cwd(), source):
+                  proof.require(proof.git(checkout, "config", "--get", "core.autocrlf") == "false" and
+                                proof.git(checkout, "config", "--get", "core.eol") == "lf", "EXACT_INVITE_DIALOG_CHECKOUT_EOL")
+              proof.require(proof.git(source, "status", "--porcelain", "--untracked-files=all") == "",
+                            "CLEAN_INVITE_DIALOG_SOURCE")
+              fixtures = helpers / "fixtures"
+              for name in (kt_name, ps_name):
+                  path = fixtures / name
+                  proof.require(path.is_file() and not path.is_symlink(), "INVITE_DIALOG_FIXTURE_PATH")
+              kt = (fixtures / kt_name).read_bytes()
+              ps = (fixtures / ps_name).read_bytes()
+              proof.require(hashlib.sha256(kt).hexdigest() == kt_sha and b"\r" not in kt, "INVITE_DIALOG_KOTLIN_BYTES")
+              proof.require(hashlib.sha256(ps).hexdigest() == ps_sha and ps.startswith(b"\xef\xbb\xbf") and b"\r" not in ps,
+                            "INVITE_DIALOG_POWERSHELL_BYTES")
+              proof.install_overlay(source, kt)
+              proof.overlay_status(source, request)
+              script = runner / ps_name
+              with script.open("xb") as stream:
+                  stream.write(ps)
+
+              raw_xml = source / ("app/desktopApp/build/test-results/test/TEST-" + proof.CLASS + ".xml")
+              proof.require(not raw_xml.exists() and not raw_xml.is_symlink(), "PREEXISTING_NATIVE_XML_REFUSED")
+              private = Path(tempfile.mkdtemp(prefix="ccb-invite-save-control-", dir=runner))
+              local, roaming = private / "Local", private / "Roaming"
+              local.mkdir()
+              roaming.mkdir()
+              env = dict(os.environ, LOCALAPPDATA=str(local), APPDATA=str(roaming),
+                         CCB_WINDOWS_INVITE_DIALOG_PROOF="true", CCB_INVITE_DIALOG_AUTOMATION_SCRIPT=str(script))
+              receipt["phase"] = "NATIVE_PICKER_TEST"
+              with (private / "gradle-original.log").open("xb") as log:
+                  run = subprocess.run(proof.native_command(source), cwd=source / "app", env=env,
+                                       stdout=log, stderr=subprocess.STDOUT, timeout=2100)
+              receipt["gradleExit"] = run.returncode
+              receipt["phase"] = "ORIGINAL_JUNIT"
+              proof.require(raw_xml.is_file() and not raw_xml.is_symlink() and
+                            0 < raw_xml.stat().st_size <= 1024 * 1024, "INVITE_DIALOG_NATIVE_XML_MISSING")
+              raw = raw_xml.read_bytes()
+              receipt["rawXmlSha256"] = hashlib.sha256(raw).hexdigest()
+              actual = proof.junit_result(raw)
+              proof.require(run.returncode == 0, "INVITE_DIALOG_GRADLE_FAILED")
+              proof.overlay_status(source, request)
+              receipt.update(phase="COMPLETE", passed=True, junit=actual)
+          except Exception:
+              # Diagnostic output is deliberately limited to the fixed phase and hashes in the receipt.
+              print("INVITE_DIALOG_PROOF_INCOMPLETE:" + receipt["phase"], file=sys.stderr)
+          finally:
+              payload = json.dumps(receipt, ensure_ascii=True, sort_keys=True).encode("ascii") + b"\n"
+              proof.require(len(payload) < 4096, "INVITE_DIALOG_SAFE_RECEIPT")
+              with report.open("xb") as stream:
+                  stream.write(payload)
+          sys.exit(0 if receipt["passed"] else 1)
+          '@ | python -B -
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-windows-invitation-save-dialog-safe-result
+          path: ${{ runner.temp }}/v7-invitation-save-evidence.json
+          if-no-files-found: error
+          retention-days: 5
