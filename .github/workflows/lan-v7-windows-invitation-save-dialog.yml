@@ -52,6 +52,7 @@ jobs:
           import subprocess
           import sys
           import tempfile
+          import xml.etree.ElementTree as ET
 
           helpers = Path.cwd() / "tools/lan-next-control"
           sys.path.insert(0, str(helpers))
@@ -125,6 +126,27 @@ jobs:
                             0 < raw_xml.stat().st_size <= 1024 * 1024, "INVITE_DIALOG_NATIVE_XML_MISSING")
               raw = raw_xml.read_bytes()
               receipt["rawXmlSha256"] = hashlib.sha256(raw).hexdigest()
+              suite = ET.fromstring(raw)
+              receipt["originalCounts"] = {
+                  tag: int(suite.attrib[tag]) for tag in ("tests", "failures", "errors", "skipped")
+                  if re.fullmatch(r"[0-9]{1,4}", suite.get(tag, ""))
+              }
+              for failure in suite.findall("testcase/failure") + suite.findall("testcase/error"):
+                  detail = (failure.get("message", "") + "\n" + (failure.text or ""))[:32768]
+                  types = {"IllegalStateException", "AssertionError", "TimeoutException", "ExecutionException", "IOException"}
+                  category = failure.get("type", "").rsplit(".", 1)[-1]
+                  if category in types:
+                      receipt["failureType"] = category
+                  codes = {
+                      "INVITE_DIALOG_ENVIRONMENT_SCOPE", "INVITE_DIALOG_SCRIPT_SCOPE", "INVITE_DIALOG_DIRECTORY_SCOPE",
+                      "INVITE_DIALOG_GRAPHICAL_CLOUD_REQUIRED", "INVITE_DIALOG_OWNER_MISMATCH", "INVITE_DIALOG_ENUMERATION_FAILED",
+                      "INVITE_DIALOG_AMBIGUOUS", "INVITE_DIALOG_NOT_OBSERVED", "INVITE_DIALOG_TARGET_CHANGED",
+                      "INVITE_DIALOG_CLEANUP_REFUSED", "INVITE_DIALOG_FILENAME_CONTROL_NOT_UNIQUE", "INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE",
+                      "INVITE_DIALOG_SELECTION_CHANGED", "INVITE_DIALOG_AUTOMATION_FAILED", "INVITE_DIALOG_AUTOMATION_TIMEOUT",
+                  }
+                  receipt["failureCodes"] = sorted(set(re.findall(r"\bINVITE_DIALOG_[A-Z_]+\b", detail)) & codes)
+                  receipt["fixtureLines"] = [int(line) for line in re.findall(r"WindowsInvitationSaveDialogProofTest\.kt:([0-9]{1,3})", detail)[:6]]
+                  break
               actual = proof.junit_result(raw)
               proof.require(run.returncode == 0, "INVITE_DIALOG_GRADLE_FAILED")
               proof.overlay_status(source, request)
