@@ -24,7 +24,9 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
     private data class PeerBlob(val binding: SyncEnvelopeBlobBinding, val source: SyncAuthenticatedGroupObject, val signedDirectly: Boolean)
     private data class RecoveredReads(val objects: Map<CiphertextObjectKey, Set<CiphertextDescriptor>>,
-        val blobs: Map<CiphertextObjectMetadata, List<PeerBlob>>)
+        val blobs: Map<CiphertextObjectMetadata, List<PeerBlob>>) {
+        val verified = java.util.concurrent.ConcurrentHashMap.newKeySet<CiphertextObjectMetadata>()
+    }
     private val offlineReadControls = RecoveredReads(mapOf(vault.key to setOf(vaultDescriptor)), emptyMap())
     private var recoveredReads: Pair<SyncInboxReconciliation, RecoveredReads>? = null
     private val verifiedPeerBlobs = java.util.concurrent.ConcurrentHashMap.newKeySet<LanSyncGroupTargetRawCheck>()
@@ -61,8 +63,9 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     }
     private fun verifyPeerBlob(checkpoint: SyncVersionRef, metadata: CiphertextObjectMetadata): Boolean {
         if (metadata.key == vault.key && metadata.descriptor == vaultDescriptor) return true
-        val bindings = recoveredReadScope(checkpoint).blobs[metadata].orEmpty()
-        return bindings.any { (binding, source, signedDirectly) ->
+        val scope = recoveredReadScope(checkpoint)
+        if (metadata in scope.verified) return true
+        val allowed = scope.blobs[metadata].orEmpty().any { (binding, source, signedDirectly) ->
             if (!signedDirectly && !node.isDeclaredPeerResource(source, binding.plaintext)) return@any false
             val key = custody.key(binding.epoch)
             val proof = LanSyncGroupTargetRawCheck(trust.group, binding.epoch, key.keyCommitment(), metadata, binding.plaintext)
@@ -76,6 +79,8 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
             }
             true
         }
+        if (allowed) scope.verified += metadata
+        return allowed
     }
     fun ledger() = custody.ledger()
     internal fun requiresRecoveryProtocol(group: SyncStoreId): Boolean {

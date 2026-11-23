@@ -64,7 +64,11 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         if (!active(ledger)) {
             val notice = notice(ledger)
             if (key != notice.key || expected != notice.descriptor) denied()
-        } else if (readChoices(ledger, key)?.contains(expected) == false) denied()
+        } else {
+            if (readChoices(ledger, key)?.contains(expected) == false) denied()
+            if (key.kind == CiphertextObjectKind.BLOB && verifyRecoveredBlob?.invoke(
+                    ledger.current().reference(), CiphertextObjectMetadata(key, expected)) == false) denied()
+        }
     }
     fun requireWriteAllowed(key: CiphertextObjectKey) = authorize(key, true)
 
