@@ -1,0 +1,41 @@
+name: V7 invitation seventh repair checks
+on:
+  push:
+    branches: [codex/v7-invitation-r07-repair-20261123]
+    paths:
+      - .github/workflows/v7-invitation-round-seven-proof.yml
+      - app/sharedCore/**
+      - app/app/src/main/java/com/example/chatbar/lanSync/**
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/**
+permissions:
+  contents: read
+jobs:
+  shared:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify isolated local photo failures and independent delivery
+        working-directory: app
+        run: |
+          bash ./gradlew :sharedCore:test \
+            --tests '*LanSyncGroupNodeTest.aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen' \
+            --tests '*LanSyncGroupNodeTest.aTruncatedOwnedPngRetainsItsOriginalRecordWithoutBlockingAnIndependentPublish' \
+            --tests '*LanSyncWorkspaceTest.onlyConfirmedOwnedMissingMessageImagesAreIsolated' \
+            -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
+            --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r07-local-photo-isolation
+          path: app/sharedCore/build/test-results/test/TEST-*.xml

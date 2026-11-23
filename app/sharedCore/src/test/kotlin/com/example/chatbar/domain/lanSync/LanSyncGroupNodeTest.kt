@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.FormatCard
+import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.domain.syncStore.*
@@ -333,7 +334,10 @@ class LanSyncGroupNodeTest {
             ChatSession.serializer(), ChatSession(id, "card", title, createdAt = 1, updatedAt = 1))
         fun message(end: Group.End, session: String, id: String, body: String, photo: Path? = null) =
             LanSyncJsonFiles.write(path(end, "chat_messages", "${session}_$id"), ChatMessage.serializer(),
-                ChatMessage(id, session, MessageRole.USER, body, images = listOfNotNull(photo?.toString()), createdAt = 2, updatedAt = 2))
+                ChatMessage(id, session, MessageRole.USER, body, images = listOfNotNull(photo?.toString()),
+                    generatedImageMetadata = if (session == "a" && photo != null) listOf(
+                        GeneratedImageMetadata(photo.toString(), "synthetic", negativePrompt = "", sizePreset = "small", width = 8, height = 8)
+                    ) else emptyList(), createdAt = 2, updatedAt = 2))
         suspend fun send(units: Set<String>) {
             val review = origin.inspect().review(units)
             publisher.send(origin, origin.commit(review, confirmations = review.requiredBindings))
@@ -349,7 +353,9 @@ class LanSyncGroupNodeTest {
         val oldReceipt = receiver.inspect().nativeState.units.getValue(a)
         val recordA = path(local, "chat_messages", "a_old")
         val rawA = Files.readAllBytes(recordA)
-        val localImage = Path.of(requireNotNull(LanSyncJsonFiles.read(recordA, ChatMessage.serializer())).images.single())
+        val localMessage = requireNotNull(LanSyncJsonFiles.read(recordA, ChatMessage.serializer()))
+        val localImage = Path.of(localMessage.images.single())
+        assertEquals(localImage.toString(), localMessage.generatedImageMetadata.single().imagePath)
         assertContentEquals(bytes, Files.readAllBytes(localImage))
         Files.delete(localImage)
 
@@ -418,6 +424,57 @@ class LanSyncGroupNodeTest {
         assertEquals(oldReceipt, restored.nativeState.units.getValue(a))
         assertContentEquals(rawA, Files.readAllBytes(recordA))
         assertContentEquals(bytes, Files.readAllBytes(localImage))
+    }
+
+    @Test fun aTruncatedOwnedPngRetainsItsOriginalRecordWithoutBlockingAnIndependentPublish() = withGroup { group ->
+        val local = group.End(0); val peer = group.End(1)
+        local.resourceValidator = { kind, file, _ -> if (kind == "images") LanSyncRasterPolicy.checkPng(file, false) }
+        val sender = local.enroll(); val receiver = peer.enroll()
+        val damaged = "conversation/damaged"; val independent = "conversation/independent"
+        val image = Files.createDirectories(local.data.resolve("images")).resolve("owned.png")
+        val raster = BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB)
+        try { assertTrue(ImageIO.write(raster, "png", image.toFile())) } finally { raster.flush() }
+        val original = Files.readAllBytes(image)
+        val sessions = Files.createDirectories(local.data.resolve("entities/chat_sessions"))
+        val messages = Files.createDirectories(local.data.resolve("entities/chat_messages"))
+        listOf("damaged", "independent").forEach { id ->
+            LanSyncJsonFiles.write(sessions.resolve("$id.json"), ChatSession.serializer(), ChatSession(id, "card", id,
+                createdAt = 1, updatedAt = 1))
+        }
+        val record = messages.resolve("damaged_original.json")
+        LanSyncJsonFiles.write(record, ChatMessage.serializer(), ChatMessage("original", "damaged", MessageRole.USER, "保留这张图",
+            images = listOf(image.toString()), createdAt = 2, updatedAt = 2))
+        val initial = sender.commit(sender.inspect().review(setOf(damaged, independent)))
+        local.send(sender, initial)
+        receiver.apply(requireNotNull(peer.scan(receiver).plan))
+        val previous = sender.inspect().nativeState.units.getValue(damaged)
+        val recordBytes = Files.readAllBytes(record)
+        val truncated = original.copyOf(8)
+        Files.write(image, truncated)
+        assertEquals("SYNC_IMAGE_INVALID", assertFailsWith<IllegalArgumentException> {
+            local.workspace.capture(group.identities[0].fingerprint).close()
+        }.message)
+
+        LanSyncJsonFiles.write(messages.resolve("independent_new.json"), ChatMessage.serializer(),
+            ChatMessage("new", "independent", MessageRole.USER, "独立会话继续发表", createdAt = 3, updatedAt = 3))
+        val pending = sender.inspect()
+        assertEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, requireNotNull(pending.plan).units.getValue(damaged).stage)
+        assertFailsWith<IllegalArgumentException> { pending.review(setOf(damaged)) }
+        val update = sender.commit(pending.review(setOf(independent)))
+        assertEquals(setOf(independent), update.entry.version.changes.keys)
+        local.send(sender, update)
+        receiver.apply(requireNotNull(peer.scan(receiver).plan))
+        val readBack = LanSyncJsonFiles.read(peer.data.resolve("entities/chat_messages/independent_new.json"), ChatMessage.serializer())
+        assertEquals("独立会话继续发表", readBack?.content)
+        assertEquals(previous, sender.inspect().nativeState.units.getValue(damaged))
+        assertContentEquals(recordBytes, Files.readAllBytes(record))
+        assertContentEquals(truncated, Files.readAllBytes(image))
+        Files.write(image, original)
+        val repaired = local.open(workspaceOwner = local.openWorkspace()).inspect()
+        assertNotEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, requireNotNull(repaired.plan).units.getValue(damaged).stage)
+        assertEquals(previous, repaired.nativeState.units.getValue(damaged))
+        assertContentEquals(recordBytes, Files.readAllBytes(record))
+        assertContentEquals(original, Files.readAllBytes(image))
     }
 
     @Test fun signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown() = withGroup { g ->
