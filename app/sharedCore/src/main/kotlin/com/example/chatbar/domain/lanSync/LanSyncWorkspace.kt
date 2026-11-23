@@ -207,10 +207,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                     val relative = dataRoot.relativize(file).toString().replace('\\', '/')
                     require(relative == LanSyncScope.relativePath(original)) { "SYNC_STORAGE_ID" }
                     chargeIndex(768 + 8L * (relative.length + id.length))
-                    val messageImages = if (isolateLocalImages && type == "chat_messages")
-                        LanSyncMissingImage.images(body["images"] as? JsonArray).toSet()
-                    else emptySet()
-                    val normalized = LanSyncScope.normalize(type, mapResources(body) resource@{ reference, field ->
+                    fun blockRecord() {
+                        if (blockedRecords.add(original.key)) chargeIndex(144 + 4L * original.key.length)
+                    }
+                    val normalized = LanSyncScope.normalize(type, mapResourcesWithPath(body) resource@{ reference, field, path ->
                         if (reference.isBlank() || field != "vibePayload" && reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) ||
                             type == "save_slots" && field != "vibePayload" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
                                 reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX))) reference else {
@@ -223,14 +223,15 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                             } else (if (field == "packageFile") dataRoot.resolve("save_slot_packages").resolve(reference) else resolveResource(reference)).also { source ->
                                 require(source.toAbsolutePath().normalize().startsWith(dataRoot)) { "SYNC_EXTERNAL_RESOURCE" }
                             }
-                            if (reference in messageImages && LanSyncMissingImage.allows(type, field) && !reference.startsWith("asset:") &&
-                                resource.startsWith(imageRoot)) {
+                            val ownedMessageImage = isolateLocalImages && LanSyncMissingImage.allows(type, path) &&
+                                !reference.startsWith("asset:") && resource.startsWith(imageRoot) && resource.normalize() == resource
+                            if (ownedMessageImage) {
                                 val missing = missingOwnedImage(resource)
                                 val previous = imageAvailability.putIfAbsent(resource, missing)
                                 require(previous == null || previous == missing) { "SYNC_SOURCE_CHANGED" }
                                 if (previous == null) chargeIndex(192 + 4L * resource.toString().length)
                                 if (missing) {
-                                    if (blockedRecords.add(original.key)) chargeIndex(144 + 4L * original.key.length)
+                                    blockRecord()
                                     val relativeImage = relativeResource(resource)
                                     return@resource LanSyncMissingImage.reference(fileMediaId(resource) ?: derivedMediaId(relativeImage), relativeImage)
                                 }
@@ -251,7 +252,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                                 try { validateResource(kind, requireNotNull(blobs[hash]), original) }
                                 catch (failure: LanSyncLocalImageUnsupported) {
                                     if (!isolateLocalImages || kind != "images" || Thread.currentThread().isInterrupted) throw failure
-                                    if (blockedRecords.add(original.key)) chargeIndex(144 + 4L * original.key.length)
+                                    blockRecord()
+                                } catch (failure: LanSyncInvalidImage) {
+                                    if (!ownedMessageImage || Thread.currentThread().isInterrupted) throw failure
+                                    blockRecord()
                                 }
                             }
                             val suffix = if (kind == "payloads") "utf8" else reference.substringAfterLast('.', "bin").lowercase().takeIf {
@@ -616,7 +620,10 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
         const val MAX_RECORD = 8 * 1024 * 1024
         private val LAN_MEDIA_FILE = Regex("lan-([a-f0-9-]{36})-[a-f0-9]{64}\\.[a-z0-9]{1,8}")
         /** Mirrors the existing backup registry's contextual path recognition. */
-        fun mapResources(body: JsonObject, transform: (String, String) -> String): JsonObject {
+        fun mapResources(body: JsonObject, transform: (String, String) -> String): JsonObject =
+            mapResourcesWithPath(body) { reference, field, _ -> transform(reference, field) }
+
+        internal fun mapResourcesWithPath(body: JsonObject, transform: (String, String, List<String>) -> String): JsonObject {
             fun visit(value: JsonElement, fields: List<String>): JsonElement {
                 require(fields.size <= 64) { "SYNC_JSON_DEPTH" }
                 if (fields.any { it in setOf("extensions", "metadata", "customParams") }) return value
@@ -631,7 +638,7 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                         val studioImage = field == "path" && (fields.dropLast(1).lastOrNull() == "images" ||
                             fields.any { it in setOf("imageGuidance", "guidance") } && fields.dropLast(1).lastOrNull() in setOf("asset", "baseImage", "maskImage"))
                         if (value.isString && (field in LanSyncScope.resources || packageFile || vibe) && !serviceArtwork)
-                            JsonPrimitive(transform(value.content, when { packageFile -> "packageFile"; vibe -> "vibePayload"; studioImage -> "imagePath"; else -> field!! })) else value
+                            JsonPrimitive(transform(value.content, when { packageFile -> "packageFile"; vibe -> "vibePayload"; studioImage -> "imagePath"; else -> field!! }, fields)) else value
                     }
                     else -> value
                 }

@@ -5,6 +5,7 @@ import android.graphics.ImageDecoder
 import android.os.Build
 import com.example.chatbar.domain.image.ImageMetadataStripper
 import com.example.chatbar.domain.lanSync.LanSyncHeifStill
+import com.example.chatbar.domain.lanSync.LanSyncInvalidImage
 import com.example.chatbar.domain.lanSync.LanSyncPostProcess
 import com.example.chatbar.domain.lanSync.LanSyncRecord
 import com.example.chatbar.domain.lanSync.LanSyncRasterPolicy
@@ -29,13 +30,14 @@ fun validateAndroidLanSyncResource(kind: String, path: Path, record: LanSyncReco
     if (result == null && LanSyncHeifStill.inspect(path) != null) return
     val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
     Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { android.graphics.BitmapFactory.decodeStream(it, null, options) }
-    require(result == null || options.outMimeType == "image/png") { "SYNC_IMAGE_INVALID" }
+    if (result != null && options.outMimeType != "image/png") throw LanSyncInvalidImage()
     LanSyncRasterPolicy.validateDimensions(path, record, options.outWidth, options.outHeight, options.outMimeType == "image/jpeg")
     var sample = 1
     while (maxOf(options.outWidth, options.outHeight).toLong() > 256L * sample) sample *= 2
     val decoded = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888 }
     Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
-        requireNotNull(android.graphics.BitmapFactory.decodeStream(input, null, decoded)) { "SYNC_IMAGE_INVALID" }.recycle()
+        val bitmap = android.graphics.BitmapFactory.decodeStream(input, null, decoded) ?: throw LanSyncInvalidImage()
+        bitmap.recycle()
     }
 }
 

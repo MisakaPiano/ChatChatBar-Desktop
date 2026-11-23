@@ -142,15 +142,12 @@ object LanSyncScope {
         val mediaIdentities = linkedMapOf<String, String>()
         snapshot.records.forEach { record ->
             val body = record.body
-            val localImages = if (allowLocalMissingImages && record.type == "chat_messages")
-                LanSyncMissingImage.images(body["images"] as? JsonArray).filter(LanSyncMissingImage::isMarker).toSet()
-            else emptySet()
-            LanSyncWorkspace.mapResources(body) { reference, field ->
+            LanSyncWorkspace.mapResourcesWithPath(body) { reference, field, path ->
                 when {
                     reference.isBlank() || field != "vibePayload" && reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
                     record.type == "save_slots" && field != "vibePayload" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
                         reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) -> Unit
-                    reference in localImages && LanSyncMissingImage.allows(record.type, field) &&
+                    allowLocalMissingImages && LanSyncMissingImage.allows(record.type, path) &&
                         LanSyncMissingImage.mediaId(reference) != null -> Unit
                     else -> {
                         val parts = reference.split('/')

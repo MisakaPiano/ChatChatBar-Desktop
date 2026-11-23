@@ -23,15 +23,16 @@ internal object DesktopLanSyncRaster {
             try {
                 reader.setInput(input, false, true)
                 val format = reader.formatName.lowercase()
-                require(format in setOf("png", "jpeg", "jpg", "gif", "webp", "bmp") ||
-                    heif != null && format in setOf("heic", "heif")) { "SYNC_IMAGE_INVALID" }
+                if (format !in setOf("png", "jpeg", "jpg", "gif", "webp", "bmp") &&
+                    (heif == null || format !in setOf("heic", "heif"))) throw LanSyncInvalidImage()
                 val width = reader.getWidth(0); val height = reader.getHeight(0)
                 LanSyncRasterPolicy.validateDimensions(path, record, width, height, format == "jpeg" || format == "jpg")
                 val orientation = if (!renderOrientation || format == "gif" || format == "bmp" || heif != null) 1
                     else ImageMetadataStripper.readOrientation(path.toFile())
                 val sample = ((maxOf(width, height).toLong() + longestSide - 1) / longestSide).toInt().coerceAtLeast(1)
                 val params = reader.defaultReadParam.apply { setSourceSubsampling(sample, sample, 0, 0) }
-                return DesktopImageEditing.orient(requireNotNull(reader.read(0, params)) { "SYNC_IMAGE_INVALID" }, orientation)
+                val raster = reader.read(0, params) ?: throw LanSyncInvalidImage()
+                return DesktopImageEditing.orient(raster, orientation)
             } finally { reader.dispose() }
         }
     }

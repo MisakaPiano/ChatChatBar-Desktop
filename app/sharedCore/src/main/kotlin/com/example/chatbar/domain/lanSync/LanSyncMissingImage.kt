@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.lanSync
 
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -10,7 +11,10 @@ internal object LanSyncMissingImage {
     private const val PREFIX = "ccb-lan-missing-image/"
     private val marker = Regex("${PREFIX}([a-f0-9-]{36})/[a-f0-9]{64}")
 
-    fun allows(type: String, field: String) = type == "chat_messages" && field == "images"
+    private val attachmentPath = listOf("images")
+    private val generatedPath = listOf("generatedImageMetadata", "imagePath")
+
+    fun allows(type: String, path: List<String>) = type == "chat_messages" && (path == attachmentPath || path == generatedPath)
 
     fun reference(mediaId: String, relativePath: String): String =
         "$PREFIX$mediaId/${lanSyncHash("ccb-lan-missing-image-path/$relativePath".toByteArray(Charsets.UTF_8))}"
@@ -19,10 +23,12 @@ internal object LanSyncMissingImage {
 
     fun mediaId(reference: String): String? = if (isMarker(reference)) marker.matchEntire(reference)?.groupValues?.get(1) else null
 
-    fun references(record: LanSyncRecord): Sequence<String> = if (record.type != "chat_messages") emptySequence() else
-        images(record.body["images"] as? JsonArray).filter(::isMarker)
-
-    fun images(value: JsonArray?): Sequence<String> = value.orEmpty().asSequence().mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+    private fun references(record: LanSyncRecord): Sequence<String> = if (record.type != "chat_messages") emptySequence() else {
+        val attached = (record.body[attachmentPath.single()] as? JsonArray).orEmpty().asSequence()
+        val generated = (record.body[generatedPath.first()] as? JsonArray).orEmpty().asSequence()
+            .mapNotNull { (it as? JsonObject)?.get(generatedPath.last()) }
+        (attached + generated).mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.filter(::isMarker)
+    }
 
     fun records(snapshot: LanSyncSnapshot): Sequence<LanSyncRecord> = snapshot.records.asSequence()
         .filter { references(it).any() }

@@ -315,7 +315,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_JOIN_ROUTE_NO_LONGER_ACTIVE", "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" -> "原连接身份已停用，请通过同组仍有效的设备核对。"
             "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" -> "邀请已过期或设备组已更新。请重新生成邀请。"
             "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" -> "暂时无法校验已发布的设备组历史。请重新检查同步。"
-            "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "本机会话有暂无法处理的图片。可以保留原图，并用兼容副本替换附件。其他会话可以同步。"
+            "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "本机会话有无法读取或处理的图片。其他会话仍可同步。补回可读的原图，或保留原件并换用兼容副本。"
             LanSyncMissingImage.CODE -> LanSyncGroupDisplay.missingLocalImageNotice(code)
             "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" -> joiningLedgerConflictText
             "SYNC_GROUP_MEMBERSHIP_CONFLICT" -> "成员变更冲突。签名分支和本机资料已保留。"

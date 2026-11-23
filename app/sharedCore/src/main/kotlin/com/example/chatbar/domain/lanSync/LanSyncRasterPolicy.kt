@@ -9,6 +9,7 @@ import java.nio.file.Path
 import java.util.zip.CRC32
 
 class LanSyncLocalImageUnsupported : IllegalArgumentException("SYNC_GROUP_LOCAL_RESOURCE_BLOCKED")
+class LanSyncInvalidImage(cause: Throwable? = null) : IllegalArgumentException("SYNC_IMAGE_INVALID", cause)
 
 /** Encoded originals are streamed; raster working limits are independent of encoded length. */
 object LanSyncRasterPolicy {
@@ -20,12 +21,12 @@ object LanSyncRasterPolicy {
     /** Camera JPEG can be admitted and sampled above the ordinary bitmap limit. */
     fun validateDimensions(path: Path, record: LanSyncRecord?, width: Int, height: Int, jpeg: Boolean) {
         val pixels = width.toLong() * height
-        require(width > 0 && height > 0) { "SYNC_IMAGE_INVALID" }
+        requireValidImage(width > 0 && height > 0)
         if (pixels <= maximumPixels(record)) return
-        require(record?.let(LanSyncPostProcess::record) == null) { "SYNC_IMAGE_INVALID" }
+        requireValidImage(record?.let(LanSyncPostProcess::record) == null)
         if (!jpeg) throw LanSyncLocalImageUnsupported()
-        val frame = requireNotNull(jpegFrame(path)) { "SYNC_IMAGE_INVALID" }
-        require(frame.width == width && frame.height == height) { "SYNC_IMAGE_INVALID" }
+        val frame = jpegFrame(path) ?: throw LanSyncInvalidImage()
+        requireValidImage(frame.width == width && frame.height == height)
         if (!frame.baseline || width > 16_384 || height > 16_384 || pixels > 72_000_000L) throw LanSyncLocalImageUnsupported()
     }
     fun needsSampledJpegPreview(path: Path): Boolean = jpegFrame(path)?.let {
@@ -65,7 +66,7 @@ object LanSyncRasterPolicy {
             val header = ByteArray(8)
             if (size >= 8) input.readFully(header)
             val png = size >= 8 && header.contentEquals(signature)
-            require(png || !staticPngRequired) { "SYNC_IMAGE_INVALID" }
+            requireValidImage(png || !staticPngRequired)
             if (!png) return
             var consumed = 8L
             var first = true
@@ -74,21 +75,21 @@ object LanSyncRasterPolicy {
             var palette = false
             val buffer = ByteArray(64 * 1024)
             while (consumed < size) {
-                require(size - consumed >= 12) { "SYNC_IMAGE_INVALID" }
+                requireValidImage(size - consumed >= 12)
                 val length = input.readInt().toLong()
-                require(length >= 0 && length <= size - consumed - 12) { "SYNC_IMAGE_INVALID" }
+                requireValidImage(length >= 0 && length <= size - consumed - 12)
                 val typeBytes = ByteArray(4).also(input::readFully)
-                require(typeBytes.all { it.toInt() in 65..90 || it.toInt() in 97..122 } && typeBytes[2].toInt() in 65..90) { "SYNC_IMAGE_INVALID" }
+                requireValidImage(typeBytes.all { it.toInt() in 65..90 || it.toInt() in 97..122 } && typeBytes[2].toInt() in 65..90)
                 val type = typeBytes.toString(Charsets.US_ASCII)
-                require(!first || type == "IHDR" && length == 13L) { "SYNC_IMAGE_INVALID" }
-                require(first || type != "IHDR") { "SYNC_IMAGE_INVALID" }
+                requireValidImage(!first || type == "IHDR" && length == 13L)
+                requireValidImage(first || type != "IHDR")
                 require(!staticPngRequired || type !in setOf("acTL", "fcTL", "fdAT")) { "SYNC_IMAGE_ANIMATED_RESULT" }
-                require(typeBytes[0].toInt() in 97..122 || type in setOf("IHDR", "PLTE", "IDAT", "IEND")) { "SYNC_IMAGE_INVALID" }
+                requireValidImage(typeBytes[0].toInt() in 97..122 || type in setOf("IHDR", "PLTE", "IDAT", "IEND"))
                 if (type == "PLTE") {
-                    require(!palette && !imageData && length in 3L..768L && length % 3 == 0L) { "SYNC_IMAGE_INVALID" }
+                    requireValidImage(!palette && !imageData && length in 3L..768L && length % 3 == 0L)
                     palette = true
                 }
-                if (type == "IDAT") { require(!endedData) { "SYNC_IMAGE_INVALID" }; imageData = true }
+                if (type == "IDAT") { requireValidImage(!endedData); imageData = true }
                 else if (imageData) endedData = true
                 val crc = CRC32().apply { update(typeBytes) }
                 var remaining = length
@@ -96,15 +97,19 @@ object LanSyncRasterPolicy {
                     val read = minOf(remaining, buffer.size.toLong()).toInt()
                     input.readFully(buffer, 0, read); crc.update(buffer, 0, read); remaining -= read
                 }
-                require((input.readInt().toLong() and 0xffffffffL) == crc.value) { "SYNC_IMAGE_INVALID" }
+                requireValidImage((input.readInt().toLong() and 0xffffffffL) == crc.value)
                 consumed += length + 12
                 if (type == "IEND") {
-                    require(length == 0L && imageData && consumed == size && input.read() == -1) { "SYNC_IMAGE_INVALID" }
+                    requireValidImage(length == 0L && imageData && consumed == size && input.read() == -1)
                     return
                 }
                 first = false
             }
-            error("SYNC_IMAGE_INVALID")
+            throw LanSyncInvalidImage()
         }
+    }
+
+    private fun requireValidImage(condition: Boolean) {
+        if (!condition) throw LanSyncInvalidImage()
     }
 }

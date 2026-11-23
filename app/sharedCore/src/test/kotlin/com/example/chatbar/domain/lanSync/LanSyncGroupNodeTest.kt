@@ -460,6 +460,11 @@ class LanSyncGroupNodeTest {
         val pending = sender.inspect()
         assertEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, requireNotNull(pending.plan).units.getValue(damaged).stage)
         assertFailsWith<IllegalArgumentException> { pending.review(setOf(damaged)) }
+        local.workspace.captureGroup(group.identities[0].fingerprint).use { capture ->
+            assertEquals("SYNC_GROUP_LOCAL_RESOURCE_BLOCKED", assertFailsWith<IllegalArgumentException> {
+                LanSyncGroupUnitCodec(local.base).prepare(capture, damaged).close()
+            }.message)
+        }
         val update = sender.commit(pending.review(setOf(independent)))
         assertEquals(setOf(independent), update.entry.version.changes.keys)
         local.send(sender, update)

@@ -265,6 +265,9 @@ internal fun validateDesktopLanSyncResource(kind: String, path: Path, record: La
     if (kind == "images") {
         if (LanSyncPostProcess.record(record) == null && LanSyncHeifStill.inspect(path) != null) return
         try { DesktopLanSyncRaster.decode(path, record, 256, renderOrientation = false).flush() }
-        catch (failure: javax.imageio.IIOException) { throw IllegalArgumentException("SYNC_IMAGE_INVALID", failure) }
+        catch (failure: javax.imageio.IIOException) {
+            if (failure.cause == null || failure.cause is java.io.EOFException) throw LanSyncInvalidImage(failure)
+            throw IllegalArgumentException("SYNC_IMAGE_INVALID", failure)
+        }
     }
 }
