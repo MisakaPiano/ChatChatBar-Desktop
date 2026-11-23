@@ -541,6 +541,18 @@ class ChatRepository internal constructor(
         is JsonFileStorage.EntityReadResult.ReadError -> throw ChatSessionUnavailableException(missing = false, cause = stored.cause)
     }
 
+    /** Hold the parent against local deletion and storage maintenance for a short dependent update. */
+    internal suspend fun <T : Any> withDurableSession(sessionId: String, update: suspend () -> T): T? =
+        messageAppendMutex.withDataAccess {
+            try {
+                requireDurableSession(sessionId)
+            } catch (failure: ChatSessionUnavailableException) {
+                if (failure.missing) return@withDataAccess null
+                throw failure
+            }
+            update()
+        }
+
     /** Short local publication only. The callback must not do network work or re-enter message mutations. */
     suspend fun <T> withLockedMessageSnapshot(sessionId: String, messageId: String,
         publish: suspend (ChatMessage) -> T): T = messageAppendMutex.withDataAccess {

@@ -1095,18 +1095,19 @@ class LongTermMemoryService constructor(
 
     suspend fun consumeCompressionEvents(sessionId: String): List<MemoryCompressionEvent> =
         stateLock(sessionId) {
-            val loaded = loadLocked(sessionId)
-            val events = loaded.state.pendingCompressionEvents
-            if (events.isNotEmpty()) {
+            chatRepository.withDurableSession(sessionId) {
+                val state = memoryRepository.getState(sessionId) ?: return@withDurableSession emptyList()
+                val events = state.pendingCompressionEvents
+                if (events.isEmpty()) return@withDurableSession events
                 memoryRepository.saveState(
-                    loaded.state.copy(
+                    state.copy(
                         pendingCompressionEvents = emptyList(),
-                        revision = loaded.state.revision + 1,
+                        revision = state.revision + 1,
                         updatedAt = System.currentTimeMillis()
                     )
                 )
-            }
-            events
+                events
+            } ?: emptyList()
         }
 
     suspend fun setEnabled(sessionId: String, enabled: Boolean) = stateLock(sessionId) {
