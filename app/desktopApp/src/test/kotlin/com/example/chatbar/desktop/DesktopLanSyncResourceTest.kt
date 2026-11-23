@@ -6,6 +6,7 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.lanSync.*
+import com.example.chatbar.interop.LanSyncMalformedHeifFixture
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 import java.awt.image.BufferedImage
@@ -43,8 +44,8 @@ class DesktopLanSyncResourceTest {
                 DesktopCharacterResourceStore(data)::resolveOwnedReference,
                 resourceReference = { _, path -> desktopLanSyncResourceReference(data, path) }, validateResource = ::validateDesktopLanSyncResource)
             val originalHashes = workspace.captureGroup("desktop").use { it.snapshot.hashes() }
-            val malformed = listOf(original.copyOf(16),
-                byteArrayOf(0, 0, 0, 20, 102, 116, 121, 112, 104, 101, 105, 99, 0, 0, 0, 0, 109, 105, 102, 49))
+            val malformed = listOf(original.copyOf(16), LanSyncMalformedHeifFixture.withoutMeta(),
+                LanSyncMalformedHeifFixture.withoutPrimaryItem(), LanSyncMalformedHeifFixture.truncatedMetadata())
             for (broken in malformed) {
                 Files.write(image, broken)
                 assertFailsWith<LanSyncInvalidImage> { workspace.capture("desktop").close() }

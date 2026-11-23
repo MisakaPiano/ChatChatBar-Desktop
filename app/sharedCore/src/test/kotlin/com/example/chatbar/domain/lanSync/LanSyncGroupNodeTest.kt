@@ -10,6 +10,7 @@ import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.domain.syncStore.*
+import com.example.chatbar.interop.LanSyncMalformedHeifFixture
 import java.awt.image.BufferedImage
 import java.io.IOException
 import java.io.InputStream
@@ -432,9 +433,31 @@ class LanSyncGroupNodeTest {
         checkOwnedBadImageIsolation { it.copyOf(8) }
 
     @Test fun anIncompleteRecognizedHeifRetainsTheImageAndLetsBothConversationsPublish() =
-        checkOwnedBadImageIsolation {
-            byteArrayOf(0, 0, 0, 20, 102, 116, 121, 112, 104, 101, 105, 99, 0, 0, 0, 0, 109, 105, 102, 49)
-        }
+        checkOwnedBadImageIsolation { LanSyncMalformedHeifFixture.withoutMeta() }
+
+    @Test fun recognizedHeifWithAnIncompleteOrTruncatedMetadataBoxOnlyHoldsTheOwningChat() {
+        checkOwnedBadImageIsolation { LanSyncMalformedHeifFixture.withoutPrimaryItem() }
+        checkOwnedBadImageIsolation { LanSyncMalformedHeifFixture.truncatedMetadata() }
+    }
+
+    @Test fun unsupportedHeifMetadataAndMetadataAboveTheBudgetRemainStrictErrors() {
+        val file = Files.createTempFile("synthetic-heif-limits-", ".heic")
+        try {
+            val unsupported = LanSyncMalformedHeifFixture.withoutPrimaryItem().also { it[it.size - 4] = 1 }
+            Files.write(file, unsupported)
+            val version = assertFailsWith<IllegalArgumentException> { LanSyncHeifStill.inspect(file) }
+            assertFalse(version is LanSyncInvalidImage)
+            assertEquals("SYNC_IMAGE_HEIF_INVALID", version.message)
+
+            val metaLength = 4 * 1024 * 1024 + 9
+            val oversized = java.nio.ByteBuffer.allocate(metaLength).putInt(metaLength)
+                .put("meta".toByteArray(Charsets.US_ASCII)).array()
+            Files.write(file, LanSyncMalformedHeifFixture.withoutMeta() + oversized)
+            val budget = assertFailsWith<IllegalArgumentException> { LanSyncHeifStill.inspect(file) }
+            assertFalse(budget is LanSyncInvalidImage)
+            assertEquals("SYNC_IMAGE_HEIF_INVALID", budget.message)
+        } finally { Files.deleteIfExists(file) }
+    }
 
     private fun checkOwnedBadImageIsolation(breakImage: (ByteArray) -> ByteArray) = withGroup { group ->
         val local = group.End(0); val peer = group.End(1)

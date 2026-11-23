@@ -22,18 +22,27 @@ object LanSyncHeifStill {
         val major = brands.type()
         brands.u(4)
         if (major !in heicBrands && (0 until brands.remaining() / 4).none { brands.type() in heicBrands }) return null
+        try {
+            inspectStill(file, size, brand.end)
+        } catch (failure: MalformedStructure) {
+            throw LanSyncInvalidImage(failure)
+        }
+    }
+
+    private fun inspectStill(file: FileChannel, size: Long, start: Long): Dimensions {
         val boxes = mutableListOf<Box>()
-        var position = brand.end
+        var position = start
         while (position < size) {
-            need(boxes.size < MAX_ITEMS)
+            requireSupported(boxes.size < MAX_ITEMS)
             val box = file.box(position, size)
             boxes += box
             position = box.end
         }
-        val meta = boxes.singleOrNull { it.type == "meta" } ?: throw LanSyncInvalidImage()
-        need(meta.length in 4L..MAX_METADATA.toLong())
+        val meta = requireValue(boxes.singleOrNull { it.type == "meta" })
+        requireSupported(meta.length <= MAX_METADATA)
+        need(meta.length >= 4)
         val cursor = file.bytes(meta.start, meta.length.toInt())
-        need(cursor.u(4) == 0L)
+        requireSupported(cursor.u(4) == 0L)
         val metadata = cursor.children()
         val primaryBox = metadata.only("pitm")
         val primary = primaryBox.content.run { id(fullVersion()) }
@@ -58,30 +67,33 @@ object LanSyncHeifStill {
         }
         fun propertiesOf(id: Long): List<Child> = requireValue(associations[id]).map { definitions[it - 1] }
         fun dimensions(id: Long): Dimensions = propertiesOf(id).only("ispe").content.duplicate().run {
-            need(u(4) == 0L)
+            requireSupported(u(4) == 0L)
             size(u(4), u(4))
         }
         fun coded(id: Long): Dimensions {
-            need(items[id] == "hvc1")
+            requireSupported(requireValue(items[id]) == "hvc1")
             val codec = propertiesOf(id).only("hvcC").content.duplicate()
-            need(codec.remaining() >= 23 && codec.u(1) == 1L)
+            need(codec.remaining() >= 23)
+            requireSupported(codec.u(1) == 1L)
             extents(id)
             return dimensions(id)
         }
-        val still = when (items[primary]) {
+        val still = when (requireValue(items[primary])) {
             "hvc1" -> coded(primary)
             "grid" -> {
                 val extent = requireValue(extents(primary).singleOrNull())
                 need(extent.length == 8L || extent.length == 12L)
                 val grid = file.bytes(extent.offset, extent.length.toInt())
-                need(grid.u(1) == 0L)
+                requireSupported(grid.u(1) == 0L)
                 val flags = grid.u(1)
-                need(flags in 0L..1L && extent.length == if (flags == 1L) 12L else 8L)
+                requireSupported(flags in 0L..1L)
+                need(extent.length == if (flags == 1L) 12L else 8L)
                 val rows = grid.u(1) + 1
                 val columns = grid.u(1) + 1
                 val fieldSize = if (flags == 1L) 4 else 2
                 val result = size(grid.u(fieldSize), grid.u(fieldSize))
-                need(result == dimensions(primary) && rows * columns <= MAX_ITEMS)
+                requireSupported(rows * columns <= MAX_ITEMS)
+                need(result == dimensions(primary))
                 val tiles = readGridReferences(metadata.only("iref").content, primary)
                 need(tiles.size.toLong() == rows * columns && primary !in tiles)
                 val tileSizes = tiles.distinct().map(::coded).toSet()
@@ -91,11 +103,11 @@ object LanSyncHeifStill {
                 if (columns * tile.width * rows * tile.height > MAX_PIXELS) throw LanSyncLocalImageUnsupported()
                 result
             }
-            else -> invalid()
+            else -> throw IllegalArgumentException("SYNC_IMAGE_HEIF_INVALID")
         }
         if (still.width > 16_384 || still.height > 16_384 || still.width.toLong() * still.height > MAX_PIXELS)
             throw LanSyncLocalImageUnsupported()
-        still
+        return still
     }
 
     private data class Box(val type: String, val start: Long, val end: Long) { val length get() = end - start }
@@ -112,7 +124,7 @@ object LanSyncHeifStill {
         for (item in items) {
             val content = item.content
             val itemVersion = content.fullVersion(3)
-            need(itemVersion in 2..3)
+            requireSupported(itemVersion in 2..3)
             val id = content.id(itemVersion - 2)
             val protection = content.u(2)
             val type = content.type()
@@ -133,13 +145,15 @@ object LanSyncHeifStill {
             val reference = buffer.u(2)
             val base = buffer.u(widths ushr 4)
             val count = buffer.count(2)
-            need(count in 1..remainingExtents)
+            requireSupported(count <= remainingExtents)
+            need(count > 0)
             remainingExtents -= count
             val extents = List(count) {
                 if (version != 0) buffer.u(widths and 15)
                 Extent(buffer.u(lengths ushr 4), buffer.u(lengths and 15))
             }
-            need(method in 0L..1L && reference == 0L && extents.isNotEmpty() && extents.all { it.length > 0 })
+            requireSupported(method in 0L..1L && reference == 0L)
+            need(extents.all { it.length > 0 })
             need(result.put(id, Location(method == 1L, base, extents)) == null)
         }
         return result
@@ -151,7 +165,7 @@ object LanSyncHeifStill {
             val content = box.content
             val flags = content.u(4)
             val version = (flags ushr 24).toInt()
-            need(version in 0..1 && (flags and 0x00ffffffL) in 0L..1L)
+            requireSupported(version in 0..1 && (flags and 0x00ffffffL) in 0L..1L)
             val indexBytes = if (flags and 1L == 0L) 1 else 2
             val mask = if (indexBytes == 1) 0x7f else 0x7fff
             repeat(content.count(4)) {
@@ -159,7 +173,8 @@ object LanSyncHeifStill {
                 val indices = result.getOrPut(id) { mutableListOf() }
                 repeat(content.count(1)) {
                     val index = content.u(indexBytes).toInt() and mask
-                    need(index in 0..count && indices.size < MAX_ITEMS)
+                    requireSupported(indices.size < MAX_ITEMS)
+                    need(index in 0..count)
                     if (index != 0) indices += index
                 }
             }
@@ -189,12 +204,14 @@ object LanSyncHeifStill {
     }
 
     private fun FileChannel.bytes(position: Long, count: Int): ByteBuffer = ByteBuffer.allocate(count).also { buffer ->
-        while (buffer.hasRemaining()) need(read(buffer, position + buffer.position()) > 0)
+        // A short physical read here no longer matches the observed file size.
+        while (buffer.hasRemaining()) require(read(buffer, position + buffer.position()) > 0) { "SYNC_IMAGE_HEIF_INVALID" }
         buffer.flip()
     }
     private fun ByteBuffer.children(): List<Child> = buildList {
         while (hasRemaining()) {
-            need(remaining() >= 8 && size < MAX_ITEMS)
+            requireSupported(size < MAX_ITEMS)
+            need(remaining() >= 8)
             val offset = position()
             val declared = u(4)
             val type = type()
@@ -207,11 +224,12 @@ object LanSyncHeifStill {
         }
     }
     private fun ByteBuffer.u(count: Int): Long {
-        need(count in 0..8 && count <= remaining())
+        requireSupported(count in 0..8)
+        need(count <= remaining())
         var value = 0L
         repeat(count) {
             val next = get().toInt() and 255
-            need(value <= (Long.MAX_VALUE - next) / 256)
+            requireSupported(value <= (Long.MAX_VALUE - next) / 256)
             value = value * 256 + next
         }
         return value
@@ -219,18 +237,20 @@ object LanSyncHeifStill {
     private fun ByteBuffer.type(): String = u(4).let { value ->
         CharArray(4) { index -> ((value ushr (24 - 8 * index)) and 255).toInt().toChar() }.concatToString()
     }
-    private fun ByteBuffer.fullVersion(maximum: Int = 1) = (u(4) ushr 24).toInt().also { need(it <= maximum) }
+    private fun ByteBuffer.fullVersion(maximum: Int = 1) = (u(4) ushr 24).toInt().also { requireSupported(it <= maximum) }
     private fun ByteBuffer.id(version: Int) = u(if (version == 0) 2 else 4).also { need(it > 0) }
-    private fun ByteBuffer.count(bytes: Int) = u(bytes).also { need(it <= MAX_ITEMS) }.toInt()
+    private fun ByteBuffer.count(bytes: Int) = u(bytes).also { requireSupported(it <= MAX_ITEMS) }.toInt()
     private fun size(width: Long, height: Long): Dimensions {
-        need(width in 1L..262_144L && height in 1L..262_144L)
+        requireSupported(width <= 262_144L && height <= 262_144L)
+        need(width > 0 && height > 0)
         return Dimensions(width.toInt(), height.toInt())
     }
     private fun List<Child>.only(type: String) = requireValue(singleOrNull { it.type == type })
-    private fun sum(a: Long, b: Long): Long { need(a <= Long.MAX_VALUE - b); return a + b }
-    private fun <T : Any> requireValue(value: T?): T = value ?: invalid()
-    private fun need(value: Boolean) { if (!value) invalid() }
-    private fun invalid(): Nothing = throw IllegalArgumentException("SYNC_IMAGE_HEIF_INVALID")
+    private fun sum(a: Long, b: Long): Long { requireSupported(a <= Long.MAX_VALUE - b); return a + b }
+    private fun <T : Any> requireValue(value: T?): T = value ?: throw MalformedStructure()
+    private fun need(value: Boolean) { if (!value) throw MalformedStructure() }
+    private fun requireSupported(value: Boolean) { require(value) { "SYNC_IMAGE_HEIF_INVALID" } }
+    private class MalformedStructure : IllegalArgumentException("SYNC_IMAGE_HEIF_INVALID")
     private val heicBrands = setOf("heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs")
     private const val MAX_METADATA = 4 * 1024 * 1024
     private const val MAX_ITEMS = 1024

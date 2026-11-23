@@ -1,0 +1,170 @@
+name: V7 invitation ninth repair checks
+on:
+  push:
+    branches: [codex/v7-invitation-r09-repair-20261123]
+    paths:
+      - .github/workflows/v7-invitation-round-nine-proof.yml
+      - app/sharedCore/**
+      - app/app/src/main/java/com/example/chatbar/lanSync/**
+      - app/app/src/androidTest/java/com/example/chatbar/lanSync/**
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/**
+      - app/desktopApp/src/test/**
+permissions:
+  contents: read
+jobs:
+  camera-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Encode a genuine synthetic HEIF still
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libheif-examples libheif-plugin-x265
+          python3 - <<'PY'
+          import pathlib
+          import struct
+          import zlib
+
+          def chunk(kind, data):
+              return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+
+          header = struct.pack('>IIBBBBB', 64, 48, 8, 2, 0, 0, 0)
+          pixels = (bytes([0]) + bytes([28, 136, 192]) * 64) * 48
+          png = bytes.fromhex('89504e470d0a1a0a') + chunk(b'IHDR', header)
+          png += chunk(b'IDAT', zlib.compress(pixels)) + chunk(b'IEND', b'')
+          pathlib.Path('synthetic.png').write_bytes(png)
+          PY
+          heif-enc -q 75 -o synthetic.heic synthetic.png 2>encoder.log || { cat encoder.log; exit 1; }
+          heif-info synthetic.heic
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v7-r09-synthetic-heif
+          path: synthetic.heic
+  shared:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - name: Verify real shared invitation and attachment recovery paths
+        working-directory: app
+        run: |
+          bash ./gradlew :sharedCore:test \
+            --tests '*LanSyncGroupCoordinatorTest.invitationFileReadFailuresKeepTheirOwnGuidanceAndDoNotOpenEnrollment' \
+            --tests '*LanSyncGroupJoiningTest.nativeEnrollmentReplyLossRetainsProjectionAndIncarnationWhileLaterLocalEditsSurviveRetry' \
+            --tests '*LanSyncGroupJoiningTest.firstExplicitJoinAutomaticallySendsOneRealProofWhenProtectionStarts' \
+            --tests '*LanSyncGroupJoiningTest.expiredUnusedInviteAndAnUncertainAttemptRefreshTheCapabilityWithoutChangingRecipientOrOperation' \
+            --tests '*LanSyncGroupJoiningTest.coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving' \
+            --tests '*LanSyncGroupNodeTest.recognizedHeifWithAnIncompleteOrTruncatedMetadataBoxOnlyHoldsTheOwningChat' \
+            --tests '*LanSyncGroupNodeTest.unsupportedHeifMetadataAndMetadataAboveTheBudgetRemainStrictErrors' \
+            --tests '*LanSyncGroupCloudRecoveryOwnerTest.coordinatorReadyLoadKeepsTheInterruptedExternalRecoveryEntryAndExplicitConfirmationFinishesIt' \
+            -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
+            --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r09-shared
+          path: app/sharedCore/build/test-results/test/TEST-*.xml
+  android:
+    needs: camera-fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v7-r09-synthetic-heif
+          path: ${{ runner.temp }}/r09-heif
+      - name: Compile isolated app and instrumented tests
+        working-directory: app
+        run: >-
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - name: Enable acceleration on the cloud runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise real invitation screen and HEIF codec
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb shell wm size 1080x1920
+            adb shell wm density 320
+            adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
+            adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
+            adb shell run-as com.example.chatbar.lansyncnext mkdir -p cache
+            adb shell -T "run-as com.example.chatbar.lansyncnext sh -c 'cat > cache/synthetic-r02-heif.jpg'" < "$RUNNER_TEMP/r09-heif/synthetic.heic"
+            adb shell am instrument -w -e lanSyncInvitationFileRestoreFixture true -e class com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r09-android-files.txt"
+            cat "$RUNNER_TEMP/v7-r09-android-files.txt"
+            adb shell am instrument -w -e class 'com.example.chatbar.lanSync.AndroidLanSyncCameraResourceTest#incompleteRecognizedHeifHoldsOnlyItsOwningChat,com.example.chatbar.lanSync.AndroidLanSyncCameraResourceTest#genuineHeifUnderLegacyJpegNameUsesAndroidCodecAndKeepsExactOriginal' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r09-android-heif.txt"
+            cat "$RUNNER_TEMP/v7-r09-android-heif.txt"
+            grep -F 'OK (4 tests)' "$RUNNER_TEMP/v7-r09-android-files.txt"
+            grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r09-android-heif.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r09-android
+          path: ${{ runner.temp }}/v7-r09-android-*.txt
+  windows:
+    needs: camera-fixture
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v7-r09-synthetic-heif
+          path: ${{ runner.temp }}/r09-heif
+      - name: Test ordinary file opener and real Desktop validation
+        working-directory: app
+        env:
+          CCB_R02_HEIF_FIXTURE: ${{ runner.temp }}/r09-heif/synthetic.heic
+        run: >-
+          ./gradlew.bat :sharedCore:test
+          --tests '*LanSyncGroupCoordinatorTest.invitationFileReadFailuresKeepTheirOwnGuidanceAndDoNotOpenEnrollment'
+          :desktopApp:test
+          --tests '*DesktopLanSyncResourceTest.malformedKnownWebpAndHeifAreHeldOnlyInTheOwningConversation'
+          --tests '*DesktopLanSyncResourceTest.heifWithoutDesktopCodecKeepsExactBytesAndLeavesTextUsable'
+          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 '-Pkotlin.daemon.jvmargs=-Xmx4g'
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r09-windows
+          path: |
+            app/sharedCore/build/test-results/test/TEST-*.xml
+            app/desktopApp/build/test-results/test/TEST-*.xml

@@ -15,6 +15,7 @@ import com.example.chatbar.domain.lanSync.LanSyncInvalidImage
 import com.example.chatbar.domain.lanSync.LanSyncRecord
 import com.example.chatbar.domain.lanSync.LanSyncResourceStore
 import com.example.chatbar.domain.lanSync.LanSyncWorkspace
+import com.example.chatbar.interop.LanSyncMalformedHeifFixture
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
@@ -69,15 +70,17 @@ class AndroidLanSyncCameraResourceTest {
             val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("state")), { data.resolve(it) },
                 validateResource = ::validateAndroidLanSyncResource)
             val good = workspace.captureGroup("phone").use { it.snapshot.hashes() }
-            val broken = byteArrayOf(0, 0, 0, 20, 102, 116, 121, 112, 104, 101, 105, 99, 0, 0, 0, 0, 109, 105, 102, 49)
-            Files.write(image, broken)
-            assertTrue(runCatching { workspace.capture("phone").close() }.exceptionOrNull() is LanSyncInvalidImage)
-            workspace.captureGroup("phone").use {
-                assertEquals(setOf("conversation/photo"), it.blockedResourceUnits)
-                assertEquals(good["conversation/text"], it.snapshot.hashes()["conversation/text"])
+            for (broken in listOf(LanSyncMalformedHeifFixture.withoutMeta(), LanSyncMalformedHeifFixture.withoutPrimaryItem(),
+                LanSyncMalformedHeifFixture.truncatedMetadata())) {
+                Files.write(image, broken)
+                assertTrue(runCatching { workspace.capture("phone").close() }.exceptionOrNull() is LanSyncInvalidImage)
+                workspace.captureGroup("phone").use {
+                    assertEquals(setOf("conversation/photo"), it.blockedResourceUnits)
+                    assertEquals(good["conversation/text"], it.snapshot.hashes()["conversation/text"])
+                }
+                assertTrue(broken.contentEquals(Files.readAllBytes(image)))
+                assertEquals(photo, storage.loadEntity("chat_messages", "photo_photo-image", ChatMessage.serializer()))
             }
-            assertTrue(broken.contentEquals(Files.readAllBytes(image)))
-            assertEquals(photo, storage.loadEntity("chat_messages", "photo_photo-image", ChatMessage.serializer()))
             Files.write(image, original)
             workspace.captureGroup("phone").use {
                 assertTrue(it.blockedResourceUnits.isEmpty())
