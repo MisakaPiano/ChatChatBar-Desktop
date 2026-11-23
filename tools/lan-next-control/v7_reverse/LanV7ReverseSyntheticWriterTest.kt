@@ -218,7 +218,9 @@ class LanV7ReverseSyntheticWriterTest {
             val ordinaryPort = checkNotNull(observedPort)
             listenerObserved = true; listenerStep = "ORIGINAL_LISTENER_READY"; report(true)
             phase = "isolated-reverse-route"; listenerStep = "RESOLVE_PRIVATE_ADDRESS"; report(true)
-            val deviceAddress = LanSyncTls.parseAddress(LanSyncTls.localAddresses().single())
+            val deviceAddress = originalListenerAddress(LanSyncTls.localAddresses()) {
+                LanSyncNetwork.Local.preferredInvitationAddress(it)
+            }
             // ADB connects only to this test relay. The app's original listener still sees
             // a real RFC1918 source, and still authenticates the original Windows certificate.
             listenerStep = "CREATE_LOOPBACK_RELAY"; report(true)
@@ -350,6 +352,17 @@ class LanV7ReverseSyntheticWriterTest {
             report(true)
         }
         failed?.let { throw AssertionError("V7_REVERSE_ANDROID_PHASE_FAILED:$it") }
+    }
+
+    /** Choose only an eligible local address; never replace the original app listener or its port. */
+    private fun originalListenerAddress(addresses: List<String>, preferred: (List<String>) -> String?): InetAddress {
+        val eligible = addresses.distinct().filter { address ->
+            try { LanSyncTls.parseAddress(address); true }
+            catch (_: IllegalArgumentException) { false }
+        }.sorted()
+        check(eligible.isNotEmpty()) { "V7_REVERSE_PRIVATE_ADDRESS_UNAVAILABLE" }
+        val selected = preferred(eligible)?.takeIf { it in eligible } ?: eligible.first()
+        return LanSyncTls.parseAddress(selected)
     }
 
     /** Read existing projections/Job flags only. Sequential samples are not an atomic lifecycle proof. */

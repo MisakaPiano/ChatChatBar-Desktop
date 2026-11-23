@@ -222,4 +222,70 @@ class ReverseRouteContracts(unittest.TestCase):
         self.assertIn('.put("nearbyObservation", readNearby?.invoke() ?: JSONObject.NULL)',source)
 
 
+    def address_policy_oracle(self,addresses,preferred,validate):
+        """Synthetic policy oracle only; no socket, device address query or Kotlin execution."""
+        eligible=[]
+        for address in dict.fromkeys(addresses):
+            try:validate(address)
+            except ValueError:continue
+            eligible.append(address)
+        eligible.sort()
+        if not eligible:raise ValueError('V7_REVERSE_PRIVATE_ADDRESS_UNAVAILABLE')
+        chosen=preferred(eligible)
+        return validate(chosen if chosen in eligible else eligible[0])
+
+    def fake_local_literal(self,address):
+        # Finite synthetic membership oracle, not another production address parser.
+        if address not in ('10.0.2.15','192.168.1.20'):raise ValueError('SYNTHETIC_INVALID_LITERAL')
+        return address
+
+    def test_address_empty_refuses_before_preference_is_called(self):
+        def forbidden(_):raise AssertionError('PREFERENCE_MUST_NOT_BE_CALLED')
+        with self.assertRaises(ValueError):self.address_policy_oracle([],forbidden,self.fake_local_literal)
+
+    def test_address_single_eligible_fallback(self):
+        self.assertEqual(self.address_policy_oracle(['10.0.2.15'],lambda _:None,self.fake_local_literal),'10.0.2.15')
+
+    def test_address_multiple_prefers_existing_local_member(self):
+        self.assertEqual(self.address_policy_oracle(['192.168.1.20','10.0.2.15'],lambda _:'192.168.1.20',self.fake_local_literal),'192.168.1.20')
+
+    def test_address_multiple_fallback_uses_existing_sorted_first(self):
+        self.assertEqual(self.address_policy_oracle(['192.168.1.20','10.0.2.15'],lambda _:None,self.fake_local_literal),'10.0.2.15')
+
+    def test_address_preference_outside_exact_local_set_cannot_redirect(self):
+        for outside in ('127.0.0.1','8.8.8.8','192.168.1.21','untrusted.example'):
+            self.assertEqual(self.address_policy_oracle(['10.0.2.15'],lambda _,x=outside:x,self.fake_local_literal),'10.0.2.15')
+
+    def test_address_invalid_literals_never_enter_preference_candidates(self):
+        seen=[]
+        def preferred(eligible):seen.extend(eligible);return None
+        value=self.address_policy_oracle(['untrusted.example','127.0.0.1','10.0.2.15','10.0.2.15','8.8.8.8'],preferred,self.fake_local_literal)
+        self.assertEqual(value,'10.0.2.15');self.assertEqual(seen,['10.0.2.15'])
+        with self.assertRaises(ValueError):self.address_policy_oracle(['127.0.0.1'],preferred,self.fake_local_literal)
+
+    def test_address_preference_and_nonvalidation_failures_are_not_swallowed(self):
+        failure=RuntimeError('SYNTHETIC_FAILURE_NO_RAW_LOG')
+        def broken(_):raise failure
+        with self.assertRaises(RuntimeError) as observed:self.address_policy_oracle(['10.0.2.15'],broken,self.fake_local_literal)
+        self.assertIs(observed.exception,failure)
+        with self.assertRaises(RuntimeError):self.address_policy_oracle(['10.0.2.15'],lambda _:None,broken)
+
+    def test_address_kotlin_keeps_original_relay_target_port_tls_and_source_boundary(self):
+        source=(Path(__file__).parent/'LanV7ReverseSyntheticWriterTest.kt').read_text(encoding='utf-8')
+        block=source.split('private fun originalListenerAddress(',1)[1].split('/** Read existing projections/Job flags only.',1)[0]
+        for required in ('addresses.distinct()','LanSyncTls.parseAddress(address)','catch (_: IllegalArgumentException)',
+            '.sorted()','check(eligible.isNotEmpty())','preferred(eligible)?.takeIf { it in eligible } ?: eligible.first()',
+            'return LanSyncTls.parseAddress(selected)'):
+            self.assertIn(required,block)
+        for forbidden in ('catch (_: Exception)','catch (_: Throwable)', '.connect(', '.start(', '.open(', '.trySend('):
+            self.assertNotIn(forbidden,block)
+        self.assertIn('originalListenerAddress(LanSyncTls.localAddresses())',source)
+        self.assertIn('LanSyncNetwork.Local.preferredInvitationAddress(it)',source)
+        self.assertNotIn('LanSyncTls.localAddresses().single()',source)
+        self.assertIn('V7ReverseTcpRelay(InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), deviceAddress, ordinaryPort, deviceAddress)',source)
+        self.assertIn('if (incoming.inetAddress != bind) { incoming.close(); continue }',source)
+        self.assertIn('source?.let { outgoing.bind(java.net.InetSocketAddress(it, 0)) }',source)
+        self.assertIn('outgoing.connect(java.net.InetSocketAddress(target, targetPort), 5_000)',source)
+
+
 if __name__=='__main__':unittest.main()

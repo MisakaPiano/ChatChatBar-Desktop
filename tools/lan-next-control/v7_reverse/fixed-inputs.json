@@ -40,8 +40,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/LanV7ReverseSyntheticWriterTest.kt",
-      "bytes": 35396,
-      "sha256": "573ffc9082542dc0f74f1be1face344da3df0ecd6f6c97fb0d288ea4975015ca"
+      "bytes": 36120,
+      "sha256": "7b1d25df594a505fb4640a65a2db3bf36e362924c3e2729c410503fc5bcc8151"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/README.md",
@@ -70,8 +70,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/test_reverse_isolated_route.py",
-      "bytes": 14183,
-      "sha256": "3104c461442058f12ed2d2de737e049066aca9416685fa6e738295f57125b875"
+      "bytes": 18639,
+      "sha256": "5496ebc563937c7348a155dc451c0b22ba25ad0811fe1cf8abe7fec4fd646644"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/adb_observation.py",
