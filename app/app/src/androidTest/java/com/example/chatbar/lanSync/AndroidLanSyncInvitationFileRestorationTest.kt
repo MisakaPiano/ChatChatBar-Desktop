@@ -253,6 +253,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             compose.onNodeWithText("导出加密同步文件").assertIsNotEnabled()
             source.lockManagementOnVisibilityLoss()
             compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            compose.waitForIdle()
             reach("verify restored output picker write and readback") { !exporter.state.value.busy && exporter.state.value.readbackVerified }
             val bytes = Files.readAllBytes(target)
             assertTrue(bytes.isNotEmpty())
@@ -261,6 +262,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             restoration.emulateSavedInstanceStateRestore()
             exporter.lock()
             compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            compose.waitForIdle()
             compose.onNodeWithText("这次文件选择已失效，请重新准备或选择保存位置").assertExists()
             assertTrue(bytes.contentEquals(Files.readAllBytes(target)))
 
@@ -271,6 +273,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             restoration.emulateSavedInstanceStateRestore()
             receiver.lockManagementOnVisibilityLoss()
             compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            compose.waitForIdle()
             compose.onNodeWithText("已选择加密同步文件；返回应用后请重新输入恢复码").assertExists()
             compose.onNodeWithText("读取并核对设备组").assertIsNotEnabled()
             assertNull(recovery.state.value.review)
