@@ -7,6 +7,7 @@ import com.example.chatbar.domain.syncStore.webdav.WebDavEndpointPolicy
 import com.example.chatbar.domain.syncStore.webdav.WeakFixture
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.IOException
 import java.io.OutputStream
@@ -16,6 +17,7 @@ import java.net.Proxy
 import java.net.ServerSocket
 import java.net.Socket
 import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.CountDownLatch
@@ -26,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -69,6 +72,60 @@ class LanSyncGroupCoordinatorTest {
         assertEquals(LanSyncGroupPanelStage.EMPTY, coordinator.state.value.stage)
         assertNull(coordinator.state.value.recoveryCode)
         assertNull(coordinator.view.value)
+    }
+
+    @Test fun invitationFileReadFailuresKeepTheirOwnGuidanceAndDoNotOpenEnrollment() = runBlocking {
+        val root = Files.createTempDirectory("synthetic-invitation-input-").toRealPath()
+        val empty = Files.createFile(root.resolve("empty.ccbinvite"))
+        val calls = AtomicInteger()
+        val coordinator = LanSyncGroupCoordinator({ false },
+            { calls.incrementAndGet(); error("unexpected enrollment") },
+            { calls.incrementAndGet(); error("unexpected joining") }, noNetwork,
+            "synthetic invitation reader", { calls.incrementAndGet() })
+        suspend fun expect(code: String, instruction: String, open: () -> InputStream?) {
+            val opened = CompletableDeferred<Unit>()
+            coordinator.beginJoinFromFile { opened.complete(Unit); open() }
+            withTimeout(5_000) { opened.await() }
+            await { !coordinator.state.value.busy && coordinator.state.value.error?.contains(code) == true }
+            val shown = requireNotNull(coordinator.state.value.error)
+            assertTrue(shown.contains(instruction), shown)
+            assertFalse(shown.contains("SYNTHETIC_INPUT_DETAIL") || shown.contains("保存位置"), shown)
+        }
+        try {
+            val unavailable = "SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE"
+            val chooseAgain = "重新选择可读文件"
+            expect(unavailable, chooseAgain) { null }
+            expect(unavailable, chooseAgain) { throw FileNotFoundException("SYNTHETIC_INPUT_DETAIL") }
+            expect(unavailable, chooseAgain) { throw SecurityException("SYNTHETIC_INPUT_DETAIL") }
+            expect(unavailable, chooseAgain) { Files.newInputStream(root.resolve("missing.ccbinvite"), NOFOLLOW_LINKS) }
+            expect(unavailable, chooseAgain) { object : InputStream() {
+                override fun read(): Int = throw IOException("SYNTHETIC_INPUT_DETAIL")
+            } }
+            expect("SYNC_GROUP_INVITE_FILE_EMPTY", "该邀请文件为空") { Files.newInputStream(empty, NOFOLLOW_LINKS) }
+            expect("SYNC_GROUP_INVITE_OFFER", "无法识别该邀请文件") { "SYNTHETIC_INPUT_DETAIL".byteInputStream() }
+            expect("SYNC_INVALID_UTF8", "无法识别该邀请文件") { byteArrayOf(0xff.toByte()).inputStream() }
+            expect("SYNC_GROUP_INVITE_VERSION", "核对版本") { "CCB-GROUP-JOIN97:SYNTHETIC_INPUT_DETAIL".byteInputStream() }
+            expect("SYNC_GROUP_INVITE_FILE_TOO_LARGE", "超过文件大小限制") {
+                ByteArray(LanSyncGroupInviteOffer.MAX_FILE_CHARS + 1).inputStream()
+            }
+            val expired = SyncManagementSession.create().use { session ->
+                LanSyncGroupInviteOffer(SyncGroupTrust(SyncStoreId.random(),
+                    SyncVersionRef(SyncStoreId.random(), "a".repeat(64)), session.ownerCertificate),
+                    "10.0.0.1", 16_384, "b".repeat(64), "c".repeat(64),
+                    System.currentTimeMillis() - 120_000).code()
+            }
+            expect("SYNC_GROUP_INVITE_EXPIRED", "已过期") { expired.byteInputStream() }
+            val cancellation = CompletableDeferred<Unit>()
+            coordinator.beginJoinFromFile {
+                cancellation.complete(Unit)
+                throw CancellationException("SYNTHETIC_INPUT_DETAIL")
+            }
+            withTimeout(5_000) { cancellation.await() }
+            await { !coordinator.state.value.busy }
+            assertNull(coordinator.state.value.error)
+            assertEquals(0, calls.get())
+            assertEquals(LanSyncGroupPanelStage.EMPTY, coordinator.state.value.stage)
+        } finally { coordinator.closeAndDrain(); check(root.toFile().deleteRecursively()) }
     }
 
     private class RecoveryCloseProbe(network: LanSyncNetwork) {

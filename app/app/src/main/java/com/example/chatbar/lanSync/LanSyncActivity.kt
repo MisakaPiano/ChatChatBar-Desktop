@@ -202,7 +202,7 @@ internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state:
     val resolver = LocalContext.current.applicationContext.contentResolver
     var exportBinding by rememberSaveable { mutableStateOf<String?>(null) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) coordinator.beginJoinFromFile { resolver.openInputStream(uri) ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE") }
+        if (uri != null) coordinator.beginJoinFromFile { resolver.openInputStream(uri) }
     }
     val saveFile = rememberLauncherForActivityResult(CreateOpenableDocument("application/octet-stream")) { uri ->
         val binding = exportBinding

@@ -73,10 +73,11 @@ import kotlinx.serialization.json.put
                 while (length < bytes.size) {
                     val count = input.read(bytes, length, bytes.size - length)
                     if (count < 0) break
-                    require(count > 0) { "SYNC_GROUP_INVITE_OFFER" }
+                    if (count == 0) throw IOException("SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE")
                     length += count
                 }
                 require(length <= MAX_FILE_CHARS) { "SYNC_GROUP_INVITE_FILE_TOO_LARGE" }
+                require(length > 0) { "SYNC_GROUP_INVITE_FILE_EMPTY" }
                 val document = bytes.copyOf(length)
                 try { return parseBounded(lanSyncUtf8(document), now, MAX_FILE_CHARS) }
                 finally { document.fill(0) }

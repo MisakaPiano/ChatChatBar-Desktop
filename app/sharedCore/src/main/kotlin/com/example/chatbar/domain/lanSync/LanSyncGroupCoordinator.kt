@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.domain.syncStore.*
+import java.io.IOException
+import java.io.InputStream
 import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -17,6 +19,9 @@ import kotlinx.coroutines.sync.withPermit
 private val reprepareJoinStages = setOf(LanSyncGroupJoinStage.KEYS_ADMITTED, LanSyncGroupJoinStage.NATIVE_ENROLLED)
 private const val joiningLedgerConflictText = "原设备组的签名账本存在冲突。已保留本机身份和资料。请让邀请设备核对原组，再重新核对此申请。"
 private const val refreshJoiningInvitationText = "请对方生成同组新邀请，再选择「更新邀请并继续」。"
+private const val openInvitationFileAction = "打开设备组邀请文件"
+private const val invalidInvitationFileText = "无法识别该邀请文件。请重新选择完整的设备组邀请文件，或请邀请方重新发送。"
+private const val enrolledJoinContinuationText = "本机已完成登记。请继续原申请，或选择「重新核对本机资料并继续」。"
 private val localMaintenanceCodes = setOf("SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE")
 private val resumableJoinRouteWaits = setOf("SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING", "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE",
     "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING",
@@ -319,11 +324,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_METADATA_STRING_BUDGET", "SYNC_METADATA_DEPTH", "SYNC_FILE_LIMIT" ->
                 "本次设备组操作遇到超出格式或大小限制的同步资料。"
             "SYNC_GROUP_PROFILE_LOCAL_HISTORY_EXISTS" -> "本机已保留原设备组的设置进度。请使用已保存的恢复码继续该组。"
-            "SYNC_GROUP_INVITE_OFFER", "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" -> "本机无法识别此邀请码，请重新复制完整内容或扫码。"
+            "SYNC_GROUP_INVITE_OFFER", "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" ->
+                if (stage == openInvitationFileAction) invalidInvitationFileText else "本机无法识别此邀请码，请重新复制完整内容或扫码。"
+            "SYNC_INVALID_UTF8" -> invalidInvitationFileText.takeIf { stage == openInvitationFileAction }
             "SYNC_GROUP_INVITE_EXPIRED" -> "邀请码显示已过期。请检查两台设备的系统时间并生成新邀请。"
             "SYNC_GROUP_INVITE_CLOCK", "SYNC_GROUP_INVITE_CERTIFICATE_TIME" -> "两台设备的时间可能不一致。请核对系统时间后重试。"
             "SYNC_GROUP_INVITE_CODE_TOO_LARGE" -> "普通邀请码无法容纳完整记录。请使用「生成邀请文件」。"
             "SYNC_GROUP_INVITE_FILE_TOO_LARGE" -> "完整邀请超过文件大小限制。原设备组历史已保留。"
+            "SYNC_GROUP_INVITE_FILE_EMPTY" -> "该邀请文件为空。请重新选择完整的邀请文件，或请邀请方重新发送。"
+            "SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE" -> "无法读取所选邀请文件。请重新选择可读文件，或请邀请方重新发送有效邀请。"
             "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED" -> "这次保存已过期或被取消。请重新生成邀请；如果系统创建了空文件，可以另选名称重试。"
             "SYNC_GROUP_INVITE_FILE_DESTINATION_CHANGED" -> "同名目标已变化或不是邀请文件，原文件已保留。请选择新文件名。"
             "SYNC_GROUP_INVITE_FILE_UNAVAILABLE" -> "无法保存邀请文件，请另选保存位置。"
@@ -340,6 +349,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_JOIN_RESTORE_SHELVED_FIRST" -> "该设备组已有暂存申请。请恢复原申请以沿用原设备身份。"
             "SYNC_GROUP_JOIN_ROUTE_NO_LONGER_ACTIVE", "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" -> "原连接身份已停用，请通过同组仍有效的设备核对。"
             "SYNC_GROUP_JOIN_INVITATION_REVOKED" -> "原申请已撤销。若可归档，请先结束旧申请，再使用新邀请。"
+            "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" -> "当前申请暂不能更新邀请。请使用原申请的继续入口。"
             "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" -> "邀请已过期或设备组已更新。请重新生成邀请。"
             "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" -> "暂时无法校验已发布的设备组历史。请重新检查同步。"
             "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "本机会话有无法读取或处理的图片。其他会话仍可同步。补回可读的原图，或保留原件并换用兼容副本。"
@@ -456,10 +466,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     joiningDevice = joined.device.takeUnless { recovery }, canAbandonJoin = joined.canAbandon,
                     canRefreshJoinPreparation = joined.canRefreshPreparation(), canShelveJoin = joined.canShelve,
                     canArchiveRevokedJoin = joined.canArchiveRevoked, joiningLedgerConflict = joined.ledgerConflict,
-                    joiningMembershipRevoked = joined.membershipRevoked,
+                    joiningMembershipRevoked = joined.membershipRevoked, canRefreshInvitation = joined.canRefreshInvitation,
                     status = if (joined.ledgerConflict) joiningLedgerConflictText
                     else if (recovery) "恢复进度已保留，可从网盘或加密文件入口接续"
                     else if (joined.membershipRevoked) "原组已撤销此设备，已保留本机资料"
+                    else if (joined.stage == LanSyncGroupJoinStage.NATIVE_ENROLLED) enrolledJoinContinuationText
                     else if (joined.membershipVerified) "已核对批准，可继续查收接续所需资料"
                     else if (!joined.invitationExpired && paused && pendingJoinProof == actionGeneration.get())
                         "邀请已核对，等待同步服务就绪后发送证明"
@@ -718,12 +729,26 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     override fun beginJoin(code: String) = enterJoin { LanSyncGroupInviteOffer.parse(code) }
 
-    override fun beginJoinFromFile(open: () -> java.io.InputStream) = enterJoin { open().use { LanSyncGroupInviteOffer.readFile(it) } }
+    override fun beginJoinFromFile(open: () -> InputStream?) = enterJoin(openInvitationFileAction) {
+        try {
+            val stream = checkNotNull(open()) { "SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE" }
+            stream.use { LanSyncGroupInviteOffer.readFile(it) }
+        } catch (failure: IOException) {
+            if (Thread.currentThread().isInterrupted) throw CancellationException("Invitation file read interrupted", failure)
+            throw IllegalStateException("SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE", failure)
+        } catch (failure: SecurityException) {
+            throw IllegalStateException("SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE", failure)
+        }
+    }
 
-    private fun enterJoin(readOffer: () -> LanSyncGroupInviteOffer) = action("加入设备组", allowWhilePaused = true) {
-        require(!state.value.joiningLedgerConflict) { "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" }
-        require(!state.value.joiningMembershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
-        pendingJoinProof = null
+    private fun enterJoin(label: String = "加入设备组", readOffer: () -> LanSyncGroupInviteOffer) = action(label, allowWhilePaused = true) {
+        val current = state.value
+        require(!current.joiningLedgerConflict) { "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" }
+        require(!current.joiningMembershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
+        if (current.stage == LanSyncGroupPanelStage.JOINING) {
+            require(!current.recoveryJoining) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
+            require(current.canEnterInvitation) { "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" }
+        }
         val offer = readOffer()
         requireNotNull(offer.bootstrap) { "SYNC_GROUP_JOIN_BOOTSTRAP_REQUIRED" }
         val generation = actionGeneration.get()
@@ -778,20 +803,24 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             fileRecoveryJoinScope = profile.localReplica.id.value.takeUnless { profile.membershipRevoked },
             canShelveJoin = profile.canShelve, canArchiveRevokedJoin = profile.canArchiveRevoked,
             canRefreshJoinPreparation = profile.canRefreshPreparation(), joiningLedgerConflict = profile.ledgerConflict,
-            joiningMembershipRevoked = profile.membershipRevoked, status = if (profile.ledgerConflict) joiningLedgerConflictText else status)
+            joiningMembershipRevoked = profile.membershipRevoked, canRefreshInvitation = profile.canRefreshInvitation,
+            status = if (profile.ledgerConflict) joiningLedgerConflictText else status)
     }
-    private fun unverifiedJoinStatus(profile: LanSyncGroupJoiningProfile): String = when {
-        profile.invitationExpired -> {
-            val checkApproval = if (profile.canAbandon) "" else "仍可查收签名批准。"
-            "按本机时间，原邀请已到期。原设备身份已保留。$checkApproval$refreshJoiningInvitationText"
+    private fun unverifiedJoinStatus(profile: LanSyncGroupJoiningProfile): String {
+        val refresh = refreshJoiningInvitationText.takeIf { profile.canRefreshInvitation }.orEmpty()
+        val replaced = refresh.takeIf { it.isNotEmpty() }?.let { "若原邀请已关闭，$it" }.orEmpty()
+        return when {
+            profile.invitationExpired -> {
+                val checkApproval = if (profile.canAbandon) "" else "仍可查收签名批准。"
+                "按本机时间，原邀请已到期。原设备身份已保留。$checkApproval$refresh"
+            }
+            profile.stage == LanSyncGroupJoinStage.WAITING_FOR_APPROVAL ->
+                "已发送证明，正在查收批准。若邀请方已退出，请对方重新打开设备组。$replaced"
+            profile.stage == LanSyncGroupJoinStage.PROOF_ATTEMPTED ->
+                "正在核对证明是否送达，原设备身份已保留。若邀请方已退出，请对方重新打开设备组。$replaced"
+            profile.canAbandon -> "本机尚未发送加入证明，可重试或放弃本次申请。$refresh"
+            else -> "原设备身份已保留，可继续查收批准"
         }
-        profile.stage == LanSyncGroupJoinStage.WAITING_FOR_APPROVAL ->
-            "已发送证明，正在查收批准。若邀请方已退出，请对方重新打开设备组。若原邀请已关闭，$refreshJoiningInvitationText"
-        profile.stage == LanSyncGroupJoinStage.PROOF_ATTEMPTED ->
-            "正在核对证明是否送达，原设备身份已保留。若邀请方已退出，请对方重新打开设备组。若原邀请已关闭，$refreshJoiningInvitationText"
-        profile.canAbandon ->
-            "本机尚未发送加入证明，可重试或放弃本次申请。若对方已退出或关闭邀请，$refreshJoiningInvitationText"
-        else -> "原设备身份已保留，可继续查收批准"
     }
     override fun retryJoin() = action("继续加入") { attemptJoin() }
     override fun refreshJoinPreparation() = action("重新核对加入资料") { member().refreshPreparation(); attemptJoin() }
@@ -841,12 +870,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val approvalGate = (waiting || uncertain) && isAmbiguousJoinConnection(classified)
             val offlineConflict = retained?.ledgerConflict == true && isAmbiguousJoinConnection(classified)
             mutableState.update { it.copy(canRefreshJoinPreparation = retained?.canRefreshPreparation() == true,
+                canRefreshInvitation = retained?.canRefreshInvitation == true,
                 canShelveJoin = retained?.canShelve == true, canArchiveRevokedJoin = retained?.canArchiveRevoked == true,
                 joiningLedgerConflict = retained?.ledgerConflict == true, joiningMembershipRevoked = retained?.membershipRevoked == true,
                 error = if (approvalGate || offlineConflict) null else it.error,
                 status = when {
                     retained?.ledgerConflict == true -> joiningLedgerConflictText
                     retained?.membershipRevoked == true -> "原组已撤销此设备，已保留本机资料"
+                    retained?.stage == LanSyncGroupJoinStage.NATIVE_ENROLLED -> enrolledJoinContinuationText
                     retained?.membershipVerified == true -> "已核对批准，正在等待可达的设备或接续资料"
                     waiting || uncertain -> unverifiedJoinStatus(requireNotNull(retained))
                     else -> it.status
@@ -870,11 +901,13 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 "SYNC_GROUP_JOIN_PRESET_REVIEW_REQUIRED" -> "已核对批准，需要原组先核对冲突的预设"
                 "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" -> "原组已撤销此设备，已保留本机资料"
                 "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" -> joiningLedgerConflictText
-                else -> if (result.profile.membershipVerified) "已核对批准，等待接续资料"
+                else -> if (result.profile.stage == LanSyncGroupJoinStage.NATIVE_ENROLLED) enrolledJoinContinuationText
+                    else if (result.profile.membershipVerified) "已核对批准，等待接续资料"
                     else unverifiedJoinStatus(result.profile)
             }
             mutableState.update { it.copy(error = null, status = status, joiningLedgerConflict = result.profile.ledgerConflict,
                 canRefreshJoinPreparation = result.profile.canRefreshPreparation(),
+                canRefreshInvitation = result.profile.canRefreshInvitation,
                 joiningMembershipRevoked = result.profile.membershipRevoked,
                 canShelveJoin = result.profile.canShelve, canArchiveRevokedJoin = result.profile.canArchiveRevoked) }
         }
@@ -1348,7 +1381,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (presentMembershipConflict(opened)) return
         opened.membershipRecovery.publishInstalledCheckpoint()
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, recoveryJoining = false, canAbandonUnactivated = false,
-            joiningDevice = null, canAbandonJoin = false, canRefreshJoinPreparation = false, canShelveJoin = false, shelvedJoins = emptyList(),
+            joiningDevice = null, canAbandonJoin = false, canRefreshJoinPreparation = false, canRefreshInvitation = false,
+            canShelveJoin = false, shelvedJoins = emptyList(),
             canArchiveRevokedJoin = false, joiningLedgerConflict = false, joiningMembershipRevoked = false, membershipConflict = null,
             membershipRecoveryPackageImportAllowed = true, membershipRecoveryExportBinding = opened.membershipRecovery.exportBinding(),
             error = if (it.stage == LanSyncGroupPanelStage.JOINING) null else it.error,

@@ -17,7 +17,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -26,6 +29,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.core.app.ActivityOptionsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -35,7 +39,9 @@ import com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator
 import com.example.chatbar.domain.lanSync.LanSyncGroupEnrollment
 import com.example.chatbar.domain.lanSync.LanSyncGroupFileRecoveryOwner
 import com.example.chatbar.domain.lanSync.LanSyncGroupJoining
+import com.example.chatbar.domain.lanSync.LanSyncGroupPanelActions
 import com.example.chatbar.domain.lanSync.LanSyncGroupPanelStage
+import com.example.chatbar.domain.lanSync.LanSyncGroupPanelState
 import com.example.chatbar.domain.lanSync.LanSyncNetwork
 import com.example.chatbar.domain.lanSync.LanSyncPeer
 import com.example.chatbar.domain.lanSync.LanSyncPlatform
@@ -44,6 +50,7 @@ import com.example.chatbar.domain.lanSync.LanSyncWorkspace
 import com.example.chatbar.ui.kit.ChatBarTheme
 import java.net.InetAddress
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.delay
@@ -71,6 +78,99 @@ class AndroidLanSyncInvitationFileRestorationTest {
             }
         }
     }).around(compose)
+
+    @Test
+    fun missingOrEmptyInvitationShowsInputGuidanceAndPickerCancellationIsQuiet() = runBlocking {
+        val root = Files.createTempDirectory(compose.activity.cacheDir.canonicalFile.toPath(), "synthetic-invitation-input-")
+        val calls = AtomicInteger()
+        val coordinator = LanSyncGroupCoordinator({ false },
+            { calls.incrementAndGet(); error("unexpected enrollment") },
+            { calls.incrementAndGet(); error("unexpected joining") }, deviceName = "synthetic invitation input",
+            beforeSetup = { calls.incrementAndGet(); Unit })
+        val picker = Picker(allowInput = true)
+        val registry = object : ActivityResultRegistryOwner { override val activityResultRegistry = picker }
+        try {
+            compose.runOnUiThread {
+                compose.activity.setContent {
+                    val state by coordinator.state.collectAsState()
+                    ChatBarTheme {
+                        CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry) {
+                            LanSyncGroupPanel(state, coordinator, pageControls = {
+                                LanSyncInvitationFiles(coordinator, state)
+                            }, scanInvitation = {})
+                        }
+                    }
+                }
+            }
+            fun openPicker() = compose.onNodeWithText("打开设备组邀请文件").performScrollTo().assertIsEnabled().performClick()
+            openPicker()
+            compose.runOnIdle { picker.cancel() }
+            compose.waitForIdle()
+            assertNull(coordinator.state.value.error)
+
+            openPicker()
+            compose.runOnIdle { picker.deliver(Uri.fromFile(root.resolve("missing.ccbinvite").toFile())) }
+            compose.waitUntil(10_000) {
+                !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE") == true
+            }
+            compose.onNodeWithText("重新选择可读文件", substring = true).performScrollTo().assertIsDisplayed()
+            assertFalse(requireNotNull(coordinator.state.value.error).contains(root.toString()))
+
+            val empty = Files.createFile(root.resolve("empty.ccbinvite"))
+            openPicker()
+            compose.runOnIdle { picker.deliver(Uri.fromFile(empty.toFile())) }
+            compose.waitUntil(10_000) {
+                !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_INVITE_FILE_EMPTY") == true
+            }
+            compose.onNodeWithText("该邀请文件为空", substring = true).performScrollTo().assertIsDisplayed()
+            assertTrue(calls.get() == 0)
+            assertTrue(coordinator.state.value.stage == LanSyncGroupPanelStage.EMPTY)
+        } finally { coordinator.closeAndDrain(); check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test
+    fun pausedEnrollmentRequiresResumeAndShowsOnlyValidInvitationActions() = runBlocking {
+        val coordinator = LanSyncGroupCoordinator({ false }, { error("unexpected enrollment") },
+            { error("unexpected joining") }, deviceName = "synthetic paused enrollment")
+        val calls = AtomicInteger()
+        val actions = object : LanSyncGroupPanelActions by coordinator {
+            override fun refreshJoinPreparation() { calls.incrementAndGet() }
+        }
+        var state by mutableStateOf(LanSyncGroupPanelState(stage = LanSyncGroupPanelStage.JOINING,
+            paused = true, canRefreshJoinPreparation = true, status = "本机已完成登记"))
+        try {
+            compose.runOnUiThread {
+                compose.activity.setContent {
+                    ChatBarTheme {
+                        LanSyncGroupPanel(state, actions, pageControls = {
+                            LanSyncGroupPageControls(coordinator, state, hasCloudRecovery = true, close = {})
+                            if (state.paused) LanSyncBackgroundControls(AndroidLanSyncBackgroundState(AndroidLanSyncBackgroundPhase.PAUSED),
+                                {}, { state = state.copy(paused = false) }, {})
+                        }, scanInvitation = {})
+                    }
+                }
+            }
+            compose.onNodeWithText("扫描更新邀请").assertDoesNotExist()
+            compose.onNodeWithText("更新邀请并继续").assertDoesNotExist()
+            compose.onNodeWithText("打开设备组邀请文件").assertDoesNotExist()
+            compose.onNodeWithText("从网盘恢复设备组").assertDoesNotExist()
+            compose.onNodeWithText("继续加入").performScrollTo().assertIsNotEnabled()
+            val recheck = compose.onNodeWithText("重新核对本机资料并继续")
+            recheck.performScrollTo().assertIsNotEnabled().performTouchInput { click() }
+            assertTrue(calls.get() == 0)
+            compose.onNodeWithText("恢复设备组后台运行").performScrollTo().assertIsEnabled().performClick()
+            recheck.performScrollTo().assertIsEnabled().performTouchInput { click() }
+            assertTrue(calls.get() == 1)
+            compose.onNodeWithText("打开设备组邀请文件").assertDoesNotExist()
+
+            compose.runOnIdle { state = state.copy(recoveryJoining = true) }
+            compose.onNodeWithText("重新核对本机资料并继续").assertDoesNotExist()
+            compose.onNodeWithText("从网盘恢复设备组").performScrollTo().assertIsEnabled()
+            compose.runOnIdle { state = state.copy(recoveryJoining = false, canRefreshInvitation = true) }
+            compose.onNodeWithText("扫描更新邀请").performScrollTo().assertIsEnabled()
+            compose.onNodeWithText("打开设备组邀请文件").performScrollTo().assertIsEnabled()
+        } finally { coordinator.closeAndDrain() }
+    }
 
     @Test
     fun restoredPickerSavesTheSameInvitationAndARevokedSelectionCannotWrite() = runBlocking {
@@ -314,6 +414,12 @@ class AndroidLanSyncInvitationFileRestorationTest {
             val code = requireNotNull(pending)
             pending = null
             check(dispatchResult(code, Activity.RESULT_OK, Intent().setData(uri)))
+        }
+
+        fun cancel() {
+            val code = requireNotNull(pending)
+            pending = null
+            check(dispatchResult(code, Activity.RESULT_CANCELED, null))
         }
     }
 }

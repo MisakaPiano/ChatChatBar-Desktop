@@ -311,6 +311,11 @@ class LanSyncGroupJoiningTest {
             assertEquals("邀请已核对，等待同步服务就绪后发送证明", waiting.status)
             assertEquals(0, attempts.get())
             assertEquals(LanSyncGroupJoinStage.PREPARED, f.owner().profile()?.stage)
+            assertTrue(waiting.canEnterInvitation)
+            coordinator.beginJoinFromFile { null }
+            withTimeout(15_000) {
+                coordinator.state.first { !it.busy && it.error?.contains("SYNC_GROUP_INVITE_FILE_READ_UNAVAILABLE") == true }
+            }
             // Android calls this only after its current foreground service has promoted.
             coordinator.resumeIfConfigured()
             assertEquals(f.founder.joiningIdentity.fingerprint, withTimeout(15_000) { proof.await() }.device)
@@ -487,6 +492,36 @@ class LanSyncGroupJoiningTest {
         assertFailsWith<IOException> { f.owner().activate(f.backend()) }; assertTrue(interrupted)
         val origin = Files.readAllBytes(f.root.resolve("joining/node/native/origin.protected"))
         val projection = Files.readAllBytes(f.projectionPath())
+        val before = Files.readAllBytes(f.root.resolve("joining/profile.protected"))
+        assertEquals(LanSyncGroupJoinStage.NATIVE_ENROLLED, f.owner().profile()?.stage)
+        assertFalse(requireNotNull(f.owner().profile()).canRefreshInvitation)
+        val network = object : LanSyncNetwork {
+            override val discoveryEnabled = false
+            override fun addresses() = emptyList<String>()
+            override fun accepts(address: InetAddress) = false
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket =
+                error("Paused enrollment must not dial")
+        }
+        val panel = f.protectedCoordinator(network)
+        try {
+            panel.open()
+            val paused = withTimeout(15_000) { panel.state.first { !it.busy && it.stage == LanSyncGroupPanelStage.JOINING } }
+            assertTrue(paused.paused && paused.canRefreshJoinPreparation)
+            assertFalse(paused.canEnterInvitation || paused.canContinueJoin || paused.canEnterExternalRecovery)
+            assertTrue(paused.status.contains("继续原申请"))
+            panel.refreshJoinPreparation()
+            val called = AtomicInteger()
+            panel.beginJoinFromFile { called.incrementAndGet(); error("A late file callback must not read") }
+            withTimeout(15_000) {
+                panel.state.first { !it.busy && it.error?.contains("SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE") == true }
+            }
+            assertEquals(0, called.get())
+            assertContentEquals(before, Files.readAllBytes(f.root.resolve("joining/profile.protected")))
+            panel.resumeIfConfigured()
+            val resumed = withTimeout(15_000) { panel.state.first { !it.busy && !it.paused && it.canContinueJoin } }
+            assertTrue(resumed.canRefreshJoinPreparation)
+            assertFalse(resumed.canEnterInvitation)
+        } finally { panel.closeAndDrain() }
         f.hook = {}; f.put(f.data, f.card("physical-card").copy(basicSetting = "加入后继续编辑"))
         val later = Files.readAllBytes(local)
         assertEquals(LanSyncGroupJoinStage.READY, f.owner().activate(f.backend()).profile.stage)
@@ -513,6 +548,7 @@ class LanSyncGroupJoiningTest {
         val expired = assertNotNull(f.owner().profile())
         assertEquals(LanSyncGroupJoinStage.PREPARED, expired.stage)
         assertTrue(expired.invitationExpired)
+        assertTrue(expired.canRefreshInvitation)
         f.timeShift = 0
         val pool = Executors.newSingleThreadExecutor()
         val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket).also { it.needClientAuth = true }
@@ -985,7 +1021,7 @@ class LanSyncGroupJoiningTest {
         val evidence = retainedFiles(root)
         val cold = f.owner()
         val conflict = assertNotNull(cold.profile())
-        assertEquals(pending.copy(ledgerConflict = true, membershipVerified = false), conflict)
+        assertEquals(pending.copy(ledgerConflict = true, membershipVerified = false, canRefreshInvitation = false), conflict)
         assertEquals(conflict, cold.resumePreparation())
         assertEquals("SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT", assertFailsWith<IllegalArgumentException> {
             cold.archiveRevokedInvitation()

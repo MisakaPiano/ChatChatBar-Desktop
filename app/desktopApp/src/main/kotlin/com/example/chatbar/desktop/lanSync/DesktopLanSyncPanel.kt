@@ -55,6 +55,13 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
                 DesktopLanSyncMembershipRecoveryFiles(coordinator, state, filePicker)
             }
             DesktopLanSyncFileActions(coordinator, state, filePicker)
+            if (state.stage == LanSyncGroupPanelStage.JOINING && state.paused &&
+                !state.recoveryJoining && !state.joiningMembershipRevoked) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusText("设备组同步已暂停。恢复后可继续原申请。")
+                    BootstrapButton("恢复设备组同步", secondary = true, enabled = !state.busy, onClick = coordinator::resumeIfConfigured)
+                }
+            }
             if (state.invitationRetainedWhileLocked) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
                     StatusText("邀请仍在有效期内。请重新解锁管理，再核对并确认新设备。")

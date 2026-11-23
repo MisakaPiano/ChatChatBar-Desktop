@@ -22,10 +22,12 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 enum class LanSyncGroupJoinStage { PREPARING, PREPARED, PROOF_ATTEMPTED, WAITING_FOR_APPROVAL, KEYS_ADMITTED, NATIVE_ENROLLED, READY }
+private val invitationRefreshStages = setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED,
+    LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, LanSyncGroupJoinStage.KEYS_ADMITTED)
 data class LanSyncGroupJoiningProfile(val stage: LanSyncGroupJoinStage, val trust: SyncGroupTrust,
     val device: String, val localReplica: SyncDeliveryTarget, val canAbandon: Boolean = false, val canShelve: Boolean = false,
     val membershipVerified: Boolean = false, val membershipRevoked: Boolean = false, val canArchiveRevoked: Boolean = false,
-    val ledgerConflict: Boolean = false, val invitationExpired: Boolean = false)
+    val ledgerConflict: Boolean = false, val invitationExpired: Boolean = false, val canRefreshInvitation: Boolean = false)
 data class LanSyncShelvedJoin(val operation: String, val group: String)
 data class LanSyncGroupJoiningResult(val profile: LanSyncGroupJoiningProfile, val node: LanSyncGroupNode?, val waitingCode: String? = null)
 internal class LanSyncJoinRouteFailure(cause: IOException) : IOException("SYNC_GROUP_JOIN_CONNECTION_FAILED", cause)
@@ -65,13 +67,16 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
     private fun bootstrap(record: Record): LanSyncGroupRecoveryAnchor = record.recoveryAnchor ?: requireNotNull(record.offer).let { offer ->
         requireNotNull(offer.bootstrap).let { LanSyncGroupRecoveryAnchor(offer.trust, it.vault, it.vaultDescriptor, it.dataHeads) }
     }
+    private fun Record.canRefreshInvitation(): Boolean = offer != null && !membershipRevoked && stage in invitationRefreshStages
+
     private fun profile(record: Record, ledgerConflict: Boolean = false) =
         LanSyncGroupJoiningProfile(record.stage, trust(record), identity.fingerprint, record.localReplica,
             canAbandon = !ledgerConflict && canAbandon(record), canShelve = !ledgerConflict && canShelve(record, root),
             membershipVerified = !ledgerConflict && (record.knownMembership != null || record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal),
             membershipRevoked = !ledgerConflict && record.membershipRevoked,
             canArchiveRevoked = !ledgerConflict && canArchiveRevoked(record), ledgerConflict = ledgerConflict,
-            invitationExpired = record.offer?.let { wallTime() >= it.expiresAt } == true)
+            invitationExpired = record.offer?.let { wallTime() >= it.expiresAt } == true,
+            canRefreshInvitation = !ledgerConflict && record.canRefreshInvitation())
 
     private fun retainedProfile(record: Record): LanSyncGroupJoiningProfile = try {
         profile(checkRetainedMembership(record))
@@ -402,8 +407,7 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val record = checkRetainedMembership(requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" })
         require(!record.membershipRevoked) { "SYNC_GROUP_JOIN_INVITATION_REVOKED" }
         val offer = requireNotNull(record.offer) { "SYNC_GROUP_JOIN_RECOVERY_NOT_AVAILABLE" }
-        require(record.stage in setOf(LanSyncGroupJoinStage.PREPARED, LanSyncGroupJoinStage.PROOF_ATTEMPTED,
-            LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, LanSyncGroupJoinStage.KEYS_ADMITTED)) { "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" }
+        require(record.canRefreshInvitation()) { "SYNC_GROUP_JOIN_INVITATION_REFRESH_NOT_AVAILABLE" }
         parsed.validate(wallTime())
         val replacement = parsed.let { it.copy(bootstrap = it.bootstrap?.let { value ->
             value.copy(dataHeads = Collections.unmodifiableSet(value.dataHeads.toSet()))

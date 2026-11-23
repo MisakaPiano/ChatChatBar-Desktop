@@ -65,13 +65,17 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val membershipRecoveryExportBinding: String? = null,
     val membershipRecoveryImport: LanSyncMembershipRecoveryImportReview? = null,
     internal val fileRecoveryJoinScope: String? = null,
-    val joiningMembershipRevoked: Boolean = false) {
+    val joiningMembershipRevoked: Boolean = false,
+    val canRefreshInvitation: Boolean = false) {
     val canEnterInvitation: Boolean
         get() = stage == LanSyncGroupPanelStage.EMPTY ||
-            stage == LanSyncGroupPanelStage.JOINING && !recoveryJoining && !joiningLedgerConflict && !joiningMembershipRevoked
+            stage == LanSyncGroupPanelStage.JOINING && canRefreshInvitation && !recoveryJoining &&
+                !joiningLedgerConflict && !joiningMembershipRevoked
+    val canContinueJoin: Boolean
+        get() = stage == LanSyncGroupPanelStage.JOINING && !recoveryJoining && !joiningMembershipRevoked && !busy && !paused
     val canEnterExternalRecovery: Boolean
         get() = !joiningLedgerConflict && !joiningMembershipRevoked &&
-            (stage == LanSyncGroupPanelStage.EMPTY || stage == LanSyncGroupPanelStage.JOINING ||
+            (stage == LanSyncGroupPanelStage.EMPTY || stage == LanSyncGroupPanelStage.JOINING && recoveryJoining ||
                 stage == LanSyncGroupPanelStage.READY && canResumeExternalRecovery)
 
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
@@ -94,7 +98,7 @@ interface LanSyncGroupPanelActions {
     fun cancelMembershipRecoveryImport()
     fun saveMembershipRecoveryPackage(binding: String?, write: (ByteArray) -> Unit)
     fun beginJoin(code: String)
-    fun beginJoinFromFile(open: () -> java.io.InputStream)
+    fun beginJoinFromFile(open: () -> java.io.InputStream?)
     fun abandonUnprovedJoin()
     fun shelveUnsettledJoin()
     fun archiveRevokedJoin()

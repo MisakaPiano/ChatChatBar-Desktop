@@ -114,10 +114,11 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             state.joiningDevice?.let { StatusText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             if (state.canArchiveRevokedJoin) BootstrapButton("结束并归档已撤销的申请", enabled = !interactionBlocked) { actions.archiveRevokedJoin() }
             else if (!state.joiningMembershipRevoked) BootstrapButton(if (state.joiningLedgerConflict) "重新核对原申请" else "继续加入",
-                enabled = !interactionBlocked && !state.paused) { actions.retryJoin() }
+                enabled = state.canContinueJoin) { actions.retryJoin() }
             if (state.canAbandonJoin) BootstrapButton("放弃未发送的申请", secondary = true, enabled = !interactionBlocked) { actions.abandonUnprovedJoin() }
             if (state.canShelveJoin) BootstrapButton("暂存原申请并重新加入", secondary = true, enabled = !interactionBlocked) { actions.shelveUnsettledJoin() }
-            if (state.canRefreshJoinPreparation) BootstrapButton("重新核对本机资料并继续", secondary = true, enabled = !interactionBlocked) { actions.refreshJoinPreparation() }
+            if (state.canRefreshJoinPreparation) BootstrapButton("重新核对本机资料并继续", secondary = true,
+                enabled = state.canContinueJoin) { actions.refreshJoinPreparation() }
         }
         if (state.stage == LanSyncGroupPanelStage.READY) {
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
