@@ -27,7 +27,7 @@ internal data class SyncPinnedDeviceCertificate(val encoded: String, val fingerp
 object SyncDeviceSignatures {
     fun isPayload(payload: ByteArray): Boolean = payload.size in 1..128 &&
         String(payload, Charsets.US_ASCII).matches(Regex(
-            "CCB-SYNC-(?:(?:VERSION|DEVICE-LEDGER|KEY-DELIVERY|LEDGER-NOTICE|RECOVERY-DEVICE)-SIGNATURE/1|(?:DEVICE-LEDGER|KEY-DELIVERY)-SIGNATURE/2)\n[a-f0-9]{64}"))
+            "CCB-SYNC-(?:(?:VERSION|DEVICE-LEDGER|KEY-DELIVERY|LEDGER-NOTICE|RECOVERY-DEVICE)-SIGNATURE/1|(?:VERSION|DEVICE-LEDGER|KEY-DELIVERY)-SIGNATURE/2)\n[a-f0-9]{64}"))
 
     internal fun decode(encoded: String): SyncPinnedDeviceCertificate {
         require(encoded.length in 1..8192) { "SYNC_GROUP_CERTIFICATE" }

@@ -349,7 +349,8 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
             val certificate = requireNotNull(certificates[version.author]) { "SYNC_GROUP_AUTHOR_NOT_ADMITTED" }
             require(certificate.verifies(version.signingBytes(), version.signature)) { "SYNC_GROUP_VERSION_SIGNATURE" }
             version.authorRecovery?.let { recovery ->
-                require(authorizingRecovery(ledger, version.author, ledgers::get)?.reference() == recovery) {
+                val cut = authorizingRecovery(ledger, version.author, ledgers::get)
+                require(cut?.reference() == recovery && cut.acceptedHeads.all { fenced(it, version.parents) }) {
                     "SYNC_GROUP_AUTHOR_RECOVERY_AUTHORITY"
                 }
             }

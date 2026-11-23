@@ -22,6 +22,28 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     val node = node(reader)
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
+    private var recoveredReads: Pair<SyncInboxReconciliation, Map<CiphertextObjectKey, Set<CiphertextDescriptor>>>? = null
+    @Synchronized private fun recoveredReadScope(checkpoint: SyncVersionRef): Map<CiphertextObjectKey, Set<CiphertextDescriptor>> {
+        val view = node.peerReadView(checkpoint) ?: return mapOf(vault.key to setOf(vaultDescriptor))
+        recoveredReads?.takeIf { it.first === view }?.let { return it.second }
+        val controls = setOf(SyncInboxStage.KEY_ADMITTED, SyncInboxStage.LEDGER_ADMITTED, SyncInboxStage.NOT_FOR_DEVICE, SyncInboxStage.DEVICE_REVOKED)
+        val history = requireNotNull(view.history)
+        val forkedAuthors = history.authorForks()
+        val allowed = linkedMapOf<CiphertextObjectKey, MutableSet<CiphertextDescriptor>>()
+        fun allow(key: CiphertextObjectKey, descriptor: CiphertextDescriptor) { allowed.getOrPut(key) { linkedSetOf() } += descriptor }
+        allow(vault.key, vaultDescriptor)
+        view.observations.forEach { observation ->
+            if (observation.stage in controls) observation.descriptor?.let { allow(observation.key, it) }
+        }
+        view.authenticatedVersions.forEach { actual ->
+            val version = requireNotNull(actual.envelope.version)
+            if (history.contains(version.reference()) && version.author !in forkedAuthors) {
+                allow(actual.metadata.key, actual.metadata.descriptor)
+                actual.envelope.blobs.values.forEach { allow(it.key, it.descriptor) }
+            }
+        }
+        return allowed.mapValues { it.value.toSet() }.also { recoveredReads = view to it }
+    }
     fun ledger() = custody.ledger()
     internal fun requiresRecoveryProtocol(group: SyncStoreId): Boolean {
         require(group == trust.group) { "SYNC_GROUP_WIRE_GROUP" }
@@ -98,7 +120,8 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     }
     fun peerStore(group: SyncStoreId, localCertificate: String, peerCertificate: String): LanSyncGroupPeerStore {
         require(group == trust.group && localCertificate == certificate) { "SYNC_GROUP_RUNTIME_TLS_IDENTITY" }
-        return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader, ::notice)
+        val scope = if (requiresRecoveryProtocol(group)) ::recoveredReadScope else null
+        return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader, scope, ::notice)
     }
     @Synchronized private fun notice(device: String): SyncLedgerNoticeEntry? {
         val checkpoint = ledger().current().reference()

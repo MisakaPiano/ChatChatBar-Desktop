@@ -54,7 +54,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private val observe: (String) -> Unit = {}) {
     private val operation = Mutex()
     private val discoveryOperation = Mutex()
-    private var current: SyncInboxReconciliation? = null
+    @Volatile private var current: SyncInboxReconciliation? = null
     private var pendingRestorations: Map<String, Set<String>> = emptyMap()
     private var pendingResolutions: Set<String> = emptySet()
     private var heldResolutions: Set<String> = emptySet()
@@ -84,6 +84,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         inbox()
     }
     private fun currentView() = requireNotNull(current) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
+    internal fun peerReadView(checkpoint: SyncVersionRef): SyncInboxReconciliation? =
+        current?.takeIf { !it.trustBlocked && it.ledgerCheckpoint == checkpoint && it.history != null }
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
 
     internal class MembershipRecoveryContent(val keys: Map<SyncStoreId, SyncStreamingCipher>,

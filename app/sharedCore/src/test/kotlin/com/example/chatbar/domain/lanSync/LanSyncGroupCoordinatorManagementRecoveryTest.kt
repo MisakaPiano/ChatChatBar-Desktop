@@ -11,6 +11,7 @@ import com.example.chatbar.domain.syncStore.*
 import java.net.InetAddress
 import java.net.Socket
 import java.io.IOException
+import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -502,12 +503,23 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                                 val route = remote(aTransport, bSource, bTransport.start())
                                 aReceiver.reader.routes("authorproof", listOf(LanSyncGroupReplicaReader.Route("author-proof-tls", route)))
                                 try {
-                                    val noDiscardedVersion = object : CiphertextStore by route {
-                                        override fun listCommits(cursor: CommitCursor?, pageSize: Int): CommitPage = route.listCommits(cursor, pageSize).let {
-                                            CommitPage(it.entries.filterNot { row -> row == held.metadata.metadata }, it.nextCursor)
-                                        }
+                                    var cursor: CommitCursor? = null
+                                    do {
+                                        val page = route.listCommits(cursor, 1)
+                                        assertFalse(page.entries.any { it.key == held.metadata.metadata.key })
+                                        cursor = page.nextCursor
+                                    } while (cursor != null)
+                                    val retainedObjects = listOf(held.metadata.metadata) + held.metadata.envelope.blobs.values.map {
+                                        CiphertextObjectMetadata(it.key, it.descriptor)
                                     }
-                                    receiveFrom(aReceiver, noDiscardedVersion)
+                                    retainedObjects.forEach { original ->
+                                        assertEquals(original, bSource.replica.metadata(original.key))
+                                        assertNull(route.metadata(original.key))
+                                        val output = ByteArrayOutputStream()
+                                        assertNull(route.readTo(original.key, output, original.descriptor))
+                                        assertEquals(0, output.size())
+                                    }
+                                    receiveFrom(aReceiver, route)
                                     val incoming = requireNotNull(aReceiver.node.inspect().plan)
                                     aReceiver.node.apply(incoming)
                                     val record = founder.data.resolve("entities/chat_messages/independent_$id.json")

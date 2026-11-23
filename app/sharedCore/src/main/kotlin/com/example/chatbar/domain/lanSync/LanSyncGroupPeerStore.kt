@@ -11,7 +11,11 @@ import java.io.OutputStream
  */
 class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate: String, peerCertificate: String,
     private val currentLedger: () -> SyncDeviceLedger, private val backend: CiphertextStore,
+    private val recoveredReads: ((SyncVersionRef) -> Map<CiphertextObjectKey, Set<CiphertextDescriptor>>)?,
     private val revocationNotice: (String) -> SyncLedgerNoticeEntry?) : CiphertextStore {
+    constructor(trust: SyncGroupTrust, localCertificate: String, peerCertificate: String, currentLedger: () -> SyncDeviceLedger,
+        backend: CiphertextStore, revocationNotice: (String) -> SyncLedgerNoticeEntry?) :
+        this(trust, localCertificate, peerCertificate, currentLedger, backend, null, revocationNotice)
     private val local = SyncDeviceSignatures.decode(localCertificate)
     private val peer = SyncDeviceSignatures.decode(peerCertificate)
     val group: SyncStoreId get() = trust.group
@@ -43,13 +47,15 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         if (!active(ledger) && (write || notice(ledger).key != key)) denied()
     }
     private fun denied(): Nothing = throw CiphertextStoreException(CiphertextStoreFailure.PERMISSION)
+    private fun readChoices(ledger: SyncDeviceLedger, key: CiphertextObjectKey): Set<CiphertextDescriptor>? =
+        recoveredReads?.let { readScope -> readScope(ledger.current().reference())[key].orEmpty() }
     /** Recheck before each network chunk even when ciphertext is already in a verified local cache. */
     fun requireReadAllowed(key: CiphertextObjectKey, expected: CiphertextDescriptor) {
         val ledger = ledger()
         if (!active(ledger)) {
             val notice = notice(ledger)
             if (key != notice.key || expected != notice.descriptor) denied()
-        }
+        } else if (readChoices(ledger, key)?.contains(expected) == false) denied()
     }
     fun requireWriteAllowed(key: CiphertextObjectKey) = authorize(key, true)
 
@@ -84,16 +90,7 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         authorize(request.key, true)
         return result
     }
-    override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? {
-        authorize(key)
-        val before = ledger()
-        val expected = if (!active(before)) notice(before).descriptor else null
-        val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, expected) else backend.metadata(key)
-        authorize(key)
-        val latest = ledger()
-        if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
-        return result
-    }
+    override fun metadata(key: CiphertextObjectKey): CiphertextObjectMetadata? = metadataExact(key, null)
     fun metadataExact(key: CiphertextObjectKey, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
         authorize(key)
         val ledger = ledger()
@@ -101,12 +98,18 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
             val notice = notice(ledger)
             require(key == notice.key && (expected == null || expected == notice.descriptor)) { "SYNC_GROUP_PEER_NOTICE_CHANGED" }
             notice.descriptor
-        } else expected
+        } else {
+            val allowed = readChoices(ledger, key)
+            if (allowed == null) expected
+            else if (expected == null) allowed.firstOrNull() ?: return null
+            else if (expected in allowed) expected else return null
+        }
         val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, chosen)
             else backend.metadata(key)?.also { require(chosen == null || chosen == it.descriptor) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
         authorize(key)
         val latest = this.ledger()
         if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
+        else if (result != null && readChoices(latest, key)?.contains(result.descriptor) == false) denied()
         return result
     }
     override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
@@ -120,7 +123,8 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         } else expected
         // Pin even an active caller's default read, so a later revocation cannot authorize a
         // different same-key raw candidate merely because the authentic notice uses that key.
-        val selected = chosen ?: metadata(key)?.descriptor ?: return null
+        val selected = if (recoveredReads == null) chosen ?: metadata(key)?.descriptor ?: return null
+            else metadataExact(key, chosen)?.descriptor ?: return null
         requireReadAllowed(key, selected)
         val checked = object : OutputStream() {
             override fun write(value: Int) { requireReadAllowed(key, selected); destination.write(value) }
@@ -138,8 +142,10 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         val ledger = ledger()
         if (active(ledger)) {
             val result = backend.listCommits(cursor, pageSize)
-            if (!active(this.ledger())) denied()
-            return result
+            val latest = this.ledger()
+            if (!active(latest)) denied()
+            val allowed = recoveredReads?.invoke(latest.current().reference()) ?: return result
+            return CommitPage(result.entries.filter { it.descriptor in allowed[it.key].orEmpty() }, result.nextCursor)
         }
         // An active-peer backend cursor has no authority over the newly restricted view.
         if (cursor != null) throw CiphertextStoreException(CiphertextStoreFailure.INVALID_CURSOR)
