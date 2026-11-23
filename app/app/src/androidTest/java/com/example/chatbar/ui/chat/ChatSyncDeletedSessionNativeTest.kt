@@ -137,15 +137,17 @@ class ChatSyncDeletedSessionNativeTest {
             val initialRows = readConversationRows(initial, conversation)
 
             lateinit var oldOwner: ChatViewModel
+            lateinit var sendPosition: ChatWindow.SendPosition
             openChat(app, sessionId).use { scenario ->
                 oldOwner = owner(scenario, sessionId)
                 await { oldOwner.draftLoaded.value && oldOwner.isModelUsable.value && !oldOwner.isArchived.value }
                 ui.label(sessionTitle)
-                ui.sendButton(enabled = true)
+                ui.liveSendButton()
                 ui.replaceDraftText(draftText)
                 withContext(Dispatchers.Main) { oldOwner.addDraftImage(images.single()) }
                 ui.label("待发图片")
                 await { app.chatRepository.getComposerDraft(sessionId).let { it.content == draftText && it.imagePaths == images } }
+                sendPosition = ui.recordSendPosition()
 
                 scenario.moveToState(Lifecycle.State.STARTED)
                 val beforeDelete = target.inspect()
@@ -175,7 +177,7 @@ class ChatSyncDeletedSessionNativeTest {
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 await { oldOwner.sessionMissing.value }
                 assertRemovedScreen(ui)
-                ui.tapDisabledSend()
+                ui.checkDisabledSend(sendPosition, touch = true)
                 assertEquals(draftText, oldOwner.composerDraft.value.text)
                 assertEquals(images, oldOwner.composerDraft.value.images)
                 assertFalse(withContext(Dispatchers.Main) { oldOwner.sendMessage(draftText, images) })
@@ -188,6 +190,7 @@ class ChatSyncDeletedSessionNativeTest {
                 assertNotSame(oldOwner, cold)
                 await { cold.draftLoaded.value && cold.sessionMissing.value }
                 assertRemovedScreen(ui)
+                ui.checkDisabledSend(sendPosition, touch = false)
                 assertEquals(draftText, cold.composerDraft.value.text)
                 assertEquals(images, cold.composerDraft.value.images)
                 val reopenedRepository = ChatRepository(JsonFileStorage(data, app.lanSyncOwner.gate))
@@ -249,19 +252,30 @@ class ChatSyncDeletedSessionNativeTest {
         ui.label("复制草稿")
         ui.label("复制图片位置")
         ui.label("待发图片")
-        ui.sendButton(enabled = false)
     }
 
     /** Observe the Android accessibility tree without replacing the production window recomposer. */
     private class ChatWindow(private val packageName: String) {
-        private val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        private val instrumentation = InstrumentationRegistry.getInstrumentation()
+        private val automation = instrumentation.uiAutomation
+
+        data class SendPosition(val send: Rect, val draftImage: Rect)
 
         suspend fun label(value: String) = awaitNode(value) {
             it.text?.toString() == value || it.contentDescription?.toString() == value
         }
 
-        suspend fun sendButton(enabled: Boolean) = awaitNode("send button enabled=$enabled") {
-            it.contentDescription?.toString() == "发送" && it.isEnabled == enabled
+        suspend fun liveSendButton() = awaitNode("enabled Send control") {
+            isSend(it) && it.isEnabled
+        }
+
+        suspend fun recordSendPosition(): SendPosition {
+            val send = bounds(liveSendButton())
+            val image = bounds(label("待发图片"))
+            check(!send.isEmpty && !image.isEmpty && send.centerX() > image.right && send.centerY() >= image.bottom) {
+                "Enabled Send must be below and to the right of the draft thumbnail. send=$send image=$image; ${describeWindow()}"
+            }
+            return SendPosition(send, image)
         }
 
         suspend fun replaceDraftText(value: String) {
@@ -276,20 +290,50 @@ class ChatSyncDeletedSessionNativeTest {
                 field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, input))
         }
 
-        suspend fun tapDisabledSend() {
-            val bounds = Rect()
-            sendButton(enabled = false).getBoundsInScreen(bounds)
-            assertFalse("Disabled send must have visible screen bounds", bounds.isEmpty)
+        suspend fun checkDisabledSend(previous: SendPosition, touch: Boolean) {
+            val image = bounds(label("待发图片"))
+            val explicit = findNode(::isSend)?.let(::bounds)?.takeUnless { it.isEmpty }
+            // Disabled Compose semantics can expose the icon on a different node or omit the control.
+            // The same thumbnail remains immediately above the composer; use its measured position.
+            val send = explicit ?: Rect(previous.send).apply {
+                offset(image.left - previous.draftImage.left, image.bottom - previous.draftImage.bottom)
+            }
+            val x = send.centerX()
+            val y = send.centerY()
+            val root = automation.rootInActiveWindow
+            check(root != null && root.packageName?.toString() == packageName && bounds(root).contains(x, y) &&
+                !send.isEmpty && x > image.right && y >= image.bottom) {
+                "Send touch target was outside the Android chat composer. send=$send image=$image explicit=${explicit != null}; ${describeWindow()}"
+            }
+            val clickable = nodes().filter {
+                it.packageName?.toString() == packageName && it.isVisibleToUser && it.isEnabled &&
+                    AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK in it.actionList
+            }.firstOrNull { node ->
+                val area = bounds(node)
+                area.contains(x, y) && (isSend(node) ||
+                    area.width() <= maxOf(send.width(), previous.send.width()) * 3 &&
+                    area.height() <= maxOf(send.height(), previous.send.height()) * 3)
+            }
+            check(clickable == null) {
+                "Removed chat still exposes an enabled click at Send. send=$send; ${describeWindow()}"
+            }
+            if (!touch) return
             val downTime = SystemClock.uptimeMillis()
             for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
                 val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action,
-                    bounds.exactCenterX(), bounds.exactCenterY(), 0).apply {
+                    send.exactCenterX(), send.exactCenterY(), 0).apply {
                     source = InputDevice.SOURCE_TOUCHSCREEN
                 }
-                try { assertTrue("Android must deliver the synthetic touch", automation.injectInputEvent(event, true)) }
+                try { assertTrue("Android must deliver the synthetic touch at $send", automation.injectInputEvent(event, true)) }
                 finally { event.recycle() }
             }
+            instrumentation.waitForIdleSync()
         }
+
+        private fun bounds(node: AccessibilityNodeInfo): Rect = Rect().also(node::getBoundsInScreen)
+
+        private fun isSend(node: AccessibilityNodeInfo): Boolean =
+            node.contentDescription?.toString() == "发送"
 
         private suspend fun awaitNode(description: String, matches: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
             val found = withTimeoutOrNull(15_000) {
@@ -300,18 +344,32 @@ class ChatSyncDeletedSessionNativeTest {
                 }
                 node
             }
-            return checkNotNull(found) { "Visible Android chat control unavailable: $description" }
+            return checkNotNull(found) { "Visible Android chat control unavailable: $description; ${describeWindow()}" }
         }
 
-        private fun findNode(matches: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+        private fun findNode(matches: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? =
+            nodes().firstOrNull { it.packageName?.toString() == packageName && it.isVisibleToUser && matches(it) }
+
+        private fun nodes(): Sequence<AccessibilityNodeInfo> = sequence {
             val pending = ArrayDeque<AccessibilityNodeInfo>()
             automation.rootInActiveWindow?.let(pending::addLast)
-            while (pending.isNotEmpty()) {
+            var visited = 0
+            while (pending.isNotEmpty() && visited++ < 128) {
                 val node = pending.removeFirst()
-                if (node.packageName?.toString() == packageName && node.isVisibleToUser && matches(node)) return node
-                for (index in 0 until node.childCount) node.getChild(index)?.let(pending::addLast)
+                yield(node)
+                for (index in 0 until minOf(node.childCount, 128)) node.getChild(index)?.let(pending::addLast)
             }
-            return null
+        }
+
+        private fun describeWindow(): String {
+            val known = setOf("发送", "中断生成", "添加图片", "全屏编辑", "待发图片", "复制草稿", "复制图片位置")
+            return nodes().filter { it.packageName?.toString() == packageName && it.isVisibleToUser }
+                .take(24).joinToString(prefix = "visible=[", postfix = "]") { node ->
+                    val label = listOfNotNull(node.contentDescription?.toString(), node.text?.toString()).firstOrNull { it in known }
+                    val click = AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK in node.actionList
+                    "${node.className?.toString()?.substringAfterLast('.')}/${label ?: "other"}" +
+                        "/enabled=${node.isEnabled}/click=$click/editable=${node.isEditable}/${bounds(node).toShortString()}"
+                }
         }
     }
 
