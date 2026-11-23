@@ -55,8 +55,8 @@ class LanSyncGroupJoiningTest {
             founder.node.upload(commit.entry.request.operation, backend(), requireNotNull(founder.service.profile()).localReplica)
         }
         fun backend() = FileCiphertextStore(founder.profile.resolve("local-replica"))
-        suspend fun prove(owner: LanSyncGroupJoining): Pair<LanSyncGroupInvitation, LanSyncGroupInvitedPeer> {
-            val invitation = founder.service.invitation(16384)
+        suspend fun prove(owner: LanSyncGroupJoining, recovered: LanSyncGroupInvitation? = null): Pair<LanSyncGroupInvitation, LanSyncGroupInvitedPeer> {
+            val invitation = recovered ?: founder.service.invitation(16384)
             founder.invitations += invitation
             val pool = Executors.newSingleThreadExecutor()
             val listener = (invitation.invitationContext().serverSocketFactory.createServerSocket(0, 2, InetAddress.getLoopbackAddress()) as SSLServerSocket).also { it.needClientAuth = true }
@@ -124,22 +124,62 @@ class LanSyncGroupJoiningTest {
             do { cursor = alternate.node.discover(alternate.reader, cursor).nextCursor } while (cursor != null)
             assertFalse(alternate.node.reconcileForPrefetch().trustBlocked)
             assertTrue(alternate.ledger().current().members.getValue(client.identity.fingerprint).active)
+            alternate.node.inspectLocal()
         }
     }
 
-    private fun historicalJoinRelay(work: suspend (HistoricalJoinRelay) -> Unit) = fixture { client ->
+    private fun historicalJoinRelay(recovered: Boolean = false, work: suspend (HistoricalJoinRelay) -> Unit) = fixture { client ->
         val founder = client.founder
         founder.rotateBeforeJoin()
         client.publishedPreset()
         val alternate = Joiner(founder, LanSyncTlsIdentity.create(), "alternate")
         val alternateOwner = alternate.owner()
         alternate.admit(alternate.prove(alternateOwner))
-        val alternateActivation = alternateOwner.activate(client.backend())
-        assertEquals(LanSyncGroupJoinStage.READY, alternateActivation.profile.stage, alternateActivation.waitingCode)
+        val owner = client.owner()
+        if (recovered) {
+            val bootstrap = requireNotNull(founder.service.invitation(16384).use { it.issue("10.0.0.1", 16383).bootstrap })
+            val baseline = founder.custody().ledger()
+            val parent = baseline.current()
+            val newKey = SyncStreamingCipher.create(parent.group)
+            val graph = SyncDeviceLedger(baseline.trustAnchor).also { ledger -> baseline.ancestry().forEach(ledger::offer) }
+            founder.service.resume(founder.code).use { prepared ->
+                fun sign(row: SyncDeviceLedgerRecord) = row.copy(signature =
+                    Base64.getEncoder().encodeToString(prepared.session.signRootPayload(row.signingBytes())))
+                val left = sign(parent.copy(id = SyncStoreId.random(), parent = parent.reference(), sequence = parent.sequence + 1))
+                val right = sign(left.copy(id = SyncStoreId.random()))
+                val repaired = sign(left.copy(id = SyncStoreId.random(), parent = null, sequence = left.sequence + 1,
+                    epoch = newKey.epoch, keyCommitment = newKey.keyCommitment(), acceptedHeads = bootstrap.dataHeads + parent.acceptedHeads,
+                    recovery = SyncGroupLedgerRecovery(setOf(left.reference(), right.reference()), left.reference())))
+                listOf(left, right, repaired).forEach { assertEquals(SyncVersionState.ADMITTED, graph.offer(it)) }
+                val root = Files.createDirectory(founder.root.resolve("relay-recovery-publication"))
+                fun cipher(epoch: SyncStoreId) = if (epoch == newKey.epoch) newKey else founder.custody().key(epoch)
+                val publication = LanSyncGroupRootPublication(root, prepared.session.ownerCertificate, prepared.session::signRootPayload,
+                    { graph }, ::cipher, { epoch -> SyncEncryptedOutbox(Files.createDirectories(root.resolve("queue-${epoch.value}")), cipher(epoch)) })
+                val localTarget = requireNotNull(founder.service.profile()).localReplica
+                publication.upload(client.backend(), localTarget)
+                LanSyncGroupInvitation(founder.identity, graph.trustAnchor, { graph }, bootstrap = bootstrap).use {
+                    val offer = it.issue("10.0.0.1", 16383)
+                    assertTrue(offer.code().startsWith("CCB-GROUP-JOIN2:"))
+                    alternateOwner.refreshInvitation(offer.code()) { }
+                }
+                assertEquals(LanSyncGroupJoinStage.READY, alternateOwner.activate(client.backend()).profile.stage)
+
+                val realInvite = LanSyncGroupInvitation(founder.identity, graph.trustAnchor, { graph }, bootstrap = bootstrap)
+                val (invite, applicant) = client.prove(owner, realInvite)
+                assertEquals(repaired.reference(), applicant.trust.checkpoint)
+                invite.requireCurrent(applicant)
+                val approved = sign(repaired.copy(id = SyncStoreId.random(), parent = repaired.reference(), sequence = repaired.sequence + 1,
+                    members = repaired.members + (applicant.device to applicant.member), recovery = null))
+                assertEquals(SyncVersionState.ADMITTED, graph.offer(approved))
+                publication.upload(client.backend(), localTarget)
+            }
+        } else {
+            val alternateActivation = alternateOwner.activate(client.backend())
+            assertEquals(LanSyncGroupJoinStage.READY, alternateActivation.profile.stage, alternateActivation.waitingCode)
+            client.admit(client.prove(owner))
+        }
         val access = requireNotNull(alternateOwner.runtimeAccess())
 
-        val owner = client.owner()
-        client.admit(client.prove(owner))
         val oldEpoch = founder.custody().ledger().history().first().epoch
         val source = client.backend()
         val page = source.listCommits(null)
@@ -172,6 +212,21 @@ class LanSyncGroupJoiningTest {
     }
 
     @Test fun approvedColdJoinFetchesItsMissingHistoricalKeyFromAnAuthorizedMemberOverOrdinaryTls() = historicalJoinRelay { relay ->
+        verifyColdRelay(relay)
+    }
+
+    @Test fun anApprovedRecoveredInvitationFetchesTheMissingHistoricalKeyFromAnotherDeviceAfterColdOpen() = historicalJoinRelay(recovered = true) { relay ->
+        val code = lanSyncJson.decodeFromJsonElement(LanSyncGroupInviteOffer.serializer(), relay.client.control().getValue("offer")).code()
+        assertTrue(code.startsWith("CCB-GROUP-JOIN2:"))
+        relay.admitFromPublishedCopy(includeMissingCapsule = false)
+        val cold = relay.client.owner()
+        val waiting = cold.activate(cold.discoveredBootstrapStores(relay).single())
+        assertEquals("SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", waiting.waitingCode)
+        assertTrue(waiting.profile.membershipVerified); assertNull(waiting.node)
+        verifyColdRelay(relay)
+    }
+
+    private suspend fun verifyColdRelay(relay: HistoricalJoinRelay) {
         val client = relay.client
         val original = client.control()
         val recipient = client.root.resolve("joining/recipient/recipient.protected")

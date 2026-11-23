@@ -66,8 +66,8 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         private val founders = mutableListOf<LanSyncGroupEnrollment>()
         private fun founderAtJoinedProfile() = LanSyncGroupEnrollment(root, workspace, platform, f.joiningIdentity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(founders::add)
-        fun newCoordinator() = LanSyncGroupCoordinator({ Files.isRegularFile(root.resolve("joining/profile.protected")) },
-            ::founderAtJoinedProfile, { joining }, network, "synthetic surviving phone")
+        fun newCoordinator(initiallyPaused: Boolean = false) = LanSyncGroupCoordinator({ Files.isRegularFile(root.resolve("joining/profile.protected")) },
+            ::founderAtJoinedProfile, { joining }, network, "synthetic surviving phone", initiallyPaused = initiallyPaused)
         val coordinator = newCoordinator()
         lateinit var node: LanSyncGroupNode
         lateinit var trust: SyncGroupTrust
@@ -441,7 +441,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         if (signed == null) {
                             assertEquals(setOf(cRow, dRow), requireNotNull(b.verifiedLedgerFork()).branches.toSet())
                         } else {
-                            val coldSigner = joined.newCoordinator()
+                            val coldSigner = joined.newCoordinator(initiallyPaused = continueAuthor)
                             try {
                                 coldSigner.startIfConfigured()
                                 await { !coldSigner.state.value.busy && coldSigner.state.value.stage == LanSyncGroupPanelStage.READY }
