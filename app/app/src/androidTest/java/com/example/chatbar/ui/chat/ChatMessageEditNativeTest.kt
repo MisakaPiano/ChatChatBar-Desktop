@@ -53,7 +53,7 @@ class ChatMessageEditNativeTest {
         val original = "Synthetic original active version"
         val incoming = "Synthetic version text from the other signed device"
         val draft = "Synthetic Android draft that must survive"
-        val root = Files.createTempDirectory(app.noBackupFilesDir.toPath(), "synthetic-stale-edit-")
+        val root = Files.createTempDirectory(app.noBackupFilesDir.canonicalFile.toPath(), "synthetic-stale-edit-")
         val localSelection = png(root.resolve("selection.png"), Color.GREEN)
         var selected: Path? = null
         var received: Path? = null
