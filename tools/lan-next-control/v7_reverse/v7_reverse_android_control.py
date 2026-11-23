@@ -152,8 +152,8 @@ def main():
             paths=call('GET_APK_PATH','shell','pm','path',package).decode('ascii').splitlines()
             need(len(paths)==1 and paths[0].startswith('package:/data/app/') and paths[0].endswith('/base.apk'),'SINGLE_INSTALLED_APK_REQUIRED')
             need(call('GET_APK_HASH','shell','toybox','sha256sum',paths[0][8:]).split()[0].decode('ascii')==sha,'INSTALLED_DEBUG_APK_HASH_MISMATCH')
-        features=call('VERIFY_SHELL_FEATURES','features').decode('ascii').strip().split(',')
-        need('shell_v2' in features,'SHELL_V2_REQUIRED');r['shellV2Observed']=True
+        features=call('VERIFY_SHELL_FEATURES','features').splitlines()
+        need(b'shell_v2' in features,'SHELL_V2_REQUIRED');r['shellV2Observed']=True
         app_root=call('VERIFY_RUN_AS_ROOT','shell','-T','run-as',PACKAGE,'pwd').strip()
         need(app_root in (('/data/user/0/'+PACKAGE).encode(),('/data/data/'+PACKAGE).encode()),'APP_RUN_AS_ROOT_NOT_EXPECTED')
         r['runAsRootObserved']=True

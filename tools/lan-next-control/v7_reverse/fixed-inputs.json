@@ -55,8 +55,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_reverse_android_control.py",
-      "bytes": 16994,
-      "sha256": "881470a735c901371128d64d127464dee67466ed52c38271e688d9b47852287f"
+      "bytes": 16973,
+      "sha256": "610f0201393ce12620e5cee263d56ae5c0a023018fefea73781a40410080b6a0"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_windows_reverse_control.py",
@@ -80,8 +80,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/test_reverse_adb_observation.py",
-      "bytes": 8054,
-      "sha256": "16d9a61819511f74c03370ed96e7a21d7bf09fd409b6c936d67700c803ee676d"
+      "bytes": 8059,
+      "sha256": "c99187984e17c7fa7aced81dd7ef064b00a5d1570faf3d6b14fe99a0bad0fc7e"
     }
   ],
   "sourceFiles": [

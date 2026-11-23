@@ -86,7 +86,7 @@ class AdbEvidenceTests(unittest.TestCase):
                 elif args[:3]==['shell','dumpsys','package']:stdout=b'versionCode=87 DEBUGGABLE\n'
                 elif args[:3]==['shell','pm','path']:stdout=b'package:/data/app/synthetic/base.apk\n'
                 elif args[:3]==['shell','toybox','sha256sum']:stdout=b'a'*64+b'  synthetic\n'
-                elif args==['features']:stdout=b'shell_v2,cmd\n'
+                elif args==['features']:stdout=b'cmd\r\nshell_v2\r\n'
                 elif args[-1:] == ['pwd']:stdout=('/data/user/0/'+control.PACKAGE+'\n').encode()
                 elif args[-1:] == [control.APP_LAB+'progress.json']:code=1;stderr=self.stat_missing('progress.json')
                 elif args[-1:] == [control.APP_LAB+'ready.json']:
