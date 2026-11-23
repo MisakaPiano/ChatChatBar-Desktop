@@ -61,11 +61,11 @@ class AndroidLanSyncCameraResourceTest {
                 storage.saveEntity("chat_sessions", id, ChatSession(id, "card", id, createdAt = 1, updatedAt = 1),
                     ChatSession.serializer())
             }
-            val photo = ChatMessage("m", "photo", MessageRole.USER, "合成图片",
+            val photo = ChatMessage("photo-image", "photo", MessageRole.USER, "合成图片",
                 images = listOf("images/owned.jpg"), createdAt = 2, updatedAt = 2)
-            storage.saveEntity("chat_messages", "photo_m", photo, ChatMessage.serializer())
-            val text = ChatMessage("m", "text", MessageRole.USER, "合成独立文字", createdAt = 2, updatedAt = 2)
-            storage.saveEntity("chat_messages", "text_m", text, ChatMessage.serializer())
+            storage.saveEntity("chat_messages", "photo_photo-image", photo, ChatMessage.serializer())
+            val text = ChatMessage("independent-text", "text", MessageRole.USER, "合成独立文字", createdAt = 2, updatedAt = 2)
+            storage.saveEntity("chat_messages", "text_independent-text", text, ChatMessage.serializer())
             val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("state")), { data.resolve(it) },
                 validateResource = ::validateAndroidLanSyncResource)
             val good = workspace.captureGroup("phone").use { it.snapshot.hashes() }
@@ -77,7 +77,7 @@ class AndroidLanSyncCameraResourceTest {
                 assertEquals(good["conversation/text"], it.snapshot.hashes()["conversation/text"])
             }
             assertTrue(broken.contentEquals(Files.readAllBytes(image)))
-            assertEquals(photo, storage.loadEntity("chat_messages", "photo_m", ChatMessage.serializer()))
+            assertEquals(photo, storage.loadEntity("chat_messages", "photo_photo-image", ChatMessage.serializer()))
             Files.write(image, original)
             workspace.captureGroup("phone").use {
                 assertTrue(it.blockedResourceUnits.isEmpty())

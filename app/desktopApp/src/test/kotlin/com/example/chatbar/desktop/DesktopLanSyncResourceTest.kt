@@ -34,11 +34,11 @@ class DesktopLanSyncResourceTest {
                 storage.saveEntity("chat_sessions", id,
                     ChatSession(id, "card", id, createdAt = 1, updatedAt = 1), ChatSession.serializer())
             }
-            val owningMessage = ChatMessage("m", "has_image", MessageRole.USER, "保留原图",
+            val owningMessage = ChatMessage("photo", "has_image", MessageRole.USER, "保留原图",
                 images = listOf("images/owned.webp"), createdAt = 2, updatedAt = 2)
-            storage.saveEntity("chat_messages", "has_image_m", owningMessage, ChatMessage.serializer())
-            storage.saveEntity("chat_messages", "text_only_m",
-                ChatMessage("m", "text_only", MessageRole.USER, "独立文字", createdAt = 2, updatedAt = 2), ChatMessage.serializer())
+            storage.saveEntity("chat_messages", "has_image_photo", owningMessage, ChatMessage.serializer())
+            storage.saveEntity("chat_messages", "text_only_dialogue",
+                ChatMessage("dialogue", "text_only", MessageRole.USER, "独立文字", createdAt = 2, updatedAt = 2), ChatMessage.serializer())
             val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("state")),
                 DesktopCharacterResourceStore(data)::resolveOwnedReference,
                 resourceReference = { _, path -> desktopLanSyncResourceReference(data, path) }, validateResource = ::validateDesktopLanSyncResource)
@@ -53,7 +53,7 @@ class DesktopLanSyncResourceTest {
                     assertEquals(originalHashes["conversation/text_only"], capture.snapshot.hashes()["conversation/text_only"])
                 }
                 assertContentEquals(broken, Files.readAllBytes(image))
-                assertEquals(owningMessage, storage.loadEntity("chat_messages", "has_image_m", ChatMessage.serializer()))
+                assertEquals(owningMessage, storage.loadEntity("chat_messages", "has_image_photo", ChatMessage.serializer()))
             }
             Files.write(image, original)
             workspace.captureGroup("desktop").use {
