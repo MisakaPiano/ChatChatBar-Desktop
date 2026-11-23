@@ -1,0 +1,70 @@
+name: V7 invitation tenth repair shared diagnosis
+on:
+  push:
+    branches: [codex/v7-invitation-r10-repair-20261123]
+    paths:
+      - .github/workflows/v7-invitation-round-ten-shared.yml
+permissions:
+  contents: read
+jobs:
+  shared:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - name: Verify real shared invitation and attachment recovery paths
+        working-directory: app
+        run: |
+          cat >"$RUNNER_TEMP/test-events.init.gradle" <<'GRADLE'
+          allprojects {
+            tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+              testLogging.events 'started', 'passed', 'failed', 'skipped'
+            }
+          }
+          GRADLE
+          bash ./gradlew :sharedCore:test \
+            --tests '*LanSyncGroupCoordinatorTest.fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation' \
+            --tests '*LanSyncGroupCoordinatorTest.anActualInvitationFileWriteBlocksActiveCloseAndRejectsAResultAfterVisibilityLoss' \
+            --tests '*LanSyncGroupCoordinatorTest.noUsableLanAddressAndDisappearingSelectionOfferDifferentRecoverySteps' \
+            --tests '*LanSyncGroupInvitationTest.fileOfferCannotReportSuccessAfterItsMonotonicDeadline' \
+            --tests '*LanSyncGroupNodeTest.aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen' \
+            --tests '*LanSyncGroupNodeTest.aTruncatedFileTypeWithAConfirmedHeicBrandOnlyHoldsTheOwningChat' \
+            --tests '*LanSyncGroupNodeTest.unsupportedHeifMetadataAndMetadataAboveTheBudgetRemainStrictErrors' \
+            --tests '*LanSyncGroupResolutionTest' \
+            -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
+            --no-daemon --max-workers=1 --no-parallel --console=plain --init-script "$RUNNER_TEMP/test-events.init.gradle" >"$RUNNER_TEMP/shared-console.log" 2>&1 &
+          gradle_pid=$!
+          for attempt in {1..108}; do
+            if ! kill -0 "$gradle_pid" 2>/dev/null; then break; fi
+            sleep 5
+          done
+          if kill -0 "$gradle_pid" 2>/dev/null; then
+            jcmd -l | awk '/GradleWorkerMain/ {print $1}' | while read -r pid; do
+              timeout 10s jcmd "$pid" Thread.print
+            done >"$RUNNER_TEMP/shared-worker-stacks.txt" 2>&1 || true
+            tail -n 100 "$RUNNER_TEMP/shared-console.log"
+            kill -TERM "$gradle_pid"
+            exit 124
+          fi
+          result=0
+          wait "$gradle_pid" || result=$?
+          cat "$RUNNER_TEMP/shared-console.log"
+          exit "$result"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r10-bounded-shared
+          path: |
+            app/sharedCore/build/test-results/test/TEST-*.xml
+            ${{ runner.temp }}/shared-console.log
+            ${{ runner.temp }}/shared-worker-stacks.txt
