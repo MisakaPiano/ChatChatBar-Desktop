@@ -37,6 +37,9 @@ jobs:
             --tests '*LanSyncGroupCloudRecoveryOwnerTest.coordinatorReadyLoadKeepsTheInterruptedExternalRecoveryEntryAndExplicitConfirmationFinishesIt' \
             --tests '*SyncGroupBootstrapTest.missingLaterJoinPinAfterRecoveredMembershipWaitsButAnActualLateBranchBlocks' \
             --tests '*EncryptedFileExportOwnerTest.aPreparedBindingAfterAuthorityChangesDoesNotOpenOrTruncateTheSelectedDestination' \
+            --tests '*LanSyncGroupNativeApplyOwnerTest.retainedMembershipForkAllowsOnlyVerifiedAppliedReceiptRepairWithoutReplayingNativeData' \
+            --tests '*LanSyncGroupNodeTest.aCommittedLocalRestoreRetriesOnlyRepositoryRefreshAfterColdOpen' \
+            --tests '*LanSyncGroupNodeTest.signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4

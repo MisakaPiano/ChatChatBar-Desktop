@@ -341,6 +341,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 val (recovered, pendingReload) = native.recoverForReload()
                 author.state()
                 reloadNative(pendingReload)
+                reloadLocalRecoveries()
                 val sessions = resolutions.recover()
                 if (resolutions.needsReload()) { reload(sessions); resolutions.acknowledgeReload() }
                 recovered
@@ -532,13 +533,12 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
     /** Explicit local restore; per-unit sync receipts are preserved and its fresh revision stays pending. */
     suspend fun applyRecovery(preview: LanSyncRestorePreview): LanSyncRestoreRevision = serialized {
-        val restored = exclusive {
+        exclusive {
             author.state(); native.state()
-            workspace.applyRecovery(preview, identity.fingerprint, projection, isolateLocalImages = true).also {
-                reload(preview.currentRecords.filter { record -> record.type == "chat_sessions" }.mapTo(linkedSetOf()) { record -> record.id })
-            }
+            val revision = workspace.applyRecovery(preview, identity.fingerprint, projection, isolateLocalImages = true, trackReload = true)
+            reloadLocalRecoveries()
+            revision.copy(reloadPending = false)
         }
-        restored
     }
 
     private suspend fun refreshRestorations() = exclusive {
@@ -618,10 +618,21 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     }
     private suspend fun reloadNative(work: LanSyncGroupNativeApplyOwner.ReloadWork?) {
         if (work == null) return
-        try { reload(work.sessions) }
+        reloadPendingRepositories(work.sessions)
+        native.acknowledgeReload(work)
+    }
+    private suspend fun reloadLocalRecoveries() {
+        val pending = workspace.completedRecoveries(identity.fingerprint).filter { it.reloadPending }
+        if (pending.isEmpty()) return
+        val affected = pending.flatMap { it.restoredUnits }.filter { it.startsWith("conversation/") }
+            .mapTo(linkedSetOf()) { it.removePrefix("conversation/") }
+        reloadPendingRepositories(affected)
+        pending.forEach(workspace::acknowledgeRecoveryReload)
+    }
+    private suspend fun reloadPendingRepositories(sessions: Set<String>) {
+        try { reload(sessions) }
         catch (failure: CancellationException) { throw failure }
         catch (failure: Exception) { throw IllegalStateException("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure) }
-        native.acknowledgeReload(work)
     }
     private suspend fun reload(previousSessions: Set<String> = emptySet()) {
         val sessions = workspace.captureGroup(identity.fingerprint, projection).use { capture ->

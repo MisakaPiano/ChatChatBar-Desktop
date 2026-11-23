@@ -1249,7 +1249,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val node = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node
         selected.source?.let { node.commit(it, it.requiredBindings) }
         selected.incoming?.let { node.applyIncoming(it.acknowledge(selected.incomingBindings)) }
-        selected.recovery?.let { node.applyRecovery(it) }
+        selected.recovery?.let {
+            try { node.applyRecovery(it) } catch (failure: IllegalStateException) {
+                if (failure.message == "SYNC_GROUP_NATIVE_RELOAD_PENDING" && mutableActionReview.value === selected) cancelActionReview()
+                throw failure
+            }
+        }
         selected.resolution?.let { node.resolve(it.acknowledge(it.binding, it.requiredBindings, it.requiredRestorations)) }
         if (mutableActionReview.value === selected) cancelActionReview()
         cycle(force = true)

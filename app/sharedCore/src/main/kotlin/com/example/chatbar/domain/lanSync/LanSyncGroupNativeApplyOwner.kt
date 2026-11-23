@@ -87,8 +87,15 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
     }
     fun state(): LanSyncGroupNativeState = guarded { publicState(load()) }
     internal fun recoveryFrontiers(): Set<SyncVersionRef> = guarded {
-        val retained = load(advanceHead = false)
-        require(retained.pending == null) { "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING" }
+        var retained = load(advanceHead = false)
+        retained.pending?.let { intent ->
+            val frozen = payload(intent)
+            require(frozen.sourceOperation == null && workspace.verifiedApplied(intent.transaction)) {
+                "SYNC_GROUP_MEMBERSHIP_RECOVERY_NATIVE_PENDING"
+            }
+            recoverAppliedReceipt(retained, intent, frozen)
+            retained = load(advanceHead = false)
+        }
         retained.units.values.flatMapTo(linkedSetOf()) { it.frontiers }
     }
     fun recover(): LanSyncGroupNativeState = guarded { publicState(recovered()) }
@@ -223,10 +230,17 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         }
         // An applied WAL receipt is historical authority even if later native edits now differ.
         // Never replay this old target to 'verify' it against today's source.
-        val status = if (workspace.applied(intent.transaction)) LanSyncGroupNativeApplyStatus.APPLIED else LanSyncGroupNativeApplyStatus.NOT_APPLIED
-        if (status == LanSyncGroupNativeApplyStatus.APPLIED) verifyPreimage(intent, payload)
-        complete(intent, status)
-        observe(if (status == LanSyncGroupNativeApplyStatus.APPLIED) "NATIVE_RECEIPT_RECOVERED" else "NATIVE_INERT_PREPARATION_RETAINED")
+        if (workspace.applied(intent.transaction)) recoverAppliedReceipt(loaded, intent, payload)
+        else {
+            complete(intent, LanSyncGroupNativeApplyStatus.NOT_APPLIED)
+            observe("NATIVE_INERT_PREPARATION_RETAINED")
+        }
+    }
+    private fun recoverAppliedReceipt(loaded: Loaded, intent: Intent, frozen: Payload) {
+        require(frozen.appliedBefore == stateBinding(loaded.units)) { "SYNC_GROUP_NATIVE_CONTROL_CHANGED" }
+        verifyPreimage(intent, frozen)
+        complete(intent, LanSyncGroupNativeApplyStatus.APPLIED)
+        observe("NATIVE_RECEIPT_RECOVERED")
     }
     private fun requireFreshSource(plan: LanSyncGroupNativePlan) = workspace.captureGroup(actor.fingerprint, projection).use { fresh ->
         require(fresh.snapshot.coveredTypes == plan.before.coveredTypes && fresh.snapshot.hashes() == plan.expected && fresh.sourceFiles == plan.sourceFiles) {

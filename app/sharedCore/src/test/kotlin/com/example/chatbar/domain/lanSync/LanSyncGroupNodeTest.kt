@@ -903,4 +903,58 @@ class LanSyncGroupNodeTest {
         assertNotEquals(restored.revision, later.revision)
         assertEquals(LanSyncGroupNativeStage.LOCAL_PROPOSAL, end.open().inspect().plan?.units?.get(unit)?.stage)
     }
+
+    @Test fun aCommittedLocalRestoreRetriesOnlyRepositoryRefreshAfterColdOpen() = withGroup { g ->
+        val end = g.End(0); val node = end.enroll(); val unit = "conversation/manual"
+        val sessions = Files.createDirectories(end.data.resolve("entities/chat_sessions"))
+        val messages = Files.createDirectories(end.data.resolve("entities/chat_messages"))
+        val photo = Files.createDirectories(end.data.resolve("images")).resolve("manual.png")
+        val raster = BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB)
+        try { assertTrue(ImageIO.write(raster, "png", photo.toFile())) } finally { raster.flush() }
+        val photoBytes = Files.readAllBytes(photo)
+        val localPhoto = photo.toString()
+        val session = ChatSession("manual", "card", "旧标题", createdAt = 1, updatedAt = 1)
+        val message = ChatMessage("m", "manual", MessageRole.USER, "原消息", images = listOf(localPhoto), createdAt = 2, updatedAt = 2)
+        LanSyncJsonFiles.write(sessions.resolve("manual.json"), ChatSession.serializer(), session)
+        LanSyncJsonFiles.write(messages.resolve("manual_m.json"), ChatMessage.serializer(), message)
+        val old = node.commit(node.inspect().review(setOf(unit)))
+        val nativeBefore = node.inspect().nativeState
+
+        LanSyncJsonFiles.write(sessions.resolve("manual.json"), ChatSession.serializer(), session.copy(title = "同步前仍可编辑"))
+        val chats = ChatRepository(JsonFileStorage(end.data))
+        assertEquals("同步前仍可编辑", chats.getSession("manual")?.title)
+        val draft = Files.writeString(Files.createDirectory(end.data.resolve("drafts")).resolve("manual.txt"), "原草稿")
+        val draftBytes = Files.readAllBytes(draft)
+        var attempted = 0
+        end.reloadHook = { ids ->
+            assertTrue("manual" in ids)
+            if (++attempted == 1) throw IOException("SYNTHETIC_RESTORE_FIRST_RELOAD_FAILED")
+            chats.reloadAfterLanSync()
+        }
+        val preview = node.prepareRecovery(old.entry.request.sourceCheckpoint, unit)
+        val failure = assertFailsWith<IllegalStateException> { node.applyRecovery(preview) }
+        assertEquals("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure.message)
+        assertEquals("SYNTHETIC_RESTORE_FIRST_RELOAD_FAILED", failure.cause?.message)
+        assertTrue(end.workspace.verifiedApplied(preview.id))
+        val beforeRetry = retainedFiles(end.data)
+        assertTrue(end.workspace.completedRecoveries(g.identities[0].fingerprint).single().reloadPending)
+        assertEquals("同步前仍可编辑", chats.getSession("manual")?.title)
+
+        val cold = end.open(workspaceOwner = end.openWorkspace())
+        assertEquals(nativeBefore, cold.inspectLocal(recoverNative = false).nativeState)
+        assertEquals(1, attempted)
+        assertEquals(nativeBefore, cold.inspectLocal().nativeState)
+        assertEquals(2, attempted)
+        assertEquals("旧标题", chats.getSession("manual")?.title)
+        val updated = chats.getMessages("manual").single()
+        assertEquals("原消息", updated.content)
+        assertContentEquals(photoBytes, Files.readAllBytes(Path.of(updated.images.single())))
+        assertContentEquals(draftBytes, Files.readAllBytes(draft))
+        assertRetainedFiles(beforeRetry, end.data)
+        val merged = end.workspace.completedRecoveries(g.identities[0].fingerprint).single()
+        assertEquals(preview.id, merged.revision); assertFalse(merged.reloadPending)
+        assertEquals(nativeBefore, end.open().inspectLocal().nativeState)
+        assertEquals(2, attempted)
+        assertEquals(1L, end.author().state().committedSequence)
+    }
 }

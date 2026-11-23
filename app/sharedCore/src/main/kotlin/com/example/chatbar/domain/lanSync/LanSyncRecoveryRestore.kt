@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.lanSync
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 import java.util.UUID
 
@@ -10,9 +12,11 @@ data class LanSyncRestorePreview(val id: String, val sourceTransaction: String, 
     val hasChanges: Boolean)
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class LanSyncRestoreRevision(val revision: String, val sourceTransaction: String, val sourceSnapshotHash: String,
     val unit: String, val sourceDevice: String, val previewBinding: String, val createdAt: Long,
-    val applied: Boolean = false, val restoredUnits: Set<String> = emptySet())
+    val applied: Boolean = false, val restoredUnits: Set<String> = emptySet(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val reloadPending: Boolean = false)
 
 /** Replaces only the selected historical unit and its required missing dependencies. */
 object LanSyncRecoveryRestore {

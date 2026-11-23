@@ -104,7 +104,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     fun applyRecovery(preview: LanSyncRestorePreview, deviceId: String,
-        projection: LanSyncProjection = LanSyncProjection(), isolateLocalImages: Boolean = false): LanSyncRestoreRevision {
+        projection: LanSyncProjection = LanSyncProjection(), isolateLocalImages: Boolean = false,
+        trackReload: Boolean = false): LanSyncRestoreRevision {
         recover()
         require(preview.id.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_RECOVERY_REVISION" }
         val entry = requireNotNull(recovery.read(preview.sourceTransaction)) { "SYNC_RECOVERY_MISSING" }
@@ -124,7 +125,8 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
             require(fresh.binding == preview.binding && fresh.hasChanges) { "SYNC_RECOVERY_SOURCE_CHANGED" }
             requireRetainedUnits(current, fresh.plan.snapshot, isolateLocalImages)
             val revision = previous ?: LanSyncRestoreRevision(preview.id, entry.transaction, entry.snapshotHash,
-                preview.unit, deviceId, preview.binding, System.currentTimeMillis(), restoredUnits = preview.restoredUnits)
+                preview.unit, deviceId, preview.binding, System.currentTimeMillis(), restoredUnits = preview.restoredUnits,
+                reloadPending = trackReload)
             if (previous == null) LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), revision)
             val localFields = recovery.restoredLocalFields(entry, fresh.restoredRecords.map { it.key }.toSet(), projection)
             apply(fresh.plan, fresh.expected, deviceId, current.blobs + recovery.blobs(entry), projection, localFields,
@@ -154,6 +156,13 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
                 revision.unit in recovery.affected(entry)) { "SYNC_RECOVERY_SOURCE_CHANGED" }
             revision.copy(restoredUnits = revision.restoredUnits.ifEmpty { setOf(revision.unit) }.toSet())
         } }
+
+    internal fun acknowledgeRecoveryReload(revision: LanSyncRestoreRevision) {
+        require(revision.applied && revision.reloadPending && verifiedApplied(revision.revision)) { "SYNC_RECOVERY_RELOAD_CHANGED" }
+        val path = stateRoot.resolve("restore-intent-${revision.revision}.json")
+        require(LanSyncJsonFiles.read(path, LanSyncRestoreRevision.serializer()) == revision) { "SYNC_RECOVERY_RELOAD_CHANGED" }
+        LanSyncJsonFiles.write(path, LanSyncRestoreRevision.serializer(), revision.copy(reloadPending = false))
+    }
 
     fun captureGroup(deviceId: String, projection: LanSyncProjection = LanSyncProjection()): LanSyncCapture =
         capture(deviceId, projection, isolateLocalImages = true)
@@ -507,6 +516,15 @@ class LanSyncWorkspace(val dataRoot: Path, private val stateRoot: Path,
     }
 
     fun applied(transaction: String): Boolean = Files.exists(stateRoot.resolve("transaction-$transaction/applied"), LinkOption.NOFOLLOW_LINKS)
+    internal fun verifiedApplied(transactionId: String): Boolean {
+        require(transactionId.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
+        if (!applied(transactionId)) return false
+        val transaction = stateRoot.resolve("transaction-$transactionId")
+        lanSyncSafe(transaction, true)
+        val journal = readAuthorizedJournal(transaction)
+        require(lanSyncUtf8(lanSyncRead(transaction.resolve("applied"), 128)) == journal.transaction) { "SYNC_JOURNAL_DAMAGED" }
+        return true
+    }
     internal fun authorized(transaction: String): Boolean {
         require(transaction.matches(Regex("[a-f0-9-]{36}"))) { "SYNC_TRANSACTION_ID" }
         return Files.exists(stateRoot.resolve("transaction-$transaction/authorized"), LinkOption.NOFOLLOW_LINKS)

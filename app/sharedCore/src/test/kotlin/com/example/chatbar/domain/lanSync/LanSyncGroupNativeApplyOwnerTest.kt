@@ -103,6 +103,33 @@ class LanSyncGroupNativeApplyOwnerTest {
         assertEquals("收到的新内容", n.readCard("a").name)
     }
 
+    @Test fun retainedMembershipForkAllowsOnlyVerifiedAppliedReceiptRepairWithoutReplayingNativeData() = withNode { n ->
+        val unit = "character_cards/a"; val f = n.f
+        f.card("a", "原角色"); f.publish(setOf(unit)); n.owner().apply(n.plan())
+        f.card("a", "已收新角色"); val version = f.publish(setOf(unit)); val plan = n.plan()
+        assertFailsWith<IOException> { n.owner { point ->
+            if (point == "NATIVE_DATA_APPLIED") throw IOException("SYNTHETIC_COMMITTED_BEFORE_CONTROL_RECEIPT")
+        }.apply(plan) }
+        assertTrue(f.workspace.verifiedApplied(plan.plan.transaction))
+        assertEquals(plan.plan.transaction, n.owner().state().pendingTransaction)
+        n.localCard("a", "已应用后本机再次编辑")
+        val parent = f.custody().ledger().current()
+        val left = f.source.sign(parent.copy(id = SyncStoreId.random(), parent = parent.reference(), sequence = parent.sequence + 1))
+        val right = f.source.sign(left.copy(id = SyncStoreId.random()))
+        assertFailsWith<IllegalArgumentException> { f.custody().update(listOf(left, right)) }
+        assertEquals(setOf(left.reference(), right.reference()), f.custody().ledger().admittedTips())
+        val marker = n.control.resolve("receipt-0000000000000000002.protected")
+        assertFalse(Files.exists(marker))
+
+        assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers())
+        val originalReceipt = Files.readAllBytes(marker)
+        assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers())
+        assertContentEquals(originalReceipt, Files.readAllBytes(marker))
+        assertEquals("已应用后本机再次编辑", n.readCard("a").name)
+        assertEquals(setOf(left.reference(), right.reference()), f.custody().ledger().admittedTips())
+        assertNull(n.owner().state().pendingTransaction)
+    }
+
     @Test fun rawOnlySourceChangesAndLiveLedgerRotationRefuseAStaleFrozenPlan() = withNode { n ->
         val a = "character_cards/a"; val f = n.f
         f.card("a", "原角色"); f.publish(setOf(a)); n.owner().apply(n.plan())
