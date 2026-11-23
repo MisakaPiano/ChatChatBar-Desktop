@@ -1212,6 +1212,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private fun nearbyFailure(stage: String, failure: Exception) {
         if (failure is CancellationException) throw failure
+        if (stage == "NEARBY_PENDING_APPROVAL") return
         var restart = false
         synchronized(lifecycle) {
             if (closed || paused) return
@@ -1220,8 +1221,13 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 nearbyRestartRequested = true
                 restart = true
             }
-            mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus(
-                "局域网连接暂时不可用，将在前台或网络变化后重试；本机与网盘工作可继续", it.nearby.lastSuccessAt)) }
+            val message = when (stage) {
+                "INDEX" -> "暂时无法读取一台附近成员的加密索引。其他连接可继续同步。"
+                "DISCOVER" -> "暂时无法查找一台附近成员。其他连接可继续同步。"
+                "NEARBY_SERVER" -> "有一条附近设备连接未完成。其他连接可继续同步。"
+                else -> "局域网连接暂时不可用，将在前台或网络变化后重试；本机与网盘工作可继续"
+            }
+            mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus(message, it.nearby.lastSuccessAt)) }
         }
         // The callback can run on the listener itself. Its independent worker owns teardown/join.
         if (restart) nearbyWake.trySend(Unit)
@@ -1404,16 +1410,45 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         var cursor: CommitCursor? = null
         do { cursor = node.discover(store, cursor).nextCursor } while (cursor != null)
     }
+    private suspend fun checkNearbyMembership(current: LanSyncGroupRuntimeAccess, live: LanSyncGroupAppTransport) {
+        val members = current.ledger().current().members
+        if (members[current.device]?.active != true) return
+        val hints = try {
+            network.discoverGroupLedger(current.trust.group, current.device, members.keys)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            System.err.println("SYNC_GROUP_NEARBY_LEDGER_DISCOVERY_FAILED")
+            return
+        }
+        for (hint in hints) {
+            currentCoroutineContext().ensureActive()
+            if (closed || paused) return
+            val advanced = try { live.catchUpLedger(hint) }
+            catch (error: Exception) {
+                if (error is CancellationException) throw error
+                System.err.println("SYNC_GROUP_NEARBY_LEDGER_CANDIDATE_REJECTED")
+                false
+            }
+            if (advanced) {
+                requestLocalCheck()
+                nearbyWake.trySend(Unit)
+                return
+            }
+        }
+    }
     /** Pull observations are never labelled as peer/cloud outgoing delivery receipts. */
     private suspend fun pullNearby() {
         if (closed || paused) return
         val current = access ?: return
+        val live = transport ?: return
         val routes = mutableListOf<LanSyncGroupReplicaReader.Route>()
+        val responder = discovery
         val managementIdentity = SyncDeviceSignatures.decode(current.trust.ownerCertificate).fingerprint
         for ((id, member) in current.ledger().current().members) {
             if (!member.active || id == current.device || id == managementIdentity) continue
             try {
-                discovery?.find(id)?.let { peer -> routes += LanSyncGroupReplicaReader.Route(id, requireNotNull(transport).remote(peer)) }
+                val peer = if (responder != null) responder.find(id) else network.discoverGroup(current.trust.group, current.device, id)
+                peer?.let { routes += LanSyncGroupReplicaReader.Route(id, live.remote(it)) }
             } catch (error: Exception) { nearbyFailure("DISCOVER", error) }
         }
         current.reader.routes("nearby", routes)
@@ -1422,6 +1457,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             discover(current.node, current.reader.discoveryFrom(route.store))
             mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("已连接附近设备并读取加密索引", System.currentTimeMillis())) }
         } catch (error: Exception) { nearbyFailure("INDEX", error) }
+        if (closed || paused) return
+        checkNearbyMembership(current, live)
         if (closed || paused) return
         val stamp = candidateStamp(current.reader)
         val currentView = mutableView.value
@@ -1456,7 +1493,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         var inspected = current.node.inspectLocal(recoverNative = !shutdown)
         mutableView.value = inspected
         if (inspected.stage != LanSyncGroupNodeStage.READY) {
-            if (inspected.stage == LanSyncGroupNodeStage.DEVICE_REVOKED) refreshDevices()
+            if (inspected.stage == LanSyncGroupNodeStage.DEVICE_REVOKED ||
+                inspected.stage == LanSyncGroupNodeStage.WAITING_FOR_KEY) refreshDevices()
             mutableState.update { it.copy(status = when (inspected.stage) {
                 LanSyncGroupNodeStage.DEVICE_REVOKED -> "此设备已撤销，保留原件和待传队列"
                 LanSyncGroupNodeStage.WAITING_FOR_KEY -> "正在等待新密钥，待传队列已保留"

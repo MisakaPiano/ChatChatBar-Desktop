@@ -24,11 +24,15 @@ interface LanSyncNetwork {
         connectOwned(identity, peer, own)
     fun connectBootstrapOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit): SSLSocket =
         connectOwned(identity, peer, own)
+    fun connectLedgerOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit): SSLSocket =
+        connectBootstrapOwned(identity, peer, own)
     fun accepts(address: InetAddress): Boolean
     fun listening(fingerprint: String, port: Int) {}
     fun discover(fingerprint: String): Pair<String, Int>? = LanSyncDiscovery.find(fingerprint)
     fun discoverGroup(group: SyncStoreId, local: String, fingerprint: String): LanSyncPeer? =
-        LanSyncGroupDiscovery(group, local, this) { _, _ -> }.use { it.find(fingerprint) }
+        LanSyncGroupDiscovery(group, local, this, { _, _ -> }).use { it.find(fingerprint) }
+    fun discoverGroupLedger(group: SyncStoreId, local: String, known: Set<String>): List<LanSyncPeer> =
+        LanSyncGroupDiscovery(group, local, this, { _, _ -> }).use { it.findLedgerCandidates(known) }
     val discoveryEnabled: Boolean
     object Local : LanSyncNetwork {
         override fun addresses() = LanSyncTls.localAddresses()
@@ -46,6 +50,8 @@ interface LanSyncNetwork {
             LanSyncTls.connectOwned(identity, peer.host, peer.port, peer.fingerprint, handshakeTimeoutMillis = 15_000, own = own)
         override fun connectBootstrapOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit) =
             LanSyncTls.connectOwned(identity, peer.host, peer.port, peer.fingerprint, handshakeTimeoutMillis = 15_000, own = own)
+        override fun connectLedgerOwned(identity: LanSyncTlsIdentity, peer: LanSyncPeer, own: (Socket) -> Unit): SSLSocket =
+            LanSyncTls.connectOwned(identity, peer.host, peer.port, peer.fingerprint, handshakeTimeoutMillis = GROUP_LEDGER_RELAY_TIMEOUT, own = own)
         override fun accepts(address: InetAddress) = address.isSiteLocalAddress && !address.isLoopbackAddress
         override val discoveryEnabled = true
     }

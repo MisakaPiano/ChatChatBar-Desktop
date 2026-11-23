@@ -6,6 +6,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocket
 
 /** App-owned daily capability. UI receives only its separate panel projection. */
 class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, val localTarget: SyncDeliveryTarget,
@@ -22,6 +23,25 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
     fun ledger() = custody.ledger()
+    internal fun canOfferLedgerTo(peer: String): Boolean {
+        val members = ledger().current().members
+        return members[device]?.active == true && members[peer]?.active == true
+    }
+    internal fun catchUpLedger(peer: LanSyncPeer, connect: (LanSyncTlsIdentity, LanSyncPeer) -> SSLSocket): Boolean {
+        val current = ledger().current()
+        if (current.members[device]?.active != true || peer.fingerprint in current.members) return false
+        val checkpoint = current.reference()
+        val (actualPeer, envelope) = connect(identity, peer).use { socket ->
+            val chain = socket.session.peerCertificates
+            require(chain.size == 1 && lanSyncHash(chain.single().encoded) == peer.fingerprint) {
+                "SYNC_GROUP_LEDGER_RELAY_TLS"
+            }
+            val actualPeer = Base64.getEncoder().encodeToString(chain.single().encoded)
+            val received = receiveGroupLedger(socket, trust.group, checkpoint) ?: return false
+            actualPeer to received
+        }
+        return custody.extendFromPeer(checkpoint, envelope, certificate, actualPeer)
+    }
     private val peerNames by lazy { LanSyncGroupPeerNames(work, trust, custody::ledger, peerNameProtect, peerNameUnprotect) }
     private val cloudRouteCatalog by lazy {
         val directory = work.resolve("cloud-connections")
@@ -117,6 +137,10 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
         val directory = work.resolve("peer-${peer.fingerprint}"); Files.createDirectories(directory)
         lanSyncSafe(directory, true)
         return LanSyncGroupRemoteStore(trust.group, directory, {
+            val members = ledger().current().members
+            require(members[device]?.active == true && members[peer.fingerprint]?.active == true) {
+                "SYNC_GROUP_RUNTIME_PEER_NOT_ACTIVE"
+            }
             network.connect(identity, peer).also { it.soTimeout = 120_000 }
         }, authenticatedConnect = true)
     }

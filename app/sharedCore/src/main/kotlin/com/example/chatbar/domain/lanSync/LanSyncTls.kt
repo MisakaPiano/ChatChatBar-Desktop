@@ -14,6 +14,8 @@ import java.security.spec.ECGenParameterSpec
 import java.util.Date
 import javax.net.ssl.*
 
+internal class LanSyncUntrustedDevice(val fingerprint: String) : IllegalArgumentException("SYNC_UNTRUSTED_DEVICE")
+
 /** Private PKCS12 bytes must be wrapped by DPAPI / Android Keystore before persisting. */
 class LanSyncTlsIdentity private constructor(val keyStore: KeyStore, val certificate: X509Certificate) {
     val fingerprint: String get() = lanSyncHash(certificate.encoded)
@@ -38,7 +40,9 @@ class LanSyncTlsIdentity private constructor(val keyStore: KeyStore, val certifi
                 val certificate = chain.single()
                 certificate.checkValidity()
                 certificate.verify(certificate.publicKey)
-                require(certificate.publicKey.algorithm == "EC" && acceptPeer(lanSyncHash(certificate.encoded))) { "SYNC_UNTRUSTED_DEVICE" }
+                require(certificate.publicKey.algorithm == "EC") { "SYNC_UNTRUSTED_DEVICE" }
+                val fingerprint = lanSyncHash(certificate.encoded)
+                if (!acceptPeer(fingerprint)) throw LanSyncUntrustedDevice(fingerprint)
             }
         }
         return SSLContext.getInstance("TLS").apply { init(keyManager.keyManagers, arrayOf(trust), SecureRandom()) }

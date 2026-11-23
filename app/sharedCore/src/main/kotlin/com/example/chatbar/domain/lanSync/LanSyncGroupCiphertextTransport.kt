@@ -19,7 +19,7 @@ import javax.net.ssl.SSLSocket
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 
-@Serializable private enum class GroupStoreCommand { METADATA, LIST, GET, PUT }
+@Serializable private enum class GroupStoreCommand { METADATA, LIST, GET, PUT, LEDGER }
 @Serializable private data class GroupStoreRequest(val protocol: String, val group: SyncStoreId, val command: GroupStoreCommand,
     val key: CiphertextObjectKey? = null, val operation: SyncStoreId? = null, val descriptor: CiphertextDescriptor? = null,
     val cursor: String? = null, val pageSize: Int = 100, val offset: Long = 0)
@@ -82,6 +82,43 @@ private object GroupStoreWire {
     }
 }
 
+// Reuse the existing request fields to leave every ordinary request byte-compatible with older readers.
+private fun groupLedgerRequest(group: SyncStoreId, checkpoint: SyncVersionRef) =
+    GroupStoreRequest(GroupStoreWire.PROTOCOL, group, GroupStoreCommand.LEDGER, operation = checkpoint.id,
+        cursor = checkpoint.bodyHash)
+
+private const val GROUP_LEDGER_RELAY_BYTES = 16 * 1024 * 1024
+private const val GROUP_LEDGER_RELAY_CHUNK_BYTES = 1024 * 1024
+internal const val GROUP_LEDGER_RELAY_TIMEOUT = 4_000
+
+/** This role can request exactly one signed membership envelope and exposes no store operations. */
+internal fun receiveGroupLedger(socket: SSLSocket, group: SyncStoreId, checkpoint: SyncVersionRef): SyncGroupEnvelope? {
+    socket.soTimeout = GROUP_LEDGER_RELAY_TIMEOUT
+    LanSyncWire(socket).use { wire ->
+        GroupStoreWire.send(wire, GroupStoreRequest.serializer(), groupLedgerRequest(group, checkpoint))
+        val reply = GroupStoreWire.reply(wire)
+        if (reply == GroupStoreReply(done = true)) return null
+        require(reply.length in 1..GROUP_LEDGER_RELAY_BYTES && reply == GroupStoreReply(length = reply.length)) {
+            "SYNC_GROUP_LEDGER_RELAY_SIZE"
+        }
+        val contents = ByteArray(reply.length)
+        var offset = 0
+        while (offset < contents.size) {
+            val length = minOf(GROUP_LEDGER_RELAY_CHUNK_BYTES, contents.size - offset)
+            val chunk = wire.receive(length)
+            require(chunk.size == length) { "SYNC_GROUP_LEDGER_RELAY_SIZE" }
+            chunk.copyInto(contents, offset)
+            offset += length
+        }
+        require(GroupStoreWire.reply(wire) == GroupStoreReply(done = true)) { "SYNC_GROUP_LEDGER_RELAY_INCOMPLETE" }
+        val text = lanSyncUtf8(contents)
+        LanSyncMetadataBudget(maximumDepth = 16, maximumStringCharacters = 32 * 1024L).validate(text.reader())
+        return lanSyncJson.decodeFromString(SyncGroupEnvelope.serializer(), text).also {
+            require(it.kind == SyncGroupObjectKind.DEVICE_LEDGER && it.group == group) { "SYNC_GROUP_LEDGER_RELAY_CONTEXT" }
+        }
+    }
+}
+
 /**
  * One request per mutually authenticated TLS connection. The app owns the listener, routing and
  * socket lifecycle; resolve receives certificates extracted from the real session, never wire claims.
@@ -113,6 +150,10 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
                         }
                         GroupStoreCommand.GET -> download(wire, request, store)
                         GroupStoreCommand.PUT -> upload(wire, request, store)
+                        GroupStoreCommand.LEDGER -> {
+                            socket.soTimeout = GROUP_LEDGER_RELAY_TIMEOUT
+                            sendLedger(wire, request, store)
+                        }
                     }
                 } catch (failure: Exception) {
                     val code = GroupStoreWire.errorCode(failure); observe(code, 0)
@@ -121,6 +162,30 @@ class LanSyncGroupCiphertextServer(private val privateRoot: Path,
             }
         }
     }
+    private fun sendLedger(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore) {
+        val checkpoint = SyncVersionRef(requireNotNull(request.operation), requireNotNull(request.cursor))
+        require(request == groupLedgerRequest(store.group, checkpoint)) { "SYNC_GROUP_LEDGER_RELAY_REQUEST" }
+        val envelope = store.membershipLedger(checkpoint)
+        if (envelope == null) {
+            GroupStoreWire.reply(wire, GroupStoreReply(done = true))
+            return
+        }
+        val reference = envelope.reference()
+        val bytes = lanSyncJson.encodeToString(SyncGroupEnvelope.serializer(), envelope).toByteArray(Charsets.UTF_8)
+        require(bytes.size in 1..GROUP_LEDGER_RELAY_BYTES) { "SYNC_GROUP_LEDGER_RELAY_SIZE" }
+        store.requireLedgerReadAllowed(reference)
+        GroupStoreWire.reply(wire, GroupStoreReply(length = bytes.size))
+        var offset = 0
+        while (offset < bytes.size) {
+            store.requireLedgerReadAllowed(reference)
+            val end = minOf(offset + GROUP_LEDGER_RELAY_CHUNK_BYTES, bytes.size)
+            wire.send(bytes.copyOfRange(offset, end))
+            offset = end
+        }
+        store.requireLedgerReadAllowed(reference)
+        GroupStoreWire.reply(wire, GroupStoreReply(done = true))
+    }
+
     private fun upload(wire: LanSyncWire, request: GroupStoreRequest, store: LanSyncGroupPeerStore) {
         val key = requireNotNull(request.key); val descriptor = requireNotNull(request.descriptor)
         val put = CiphertextPutRequest(key, requireNotNull(request.operation), descriptor)

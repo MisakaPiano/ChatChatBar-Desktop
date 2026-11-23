@@ -13,6 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 
 /** Application lifetime transport. No listener or identity is created until explicit start. */
@@ -21,7 +22,7 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     private class Invitation(val owner: LanSyncGroupInvitation, val listener: SSLServerSocket) {
         val sockets = mutableSetOf<SSLSocket>()
         var timer: Job? = null
-        var claimed = false
+        var claimedDevice: String? = null
     }
     private val lock = Any()
     private val lifetime = SupervisorJob()
@@ -111,7 +112,14 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
                 if (!accepted) { socket.closeQuietly(); continue }
                 scope.launch {
                     try { server.serve(socket) }
-                    catch (failure: Exception) { if (!closed) onFailure("NEARBY_SERVER", failure) }
+                    catch (failure: Exception) {
+                        if (!closed) {
+                            val pending = synchronized(lock) { activeInvitation?.claimedDevice }
+                            val refusedPending = pending != null && generateSequence<Throwable>(failure) { it.cause }
+                                .take(8).filterIsInstance<LanSyncUntrustedDevice>().any { it.fingerprint == pending }
+                            onFailure(if (refusedPending) "NEARBY_PENDING_APPROVAL" else "NEARBY_SERVER", failure)
+                        }
+                    }
                     finally { socket.closeQuietly(); synchronized(lock) { ordinary -= socket } }
                 }
             }
@@ -125,7 +133,7 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
             while (!closed && !current.listener.isClosed) {
                 val socket = current.listener.accept() as SSLSocket
                 val accepted = try { synchronized(lock) {
-                    if (closed || activeInvitation !== current || current.claimed ||
+                    if (closed || activeInvitation !== current || current.claimedDevice != null ||
                         !network.accepts(socket.inetAddress) || current.sockets.size >= 2) false
                     else { current.sockets += socket; true }
                 } } catch (failure: Exception) { socket.closeQuietly(); throw failure }
@@ -134,9 +142,9 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
                     try {
                         val peer = current.owner.serve(socket)
                         val deliver = synchronized(lock) {
-                            if (closed || activeInvitation !== current || current.claimed) false
+                            if (closed || activeInvitation !== current || current.claimedDevice != null) false
                             else {
-                                current.claimed = true
+                                current.claimedDevice = peer.device
                                 current.listener.closeQuietly()
                                 current.sockets.filter { it !== socket }.forEach { it.closeQuietly() }
                                 true
@@ -161,46 +169,76 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
             override fun addresses() = network.addresses()
             override fun accepts(address: InetAddress) = network.accepts(address)
             override val discoveryEnabled get() = network.discoveryEnabled
-            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
-                synchronized(lock) {
-                    clients.removeAll { it.isClosed }
-                    activeClients.removeAll { it.isClosed }
-                    check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
-                    require(activeClients.size + connecting < 4) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
-                    connecting++
-                }
-                val owned = mutableSetOf<Socket>()
-                val own: (Socket) -> Unit = { socket ->
-                    try { synchronized(lock) {
-                        check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
-                        clients.removeAll { it.isClosed }
-                        require(!socket.isClosed && (socket in owned || owned.size < 2) &&
-                            (socket in clients || clients.size < 8)) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
-                        owned += socket; clients += socket
-                    } } catch (failure: Throwable) { socket.closeQuietly(); throw failure }
-                }
-                var created: SSLSocket? = null
-                var returned = false
-                try {
-                    val socket = network.connectOwned(identity, peer, own)
-                    created = socket
-                    own(socket)
-                    synchronized(lock) {
-                        check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
-                        activeClients += socket
-                    }
-                    returned = true
-                    return socket
-                } catch (failure: Throwable) {
-                    synchronized(lock) { owned.toList() }.forEach { it.closeQuietly() }
-                    created?.closeQuietly(); throw failure
-                } finally { synchronized(lock) {
-                    connecting--
-                    if (!returned) { clients.removeAll(owned); activeClients.removeAll { it in owned } }
-                } }
-            }
+            override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket =
+                connectTracked(identity, peer, network::connectOwned)
         }
         return access.remote(peer, tracked)
+    }
+
+    /** UDP hints can only enter this control connection. They never construct a data route. */
+    internal suspend fun catchUpLedger(peer: LanSyncPeer): Boolean {
+        val sockets = mutableSetOf<Socket>()
+        var expired = false
+        val timeout = scope.launch {
+            delay(LEDGER_EXCHANGE_TIMEOUT)
+            val pending = synchronized(sockets) { expired = true; sockets.toList() }
+            pending.forEach { it.closeQuietly() }
+        }
+        try {
+            return runInterruptible(Dispatchers.IO) {
+                access.catchUpLedger(peer) { identity, destination ->
+                    connectTracked(identity, destination) { local, hint, own ->
+                        network.connectLedgerOwned(local, hint) { socket ->
+                            own(socket)
+                            synchronized(sockets) {
+                                check(!expired) { "SYNC_GROUP_LEDGER_RELAY_TIMEOUT" }
+                                sockets += socket
+                            }
+                        }
+                    }
+                }
+            }
+        } finally { timeout.cancel() }
+    }
+
+    private fun connectTracked(identity: LanSyncTlsIdentity, peer: LanSyncPeer,
+        connect: (LanSyncTlsIdentity, LanSyncPeer, (Socket) -> Unit) -> SSLSocket): SSLSocket {
+        synchronized(lock) {
+            clients.removeAll { it.isClosed }
+            activeClients.removeAll { it.isClosed }
+            check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
+            require(activeClients.size + connecting < 4) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
+            connecting++
+        }
+        val owned = mutableSetOf<Socket>()
+        val own: (Socket) -> Unit = { socket ->
+            try { synchronized(lock) {
+                check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
+                clients.removeAll { it.isClosed }
+                require(!socket.isClosed && (socket in owned || owned.size < 2) &&
+                    (socket in clients || clients.size < 8)) { "SYNC_GROUP_TRANSPORT_CONNECTION_LIMIT" }
+                owned += socket; clients += socket
+            } } catch (failure: Throwable) { socket.closeQuietly(); throw failure }
+        }
+        var created: SSLSocket? = null
+        var returned = false
+        try {
+            val socket = connect(identity, peer, own)
+            created = socket
+            own(socket)
+            synchronized(lock) {
+                check(!closed) { "SYNC_GROUP_TRANSPORT_CLOSED" }
+                activeClients += socket
+            }
+            returned = true
+            return socket
+        } catch (failure: Throwable) {
+            synchronized(lock) { owned.toList() }.forEach { it.closeQuietly() }
+            created?.closeQuietly(); throw failure
+        } finally { synchronized(lock) {
+            connecting--
+            if (!returned) { clients.removeAll(owned); activeClients.removeAll { it in owned } }
+        } }
     }
 
     /** Stops admission, closes owned I/O, then waits for workers and an already-started connect. */
@@ -220,4 +258,6 @@ class LanSyncGroupAppTransport(private val access: LanSyncGroupRuntimeAccess,
     }
 
     private fun Closeable.closeQuietly() { try { close() } catch (_: Exception) { } }
+
+    private companion object { const val LEDGER_EXCHANGE_TIMEOUT = 10_000L }
 }

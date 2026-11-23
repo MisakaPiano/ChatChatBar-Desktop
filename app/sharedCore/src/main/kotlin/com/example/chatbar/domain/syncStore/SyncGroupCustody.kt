@@ -83,6 +83,46 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
         build(read()).also { it.current() }
     }
 
+    /** A provisional LAN peer can only extend the exact retained checkpoint with owner-signed membership. */
+    internal fun extendFromPeer(expected: SyncVersionRef, envelope: SyncGroupEnvelope,
+        localCertificate: String, peerCertificate: String): Boolean = guarded {
+        require(envelope.group == group && envelope.kind == SyncGroupObjectKind.DEVICE_LEDGER) {
+            "SYNC_GROUP_LEDGER_RELAY_CONTEXT"
+        }
+        val state = read()
+        val ledger = build(state)
+        val before = ledger.current()
+        val peer = SyncDeviceSignatures.decode(peerCertificate)
+        if (before.reference() != expected || peer.fingerprint in before.members) return@guarded false
+        val local = before.members[recipient.device]
+        require(local?.let { it.active && it.certificate == localCertificate &&
+            it.recipientKey == recipient.publicKey.encoded } == true) { "SYNC_GROUP_LEDGER_RELAY_LOCAL" }
+
+        val tip = requireNotNull(envelope.deviceLedger)
+        val suffix = envelope.ledgerHistory + tip
+        var parent = expected
+        for (row in suffix) {
+            require(row.parent == parent && ledger.offer(row) == SyncVersionState.ADMITTED) {
+                "SYNC_GROUP_LEDGER_RELAY_ANCESTRY"
+            }
+            parent = row.reference()
+        }
+        val latest = ledger.current()
+        require(latest.reference() == tip.reference()) { "SYNC_GROUP_LEDGER_RELAY_TIP" }
+        require(latest.members[recipient.device] == local) { "SYNC_GROUP_LEDGER_RELAY_LOCAL" }
+        require(latest.members[peer.fingerprint]?.let { it.active && it.certificate == peer.encoded } == true) {
+            "SYNC_GROUP_LEDGER_RELAY_PEER"
+        }
+
+        val retained = state.ledgers.associateByTo(linkedMapOf()) { it.id }
+        suffix.forEach { retained.putIfAbsent(it.id, freeze(it)) }
+        write(state.copy(trust = state.trust.copy(checkpoint = latest.reference()),
+            ledgers = retained.values.sortedWith(compareBy<SyncDeviceLedgerRecord> { it.sequence }.thenBy { it.id.value })))
+        observe("GROUP_LEDGER_EVIDENCE_RETAINED")
+        observe("GROUP_CHECKPOINT_RETAINED")
+        true
+    }
+
     /** Explicit enrollment: signed ancestry, verified keys and checkpoint publish in one protected state. */
     fun enrollWithKeys(trust: SyncGroupTrust, records: Collection<SyncDeviceLedgerRecord>, keys: Collection<SyncAdmittedGroupKey>): SyncDeviceLedger = guarded {
         require(trust.group == group) { "SYNC_GROUP_IDENTITY" }

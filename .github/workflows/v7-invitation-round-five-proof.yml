@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  missing-image:
+  nearby-ledger:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -20,18 +20,19 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Verify that a missing owned photo does not block independent conversations
+      - name: Verify nearby signed ledger catch-up and ordinary TLS authorization
         working-directory: app
         run: |
           bash ./gradlew :sharedCore:test \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.initialFounderWithMissingOwnedMessageImageCanPublishAnIndependentUnitAndReopen' \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncWorkspaceTest.onlyConfirmedOwnedMissingMessageImagesAreIsolated' \
-            :desktopApp:compileKotlin :app:compileLanPreviewKotlin \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupLedgerCatchUpTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.knownPendingCertificateDenialKeepsTheListenerStatusAndAuthorizedDataTransfers' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.optionalNearbyBindFailureDoesNotBlockLocalOrEnabledCloudAndForegroundRetriesTheListener' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupAppTransportTest' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCiphertextTransportTest' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-r05-missing-image
+          name: v7-r05-nearby-ledger
           path: app/sharedCore/build/test-results/test/TEST-*.xml

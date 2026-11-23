@@ -12,9 +12,11 @@ import java.security.SecureRandom
 
 /** Address hints only. Every returned route still requires the real pinned mutual TLS handshake. */
 class LanSyncGroupDiscovery internal constructor(private val group: SyncStoreId, private val device: String,
-    private val network: LanSyncNetwork, private val onFailure: (String, Exception) -> Unit) : AutoCloseable {
+    private val network: LanSyncNetwork, private val onFailure: (String, Exception) -> Unit,
+    private val canOfferLedgerTo: (String) -> Boolean = { false }) : AutoCloseable {
     constructor(access: LanSyncGroupRuntimeAccess, network: LanSyncNetwork,
-        onFailure: (String, Exception) -> Unit) : this(access.trust.group, access.device, network, onFailure)
+        onFailure: (String, Exception) -> Unit) :
+        this(access.trust.group, access.device, network, onFailure, access::canOfferLedgerTo)
 
     private val lock = Any()
     private var responder: DatagramSocket? = null
@@ -47,15 +49,29 @@ class LanSyncGroupDiscovery internal constructor(private val group: SyncStoreId,
 
     private fun listen(socket: DatagramSocket, port: Int) {
         try {
+            var lastLedgerCheck: Long? = null
             while (!socket.isClosed) {
                 // One extra byte makes an overlong datagram distinguishable from a valid bounded frame.
                 val packet = DatagramPacket(ByteArray(LanSyncGroupDiscoveryProtocol.MAX_BYTES + 1),
                     LanSyncGroupDiscoveryProtocol.MAX_BYTES + 1)
                 try { socket.receive(packet) } catch (_: SocketTimeoutException) { continue }
                 if (!network.accepts(packet.address)) continue
-                val request = LanSyncGroupDiscoveryProtocol.request(packet.data, packet.offset, packet.length) ?: continue
-                if (request.group != group || request.device != device) continue
-                val reply = LanSyncGroupDiscoveryProtocol.reply(group, device, port, request.nonce)
+                val request = LanSyncGroupDiscoveryProtocol.request(packet.data, packet.offset, packet.length)
+                val reply = if (request != null) {
+                    if (request.group != group || request.device != device) continue
+                    LanSyncGroupDiscoveryProtocol.reply(group, device, port, request.nonce)
+                } else {
+                    val query = LanSyncGroupDiscoveryProtocol.ledgerRequest(packet.data, packet.offset, packet.length) ?: continue
+                    if (query.group != group || query.device == device) continue
+                    val now = System.nanoTime()
+                    if (lastLedgerCheck?.let { now - it < LEDGER_HINT_INTERVAL_NANOS } == true) continue
+                    lastLedgerCheck = now
+                    // This hint is optional. An unreadable local ledger still uses the normal
+                    // coordinator diagnostics and does not tear down the legacy responder.
+                    val eligible = try { canOfferLedgerTo(query.device) } catch (_: Exception) { false }
+                    if (!eligible) continue
+                    LanSyncGroupDiscoveryProtocol.ledgerReply(group, device, port, query.nonce)
+                }
                 socket.send(DatagramPacket(reply, reply.size, packet.address, packet.port))
             }
         } catch (failure: Exception) {
@@ -76,8 +92,38 @@ class LanSyncGroupDiscovery internal constructor(private val group: SyncStoreId,
         require(fingerprint.matches(LanSyncGroupDiscoveryProtocol.FINGERPRINT)) { "SYNC_GROUP_DISCOVERY_DEVICE" }
         check(!closed) { "SYNC_GROUP_DISCOVERY_CLOSED" }
         if (!network.discoveryEnabled || fingerprint == device) return null
-        val nonce = ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }
-        val bytes = LanSyncGroupDiscoveryProtocol.request(group, fingerprint, nonce)
+        val nonce = nonce()
+        var found: LanSyncPeer? = null
+        search(LanSyncGroupDiscoveryProtocol.request(group, fingerprint, nonce)) { packet, host ->
+            val reply = LanSyncGroupDiscoveryProtocol.reply(packet.data, packet.offset, packet.length) ?: return@search false
+            if (reply.group != group || reply.device != fingerprint || reply.nonce != nonce) false
+            else {
+                found = LanSyncPeer(reply.device, "同网设备", host, reply.port)
+                true
+            }
+        }
+        return found
+    }
+
+    /** A reply describes a possible TLS endpoint, never a trusted member or a regular data route. */
+    internal fun findLedgerCandidates(known: Set<String>): List<LanSyncPeer> {
+        check(!closed) { "SYNC_GROUP_DISCOVERY_CLOSED" }
+        if (!network.discoveryEnabled) return emptyList()
+        val nonce = nonce()
+        val candidates = linkedSetOf<LanSyncPeer>()
+        search(LanSyncGroupDiscoveryProtocol.ledgerRequest(group, device, nonce)) { packet, host ->
+            val reply = LanSyncGroupDiscoveryProtocol.ledgerReply(packet.data, packet.offset, packet.length) ?: return@search false
+            if (reply.group == group && reply.nonce == nonce && reply.device != device && reply.device !in known) {
+                candidates += LanSyncPeer(reply.device, "同网设备", host, reply.port)
+            }
+            candidates.size >= MAX_LEDGER_CANDIDATES
+        }
+        return candidates.toList()
+    }
+
+    private fun nonce() = ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }
+
+    private fun search(bytes: ByteArray, receive: (DatagramPacket, String) -> Boolean) {
         val socket = DatagramSocket()
         synchronized(lock) {
             if (closed) { socket.close(); error("SYNC_GROUP_DISCOVERY_CLOSED") }
@@ -94,28 +140,27 @@ class LanSyncGroupDiscovery internal constructor(private val group: SyncStoreId,
                 try {
                     socket.send(DatagramPacket(bytes, bytes.size, address, PORT)); sent = true
                 } catch (failure: Exception) {
-                    if (closed) return null
+                    if (closed) return
                     onFailure("GROUP_DISCOVERY_SEND", failure)
                 }
             }
-            if (!sent) return null
+            if (!sent) return
             val deadline = System.nanoTime() + 1_500_000_000L
-            while (!closed && System.nanoTime() < deadline) {
-                val packet = DatagramPacket(ByteArray(LanSyncGroupDiscoveryProtocol.MAX_BYTES + 1),
-                    LanSyncGroupDiscoveryProtocol.MAX_BYTES + 1)
+            val contents = ByteArray(LanSyncGroupDiscoveryProtocol.MAX_BYTES + 1)
+            while (!closed) {
+                val remaining = deadline - System.nanoTime()
+                if (remaining <= 0) break
+                socket.soTimeout = (remaining / 1_000_000).coerceIn(1, 250).toInt()
+                val packet = DatagramPacket(contents, contents.size)
                 try { socket.receive(packet) } catch (_: SocketTimeoutException) { continue }
                 if (!network.accepts(packet.address)) continue
-                val reply = LanSyncGroupDiscoveryProtocol.reply(packet.data, packet.offset, packet.length) ?: continue
-                if (reply.group != group || reply.device != fingerprint || reply.nonce != nonce) continue
                 val host = packet.address.hostAddress ?: continue
                 // Numeric site-local validation remains independent of the discovery packet body.
                 if (runCatching { LanSyncTls.parseAddress(host) }.isFailure) continue
-                return LanSyncPeer(fingerprint, "同网设备", host, reply.port)
+                if (receive(packet, host)) return
             }
-            return null
         } catch (failure: SocketException) {
             if (!closed) throw failure
-            return null
         } finally {
             socket.close()
             synchronized(lock) { searches -= socket }
@@ -134,7 +179,11 @@ class LanSyncGroupDiscovery internal constructor(private val group: SyncStoreId,
         }
     }
 
-    companion object { const val PORT = 39238 }
+    companion object {
+        const val PORT = 39238
+        internal const val MAX_LEDGER_CANDIDATES = 4
+        private const val LEDGER_HINT_INTERVAL_NANOS = 250_000_000L
+    }
 }
 
 /** Strict fixed-shape ASCII; no names, addresses, capabilities or mutable state travel in discovery. */
@@ -145,23 +194,39 @@ internal object LanSyncGroupDiscoveryProtocol {
     data class Request(val group: SyncStoreId, val device: String, val nonce: String)
     data class Reply(val group: SyncStoreId, val device: String, val port: Int, val nonce: String)
 
-    fun request(group: SyncStoreId, device: String, nonce: String): ByteArray {
+    fun request(group: SyncStoreId, device: String, nonce: String) =
+        request("CCB-GROUP-FIND-1", group, device, nonce)
+    fun reply(group: SyncStoreId, device: String, port: Int, nonce: String) =
+        reply("CCB-GROUP-HERE-1", group, device, port, nonce)
+    fun request(bytes: ByteArray, offset: Int, length: Int) = request("CCB-GROUP-FIND-1", bytes, offset, length)
+    fun reply(bytes: ByteArray, offset: Int, length: Int) = reply("CCB-GROUP-HERE-1", bytes, offset, length)
+
+    fun ledgerRequest(group: SyncStoreId, device: String, nonce: String) =
+        request("CCB-GROUP-LEDGER-FIND-1", group, device, nonce)
+    fun ledgerReply(group: SyncStoreId, device: String, port: Int, nonce: String) =
+        reply("CCB-GROUP-LEDGER-HERE-1", group, device, port, nonce)
+    fun ledgerRequest(bytes: ByteArray, offset: Int, length: Int) =
+        request("CCB-GROUP-LEDGER-FIND-1", bytes, offset, length)
+    fun ledgerReply(bytes: ByteArray, offset: Int, length: Int) =
+        reply("CCB-GROUP-LEDGER-HERE-1", bytes, offset, length)
+
+    private fun request(prefix: String, group: SyncStoreId, device: String, nonce: String): ByteArray {
         require(device.matches(FINGERPRINT) && nonce.matches(NONCE)) { "SYNC_GROUP_DISCOVERY_FIELDS" }
-        return "CCB-GROUP-FIND-1 ${group.value} $device $nonce".toByteArray(Charsets.US_ASCII)
+        return "$prefix ${group.value} $device $nonce".toByteArray(Charsets.US_ASCII)
     }
-    fun reply(group: SyncStoreId, device: String, port: Int, nonce: String): ByteArray {
+    private fun reply(prefix: String, group: SyncStoreId, device: String, port: Int, nonce: String): ByteArray {
         require(device.matches(FINGERPRINT) && nonce.matches(NONCE) && port in 1024..65535) { "SYNC_GROUP_DISCOVERY_FIELDS" }
-        return "CCB-GROUP-HERE-1 ${group.value} $device $port $nonce".toByteArray(Charsets.US_ASCII)
+        return "$prefix ${group.value} $device $port $nonce".toByteArray(Charsets.US_ASCII)
     }
-    fun request(bytes: ByteArray, offset: Int, length: Int): Request? {
+    private fun request(prefix: String, bytes: ByteArray, offset: Int, length: Int): Request? {
         val fields = fields(bytes, offset, length) ?: return null
-        if (fields.size != 4 || fields[0] != "CCB-GROUP-FIND-1" || !fields[2].matches(FINGERPRINT) || !fields[3].matches(NONCE)) return null
+        if (fields.size != 4 || fields[0] != prefix || !fields[2].matches(FINGERPRINT) || !fields[3].matches(NONCE)) return null
         val group = runCatching { SyncStoreId.parse(fields[1]) }.getOrNull() ?: return null
         return Request(group, fields[2], fields[3])
     }
-    fun reply(bytes: ByteArray, offset: Int, length: Int): Reply? {
+    private fun reply(prefix: String, bytes: ByteArray, offset: Int, length: Int): Reply? {
         val fields = fields(bytes, offset, length) ?: return null
-        if (fields.size != 5 || fields[0] != "CCB-GROUP-HERE-1" || !fields[2].matches(FINGERPRINT) || !fields[4].matches(NONCE)) return null
+        if (fields.size != 5 || fields[0] != prefix || !fields[2].matches(FINGERPRINT) || !fields[4].matches(NONCE)) return null
         val group = runCatching { SyncStoreId.parse(fields[1]) }.getOrNull() ?: return null
         val port = fields[3].toIntOrNull()?.takeIf { it in 1024..65535 && it.toString() == fields[3] } ?: return null
         return Reply(group, fields[2], port, fields[4])

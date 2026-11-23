@@ -13,6 +13,7 @@ import java.io.OutputStream
 import java.net.BindException
 import java.net.InetAddress
 import java.net.Proxy
+import java.net.ServerSocket
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -927,6 +929,73 @@ class LanSyncGroupCoordinatorTest {
                 assertContentEquals(originalKey, Files.readAllBytes(keyFile))
             } finally { reopenedMember.closeAndDrain() }
         } finally { firstRecipient.closeAndDrain() }
+    }
+
+    @Test fun knownPendingCertificateDenialKeepsTheListenerStatusAndAuthorizedDataTransfers() {
+        val unavailable = AtomicReference<LanSyncPeer?>()
+        val network = object : LanSyncNetwork by noNetwork {
+            override fun discoverGroup(group: SyncStoreId, local: String, fingerprint: String): LanSyncPeer? =
+                unavailable.get()?.takeIf { it.fingerprint == fingerprint }
+        }
+        fixture(network) { f ->
+            f.writeCard("synthetic published original")
+            val coordinator = readyCoordinator(f)
+            val code = requireNotNull(f.recoveryCode)
+            suspend fun present(identity: LanSyncTlsIdentity): LanSyncGroupInviteOffer {
+                coordinator.unlockManagement(code)
+                await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+                coordinator.createInvitation()
+                await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+                val offer = requireNotNull(coordinator.state.value.invitation)
+                val recipient = SyncDeviceEncryptionKey.create(identity.fingerprint)
+                LanSyncGroupInviteClient.exchange(offer, identity, recipient, "synthetic device",
+                    { network.connect(identity, LanSyncPeer(offer.inviter, "synthetic inviter", offer.host, offer.port)) })
+                await { !coordinator.state.value.busy && coordinator.state.value.peerConfirmation?.fingerprint == identity.fingerprint }
+                return offer
+            }
+            suspend fun accept(identity: LanSyncTlsIdentity) {
+                coordinator.acceptPeer(requireNotNull(coordinator.state.value.peerConfirmation).binding)
+                await { !coordinator.state.value.busy && coordinator.state.value.devices.any { it.id == identity.fingerprint } }
+                assertNull(coordinator.state.value.error)
+            }
+            fun remote(offer: LanSyncGroupInviteOffer, identity: LanSyncTlsIdentity, scopeName: String): LanSyncGroupRemoteStore {
+                val port = requireNotNull(offer.bootstrap).storePort
+                val endpoint = LanSyncPeer(offer.inviter, "synthetic inviter", offer.host, port)
+                return LanSyncGroupRemoteStore(offer.trust.group, Files.createDirectory(f.root.resolve(scopeName)),
+                    connect = { network.connect(identity, endpoint) }, authenticatedConnect = true)
+            }
+
+            val existing = LanSyncTlsIdentity.create()
+            val existingOffer = present(existing)
+            accept(existing)
+            val authorized = remote(existingOffer, existing, "authorized-store")
+            val entry = authorized.listCommits(null).entries.first()
+            val pending = LanSyncTlsIdentity.create()
+            val pendingOffer = present(pending)
+            val applicantStore = remote(pendingOffer, pending, "pending-store")
+            assertFalse(f.custody(pendingOffer.trust).ledger().current().members.containsKey(pending.fingerprint))
+            val messages = java.util.concurrent.CopyOnWriteArrayList<String>()
+            coroutineScope {
+                val monitor = launch(start = CoroutineStart.UNDISPATCHED) { coordinator.state.collect { messages += it.nearby.text } }
+                try {
+                    assertFails { applicantStore.listCommits(null) }
+                    val ciphertext = ByteArrayOutputStream()
+                    assertEquals(entry, authorized.readTo(entry.key, ciphertext, entry.descriptor))
+                    assertEquals(entry.descriptor.length, ciphertext.size().toLong())
+                    assertFalse(messages.any { it.contains("连接暂时不可用") || it.contains("连接未完成") })
+                } finally { monitor.cancelAndJoin() }
+            }
+            assertEquals(pending.fingerprint, coordinator.state.value.peerConfirmation?.fingerprint)
+
+            val stoppedPort = ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { it.localPort }
+            unavailable.set(LanSyncPeer(existing.fingerprint, "synthetic stopped member", "10.0.0.2", stoppedPort))
+            coordinator.onForeground()
+            await { coordinator.state.value.nearby.text.contains("无法读取一台附近成员") }
+            assertTrue(authorized.listCommits(null).entries.contains(entry))
+            unavailable.set(null)
+            accept(pending)
+            assertTrue(applicantStore.listCommits(null).entries.isNotEmpty())
+        }
     }
 
     @Test fun fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation() = fixture { f ->

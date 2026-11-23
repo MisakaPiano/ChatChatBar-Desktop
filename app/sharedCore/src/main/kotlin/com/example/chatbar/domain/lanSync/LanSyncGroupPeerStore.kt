@@ -53,6 +53,25 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
     }
     fun requireWriteAllowed(key: CiphertextObjectKey) = authorize(key, true)
 
+    /** The caller's real TLS identity still needs ordinary active membership. */
+    internal fun membershipLedger(after: SyncVersionRef): SyncGroupEnvelope? {
+        val ledger = ledger()
+        if (!active(ledger)) denied()
+        val tip = ledger.current()
+        val history = ledger.history(tip.reference())
+        val anchor = history.indexOfFirst { it.reference() == after }
+        require(anchor >= 0) { "SYNC_GROUP_LEDGER_RELAY_ANCESTRY" }
+        if (anchor == history.lastIndex) return null
+        return SyncGroupEnvelope(2, SyncGroupObjectKind.DEVICE_LEDGER, deviceLedger = tip,
+            ledgerHistory = history.subList(anchor + 1, history.lastIndex))
+    }
+
+    internal fun requireLedgerReadAllowed(reference: SyncVersionRef) {
+        val ledger = ledger()
+        if (!active(ledger)) denied()
+        require(ledger.current().reference() == reference) { "SYNC_GROUP_LEDGER_RELAY_TIP_CHANGED" }
+    }
+
     override fun put(request: CiphertextPutRequest, source: InputStream): CiphertextPutResult {
         authorize(request.key, true)
         val checked = object : InputStream() {
