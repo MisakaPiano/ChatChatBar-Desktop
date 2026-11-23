@@ -1,4 +1,4 @@
-name: V7 invitation fifth repair checks
+name: V7 invitation Android native checks
 on:
   push:
     branches: [codex/v7-invitation-r04-repair-20261123]
@@ -33,7 +33,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify the existing Android chat page after confirmed incoming deletion
+      - name: Verify retry of an already committed deletion on the existing Android page
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -45,11 +45,11 @@ jobs:
             adb shell wm size 1080x1920
             adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
             adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
-            adb shell am instrument -w -e lanSyncDeletedChatFixture true -e class 'com.example.chatbar.ui.chat.ChatSyncDeletedSessionNativeTest#confirmedIncomingDeletionKeepsOpenAndReopenedComposerDraft' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r05-android-deleted-chat.txt"
-            cat "$RUNNER_TEMP/v7-r05-android-deleted-chat.txt"
-            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r05-android-deleted-chat.txt"
+            adb shell am instrument -w -e lanSyncDeletedChatReloadFixture true -e class 'com.example.chatbar.ui.chat.ChatSyncDeletedSessionNativeTest#aCommittedDeletionReloadsTheOldAndroidPageOnTheNextInspection' com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r06-android-reload.txt"
+            cat "$RUNNER_TEMP/v7-r06-android-reload.txt"
+            grep -F 'OK (1 test)' "$RUNNER_TEMP/v7-r06-android-reload.txt"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-r05-android-deleted-chat
-          path: ${{ runner.temp }}/v7-r05-android-deleted-chat.txt
+          name: v7-r06-android-reload
+          path: ${{ runner.temp }}/v7-r06-android-reload.txt

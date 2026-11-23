@@ -54,6 +54,7 @@ import com.example.chatbar.lanSync.LanSyncActivity
 import com.example.chatbar.lanSync.androidLanSyncResourcePath
 import com.example.chatbar.lanSync.validateAndroidLanSyncResource
 import com.example.chatbar.ui.kit.ChatBarTheme
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -79,6 +80,16 @@ class ChatSyncDeletedSessionNativeTest {
     @Test
     fun confirmedIncomingDeletionKeepsOpenAndReopenedComposerDraft() = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncDeletedChatFixture") == "true")
+        exerciseDeletion(failFirstReload = false)
+    }
+
+    @Test
+    fun aCommittedDeletionReloadsTheOldAndroidPageOnTheNextInspection() = runBlocking {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("lanSyncDeletedChatReloadFixture") == "true")
+        exerciseDeletion(failFirstReload = true)
+    }
+
+    private suspend fun exerciseDeletion(failFirstReload: Boolean) {
         val app = ApplicationProvider.getApplicationContext<ChatBarApp>()
         check(app.packageName in setOf("com.example.chatbar.lansync", "com.example.chatbar.lansyncnext"))
         check((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
@@ -171,10 +182,48 @@ class ChatSyncDeletedSessionNativeTest {
                 assertEquals(setOf(sessionId, oldMessageId), review.reductions.getValue(conversation).current.map { it.id }.toSet())
                 assertTrue(review.reductions.getValue(conversation).proposed.isEmpty())
                 assertEquals(sessionId, app.chatRepository.requireDurableSession(sessionId).id)
-                assertEquals(diagnostic, LanSyncGroupNativeApplyStatus.APPLIED,
-                    target.applyIncoming(review.acknowledge(review.requiredBindings))?.status)
+                val approval = review.acknowledge(review.requiredBindings)
+                if (failFirstReload) {
+                    val previousRevision = app.chatRepository.lanSyncRevision.value
+                    val previousReloads = fixture.reloadAttempts
+                    fixture.failNextReload = true
+                    val failure = try {
+                        target.applyIncoming(approval)
+                        error("Signed deletion did not report the injected app reload failure")
+                    } catch (error: IllegalStateException) {
+                        error
+                    }
+                    assertEquals("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure.message)
+                    assertEquals("SYNTHETIC_ANDROID_RELOAD_FAILURE", failure.cause?.message)
+                    assertEquals(previousReloads + 1, fixture.reloadAttempts)
+                    assertTrue(sessionId in fixture.lastReloadSessions)
+                    assertDurableRemoval(app, sessionId, oldMessageId)
+                    assertEquals(previousRevision, app.chatRepository.lanSyncRevision.value)
 
-                scenario.moveToState(Lifecycle.State.RESUMED)
+                    scenario.moveToState(Lifecycle.State.RESUMED)
+                    ui.label(sessionTitle)
+                    ui.liveSendButton()
+                    assertFalse(oldOwner.sessionMissing.value)
+                    assertEquals(draftText, oldOwner.composerDraft.value.text)
+                    assertEquals(images, oldOwner.composerDraft.value.images)
+                    assertArrayEquals(original, Files.readAllBytes(image))
+
+                    val reloaded = target.inspectLocal()
+                    assertEquals(previousReloads + 2, fixture.reloadAttempts)
+                    assertTrue(sessionId in fixture.lastReloadSessions)
+                    assertEquals(previousRevision + 1, app.chatRepository.lanSyncRevision.value)
+                    assertEquals(pending.nativeState.completedSequence + 1, reloaded.nativeState.completedSequence)
+                    assertNull(reloaded.nativeState.pendingTransaction)
+                    assertEquals(setOf(deletion.reference()), reloaded.nativeState.units[conversation]?.frontiers)
+                    assertTrue(reloaded.incomingReview?.reductions.orEmpty().isEmpty())
+                    val steady = target.inspectLocal()
+                    assertEquals(reloaded.nativeState, steady.nativeState)
+                    assertEquals(previousReloads + 2, fixture.reloadAttempts)
+                    assertEquals(previousRevision + 1, app.chatRepository.lanSyncRevision.value)
+                } else {
+                    assertEquals(diagnostic, LanSyncGroupNativeApplyStatus.APPLIED, target.applyIncoming(approval)?.status)
+                    scenario.moveToState(Lifecycle.State.RESUMED)
+                }
                 await { oldOwner.sessionMissing.value }
                 assertRemovedScreen(ui)
                 ui.checkDisabledSend(sendPosition, touch = true)
@@ -410,6 +459,12 @@ class ChatSyncDeletedSessionNativeTest {
             override suspend fun exclusive(work: suspend () -> Unit) = work()
             override suspend fun reload(sessionIds: Set<String>) = Unit
         }
+        var failNextReload = false
+        var reloadAttempts = 0
+            private set
+        var lastReloadSessions = emptySet<String>()
+            private set
+
         val targetPlatform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) {
                 app.momentScheduler.withLanSyncMaintenance {
@@ -422,6 +477,12 @@ class ChatSyncDeletedSessionNativeTest {
                 }
             }
             override suspend fun reload(sessionIds: Set<String>) {
+                reloadAttempts++
+                lastReloadSessions = sessionIds
+                if (failNextReload) {
+                    failNextReload = false
+                    throw IOException("SYNTHETIC_ANDROID_RELOAD_FAILURE")
+                }
                 app.characterRepository.refreshFromStorage()
                 app.chatRepository.reloadAfterLanSync()
             }
