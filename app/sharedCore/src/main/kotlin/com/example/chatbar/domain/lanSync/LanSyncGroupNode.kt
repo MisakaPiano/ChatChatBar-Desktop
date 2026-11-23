@@ -7,6 +7,7 @@ import java.nio.file.Path
 import java.util.Base64
 import java.util.Collections
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -305,14 +306,15 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private suspend fun inspectOwned(allowNetwork: Boolean = true, recoverNative: Boolean = true): LanSyncGroupNodeView {
         current = inbox().reconcile(localVersions.values)
         var state = exclusive {
-            val before = native.state()
             if (recoverNative) {
-                val recovered = native.recover(); author.state()
-                if (before.pendingTransaction != null) reload()
+                val (recovered, pendingReload) = native.recoverForReload()
+                author.state()
+                reloadNative(pendingReload)
                 val sessions = resolutions.recover()
                 if (resolutions.needsReload()) { reload(sessions); resolutions.acknowledgeReload() }
                 recovered
             } else {
+                val before = native.state()
                 workspace.requireSettledForSourceOnly()
                 require(before.pendingTransaction == null && !resolutions.needsReload() &&
                     resolutions.state().none { it.stage == LanSyncGroupResolutionLocalStage.PREPARED }) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
@@ -525,8 +527,10 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         current = inbox().reconcile(localVersions.values)
         refreshResolutions()
         return exclusive {
-            native.apply(LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)).also { if (it?.status == LanSyncGroupNativeApplyStatus.APPLIED)
-                reload(plan.before.records.filter { record -> record.type == "chat_sessions" }.mapTo(linkedSetOf()) { record -> record.id }) }
+            val restricted = LanSyncGroupNativePlanner.restrict(plan, pendingResolutions + heldResolutions)
+            val (receipt, pendingReload) = native.applyForReload(restricted)
+            reloadNative(pendingReload)
+            receipt
         }
     }
 
@@ -565,6 +569,13 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         workspace.requireSettledForSourceOnly()
         require(native.state().pendingTransaction == null && !resolutions.needsReload() &&
             resolutions.state().none { it.stage == LanSyncGroupResolutionLocalStage.PREPARED }) { "SYNC_GROUP_SOURCE_RECOVERY_REQUIRED" }
+    }
+    private suspend fun reloadNative(work: LanSyncGroupNativeApplyOwner.ReloadWork?) {
+        if (work == null) return
+        try { reload(work.sessions) }
+        catch (failure: CancellationException) { throw failure }
+        catch (failure: Exception) { throw IllegalStateException("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure) }
+        native.acknowledgeReload(work)
     }
     private suspend fun reload(previousSessions: Set<String> = emptySet()) {
         val sessions = workspace.captureGroup(identity.fingerprint, projection).use { capture ->

@@ -1,10 +1,12 @@
 package com.example.chatbar.domain.lanSync
 
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.domain.syncStore.*
 import java.awt.image.BufferedImage
 import java.io.IOException
@@ -24,6 +26,7 @@ import javax.net.ssl.SSLSocket
 import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 import javax.imageio.IIOImage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
@@ -73,6 +76,7 @@ class LanSyncGroupNodeTest {
                     resourceValidator(kind, path, record)
                 })
             var gated = false; var reloads = 0; var hook: (String) -> Unit = {}
+            var reloadHook: suspend (Set<String>) -> Unit = {}
             fun custody() = SyncGroupCustody(custodyRoot, cipher.group, recipients[index], { it.reversedArray() }, { it.reversedArray() })
             fun author() = SyncAuthorJournal(runtime.resolve("author"), trust,
                 Base64.getEncoder().encodeToString(identities[index].certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
@@ -81,7 +85,7 @@ class LanSyncGroupNodeTest {
                     check(!gated); gated = true
                     try { work() } finally { gated = false }
                 }
-                override suspend fun reload(sessionIds: Set<String>) { check(gated); reloads++ }
+                override suspend fun reload(sessionIds: Set<String>) { check(gated); reloads++; reloadHook(sessionIds) }
             }
             fun open(dependencies: CiphertextStore = backend, workspaceOwner: LanSyncWorkspace = workspace) =
                 LanSyncGroupNode(runtime, workspaceOwner, platform, identities[index], trust, custody(), recipients[index], dependencies,
@@ -414,6 +418,130 @@ class LanSyncGroupNodeTest {
         assertEquals(oldReceipt, restored.nativeState.units.getValue(a))
         assertContentEquals(rawA, Files.readAllBytes(recordA))
         assertContentEquals(bytes, Files.readAllBytes(localImage))
+    }
+
+    @Test fun signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown() = withGroup { g ->
+        val source = g.End(0); val sender = source.enroll()
+        val destination = g.End(1); val receiver = destination.enroll()
+        fun session(end: Group.End, id: String) = end.data.resolve("entities/chat_sessions/$id.json")
+        fun message(end: Group.End, id: String) = end.data.resolve("entities/chat_messages/$id.json")
+        fun saveSession(end: Group.End, id: String, title: String) {
+            val path = session(end, id)
+            Files.createDirectories(path.parent)
+            LanSyncJsonFiles.write(path, ChatSession.serializer(), ChatSession(id, "card", title, createdAt = 1, updatedAt = 1))
+        }
+        val deleted = "conversation/deleted"
+        val kept = "conversation/kept"
+        saveSession(source, "deleted", "signed conversation")
+        saveSession(source, "kept", "existing conversation")
+        val messagePath = message(source, "deleted_original")
+        Files.createDirectories(messagePath.parent)
+        LanSyncJsonFiles.write(messagePath, ChatMessage.serializer(),
+            ChatMessage("original", "deleted", MessageRole.USER, "signed message", createdAt = 2, updatedAt = 2))
+        source.send(sender, sender.commit(sender.inspect().review(setOf(deleted, kept))))
+        assertEquals(LanSyncGroupNativeApplyStatus.APPLIED, receiver.apply(requireNotNull(destination.scan(receiver).plan))?.status)
+        assertTrue(Files.isRegularFile(session(destination, "deleted")))
+        assertTrue(Files.isRegularFile(message(destination, "deleted_original")))
+        val chats = ChatRepository(JsonFileStorage(destination.data))
+        assertEquals(setOf("deleted", "kept"), chats.getAllSessions().map { it.id }.toSet())
+        val beforeReloads = destination.reloads
+        val refreshes = mutableListOf<Set<String>>()
+        destination.reloadHook = { ids ->
+            refreshes.add(ids)
+            if (refreshes.size == 1) throw IOException("SYNTHETIC_PLATFORM_REPOSITORY_RELOAD_FAILED")
+            chats.reloadAfterLanSync()
+        }
+        var writes = 0
+        destination.hook = { if (it == "NATIVE_DATA_APPLIED") writes++ }
+
+        Files.delete(messagePath)
+        Files.delete(session(source, "deleted"))
+        val review = sender.inspect().review(setOf(deleted))
+        val tombstone = sender.commit(review, review.requiredBindings)
+        assertNull(tombstone.entry.version.changes.getValue(deleted).content)
+        source.send(sender, tombstone)
+        val pending = requireNotNull(destination.scan(receiver).incomingReview)
+        assertEquals(setOf(deleted), pending.reductions.keys)
+        val approval = pending.acknowledge(pending.requiredBindings)
+        val transaction = pending.confirmedPlan(approval).plan.transaction
+        val failure = assertFailsWith<IllegalStateException> { receiver.applyIncoming(approval) }
+        assertEquals("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure.message)
+        assertEquals("SYNTHETIC_PLATFORM_REPOSITORY_RELOAD_FAILED", failure.cause?.message)
+        assertEquals(listOf(setOf("deleted", "kept")), refreshes)
+        assertEquals(1, writes)
+        assertTrue(destination.workspace.applied(transaction))
+        assertFalse(Files.exists(session(destination, "deleted")))
+        assertFalse(Files.exists(message(destination, "deleted_original")))
+        saveSession(destination, "kept", "local edit between refresh attempts")
+        assertEquals(setOf("deleted", "kept"), chats.getAllSessions().map { it.id }.toSet())
+        assertEquals(0L, chats.lanSyncRevision.value)
+
+        val nativeDir = destination.runtime.resolve("native")
+        val beforeRetry = retainedFiles(nativeDir)
+        val dataBeforeRetry = retainedFiles(destination.data)
+        val afterShutdown = destination.open().inspectLocal(recoverNative = false)
+        assertEquals(setOf(tombstone.entry.version.reference()), afterShutdown.nativeState.units.getValue(deleted).frontiers)
+        assertNull(afterShutdown.nativeState.units.getValue(deleted).valueHash)
+        assertEquals(beforeReloads + 1, destination.reloads)
+        assertRetainedFiles(beforeRetry, nativeDir)
+        assertRetainedFiles(dataBeforeRetry, destination.data)
+
+        val opened = destination.open(workspaceOwner = destination.openWorkspace())
+        val recovered = opened.inspectLocal()
+        assertEquals(afterShutdown.nativeState, recovered.nativeState)
+        assertEquals(LanSyncGroupNativeStage.LOCAL_PROPOSAL, requireNotNull(recovered.plan).units.getValue(kept).stage)
+        assertEquals(listOf(setOf("deleted", "kept"), setOf("deleted", "kept")), refreshes)
+        assertEquals("kept", chats.getAllSessions().single().id)
+        assertEquals("local edit between refresh attempts", chats.getAllSessions().single().title)
+        assertEquals(1L, chats.lanSyncRevision.value)
+        assertEquals(1, writes)
+        assertRetainedFiles(dataBeforeRetry, destination.data)
+        val afterRetry = retainedFiles(nativeDir)
+        assertEquals(beforeRetry.keys, afterRetry.keys)
+        assertFalse(beforeRetry.getValue("reload.protected").contentEquals(afterRetry.getValue("reload.protected")))
+        beforeRetry.filterKeys { it != "reload.protected" }.forEach { (name, bytes) ->
+            assertContentEquals(bytes, afterRetry.getValue(name), name)
+        }
+        assertEquals(0L, destination.author().state().committedSequence)
+        assertEquals(recovered.nativeState, opened.inspectLocal().nativeState)
+        assertEquals(beforeReloads + 2, destination.reloads)
+        assertRetainedFiles(afterRetry, nativeDir)
+    }
+
+    @Test fun olderAppliedHistoryWithoutARefreshMarkerSurvivesCancelledReloadAndIgnoresSourceOnlyReceipts() = withGroup { g ->
+        val source = g.End(0); val sender = source.enroll()
+        val destination = g.End(1); val receiver = destination.enroll()
+        val incoming = "character_cards/incoming"
+        source.card("incoming", "received from signer")
+        source.send(sender, sender.commit(sender.inspect().review(setOf(incoming))))
+        assertEquals(LanSyncGroupNativeApplyStatus.APPLIED, receiver.apply(requireNotNull(destination.scan(receiver).plan))?.status)
+        val marker = destination.runtime.resolve("native/reload.protected")
+        val originalMarker = Files.readAllBytes(marker)
+        val firstReloads = destination.reloads
+        destination.card("local", "signed only at destination")
+        val authored = receiver.commit(receiver.inspect().review(setOf("character_cards/local")))
+        destination.send(receiver, authored)
+        assertEquals(firstReloads, destination.reloads)
+        assertContentEquals(originalMarker, Files.readAllBytes(marker))
+
+        Files.delete(marker)
+        val older = retainedFiles(destination.runtime.resolve("native"))
+        val onDisk = retainedFiles(destination.data)
+        destination.reloadHook = { throw CancellationException("SYNTHETIC_CANCELLED_REFRESH") }
+        assertEquals("SYNTHETIC_CANCELLED_REFRESH", assertFailsWith<CancellationException> {
+            destination.open().inspectLocal()
+        }.message)
+        assertRetainedFiles(older, destination.runtime.resolve("native"))
+        assertRetainedFiles(onDisk, destination.data)
+        destination.reloadHook = {}
+        val cold = destination.open()
+        val state = cold.inspectLocal().nativeState
+        assertEquals(2L, state.completedSequence)
+        assertContentEquals(originalMarker, Files.readAllBytes(marker))
+        assertEquals(firstReloads + 2, destination.reloads)
+        assertEquals(state, cold.inspectLocal().nativeState)
+        assertEquals(firstReloads + 2, destination.reloads)
+        assertRetainedFiles(onDisk, destination.data)
     }
 
     @Test fun coldSourceOnlyRetriesWithOrWithoutMetadataPrefetchReuseTheOriginalLocalReceiptWithoutNativeOrLiveRouteWork() = withGroup { g ->

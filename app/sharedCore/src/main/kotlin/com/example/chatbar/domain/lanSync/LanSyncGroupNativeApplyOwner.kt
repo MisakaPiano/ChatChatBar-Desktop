@@ -32,6 +32,7 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
     private val lock: ReentrantLock
     private var incarnation: SyncStoreId? = null
     private var originTrust: SyncGroupTrust? = null
+    private val reloadPath get() = root.resolve("reload.protected")
     @Serializable private data class Origin(val trust: SyncGroupTrust, val certificate: String, val projection: String, val incarnation: SyncStoreId)
     @Serializable private data class Frame(val domain: String, val group: SyncStoreId, val device: String,
         val incarnation: SyncStoreId, val kind: String, val value: JsonElement)
@@ -39,13 +40,15 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
     @Serializable private data class Intent(val sequence: Long, val transaction: String, val previousReceipt: String?,
         val payload: SyncPlaintextIdentity, val preimage: String?)
     @Serializable private data class Receipt(val sequence: Long, val transaction: String, val intent: String, val status: LanSyncGroupNativeApplyStatus)
+    @Serializable private data class Reloaded(val sequence: Long, val receipt: String)
+    internal data class ReloadWork(val incarnation: SyncStoreId, val sequence: Long, val receipt: String, val sessions: Set<String>)
     @Serializable private data class Payload(val plan: LanSyncPlan, val checkpoint: SyncVersionRef, val heads: Set<SyncVersionRef>,
         val before: Map<String, String>, val rawSource: String, val appliedBefore: String, val advances: Map<String, LanSyncGroupAppliedUnit>,
         val preimageRequired: Boolean, val sourceOperation: SyncStoreId? = null, val sourceVersion: SyncCausalVersion? = null,
         val sourceHeld: Set<String> = emptySet())
     private data class Loaded(val units: Map<String, LanSyncGroupAppliedUnit>, val completed: Long, val receipt: String?, val pending: Intent?,
         val matched: Intent? = null, val matchedReceipt: Receipt? = null,
-        val matchedSourceReceipt: LanSyncGroupNativeApplyReceipt? = null)
+        val matchedSourceReceipt: LanSyncGroupNativeApplyReceipt? = null, val reload: ReloadWork? = null)
     init { PrivateSyncFile.checked(root, true); projection.validate()
         require(actor.encoded == actorCertificate) { "SYNC_GROUP_NATIVE_CERTIFICATE" }
         lock = locks.computeIfAbsent(root) { ReentrantLock() } }
@@ -83,7 +86,25 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         publicState(load())
     }
     fun state(): LanSyncGroupNativeState = guarded { publicState(load()) }
-    fun recover(): LanSyncGroupNativeState = guarded { recoverOwned(); publicState(load()) }
+    fun recover(): LanSyncGroupNativeState = guarded { publicState(recovered()) }
+
+    internal fun recoverForReload(): Pair<LanSyncGroupNativeState, ReloadWork?> = guarded {
+        val loaded = recovered(trackReload = true)
+        publicState(loaded) to loaded.reload
+    }
+
+    /** The platform acknowledges the exact applied receipt only after its refresh has finished. */
+    internal fun acknowledgeReload(work: ReloadWork) = guarded {
+        require(readOrigin().incarnation == work.incarnation) { "SYNC_GROUP_NATIVE_RELOAD_CHANGED" }
+        val checkpoint = Reloaded(work.sequence, work.receipt)
+        requireAppliedReceipt(checkpoint)
+        val prior = read(reloadPath, "RELOADED", Reloaded.serializer())
+        if (prior != null) {
+            requireAppliedReceipt(prior)
+            if (prior.sequence >= checkpoint.sequence) return@guarded
+        }
+        write(reloadPath, "RELOADED", Reloaded.serializer(), checkpoint, replace = true)
+    }
 
     /** Records an approved historical local source fact; never applies its old full snapshot. */
     fun recordSource(commit: LanSyncGroupSourceCommit, recoverNative: Boolean = true): LanSyncGroupNativeApplyReceipt = guarded {
@@ -131,15 +152,21 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
 
     /** No source signing or UI decisions occur here: only already-approved incoming facts can advance. */
     fun apply(plan: LanSyncGroupNativePlan): LanSyncGroupNativeApplyReceipt? = guarded {
+        applyOwned(plan, trackReload = false).first
+    }
+    internal fun applyForReload(plan: LanSyncGroupNativePlan): Pair<LanSyncGroupNativeApplyReceipt?, ReloadWork?> = guarded {
+        applyOwned(plan, trackReload = true)
+    }
+    private fun applyOwned(plan: LanSyncGroupNativePlan, trackReload: Boolean): Pair<LanSyncGroupNativeApplyReceipt?, ReloadWork?> {
         recoverOwned()
-        val loaded = load(plan.plan.transaction)
+        val loaded = load(plan.plan.transaction, trackReload = trackReload)
         loaded.matched?.let { previous ->
             require(payload(previous) == payload(plan)) { "SYNC_GROUP_NATIVE_OPERATION_CHANGED" }
             val receipt = requireNotNull(loaded.matchedReceipt) { "SYNC_GROUP_NATIVE_PENDING" }
-            return@guarded publicReceipt(previous, receipt)
+            return publicReceipt(previous, receipt) to loaded.reload
         }
         require(loaded.pending == null && loaded.units == plan.appliedBefore) { "SYNC_GROUP_NATIVE_CONTROL_CHANGED" }
-        if (plan.advances.isEmpty()) return@guarded null
+        if (plan.advances.isEmpty()) return null to loaded.reload
         require(plan.plan.transaction.matches(Regex("[a-f0-9-]{36}")) && !workspace.applied(plan.plan.transaction)) { "SYNC_GROUP_NATIVE_FOREIGN_RECEIPT" }
         require(plan.before.deviceId == actor.fingerprint && plan.plan.snapshot.deviceId == actor.fingerprint) { "SYNC_GROUP_NATIVE_DEVICE" }
         requireView(plan)
@@ -168,11 +195,17 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         observe("NATIVE_DATA_APPLIED")
         verifyPreimage(intent, payload)
         val receipt = complete(intent, LanSyncGroupNativeApplyStatus.APPLIED)
-        publicReceipt(intent, receipt)
+        val reload = if (trackReload) ReloadWork(requireNotNull(incarnation), receipt.sequence,
+            binding(Receipt.serializer(), receipt), loaded.reload?.sessions.orEmpty() + sessionIds(payload.advances.keys)) else null
+        return publicReceipt(intent, receipt) to reload
     }
 
-    private fun recoverOwned() {
-        val loaded = load()
+    private fun recovered(trackReload: Boolean = false): Loaded {
+        val loaded = load(trackReload = trackReload)
+        recoverOwned(loaded)
+        return if (loaded.pending == null) loaded else load(trackReload = trackReload)
+    }
+    private fun recoverOwned(loaded: Loaded = load()) {
         workspace.recover()
         val intent = loaded.pending ?: return
         val payload = payload(intent)
@@ -277,13 +310,27 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
         write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(intent.sequence, binding(Receipt.serializer(), receipt)), true)
         return receipt
     }
-    private fun load(match: String? = null, source: SyncAuthorJournalEntry? = null): Loaded {
+    private fun readOrigin(): Origin {
         val origin = requireNotNull(read(root.resolve("origin.protected"), "ORIGIN", Origin.serializer())) { "SYNC_GROUP_NATIVE_ORIGIN_MISSING" }
         require(sameAnchor(origin.trust, trust) && origin.certificate == actorCertificate && origin.projection == projection.digest()) { "SYNC_GROUP_NATIVE_ORIGIN_CHANGED" }
         originTrust = origin.trust
+        return origin
+    }
+    private fun requireAppliedReceipt(checkpoint: Reloaded) {
+        require(checkpoint.sequence > 0) { "SYNC_GROUP_NATIVE_RELOAD_CHANGED" }
+        val receipt = read(receiptPath(checkpoint.sequence), "RECEIPT", Receipt.serializer())
+        require(receipt != null && receipt.sequence == checkpoint.sequence && receipt.status == LanSyncGroupNativeApplyStatus.APPLIED &&
+            binding(Receipt.serializer(), receipt) == checkpoint.receipt) { "SYNC_GROUP_NATIVE_RELOAD_CHANGED" }
+    }
+    private fun load(match: String? = null, source: SyncAuthorJournalEntry? = null, trackReload: Boolean = false): Loaded {
+        val origin = readOrigin()
         val head = requireNotNull(read(root.resolve("head.protected"), "HEAD", Head.serializer())) { "SYNC_GROUP_NATIVE_HEAD_MISSING" }
         val intents = inventory("intent"); val receipts = inventory("receipt")
         require(head.sequence in 0..receipts && receipts <= intents && intents - receipts <= 1 && (head.sequence == 0L) == (head.receipt == null)) { "SYNC_GROUP_NATIVE_HISTORY_MISSING" }
+        val reloaded = if (trackReload) read(reloadPath, "RELOADED", Reloaded.serializer()) else null
+        require(reloaded == null || reloaded.sequence in 1..receipts) { "SYNC_GROUP_NATIVE_RELOAD_CHANGED" }
+        var reloadThrough: Reloaded? = null
+        val reloadSessions = linkedSetOf<String>()
         val units = linkedMapOf<String, LanSyncGroupAppliedUnit>(); var previous: String? = null
         var pending: Intent? = null; var matched: Intent? = null; var matchedReceipt: Receipt? = null
         var matchedSourceReceipt: LanSyncGroupNativeApplyReceipt? = null
@@ -302,8 +349,15 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
                 if (receipt.status in setOf(LanSyncGroupNativeApplyStatus.APPLIED, LanSyncGroupNativeApplyStatus.SOURCE_COMMIT_RECORDED)) units.putAll(payload.advances.mapValues { (_, value) ->
                     value.copy(frontiers = Collections.unmodifiableSet(value.frontiers.toSet()))
                 })
-                previous = binding(Receipt.serializer(), receipt)
-                if (sequence == head.sequence) require(previous == head.receipt) { "SYNC_GROUP_NATIVE_HEAD_CHANGED" }
+                val receiptBinding = binding(Receipt.serializer(), receipt)
+                previous = receiptBinding
+                if (sequence == head.sequence) require(receiptBinding == head.receipt) { "SYNC_GROUP_NATIVE_HEAD_CHANGED" }
+                if (reloaded != null && sequence == reloaded.sequence) require(receipt.status == LanSyncGroupNativeApplyStatus.APPLIED &&
+                    receiptBinding == reloaded.receipt) { "SYNC_GROUP_NATIVE_RELOAD_CHANGED" }
+                if (trackReload && sequence > (reloaded?.sequence ?: 0) && receipt.status == LanSyncGroupNativeApplyStatus.APPLIED) {
+                    reloadThrough = Reloaded(sequence, receiptBinding)
+                    reloadSessions += sessionIds(payload.advances.keys)
+                }
             }
             if (intent.transaction == match) {
                 require(matched == null) { "SYNC_GROUP_NATIVE_OPERATION_CHANGED" }
@@ -314,8 +368,11 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
             }
         }
         if (head.sequence < receipts) write(root.resolve("head.protected"), "HEAD", Head.serializer(), Head(receipts, previous), true)
-        return Loaded(Collections.unmodifiableMap(units), receipts, previous, pending, matched, matchedReceipt, matchedSourceReceipt)
+        val reload = reloadThrough?.let { ReloadWork(origin.incarnation, it.sequence, it.receipt, reloadSessions.toSet()) }
+        return Loaded(Collections.unmodifiableMap(units), receipts, previous, pending, matched, matchedReceipt, matchedSourceReceipt, reload)
     }
+    private fun sessionIds(units: Set<String>): List<String> =
+        units.filter { it.startsWith("conversation/") }.map { it.removePrefix("conversation/") }
     private fun inventory(prefix: String): Long {
         var count = 0L; var maximum = 0L
         Files.newDirectoryStream(root, "$prefix-*.protected").use { paths -> paths.forEach { path ->

@@ -32,6 +32,9 @@ jobs:
             --tests '*LanSyncGroupJoiningTest.aLegacyAttemptWithVerifiedMembershipButMissingHistoricalKeysShowsTheSignedForkWhenReopened' \
             --tests '*LanSyncGroupNearbyStatusTest.mixedSameNameMembersKeepBothObservationsAndColdStartDoesNotInventReachability' \
             --tests '*LanSyncGroupAppTransportTest.proofAcknowledgementBeforePromptDeliveryStillClassifiesOnlyTheVerifiedApplicant' \
+            --tests '*LanSyncGroupNodeTest.signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown' \
+            --tests '*LanSyncGroupNodeTest.olderAppliedHistoryWithoutARefreshMarkerSurvivesCancelledReloadAndIgnoresSourceOnlyReceipts' \
+            --tests '*LanSyncGroupNativeApplyOwnerTest.aLostControlReceiptAfterNativeApplyAdvancesExactUnitsWithoutOverwritingLaterLocalEdits' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
