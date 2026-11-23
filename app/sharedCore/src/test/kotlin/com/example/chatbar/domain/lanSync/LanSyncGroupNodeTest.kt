@@ -2,6 +2,7 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatDraft
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.FormatCard
@@ -28,6 +29,7 @@ import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 import javax.imageio.IIOImage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
@@ -922,8 +924,9 @@ class LanSyncGroupNodeTest {
 
         LanSyncJsonFiles.write(sessions.resolve("manual.json"), ChatSession.serializer(), session.copy(title = "同步前仍可编辑"))
         val chats = ChatRepository(JsonFileStorage(end.data))
-        assertEquals("同步前仍可编辑", chats.getSession("manual")?.title)
-        val draft = Files.writeString(Files.createDirectory(end.data.resolve("drafts")).resolve("manual.txt"), "原草稿")
+        assertEquals("同步前仍可编辑", chats.getAllSessions().single().title)
+        chats.updateComposerDraft(ChatDraft("manual", "原草稿", updatedAt = 3))
+        val draft = end.data.resolve("entities/chat_drafts/manual.json")
         val draftBytes = Files.readAllBytes(draft)
         var attempted = 0
         end.reloadHook = { ids ->
@@ -940,18 +943,20 @@ class LanSyncGroupNodeTest {
         assertTrue(end.workspace.verifiedApplied(preview.id))
         val beforeRetry = retainedFiles(end.data)
         assertTrue(end.workspace.completedRecoveries(g.identities[0].fingerprint).single().reloadPending)
-        assertEquals("同步前仍可编辑", chats.getSession("manual")?.title)
+        assertEquals("旧标题", chats.getSession("manual")?.title)
+        assertEquals("同步前仍可编辑", chats.observeSessions().first().single().title)
 
         val cold = end.open(workspaceOwner = end.openWorkspace())
         assertEquals(nativeBefore, cold.inspectLocal(recoverNative = false).nativeState)
         assertEquals(1, attempted)
         assertEquals(nativeBefore, cold.inspectLocal().nativeState)
         assertEquals(2, attempted)
-        assertEquals("旧标题", chats.getSession("manual")?.title)
+        assertEquals("旧标题", chats.observeSessions().first().single().title)
         val updated = chats.getMessages("manual").single()
         assertEquals("原消息", updated.content)
         assertContentEquals(photoBytes, Files.readAllBytes(Path.of(updated.images.single())))
         assertContentEquals(draftBytes, Files.readAllBytes(draft))
+        assertEquals("原草稿", chats.getComposerDraft("manual").content)
         assertRetainedFiles(beforeRetry, end.data)
         val merged = end.workspace.completedRecoveries(g.identities[0].fingerprint).single()
         assertEquals(preview.id, merged.revision); assertFalse(merged.reloadPending)

@@ -117,6 +117,61 @@ class SyncAuthorJournalTest {
         assertNull(g.journal().entry(request.operation))
     }
 
+    @Test fun aSecondExplicitRecoveryRetiresOnlyTheUnsignedStartAndColdOpenContinuesTheOriginalCounter() = withGroup { g ->
+        fun child(parent: SyncDeviceLedgerRecord) = g.signLedger(parent.copy(id = SyncStoreId.random(),
+            parent = parent.reference(), sequence = parent.sequence + 1, recovery = null))
+        fun recover(primary: SyncDeviceLedgerRecord, other: SyncDeviceLedgerRecord, accepted: Set<SyncVersionRef> = emptySet()): SyncDeviceLedgerRecord {
+            val key = SyncStreamingCipher.create(g.key.group)
+            return g.signLedger(primary.copy(id = SyncStoreId.random(), parent = null, sequence = maxOf(primary.sequence, other.sequence) + 1,
+                epoch = key.epoch, keyCommitment = key.keyCommitment(), acceptedHeads = accepted,
+                recovery = SyncGroupLedgerRecovery(setOf(primary.reference(), other.reference()), primary.reference())))
+        }
+        g.journal().initializeNewEnrollment()
+        val original = child(g.genesis)
+        val other = child(g.genesis)
+        g.ledger.offer(original)
+        val v = g.journal().commitApproved(g.request().copy(deviceLedger = original.reference()), g.ledger, g.approved, g::signer)
+        val oldSigned = g.journalRoot.resolve("signed-0000000000000000001.protected")
+        val signedBytes = Files.readAllBytes(oldSigned)
+        g.ledger.offer(other)
+        val first = recover(other, original)
+        assertEquals(SyncVersionState.ADMITTED, g.ledger.offer(first))
+        val request = g.request("synthetic/next").copy(deviceLedger = first.reference(),
+            expectedAuthorHead = SyncAuthorHeadExpectation(v.version.reference()), authorRecovery = first.reference())
+        assertFailsWith<IOException> { g.journal { point ->
+            if (point == "APPROVED_AUTHOR_INTENT_RETAINED") throw IOException("SYNTHETIC_STOP_BEFORE_SEGMENT_SIGNATURE")
+        }.commitApproved(request, g.ledger, g.approved, g::signer) }
+        val pending = requireNotNull(g.journal().state().pendingApproved)
+        assertEquals(first.reference(), pending.version.authorRecovery)
+        assertEquals(1, g.signerCalls.get())
+
+        val late = child(original); g.ledger.offer(late)
+        val second = recover(late, first, setOf(v.version.reference()))
+        assertEquals(SyncVersionState.ADMITTED, g.ledger.offer(second))
+        assertEquals("SYNC_AUTHOR_RECOVERY_SUPERSEDED", assertFailsWith<IllegalArgumentException> {
+            g.journal().commitApproved(request, g.ledger, g.approved, g::signer)
+        }.message)
+        assertFailsWith<IOException> { g.journal { point ->
+            if (point == "SUPERSEDED_AUTHOR_INTENT_RETAINED") throw IOException("SYNTHETIC_STOP_AFTER_ARCHIVE_BEFORE_CLEANUP")
+        }.retireSupersededRecovery(g.ledger) }
+
+        val cold = g.journal()
+        assertEquals(v, cold.state().last); assertNull(cold.state().pendingApproved)
+        assertNull(cold.entry(request.operation)); assertEquals(setOf(request.operation), cold.supersededOperations())
+        assertEquals(1, g.signerCalls.get()); assertContentEquals(signedBytes, Files.readAllBytes(oldSigned))
+        val archive = g.journalRoot.resolve("superseded-${request.operation.value}.protected")
+        val archived = Files.readAllBytes(archive)
+        assertEquals("SYNC_AUTHOR_OPERATION_SUPERSEDED", assertFailsWith<IllegalArgumentException> {
+            cold.commitApproved(request, g.ledger, g.approved, g::signer)
+        }.message)
+        val replacement = cold.commitApproved(g.request("synthetic/next").copy(deviceLedger = second.reference(),
+            parents = setOf(v.version.reference()), expectedAuthorHead = SyncAuthorHeadExpectation(v.version.reference())), g.ledger, g.approved, g::signer)
+        assertEquals(2L, replacement.version.authorSequence)
+        assertEquals(v.version.reference(), replacement.version.previousByAuthor)
+        assertEquals(replacement, g.journal().state().last)
+        assertContentEquals(archived, Files.readAllBytes(archive))
+    }
+
     @Test fun lostOriginOrHistoricalSignedEvidenceRefusesResetRatherThanGuessingTheHighestBackendCounter() = withGroup { g ->
         assertEquals("SYNC_AUTHOR_ORIGIN_MISSING", assertFailsWith<IllegalArgumentException> { g.journal().state() }.message)
         g.journal().initializeNewEnrollment()

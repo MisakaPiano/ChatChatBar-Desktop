@@ -49,6 +49,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     @Serializable private data class Origin(val format: Int, val trust: SyncGroupTrust, val certificate: String, val incarnation: SyncStoreId)
     @Serializable private data class Head(val sequence: Long, val operation: SyncStoreId, val reference: SyncVersionRef)
     @Serializable private data class Index(val sequence: Long, val operation: SyncStoreId)
+    @Serializable private data class Superseded(val entry: SyncAuthorJournalEntry, val recovery: SyncVersionRef)
     @Serializable private data class ProtectedFrame(val domain: String, val group: SyncStoreId, val actor: String, val incarnation: SyncStoreId,
         val kind: String, val payload: JsonElement)
     init {
@@ -66,6 +67,26 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         observe("AUTHOR_ORIGIN_RETAINED")
     }
     fun state(): SyncAuthorJournalState = guarded { recover() }
+
+    /** A later explicit recovery may replace a reserved authorization, never an already signed fact. */
+    internal fun retireSupersededRecovery(ledger: SyncDeviceLedger) = guarded {
+        val state = recover()
+        val intent = state.pendingApproved ?: return@guarded
+        val prior = intent.version.authorRecovery ?: return@guarded
+        requireActive(ledger)
+        val current = ledger.current().reference()
+        val replacement = ledger.authorRecoveryAt(current, actor.fingerprint) ?: return@guarded
+        if (replacement == prior || !ledger.isAncestorOrSelf(prior, replacement)) return@guarded
+        val evidence = Superseded(intent, replacement)
+        write(supersededPath(intent.request.operation), "SUPERSEDED", Superseded.serializer(), evidence)
+        observe("SUPERSEDED_AUTHOR_INTENT_RETAINED")
+        completeSuperseded(evidence, state.committedSequence)
+    }
+
+    internal fun supersededOperations(): Set<SyncStoreId> = guarded {
+        recover()
+        readSuperseded().mapTo(linkedSetOf()) { it.entry.request.operation }
+    }
     fun entry(operation: SyncStoreId): SyncAuthorJournalEntry? = guarded {
         val state = recover()
         val index = read(indexPath(operation), "INDEX", Index.serializer()) ?: return@guarded null
@@ -81,6 +102,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     fun commitApprovedLive(request: SyncAuthorCommitRequest, ledger: () -> SyncDeviceLedger, admission: SyncAuthorCommitAdmission,
         sign: (ByteArray) -> ByteArray): SyncAuthorJournalEntry = guarded {
         val input = freeze(request); val state = recover()
+        require(!Files.exists(supersededPath(input.operation), NOFOLLOW_LINKS)) { "SYNC_AUTHOR_OPERATION_SUPERSEDED" }
         requireActive(ledger())
         val index = read(indexPath(input.operation), "INDEX", Index.serializer())
         if (index != null) {
@@ -118,15 +140,23 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         requireActive(signingLedger)
         require(signingLedger.record(intent.version.deviceLedger)?.members?.get(actor.fingerprint)?.active == true) { "SYNC_AUTHOR_LEDGER_MISSING" }
         intent.version.authorRecovery?.let { recovery ->
-            require(signingLedger.authorRecoveryAt(intent.version.deviceLedger, actor.fingerprint) == recovery) { "SYNC_AUTHOR_RECOVERY_PARENT" }
+            requireLiveRecovery(signingLedger, intent.version, recovery)
         }
         val version = intent.version.copy(signature = Base64.getEncoder().encodeToString(sign(intent.version.signingBytes())))
-        requireActive(ledger())
+        val after = ledger()
+        requireActive(after)
+        intent.version.authorRecovery?.let { requireLiveRecovery(after, intent.version, it) }
         val entry = intent.copy(version = version); validateSigned(entry, intent)
         write(signedPath(version.authorSequence), "SIGNED", SyncAuthorJournalEntry.serializer(), entry)
         observe("SIGNED_AUTHOR_ENTRY_RETAINED")
         advance(entry)
         return entry
+    }
+    private fun requireLiveRecovery(ledger: SyncDeviceLedger, version: SyncCausalVersion, recovery: SyncVersionRef) {
+        val current = ledger.current().reference()
+        require(ledger.authorRecoveryAt(version.deviceLedger, actor.fingerprint) == recovery &&
+            ledger.authorRecoveryAt(current, actor.fingerprint) == recovery &&
+            ledger.excludedLedgerCuts(version.deviceLedger, current).isEmpty()) { "SYNC_AUTHOR_RECOVERY_SUPERSEDED" }
     }
     private fun requireActive(ledger: SyncDeviceLedger) {
         require(sameAnchor(ledger.trustAnchor, trust)) { "SYNC_AUTHOR_TRUST_CHANGED" }
@@ -139,6 +169,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         require(origin.format == 1 && sameAnchor(origin.trust, trust) && origin.certificate == actorCertificate) { "SYNC_AUTHOR_ORIGIN_CHANGED" }
         var head = read(root.resolve("head.protected"), "HEAD", Head.serializer())
         require(head == null || head.sequence > 0) { "SYNC_AUTHOR_HEAD" }
+        readSuperseded().forEach { completeSuperseded(it, head?.sequence ?: 0) }
         var last = head?.let {
             val intent = requireIntent(it.sequence)
             requireNotNull(read(signedPath(it.sequence), "SIGNED", SyncAuthorJournalEntry.serializer())).also { entry ->
@@ -170,6 +201,32 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
         }
         requireIndexes(intents)
         return SyncAuthorJournalState(head?.sequence ?: 0, last, null)
+    }
+    private fun readSuperseded(): List<Superseded> = Files.newDirectoryStream(root, "superseded-*.protected").use { files ->
+        files.map { path ->
+            val value = requireNotNull(read(path, "SUPERSEDED", Superseded.serializer())) { "SYNC_AUTHOR_SUPERSEDED_CHANGED" }
+            val entry = value.entry
+            require(path == supersededPath(entry.request.operation) && entry.version.group == group &&
+                entry.version.author == actor.fingerprint && entry.version.signature == "unsigned" &&
+                entry.version.authorRecovery == entry.request.authorRecovery && entry.version.authorRecovery != null &&
+                entry.version.authorRecovery != value.recovery) { "SYNC_AUTHOR_SUPERSEDED_CHANGED" }
+            value
+        }
+    }
+    private fun completeSuperseded(retired: Superseded, committed: Long) {
+        val entry = retired.entry
+        val sequence = entry.version.authorSequence
+        val operation = entry.request.operation
+        val liveIntent = read(intentPath(sequence), "INTENT", SyncAuthorJournalEntry.serializer())
+        val index = read(indexPath(operation), "INDEX", Index.serializer())
+        if (liveIntent?.request?.operation == operation || index != null) {
+            require(sequence == committed + 1 && index?.let { it == Index(sequence, operation) } != false &&
+                (liveIntent == null || liveIntent == entry) && !Files.exists(signedPath(sequence), NOFOLLOW_LINKS)) {
+                "SYNC_AUTHOR_SUPERSEDED_CHANGED"
+            }
+            if (liveIntent != null) Files.delete(intentPath(sequence))
+            if (index != null) Files.delete(indexPath(operation))
+        }
     }
     /** Fixed-width filenames are unique, so positive count == maximum proves a dense sequence without a list. */
     private fun inventory(prefix: String, missingCode: String): Long {
@@ -218,6 +275,7 @@ class SyncAuthorJournal(private val root: Path, private val trust: SyncGroupTrus
     private fun intentPath(sequence: Long) = root.resolve("intent-${sequence.toString().padStart(19, '0')}.protected")
     private fun signedPath(sequence: Long) = root.resolve("signed-${sequence.toString().padStart(19, '0')}.protected")
     private fun indexPath(operation: SyncStoreId) = root.resolve("operation-${operation.value}.protected")
+    private fun supersededPath(operation: SyncStoreId) = root.resolve("superseded-${operation.value}.protected")
     private fun <T> read(path: Path, kind: String, serializer: KSerializer<T>): T? {
         if (!Files.exists(path, NOFOLLOW_LINKS)) return null
         PrivateSyncFile.checked(path); require(Files.size(path) in 1..MAX_PROTECTED_BYTES.toLong()) { "SYNC_AUTHOR_WORKING_BUDGET" }

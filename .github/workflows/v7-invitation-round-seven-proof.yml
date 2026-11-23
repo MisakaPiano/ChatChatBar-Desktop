@@ -44,6 +44,7 @@ jobs:
             --tests '*FileRecoveryOwnerTest.anOfflineFileRecoversTheSameRootAndActualNativeBodyAndColdReadyRetryStillRequiresReview' \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.retainedDailyAuthorContinuesAfterRecoveryWithoutExportingDiscardedContentOrItsReference' \
             --tests '*SyncCausalHistoryTest.competingAuthorStartsAtTheSameMembershipRecoveryStayAForkEvenWithDifferentCounters' \
+            --tests '*SyncAuthorJournalTest.aSecondExplicitRecoveryRetiresOnlyTheUnsignedStartAndColdOpenContinuesTheOriginalCounter' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4

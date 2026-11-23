@@ -418,6 +418,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     /** Dense author order, never random preparation-filename order or a reset counter. */
     private suspend fun recoverSources(recoverNative: Boolean = true): Set<SyncStoreId> {
         val entries = exclusive {
+            author.retireSupersededRecovery(custody.ledger())
             val state = author.state(); val operations = writer.operations()
             val signed = operations.mapNotNull { author.entry(it) }
             require(signed.size.toLong() == state.committedSequence &&
@@ -425,7 +426,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             val pending = state.pendingApproved
             val active = (signed + listOfNotNull(pending)).sortedBy { it.version.authorSequence }
             active.forEachIndexed { index, entry -> require(entry.version.authorSequence == index.toLong() + 1) { "SYNC_GROUP_NODE_SOURCE_HISTORY_MISSING" } }
-            active to (operations.toSet() - active.map { it.request.operation }.toSet())
+            active to (operations.toSet() - active.map { it.request.operation }.toSet() - author.supersededOperations())
         }
         val locallyHeld = linkedMapOf<SyncVersionRef, SyncCausalVersion>()
         for (entry in entries.first) {
@@ -638,6 +639,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private suspend fun reloadLocalRecoveries() {
         val pending = workspace.completedRecoveries(identity.fingerprint).filter { it.reloadPending }
         if (pending.isEmpty()) return
+        require(pending.all { workspace.verifiedApplied(it.revision) }) { "SYNC_RECOVERY_RELOAD_CHANGED" }
         val affected = pending.flatMap { it.restoredUnits }.filter { it.startsWith("conversation/") }
             .mapTo(linkedSetOf()) { it.removePrefix("conversation/") }
         reloadPendingRepositories(affected)
