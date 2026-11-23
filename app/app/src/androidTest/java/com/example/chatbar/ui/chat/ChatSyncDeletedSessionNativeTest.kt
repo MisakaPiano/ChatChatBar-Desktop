@@ -29,6 +29,7 @@ import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.ModelConfigurationMode
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.domain.lanSync.LanSyncGroupNativeApplyStatus
 import com.example.chatbar.domain.lanSync.LanSyncGroupNode
 import com.example.chatbar.domain.lanSync.LanSyncGroupNodeView
 import com.example.chatbar.domain.lanSync.LanSyncPlatform
@@ -40,6 +41,7 @@ import com.example.chatbar.domain.syncStore.CiphertextObjectKey
 import com.example.chatbar.domain.syncStore.CiphertextObjectKind
 import com.example.chatbar.domain.syncStore.CommitCursor
 import com.example.chatbar.domain.syncStore.FileCiphertextStore
+import com.example.chatbar.domain.syncStore.SyncCausalVersion
 import com.example.chatbar.domain.syncStore.SyncDeliveryKind
 import com.example.chatbar.domain.syncStore.SyncDeliveryTarget
 import com.example.chatbar.domain.syncStore.SyncDeviceEncryptionKey
@@ -51,11 +53,11 @@ import com.example.chatbar.domain.syncStore.SyncGroupMember
 import com.example.chatbar.domain.syncStore.SyncGroupTrust
 import com.example.chatbar.domain.syncStore.SyncStoreId
 import com.example.chatbar.domain.syncStore.SyncStreamingCipher
+import com.example.chatbar.domain.syncStore.SyncVersionRef
 import com.example.chatbar.lanSync.LanSyncActivity
 import com.example.chatbar.lanSync.androidLanSyncResourcePath
 import com.example.chatbar.lanSync.validateAndroidLanSyncResource
 import com.example.chatbar.ui.kit.ChatBarTheme
-import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -65,6 +67,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -124,9 +127,19 @@ class ChatSyncDeletedSessionNativeTest {
             fixture.sourceChat.createSession(ChatSession(sessionId, cardId, sessionTitle, longTermMemoryEnabled = false,
                 automaticImageGenerationEnabled = false, createdAt = 1, updatedAt = 1))
             fixture.sourceChat.addMessage(ChatMessage(oldMessageId, sessionId, MessageRole.USER, oldText, createdAt = 2, updatedAt = 2))
-            fixture.publish(source, setOf(conversation, cardUnit))
-            target.apply(requireNotNull(fixture.receive(target).plan))
+            val originalVersion = fixture.publish(source, setOf(conversation, cardUnit))
+            val firstTransfer = fixture.receive(target)
+            val transferDiagnostic = describePlan("first reception", firstTransfer, conversation, originalVersion.reference())
+            val firstPlan = requireNotNull(firstTransfer.plan) { transferDiagnostic }
+            assertEquals(transferDiagnostic, setOf(originalVersion.reference()), firstPlan.advances[conversation]?.frontiers)
+            assertEquals(transferDiagnostic, LanSyncGroupNativeApplyStatus.APPLIED, target.apply(firstPlan)?.status)
             assertEquals(oldText, app.chatRepository.getMessagesReadOnly(sessionId).single().content)
+            val initial = target.inspect()
+            val accepted = initial.nativeState.units[conversation]
+            val initialDiagnostic = describePlan("before opening chat", initial, conversation, originalVersion.reference())
+            assertEquals(initialDiagnostic, setOf(originalVersion.reference()), accepted?.frontiers)
+            assertEquals(initialDiagnostic, originalVersion.changes.getValue(conversation).valueHash, accepted?.valueHash)
+            val initialRows = readConversationRows(initial, conversation)
 
             lateinit var oldOwner: ChatViewModel
             openChat(app, sessionId).use { scenario ->
@@ -140,15 +153,29 @@ class ChatSyncDeletedSessionNativeTest {
                 await { app.chatRepository.getComposerDraft(sessionId).let { it.content == draftText && it.imagePaths == images } }
 
                 scenario.moveToState(Lifecycle.State.STARTED)
+                val beforeDelete = target.inspect()
+                val pageChanges = changedFields(initialRows, readConversationRows(beforeDelete, conversation))
                 fixture.sourceChat.deleteSession(sessionId)
-                fixture.publish(source, setOf(conversation))
+                val deletion = fixture.publish(source, setOf(conversation))
+                val tombstone = requireNotNull(deletion.changes[conversation]) { "signed version lacks the selected conversation" }
+                assertNull("signed deletion retained content", tombstone.content)
+                assertNull("signed deletion retained a value hash", tombstone.valueHash)
+                assertEquals("signed deletion did not acknowledge the previous conversation", setOf(originalVersion.reference()), tombstone.previous)
+
                 val pending = fixture.receive(target)
-                val review = requireNotNull(pending.incomingReview)
-                assertEquals(setOf(conversation), review.reductions.keys)
+                val diagnostic = describePlan("after signed deletion", pending, conversation, deletion.reference()) +
+                    "; pageChanges=$pageChanges; lastChanges=" +
+                    changedFields(readConversationRows(beforeDelete, conversation), readConversationRows(pending, conversation))
+                val history = requireNotNull(pending.reconciliation.history) { diagnostic }
+                assertTrue(diagnostic, history.isAncestorOrSelf(originalVersion.reference(), deletion.reference()))
+                assertEquals(diagnostic, setOf(deletion.reference()), history.frontier(conversation).map { it.version }.toSet())
+                val review = requireNotNull(pending.incomingReview) { diagnostic }
+                assertEquals(diagnostic, setOf(conversation), review.reductions.keys)
                 assertEquals(setOf(sessionId, oldMessageId), review.reductions.getValue(conversation).current.map { it.id }.toSet())
                 assertTrue(review.reductions.getValue(conversation).proposed.isEmpty())
                 assertEquals(sessionId, app.chatRepository.requireDurableSession(sessionId).id)
-                assertTrue(target.applyIncoming(review.acknowledge(review.requiredBindings)) != null)
+                assertEquals(diagnostic, LanSyncGroupNativeApplyStatus.APPLIED,
+                    target.applyIncoming(review.acknowledge(review.requiredBindings))?.status)
 
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 await { oldOwner.sessionMissing.value }
@@ -197,6 +224,31 @@ class ChatSyncDeletedSessionNativeTest {
         return viewModel
     }
 
+    private fun describePlan(phase: String, view: LanSyncGroupNodeView, unit: String, expected: SyncVersionRef): String {
+        val plan = view.plan
+        val row = plan?.units?.get(unit)
+        val applied = view.nativeState.units[unit]
+        val history = view.reconciliation.history
+        val observations = view.reconciliation.observations.takeLast(8).map { "${it.stage}/${it.code}" }
+        return "$phase; node=${view.stage}; row=${row?.stage}/${row?.code}; " +
+            "applied=${applied != null}; currentEqualsApplied=${row?.currentHash == applied?.valueHash}; " +
+            "currentPresent=${row?.currentHash != null}; appliedFrontiers=${applied?.frontiers?.size}; " +
+            "rowFrontiers=${row?.frontiers?.size}; componentSize=${plan?.components?.get(unit)?.size}; " +
+            "historyContainsExpected=${history?.contains(expected)}; versionState=${history?.state(expected.id)}/${history?.failure(expected.id)}; " +
+            "observations=$observations"
+    }
+
+    private fun readConversationRows(view: LanSyncGroupNodeView, unit: String): Map<String, JsonObject> =
+        view.plan?.before?.units()?.get(unit).orEmpty().associate { it.type to it.body }
+
+    private fun changedFields(before: Map<String, JsonObject>, after: Map<String, JsonObject>): List<String> =
+        (before.keys + after.keys).sorted().take(8).mapNotNull { type ->
+            val old = before[type].orEmpty()
+            val new = after[type].orEmpty()
+            val fields = (old.keys + new.keys).sorted().filter { old[it] != new[it] }.take(12)
+            fields.takeIf { it.isNotEmpty() }?.let { "$type:$it" }
+        }
+
     private fun assertRemovedScreen() {
         compose.onNodeWithText("会话已删除，草稿和图片已保留在本机。").assertIsDisplayed()
         compose.onNodeWithText("复制草稿").assertIsDisplayed()
@@ -237,19 +289,6 @@ class ChatSyncDeletedSessionNativeTest {
         val sourceWorkspace = LanSyncWorkspace(sourceData, root.resolve("source-workspace"), { sourceData.resolve(it) })
         val targetWorkspace = LanSyncWorkspace(targetData, root.resolve("target-workspace"),
             { androidLanSyncResourcePath(targetData, app.filesDir.toPath(), it) },
-            assetResource = { reference ->
-                app.assets.open(reference.removePrefix("asset:").removePrefix("/")).use { input ->
-                    val output = ByteArrayOutputStream()
-                    val buffer = ByteArray(16 * 1024)
-                    while (true) {
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        check(output.size() + count <= 32 * 1024 * 1024)
-                        output.write(buffer, 0, count)
-                    }
-                    output.toByteArray()
-                }
-            },
             validateResource = ::validateAndroidLanSyncResource)
         val sourcePlatform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) = work()
@@ -286,10 +325,11 @@ class ChatSyncDeletedSessionNativeTest {
                 .also { it.initializeNewEnrollment() }
         }
 
-        suspend fun publish(source: LanSyncGroupNode, units: Set<String>) {
+        suspend fun publish(source: LanSyncGroupNode, units: Set<String>): SyncCausalVersion {
             val review = source.inspect().review(units)
             val commit = source.commit(review, review.requiredBindings)
             source.upload(commit.entry.request.operation, backend, delivery)
+            return commit.entry.version
         }
 
         suspend fun receive(target: LanSyncGroupNode): LanSyncGroupNodeView {
