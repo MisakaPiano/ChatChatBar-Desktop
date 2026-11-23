@@ -125,6 +125,91 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
     @Test fun retainedDailyAuthorContinuesAfterRecoveryWithoutExportingDiscardedContentOrItsReference() =
         actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, continueAuthor = true)
 
+    @Test fun twoOfflineManagersRevokeDifferentMembersAndBothRevocationsSurviveExplicitRecovery() = runBlocking {
+        val root = Files.createTempDirectory("synthetic-membership-revocation-fork-").toRealPath()
+        try {
+            LanSyncGroupAdministrationTest.Fixture(root).use { founder ->
+                founder.seed()
+                val joined = Joined(founder, network)
+                try {
+                    joined.join()
+                    val a = requireNotNull(founder.service.runtimeAccess())
+                    val b = requireNotNull(joined.joining.runtimeAccess())
+                    val transport = LanSyncGroupAppTransport(a, network) { _, _ -> }
+                    suspend fun add(): SyncDeviceEncryptionKey {
+                        val created = LanSyncTlsIdentity.create()
+                        val recipient = SyncDeviceEncryptionKey.create(created.fingerprint)
+                        val proof = CompletableDeferred<LanSyncGroupInvitedPeer>()
+                        val invitation = founder.service.invitation(transport.start())
+                        val offer = transport.invitation(invitation) { proof.complete(it) }
+                        prove(offer, created, recipient)
+                        val candidate = withTimeout(15_000) { proof.await() }
+                        val reviewed = founder.service.prepareMember(candidate, invitation)
+                        founder.service.addMember(founder.service.resume(founder.code), reviewed.acknowledge(reviewed.request.approvalBinding))
+                        transport.closeInvitation()
+                        return recipient
+                    }
+                    val (c, d) = try { add() to add() } finally { transport.closeAndDrain() }
+                    suspend fun readMetadata(runtime: LanSyncGroupRuntimeAccess, source: CiphertextStore) {
+                        val route = runtime.reader.discoveryFrom(source)
+                        var cursor: CommitCursor? = null
+                        do { cursor = runtime.node.discover(route, cursor).nextCursor } while (cursor != null)
+                        runtime.node.reconcileForPrefetch()
+                    }
+                    readMetadata(b, a.replica)
+                    val parent = a.ledger().current()
+                    assertEquals(parent.reference(), b.ledger().current().reference())
+                    assertTrue(parent.members.getValue(c.device).active && parent.members.getValue(d.device).active)
+                    val bManager = b.managementRecovery()
+                    val (left, right) = try {
+                        val originalVault = b.encryptedManagementBackup()
+                        bManager.recover(founder.code, originalVault.bytes(), b.reader, LanSyncManagementRecoveryAdmission {},
+                            b.trust.copy(checkpoint = parent.reference()))
+                        val aReview = founder.service.prepareRevocation(c.device)
+                        val bReview = bManager.prepareRevocation(d.device)
+                        val aRevoke = founder.service.revokeDevice(founder.service.resume(founder.code), aReview.acknowledge(aReview.request.approvalBinding)).ledger
+                        val bRevoke = bManager.revokeDevice(bReview.acknowledge(bReview.request.approvalBinding)).ledger
+                        bManager.publish(b.replica, b.localTarget)
+                        aRevoke to bRevoke
+                    } finally { bManager.close() }
+                    assertEquals(parent.reference(), left.parent); assertEquals(parent.reference(), right.parent)
+                    assertEquals(3, setOf(parent.epoch, left.epoch, right.epoch).size)
+                    val crosses = left.reference() to right.reference()
+                    readMetadata(b, a.replica); readMetadata(a, b.replica)
+                    assertEquals(setOf(crosses.first, crosses.second), requireNotNull(b.verifiedLedgerFork()).branches.map { it.reference() }.toSet())
+                    assertEquals(setOf(crosses.first, crosses.second), requireNotNull(a.verifiedLedgerFork()).branches.map { it.reference() }.toSet())
+                    val cold = joined.newCoordinator(initiallyPaused = true)
+                    try {
+                        cold.startIfConfigured()
+                        awaitRecovery(cold, "two revocations retained") { !it.busy && it.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
+                        cold.prepareMembershipRecovery(founder.code)
+                        awaitRecovery(cold, "two revocations reviewed") { !it.busy && it.membershipRecovery != null }
+                        val review = requireNotNull(cold.state.value.membershipRecovery)
+                        assertEquals(setOf(c.device, d.device), review.members.filter {
+                            it.authority == LanSyncMembershipRecoveryAuthority.REVOKED
+                        }.map { it.fingerprint }.toSet())
+                        val retained = parent.members.filterValues { it.active }.keys - setOf(c.device, d.device)
+                        cold.confirmMembershipRecovery(review.binding, left.id.value, retained)
+                        awaitRecovery(cold, "two revocations recovered") {
+                            !it.busy && it.stage == LanSyncGroupPanelStage.READY && it.membershipRecoveryExportBinding != null
+                        }
+                        val bytes = exportPackage(cold, requireNotNull(cold.state.value.membershipRecoveryExportBinding))
+                        val signed = SyncLedgerRecoveryFileCodec.read(bytes.inputStream(), b.trust, joined.receivingKey())
+                        assertEquals(setOf(left.reference(), right.reference()), signed.recovery.recovery?.parents)
+                        assertEquals(retained, signed.recovery.members.filterValues { it.active }.keys)
+                        assertTrue(signed.recovery.epoch !in setOf(parent.epoch, left.epoch, right.epoch))
+                        assertTrue(setOf(left.epoch, right.epoch, signed.recovery.epoch).all { e -> signed.keys.any { it.cipher.epoch == e } })
+                        listOf(c, d).forEach { revoked ->
+                            assertEquals("SYNC_GROUP_LEDGER_RECOVERY_FILE_RECIPIENT_REVOKED", assertFailsWith<IllegalArgumentException> {
+                                SyncLedgerRecoveryFileCodec.read(bytes.inputStream(), b.trust, revoked)
+                            }.message)
+                        }
+                    } finally { cold.closeAndDrain() }
+                } finally { joined.close() }
+            }
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
     private data class SignedRecovery(val bytes: ByteArray, val proof: SyncVerifiedLedgerRecoveryFile)
 
     private suspend fun issueRecovery(coordinator: LanSyncGroupCoordinator, joined: Joined,
