@@ -27,6 +27,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.core.app.ActivityOptionsCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator
@@ -42,6 +44,7 @@ import com.example.chatbar.domain.lanSync.LanSyncWorkspace
 import com.example.chatbar.ui.kit.ChatBarTheme
 import java.net.InetAddress
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -200,11 +203,12 @@ class AndroidLanSyncInvitationFileRestorationTest {
         val source = coordinator(Files.createDirectory(root.resolve("source")))
         val receiver = coordinator(Files.createDirectory(root.resolve("receiver")))
         try {
+            val selectionLifecycle = AtomicReference<Lifecycle?>()
             fun diagnostics(): String {
                 val group = source.state.value
                 val exported = source.fileExport?.state?.value
                 val recovered = receiver.fileRecovery?.state?.value
-                return "source=${group.stage} busy=${group.busy} issue=${group.error}; " +
+                return "source=${group.stage} busy=${group.busy} issue=${group.error}; selectionLifecycle=${selectionLifecycle.get()?.currentState}; " +
                     "export visible=${exported?.visible} busy=${exported?.busy} prepared=${exported?.preparedBinding != null} " +
                     "written=${exported?.writeCompleted} readback=${exported?.readbackVerified} issue=${exported?.error}; " +
                     "recovery visible=${recovered?.visible} busy=${recovered?.busy} review=${recovered?.review != null} issue=${recovered?.error}"
@@ -234,6 +238,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             restoration.setContent {
                 val current = shown
                 key(current) { CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner) {
+                    selectionLifecycle.set(LocalLifecycleOwner.current.lifecycle)
                     val state by current.state.collectAsState()
                     ChatBarTheme { LanSyncGroupFileActions(current, state) }
                 } }
@@ -243,7 +248,9 @@ class AndroidLanSyncInvitationFileRestorationTest {
             reach("prepare encrypted file") { !exporter.state.value.busy && exporter.state.value.preparedBinding != null }
             val target = root.resolve("verified.cbgroup")
             compose.onNodeWithText("选择保存位置并写出").performScrollTo().performClick()
+            compose.onNodeWithText("导出加密同步文件").assertIsNotEnabled()
             restoration.emulateSavedInstanceStateRestore()
+            compose.onNodeWithText("导出加密同步文件").assertIsNotEnabled()
             source.lockManagementOnVisibilityLoss()
             compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
             reach("verify restored output picker write and readback") { !exporter.state.value.busy && exporter.state.value.readbackVerified }
