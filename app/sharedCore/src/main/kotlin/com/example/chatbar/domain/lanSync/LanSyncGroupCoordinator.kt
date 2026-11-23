@@ -99,9 +99,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private fun externalRecoveryAllowed(): Boolean {
         val current = mutableState.value
-        return !current.busy && !current.joiningLedgerConflict &&
-            (current.stage == LanSyncGroupPanelStage.EMPTY || current.stage == LanSyncGroupPanelStage.JOINING ||
-            current.stage == LanSyncGroupPanelStage.READY && current.canResumeExternalRecovery)
+        return !current.busy && current.canEnterExternalRecovery
     }
     fun openCloudRecovery(): Unit = synchronized(lifecycle) {
         if (closed || !externalRecoveryAllowed()) return@synchronized

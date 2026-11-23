@@ -766,6 +766,8 @@ class LanSyncGroupJoiningTest {
                     coordinator.open()
                     val panel = withTimeout(15_000) { coordinator.state.first { !it.busy && it.canArchiveRevokedJoin } }
                     assertFalse(panel.canEnterInvitation)
+                    assertFalse(panel.canEnterExternalRecovery)
+                    assertNull(coordinator.fileRecoveryPickerBinding())
                     assertFalse(panel.canRefreshJoinPreparation)
                     val reads = AtomicInteger()
                     coordinator.beginJoinFromFile { reads.incrementAndGet(); error("Revoked request must not read a file") }

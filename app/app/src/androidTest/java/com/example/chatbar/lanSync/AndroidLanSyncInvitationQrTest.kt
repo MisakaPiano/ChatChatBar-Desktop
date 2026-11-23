@@ -7,8 +7,8 @@ import android.os.Build
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -26,25 +26,32 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.chatbar.domain.lanSync.LanSyncGroupCoordinator
 import com.example.chatbar.domain.lanSync.LanSyncGroupEnrollment
+import com.example.chatbar.domain.lanSync.LanSyncGroupInviteClient
 import com.example.chatbar.domain.lanSync.LanSyncGroupPanelStage
 import com.example.chatbar.domain.lanSync.LanSyncNetwork
 import com.example.chatbar.domain.lanSync.LanSyncPeer
 import com.example.chatbar.domain.lanSync.LanSyncPlatform
+import com.example.chatbar.domain.lanSync.LanSyncTls
 import com.example.chatbar.domain.lanSync.LanSyncTlsIdentity
 import com.example.chatbar.domain.lanSync.LanSyncWorkspace
+import com.example.chatbar.domain.syncStore.SyncDeviceEncryptionKey
+import com.example.chatbar.domain.syncStore.SyncStoreId
 import com.example.chatbar.ui.kit.ChatBarTheme
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
@@ -169,11 +176,15 @@ class AndroidLanSyncInvitationQrTest {
             override suspend fun exclusive(work: suspend () -> Unit) = work()
             override suspend fun reload(sessionIds: Set<String>) = Unit
         }
+        val ownHost = LanSyncTls.localAddresses().firstOrNull() ?: error("The isolated emulator needs its own private IPv4")
         val network = object : LanSyncNetwork {
-            override fun addresses() = listOf("10.0.0.17")
+            override fun addresses() = listOf(ownHost, "10.0.0.18").distinct()
+            override fun preferredInvitationAddress(eligible: List<String>) = ownHost
             override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket =
                 error("SYNTHETIC_INVITATION_QR_UNEXPECTED_OUTBOUND_CONNECTION")
-            override fun accepts(address: InetAddress) = address.isLoopbackAddress
+            override fun accepts(address: InetAddress) = address.hostAddress == ownHost || address.isLoopbackAddress
+            override fun discoverGroup(group: SyncStoreId, local: String, fingerprint: String): LanSyncPeer? = null
+            override fun discoverGroupLedger(group: SyncStoreId, local: String, known: Set<String>) = emptyList<LanSyncPeer>()
             override val discoveryEnabled = false
         }
         val founder = LanSyncGroupEnrollment(profile, workspace, platform, LanSyncTlsIdentity.create(),
@@ -198,14 +209,22 @@ class AndroidLanSyncInvitationQrTest {
             val invitation = requireNotNull(coordinator.state.value.invitation).code()
             val panelBodyWidthPx = referenceMatrix(invitation).width * 2 - 1
             val clipboard = requireNotNull(compose.activity.getSystemService(ClipboardManager::class.java))
+            val height = mutableIntStateOf(0)
 
             setContent {
                 val state by coordinator.state.collectAsState()
-                val panelWidth = with(LocalDensity.current) { (panelBodyWidthPx + 2 * 20.dp.roundToPx()).toDp() }
+                val narrowPanelWidth = with(LocalDensity.current) { (panelBodyWidthPx + 2 * 20.dp.roundToPx()).toDp() }
+                val compactHeight = height.intValue
                 ChatBarTheme {
-                    Column(Modifier.width(panelWidth)) {
-                        LanSyncInvitationFiles(coordinator, state)
-                        Box(Modifier.weight(1f)) { LanSyncGroupPanel(state, coordinator, scanInvitation = {}) }
+                    val viewport = if (compactHeight == 0) Modifier.width(narrowPanelWidth).fillMaxSize()
+                    else Modifier.width(360.dp).height(compactHeight.dp)
+                    Box(viewport.testTag("synthetic-group-viewport")) {
+                        LanSyncGroupPanel(state, coordinator, pageControls = {
+                            LanSyncGroupPageControls(coordinator, state, hasCloudRecovery = false, close = {})
+                            if (compactHeight > 0) LanSyncBackgroundControls(
+                                AndroidLanSyncBackgroundState(AndroidLanSyncBackgroundPhase.RUNNING,
+                                    notificationsVisible = false, foregroundProtected = true), {}, {}, {})
+                        }, scanInvitation = {})
                     }
                 }
             }
@@ -230,7 +249,29 @@ class AndroidLanSyncInvitationQrTest {
             }
             compose.onNodeWithText("生成邀请文件").performScrollTo().assertIsEnabled().performClick()
             compose.waitUntil(30_000) { !coordinator.state.value.busy && coordinator.state.value.invitationFileBinding != null }
-            compose.onNodeWithText("保存邀请文件").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithText("保存邀请文件").performScrollTo().assertIsDisplayed().assertIsEnabled()
+            val candidate = LanSyncTlsIdentity.create()
+            val fileOffer = requireNotNull(coordinator.state.value.invitation)
+            assertEquals(ownHost, fileOffer.host)
+            LanSyncGroupInviteClient.exchange(fileOffer, candidate, SyncDeviceEncryptionKey.create(candidate.fingerprint), "合成待批准手机")
+            compose.waitUntil(30_000) { coordinator.state.value.peerConfirmation?.fingerprint == candidate.fingerprint }
+            val confirmation = requireNotNull(coordinator.state.value.peerConfirmation)
+            for (windowHeight in listOf(360, 320, 280)) {
+                compose.runOnIdle { height.intValue = windowHeight }
+                compose.onNodeWithTag("synthetic-group-viewport").assertHeightIsEqualTo(windowHeight.dp)
+                listOf("返回", "保存邀请文件", "生成新邀请文件", "停止设备组同步", "允许设备组通知", "立即检查",
+                    confirmation.name, confirmation.fingerprint).forEach { label ->
+                    compose.onNodeWithText(label, substring = true).performScrollTo().assertIsDisplayed()
+                }
+                val approve = compose.onNodeWithText("确认加入此设备").performScrollTo().assertIsDisplayed().assertIsEnabled()
+                if (windowHeight == 280) approve.performTouchInput { click() }
+            }
+            await {
+                val state = coordinator.state.value
+                !state.busy && state.peerConfirmation == null && state.devices.any { it.id == candidate.fingerprint }
+            }
+            val enrolled = requireNotNull(founder.runtimeAccess()).ledger().current().members[candidate.fingerprint]
+            assertTrue(enrolled?.active == true)
         } finally {
             coordinator.closeAndDrain()
             check(root.toFile().deleteRecursively())

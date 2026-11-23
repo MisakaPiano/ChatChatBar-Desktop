@@ -61,7 +61,7 @@ internal fun LanSyncGroupFileActions(coordinator: LanSyncGroupCoordinator, state
     var confirmed by remember(recoveryState.review?.binding, state.privacyRevision) { mutableStateOf(false) }
     fun clearSecrets() { code = ""; confirmed = false; secretRevision++ }
     val clearCurrentSecrets by rememberUpdatedState(::clearSecrets)
-    val canRecover = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING || state.canResumeExternalRecovery
+    val canRecover = state.canEnterExternalRecovery
     val choosingInput = inputPickerPending || inputReturned
 
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->

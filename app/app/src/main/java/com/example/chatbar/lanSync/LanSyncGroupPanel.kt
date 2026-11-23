@@ -42,7 +42,8 @@ import java.util.Date
 internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGroupPanelActions,
     view: LanSyncGroupNodeView? = null, actionReview: LanSyncGroupActionReview? = null,
     recoveryEntries: List<LanSyncRecoveryEntry> = emptyList(), recoveryView: LanSyncGroupRecoveryView? = null,
-    imageState: LanSyncGroupImageState = LanSyncGroupImageState(), scanInvitation: () -> Unit) {
+    imageState: LanSyncGroupImageState = LanSyncGroupImageState(), pageControls: @Composable () -> Unit = {},
+    scanInvitation: () -> Unit) {
     val interactionBlocked = state.busy || (state.paused && state.stage == LanSyncGroupPanelStage.READY)
     val context = LocalContext.current
     DisposableEffect(actions) {
@@ -70,13 +71,13 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             true
         }
     }
-    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LanSyncGroupViewport(pageControls) {
         CbText("设备组同步", style = ChatBarTheme.typography.title)
         CbText(state.status)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
         state.membershipRecoveryImport?.let { review ->
             GroupMembershipRecoveryImport(review, state.busy, actions)
-            return@Column
+            return@LanSyncGroupViewport
         }
         if (state.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) {
             CbText("同步和成员变更已暂停，本机资料与签名记录均已保留。请由设备组管理员核对这些分支及各自的签发设备。")
@@ -94,7 +95,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
                 if (conflict.branches.size < conflict.totalHeads) CbText("此处显示 ${conflict.branches.size} 个分支，其余签名记录仍保留。")
             }
             GroupMembershipRecovery(state, actions)
-            return@Column
+            return@LanSyncGroupViewport
         }
         imageState.error?.let { CbText(it, color = ChatBarTheme.colors.warning) }
         if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
@@ -221,6 +222,14 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
     }
     imageState.preview?.let { preview -> LanSyncFrozenImageDialog(preview, actions::closeImagePreview) }
 
+}
+
+@Composable
+private fun LanSyncGroupViewport(pageControls: @Composable () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState())) {
+        pageControls()
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+    }
 }
 
 @Composable

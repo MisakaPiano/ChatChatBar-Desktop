@@ -45,7 +45,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             if (legacyAllowed && legacy != null) Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 BootstrapButton("打开旧版双端同步", secondary = true, enabled = !state.busy) { legacySelected = true }
             }
-            if (cloudRecoveryOwner != null && (state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING) || state.canResumeExternalRecovery)) {
+            if (cloudRecoveryOwner != null && state.canEnterExternalRecovery) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
                     BootstrapButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", secondary = true, enabled = !state.busy) { coordinator.openCloudRecovery() }
                 }

@@ -69,46 +69,44 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer); cloudRecoveryOwner?.hide() }
     }
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CbButton("返回", close, variant = ButtonVariant.Secondary)
-            if (legacySelected) CbButton("设备组同步", { legacySelected = false }, variant = ButtonVariant.Secondary)
-            else if (legacyAllowed) CbButton("旧版双端同步", { legacySelected = true }, enabled = !state.busy, variant = ButtonVariant.Secondary)
-        }
-        if (!legacySelected && cloudRecoveryOwner != null &&
-            (state.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING) || state.canResumeExternalRecovery)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
-                CbButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组", coordinator::openCloudRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)
-            }
-        }
-        if (!legacySelected) {
-            LanSyncInvitationFiles(coordinator, state)
-            LanSyncGroupFileActions(coordinator, state)
-            LanSyncMembershipRecoveryFiles(coordinator, state)
-        }
-        if (!legacyAllowed || backgroundState.phase == AndroidLanSyncBackgroundPhase.PAUSED) LanSyncBackgroundControls(owner, backgroundState)
-        Box(Modifier.weight(1f)) {
-            if (legacySelected && legacyAllowed) {
-                val runtime = remember(owner) { owner.runtime }
-                val lifecycle = LocalLifecycleOwner.current.lifecycle
-                DisposableEffect(runtime, lifecycle) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        when (event) {
-                            Lifecycle.Event.ON_START -> runtime.startPhone()
-                            Lifecycle.Event.ON_STOP -> runtime.stop()
-                            else -> Unit
-                        }
-                    }
-                    lifecycle.addObserver(observer)
-                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) runtime.startPhone()
-                    onDispose { lifecycle.removeObserver(observer); runtime.stop() }
+    if (legacySelected && legacyAllowed) {
+        val runtime = remember(owner) { owner.runtime }
+        DisposableEffect(runtime, lifecycle) {
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> runtime.startPhone()
+                    Lifecycle.Event.ON_STOP -> runtime.stop()
+                    else -> Unit
                 }
-                LanSyncScreen(runtime, close)
-            } else LanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState) {
-                scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
             }
+            lifecycle.addObserver(observer)
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) runtime.startPhone()
+            onDispose { lifecycle.removeObserver(observer); runtime.stop() }
+        }
+        Column(Modifier.fillMaxSize()) {
+            Row(Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CbButton("返回", close, variant = ButtonVariant.Secondary)
+                CbButton("设备组同步", { legacySelected = false }, variant = ButtonVariant.Secondary)
+            }
+            if (backgroundState.phase == AndroidLanSyncBackgroundPhase.PAUSED) {
+                LanSyncBackgroundControls(backgroundState, { owner.pauseBackground(); Unit }, owner::resumeBackground,
+                    owner::onForeground)
+            }
+            Box(Modifier.weight(1f)) { LanSyncScreen(runtime, close) }
+        }
+    } else {
+        LanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState,
+            pageControls = {
+                LanSyncGroupPageControls(coordinator, state, hasCloudRecovery = cloudRecoveryOwner != null, close = close,
+                    openLegacy = if (legacyAllowed) ({ legacySelected = true }) else null)
+                if (!legacyAllowed || backgroundState.phase == AndroidLanSyncBackgroundPhase.PAUSED) {
+                    LanSyncBackgroundControls(backgroundState, { owner.pauseBackground(); Unit }, owner::resumeBackground,
+                        owner::onForeground)
+                }
+            }) {
+            scanner.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setPrompt("扫描设备组邀请二维码").setBeepEnabled(false).setOrientationLocked(false))
         }
     }
     LanSyncGroupCloudSettings(cloudSettings, coordinator)
@@ -117,6 +115,24 @@ private fun LanSyncEntry(owner: AndroidLanSync, close: () -> Unit) {
         LanSyncGroupCloudRecovery(recoveryState, state.privacyRevision, { draft, code -> coordinator.prepareCloudRecovery(draft, code); Unit }, recovery::confirm,
             { recovery.lock(); coordinator.open() }, recovery::hide)
     }
+}
+
+@Composable
+internal fun LanSyncGroupPageControls(coordinator: LanSyncGroupCoordinator, state: LanSyncGroupPanelState,
+    hasCloudRecovery: Boolean, close: () -> Unit, openLegacy: (() -> Unit)? = null) {
+    Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CbButton("返回", close, variant = ButtonVariant.Secondary)
+        if (openLegacy != null) CbButton("旧版双端同步", openLegacy, enabled = !state.busy, variant = ButtonVariant.Secondary)
+    }
+    if (hasCloudRecovery && state.canEnterExternalRecovery) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
+            CbButton(if (state.stage == LanSyncGroupPanelStage.READY) "接续网盘恢复与连接设置" else "从网盘恢复设备组",
+                coordinator::openCloudRecovery, enabled = !state.busy, variant = ButtonVariant.Secondary)
+        }
+    }
+    LanSyncInvitationFiles(coordinator, state)
+    LanSyncGroupFileActions(coordinator, state)
+    LanSyncMembershipRecoveryFiles(coordinator, state)
 }
 
 @Composable
@@ -218,10 +234,11 @@ internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state:
 }
 
 @Composable
-private fun LanSyncBackgroundControls(owner: AndroidLanSync, state: AndroidLanSyncBackgroundState) {
+internal fun LanSyncBackgroundControls(state: AndroidLanSyncBackgroundState, stop: () -> Unit,
+    resume: () -> Unit, onNotificationPermissionResult: () -> Unit) {
     val context = LocalContext.current
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        owner.onForeground()
+        onNotificationPermissionResult()
     }
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -239,10 +256,10 @@ private fun LanSyncBackgroundControls(owner: AndroidLanSync, state: AndroidLanSy
             CbText("实际传输与待确认项目见下方状态；系统休眠、强停或终止进程后可能需要回到应用恢复。", color = ChatBarTheme.colors.mutedForeground)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
         if (state.foregroundProtected || state.phase == AndroidLanSyncBackgroundPhase.STARTING)
-            CbButton("停止设备组同步", { owner.pauseBackground(); Unit },
+            CbButton("停止设备组同步", stop,
                 enabled = state.phase != AndroidLanSyncBackgroundPhase.STOPPING, variant = ButtonVariant.Secondary)
         else if (state.phase !in setOf(AndroidLanSyncBackgroundPhase.STOPPING, AndroidLanSyncBackgroundPhase.RECOVERY_PENDING))
-            CbButton("恢复设备组后台运行", owner::resumeBackground, variant = ButtonVariant.Secondary)
+            CbButton("恢复设备组后台运行", resume, variant = ButtonVariant.Secondary)
         if (!state.notificationsVisible) {
             CbText("通知权限或通知频道已关闭，通知栏可能不显示运行状态和停止按钮；仍可在此停止同步。", color = ChatBarTheme.colors.warning)
             CbButton("允许设备组通知", {

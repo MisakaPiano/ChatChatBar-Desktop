@@ -44,7 +44,7 @@ internal fun DesktopLanSyncFileActions(coordinator: LanSyncGroupCoordinator, sta
     fun clearSecrets() { code = ""; confirmed = false; secretRevision++ }
     val clearCurrentSecrets by rememberUpdatedState(::clearSecrets)
     val currentState by rememberUpdatedState(state)
-    val canRecover = state.stage == LanSyncGroupPanelStage.EMPTY || state.stage == LanSyncGroupPanelStage.JOINING || state.canResumeExternalRecovery
+    val canRecover = state.canEnterExternalRecovery
     val type = remember { DesktopFileType("设备组加密同步文件", listOf("cbgroup")) }
     DisposableEffect(coordinator) {
         onDispose { clearCurrentSecrets(); selectedFile = null; recovery?.hide(); exporter?.hide() }
@@ -106,7 +106,7 @@ internal fun DesktopLanSyncFileActions(coordinator: LanSyncGroupCoordinator, sta
                         try {
                             val path = withContext(Dispatchers.IO) { picker.pickOpenFile(type) }
                             clearCurrentSecrets()
-                            if ((currentState.stage in setOf(LanSyncGroupPanelStage.EMPTY, LanSyncGroupPanelStage.JOINING) || currentState.canResumeExternalRecovery)) {
+                            if (currentState.canEnterExternalRecovery) {
                                 if (path != null) selectedFile = path
                                 pickerNotice = if (path == null) "未选择文件" else null
                                 coordinator.openFileRecovery()

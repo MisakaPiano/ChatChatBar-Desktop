@@ -13,6 +13,58 @@ on:
 permissions:
   contents: read
 jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build the isolated app and Activity tests
+        working-directory: app
+        run: >-
+          bash ./gradlew :app:assembleLanPreview :app:assembleLanPreviewAndroidTest
+          -PlanSyncDeviceTests=true -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - name: Enable acceleration on the cloud runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise compact group controls and file selection lifecycle
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb shell wm size 1080x1920
+            adb shell wm density 320
+            adb shell wm size
+            adb shell wm density
+            adb install app/app/build/outputs/apk/lanPreview/app-lanPreview.apk
+            adb install app/app/build/outputs/apk/androidTest/lanPreview/app-lanPreview-androidTest.apk
+            adb shell am instrument -w -e lanSyncInvitationQrFixture true -e class com.example.chatbar.lanSync.AndroidLanSyncInvitationQrTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r08-android-viewport.txt"
+            cat "$RUNNER_TEMP/v7-r08-android-viewport.txt"
+            adb shell am instrument -w -e lanSyncInvitationFileRestoreFixture true -e class com.example.chatbar.lanSync.AndroidLanSyncInvitationFileRestorationTest com.example.chatbar.lansyncnext.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/v7-r08-android-files.txt"
+            cat "$RUNNER_TEMP/v7-r08-android-files.txt"
+            grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r08-android-viewport.txt"
+            grep -F 'OK (2 tests)' "$RUNNER_TEMP/v7-r08-android-files.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r08-android-viewport-and-files
+          path: ${{ runner.temp }}/v7-r08-android-*.txt
   shared:
     runs-on: ubuntu-latest
     timeout-minutes: 30
