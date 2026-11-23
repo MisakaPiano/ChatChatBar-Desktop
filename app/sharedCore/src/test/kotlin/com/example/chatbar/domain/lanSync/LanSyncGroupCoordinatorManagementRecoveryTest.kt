@@ -120,7 +120,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         actualAdministrators(receiveBeforeSecondApproval = true)
 
     @Test fun signedMembershipRecoveryRetainsBothBranchesAndRequiresExplicitImportAfterColdOpen() =
-        actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true)
+        actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, nativeReceiptBeforeFork = true)
 
     @Test fun retainedDailyAuthorContinuesAfterRecoveryWithoutExportingDiscardedContentOrItsReference() =
         actualAdministrators(receiveBeforeSecondApproval = false, recoverFork = true, continueAuthor = true)
@@ -333,7 +333,8 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         coordinator.closeInvitation()
     }
 
-    private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false, continueAuthor: Boolean = false) = runBlocking {
+    private fun actualAdministrators(receiveBeforeSecondApproval: Boolean, recoverFork: Boolean = false,
+        continueAuthor: Boolean = false, nativeReceiptBeforeFork: Boolean = false) = runBlocking {
         val root = Files.createTempDirectory("synthetic-membership-administrators-").toRealPath()
         try {
             LanSyncGroupAdministrationTest.Fixture(root).use { founder ->
@@ -408,6 +409,33 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         } finally { caller.closeAndDrain(); serving.closeAndDrain() }
                         approved
                     }
+                    val retainedReceipt = if (nativeReceiptBeforeFork) {
+                        writeChat(founder.data, "prepare-receipt", "retained", "成员分叉前已经应用的消息")
+                        val sent = a.node.commit(a.node.inspect().review(setOf("conversation/prepare-receipt")))
+                        a.node.upload(sent.entry.request.operation, a.replica, a.localTarget)
+                        val serving = transport(a); val caller = transport(b)
+                        val route = remote(caller, a, serving.start())
+                        b.reader.routes("receipttest", listOf(LanSyncGroupReplicaReader.Route("receipt-test-tls", route)))
+                        try {
+                            receiveFrom(b, route)
+                            val target = b.node.inspect()
+                            val native = requireNotNull(target.plan)
+                            val expected = target.nativeState.completedSequence + 1
+                            val receipt = joined.root.resolve("joining/node/native/receipt-${expected.toString().padStart(19, '0')}.protected")
+                            joined.observe = { point -> if (point == "NATIVE_DATA_APPLIED") throw IOException("SYNTHETIC_MISSING_BEFORE_FORK_RECEIPT") }
+                            val fault = assertFailsWith<IOException> { b.node.apply(native) }
+                            assertEquals("SYNTHETIC_MISSING_BEFORE_FORK_RECEIPT", fault.message)
+                            assertTrue(joined.workspace.verifiedApplied(native.plan.transaction))
+                            assertFalse(Files.exists(receipt))
+                            receipt
+                        } finally {
+                            joined.observe = {}
+                            b.reader.removeRoutes("receipttest")
+                            caller.closeAndDrain(); serving.closeAndDrain()
+                        }
+                    } else null
+                    val previouslyApplied = joined.data.resolve("entities/chat_messages/prepare-receipt_retained.json")
+                    val appliedBytes = retainedReceipt?.let { Files.readAllBytes(previouslyApplied) }
 
                     val manager = b.managementRecovery()
                     val vault = b.encryptedManagementBackup()
@@ -432,7 +460,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                     val secondaryPort = secondary.start()
                     if (receiveBeforeSecondApproval) {
                         receiveFrom(b, remote(secondary, a, initialPort))
-                        b.node.inspectLocal()
+                        if (nativeReceiptBeforeFork) b.node.reconcileForPrefetch() else b.node.inspectLocal()
                         assertEquals(cRow.reference(), b.ledger().current().reference())
                     }
                     originalTransport.closeAndDrain()
@@ -447,7 +475,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         val result = manager.addMember(dPreview.acknowledge(dPreview.request.approvalBinding)).ledger
                         manager.publish(b.replica, b.localTarget)
                         receiveFrom(b, b.replica)
-                        b.node.inspectLocal()
+                        if (nativeReceiptBeforeFork) b.node.reconcileForPrefetch() else b.node.inspectLocal()
                         assertEquals(result.reference(), b.ledger().current().reference())
                         result
                     } finally { manager.close() }
@@ -520,7 +548,13 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             assertFalse(cold.state.value.managementUnlocked)
                             if (recoverFork) {
                                 cold.pauseAndDrain()
-                                issueRecovery(cold, joined, b, parent, cRow, dRow, recipientC.fingerprint, recipientDKey)
+                                retainedReceipt?.let { assertFalse(Files.exists(it)) }
+                                issueRecovery(cold, joined, b, parent, cRow, dRow, recipientC.fingerprint, recipientDKey).also {
+                                    retainedReceipt?.let { receipt ->
+                                        assertTrue(Files.isRegularFile(receipt))
+                                        assertContentEquals(requireNotNull(appliedBytes), Files.readAllBytes(previouslyApplied))
+                                    }
+                                }
                             } else null
                         } finally { cold.closeAndDrain() }
                         if (signed == null) {

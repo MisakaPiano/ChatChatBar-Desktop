@@ -48,6 +48,8 @@ jobs:
             --tests '*LanSyncGroupJoiningTest.anApprovedRecoveredInvitationFetchesTheMissingHistoricalKeyFromAnotherDeviceAfterColdOpen' \
             --tests '*LanSyncGroupJoiningTest.approvedColdJoinFetchesItsMissingHistoricalKeyFromAnAuthorizedMemberOverOrdinaryTls' \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.twoOfflineManagersRevokeDifferentMembersAndBothRevocationsSurviveExplicitRecovery' \
+            --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.signedMembershipRecoveryRetainsBothBranchesAndRequiresExplicitImportAfterColdOpen' \
+            --tests '*SyncLedgerRecoveryFileCodecTest.approvedPackageAndLocallyPinnedThirdBranchBothSurviveBeforeAnotherExplicitRecovery' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
