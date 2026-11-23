@@ -2,6 +2,8 @@ name: V7 invitation fifth repair checks
 on:
   push:
     branches: [codex/v7-invitation-r04-repair-20261123]
+    paths:
+      - app/app/src/androidTest/java/com/example/chatbar/ui/chat/ChatSyncDeletedSessionNativeTest.kt
 permissions:
   contents: read
 jobs:

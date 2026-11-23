@@ -11,6 +11,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -29,7 +30,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
             LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint, 15_000) { _, port -> Socket("127.0.0.1", port) }
     }
     private suspend fun await(condition: () -> Boolean) = withTimeout(25_000) { while (!condition()) delay(10) }
-    private class Joined(val f: LanSyncGroupAdministrationTest.Fixture, network: LanSyncNetwork) {
+    private class Joined(val f: LanSyncGroupAdministrationTest.Fixture, private val network: LanSyncNetwork) {
         val root = Files.createDirectory(f.root.resolve("joined-profile"))
         val data = Files.createDirectory(f.root.resolve("joined-data"))
         val workspace = LanSyncWorkspace(data, Files.createDirectory(f.root.resolve("joined-workspace")), { Path.of(it) })
@@ -43,8 +44,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         private val founders = mutableListOf<LanSyncGroupEnrollment>()
         private fun founderAtJoinedProfile() = LanSyncGroupEnrollment(root, workspace, platform, f.joiningIdentity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }).also(founders::add)
-        val coordinator = LanSyncGroupCoordinator({ Files.isRegularFile(root.resolve("joining/profile.protected")) },
+        fun newCoordinator() = LanSyncGroupCoordinator({ Files.isRegularFile(root.resolve("joining/profile.protected")) },
             ::founderAtJoinedProfile, { joining }, network, "synthetic surviving phone")
+        val coordinator = newCoordinator()
         lateinit var node: LanSyncGroupNode
         lateinit var trust: SyncGroupTrust
         suspend fun join() {
@@ -81,6 +83,145 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         LanSyncGroupInviteClient.exchange(offer, identity, key, "synthetic newly approved tablet", {
             LanSyncTls.connect(identity, offer.host, offer.port, offer.inviter, 15_000) { _, port -> Socket(InetAddress.getLoopbackAddress(), port) }
         })
+
+    @Test fun independentManagersRetainBothSignedMembershipBranchesAndCannotResumeOrdinaryWorkAfterColdOpen() =
+        actualAdministrators(receiveBeforeSecondApproval = false)
+
+    @Test fun recoveredManagerThatSeesFirstApprovalSignsTheNextMemberFromItsNewParent() =
+        actualAdministrators(receiveBeforeSecondApproval = true)
+
+    private fun actualAdministrators(receiveBeforeSecondApproval: Boolean) = runBlocking {
+        val root = Files.createTempDirectory("synthetic-membership-administrators-").toRealPath()
+        try {
+            LanSyncGroupAdministrationTest.Fixture(root).use { founder ->
+                founder.seed()
+                val joined = Joined(founder, network)
+                val endpoints = mutableListOf<LanSyncGroupAppTransport>()
+                try {
+                    joined.join()
+                    val a = requireNotNull(founder.service.runtimeAccess())
+                    val b = requireNotNull(joined.joining.runtimeAccess())
+                    val parent = a.ledger().current()
+                    assertEquals(parent.reference(), b.ledger().current().reference())
+                    val originals = mapOf(founder.data to "founder-original", joined.data to "other-manager-original")
+                        .map { (data, id) ->
+                            val path = Files.createDirectories(data.resolve("entities/character_cards")).resolve("$id.json")
+                            LanSyncJsonFiles.write(path, CharacterCard.serializer(),
+                                CharacterCard(id, "synthetic private original", createdAt = 1, updatedAt = 1))
+                            path to Files.readAllBytes(path)
+                        }.toMap()
+                    fun transport(runtime: LanSyncGroupRuntimeAccess) =
+                        LanSyncGroupAppTransport(runtime, network) { _, _ -> }.also(endpoints::add)
+                    suspend fun proveThrough(transport: LanSyncGroupAppTransport, invitation: LanSyncGroupInvitation,
+                        identity: LanSyncTlsIdentity): LanSyncGroupInvitedPeer {
+                        val recognized = CompletableDeferred<LanSyncGroupInvitedPeer>()
+                        val offer = transport.invitation(invitation) { recognized.complete(it) }
+                        prove(offer, identity, SyncDeviceEncryptionKey.create(identity.fingerprint))
+                        val peer = withTimeout(15_000) { recognized.await() }
+                        assertEquals(identity.fingerprint, peer.device)
+                        return peer
+                    }
+                    suspend fun receiveFrom(runtime: LanSyncGroupRuntimeAccess, from: CiphertextStore) {
+                        var cursor: CommitCursor? = null
+                        do { cursor = runtime.node.discover(from, cursor).nextCursor } while (cursor != null)
+                    }
+                    fun remote(caller: LanSyncGroupAppTransport, host: LanSyncGroupRuntimeAccess, port: Int) =
+                        caller.remote(LanSyncPeer(host.device, "synthetic previously approved member", "10.0.0.1", port))
+
+                    val manager = b.managementRecovery()
+                    val vault = b.encryptedManagementBackup()
+                    suspend fun recoverManager(checkpoint: SyncVersionRef) =
+                        manager.recover(founder.code, vault.bytes(), b.reader, LanSyncManagementRecoveryAdmission {},
+                            b.trust.copy(checkpoint = checkpoint))
+                    if (!receiveBeforeSecondApproval) recoverManager(parent.reference())
+                    val recipientC = LanSyncTlsIdentity.create()
+                    val recipientD = LanSyncTlsIdentity.create()
+                    val originalTransport = transport(a)
+                    val initialPort = originalTransport.start()
+                    val initialInvite = founder.service.invitation(initialPort)
+                    val c = proveThrough(originalTransport, initialInvite, recipientC)
+                    val cPreview = founder.service.prepareMember(c, initialInvite)
+                    val cRow = founder.service.addMember(founder.service.resume(founder.code),
+                        cPreview.acknowledge(cPreview.request.approvalBinding)).ledger
+                    assertEquals(parent.reference(), cRow.parent)
+                    assertTrue(cRow.members.getValue(recipientC.fingerprint).active)
+
+                    val secondary = transport(b)
+                    val secondaryPort = secondary.start()
+                    if (receiveBeforeSecondApproval) {
+                        receiveFrom(b, remote(secondary, a, initialPort))
+                        b.node.inspectLocal()
+                        assertEquals(cRow.reference(), b.ledger().current().reference())
+                    }
+                    originalTransport.closeAndDrain()
+
+                    val dRow = try {
+                        val known = b.ledger().current().reference()
+                        assertEquals(if (receiveBeforeSecondApproval) cRow.reference() else parent.reference(), known)
+                        if (receiveBeforeSecondApproval) recoverManager(known)
+                        val secondInvite = b.invitation(secondaryPort)
+                        val d = proveThrough(secondary, secondInvite, recipientD)
+                        val dPreview = manager.prepareMember(d, secondInvite)
+                        val result = manager.addMember(dPreview.acknowledge(dPreview.request.approvalBinding)).ledger
+                        manager.publish(b.replica, b.localTarget)
+                        receiveFrom(b, b.replica)
+                        b.node.inspectLocal()
+                        assertEquals(result.reference(), b.ledger().current().reference())
+                        result
+                    } finally { manager.close() }
+                    assertTrue(dRow.members.getValue(recipientD.fingerprint).active)
+
+                    val backOnline = transport(a)
+                    val reopenedPort = backOnline.start()
+                    receiveFrom(a, remote(backOnline, b, secondaryPort))
+                    if (receiveBeforeSecondApproval) {
+                        assertEquals(cRow.reference(), dRow.parent)
+                        assertTrue(dRow.members.getValue(recipientC.fingerprint).active)
+                        a.node.inspectLocal()
+                        assertEquals(dRow.reference(), a.ledger().current().reference())
+                        assertNull(a.verifiedLedgerFork())
+                    } else {
+                        assertEquals(parent.reference(), dRow.parent)
+                        assertNotEquals(cRow.reference(), dRow.reference())
+                        assertFalse(recipientC.fingerprint in dRow.members)
+                        assertFalse(recipientD.fingerprint in cRow.members)
+                        // Exchange both candidates before asking either participant to reconcile.
+                        receiveFrom(b, remote(secondary, a, reopenedPort))
+                        val live = joined.coordinator
+                        live.startIfConfigured()
+                        await { !live.state.value.busy && live.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
+                        val warm = assertNotNull(live.state.value.membershipConflict)
+                        assertEquals(parent.sequence, warm.commonSequence)
+                        assertEquals(setOf(recipientC.fingerprint, recipientD.fingerprint), warm.branches.flatMap { it.added }.toSet())
+                        assertFalse(live.state.value.managementCanInvite)
+                        assertNull(live.state.value.invitation)
+                        assertNull(live.actionsReview.value)
+                        val blocked = runCatching { a.node.inspectLocal() }
+                        if (blocked.isSuccess) assertEquals(LanSyncGroupNodeStage.TRUST_BLOCKED, blocked.getOrThrow().stage)
+                        else assertEquals("SYNC_GROUP_LEDGER_FORK_OR_MISSING", blocked.exceptionOrNull()?.message)
+                        val originalFork = assertNotNull(founder.custody().verifiedFork())
+                        assertEquals(setOf(cRow, dRow), originalFork.branches.toSet())
+                        assertEquals(cRow.reference(), founder.custody().trust().checkpoint)
+                        assertFails { remote(backOnline, b, secondaryPort).listCommits(null) }
+
+                        endpoints.forEach { it.closeAndDrain() }
+                        live.closeAndDrain()
+                        val cold = joined.newCoordinator()
+                        try {
+                            cold.startIfConfigured()
+                            await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
+                            assertEquals(warm, cold.state.value.membershipConflict)
+                            cold.recoverManagement(founder.code)
+                            await { cold.state.value.error?.contains("SYNC_GROUP_MEMBERSHIP_CONFLICT") == true }
+                            assertFalse(cold.state.value.managementUnlocked)
+                        } finally { cold.closeAndDrain() }
+                        assertEquals(setOf(cRow, dRow), requireNotNull(b.verifiedLedgerFork()).branches.toSet())
+                    }
+                    originals.forEach { (file, raw) -> assertContentEquals(raw, Files.readAllBytes(file)) }
+                } finally { endpoints.forEach { it.closeAndDrain() }; joined.close() }
+            }
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
 
     @Test fun joinedCoordinatorRecoversOriginalManagementApprovesRealPeerAndPageLockCannotReplayOldApproval() = runBlocking {
         val root = Files.createTempDirectory("synthetic-coordinator-management-recovery-").toRealPath()

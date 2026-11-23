@@ -1,9 +1,21 @@
 package com.example.chatbar.domain.lanSync
 
-enum class LanSyncGroupPanelStage { EMPTY, NEEDS_RECOVERY_SAVE, PREPARED_LOCKED, JOINING, READY }
+enum class LanSyncGroupPanelStage { EMPTY, NEEDS_RECOVERY_SAVE, PREPARED_LOCKED, JOINING, READY, MEMBERSHIP_CONFLICT }
+data class LanSyncGroupLedgerConflictBranch(val id: String, val added: List<String>, val revoked: List<String>)
+data class LanSyncGroupLedgerConflict(val commonSequence: Long, val totalHeads: Int, val branches: List<LanSyncGroupLedgerConflictBranch>)
 data class LanSyncGroupRouteStatus(val text: String, val lastSuccessAt: Long? = null)
+enum class LanSyncGroupNearbyStage(val label: String) {
+    UNOBSERVED("尚未核对附近连接"),
+    NOT_DISCOVERED("本轮未发现同网连接"),
+    DISCOVERY_FAILED("本轮未能查找此设备"),
+    INDEX_FAILED("本轮未能读取加密索引"),
+    INDEX_READ("已连接并读取加密索引"),
+    READ_INCOMPLETE("已连接，部分加密内容未能读取")
+}
+data class LanSyncGroupDeviceNearby(val stage: LanSyncGroupNearbyStage = LanSyncGroupNearbyStage.UNOBSERVED,
+    val lastSuccessAt: Long? = null)
 data class LanSyncGroupDeviceRow(val id: String, val name: String, val status: String, val thisDevice: Boolean,
-    val managementIdentity: Boolean, val canRevoke: Boolean)
+    val managementIdentity: Boolean, val canRevoke: Boolean, val nearby: LanSyncGroupDeviceNearby? = null)
 data class LanSyncGroupPeerConfirmation(val binding: String, val name: String, val fingerprint: String)
 data class LanSyncGroupRevocationConfirmation(val binding: String, val name: String, val fingerprint: String)
 
@@ -25,7 +37,8 @@ data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGro
     val canRefreshJoinPreparation: Boolean = false, val invitationAddresses: List<String> = emptyList(),
     val canShelveJoin: Boolean = false, val shelvedJoins: List<LanSyncShelvedJoin> = emptyList(),
     val canArchiveRevokedJoin: Boolean = false, val invitationFileOnly: Boolean = false,
-    val invitationFileBinding: String? = null, val joiningLedgerConflict: Boolean = false) {
+    val invitationFileBinding: String? = null, val joiningLedgerConflict: Boolean = false,
+    val nearbyNotice: String? = null, val membershipConflict: LanSyncGroupLedgerConflict? = null) {
     override fun toString() = "LanSyncGroupPanelState(stage=$stage, busy=$busy, secrets=REDACTED)"
 }
 

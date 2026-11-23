@@ -65,6 +65,9 @@ class SyncGroupCustody(private val root: Path, private val group: SyncStoreId,
     }
     fun trust(): SyncGroupTrust = guarded { read().trust }
 
+    /** Read preserved conflict evidence without advancing the protected checkpoint. */
+    internal fun verifiedFork(): SyncVerifiedLedgerFork? = guarded { build(read()).verifiedFork() }
+
     /** Signed waiting/rejected/fork evidence persists before trying to select a new current head. */
     fun update(records: Collection<SyncDeviceLedgerRecord>): SyncDeviceLedger = guarded {
         val state = read(); val ledger = build(state)

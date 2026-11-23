@@ -16,6 +16,12 @@ import kotlinx.serialization.Serializable
 }
 @Serializable data class SyncGroupTrust(val group: SyncStoreId, val genesis: SyncVersionRef, val ownerCertificate: String,
     val checkpoint: SyncVersionRef = genesis)
+
+internal data class SyncVerifiedLedgerFork(
+    val common: SyncDeviceLedgerRecord,
+    val branches: List<SyncDeviceLedgerRecord>,
+    val headCount: Int,
+)
 @Serializable data class SyncDeviceLedgerRecord(val group: SyncStoreId, val id: SyncStoreId, val parent: SyncVersionRef?,
     val sequence: Long, val epoch: SyncStoreId, val keyCommitment: String, val coveredTypes: Set<String>, val members: Map<String, SyncGroupMember>,
     val acceptedHeads: Set<SyncVersionRef>, val signature: String) {
@@ -125,9 +131,26 @@ class SyncDeviceLedger private constructor(private val trust: SyncGroupTrust, pr
         }
         return false
     }
-    @Synchronized fun current(): SyncDeviceLedgerRecord {
+    private fun admittedHeads(): List<SyncStoreId> {
         val parents = admitted.mapNotNull { records.getValue(it).parent?.id }.toSet()
-        val heads = admitted.filterNot(parents::contains)
+        return admitted.filterNot(parents::contains)
+    }
+
+    /** Only fully admitted, root-signed records participate in this diagnostic view. */
+    @Synchronized internal fun verifiedFork(): SyncVerifiedLedgerFork? {
+        val heads = admittedHeads()
+        if (heads.size < 2) return null
+        val children = admitted.map(records::getValue).groupBy { it.parent }
+        var common = requireNotNull(record(trust.genesis)) { "SYNC_GROUP_LEDGER_MISSING" }
+        while (true) {
+            val next = children[common.reference()].orEmpty()
+            if (next.size > 1) return SyncVerifiedLedgerFork(common, next.sortedBy { it.id.value }, heads.size)
+            common = next.single()
+        }
+    }
+
+    @Synchronized fun current(): SyncDeviceLedgerRecord {
+        val heads = admittedHeads()
         require(heads.size == 1) { "SYNC_GROUP_LEDGER_FORK_OR_MISSING" }
         val head = records.getValue(heads.single())
         var cursor: SyncDeviceLedgerRecord? = head

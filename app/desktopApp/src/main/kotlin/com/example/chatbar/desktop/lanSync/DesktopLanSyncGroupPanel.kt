@@ -41,6 +41,23 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         DesktopDataSectionHeading("设备组同步")
         StatusText(state.status)
         state.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        if (state.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) {
+            StatusText("同步和成员变更已暂停，本机资料与签名记录均已保留。请由设备组管理员核对这些分支及各自的签发设备。")
+            state.membershipConflict?.let { conflict ->
+                StatusText("共同账本记录为第 ${conflict.commonSequence} 条。已核实 ${conflict.totalHeads} 个分支均由原设备组管理身份签名。")
+                SelectionContainer {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        conflict.branches.forEach { branch ->
+                            StatusText("签名分支 ${branch.id}")
+                            branch.added.forEach { StatusText("批准设备 ${it}") }
+                            branch.revoked.forEach { StatusText("撤销设备 ${it}") }
+                        }
+                    }
+                }
+                if (conflict.branches.size < conflict.totalHeads) StatusText("此处显示 ${conflict.branches.size} 个分支，其余签名记录仍保留。")
+            }
+            return@Column
+        }
         imageState.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (copyFailed) StatusText("未能复制，请保持此窗口打开后重试。", DesktopBootstrapColors.warning)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
@@ -104,6 +121,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
                 StatusText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             groupRoute("本机", state.local, "最近保存"); groupRoute("附近设备", state.nearby, "最近连接"); groupRoute("网盘", state.cloud, "最近上传")
+            state.nearbyNotice?.let { StatusText(it) }
             ActionRow {
                 BootstrapButton("立即检查", secondary = true, enabled = !interactionBlocked) { actions.retry() }
                 BootstrapButton("网盘设置", secondary = true, enabled = !interactionBlocked) { actions.openCloudSettings() }
@@ -144,12 +162,16 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 StatusText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
                 BootstrapButton("接续已确认的管理操作", secondary = true, enabled = !interactionBlocked) { actions.resumeManagementOperation() }
             }
-            state.devices.forEach { device ->
+            state.devices.forEach { device -> key(device.id) {
                 StatusText(device.name + if (device.thisDevice) " · 本机" else if (device.managementIdentity) " · 恢复管理身份" else "")
                 StatusText("设备指纹 ${device.id}")
                 StatusText(device.status)
+                device.nearby?.let { nearby ->
+                    StatusText(nearby.stage.label)
+                    nearby.lastSuccessAt?.let { StatusText("最近连接：${DateFormat.getDateTimeInstance().format(Date(it))}") }
+                }
                 if (device.canRevoke) BootstrapButton("撤销此设备", secondary = true, enabled = !interactionBlocked && state.managementUnlocked) { actions.prepareRevocation(device.id) }
-            }
+            } }
         }
         DesktopGroupFrozenReviewBrowser(view, interactionBlocked, actions)
         DesktopLanSyncGroupResolutionHistory(view, interactionBlocked, actions)
@@ -157,7 +179,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
         state.peerConfirmation?.let { peer ->
-            StatusText("允许 ${peer.name} 加入设备组？")
+            StatusText(if (state.invitationApprovalInProgress) "正在批准 ${peer.name}" else "待批准 · 允许 ${peer.name} 加入设备组？")
             StatusText("设备身份：${peer.fingerprint}")
             BootstrapButton("确认加入此设备", enabled = !interactionBlocked && state.managementUnlocked) { actions.acceptPeer(peer.binding) }
         }

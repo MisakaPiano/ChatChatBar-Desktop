@@ -74,6 +74,23 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         CbText("设备组同步", style = ChatBarTheme.typography.title)
         CbText(state.status)
         state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+        if (state.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) {
+            CbText("同步和成员变更已暂停，本机资料与签名记录均已保留。请由设备组管理员核对这些分支及各自的签发设备。")
+            state.membershipConflict?.let { conflict ->
+                CbText("共同账本记录为第 ${conflict.commonSequence} 条。已核实 ${conflict.totalHeads} 个分支均由原设备组管理身份签名。")
+                SelectionContainer {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        conflict.branches.forEach { branch ->
+                            CbText("签名分支 ${branch.id}")
+                            branch.added.forEach { CbText("批准设备 ${it}") }
+                            branch.revoked.forEach { CbText("撤销设备 ${it}") }
+                        }
+                    }
+                }
+                if (conflict.branches.size < conflict.totalHeads) CbText("此处显示 ${conflict.branches.size} 个分支，其余签名记录仍保留。")
+            }
+            return@Column
+        }
         imageState.error?.let { CbText(it, color = ChatBarTheme.colors.warning) }
         if (copyFailed) CbText("未能复制，请重试。", color = ChatBarTheme.colors.destructive)
         if (state.stage == LanSyncGroupPanelStage.EMPTY) {
@@ -144,6 +161,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             if (!state.localManagementAvailable && !state.managementRecoveryAvailable && !state.managementUnlocked)
                 CbText("此设备可日常同步；管理恢复还需要对应的加密管理资料。")
             GroupRoute("本机", state.local, "最近保存"); GroupRoute("附近设备", state.nearby, "最近连接"); GroupRoute("网盘", state.cloud, "最近上传")
+            state.nearbyNotice?.let { CbText(it) }
             CbButton("立即检查", actions::retry, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbButton("网盘设置", actions::openCloudSettings, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             CbButton("邀请设备", { actions.createInvitation() }, enabled = !interactionBlocked && state.managementUnlocked && state.managementCanInvite)
@@ -154,13 +172,17 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
                 CbText("仅接续先前已确认的加入或撤销，不会重新决定设备成员。")
                 CbButton("接续已确认的管理操作", actions::resumeManagementOperation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
             }
-            state.devices.forEach { device ->
+            state.devices.forEach { device -> key(device.id) {
                 CbText(device.name + if (device.thisDevice) " · 本机" else if (device.managementIdentity) " · 恢复管理身份" else "")
                 CbText("设备指纹 ${device.id}")
                 CbText(device.status)
+                device.nearby?.let { nearby ->
+                    CbText(nearby.stage.label)
+                    nearby.lastSuccessAt?.let { CbText("最近连接：${DateFormat.getDateTimeInstance().format(Date(it))}") }
+                }
                 if (device.canRevoke) CbButton("撤销此设备", { actions.prepareRevocation(device.id) },
                     enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Destructive)
-            }
+            } }
         }
         GroupFrozenReviewBrowser(view, interactionBlocked, actions)
         LanSyncGroupResolutionHistory(view, interactionBlocked, actions)
@@ -182,7 +204,8 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             }
         }
         state.peerConfirmation?.let { peer ->
-            CbText("允许 ${peer.name} 加入设备组？"); CbText("设备身份：${peer.fingerprint}")
+            CbText(if (state.invitationApprovalInProgress) "正在批准 ${peer.name}" else "待批准 · 允许 ${peer.name} 加入设备组？")
+            CbText("设备身份：${peer.fingerprint}")
             CbButton("确认加入此设备", { actions.acceptPeer(peer.binding) }, enabled = !interactionBlocked && state.managementUnlocked)
         }
         state.revocation?.let { review ->

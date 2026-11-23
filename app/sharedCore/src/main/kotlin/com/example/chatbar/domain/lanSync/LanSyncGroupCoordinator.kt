@@ -217,6 +217,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private val nearbyAdmission = Mutex()
     private var nearbyReady = false
     private var nearbyRestartRequested = false
+    // Guarded by lifecycle. An older Reader snapshot can still report a failure after replacement.
+    private class NearbyScan {
+        val routePrefix = "nearby:${UUID.randomUUID()}:"
+        val outcomes = linkedMapOf<String, LanSyncGroupDeviceNearby>()
+        val readFailures = mutableSetOf<String>()
+        var lastSuccessAt: Long? = null
+        var published = false
+    }
+    private var nearbyScan: NearbyScan? = null
     private var lastSourceScan = 0L
     private var metadataStamp: String? = null
     private var nearbyStamp: String? = null
@@ -306,6 +315,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "本机会话有暂无法处理的图片。可以保留原图，并用兼容副本替换附件。其他会话可以同步。"
             LanSyncMissingImage.CODE -> LanSyncGroupDisplay.missingLocalImageNotice(code)
             "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" -> joiningLedgerConflictText
+            "SYNC_GROUP_MEMBERSHIP_CONFLICT" -> "成员变更冲突。签名分支和本机资料已保留。"
+            "SYNC_GROUP_NATIVE_RELOAD_PENDING" -> "同步资料已保存，界面会在后续检查时重新加载。"
             "SYNC_ORPHAN_SESSION" -> "发现找不到原会话的本机消息，原资料已保留。请恢复对应会话后重新检查同步。"
             "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机正在生成或处理资料。完成后将继续检查同步。"
             else -> null
@@ -316,9 +327,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val resume = if (canResumeSetup) "设置进度已保留，可以用之前保存的恢复码继续原设备组。" else ""
             current.copy(error = "$stage：${explanation?.let { "$it$resume（$code）" } ?: code}")
         }
-        if (automaticLocalCheck && code in localMaintenanceCodes) {
+        if (code == "SYNC_GROUP_NATIVE_RELOAD_PENDING" || automaticLocalCheck && code in localMaintenanceCodes) {
             automaticLocalBusyNotice = "$stage：$explanation（$code）"
         }
+        if (code == "SYNC_GROUP_NATIVE_RELOAD_PENDING" && !automaticLocalCheck) requestLocalCheck()
     }
     private fun action(label: String, allowWhilePaused: Boolean = false, work: suspend () -> Unit) {
         if (closed || paused && !allowWhilePaused) return
@@ -480,6 +492,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (access?.localManagementAvailable == false) { recoverManagement(code); return }
         val label = if (state.value.stage == LanSyncGroupPanelStage.PREPARED_LOCKED) "继续设备组设置" else "解锁管理"
         val generation = synchronized(lifecycle) { privacyGeneration }; action(label, allowWhilePaused = true) {
+        check(state.value.membershipConflict == null) { "SYNC_GROUP_MEMBERSHIP_CONFLICT" }
         val owner = founder()
         val opened = owner.resume(code)
         val prepared = opened.profile.stage == LanSyncGroupEnrollmentStage.PREPARED
@@ -506,6 +519,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun recoverManagement(code: String) {
         val generation = synchronized(lifecycle) { privacyGeneration }
         action("恢复组管理") {
+            check(state.value.membershipConflict == null) { "SYNC_GROUP_MEMBERSHIP_CONFLICT" }
             val current = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }
             require(!current.localManagementAvailable) { "SYNC_GROUP_FOUNDER_MANAGEMENT_AVAILABLE" }
             val owner = synchronized(lifecycle) {
@@ -1175,21 +1189,57 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         synchronized(lifecycle) {
         check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
         if (access == null) {
-            opened.routeFailure = { route, error -> if (!route.startsWith("cloud:")) nearbyFailure("READ", error) }
+            opened.routeFailure = ::nearbyReadFailure
             access = opened
             cloudRuntime = makeCloudRuntime(opened, cloudWorkAllowed, ::requestLocalCheck, ::cloudProgress)
             metadataStamp = null
         }
         }
+        if (presentMembershipConflict(opened)) return
         mutableState.update { it.copy(stage = LanSyncGroupPanelStage.READY, recoveryJoining = false, canAbandonUnactivated = false,
             joiningDevice = null, canAbandonJoin = false, canRefreshJoinPreparation = false, canShelveJoin = false, shelvedJoins = emptyList(),
-            canArchiveRevokedJoin = false, joiningLedgerConflict = false,
+            canArchiveRevokedJoin = false, joiningLedgerConflict = false, membershipConflict = null,
             error = if (it.stage == LanSyncGroupPanelStage.JOINING) null else it.error,
             localManagementAvailable = requireNotNull(access).localManagementAvailable,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             paused = paused, status = if (paused) "设备组同步尚未恢复，原件与待传队列已保留" else "设备组已就绪，应用正在检查同步") }
         refreshDevices()
         if (!paused) try { cycle(force = true) } finally { if (!paused && !closed) startLoop() }
+    }
+
+    private suspend fun presentMembershipConflict(opened: LanSyncGroupRuntimeAccess): Boolean {
+        val fork = opened.verifiedLedgerFork() ?: return false
+        if (state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT) return true
+        val originalMembers = fork.common.members
+        val summary = LanSyncGroupLedgerConflict(fork.common.sequence, fork.headCount, fork.branches.map { signed ->
+            LanSyncGroupLedgerConflictBranch(signed.id.value,
+                (signed.members.keys - originalMembers.keys).sorted(),
+                originalMembers.keys.filter { originalMembers.getValue(it).active && signed.members[it]?.active == false }.sorted())
+        })
+        lockManagement()
+        cancelActionReview()
+        mutableView.value = null
+        val nearbyToClose = synchronized(lifecycle) {
+            val sockets = discovery to transport
+            discovery = null
+            transport = null
+            port = null
+            nearbyReady = false
+            nearbyScan = null
+            nearbyRestartRequested = false
+            opened.reader.removeRoutes("nearby")
+            mutableState.update { it.copy(stage = LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT, membershipConflict = summary,
+                status = "成员变更冲突。已保留签名分支、原件和待传队列，设备组同步和成员操作已暂停。",
+                error = null, devices = emptyList(), nearbyNotice = null,
+                nearby = LanSyncGroupRouteStatus("成员变更冲突，附近同步已暂停", it.nearby.lastSuccessAt),
+                cloud = LanSyncGroupRouteStatus("成员变更冲突，网盘同步已暂停", it.cloud.lastSuccessAt)) }
+            sockets
+        }
+        cancelCloudWork()
+        withContext(NonCancellable) {
+            try { nearbyToClose.first?.close() } finally { nearbyToClose.second?.closeAndDrain() }
+        }
+        return true
     }
     private fun refreshDevices() {
         val current = access ?: return
@@ -1204,12 +1254,70 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 hint ?: "已加入设备"
             }
             LanSyncGroupDeviceRow(id, name, if (member.active) "已加入" else "已撤销",
-                id == current.device, id == manager, false)
+                id == current.device, id == manager, false, nearby = if (
+                    member.active && ledger.members[current.device]?.active == true && id != current.device && id != manager
+                ) LanSyncGroupDeviceNearby() else null)
         }
-        mutableState.update { state -> state.copy(devices = rows.map { row -> row.copy(canRevoke =
-            state.managementUnlocked && ledger.members.getValue(row.id).active && !row.thisDevice && !row.managementIdentity) }) }
+        mutableState.update { state ->
+            val previous = state.devices.associateBy { it.id }
+            state.copy(devices = rows.map { row -> row.copy(
+                canRevoke = state.managementUnlocked && ledger.members.getValue(row.id).active && !row.thisDevice && !row.managementIdentity,
+                nearby = row.nearby?.let { previous[row.id]?.nearby ?: it }) })
+        }
         hintFailure?.let { failure("读取设备显示名称（原文件已保留）", it) }
     }
+    private fun nearbyReadFailure(route: String, failure: Exception) {
+        if (failure is CancellationException) throw failure
+        if (!route.startsWith("nearby:")) {
+            if (!route.startsWith("cloud:")) nearbyFailure("READ", failure)
+            return
+        }
+        synchronized(lifecycle) {
+            if (closed || paused || !nearbyReady) return
+            val scan = nearbyScan ?: return
+            if (!route.startsWith(scan.routePrefix)) return
+            scan.readFailures += route.removePrefix(scan.routePrefix)
+            if (scan.published) projectNearby(scan)
+        }
+    }
+    private fun projectNearby(scan: NearbyScan) {
+        check(Thread.holdsLock(lifecycle))
+        if (closed || paused || !nearbyReady || nearbyScan !== scan) return
+        scan.published = true
+        mutableState.update { state ->
+            var connected = 0
+            var failed = 0
+            var notDiscovered = 0
+            val rows = state.devices.map { device ->
+                val previous = device.nearby ?: return@map device
+                val outcome = scan.outcomes[device.id] ?: LanSyncGroupDeviceNearby()
+                val stage = if (outcome.lastSuccessAt != null && device.id in scan.readFailures)
+                    LanSyncGroupNearbyStage.READ_INCOMPLETE else outcome.stage
+                if (outcome.lastSuccessAt != null) connected++
+                when (stage) {
+                    LanSyncGroupNearbyStage.NOT_DISCOVERED -> notDiscovered++
+                    LanSyncGroupNearbyStage.DISCOVERY_FAILED, LanSyncGroupNearbyStage.INDEX_FAILED,
+                    LanSyncGroupNearbyStage.READ_INCOMPLETE -> failed++
+                    else -> Unit
+                }
+                device.copy(nearby = LanSyncGroupDeviceNearby(stage, outcome.lastSuccessAt ?: previous.lastSuccessAt))
+            }
+            val message = when {
+                connected > 0 -> buildString {
+                    append("已读取 ${connected} 台附近设备的加密索引")
+                    if (failed > 0) append("，${failed} 台连接或读取未完成")
+                    if (notDiscovered > 0) append("，本轮未发现 ${notDiscovered} 台")
+                }
+                failed == 1 && notDiscovered == 0 -> "暂时无法读取一台附近成员的加密索引。其他连接可继续同步。"
+                failed > 0 -> "${failed} 台附近设备连接或读取未完成"
+                else -> "暂未发现同网设备"
+            }
+            state.copy(devices = rows, nearby = LanSyncGroupRouteStatus(message, scan.lastSuccessAt ?: state.nearby.lastSuccessAt))
+        }
+    }
+    private fun resetNearbyObservations(state: LanSyncGroupPanelState): List<LanSyncGroupDeviceRow> =
+        state.devices.map { device -> device.copy(nearby = device.nearby?.copy(stage = LanSyncGroupNearbyStage.UNOBSERVED)) }
+
     private fun nearbyFailure(stage: String, failure: Exception) {
         if (failure is CancellationException) throw failure
         if (stage == "NEARBY_PENDING_APPROVAL") return
@@ -1219,15 +1327,20 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             if (stage == "GROUP_DISCOVERY_LISTENER" || stage == "NEARBY_LISTENER") {
                 nearbyReady = false
                 nearbyRestartRequested = true
+                nearbyScan = null
                 restart = true
             }
             val message = when (stage) {
-                "INDEX" -> "暂时无法读取一台附近成员的加密索引。其他连接可继续同步。"
-                "DISCOVER" -> "暂时无法查找一台附近成员。其他连接可继续同步。"
                 "NEARBY_SERVER" -> "有一条附近设备连接未完成。其他连接可继续同步。"
+                "GROUP_DISCOVERY_SEND" -> "有一条附近发现路径暂时不可用。"
                 else -> "局域网连接暂时不可用，将在前台或网络变化后重试；本机与网盘工作可继续"
             }
-            mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus(message, it.nearby.lastSuccessAt)) }
+            mutableState.update {
+                if (stage in setOf("NEARBY_SERVER", "GROUP_DISCOVERY_SEND") || nearbyScan?.published == true)
+                    it.copy(nearbyNotice = message)
+                else it.copy(nearby = LanSyncGroupRouteStatus(message, it.nearby.lastSuccessAt), nearbyNotice = null,
+                    devices = if (restart) resetNearbyObservations(it) else it.devices)
+            }
         }
         // The callback can run on the listener itself. Its independent worker owns teardown/join.
         if (restart) nearbyWake.trySend(Unit)
@@ -1236,7 +1349,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private suspend fun ensureNearbyStarted(): Boolean = nearbyAdmission.withLock {
         val obsolete = synchronized(lifecycle) {
-            if (closed || paused || access == null) return@withLock false
+            if (closed || paused || access == null || state.value.membershipConflict != null) return@withLock false
             if (nearbyRestartRequested) discovery to transport else null
         }
         if (obsolete != null) {
@@ -1259,7 +1372,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         var failedTransport: LanSyncGroupAppTransport? = null
         var failedDiscovery: LanSyncGroupDiscovery? = null
         synchronized(lifecycle) {
-            if (closed || paused || access == null) return@withLock false
+            if (closed || paused || access == null || state.value.membershipConflict != null) return@withLock false
             if (nearbyReady) return@withLock true
             try {
                 val current = requireNotNull(access)
@@ -1271,7 +1384,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     hints.start(bound)
                 }
                 port = bound; nearbyReady = true
-                mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("局域网监听已启动，等待已加入设备", it.nearby.lastSuccessAt)) }
+                mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("局域网监听已启动，等待已加入设备", it.nearby.lastSuccessAt),
+                    nearbyNotice = null) }
                 return@withLock true
             } catch (error: Exception) {
                 failure = error; nearbyReady = false; port = null
@@ -1395,6 +1509,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private suspend fun runCloudCycle(shutdown: Boolean = false, forceIdle: Boolean = true,
         onInvoked: () -> Unit = {}): Boolean {
         access ?: return true
+        if (state.value.membershipConflict != null) return false
         val runtime = cloudRuntime ?: return true
         // An idle/disabled batch starts no platform lease. A deferred enabled target remains
         // pending at final close; its backoff is never promoted to a completion receipt.
@@ -1406,9 +1521,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (!completed) mutableState.update { it.copy(cloud = LanSyncGroupRouteStatus("网盘核对尚未完成，待传队列已保留", it.cloud.lastSuccessAt)) }
         return completed
     }
-    private suspend fun discover(node: LanSyncGroupNode, store: CiphertextStore) {
+    private suspend fun discoverNearbyIndex(node: LanSyncGroupNode, store: CiphertextStore): Boolean {
         var cursor: CommitCursor? = null
-        do { cursor = node.discover(store, cursor).nextCursor } while (cursor != null)
+        var complete = true
+        do {
+            val page = node.discover(store, cursor)
+            if (page.observations.any { it.stage == SyncInboxStage.INVALID_OBJECT }) complete = false
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return complete
     }
     private suspend fun checkNearbyMembership(current: LanSyncGroupRuntimeAccess, live: LanSyncGroupAppTransport) {
         val members = current.ledger().current().members
@@ -1441,22 +1562,50 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (closed || paused) return
         val current = access ?: return
         val live = transport ?: return
-        val routes = mutableListOf<LanSyncGroupReplicaReader.Route>()
+        val routes = linkedMapOf<String, LanSyncGroupReplicaReader.Route>()
         val responder = discovery
         val managementIdentity = SyncDeviceSignatures.decode(current.trust.ownerCertificate).fingerprint
-        for ((id, member) in current.ledger().current().members) {
-            if (!member.active || id == current.device || id == managementIdentity) continue
-            try {
-                val peer = if (responder != null) responder.find(id) else network.discoverGroup(current.trust.group, current.device, id)
-                peer?.let { routes += LanSyncGroupReplicaReader.Route(id, live.remote(it)) }
-            } catch (error: Exception) { nearbyFailure("DISCOVER", error) }
+        val members = current.ledger().current().members
+        val scan = synchronized(lifecycle) {
+            if (closed || paused || !nearbyReady || transport !== live) return
+            NearbyScan().also {
+                nearbyScan = it
+                mutableState.update { state -> state.copy(nearbyNotice = null) }
+            }
         }
-        current.reader.routes("nearby", routes)
-        if (routes.isEmpty()) mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("暂未发现同网设备", it.nearby.lastSuccessAt)) }
-        for (route in routes) try {
-            discover(current.node, current.reader.discoveryFrom(route.store))
-            mutableState.update { it.copy(nearby = LanSyncGroupRouteStatus("已连接附近设备并读取加密索引", System.currentTimeMillis())) }
-        } catch (error: Exception) { nearbyFailure("INDEX", error) }
+        for ((id, member) in members) {
+            if (members[current.device]?.active != true) break
+            if (!member.active || id == current.device || id == managementIdentity) continue
+            currentCoroutineContext().ensureActive()
+            val outcome = try {
+                val peer = if (responder != null) responder.find(id) else network.discoverGroup(current.trust.group, current.device, id)
+                if (peer != null) {
+                    require(peer.fingerprint == id) { "SYNC_GROUP_DISCOVERY_DEVICE" }
+                    routes[id] = LanSyncGroupReplicaReader.Route(scan.routePrefix + id, live.remote(peer))
+                }
+                LanSyncGroupNearbyStage.NOT_DISCOVERED
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { LanSyncGroupNearbyStage.DISCOVERY_FAILED }
+            synchronized(lifecycle) { scan.outcomes[id] = LanSyncGroupDeviceNearby(outcome) }
+        }
+        synchronized(lifecycle) {
+            if (closed || paused || !nearbyReady || nearbyScan !== scan) return
+            current.reader.routes("nearby", routes.values.toList())
+        }
+        for ((id, route) in routes) {
+            currentCoroutineContext().ensureActive()
+            val outcome = try {
+                val complete = discoverNearbyIndex(current.node, current.reader.discoveryFrom(route.store, route.id))
+                LanSyncGroupDeviceNearby(if (complete) LanSyncGroupNearbyStage.INDEX_READ else LanSyncGroupNearbyStage.READ_INCOMPLETE,
+                    System.currentTimeMillis())
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { LanSyncGroupDeviceNearby(LanSyncGroupNearbyStage.INDEX_FAILED) }
+            synchronized(lifecycle) {
+                scan.outcomes[id] = outcome
+                outcome.lastSuccessAt?.let { scan.lastSuccessAt = it }
+            }
+        }
+        synchronized(lifecycle) { projectNearby(scan) }
         if (closed || paused) return
         checkNearbyMembership(current, live)
         if (closed || paused) return
@@ -1482,6 +1631,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     /** Local-only inspection/publication. A completed check is not a peer/cloud completion receipt. */
     private suspend fun cycle(force: Boolean = false, shutdown: Boolean = false): Boolean {
         val current = access ?: return true
+        if (state.value.membershipConflict != null) return false
         val finalSeal = shutdown && quiesced
         val request = localRequests.get(); val revision = latestSourceRevision
         val stamp = candidateStamp(current.reader)
@@ -1490,9 +1640,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             now - lastSourceScan < 60_000_000_000L) return true
         var localCursor: CommitCursor? = null
         do { localCursor = current.node.discoverLocal(localCursor).nextCursor } while (localCursor != null)
-        var inspected = current.node.inspectLocal(recoverNative = !shutdown)
+        var inspected = try { current.node.inspectLocal(recoverNative = !shutdown) }
+        catch (failure: IllegalArgumentException) {
+            if (failure.message == "SYNC_GROUP_LEDGER_FORK_OR_MISSING" && presentMembershipConflict(current)) return false
+            throw failure
+        }
         mutableView.value = inspected
         if (inspected.stage != LanSyncGroupNodeStage.READY) {
+            if (inspected.stage == LanSyncGroupNodeStage.TRUST_BLOCKED && presentMembershipConflict(current)) return false
             if (inspected.stage == LanSyncGroupNodeStage.DEVICE_REVOKED ||
                 inspected.stage == LanSyncGroupNodeStage.WAITING_FOR_KEY) refreshDevices()
             mutableState.update { it.copy(status = when (inspected.stage) {
@@ -1565,10 +1720,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             cloudRuntime?.drain()
             admission.withLock { pendingJoinProof = null }
             discovery?.close(); transport?.closeAndDrain()
-            discovery = null; transport = null; port = null; nearbyReady = false; nearbyRestartRequested = false
+            discovery = null; transport = null; port = null; nearbyReady = false; nearbyRestartRequested = false; nearbyScan = null
             loop = null; nearbyWorker = null; localWorker = null; cloudWorker = null
             access?.reader?.routes(emptyList())
-            mutableState.update { it.copy(paused = true, busy = false, status = "设备组同步已暂停，原件与待传队列已保留") }
+            mutableState.update { it.copy(paused = true, busy = false, status = "设备组同步已暂停，原件与待传队列已保留",
+                nearby = LanSyncGroupRouteStatus("附近设备连接检查已暂停", it.nearby.lastSuccessAt), nearbyNotice = null,
+                devices = resetNearbyObservations(it)) }
         }
     }
     /** Terminal shutdown; retains daily owners until final source sealing. */
