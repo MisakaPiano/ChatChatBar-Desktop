@@ -2080,13 +2080,21 @@ class LanSyncGroupCoordinatorTest {
             }
         } finally { releasePut.countDown(); client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
     }
-    @Test fun pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints() {
+    @Test fun pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints() =
+        checkPauseDuringNearbyBind(reopenRegistered = false)
+
+    @Test fun pauseDuringEarlyColdNearbyStartupPreservesTheAlreadyPublishedSource() =
+        checkPauseDuringNearbyBind(reopenRegistered = true)
+
+    private fun checkPauseDuringNearbyBind(reopenRegistered: Boolean) {
         val entered = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
         val attempts = AtomicInteger(); val forbidden = AtomicBoolean(false)
+        val blockBinding = AtomicBoolean(!reopenRegistered)
         val network = object : LanSyncNetwork by noNetwork {
             override fun listening(fingerprint: String, port: Int) {
                 attempts.incrementAndGet()
                 check(!forbidden.get()) { "SYNTHETIC_LATE_LISTENER_FORBIDDEN" }
+                if (!blockBinding.get()) return
                 entered.complete(Unit)
                 check(release.await(20, TimeUnit.SECONDS)) { "SYNTHETIC_LISTENER_RELEASE_TIMEOUT" }
                 throw BindException("synthetic optional bind failure during pause")
@@ -2097,8 +2105,17 @@ class LanSyncGroupCoordinatorTest {
                 f.writeCard("synthetic source before optional listener pause")
                 val original = Files.readAllBytes(f.card)
                 val storage = JsonFileStorage(f.data)
-                val coordinator = readyCoordinator(f, storage.committedRevisionFor(LanSyncScope.schemas.keys))
+                val revisions = storage.committedRevisionFor(LanSyncScope.schemas.keys)
+                val initial = readyCoordinator(f, revisions)
+                val coordinator = if (reopenRegistered) {
+                    initial.closeAndDrain()
+                    val published = requireNotNull(f.founder().runtimeAccess())
+                    assertEquals(1, published.node.sourceOperations().size)
+                    blockBinding.set(true)
+                    f.coordinator(revisions).also { it.open() }
+                } else initial
                 withTimeout(5_000) { entered.await() }
+                assertEquals(LanSyncGroupPanelStage.READY, coordinator.state.value.stage)
                 coroutineScope {
                     val requested = CompletableDeferred<Unit>()
                     val stop = async(Dispatchers.IO) { requested.complete(Unit); coordinator.pauseAndDrain() }

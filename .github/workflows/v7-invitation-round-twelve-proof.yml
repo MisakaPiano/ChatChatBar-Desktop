@@ -66,6 +66,7 @@ jobs:
             --tests '*LanSyncGroupCoordinatorTest.aColdRegisteredProfileStartsItsAuthenticatedListenerWhileTheFirstCheckWaits' \
             --tests '*LanSyncGroupCoordinatorTest.manualCheckWakesAnIdleEnabledCloudRouteButStillValidatesItsConfiguration' \
             --tests '*LanSyncGroupCoordinatorTest.pauseDrainsAnInFlightFailedNearbyStartupAndRejectsQueuedNetworkHints' \
+            --tests '*LanSyncGroupCoordinatorTest.pauseDuringEarlyColdNearbyStartupPreservesTheAlreadyPublishedSource' \
             --tests '*LanSyncGroupJoiningTest.automaticSignedJoinCanBindNearbyWhileItsFirstReadyInspectionIsBlocked' \
             --tests '*LanSyncGroupJoiningTest.coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving' \
             --tests '*LanSyncGroupDependenciesTest' \
