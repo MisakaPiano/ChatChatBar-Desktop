@@ -33,7 +33,7 @@ def observation(operation,returncode,stdout,stderr,transport='RETURNED'):
     # failure containing the same English phrase is deliberately not a miss.
     for key,name in PRIVATE_FILES.items():
         expected=("stat: 'files/v7-reverse-lab/"+name+"': No such file or directory\n").encode('ascii')
-        if operation=='PRIVATE_'+key+'_STAT' and returncode==1 and not stdout and stderr==expected:
+        if operation=='PRIVATE_'+key+'_STAT' and returncode==1 and not stdout and stderr in (expected, expected[:-1]+b'\r\n'):
             value.update(errorClass='EXPECTED_PRIVATE_FILE_MISSING',disposition='EXPECTED_MISSING');return value
     patterns=(('RUN_AS_NOT_DEBUGGABLE',rb'(?i)not debuggable'),
         ('RUN_AS_PACKAGE_UNAVAILABLE',rb'(?i)(unknown package|package .+ is unknown)'),

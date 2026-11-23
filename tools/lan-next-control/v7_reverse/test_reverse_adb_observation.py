@@ -19,9 +19,13 @@ class AdbEvidenceTests(unittest.TestCase):
         return ("stat: 'files/v7-reverse-lab/"+name+"': No such file or directory\n").encode()
 
     def test_exact_api26_stat_missing(self):
-        observed=evidence.observation('PRIVATE_READY_STAT',1,b'',self.stat_missing())
-        self.assertIsNone(evidence.interpret(observed,b'',missing=True))
-        self.assertEqual(observed['disposition'],'EXPECTED_MISSING')
+        for operation,name in (('PRIVATE_READY_STAT','ready.json'),('PRIVATE_PROGRESS_STAT','progress.json')):
+            expected=self.stat_missing(name)
+            for stderr in (expected,expected[:-1]+b'\r\n'):
+                with self.subTest(operation=operation,stderrLength=len(stderr)):
+                    observed=evidence.observation(operation,1,b'',stderr)
+                    self.assertIsNone(evidence.interpret(observed,b'',missing=True))
+                    self.assertEqual(observed['disposition'],'EXPECTED_MISSING')
 
     def test_wrong_file_or_package_enoent_is_fatal(self):
         for stderr in (self.stat_missing('progress.json'),b'run-as: No such file or directory\n',
