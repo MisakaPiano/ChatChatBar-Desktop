@@ -178,6 +178,19 @@ class LanSyncGroupInvitationTest {
         }
     }
 
+    @Test fun fileOfferCannotReportSuccessAfterItsMonotonicDeadline() = withFixture { t ->
+        val offer = t.offer()
+        val bytes = t.owner.fileBytes(offer)
+        try {
+            t.owner.requireCurrentFileOffer(offer)
+            t.nanos += LanSyncGroupInviteOffer.LIFETIME_MILLIS * 1_000_000
+            assertEquals("SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED", assertFailsWith<IllegalArgumentException> {
+                t.owner.requireCurrentFileOffer(offer)
+            }.message)
+            assertEquals(offer, LanSyncGroupInviteOffer.readFile(bytes.inputStream(), t.wall))
+        } finally { bytes.fill(0) }
+    }
+
     @Test fun newSignedLedgerCheckpointInvalidatesTheOldProofBeforeRootAdmission() = withFixture { t ->
         val peer = t.attempt(t.offer()).first.getOrThrow()
         val next = t.f.sign(t.f.genesis.copy(id = SyncStoreId.random(), parent = t.f.genesis.reference(), sequence = 2))

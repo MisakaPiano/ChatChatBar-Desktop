@@ -16,33 +16,45 @@ object LanSyncHeifStill {
         val signature = file.bytes(0, 8)
         val declared = signature.u(4)
         if (signature.type() != "ftyp") return null
-        fun hasHeicMajorBrand(): Boolean {
-            val majorStart = if (declared == 1L) 16L else 8L
-            return (declared <= 1L || declared >= 12L) && size >= majorStart + 4 &&
-                file.bytes(majorStart, 4).type() in heicBrands
+        fun hasHeicBrandInAvailableFileType(): Boolean {
+            val brandStart = if (declared == 1L) 16L else 8L
+            if (size < brandStart + 4) return false
+            val declaredEnd = when (declared) {
+                0L -> size
+                1L -> file.bytes(8, 8).u(8)
+                else -> declared
+            }
+            // Even if the box is truncated, the available full brand slots can identify it.
+            val available = minOf(size, declaredEnd, brandStart + MAX_FILE_TYPE) - brandStart
+            return available >= 4 && file.bytes(brandStart, available.toInt()).hasHeicBrand()
         }
         if (size < 16) {
-            if (hasHeicMajorBrand()) throw LanSyncInvalidImage()
+            if (hasHeicBrandInAvailableFileType()) throw LanSyncInvalidImage()
             return null
         }
         val brand = try {
             file.box(0, size).also {
-                requireSupported(it.length <= 1024)
+                requireSupported(it.length <= MAX_FILE_TYPE)
                 need(it.length >= 8 && (it.length - 8) % 4 == 0L)
             }
         } catch (failure: MalformedStructure) {
-            if (hasHeicMajorBrand()) throw LanSyncInvalidImage(failure)
+            if (hasHeicBrandInAvailableFileType()) throw LanSyncInvalidImage(failure)
             throw failure
         }
-        val brands = file.bytes(brand.start, brand.length.toInt())
-        val major = brands.type()
-        brands.u(4)
-        if (major !in heicBrands && (0 until brands.remaining() / 4).none { brands.type() in heicBrands }) return null
+        if (!file.bytes(brand.start, brand.length.toInt()).hasHeicBrand()) return null
         try {
             inspectStill(file, size, brand.end)
         } catch (failure: MalformedStructure) {
             throw LanSyncInvalidImage(failure)
         }
+    }
+
+    private fun ByteBuffer.hasHeicBrand(): Boolean {
+        if (remaining() < 4) return false
+        if (type() in heicBrands) return true
+        if (remaining() < 4) return false
+        u(4) // Skip the minor version.
+        return (0 until remaining() / 4).any { type() in heicBrands }
     }
 
     private fun inspectStill(file: FileChannel, size: Long, start: Long): Dimensions {
@@ -268,6 +280,7 @@ object LanSyncHeifStill {
     private fun requireSupported(value: Boolean) { require(value) { "SYNC_IMAGE_HEIF_INVALID" } }
     private class MalformedStructure : IllegalArgumentException("SYNC_IMAGE_HEIF_INVALID")
     private val heicBrands = setOf("heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs")
+    private const val MAX_FILE_TYPE = 1024
     private const val MAX_METADATA = 4 * 1024 * 1024
     private const val MAX_ITEMS = 1024
     private const val MAX_PIXELS = 32_000_000L

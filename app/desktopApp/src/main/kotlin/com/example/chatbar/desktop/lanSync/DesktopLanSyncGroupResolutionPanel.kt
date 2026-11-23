@@ -17,9 +17,12 @@ internal fun DesktopLanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, se
     val primary = remember(view, selectedUnit) { mutableStateMapOf<String, LanSyncGroupResolutionSource>() }
     val copies = remember(view, selectedUnit) { mutableStateMapOf<String, LanSyncGroupResolutionSource>() }
     var page by remember(view, selectedUnit) { mutableStateOf(0) }
-    val blocked = units.any { plan.units.getValue(it).stage == LanSyncGroupNativeStage.AUTHOR_FORK }
+    val authorFork = units.any { plan.units.getValue(it).stage == LanSyncGroupNativeStage.AUTHOR_FORK }
     StatusText("关联内容需要一起处理，请分别为每组选定来源。准备目标后仍会显示完整正文和影响，最后由你确认。")
-    if (blocked) StatusText("存在同一设备的版本分叉，当前不能采用或复制；可以先暂缓处理。", color = DesktopBootstrapColors.warning)
+    val resourceBlocked = plan.componentHasBlockedResource(selectedUnit)
+    val canKeep = !busy && !authorFork && !resourceBlocked
+    if (authorFork) StatusText("存在同一设备的版本分叉，当前不能采用或复制；可以先暂缓处理。", color = DesktopBootstrapColors.warning)
+    if (resourceBlocked) StatusText(LanSyncGroupDisplay.blockedResolutionImageNotice, color = DesktopBootstrapColors.warning)
     StatusText("保留两份时，每组需另选一份非空正文；全局设定与删除标记不能复制。")
     units.drop(page * 10).take(10).forEach { unit ->
         key(view, unit) {
@@ -40,9 +43,9 @@ internal fun DesktopLanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, se
                     reference?.let { StatusText("版本身份：${it.id.value} · ${it.bodyHash}") }
                     if (!available) StatusText("此版本正文或附件尚未补齐。")
                     DesktopGroupReviewButton((if (primary[unit] == source) "✓ " else "") + "作为采用目标 · $label",
-                        { primary[unit] = source }, enabled = !busy && !blocked && available)
+                        { primary[unit] = source }, enabled = canKeep && available)
                     DesktopGroupReviewButton((if (copies[unit] == source) "✓ " else "") + "作为第二份 · $label",
-                        { copies[unit] = source }, enabled = !busy && !blocked && available && LanSyncGroupDisplay.canOfferCopy(records))
+                        { copies[unit] = source }, enabled = canKeep && available && LanSyncGroupDisplay.canOfferCopy(records))
                 }
             }
         }
@@ -55,10 +58,10 @@ internal fun DesktopLanSyncGroupResolutionChoices(view: LanSyncGroupNodeView, se
     val selected = units.isNotEmpty() && units.all { it in primary }
     DesktopGroupReviewButton("采用选定版本", { actions.prepareResolution(view, units.associateWith {
         LanSyncGroupResolutionChoice.Keep(primary.getValue(it))
-    }) }, enabled = !busy && !blocked && selected)
+    }) }, enabled = canKeep && selected)
     DesktopGroupReviewButton("两份都保留", { actions.prepareResolution(view, units.associateWith {
         LanSyncGroupResolutionChoice.Keep(primary.getValue(it), mapOf("copy-1" to copies.getValue(it)))
-    }) }, enabled = !busy && !blocked && selected && units.all { it in copies && copies[it] != primary[it] })
+    }) }, enabled = canKeep && selected && units.all { it in copies && copies[it] != primary[it] })
     DesktopGroupReviewButton("暂缓处理", { actions.prepareResolution(view, mapOf(selectedUnit to LanSyncGroupResolutionChoice.Later)) },
         enabled = !busy)
 }

@@ -71,7 +71,8 @@ class AndroidLanSyncCameraResourceTest {
                 validateResource = ::validateAndroidLanSyncResource)
             val good = workspace.captureGroup("phone").use { it.snapshot.hashes() }
             for (broken in listOf(LanSyncMalformedHeifFixture.withoutMeta(), LanSyncMalformedHeifFixture.withoutPrimaryItem(),
-                LanSyncMalformedHeifFixture.truncatedMetadata(), LanSyncMalformedHeifFixture.truncatedFileType())) {
+                LanSyncMalformedHeifFixture.truncatedMetadata(), LanSyncMalformedHeifFixture.truncatedFileType(),
+                LanSyncMalformedHeifFixture.truncatedFileTypeWithHeicCompatibility())) {
                 Files.write(image, broken)
                 assertTrue(runCatching { workspace.capture("phone").close() }.exceptionOrNull() is LanSyncInvalidImage)
                 workspace.captureGroup("phone").use {

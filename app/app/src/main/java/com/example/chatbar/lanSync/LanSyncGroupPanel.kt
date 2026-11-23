@@ -189,18 +189,18 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         GroupFrozenReviewBrowser(view, interactionBlocked, actions)
         LanSyncGroupResolutionHistory(view, interactionBlocked, actions)
-        actionReview?.let { review -> GroupActionReview(review, state.busy, actions) }
+        actionReview?.let { review -> GroupActionReview(review, view?.plan, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             GroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
         if (state.invitationRetainedWhileLocked) {
             CbText("邀请仍在有效期内。请解锁管理以核对申请设备，或关闭邀请。")
-            CbButton("关闭邀请", actions::closeInvitation, variant = ButtonVariant.Secondary)
+            CbButton("关闭邀请", actions::closeInvitation, enabled = state.canCloseInvitation, variant = ButtonVariant.Secondary)
         }
         state.invitation?.takeUnless { state.invitationFileOnly }?.let { offer ->
             val code = remember(offer) { offer.code() }
             LanSyncGroupInvitationQr(code)
             CbButton("复制邀请", { copy(code) }, variant = ButtonVariant.Secondary)
-            CbButton("关闭邀请", actions::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
+            CbButton("关闭邀请", actions::closeInvitation, enabled = state.canCloseInvitation, variant = ButtonVariant.Secondary)
             state.invitationAddresses.filter { it != offer.host }.forEach { address ->
                 CbButton("用 $address 生成新邀请", { actions.createInvitation(address) },
                     enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Secondary)
@@ -517,13 +517,15 @@ private fun GroupRecoveryMetadata(entry: LanSyncRecoveryEntry) {
 
 /** All confirmations refer to this exact owner-prepared review, never the latest screen state. */
 @Composable
-private fun GroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+private fun GroupActionReview(review: LanSyncGroupActionReview, latestPlan: LanSyncGroupNativePlan?, busy: Boolean, actions: LanSyncGroupPanelActions) {
     val imageContext = LanSyncGroupFrozenImageContext.Action(review)
     var confirmed by remember(review.binding) { mutableStateOf(false) }
     var unitPage by remember(review.binding) { mutableStateOf(0) }
     val recovery = review.recovery
     val resolution = review.resolution
-    val canConfirm = review.canConfirm && (recovery?.hasChanges != false)
+    val resourceBlocked = review.resolutionBlockedByLocalResources(latestPlan)
+    val canConfirm = review.canConfirm && !resourceBlocked && (recovery?.hasChanges != false)
+    if (resourceBlocked) CbText(LanSyncGroupDisplay.blockedResolutionImageNotice, color = ChatBarTheme.colors.warning)
     CbText(when { resolution != null -> "核对版本处理目标"; review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" },
         style = ChatBarTheme.typography.title)
     CbText("以下关联内容按同一核对结果处理；请查看各组正文和影响后确认。确认时会再次检查资料是否变化。")

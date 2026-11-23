@@ -11,5 +11,8 @@ class LanSyncGroupActionReview internal constructor(val binding: String,
         require(listOf(source, incoming, recovery, resolution).count { it != null } == 1)
         require((resolution != null) == (resolutionBasis != null))
     }
+    fun resolutionBlockedByLocalResources(latestPlan: LanSyncGroupNativePlan?): Boolean =
+        resolution?.let { latestPlan?.resolutionBlockedByLocalResources(it.choices) } == true
+
     override fun toString() = "LanSyncGroupActionReview(binding=$binding, canConfirm=$canConfirm, contents=REDACTED)"
 }

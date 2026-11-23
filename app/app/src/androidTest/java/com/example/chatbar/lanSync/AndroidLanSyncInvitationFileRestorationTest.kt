@@ -245,7 +245,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             coordinator.lockManagementOnVisibilityLoss()
             assertFalse(coordinator.state.value.managementUnlocked)
             assertTrue(coordinator.state.value.invitationRetainedWhileLocked)
-            val target = root.resolve("restored.ccbinvite")
+            val target = Files.createFile(root.resolve("restored.ccbinvite"))
             compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
             await { !coordinator.state.value.busy && Files.isRegularFile(target) && Files.size(target) > 0 }
             assertTrue(originalBytes.contentEquals(Files.readAllBytes(target)))
@@ -254,6 +254,12 @@ class AndroidLanSyncInvitationFileRestorationTest {
             issueFile()
             assertTrue(coordinator.state.value.invitationFileBinding != originalBinding)
             assertTrue(requireNotNull(coordinator.state.value.invitation).code() != originalCode)
+            compose.onNodeWithText("保存邀请文件").performClick()
+            compose.onNodeWithText("关闭邀请").assertIsEnabled()
+            compose.onNodeWithText("正在选择邀请文件的保存位置").assertExists()
+            compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
+            await { !coordinator.state.value.busy && coordinator.state.value.error?.contains("SYNC_GROUP_INVITE_FILE_DESTINATION_CHANGED") == true }
+            assertTrue(originalBytes.contentEquals(Files.readAllBytes(target)))
             compose.onNodeWithText("保存邀请文件").performClick()
             restoration.emulateSavedInstanceStateRestore()
             coordinator.closeInvitation()

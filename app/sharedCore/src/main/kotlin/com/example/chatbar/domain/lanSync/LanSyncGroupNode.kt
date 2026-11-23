@@ -495,7 +495,6 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     suspend fun prepareResolution(choices: Map<String, LanSyncGroupResolutionChoice>, operation: String = UUID.randomUUID().toString()): LanSyncGroupResolutionPreview = serialized {
         val view = inspectOwned()
         exclusive { workspace.captureGroup(identity.fingerprint, projection).use { capture ->
-            require(choices.keys.intersect(capture.blockedResourceUnits).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
             view.resolution(capture, choices, operation)
         } }
     }
@@ -503,6 +502,9 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     suspend fun resolve(candidate: LanSyncGroupResolvedCandidate): LanSyncGroupSourceCommit? = serialized {
         val before = inspectOwned()
         require(candidate.preview.units.keys.intersect(before.plan?.recoveryHeldUnits.orEmpty()).isEmpty()) { LanSyncGroupNativePlanner.RECOVERY_HELD }
+        require(before.plan?.resolutionBlockedByLocalResources(candidate.preview.choices) != true) {
+            "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
+        }
         val revision = candidate.preview.operation
         val adopted = try { exclusive { resolutions.adopt(candidate, writer.acknowledgedResolutions()) } }
         catch (failure: Throwable) {

@@ -209,6 +209,9 @@ internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state:
         exportBinding = null
         if (uri != null) coordinator.saveInvitationFile(binding) { bytes ->
             try {
+                val empty = resolver.openInputStream(uri)?.use { it.read() == -1 }
+                    ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
+                require(empty) { "SYNC_GROUP_INVITE_FILE_DESTINATION_CHANGED" }
                 val stream = resolver.openOutputStream(uri, "wt") ?: error("SYNC_GROUP_INVITE_FILE_UNAVAILABLE")
                 stream.use { it.write(bytes) }
             } catch (_: java.io.IOException) {
@@ -224,8 +227,12 @@ internal fun LanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, state:
     val offer = state.invitation?.takeIf { state.invitationFileOnly }
     val binding = state.invitationFileBinding
     if (offer != null && binding != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        when {
+            state.invitationFileWriteBinding == binding -> CbText("正在写入邀请文件")
+            exportBinding == binding -> CbText("正在选择邀请文件的保存位置")
+        }
         CbButton("保存邀请文件", { exportBinding = binding; saveFile.launch("设备组邀请.ccbinvite") }, enabled = !state.busy && exportBinding == null)
-        CbButton("关闭邀请", coordinator::closeInvitation, enabled = !state.invitationApprovalInProgress, variant = ButtonVariant.Secondary)
+        CbButton("关闭邀请", coordinator::closeInvitation, enabled = state.canCloseInvitation, variant = ButtonVariant.Secondary)
         state.invitationAddresses.filter { it != offer.host }.forEach { address ->
             CbButton("用 $address 生成新邀请文件", { coordinator.createInvitation(address, forFile = true) }, enabled = !state.busy,
                 variant = ButtonVariant.Secondary)

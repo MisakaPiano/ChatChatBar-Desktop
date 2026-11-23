@@ -21,7 +21,15 @@ data class LanSyncGroupNativeUnit(val unit: String, val stage: LanSyncGroupNativ
 class LanSyncGroupNativePlan internal constructor(val before: LanSyncSnapshot, val plan: LanSyncPlan, val checkpoint: SyncVersionRef,
     val heads: Set<SyncVersionRef>, val expected: Map<String, String>, val sourceFiles: Map<String, String>,
     val units: Map<String, LanSyncGroupNativeUnit>, val appliedBefore: Map<String, LanSyncGroupAppliedUnit>,
-    val advances: Map<String, LanSyncGroupAppliedUnit>, val components: Map<String, Set<String>>) {
+    val advances: Map<String, LanSyncGroupAppliedUnit>, val components: Map<String, Set<String>>,
+    internal val blockedResourceUnits: Set<String>) {
+    fun componentHasBlockedResource(unit: String): Boolean = componentHasBlockedResource(unit, blockedResourceUnits)
+
+    internal fun componentHasBlockedResource(unit: String, blocked: Set<String>): Boolean =
+        components[unit].orEmpty().any(blocked::contains)
+
+    fun resolutionBlockedByLocalResources(choices: Map<String, LanSyncGroupResolutionChoice>): Boolean =
+        choices.any { (unit, choice) -> choice is LanSyncGroupResolutionChoice.Keep && componentHasBlockedResource(unit) }
     internal val recoveryHeldUnits: Set<String> get() = units.values.filter { it.code == LanSyncGroupNativePlanner.RECOVERY_HELD }.mapTo(linkedSetOf()) { it.unit }
 }
 
@@ -220,7 +228,8 @@ object LanSyncGroupNativePlanner {
         return LanSyncGroupNativePlan(source, LanSyncPlan(transaction, target, emptyMap()), checkpoint, Collections.unmodifiableSet(history.heads()),
             Collections.unmodifiableMap(hashes), Collections.unmodifiableMap(current.sourceFiles.toMap()), Collections.unmodifiableMap(rows),
             Collections.unmodifiableMap(applied.mapValues { (_, value) -> value.copy(frontiers = Collections.unmodifiableSet(value.frontiers.toSet())) }),
-            Collections.unmodifiableMap(advances), Collections.unmodifiableMap(components))
+            Collections.unmodifiableMap(advances), Collections.unmodifiableMap(components),
+            Collections.unmodifiableSet(current.blockedResourceUnits.toSet()))
     }
     /** Rebuild both target and receipts from complete allowed components; never filter receipts alone. */
     internal fun restrict(native: LanSyncGroupNativePlan, blockedUnits: Set<String>): LanSyncGroupNativePlan {
@@ -239,7 +248,7 @@ object LanSyncGroupNativePlanner {
             row.copy(stage = LanSyncGroupNativeStage.DEPENDENCY_HELD, code = "SYNC_GROUP_RESOLUTION_HELD") else row }
         return LanSyncGroupNativePlan(native.before, native.plan.copy(snapshot = snapshot), native.checkpoint, native.heads,
             native.expected, native.sourceFiles, Collections.unmodifiableMap(units), native.appliedBefore,
-            Collections.unmodifiableMap(advances), native.components)
+            Collections.unmodifiableMap(advances), native.components, native.blockedResourceUnits)
     }
     private val readyStages = setOf(LanSyncGroupNativeStage.READY_CONTENT, LanSyncGroupNativeStage.READY_DELETION, LanSyncGroupNativeStage.READY_OBSERVATION)
     private fun replace(current: LanSyncSnapshot, units: Set<String>, rows: Map<String, LanSyncGroupNativeUnit>): LanSyncSnapshot {

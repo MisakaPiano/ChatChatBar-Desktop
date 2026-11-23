@@ -154,7 +154,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
                 }
                 StatusText("邀请有效期为三分钟。切换程序后可返回这里，重新解锁管理并核对新设备。")
                 ActionRow { BootstrapButton("复制邀请", secondary = true) { copy(code) }; BootstrapButton("关闭邀请", secondary = true,
-                    enabled = !state.invitationApprovalInProgress) { actions.closeInvitation() } }
+                    enabled = state.canCloseInvitation) { actions.closeInvitation() } }
                 state.invitationAddresses.filter { it != offer.host }.forEach { address ->
                     BootstrapButton("用 $address 生成新邀请", secondary = true, enabled = !interactionBlocked && state.managementUnlocked) {
                         actions.createInvitation(address)
@@ -178,7 +178,7 @@ internal fun DesktopLanSyncGroupPanel(state: LanSyncGroupPanelState, actions: La
         }
         DesktopGroupFrozenReviewBrowser(view, interactionBlocked, actions)
         DesktopLanSyncGroupResolutionHistory(view, interactionBlocked, actions)
-        actionReview?.let { review -> DesktopGroupActionReview(review, state.busy, actions) }
+        actionReview?.let { review -> DesktopGroupActionReview(review, view?.plan, state.busy, actions) }
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             DesktopGroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
         state.peerConfirmation?.let { peer ->
@@ -450,13 +450,15 @@ private fun DesktopGroupRecoveryMetadata(entry: LanSyncRecoveryEntry) {
 
 /** All confirmations refer to this exact owner-prepared review, never the latest screen state. */
 @Composable
-private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, busy: Boolean, actions: LanSyncGroupPanelActions) {
+private fun DesktopGroupActionReview(review: LanSyncGroupActionReview, latestPlan: LanSyncGroupNativePlan?, busy: Boolean, actions: LanSyncGroupPanelActions) {
     val imageContext = LanSyncGroupFrozenImageContext.Action(review)
     var confirmed by remember(review.binding) { mutableStateOf(false) }
     var unitPage by remember(review.binding) { mutableStateOf(0) }
     val recovery = review.recovery
     val resolution = review.resolution
-    val canConfirm = review.canConfirm && (recovery?.hasChanges != false)
+    val resourceBlocked = review.resolutionBlockedByLocalResources(latestPlan)
+    val canConfirm = review.canConfirm && !resourceBlocked && (recovery?.hasChanges != false)
+    if (resourceBlocked) StatusText(LanSyncGroupDisplay.blockedResolutionImageNotice, color = DesktopBootstrapColors.warning)
     DesktopDataSectionHeading(when { resolution != null -> "核对版本处理目标"; review.source != null -> "核对本机发布目标"; recovery != null -> "核对本机恢复目标"; else -> "核对传入删除或覆盖" })
     StatusText("以下关联内容按同一核对结果处理；请查看各组正文和影响后确认。确认时会再次检查资料是否变化。")
     val source = review.source

@@ -46,7 +46,7 @@ class DesktopLanSyncResourceTest {
             val originalHashes = workspace.captureGroup("desktop").use { it.snapshot.hashes() }
             val malformed = listOf(original.copyOf(16), LanSyncMalformedHeifFixture.withoutMeta(),
                 LanSyncMalformedHeifFixture.withoutPrimaryItem(), LanSyncMalformedHeifFixture.truncatedMetadata(),
-                LanSyncMalformedHeifFixture.truncatedFileType())
+                LanSyncMalformedHeifFixture.truncatedFileType(), LanSyncMalformedHeifFixture.truncatedFileTypeWithHeicCompatibility())
             for (broken in malformed) {
                 Files.write(image, broken)
                 assertFailsWith<LanSyncInvalidImage> { workspace.capture("desktop").close() }

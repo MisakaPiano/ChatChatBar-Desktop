@@ -169,10 +169,14 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
         issued = Issued(offer, monotonic()); offer
     }
     internal fun fileBytes(expected: LanSyncGroupInviteOffer): ByteArray = synchronized(lock) {
+        requireCurrentFileOffer(expected)
+        expected.code().toByteArray(Charsets.US_ASCII)
+    }
+
+    internal fun requireCurrentFileOffer(expected: LanSyncGroupInviteOffer) = synchronized(lock) {
         val current = requireNotNull(issued) { "SYNC_GROUP_INVITE_MISSING" }
         live(current)
         require(current.offer === expected && !current.claimed) { "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" }
-        current.offer.code().toByteArray(Charsets.US_ASCII)
     }
     /** Never reuse this context for ordinary group-store or legacy sync commands. */
     fun invitationContext(): SSLContext = identity.context { synchronized(lock) {

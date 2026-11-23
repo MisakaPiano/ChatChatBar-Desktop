@@ -1078,6 +1078,100 @@ class LanSyncGroupCoordinatorTest {
         assertTrue(file.size() > 0)
     }
 
+    @Test fun anActualInvitationFileWriteBlocksActiveCloseAndRejectsAResultAfterVisibilityLoss() = fixture { f ->
+        val coordinator = readyCoordinator(f)
+        suspend fun issue(): Pair<String, LanSyncGroupInviteOffer> {
+            coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+            await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+            coordinator.createInvitation(forFile = true)
+            await { !coordinator.state.value.busy && coordinator.state.value.invitationFileBinding != null }
+            return requireNotNull(coordinator.state.value.invitationFileBinding) to requireNotNull(coordinator.state.value.invitation)
+        }
+
+        for (invalidate in listOf(false, true)) {
+            val (binding, offer) = issue()
+            assertTrue(coordinator.state.value.canCloseInvitation)
+            val entered = CompletableDeferred<Unit>()
+            val release = CountDownLatch(1)
+            val written = ByteArrayOutputStream()
+            val unexpected = AtomicInteger()
+            coordinator.saveInvitationFile(binding) { bytes ->
+                entered.complete(Unit)
+                check(release.await(15, TimeUnit.SECONDS))
+                written.write(bytes)
+            }
+            try {
+                withTimeout(5_000) { entered.await() }
+                assertEquals(binding, coordinator.state.value.invitationFileWriteBinding)
+                assertFalse(coordinator.state.value.canCloseInvitation)
+                assertTrue(coordinator.state.value.status.contains("正在写入邀请文件"))
+                coroutineScope {
+                    withTimeout(5_000) {
+                        async(Dispatchers.Default) { coordinator.closeInvitation() }.await()
+                    }
+                }
+                assertEquals(binding, coordinator.state.value.invitationFileBinding)
+                coordinator.saveInvitationFile(binding) { unexpected.incrementAndGet() }
+                if (invalidate) {
+                    coordinator.lockManagementOnVisibilityLoss()
+                    assertNull(coordinator.state.value.invitationFileBinding)
+                    assertTrue(coordinator.state.value.invitationRetainedWhileLocked)
+                    assertEquals(binding, coordinator.state.value.invitationFileWriteBinding)
+                    assertFalse(coordinator.state.value.canCloseInvitation)
+                }
+            } finally { release.countDown() }
+
+            await { !coordinator.state.value.busy && coordinator.state.value.invitationFileWriteBinding == null }
+            assertEquals(0, unexpected.get())
+            assertEquals(offer, LanSyncGroupInviteOffer.readFile(written.toByteArray().inputStream()))
+            if (invalidate) {
+                assertTrue(coordinator.state.value.error.orEmpty().contains("SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE"))
+                assertFalse(coordinator.state.value.status.contains("邀请文件已保存"))
+            } else {
+                assertNull(coordinator.state.value.error)
+                assertTrue(coordinator.state.value.status.contains("邀请文件已保存"))
+            }
+            assertTrue(coordinator.state.value.canCloseInvitation)
+            coordinator.closeInvitation()
+            assertEquals("邀请已取消", coordinator.state.value.status)
+        }
+    }
+
+    @Test fun noUsableLanAddressAndDisappearingSelectionOfferDifferentRecoverySteps() {
+        val addresses = AtomicReference(listOf("127.0.0.1", "8.8.8.8"))
+        fixture(object : LanSyncNetwork by noNetwork {
+            override fun addresses() = addresses.get()
+        }) { f ->
+            val coordinator = readyCoordinator(f)
+            coordinator.unlockManagement(requireNotNull(f.recoveryCode))
+            await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+            coordinator.createInvitation()
+            await { !coordinator.state.value.busy &&
+                coordinator.state.value.error.orEmpty().contains("SYNC_GROUP_LAN_ADDRESS_UNAVAILABLE") }
+            assertTrue(coordinator.state.value.error.orEmpty().contains("接入同一个可互通的局域网"))
+            assertNull(coordinator.state.value.invitation)
+
+            addresses.set(listOf("10.0.0.1", "10.0.0.2"))
+            coordinator.createInvitation()
+            await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+            val previous = requireNotNull(coordinator.state.value.invitation)
+            val removed = coordinator.state.value.invitationAddresses.single { it != previous.host }
+            addresses.set(listOf(previous.host))
+            coordinator.createInvitation(removed)
+            await { !coordinator.state.value.busy &&
+                coordinator.state.value.error.orEmpty().contains("SYNC_GROUP_LAN_ADDRESS_CHANGED") }
+            assertTrue(coordinator.state.value.error.orEmpty().contains("选择当前地址并重新生成邀请"))
+            assertNull(coordinator.state.value.invitation)
+
+            coordinator.createInvitation(previous.host)
+            await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+            val fresh = requireNotNull(coordinator.state.value.invitation)
+            assertEquals(previous.host, fresh.host)
+            assertNotEquals(previous.binding(), fresh.binding())
+            assertNull(coordinator.state.value.error)
+        }
+    }
+
     @Test fun automaticLocalCheckClearsItsOwnRecoveredMaintenanceNotice() = fixture { f ->
         val revisions = kotlinx.coroutines.channels.Channel<Long>(kotlinx.coroutines.channels.Channel.UNLIMITED)
         val coordinator = readyCoordinator(f, kotlinx.coroutines.flow.flow {

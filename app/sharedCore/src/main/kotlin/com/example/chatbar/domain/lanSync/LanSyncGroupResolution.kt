@@ -94,7 +94,9 @@ object LanSyncGroupResolution {
         } })
         require(frozenChoices.keys.all { it in native.units }) { "SYNC_GROUP_RESOLUTION_SELECTION" }
         val selected = frozenChoices.filterValues { it is LanSyncGroupResolutionChoice.Keep }.keys
-        require(selected.intersect(current.blockedResourceUnits).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
+        require(selected.none { native.componentHasBlockedResource(it, current.blockedResourceUnits) }) {
+            "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
+        }
         selected.forEach { unit ->
             val row = native.units.getValue(unit)
             require(row.stage != LanSyncGroupNativeStage.AUTHOR_FORK && row.frontiers.none { facts.getValue(it.version).author in history.authorForks() }) { "SYNC_GROUP_RESOLUTION_AUTHOR_FORK" }

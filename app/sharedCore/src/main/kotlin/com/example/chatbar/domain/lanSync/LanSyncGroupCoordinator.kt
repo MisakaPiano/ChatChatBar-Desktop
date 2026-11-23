@@ -241,6 +241,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
     private var invitation: ActiveInvitation? = null
     private var approvalInFlight: ActiveInvitation? = null
+    private var invitationFileWrite: ActiveInvitation? = null
     private var membershipRecoveryGeneration = 0L
     @Volatile private var membershipReview: LanSyncGroupMembershipRecovery.OpenReview? = null
     @Volatile private var membershipPackageReview: LanSyncGroupMembershipRecovery.ImportReview? = null
@@ -336,6 +337,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED" -> "这次保存已过期或被取消。请重新生成邀请；如果系统创建了空文件，可以另选名称重试。"
             "SYNC_GROUP_INVITE_FILE_DESTINATION_CHANGED" -> "同名目标已变化或不是邀请文件，原文件已保留。请选择新文件名。"
             "SYNC_GROUP_INVITE_FILE_UNAVAILABLE" -> "无法保存邀请文件，请另选保存位置。"
+            "SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE" ->
+                "文件已写出，但保存期间邀请状态发生变化，无法确认它仍可用。请重新生成邀请并使用新文件名保存。"
+            "SYNC_GROUP_LAN_ADDRESS_UNAVAILABLE" ->
+                "本机没有可用于邀请的局域网地址。请让两台设备接入同一个可互通的局域网，再生成邀请。"
+            "SYNC_GROUP_LAN_ADDRESS_CHANGED" ->
+                "原选局域网地址已不可用。请重新检查本机网络连接，选择当前地址并重新生成邀请。"
             "SYNC_GROUP_INVITE_TLS_PIN", "SYNC_GROUP_INVITE_TLS" -> "无法验证邀请设备的连接身份。请核对设备并重新生成有效邀请。"
             "SYNC_GROUP_JOIN_CONNECTION_FAILED" -> "暂时无法连接设备组。请检查两端是否在同一可达网络、邀请地址是否正确。"
             "SYNC_GROUP_INVITE_FRAME", "SYNC_GROUP_INVITE_REQUEST", "SYNC_GROUP_INVITE_REPLY", "SYNC_GROUP_INVITE_CHALLENGE" ->
@@ -1023,17 +1030,43 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
     }
 
-    override fun saveInvitationFile(binding: String?, write: (ByteArray) -> Unit) = action("保存邀请文件", allowWhilePaused = true) {
-        val bytes = synchronized(lifecycle) {
-            val current = requireNotNull(invitation?.takeIf { binding != null && it.fileBinding == binding }) {
-                "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"
+    override fun saveInvitationFile(binding: String?, write: (ByteArray) -> Unit) {
+        if (synchronized(lifecycle) { invitationFileWrite != null }) return
+        action("保存邀请文件", allowWhilePaused = true) {
+            val (current, privacy) = synchronized(lifecycle) {
+                requireNotNull(invitation?.takeIf { !closed && !paused && binding != null && it.fileBinding == binding }) {
+                    "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"
+                } to privacyGeneration
             }
-            try { current.owner.fileBytes(current.offer) }
+            val bytes = try { current.owner.fileBytes(current.offer) }
             catch (_: IllegalArgumentException) { error("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED") }
-        }
-        try { write(bytes) } finally { bytes.fill(0) }
-        synchronized(lifecycle) {
-            if (invitation?.fileBinding == binding) mutableState.update { it.copy(status = "邀请文件已保存，可在有效期内用新设备打开。") }
+            try {
+                synchronized(lifecycle) {
+                    require(!closed && !paused && invitation === current && privacy == privacyGeneration) {
+                        "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"
+                    }
+                    invitationFileWrite = current
+                    mutableState.update { it.copy(invitationFileWriteBinding = current.fileBinding, status = "正在写入邀请文件") }
+                }
+                write(bytes)
+                currentCoroutineContext().ensureActive()
+                try { current.owner.requireCurrentFileOffer(current.offer) }
+                catch (_: IllegalArgumentException) { error("SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE") }
+                synchronized(lifecycle) {
+                    check(!closed && !paused && invitation === current && privacy == privacyGeneration) {
+                        "SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE"
+                    }
+                    mutableState.update { it.copy(status = "邀请文件已保存，可在有效期内用新设备打开。") }
+                }
+            } finally {
+                bytes.fill(0)
+                synchronized(lifecycle) {
+                    if (invitationFileWrite === current) {
+                        invitationFileWrite = null
+                        mutableState.update { it.copy(invitationFileWriteBinding = null) }
+                    }
+                }
+            }
         }
     }
 
@@ -1062,6 +1095,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun closeInvitation() = synchronized(lifecycle) {
         if (approvalInFlight != null) {
             mutableState.update { it.copy(status = "正在确认批准结果") }
+        } else if (invitationFileWrite != null) {
+            mutableState.update { it.copy(status = "正在写入邀请文件，完成后可关闭邀请") }
         } else if (invitation != null || pendingInvitationCommand != null) {
             invitationCommandGeneration++
             pendingInvitationCommand = null
@@ -1241,6 +1276,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         action("核对冲突处理目标") {
             require(frozenChoices.isNotEmpty()) { "SYNC_GROUP_RESOLUTION_SELECTION" }
             val plan = requireNotNull(view.plan) { "SYNC_GROUP_NODE_NOT_READY" }
+            require(!plan.resolutionBlockedByLocalResources(frozenChoices)) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
             val prepared = requireNotNull(access) { "SYNC_GROUP_NODE_NOT_READY" }.node.prepareResolution(frozenChoices)
             require(prepared.checkpoint == plan.checkpoint && prepared.heads == plan.heads &&
                 prepared.sourceFiles == plan.sourceFiles && prepared.appliedBefore == plan.appliedBefore) { "SYNC_GROUP_RESOLUTION_STALE" }

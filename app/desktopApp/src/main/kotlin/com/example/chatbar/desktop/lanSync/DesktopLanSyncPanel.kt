@@ -65,7 +65,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             if (state.invitationRetainedWhileLocked) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
                     StatusText("邀请仍在有效期内。请重新解锁管理，再核对并确认新设备。")
-                    BootstrapButton("取消邀请", secondary = true) { coordinator.closeInvitation() }
+                    BootstrapButton("取消邀请", secondary = true, enabled = state.canCloseInvitation) { coordinator.closeInvitation() }
                 }
             }
             Box(Modifier.weight(1f)) { DesktopLanSyncGroupPanel(state, coordinator, view, actionReview, recoveryEntries, recoveryView, imageState) }
@@ -116,13 +116,13 @@ private fun DesktopLanSyncInvitationFiles(coordinator: LanSyncGroupCoordinator, 
     val offer = state.invitation?.takeIf { state.invitationFileOnly }
     val binding = state.invitationFileBinding
     if (offer != null && binding != null) Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        StatusText("请使用新文件名保存邀请。已有文件会保留。")
+        StatusText(if (state.invitationFileWriteBinding == binding) "正在写入邀请文件" else "请使用新文件名保存邀请。已有文件会保留。")
         BootstrapButton("保存邀请文件", enabled = !state.busy) {
             filePicker.pickNewSaveFile(type, "设备组邀请.ccbinvite", "保存邀请文件 · 请使用新文件名")?.let { path ->
                 coordinator.saveInvitationFile(binding) { writeNewDesktopInvitationFile(path, it) }
             }
         }
-        BootstrapButton("关闭邀请", secondary = true, enabled = !state.invitationApprovalInProgress) { coordinator.closeInvitation() }
+        BootstrapButton("关闭邀请", secondary = true, enabled = state.canCloseInvitation) { coordinator.closeInvitation() }
         state.invitationAddresses.filter { it != offer.host }.forEach { address ->
             BootstrapButton("用 $address 生成新邀请文件", secondary = true, enabled = !state.busy) {
                 coordinator.createInvitation(address, forFile = true)
