@@ -131,25 +131,26 @@ class AdbEvidenceTests(unittest.TestCase):
 
     def test_ready_retry_exact_predicate_refuses_other_conditions(self):
         value=evidence.observation('PRIVATE_READY_STAT',255,b'',b'')
-        self.assertTrue(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,value))
+        self.assertTrue(control.protocol_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,value))
         for name,phase,before,after,used in [('progress.json','ONE_INSTRUMENTATION',True,True,False),
             ('ready.json','PRIVATE_OFFER',True,True,False),('ready.json','ONE_INSTRUMENTATION',False,True,False),
             ('ready.json','ONE_INSTRUMENTATION',True,False,False),('ready.json','ONE_INSTRUMENTATION',True,True,True)]:
-            self.assertFalse(control.ready_stat_255_retry_allowed(name,phase,before,after,used,value))
+            self.assertFalse(control.protocol_stat_255_retry_allowed(name,phase,before,after,used,value))
         for code,out,err in ((255,b'x',b''),(255,b'',b'x'),(1,b'',b'')):
             row=evidence.observation('PRIVATE_READY_STAT',code,out,err)
-            self.assertFalse(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
+            self.assertFalse(control.protocol_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
         row=dict(value);row['stdoutCapped']=0
-        self.assertFalse(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
+        self.assertFalse(control.protocol_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
         row=evidence.observation('PRIVATE_READY_CAT',255,b'',b'')
-        self.assertFalse(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
+        self.assertFalse(control.protocol_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
 
-    def run_ready_retry_driver(self,continuous=False,initially_active=True,exit_during_wait=False,cat_error=False):
+    def run_stat_retry_driver(self,continuous=False,initially_active=True,exit_during_wait=False,cat_error=False,
+                              fault_file='ready.json',consume_ready_budget=False):
         here=Path(__file__).resolve().parent
         with tempfile.TemporaryDirectory(prefix='pure-ready-',dir=here) as temporary:
             runner=Path(temporary).resolve();self.assertEqual(runner.parent,here)
             lab=runner/'ccb-v7-live';lab.mkdir();out=runner/'small';out.mkdir();result=out/'android.json'
-            calls=[];sleep_calls=[];state={'stat':0,'active':initially_active}
+            calls=[];sleep_calls=[];state={'stat':0,'active':initially_active,'ready.json':0,'route.json':0}
             class FakeProcess:
                 def poll(self):return None if state['active'] else 1
                 def terminate(self):state['active']=False
@@ -165,15 +166,27 @@ class AdbEvidenceTests(unittest.TestCase):
                 elif args==['features']:stdout=b'shell_v2\ncmd\n'
                 elif args[-1:]==['pwd']:stdout=('/data/user/0/'+control.PACKAGE+'\n').encode()
                 elif args[-1:]==[control.APP_LAB+'progress.json']:code=1;stderr=self.stat_missing('progress.json')
-                elif args[-1:]==[control.APP_LAB+'ready.json']:
+                elif args[-1:] in ([control.APP_LAB+'ready.json'],[control.APP_LAB+'route.json']):
+                    name=args[-1].removeprefix(control.APP_LAB)
                     if 'stat' in args:
-                        state['stat']+=1
-                        if state['stat']==1 or continuous:code=255
+                        state[name]+=1
+                        if name==fault_file:
+                            state['stat']+=1
+                            if state['stat']==1 or continuous:code=255
+                            else:stdout=b'36\n'
+                        elif consume_ready_budget and name=='ready.json' and state[name]==1:code=255
                         else:stdout=b'36\n'
-                    elif cat_error:code=255
-                    else:
+                    elif cat_error and name==fault_file:code=255
+                    elif name=='ready.json':
                         stdout=b'{"kind":"CCB_V7_ANDROID_READY","ready":true}'
-                        (lab/'android-stop-requested.json').write_text('{"kind":"CCB_V7_REVERSE_STOP","reason":"PEER_OR_CONTROL_FAILED"}')
+                        if fault_file=='route.json':
+                            (lab/'live-offer.json').write_text(json.dumps(dict(kind='CCB_V7_LIVE_SYNTHETIC_OFFER',
+                                code='CCB-GROUP-JOIN1:synthetic',session='ccb-v7-lab-session',message='ccb-v7-lab-message',
+                                text='CCB-V7-synthetic-message',imageSha256='b'*64)))
+                        else:
+                            (lab/'android-stop-requested.json').write_text('{"kind":"CCB_V7_REVERSE_STOP","reason":"PEER_OR_CONTROL_FAILED"}')
+                    else:stdout=b'{}' # Deliberately refuse route contents after real driver read; no forward/native claim.
+                elif args[:6]==['shell','-T','run-as',control.PACKAGE,'sh','-c']:pass
                 elif 'rm' not in args:raise AssertionError('UNEXPECTED_MOCK_OPERATION')
                 return types.SimpleNamespace(returncode=code,stdout=stdout,stderr=stderr)
             def fake_sleep(seconds):
@@ -192,37 +205,102 @@ class AdbEvidenceTests(unittest.TestCase):
             return value,state['stat'],sleep_calls
 
     def test_ready_255_once_can_reach_exact_ready_then_controlled_stop(self):
-        value,reads,sleeps=self.run_ready_retry_driver()
+        value,reads,sleeps=self.run_stat_retry_driver()
         self.assertTrue(value['readyObserved']);self.assertEqual(reads,2)
-        self.assertEqual(value['readyStatRetry']['retryAttempts'],1)
-        self.assertEqual(value['readyStatRetry']['firstObservation']['exitCode'],255)
-        self.assertEqual(value['readyStatRetry']['outcome'],'STAT_SUCCESS')
+        self.assertEqual(value['protocolStatRetry']['retryAttempts'],1)
+        self.assertEqual(value['protocolStatRetry']['firstObservation']['exitCode'],255)
+        self.assertEqual(value['protocolStatRetry']['outcome'],'STAT_SUCCESS')
         self.assertIsNone(value['firstFatalAdb']);self.assertEqual(sleeps,[.3])
 
     def test_second_255_is_fatal_without_third_stat(self):
-        value,reads,_=self.run_ready_retry_driver(continuous=True)
+        value,reads,_=self.run_stat_retry_driver(continuous=True)
         self.assertFalse(value['readyObserved']);self.assertEqual(reads,2)
-        self.assertEqual(value['readyStatRetry']['outcome'],'RETRY_FAILED')
-        self.assertEqual(value['readyStatRetry']['retryAttempts'],1)
+        self.assertEqual(value['protocolStatRetry']['outcome'],'RETRY_FAILED')
+        self.assertEqual(value['protocolStatRetry']['retryAttempts'],1)
         self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_READY_STAT')
-        self.assertEqual(value['readyStatRetry']['retryObservation']['exitCode'],255)
+        self.assertEqual(value['protocolStatRetry']['retryObservation']['exitCode'],255)
 
     def test_inactive_instrumentation_does_not_get_retry(self):
-        value,reads,sleeps=self.run_ready_retry_driver(initially_active=False)
+        value,reads,sleeps=self.run_stat_retry_driver(initially_active=False)
         self.assertEqual(reads,1);self.assertEqual(sleeps,[])
-        self.assertFalse(value['readyStatRetry']['budgetUsed']);self.assertFalse(value['readyObserved'])
+        self.assertFalse(value['protocolStatRetry']['budgetUsed']);self.assertFalse(value['readyObserved'])
 
     def test_exit_before_retry_prevents_second_stat(self):
-        value,reads,_=self.run_ready_retry_driver(exit_during_wait=True)
+        value,reads,_=self.run_stat_retry_driver(exit_during_wait=True)
         self.assertEqual(reads,1);self.assertFalse(value['readyObserved'])
-        self.assertEqual(value['readyStatRetry']['retryAttempts'],0)
-        self.assertEqual(value['readyStatRetry']['outcome'],'REFUSED_INACTIVE')
+        self.assertEqual(value['protocolStatRetry']['retryAttempts'],0)
+        self.assertEqual(value['protocolStatRetry']['outcome'],'REFUSED_INACTIVE')
 
     def test_cat_255_after_retried_stat_stays_fatal(self):
-        value,reads,_=self.run_ready_retry_driver(cat_error=True)
+        value,reads,_=self.run_stat_retry_driver(cat_error=True)
         self.assertEqual(reads,2);self.assertFalse(value['readyObserved'])
-        self.assertEqual(value['readyStatRetry']['outcome'],'STAT_SUCCESS')
+        self.assertEqual(value['protocolStatRetry']['outcome'],'STAT_SUCCESS')
         self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_READY_CAT')
+
+
+    def test_route_retry_predicate_only_exact_file_phase_and_operation(self):
+        value=evidence.observation('PRIVATE_ROUTE_STAT',255,b'',b'')
+        self.assertTrue(control.protocol_stat_255_retry_allowed('route.json','ISOLATED_REVERSE_ROUTE',True,True,False,value))
+        for name,phase,before,after,used in [('ready.json','ISOLATED_REVERSE_ROUTE',True,True,False),
+            ('route.json','ONE_INSTRUMENTATION',True,True,False),('route.json','ISOLATED_REVERSE_ROUTE',False,True,False),
+            ('route.json','ISOLATED_REVERSE_ROUTE',True,False,False),('route.json','ISOLATED_REVERSE_ROUTE',True,True,True),
+            ('oracle.json','ISOLATED_REVERSE_ROUTE',True,True,False),('progress.json','ISOLATED_REVERSE_ROUTE',True,True,False)]:
+            self.assertFalse(control.protocol_stat_255_retry_allowed(name,phase,before,after,used,value))
+        for operation,code,out,err in [('PRIVATE_ROUTE_CAT',255,b'',b''),('PRIVATE_ROUTE_STAT',1,b'',b''),
+            ('PRIVATE_ROUTE_STAT',255,b'x',b''),('PRIVATE_ROUTE_STAT',255,b'',b'x')]:
+            row=evidence.observation(operation,code,out,err)
+            self.assertFalse(control.protocol_stat_255_retry_allowed('route.json','ISOLATED_REVERSE_ROUTE',True,True,False,row))
+        for field in ('exitCode','stdoutBytes','stderrBytes'):
+            row=dict(value);row[field]=True
+            self.assertFalse(control.protocol_stat_255_retry_allowed('route.json','ISOLATED_REVERSE_ROUTE',True,True,False,row))
+        for field in ('exitCodeCapped','stdoutCapped','stderrCapped'):
+            row=dict(value);row[field]=0
+            self.assertFalse(control.protocol_stat_255_retry_allowed('route.json','ISOLATED_REVERSE_ROUTE',True,True,False,row))
+
+    def test_route_255_once_reaches_stat_and_cat_then_refuses_synthetic_route(self):
+        value,reads,sleeps=self.run_stat_retry_driver(fault_file='route.json')
+        self.assertTrue(value['readyObserved']);self.assertEqual(reads,2)
+        retry=value['protocolStatRetry']
+        self.assertTrue(retry['budgetUsed']);self.assertEqual(retry['retryAttempts'],1)
+        self.assertEqual(retry['firstObservation']['operation'],'PRIVATE_ROUTE_STAT')
+        self.assertTrue(retry['firstProcessActive']);self.assertTrue(retry['processActiveForRetry'])
+        self.assertEqual(retry['outcome'],'STAT_SUCCESS');self.assertEqual(sleeps,[.3])
+        self.assertIsNone(value['firstFatalAdb']);self.assertEqual(value['errorCode'],'PRIVATE_ROUTE_FIELDS')
+
+    def test_route_continuous_255_preserves_fatal_without_third_stat(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',continuous=True)
+        self.assertEqual(reads,2);self.assertEqual(value['protocolStatRetry']['retryAttempts'],1)
+        self.assertEqual(value['protocolStatRetry']['outcome'],'RETRY_FAILED')
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
+        self.assertEqual(value['protocolStatRetry']['retryObservation']['exitCode'],255)
+
+    def test_ready_and_route_share_one_whole_flow_budget(self):
+        value,reads,sleeps=self.run_stat_retry_driver(fault_file='route.json',consume_ready_budget=True)
+        self.assertTrue(value['readyObserved']);self.assertEqual(reads,1);self.assertEqual(sleeps,[.3])
+        retry=value['protocolStatRetry']
+        self.assertEqual(retry['firstObservation']['operation'],'PRIVATE_READY_STAT')
+        self.assertEqual(retry['retryAttempts'],1);self.assertEqual(retry['outcome'],'STAT_SUCCESS')
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
+
+    def test_route_inactive_instrumentation_refuses_first_255(self):
+        value,reads,sleeps=self.run_stat_retry_driver(fault_file='route.json',initially_active=False)
+        self.assertEqual(reads,1);self.assertEqual(sleeps,[])
+        self.assertFalse(value['protocolStatRetry']['budgetUsed'])
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
+
+    def test_route_exit_before_retry_prevents_second_stat(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',exit_during_wait=True)
+        self.assertEqual(reads,1);self.assertEqual(value['protocolStatRetry']['retryAttempts'],0)
+        self.assertEqual(value['protocolStatRetry']['outcome'],'REFUSED_INACTIVE')
+        self.assertFalse(value['protocolStatRetry']['processActiveForRetry'])
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
+
+    def test_route_cat_255_is_not_retried(self):
+        value,reads,sleeps=self.run_stat_retry_driver(fault_file='route.json',cat_error=True)
+        self.assertEqual(reads,2);self.assertEqual(sleeps,[.3])
+        self.assertEqual(value['protocolStatRetry']['retryAttempts'],1)
+        self.assertEqual(value['protocolStatRetry']['outcome'],'STAT_SUCCESS')
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_CAT')
 
 
 if __name__=='__main__':unittest.main()

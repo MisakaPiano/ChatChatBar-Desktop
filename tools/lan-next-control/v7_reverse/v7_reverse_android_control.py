@@ -75,12 +75,14 @@ def owned_forward(rows,serial,port,relay_port):
     return sum(line.split()==[serial,'tcp:'+str(port),'tcp:'+str(relay_port)]
                for line in rows.splitlines())==1
 
-def ready_stat_255_retry_allowed(name,phase,alive_before,alive_after,budget_used,value):
-    return (name=='ready.json' and phase=='ONE_INSTRUMENTATION' and alive_before is True and
+STAT_RETRY_PHASES={'ready.json':'ONE_INSTRUMENTATION','route.json':'ISOLATED_REVERSE_ROUTE'}
+def protocol_stat_255_retry_allowed(name,phase,alive_before,alive_after,budget_used,value):
+    operation={'ready.json':'PRIVATE_READY_STAT','route.json':'PRIVATE_ROUTE_STAT'}.get(name)
+    return (operation is not None and phase==STAT_RETRY_PHASES[name] and alive_before is True and
         alive_after is True and budget_used is False and type(value) is dict and
         all(type(value.get(key)) is int for key in ('exitCode','stdoutBytes','stderrBytes')) and
         all(type(value.get(key)) is bool for key in ('exitCodeCapped','stdoutCapped','stderrCapped')) and value=={
-            'operation':'PRIVATE_READY_STAT','transport':'RETURNED','exitCode':255,'exitCodeCapped':False,
+            'operation':operation,'transport':'RETURNED','exitCode':255,'exitCodeCapped':False,
             'stdoutBytes':0,'stdoutCapped':False,'stderrBytes':0,'stderrCapped':False,
             'errorClass':'OTHER','disposition':'REFUSED'})
 
@@ -96,10 +98,10 @@ def main():
         'terminal':False,'nativeProgressAvailability':'UNREAD','lastNativeProgress':None,'checkpointWriteFailed':False,
         'firstFatalAdb':None,'lastAdbOperation':None,'lastProgressAdbFailure':None,'instrumentationAtFailure':None,
         'shellV2Observed':False,'runAsRootObserved':False,
-        'readyStatRetry':{'budgetUsed':False,'retryAttempts':0,'firstObservation':None,'retryObservation':None,
+        'protocolStatRetry':{'budgetUsed':False,'retryAttempts':0,'firstObservation':None,'retryObservation':None,
                           'firstProcessActive':None,'processActiveForRetry':None,'outcome':'NOT_USED'}}
     proc=None;logs=[];prefix=[str(args.adb),'-s',args.serial];result_owned=False;last_progress=0;forward=None
-    ready_retry_process=None;ready_retry_original=None
+    stat_retry_process=None;stat_retry_original=None
     def checkpoint():
         if result_owned:
             try:publish(args.result,r,replace=True)
@@ -124,29 +126,30 @@ def main():
             return instrumentation_summary(*data,proc is not None and proc.poll() is not None,CLASS,METHOD,NATIVE_PHASES)
         except Exception:return {'availability':'READ_ERROR','passClaimed':False}
     def private_read(name):
-        nonlocal ready_retry_process,ready_retry_original
+        nonlocal stat_retry_process,stat_retry_original
         need(name in ('ready.json','oracle.json','progress.json','route.json'),'PRIVATE_READ_ENUM')
         key={'ready.json':'READY','oracle.json':'ORACLE','progress.json':'PROGRESS','route.json':'ROUTE'}[name]
-        retry=r['readyStatRetry']
-        pending=name=='ready.json' and retry['outcome']=='WAIT_ORIGINAL_NEXT_POLL'
+        retry=r['protocolStatRetry']
+        pending=(retry['outcome']=='WAIT_ORIGINAL_NEXT_POLL' and
+                 retry['firstObservation']['operation']=='PRIVATE_'+key+'_STAT')
         original=proc
-        alive_before=name=='ready.json' and original is not None and original.poll() is None
+        alive_before=name in STAT_RETRY_PHASES and original is not None and original.poll() is None
         if pending:
-            active=(r['phase']=='ONE_INSTRUMENTATION' and original is ready_retry_process and alive_before)
+            active=(r['phase']==STAT_RETRY_PHASES[name] and original is stat_retry_process and alive_before)
             retry['processActiveForRetry']=active
             if not active:
-                retry['outcome']='REFUSED_INACTIVE';raise ready_retry_original
+                retry['outcome']='REFUSED_INACTIVE';raise stat_retry_original
             retry['retryAttempts']=1;retry['outcome']='RETRY_IN_FLIGHT';checkpoint()
         try:
             stat=call('PRIVATE_'+key+'_STAT','shell','-T','run-as',PACKAGE,'toybox','stat','-c','%s',APP_LAB+name,missing=True)
         except AdbFailure as error:
-            alive_after=name=='ready.json' and proc is original and original is not None and original.poll() is None
-            if ready_stat_255_retry_allowed(name,r['phase'],alive_before,alive_after,retry['budgetUsed'],error.evidence):
+            alive_after=name in STAT_RETRY_PHASES and proc is original and original is not None and original.poll() is None
+            if protocol_stat_255_retry_allowed(name,r['phase'],alive_before,alive_after,retry['budgetUsed'],error.evidence):
                 retry.update(budgetUsed=True,firstObservation=dict(error.evidence),firstProcessActive=True,
                              outcome='WAIT_ORIGINAL_NEXT_POLL')
-                ready_retry_process=original;ready_retry_original=error;checkpoint()
+                stat_retry_process=original;stat_retry_original=error;checkpoint()
                 # Only defer this read. The original wait owns its existing0.3s poll and deadline.
-                # No READY, expected-ENOENT or native success is manufactured here.
+                # No protocol file, expected-ENOENT or native success is manufactured here.
                 return None
             if pending:
                 retry['retryObservation']=dict(error.evidence);retry['outcome']='RETRY_FAILED'
@@ -256,7 +259,7 @@ def main():
         execution=instrumentation_report.execution(report.decode('utf-8'),CLASS,METHOD)
         r.update(oneNativeMethodPassed=True,execution=execution,reportSha256=hashlib.sha256(report).hexdigest(),status='REVERSE_DEBUG_CASE_PASSED',phase='DONE')
     except Exception as error:
-        if r['readyStatRetry']['outcome']=='WAIT_ORIGINAL_NEXT_POLL':r['readyStatRetry']['outcome']='NOT_ATTEMPTED_STOP'
+        if r['protocolStatRetry']['outcome']=='WAIT_ORIGINAL_NEXT_POLL':r['protocolStatRetry']['outcome']='NOT_ATTEMPTED_STOP'
         r.update(status='REFUSED',errorCode=str(error) if isinstance(error,(Refused,AdbFailure)) else 'CONTROL_EXCEPTION')
         if isinstance(error,AdbFailure):r['firstFatalAdb']=error.evidence
         if logs:r['instrumentationAtFailure']=native_snapshot()
