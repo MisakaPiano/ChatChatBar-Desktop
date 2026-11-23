@@ -22,6 +22,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.*
 
 /** Actual joined daily profile, coordinator callbacks, invitation/store TLS and root management.
@@ -86,6 +88,13 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         }
         fun author() = SyncAuthorJournal(root.resolve("joining/node/author"), trust,
             Base64.getEncoder().encodeToString(f.joiningIdentity.certificate.encoded), { it.reversedArray() }, { it.reversedArray() })
+        fun receivingKey(): SyncDeviceEncryptionKey {
+            val path = root.resolve("joining")
+            val profile = lanSyncJson.parseToJsonElement(lanSyncUtf8(Files.readAllBytes(path.resolve("profile.protected")).reversedArray()))
+            val retainedId = profile.jsonObject.getValue("recipient").jsonPrimitive.content
+            return SyncDeviceKeyCustody(path.resolve("recipient"), f.joiningIdentity.fingerprint,
+                { it.reversedArray() }, { it.reversedArray() }).open(retainedId)
+        }
         suspend fun close() { coordinator.closeAndDrain(); founders.forEach { it.close() } }
     }
     private fun rootState(root: Path, code: String, vault: SyncManagementVaultBlob): SyncRootLedgerState =
@@ -154,7 +163,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         Files.newDirectoryStream(recoveryRoot, "package-*.ccbgroupfix").use { files ->
             assertContentEquals(retry, Files.readAllBytes(files.single()))
         }
-        val signed = SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust, joined.f.joiningKey)
+        val receiver = joined.receivingKey()
+        assertEquals(parent.members.getValue(access.device).recipientKey, receiver.publicKey.encoded)
+        val signed = SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust, receiver)
         assertEquals(binding, signed.binding)
         assertEquals(primary.reference(), signed.primary)
         assertEquals(checkpoints, signed.recovery.recovery?.parents)
@@ -170,7 +181,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
             SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust, excludedKey)
         }.message)
         assertFailsWith<IllegalArgumentException> {
-            SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust.copy(group = SyncStoreId.random()), joined.f.joiningKey)
+            SyncLedgerRecoveryFileCodec.read(retry.inputStream(), access.trust.copy(group = SyncStoreId.random()), receiver)
         }
         return SignedRecovery(retry, signed)
     }
